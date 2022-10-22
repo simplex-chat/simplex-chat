@@ -134,6 +134,8 @@ responseToView testView = \case
     [ttyContact c <> " cancelled receiving " <> sndFile ft]
   CRContactConnecting _ -> []
   CRContactConnected ct userCustomProfile -> viewContactConnected ct userCustomProfile testView
+  CRContactConnectingViaGroupLink _ -> []
+  CRContactConnectedViaGroupLink _ _ -> []
   CRContactAnotherClient c -> [ttyContact' c <> ": contact is connected to another client"]
   CRSubscriptionEnd acEntity -> [sShow (connId (entityConnection acEntity :: Connection)) <> ": END"]
   CRContactsDisconnected srv cs -> [plain $ "server disconnected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]

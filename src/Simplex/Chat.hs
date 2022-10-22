@@ -1681,7 +1681,10 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
             Nothing -> do
               -- [incognito] print incognito profile used for this contact
               incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
-              toView $ CRContactConnected ct (fmap fromLocalProfile incognitoProfile)
+              viaGroupLink <- withStore' (\db -> getConnectionViaGroupLinkFlag db user connId)
+              if viaGroupLink == Just True
+                then toView $ CRContactConnectedViaGroupLink ct (fmap fromLocalProfile incognitoProfile)
+                else toView $ CRContactConnected ct (fmap fromLocalProfile incognitoProfile)
               setActive $ ActiveC c
               showToast (c <> "> ") "connected"
               forM_ viaUserContactLink $ \userContactLinkId ->
@@ -2521,12 +2524,15 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
       toView $ CRContactsMerged to from
 
     saveConnInfo :: Connection -> ConnInfo -> m ()
-    saveConnInfo activeConn connInfo = do
+    saveConnInfo activeConn@Connection {connId} connInfo = do
       ChatMessage {chatMsgEvent} <- parseChatMessage connInfo
       case chatMsgEvent of
         XInfo p -> do
           ct <- withStore $ \db -> createDirectContact db userId activeConn p
-          toView $ CRContactConnecting ct
+          viaGroupLink <- withStore' (\db -> getConnectionViaGroupLinkFlag db user connId)
+          if viaGroupLink == Just True
+            then toView $ CRContactConnectingViaGroupLink ct
+            else toView $ CRContactConnecting ct
         -- TODO show/log error, other events in SMP confirmation
         _ -> pure ()
 

@@ -3313,9 +3313,7 @@ testGroupLink =
       bob <## "connection request sent!"
       alice <## "bob (Bob): accepting request to join group #team..."
       concurrentlyN_
-        [ do
-            alice <## "bob (Bob): contact is connected"
-            alice <## "bob invited to group #team via your group link",
+        [ alice <## "bob invited to group #team via your group link",
           do
             bob <## "alice (Alice): contact is connected"
             bob <## "#team: alice invites you to join the group as member"
@@ -3347,9 +3345,7 @@ testGroupLink =
       cath <## "connection request sent!"
       alice <## "cath_1 (Catherine): accepting request to join group #team..."
       concurrentlyN_
-        [ do
-            alice <## "cath_1 (Catherine): contact is connected"
-            alice <## "cath_1 invited to group #team via your group link",
+        [ alice <## "cath_1 invited to group #team via your group link",
           do
             cath <## "alice_1 (Alice): contact is connected"
             cath <## "#team: alice_1 invites you to join the group as member"
@@ -3430,12 +3426,8 @@ testGroupLinkIncognitoMembership =
       cath ##> ("/c " <> gLink)
       cath <## "connection request sent!"
       bob <## "cath (Catherine): accepting request to join group #team..."
-      _ <- getTermLine bob
       concurrentlyN_
-        [ do
-            bob <## ("cath (Catherine): contact is connected, your incognito profile for this contact is " <> bobIncognito)
-            bob <## "use /info cath to print out this incognito profile again"
-            bob <## "cath invited to group #team via your group link",
+        [ bob <## "cath invited to group #team via your group link",
           do
             cath <## (bobIncognito <> ": contact is connected")
             cath <## ("#team: " <> bobIncognito <> " invites you to join the group as member")
@@ -3464,10 +3456,7 @@ testGroupLinkIncognitoMembership =
       _ <- getTermLine bob
       _ <- getTermLine dan
       concurrentlyN_
-        [ do
-            bob <## (danIncognito <> ": contact is connected, your incognito profile for this contact is " <> bobIncognito)
-            bob <## ("use /info " <> danIncognito <> " to print out this incognito profile again")
-            bob <## (danIncognito <> " invited to group #team via your group link"),
+        [ bob <## (danIncognito <> " invited to group #team via your group link"),
           do
             dan <## (bobIncognito <> ": contact is connected, your incognito profile for this contact is " <> danIncognito)
             dan <## ("use /info " <> bobIncognito <> " to print out this incognito profile again")
@@ -3533,9 +3522,7 @@ testGroupLinkDeleteInvitedMemberNoBrokenItem =
       bob <## "connection request sent!"
       alice <## "bob (Bob): accepting request to join group #team..."
       concurrentlyN_
-        [ do
-            alice <## "bob (Bob): contact is connected"
-            alice <## "bob invited to group #team via your group link",
+        [ alice <## "bob invited to group #team via your group link",
           do
             bob <## "alice (Alice): contact is connected"
             bob <## "#team: alice invites you to join the group as member"
@@ -3561,9 +3548,7 @@ testGroupLinkDeleteInvitedMemberNoBrokenItem =
       bob <## "connection request sent!"
       alice <## "bob_1 (Bob): accepting request to join group #team..."
       concurrentlyN_
-        [ do
-            alice <## "bob_1 (Bob): contact is connected"
-            alice <## "bob_1 invited to group #team via your group link",
+        [ alice <## "bob_1 invited to group #team via your group link",
           do
             bob <## "alice_1 (Alice): contact is connected"
             bob <## "#team_1 (team): alice_1 invites you to join the group as member"

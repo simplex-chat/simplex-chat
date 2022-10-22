@@ -315,6 +315,8 @@ data ChatResponse
   | CRConnectionAliasUpdated {toConnection :: PendingContactConnection}
   | CRContactConnecting {contact :: Contact}
   | CRContactConnected {contact :: Contact, userCustomProfile :: Maybe Profile}
+  | CRContactConnectingViaGroupLink {contact :: Contact}
+  | CRContactConnectedViaGroupLink {contact :: Contact, userCustomProfile :: Maybe Profile}
   | CRContactAnotherClient {contact :: Contact}
   | CRSubscriptionEnd {connectionEntity :: ConnectionEntity}
   | CRContactsDisconnected {server :: SMPServer, contactRefs :: [ContactRef]}
