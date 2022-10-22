@@ -3453,7 +3453,6 @@ testGroupLinkIncognitoMembership =
       danIncognito <- getTermLine dan
       dan <## "connection request sent incognito!"
       bob <## (danIncognito <> ": accepting request to join group #team...")
-      _ <- getTermLine bob
       _ <- getTermLine dan
       concurrentlyN_
         [ bob <## (danIncognito <> " invited to group #team via your group link"),
