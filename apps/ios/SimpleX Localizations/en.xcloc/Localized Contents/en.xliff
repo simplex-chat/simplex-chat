@@ -328,11 +328,6 @@
         <target>Calls</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Can't delete contact!" xml:space="preserve">
-        <source>Can't delete contact!</source>
-        <target>Can't delete contact!</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Can't invite contact!" xml:space="preserve">
         <source>Can't invite contact!</source>
         <target>Can't invite contact!</target>
@@ -371,6 +366,11 @@
       <trans-unit id="Change member role?" xml:space="preserve">
         <source>Change member role?</source>
         <target>Change member role?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Change role" xml:space="preserve">
+        <source>Change role</source>
+        <target>Change role</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat archive" xml:space="preserve">
@@ -536,11 +536,6 @@
       <trans-unit id="Connection timeout" xml:space="preserve">
         <source>Connection timeout</source>
         <target>Connection timeout</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Contact %@ cannot be deleted, they are a member of the group(s) %@." xml:space="preserve">
-        <source>Contact %@ cannot be deleted, they are a member of the group(s) %@.</source>
-        <target>Contact %@ cannot be deleted, they are a member of the group(s) %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact already exists" xml:space="preserve">
@@ -1978,6 +1973,11 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>Revert</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Role" xml:space="preserve">
+        <source>Role</source>
+        <target>Role</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Run chat" xml:space="preserve">
         <source>Run chat</source>
         <target>Run chat</target>
@@ -2447,6 +2447,11 @@ To connect, please ask your contact to create another connection link and check 
         <target>Unmute</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Unread" xml:space="preserve">
+        <source>Unread</source>
+        <target>Unread</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Update" xml:space="preserve">
         <source>Update</source>
         <target>Update</target>
@@ -2861,6 +2866,16 @@ SimpleX servers cannot see your profile.</target>
         <target>calling…</target>
         <note>call status</note>
       </trans-unit>
+      <trans-unit id="changed role of %@ to %@" xml:space="preserve">
+        <source>changed role of %1$@ to %2$@</source>
+        <target>changed role of %1$@ to %2$@</target>
+        <note>rcv group event chat item</note>
+      </trans-unit>
+      <trans-unit id="changed your role to %@" xml:space="preserve">
+        <source>changed your role to %@</source>
+        <target>changed your role to %@</target>
+        <note>rcv group event chat item</note>
+      </trans-unit>
       <trans-unit id="colored" xml:space="preserve">
         <source>colored</source>
         <target>colored</target>
@@ -3036,6 +3051,11 @@ SimpleX servers cannot see your profile.</target>
         <target>invited to connect</target>
         <note>chat list item title</note>
       </trans-unit>
+      <trans-unit id="invited via your group link" xml:space="preserve">
+        <source>invited via your group link</source>
+        <target>invited via your group link</target>
+        <note>rcv group event chat item</note>
+      </trans-unit>
       <trans-unit id="italic" xml:space="preserve">
         <source>italic</source>
         <target>italic</target>
@@ -3055,12 +3075,6 @@ SimpleX servers cannot see your profile.</target>
         <source>member</source>
         <target>member</target>
         <note>member role</note>
-      </trans-unit>
-      <trans-unit id="member %@ role: %@" xml:space="preserve">
-        <source>member %1$@ role: %2$@</source>
-        <target>member %1$@ role: %2$@</target>
-        <note>rcv group event chat item
-   snd group event chat item</note>
       </trans-unit>
       <trans-unit id="member connected" xml:space="preserve">
         <source>connected</source>
@@ -3217,6 +3231,16 @@ SimpleX servers cannot see your profile.</target>
         <target>you are invited to group</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="you changed role for yourself to %@" xml:space="preserve">
+        <source>you changed role for yourself to %@</source>
+        <target>you changed role for yourself to %@</target>
+        <note>snd group event chat item</note>
+      </trans-unit>
+      <trans-unit id="you changed role of %@ to %@" xml:space="preserve">
+        <source>you changed role of %1$@ to %2$@</source>
+        <target>you changed role of %1$@ to %2$@</target>
+        <note>snd group event chat item</note>
+      </trans-unit>
       <trans-unit id="you left" xml:space="preserve">
         <source>you left</source>
         <target>you left</target>
@@ -3241,12 +3265,6 @@ SimpleX servers cannot see your profile.</target>
         <source>you: </source>
         <target>you: </target>
         <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="your role: %@" xml:space="preserve">
-        <source>your role: %@</source>
-        <target>your role: %@</target>
-        <note>rcv group event chat item
-   snd group event chat item</note>
       </trans-unit>
       <trans-unit id="~strike~" xml:space="preserve">
         <source>\~strike~</source>

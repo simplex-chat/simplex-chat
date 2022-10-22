@@ -1040,6 +1040,7 @@ data class ChatItem (
           is RcvGroupEvent.MemberRole -> true
           is RcvGroupEvent.UserRole -> false
           is RcvGroupEvent.MemberDeleted -> false
+          is RcvGroupEvent.InvitedViaGroupLink -> false
         }
       is CIContent.SndGroupEventContent -> true
       else -> false
@@ -1547,17 +1548,19 @@ sealed class RcvGroupEvent() {
   @Serializable @SerialName("userDeleted") class UserDeleted(): RcvGroupEvent()
   @Serializable @SerialName("groupDeleted") class GroupDeleted(): RcvGroupEvent()
   @Serializable @SerialName("groupUpdated") class GroupUpdated(val groupProfile: GroupProfile): RcvGroupEvent()
+  @Serializable @SerialName("invitedViaGroupLink") class InvitedViaGroupLink(): RcvGroupEvent()
 
   val text: String get() = when (this) {
     is MemberAdded -> String.format(generalGetString(R.string.rcv_group_event_member_added), profile.profileViewName)
     is MemberConnected -> generalGetString(R.string.rcv_group_event_member_connected)
     is MemberLeft -> generalGetString(R.string.rcv_group_event_member_left)
-    is MemberRole -> String.format(generalGetString(R.string.member_role), profile.profileViewName, role.text)
-    is UserRole -> String.format(generalGetString(R.string.your_member_role), role.text)
+    is MemberRole -> String.format(generalGetString(R.string.rcv_group_event_changed_member_role), profile.profileViewName, role.text)
+    is UserRole -> String.format(generalGetString(R.string.rcv_group_event_changed_your_role), role.text)
     is MemberDeleted -> String.format(generalGetString(R.string.rcv_group_event_member_deleted), profile.profileViewName)
     is UserDeleted -> generalGetString(R.string.rcv_group_event_user_deleted)
     is GroupDeleted -> generalGetString(R.string.rcv_group_event_group_deleted)
     is GroupUpdated -> generalGetString(R.string.rcv_group_event_updated_group_profile)
+    is InvitedViaGroupLink -> generalGetString(R.string.rcv_group_event_invited_via_your_group_link)
   }
 }
 
@@ -1570,8 +1573,8 @@ sealed class SndGroupEvent() {
   @Serializable @SerialName("groupUpdated") class GroupUpdated(val groupProfile: GroupProfile): SndGroupEvent()
 
   val text: String get() = when (this) {
-    is MemberRole -> String.format(generalGetString(R.string.member_role), profile.profileViewName, role.text)
-    is UserRole -> String.format(generalGetString(R.string.your_member_role), role.text)
+    is MemberRole -> String.format(generalGetString(R.string.snd_group_event_changed_member_role), profile.profileViewName, role.text)
+    is UserRole -> String.format(generalGetString(R.string.snd_group_event_changed_role_for_yourself), role.text)
     is MemberDeleted -> String.format(generalGetString(R.string.snd_group_event_member_deleted), profile.profileViewName)
     is UserLeft -> generalGetString(R.string.snd_group_event_user_left)
     is GroupUpdated -> generalGetString(R.string.snd_group_event_group_profile_updated)

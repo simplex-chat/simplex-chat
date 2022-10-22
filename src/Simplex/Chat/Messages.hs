@@ -508,8 +508,8 @@ rcvGroupEventToText = \case
   RGEMemberAdded _ p -> "added " <> profileToText p
   RGEMemberConnected -> "connected"
   RGEMemberLeft -> "left"
-  RGEMemberRole _ p r -> "role of " <> profileToText p <> ": " <> safeDecodeUtf8 (strEncode r)
-  RGEUserRole r -> "your role: " <> safeDecodeUtf8 (strEncode r)
+  RGEMemberRole _ p r -> "changed role of " <> profileToText p <> " to " <> safeDecodeUtf8 (strEncode r)
+  RGEUserRole r -> "changed your role to " <> safeDecodeUtf8 (strEncode r)
   RGEMemberDeleted _ p -> "removed " <> profileToText p
   RGEUserDeleted -> "removed you"
   RGEGroupDeleted -> "deleted group"
@@ -518,8 +518,8 @@ rcvGroupEventToText = \case
 
 sndGroupEventToText :: SndGroupEvent -> Text
 sndGroupEventToText = \case
-  SGEMemberRole _ p r -> "role of " <> profileToText p <> ": " <> safeDecodeUtf8 (strEncode r)
-  SGEUserRole r -> "your role " <> safeDecodeUtf8 (strEncode r)
+  SGEMemberRole _ p r -> "changed role of " <> profileToText p <> " to " <> safeDecodeUtf8 (strEncode r)
+  SGEUserRole r -> "changed role for yourself to " <> safeDecodeUtf8 (strEncode r)
   SGEMemberDeleted _ p -> "removed " <> profileToText p
   SGEUserLeft -> "left"
   SGEGroupUpdated _ -> "group profile updated"

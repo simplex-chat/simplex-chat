@@ -328,11 +328,6 @@
         <target>Звонки</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Can't delete contact!" xml:space="preserve">
-        <source>Can't delete contact!</source>
-        <target>Невозможно удалить контакт!</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Can't invite contact!" xml:space="preserve">
         <source>Can't invite contact!</source>
         <target>Нельзя пригласить контакт!</target>
@@ -371,6 +366,11 @@
       <trans-unit id="Change member role?" xml:space="preserve">
         <source>Change member role?</source>
         <target>Поменять роль члена группы?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Change role" xml:space="preserve">
+        <source>Change role</source>
+        <target>Поменять роль</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat archive" xml:space="preserve">
@@ -536,11 +536,6 @@
       <trans-unit id="Connection timeout" xml:space="preserve">
         <source>Connection timeout</source>
         <target>Превышено время соединения</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Contact %@ cannot be deleted, they are a member of the group(s) %@." xml:space="preserve">
-        <source>Contact %@ cannot be deleted, they are a member of the group(s) %@.</source>
-        <target>Контакт %@ не может быть удален, так как является членом групп(ы) %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact already exists" xml:space="preserve">
@@ -1978,6 +1973,11 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Отменить изменения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Role" xml:space="preserve">
+        <source>Role</source>
+        <target>Роль</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Run chat" xml:space="preserve">
         <source>Run chat</source>
         <target>Запустить chat</target>
@@ -2447,6 +2447,11 @@ To connect, please ask your contact to create another connection link and check 
         <target>Уведомлять</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Unread" xml:space="preserve">
+        <source>Unread</source>
+        <target>Не прочитано</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Update" xml:space="preserve">
         <source>Update</source>
         <target>Обновить</target>
@@ -2861,6 +2866,16 @@ SimpleX серверы не могут получить доступ к ваше
         <target>входящий звонок…</target>
         <note>call status</note>
       </trans-unit>
+      <trans-unit id="changed role of %@ to %@" xml:space="preserve">
+        <source>changed role of %1$@ to %2$@</source>
+        <target>поменял(а) роль члена %1$@ на: %2$@</target>
+        <note>rcv group event chat item</note>
+      </trans-unit>
+      <trans-unit id="changed your role to %@" xml:space="preserve">
+        <source>changed your role to %@</source>
+        <target>поменял(а) вашу роль на: %@</target>
+        <note>rcv group event chat item</note>
+      </trans-unit>
       <trans-unit id="colored" xml:space="preserve">
         <source>colored</source>
         <target>цвет</target>
@@ -3036,6 +3051,11 @@ SimpleX серверы не могут получить доступ к ваше
         <target>приглашение</target>
         <note>chat list item title</note>
       </trans-unit>
+      <trans-unit id="invited via your group link" xml:space="preserve">
+        <source>invited via your group link</source>
+        <target>приглашен(а) через вашу ссылку группы</target>
+        <note>rcv group event chat item</note>
+      </trans-unit>
       <trans-unit id="italic" xml:space="preserve">
         <source>italic</source>
         <target>курсив</target>
@@ -3055,12 +3075,6 @@ SimpleX серверы не могут получить доступ к ваше
         <source>member</source>
         <target>член группы</target>
         <note>member role</note>
-      </trans-unit>
-      <trans-unit id="member %@ role: %@" xml:space="preserve">
-        <source>member %1$@ role: %2$@</source>
-        <target>роль %1$@: %2$@</target>
-        <note>rcv group event chat item
-   snd group event chat item</note>
       </trans-unit>
       <trans-unit id="member connected" xml:space="preserve">
         <source>connected</source>
@@ -3217,6 +3231,16 @@ SimpleX серверы не могут получить доступ к ваше
         <target>вы приглашены в группу</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="you changed role for yourself to %@" xml:space="preserve">
+        <source>you changed role for yourself to %@</source>
+        <target>вы поменяли роль себе на: %@</target>
+        <note>snd group event chat item</note>
+      </trans-unit>
+      <trans-unit id="you changed role of %@ to %@" xml:space="preserve">
+        <source>you changed role of %1$@ to %2$@</source>
+        <target>вы поменяли роль члена %1$@ на: %2$@</target>
+        <note>snd group event chat item</note>
+      </trans-unit>
       <trans-unit id="you left" xml:space="preserve">
         <source>you left</source>
         <target>вы покинули группу</target>
@@ -3241,12 +3265,6 @@ SimpleX серверы не могут получить доступ к ваше
         <source>you: </source>
         <target>вы: </target>
         <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="your role: %@" xml:space="preserve">
-        <source>your role: %@</source>
-        <target>ваша роль: %@</target>
-        <note>rcv group event chat item
-   snd group event chat item</note>
       </trans-unit>
       <trans-unit id="~strike~" xml:space="preserve">
         <source>\~strike~</source>

@@ -328,11 +328,6 @@
         <target>Anrufe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Can't delete contact!" xml:space="preserve">
-        <source>Can't delete contact!</source>
-        <target>Der Kontakt kann nicht gelöscht werden!</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Can't invite contact!" xml:space="preserve">
         <source>Can't invite contact!</source>
         <target>Kontakt kann nicht eingeladen werden!</target>
@@ -371,6 +366,11 @@
       <trans-unit id="Change member role?" xml:space="preserve">
         <source>Change member role?</source>
         <target>Die Mitgliederrolle ändern?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Change role" xml:space="preserve">
+        <source>Change role</source>
+        <target>Rolle ändern</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat archive" xml:space="preserve">
@@ -536,11 +536,6 @@
       <trans-unit id="Connection timeout" xml:space="preserve">
         <source>Connection timeout</source>
         <target>Verbindungszeitüberschreitung</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Contact %@ cannot be deleted, they are a member of the group(s) %@." xml:space="preserve">
-        <source>Contact %@ cannot be deleted, they are a member of the group(s) %@.</source>
-        <target>Der Kontakt mit %@ kann nicht gelöscht werden, da er Mitglied einer oder mehrerer dieser Gruppen ist %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact already exists" xml:space="preserve">
@@ -1978,6 +1973,11 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>Zurückkehren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Role" xml:space="preserve">
+        <source>Role</source>
+        <target>Rolle</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Run chat" xml:space="preserve">
         <source>Run chat</source>
         <target>Chat starten</target>
@@ -2447,6 +2447,11 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>Stummschaltung aufheben</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Unread" xml:space="preserve">
+        <source>Unread</source>
+        <target>***Unread</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Update" xml:space="preserve">
         <source>Update</source>
         <target>Aktualisieren</target>
@@ -2861,6 +2866,16 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>Anrufen…</target>
         <note>call status</note>
       </trans-unit>
+      <trans-unit id="changed role of %@ to %@" xml:space="preserve">
+        <source>changed role of %1$@ to %2$@</source>
+        <target>***changed role of %1$@ to %2$@</target>
+        <note>rcv group event chat item</note>
+      </trans-unit>
+      <trans-unit id="changed your role to %@" xml:space="preserve">
+        <source>changed your role to %@</source>
+        <target>***changed your role to %@</target>
+        <note>rcv group event chat item</note>
+      </trans-unit>
       <trans-unit id="colored" xml:space="preserve">
         <source>colored</source>
         <target>farbig</target>
@@ -3036,6 +3051,11 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>Für eine Verbindung eingeladen</target>
         <note>chat list item title</note>
       </trans-unit>
+      <trans-unit id="invited via your group link" xml:space="preserve">
+        <source>invited via your group link</source>
+        <target>***invited via your group link</target>
+        <note>rcv group event chat item</note>
+      </trans-unit>
       <trans-unit id="italic" xml:space="preserve">
         <source>italic</source>
         <target>kursiv</target>
@@ -3055,12 +3075,6 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <source>member</source>
         <target>Mitglied</target>
         <note>member role</note>
-      </trans-unit>
-      <trans-unit id="member %@ role: %@" xml:space="preserve">
-        <source>member %1$@ role: %2$@</source>
-        <target>Mitglieder %1$@ Rolle: %2$@</target>
-        <note>rcv group event chat item
-   snd group event chat item</note>
       </trans-unit>
       <trans-unit id="member connected" xml:space="preserve">
         <source>connected</source>
@@ -3217,6 +3231,16 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>Sie sind zur Gruppe eingeladen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="you changed role for yourself to %@" xml:space="preserve">
+        <source>you changed role for yourself to %@</source>
+        <target>***you changed role for yourself to %@</target>
+        <note>snd group event chat item</note>
+      </trans-unit>
+      <trans-unit id="you changed role of %@ to %@" xml:space="preserve">
+        <source>you changed role of %1$@ to %2$@</source>
+        <target>***you changed role of %1$@ to %2$@</target>
+        <note>snd group event chat item</note>
+      </trans-unit>
       <trans-unit id="you left" xml:space="preserve">
         <source>you left</source>
         <target>Sie haben verlassen</target>
@@ -3241,12 +3265,6 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <source>you: </source>
         <target>Sie: </target>
         <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="your role: %@" xml:space="preserve">
-        <source>your role: %@</source>
-        <target>Meine Rolle: %@</target>
-        <note>rcv group event chat item
-   snd group event chat item</note>
       </trans-unit>
       <trans-unit id="~strike~" xml:space="preserve">
         <source>\~strike~</source>

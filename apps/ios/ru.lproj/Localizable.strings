@@ -234,9 +234,6 @@
 "Calls" = "Звонки";
 
 /* No comment provided by engineer. */
-"Can't delete contact!" = "Невозможно удалить контакт!";
-
-/* No comment provided by engineer. */
 "Can't invite contact!" = "Нельзя пригласить контакт!";
 
 /* No comment provided by engineer. */
@@ -259,6 +256,15 @@
 
 /* No comment provided by engineer. */
 "Change member role?" = "Поменять роль члена группы?";
+
+/* No comment provided by engineer. */
+"Change role" = "Поменять роль";
+
+/* rcv group event chat item */
+"changed role of %@ to %@" = "поменял(а) роль члена %1$@ на: %2$@";
+
+/* rcv group event chat item */
+"changed your role to %@" = "поменял(а) вашу роль на: %@";
 
 /* No comment provided by engineer. */
 "Chat archive" = "Архив чата";
@@ -397,9 +403,6 @@
 
 /* connection information */
 "connection:%@" = "connection:%@";
-
-/* No comment provided by engineer. */
-"Contact %@ cannot be deleted, they are a member of the group(s) %@." = "Контакт %@ не может быть удален, так как является членом групп(ы) %@.";
 
 /* No comment provided by engineer. */
 "Contact already exists" = "Существующий контакт";
@@ -983,6 +986,9 @@
 /* chat list item title */
 "invited to connect" = "приглашение";
 
+/* rcv group event chat item */
+"invited via your group link" = "приглашен(а) через вашу ссылку группы";
+
 /* No comment provided by engineer. */
 "iOS Keychain is used to securely store passphrase - it allows receiving push notifications." = "iOS Keychain используется для безопасного хранения пароля - это позволяет получать мгновенные уведомления.";
 
@@ -1066,10 +1072,6 @@
 
 /* No comment provided by engineer. */
 "Member" = "Член группы";
-
-/* rcv group event chat item
-   snd group event chat item */
-"member %@ role: %@" = "роль %1$@: %2$@";
 
 /* rcv group event chat item */
 "member connected" = "соединен(а)";
@@ -1378,6 +1380,9 @@
 "Revert" = "Отменить изменения";
 
 /* No comment provided by engineer. */
+"Role" = "Роль";
+
+/* No comment provided by engineer. */
 "Run chat" = "Запустить chat";
 
 /* chat item action */
@@ -1675,6 +1680,9 @@
 "Unmute" = "Уведомлять";
 
 /* No comment provided by engineer. */
+"Unread" = "Не прочитано";
+
+/* No comment provided by engineer. */
 "Update" = "Обновить";
 
 /* No comment provided by engineer. */
@@ -1800,6 +1808,12 @@
 /* No comment provided by engineer. */
 "You can use markdown to format messages:" = "Вы можете форматировать сообщения:";
 
+/* snd group event chat item */
+"you changed role for yourself to %@" = "вы поменяли роль себе на: %@";
+
+/* snd group event chat item */
+"you changed role of %@ to %@" = "вы поменяли роль члена %1$@ на: %2$@";
+
 /* No comment provided by engineer. */
 "You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." = "Вы определяете через какие серверы вы **получаете сообщения**, ваши контакты - серверы, которые вы используете для отправки.";
 
@@ -1916,10 +1930,6 @@
 
 /* No comment provided by engineer. */
 "Your random profile" = "Ваш случайный профиль";
-
-/* rcv group event chat item
-   snd group event chat item */
-"your role: %@" = "ваша роль: %@";
 
 /* No comment provided by engineer. */
 "Your settings" = "Настройки";

@@ -234,9 +234,6 @@
 "Calls" = "Anrufe";
 
 /* No comment provided by engineer. */
-"Can't delete contact!" = "Der Kontakt kann nicht gelöscht werden!";
-
-/* No comment provided by engineer. */
 "Can't invite contact!" = "Kontakt kann nicht eingeladen werden!";
 
 /* No comment provided by engineer. */
@@ -259,6 +256,15 @@
 
 /* No comment provided by engineer. */
 "Change member role?" = "Die Mitgliederrolle ändern?";
+
+/* No comment provided by engineer. */
+"Change role" = "Rolle ändern";
+
+/* rcv group event chat item */
+"changed role of %@ to %@" = "***changed role of %1$@ to %2$@";
+
+/* rcv group event chat item */
+"changed your role to %@" = "***changed your role to %@";
 
 /* No comment provided by engineer. */
 "Chat archive" = "Datenbank Archiv";
@@ -397,9 +403,6 @@
 
 /* connection information */
 "connection:%@" = "Verbindung:%@";
-
-/* No comment provided by engineer. */
-"Contact %@ cannot be deleted, they are a member of the group(s) %@." = "Der Kontakt mit %@ kann nicht gelöscht werden, da er Mitglied einer oder mehrerer dieser Gruppen ist %@.";
 
 /* No comment provided by engineer. */
 "Contact already exists" = "Der Kontakt ist bereits vorhanden";
@@ -983,6 +986,9 @@
 /* chat list item title */
 "invited to connect" = "Für eine Verbindung eingeladen";
 
+/* rcv group event chat item */
+"invited via your group link" = "***invited via your group link";
+
 /* No comment provided by engineer. */
 "iOS Keychain is used to securely store passphrase - it allows receiving push notifications." = "Für die sichere Speicherung des Passworts wird der iOS Schlüsselbund verwendet - dies erlaubt den Empfang von Push-Benachrichtigungen.";
 
@@ -1066,10 +1072,6 @@
 
 /* No comment provided by engineer. */
 "Member" = "Mitglied";
-
-/* rcv group event chat item
-   snd group event chat item */
-"member %@ role: %@" = "Mitglieder %1$@ Rolle: %2$@";
 
 /* rcv group event chat item */
 "member connected" = "verbunden";
@@ -1378,6 +1380,9 @@
 "Revert" = "Zurückkehren";
 
 /* No comment provided by engineer. */
+"Role" = "Rolle";
+
+/* No comment provided by engineer. */
 "Run chat" = "Chat starten";
 
 /* chat item action */
@@ -1675,6 +1680,9 @@
 "Unmute" = "Stummschaltung aufheben";
 
 /* No comment provided by engineer. */
+"Unread" = "***Unread";
+
+/* No comment provided by engineer. */
 "Update" = "Aktualisieren";
 
 /* No comment provided by engineer. */
@@ -1800,6 +1808,12 @@
 /* No comment provided by engineer. */
 "You can use markdown to format messages:" = "Um Nachrichteninhalte zu formatieren, können Sie Markdowns verwenden:";
 
+/* snd group event chat item */
+"you changed role for yourself to %@" = "***you changed role for yourself to %@";
+
+/* snd group event chat item */
+"you changed role of %@ to %@" = "***you changed role of %1$@ to %2$@";
+
 /* No comment provided by engineer. */
 "You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." = "Sie legen fest, über welche Server Sie Ihre Nachrichten **empfangen** und an Ihre Kontakte **senden**.";
 
@@ -1916,10 +1930,6 @@
 
 /* No comment provided by engineer. */
 "Your random profile" = "Ihr Zufallsprofil";
-
-/* rcv group event chat item
-   snd group event chat item */
-"your role: %@" = "Meine Rolle: %@";
 
 /* No comment provided by engineer. */
 "Your settings" = "Meine Einstellungen";

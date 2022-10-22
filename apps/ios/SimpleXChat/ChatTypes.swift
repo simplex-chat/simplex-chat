@@ -915,6 +915,7 @@ public struct ChatItem: Identifiable, Decodable {
             case .memberAdded: return false
             case .memberLeft: return false
             case .memberDeleted: return false
+            case .invitedViaGroupLink: return false
             }
         case .sndGroupEvent: return true
         default: return false
@@ -1448,6 +1449,7 @@ public enum RcvGroupEvent: Decodable {
     case userDeleted
     case groupDeleted
     case groupUpdated(groupProfile: GroupProfile)
+    case invitedViaGroupLink
 
     var text: String {
         switch self {
@@ -1456,14 +1458,15 @@ public enum RcvGroupEvent: Decodable {
         case .memberConnected: return NSLocalizedString("member connected", comment: "rcv group event chat item")
         case .memberLeft: return NSLocalizedString("left", comment: "rcv group event chat item")
         case let .memberRole(_, profile, role):
-            return  String.localizedStringWithFormat(NSLocalizedString("member %@ role: %@", comment: "rcv group event chat item"), profile.profileViewName, role.text)
+            return  String.localizedStringWithFormat(NSLocalizedString("changed role of %@ to %@", comment: "rcv group event chat item"), profile.profileViewName, role.text)
         case let .userRole(role):
-            return String.localizedStringWithFormat(NSLocalizedString("your role: %@", comment: "rcv group event chat item"), role.text)
+            return String.localizedStringWithFormat(NSLocalizedString("changed your role to %@", comment: "rcv group event chat item"), role.text)
         case let .memberDeleted(_, profile):
             return String.localizedStringWithFormat(NSLocalizedString("removed %@", comment: "rcv group event chat item"), profile.profileViewName)
         case .userDeleted: return NSLocalizedString("removed you", comment: "rcv group event chat item")
         case .groupDeleted: return NSLocalizedString("deleted group", comment: "rcv group event chat item")
         case .groupUpdated: return NSLocalizedString("updated group profile", comment: "rcv group event chat item")
+        case .invitedViaGroupLink: return NSLocalizedString("invited via your group link", comment: "rcv group event chat item")
         }
     }
 }
@@ -1478,9 +1481,9 @@ public enum SndGroupEvent: Decodable {
     var text: String {
         switch self {
         case let .memberRole(_, profile, role):
-            return  String.localizedStringWithFormat(NSLocalizedString("member %@ role: %@", comment: "snd group event chat item"), profile.profileViewName, role.text)
+            return  String.localizedStringWithFormat(NSLocalizedString("you changed role of %@ to %@", comment: "snd group event chat item"), profile.profileViewName, role.text)
         case let .userRole(role):
-            return String.localizedStringWithFormat(NSLocalizedString("your role: %@", comment: "snd group event chat item"), role.text)
+            return String.localizedStringWithFormat(NSLocalizedString("you changed role for yourself to %@", comment: "snd group event chat item"), role.text)
         case let .memberDeleted(_, profile):
             return String.localizedStringWithFormat(NSLocalizedString("you removed %@", comment: "snd group event chat item"), profile.profileViewName)
         case .userLeft: return NSLocalizedString("you left", comment: "snd group event chat item")

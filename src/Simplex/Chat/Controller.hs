@@ -39,7 +39,9 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Store (AutoAccept, StoreError, UserContactLink)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent (AgentClient)
+import Simplex.Messaging.Agent.Client (AgentLocks)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, InitialAgentServers, NetworkConfig)
+import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore)
 import qualified Simplex.Messaging.Crypto as C
@@ -108,7 +110,7 @@ data ChatController = ChatController
     outputQ :: TBQueue (Maybe CorrId, ChatResponse),
     notifyQ :: TBQueue Notification,
     sendNotification :: Notification -> IO (),
-    chatLock :: TMVar (),
+    chatLock :: Lock,
     sndFiles :: TVar (Map Int64 Handle),
     rcvFiles :: TVar (Map Int64 Handle),
     currentCalls :: TMap ContactId Call,
@@ -241,6 +243,7 @@ data ChatCommand
   | UpdateProfileImage (Maybe ImageData)
   | QuitChat
   | ShowVersion
+  | DebugLocks
   deriving (Show)
 
 data ChatResponse
@@ -272,8 +275,8 @@ data ChatResponse
   | CRGroupCreated {groupInfo :: GroupInfo}
   | CRGroupMembers {group :: Group}
   | CRContactsList {contacts :: [Contact]}
-  | CRUserContactLink UserContactLink
-  | CRUserContactLinkUpdated UserContactLink
+  | CRUserContactLink {contactLink :: UserContactLink}
+  | CRUserContactLinkUpdated {contactLink :: UserContactLink}
   | CRContactRequestRejected {contactRequest :: UserContactRequest}
   | CRUserAcceptedGroupSent {groupInfo :: GroupInfo}
   | CRUserDeletedMember {groupInfo :: GroupInfo, member :: GroupMember}
@@ -363,6 +366,7 @@ data ChatResponse
   | CRNewContactConnection {connection :: PendingContactConnection}
   | CRContactConnectionDeleted {connection :: PendingContactConnection}
   | CRSQLResult {rows :: [Text]}
+  | CRDebugLocks {chatLockName :: Maybe String, agentLocks :: AgentLocks}
   | CRMessageError {severity :: Text, errorMessage :: Text}
   | CRChatCmdError {chatError :: ChatError}
   | CRChatError {chatError :: ChatError}
