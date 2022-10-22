@@ -48,27 +48,27 @@ struct GroupMemberInfoView: View {
                 Section("Member") {
                     infoRow("Group", groupInfo.displayName)
 
-//                    HStack {
-//                        if let roles = member.canChangeRoleTo(groupInfo: groupInfo) {
-//                            Picker("Change role", selection: $newRole) {
-//                                ForEach(roles) { role in
-//                                    Text(role.text)
-//                                        .foregroundStyle(.secondary)
-//                                }
-//                            }
-//                        } else {
-//                            Text("Role")
-//                            Spacer()
-//                            Text(member.memberRole.text)
-//                                .foregroundStyle(.secondary)
-//                        }
-//                    }
-//                    .onAppear { newRole = member.memberRole }
-//                    .onChange(of: newRole) { _ in
-//                        if newRole != member.memberRole {
-//                            alert = .changeMemberRoleAlert(role: newRole)
-//                        }
-//                    }
+                    HStack {
+                        if let roles = member.canChangeRoleTo(groupInfo: groupInfo) {
+                            Picker("Change role", selection: $newRole) {
+                                ForEach(roles) { role in
+                                    Text(role.text)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        } else {
+                            Text("Role")
+                            Spacer()
+                            Text(member.memberRole.text)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .onAppear { newRole = member.memberRole }
+                    .onChange(of: newRole) { _ in
+                        if newRole != member.memberRole {
+                            alert = .changeMemberRoleAlert(role: newRole)
+                        }
+                    }
 
                     // TODO invited by - need to get contact by contact id
                     if let conn = member.activeConn {

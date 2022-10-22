@@ -368,6 +368,11 @@
         <target>Change member role?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Change role" xml:space="preserve">
+        <source>Change role</source>
+        <target>Change role</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Chat archive" xml:space="preserve">
         <source>Chat archive</source>
         <target>Chat archive</target>
@@ -1968,6 +1973,11 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>Revert</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Role" xml:space="preserve">
+        <source>Role</source>
+        <target>Role</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Run chat" xml:space="preserve">
         <source>Run chat</source>
         <target>Run chat</target>
@@ -2856,6 +2866,16 @@ SimpleX servers cannot see your profile.</target>
         <target>calling…</target>
         <note>call status</note>
       </trans-unit>
+      <trans-unit id="changed role of %@ to %@" xml:space="preserve">
+        <source>changed role of %1$@ to %2$@</source>
+        <target>changed role of %1$@ to %2$@</target>
+        <note>rcv group event chat item</note>
+      </trans-unit>
+      <trans-unit id="changed your role to %@" xml:space="preserve">
+        <source>changed your role to %@</source>
+        <target>changed your role to %@</target>
+        <note>rcv group event chat item</note>
+      </trans-unit>
       <trans-unit id="colored" xml:space="preserve">
         <source>colored</source>
         <target>colored</target>
@@ -3056,12 +3076,6 @@ SimpleX servers cannot see your profile.</target>
         <target>member</target>
         <note>member role</note>
       </trans-unit>
-      <trans-unit id="member %@ role: %@" xml:space="preserve">
-        <source>member %1$@ role: %2$@</source>
-        <target>member %1$@ role: %2$@</target>
-        <note>rcv group event chat item
-   snd group event chat item</note>
-      </trans-unit>
       <trans-unit id="member connected" xml:space="preserve">
         <source>connected</source>
         <target>connected</target>
@@ -3217,6 +3231,16 @@ SimpleX servers cannot see your profile.</target>
         <target>you are invited to group</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="you changed role for yourself to %@" xml:space="preserve">
+        <source>you changed role for yourself to %@</source>
+        <target>you changed role for yourself to %@</target>
+        <note>snd group event chat item</note>
+      </trans-unit>
+      <trans-unit id="you changed role of %@ to %@" xml:space="preserve">
+        <source>you changed role of %1$@ to %2$@</source>
+        <target>you changed role of %1$@ to %2$@</target>
+        <note>snd group event chat item</note>
+      </trans-unit>
       <trans-unit id="you left" xml:space="preserve">
         <source>you left</source>
         <target>you left</target>
@@ -3241,12 +3265,6 @@ SimpleX servers cannot see your profile.</target>
         <source>you: </source>
         <target>you: </target>
         <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="your role: %@" xml:space="preserve">
-        <source>your role: %@</source>
-        <target>your role: %@</target>
-        <note>rcv group event chat item
-   snd group event chat item</note>
       </trans-unit>
       <trans-unit id="~strike~" xml:space="preserve">
         <source>\~strike~</source>
