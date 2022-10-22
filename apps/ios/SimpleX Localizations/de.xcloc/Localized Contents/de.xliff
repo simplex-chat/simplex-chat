@@ -328,11 +328,6 @@
         <target>Anrufe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Can't delete contact!" xml:space="preserve">
-        <source>Can't delete contact!</source>
-        <target>Der Kontakt kann nicht gelöscht werden!</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Can't invite contact!" xml:space="preserve">
         <source>Can't invite contact!</source>
         <target>Kontakt kann nicht eingeladen werden!</target>
@@ -536,11 +531,6 @@
       <trans-unit id="Connection timeout" xml:space="preserve">
         <source>Connection timeout</source>
         <target>Verbindungszeitüberschreitung</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Contact %@ cannot be deleted, they are a member of the group(s) %@." xml:space="preserve">
-        <source>Contact %@ cannot be deleted, they are a member of the group(s) %@.</source>
-        <target>Der Kontakt mit %@ kann nicht gelöscht werden, da er Mitglied einer oder mehrerer dieser Gruppen ist %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact already exists" xml:space="preserve">
@@ -2447,6 +2437,11 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>Stummschaltung aufheben</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Unread" xml:space="preserve">
+        <source>Unread</source>
+        <target>***Unread</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Update" xml:space="preserve">
         <source>Update</source>
         <target>Aktualisieren</target>
@@ -3035,6 +3030,11 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <source>invited to connect</source>
         <target>Für eine Verbindung eingeladen</target>
         <note>chat list item title</note>
+      </trans-unit>
+      <trans-unit id="invited via your group link" xml:space="preserve">
+        <source>invited via your group link</source>
+        <target>***invited via your group link</target>
+        <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="italic" xml:space="preserve">
         <source>italic</source>

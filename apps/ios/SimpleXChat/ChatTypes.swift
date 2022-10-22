@@ -915,6 +915,7 @@ public struct ChatItem: Identifiable, Decodable {
             case .memberAdded: return false
             case .memberLeft: return false
             case .memberDeleted: return false
+            case .invitedViaGroupLink: return false
             }
         case .sndGroupEvent: return true
         default: return false
@@ -1448,6 +1449,7 @@ public enum RcvGroupEvent: Decodable {
     case userDeleted
     case groupDeleted
     case groupUpdated(groupProfile: GroupProfile)
+    case invitedViaGroupLink
 
     var text: String {
         switch self {
@@ -1464,6 +1466,7 @@ public enum RcvGroupEvent: Decodable {
         case .userDeleted: return NSLocalizedString("removed you", comment: "rcv group event chat item")
         case .groupDeleted: return NSLocalizedString("deleted group", comment: "rcv group event chat item")
         case .groupUpdated: return NSLocalizedString("updated group profile", comment: "rcv group event chat item")
+        case .invitedViaGroupLink: return NSLocalizedString("invited via your group link", comment: "rcv group event chat item")
         }
     }
 }

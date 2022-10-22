@@ -234,9 +234,6 @@
 "Calls" = "Anrufe";
 
 /* No comment provided by engineer. */
-"Can't delete contact!" = "Der Kontakt kann nicht gelöscht werden!";
-
-/* No comment provided by engineer. */
 "Can't invite contact!" = "Kontakt kann nicht eingeladen werden!";
 
 /* No comment provided by engineer. */
@@ -397,9 +394,6 @@
 
 /* connection information */
 "connection:%@" = "Verbindung:%@";
-
-/* No comment provided by engineer. */
-"Contact %@ cannot be deleted, they are a member of the group(s) %@." = "Der Kontakt mit %@ kann nicht gelöscht werden, da er Mitglied einer oder mehrerer dieser Gruppen ist %@.";
 
 /* No comment provided by engineer. */
 "Contact already exists" = "Der Kontakt ist bereits vorhanden";
@@ -982,6 +976,9 @@
 
 /* chat list item title */
 "invited to connect" = "Für eine Verbindung eingeladen";
+
+/* rcv group event chat item */
+"invited via your group link" = "***invited via your group link";
 
 /* No comment provided by engineer. */
 "iOS Keychain is used to securely store passphrase - it allows receiving push notifications." = "Für die sichere Speicherung des Passworts wird der iOS Schlüsselbund verwendet - dies erlaubt den Empfang von Push-Benachrichtigungen.";
@@ -1673,6 +1670,9 @@
 
 /* No comment provided by engineer. */
 "Unmute" = "Stummschaltung aufheben";
+
+/* No comment provided by engineer. */
+"Unread" = "***Unread";
 
 /* No comment provided by engineer. */
 "Update" = "Aktualisieren";
