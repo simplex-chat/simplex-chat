@@ -297,8 +297,8 @@ public enum ChatResponse: Decodable, Error {
     case userContactLink(connReqContact: String)
     case userContactLinkCreated(connReqContact: String)
     case userContactLinkDeleted
-    case contactConnected(contact: Contact)
-    case contactConnecting(contact: Contact)
+    case contactConnected(contact: Contact, userCustomProfile: Profile?, viaGroupLink: Bool)
+    case contactConnecting(contact: Contact, viaGroupLink: Bool)
     case receivedContactRequest(contactRequest: UserContactRequest)
     case acceptingContactRequest(contact: Contact)
     case contactRequestRejected
@@ -318,7 +318,7 @@ public enum ChatResponse: Decodable, Error {
     case contactsList(contacts: [Contact])
     // group events
     case groupCreated(groupInfo: GroupInfo)
-    case sentGroupInvitation(groupInfo: GroupInfo, contact: Contact, member: GroupMember)
+    case sentGroupInvitation(groupInfo: GroupInfo, contact: Contact, member: GroupMember, viaGroupLink: Bool)
     case userAcceptedGroupSent(groupInfo: GroupInfo)
     case userDeletedMember(groupInfo: GroupInfo, member: GroupMember)
     case leftMemberUser(groupInfo: GroupInfo)
@@ -497,8 +497,8 @@ public enum ChatResponse: Decodable, Error {
             case let .userContactLink(connReq): return connReq
             case let .userContactLinkCreated(connReq): return connReq
             case .userContactLinkDeleted: return noDetails
-            case let .contactConnected(contact): return String(describing: contact)
-            case let .contactConnecting(contact): return String(describing: contact)
+            case let .contactConnected(contact, _, _): return String(describing: contact)
+            case let .contactConnecting(contact, _): return String(describing: contact)
             case let .receivedContactRequest(contactRequest): return String(describing: contactRequest)
             case let .acceptingContactRequest(contact): return String(describing: contact)
             case .contactRequestRejected: return noDetails
@@ -517,7 +517,7 @@ public enum ChatResponse: Decodable, Error {
             case let .chatItemDeleted(deletedChatItem, toChatItem): return "deletedChatItem:\n\(String(describing: deletedChatItem))\ntoChatItem:\n\(String(describing: toChatItem))"
             case let .contactsList(contacts): return String(describing: contacts)
             case let .groupCreated(groupInfo): return String(describing: groupInfo)
-            case let .sentGroupInvitation(groupInfo, contact, member): return "groupInfo: \(groupInfo)\ncontact: \(contact)\nmember: \(member)"
+            case let .sentGroupInvitation(groupInfo, contact, member, viaGroupLink): return "groupInfo: \(groupInfo)\ncontact: \(contact)\nmember: \(member)\nviaGroupLink: \(viaGroupLink)"
             case let .userAcceptedGroupSent(groupInfo): return String(describing: groupInfo)
             case let .userDeletedMember(groupInfo, member): return "groupInfo: \(groupInfo)\nmember: \(member)"
             case let .leftMemberUser(groupInfo): return String(describing: groupInfo)
