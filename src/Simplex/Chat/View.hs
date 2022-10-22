@@ -193,6 +193,10 @@ responseToView testView = \case
   CRNtfToken _ status mode -> ["device token status: " <> plain (smpEncode status) <> ", notifications mode: " <> plain (strEncode mode)]
   CRNtfMessages {} -> []
   CRSQLResult rows -> map plain rows
+  CRDebugLocks {chatLockName, agentLocks} ->
+    [ maybe "no chat lock" (("chat lock" <>) . plain) chatLockName,
+      plain $ "agent locks: " <> LB.unpack (J.encode agentLocks)
+    ]
   CRMessageError prefix err -> [plain prefix <> ": " <> plain err]
   CRChatError e -> viewChatError e
   where
