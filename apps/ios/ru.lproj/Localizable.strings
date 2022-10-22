@@ -234,9 +234,6 @@
 "Calls" = "Звонки";
 
 /* No comment provided by engineer. */
-"Can't delete contact!" = "Невозможно удалить контакт!";
-
-/* No comment provided by engineer. */
 "Can't invite contact!" = "Нельзя пригласить контакт!";
 
 /* No comment provided by engineer. */
@@ -397,9 +394,6 @@
 
 /* connection information */
 "connection:%@" = "connection:%@";
-
-/* No comment provided by engineer. */
-"Contact %@ cannot be deleted, they are a member of the group(s) %@." = "Контакт %@ не может быть удален, так как является членом групп(ы) %@.";
 
 /* No comment provided by engineer. */
 "Contact already exists" = "Существующий контакт";
@@ -982,6 +976,9 @@
 
 /* chat list item title */
 "invited to connect" = "приглашение";
+
+/* rcv group event chat item */
+"invited via your group link" = "приглашен(а) через вашу ссылку группы";
 
 /* No comment provided by engineer. */
 "iOS Keychain is used to securely store passphrase - it allows receiving push notifications." = "iOS Keychain используется для безопасного хранения пароля - это позволяет получать мгновенные уведомления.";
@@ -1673,6 +1670,9 @@
 
 /* No comment provided by engineer. */
 "Unmute" = "Уведомлять";
+
+/* No comment provided by engineer. */
+"Unread" = "Не прочитано";
 
 /* No comment provided by engineer. */
 "Update" = "Обновить";
