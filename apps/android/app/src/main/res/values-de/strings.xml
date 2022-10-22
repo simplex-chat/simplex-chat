@@ -706,7 +706,7 @@
   <string name="group_invitation_expired">Die Gruppeneinladung ist abgelaufen</string>
 
   <!-- Group event chat items -->
-  <string name="rcv_group_event_member_added">sie haben <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g> eingeladen.</string>
+  <string name="rcv_group_event_member_added">***sie haben <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g> eingeladen.</string>
   <string name="rcv_group_event_member_connected">verbunden</string>
   <string name="rcv_group_event_member_left">verlassen</string>
   <string name="rcv_group_event_changed_member_role">***changed role of %s to %s</string>
