@@ -912,16 +912,20 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         chatModel.removeChat(r.connection.id)
       }
       is CR.ContactConnected -> {
-        chatModel.updateContact(r.contact)
-        chatModel.dismissConnReqView(r.contact.activeConn.id)
-        chatModel.removeChat(r.contact.activeConn.id)
-        chatModel.updateNetworkStatus(r.contact.id, Chat.NetworkStatus.Connected())
-        ntfManager.notifyContactConnected(r.contact)
+        if (!r.viaGroupLink) {
+          chatModel.updateContact(r.contact)
+          chatModel.dismissConnReqView(r.contact.activeConn.id)
+          chatModel.removeChat(r.contact.activeConn.id)
+          chatModel.updateNetworkStatus(r.contact.id, Chat.NetworkStatus.Connected())
+          ntfManager.notifyContactConnected(r.contact)
+        }
       }
       is CR.ContactConnecting -> {
-        chatModel.updateContact(r.contact)
-        chatModel.dismissConnReqView(r.contact.activeConn.id)
-        chatModel.removeChat(r.contact.activeConn.id)
+        if (!r.viaGroupLink) {
+          chatModel.updateContact(r.contact)
+          chatModel.dismissConnReqView(r.contact.activeConn.id)
+          chatModel.removeChat(r.contact.activeConn.id)
+        }
       }
       is CR.ReceivedContactRequest -> {
         val contactRequest = r.contactRequest
@@ -1746,8 +1750,8 @@ sealed class CR {
   @Serializable @SerialName("userContactLink") class UserContactLink(val connReqContact: String): CR()
   @Serializable @SerialName("userContactLinkCreated") class UserContactLinkCreated(val connReqContact: String): CR()
   @Serializable @SerialName("userContactLinkDeleted") class UserContactLinkDeleted: CR()
-  @Serializable @SerialName("contactConnected") class ContactConnected(val contact: Contact): CR()
-  @Serializable @SerialName("contactConnecting") class ContactConnecting(val contact: Contact): CR()
+  @Serializable @SerialName("contactConnected") class ContactConnected(val contact: Contact, val userCustomProfile: Profile?, val viaGroupLink: Boolean): CR()
+  @Serializable @SerialName("contactConnecting") class ContactConnecting(val contact: Contact, val viaGroupLink: Boolean): CR()
   @Serializable @SerialName("receivedContactRequest") class ReceivedContactRequest(val contactRequest: UserContactRequest): CR()
   @Serializable @SerialName("acceptingContactRequest") class AcceptingContactRequest(val contact: Contact): CR()
   @Serializable @SerialName("contactRequestRejected") class ContactRequestRejected: CR()
@@ -1767,7 +1771,7 @@ sealed class CR {
   @Serializable @SerialName("contactsList") class ContactsList(val contacts: List<Contact>): CR()
   // group events
   @Serializable @SerialName("groupCreated") class GroupCreated(val groupInfo: GroupInfo): CR()
-  @Serializable @SerialName("sentGroupInvitation") class SentGroupInvitation(val groupInfo: GroupInfo, val contact: Contact, val member: GroupMember): CR()
+  @Serializable @SerialName("sentGroupInvitation") class SentGroupInvitation(val groupInfo: GroupInfo, val contact: Contact, val member: GroupMember, val viaGroupLink: Boolean): CR()
   @Serializable @SerialName("userAcceptedGroupSent") class UserAcceptedGroupSent (val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("userDeletedMember") class UserDeletedMember(val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("leftMemberUser") class LeftMemberUser(val groupInfo: GroupInfo): CR()
@@ -1954,7 +1958,7 @@ sealed class CR {
     is ChatItemDeleted -> "deletedChatItem:\n${json.encodeToString(deletedChatItem)}\ntoChatItem:\n${json.encodeToString(toChatItem)}"
     is ContactsList -> json.encodeToString(contacts)
     is GroupCreated -> json.encodeToString(groupInfo)
-    is SentGroupInvitation -> "groupInfo: $groupInfo\ncontact: $contact\nmember: $member"
+    is SentGroupInvitation -> "groupInfo: $groupInfo\ncontact: $contact\nmember: $member\nviaGroupLink: $viaGroupLink"
     is UserAcceptedGroupSent -> json.encodeToString(groupInfo)
     is UserDeletedMember -> "groupInfo: $groupInfo\nmember: $member"
     is LeftMemberUser -> json.encodeToString(groupInfo)
