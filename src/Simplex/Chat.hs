@@ -392,7 +392,7 @@ processChatCommand = \case
       unzipMaybe3 :: Maybe (a, b, c) -> (Maybe a, Maybe b, Maybe c)
       unzipMaybe3 (Just (a, b, c)) = (Just a, Just b, Just c)
       unzipMaybe3 _ = (Nothing, Nothing, Nothing)
-  APIUpdateChatItem (ChatRef cType chatId) itemId mc -> withUser $ \user@User {userId} -> withChatLock "updateItem" $ case cType of
+  APIUpdateChatItem (ChatRef cType chatId) itemId mc -> withUser $ \user@User {userId} -> withChatLock "updateChatItem" $ case cType of
     CTDirect -> do
       (ct@Contact {contactId, localDisplayName = c}, ci) <- withStore $ \db -> (,) <$> getContact db userId chatId <*> getDirectChatItem db userId chatId itemId
       case ci of
@@ -421,7 +421,7 @@ processChatCommand = \case
         CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
     CTContactRequest -> pure $ chatCmdError "not supported"
     CTContactConnection -> pure $ chatCmdError "not supported"
-  APIDeleteChatItem (ChatRef cType chatId) itemId mode -> withUser $ \user@User {userId} -> withChatLock "deleteItem" $ case cType of
+  APIDeleteChatItem (ChatRef cType chatId) itemId mode -> withUser $ \user@User {userId} -> withChatLock "deleteChatItem" $ case cType of
     CTDirect -> do
       (ct@Contact {localDisplayName = c}, CChatItem msgDir deletedItem@ChatItem {meta = CIMeta {itemSharedMsgId}, file}) <- withStore $ \db -> (,) <$> getContact db userId chatId <*> getDirectChatItem db userId chatId itemId
       case (mode, msgDir, itemSharedMsgId) of
@@ -492,7 +492,7 @@ processChatCommand = \case
         withStore' $ \db -> deleteContact db userId ct
         unsetActive $ ActiveC localDisplayName
         pure $ CRContactDeleted ct
-    CTContactConnection -> withChatLock "deleteChat connection" . procCmd $ do
+    CTContactConnection -> withChatLock "deleteChat contactConnection" . procCmd $ do
       conn@PendingContactConnection {pccConnId, pccAgentConnId} <- withStore $ \db -> getPendingContactConnection db userId chatId
       deleteAgentConnectionAsync' user pccConnId pccAgentConnId
       withStore' $ \db -> deletePendingContactConnection db userId chatId
@@ -559,7 +559,7 @@ processChatCommand = \case
     -- party initiating call
     ct <- withStore $ \db -> getContact db userId contactId
     calls <- asks currentCalls
-    withChatLock "sendCallInv" $ do
+    withChatLock "sendCallInvitation" $ do
       callId <- CallId <$> (asks idsDrg >>= liftIO . (`randomBytes` 16))
       dhKeyPair <- if encryptedCall callType then Just <$> liftIO C.generateKeyPair' else pure Nothing
       let invitation = CallInvitation {callType, callDhPubKey = fst <$> dhKeyPair}
@@ -662,14 +662,14 @@ processChatCommand = \case
     connEntity <- withStore (\db -> Just <$> getConnectionEntity db user (AgentConnId ntfConnId)) `catchError` \_ -> pure Nothing
     pure CRNtfMessages {connEntity, msgTs = msgTs', ntfMessages}
   GetUserSMPServers -> CRUserSMPServers <$> withUser (\user -> withStore' (`getSMPServers` user))
-  SetUserSMPServers smpServers -> withUser $ \user -> withChatLock "setServers" $ do
+  SetUserSMPServers smpServers -> withUser $ \user -> withChatLock "setUserSMPServers" $ do
     withStore $ \db -> overwriteSMPServers db user smpServers
     ChatConfig {defaultServers = InitialAgentServers {smp = defaultSMPServers}} <- asks config
     withAgent $ \a -> setSMPServers a (fromMaybe defaultSMPServers (nonEmpty smpServers))
     pure CRCmdOk
   APISetChatItemTTL newTTL_ -> withUser' $ \user ->
     checkStoreNotChanged $
-      withChatLock "setItemTTL" $ do
+      withChatLock "setChatItemTTL" $ do
         case newTTL_ of
           Nothing -> do
             withStore' $ \db -> setChatItemTTL db user newTTL_
@@ -757,11 +757,11 @@ processChatCommand = \case
     contactId <- withStore $ \db -> getContactIdByName db user cName
     processChatCommand $ APIClearChat (ChatRef CTDirect contactId)
   ListContacts -> withUser $ \user -> CRContactsList <$> withStore' (`getUserContacts` user)
-  CreateMyAddress -> withUser $ \User {userId} -> withChatLock "createAddress" . procCmd $ do
+  CreateMyAddress -> withUser $ \User {userId} -> withChatLock "createMyAddress" . procCmd $ do
     (connId, cReq) <- withAgent $ \a -> createConnection a True SCMContact
     withStore $ \db -> createUserContactLink db userId connId cReq
     pure $ CRUserContactLinkCreated cReq
-  DeleteMyAddress -> withUser $ \user -> withChatLock "deleteAddress" $ do
+  DeleteMyAddress -> withUser $ \user -> withChatLock "deleteMyAddress" $ do
     conns <- withStore (`getUserAddressConnections` user)
     procCmd $ do
       forM_ conns $ \conn -> deleteAgentConnectionAsync user conn `catchError` \_ -> pure ()
@@ -783,7 +783,7 @@ processChatCommand = \case
     processChatCommand . APISendMessage chatRef $ ComposedMessage Nothing Nothing mc
   SendMessageBroadcast msg -> withUser $ \user -> do
     contacts <- withStore' (`getUserContacts` user)
-    withChatLock "sendBroadcast" . procCmd $ do
+    withChatLock "sendMessageBroadcast" . procCmd $ do
       let mc = MCText $ safeDecodeUtf8 msg
           cts = filter isReady contacts
       forM_ cts $ \ct ->
@@ -1379,8 +1379,12 @@ agentSubscriber = do
   forever $ do
     (corrId, connId, msg) <- atomically $ readTBQueue q
     u <- readTVarIO =<< asks currentUser
-    withLock l ("subscriber connId=" <> B.unpack (strEncode connId) <> " corrId=" <> B.unpack (strEncode corrId) <> " aCmdTag=" <> B.unpack (strEncode $ aCommandTag msg)) . void . runExceptT $
+    let name = "agentSubscriber connId=" <> str connId <> " corrId=" <> str corrId <> " msg=" <> str (aCommandTag msg)
+    withLock l name . void . runExceptT $
       processAgentMessage u corrId connId msg `catchError` (toView . CRChatError)
+  where
+    str :: StrEncoding a => a -> String
+    str = B.unpack . strEncode
 
 type AgentBatchSubscribe m = AgentClient -> [ConnId] -> ExceptT AgentErrorType m (Map ConnId (Either AgentErrorType ()))
 
@@ -1471,7 +1475,7 @@ subscribeUserConnections agentBatchSubscribe user = do
         void . forkIO $ do
           threadDelay 1000000
           l <- asks chatLock
-          when (fileStatus == FSConnected) . unlessM (isFileActive fileId sndFiles) . withLock l "sendFileChunk" $
+          when (fileStatus == FSConnected) . unlessM (isFileActive fileId sndFiles) . withLock l "subscribe sendFileChunk" $
             sendFileChunk user ft
     rcvFileSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId RcvFileTransfer -> m ()
     rcvFileSubsToView rs = mapM_ (toView . uncurry CRRcvFileSubError) . filterErrors . resultsFor rs
@@ -1632,7 +1636,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
         MSG msgMeta _msgFlags msgBody -> do
           cmdId <- createAckCmd conn
           msg@RcvMessage {chatMsgEvent = ACME _ event} <- saveRcvMSG conn (ConnectionId connId) msgMeta msgBody cmdId
-          asks chatLock >>= \l -> void . atomically . swapTMVar l $ "directMessage " <> B.unpack (strEncode $ toCMEventTag event)
+          updateChatLock "directMessage" event
           withAckMessage agentConnId cmdId msgMeta $
             case event of
               XMsgNew mc -> newContentMessage ct mc msg msgMeta
@@ -1832,6 +1836,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
       MSG msgMeta _msgFlags msgBody -> do
         cmdId <- createAckCmd conn
         msg@RcvMessage {chatMsgEvent = ACME _ event} <- saveRcvMSG conn (GroupId groupId) msgMeta msgBody cmdId
+        updateChatLock "groupMessage" event
         withAckMessage agentConnId cmdId msgMeta $
           case event of
             XMsgNew mc -> newGroupContentMessage gInfo m mc msg msgMeta
@@ -2017,6 +2022,13 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
                       toView $ CRReceivedContactRequest cReq
                       showToast (localDisplayName <> "> ") "wants to connect to you"
                 _ -> pure ()
+
+    updateChatLock :: MsgEncodingI e => String -> ChatMsgEvent e -> m ()
+    updateChatLock name event = do
+      l <- asks chatLock
+      atomically $ tryReadTMVar l >>= mapM_ (swapTMVar l . (<> s))
+      where
+        s = " " <> name <> "=" <> B.unpack (strEncode $ toCMEventTag event)
 
     withCompletedCommand :: Connection -> ACommand 'Agent -> (CommandData -> m ()) -> m ()
     withCompletedCommand Connection {connId} agentMsg action = do

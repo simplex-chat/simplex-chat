@@ -194,7 +194,7 @@ responseToView testView = \case
   CRNtfMessages {} -> []
   CRSQLResult rows -> map plain rows
   CRDebugLocks {chatLockName, agentLocks} ->
-    [ maybe "no chat lock" (("chat lock" <>) . plain) chatLockName,
+    [ maybe "no chat lock" (("chat lock: " <>) . plain) chatLockName,
       plain $ "agent locks: " <> LB.unpack (J.encode agentLocks)
     ]
   CRMessageError prefix err -> [plain prefix <> ": " <> plain err]
