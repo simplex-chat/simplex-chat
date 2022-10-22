@@ -93,8 +93,10 @@ responseToView testView = \case
   CRGroupCreated g -> viewGroupCreated g
   CRGroupMembers g -> viewGroupMembers g
   CRGroupsList gs -> viewGroupsList gs
-  CRSentGroupInvitation g c _ -> ["invitation to join the group " <> ttyGroup' g <> " sent to " <> ttyContact' c]
-  CRSentGroupInvitationViaLink g c _ -> [ttyContact' c <> " invited to group " <> ttyGroup' g <> " via your group link"]
+  CRSentGroupInvitation g c _ viaLink ->
+    if viaLink
+      then [ttyContact' c <> " invited to group " <> ttyGroup' g <> " via your group link"]
+      else ["invitation to join the group " <> ttyGroup' g <> " sent to " <> ttyContact' c]
   CRFileTransferStatus ftStatus -> viewFileTransferStatus ftStatus
   CRUserProfile p -> viewUserProfile p
   CRUserProfileNoChange -> ["user profile did not change"]
@@ -132,10 +134,8 @@ responseToView testView = \case
   CRSndFileCancelled _ ft -> sendingFile_ "cancelled" ft
   CRSndFileRcvCancelled _ ft@SndFileTransfer {recipientDisplayName = c} ->
     [ttyContact c <> " cancelled receiving " <> sndFile ft]
-  CRContactConnecting _ -> []
-  CRContactConnected ct userCustomProfile -> viewContactConnected ct userCustomProfile testView
-  CRContactConnectingViaGroupLink _ -> []
-  CRContactConnectedViaGroupLink _ _ -> []
+  CRContactConnecting _ _ -> []
+  CRContactConnected ct userCustomProfile _ -> viewContactConnected ct userCustomProfile testView
   CRContactAnotherClient c -> [ttyContact' c <> ": contact is connected to another client"]
   CRSubscriptionEnd acEntity -> [sShow (connId (entityConnection acEntity :: Connection)) <> ": END"]
   CRContactsDisconnected srv cs -> [plain $ "server disconnected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]

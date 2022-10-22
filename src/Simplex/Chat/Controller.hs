@@ -278,8 +278,7 @@ data ChatResponse
   | CRUserAcceptedGroupSent {groupInfo :: GroupInfo}
   | CRUserDeletedMember {groupInfo :: GroupInfo, member :: GroupMember}
   | CRGroupsList {groups :: [GroupInfo]}
-  | CRSentGroupInvitation {groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember}
-  | CRSentGroupInvitationViaLink {groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember}
+  | CRSentGroupInvitation {groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember, viaGroupLink :: Bool}
   | CRFileTransferStatus (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
   | CRUserProfile {profile :: Profile}
   | CRUserProfileNoChange
@@ -313,10 +312,8 @@ data ChatResponse
   | CRUserProfileUpdated {fromProfile :: Profile, toProfile :: Profile}
   | CRContactAliasUpdated {toContact :: Contact}
   | CRConnectionAliasUpdated {toConnection :: PendingContactConnection}
-  | CRContactConnecting {contact :: Contact}
-  | CRContactConnected {contact :: Contact, userCustomProfile :: Maybe Profile}
-  | CRContactConnectingViaGroupLink {contact :: Contact}
-  | CRContactConnectedViaGroupLink {contact :: Contact, userCustomProfile :: Maybe Profile}
+  | CRContactConnecting {contact :: Contact, viaGroupLink :: Bool}
+  | CRContactConnected {contact :: Contact, userCustomProfile :: Maybe Profile, viaGroupLink :: Bool}
   | CRContactAnotherClient {contact :: Contact}
   | CRSubscriptionEnd {connectionEntity :: ConnectionEntity}
   | CRContactsDisconnected {server :: SMPServer, contactRefs :: [ContactRef]}
