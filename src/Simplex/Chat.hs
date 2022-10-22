@@ -1379,7 +1379,7 @@ agentSubscriber = do
   forever $ do
     (corrId, connId, msg) <- atomically $ readTBQueue q
     u <- readTVarIO =<< asks currentUser
-    withLock l ("subscriber " <> B.unpack (strEncode $ aCommandTag msg)) . void . runExceptT $
+    withLock l ("subscriber connId=" <> B.unpack (strEncode connId) <> " corrId=" <> B.unpack (strEncode corrId) <> " aCmdTag=" <> B.unpack (strEncode $ aCommandTag msg)) . void . runExceptT $
       processAgentMessage u corrId connId msg `catchError` (toView . CRChatError)
 
 type AgentBatchSubscribe m = AgentClient -> [ConnId] -> ExceptT AgentErrorType m (Map ConnId (Either AgentErrorType ()))
