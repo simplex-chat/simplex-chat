@@ -38,7 +38,7 @@ class ChatModel(val controller: ChatController) {
   val groupMembers = mutableStateListOf<GroupMember>()
 
   val terminalItems = mutableStateListOf<TerminalItem>()
-  val userAddress = mutableStateOf<String?>(null)
+  val userAddress = mutableStateOf<UserContactLinkRec?>(null)
   val userSMPServers = mutableStateOf<(List<String>)?>(null)
   val chatItemTTL = mutableStateOf<ChatItemTTL>(ChatItemTTL.None)
 

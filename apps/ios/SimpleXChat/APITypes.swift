@@ -66,6 +66,7 @@ public enum ChatCommand {
     case createMyAddress
     case deleteMyAddress
     case showMyAddress
+    case addressAutoAccept(autoAccept: AutoAccept?)
     case apiAcceptContact(contactReqId: Int64)
     case apiRejectContact(contactReqId: Int64)
     // WebRTC calls
@@ -141,6 +142,7 @@ public enum ChatCommand {
             case .createMyAddress: return "/address"
             case .deleteMyAddress: return "/delete_address"
             case .showMyAddress: return "/show_address"
+            case let .addressAutoAccept(autoAccept): return "/auto_accept \(AutoAccept.cmdString(autoAccept))"
             case let .apiAcceptContact(contactReqId): return "/_accept \(contactReqId)"
             case let .apiRejectContact(contactReqId): return "/_reject \(contactReqId)"
             case let .apiSendCallInvitation(contact, callType): return "/_call invite @\(contact.apiId) \(encodeJSON(callType))"
@@ -215,6 +217,7 @@ public enum ChatCommand {
             case .createMyAddress: return "createMyAddress"
             case .deleteMyAddress: return "deleteMyAddress"
             case .showMyAddress: return "showMyAddress"
+            case .addressAutoAccept: return "addressAutoAccept"
             case .apiAcceptContact: return "apiAcceptContact"
             case .apiRejectContact: return "apiRejectContact"
             case .apiSendCallInvitation: return "apiSendCallInvitation"
@@ -294,7 +297,8 @@ public enum ChatResponse: Decodable, Error {
     case userProfileUpdated(fromProfile: Profile, toProfile: Profile)
     case contactAliasUpdated(toContact: Contact)
     case connectionAliasUpdated(toConnection: PendingContactConnection)
-    case userContactLink(connReqContact: String)
+    case userContactLink(contactLink: UserContactLink)
+    case userContactLinkUpdated(contactLink: UserContactLink)
     case userContactLinkCreated(connReqContact: String)
     case userContactLinkDeleted
     case contactConnected(contact: Contact)
@@ -395,6 +399,7 @@ public enum ChatResponse: Decodable, Error {
             case .contactAliasUpdated: return "contactAliasUpdated"
             case .connectionAliasUpdated: return "connectionAliasUpdated"
             case .userContactLink: return "userContactLink"
+            case .userContactLinkUpdated: return "userContactLinkUpdated"
             case .userContactLinkCreated: return "userContactLinkCreated"
             case .userContactLinkDeleted: return "userContactLinkDeleted"
             case .contactConnected: return "contactConnected"
@@ -494,7 +499,8 @@ public enum ChatResponse: Decodable, Error {
             case let .userProfileUpdated(_, toProfile): return String(describing: toProfile)
             case let .contactAliasUpdated(toContact): return String(describing: toContact)
             case let .connectionAliasUpdated(toConnection): return String(describing: toConnection)
-            case let .userContactLink(connReq): return connReq
+            case let .userContactLink(contactLink): return contactLink.responseDetails
+            case let .userContactLinkUpdated(contactLink): return contactLink.responseDetails
             case let .userContactLinkCreated(connReq): return connReq
             case .userContactLinkDeleted: return noDetails
             case let .contactConnected(contact): return String(describing: contact)
@@ -700,6 +706,32 @@ public struct ChatSettings: Codable {
 public struct ConnectionStats: Codable {
     public var rcvServers: [String]?
     public var sndServers: [String]?
+}
+
+public struct UserContactLink: Decodable {
+    public var connReqContact: String
+    public var autoAccept: AutoAccept?
+
+    public init(connReqContact: String, autoAccept: AutoAccept? = nil) {
+        self.connReqContact = connReqContact
+        self.autoAccept = autoAccept
+    }
+
+    var responseDetails: String {
+        "connReqContact: \(connReqContact)\nautoAccept: \(AutoAccept.cmdString(autoAccept))"
+    }
+}
+
+public struct AutoAccept: Codable {
+    public var acceptIncognito: Bool
+    public var autoReply: MsgContent?
+
+    static func cmdString(_ autoAccept: AutoAccept?) -> String {
+        guard let autoAccept = autoAccept else { return "off" }
+        let s = "on" + (autoAccept.acceptIncognito ? " incognito=on" : "")
+        guard let msg = autoAccept.autoReply else { return s }
+        return s + " " + msg.cmdString
+    }
 }
 
 public protocol SelectableItem: Hashable, Identifiable {

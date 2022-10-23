@@ -36,7 +36,7 @@ struct UserAddress: View {
                 Text("You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it.")
                     .padding(.bottom)
                 if let userAdress = chatModel.userAddress {
-                    QRCode(uri: userAdress)
+                    QRCode(uri: userAdress.connReqContact)
                     HStack {
                         Button {
                             showShareSheet(items: [userAdress])
@@ -55,9 +55,9 @@ struct UserAddress: View {
                     Button {
                         Task {
                             do {
-                                let userAddress = try await apiCreateUserAddress()
+                                let connReqContact = try await apiCreateUserAddress()
                                 DispatchQueue.main.async {
-                                    chatModel.userAddress = userAddress
+                                    chatModel.userAddress = UserContactLink(connReqContact: connReqContact)
                                 }
                             } catch let error {
                                 logger.error("UserAddress apiCreateUserAddress: \(responseError(error))")
@@ -101,7 +101,7 @@ struct UserAddress: View {
 struct UserAddress_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
-        chatModel.userAddress = "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D"
+        chatModel.userAddress = UserContactLink(connReqContact: "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D")
         return Group {
             UserAddress()
                 .environmentObject(chatModel)
