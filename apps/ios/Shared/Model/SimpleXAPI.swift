@@ -488,13 +488,20 @@ func apiDeleteUserAddress() async throws {
     throw r
 }
 
-func apiGetUserAddress() throws -> String? {
+func apiGetUserAddress() throws -> UserContactLink? {
     let r = chatSendCmdSync(.showMyAddress)
     switch r {
-    case let .userContactLink(connReq):
-        return connReq
-    case .chatCmdError(chatError: .errorStore(storeError: .userContactLinkNotFound)):
-        return nil
+    case let .userContactLink(contactLink): return contactLink
+    case .chatCmdError(chatError: .errorStore(storeError: .userContactLinkNotFound)): return nil
+    default: throw r
+    }
+}
+
+func userAddressAutoAccept(_ autoAccept: AutoAccept?) async throws -> UserContactLink? {
+    let r = await chatSendCmd(.addressAutoAccept(autoAccept: autoAccept))
+    switch r {
+    case let .userContactLinkUpdated(contactLink): return contactLink
+    case .chatCmdError(chatError: .errorStore(storeError: .userContactLinkNotFound)): return nil
     default: throw r
     }
 }

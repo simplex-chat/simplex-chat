@@ -30,7 +30,7 @@ final class ChatModel: ObservableObject {
     @Published var groupMembers: [GroupMember] = []
     // items in the terminal view
     @Published var terminalItems: [TerminalItem] = []
-    @Published var userAddress: String?
+    @Published var userAddress: UserContactLink?
     @Published var userSMPServers: [String]?
     @Published var chatItemTTL: ChatItemTTL = .none
     @Published var appOpenUrl: URL?
