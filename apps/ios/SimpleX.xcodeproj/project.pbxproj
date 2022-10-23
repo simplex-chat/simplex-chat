@@ -94,6 +94,7 @@
 		5CCA7DEF2901E32900C8FEBA /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CCA7DEA2901E32800C8FEBA /* libgmpxx.a */; };
 		5CCA7DF02901E32900C8FEBA /* libHSsimplex-chat-4.1.1-YMBxN0i6bGIdLfYB8ndX-ghc8.10.7.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CCA7DEB2901E32800C8FEBA /* libHSsimplex-chat-4.1.1-YMBxN0i6bGIdLfYB8ndX-ghc8.10.7.a */; };
 		5CCA7DF12901E32900C8FEBA /* libHSsimplex-chat-4.1.1-YMBxN0i6bGIdLfYB8ndX.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CCA7DEC2901E32800C8FEBA /* libHSsimplex-chat-4.1.1-YMBxN0i6bGIdLfYB8ndX.a */; };
+		5CCA7DF32905735700C8FEBA /* AcceptRequestsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCA7DF22905735700C8FEBA /* AcceptRequestsView.swift */; };
 		5CCD403427A5F6DF00368C90 /* AddContactView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403327A5F6DF00368C90 /* AddContactView.swift */; };
 		5CCD403727A5F9A200368C90 /* ScanToConnectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403627A5F9A200368C90 /* ScanToConnectView.swift */; };
 		5CDCAD482818589900503DA2 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CDCAD472818589900503DA2 /* NotificationService.swift */; };
@@ -294,6 +295,7 @@
 		5CCA7DEA2901E32800C8FEBA /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
 		5CCA7DEB2901E32800C8FEBA /* libHSsimplex-chat-4.1.1-YMBxN0i6bGIdLfYB8ndX-ghc8.10.7.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-4.1.1-YMBxN0i6bGIdLfYB8ndX-ghc8.10.7.a"; sourceTree = "<group>"; };
 		5CCA7DEC2901E32800C8FEBA /* libHSsimplex-chat-4.1.1-YMBxN0i6bGIdLfYB8ndX.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-4.1.1-YMBxN0i6bGIdLfYB8ndX.a"; sourceTree = "<group>"; };
+		5CCA7DF22905735700C8FEBA /* AcceptRequestsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcceptRequestsView.swift; sourceTree = "<group>"; };
 		5CCD403327A5F6DF00368C90 /* AddContactView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddContactView.swift; sourceTree = "<group>"; };
 		5CCD403627A5F9A200368C90 /* ScanToConnectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanToConnectView.swift; sourceTree = "<group>"; };
 		5CDCAD452818589900503DA2 /* SimpleX NSE.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "SimpleX NSE.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -573,6 +575,7 @@
 				5C05DF522840AA1D00C683F9 /* CallSettings.swift */,
 				5C3F1D57284363C400EC8A82 /* PrivacySettings.swift */,
 				5CB924E327A8683A00ACCCDD /* UserAddress.swift */,
+				5CCA7DF22905735700C8FEBA /* AcceptRequestsView.swift */,
 				5CB924E027A867BA00ACCCDD /* UserProfile.swift */,
 				5C577F7C27C83AA10006112D /* MarkdownHelp.swift */,
 				640F50E227CF991C001E05C2 /* SMPServers.swift */,
@@ -892,6 +895,7 @@
 				5CE4407927ADB701007B033A /* EmojiItemView.swift in Sources */,
 				5C3F1D562842B68D00EC8A82 /* IntegrityErrorItemView.swift in Sources */,
 				5C029EAA283942EA004A9677 /* CallController.swift in Sources */,
+				5CCA7DF32905735700C8FEBA /* AcceptRequestsView.swift in Sources */,
 				5C5346A827B59A6A004DF848 /* ChatHelp.swift in Sources */,
 				5CFA59C42860BC6200863A68 /* MigrateToAppGroupView.swift in Sources */,
 				648010AB281ADD15009009B9 /* CIFileView.swift in Sources */,

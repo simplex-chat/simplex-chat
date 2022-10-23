@@ -12,6 +12,7 @@ import SimpleXChat
 struct UserAddress: View {
     @EnvironmentObject private var chatModel: ChatModel
     @State private var alert: UserAddressAlert?
+    @State private var showAcceptRequests = false
     var viaNavLink = false
 
     private enum UserAddressAlert: Identifiable {
@@ -44,11 +45,14 @@ struct UserAddress: View {
                             Label("Share link", systemImage: "square.and.arrow.up")
                         }
                         .padding()
-
-                        Button(role: .destructive) { alert = .deleteAddress } label: {
-                            Label("Delete address", systemImage: "trash")
+                        Button { showAcceptRequests = true } label: {
+                            Label("Accept requests", systemImage: "checkmark")
                         }
                         .padding()
+                    }
+                    .frame(maxWidth: .infinity)
+                    Button(role: .destructive) { alert = .deleteAddress } label: {
+                        Label("Delete address", systemImage: "trash")
                     }
                     .frame(maxWidth: .infinity)
                 } else {
@@ -71,6 +75,11 @@ struct UserAddress: View {
             }
             .padding()
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .sheet(isPresented: $showAcceptRequests) {
+                if let contactLink = chatModel.userAddress {
+                    AcceptRequestsView(contactLink: contactLink)
+                }
+            }
             .alert(item: $alert) { alert in
                 switch alert {
                 case .deleteAddress:

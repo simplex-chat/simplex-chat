@@ -726,6 +726,11 @@ public struct AutoAccept: Codable {
     public var acceptIncognito: Bool
     public var autoReply: MsgContent?
 
+    public init(acceptIncognito: Bool, autoReply: MsgContent? = nil) {
+        self.acceptIncognito = acceptIncognito
+        self.autoReply = autoReply
+    }
+
     static func cmdString(_ autoAccept: AutoAccept?) -> String {
         guard let autoAccept = autoAccept else { return "off" }
         let s = "on" + (autoAccept.acceptIncognito ? " incognito=on" : "")

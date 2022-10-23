@@ -1199,7 +1199,7 @@ public enum MsgContent {
     // TODO include original JSON, possibly using https://github.com/zoul/generic-json-swift
     case unknown(type: String, text: String)
 
-    var text: String {
+    public var text: String {
         get {
             switch self {
             case let .text(text): return text
