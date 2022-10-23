@@ -24,7 +24,7 @@ chatBotRepl welcome answer _user cc = do
   race_ (forever $ void getLine) . forever $ do
     (_, resp) <- atomically . readTBQueue $ outputQ cc
     case resp of
-      CRContactConnected contact _ -> do
+      CRContactConnected contact _ _ -> do
         contactConnected contact
         void $ sendMsg contact welcome
       CRNewChatItem (AChatItem _ SMDRcv (DirectChat contact) ChatItem {content}) -> do
