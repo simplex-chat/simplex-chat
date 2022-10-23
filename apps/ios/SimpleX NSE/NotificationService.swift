@@ -207,9 +207,9 @@ func chatRecvMsg() async -> ChatResponse? {
 func receivedMsgNtf(_ res: ChatResponse) async -> (String, UNMutableNotificationContent)? {
     logger.debug("NotificationService processReceivedMsg: \(res.responseType)")
     switch res {
-    case let .contactConnected(contact):
+    case let .contactConnected(contact, _, _):
         return (contact.id, createContactConnectedNtf(contact))
-//        case let .contactConnecting(contact):
+//        case let .contactConnecting(contact, _):
 //            TODO profile update
     case let .receivedContactRequest(contactRequest):
         return (UserContact(contactRequest: contactRequest).id, createContactRequestNtf(contactRequest))

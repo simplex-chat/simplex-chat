@@ -68,6 +68,7 @@ module Simplex.Chat.Store
     getContactConnections,
     getConnectionEntity,
     getConnectionById,
+    getConnectionViaGroupLinkFlag,
     getConnectionsContacts,
     getGroupAndMember,
     updateConnectionStatus,
@@ -1458,6 +1459,10 @@ getConnectionById db User {userId} connId = ExceptT $ do
         WHERE user_id = ? AND connection_id = ?
       |]
       (userId, connId)
+
+getConnectionViaGroupLinkFlag :: DB.Connection -> User -> Int64 -> IO (Maybe Bool)
+getConnectionViaGroupLinkFlag db User {userId} connId =
+  maybeFirstRow fromOnly $ DB.query db "SELECT via_group_link FROM connections WHERE user_id = ? AND connection_id = ? LIMIT 1" (userId, connId)
 
 getConnectionsContacts :: DB.Connection -> UserId -> [ConnId] -> IO [ContactRef]
 getConnectionsContacts db userId agentConnIds = do

@@ -694,7 +694,7 @@ func apiNewGroup(_ p: GroupProfile) throws -> GroupInfo {
 
 func apiAddMember(_ groupId: Int64, _ contactId: Int64, _ memberRole: GroupMemberRole) async throws -> GroupMember {
     let r = await chatSendCmd(.apiAddMember(groupId: groupId, contactId: contactId, memberRole: memberRole))
-    if case let .sentGroupInvitation(_, _, member) = r { return member }
+    if case let .sentGroupInvitation(_, _, member, _) = r { return member }
     throw r
 }
 
@@ -881,16 +881,20 @@ func processReceivedMsg(_ res: ChatResponse) async {
             m.updateContactConnection(connection)
         case let .contactConnectionDeleted(connection):
             m.removeChat(connection.id)
-        case let .contactConnected(contact):
-            m.updateContact(contact)
-            m.dismissConnReqView(contact.activeConn.id)
-            m.removeChat(contact.activeConn.id)
-            m.updateNetworkStatus(contact.id, .connected)
-            NtfManager.shared.notifyContactConnected(contact)
-        case let .contactConnecting(contact):
-            m.updateContact(contact)
-            m.dismissConnReqView(contact.activeConn.id)
-            m.removeChat(contact.activeConn.id)
+        case let .contactConnected(contact, _, viaGroupLink):
+            if !viaGroupLink {
+                m.updateContact(contact)
+                m.dismissConnReqView(contact.activeConn.id)
+                m.removeChat(contact.activeConn.id)
+                m.updateNetworkStatus(contact.id, .connected)
+                NtfManager.shared.notifyContactConnected(contact)
+            }
+        case let .contactConnecting(contact, viaGroupLink):
+            if !viaGroupLink {
+                m.updateContact(contact)
+                m.dismissConnReqView(contact.activeConn.id)
+                m.removeChat(contact.activeConn.id)
+            }
         case let .receivedContactRequest(contactRequest):
             let cInfo = ChatInfo.contactRequest(contactRequest: contactRequest)
             if m.hasChat(contactRequest.id) {
