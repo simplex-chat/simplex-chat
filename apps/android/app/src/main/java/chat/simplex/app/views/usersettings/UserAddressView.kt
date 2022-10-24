@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
+import chat.simplex.app.model.UserContactLinkRec
 import chat.simplex.app.ui.theme.SimpleButton
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.*
@@ -28,7 +29,10 @@ fun UserAddressView(chatModel: ChatModel) {
     userAddress = chatModel.userAddress.value,
     createAddress = {
       withApi {
-        chatModel.userAddress.value = chatModel.controller.apiCreateUserAddress()
+        val connReqContact = chatModel.controller.apiCreateUserAddress()
+        if (connReqContact != null) {
+          chatModel.userAddress.value = UserContactLinkRec(connReqContact)
+        }
       }
     },
     share = { userAddress: String -> shareText(cxt, userAddress) },
@@ -50,7 +54,7 @@ fun UserAddressView(chatModel: ChatModel) {
 
 @Composable
 fun UserAddressLayout(
-  userAddress: String?,
+  userAddress: UserContactLinkRec?,
   createAddress: () -> Unit,
   share: (String) -> Unit,
   deleteAddress: () -> Unit
@@ -83,7 +87,7 @@ fun UserAddressLayout(
           Modifier.padding(bottom = 24.dp),
           lineHeight = 22.sp
         )
-        QRCode(userAddress, Modifier.weight(1f, fill = false).aspectRatio(1f))
+        QRCode(userAddress.connReqContact, Modifier.weight(1f, fill = false).aspectRatio(1f))
         Row(
           horizontalArrangement = Arrangement.spacedBy(10.dp),
           verticalAlignment = Alignment.CenterVertically,
@@ -92,7 +96,7 @@ fun UserAddressLayout(
           SimpleButton(
             stringResource(R.string.share_link),
             icon = Icons.Outlined.Share,
-            click = { share(userAddress) })
+            click = { share(userAddress.connReqContact) })
           SimpleButton(
             stringResource(R.string.delete_address),
             icon = Icons.Outlined.Delete,
@@ -133,7 +137,7 @@ fun PreviewUserAddressLayoutNoAddress() {
 fun PreviewUserAddressLayoutAddressCreated() {
   SimpleXTheme {
     UserAddressLayout(
-      userAddress = "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D",
+      userAddress = UserContactLinkRec("https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D"),
       createAddress = {},
       share = { _ -> },
       deleteAddress = {},

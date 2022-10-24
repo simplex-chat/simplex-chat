@@ -628,14 +628,25 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return false
   }
 
-  private suspend fun apiGetUserAddress(): String? {
+  private suspend fun apiGetUserAddress(): UserContactLinkRec? {
     val r = sendCmd(CC.ShowMyAddress())
-    if (r is CR.UserContactLink) return r.connReqContact
+    if (r is CR.UserContactLink) return r.contactLink
     if (r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore
       && r.chatError.storeError is StoreError.UserContactLinkNotFound) {
       return null
     }
     Log.e(TAG, "apiGetUserAddress bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
+  suspend fun userAddressAutoAccept(autoAccept: AutoAccept?): UserContactLinkRec? {
+    val r = sendCmd(CC.AddressAutoAccept(autoAccept))
+    if (r is CR.UserContactLinkUpdated) return r.contactLink
+    if (r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore
+      && r.chatError.storeError is StoreError.UserContactLinkNotFound) {
+      return null
+    }
+    Log.e(TAG, "userAddressAutoAccept bad response: ${r.responseType} ${r.details}")
     return null
   }
 
@@ -912,16 +923,20 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         chatModel.removeChat(r.connection.id)
       }
       is CR.ContactConnected -> {
-        chatModel.updateContact(r.contact)
-        chatModel.dismissConnReqView(r.contact.activeConn.id)
-        chatModel.removeChat(r.contact.activeConn.id)
-        chatModel.updateNetworkStatus(r.contact.id, Chat.NetworkStatus.Connected())
-        ntfManager.notifyContactConnected(r.contact)
+        if (!r.viaGroupLink) {
+          chatModel.updateContact(r.contact)
+          chatModel.dismissConnReqView(r.contact.activeConn.id)
+          chatModel.removeChat(r.contact.activeConn.id)
+          chatModel.updateNetworkStatus(r.contact.id, Chat.NetworkStatus.Connected())
+          ntfManager.notifyContactConnected(r.contact)
+        }
       }
       is CR.ContactConnecting -> {
-        chatModel.updateContact(r.contact)
-        chatModel.dismissConnReqView(r.contact.activeConn.id)
-        chatModel.removeChat(r.contact.activeConn.id)
+        if (!r.viaGroupLink) {
+          chatModel.updateContact(r.contact)
+          chatModel.dismissConnReqView(r.contact.activeConn.id)
+          chatModel.removeChat(r.contact.activeConn.id)
+        }
       }
       is CR.ReceivedContactRequest -> {
         val contactRequest = r.contactRequest
@@ -1422,6 +1437,7 @@ sealed class CC {
   class CreateMyAddress: CC()
   class DeleteMyAddress: CC()
   class ShowMyAddress: CC()
+  class AddressAutoAccept(val autoAccept: AutoAccept?): CC()
   class ApiSendCallInvitation(val contact: Contact, val callType: CallType): CC()
   class ApiRejectCall(val contact: Contact): CC()
   class ApiSendCallOffer(val contact: Contact, val callOffer: WebRTCCallOffer): CC()
@@ -1484,6 +1500,7 @@ sealed class CC {
     is CreateMyAddress -> "/address"
     is DeleteMyAddress -> "/delete_address"
     is ShowMyAddress -> "/show_address"
+    is AddressAutoAccept -> "/auto_accept ${AutoAccept.cmdString(autoAccept)}"
     is ApiAcceptContact -> "/_accept $contactReqId"
     is ApiRejectContact -> "/_reject $contactReqId"
     is ApiSendCallInvitation -> "/_call invite @${contact.apiId} ${json.encodeToString(callType)}"
@@ -1547,6 +1564,7 @@ sealed class CC {
     is CreateMyAddress -> "createMyAddress"
     is DeleteMyAddress -> "deleteMyAddress"
     is ShowMyAddress -> "showMyAddress"
+    is AddressAutoAccept -> "addressAutoAccept"
     is ApiAcceptContact -> "apiAcceptContact"
     is ApiRejectContact -> "apiRejectContact"
     is ApiSendCallInvitation -> "apiSendCallInvitation"
@@ -1743,11 +1761,12 @@ sealed class CR {
   @Serializable @SerialName("contactAliasUpdated") class ContactAliasUpdated(val toContact: Contact): CR()
   @Serializable @SerialName("connectionAliasUpdated") class ConnectionAliasUpdated(val toConnection: PendingContactConnection): CR()
   @Serializable @SerialName("apiParsedMarkdown") class ParsedMarkdown(val formattedText: List<FormattedText>? = null): CR()
-  @Serializable @SerialName("userContactLink") class UserContactLink(val connReqContact: String): CR()
+  @Serializable @SerialName("userContactLink") class UserContactLink(val contactLink: UserContactLinkRec): CR()
+  @Serializable @SerialName("userContactLinkUpdated") class UserContactLinkUpdated(val contactLink: UserContactLinkRec): CR()
   @Serializable @SerialName("userContactLinkCreated") class UserContactLinkCreated(val connReqContact: String): CR()
   @Serializable @SerialName("userContactLinkDeleted") class UserContactLinkDeleted: CR()
-  @Serializable @SerialName("contactConnected") class ContactConnected(val contact: Contact): CR()
-  @Serializable @SerialName("contactConnecting") class ContactConnecting(val contact: Contact): CR()
+  @Serializable @SerialName("contactConnected") class ContactConnected(val contact: Contact, val userCustomProfile: Profile?, val viaGroupLink: Boolean): CR()
+  @Serializable @SerialName("contactConnecting") class ContactConnecting(val contact: Contact, val viaGroupLink: Boolean): CR()
   @Serializable @SerialName("receivedContactRequest") class ReceivedContactRequest(val contactRequest: UserContactRequest): CR()
   @Serializable @SerialName("acceptingContactRequest") class AcceptingContactRequest(val contact: Contact): CR()
   @Serializable @SerialName("contactRequestRejected") class ContactRequestRejected: CR()
@@ -1767,7 +1786,7 @@ sealed class CR {
   @Serializable @SerialName("contactsList") class ContactsList(val contacts: List<Contact>): CR()
   // group events
   @Serializable @SerialName("groupCreated") class GroupCreated(val groupInfo: GroupInfo): CR()
-  @Serializable @SerialName("sentGroupInvitation") class SentGroupInvitation(val groupInfo: GroupInfo, val contact: Contact, val member: GroupMember): CR()
+  @Serializable @SerialName("sentGroupInvitation") class SentGroupInvitation(val groupInfo: GroupInfo, val contact: Contact, val member: GroupMember, val viaGroupLink: Boolean): CR()
   @Serializable @SerialName("userAcceptedGroupSent") class UserAcceptedGroupSent (val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("userDeletedMember") class UserDeletedMember(val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("leftMemberUser") class LeftMemberUser(val groupInfo: GroupInfo): CR()
@@ -1839,6 +1858,7 @@ sealed class CR {
     is ConnectionAliasUpdated -> "connectionAliasUpdated"
     is ParsedMarkdown -> "apiParsedMarkdown"
     is UserContactLink -> "userContactLink"
+    is UserContactLinkUpdated -> "userContactLinkUpdated"
     is UserContactLinkCreated -> "userContactLinkCreated"
     is UserContactLinkDeleted -> "userContactLinkDeleted"
     is ContactConnected -> "contactConnected"
@@ -1931,7 +1951,8 @@ sealed class CR {
     is ContactAliasUpdated -> json.encodeToString(toContact)
     is ConnectionAliasUpdated -> json.encodeToString(toConnection)
     is ParsedMarkdown -> json.encodeToString(formattedText)
-    is UserContactLink -> connReqContact
+    is UserContactLink -> contactLink.responseDetails
+    is UserContactLinkUpdated -> contactLink.responseDetails
     is UserContactLinkCreated -> connReqContact
     is UserContactLinkDeleted -> noDetails()
     is ContactConnected -> json.encodeToString(contact)
@@ -1954,7 +1975,7 @@ sealed class CR {
     is ChatItemDeleted -> "deletedChatItem:\n${json.encodeToString(deletedChatItem)}\ntoChatItem:\n${json.encodeToString(toChatItem)}"
     is ContactsList -> json.encodeToString(contacts)
     is GroupCreated -> json.encodeToString(groupInfo)
-    is SentGroupInvitation -> "groupInfo: $groupInfo\ncontact: $contact\nmember: $member"
+    is SentGroupInvitation -> "groupInfo: $groupInfo\ncontact: $contact\nmember: $member\nviaGroupLink: $viaGroupLink"
     is UserAcceptedGroupSent -> json.encodeToString(groupInfo)
     is UserDeletedMember -> "groupInfo: $groupInfo\nmember: $member"
     is LeftMemberUser -> json.encodeToString(groupInfo)
@@ -2033,6 +2054,24 @@ abstract class TerminalItem {
 
 @Serializable
 class ConnectionStats(val rcvServers: List<String>?, val sndServers: List<String>?)
+
+@Serializable
+class UserContactLinkRec(val connReqContact: String, val autoAccept: AutoAccept? = null) {
+  val responseDetails: String get() = "connReqContact: ${connReqContact}\nautoAccept: ${AutoAccept.cmdString(autoAccept)}"
+}
+
+@Serializable
+class AutoAccept(val acceptIncognito: Boolean, val autoReply: MsgContent?) {
+  companion object {
+    fun cmdString(autoAccept: AutoAccept?): String {
+      if (autoAccept == null) return "off"
+      val s = "on" + if (autoAccept.acceptIncognito) " incognito=on" else ""
+      val msg = autoAccept.autoReply ?: return s
+      return s + " " + msg.cmdString
+    }
+  }
+}
+
 
 @Serializable
 sealed class ChatError {
