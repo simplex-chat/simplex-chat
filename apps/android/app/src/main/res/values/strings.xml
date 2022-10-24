@@ -398,6 +398,12 @@
   <string name="if_you_delete_address_you_wont_lose_contacts">If you delete it - you won\'t lose your contacts made via this address.</string>
   <string name="share_link">Share link</string>
   <string name="delete_address">Delete address</string>
+  <string name="accept_requests">Accept requests</string>
+
+  <!-- AcceptRequestsView.kt -->
+  <string name="contact_requests">Contact requests</string>
+  <string name="accept_automatically">Automatically</string>
+  <string name="section_title_welcome_text">WELCOME TEXT</string>
 
   <!-- User profile details - UserProfileView.kt -->
   <string name="display_name__field">Display name:</string>

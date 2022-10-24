@@ -60,6 +60,8 @@ class ModalManager {
     modalCount.value = modalViews.size - toRemove.size
   }
 
+  fun hasModalsOpen() = modalCount.value > 0
+
   fun closeModal() {
     if (modalViews.isNotEmpty()) {
       if (modalViews.lastOrNull()?.first == false) modalViews.removeAt(modalViews.lastIndex)
