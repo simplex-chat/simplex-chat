@@ -84,7 +84,8 @@ fun ChatPreviewView(chat: Chat, chatModelIncognito: Boolean, currentUserProfileD
       MarkdownText(
         ci.text,
         ci.formattedText,
-        sender = null,
+        sender = if (cInfo is ChatInfo.Group && !ci.chatDir.sent) ci.memberDisplayName else null,
+        senderBold = true,
         metaText = null,
         maxLines = 2,
         overflow = TextOverflow.Ellipsis,
