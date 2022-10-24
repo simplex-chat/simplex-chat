@@ -90,7 +90,7 @@ class ChatModel(val controller: ChatController) {
 
   fun updateContactConnection(contactConnection: PendingContactConnection) = updateChat(ChatInfo.ContactConnection(contactConnection))
 
-  fun updateContact(contact: Contact) = updateChat(ChatInfo.Direct(contact), addMissing = !contact.isIndirectContact)
+  fun updateContact(contact: Contact) = updateChat(ChatInfo.Direct(contact), addMissing = !contact.isIndirectContact && !contact.viaGroupLink)
 
   fun updateGroup(groupInfo: GroupInfo) = updateChat(ChatInfo.Group(groupInfo))
 
@@ -540,6 +540,9 @@ data class Contact(
   val isIndirectContact: Boolean get() =
     activeConn.connLevel > 0 || viaGroup != null
 
+  val viaGroupLink: Boolean get() =
+    activeConn.viaGroupLink
+
   val contactConnIncognito =
     activeConn.customUserProfileId != null
 
@@ -571,10 +574,10 @@ class ContactSubStatus(
 )
 
 @Serializable
-class Connection(val connId: Long, val connStatus: ConnStatus, val connLevel: Int, val customUserProfileId: Long? = null) {
+class Connection(val connId: Long, val connStatus: ConnStatus, val connLevel: Int, val viaGroupLink: Boolean, val customUserProfileId: Long? = null) {
   val id: ChatId get() = ":$connId"
   companion object {
-    val sampleData = Connection(connId = 1, connStatus = ConnStatus.Ready, connLevel = 0, customUserProfileId = null)
+    val sampleData = Connection(connId = 1, connStatus = ConnStatus.Ready, connLevel = 0, viaGroupLink = false, customUserProfileId = null)
   }
 }
 
