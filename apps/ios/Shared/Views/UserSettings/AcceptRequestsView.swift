@@ -33,7 +33,7 @@ struct AcceptRequestsView: View {
             } header: {
                 Text("Accept requests")
             } footer: {
-                if !a.enable { saveButtons() }
+                saveButtons()
             }
             if a.enable {
                 Section {
@@ -45,8 +45,6 @@ struct AcceptRequestsView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                 } header: {
                     Text("Welcome message")
-                } footer: {
-                    saveButtons()
                 }
             }
         }
