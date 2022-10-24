@@ -18,13 +18,6 @@ struct AcceptRequestsView: View {
 
     var body: some View {
         List {
-            Text("Contact requests")
-                .font(.largeTitle)
-                .bold()
-                .padding(.vertical)
-                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                .listRowBackground(Color.clear)
-
             Section {
                 settingsRow("checkmark") {
                     Toggle("Automatically", isOn: $a.enable)

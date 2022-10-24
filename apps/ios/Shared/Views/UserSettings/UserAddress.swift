@@ -13,7 +13,6 @@ struct UserAddress: View {
     @EnvironmentObject private var chatModel: ChatModel
     @State private var alert: UserAddressAlert?
     @State private var showAcceptRequests = false
-    var viaNavLink = false
 
     private enum UserAddressAlert: Identifiable {
         case deleteAddress
@@ -30,10 +29,6 @@ struct UserAddress: View {
     var body: some View {
         ScrollView {
             VStack (alignment: .leading) {
-                Text("Your contact address")
-                    .font(.largeTitle)
-                    .bold()
-                    .padding(viaNavLink ? .bottom : .vertical)
                 Text("You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it.")
                     .padding(.bottom)
                 if let userAdress = chatModel.userAddress {
@@ -45,8 +40,17 @@ struct UserAddress: View {
                             Label("Share link", systemImage: "square.and.arrow.up")
                         }
                         .padding()
-                        Button { showAcceptRequests = true } label: {
-                            Label("Accept requests", systemImage: "checkmark")
+                        NavigationLink {
+                            if let contactLink = chatModel.userAddress {
+                                AcceptRequestsView(contactLink: contactLink)
+                                    .navigationTitle("Contact requests")
+                                    .navigationBarTitleDisplayMode(.large)
+                            }
+                        } label: {
+                            HStack {
+                                Text("Contact requests")
+                                Image(systemName: "chevron.right")
+                            }
                         }
                         .padding()
                     }
