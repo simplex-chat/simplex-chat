@@ -278,7 +278,8 @@ processChatCommand = \case
   APIGetChatItems _pagination -> pure $ chatCmdError "not implemented"
   APISendMessage (ChatRef cType chatId) (ComposedMessage file_ quotedItemId_ mc) -> withUser $ \user@User {userId} -> withChatLock "sendMessage" $ case cType of
     CTDirect -> do
-      ct@Contact {localDisplayName = c} <- withStore $ \db -> getContact db userId chatId
+      ct@Contact {localDisplayName = c, contactUsed} <- withStore $ \db -> getContact db userId chatId
+      unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
       (fileInvitation_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer ct
       (msgContainer, quotedItem_) <- prepareMsg fileInvitation_
       (msg@SndMessage {sharedMsgId}, _) <- sendDirectContactMessage ct (XMsgNew msgContainer)
@@ -468,14 +469,14 @@ processChatCommand = \case
     CTContactConnection -> pure $ chatCmdError "not supported"
   APIChatUnread (ChatRef cType chatId) unreadChat -> withUser $ \user@User {userId} -> case cType of
     CTDirect -> do
-      _ <- withStore $ \db -> do
-        Contact {contactId} <- getContact db userId chatId
-        liftIO $ updateContactUnreadChat db user contactId unreadChat
+      withStore $ \db -> do
+        ct <- getContact db userId chatId
+        liftIO $ updateContactUnreadChat db user ct unreadChat
       pure CRCmdOk
     CTGroup -> do
-      _ <- withStore $ \db -> do
-        Group GroupInfo {groupId} _ <- getGroup db user chatId
-        liftIO $ updateGroupUnreadChat db user groupId unreadChat
+      withStore $ \db -> do
+        Group {groupInfo} <- getGroup db user chatId
+        liftIO $ updateGroupUnreadChat db user groupInfo unreadChat
       pure CRCmdOk
     _ -> pure $ chatCmdError "not supported"
   APIDeleteChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
@@ -650,6 +651,11 @@ processChatCommand = \case
       conn <- getPendingContactConnection db userId connId
       liftIO $ updateContactConnectionAlias db userId conn localAlias
     pure $ CRConnectionAliasUpdated conn'
+  APIMarkContactUsed contactId -> withUser $ \user@User {userId} -> do
+    withStore $ \db -> do
+      ct@Contact {contactUsed} <- getContact db userId contactId
+      unless contactUsed $ liftIO $ updateContactUsed db user ct
+    pure CRCmdOk
   APIParseMarkdown text -> pure . CRApiParsedMarkdown $ parseMaybeMarkdownList text
   APIGetNtfToken -> withUser $ \_ -> crNtfToken <$> withAgent getNtfToken
   APIRegisterToken token mode -> CRNtfTokenStatus <$> withUser (\_ -> withAgent $ \a -> registerNtfToken a token mode)
@@ -2116,7 +2122,8 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
     messageError = toView . CRMessageError "error"
 
     newContentMessage :: Contact -> MsgContainer -> RcvMessage -> MsgMeta -> m ()
-    newContentMessage ct@Contact {localDisplayName = c, chatSettings} mc msg msgMeta = do
+    newContentMessage ct@Contact {localDisplayName = c, contactUsed, chatSettings} mc msg msgMeta = do
+      unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       let (ExtMsgContent content fileInvitation_) = mcExtMsgContent mc
       ciFile_ <- processFileInvitation fileInvitation_ $ \db -> createRcvFileTransfer db userId ct
@@ -3112,6 +3119,7 @@ chatCommandP =
       "/_profile " *> (APIUpdateProfile <$> jsonP),
       "/_set alias @" *> (APISetContactAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set alias :" *> (APISetConnectionAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
+      "/_used @" *> (APIMarkContactUsed <$> A.decimal),
       "/_parse " *> (APIParseMarkdown . safeDecodeUtf8 <$> A.takeByteString),
       "/_ntf get" $> APIGetNtfToken,
       "/_ntf register " *> (APIRegisterToken <$> strP_ <*> strP),

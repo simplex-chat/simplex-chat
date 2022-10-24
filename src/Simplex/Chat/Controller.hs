@@ -168,6 +168,7 @@ data ChatCommand
   | APIUpdateProfile Profile
   | APISetContactAlias ContactId LocalAlias
   | APISetConnectionAlias Int64 LocalAlias
+  | APIMarkContactUsed ContactId
   | APIParseMarkdown Text
   | APIGetNtfToken
   | APIRegisterToken DeviceToken NotificationsMode

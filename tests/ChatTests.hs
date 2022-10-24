@@ -136,7 +136,7 @@ chatTests = do
     it "mute/unmute group" testMuteGroup
   describe "chat item expiration" $ do
     it "set chat item TTL" testSetChatItemTTL
-  describe "group links" $ do
+  fdescribe "group links" $ do
     it "create group link, join via group link" testGroupLink
     it "create group link, join via group link - incognito membership" testGroupLinkIncognitoMembership
     it "deleting invited member does not leave broken chat item" testGroupLinkDeleteInvitedMemberNoBrokenItem
@@ -3323,6 +3323,9 @@ testGroupLink =
         ]
       alice #$> ("/_get chat #1 count=100", chat, [(0, "invited via your group link")])
       alice @@@ [("#team", "invited via your group link")] -- contacts connected via group link are not in chat previews
+      -- marking contact as used adds it to chat previews
+      alice #$> ("/_used @2", id, "ok")
+      alice @@@ [("@bob", ""), ("#team", "invited via your group link")]
       alice <##> bob
       alice @@@ [("@bob", "hey"), ("#team", "invited via your group link")]
       bob ##> "/j team"
@@ -3355,6 +3358,12 @@ testGroupLink =
             cath <## "#team: alice_1 invites you to join the group as member"
             cath <## "use /j team to accept"
         ]
+      -- sending message to contact marks it as used
+      alice @@@ [("@cath", "hey"), ("@bob", "hey"), ("#team", "invited via your group link")]
+      alice #> "@cath_1 hello"
+      cath <# "alice_1> hello"
+      alice #$> ("/clear cath_1", id, "cath_1: all messages are removed locally ONLY")
+      alice @@@ [("@cath_1", ""), ("@cath", "hey"), ("@bob", "hey"), ("#team", "invited via your group link")]
       cath ##> "/j team"
       concurrentlyN_
         [ alice <## "#team: cath_1 joined the group",
