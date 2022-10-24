@@ -337,6 +337,10 @@ public struct Contact: Identifiable, Decodable, NamedChat {
         activeConn.connLevel > 0 || viaGroup != nil
     }
 
+    public var viaGroupLink: Bool {
+        activeConn.viaGroupLink
+    }
+
     public var contactConnIncognito: Bool {
         activeConn.customUserProfileId != nil
     }
@@ -368,6 +372,7 @@ public struct Connection: Decodable {
     var connId: Int64
     var connStatus: ConnStatus
     public var connLevel: Int
+    public var viaGroupLink: Bool
     public var customUserProfileId: Int64?
 
     public var id: ChatId { get { ":\(connId)" } }
@@ -375,7 +380,8 @@ public struct Connection: Decodable {
     static let sampleData = Connection(
         connId: 1,
         connStatus: .ready,
-        connLevel: 0
+        connLevel: 0,
+        viaGroupLink: false
     )
 }
 
