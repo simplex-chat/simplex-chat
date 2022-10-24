@@ -60,8 +60,7 @@ fun MarkdownText (
     else -> "    "
   }
   CompositionLocalProvider(
-    // When we draw `sender` is has issues on LTR languages set globally with RTL text language
-    LocalLayoutDirection provides if (textLayoutDirection != LocalLayoutDirection.current && sender == null)
+    LocalLayoutDirection provides if (textLayoutDirection != LocalLayoutDirection.current)
       if (LocalLayoutDirection.current == LayoutDirection.Ltr) LayoutDirection.Rtl else LayoutDirection.Ltr
     else
       LocalLayoutDirection.current
