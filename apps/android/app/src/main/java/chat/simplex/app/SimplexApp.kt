@@ -10,6 +10,7 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.onboarding.OnboardingStage
 import chat.simplex.app.views.usersettings.NotificationsMode
 import kotlinx.coroutines.*
+import kotlinx.serialization.decodeFromString
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.util.*
@@ -26,9 +27,7 @@ external fun pipeStdOutToSocket(socketName: String) : Int
 
 // SimpleX API
 typealias ChatCtrl = Long
-external fun chatMigrateDB(dbPath: String, dbKey: String): String
-external fun chatInitKey(dbPath: String, dbKey: String): ChatCtrl
-external fun chatInit(dbPath: String): ChatCtrl
+external fun chatMigrateInit(dbPath: String, dbKey: String): Array<Any>
 external fun chatSendCmd(ctrl: ChatCtrl, msg: String): String
 external fun chatRecvMsg(ctrl: ChatCtrl): String
 external fun chatRecvMsgWait(ctrl: ChatCtrl, timeout: Int): String
@@ -38,20 +37,24 @@ class SimplexApp: Application(), LifecycleEventObserver {
   lateinit var chatController: ChatController
 
   fun initChatController(useKey: String? = null, startChat: Boolean = true) {
-    val dbKey = useKey ?: DatabaseUtils.getDatabaseKey() ?: ""
-    val res = DatabaseUtils.migrateChatDatabase(dbKey)
-    val ctrl = if (res.second is DBMigrationResult.OK) {
-      chatInitKey(getFilesDirectory(applicationContext), dbKey)
+    val dbKey = useKey ?: DatabaseUtils.useDatabaseKey() ?: ""
+    val dbAbsolutePathPrefix = getFilesDirectory(SimplexApp.context)
+    val migrated: Array<Any> = chatMigrateInit(dbAbsolutePathPrefix, dbKey)
+    val res: DBMigrationResult = kotlin.runCatching {
+      json.decodeFromString<DBMigrationResult>(migrated[0] as String)
+    }.getOrElse { DBMigrationResult.Unknown(migrated[0] as String) }
+    val ctrl = if (res is DBMigrationResult.OK) {
+      migrated[1] as Long
     } else null
     if (::chatController.isInitialized) {
       chatController.ctrl = ctrl
     } else {
       chatController = ChatController(ctrl, ntfManager, applicationContext, appPreferences)
     }
-    chatModel.chatDbEncrypted.value = res.first
-    chatModel.chatDbStatus.value = res.second
-    if (res.second != DBMigrationResult.OK) {
-      Log.d(TAG, "Unable to migrate successfully: ${res.second}")
+    chatModel.chatDbEncrypted.value = dbKey != ""
+    chatModel.chatDbStatus.value = res
+    if (res != DBMigrationResult.OK) {
+      Log.d(TAG, "Unable to migrate successfully: $res")
     } else if (startChat) {
       // If we migrated successfully means previous re-encryption process on database level finished successfully too
       if (appPreferences.encryptionStartedAt.get() != null) appPreferences.encryptionStartedAt.set(null)
@@ -91,6 +94,14 @@ class SimplexApp: Application(), LifecycleEventObserver {
     Log.d(TAG, "onStateChanged: $event")
     withApi {
       when (event) {
+        Lifecycle.Event.ON_START -> {
+          if (chatModel.chatRunning.value == true) {
+            kotlin.runCatching {
+              val chats = chatController.apiGetChats()
+              chatModel.updateChats(chats)
+            }.onFailure { Log.e(TAG, it.stackTraceToString()) }
+          }
+        }
         Lifecycle.Event.ON_RESUME -> {
           if (chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete) {
             chatController.showBackgroundServiceNoticeIfNeeded()

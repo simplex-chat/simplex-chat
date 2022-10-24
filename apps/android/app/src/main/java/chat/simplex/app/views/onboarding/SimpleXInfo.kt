@@ -2,7 +2,7 @@ package chat.simplex.app.views.onboarding
 
 import android.content.res.Configuration
 import androidx.annotation.StringRes
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -12,9 +12,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -23,6 +25,7 @@ import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.User
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.ModalManager
+import chat.simplex.app.views.helpers.generalGetString
 
 @Composable
 fun SimpleXInfo(chatModel: ChatModel, onboarding: Boolean = true) {
@@ -39,34 +42,36 @@ fun SimpleXInfoLayout(
   onboardingStage: MutableState<OnboardingStage?>?,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
 ) {
-  Column(Modifier.fillMaxHeight(), horizontalAlignment = Alignment.Start) {
-    SimpleXLogo()
+  Column(
+    Modifier
+      .fillMaxSize()
+      .verticalScroll(rememberScrollState())
+      .padding(horizontal = DEFAULT_PADDING),
+  ) {
+    Box(Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 8.dp), contentAlignment = Alignment.Center) {
+      SimpleXLogo()
+    }
 
-    Text(stringResource(R.string.next_generation_of_private_messaging), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = 16.dp))
+    Text(stringResource(R.string.next_generation_of_private_messaging), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = 24.dp), textAlign = TextAlign.Center)
 
-    InfoRow("🎭", R.string.privacy_redefined, R.string.first_platform_without_user_ids)
-    InfoRow("📭", R.string.immune_to_spam_and_abuse, R.string.people_can_connect_only_via_links_you_share)
-    InfoRow("🤝", R.string.decentralized, R.string.opensource_protocol_and_code_anybody_can_run_servers)
+    InfoRow(painterResource(R.drawable.privacy), R.string.privacy_redefined, R.string.first_platform_without_user_ids)
+    InfoRow(painterResource(R.drawable.shield), R.string.immune_to_spam_and_abuse, R.string.people_can_connect_only_via_links_you_share)
+    InfoRow(painterResource(R.drawable.decentralized), R.string.decentralized, R.string.opensource_protocol_and_code_anybody_can_run_servers)
 
-    Spacer(
-      Modifier
-        .fillMaxHeight()
-        .weight(1f))
+    Spacer(Modifier.fillMaxHeight().weight(1f))
 
     if (onboardingStage != null) {
       Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         OnboardingActionButton(user, onboardingStage)
       }
-      Spacer(
-        Modifier
-          .fillMaxHeight()
-          .weight(1f))
+      Spacer(Modifier.fillMaxHeight().weight(1f))
     }
 
     Box(
       Modifier
         .fillMaxWidth()
-        .padding(bottom = 16.dp), contentAlignment = Alignment.Center) {
+        .padding(bottom = 16.dp), contentAlignment = Alignment.Center
+    ) {
       SimpleButton(text = stringResource(R.string.how_it_works), icon = Icons.Outlined.Info,
         click = showModal { HowItWorks(user, onboardingStage) })
     }
@@ -79,24 +84,23 @@ fun SimpleXLogo() {
     painter = painterResource(if (isInDarkTheme()) R.drawable.logo_light else R.drawable.logo),
     contentDescription = stringResource(R.string.image_descr_simplex_logo),
     modifier = Modifier
-      .padding(vertical = 20.dp)
+      .padding(vertical = DEFAULT_PADDING)
       .fillMaxWidth(0.80f)
   )
 }
 
 @Composable
-private fun InfoRow(emoji: String, @StringRes titleId: Int, @StringRes textId: Int) {
+private fun InfoRow(icon: Painter, @StringRes titleId: Int, @StringRes textId: Int) {
   Row(Modifier.padding(bottom = 20.dp), verticalAlignment = Alignment.Top) {
-    Text(emoji, fontSize = 36.sp, modifier = Modifier
+    Image(icon, contentDescription = null, modifier = Modifier
       .width(60.dp)
-      .padding(end = 16.dp))
+      .padding(top = 8.dp, end = 16.dp))
     Column(horizontalAlignment = Alignment.Start) {
       Text(stringResource(titleId), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.h3, lineHeight = 24.sp)
       Text(stringResource(textId), lineHeight = 24.sp, style = MaterialTheme.typography.caption)
     }
   }
 }
-
 
 @Composable
 fun OnboardingActionButton(user: User?, onboardingStage: MutableState<OnboardingStage?>, onclick: (() -> Unit)? = null) {
@@ -138,7 +142,7 @@ fun PreviewSimpleXInfo() {
     SimpleXInfoLayout(
       user = null,
       onboardingStage = null,
-      showModal = {{}}
+      showModal = { {} }
     )
   }
 }

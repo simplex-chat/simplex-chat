@@ -10,48 +10,47 @@ import Foundation
 
 private var chatController: chat_ctrl?
 
+private var migrationResult: (Bool, DBMigrationResult)?
+
 public func getChatCtrl(_ useKey: String? = nil) -> chat_ctrl {
     if let controller = chatController { return controller }
-    let dbPath = getAppDatabasePath().path
-    let dbKey = useKey ?? getDatabaseKey() ?? ""
-    logger.debug("getChatCtrl DB path: \(dbPath)")
-    var cPath = dbPath.cString(using: .utf8)!
-    var cKey = dbKey.cString(using: .utf8)!
-    chatController = chat_init_key(&cPath, &cKey)
-    logger.debug("getChatCtrl: chat_init_key")
-    return chatController!
+    fatalError("chat controller not initialized")
 }
 
-public func migrateChatDatabase(_ useKey: String? = nil) -> (Bool, DBMigrationResult) {
-    logger.debug("migrateChatDatabase \(storeDBPassphraseGroupDefault.get())")
+public func chatMigrateInit(_ useKey: String? = nil) -> (Bool, DBMigrationResult) {
+    if let res = migrationResult { return res }
     let dbPath = getAppDatabasePath().path
     var dbKey = ""
     let useKeychain = storeDBPassphraseGroupDefault.get()
+    logger.debug("chatMigrateInit uses keychain: \(useKeychain)")
     if let key = useKey {
         dbKey = key
     } else if useKeychain {
         if !hasDatabase() {
+            logger.debug("chatMigrateInit generating a random DB key")
             dbKey = randomDatabasePassword()
             initialRandomDBPassphraseGroupDefault.set(true)
         } else if let key = getDatabaseKey() {
             dbKey = key
         }
     }
-    logger.debug("migrateChatDatabase DB path: \(dbPath)")
-//    logger.debug("migrateChatDatabase DB key: \(dbKey)")
+    logger.debug("chatMigrateInit DB path: \(dbPath)")
+//    logger.debug("chatMigrateInit DB key: \(dbKey)")
     var cPath = dbPath.cString(using: .utf8)!
     var cKey = dbKey.cString(using: .utf8)!
-    let cjson = chat_migrate_db(&cPath, &cKey)!
-    let res = dbMigrationResult(fromCString(cjson))
+    // the last parameter of chat_migrate_init is used to return the pointer to chat controller
+    let cjson = chat_migrate_init(&cPath, &cKey, &chatController)!
+    let dbRes = dbMigrationResult(fromCString(cjson))
     let encrypted = dbKey != ""
-    if case .ok = res, useKeychain && encrypted && !setDatabaseKey(dbKey) {
-        return (encrypted, .errorKeychain)
-    }
-    return (encrypted, res)
+    let keychainErr = dbRes == .ok && useKeychain && encrypted && !setDatabaseKey(dbKey)
+    let result = (encrypted, keychainErr ? .errorKeychain : dbRes)
+    migrationResult = result
+    return result
 }
 
 public func resetChatCtrl() {
     chatController = nil
+    migrationResult = nil
 }
 
 public func sendSimpleXCmd(_ cmd: ChatCommand) -> ChatResponse {

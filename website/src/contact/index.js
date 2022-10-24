@@ -1,20 +1,30 @@
-(async function () {
+(function () {
+
+let complete = false
+run()
+window.onload = run
+
+async function run() {
   const connURIel = document.getElementById("conn_req_uri_text");
+  const mobileConnURIanchor = document.getElementById("mobile_conn_req_uri");
+  const connQRCode = document.getElementById("conn_req_uri_qrcode");
+  if (complete || !connURIel || !mobileConnURIanchor || !connQRCode) return
+  complete = true
   const connURI = document.location.toString().replace(/\/(contact|invitation)\//, "/$1");
   connURIel.innerText = "/c " + connURI;
-  const mobileConnURIanchor = document.getElementById("mobile_conn_req_uri");
   mobileConnURIanchor.href = connURI.replace("https://simplex.chat", "simplex:");
   if (document.location.pathname.indexOf("/contact") >= 0) {
-    document.querySelector("#conn_req .conn_mode").innerText = "address of";
+    let connModeEl = document.querySelector("#conn_req .conn_mode")
+    if (connModeEl) connModeEl.innerText = "address of";
   }
   const els = document.querySelectorAll(".content_copy_with_tooltip");
   if (navigator.clipboard) {
     els.forEach(contentCopyWithTooltip)
   } else {
-    els.forEach(el => el.style.visibility = "hidden")
+    const tooltips = document.querySelectorAll(".content_copy_with_tooltip .tooltip");
+    tooltips.forEach(el => el.style.visibility = "hidden")
   }
 
-  const connQRCode = document.getElementById("conn_req_uri_qrcode");
   try {
     await QRCode.toCanvas(connQRCode, connURI, {
       errorCorrectionLevel: "M",
@@ -53,4 +63,5 @@
   function resetTooltip() {
     tooltipEl.innerHTML = "Copy to clipboard";
   }
+}
 })();

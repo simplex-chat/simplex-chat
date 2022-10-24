@@ -117,7 +117,6 @@ func chatRecvMsg() async -> ChatResponse? {
 }
 
 func apiGetActiveUser() throws -> User? {
-    let _ = getChatCtrl()
     let r = chatSendCmdSync(.showActiveUser)
     switch r {
     case let .activeUser(user): return user
@@ -133,7 +132,7 @@ func apiCreateActiveUser(_ p: Profile) throws -> User {
 }
 
 func apiStartChat() throws -> Bool {
-    let r = chatSendCmdSync(.startChat(subscribe: true))
+    let r = chatSendCmdSync(.startChat(subscribe: true, expire: true))
     switch r {
     case .chatStarted: return true
     case .chatRunning: return false
@@ -320,6 +319,16 @@ func setUserSMPServers(smpServers: [String]) async throws {
     try await sendCommandOkResp(.setUserSMPServers(smpServers: smpServers))
 }
 
+func getChatItemTTL() throws -> ChatItemTTL {
+    let r = chatSendCmdSync(.apiGetChatItemTTL)
+    if case let .chatItemTTL(chatItemTTL) = r { return ChatItemTTL(chatItemTTL) }
+    throw r
+}
+
+func setChatItemTTL(_ chatItemTTL: ChatItemTTL) async throws {
+    try await sendCommandOkResp(.apiSetChatItemTTL(seconds: chatItemTTL.seconds))
+}
+
 func getNetworkConfig() async throws -> NetCfg? {
     let r = await chatSendCmd(.apiGetNetworkConfig)
     if case let .networkConfig(cfg) = r { return cfg }
@@ -417,18 +426,10 @@ func deleteChat(_ chat: Chat) async {
         DispatchQueue.main.async { ChatModel.shared.removeChat(cInfo.id) }
     } catch let error {
         logger.error("deleteChat apiDeleteChat error: \(responseError(error))")
-        switch error as? ChatResponse {
-        case let .chatCmdError(.error(.contactGroups(contact, groupNames))):
-            AlertManager.shared.showAlertMsg(
-                title: "Can't delete contact!",
-                message: "Contact \(contact.displayName) cannot be deleted, they are a member of the group(s) \(groupNames.joined(separator: ", "))."
-            )
-        default:
-            AlertManager.shared.showAlertMsg(
-                title: "Error deleting chat!",
-                message: "Error: \(responseError(error))"
-            )
-        }
+        AlertManager.shared.showAlertMsg(
+            title: "Error deleting chat!",
+            message: "Error: \(responseError(error))"
+        )
     }
 }
 
@@ -469,6 +470,12 @@ func apiSetContactAlias(contactId: Int64, localAlias: String) async throws -> Co
     throw r
 }
 
+func apiSetConnectionAlias(connId: Int64, localAlias: String) async throws -> PendingContactConnection? {
+    let r = await chatSendCmd(.apiSetConnectionAlias(connId: connId, localAlias: localAlias))
+    if case let .connectionAliasUpdated(toConnection) = r { return toConnection }
+    throw r
+}
+
 func apiCreateUserAddress() async throws -> String {
     let r = await chatSendCmd(.createMyAddress)
     if case let .userContactLinkCreated(connReq) = r { return connReq }
@@ -481,13 +488,20 @@ func apiDeleteUserAddress() async throws {
     throw r
 }
 
-func apiGetUserAddress() throws -> String? {
+func apiGetUserAddress() throws -> UserContactLink? {
     let r = chatSendCmdSync(.showMyAddress)
     switch r {
-    case let .userContactLink(connReq):
-        return connReq
-    case .chatCmdError(chatError: .errorStore(storeError: .userContactLinkNotFound)):
-        return nil
+    case let .userContactLink(contactLink): return contactLink
+    case .chatCmdError(chatError: .errorStore(storeError: .userContactLinkNotFound)): return nil
+    default: throw r
+    }
+}
+
+func userAddressAutoAccept(_ autoAccept: AutoAccept?) async throws -> UserContactLink? {
+    let r = await chatSendCmd(.addressAutoAccept(autoAccept: autoAccept))
+    switch r {
+    case let .userContactLinkUpdated(contactLink): return contactLink
+    case .chatCmdError(chatError: .errorStore(storeError: .userContactLinkNotFound)): return nil
     default: throw r
     }
 }
@@ -520,6 +534,10 @@ func apiRejectContactRequest(contactReqId: Int64) async throws {
 
 func apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64)) async throws {
     try await sendCommandOkResp(.apiChatRead(type: type, id: id, itemRange: itemRange))
+}
+
+func apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool) async throws {
+    try await sendCommandOkResp(.apiChatUnread(type: type, id: id, unreadChat: unreadChat))
 }
 
 func receiveFile(fileId: Int64) async {
@@ -627,13 +645,28 @@ func apiCallStatus(_ contact: Contact, _ status: String) async throws {
 
 func markChatRead(_ chat: Chat, aboveItem: ChatItem? = nil) async {
     do {
-        let minItemId = chat.chatStats.minUnreadItemId
-        let itemRange = (minItemId, aboveItem?.id ?? chat.chatItems.last?.id ?? minItemId)
-        let cInfo = chat.chatInfo
-        try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: itemRange)
-        DispatchQueue.main.async { ChatModel.shared.markChatItemsRead(cInfo, aboveItem: aboveItem) }
+        if chat.chatStats.unreadCount > 0 {
+            let minItemId = chat.chatStats.minUnreadItemId
+            let itemRange = (minItemId, aboveItem?.id ?? chat.chatItems.last?.id ?? minItemId)
+            let cInfo = chat.chatInfo
+            try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: itemRange)
+            await MainActor.run { ChatModel.shared.markChatItemsRead(cInfo, aboveItem: aboveItem) }
+        }
+        if chat.chatStats.unreadChat {
+            await markChatUnread(chat, unreadChat: false)
+        }
     } catch {
         logger.error("markChatRead apiChatRead error: \(responseError(error))")
+    }
+}
+
+func markChatUnread(_ chat: Chat, unreadChat: Bool = true) async {
+    do {
+        let cInfo = chat.chatInfo
+        try await apiChatUnread(type: cInfo.chatType, id: cInfo.apiId, unreadChat: unreadChat)
+        await MainActor.run { ChatModel.shared.markChatUnread(cInfo, unreadChat: unreadChat) }
+    } catch {
+        logger.error("markChatUnread apiChatUnread error: \(responseError(error))")
     }
 }
 
@@ -661,7 +694,7 @@ func apiNewGroup(_ p: GroupProfile) throws -> GroupInfo {
 
 func apiAddMember(_ groupId: Int64, _ contactId: Int64, _ memberRole: GroupMemberRole) async throws -> GroupMember {
     let r = await chatSendCmd(.apiAddMember(groupId: groupId, contactId: contactId, memberRole: memberRole))
-    if case let .sentGroupInvitation(_, _, member) = r { return member }
+    if case let .sentGroupInvitation(_, _, member, _) = r { return member }
     throw r
 }
 
@@ -684,6 +717,12 @@ func apiJoinGroup(_ groupId: Int64) async throws -> JoinGroupResult {
 func apiRemoveMember(_ groupId: Int64, _ memberId: Int64) async throws -> GroupMember {
     let r = await chatSendCmd(.apiRemoveMember(groupId: groupId, memberId: memberId), bgTask: false)
     if case let .userDeletedMember(_, member) = r { return member }
+    throw r
+}
+
+func apiMemberRole(_ groupId: Int64, _ memberId: Int64, _ memberRole: GroupMemberRole) async throws -> GroupMember {
+    let r = await chatSendCmd(.apiMemberRole(groupId: groupId, memberId: memberId, memberRole: memberRole), bgTask: false)
+    if case let .memberRoleUser(_, member, _, _) = r { return member }
     throw r
 }
 
@@ -722,18 +761,41 @@ func apiUpdateGroup(_ groupId: Int64, _ groupProfile: GroupProfile) async throws
     throw r
 }
 
+func apiCreateGroupLink(_ groupId: Int64) async throws -> String {
+    let r = await chatSendCmd(.apiCreateGroupLink(groupId: groupId))
+    if case let .groupLinkCreated(_, connReq) = r { return connReq }
+    throw r
+}
+
+func apiDeleteGroupLink(_ groupId: Int64) async throws {
+    let r = await chatSendCmd(.apiDeleteGroupLink(groupId: groupId))
+    if case .groupLinkDeleted = r { return }
+    throw r
+}
+
+func apiGetGroupLink(_ groupId: Int64) throws -> String? {
+    let r = chatSendCmdSync(.apiGetGroupLink(groupId: groupId))
+    switch r {
+    case let .groupLink(_, connReq):
+        return connReq
+    case .chatCmdError(chatError: .errorStore(storeError: .groupLinkNotFound)):
+        return nil
+    default: throw r
+    }
+}
+
 func initializeChat(start: Bool, dbKey: String? = nil) throws {
     logger.debug("initializeChat")
     let m = ChatModel.shared
-    (m.chatDbEncrypted, m.chatDbStatus) = migrateChatDatabase(dbKey)
+    (m.chatDbEncrypted, m.chatDbStatus) = chatMigrateInit(dbKey)
     if  m.chatDbStatus != .ok { return }
     // If we migrated successfully means previous re-encryption process on database level finished successfully too
     if encryptionStartedDefault.get() {
         encryptionStartedDefault.set(false)
     }
-    let _ = getChatCtrl(dbKey)
     try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
     try apiSetIncognito(incognito: incognitoGroupDefault.get())
+    m.chatInitialized = true
     m.currentUser = try apiGetActiveUser()
     if m.currentUser == nil {
         m.onboardingStage = .step1_SimpleXInfo
@@ -752,6 +814,7 @@ func startChat() throws {
     if justStarted {
         m.userAddress = try apiGetUserAddress()
         m.userSMPServers = try getUserSMPServers()
+        m.chatItemTTL = try getChatItemTTL()
         let chats = try apiGetChats()
         m.chats = chats.map { Chat.init($0) }
         NtfManager.shared.setNtfBadgeCount(m.totalUnreadCount())
@@ -818,14 +881,20 @@ func processReceivedMsg(_ res: ChatResponse) async {
             m.updateContactConnection(connection)
         case let .contactConnectionDeleted(connection):
             m.removeChat(connection.id)
-        case let .contactConnected(contact):
-            m.updateContact(contact)
-            m.removeChat(contact.activeConn.id)
-            m.updateNetworkStatus(contact.id, .connected)
-            NtfManager.shared.notifyContactConnected(contact)
-        case let .contactConnecting(contact):
-            m.updateContact(contact)
-            m.removeChat(contact.activeConn.id)
+        case let .contactConnected(contact, _, viaGroupLink):
+            if !viaGroupLink {
+                m.updateContact(contact)
+                m.dismissConnReqView(contact.activeConn.id)
+                m.removeChat(contact.activeConn.id)
+                m.updateNetworkStatus(contact.id, .connected)
+                NtfManager.shared.notifyContactConnected(contact)
+            }
+        case let .contactConnecting(contact, viaGroupLink):
+            if !viaGroupLink {
+                m.updateContact(contact)
+                m.dismissConnReqView(contact.activeConn.id)
+                m.removeChat(contact.activeConn.id)
+            }
         case let .receivedContactRequest(contactRequest):
             let cInfo = ChatInfo.contactRequest(contactRequest: contactRequest)
             if m.hasChat(contactRequest.id) {
@@ -869,7 +938,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
                     await receiveFile(fileId: file.fileId)
                 }
             }
-            if !cItem.chatDir.sent && !cItem.isCall() {
+            if !cItem.chatDir.sent && !cItem.isCall() && !cItem.isMutedMemberEvent {
                 NtfManager.shared.notifyMessageReceived(cInfo, cItem)
             }
         case let .chatItemStatusUpdated(aChatItem):

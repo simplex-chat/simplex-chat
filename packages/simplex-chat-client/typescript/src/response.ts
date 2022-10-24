@@ -388,6 +388,7 @@ export interface CRContactConnecting extends CR {
 export interface CRContactConnected extends CR {
   type: "contactConnected"
   contact: Contact
+  userCustomProfile?: Profile
 }
 
 export interface CRContactAnotherClient extends CR {

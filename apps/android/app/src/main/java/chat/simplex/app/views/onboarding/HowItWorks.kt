@@ -4,7 +4,6 @@ import android.content.res.Configuration
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
@@ -17,14 +16,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.User
+import chat.simplex.app.ui.theme.DEFAULT_PADDING
 import chat.simplex.app.ui.theme.SimpleXTheme
-import chat.simplex.app.views.helpers.ModalManager
-import chat.simplex.app.views.helpers.annotatedStringResource
+import chat.simplex.app.views.helpers.*
 
 @Composable
 fun HowItWorks(user: User?, onboardingStage: MutableState<OnboardingStage?>? = null) {
-  Column(Modifier.fillMaxHeight(), horizontalAlignment = Alignment.Start) {
-    Text(stringResource(R.string.how_simplex_works), style = MaterialTheme.typography.h1, modifier = Modifier.padding(bottom = 8.dp))
+  Column(Modifier
+    .fillMaxWidth()
+    .padding(horizontal = DEFAULT_PADDING),
+    horizontalAlignment = Alignment.Start
+  ) {
+    AppBarTitle(stringResource(R.string.how_simplex_works), false)
     ReadableText(R.string.many_people_asked_how_can_it_deliver)
     ReadableText(R.string.to_protect_privacy_simplex_has_ids_for_queues)
     ReadableText(R.string.you_control_servers_to_receive_your_contacts_to_send)

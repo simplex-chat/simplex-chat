@@ -7,11 +7,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.UriHandler
+import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
+import androidx.core.text.BidiFormatter
 import chat.simplex.app.model.*
 import chat.simplex.app.views.helpers.detectGesture
 
@@ -50,51 +51,69 @@ fun MarkdownText (
   modifier: Modifier = Modifier,
   onLinkLongClick: (link: String) -> Unit = {}
 ) {
-  val reserve = if (edited) "        " else "    "
-  if (formattedText == null) {
-    val annotatedText = buildAnnotatedString {
-      appendSender(this, sender, senderBold)
-      append(text)
-      if (metaText != null) withStyle(reserveTimestampStyle) { append(reserve + metaText) }
-    }
-    Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow)
-  } else {
-    var hasLinks = false
-    val annotatedText = buildAnnotatedString {
-      appendSender(this, sender, senderBold)
-      for (ft in formattedText) {
-        if (ft.format == null) append(ft.text)
-        else {
-          val link = ft.link
-          if (link != null) {
-            hasLinks = true
-            val ftStyle = ft.format.style
-            withAnnotation(tag = "URL", annotation = link) {
-              withStyle(ftStyle) { append(ft.text) }
+  val textLayoutDirection = remember (text) {
+    if (BidiFormatter.getInstance().isRtl(text.subSequence(0, kotlin.math.min(50, text.length)))) LayoutDirection.Rtl else LayoutDirection.Ltr
+  }
+  val reserve = when {
+    textLayoutDirection != LocalLayoutDirection.current && metaText != null -> "\n"
+    edited -> "        "
+    else -> "    "
+  }
+  CompositionLocalProvider(
+    // When we draw `sender` is has issues on LTR languages set globally with RTL text language
+    LocalLayoutDirection provides if (textLayoutDirection != LocalLayoutDirection.current && sender == null)
+      if (LocalLayoutDirection.current == LayoutDirection.Ltr) LayoutDirection.Rtl else LayoutDirection.Ltr
+    else
+      LocalLayoutDirection.current
+  ) {
+    if (formattedText == null) {
+      val annotatedText = buildAnnotatedString {
+        appendSender(this, sender, senderBold)
+        append(text)
+        if (metaText != null) withStyle(reserveTimestampStyle) { append(reserve + metaText) }
+      }
+      Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow)
+    } else {
+      var hasLinks = false
+      val annotatedText = buildAnnotatedString {
+        appendSender(this, sender, senderBold)
+        for (ft in formattedText) {
+          if (ft.format == null) append(ft.text)
+          else {
+            val link = ft.link
+            if (link != null) {
+              hasLinks = true
+              val ftStyle = ft.format.style
+              withAnnotation(tag = "URL", annotation = link) {
+                withStyle(ftStyle) { append(ft.text) }
+              }
+            } else {
+              withStyle(ft.format.style) { append(ft.text) }
             }
-          } else {
-            withStyle(ft.format.style) { append(ft.text) }
           }
         }
+        // With RTL language set globally links looks bad sometimes, better to add a new line to bo sure everything looks good
+        /*if (metaText != null && hasLinks && LocalLayoutDirection.current == LayoutDirection.Rtl)
+          withStyle(reserveTimestampStyle) { append("\n" + metaText) }
+        else */if (metaText != null) withStyle(reserveTimestampStyle) { append(reserve + metaText) }
       }
-      if (metaText != null) withStyle(reserveTimestampStyle) { append(reserve + metaText) }
-    }
-    if (hasLinks && uriHandler != null) {
-      ClickableText(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow,
-        onLongClick = { offset ->
-          annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
-            .firstOrNull()?.let { annotation -> onLinkLongClick(annotation.item) }
-        },
-        onClick = { offset ->
-          annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
-            .firstOrNull()?.let { annotation -> uriHandler.openUri(annotation.item) }
-        },
-        shouldConsumeEvent = { offset ->
-          annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset).any()
-        }
-      )
-    } else {
-      Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow)
+      if (hasLinks && uriHandler != null) {
+        ClickableText(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow,
+          onLongClick = { offset ->
+            annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
+              .firstOrNull()?.let { annotation -> onLinkLongClick(annotation.item) }
+          },
+          onClick = { offset ->
+            annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
+              .firstOrNull()?.let { annotation -> uriHandler.openUri(annotation.item) }
+          },
+          shouldConsumeEvent = { offset ->
+            annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset).any()
+          }
+        )
+      } else {
+        Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow)
+      }
     }
   }
 }

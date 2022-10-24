@@ -24,6 +24,8 @@
 - 🚀 [TestFlight preview for iOS](https://testflight.apple.com/join/DWuT2LQu) with the new features 1-2 weeks earlier - **limited to 10,000 users**!
 - 🖥 Available as a terminal (console) app / CLI on Linux, MacOS, Windows.
 
+**NEW**: v4.0 is released - now local chat database is encrypted with passphrase! See [the release announcement](./blog/20220928-simplex-chat-v4-encrypted-database.md).
+
 ## Contents
 
 - [Why privacy matters](#why-privacy-matters)
@@ -80,6 +82,8 @@ You can use SimpleX with your own servers and still communicate with people usin
 ## News and updates
 
 Recent updates:
+
+[Sep 28, 2022. v4.0: encrypted local chat database and many other changes](./blog/20220928-simplex-chat-v4-encrypted-database.md)
 
 [Sep 1, 2022. v3.2: incognito mode, support .onion server hostnames, setting contact names, changing color scheme, etc. Implementation audit is arranged for October!](./blog/20220901-simplex-chat-v3.2-incognito-mode.md)
 
@@ -138,11 +142,12 @@ What is already implemented:
 7. Only TLS 1.2/1.3 are allowed for client-server connections, limited to cryptographic algorithms: CHACHA20POLY1305_SHA256, Ed25519/Ed448, Curve25519/Curve448.
 8. To protect against replay attacks SimpleX servers require [tlsunique channel binding](https://www.rfc-editor.org/rfc/rfc5929.html) as session ID in each client command signed with per-queue ephemeral key.
 9. To protect your IP address all SimpleX Chat clients support accessing messaging servers via Tor - see [v3.1 release announcement](./blog/20220808-simplex-chat-v3.1-chat-groups.md) for more details.
+10. Local database encryption with passphrase - your contacts, groups and all sent and received messages are stored encrypted. If you used SimpleX Chat before v4.0 you need to enable the encryption via the app settings.
 
 We plan to add soon:
 
 1. Message queue rotation. Currently the queues created between two users are used until the contact is deleted, providing a long-term pairwise identifiers of the conversation. We are planning to add queue rotation to make these identifiers termporary and rotate based on some schedule TBC (e.g., every X messages, or every X hours/days).
-2. Local database encryption. Currently the local chat database stored on your device is not encrypted.
+2. Local files encryption. Currently the images and files you send and receive are stored in the app unencrypted, you can delete them via `Settings / Database passphrase & export`.
 3. Message "mixing" - adding latency to message delivery, to protect against traffic correlation by message time.
 4. Independent implementation audit.
 
@@ -176,16 +181,17 @@ If you are considering developing with SimpleX platform please get in touch for 
 - ✅ Dual server addresses to access messaging servers as v3 hidden services.
 - ✅ Chat server and TypeScript client SDK to develop chat interfaces, integrations and chat bots (ready for announcement).
 - ✅ Incognito mode to share a new random name with each contact.
-- 🏗 Chat database encryption.
+- ✅ Chat database encryption.
+- 🏗 Automatic chat history deletion.
+- 🏗 SMP queue redundancy and rotation.
 - 🏗 Links to join groups and improve groups stability.
+- Feeds/broadcasts
 - Disappearing messages, with mutual agreement.
 - Voice messages
 - Video messages
 - Web widgets for custom interactivity in the chats.
-- SMP protocol improvements:
-  - SMP queue redundancy and rotation.
-  - Message delivery confirmation.
-  - Supporting the same profile on multiple devices.
+- Message delivery confirmation.
+- Supporting the same profile on multiple devices.
 - Privacy-preserving identity server for optional DNS-based contact/group addresses to simplify connection and discovery, but not used to deliver messages:
   - keep all your contacts and groups even if you lose the domain.
   - the server doesn't have information about your contacts and groups.

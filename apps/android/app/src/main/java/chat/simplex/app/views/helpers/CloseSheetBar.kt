@@ -3,35 +3,44 @@ package chat.simplex.app.views.helpers
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Close
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import chat.simplex.app.R
-import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.ui.theme.*
 
 @Composable
 fun CloseSheetBar(close: () -> Unit) {
-  Row (
+  Column(
     Modifier
       .fillMaxWidth()
-      .height(60.dp),
-    horizontalArrangement = Arrangement.End,
-    verticalAlignment = Alignment.CenterVertically
+      .heightIn(min = AppBarHeight)
+      .padding(horizontal = AppBarHorizontalPadding),
   ) {
-    IconButton(onClick = close) {
-      Icon(
-        Icons.Outlined.Close,
-        stringResource(R.string.icon_descr_close_button),
-        tint = MaterialTheme.colors.primary,
-        modifier = Modifier.padding(10.dp)
-      )
-    }
+    Row(
+      Modifier
+        .width(TitleInsetWithIcon - AppBarHorizontalPadding)
+        .padding(top = 4.dp), // Like in DefaultAppBar
+      content = { NavigationButtonBack(close) }
+    )
   }
+}
+
+@Composable
+fun AppBarTitle(title: String, withPadding: Boolean = true) {
+  val padding = if (withPadding)
+    PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING )
+  else
+    PaddingValues(bottom = DEFAULT_PADDING)
+  Text(
+    title,
+    Modifier
+      .fillMaxWidth()
+      .padding(padding),
+    overflow = TextOverflow.Ellipsis,
+    style = MaterialTheme.typography.h1
+  )
 }
 
 @Preview(showBackground = true)

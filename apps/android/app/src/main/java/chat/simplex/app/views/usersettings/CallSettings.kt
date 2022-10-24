@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
+import chat.simplex.app.views.helpers.*
 
 @Composable
 fun CallSettingsView(m: ChatModel,
@@ -38,32 +39,41 @@ fun CallSettingsLayout(
     horizontalAlignment = Alignment.Start,
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
+    AppBarTitle(stringResource(R.string.your_calls))
     val lockCallState = remember { mutableStateOf(callOnLockScreen.get()) }
-    Text(
-      stringResource(R.string.your_calls),
-      Modifier.padding(start = 16.dp, bottom = 24.dp),
-      style = MaterialTheme.typography.h1
-    )
     SectionView(stringResource(R.string.settings_section_title_settings)) {
       SectionItemView() {
         SharedPreferenceToggle(stringResource(R.string.connect_calls_via_relay), webrtcPolicyRelay)
       }
       SectionDivider()
 
-      Column(Modifier.padding(start = 10.dp, top = 12.dp)) {
-        Text(stringResource(R.string.call_on_lock_screen))
-        Row {
-          SharedPreferenceRadioButton(stringResource(R.string.no_call_on_lock_screen), lockCallState, callOnLockScreen, CallOnLockScreen.DISABLE)
-          Spacer(Modifier.fillMaxWidth().weight(1f))
-          SharedPreferenceRadioButton(stringResource(R.string.show_call_on_lock_screen), lockCallState, callOnLockScreen, CallOnLockScreen.SHOW)
-          Spacer(Modifier.fillMaxWidth().weight(1f))
-          SharedPreferenceRadioButton(stringResource(R.string.accept_call_on_lock_screen), lockCallState, callOnLockScreen, CallOnLockScreen.ACCEPT)
-        }
-      }
+      val enabled = remember { mutableStateOf(true) }
+      SectionItemView { LockscreenOpts(lockCallState, enabled, onSelected = { callOnLockScreen.set(it); lockCallState.value = it }) }
       SectionDivider()
       SectionItemView(editIceServers) { Text(stringResource(R.string.webrtc_ice_servers)) }
     }
   }
+}
+
+@Composable
+private fun LockscreenOpts(lockscreenOpts: State<CallOnLockScreen>, enabled: State<Boolean>, onSelected: (CallOnLockScreen) -> Unit) {
+  val values = remember {
+    CallOnLockScreen.values().map {
+      when (it) {
+        CallOnLockScreen.DISABLE -> it to generalGetString(R.string.no_call_on_lock_screen)
+        CallOnLockScreen.SHOW -> it to generalGetString(R.string.show_call_on_lock_screen)
+        CallOnLockScreen.ACCEPT -> it to generalGetString(R.string.accept_call_on_lock_screen)
+      }
+    }
+  }
+  ExposedDropDownSettingRow(
+    generalGetString(R.string.call_on_lock_screen),
+    values,
+    lockscreenOpts,
+    icon = null,
+    enabled = enabled,
+    onSelected = onSelected
+  )
 }
 
 @Composable

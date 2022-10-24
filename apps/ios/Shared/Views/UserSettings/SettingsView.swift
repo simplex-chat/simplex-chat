@@ -93,7 +93,7 @@ struct SettingsView: View {
                         .disabled(chatModel.chatRunning != true)
 
                     NavigationLink {
-                        CreateLinkView(selection: .longTerm, viaSettings: true)
+                        CreateLinkView(selection: .longTerm, viaNavLink: true)
                             .navigationBarTitleDisplayMode(.inline)
                     } label: {
                         settingsRow("qrcode") { Text("Your SimpleX contact address") }
@@ -101,7 +101,7 @@ struct SettingsView: View {
                     .disabled(chatModel.chatRunning != true)
 
                     NavigationLink {
-                        DatabaseView(showSettings: $showSettings)
+                        DatabaseView(showSettings: $showSettings, chatItemTTL: chatModel.chatItemTTL)
                             .navigationTitle("Your chat database")
                     } label: {
                         let color: Color = chatModel.chatDbEncrypted == false ? .orange : .secondary

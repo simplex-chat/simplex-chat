@@ -56,6 +56,7 @@ is_user INTEGER NOT NULL DEFAULT 0, -- 1 if this contact is a user
   updated_at TEXT CHECK(updated_at NOT NULL),
   xcontact_id BLOB,
   enable_ntfs INTEGER,
+  unread_chat INTEGER DEFAULT 0 CHECK(unread_chat NOT NULL),
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -123,7 +124,8 @@ CREATE TABLE groups(
   updated_at TEXT CHECK(updated_at NOT NULL),
   chat_item_id INTEGER DEFAULT NULL REFERENCES chat_items ON DELETE SET NULL,
   enable_ntfs INTEGER,
-  host_conn_custom_user_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL, -- received
+  host_conn_custom_user_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
+  unread_chat INTEGER DEFAULT 0 CHECK(unread_chat NOT NULL), -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -182,7 +184,8 @@ CREATE TABLE files(
   chat_item_id INTEGER DEFAULT NULL REFERENCES chat_items ON DELETE CASCADE,
   updated_at TEXT CHECK(updated_at NOT NULL),
   cancelled INTEGER,
-  ci_file_status TEXT
+  ci_file_status TEXT,
+  file_inline TEXT
 );
 CREATE TABLE snd_files(
   file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
@@ -191,6 +194,8 @@ CREATE TABLE snd_files(
   group_member_id INTEGER REFERENCES group_members ON DELETE CASCADE,
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
+  file_inline TEXT,
+  last_inline_msg_delivery_id INTEGER,
   PRIMARY KEY(file_id, connection_id)
 ) WITHOUT ROWID;
 CREATE TABLE rcv_files(
@@ -200,7 +205,9 @@ CREATE TABLE rcv_files(
   file_queue_info BLOB
   ,
   created_at TEXT CHECK(created_at NOT NULL),
-  updated_at TEXT CHECK(updated_at NOT NULL)
+  updated_at TEXT CHECK(updated_at NOT NULL),
+  rcv_file_inline TEXT,
+  file_inline TEXT
 );
 CREATE TABLE snd_file_chunks(
   file_id INTEGER NOT NULL,
@@ -244,6 +251,8 @@ CREATE TABLE connections(
   REFERENCES user_contact_links(user_contact_link_id) ON DELETE SET NULL,
   custom_user_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
   conn_req_inv BLOB,
+  local_alias DEFAULT '' CHECK(local_alias NOT NULL),
+  via_group_link INTEGER DEFAULT 0 CHECK(via_group_link NOT NULL),
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
@@ -258,6 +267,8 @@ CREATE TABLE user_contact_links(
   updated_at TEXT CHECK(updated_at NOT NULL),
   auto_accept INTEGER DEFAULT 0,
   auto_reply_msg_content TEXT DEFAULT NULL,
+  group_id INTEGER REFERENCES groups ON DELETE CASCADE,
+  auto_accept_incognito INTEGER DEFAULT 0 CHECK(auto_accept_incognito NOT NULL),
   UNIQUE(user_id, local_display_name)
 );
 CREATE TABLE contact_requests(
@@ -330,8 +341,8 @@ CREATE TABLE chat_items(
   created_by_msg_id INTEGER UNIQUE REFERENCES messages(message_id) ON DELETE SET NULL,
   item_sent INTEGER NOT NULL, -- 0 for received, 1 for sent
   item_ts TEXT NOT NULL, -- broker_ts of creating message for received, created_at for sent
-  item_deleted INTEGER NOT NULL DEFAULT 0, -- 1 for deleted,
-  item_content TEXT NOT NULL, -- JSON
+  item_deleted INTEGER NOT NULL DEFAULT 0, -- 1 for deleted, -- ! legacy field that was used for group chat items when they weren't fully deleted
+item_content TEXT NOT NULL, -- JSON
   item_text TEXT NOT NULL, -- textual representation
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
@@ -368,16 +379,6 @@ CREATE TABLE smp_servers(
   UNIQUE(host, port)
 );
 CREATE INDEX idx_messages_shared_msg_id ON messages(shared_msg_id);
-CREATE UNIQUE INDEX idx_messages_direct_shared_msg_id ON messages(
-  connection_id,
-  shared_msg_id_user,
-  shared_msg_id
-);
-CREATE UNIQUE INDEX idx_messages_group_shared_msg_id ON messages(
-  group_id,
-  shared_msg_id_user,
-  shared_msg_id
-);
 CREATE INDEX idx_chat_items_shared_msg_id ON chat_items(shared_msg_id);
 CREATE TABLE calls(
   -- stores call invitations state for communicating state between NSE and app when call notification comes
@@ -412,3 +413,28 @@ CREATE TABLE commands(
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
 CREATE TABLE sqlite_sequence(name,seq);
+CREATE TABLE settings(
+  settings_id INTEGER PRIMARY KEY,
+  chat_item_ttl INTEGER,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+);
+CREATE UNIQUE INDEX idx_chat_items_direct_shared_msg_id ON chat_items(
+  user_id,
+  contact_id,
+  shared_msg_id
+);
+CREATE UNIQUE INDEX idx_chat_items_group_shared_msg_id ON chat_items(
+  user_id,
+  group_id,
+  group_member_id,
+  shared_msg_id
+);
+CREATE INDEX idx_msg_deliveries_message_id ON msg_deliveries(message_id);
+CREATE UNIQUE INDEX idx_user_contact_links_group_id ON user_contact_links(
+  group_id
+);
+CREATE UNIQUE INDEX idx_snd_files_last_inline_msg_delivery_id ON snd_files(
+  last_inline_msg_delivery_id
+);

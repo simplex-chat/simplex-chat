@@ -35,7 +35,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Util (safeDecodeUtf8)
 import Simplex.Messaging.Agent.Protocol (AgentErrorType, AgentMsgId, MsgErrorType (..), MsgMeta (..))
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, singleFieldJSON, sumTypeJSON)
+import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, fstToLower, singleFieldJSON, sumTypeJSON)
 import Simplex.Messaging.Protocol (MsgBody)
 import Simplex.Messaging.Util (eitherToMaybe, (<$?>))
 
@@ -213,7 +213,8 @@ instance ToJSON AChat where
 
 data ChatStats = ChatStats
   { unreadCount :: Int,
-    minUnreadItemId :: ChatItemId
+    minUnreadItemId :: ChatItemId,
+    unreadChat :: Bool
   }
   deriving (Show, Generic)
 
@@ -338,6 +339,8 @@ data CIFileStatus (d :: MsgDirection) where
   CIFSRcvComplete :: CIFileStatus 'MDRcv
   CIFSRcvCancelled :: CIFileStatus 'MDRcv
 
+deriving instance Eq (CIFileStatus d)
+
 deriving instance Show (CIFileStatus d)
 
 ciFileEnded :: CIFileStatus d -> Bool
@@ -395,9 +398,10 @@ instance StrEncoding ACIFileStatus where
 -- to conveniently read file data from db
 data CIFileInfo = CIFileInfo
   { fileId :: Int64,
-    fileStatus :: ACIFileStatus,
+    fileStatus :: Maybe ACIFileStatus,
     filePath :: Maybe FilePath
   }
+  deriving (Show)
 
 data CIStatus (d :: MsgDirection) where
   CISSndNew :: CIStatus 'MDSnd
@@ -504,13 +508,18 @@ rcvGroupEventToText = \case
   RGEMemberAdded _ p -> "added " <> profileToText p
   RGEMemberConnected -> "connected"
   RGEMemberLeft -> "left"
+  RGEMemberRole _ p r -> "changed role of " <> profileToText p <> " to " <> safeDecodeUtf8 (strEncode r)
+  RGEUserRole r -> "changed your role to " <> safeDecodeUtf8 (strEncode r)
   RGEMemberDeleted _ p -> "removed " <> profileToText p
   RGEUserDeleted -> "removed you"
   RGEGroupDeleted -> "deleted group"
   RGEGroupUpdated _ -> "group profile updated"
+  RGEInvitedViaGroupLink -> "invited via your group link"
 
 sndGroupEventToText :: SndGroupEvent -> Text
 sndGroupEventToText = \case
+  SGEMemberRole _ p r -> "changed role of " <> profileToText p <> " to " <> safeDecodeUtf8 (strEncode r)
+  SGEUserRole r -> "changed role for yourself to " <> safeDecodeUtf8 (strEncode r)
   SGEMemberDeleted _ p -> "removed " <> profileToText p
   SGEUserLeft -> "left"
   SGEGroupUpdated _ -> "group profile updated"
@@ -543,10 +552,16 @@ data RcvGroupEvent
   = RGEMemberAdded {groupMemberId :: GroupMemberId, profile :: Profile} -- CRJoinedGroupMemberConnecting
   | RGEMemberConnected -- CRUserJoinedGroup, CRJoinedGroupMember, CRConnectedToGroupMember
   | RGEMemberLeft -- CRLeftMember
+  | RGEMemberRole {groupMemberId :: GroupMemberId, profile :: Profile, role :: GroupMemberRole}
+  | RGEUserRole {role :: GroupMemberRole}
   | RGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRDeletedMember
   | RGEUserDeleted -- CRDeletedMemberUser
   | RGEGroupDeleted -- CRGroupDeleted
   | RGEGroupUpdated {groupProfile :: GroupProfile} -- CRGroupUpdated
+  -- RGEInvitedViaGroupLink chat items are not received - they're created when sending group invitations,
+  -- but being RcvGroupEvent allows them to be assigned to the respective member (and so enable "send direct message")
+  -- and be created as unread without adding / working around new status for sent items
+  | RGEInvitedViaGroupLink -- CRSentGroupInvitationViaLink
   deriving (Show, Generic)
 
 instance FromJSON RcvGroupEvent where
@@ -566,7 +581,9 @@ instance ToJSON DBRcvGroupEvent where
   toEncoding (RGE v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "RGE") v
 
 data SndGroupEvent
-  = SGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRUserDeletedMember
+  = SGEMemberRole {groupMemberId :: GroupMemberId, profile :: Profile, role :: GroupMemberRole}
+  | SGEUserRole {role :: GroupMemberRole}
+  | SGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRUserDeletedMember
   | SGEUserLeft -- CRLeftMemberUser
   | SGEGroupUpdated {groupProfile :: GroupProfile} -- CRGroupUpdated
   deriving (Show, Generic)
@@ -586,6 +603,15 @@ instance FromJSON DBSndGroupEvent where
 instance ToJSON DBSndGroupEvent where
   toJSON (SGE v) = J.genericToJSON (singleFieldJSON $ dropPrefix "SGE") v
   toEncoding (SGE v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "SGE") v
+
+newtype DBMsgErrorType = DBME MsgErrorType
+
+instance FromJSON DBMsgErrorType where
+  parseJSON v = DBME <$> J.genericParseJSON (singleFieldJSON fstToLower) v
+
+instance ToJSON DBMsgErrorType where
+  toJSON (DBME v) = J.genericToJSON (singleFieldJSON fstToLower) v
+  toEncoding (DBME v) = J.genericToEncoding (singleFieldJSON fstToLower) v
 
 data CIGroupInvitation = CIGroupInvitation
   { groupId :: GroupId,
@@ -720,7 +746,7 @@ data DBJSONCIContent
   | DBJCIRcvDeleted {deleteMode :: CIDeleteMode}
   | DBJCISndCall {status :: CICallStatus, duration :: Int}
   | DBJCIRcvCall {status :: CICallStatus, duration :: Int}
-  | DBJCIRcvIntegrityError {msgError :: MsgErrorType}
+  | DBJCIRcvIntegrityError {msgError :: DBMsgErrorType}
   | DBJCIRcvGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   | DBJCISndGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   | DBJCIRcvGroupEvent {rcvGroupEvent :: DBRcvGroupEvent}
@@ -742,7 +768,7 @@ dbJsonCIContent = \case
   CIRcvDeleted cidm -> DBJCIRcvDeleted cidm
   CISndCall status duration -> DBJCISndCall {status, duration}
   CIRcvCall status duration -> DBJCIRcvCall {status, duration}
-  CIRcvIntegrityError err -> DBJCIRcvIntegrityError err
+  CIRcvIntegrityError err -> DBJCIRcvIntegrityError $ DBME err
   CIRcvGroupInvitation groupInvitation memberRole -> DBJCIRcvGroupInvitation {groupInvitation, memberRole}
   CISndGroupInvitation groupInvitation memberRole -> DBJCISndGroupInvitation {groupInvitation, memberRole}
   CIRcvGroupEvent rge -> DBJCIRcvGroupEvent $ RGE rge
@@ -756,7 +782,7 @@ aciContentDBJSON = \case
   DBJCIRcvDeleted cidm -> ACIContent SMDRcv $ CIRcvDeleted cidm
   DBJCISndCall {status, duration} -> ACIContent SMDSnd $ CISndCall status duration
   DBJCIRcvCall {status, duration} -> ACIContent SMDRcv $ CIRcvCall status duration
-  DBJCIRcvIntegrityError err -> ACIContent SMDRcv $ CIRcvIntegrityError err
+  DBJCIRcvIntegrityError (DBME err) -> ACIContent SMDRcv $ CIRcvIntegrityError err
   DBJCIRcvGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDRcv $ CIRcvGroupInvitation groupInvitation memberRole
   DBJCISndGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDSnd $ CISndGroupInvitation groupInvitation memberRole
   DBJCIRcvGroupEvent (RGE rge) -> ACIContent SMDRcv $ CIRcvGroupEvent rge
@@ -818,8 +844,8 @@ instance ChatTypeI 'CTDirect where chatTypeI = SCTDirect
 
 instance ChatTypeI 'CTGroup where chatTypeI = SCTGroup
 
-data NewMessage = NewMessage
-  { chatMsgEvent :: ChatMsgEvent,
+data NewMessage e = NewMessage
+  { chatMsgEvent :: ChatMsgEvent e,
     msgBody :: MsgBody
   }
   deriving (Show)
@@ -832,14 +858,14 @@ data SndMessage = SndMessage
 
 data RcvMessage = RcvMessage
   { msgId :: MessageId,
-    chatMsgEvent :: ChatMsgEvent,
+    chatMsgEvent :: AChatMsgEvent,
     sharedMsgId_ :: Maybe SharedMsgId,
     msgBody :: MsgBody
   }
 
 data PendingGroupMessage = PendingGroupMessage
   { msgId :: MessageId,
-    cmEventTag :: CMEventTag,
+    cmEventTag :: ACMEventTag,
     msgBody :: MsgBody,
     introId_ :: Maybe Int64
   }

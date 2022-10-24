@@ -158,8 +158,11 @@ var chatStarted = false
 func startChat() -> DBMigrationResult? {
     hs_init(0, nil)
     if chatStarted { return .ok }
-    let (_, dbStatus) = migrateChatDatabase()
-    if dbStatus != .ok { return dbStatus }
+    let (_, dbStatus) = chatMigrateInit()
+    if dbStatus != .ok {
+        resetChatCtrl()
+        return dbStatus
+    }
     if let user = apiGetActiveUser() {
         logger.debug("active user \(String(describing: user))")
         do {
@@ -204,9 +207,9 @@ func chatRecvMsg() async -> ChatResponse? {
 func receivedMsgNtf(_ res: ChatResponse) async -> (String, UNMutableNotificationContent)? {
     logger.debug("NotificationService processReceivedMsg: \(res.responseType)")
     switch res {
-    case let .contactConnected(contact):
+    case let .contactConnected(contact, _, _):
         return (contact.id, createContactConnectedNtf(contact))
-//        case let .contactConnecting(contact):
+//        case let .contactConnecting(contact, _):
 //            TODO profile update
     case let .receivedContactRequest(contactRequest):
         return (UserContact(contactRequest: contactRequest).id, createContactRequestNtf(contactRequest))
@@ -230,7 +233,6 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, UNMutableNotification
 }
 
 func apiGetActiveUser() -> User? {
-    let _ = getChatCtrl()
     let r = sendSimpleXCmd(.showActiveUser)
     logger.debug("apiGetActiveUser sendSimpleXCmd responce: \(String(describing: r))")
     switch r {
@@ -243,7 +245,7 @@ func apiGetActiveUser() -> User? {
 }
 
 func apiStartChat() throws -> Bool {
-    let r = sendSimpleXCmd(.startChat(subscribe: false))
+    let r = sendSimpleXCmd(.startChat(subscribe: false, expire: false))
     switch r {
     case .chatStarted: return true
     case .chatRunning: return false

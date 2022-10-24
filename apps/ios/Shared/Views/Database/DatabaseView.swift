@@ -18,6 +18,7 @@ enum DatabaseAlert: Identifiable {
     case chatDeleted
     case deleteLegacyDatabase
     case deleteFilesAndMedia
+    case setChatItemTTL(ttl: ChatItemTTL)
     case error(title: LocalizedStringKey, error: String = "")
 
     var id: String {
@@ -30,6 +31,7 @@ enum DatabaseAlert: Identifiable {
         case .chatDeleted: return "chatDeleted"
         case .deleteLegacyDatabase: return "deleteLegacyDatabase"
         case .deleteFilesAndMedia: return "deleteFilesAndMedia"
+        case .setChatItemTTL: return "setChatItemTTL"
         case let .error(title, _): return "error \(title)"
         }
     }
@@ -49,6 +51,9 @@ struct DatabaseView: View {
     @State private var legacyDatabase = hasLegacyDatabase()
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
     @State private var appFilesCountAndSize: (Int, Int)?
+
+    @State var chatItemTTL: ChatItemTTL
+    @State private var currentChatItemTTL: ChatItemTTL = .none
 
     var body: some View {
         ZStack {
@@ -100,7 +105,7 @@ struct DatabaseView: View {
                 }
                 settingsRow("square.and.arrow.up") {
                     Button("Export database") {
-                        if initialRandomDBPassphraseGroupDefault.get() {
+                        if initialRandomDBPassphraseGroupDefault.get() && !unencrypted {
                             alert = .exportProhibited
                         } else {
                             exportArchive()
@@ -152,11 +157,22 @@ struct DatabaseView: View {
             }
 
             Section {
+                Picker("Delete messages after", selection: $chatItemTTL) {
+                    ForEach([ChatItemTTL.none, ChatItemTTL.month, ChatItemTTL.week, ChatItemTTL.day]) { ttl in
+                        Text(ttl.deleteAfterText).tag(ttl)
+                    }
+                    if case .seconds = chatItemTTL {
+                        Text(chatItemTTL.deleteAfterText).tag(chatItemTTL)
+                    }
+                }
+                .frame(height: 36)
+                .disabled(m.chatDbChanged || progressIndicator)
                 Button("Delete files & media", role: .destructive) {
                     alert = .deleteFilesAndMedia
                 }
+                .disabled(!stopped || appFilesCountAndSize?.0 == 0)
             } header: {
-                Text("Files")
+                Text("Data")
             } footer: {
                 if let (fileCount, size) = appFilesCountAndSize {
                     if fileCount == 0 {
@@ -166,11 +182,18 @@ struct DatabaseView: View {
                     }
                 }
             }
-            .disabled(!stopped || appFilesCountAndSize?.0 == 0)
         }
         .onAppear {
             runChat = m.chatRunning ?? true
             appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
+            currentChatItemTTL = chatItemTTL
+        }
+        .onChange(of: chatItemTTL) { ttl in
+            if ttl < currentChatItemTTL {
+                alert = .setChatItemTTL(ttl: ttl)
+            } else if ttl != currentChatItemTTL {
+                setCiTTL(ttl)
+            }
         }
         .alert(item: $alert) { item in databaseAlert(item) }
         .fileImporter(
@@ -253,6 +276,17 @@ struct DatabaseView: View {
                     deleteFiles()
                 },
                 secondaryButton: .cancel()
+            )
+        case let .setChatItemTTL(ttl):
+            return Alert(
+                title: Text("Enable automatic message deletion?"),
+                message: Text("This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes."),
+                primaryButton: .destructive(Text("Delete messages")) {
+                    setCiTTL(ttl)
+                },
+                secondaryButton: .cancel() {
+                    chatItemTTL = currentChatItemTTL
+                }
             )
         case let .error(title, error):
             return Alert(title: Text(title), message: Text("\(error)"))
@@ -337,6 +371,7 @@ struct DatabaseView: View {
                 _ = removeDatabaseKey()
                 storeDBPassphraseGroupDefault.set(true)
                 await operationEnded(.chatDeleted)
+                appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
             } catch let error {
                 await operationEnded(.error(title: "Error deleting database", error: responseError(error)))
             }
@@ -354,6 +389,7 @@ struct DatabaseView: View {
     private func operationEnded(_ dbAlert: DatabaseAlert) async {
         await MainActor.run {
             m.chatDbChanged = true
+            m.chatInitialized = false
             progressIndicator = false
             alert = dbAlert
         }
@@ -387,6 +423,38 @@ struct DatabaseView: View {
         }
     }
 
+    private func setCiTTL(_ ttl: ChatItemTTL) {
+        logger.debug("DatabaseView setChatItemTTL \(ttl.seconds ?? -1)")
+        progressIndicator = true
+        Task {
+            do {
+                try await setChatItemTTL(ttl)
+                await MainActor.run {
+                    m.chatItemTTL = ttl
+                    currentChatItemTTL = ttl
+                    afterSetCiTTL()
+                }
+            } catch {
+                await MainActor.run {
+                    alert = .error(title: "Error changing setting", error: responseError(error))
+                    chatItemTTL = currentChatItemTTL
+                    afterSetCiTTL()
+                }
+            }
+        }
+    }
+
+    private func afterSetCiTTL() {
+        progressIndicator = false
+        appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
+        do {
+            let chats = try apiGetChats()
+            m.updateChats(with: chats)
+        } catch let error {
+            logger.error("apiGetChats: cannot update chats \(responseError(error))")
+        }
+    }
+
     private func deleteFiles() {
         deleteAppFiles()
         appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
@@ -395,6 +463,6 @@ struct DatabaseView: View {
 
 struct DatabaseView_Previews: PreviewProvider {
     static var previews: some View {
-        DatabaseView(showSettings: Binding.constant(false))
+        DatabaseView(showSettings: Binding.constant(false), chatItemTTL: .none)
     }
 }

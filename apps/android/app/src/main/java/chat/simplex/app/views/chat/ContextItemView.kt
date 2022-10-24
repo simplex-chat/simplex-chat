@@ -52,7 +52,8 @@ fun ContextItemView(
       )
       MarkdownText(
         contextItem.text, contextItem.formattedText,
-        sender = contextItem.memberDisplayName, senderBold = true, maxLines = 3
+        sender = contextItem.memberDisplayName, senderBold = true, maxLines = 3,
+        modifier = Modifier.fillMaxWidth(),
       )
     }
     IconButton(onClick = cancelContextItem) {

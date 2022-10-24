@@ -57,6 +57,13 @@ memberSubSummary = "{\"resp\":{\"memberSubSummary\":{\"memberSubscriptions\":[]}
 memberSubSummary = "{\"resp\":{\"type\":\"memberSubSummary\",\"memberSubscriptions\":[]}}"
 #endif
 
+userContactSubSummary :: String
+#if defined(darwin_HOST_OS) && defined(swiftJSON)
+userContactSubSummary = "{\"resp\":{\"userContactSubSummary\":{\"userContactSubscriptions\":[]}}}"
+#else
+userContactSubSummary = "{\"resp\":{\"type\":\"userContactSubSummary\",\"userContactSubscriptions\":[]}}"
+#endif
+
 pendingSubSummary :: String
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
 pendingSubSummary = "{\"resp\":{\"pendingSubSummary\":{\"pendingSubscriptions\":[]}}}"
@@ -73,9 +80,8 @@ parsedMarkdown = "{\"formattedText\":[{\"format\":{\"type\":\"bold\"},\"text\":\
 
 testChatApiNoUser :: IO ()
 testChatApiNoUser = withTmpFiles $ do
-  DBMOk <- chatMigrateDB testDBPrefix ""
-  cc <- chatInit testDBPrefix
-  DBMErrorNotADatabase _ <- chatMigrateDB testDBPrefix "myKey"
+  Right cc <- chatMigrateInit testDBPrefix ""
+  Left (DBMErrorNotADatabase _) <- chatMigrateInit testDBPrefix "myKey"
   chatSendCmd cc "/u" `shouldReturn` noActiveUser
   chatSendCmd cc "/_start" `shouldReturn` noActiveUser
   chatSendCmd cc "/u alice Alice" `shouldReturn` activeUser
@@ -87,14 +93,14 @@ testChatApi = withTmpFiles $ do
       f = chatStoreFile dbPrefix
   st <- createChatStore f "myKey" True
   Right _ <- withTransaction st $ \db -> runExceptT $ createUser db aliceProfile True
-  DBMOk <- chatMigrateDB testDBPrefix "myKey"
-  cc <- chatInitKey dbPrefix "myKey"
-  DBMErrorNotADatabase _ <- chatMigrateDB testDBPrefix ""
-  DBMErrorNotADatabase _ <- chatMigrateDB testDBPrefix "anotherKey"
+  Right cc <- chatMigrateInit dbPrefix "myKey"
+  Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix ""
+  Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "anotherKey"
   chatSendCmd cc "/u" `shouldReturn` activeUser
   chatSendCmd cc "/u alice Alice" `shouldReturn` activeUserExists
   chatSendCmd cc "/_start" `shouldReturn` chatStarted
   chatRecvMsg cc `shouldReturn` contactSubSummary
+  chatRecvMsg cc `shouldReturn` userContactSubSummary
   chatRecvMsg cc `shouldReturn` memberSubSummary
   chatRecvMsgWait cc 10000 `shouldReturn` pendingSubSummary
   chatRecvMsgWait cc 10000 `shouldReturn` ""

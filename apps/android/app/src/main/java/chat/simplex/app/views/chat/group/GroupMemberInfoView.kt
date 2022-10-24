@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -26,6 +26,7 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.SimplexServers
 import chat.simplex.app.views.chatlist.openChat
 import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.usersettings.SettingsActionItem
 
 @Composable
 fun GroupMemberInfoView(
@@ -40,10 +41,12 @@ fun GroupMemberInfoView(
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   if (chat != null) {
+    val newRole = remember { mutableStateOf(member.memberRole) }
     GroupMemberInfoLayout(
       groupInfo,
       member,
       connStats,
+      newRole,
       developerTools,
       openDirectChat = {
         withApi {
@@ -61,7 +64,24 @@ fun GroupMemberInfoView(
           closeAll()
         }
       },
-      removeMember = { removeMemberDialog(groupInfo, member, chatModel, close) }
+      removeMember = { removeMemberDialog(groupInfo, member, chatModel, close) },
+      onRoleSelected = {
+        if (it == newRole.value) return@GroupMemberInfoLayout
+        val prevValue = newRole.value
+        newRole.value = it
+        updateMemberRoleDialog(it, member, onDismiss = {
+          newRole.value = prevValue
+        }) {
+          withApi {
+            kotlin.runCatching {
+              val mem = chatModel.controller.apiMemberRole(groupInfo.groupId, member.groupMemberId, it)
+              chatModel.upsertGroupMember(groupInfo, mem)
+            }.onFailure {
+              newRole.value = prevValue
+            }
+          }
+        }
+      }
     )
   }
 }
@@ -88,9 +108,11 @@ fun GroupMemberInfoLayout(
   groupInfo: GroupInfo,
   member: GroupMember,
   connStats: ConnectionStats?,
+  newRole: MutableState<GroupMemberRole>,
   developerTools: Boolean,
   openDirectChat: () -> Unit,
   removeMember: () -> Unit,
+  onRoleSelected: (GroupMemberRole) -> Unit,
 ) {
   Column(
     Modifier
@@ -107,14 +129,21 @@ fun GroupMemberInfoLayout(
     SectionSpacer()
 
     SectionView {
-      SectionItemView {
-        OpenChatButton(openDirectChat)
-      }
+      OpenChatButton(openDirectChat)
     }
     SectionSpacer()
 
     SectionView(title = stringResource(R.string.member_info_section_title_member)) {
       InfoRow(stringResource(R.string.info_row_group), groupInfo.displayName)
+      SectionDivider()
+      val roles = remember { member.canChangeRoleTo(groupInfo) }
+      if (roles != null) {
+        SectionItemView {
+          RoleSelectionRow(roles, newRole, onRoleSelected)
+        }
+      } else {
+        InfoRow(stringResource(R.string.role_in_group), member.memberRole.text)
+      }
       val conn = member.activeConn
       if (conn != null) {
         SectionDivider()
@@ -145,11 +174,9 @@ fun GroupMemberInfoLayout(
       }
     }
 
-    if (member.canBeRemoved(groupInfo.membership)) {
+    if (member.canBeRemoved(groupInfo)) {
       SectionView {
-        SectionItemView {
-          RemoveMemberButton(removeMember)
-        }
+        RemoveMemberButton(removeMember)
       }
       SectionSpacer()
     }
@@ -190,40 +217,67 @@ fun GroupMemberInfoHeader(member: GroupMember) {
 }
 
 @Composable
-fun RemoveMemberButton(removeMember: () -> Unit) {
-  Row(
-    Modifier
-      .fillMaxSize()
-      .clickable { removeMember() },
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    Icon(
-      Icons.Outlined.Delete,
-      stringResource(R.string.button_remove_member),
-      tint = Color.Red
-    )
-    Spacer(Modifier.size(8.dp))
-    Text(stringResource(R.string.button_remove_member), color = Color.Red)
-  }
+fun RemoveMemberButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    Icons.Outlined.Delete,
+    stringResource(R.string.button_remove_member),
+    click = onClick,
+    textColor = Color.Red,
+    iconColor = Color.Red,
+  )
 }
 
 @Composable
 fun OpenChatButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    Icons.Outlined.Message,
+    stringResource(R.string.button_send_direct_message),
+    click = onClick,
+    textColor = MaterialTheme.colors.primary,
+    iconColor = MaterialTheme.colors.primary,
+  )
+}
+
+@Composable
+private fun RoleSelectionRow(
+  roles: List<GroupMemberRole>,
+  selectedRole: MutableState<GroupMemberRole>,
+  onSelected: (GroupMemberRole) -> Unit
+) {
   Row(
-    Modifier
-      .fillMaxSize()
-      .clickable { onClick() },
-    verticalAlignment = Alignment.CenterVertically
+    Modifier.fillMaxWidth(),
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.SpaceBetween
   ) {
-    Icon(
-      Icons.Outlined.Message,
-      stringResource(R.string.button_send_direct_message),
-      Modifier.padding(top = 5.dp),
-      tint = MaterialTheme.colors.primary
+    val values = remember { roles.map { it to it.text } }
+    ExposedDropDownSettingRow(
+      generalGetString(R.string.change_role),
+      values,
+      selectedRole,
+      icon = null,
+      enabled = remember { mutableStateOf(true) },
+      onSelected = onSelected
     )
-    Spacer(Modifier.size(8.dp))
-    Text(stringResource(R.string.button_send_direct_message), color = MaterialTheme.colors.primary)
   }
+}
+
+private fun updateMemberRoleDialog(
+  newRole: GroupMemberRole,
+  member: GroupMember,
+  onDismiss: () -> Unit,
+  onConfirm: () -> Unit
+) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(R.string.change_member_role_question),
+    text = if (member.memberCurrent)
+      String.format(generalGetString(R.string.member_role_will_be_changed_with_notification), newRole.text)
+    else
+      String.format(generalGetString(R.string.member_role_will_be_changed_with_invitation), newRole.text),
+    confirmText = generalGetString(R.string.change_verb),
+    onDismiss = onDismiss,
+    onConfirm = onConfirm,
+    onDismissRequest = onDismiss
+  )
 }
 
 @Preview
@@ -234,9 +288,11 @@ fun PreviewGroupMemberInfoLayout() {
       groupInfo = GroupInfo.sampleData,
       member = GroupMember.sampleData,
       connStats = null,
+      newRole = remember { mutableStateOf(GroupMemberRole.Member) },
       developerTools = false,
       openDirectChat = {},
-      removeMember = {}
+      removeMember = {},
+      onRoleSelected = {}
     )
   }
 }
