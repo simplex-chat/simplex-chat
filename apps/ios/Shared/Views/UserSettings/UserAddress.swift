@@ -35,9 +35,12 @@ struct UserAddress: View {
                     QRCode(uri: userAdress.connReqContact)
                     HStack {
                         Button {
-                            showShareSheet(items: [userAdress])
+                            showShareSheet(items: [userAdress.connReqContact])
                         } label: {
-                            Label("Share link", systemImage: "square.and.arrow.up")
+                            HStack {
+                                Image(systemName: "square.and.arrow.up")
+                                Text("Share link")
+                            }
                         }
                         .padding()
                         NavigationLink {
