@@ -89,7 +89,7 @@ private fun AcceptRequestsLayout(
     Spacer(Modifier.height(DEFAULT_PADDING))
     if (autoAcceptState.value.enable) {
       Text(
-        stringResource(R.string.section_title_welcome_text), color = HighOrLowlight, style = MaterialTheme.typography.body2,
+        stringResource(R.string.section_title_welcome_message), color = HighOrLowlight, style = MaterialTheme.typography.body2,
         modifier = Modifier.padding(start = DEFAULT_PADDING, bottom = 5.dp), fontSize = 12.sp
       )
       TextEditor(Modifier.padding(horizontal = DEFAULT_PADDING).height(160.dp), text = welcomeText)
