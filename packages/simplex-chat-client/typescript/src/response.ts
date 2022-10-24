@@ -383,14 +383,12 @@ export interface CRContactRequestAlreadyAccepted extends CR {
 export interface CRContactConnecting extends CR {
   type: "contactConnecting"
   contact: Contact
-  viaGroupLink: boolean
 }
 
 export interface CRContactConnected extends CR {
   type: "contactConnected"
   contact: Contact
   userCustomProfile?: Profile
-  viaGroupLink: boolean
 }
 
 export interface CRContactAnotherClient extends CR {
@@ -569,7 +567,6 @@ export interface CRSentGroupInvitation extends CR {
   groupInfo: GroupInfo
   contact: Contact
   member: GroupMember
-  viaGroupLink: boolean
 }
 
 export interface CRLeftMemberUser extends CR {
