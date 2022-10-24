@@ -33,7 +33,7 @@ For groups these are also added to group profile and sent via `x.grp.info` messa
 
 Current schema for `preferences` member:
 
-```json
+```js
 {
   "definitions": {
     "enabled": {
