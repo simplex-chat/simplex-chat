@@ -136,7 +136,7 @@ chatTests = do
     it "mute/unmute group" testMuteGroup
   describe "chat item expiration" $ do
     it "set chat item TTL" testSetChatItemTTL
-  fdescribe "group links" $ do
+  describe "group links" $ do
     it "create group link, join via group link" testGroupLink
     it "create group link, join via group link - incognito membership" testGroupLinkIncognitoMembership
     it "deleting invited member does not leave broken chat item" testGroupLinkDeleteInvitedMemberNoBrokenItem

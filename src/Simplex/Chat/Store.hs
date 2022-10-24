@@ -3126,7 +3126,7 @@ getDirectChatPreviews_ db User {userId} = do
         ) ChatStats ON ChatStats.contact_id = ct.contact_id
         LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
         WHERE ct.user_id = ?
-          AND ((c.conn_level = 0 AND c.via_group_link = 0) OR i.chat_item_id IS NOT NULL OR (ct.contact_used IS NOT NULL AND ct.contact_used = 1))
+          AND ((c.conn_level = 0 AND c.via_group_link = 0) OR i.chat_item_id IS NOT NULL OR ct.contact_used = 1)
           AND c.connection_id = (
             SELECT cc_connection_id FROM (
               SELECT
