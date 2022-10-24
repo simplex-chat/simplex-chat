@@ -62,8 +62,9 @@ struct ContactConnectionInfo: View {
                     if contactConnection.initiated,
                        let connReqInv = contactConnection.connReqInv {
                         NavigationLink {
-                            AddContactView(contactConnection: contactConnection, connReqInvitation: connReqInv, viaNavLink: true)
-                                .navigationBarTitleDisplayMode(.inline)
+                            AddContactView(contactConnection: contactConnection, connReqInvitation: connReqInv)
+                                .navigationTitle(CreateLinkTab.oneTime.title)
+                                .navigationBarTitleDisplayMode(.large)
                         } label: {
                             Label("Show QR code", systemImage: "qrcode")
                                 .foregroundColor(contactConnection.incognito ? .indigo : .accentColor)

@@ -12,7 +12,7 @@ import SimpleXChat
 struct UserAddress: View {
     @EnvironmentObject private var chatModel: ChatModel
     @State private var alert: UserAddressAlert?
-    var viaNavLink = false
+    @State private var showAcceptRequests = false
 
     private enum UserAddressAlert: Identifiable {
         case deleteAddress
@@ -29,26 +29,37 @@ struct UserAddress: View {
     var body: some View {
         ScrollView {
             VStack (alignment: .leading) {
-                Text("Your contact address")
-                    .font(.largeTitle)
-                    .bold()
-                    .padding(viaNavLink ? .bottom : .vertical)
                 Text("You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it.")
                     .padding(.bottom)
                 if let userAdress = chatModel.userAddress {
                     QRCode(uri: userAdress.connReqContact)
                     HStack {
                         Button {
-                            showShareSheet(items: [userAdress])
+                            showShareSheet(items: [userAdress.connReqContact])
                         } label: {
-                            Label("Share link", systemImage: "square.and.arrow.up")
+                            HStack {
+                                Image(systemName: "square.and.arrow.up")
+                                Text("Share link")
+                            }
                         }
                         .padding()
-
-                        Button(role: .destructive) { alert = .deleteAddress } label: {
-                            Label("Delete address", systemImage: "trash")
+                        NavigationLink {
+                            if let contactLink = chatModel.userAddress {
+                                AcceptRequestsView(contactLink: contactLink)
+                                    .navigationTitle("Contact requests")
+                                    .navigationBarTitleDisplayMode(.large)
+                            }
+                        } label: {
+                            HStack {
+                                Text("Contact requests")
+                                Image(systemName: "chevron.right")
+                            }
                         }
                         .padding()
+                    }
+                    .frame(maxWidth: .infinity)
+                    Button(role: .destructive) { alert = .deleteAddress } label: {
+                        Label("Delete address", systemImage: "trash")
                     }
                     .frame(maxWidth: .infinity)
                 } else {
@@ -71,6 +82,11 @@ struct UserAddress: View {
             }
             .padding()
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .sheet(isPresented: $showAcceptRequests) {
+                if let contactLink = chatModel.userAddress {
+                    AcceptRequestsView(contactLink: contactLink)
+                }
+            }
             .alert(item: $alert) { alert in
                 switch alert {
                 case .deleteAddress:
