@@ -14,15 +14,10 @@ struct AddContactView: View {
     @EnvironmentObject private var chatModel: ChatModel
     var contactConnection: PendingContactConnection? = nil
     var connReqInvitation: String
-    var viaNavLink = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading) {
-                Text("One-time invitation link")
-                    .font(.largeTitle)
-                    .bold()
-                    .padding(viaNavLink ? .bottom : .vertical)
                 Text("Your contact can scan it from the app.")
                     .padding(.bottom, 4)
                 if (contactConnection?.incognito ?? chatModel.incognito) {
