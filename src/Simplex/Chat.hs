@@ -1593,7 +1593,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
       _ -> Nothing
 
     processDirectMessage :: ACommand 'Agent -> Connection -> Maybe Contact -> m ()
-    processDirectMessage agentMsg conn@Connection {connId, viaUserContactLink, customUserProfileId} = \case
+    processDirectMessage agentMsg conn@Connection {connId, viaUserContactLink, viaGroupLink, customUserProfileId} = \case
       Nothing -> case agentMsg of
         CONF confId _ connInfo -> do
           -- [incognito] send saved profile
@@ -1685,8 +1685,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
             Nothing -> do
               -- [incognito] print incognito profile used for this contact
               incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
-              viaGroupLink <- withStore' (\db -> getConnectionViaGroupLinkFlag db user connId)
-              toView $ CRContactConnected ct (fmap fromLocalProfile incognitoProfile) (fromMaybe False viaGroupLink)
+              toView $ CRContactConnected ct (fmap fromLocalProfile incognitoProfile) viaGroupLink
               setActive $ ActiveC c
               showToast (c <> "> ") "connected"
               forM_ viaUserContactLink $ \userContactLinkId ->
@@ -2534,13 +2533,12 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
       toView $ CRContactsMerged to from
 
     saveConnInfo :: Connection -> ConnInfo -> m ()
-    saveConnInfo activeConn@Connection {connId} connInfo = do
+    saveConnInfo activeConn@Connection {viaGroupLink} connInfo = do
       ChatMessage {chatMsgEvent} <- parseChatMessage connInfo
       case chatMsgEvent of
         XInfo p -> do
           ct <- withStore $ \db -> createDirectContact db userId activeConn p
-          viaGroupLink <- withStore' (\db -> getConnectionViaGroupLinkFlag db user connId)
-          toView $ CRContactConnecting ct (fromMaybe False viaGroupLink)
+          toView $ CRContactConnecting ct viaGroupLink
         -- TODO show/log error, other events in SMP confirmation
         _ -> pure ()
 
