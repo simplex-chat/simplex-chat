@@ -2,6 +2,8 @@ package chat.simplex.app.views.usersettings
 
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
@@ -66,6 +68,7 @@ fun UserAddressLayout(
   deleteAddress: () -> Unit
 ) {
   Column(
+    Modifier.verticalScroll(rememberScrollState()),
     horizontalAlignment = Alignment.Start,
     verticalArrangement = Arrangement.Top
   ) {
@@ -76,24 +79,24 @@ fun UserAddressLayout(
       lineHeight = 22.sp
     )
     Column(
-      Modifier.fillMaxWidth(),
+      Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING_HALF),
       horizontalAlignment = Alignment.CenterHorizontally,
       verticalArrangement = Arrangement.SpaceEvenly
     ) {
       if (userAddress == null) {
         Text(
           stringResource(R.string.if_you_later_delete_address_you_wont_lose_contacts),
-          Modifier.padding(bottom = 24.dp),
+          Modifier.align(Alignment.Start).padding(bottom = 24.dp),
           lineHeight = 22.sp
         )
         SimpleButton(stringResource(R.string.create_address), icon = Icons.Outlined.QrCode, click = createAddress)
       } else {
         Text(
           stringResource(R.string.if_you_delete_address_you_wont_lose_contacts),
-          Modifier.padding(bottom = 24.dp),
+          Modifier.align(Alignment.Start).padding(bottom = 24.dp),
           lineHeight = 22.sp
         )
-        QRCode(userAddress.connReqContact, Modifier.weight(1f, fill = false).aspectRatio(1f))
+        QRCode(userAddress.connReqContact, Modifier.aspectRatio(1f))
         Row(
           horizontalArrangement = Arrangement.spacedBy(10.dp),
           verticalAlignment = Alignment.CenterVertically,
