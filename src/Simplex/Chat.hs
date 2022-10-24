@@ -832,11 +832,11 @@ processChatCommand = \case
         (agentConnId, cReq) <- withAgent $ \a -> createConnection a True SCMInvitation
         member <- withStore $ \db -> createNewContactMember db gVar user groupId contact memRole agentConnId cReq
         sendInvitation member cReq
-        pure $ CRSentGroupInvitation gInfo contact member False
+        pure $ CRSentGroupInvitation gInfo contact member
       Just member@GroupMember {groupMemberId, memberStatus}
         | memberStatus == GSMemInvited ->
           withStore' (\db -> getMemberInvitation db user groupMemberId) >>= \case
-            Just cReq -> sendInvitation member cReq $> CRSentGroupInvitation gInfo contact member False
+            Just cReq -> sendInvitation member cReq $> CRSentGroupInvitation gInfo contact member
             Nothing -> throwChatError $ CEGroupCantResendInvitation gInfo cName
         | otherwise -> throwChatError $ CEGroupDuplicateMember cName
   APIJoinGroup groupId -> withUser $ \user@User {userId} -> do
@@ -1685,8 +1685,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
             Nothing -> do
               -- [incognito] print incognito profile used for this contact
               incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
-              viaGroupLink <- withStore' (\db -> getConnectionViaGroupLinkFlag db user connId)
-              toView $ CRContactConnected ct (fmap fromLocalProfile incognitoProfile) (fromMaybe False viaGroupLink)
+              toView $ CRContactConnected ct (fmap fromLocalProfile incognitoProfile)
               setActive $ ActiveC c
               showToast (c <> "> ") "connected"
               forM_ viaUserContactLink $ \userContactLinkId ->
@@ -1750,7 +1749,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
                   Just ct -> do
                     withStore' $ \db -> setNewContactMemberConnRequest db user m cReq
                     sendGrpInvitation ct m
-                    toView $ CRSentGroupInvitation gInfo ct m True
+                    toView $ CRSentGroupInvitation gInfo ct m
                 where
                   sendGrpInvitation :: Contact -> GroupMember -> m ()
                   sendGrpInvitation ct GroupMember {memberId, memberRole = memRole} = do
@@ -2534,13 +2533,12 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
       toView $ CRContactsMerged to from
 
     saveConnInfo :: Connection -> ConnInfo -> m ()
-    saveConnInfo activeConn@Connection {connId} connInfo = do
+    saveConnInfo activeConn connInfo = do
       ChatMessage {chatMsgEvent} <- parseChatMessage connInfo
       case chatMsgEvent of
         XInfo p -> do
           ct <- withStore $ \db -> createDirectContact db userId activeConn p
-          viaGroupLink <- withStore' (\db -> getConnectionViaGroupLinkFlag db user connId)
-          toView $ CRContactConnecting ct (fromMaybe False viaGroupLink)
+          toView $ CRContactConnecting ct
         -- TODO show/log error, other events in SMP confirmation
         _ -> pure ()
 
