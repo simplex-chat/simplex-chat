@@ -61,8 +61,8 @@ private fun AcceptRequestsLayout(
             AutoAcceptState(it, autoAcceptState.value.incognito, autoAcceptState.value.welcomeText)
         }
       }
-      SectionDivider()
       if (autoAcceptState.value.enable) {
+        SectionDivider()
         SectionItemView {
           PreferenceToggleWithIcon(
             stringResource(R.string.incognito),
