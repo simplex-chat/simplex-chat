@@ -107,7 +107,7 @@ fun UserAddressLayout(
             icon = Icons.Outlined.Share,
             click = { share(userAddress.connReqContact) })
           SimpleButtonIconEnded(
-            stringResource(R.string.accept_requests),
+            stringResource(R.string.contact_requests),
             icon = Icons.Outlined.ChevronRight,
             click = acceptRequests
           )
