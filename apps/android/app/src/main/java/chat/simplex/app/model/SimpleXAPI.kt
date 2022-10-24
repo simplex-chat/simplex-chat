@@ -1765,7 +1765,7 @@ sealed class CR {
   @Serializable @SerialName("userContactLinkUpdated") class UserContactLinkUpdated(val contactLink: UserContactLinkRec): CR()
   @Serializable @SerialName("userContactLinkCreated") class UserContactLinkCreated(val connReqContact: String): CR()
   @Serializable @SerialName("userContactLinkDeleted") class UserContactLinkDeleted: CR()
-  @Serializable @SerialName("contactConnected") class ContactConnected(val contact: Contact, val userCustomProfile: Profile?): CR()
+  @Serializable @SerialName("contactConnected") class ContactConnected(val contact: Contact, val userCustomProfile: Profile? = null): CR()
   @Serializable @SerialName("contactConnecting") class ContactConnecting(val contact: Contact): CR()
   @Serializable @SerialName("receivedContactRequest") class ReceivedContactRequest(val contactRequest: UserContactRequest): CR()
   @Serializable @SerialName("acceptingContactRequest") class AcceptingContactRequest(val contact: Contact): CR()
