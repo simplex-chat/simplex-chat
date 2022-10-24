@@ -476,6 +476,10 @@ func apiSetConnectionAlias(connId: Int64, localAlias: String) async throws -> Pe
     throw r
 }
 
+func apiMarkContactUsed(contactId: Int64) async throws {
+    try await sendCommandOkResp(.apiMarkContactUsed(contactId: contactId))
+}
+
 func apiCreateUserAddress() async throws -> String {
     let r = await chatSendCmd(.createMyAddress)
     if case let .userContactLinkCreated(connReq) = r { return connReq }

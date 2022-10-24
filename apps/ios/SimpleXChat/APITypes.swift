@@ -63,6 +63,7 @@ public enum ChatCommand {
     case apiUpdateProfile(profile: Profile)
     case apiSetContactAlias(contactId: Int64, localAlias: String)
     case apiSetConnectionAlias(connId: Int64, localAlias: String)
+    case apiMarkContactUsed(contactId: Int64)
     case createMyAddress
     case deleteMyAddress
     case showMyAddress
@@ -139,6 +140,7 @@ public enum ChatCommand {
             case let .apiUpdateProfile(profile): return "/_profile \(encodeJSON(profile))"
             case let .apiSetContactAlias(contactId, localAlias): return "/_set alias @\(contactId) \(localAlias.trimmingCharacters(in: .whitespaces))"
             case let .apiSetConnectionAlias(connId, localAlias): return "/_set alias :\(connId) \(localAlias.trimmingCharacters(in: .whitespaces))"
+            case let .apiMarkContactUsed(contactId): return "/_used @\(contactId)"
             case .createMyAddress: return "/address"
             case .deleteMyAddress: return "/delete_address"
             case .showMyAddress: return "/show_address"
@@ -214,6 +216,7 @@ public enum ChatCommand {
             case .apiUpdateProfile: return "apiUpdateProfile"
             case .apiSetContactAlias: return "apiSetContactAlias"
             case .apiSetConnectionAlias: return "apiSetConnectionAlias"
+            case .apiMarkContactUsed: return "apiMarkContactUsed"
             case .createMyAddress: return "createMyAddress"
             case .deleteMyAddress: return "deleteMyAddress"
             case .showMyAddress: return "showMyAddress"

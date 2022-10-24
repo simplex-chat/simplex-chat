@@ -120,6 +120,13 @@ struct GroupMemberInfoView: View {
                         // TODO it's not correct to blindly set network status to connected - we should manage network status in model / backend
                         chat.serverInfo = Chat.ServerInfo(networkStatus: .connected)
                         chatModel.addChat(chat)
+                        Task {
+                            do {
+                                try await apiMarkContactUsed(contactId: contactId)
+                            } catch {
+                                logger.error("apiMarkContactUsed \(responseError(error))")
+                            }
+                        }
                     }
                 } catch let error {
                     logger.error("openDirectChatButton apiGetChat error: \(responseError(error))")
