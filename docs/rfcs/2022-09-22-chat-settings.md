@@ -23,7 +23,7 @@ These permissions are not taken into account for group memberships, instead grou
 
 ## Solution
 
-Protocol:
+### Protocol
 
 Broadcast user settings and preferences in the same way as profile updates by adding `preferences` property alongside `profile` property - it will be sent as part of `x.info` message.
 
@@ -44,28 +44,77 @@ Current schema for `preferences` member:
     }
   },
   "optionalProperties": {
-    "voice": { "ref": "enabled" },
-    "image": { "ref": "enabled" },
-    "file": { "ref": "enabled" },
-    "delete": { "ref": "enabled" },
-    "edit": { "ref": "enabled" }
+    "voice": { "ref": "enabled" }
+    // "image": { "ref": "enabled" },
+    // "file": { "ref": "enabled" },
+    // "delete": { "ref": "enabled" },
+    // "acceptDelete": { "ref": "enabled" },
+    // "edit": { "ref": "enabled" },
+    // "receipts": { "ref": "enabled" }
   },
   "additionalProperties": true
 }
 ```
 
+`enable` enum can be potentially extended to mutual
+
 Every time user updates the settings and update profile should be sent to affected contacts.
 
-Database schema:
+### Database schema
 
 ```sql
-ALTER TABLE users ADD COLUMN preferences TEXT DEFAULT '{}' CHECK (preferences NOT NULL);
-UPDATE users SET preferences = '{}';
+ALTER TABLE users ADD COLUMN preferences TEXT;
 
-ALTER TABLE group_profiles ADD COLUMN preferences TEXT DEFAULT '{}'CHECK (preferences NOT NULL);
-UPDATE group_profiles SET preferences = '{}';
+ALTER TABLE group ADD COLUMN preferences TEXT;
 
-ALTER TABLE contacts ADD COLUMN user_preferences TEXT NULL;
-ALTER TABLE contacts ADD COLUMN preferences TEXT DEFAULT '{}'CHECK (preferences NOT NULL);
-UPDATE contacts SET preferences = '{}';
+ALTER TABLE contacts ADD COLUMN user_preferences TEXT;
+ALTER TABLE contacts ADD COLUMN contact_preferences TEXT;
 ```
+
+Preferences in the user record would have all fields that the user supports, sent preferences on the contact level (`user_preferences`) - only those that are different from global. `contact_preferences` in contact will have all supported fields.
+
+Group preferences are set by owners and do not depend on user preferences.
+
+### Types
+
+```haskell
+data ChatPreferences = ChatPreferences {
+  voice :: Maybe Preference -- only this field is needed right now
+  -- image :: Maybe Preference,
+  -- file :: Maybe Preference,
+  -- delete :: Maybe Preference,
+  -- acceptDelete :: Maybe Preference,
+  -- edit :: Maybe Preference,
+  -- receipts :: Maybe Preference
+}
+
+data Preference = Preference {enable :: PrefSwitch}
+
+data PrefSwitch = PSOn | PSOff -- for example it can be extended to include PSMutual, that is only enabled if it's enabled by another party
+```
+
+### UI
+
+UI in the contact will need to differentiate between on/off and unset values in which case the global setting will be used.
+
+### API
+
+```
+/_set prefs <json>
+/_set prefs @1 <json>
+/_set prefs #1 <json>
+```
+
+Optionally, it may help to have this type to send to the UI merged preferences:
+
+```haskell
+data MergedChatPreferences = MergedChatPreferences {
+  voice :: MergedPreference
+}
+
+data MergedPreference = MergedPreference {
+  value :: Preference, global :: Bool
+}
+```
+
+But it may be easier to merge in place in the UI from two ChatPreferences values.
