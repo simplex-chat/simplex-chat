@@ -1997,7 +1997,7 @@ deleteGroupMember db user@User {userId} m@GroupMember {groupMemberId, groupId} =
   cleanupMemberContactAndProfile_ db user m
 
 cleanupMemberContactAndProfile_ :: DB.Connection -> User -> GroupMember -> IO ()
-cleanupMemberContactAndProfile_ db user@User {userId} m@GroupMember {groupMemberId, memberContactId, memberContactProfileId} =
+cleanupMemberContactAndProfile_ db User {userId} GroupMember {groupMemberId, localDisplayName, memberContactId, memberContactProfileId} =
   case memberContactId of
     Just contactId ->
       runExceptT (getContact db userId contactId) >>= \case
@@ -2006,12 +2006,9 @@ cleanupMemberContactAndProfile_ db user@User {userId} m@GroupMember {groupMember
         _ -> pure ()
     Nothing -> do
       sameProfileMember :: (Maybe GroupMemberId) <- maybeFirstRow fromOnly $ DB.query db "SELECT group_member_id FROM group_members WHERE user_id = ? AND contact_profile_id = ? AND group_member_id != ? LIMIT 1" (userId, memberContactProfileId, groupMemberId)
-      unless (isJust sameProfileMember) $ deleteMemberProfileAndName_ db user m
-
-deleteMemberProfileAndName_ :: DB.Connection -> User -> GroupMember -> IO ()
-deleteMemberProfileAndName_ db User {userId} GroupMember {memberContactProfileId, localDisplayName} = do
-  DB.execute db "DELETE FROM contact_profiles WHERE user_id = ? AND contact_profile_id = ?" (userId, memberContactProfileId)
-  DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
+      unless (isJust sameProfileMember) $ do
+        DB.execute db "DELETE FROM contact_profiles WHERE user_id = ? AND contact_profile_id = ?" (userId, memberContactProfileId)
+        DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
 
 deleteGroupMemberConnection :: DB.Connection -> User -> GroupMember -> IO ()
 deleteGroupMemberConnection db User {userId} GroupMember {groupMemberId} =
