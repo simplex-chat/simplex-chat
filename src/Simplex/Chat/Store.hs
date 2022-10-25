@@ -98,6 +98,7 @@ module Simplex.Chat.Store
     updateGroupMemberStatus,
     updateGroupMemberStatusById,
     createNewGroupMember,
+    checkGroupMemberHasItems,
     deleteGroupMember,
     deleteGroupMemberConnection,
     updateGroupMemberRole,
@@ -1985,6 +1986,10 @@ createNewMember_
       (groupId, memberId, memberRole, memberCategory, memberStatus, invitedById, userId, localDisplayName, memberContactId, memberContactProfileId, createdAt, createdAt)
     groupMemberId <- insertedRowId db
     pure GroupMember {groupMemberId, groupId, memberId, memberRole, memberCategory, memberStatus, invitedBy, localDisplayName, memberProfile = toLocalProfile memberContactProfileId memberProfile "", memberContactId, memberContactProfileId, activeConn}
+
+checkGroupMemberHasItems :: DB.Connection -> User -> GroupMember -> IO (Maybe ChatItemId)
+checkGroupMemberHasItems db User {userId} GroupMember {groupMemberId, groupId} =
+  maybeFirstRow fromOnly $ DB.query db "SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ? AND group_member_id = ? LIMIT 1" (userId, groupId, groupMemberId)
 
 deleteGroupMember :: DB.Connection -> User -> GroupMember -> IO ()
 deleteGroupMember db user@User {userId} m@GroupMember {groupMemberId, groupId, memberContactId, memberContactProfileId} = do

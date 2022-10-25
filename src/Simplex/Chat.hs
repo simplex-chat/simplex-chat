@@ -905,7 +905,10 @@ processChatCommand = \case
               ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent $ SGEMemberDeleted memberId (fromLocalProfile memberProfile)) Nothing Nothing
               toView . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
               deleteMemberConnection user m
-              withStore' $ \db -> updateGroupMemberStatus db userId m GSMemRemoved
+              withStore' $ \db ->
+                checkGroupMemberHasItems db user m >>= \case
+                  Just _ -> updateGroupMemberStatus db userId m GSMemRemoved
+                  Nothing -> deleteGroupMember db user m
           pure $ CRUserDeletedMember gInfo m {memberStatus = GSMemRemoved}
   APILeaveGroup groupId -> withUser $ \user@User {userId} -> do
     Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user groupId
@@ -1536,6 +1539,13 @@ expireChatItems user ttl sync = do
       maxItemTs_ <- withStore' $ \db -> getGroupMaxItemTs db user gInfo
       forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
       withStore' $ \db -> deleteGroupExpiredCIs db user gInfo expirationDate createdAtCutoff
+      members <- withStore' $ \db -> getGroupMembers db user gInfo
+      forM_ members $ \m@GroupMember {memberStatus} ->
+        when (memberStatus == GSMemRemoved || memberStatus == GSMemLeft || memberStatus == GSMemGroupDeleted) $
+          withStore' $ \db ->
+            checkGroupMemberHasItems db user m >>= \case
+              Nothing -> deleteGroupMember db user m
+              _ -> pure ()
       withStore' $ \db -> do
         ciCount_ <- getGroupCICount db user gInfo
         case (maxItemTs_, ciCount_) of
