@@ -57,6 +57,7 @@ is_user INTEGER NOT NULL DEFAULT 0, -- 1 if this contact is a user
   xcontact_id BLOB,
   enable_ntfs INTEGER,
   unread_chat INTEGER DEFAULT 0 CHECK(unread_chat NOT NULL),
+  contact_used INTEGER DEFAULT 0 CHECK(contact_used NOT NULL),
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
