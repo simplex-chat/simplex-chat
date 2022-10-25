@@ -680,20 +680,18 @@ updateContact_ db userId contactId displayName newName updatedAt = do
     (newName, updatedAt, userId, contactId)
   DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (displayName, userId)
 
-type ContactRow = (ContactId, ProfileId, ContactName, Maybe Int64, ContactName, Text, Maybe ImageData, LocalAlias, Maybe Bool, Maybe Bool, UTCTime, UTCTime)
+type ContactRow = (ContactId, ProfileId, ContactName, Maybe Int64, ContactName, Text, Maybe ImageData, LocalAlias, Bool, Maybe Bool, UTCTime, UTCTime)
 
 toContact :: ContactRow :. ConnectionRow -> Contact
-toContact ((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, localAlias, contactUsed_, enableNtfs_, createdAt, updatedAt) :. connRow) =
+toContact ((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, localAlias, contactUsed, enableNtfs_, createdAt, updatedAt) :. connRow) =
   let profile = LocalProfile {profileId, displayName, fullName, image, localAlias}
       activeConn = toConnection connRow
-      contactUsed = fromMaybe False contactUsed_
       chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_}
    in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, createdAt, updatedAt}
 
 toContactOrError :: ContactRow :. MaybeConnectionRow -> Either StoreError Contact
-toContactOrError ((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, localAlias, contactUsed_, enableNtfs_, createdAt, updatedAt) :. connRow) =
+toContactOrError ((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, localAlias, contactUsed, enableNtfs_, createdAt, updatedAt) :. connRow) =
   let profile = LocalProfile {profileId, displayName, fullName, image, localAlias}
-      contactUsed = fromMaybe False contactUsed_
       chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_}
    in case toMaybeConnection connRow of
         Just activeConn ->
@@ -1386,10 +1384,9 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
             WHERE c.user_id = ? AND c.contact_id = ?
           |]
           (userId, contactId)
-    toContact' :: Int64 -> Connection -> [(ProfileId, ContactName, Text, Text, Maybe ImageData, LocalAlias, Maybe Int64, Maybe Bool, Maybe Bool, UTCTime, UTCTime)] -> Either StoreError Contact
-    toContact' contactId activeConn [(profileId, localDisplayName, displayName, fullName, image, localAlias, viaGroup, contactUsed_, enableNtfs_, createdAt, updatedAt)] =
+    toContact' :: Int64 -> Connection -> [(ProfileId, ContactName, Text, Text, Maybe ImageData, LocalAlias, Maybe Int64, Bool, Maybe Bool, UTCTime, UTCTime)] -> Either StoreError Contact
+    toContact' contactId activeConn [(profileId, localDisplayName, displayName, fullName, image, localAlias, viaGroup, contactUsed, enableNtfs_, createdAt, updatedAt)] =
       let profile = LocalProfile {profileId, displayName, fullName, image, localAlias}
-          contactUsed = fromMaybe False contactUsed_
           chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_}
        in Right $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, createdAt, updatedAt}
     toContact' _ _ _ = Left $ SEInternalError "referenced contact not found"
@@ -2232,10 +2229,9 @@ getViaGroupContact db User {userId} GroupMember {groupMemberId} =
       |]
       (userId, groupMemberId)
   where
-    toContact' :: (ContactId, ProfileId, ContactName, Text, Text, Maybe ImageData, LocalAlias, Maybe Int64, Maybe Bool, Maybe Bool, UTCTime, UTCTime) :. ConnectionRow -> Contact
-    toContact' ((contactId, profileId, localDisplayName, displayName, fullName, image, localAlias, viaGroup, contactUsed_, enableNtfs_, createdAt, updatedAt) :. connRow) =
+    toContact' :: (ContactId, ProfileId, ContactName, Text, Text, Maybe ImageData, LocalAlias, Maybe Int64, Bool, Maybe Bool, UTCTime, UTCTime) :. ConnectionRow -> Contact
+    toContact' ((contactId, profileId, localDisplayName, displayName, fullName, image, localAlias, viaGroup, contactUsed, enableNtfs_, createdAt, updatedAt) :. connRow) =
       let profile = LocalProfile {profileId, displayName, fullName, image, localAlias}
-          contactUsed = fromMaybe False contactUsed_
           chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_}
           activeConn = toConnection connRow
        in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, createdAt, updatedAt}
