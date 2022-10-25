@@ -30,16 +30,16 @@ fun ContactConnectionInfoView(
   focusAlias: Boolean,
   close: () -> Unit
 ) {
-  /** When [AddContactView] is open, we don't need to drop [chatModel.connReqInv]. It will be managed by [AddContactView] itself
-   * Otherwise it will be called here AFTER [AddContactView] is launched and will clear the value too soon */
-  val allowDispose = remember { mutableStateOf(true) }
   LaunchedEffect(connReqInvitation) {
-    allowDispose.value = true
     chatModel.connReqInv.value = connReqInvitation
   }
+  /** When [AddContactView] is open, we don't need to drop [chatModel.connReqInv].
+   * Otherwise, it will be called here AFTER [AddContactView] is launched and will clear the value too soon.
+   * It will be dropped automatically when connection established or when user goes away from this screen.
+   **/
   DisposableEffect(Unit) {
     onDispose {
-      if (allowDispose.value) {
+      if (!ModalManager.shared.hasModalsOpen()) {
         chatModel.connReqInv.value = null
       }
     }
@@ -54,7 +54,6 @@ fun ContactConnectionInfoView(
     deleteConnection = { deleteContactConnectionAlert(contactConnection, chatModel, close) },
     onLocalAliasChanged = { setContactAlias(contactConnection, it, chatModel) },
     showQr = {
-      allowDispose.value = false
       ModalManager.shared.showModal {
         Column(
           Modifier
@@ -62,7 +61,7 @@ fun ContactConnectionInfoView(
             .padding(horizontal = DEFAULT_PADDING),
           verticalArrangement = Arrangement.SpaceBetween
         ) {
-          AddContactView(chatModel, connReqInvitation ?: return@showModal, contactConnection.incognito)
+          AddContactView(connReqInvitation ?: return@showModal, contactConnection.incognito)
         }
       }
     }

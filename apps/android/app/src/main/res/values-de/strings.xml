@@ -399,6 +399,12 @@
   <string name="share_link">Link teilen</string>
   <string name="delete_address">Adresse löschen</string>
 
+  <!-- AcceptRequestsView.kt -->
+  <string name="contact_requests">***Contact requests</string>
+  <string name="accept_requests">***Accept requests</string>
+  <string name="accept_automatically">***Automatically</string>
+  <string name="section_title_welcome_message">***WELCOME MESSAGE</string>
+
   <!-- User profile details - UserProfileView.kt -->
   <string name="display_name__field">Angezeigter Name:</string>
   <string name="full_name__field">"Vollständiger Name:</string>

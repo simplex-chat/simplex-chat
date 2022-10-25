@@ -271,14 +271,18 @@ processChatCommand = \case
   APIGetChats withPCC -> CRApiChats <$> withUser' (\user -> withStore' $ \db -> getChatPreviews db user withPCC)
   APIGetChat (ChatRef cType cId) pagination search -> withUser $ \user -> case cType of
     -- TODO optimize queries calculating ChatStats, currently they're disabled
-    CTDirect -> CRApiChat . AChat SCTDirect <$> withStore (\db -> getDirectChat db user cId pagination search)
+    CTDirect -> do
+      directChat@Chat {chatInfo} <- withStore (\db -> getDirectChat db user cId pagination search)
+      case chatInfo of DirectChat ct@Contact {contactUsed} -> unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
+      pure . CRApiChat $ AChat SCTDirect directChat
     CTGroup -> CRApiChat . AChat SCTGroup <$> withStore (\db -> getGroupChat db user cId pagination search)
     CTContactRequest -> pure $ chatCmdError "not implemented"
     CTContactConnection -> pure $ chatCmdError "not supported"
   APIGetChatItems _pagination -> pure $ chatCmdError "not implemented"
   APISendMessage (ChatRef cType chatId) (ComposedMessage file_ quotedItemId_ mc) -> withUser $ \user@User {userId} -> withChatLock "sendMessage" $ case cType of
     CTDirect -> do
-      ct@Contact {localDisplayName = c} <- withStore $ \db -> getContact db userId chatId
+      ct@Contact {localDisplayName = c, contactUsed} <- withStore $ \db -> getContact db userId chatId
+      unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
       (fileInvitation_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer ct
       (msgContainer, quotedItem_) <- prepareMsg fileInvitation_
       (msg@SndMessage {sharedMsgId}, _) <- sendDirectContactMessage ct (XMsgNew msgContainer)
@@ -468,14 +472,14 @@ processChatCommand = \case
     CTContactConnection -> pure $ chatCmdError "not supported"
   APIChatUnread (ChatRef cType chatId) unreadChat -> withUser $ \user@User {userId} -> case cType of
     CTDirect -> do
-      _ <- withStore $ \db -> do
-        Contact {contactId} <- getContact db userId chatId
-        liftIO $ updateContactUnreadChat db user contactId unreadChat
+      withStore $ \db -> do
+        ct <- getContact db userId chatId
+        liftIO $ updateContactUnreadChat db user ct unreadChat
       pure CRCmdOk
     CTGroup -> do
-      _ <- withStore $ \db -> do
-        Group GroupInfo {groupId} _ <- getGroup db user chatId
-        liftIO $ updateGroupUnreadChat db user groupId unreadChat
+      withStore $ \db -> do
+        Group {groupInfo} <- getGroup db user chatId
+        liftIO $ updateGroupUnreadChat db user groupInfo unreadChat
       pure CRCmdOk
     _ -> pure $ chatCmdError "not supported"
   APIDeleteChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
@@ -2116,7 +2120,8 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
     messageError = toView . CRMessageError "error"
 
     newContentMessage :: Contact -> MsgContainer -> RcvMessage -> MsgMeta -> m ()
-    newContentMessage ct@Contact {localDisplayName = c, chatSettings} mc msg msgMeta = do
+    newContentMessage ct@Contact {localDisplayName = c, contactUsed, chatSettings} mc msg msgMeta = do
+      unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       let (ExtMsgContent content fileInvitation_) = mcExtMsgContent mc
       ciFile_ <- processFileInvitation fileInvitation_ $ \db -> createRcvFileTransfer db userId ct

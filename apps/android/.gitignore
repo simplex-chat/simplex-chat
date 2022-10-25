@@ -10,6 +10,7 @@
 /.idea/deploymentTargetDropDown.xml
 /.idea/misc.xml
 /.idea/uiDesigner.xml
+/.idea/kotlinc.xml
 .DS_Store
 /build
 /captures

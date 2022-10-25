@@ -24,16 +24,8 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 
 @Composable
-fun AddContactView(chatModel: ChatModel, connReqInvitation: String, connIncognito: Boolean) {
+fun AddContactView(connReqInvitation: String, connIncognito: Boolean) {
   val cxt = LocalContext.current
-  LaunchedEffect(connReqInvitation) {
-    if (connReqInvitation.isNotEmpty()) {
-      chatModel.connReqInv.value = connReqInvitation
-    }
-  }
-  DisposableEffect(Unit) {
-    onDispose { chatModel.connReqInv.value = null }
-  }
   AddContactLayout(
     connReq = connReqInvitation,
     connIncognito = connIncognito,

@@ -396,6 +396,12 @@
     <string name="share_link">Поделиться\nссылкой</string>
     <string name="delete_address">Удалить\nадрес</string>
 
+    <!-- AcceptRequestsView.kt -->
+    <string name="contact_requests">Запросы контактов</string>
+    <string name="accept_requests">Принимать запросы</string>
+    <string name="accept_automatically">Автоматически</string>
+    <string name="section_title_welcome_message">ПРИВЕТСТВЕННОЕ СООБЩЕНИЕ</string>
+
     <!-- User profile details - UserProfileView.kt -->
     <string name="display_name__field">Имя профиля:</string>
     <string name="full_name__field">"Полное имя:</string>
