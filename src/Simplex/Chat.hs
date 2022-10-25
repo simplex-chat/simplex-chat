@@ -1539,13 +1539,8 @@ expireChatItems user ttl sync = do
       maxItemTs_ <- withStore' $ \db -> getGroupMaxItemTs db user gInfo
       forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
       withStore' $ \db -> deleteGroupExpiredCIs db user gInfo expirationDate createdAtCutoff
-      members <- withStore' $ \db -> getGroupMembers db user gInfo
-      forM_ members $ \m@GroupMember {memberStatus} ->
-        when (memberStatus == GSMemRemoved || memberStatus == GSMemLeft || memberStatus == GSMemGroupDeleted) $
-          withStore' $ \db ->
-            checkGroupMemberHasItems db user m >>= \case
-              Nothing -> deleteGroupMember db user m
-              _ -> pure ()
+      membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db user gInfo
+      forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
       withStore' $ \db -> do
         ciCount_ <- getGroupCICount db user gInfo
         case (maxItemTs_, ciCount_) of

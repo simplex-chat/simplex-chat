@@ -83,6 +83,7 @@ module Simplex.Chat.Store
     getGroupInfoByName,
     getGroupMember,
     getGroupMembers,
+    getGroupMembersForExpiration,
     deleteGroupConnectionsAndFiles,
     deleteGroupItemsAndMembers,
     deleteGroup,
@@ -1777,6 +1778,32 @@ getGroupMembers db user@User {userId, userContactId} GroupInfo {groupId} = do
         WHERE m.group_id = ? AND m.user_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)
       |]
       (groupId, userId, userContactId)
+
+getGroupMembersForExpiration :: DB.Connection -> User -> GroupInfo -> IO [GroupMember]
+getGroupMembersForExpiration db user@User {userId, userContactId} GroupInfo {groupId} = do
+  map (toContactMember user)
+    <$> DB.query
+      db
+      [sql|
+        SELECT
+          m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
+          m.invited_by, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.local_alias,
+          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.custom_user_profile_id,
+          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
+        FROM group_members m
+        JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
+        LEFT JOIN connections c ON c.connection_id = (
+          SELECT max(cc.connection_id)
+          FROM connections cc
+          where cc.group_member_id = m.group_member_id
+        )
+        WHERE m.group_id = ? AND m.user_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)
+          AND m.member_status IN (?, ?, ?)
+          AND m.group_member_id NOT IN (
+            SELECT DISTINCT group_member_id FROM chat_items
+          )
+      |]
+      (groupId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
 
 toContactMember :: User -> (GroupMemberRow :. MaybeConnectionRow) -> GroupMember
 toContactMember User {userContactId} (memberRow :. connRow) =
