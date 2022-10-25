@@ -537,6 +537,8 @@ processChatCommand = \case
       maxItemTs_ <- withStore' $ \db -> getGroupMaxItemTs db user gInfo
       forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
       withStore' $ \db -> deleteGroupCIs db user gInfo
+      membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db user gInfo
+      forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
       gInfo' <- case maxItemTs_ of
         Just ts -> do
           withStore' $ \db -> updateGroupTs db user gInfo ts
