@@ -3323,8 +3323,8 @@ testGroupLink =
         ]
       alice #$> ("/_get chat #1 count=100", chat, [(0, "invited via your group link")])
       alice @@@ [("#team", "invited via your group link")] -- contacts connected via group link are not in chat previews
-      -- marking contact as used adds it to chat previews
-      alice #$> ("/_used @2", id, "ok")
+      -- calling /_get chat api marks it as used and adds it to chat previews
+      alice #$> ("/_get chat @2 count=100", chat, [])
       alice @@@ [("@bob", ""), ("#team", "invited via your group link")]
       alice <##> bob
       alice @@@ [("@bob", "hey"), ("#team", "invited via your group link")]

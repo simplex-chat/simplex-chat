@@ -271,7 +271,10 @@ processChatCommand = \case
   APIGetChats withPCC -> CRApiChats <$> withUser' (\user -> withStore' $ \db -> getChatPreviews db user withPCC)
   APIGetChat (ChatRef cType cId) pagination search -> withUser $ \user -> case cType of
     -- TODO optimize queries calculating ChatStats, currently they're disabled
-    CTDirect -> CRApiChat . AChat SCTDirect <$> withStore (\db -> getDirectChat db user cId pagination search)
+    CTDirect -> do
+      directChat@Chat {chatInfo} <- withStore (\db -> getDirectChat db user cId pagination search)
+      case chatInfo of DirectChat ct@Contact {contactUsed} -> unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
+      pure . CRApiChat $ AChat SCTDirect directChat
     CTGroup -> CRApiChat . AChat SCTGroup <$> withStore (\db -> getGroupChat db user cId pagination search)
     CTContactRequest -> pure $ chatCmdError "not implemented"
     CTContactConnection -> pure $ chatCmdError "not supported"
@@ -651,11 +654,6 @@ processChatCommand = \case
       conn <- getPendingContactConnection db userId connId
       liftIO $ updateContactConnectionAlias db userId conn localAlias
     pure $ CRConnectionAliasUpdated conn'
-  APIMarkContactUsed contactId -> withUser $ \user@User {userId} -> do
-    withStore $ \db -> do
-      ct@Contact {contactUsed} <- getContact db userId contactId
-      unless contactUsed $ liftIO $ updateContactUsed db user ct
-    pure CRCmdOk
   APIParseMarkdown text -> pure . CRApiParsedMarkdown $ parseMaybeMarkdownList text
   APIGetNtfToken -> withUser $ \_ -> crNtfToken <$> withAgent getNtfToken
   APIRegisterToken token mode -> CRNtfTokenStatus <$> withUser (\_ -> withAgent $ \a -> registerNtfToken a token mode)
@@ -3119,7 +3117,6 @@ chatCommandP =
       "/_profile " *> (APIUpdateProfile <$> jsonP),
       "/_set alias @" *> (APISetContactAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set alias :" *> (APISetConnectionAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
-      "/_used @" *> (APIMarkContactUsed <$> A.decimal),
       "/_parse " *> (APIParseMarkdown . safeDecodeUtf8 <$> A.takeByteString),
       "/_ntf get" $> APIGetNtfToken,
       "/_ntf register " *> (APIRegisterToken <$> strP_ <*> strP),
