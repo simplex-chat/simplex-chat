@@ -129,7 +129,6 @@ html {
   background: 
     linear-gradient(#11182F,#11182F) padding-box,
     linear-gradient(to bottom, transparent, #01F1FF 58%) border-box;
-  border-radius: 6px;
   border: 1px solid transparent;
 }
 
