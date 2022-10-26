@@ -581,10 +581,10 @@ checkIncognitoProfileInUse_ db User {userId} profileId = do
   -- this is a bit risky according to schema, but we only set custom_user_profile_id for contact connections (with set contact_id)
   usedByContactId :: (Maybe ContactId) <- maybeFirstRow fromOnly $ DB.query db "SELECT contact_id FROM connections WHERE user_id = ? AND custom_user_profile_id = ? AND contact_id IS NOT NULL LIMIT 1" (userId, profileId)
   case usedByContactId of
+    Just _ -> pure True
     Nothing -> do
       usedByGroupMemberId :: (Maybe GroupMemberId) <- maybeFirstRow fromOnly $ DB.query db "SELECT group_member_id FROM group_members WHERE user_id = ? AND member_profile_id = ? LIMIT 1" (userId, profileId)
       pure $ isJust usedByGroupMemberId
-    Just _ -> pure True
 
 deleteIncognitoProfileById_ :: DB.Connection -> User -> ProfileId -> IO ()
 deleteIncognitoProfileById_ db User {userId} profileId =
