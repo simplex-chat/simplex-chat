@@ -83,6 +83,7 @@ module Simplex.Chat.Store
     getGroupInfoByName,
     getGroupMember,
     getGroupMembers,
+    getGroupMembersForExpiration,
     deleteGroupConnectionsAndFiles,
     deleteGroupItemsAndMembers,
     deleteGroup,
@@ -98,6 +99,7 @@ module Simplex.Chat.Store
     updateGroupMemberStatus,
     updateGroupMemberStatusById,
     createNewGroupMember,
+    checkGroupMemberHasItems,
     deleteGroupMember,
     deleteGroupMemberConnection,
     updateGroupMemberRole,
@@ -1676,9 +1678,7 @@ deleteGroupItemsAndMembers :: DB.Connection -> User -> GroupInfo -> [GroupMember
 deleteGroupItemsAndMembers db user@User {userId} GroupInfo {groupId} members = do
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
   DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_id = ?" (userId, groupId)
-  forM_ members $ \m@GroupMember {groupMemberId, memberContactId, memberContactProfileId} -> unless (isJust memberContactId) $ do
-    sameProfileMember :: (Maybe GroupMemberId) <- maybeFirstRow fromOnly $ DB.query db "SELECT group_member_id FROM group_members WHERE user_id = ? AND contact_profile_id = ? AND group_member_id != ? LIMIT 1" (userId, memberContactProfileId, groupMemberId)
-    unless (isJust sameProfileMember) $ deleteMemberProfileAndName_ db user m
+  forM_ members $ \m -> cleanupMemberContactAndProfile_ db user m
 
 deleteGroup :: DB.Connection -> User -> GroupInfo -> IO ()
 deleteGroup db User {userId} GroupInfo {groupId, localDisplayName} = do
@@ -1778,6 +1778,32 @@ getGroupMembers db user@User {userId, userContactId} GroupInfo {groupId} = do
         WHERE m.group_id = ? AND m.user_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)
       |]
       (groupId, userId, userContactId)
+
+getGroupMembersForExpiration :: DB.Connection -> User -> GroupInfo -> IO [GroupMember]
+getGroupMembersForExpiration db user@User {userId, userContactId} GroupInfo {groupId} = do
+  map (toContactMember user)
+    <$> DB.query
+      db
+      [sql|
+        SELECT
+          m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
+          m.invited_by, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.local_alias,
+          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.custom_user_profile_id,
+          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
+        FROM group_members m
+        JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
+        LEFT JOIN connections c ON c.connection_id = (
+          SELECT max(cc.connection_id)
+          FROM connections cc
+          where cc.group_member_id = m.group_member_id
+        )
+        WHERE m.group_id = ? AND m.user_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)
+          AND m.member_status IN (?, ?, ?)
+          AND m.group_member_id NOT IN (
+            SELECT DISTINCT group_member_id FROM chat_items
+          )
+      |]
+      (groupId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
 
 toContactMember :: User -> (GroupMemberRow :. MaybeConnectionRow) -> GroupMember
 toContactMember User {userContactId} (memberRow :. connRow) =
@@ -1986,19 +2012,30 @@ createNewMember_
     groupMemberId <- insertedRowId db
     pure GroupMember {groupMemberId, groupId, memberId, memberRole, memberCategory, memberStatus, invitedBy, localDisplayName, memberProfile = toLocalProfile memberContactProfileId memberProfile "", memberContactId, memberContactProfileId, activeConn}
 
+checkGroupMemberHasItems :: DB.Connection -> User -> GroupMember -> IO (Maybe ChatItemId)
+checkGroupMemberHasItems db User {userId} GroupMember {groupMemberId, groupId} =
+  maybeFirstRow fromOnly $ DB.query db "SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ? AND group_member_id = ? LIMIT 1" (userId, groupId, groupMemberId)
+
 deleteGroupMember :: DB.Connection -> User -> GroupMember -> IO ()
-deleteGroupMember db user@User {userId} m@GroupMember {groupMemberId, groupId, memberContactId, memberContactProfileId} = do
+deleteGroupMember db user@User {userId} m@GroupMember {groupMemberId, groupId} = do
   deleteGroupMemberConnection db user m
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ? AND group_member_id = ?" (userId, groupId, groupMemberId)
   DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId)
-  unless (isJust memberContactId) $ do
-    sameProfileMember :: (Maybe GroupMemberId) <- maybeFirstRow fromOnly $ DB.query db "SELECT group_member_id FROM group_members WHERE user_id = ? AND contact_profile_id = ? AND group_member_id != ? LIMIT 1" (userId, memberContactProfileId, groupMemberId)
-    unless (isJust sameProfileMember) $ deleteMemberProfileAndName_ db user m
+  cleanupMemberContactAndProfile_ db user m
 
-deleteMemberProfileAndName_ :: DB.Connection -> User -> GroupMember -> IO ()
-deleteMemberProfileAndName_ db User {userId} GroupMember {memberContactProfileId, localDisplayName} = do
-  DB.execute db "DELETE FROM contact_profiles WHERE user_id = ? AND contact_profile_id = ?" (userId, memberContactProfileId)
-  DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
+cleanupMemberContactAndProfile_ :: DB.Connection -> User -> GroupMember -> IO ()
+cleanupMemberContactAndProfile_ db User {userId} GroupMember {groupMemberId, localDisplayName, memberContactId, memberContactProfileId} =
+  case memberContactId of
+    Just contactId ->
+      runExceptT (getContact db userId contactId) >>= \case
+        Right ct@Contact {activeConn = Connection {connLevel, viaGroupLink}, contactUsed} ->
+          unless ((connLevel == 0 && not viaGroupLink) || contactUsed) $ deleteContact db userId ct
+        _ -> pure ()
+    Nothing -> do
+      sameProfileMember :: (Maybe GroupMemberId) <- maybeFirstRow fromOnly $ DB.query db "SELECT group_member_id FROM group_members WHERE user_id = ? AND contact_profile_id = ? AND group_member_id != ? LIMIT 1" (userId, memberContactProfileId, groupMemberId)
+      unless (isJust sameProfileMember) $ do
+        DB.execute db "DELETE FROM contact_profiles WHERE user_id = ? AND contact_profile_id = ?" (userId, memberContactProfileId)
+        DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
 
 deleteGroupMemberConnection :: DB.Connection -> User -> GroupMember -> IO ()
 deleteGroupMemberConnection db User {userId} GroupMember {groupMemberId} =
@@ -3122,7 +3159,7 @@ getDirectChatPreviews_ db User {userId} = do
         ) ChatStats ON ChatStats.contact_id = ct.contact_id
         LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
         WHERE ct.user_id = ?
-          AND ((c.conn_level = 0 AND c.via_group_link = 0) OR i.chat_item_id IS NOT NULL OR ct.contact_used = 1)
+          AND ((c.conn_level = 0 AND c.via_group_link = 0) OR ct.contact_used = 1)
           AND c.connection_id = (
             SELECT cc_connection_id FROM (
               SELECT

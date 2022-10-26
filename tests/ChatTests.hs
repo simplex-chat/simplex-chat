@@ -768,7 +768,13 @@ testGroupDelete =
       cath <## "#team: you deleted the group"
       alice <##> bob
       alice <##> cath
-      bob <##> cath
+      -- unused group contacts are deleted
+      bob ##> "@cath hi"
+      bob <## "no contact cath"
+      (cath </)
+      cath ##> "@bob hi"
+      cath <## "no contact bob"
+      (bob </)
 
 testGroupSameName :: IO ()
 testGroupSameName =
@@ -3557,8 +3563,10 @@ testGroupLinkDeleteInvitedMemberNoBrokenItem =
       alice <## "#team: you removed bob from the group"
       alice #$> ("/_get chat #1 count=100", chat, [])
       alice @@@ [("#team", "")]
-      alice <##> bob
-      alice @@@ [("@bob", "hey"), ("#team", "")]
+      -- removing member deletes unused group contact
+      alice ##> "@bob hi"
+      alice <## "no contact bob"
+      (bob </)
       bob ##> "/j team"
       bob <## "error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
       -- repeat request is prohibited because of the re-used XContactId, until contact is deleted
@@ -3568,11 +3576,11 @@ testGroupLinkDeleteInvitedMemberNoBrokenItem =
       bob <## "alice: contact is deleted"
       bob ##> ("/c " <> gLink)
       bob <## "connection request sent!"
-      alice <## "bob_1 (Bob): accepting request to join group #team..."
+      alice <## "bob (Bob): accepting request to join group #team..."
       concurrentlyN_
         [ do
-            alice <## "bob_1 (Bob): contact is connected"
-            alice <## "bob_1 invited to group #team via your group link",
+            alice <## "bob (Bob): contact is connected"
+            alice <## "bob invited to group #team via your group link",
           do
             bob <## "alice_1 (Alice): contact is connected"
             bob <## "#team_1 (team): alice_1 invites you to join the group as member"
@@ -3580,12 +3588,12 @@ testGroupLinkDeleteInvitedMemberNoBrokenItem =
         ]
       bob ##> "/j team_1"
       concurrently_
-        (alice <## "#team: bob_1 joined the group")
+        (alice <## "#team: bob joined the group")
         (bob <## "#team_1: you joined the group")
       alice #> "#team hello"
       bob <# "#team_1 alice_1> hello"
       bob #> "#team_1 hi there"
-      alice <# "#team bob_1> hi there"
+      alice <# "#team bob> hi there"
 
 withTestChatContactConnected :: String -> (TestCC -> IO a) -> IO a
 withTestChatContactConnected dbPrefix action =
