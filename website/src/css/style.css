@@ -162,12 +162,20 @@ html {
 }
 
 
-
 .sub-menu {
   visibility: hidden;
   opacity: 0;
   color: #505158;
 }
+
+.dark .sub-menu {
+  color: #fff;
+}
+
+.dark .sub-menu li:hover {
+  color: #66D9E2;
+}
+
 .sub-menu li:hover {
   color: #0053D0;
 }
