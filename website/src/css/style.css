@@ -61,8 +61,7 @@ html {
 .container-md,
 .container-sm {
   width: 100%;
-  padding-right: var(--bs-gutter-x, 0.75rem);
-  padding-left: var(--bs-gutter-x, 0.75rem);
+  padding: 0 20px;
   margin-right: auto;
   margin-left: auto;
 }
@@ -115,6 +114,23 @@ html {
   .container {
     max-width: 1320px;
   }
+}
+
+.gradient-text {
+  background: -webkit-linear-gradient(to bottom, #53C1FF -50%, #0053D0 160%);
+  background: linear-gradient(to bottom, #53C1FF -50%, #0053D0 160%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-fill-color: transparent;
+}
+
+.dark .border-gradient{
+  background: 
+    linear-gradient(#11182F,#11182F) padding-box,
+    linear-gradient(to bottom, transparent, #01F1FF 58%) border-box;
+  border-radius: 6px;
+  border: 1px solid transparent;
 }
 
 @media (min-width:1024px) {
