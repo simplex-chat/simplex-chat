@@ -560,8 +560,8 @@ deleteContactConnectionsAndFiles db userId Contact {contactId} = do
     (userId, contactId)
   DB.execute db "DELETE FROM files WHERE user_id = ? AND contact_id = ?" (userId, contactId)
 
-deleteContact :: DB.Connection -> UserId -> Contact -> IO ()
-deleteContact db userId Contact {contactId, localDisplayName} = do
+deleteContact :: DB.Connection -> User -> Contact -> IO ()
+deleteContact db user@User {userId} Contact {contactId, localDisplayName, activeConn = Connection {customUserProfileId}} = do
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
   ctMember :: (Maybe ContactId) <- maybeFirstRow fromOnly $ DB.query db "SELECT contact_id FROM group_members WHERE user_id = ? AND contact_id = ? LIMIT 1" (userId, contactId)
   if isNothing ctMember
@@ -572,6 +572,23 @@ deleteContact db userId Contact {contactId, localDisplayName} = do
       currentTs <- getCurrentTime
       DB.execute db "UPDATE group_members SET contact_id = NULL, updated_at = ? WHERE user_id = ? AND contact_id = ?" (currentTs, userId, contactId)
   DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+  forM_ customUserProfileId $ \profileId -> do
+    profileInUse <- checkIncognitoProfileInUse_ db user profileId
+    unless profileInUse $ deleteIncognitoProfileById_ db user profileId
+
+checkIncognitoProfileInUse_ :: DB.Connection -> User -> ProfileId -> IO Bool
+checkIncognitoProfileInUse_ db User {userId} profileId = do
+  -- this is a bit risky according to schema, but we only set custom_user_profile_id for contact connections (with set contact_id)
+  usedByContactId :: (Maybe ContactId) <- maybeFirstRow fromOnly $ DB.query db "SELECT contact_id FROM connections WHERE user_id = ? AND custom_user_profile_id = ? AND contact_id IS NOT NULL LIMIT 1" (userId, profileId)
+  case usedByContactId of
+    Nothing -> do
+      usedByGroupMemberId :: (Maybe GroupMemberId) <- maybeFirstRow fromOnly $ DB.query db "SELECT group_member_id FROM group_members WHERE user_id = ? AND member_profile_id = ? LIMIT 1" (userId, profileId)
+      pure $ isJust usedByGroupMemberId
+    Just _ -> pure True
+
+deleteIncognitoProfileById_ :: DB.Connection -> User -> ProfileId -> IO ()
+deleteIncognitoProfileById_ db User {userId} profileId =
+  DB.execute db "DELETE FROM contact_profiles WHERE user_id = ? AND contact_profile_id = ? AND incognito = 1" (userId, profileId)
 
 deleteContactProfile_ :: DB.Connection -> UserId -> ContactId -> IO ()
 deleteContactProfile_ db userId contactId =
@@ -2023,19 +2040,23 @@ deleteGroupMember db user@User {userId} m@GroupMember {groupMemberId, groupId} =
   DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId)
   cleanupMemberContactAndProfile_ db user m
 
+-- it's important this function is used in transaction after the actual group_members record is deleted, see checkIncognitoProfileInUse_
 cleanupMemberContactAndProfile_ :: DB.Connection -> User -> GroupMember -> IO ()
-cleanupMemberContactAndProfile_ db User {userId} GroupMember {groupMemberId, localDisplayName, memberContactId, memberContactProfileId} =
+cleanupMemberContactAndProfile_ db user@User {userId} m@GroupMember {groupMemberId, localDisplayName, memberContactId, memberContactProfileId, memberProfile = LocalProfile {profileId}} =
   case memberContactId of
     Just contactId ->
       runExceptT (getContact db userId contactId) >>= \case
         Right ct@Contact {activeConn = Connection {connLevel, viaGroupLink}, contactUsed} ->
-          unless ((connLevel == 0 && not viaGroupLink) || contactUsed) $ deleteContact db userId ct
+          unless ((connLevel == 0 && not viaGroupLink) || contactUsed) $ deleteContact db user ct
         _ -> pure ()
     Nothing -> do
       sameProfileMember :: (Maybe GroupMemberId) <- maybeFirstRow fromOnly $ DB.query db "SELECT group_member_id FROM group_members WHERE user_id = ? AND contact_profile_id = ? AND group_member_id != ? LIMIT 1" (userId, memberContactProfileId, groupMemberId)
       unless (isJust sameProfileMember) $ do
         DB.execute db "DELETE FROM contact_profiles WHERE user_id = ? AND contact_profile_id = ?" (userId, memberContactProfileId)
         DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
+      when (memberIncognito m) $ do
+        profileInUse <- checkIncognitoProfileInUse_ db user profileId
+        unless profileInUse $ deleteIncognitoProfileById_ db user profileId
 
 deleteGroupMemberConnection :: DB.Connection -> User -> GroupMember -> IO ()
 deleteGroupMemberConnection db User {userId} GroupMember {groupMemberId} =

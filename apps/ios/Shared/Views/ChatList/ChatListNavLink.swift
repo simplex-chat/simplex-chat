@@ -87,7 +87,7 @@ struct ChatListNavLink: View {
             ChatPreviewView(chat: chat)
                 .frame(height: rowHeights[dynamicTypeSize])
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                    joinGroupButton(groupInfo.hostConnCustomUserProfileId)
+                    joinGroupButton()
                     if groupInfo.canDelete {
                         deleteGroupChatButton(groupInfo)
                     }
@@ -137,7 +137,7 @@ struct ChatListNavLink: View {
         }
     }
 
-    private func joinGroupButton(_ hostConnCustomUserProfileId: Int64?) -> some View {
+    private func joinGroupButton() -> some View {
         Button {
             joinGroup(chat.chatInfo.apiId)
         } label: {

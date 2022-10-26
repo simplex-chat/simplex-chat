@@ -493,7 +493,7 @@ processChatCommand = \case
         -- functions below are called in separate transactions to prevent crashes on android
         -- (possibly, race condition on integrity check?)
         withStore' $ \db -> deleteContactConnectionsAndFiles db userId ct
-        withStore' $ \db -> deleteContact db userId ct
+        withStore' $ \db -> deleteContact db user ct
         unsetActive $ ActiveC localDisplayName
         pure $ CRContactDeleted ct
     CTContactConnection -> withChatLock "deleteChat contactConnection" . procCmd $ do
