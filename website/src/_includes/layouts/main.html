@@ -10,7 +10,11 @@
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-    {% include "navbar.html" %}
+    <section class="h-screen w-full bg-white dark:bg-gradient-radial-mobile dark:lg:bg-gradient-radial">
+        {% include "navbar.html" %}
+
+    </section>
+    
     <section class="container">
         <div class="bg-white py-6 sm:py-12 sm:px-8 md:px-16 lg:px-20">{{ content | safe }}</div>
     </section>

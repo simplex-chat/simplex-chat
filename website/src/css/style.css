@@ -131,7 +131,7 @@ html {
     height: 1px;
     bottom: 0;
     right: 0;
-    background-color: #0D0E12;
+    /* background-color: initial; */
     transition: width 0.25s ease-out;
   }
 
@@ -159,11 +159,11 @@ html {
 .sub-menu {
   transition: all .3s ease !important;
 }
-.nav-link span img,
+.nav-link span svg,
 header nav {
   transition: all 0.5s ease;
 }
-.nav-link:hover span img {
+.nav-link:hover span svg {
   transform: rotate(180deg);
 }
 
@@ -202,6 +202,10 @@ header nav {
     opacity: 1;
     transform: translateX(0);
   }
+}
+
+.lock-scroll {
+  overflow: hidden;
 }
 
 
