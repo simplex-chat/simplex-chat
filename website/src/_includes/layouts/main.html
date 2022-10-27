@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title }}</title>
     <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico" />
+    <link rel="stylesheet" href="/css/swiper-bundle.min.css">
     <link href="/css/tailwind.css" rel="stylesheet" />
     <link rel="stylesheet" href="/css/style.css">
 </head>
@@ -17,6 +18,8 @@
     {{ content | safe }}
     
     {% include "footer.html" %}
+
+    <script src="/js/swiper-bundle.min.js"></script>
     <script src="/js/script.js"></script>
 </body>
 </html>

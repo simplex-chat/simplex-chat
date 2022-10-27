@@ -19,11 +19,52 @@
 
 //   const active = nav.classList.contains('active');
 //   if (active) {
-    
+
 //   } else {
-    
+
 //   }
 // }
 
 // btnMobile.addEventListener('click', toggleMenu);
 // btnMobile.addEventListener('touchstart', toggleMenu);
+
+const privateSwiper = new Swiper('.private-swiper', {
+    slidesPerView: 1,
+    spaceBetween: 20,
+    autoplay: {
+        delay: 3000,
+    },
+
+    direction: 'horizontal',
+    scrollbar: {
+        el: ".swiper-scrollbar",
+        dragSize: 100,
+    },
+
+    navigation: {
+        nextEl: '.swiper-button-next',
+        prevEl: '.swiper-button-prev',
+    },
+
+    breakpoints: {
+        1280: {
+            slidesPerView: 4,
+            spaceBetween: 20,
+        },
+        1024: {
+            slidesPerView: 3,
+            spaceBetween: 20,
+        },
+        768: {
+            slidesPerView: 2,
+            spaceBetween: 20,
+        }
+    },
+});
+
+window.addEventListener('click', (e) => {
+    if (e.target.closest('.card')) {
+        e.target.closest('.card').classList.toggle('card-active');
+        e.target.closest('.card').classList.toggle('no-hover');
+    }
+})

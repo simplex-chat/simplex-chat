@@ -19,7 +19,16 @@ module.exports = {
         'black': '#0D0E12',
         'grey-black': '#3F484B',
         'secondary-bg-light': '#F3F6F7',
-        'secondary-bg-dark': '#11182F'
+        'primary-bg-light': '#FFFFFF',
+        'secondary-bg-dark': '#11182F',
+        'primary-bg-dark': '#0C0B13',
+
+
+        // What makes SimpleX private
+        'card-bg-light': '#ffffff',
+        'card-desc-bg-light': '#D9E7ED', 
+        'card-bg-dark': '#17203D',
+        'card-desc-bg-dark': '#1B325C',
       }
     },
   },
