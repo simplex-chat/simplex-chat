@@ -161,6 +161,9 @@
 /* No comment provided by engineer. */
 "Accept incognito" = "Inkognito akzeptieren";
 
+/* No comment provided by engineer. */
+"Accept requests" = "***Accept requests";
+
 /* call status */
 "accepted call" = "Anruf angenommen";
 
@@ -208,6 +211,9 @@
 
 /* No comment provided by engineer. */
 "Auto-accept images" = "Bilder automatisch akzeptieren";
+
+/* No comment provided by engineer. */
+"Automatically" = "***Automatically";
 
 /* integrity error chat item */
 "bad message hash" = "Ungültiger Nachrichten-Hash";
@@ -427,6 +433,9 @@
 
 /* No comment provided by engineer. */
 "Contact name" = "Kontaktname";
+
+/* No comment provided by engineer. */
+"Contact requests" = "***Contact requests";
 
 /* chat item action */
 "Copy" = "Kopieren";
@@ -1756,6 +1765,9 @@
 
 /* No comment provided by engineer. */
 "Welcome %@!" = "Willkommen %@!";
+
+/* No comment provided by engineer. */
+"Welcome message" = "***Welcome message";
 
 /* No comment provided by engineer. */
 "When available" = "Wenn verfügbar";
