@@ -1710,6 +1710,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
                       gVar <- asks idsDrg
                       groupConnIds <- createAgentConnectionAsync user CFCreateConnGrpInv True SCMInvitation
                       withStore $ \db -> createNewContactMemberAsync db gVar user groupId ct GRMember groupConnIds
+                      probeMatchingContacts ct $ contactConnIncognito ct
                   _ -> pure ()
             Just (gInfo@GroupInfo {membership}, m@GroupMember {activeConn}) -> do
               when (maybe False ((== ConnReady) . connStatus) activeConn) $ do

@@ -1345,6 +1345,10 @@ mergeContactRecords db userId Contact {contactId = toContactId} Contact {contact
     db
     "UPDATE group_members SET invited_by = ?, updated_at = ? WHERE invited_by = ? AND user_id = ?"
     (toContactId, currentTs, fromContactId, userId)
+  DB.execute
+    db
+    "UPDATE chat_items SET contact_id = ?, updated_at = ? WHERE contact_id = ? AND user_id = ?"
+    (toContactId, currentTs, fromContactId, userId)
   DB.executeNamed
     db
     [sql|
