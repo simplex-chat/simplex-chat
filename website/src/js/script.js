@@ -28,12 +28,30 @@
 // btnMobile.addEventListener('click', toggleMenu);
 // btnMobile.addEventListener('touchstart', toggleMenu);
 
+const swiper = new Swiper('.unique-swiper', {
+    slidesPerView: 1,
+    spaceBetween: 80,
+    // autoplay: {
+    //   delay: 3000,
+    //   disableOnInteraction: false,
+    // },
+    direction: 'horizontal',
+    pagination: {
+        el: '.swiper-pagination',
+        clickable: true,
+    },
+    navigation: {
+        nextEl: '.swiper-button-next',
+        prevEl: '.swiper-button-prev',
+    },
+});
+
 const privateSwiper = new Swiper('.private-swiper', {
     slidesPerView: 1,
     spaceBetween: 20,
-    autoplay: {
-        delay: 3000,
-    },
+    // autoplay: {
+    //     delay: 3000,
+    // },
 
     direction: 'horizontal',
     scrollbar: {

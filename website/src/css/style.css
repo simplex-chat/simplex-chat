@@ -132,6 +132,13 @@ html {
   border: 1px solid transparent;
 }
 
+.dark .unique-swiper .border-gradient{
+  background:
+    linear-gradient(#0C0B13, #0C0B13) padding-box,
+    linear-gradient(to bottom, transparent, #01F1FF 58%) border-box;
+  border: 1px solid transparent; 
+}
+
 @media (min-width:1024px) {
   .nav-link-text {
     position: relative;
@@ -244,8 +251,24 @@ header nav {
   background-clip: text;
 }
 
+.swiper-pagination-bullet {
+  height: 12px;
+  width: 12px;
+  margin: 0 5px !important;
+}
+.dark .swiper-pagination-bullet{
+  background: #D4D4D433;
+  opacity: .8;
+}
+
+.swiper-pagination-bullet-active{
+  opacity: 1 !important;
+}
 .swiper-pagination-bullet-active {
   background-color: #0197FF !important;
+}
+.dark .swiper-pagination-bullet-active{
+  background-color: #70F0F9 !important;
 }
 
 .swiper-button-next,
@@ -256,6 +279,11 @@ header nav {
 
 .swiper-button-disabled {
   display: none;
+}
+
+.unique-swiper .swiper-slide,
+.unique-swiper .swiper-wrapper{
+  height: inherit;
 }
 
 .swiper-scrollbar-horizontal {
