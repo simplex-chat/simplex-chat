@@ -434,6 +434,9 @@
 /* No comment provided by engineer. */
 "Contact name" = "Имена контактов";
 
+/* No comment provided by engineer. */
+"Contact requests" = "Запросы контактов";
+
 /* chat item action */
 "Copy" = "Скопировать";
 

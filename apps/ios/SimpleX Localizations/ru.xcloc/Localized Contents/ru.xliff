@@ -579,8 +579,8 @@
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact requests" xml:space="preserve">
-        <source>Запросы контактов</source>
-        <target>Имена контактов</target>
+        <source>Contact requests</source>
+        <target>Запросы контактов</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Copy" xml:space="preserve">
