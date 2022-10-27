@@ -103,71 +103,10 @@
             </svg>
         </button>
     </div>
-    
-
-    <!-- <nav class="absolute z-[10000] bg-white top-0 right-0 bottom-0 left-0">
-        <div class="flex items-center justify-between h-[78px] m-auto container">
-            <a href="">
-                <img src="/img/new/logo-symbol-light.svg" alt="" srcset="">
-            </a>
-
-            <div class="flex items-center gap-[18px]">
-                <button href="" class="flex items-center justify-center h-[36px] w-[36px]">
-                    <img src="/img/new/to-night-theme-icon.svg" alt="" srcset="">
-                </button>
-                <button href="" class="flex items-center justify-center h-[36px] w-[36px]">
-                    <img src="/img/new/cross.svg" id="cross">
-                </button>
-            </div>
-        </div>
-        
-        <div class="bg-[#F0F1F2] h-[calc(100vh-78px)] flex flex-col items-center justify-between">
-            <div id="navigation" class="container w-full bg-orange-300">  
-                <ul class="navigation-menu w-full">
-                    <li><a href="index-job.html" class="sub-menu-item">Home</a></li>
-                    
-                    
-                    <li class="has-submenu parent-menu-item">
-                        <a href="javascript:void(0)"><p>Candidate</p> <span class="menu-arrow"></span></a>
-                        <ul class="submenu">
-                            <li><a href="job-candidate-list.html" class="sub-menu-item">Candidate Listing</a></li>
-                            <li><a href="job-candidate.html" class="sub-menu-item">Candidate Detail</a></li>
-                        </ul>
-                    </li>
-                    
-                    <li class="has-submenu parent-menu-item">
-                        <a href="javascript:void(0)">Company</a><span class="menu-arrow"></span>
-                        <ul class="submenu">
-                            <li><a href="job-company-list.html" class="sub-menu-item">Company Listing</a></li>
-                            <li><a href="job-company.html" class="sub-menu-item">Company Detail</a></li>
-                        </ul>
-                    </li>
-                </ul>
-            </div>
-            
-
-            <a href="#" class="inline-block text-white rounded-[34px] bg-[#0053D0] py-3 px-20 mb-16">Get Simplex</a>
-        </div>
-    </nav> -->
 </header>
 
+
 <SCript>
-// Clickable Menu
-const nav = document.querySelector('header nav');
-
-if(document.getElementById("navigation")){
-    var elements = document.getElementById("navigation").getElementsByTagName("a");
-    for(var i = 0, len = elements.length; i < len; i++) {
-        elements[i].onclick = function (elem) {
-            if(elem.target.getAttribute("href") === "javascript:void(0)") {
-                var submenu = elem.target.nextElementSibling;
-                submenu.classList.toggle('open');
-            }
-        }
-    }
-}
-
-
 // switch theme
 const sunIcon = document.querySelector('.sun');
 const moonIcon = document.querySelector('.moon');
