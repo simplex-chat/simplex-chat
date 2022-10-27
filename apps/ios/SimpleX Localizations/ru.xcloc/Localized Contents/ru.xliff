@@ -253,6 +253,11 @@
         <target>Принять инкогнито</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Accept requests" xml:space="preserve">
+        <source>Accept requests</source>
+        <target>Принимать запросы</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Advanced network settings" xml:space="preserve">
         <source>Advanced network settings</source>
         <target>Настройки сети</target>
@@ -316,6 +321,11 @@
       <trans-unit id="Auto-accept images" xml:space="preserve">
         <source>Auto-accept images</source>
         <target>Автоприем изображений</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Automatically" xml:space="preserve">
+        <source>Automatically</source>
+        <target>Автоматически</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Call already ended!" xml:space="preserve">
@@ -565,6 +575,11 @@
       </trans-unit>
       <trans-unit id="Contact name" xml:space="preserve">
         <source>Contact name</source>
+        <target>Имена контактов</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Contact requests" xml:space="preserve">
+        <source>Запросы контактов</source>
         <target>Имена контактов</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -2530,6 +2545,11 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Welcome %@!" xml:space="preserve">
         <source>Welcome %@!</source>
         <target>Здравствуйте %@!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Welcome message" xml:space="preserve">
+        <source>Welcome message</source>
+        <target>Приветственное сообщение</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="When available" xml:space="preserve">

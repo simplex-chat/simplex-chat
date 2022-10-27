@@ -161,6 +161,9 @@
 /* No comment provided by engineer. */
 "Accept incognito" = "Принять инкогнито";
 
+/* No comment provided by engineer. */
+"Accept requests" = "Принимать запросы";
+
 /* call status */
 "accepted call" = " принятый звонок";
 
@@ -208,6 +211,9 @@
 
 /* No comment provided by engineer. */
 "Auto-accept images" = "Автоприем изображений";
+
+/* No comment provided by engineer. */
+"Automatically" = "Автоматически";
 
 /* integrity error chat item */
 "bad message hash" = "ошибка хэш сообщения";
@@ -1756,6 +1762,9 @@
 
 /* No comment provided by engineer. */
 "Welcome %@!" = "Здравствуйте %@!";
+
+/* No comment provided by engineer. */
+"Welcome message" = "Приветственное сообщение";
 
 /* No comment provided by engineer. */
 "When available" = "Когда возможно";
