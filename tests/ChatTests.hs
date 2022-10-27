@@ -138,6 +138,7 @@ chatTests = do
     it "set chat item TTL" testSetChatItemTTL
   describe "group links" $ do
     it "create group link, join via group link" testGroupLink
+    it "sending message to contact created via group link marks it used" testGroupLinkContactUsed
     it "create group link, join via group link - incognito membership" testGroupLinkIncognitoMembership
     it "deleting invited member does not leave broken chat item" testGroupLinkDeleteInvitedMemberNoBrokenItem
 
@@ -3355,24 +3356,23 @@ testGroupLink =
       cath ##> ("/c " <> gLink)
       cath <## "connection request sent!"
       alice <## "cath_1 (Catherine): accepting request to join group #team..."
+      -- if contact existed it is merged
       concurrentlyN_
         [ do
             alice <## "cath_1 (Catherine): contact is connected"
-            alice <## "cath_1 invited to group #team via your group link",
+            alice <## "cath_1 invited to group #team via your group link"
+            alice <## "contact cath_1 is merged into cath"
+            alice <## "use @cath <message> to send messages",
           do
             cath <## "alice_1 (Alice): contact is connected"
-            cath <## "#team: alice_1 invites you to join the group as member"
+            cath <## "contact alice_1 is merged into alice"
+            cath <## "use @alice <message> to send messages"
+            cath <## "#team: alice invites you to join the group as member"
             cath <## "use /j team to accept"
         ]
-      -- sending message to contact marks it as used
-      alice @@@ [("@cath", "hey"), ("@bob", "hey"), ("#team", "invited via your group link")]
-      alice #> "@cath_1 hello"
-      cath <# "alice_1> hello"
-      alice #$> ("/clear cath_1", id, "cath_1: all messages are removed locally ONLY")
-      alice @@@ [("@cath_1", ""), ("@cath", "hey"), ("@bob", "hey"), ("#team", "invited via your group link")]
       cath ##> "/j team"
       concurrentlyN_
-        [ alice <## "#team: cath_1 joined the group",
+        [ alice <## "#team: cath joined the group",
           do
             cath <## "#team: you joined the group"
             cath <## "#team: member bob (Bob) is connected",
@@ -3383,14 +3383,14 @@ testGroupLink =
       alice #> "#team hello"
       concurrently_
         (bob <# "#team alice> hello")
-        (cath <# "#team alice_1> hello")
+        (cath <# "#team alice> hello")
       bob #> "#team hi there"
       concurrently_
         (alice <# "#team bob> hi there")
         (cath <# "#team bob> hi there")
       cath #> "#team hey team"
       concurrently_
-        (alice <# "#team cath_1> hey team")
+        (alice <# "#team cath> hey team")
         (bob <# "#team cath> hey team")
 
       -- leaving team removes link
@@ -3400,10 +3400,44 @@ testGroupLink =
             alice <## "#team: you left the group"
             alice <## "use /d #team to delete the group",
           bob <## "#team: alice left the group",
-          cath <## "#team: alice_1 left the group"
+          cath <## "#team: alice left the group"
         ]
       alice ##> "/show link #team"
       alice <## "no group link, to create: /create link #team"
+
+testGroupLinkContactUsed :: IO ()
+testGroupLinkContactUsed =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "use /a team <name> to add members"
+      alice ##> "/show link #team"
+      alice <## "no group link, to create: /create link #team"
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" True
+      alice ##> "/show link #team"
+      _ <- getGroupLink alice "team" False
+      alice ##> "/create link #team"
+      alice <## "you already have link for this group, to show: /show link #team"
+      bob ##> ("/c " <> gLink)
+      bob <## "connection request sent!"
+      alice <## "bob (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ do
+            alice <## "bob (Bob): contact is connected"
+            alice <## "bob invited to group #team via your group link",
+          do
+            bob <## "alice (Alice): contact is connected"
+            bob <## "#team: alice invites you to join the group as member"
+            bob <## "use /j team to accept"
+        ]
+      -- sending message to contact marks it as used
+      alice @@@ [("#team", "invited via your group link")]
+      alice #> "@bob hello"
+      bob <# "alice> hello"
+      alice #$> ("/clear bob", id, "bob: all messages are removed locally ONLY")
+      alice @@@ [("@bob", ""), ("#team", "invited via your group link")]
 
 testGroupLinkIncognitoMembership :: IO ()
 testGroupLinkIncognitoMembership =
