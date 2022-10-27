@@ -580,15 +580,15 @@ deleteUnusedIncognitoProfileById_ db User {userId} profile_id =
     db
     [sql|
       DELETE FROM contact_profiles
-      WHERE 1 NOT IN (
+      WHERE user_id = :user_id AND contact_profile_id = :profile_id AND incognito = 1
+        AND 1 NOT IN (
           SELECT 1 FROM connections
           WHERE user_id = :user_id AND custom_user_profile_id = :profile_id LIMIT 1
         )
         AND 1 NOT IN (
-          SELECT group_member_id FROM group_members
+          SELECT 1 FROM group_members
           WHERE user_id = :user_id AND member_profile_id = :profile_id LIMIT 1
         )
-        AND user_id = :user_id AND contact_profile_id = :profile_id AND incognito = 1
     |]
     [":user_id" := userId, ":profile_id" := profile_id]
 
