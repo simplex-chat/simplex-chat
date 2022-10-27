@@ -572,23 +572,25 @@ deleteContact db user@User {userId} Contact {contactId, localDisplayName, active
       currentTs <- getCurrentTime
       DB.execute db "UPDATE group_members SET contact_id = NULL, updated_at = ? WHERE user_id = ? AND contact_id = ?" (currentTs, userId, contactId)
   DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
-  forM_ customUserProfileId $ \profileId -> do
-    profileInUse <- checkIncognitoProfileInUse_ db user profileId
-    unless profileInUse $ deleteIncognitoProfileById_ db user profileId
+  forM_ customUserProfileId $ \profileId -> deleteUnusedIncognitoProfileById_ db user profileId
 
-checkIncognitoProfileInUse_ :: DB.Connection -> User -> ProfileId -> IO Bool
-checkIncognitoProfileInUse_ db User {userId} profileId = do
-  -- this is a bit risky according to schema, but we only set custom_user_profile_id for contact connections (with set contact_id)
-  usedByContactId :: (Maybe ContactId) <- maybeFirstRow fromOnly $ DB.query db "SELECT contact_id FROM connections WHERE user_id = ? AND custom_user_profile_id = ? AND contact_id IS NOT NULL LIMIT 1" (userId, profileId)
-  case usedByContactId of
-    Just _ -> pure True
-    Nothing -> do
-      usedByGroupMemberId :: (Maybe GroupMemberId) <- maybeFirstRow fromOnly $ DB.query db "SELECT group_member_id FROM group_members WHERE user_id = ? AND member_profile_id = ? LIMIT 1" (userId, profileId)
-      pure $ isJust usedByGroupMemberId
-
-deleteIncognitoProfileById_ :: DB.Connection -> User -> ProfileId -> IO ()
-deleteIncognitoProfileById_ db User {userId} profileId =
-  DB.execute db "DELETE FROM contact_profiles WHERE user_id = ? AND contact_profile_id = ? AND incognito = 1" (userId, profileId)
+deleteUnusedIncognitoProfileById_ :: DB.Connection -> User -> ProfileId -> IO ()
+deleteUnusedIncognitoProfileById_ db User {userId} profile_id =
+  DB.executeNamed
+    db
+    [sql|
+      DELETE FROM contact_profiles
+      WHERE 1 NOT IN (
+          SELECT 1 FROM connections
+          WHERE user_id = :user_id AND custom_user_profile_id = :profile_id LIMIT 1
+        )
+        AND 1 NOT IN (
+          SELECT group_member_id FROM group_members
+          WHERE user_id = :user_id AND member_profile_id = :profile_id LIMIT 1
+        )
+        AND user_id = :user_id AND contact_profile_id = :profile_id AND incognito = 1
+    |]
+    [":user_id" := userId, ":profile_id" := profile_id]
 
 deleteContactProfile_ :: DB.Connection -> UserId -> ContactId -> IO ()
 deleteContactProfile_ db userId contactId =
@@ -2054,9 +2056,7 @@ cleanupMemberContactAndProfile_ db user@User {userId} m@GroupMember {groupMember
       unless (isJust sameProfileMember) $ do
         DB.execute db "DELETE FROM contact_profiles WHERE user_id = ? AND contact_profile_id = ?" (userId, memberContactProfileId)
         DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
-      when (memberIncognito m) $ do
-        profileInUse <- checkIncognitoProfileInUse_ db user profileId
-        unless profileInUse $ deleteIncognitoProfileById_ db user profileId
+      when (memberIncognito m) $ deleteUnusedIncognitoProfileById_ db user profileId
 
 deleteGroupMemberConnection :: DB.Connection -> User -> GroupMember -> IO ()
 deleteGroupMemberConnection db User {userId} GroupMember {groupMemberId} =
