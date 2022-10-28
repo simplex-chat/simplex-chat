@@ -108,7 +108,7 @@ jobs:
           echo "::set-output name=bin_path::$(cabal list-bin simplex-chat)"
 
       - name: Unix test
-        if: matrix.os != 'windows-latest'
+        if: matrix.os != 'windows-latest' && matrix.os != 'ubuntu-20.04'
         timeout-minutes: 10
         shell: bash
         run: cabal test --test-show-details=direct
