@@ -20,6 +20,11 @@ module.exports = function (ty) {
   ty.addCollection('blogs', function (collection) {
     return collection.getFilteredByGlob('src/blog/*.md').reverse()
   })
+  ty.addCollection('whySimplexIsUnique', function (collection) {
+    return collection.getFilteredByGlob('src/data/why_simplex_is_unique/*.md')
+  })
+
+  
 
   ty.addWatchTarget("src/css")
   ty.addWatchTarget("markdown/")
