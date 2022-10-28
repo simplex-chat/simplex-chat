@@ -950,6 +950,14 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
           chatModel.updateChatInfo(cInfo)
         }
       }
+      is CR.ContactsMerged -> {
+        if (chatModel.hasChat(r.mergedContact.id)) {
+          if (chatModel.chatId.value == r.mergedContact.id) {
+            chatModel.chatId.value = r.intoContact.id
+          }
+          chatModel.removeChat(r.mergedContact.id)
+        }
+      }
       is CR.ContactsSubscribed -> updateContactsStatus(r.contactRefs, Chat.NetworkStatus.Connected())
       is CR.ContactsDisconnected -> updateContactsStatus(r.contactRefs, Chat.NetworkStatus.Disconnected())
       is CR.ContactSubError -> processContactSubError(r.contact, r.chatError)
