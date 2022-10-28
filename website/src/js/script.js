@@ -41,8 +41,8 @@ const swiper = new Swiper('.unique-swiper', {
         clickable: true,
     },
     navigation: {
-        nextEl: '.swiper-button-next',
-        prevEl: '.swiper-button-prev',
+        nextEl: '.unique-swiper-swiper-button-next',
+        prevEl: '.unique-swiper-swiper-button-prev',
     },
 });
 
@@ -60,8 +60,8 @@ const privateSwiper = new Swiper('.private-swiper', {
     },
 
     navigation: {
-        nextEl: '.swiper-button-next',
-        prevEl: '.swiper-button-prev',
+        nextEl: '.private-swiper-swiper-button-next',
+        prevEl: '.private-swiper-swiper-button-prev',
     },
 
     breakpoints: {
