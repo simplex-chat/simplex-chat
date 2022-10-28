@@ -40,6 +40,7 @@ module Simplex.Chat.Store
     getContactIdByName,
     updateUserProfile,
     updateContactProfile,
+    updateContactUserPreferences,
     updateContactAlias,
     updateContactConnectionAlias,
     updateContactUnreadChat,
@@ -611,6 +612,13 @@ updateContactProfile db userId c@Contact {contactId, localDisplayName, profile =
       updateContact_ db userId contactId localDisplayName ldn currentTs
       pure . Right $ (c :: Contact) {localDisplayName = ldn, profile = toLocalProfile profileId p' localAlias}
 
+updateContactUserPreferences :: DB.Connection -> UserId -> Int64 -> Maybe ChatPreferences -> IO ()
+updateContactUserPreferences db userId contactId userPreferences = do
+  DB.execute
+    db
+    "UPDATE contacts SET user_preferences = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?"
+    (userPreferences, userId, contactId)
+
 updateContactAlias :: DB.Connection -> UserId -> Contact -> LocalAlias -> IO Contact
 updateContactAlias db userId c@Contact {profile = lp@LocalProfile {profileId}} localAlias = do
   updatedAt <- getCurrentTime
@@ -651,15 +659,15 @@ updateContactProfile_ db userId profileId profile = do
   updateContactProfile_' db userId profileId profile currentTs
 
 updateContactProfile_' :: DB.Connection -> UserId -> ProfileId -> Profile -> UTCTime -> IO ()
-updateContactProfile_' db userId profileId Profile {displayName, fullName, image} updatedAt = do
+updateContactProfile_' db userId profileId Profile {displayName, fullName, image, contactPreferences} updatedAt = do
   DB.execute
     db
     [sql|
       UPDATE contact_profiles
-      SET display_name = ?, full_name = ?, image = ?, updated_at = ?
+      SET display_name = ?, full_name = ?, image = ?, preferences = ?, updated_at = ?
       WHERE user_id = ? AND contact_profile_id = ?
     |]
-    (displayName, fullName, image, updatedAt, userId, profileId)
+    (displayName, fullName, image, contactPreferences, updatedAt, userId, profileId)
 
 updateContact_ :: DB.Connection -> UserId -> Int64 -> ContactName -> ContactName -> UTCTime -> IO ()
 updateContact_ db userId contactId displayName newName updatedAt = do

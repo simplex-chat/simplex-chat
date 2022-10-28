@@ -18,7 +18,7 @@ import Data.Char (toUpper)
 import Data.Function (on)
 import Data.Int (Int64)
 import Data.List (groupBy, intercalate, intersperse, partition, sortOn)
-import Data.Maybe (isJust, isNothing)
+import Data.Maybe (isJust, isNothing, fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (DiffTime)
@@ -121,6 +121,7 @@ responseToView testView = \case
   CRSndGroupFileCancelled _ ftm fts -> viewSndGroupFileCancelled ftm fts
   CRRcvFileCancelled ft -> receivingFile_ "cancelled" ft
   CRUserProfileUpdated p p' -> viewUserProfileUpdated p p'
+  CRContactProfileUpdated ct -> viewContactProfileUpdated ct
   CRContactAliasUpdated c -> viewContactAliasUpdated c
   CRConnectionAliasUpdated c -> viewConnectionAliasUpdated c
   CRContactUpdated c c' -> viewContactUpdated c c'
@@ -690,6 +691,14 @@ viewUserProfileUpdated Profile {displayName = n, fullName, image} Profile {displ
   | otherwise = ["user profile is changed to " <> ttyFullName n' fullName' <> notified]
   where
     notified = " (your contacts are notified)"
+
+viewContactProfileUpdated :: Contact -> [StyledString]
+viewContactProfileUpdated Contact{profile = LocalProfile{profile = Profile{contactPreferences, userPreferences}}} = do
+  let contactVoice = contactPreferences >>= \ChatPreferences{voice} -> voice
+  let userVoice = userPreferences >>= \ChatPreferences{voice} -> voice
+  let cVoice = if isNothing contactVoice then "unset" else "set"
+  let uVoice = if isNothing userVoice then "unset" else "set"
+  ["preferences were updated: " <> "contact's voice is " <> cVoice <> ", user's voice is " <> uVoice]
 
 viewGroupUpdated :: GroupInfo -> GroupInfo -> Maybe GroupMember -> [StyledString]
 viewGroupUpdated
