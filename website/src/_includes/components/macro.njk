@@ -1,0 +1,29 @@
+{% macro overlay(section) %}
+    {# Overlay is either hidder or flex #}
+    <div id="why-privacy-matters-{{ section.id }}" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light before:opacity-90 items-center justify-center p-10 z-[10000]">
+        <div class="overlay-card max-w-[1276px] bg-white opacity-100 max-h-[660px] z-[10001] rounded-md shadow-[0px_3px_12px_rgba(0,0,0,0.2)] p-14 overflow-auto scale-100">
+            <h1 class="text-3xl font-bold text-active-blue mb-6">Title</h1>
+            <div class="flex gap-10 justify-between">
+                <div class="max-w-md">
+                    <div class="text-grey-black dark:text-white flex flex-col gap-6 text-base">
+                        {% for para in section.overlayContent.paras %}
+                            <p>{{ para }}</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                {% if section.overlayContent.showImage %}
+                    <div class="max-w-md">
+                        <div class="flex items-center justify-center">
+                            <img class="w-full max-w-md min-w-[300px]" src="{{ section.imgLight }}" alt="">
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <svg class="fill-grey-black dark:fill-white fixed right-8 top-8 cursor-pointer close-overlay-btn" id="cross" width="13" height="13" viewBox="0 0 13 13" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12.7973 11.5525L7.59762 6.49833L12.7947 1.44675C13.055 1.19371 13.0658 0.771991 12.8188 0.505331C12.5718 0.238674 12.1602 0.227644 11.8999 0.480681L6.65343 5.58028L1.09979 0.182228C0.839522 -0.070157 0.427909 -0.059127 0.18094 0.207531C-0.0660305 0.474191 -0.0552645 0.895911 0.205003 1.14894L5.70862 6.49833L0.20247 11.851C-0.0577975 12.104 -0.0685635 12.5257 0.178407 12.7924C0.306324 12.9306 0.477936 13 0.650181 13C0.811033 13 0.971873 12.9397 1.09726 12.817L6.65343 7.41639L11.9025 12.5186C12.0285 12.6406 12.1893 12.7015 12.3495 12.7015C12.5218 12.7015 12.6934 12.6321 12.8213 12.4939C13.0689 12.2273 13.0582 11.8062 12.7973 11.5525Z"/>
+            </svg>
+        </div>
+    </div>
+{% endmacro %}

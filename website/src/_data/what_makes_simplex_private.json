@@ -1,0 +1,104 @@
+{
+    "sections": [
+        {
+            "id": 1,
+            "title": "2-layers of end-to-end encryption",
+            "imgLight": "/img/new/private-1.svg",
+            "imgDark": "/img/new/private-1-dark.svg",
+            "points": [
+                "Double-ratchet protocol (OTR messaging with forward secrecy and break-in recovery).",
+                "E2E encryption in each queue to prevent traffic correlation between queues in case TLS is compromised."
+            ]
+        },
+        {
+            "id": 2,
+            "title": "Additional layer of server encryption",
+            "imgLight": "/img/new/private-2.svg",
+            "imgDark": "/img/new/private-2-dark.svg",
+            "points": [
+                "Lorem ipsum dolor sit amet consectetur, adipisicing elit. Quaerat, labore.",
+                "Lorem ipsum dolor sit amet consectetur adipisicing elit. Ab, consequatur!"
+            ]
+        },
+        {
+            "id": 3,
+            "title": "Secure TLS 1.2/1.3",
+            "imgLight": "/img/new/private-3.svg",
+            "imgDark": "/img/new/private-3-dark.svg",
+            "points": [
+                "Lorem ipsum dolor sit amet consectetur, adipisicing elit. Quaerat, labore.",
+                "Lorem ipsum dolor sit amet consectetur adipisicing elit. Ab, consequatur!"
+            ]
+        },
+        {
+            "id": 4,
+            "title": "Optional access via Tor",
+            "imgLight": "/img/new/private-4.svg",
+            "imgDark": "/img/new/private-4-dark.svg",
+            "points": [
+                "Lorem ipsum dolor sit amet consectetur, adipisicing elit. Quaerat, labore.",
+                "Lorem ipsum dolor sit amet consectetur adipisicing elit. Ab, consequatur!"
+            ]
+        },
+        {
+            "id": 5,
+            "title": "Multiple layers of content padding",
+            "imgLight": "/img/new/private-5.svg",
+            "imgDark": "/img/new/private-5-dark.svg",
+            "points": [
+                "Lorem ipsum dolor sit amet consectetur, adipisicing elit. Quaerat, labore.",
+                "Lorem ipsum dolor sit amet consectetur adipisicing elit. Ab, consequatur!"
+            ]
+        },
+        {
+            "id": 6,
+            "title": "Out-of-band key exchange",
+            "imgLight": "/img/new/private-6.svg",
+            "imgDark": "/img/new/private-6-dark.svg",
+            "points": [
+                "Lorem ipsum dolor sit amet consectetur, adipisicing elit. Quaerat, labore.",
+                "Lorem ipsum dolor sit amet consectetur adipisicing elit. Ab, consequatur!"
+            ]
+        },
+        {
+            "id": 7,
+            "title": "Message integrity is guaranteed",
+            "imgLight": "/img/new/private-7.svg",
+            "imgDark": "/img/new/private-7-dark.svg",
+            "points": [
+                "Lorem ipsum dolor sit amet consectetur, adipisicing elit. Quaerat, labore.",
+                "Lorem ipsum dolor sit amet consectetur adipisicing elit. Ab, consequatur!"
+            ]
+        },
+        {
+            "id": 8,
+            "title": "Message mixing to prevent correlation",
+            "imgLight": "/img/new/private-8.svg",
+            "imgDark": "/img/new/private-8-dark.svg",
+            "points": [
+                "Lorem ipsum dolor sit amet consectetur, adipisicing elit. Quaerat, labore.",
+                "Lorem ipsum dolor sit amet consectetur adipisicing elit. Ab, consequatur!"
+            ]
+        },
+        {
+            "id": 9,
+            "title": "Unidirectional network",
+            "imgLight": "/img/new/private-9.svg",
+            "imgDark": "/img/new/private-9-dark.svg",
+            "points": [
+                "Lorem ipsum dolor sit amet consectetur, adipisicing elit. Quaerat, labore.",
+                "Lorem ipsum dolor sit amet consectetur adipisicing elit. Ab, consequatur!"
+            ]
+        },
+        {
+            "id": 10,
+            "title": "Temporary ephemeral pairwise identifiers",
+            "imgLight": "/img/new/private-10.svg",
+            "imgDark": "/img/new/private-10-dark.svg",
+            "points": [
+                "Lorem ipsum dolor sit amet consectetur, adipisicing elit. Quaerat, labore.",
+                "Lorem ipsum dolor sit amet consectetur adipisicing elit. Ab, consequatur!"
+            ]
+        }
+    ]
+}

@@ -80,9 +80,34 @@ const privateSwiper = new Swiper('.private-swiper', {
     },
 });
 
+const closeOverlay = (e) => {
+    e.target.closest('.overlay').classList.remove('flex');
+    e.target.closest('.overlay').classList.add('hidden');
+    document.body.classList.toggle('lock-scroll');
+}
+
 window.addEventListener('click', (e) => {
     if (e.target.closest('.card')) {
         e.target.closest('.card').classList.toggle('card-active');
         e.target.closest('.card').classList.toggle('no-hover');
     }
+
+    // ---------------For Overlay--------------------
+    else if (e.target.closest('.close-overlay-btn')) {
+        closeOverlay(e);
+    }
+    else if (e.target.closest('.overlay-card')) {
+        return;
+    }
+    else if (e.target.closest('.overlay')) {
+        closeOverlay(e);
+    }
+    else if (e.target.closest('.open-overlay-btn')) {
+        let id = e.target.closest('.open-overlay-btn').dataset.showOverlay;
+        let overlay = document.getElementById(id);
+        overlay.classList.remove('hidden');
+        overlay.classList.add('flex');
+        document.body.classList.toggle('lock-scroll');
+    }
+    // -----------------------------------------------
 })

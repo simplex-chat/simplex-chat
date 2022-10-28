@@ -1,0 +1,39 @@
+{
+    "sections": [
+        {
+            "id": 1,
+            "title": "Invasive and manipulative advertising and price discrimination",
+            "imgLight": "/img/new/privacy-section-1.svg",
+            "imgDark": "/img/new/privacy-section-1.svg",
+            "overlayContent": {
+                "title": "More Information",
+                "linkText": "Learn more",
+                "showImage": true,
+                "paras": [
+                    "Unlike any other existing messaging platform, SimpleX has no identifiers assigned to the users –- not even random numbers. This protects the privacy of who you are communicating with, hiding it from SimpleX platform servers and from any observers.",
+                    "E2E encryption in each queue to prevent traffic correlation between queues in case TLS is compromised."
+                ]
+            }
+        },
+        {
+            "id": 2,
+            "title": "Manipulation of elections",
+            "imgLight": "/img/new/privacy-section-2.svg",
+            "imgDark": "/img/new/privacy-section-2.svg",
+            "overlayContent": {
+                "title": "More Information",
+                "linkText": "Learn more",
+                "showImage": false,
+                "paras": [
+                    "Unlike any other existing messaging platform, SimpleX has no identifiers assigned to the users –- not even random numbers. This protects the privacy of who you are communicating with, hiding it from SimpleX platform servers and from any observers."
+                ]
+            }
+        },
+        {
+            "id": 3,
+            "title": "Protect against prosecution when you are innocent",
+            "imgLight": "/img/new/privacy-section-3.svg",
+            "imgDark": "/img/new/privacy-section-3.svg"
+        }
+    ]
+}
