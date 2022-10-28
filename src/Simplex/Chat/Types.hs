@@ -30,6 +30,8 @@ import Data.Int (Int64)
 import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Typeable
 import Database.SQLite.Simple (ResultError (..), SQLData (..))
@@ -42,6 +44,7 @@ import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..),
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, fromTextField_, sumTypeJSON)
 import Simplex.Messaging.Util ((<$?>))
+import Simplex.Chat.Util (safeDecodeUtf8)
 
 class IsContact a where
   contactId' :: a -> ContactId
@@ -226,10 +229,65 @@ defaultChatSettings = ChatSettings {enableNtfs = True}
 pattern DisableNtfs :: ChatSettings
 pattern DisableNtfs = ChatSettings {enableNtfs = False}
 
+data ChatPreferences = ChatPreferences
+  { voice :: Maybe Preference
+  -- image :: Maybe Preference,
+  -- file :: Maybe Preference,
+  -- delete :: Maybe Preference,
+  -- acceptDelete :: Maybe Preference,
+  -- edit :: Maybe Preference,
+  -- receipts :: Maybe Preference
+  }
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON ChatPreferences where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+instance ToField ChatPreferences where
+  toField = toField . safeDecodeUtf8 . LB.toStrict . J.encode
+
+instance FromField ChatPreferences where
+  fromField = fromTextField_ $ J.decode . LB.fromStrict . encodeUtf8
+
+data Preference = Preference
+  {enable :: PrefSwitch}
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON Preference where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+data PrefSwitch = PSOn | PSOff -- for example it can be extended to include PSMutual, that is only enabled if it's enabled by another party
+  deriving (Eq, Show, Generic)
+
+instance FromField PrefSwitch where fromField = fromBlobField_ strDecode
+
+instance ToField PrefSwitch where toField = toField . strEncode
+
+instance StrEncoding PrefSwitch where
+  strEncode = \case
+    PSOn -> "on"
+    PSOff -> "off"
+  strDecode = \case
+    "on" -> Right PSOn
+    "off" -> Right PSOff
+    r -> Left $ "bad PrefSwitch " <> B.unpack r
+  strP = strDecode <$?> A.takeByteString
+
+instance FromJSON PrefSwitch where
+  parseJSON = strParseJSON "PrefSwitch"
+
+instance ToJSON PrefSwitch where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
 data Profile = Profile
   { displayName :: ContactName,
     fullName :: Text,
-    image :: Maybe ImageData
+    image :: Maybe ImageData,
+    contactPreferences :: Maybe ChatPreferences,
+    userPreferences :: Maybe ChatPreferences
     -- fields that should not be read into this data type to prevent sending them as part of profile to contacts:
     -- - contact_profile_id
     -- - incognito
@@ -247,10 +305,8 @@ type LocalAlias = Text
 
 data LocalProfile = LocalProfile
   { profileId :: ProfileId,
-    displayName :: ContactName,
-    fullName :: Text,
-    image :: Maybe ImageData,
-    localAlias :: LocalAlias
+    localAlias :: LocalAlias,
+    profile :: Profile
   }
   deriving (Eq, Show, Generic, FromJSON)
 
@@ -262,17 +318,18 @@ localProfileId :: LocalProfile -> ProfileId
 localProfileId = profileId
 
 toLocalProfile :: ProfileId -> Profile -> LocalAlias -> LocalProfile
-toLocalProfile profileId Profile {displayName, fullName, image} localAlias =
-  LocalProfile {profileId, displayName, fullName, image, localAlias}
+toLocalProfile profileId Profile {displayName, fullName, image, contactPreferences, userPreferences} localAlias =
+  LocalProfile {profileId, profile = Profile{displayName, fullName, image, contactPreferences, userPreferences}, localAlias}
 
 fromLocalProfile :: LocalProfile -> Profile
-fromLocalProfile LocalProfile {displayName, fullName, image} =
-  Profile {displayName, fullName, image}
+fromLocalProfile LocalProfile { profile = Profile {displayName, fullName, image, contactPreferences, userPreferences}} =
+  Profile {displayName, fullName, image, contactPreferences, userPreferences}
 
 data GroupProfile = GroupProfile
   { displayName :: GroupName,
     fullName :: Text,
-    image :: Maybe ImageData
+    image :: Maybe ImageData,
+    groupPreferences :: Maybe ChatPreferences
   }
   deriving (Eq, Show, Generic, FromJSON)
 

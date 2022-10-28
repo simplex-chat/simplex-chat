@@ -715,8 +715,8 @@ viewConnectionAliasUpdated PendingContactConnection {pccConnId, localAlias}
 
 viewContactUpdated :: Contact -> Contact -> [StyledString]
 viewContactUpdated
-  Contact {localDisplayName = n, profile = LocalProfile {fullName}}
-  Contact {localDisplayName = n', profile = LocalProfile {fullName = fullName'}}
+  Contact {localDisplayName = n, profile = LocalProfile {profile = Profile{fullName}}}
+  Contact {localDisplayName = n', profile = LocalProfile {profile = Profile{fullName = fullName'}}}
     | n == n' && fullName == fullName' = []
     | n == n' = ["contact " <> ttyContact n <> fullNameUpdate]
     | otherwise =
@@ -1043,14 +1043,14 @@ ttyContact' :: Contact -> StyledString
 ttyContact' Contact {localDisplayName = c} = ttyContact c
 
 ttyFullContact :: Contact -> StyledString
-ttyFullContact Contact {localDisplayName, profile = LocalProfile {fullName}} =
+ttyFullContact Contact {localDisplayName, profile = LocalProfile {profile = Profile{fullName}}} =
   ttyFullName localDisplayName fullName
 
 ttyMember :: GroupMember -> StyledString
 ttyMember GroupMember {localDisplayName} = ttyContact localDisplayName
 
 ttyFullMember :: GroupMember -> StyledString
-ttyFullMember GroupMember {localDisplayName, memberProfile = LocalProfile {fullName}} =
+ttyFullMember GroupMember {localDisplayName, memberProfile = LocalProfile {profile = Profile{fullName}}} =
   ttyFullName localDisplayName fullName
 
 ttyFullName :: ContactName -> Text -> StyledString

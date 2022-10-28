@@ -532,7 +532,7 @@ toCMEventTag msg = case msg of
   XFileCancel _ -> XFileCancel_
   XInfo _ -> XInfo_
   XContact _ _ -> XContact_
-  XGrpInv _ -> XGrpInv_
+  XGrpInv _ -> XGrpInv_ 
   XGrpAcpt _ -> XGrpAcpt_
   XGrpMemNew _ -> XGrpMemNew_
   XGrpMemIntro _ -> XGrpMemIntro_

@@ -10,6 +10,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use fewer imports" #-}
 
 module Simplex.Chat where
 
@@ -739,7 +741,7 @@ processChatCommand = \case
     incognito <- readTVarIO =<< asks incognitoMode
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     let profileToSend = fromMaybe (fromLocalProfile profile) incognitoProfile
-    connId <- withAgent $ \a -> joinConnection a True cReq . directMessage $ XInfo profileToSend
+    connId <- withAgent $ \a -> joinConnection a True cReq . directMessage $ XInfo profileToSend 
     conn <- withStore' $ \db -> createDirectConnection db userId connId cReq ConnJoined incognitoProfile
     toView $ CRNewContactConnection conn
     pure CRSentConfirmation
@@ -1346,17 +1348,17 @@ getRcvFilePath fileId fPath_ fn = case fPath_ of
            in ifM (doesFileExist f) (tryCombine $ n + 1) (pure f)
 
 acceptContactRequest :: ChatMonad m => User -> UserContactRequest -> Maybe IncognitoProfile -> m Contact
-acceptContactRequest user@User {userId} UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} incognitoProfile = do
+acceptContactRequest user@User {userId, profile = LocalProfile{profile = Profile{contactPreferences}}} UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} incognitoProfile = do
   let profileToSend = profileToSendOnAccept user incognitoProfile
   acId <- withAgent $ \a -> acceptContact a True invId . directMessage $ XInfo profileToSend
-  withStore' $ \db -> createAcceptedContact db userId acId cName profileId p userContactLinkId xContactId incognitoProfile
+  withStore' $ \db -> createAcceptedContact db userId contactPreferences acId cName profileId p userContactLinkId xContactId incognitoProfile
 
 acceptContactRequestAsync :: ChatMonad m => User -> UserContactRequest -> Maybe IncognitoProfile -> m Contact
-acceptContactRequestAsync user@User {userId} UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} incognitoProfile = do
+acceptContactRequestAsync user@User {userId, profile = LocalProfile{profile = Profile{contactPreferences}}} UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} incognitoProfile = do
   let profileToSend = profileToSendOnAccept user incognitoProfile
   (cmdId, acId) <- agentAcceptContactAsync user True invId $ XInfo profileToSend
   withStore' $ \db -> do
-    ct@Contact {activeConn = Connection {connId}} <- createAcceptedContact db userId acId cName profileId p userContactLinkId xContactId incognitoProfile
+    ct@Contact {activeConn = Connection {connId}} <- createAcceptedContact db userId contactPreferences acId cName profileId p userContactLinkId xContactId incognitoProfile
     setCommandConnId db user cmdId connId
     pure ct
 
@@ -2979,7 +2981,7 @@ getCreateActiveUser st = do
         loop = do
           displayName <- getContactName
           fullName <- T.pack <$> getWithPrompt "full name (optional)"
-          withTransaction st (\db -> runExceptT $ createUser db Profile {displayName, fullName, image = Nothing} True) >>= \case
+          withTransaction st (\db -> runExceptT $ createUser db Profile {displayName, fullName, image = Nothing, contactPreferences = Nothing, userPreferences = Just ChatPreferences{voice = Nothing}} True) >>= \case
             Left SEDuplicateName -> do
               putStrLn "chosen display name is already used by another profile on this device, choose another one"
               loop
@@ -3005,7 +3007,7 @@ getCreateActiveUser st = do
                 withTransaction st (`setActiveUser` userId user)
                 pure user
     userStr :: User -> String
-    userStr User {localDisplayName, profile = LocalProfile {fullName}} =
+    userStr User {localDisplayName, profile = LocalProfile {profile = Profile{fullName}}} =
       T.unpack $ localDisplayName <> if T.null fullName || localDisplayName == fullName then "" else " (" <> fullName <> ")"
     getContactName :: IO ContactName
     getContactName = do
@@ -3224,13 +3226,13 @@ chatCommandP =
       pure (cName, fullName)
     userProfile = do
       (cName, fullName) <- userNames
-      pure Profile {displayName = cName, fullName, image = Nothing}
+      pure Profile {displayName = cName, fullName, image = Nothing, contactPreferences = Nothing, userPreferences = Nothing}
     jsonP :: J.FromJSON a => Parser a
     jsonP = J.eitherDecodeStrict' <$?> A.takeByteString
     groupProfile = do
       gName <- displayName
       fullName <- fullNameP gName
-      pure GroupProfile {displayName = gName, fullName, image = Nothing}
+      pure GroupProfile {displayName = gName, fullName, image = Nothing, groupPreferences = Nothing}
     fullNameP name = do
       n <- (A.space *> A.takeByteString) <|> pure ""
       pure $ if B.null n then name else safeDecodeUtf8 n
