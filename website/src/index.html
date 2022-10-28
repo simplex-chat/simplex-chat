@@ -8,7 +8,7 @@ title: "SimpleX Chat"
     <div class="container">
         <p class="text-grey-black dark:text-white text-[45px] text-center font-bold mb-[32px]">Why privacy <span class="gradient-text">matters</span></p>
         <p class="text-center text-[20px] font-medium mb-[86px] text-black dark:text-white">Preserving the privacy of your meta-data - <span class="text-active-blue">who you talk with</span> - protect you from:</p>
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-[20px] mb-[90px]">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[20px] mb-[90px]">
 
             {% for section in why_privacy_matters.sections %}
                 <div class="bg-white dark:bg-transparent px-[34px] flex flex-col rounded-[12px] dark:rounded-[6px] shadow-[0px_50px_61px_rgba(0,0,0,0.12)] dark:shadow-none flex-[1] border-gradient">
@@ -18,7 +18,7 @@ title: "SimpleX Chat"
                     <div class="h-[152px] flex flex-col items-center justify-between">
                         <p class="text-center font-medium leading-[28px] text-grey-black dark:text-white">{{ section.title }}</p>
                         {% if section.overlayContent %}
-                            <a href="javascript:void(0);" data-show-overlay="why-privacy-matters-{{ section.id }}" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] underline-offset-2 mb-[53px]">{{ section.overlayContent.linkText }}</a>
+                            <a href="javascript:void(0);" data-show-overlay="{{ section.overlayContent.overlayId }}" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] underline-offset-2 mb-[53px]">{{ section.overlayContent.linkText }}</a>
                             {{ overlay(section) }}
                         {% endif %}
                     </div>

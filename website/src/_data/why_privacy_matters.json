@@ -6,9 +6,10 @@
             "imgLight": "/img/new/privacy-section-1.svg",
             "imgDark": "/img/new/privacy-section-1.svg",
             "overlayContent": {
+                "overlayId": "why-privacy-matters-1",
                 "title": "More Information",
                 "linkText": "Learn more",
-                "showImage": true,
+                "showImage": false,
                 "paras": [
                     "Unlike any other existing messaging platform, SimpleX has no identifiers assigned to the users –- not even random numbers. This protects the privacy of who you are communicating with, hiding it from SimpleX platform servers and from any observers.",
                     "E2E encryption in each queue to prevent traffic correlation between queues in case TLS is compromised."
@@ -21,6 +22,7 @@
             "imgLight": "/img/new/privacy-section-2.svg",
             "imgDark": "/img/new/privacy-section-2.svg",
             "overlayContent": {
+                "overlayId": "why-privacy-matters-2",
                 "title": "More Information",
                 "linkText": "Learn more",
                 "showImage": false,

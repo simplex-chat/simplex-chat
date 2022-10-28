@@ -338,3 +338,23 @@ header nav {
 .card:not(.no-hover):hover > div:nth-child(2) > *:nth-child(3){
   opacity: 0;
 }
+
+
+/* simplex unique */
+/* 268  -> 660 */
+/* .card-content{
+  transition: all .5s ease;
+  height: 268px;
+}
+.simplex-unique-card{
+  transition: all .5s ease;
+}
+
+.card-content:hover {
+  max-height: 660px;
+  transition: all .5s ease;
+}
+
+.card-image{
+  transition: all .5s ease;
+} */

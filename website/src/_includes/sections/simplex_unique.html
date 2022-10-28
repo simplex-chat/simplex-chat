@@ -4,116 +4,47 @@
 
         <div class="swiper unique-swiper px-4 py-2">
             <div class="swiper-wrapper mb-16">
-                <div class="swiper-slide flex items-center md:items-start flex-col-reverse xl:flex-row xl:items-center px-4 md:px-10 lg:px-[50px] py-12 lg:py-[70px] rounded-[12px] shadow-[0px_3px_12px_rgba(0,0,0,0.2)] dark:shadow-none border-gradient">
-                    <a href="javascript:void(0);" class="flex items-center gap-2 md:hidden">
-                        <span class="underline text-[16px] tracking-[0.02em] underline-offset-4 text-primary-light dark:text-primary-dark">More info</span>
-                        <span class="flex items-center justify-center mt-1">
-                            <svg class="fill-primary-light dark:fill-primary-dark" width="10" height="6" viewBox="0 0 10 6" xmlns="http://www.w3.org/2000/svg">
-                                <path fill-rule="evenodd" clip-rule="evenodd" d="M1.50447 0.902966C1.21571 0.627397 0.747525 0.627397 0.458761 0.902966C0.169996 1.17853 0.169996 1.62532 0.458761 1.90089L4.21933 5.48961C4.25543 5.52406 4.29433 5.5542 4.33533 5.58003C4.62234 5.76088 5.01237 5.73074 5.26504 5.48961L9.02561 1.90089C9.31438 1.62532 9.31438 1.17853 9.02561 0.902966C8.73685 0.627397 8.26867 0.627397 7.97991 0.902966L4.74219 3.99273L1.50447 0.902966Z"/>
-                            </svg>
-                        </span>
-                    </a>
 
-                    <div class="pt-14 md:pt-0">
-                        <p class="text-[35px] lg:text-[65px] font-bold tracking-[0.06em] text-active-blue text-center md:text-left">#1</p>
-                        <p class="w-full max-w-[617px] text-[25px] leading-[33px] lg:text-[35px] lg:leading-[45px] text-center md:text-left font-bold mb-[30px] text-grey-black dark:text-white">
-                            Complete privacy of your identity, profile, contacts and metadata
-                        </p>
-                        <p class="w-full max-w-[541px] text-[16px] leading-[24px] tracking-[0.02em] mb-[36px] text-grey-black dark:text-white  text-center md:text-left hidden md:block">
-                            Unlike any other existing messaging platform, SimpleX has no identifiers assigned to the users –- not even random numbers. This protects the privacy of who you are communicating with, hiding it from SimpleX platform servers and from any observers.
-                        </p>
-                        <a href="" class="underline text-primary-light dark:text-primary-dark lg:block text-[16px] underline-offset-4 tracking-[0.02em] hidden md:block">Learn how it improves privacy</a>
+                {% for section in why_simplex_is_unique.sections %}
+                    <div class="swiper-slide flex items-center md:items-start flex-col-reverse xl:flex-row xl:items-center px-4 md:px-10 lg:px-[50px] py-12 lg:py-[70px] rounded-[12px] shadow-[0px_3px_12px_rgba(0,0,0,0.2)] dark:shadow-none border-gradient relative scale-100 simplex-unique-card">
+                        <a href="javascript:void(0);" class="flex items-center gap-2 md:hidden open-card-btn fixed z-10">
+                            <span class="underline text-[16px] tracking-[0.02em] underline-offset-4 text-primary-light dark:text-primary-dark">More info</span>
+                            <span class="flex items-center justify-center mt-1">
+                                <svg class="fill-primary-light dark:fill-primary-dark" width="10" height="6" viewBox="0 0 10 6" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M1.50447 0.902966C1.21571 0.627397 0.747525 0.627397 0.458761 0.902966C0.169996 1.17853 0.169996 1.62532 0.458761 1.90089L4.21933 5.48961C4.25543 5.52406 4.29433 5.5542 4.33533 5.58003C4.62234 5.76088 5.01237 5.73074 5.26504 5.48961L9.02561 1.90089C9.31438 1.62532 9.31438 1.17853 9.02561 0.902966C8.73685 0.627397 8.26867 0.627397 7.97991 0.902966L4.74219 3.99273L1.50447 0.902966Z"/>
+                                </svg>
+                            </span>
+                        </a>
+                        <a href="javascript:void(0);" class="items-center gap-2 md:hidden close-card-btn hidden">
+                            <span class="underline text-[16px] tracking-[0.02em] underline-offset-4 text-primary-light dark:text-primary-dark">Hide info</span>
+                            <span class="flex items-center justify-center mt-1">
+                                <svg class="fill-primary-light dark:fill-primary-dark" width="10" height="5" viewBox="0 0 10 5" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M8.40813 4.79332C8.69689 5.06889 9.16507 5.06889 9.45384 4.79332C9.7426 4.51775 9.7426 4.07097 9.45384 3.7954L5.69327 0.206676C5.65717 0.17223 5.61827 0.142089 5.57727 0.116255C5.29026 -0.064587 4.90023 -0.0344467 4.64756 0.206676L0.886983 3.7954C0.598219 4.07097 0.598219 4.51775 0.886983 4.79332C1.17575 5.06889 1.64393 5.06889 1.93269 4.79332L5.17041 1.70356L8.40813 4.79332Z"/>
+                                </svg>
+                            </span>
+                        </a>
+
+                        {# hover:absolute hover:w-full hover:h-full hover:bg-primary-bg-light hover:dark:bg-primary-bg-dark hover:p-[inherit] #}
+                        <div class="pt-14 md:pt-0 card-content pb-[60px]">
+                            <div class="content-head">
+                                <p class="text-[35px] lg:text-[65px] font-bold tracking-[0.06em] text-active-blue text-center md:text-left">#{{ section.id }}</p>
+                                <p class="w-full max-w-[617px] text-[25px] leading-[33px] lg:text-[35px] lg:leading-[45px] text-center md:text-left font-bold text-grey-black dark:text-white">{{ section.title }}</p>
+                            </div>
+
+                            <div class="content-body hidden md:block">
+                                <p class="w-full max-w-[541px] text-[16px] leading-[24px] tracking-[0.02em] mb-[36px] text-grey-black dark:text-white text-center md:text-left">{{ section.desc }}</p>
+                                {% if section.overlayContent %}
+                                    <a href="javascript:void(0)" data-show-overlay="{{ section.overlayContent.overlayId }}" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] underline-offset-4 tracking-[0.02em] text-center md:text-left">{{ section.overlayContent.linkText }}</a>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="flex-1 flex items-center justify-center w-full card-image">
+                            <img class="w-full max-w-[400px] dark:hidden" src="{{ section.imgLight }}" alt="">
+                            <img class="w-full max-w-[400px] hidden dark:block" src="{{ section.imgDark }}" alt="">
+                        </div>
                     </div>
-
-                    <div class="flex-1 flex items-center justify-center w-full">
-                        <img class="w-full max-w-[400px] dark:hidden" src="/img/new/unique-section-1.png" alt="">
-                        <img class="w-full max-w-[400px] hidden dark:block" src="/img/new/unique-section-1-dark.png" alt="">
-                    </div>
-                </div>
-
-
-                <div class="swiper-slide flex items-center md:items-start flex-col-reverse xl:flex-row xl:items-center px-4 md:px-10 lg:px-[50px] py-12 lg:py-[70px] rounded-[12px] shadow-[0px_3px_12px_rgba(0,0,0,0.2)] dark:shadow-none border-gradient">
-                    <a href="javascript:void(0);" class="flex items-center gap-2 md:hidden">
-                        <span class="underline text-[16px] tracking-[0.02em] underline-offset-4 text-primary-light dark:text-primary-dark">More info</span>
-                        <span class="flex items-center justify-center mt-1">
-                            <svg class="fill-primary-light dark:fill-primary-dark" width="10" height="6" viewBox="0 0 10 6" xmlns="http://www.w3.org/2000/svg">
-                                <path fill-rule="evenodd" clip-rule="evenodd" d="M1.50447 0.902966C1.21571 0.627397 0.747525 0.627397 0.458761 0.902966C0.169996 1.17853 0.169996 1.62532 0.458761 1.90089L4.21933 5.48961C4.25543 5.52406 4.29433 5.5542 4.33533 5.58003C4.62234 5.76088 5.01237 5.73074 5.26504 5.48961L9.02561 1.90089C9.31438 1.62532 9.31438 1.17853 9.02561 0.902966C8.73685 0.627397 8.26867 0.627397 7.97991 0.902966L4.74219 3.99273L1.50447 0.902966Z"/>
-                            </svg>
-                        </span>
-                    </a>
-
-                    <div class="pt-14 md:pt-0">
-                        <p class="text-[35px] lg:text-[65px] font-bold tracking-[0.06em] text-active-blue text-center md:text-left">#2</p>
-                        <p class="w-full max-w-[617px] text-[25px] leading-[33px] lg:text-[35px] lg:leading-[45px] text-center md:text-left font-bold mb-[30px] text-grey-black dark:text-white">
-                            The best protection against spam and abuse
-                        </p>
-                        <p class="w-full max-w-[541px] text-[16px] leading-[24px] tracking-[0.02em] mb-[36px] text-grey-black dark:text-white  text-center md:text-left hidden md:block">
-                            Because you have no identifier on the SimpleX platform, you cannot be contacted unless you share a one-time “burner” or temporary user address.
-                        </p>
-                        <a href="" class="underline text-primary-light dark:text-primary-dark lg:block text-[16px] underline-offset-4 tracking-[0.02em] hidden md:block">Learn how it improves privacy</a>
-                    </div>
-
-                    <div class="flex-1 flex items-center justify-center w-full">
-                        <img class="w-full max-w-[400px] dark:hidden" src="/img/new/unique-section-2.png" alt="">
-                        <img class="w-full max-w-[400px] hidden dark:block" src="/img/new/unique-section-2-dark.png" alt="">
-                    </div>
-                </div>
-
-
-                <div class="swiper-slide flex items-center md:items-start flex-col-reverse xl:flex-row xl:items-center px-4 md:px-10 lg:px-[50px] py-12 lg:py-[70px] rounded-[12px] shadow-[0px_3px_12px_rgba(0,0,0,0.2)] dark:shadow-none border-gradient">
-                    <a href="javascript:void(0);" class="flex items-center gap-2 md:hidden">
-                        <span class="underline text-[16px] tracking-[0.02em] underline-offset-4 text-primary-light dark:text-primary-dark">More info</span>
-                        <span class="flex items-center justify-center mt-1">
-                            <svg class="fill-primary-light dark:fill-primary-dark" width="10" height="6" viewBox="0 0 10 6" xmlns="http://www.w3.org/2000/svg">
-                                <path fill-rule="evenodd" clip-rule="evenodd" d="M1.50447 0.902966C1.21571 0.627397 0.747525 0.627397 0.458761 0.902966C0.169996 1.17853 0.169996 1.62532 0.458761 1.90089L4.21933 5.48961C4.25543 5.52406 4.29433 5.5542 4.33533 5.58003C4.62234 5.76088 5.01237 5.73074 5.26504 5.48961L9.02561 1.90089C9.31438 1.62532 9.31438 1.17853 9.02561 0.902966C8.73685 0.627397 8.26867 0.627397 7.97991 0.902966L4.74219 3.99273L1.50447 0.902966Z"/>
-                            </svg>
-                        </span>
-                    </a>
-
-                    <div class="pt-14 md:pt-0">
-                        <p class="text-[35px] lg:text-[65px] font-bold tracking-[0.06em] text-active-blue text-center md:text-left">#3</p>
-                        <p class="w-full max-w-[617px] text-[25px] leading-[33px] lg:text-[35px] lg:leading-[45px] text-center md:text-left font-bold mb-[30px] text-grey-black dark:text-white">
-                            Ownership, control and security of your data
-                        </p>
-                        <p class="w-full max-w-[541px] text-[16px] leading-[24px] tracking-[0.02em] mb-[36px] text-grey-black dark:text-white text-center md:text-left hidden md:block">
-                            SimpleX stores all user data on client devices in a portable database format. The messages are held temporarily on SimpleX relay servers until they are received, then they are permanently deleted.
-                        </p>
-                        <a href="" class="underline text-primary-light dark:text-primary-dark lg:block text-[16px] underline-offset-4 tracking-[0.02em] hidden md:block">Learn how it improves privacy</a>
-                    </div>
-
-                    <div class="flex-1 flex items-center justify-center w-full">
-                        <img class="w-full max-w-[400px] dark:hidden" src="/img/new/unique-section-3.png" alt="">
-                        <img class="w-full max-w-[400px] hidden dark:block" src="/img/new/unique-section-3-dark.png" alt="">
-                    </div>
-                </div>
-
-
-                <div class="swiper-slide flex items-center md:items-start flex-col-reverse xl:flex-row xl:items-center px-4 md:px-10 lg:px-[50px] py-12 lg:py-[70px] rounded-[12px] shadow-[0px_3px_12px_rgba(0,0,0,0.2)] dark:shadow-none border-gradient">
-                    <a href="javascript:void(0);" class="flex items-center gap-2 md:hidden">
-                        <span class="underline text-[16px] tracking-[0.02em] underline-offset-4 text-primary-light dark:text-primary-dark">More info</span>
-                        <span class="flex items-center justify-center mt-1">
-                            <svg class="fill-primary-light dark:fill-primary-dark" width="10" height="6" viewBox="0 0 10 6" xmlns="http://www.w3.org/2000/svg">
-                                <path fill-rule="evenodd" clip-rule="evenodd" d="M1.50447 0.902966C1.21571 0.627397 0.747525 0.627397 0.458761 0.902966C0.169996 1.17853 0.169996 1.62532 0.458761 1.90089L4.21933 5.48961C4.25543 5.52406 4.29433 5.5542 4.33533 5.58003C4.62234 5.76088 5.01237 5.73074 5.26504 5.48961L9.02561 1.90089C9.31438 1.62532 9.31438 1.17853 9.02561 0.902966C8.73685 0.627397 8.26867 0.627397 7.97991 0.902966L4.74219 3.99273L1.50447 0.902966Z"/>
-                            </svg>
-                        </span>
-                    </a>
-
-                    <div class="pt-14 md:pt-0">
-                        <p class="text-[35px] lg:text-[65px] font-bold tracking-[0.06em] text-active-blue text-center md:text-left">#4</p>
-                        <p class="w-full max-w-[617px] text-[25px] leading-[33px] lg:text-[35px] lg:leading-[45px] text-center md:text-left font-bold mb-[30px] text-grey-black dark:text-white">
-                            Fully decentralised – users own the SimpleX network
-                        </p>
-                        <p class="w-full max-w-[541px] text-[16px] leading-[24px] tracking-[0.02em] mb-[36px] text-grey-black dark:text-white text-center md:text-left hidden md:block">
-                            You can use SimpleX with your own servers and still communicate with people using the servers that are pre-configured in the apps or any other SimpleX servers. The SimpleX network is independent of any crypto currency or any other platform, other than the Internet
-                        </p>
-                        <a href="" class="underline text-primary-light dark:text-primary-dark lg:block text-[16px] underline-offset-4 tracking-[0.02em] hidden md:block">Learn how it improves privacy</a>
-                    </div>
-
-                    <div class="flex-1 flex items-center justify-center w-full">
-                        <img class="w-full max-w-[400px] dark:hidden" src="/img/new/unique-section-4.png" alt="">
-                        <img class="w-full max-w-[400px] hidden dark:block" src="/img/new/unique-section-4-dark.png" alt="">
-                    </div>
-                </div>
+                {% endfor %}
 
             </div>
 
@@ -127,3 +58,9 @@
         </div>
     </div>
 </section>
+
+{% for section in why_simplex_is_unique.sections %}
+    {% if section.overlayContent %}
+        {{ overlay(section) }}
+    {% endif %}
+{% endfor %}
