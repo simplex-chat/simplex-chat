@@ -1,6 +1,7 @@
 ---
 layout: layouts/main.html
 title: "SimpleX Chat"
+templateEngineOverride: njk
 ---
 {%- from "components/macro.njk" import overlay -%}
 
@@ -130,4 +131,136 @@ title: "SimpleX Chat"
         </div>
     </div>
 
+</section>
+
+
+{# simplex explained #}
+{% include "simplex_explained.html" %}
+
+
+{# Comparison #}
+<section id="comparison">
+    <div class="container">
+        <p class="text-grey-black dark:text-white text-[45px] text-center font-bold mb-[21px]">Comparison with other protocols</p>
+        <div class="table-holder">
+            <table class="systems">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th class="simplex"><img alt="simplex logo" src="img/icon.svg"/> SimpleX chat</th>
+                        <th>Signal, big platforms</th>
+                        <th>XMPP, Matrix</th>
+                        <th>P2P protocols</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Requires global identity</td>
+                        <td class="highlight good">No - private</td>
+                        <td class="highlight bad">Yes <sup>1</sup>
+                        </td>
+                        <td class="highlight bad">Yes <sup>2</sup>
+                        </td>
+                        <td class="highlight bad">Yes <sup>3</sup>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Possibility of MITM</td>
+                        <td class="highlight good">No - secure</td>
+                        <td class="highlight bad">Yes <sup>4</sup>
+                        </td>
+                        <td class="highlight bad">Yes</td>
+                        <td class="highlight bad">Yes</td>
+                    </tr>
+                    <tr>
+                        <td>Dependence on DNS</td>
+                        <td class="highlight good">No - resilient</td>
+                        <td class="highlight bad">Yes</td>
+                        <td class="highlight bad">Yes</td>
+                        <td class="highlight good">No</td>
+                    </tr>
+                    <tr>
+                        <td>Single or centralized network</td>
+                        <td class="highlight good">No - decentralized</td>
+                        <td class="highlight bad">Yes</td>
+                        <td class="highlight good">No - federated <sup>5</sup>
+                        </td>
+                        <td class="highlight bad">Yes <sup>6</sup>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Central component or other network-wide attack</td>
+                        <td class="highlight good">No - resilient</td>
+                        <td class="highlight bad">Yes</td>
+                        <td class="highlight bad">Yes <sup>2</sup>
+                        </td>
+                        <td class="highlight bad">Yes <sup>7</sup>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-comments">
+            <ul class="legend">
+                <li class="good">Good</li>
+                <li class="bad">Bad</li>
+            </ul>
+
+            <div class="footnotes">
+                <ol>
+                    <li>Usually based on a phone number, in some cases on usernames</li>
+                    <li>DNS-based addresses</li>
+                    <li>Public key or some other globally unique ID</li>
+                    <li>If operator’s servers are compromised</li>
+                    <li>Does not protect users' metadata</li>
+                    <li>
+              While P2P are distributed, they are not federated - they operate as a single network
+            </li>
+                    <li>
+              P2P networks either have a central authority or the whole network can be compromised -
+              see
+              <a
+                href="https://github.com/simplex-chat/protocol#comparison-with-p2p-messaging-protocols"
+                >here</a
+              >
+                    </li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+{# join simplex #}
+<!-- Section 09 -->
+<section class="bg-white py-[85px]">
+    <div class="container flex flex-col">
+        <div class="mx-[40px] md:mx-[150px] lg:mx-[250px] xl:mx-96 ">
+            <p class="text-[#0053D0] text-[45px] text-center font-bold  mb-[21px]">Join <span class="text-[#3F484B]">SimpleX</span></p>
+            <p class="text-black text-[16px] font-normal text-center mb-[40px]">We invite you to join the conversion</p>
+            <a href="#" class="flex items-center justify-center text-[#0053D0] font-medium text-base rounded-[34px] bg-[#D9ECFF] py-2 px-5 mb-5">Join the REDDIT community</a>
+            <a href="#" class="flex items-center justify-center text-[#0053D0] font-medium text-base rounded-[34px] bg-[#D9ECFF] py-2 px-5 mb-5">Join us on GitHub</a>
+            <a href="#" class="flex items-center justify-center text-[#0053D0] font-medium text-base rounded-[34px] bg-white border border-[#0053D0] py-2 px-5 mb-14">Donate here to help us</a>
+        </div>
+        <p class="text-black text-[16px] font-normal text-center mb-[20px]">Sign up for our newsletter below</p>
+        <form class="flex justify-center">
+            <input type="text" class="h-[50px] rounded-l-[34px] border-[#0053D0] border-solid border-[1px] text-[#0053D0] text-[16px] font-normal text-left w-[400px] px-4" 
+               placeholder="Enter your email address">
+            <input type="submit" class="h-[50px] rounded-r-[34px] bg-[#0053D0] text-white text-[16px] font-normal text-center px-8">
+        </form>
+        <p class="text-[#606C71] text-[16px] font-normal text-center mt-[20px] mb-7">Success/Error message here.</p>
+        <hr class="border-[#A8B0B4] border-[1px]"/>
+        <p class="text-black text-[16px] font-normal text-center m-[30px]">Get SimpleX</p>
+
+        <article>
+            <div class="h-[40px] flex justify-center px-28 md:gap-4">
+                <a href="#"><img class="h-full w-auto" src="/img/new/apple-store-btn.png" alt=""></a>
+                <a href="#"><img class="h-full w-auto hidden md:inline-block" src="/img/new/play-store-btn.png" alt=""></a>
+                <a href="#"><img class="h-full w-auto hidden md:inline-block " src="/img/new/f-droid-btn.png" alt=""></a>
+                <a href="#"><img class="h-full w-auto hidden md:inline-block " src="/img/new/test-flight.png" alt=""></a>
+                <a href="#"><img class="h-full w-auto hidden md:inline-block " src="/img/new/apk.png" alt=""></a>
+            </div>
+        </article>
+    </div>
 </section>

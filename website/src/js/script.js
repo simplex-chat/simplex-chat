@@ -80,6 +80,24 @@ const privateSwiper = new Swiper('.private-swiper', {
     },
 });
 
+const swiper2 = new Swiper(".simplex-explained-swiper", {
+    slidesPerView: 1,
+    spaceBetween: 80,
+    // autoplay: {
+    //   delay: 3000,
+    //   disableOnInteraction: false,
+    // },
+    direction: "horizontal",
+    pagination: {
+        el: ".swiper-pagination",
+        clickable: true
+    },
+    navigation: {
+        nextEl: ".swiper-button-next",
+        prevEl: ".swiper-button-prev"
+    }
+});
+
 const closeOverlay = (e) => {
     e.target.closest('.overlay').classList.remove('flex');
     e.target.closest('.overlay').classList.add('hidden');
