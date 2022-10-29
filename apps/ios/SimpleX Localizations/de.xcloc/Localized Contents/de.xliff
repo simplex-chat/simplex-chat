@@ -3048,7 +3048,7 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
       </trans-unit>
       <trans-unit id="indirect (%d)" xml:space="preserve">
         <source>indirect (%d)</source>
-        <target>Indirekt (%d)</target>
+        <target>indirekt (%d)</target>
         <note>connection level description</note>
       </trans-unit>
       <trans-unit id="invitation to group %@" xml:space="preserve">

@@ -802,8 +802,8 @@
   <string name="error_changing_role">Fehler beim Ändern der Rolle</string>
   <string name="info_row_group">Gruppe</string>
   <string name="info_row_connection">Verbindung</string>
-  <string name="conn_level_desc_direct">Direkt</string>
-  <string name="conn_level_desc_indirect">Indirekt (<xliff:g id="conn_level">%1$s</xliff:g>)</string>
+  <string name="conn_level_desc_direct">direkt</string>
+  <string name="conn_level_desc_indirect">indirekt (<xliff:g id="conn_level">%1$s</xliff:g>)</string>
 
   <!-- ConnectionStats -->
   <string name="conn_stats_section_title_servers">SERVER</string>
