@@ -116,13 +116,13 @@
 "~strike~" = "\\~durchstreichen~";
 
 /* No comment provided by engineer. */
-"1 day" = "1 Tag";
+"1 day" = "täglich";
 
 /* No comment provided by engineer. */
-"1 month" = "1 Monat";
+"1 month" = "monatlich";
 
 /* No comment provided by engineer. */
-"1 week" = "1 Woche";
+"1 week" = "wöchentlich";
 
 /* No comment provided by engineer. */
 "6" = "6";
@@ -162,7 +162,7 @@
 "Accept incognito" = "Inkognito akzeptieren";
 
 /* No comment provided by engineer. */
-"Accept requests" = "***Accept requests";
+"Accept requests" = "Anfragen annehmen";
 
 /* call status */
 "accepted call" = "Anruf angenommen";
@@ -174,7 +174,7 @@
 "Advanced network settings" = "Erweiterte Netzwerkeinstellungen";
 
 /* No comment provided by engineer. */
-"All group members will remain connected." = "***All group members will remain connected.";
+"All group members will remain connected." = "Alle Gruppenmitglieder bleiben verbunden.";
 
 /* No comment provided by engineer. */
 "All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." = "Alle Nachrichten werden gelöscht - dies kann nicht rückgängig gemacht werden! Die Nachrichten werden NUR bei Ihnen gelöscht.";
@@ -213,7 +213,7 @@
 "Auto-accept images" = "Bilder automatisch akzeptieren";
 
 /* No comment provided by engineer. */
-"Automatically" = "***Automatically";
+"Automatically" = "Automatisch";
 
 /* integrity error chat item */
 "bad message hash" = "Ungültiger Nachrichten-Hash";
@@ -267,10 +267,10 @@
 "Change role" = "Rolle ändern";
 
 /* rcv group event chat item */
-"changed role of %@ to %@" = "***changed role of %1$@ to %2$@";
+"changed role of %@ to %@" = "änderte die Rolle von %1$@ auf %2$@";
 
 /* rcv group event chat item */
-"changed your role to %@" = "***changed your role to %@";
+"changed your role to %@" = "änderte Ihre Rolle auf %@";
 
 /* No comment provided by engineer. */
 "Chat archive" = "Datenbank Archiv";
@@ -435,7 +435,7 @@
 "Contact name" = "Kontaktname";
 
 /* No comment provided by engineer. */
-"Contact requests" = "***Contact requests";
+"Contact requests" = "Kontaktanfragen";
 
 /* chat item action */
 "Copy" = "Kopieren";
@@ -447,7 +447,7 @@
 "Create address" = "Adresse erstellen";
 
 /* No comment provided by engineer. */
-"Create link" = "***Create link";
+"Create link" = "Link erzeugen";
 
 /* No comment provided by engineer. */
 "Create one-time invitation link" = "Erstellen Sie einen einmaligen Einladungslink";
@@ -576,10 +576,10 @@
 "Delete invitation" = "Einladung löschen";
 
 /* No comment provided by engineer. */
-"Delete link" = "***Delete link";
+"Delete link" = "Link löschen";
 
 /* No comment provided by engineer. */
-"Delete link?" = "***Delete link?";
+"Delete link?" = "Link löschen?";
 
 /* No comment provided by engineer. */
 "Delete message?" = "Die Nachricht löschen?";
@@ -588,7 +588,7 @@
 "Delete messages" = "Nachrichten löschen";
 
 /* No comment provided by engineer. */
-"Delete messages after" = "Löschen der Nachrichten nach";
+"Delete messages after" = "Löschen der Nachrichten";
 
 /* No comment provided by engineer. */
 "Delete old database" = "Alte Datenbank löschen";
@@ -735,7 +735,7 @@
 "Error creating group" = "Fehler beim Erzeugen der Gruppe";
 
 /* No comment provided by engineer. */
-"Error creating group link" = "***Error creating group link";
+"Error creating group link" = "Fehler beim Erzeugen des Gruppen-Links";
 
 /* No comment provided by engineer. */
 "Error deleting chat database" = "Fehler beim Löschen der Chat-Datenbank";
@@ -861,7 +861,7 @@
 "Group invitation is no longer valid, it was removed by sender." = "Die Gruppeneinladung ist nicht mehr gültig, sie wurde vom Absender entfernt.";
 
 /* No comment provided by engineer. */
-"Group link" = "***Group link";
+"Group link" = "Gruppen-Link";
 
 /* notification */
 "Group message:" = "Grppennachricht:";
@@ -960,7 +960,7 @@
 "Incoming video call" = "Eingehender Videoanruf";
 
 /* connection level description */
-"indirect (%d)" = "Indirekt (%d)";
+"indirect (%d)" = "indirekt (%d)";
 
 /* No comment provided by engineer. */
 "Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "Installieren Sie [SimpleX Chat als Terminalanwendung](https://github.com/simplex-chat/simplex-chat)";
@@ -990,13 +990,13 @@
 "invited" = "eingeladen";
 
 /* rcv group event chat item */
-"invited %@" = "Sie haben %@ eingeladen";
+"invited %@" = "hat %@ eingeladen.";
 
 /* chat list item title */
 "invited to connect" = "Für eine Verbindung eingeladen";
 
 /* rcv group event chat item */
-"invited via your group link" = "***invited via your group link";
+"invited via your group link" = "wurde über Ihren Gruppen-Link eingeladen";
 
 /* No comment provided by engineer. */
 "iOS Keychain is used to securely store passphrase - it allows receiving push notifications." = "Für die sichere Speicherung des Passworts wird der iOS Schlüsselbund verwendet - dies erlaubt den Empfang von Push-Benachrichtigungen.";
@@ -1083,7 +1083,7 @@
 "Member" = "Mitglied";
 
 /* rcv group event chat item */
-"member connected" = "verbunden";
+"member connected" = "beigetreten";
 
 /* No comment provided by engineer. */
 "Member role will be changed to \"%@\". All group members will be notified." = "Die Mitgliederrolle wird auf \"%@\" geändert. Alle Mitglieder der Gruppe werden benachrichtigt.";
@@ -1350,10 +1350,10 @@
 "removed" = "entfernt";
 
 /* rcv group event chat item */
-"removed %@" = "Entfernt %@";
+"removed %@" = "hat %@ aus der Gruppe entfernt";
 
 /* rcv group event chat item */
-"removed you" = "hat Sie entfernt";
+"removed you" = "hat Sie aus der Gruppe entfernt";
 
 /* chat item action */
 "Reply" = "Antwort";
@@ -1617,7 +1617,7 @@
 "This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." = "Diese Aktion kann nicht rückgängig gemacht werden - Alle empfangenen und gesendeten Dateien und Medien werden gelöscht. Bilder mit niedriger Auflösung bleiben erhalten.";
 
 /* No comment provided by engineer. */
-"This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." = "Diese Aktion kann nicht rückgängig gemacht werden - Die gesendeten und empfangenen Nachrichten, welche älter als die Ausgewählten sind, werden gelöscht. Dies kann mehrere Minuten dauern.";
+"This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." = "Diese Aktion kann nicht rückgängig gemacht werden - Alle empfangenen und gesendeten Nachrichten, die über den ausgewählten Zeitraum hinaus gehen, werden gelöscht. Dies kann mehrere Minuten dauern.";
 
 /* No comment provided by engineer. */
 "This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." = "Diese Aktion kann nicht rückgängig gemacht werden - Ihr Profil und Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren.";
@@ -1689,7 +1689,7 @@
 "Unmute" = "Stummschaltung aufheben";
 
 /* No comment provided by engineer. */
-"Unread" = "***Unread";
+"Unread" = "Ungelesen";
 
 /* No comment provided by engineer. */
 "Update" = "Aktualisieren";
@@ -1767,7 +1767,7 @@
 "Welcome %@!" = "Willkommen %@!";
 
 /* No comment provided by engineer. */
-"Welcome message" = "***Welcome message";
+"Welcome message" = "Begrüßungsmeldung";
 
 /* No comment provided by engineer. */
 "When available" = "Wenn verfügbar";
@@ -1809,7 +1809,7 @@
 "You can set lock screen notification preview via settings." = "Über die Geräte-Einstellungen können Sie die Benachrichtigungsvorschau im Sperrbildschirm erlauben.";
 
 /* No comment provided by engineer. */
-"You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." = "***You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it.";
+"You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." = "Sie können diesen Link oder QR-Code teilen - Damit kann jede Person der Gruppe beitreten. Wenn Sie den Link später löschen, werden Sie keine Gruppenmitglieder verlieren, die der Gruppe darüber beigetreten sind.";
 
 /* No comment provided by engineer. */
 "You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it." = "Sie können Ihre Adresse als Link oder als QR-Code teilen – Jeder kann sich darüber mit Ihnen verbinden. Sie werden Ihre mit dieser Adresse verbundenen Kontakte nicht verlieren, wenn Sie diese Adresse später löschen.";
@@ -1821,10 +1821,10 @@
 "You can use markdown to format messages:" = "Um Nachrichteninhalte zu formatieren, können Sie Markdowns verwenden:";
 
 /* snd group event chat item */
-"you changed role for yourself to %@" = "***you changed role for yourself to %@";
+"you changed role for yourself to %@" = "Sie haben Ihre eigene Rolle auf %@ geändert";
 
 /* snd group event chat item */
-"you changed role of %@ to %@" = "***you changed role of %1$@ to %2$@";
+"you changed role of %@ to %@" = "Sie haben die Rolle von %1$@ auf %2$@ geändert";
 
 /* No comment provided by engineer. */
 "You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." = "Sie legen fest, über welche Server Sie Ihre Nachrichten **empfangen** und an Ihre Kontakte **senden**.";
@@ -1857,7 +1857,7 @@
 "You rejected group invitation" = "Sie haben die Gruppeneinladung abgelehnt";
 
 /* snd group event chat item */
-"you removed %@" = "Sie haben %@ entfernt";
+"you removed %@" = "entfernt %@ aus der Gruppe";
 
 /* No comment provided by engineer. */
 "You sent group invitation" = "Sie haben eine Gruppeneinladung gesendet";
