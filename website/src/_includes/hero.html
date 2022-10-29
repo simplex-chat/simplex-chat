@@ -1,0 +1,66 @@
+<div class="first-two-sections">
+    <section class="h-screen m-auto flex items-center justify-between landing-page-header container">
+        <div class="h-[inherit] flex flex-col items-start justify-around">
+            <article class="w-full max-w-[500px]">
+                <p class="primary-header mb-[25px]">Privacy redefined</p>
+                <p class="secondary-header mb-[25px] leading-[43px]">
+                    The first messanger with user IDs
+                </p>
+                <p class="text-justify mb-[25px] leading-[24px] text-[16px]">
+                    SimpleX network has no user indentifiers (not ever random numbers),
+                    as all the other apps do, including WhatsApp, Telegram, Signal,
+                    Matrix, Session, Briar, Jami, Speek, Cwtch, etc.
+                </p>
+                <a href="" class="underline text-[#0053D0] block leading-[34px] text-[16px] underline-offset-2">How does
+                    it work?</a>
+                <a href="" class="underline text-[#0053D0] block leading-[34px] text-[16px] underline-offset-2">How user
+                    IDs reduce privacy and anonymity?</a>
+            </article>
+            <article>
+                <p class="text-[16px] leading-[26px] mb-[11px]">Get SimpleX</p>
+                <div class="h-[40px] flex gap-4">
+                    <a href="#"><img class="h-full w-auto" src="/img/new/apple-store-btn.png" alt="" /></a>
+                    <a href="#"><img class="h-full w-auto" src="/img/new/play-store-btn.png" alt="" /></a>
+                    <a href="#"><img class="h-full w-auto" src="/img/new/f-droid-btn.png" alt="" /></a>
+                    <a href="#"><img class="h-full w-auto" src="/img/new/test-flight.png" alt="" /></a>
+                    <a href="#"><img class="h-full w-auto" src="/img/new/apk.png" alt="" /></a>
+                </div>
+            </article>
+        </div>
+        <div class="hero-phone-background">
+
+            <img id="hero-phone"></img>
+            <iframe id="hero-phone-video" src="https://www.youtube.com/embed/2IbRtjez6ag"
+                title="Foodies Carpool Show ft WildLens By Abrar" frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen></iframe>
+        </div>
+        <div id="hero-phone-preload" style="display: none"></div>
+    </section>
+    <section class="h-screen m-auto flex items-center justify-between landing-page-header container">
+        <div class="h-[inherit] flex flex-col items-start justify-around">
+            <article class="w-full max-w-[500px]">
+                <p class="primary-header mb-[25px] font-medium">
+                    Create one to one encrypted connections with QR codes
+                </p>
+                <p class="text-justify mb-[25px] leading-[24px] text-[16px]">
+                    SimpleX network has no user indentifiers (not ever random numbers),
+                    as all the other apps do, including WhatsApp, Telegram, Signal,
+                    Matrix, Session, Briar, Jami, Speek, Cwtch, etc.
+                </p>
+            </article>
+        </div>
+    </section>
+</div>
+
+<script>
+    var navBar = document.querySelector("nav");
+    var landingPageHeader = document.querySelector('.landing-page-header');
+    landingPageHeader.style.height = window.innerHeight - navBar.offsetHeight + 'px';
+
+    // event listener for changing height of section according to window height
+    window.addEventListener('resize', function () {
+        landingPageHeader.style.height = window.innerHeight - navBar.offsetHeight + 'px';
+    });
+
+</script>

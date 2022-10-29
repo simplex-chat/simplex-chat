@@ -9,11 +9,14 @@
     <link rel="stylesheet" href="/css/swiper-bundle.min.css">
     <link href="/css/tailwind.css" rel="stylesheet" />
     <link rel="stylesheet" href="/css/style.css">
+    <script src="/js/animation.js"></script>
 </head>
 <body>
-    <section class="h-screen w-full bg-white dark:bg-gradient-radial-mobile dark:lg:bg-gradient-radial">
+    <section class="w-full bg-white dark:bg-gradient-radial-mobile dark:lg:bg-gradient-radial">
         {% include "navbar.html" %}
     </section>
+    
+    {% include "hero.html" %}
 
     {{ content | safe }}
     
