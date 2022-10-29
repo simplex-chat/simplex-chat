@@ -1,21 +1,21 @@
-{% macro overlay(card) %}
+{% macro overlay(section) %}
     {# Overlay is either hidder or flex #}
-    <div id="{{ card.overlayContent.overlayId }}" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light before:opacity-90 items-center justify-center p-10 z-[10000]">
+    <div id="{{ section.overlayContent.overlayId }}" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light before:opacity-90 items-center justify-center p-10 z-[10000]">
         <div class="overlay-card max-w-[1276px] bg-white opacity-100 max-h-[660px] z-[10001] rounded-md shadow-[0px_3px_12px_rgba(0,0,0,0.2)] p-14 overflow-auto scale-100">
-            <h1 class="text-3xl font-bold text-active-blue mb-6">{{ card.overlayContent.overlayTitle }}</h1>
+            <h1 class="text-3xl font-bold text-active-blue mb-6">{{ section.overlayContent.title }}</h1>
             <div class="flex gap-10 justify-between">
                 <div class="max-w-md">
                     <div class="text-grey-black dark:text-white flex flex-col gap-6 text-base">
-                        {% for para in card.overlayContent.paras %}
+                        {% for para in section.overlayContent.paras %}
                             <p>{{ para }}</p>
                         {% endfor %}
                     </div>
                 </div>
 
-                {% if card.overlayContent.showImage %}
+                {% if section.overlayContent.showImage %}
                     <div class="max-w-md">
                         <div class="flex items-center justify-center">
-                            <img class="w-full max-w-md min-w-[300px]" src="{{ card.imgLight }}" alt="">
+                            <img class="w-full max-w-md min-w-[300px]" src="{{ section.imgLight }}" alt="">
                         </div>
                     </div>
                 {% endif %}
