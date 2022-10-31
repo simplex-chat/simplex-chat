@@ -648,7 +648,7 @@ processChatCommand = \case
   APIUpdateProfile profile -> withUser (`updateProfile` profile)
   APISetContactPrefs contactId prefs' -> withUser $ \user@User {userId} -> do
     ct <- withStore $ \db -> getContact db userId contactId
-    updateContactPrefs user ct (userPreferences ct) prefs'
+    updateContactPrefs user ct prefs'
   APISetContactAlias contactId localAlias -> withUser $ \User {userId} -> do
     ct' <- withStore $ \db -> do
       ct <- getContact db userId contactId
@@ -743,14 +743,13 @@ processChatCommand = \case
     conn <- withStore' $ \db -> createDirectConnection db userId connId cReq ConnNew incognitoProfile
     toView $ CRNewContactConnection conn
     pure $ CRInvitation cReq
-  Connect (Just (ACR SCMInvitation cReq)) -> withUser $ \user@User {userId, profile} -> withChatLock "connect" . procCmd $ do
+  Connect (Just (ACR SCMInvitation cReq)) -> withUser $ \user@User {userId} -> withChatLock "connect" . procCmd $ do
     -- [incognito] generate profile to send
     incognito <- readTVarIO =<< asks incognitoMode
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
-    let profileToSend = fromMaybe (fromLocalProfile profile) incognitoProfile
-        mergedProfile = mergeChatPreferencesToProfile user profileToSend defaultChatPrefs
-    connId <- withAgent $ \a -> joinConnection a True cReq . directMessage $ XInfo mergedProfile
-    conn <- withStore' $ \db -> createDirectConnection db userId connId cReq ConnJoined incognitoProfile
+    let profileToSend = userProfileToSend user incognitoProfile
+    connId <- withAgent $ \a -> joinConnection a True cReq . directMessage $ XInfo profileToSend
+    conn <- withStore' $ \db -> createDirectConnection db userId connId cReq ConnJoined $ incognitoProfile $> profileToSend
     toView $ CRNewContactConnection conn
     pure CRSentConfirmation
   Connect (Just (ACR SCMContact cReq)) -> withUser $ \User {userId, profile} ->
@@ -1142,16 +1141,17 @@ processChatCommand = \case
             <$> withStore' (`getUserContacts` user)
         withChatLock "updateProfile" . procCmd $ do
           forM_ contacts $ \ct -> do
-            let mergedProfile = (p' :: Profile) {preferences = Just $ mergeChatPreferences user $ userPreferences ct}
+            let mergedProfile = (p' :: Profile) {preferences = Just . mergeChatPreferences user . Just $ userPreferences ct}
             void (sendDirectContactMessage ct $ XInfo mergedProfile) `catchError` (toView . CRChatError)
           pure $ CRUserProfileUpdated (fromLocalProfile p) p'
-    updateContactPrefs :: User -> Contact -> ChatPreferences -> ChatPreferences -> m ChatResponse
-    updateContactPrefs user@User {userId, profile = p} ct@Contact {contactId} contactUserPrefs contactUserPrefs'
+    updateContactPrefs :: User -> Contact -> ChatPreferences -> m ChatResponse
+    updateContactPrefs user@User {userId, profile = p} ct@Contact {contactId, userPreferences = contactUserPrefs} contactUserPrefs'
       | contactUserPrefs == contactUserPrefs' = pure $ CRContactProfileUpdated ct -- nothing changed actually
       | otherwise = do
         withStore' $ \db -> updateContactUserPreferences db userId contactId contactUserPrefs'
         -- [incognito] filter out contacts with whom user has incognito connections
-        let p' = mergeChatPreferencesToProfile user (fromLocalProfile p) contactUserPrefs'
+        let preferences = Just . mergeChatPreferences user $ Just contactUserPrefs'
+            p' = (fromLocalProfile p :: Profile) {preferences}
         withChatLock "updateProfile" . procCmd $ do
           void (sendDirectContactMessage ct $ XInfo p') `catchError` (toView . CRChatError)
           pure $ CRContactProfileUpdated $ (ct :: Contact) {userPreferences = contactUserPrefs'}
@@ -1386,14 +1386,13 @@ acceptContactRequestAsync user@User {userId} UserContactRequest {agentInvitation
     pure ct
 
 profileToSendOnAccept :: User -> Maybe IncognitoProfile -> (Profile, Maybe ChatPreferences)
-profileToSendOnAccept user@User {profile} incognitoProfile =
-  let p' = case incognitoProfile of
-        Just (NewIncognito p) -> p
-        Just (ExistingIncognito lp) -> fromLocalProfile lp
-        Nothing -> fromLocalProfile profile
-      mergedPrefs = Just $ mergeChatPreferences user defaultChatPrefs
-      prefOverrides = incognitoProfile >> mergedPrefs
-   in (p' {preferences = mergedPrefs}, prefOverrides)
+profileToSendOnAccept user ip =
+  let getIncognitoProfile = \case
+        NewIncognito p -> p
+        ExistingIncognito lp -> fromLocalProfile lp
+      p'@Profile {preferences} = userProfileToSend user $ getIncognitoProfile <$> ip
+      prefOverrides = ip >> preferences
+   in (p', prefOverrides)
 
 deleteGroupLink' :: ChatMonad m => User -> GroupInfo -> m ()
 deleteGroupLink' user gInfo = do
@@ -1591,7 +1590,7 @@ processAgentMessage (Just user) _ agentConnId END =
       showToast (c <> "> ") "connected to another client"
       unsetActive $ ActiveC c
     entity -> toView $ CRSubscriptionEnd entity
-processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentMessage =
+processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
   (withStore (\db -> getConnectionEntity db user $ AgentConnId agentConnId) >>= updateConnStatus) >>= \case
     RcvDirectMsgConnection conn contact_ ->
       processDirectMessage agentMessage conn contact_
@@ -1629,11 +1628,10 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
         CONF confId _ connInfo -> do
           -- [incognito] send saved profile
           incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
-          let profileToSend = fromLocalProfile $ fromMaybe profile incognitoProfile
+          let profileToSend = userProfileToSend user $ fromLocalProfile <$> incognitoProfile
           saveConnInfo conn connInfo
-          let mergedProfile = mergeChatPreferencesToProfile user profileToSend defaultChatPrefs
           -- [async agent commands] no continuation needed, but command should be asynchronous for stability
-          allowAgentConnectionAsync user conn confId $ XInfo mergedProfile
+          allowAgentConnectionAsync user conn confId $ XInfo profileToSend
         INFO connInfo ->
           saveConnInfo conn connInfo
         MSG meta _msgFlags msgBody -> do
@@ -2992,14 +2990,16 @@ deleteAgentConnectionAsync' user connId (AgentConnId acId) = do
   cmdId <- withStore' $ \db -> createCommand db user (Just connId) CFDeleteConn
   withAgent $ \a -> deleteConnectionAsync a (aCorrId cmdId) acId
 
-mergeChatPreferencesToProfile :: User -> Profile -> ChatPreferences -> Profile
-mergeChatPreferencesToProfile user p contactUserPrefs =
-  (p :: Profile) {preferences = Just $ mergeChatPreferences user contactUserPrefs}
+userProfileToSend :: User -> Maybe Profile -> Profile
+userProfileToSend user@User {profile} incognitoProfile =
+  let p = fromMaybe (fromLocalProfile profile) incognitoProfile
+      preferences = Just $ mergeChatPreferences user Nothing
+   in (p :: Profile) {preferences}
 
-mergeChatPreferences :: User -> ChatPreferences -> ChatPreferences
-mergeChatPreferences User {profile = LocalProfile {preferences}} ChatPreferences {voice = contactVoice} =
+mergeChatPreferences :: User -> Maybe ChatPreferences -> ChatPreferences
+mergeChatPreferences User {profile = LocalProfile {preferences}} contactPrefs =
   let ChatPreferences {voice = defaultVoice} = defaultChatPrefs
-   in ChatPreferences {voice = contactVoice <|> (preferences >>= voice) <|> defaultVoice}
+   in ChatPreferences {voice = (contactPrefs >>= voice) <|> (preferences >>= voice) <|> defaultVoice}
 
 getCreateActiveUser :: SQLiteStore -> IO User
 getCreateActiveUser st = do
@@ -3155,7 +3155,7 @@ chatCommandP =
       "/_profile " *> (APIUpdateProfile <$> jsonP),
       "/_set alias @" *> (APISetContactAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set alias :" *> (APISetConnectionAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
-      "/_set prefs @" *> (APISetContactPrefs <$> A.decimal <* A.space <*> ("userPreferences=" *> jsonP)),
+      "/_set prefs @" *> (APISetContactPrefs <$> A.decimal <* A.space <*> jsonP),
       "/_parse " *> (APIParseMarkdown . safeDecodeUtf8 <$> A.takeByteString),
       "/_ntf get" $> APIGetNtfToken,
       "/_ntf register " *> (APIRegisterToken <$> strP_ <*> strP),
