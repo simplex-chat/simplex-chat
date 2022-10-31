@@ -1740,10 +1740,9 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
               chatItem <- withStore $ \db -> updateDirectChatItemStatus db userId contactId (chatItemId' ci) CISSndSent
               toView $ CRChatItemStatusUpdated (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
             _ -> pure ()
-        SWITCH _phase _ -> do
-          -- ci <- ?
-          -- toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
-          pure ()
+        SWITCH qd phase _ -> case qd of
+          QDRcv -> createInternalChatItem (CDDirectSnd ct) (CISndConnEvent $ SCESwitch phase) Nothing
+          QDSnd -> createInternalChatItem (CDDirectRcv ct) (CIRcvConnEvent $ RCESwitch phase) Nothing
         OK ->
           -- [async agent commands] continuation on receiving OK
           withCompletedCommand conn agentMsg $ \CommandData {cmdFunction, cmdId} ->
@@ -1787,13 +1786,8 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
                     let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
                         groupInv = GroupInvitation (MemberIdRole userMemberId userRole) (MemberIdRole memberId memRole) cReq groupProfile
                     (_msg, _) <- sendDirectContactMessage ct $ XGrpInv groupInv
-                    createdAt <- liftIO getCurrentTime
-                    let content = CIRcvGroupEvent RGEInvitedViaGroupLink
-                        cd = CDGroupRcv gInfo m
                     -- we could link chat item with sent group invitation message (_msg)
-                    ciId <- withStore' $ \db -> createNewChatItemNoMsg db user cd content createdAt createdAt
-                    ci <- liftIO $ mkChatItem cd ciId content Nothing Nothing Nothing createdAt createdAt
-                    toView $ CRNewChatItem $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci
+                    createInternalChatItem (CDGroupRcv gInfo m) (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
               _ -> throwChatError $ CECommandError "unexpected cmdFunction"
             CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
       CONF confId _ connInfo -> do
@@ -1891,10 +1885,9 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
       SENT msgId -> do
         sentMsgDeliveryEvent conn msgId
         checkSndInlineFTComplete conn msgId
-      SWITCH _phase _ -> do
-        -- ci <- ?
-        -- toView . CRNewChatItem $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci
-        pure ()
+      SWITCH qd phase _ -> case qd of
+        QDRcv -> createInternalChatItem (CDGroupSnd gInfo) (CISndConnEvent $ SCESwitch phase) Nothing
+        QDSnd -> createInternalChatItem (CDGroupRcv gInfo m) (CIRcvConnEvent $ RCESwitch phase) Nothing
       OK ->
         -- [async agent commands] continuation on receiving OK
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction, cmdId} ->
@@ -2110,14 +2103,9 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
         throwChatError $ CEFileRcvChunk err
 
     memberConnectedChatItem :: GroupInfo -> GroupMember -> m ()
-    memberConnectedChatItem gInfo m = do
-      createdAt <- liftIO getCurrentTime
-      let content = CIRcvGroupEvent RGEMemberConnected
-          cd = CDGroupRcv gInfo m
-      -- first ts should be broker ts but we don't have it for CON
-      ciId <- withStore' $ \db -> createNewChatItemNoMsg db user cd content createdAt createdAt
-      ci <- liftIO $ mkChatItem cd ciId content Nothing Nothing Nothing createdAt createdAt
-      toView $ CRNewChatItem $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci
+    memberConnectedChatItem gInfo m =
+      -- ts should be broker ts but we don't have it for CON
+      createInternalChatItem (CDGroupRcv gInfo m) (CIRcvGroupEvent RGEMemberConnected) Nothing
 
     notifyMemberConnected :: GroupInfo -> GroupMember -> m ()
     notifyMemberConnected gInfo m@GroupMember {localDisplayName = c} = do
@@ -2424,15 +2412,16 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
     checkIntegrityCreateItem cd MsgMeta {integrity, broker = (_, brokerTs)} = case integrity of
       MsgOk -> pure ()
       MsgError e -> case e of
-        MsgSkipped {} -> createIntegrityErrorItem e
+        MsgSkipped {} -> createInternalChatItem cd (CIRcvIntegrityError e) (Just brokerTs)
         _ -> toView $ CRMsgIntegrityError e
-      where
-        createIntegrityErrorItem e = do
-          createdAt <- liftIO getCurrentTime
-          let content = CIRcvIntegrityError e
-          ciId <- withStore' $ \db -> createNewChatItemNoMsg db user cd content brokerTs createdAt
-          ci <- liftIO $ mkChatItem cd ciId content Nothing Nothing Nothing brokerTs createdAt
-          toView $ CRNewChatItem $ AChatItem (chatTypeI @c) SMDRcv (toChatInfo cd) ci
+
+    createInternalChatItem :: forall c d. (ChatTypeI c, MsgDirectionI d) => ChatDirection c d -> CIContent d -> Maybe UTCTime -> m ()
+    createInternalChatItem cd content itemTs_ = do
+      createdAt <- liftIO getCurrentTime
+      let itemTs = fromMaybe createdAt itemTs_
+      ciId <- withStore' $ \db -> createNewChatItemNoMsg db user cd content itemTs createdAt
+      ci <- liftIO $ mkChatItem cd ciId content Nothing Nothing Nothing itemTs createdAt
+      toView $ CRNewChatItem $ AChatItem (chatTypeI @c) (msgDirection @d) (toChatInfo cd) ci
 
     xInfo :: Contact -> Profile -> m ()
     xInfo c@Contact {profile = p} p' = unless (fromLocalProfile p == p') $ do
