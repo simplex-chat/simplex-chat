@@ -20,7 +20,7 @@ window.addEventListener("load", function () {
   let totalHeight = this.document.body.scrollHeight - this.window.innerHeight;
   this.window.onscroll = function () {
     let progressHeight = (window.pageYOffset / totalHeight) * 100;
-    if (progressHeight > 43) {
+    if (progressHeight > 10) {
       document.getElementsByClassName(
         "hero-phone-background"
       )[0].style.position = "absolute";
