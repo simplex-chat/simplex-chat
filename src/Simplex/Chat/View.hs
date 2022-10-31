@@ -18,7 +18,7 @@ import Data.Char (toUpper)
 import Data.Function (on)
 import Data.Int (Int64)
 import Data.List (groupBy, intercalate, intersperse, partition, sortOn)
-import Data.Maybe (isJust, isNothing, fromMaybe)
+import Data.Maybe (isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (DiffTime)

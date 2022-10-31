@@ -1427,8 +1427,8 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
             WHERE c.user_id = ? AND c.contact_id = ?
           |]
           (userId, contactId)
-    toContact' :: Int64 -> Connection -> [(ProfileId, ContactName, Text, Text, Maybe ImageData, LocalAlias, Maybe Int64, Bool, Maybe Bool, Maybe ChatPreferences, Maybe ChatPreferences, UTCTime, UTCTime)] -> Either StoreError Contact
-    toContact' contactId activeConn [(profileId, localDisplayName, displayName, fullName, image, localAlias, viaGroup, contactUsed, enableNtfs_, contactPreferences, userPreferences, createdAt, updatedAt)] =
+    toContact' :: Int64 -> Connection -> [(ProfileId, ContactName, Text, Text, Maybe ImageData, LocalAlias, Maybe Int64, Bool, Maybe Bool) :. (Maybe ChatPreferences, Maybe ChatPreferences, UTCTime, UTCTime)] -> Either StoreError Contact
+    toContact' contactId activeConn [(profileId, localDisplayName, displayName, fullName, image, localAlias, viaGroup, contactUsed, enableNtfs_) :. (contactPreferences, userPreferences, createdAt, updatedAt)] =
       let profile = LocalProfile {profileId, profile = Profile{displayName, fullName, image, contactPreferences, userPreferences}, localAlias}
           chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_}
        in Right $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, createdAt, updatedAt}
