@@ -1740,9 +1740,11 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
               chatItem <- withStore $ \db -> updateDirectChatItemStatus db userId contactId (chatItemId' ci) CISSndSent
               toView $ CRChatItemStatusUpdated (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
             _ -> pure ()
-        SWITCH qd phase _ -> case qd of
-          QDRcv -> createInternalChatItem (CDDirectSnd ct) (CISndConnEvent $ SCESwitch phase) Nothing
-          QDSnd -> createInternalChatItem (CDDirectRcv ct) (CIRcvConnEvent $ RCESwitch phase) Nothing
+        SWITCH qd phase cStats -> do
+          toView . CRContactSwitch ct $ SwitchProgress qd phase cStats
+          when (phase /= SPConfirmed) $ case qd of
+            QDRcv -> createInternalChatItem (CDDirectSnd ct) (CISndConnEvent $ SCESwitch phase) Nothing
+            QDSnd -> createInternalChatItem (CDDirectRcv ct) (CIRcvConnEvent $ RCESwitch phase) Nothing
         OK ->
           -- [async agent commands] continuation on receiving OK
           withCompletedCommand conn agentMsg $ \CommandData {cmdFunction, cmdId} ->
@@ -1885,9 +1887,11 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
       SENT msgId -> do
         sentMsgDeliveryEvent conn msgId
         checkSndInlineFTComplete conn msgId
-      SWITCH qd phase _ -> case qd of
-        QDRcv -> createInternalChatItem (CDGroupSnd gInfo) (CISndConnEvent $ SCESwitch phase) Nothing
-        QDSnd -> createInternalChatItem (CDGroupRcv gInfo m) (CIRcvConnEvent $ RCESwitch phase) Nothing
+      SWITCH qd phase cStats -> do
+        toView . CRGroupMemberSwitch gInfo m $ SwitchProgress qd phase cStats
+        when (phase /= SPConfirmed) $ case qd of
+          QDRcv -> createInternalChatItem (CDGroupSnd gInfo) (CISndConnEvent $ SCESwitch phase) Nothing
+          QDSnd -> createInternalChatItem (CDGroupRcv gInfo m) (CIRcvConnEvent $ RCESwitch phase) Nothing
       OK ->
         -- [async agent commands] continuation on receiving OK
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction, cmdId} ->
