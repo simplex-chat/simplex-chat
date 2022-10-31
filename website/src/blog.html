@@ -1,48 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="/css/tailwind.css" rel="stylesheet" />
-    <link href="/css/blogs.css" rel="stylesheet" />
-    <link href="/css/style.css" rel="stylesheet" />
-    <title>Blogs</title>
-    <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico">
-    <script async defer src="https://buttons.github.io/buttons.js"></script>
-</head>
-<body class="bg-gray-100">
-    {% include "nav.html" %}
-    
-    <section class="container">
-        {% for blog in collections.blogs  %}
-        <article class="bg-white my-3 py-8 px-6 sm:px-8 md:px-12 lg:px-16 rounded-lg hover:shadow-md ">
-            <h1 class="text-xl font-medium">{{ blog.data.title }}</h1>
-            <p class="text-sm">{{ blog.data.date.toUTCString().split(' ').slice(0, 4).join(' ') }}</p>
-            <a class="inline-block mt-5 hover:underline" href="{{ blog.url }}">Read More</a>
-            <br>
-        </article>
-        {% endfor %}
-    </section>
-    <footer>
-        <div class="container">
-          <img alt="simplex logo" class="logo d-none-992" src="/img/simplex.svg" />
-          <p class="copyright">&#169; 2020-22 SimpleX | Open-Source Project <span class="d-none-576">|</span>
-            <a class="d-none-576" href="https://github.com/simplex-chat" target="_blank"><img
-                src="/img/icons/github.svg"></a>
-            <a class="d-none-576" href="https://www.reddit.com/r/SimpleXChat/" target="_blank"><img
-                src="/img/icons/reddit.svg"></a>
-            <a class="d-none-576" href="https://twitter.com/simplexchat" target="_blank"><img
-                src="/img/icons/twitter.svg"></a>
-            <a class="d-none-576" href="https://www.linkedin.com/company/simplex-chat/" target="_blank"><img
-                src="/img/icons/linkedin.svg"></a>
-            <a class="d-none-576" href="mailto:chat@simplex.chat" target="_blank"><img src="/img/icons/email.svg"></a>
-          </p>
-          <div class="github d-none-992">
-            <a class="github-button" href="https://github.com/simplex-chat/protocol" data-size="large"
-              data-show-count="true" aria-label="Star simplex-chat on GitHub">Star</a>
-          </div>
-        </div>
-    </footer>
-</body>
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link href="/css/tailwind.css" rel="stylesheet" />
+        {# <link href="/css/blogs.css" rel="stylesheet" /> #}
+        <link href="/css/style.css" rel="stylesheet" />
+        <title>Blogs</title>
+        <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico">
+        <script async defer src="https://buttons.github.io/buttons.js"></script>
+    </head>
+    <body class="bg-white dark:bg-[#0C0B13]">
+        {% include "navbar.html" %}
+
+        <section class="py-5">
+            <div class="container">
+                <p class="text-[38px] text-center font-bold text-active-blue mb-9">Latest news</p>
+
+                {% for blog in collections.blogs %}
+                <article class="w-full flex flex-col md:flex-row rounded-[4px] overflow-hidden shadow-[0px_20px_30px_rgba(0,0,0,0.12)] mb-8">
+                    <div class="min-h-[200px] h-full md:w-[168px] bg-[#D9E7ED] dark:bg-[#17203D] flex items-center justify-center flex-[1]">
+                        <img class="h-[44px] dark:hidden" src="/img/new/logo-symbol-light.svg" alt="" srcset="">
+                        <img class="h-[44px] hidden dark:inline-block" src="/img/new/logo-symbol-dark.svg" alt="" srcset="">
+                    </div>
+                    <div class="p-6 md:py-8 flex-[2.5] flex flex-col bg-white dark:bg-[#11182F]">
+                        <div>
+                            <h1 class="text-grey-black dark:text-white text-lg md:text-xl font-bold ">{{ blog.data.title }}</h1>
+                            <p class="text-sm text-[#A8B0B4] font-medium mt-2 mb-4 tracking-[0.03em]">{{ blog.data.date.toUTCString().split(' ').slice(0, 4).join(' ') }}</p>
+                        </div>
+                        <a class="block text-primary-light dark:text-[#70F0F9] text-base font-medium tracking-[0.03em] mt-auto" href="{{ blog.url }}">Read More</a>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+        </section>
+
+        {% include "footer.html" %}
+    </body>
 </html>
