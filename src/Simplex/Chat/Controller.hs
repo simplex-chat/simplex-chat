@@ -314,9 +314,9 @@ data ChatResponse
   | CRSndFileRcvCancelled {chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
   | CRSndGroupFileCancelled {chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta, sndFileTransfers :: [SndFileTransfer]}
   | CRUserProfileUpdated {fromProfile :: Profile, toProfile :: Profile}
-  | CRContactProfileUpdated {toContact :: Contact}
   | CRContactAliasUpdated {toContact :: Contact}
   | CRConnectionAliasUpdated {toConnection :: PendingContactConnection}
+  | CRContactPrefsUpdated {toContact :: Contact}
   | CRContactConnecting {contact :: Contact}
   | CRContactConnected {contact :: Contact, userCustomProfile :: Maybe Profile}
   | CRContactAnotherClient {contact :: Contact}

@@ -121,7 +121,7 @@ responseToView testView = \case
   CRSndGroupFileCancelled _ ftm fts -> viewSndGroupFileCancelled ftm fts
   CRRcvFileCancelled ft -> receivingFile_ "cancelled" ft
   CRUserProfileUpdated p p' -> viewUserProfileUpdated p p'
-  CRContactProfileUpdated ct -> viewContactPrefsUpdated ct
+  CRContactPrefsUpdated ct -> viewContactPrefsUpdated ct
   CRContactAliasUpdated c -> viewContactAliasUpdated c
   CRConnectionAliasUpdated c -> viewConnectionAliasUpdated c
   CRContactUpdated c c' -> viewContactUpdated c c'

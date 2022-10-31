@@ -531,7 +531,7 @@ createDirectContact :: DB.Connection -> UserId -> Connection -> Profile -> Excep
 createDirectContact db userId activeConn@Connection {connId, localAlias} profile = do
   createdAt <- liftIO getCurrentTime
   (localDisplayName, contactId, profileId) <- createContact_ db userId connId profile localAlias Nothing createdAt
-  pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile localAlias, activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences = defaultChatPrefs, createdAt, updatedAt = createdAt}
+  pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile localAlias, activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences = emptyChatPrefs, createdAt, updatedAt = createdAt}
 
 createContact_ :: DB.Connection -> UserId -> Int64 -> Profile -> LocalAlias -> Maybe Int64 -> UTCTime -> ExceptT StoreError IO (Text, ContactId, ProfileId)
 createContact_ db userId connId Profile {displayName, fullName, image, preferences} localAlias viaGroup currentTs =
@@ -638,10 +638,11 @@ updateContactProfile db userId c@Contact {contactId, localDisplayName, profile =
 
 updateContactUserPreferences :: DB.Connection -> UserId -> Int64 -> ChatPreferences -> IO ()
 updateContactUserPreferences db userId contactId userPreferences = do
+  updatedAt <- getCurrentTime
   DB.execute
     db
     "UPDATE contacts SET user_preferences = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?"
-    (userPreferences, userId, contactId)
+    (userPreferences, updatedAt, userId, contactId)
 
 updateContactAlias :: DB.Connection -> UserId -> Contact -> LocalAlias -> IO Contact
 updateContactAlias db userId c@Contact {profile = lp@LocalProfile {profileId}} localAlias = do
@@ -1119,27 +1120,21 @@ deleteContactRequest db userId contactRequestId = do
     (userId, userId, contactRequestId)
   DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?" (userId, contactRequestId)
 
-createAcceptedContact :: DB.Connection -> UserId -> Maybe ChatPreferences -> ConnId -> ContactName -> ProfileId -> Profile -> Int64 -> Maybe XContactId -> Maybe IncognitoProfile -> IO Contact
-createAcceptedContact db userId usersContactPreferences agentConnId localDisplayName profileId profile userContactLinkId xContactId incognitoProfile = do
+createAcceptedContact :: DB.Connection -> User -> ConnId -> ContactName -> ProfileId -> Profile -> Int64 -> Maybe XContactId -> Maybe IncognitoProfile -> IO Contact
+createAcceptedContact db User {userId, profile = LocalProfile {preferences}} agentConnId localDisplayName profileId profile userContactLinkId xContactId incognitoProfile = do
   DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
   createdAt <- getCurrentTime
   customUserProfileId <- forM incognitoProfile $ \case
     NewIncognito p -> createIncognitoProfile_ db userId createdAt p
     ExistingIncognito LocalProfile {profileId = pId} -> pure pId
-  case incognitoProfile of
-    Just _ ->
-      DB.execute
-        db
-        "INSERT INTO contacts (user_id, local_display_name, contact_profile_id, enable_ntfs, user_preferences, created_at, updated_at, xcontact_id) VALUES (?,?,?,?,?,?,?,?)"
-        (userId, localDisplayName, profileId, True, usersContactPreferences, createdAt, createdAt, xContactId)
-    _ ->
-      DB.execute
-        db
-        "INSERT INTO contacts (user_id, local_display_name, contact_profile_id, enable_ntfs, created_at, updated_at, xcontact_id) VALUES (?,?,?,?,?,?,?)"
-        (userId, localDisplayName, profileId, True, createdAt, createdAt, xContactId)
+  let contactUserPrefs = fromMaybe emptyChatPrefs $ incognitoProfile >> preferences
+  DB.execute
+    db
+    "INSERT INTO contacts (user_id, local_display_name, contact_profile_id, enable_ntfs, user_preferences, created_at, updated_at, xcontact_id) VALUES (?,?,?,?,?,?,?,?)"
+    (userId, localDisplayName, profileId, True, contactUserPrefs, createdAt, createdAt, xContactId)
   contactId <- insertedRowId db
   activeConn <- createConnection_ db userId ConnContact (Just contactId) agentConnId Nothing (Just userContactLinkId) customUserProfileId 0 createdAt
-  pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile "", activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences = defaultChatPrefs, createdAt = createdAt, updatedAt = createdAt}
+  pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile "", activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences = contactUserPrefs, createdAt = createdAt, updatedAt = createdAt}
 
 getLiveSndFileTransfers :: DB.Connection -> User -> IO [SndFileTransfer]
 getLiveSndFileTransfers db User {userId} = do

@@ -1141,20 +1141,24 @@ processChatCommand = \case
             <$> withStore' (`getUserContacts` user)
         withChatLock "updateProfile" . procCmd $ do
           forM_ contacts $ \ct -> do
-            let mergedProfile = (p' :: Profile) {preferences = Just . mergeChatPreferences user . Just $ userPreferences ct}
+            let mergedProfile = userProfileForContact user' ct
             void (sendDirectContactMessage ct $ XInfo mergedProfile) `catchError` (toView . CRChatError)
           pure $ CRUserProfileUpdated (fromLocalProfile p) p'
     updateContactPrefs :: User -> Contact -> ChatPreferences -> m ChatResponse
-    updateContactPrefs user@User {userId, profile = p} ct@Contact {contactId, userPreferences = contactUserPrefs} contactUserPrefs'
-      | contactUserPrefs == contactUserPrefs' = pure $ CRContactProfileUpdated ct -- nothing changed actually
+    updateContactPrefs user@User {userId} ct@Contact {contactId, userPreferences = contactUserPrefs} contactUserPrefs'
+      | contactUserPrefs == contactUserPrefs' = pure $ CRContactPrefsUpdated ct -- nothing changed actually
       | otherwise = do
         withStore' $ \db -> updateContactUserPreferences db userId contactId contactUserPrefs'
         -- [incognito] filter out contacts with whom user has incognito connections
-        let preferences = Just . mergeChatPreferences user $ Just contactUserPrefs'
-            p' = (fromLocalProfile p :: Profile) {preferences}
+        let ct' = (ct :: Contact) {userPreferences = contactUserPrefs'}
+            p' = userProfileForContact user ct'
         withChatLock "updateProfile" . procCmd $ do
-          void (sendDirectContactMessage ct $ XInfo p') `catchError` (toView . CRChatError)
-          pure $ CRContactProfileUpdated $ (ct :: Contact) {userPreferences = contactUserPrefs'}
+          void (sendDirectContactMessage ct' $ XInfo p') `catchError` (toView . CRChatError)
+          pure $ CRContactPrefsUpdated ct'
+    userProfileForContact :: User -> Contact -> Profile
+    userProfileForContact user@User {profile = p} Contact {userPreferences} =
+      let preferences = Just . mergeChatPreferences user $ Just userPreferences
+       in (fromLocalProfile p :: Profile) {preferences}
 
     isReady :: Contact -> Bool
     isReady ct =
@@ -1371,28 +1375,26 @@ getRcvFilePath fileId fPath_ fn = case fPath_ of
            in ifM (doesFileExist f) (tryCombine $ n + 1) (pure f)
 
 acceptContactRequest :: ChatMonad m => User -> UserContactRequest -> Maybe IncognitoProfile -> m Contact
-acceptContactRequest user@User {userId} UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = cp, userContactLinkId, xContactId} incognitoProfile = do
-  let (profileToSend, prefOverrides) = profileToSendOnAccept user incognitoProfile
+acceptContactRequest user UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = cp, userContactLinkId, xContactId} incognitoProfile = do
+  let profileToSend = profileToSendOnAccept user incognitoProfile
   acId <- withAgent $ \a -> acceptContact a True invId . directMessage $ XInfo profileToSend
-  withStore' $ \db -> createAcceptedContact db userId prefOverrides acId cName profileId cp userContactLinkId xContactId incognitoProfile
+  withStore' $ \db -> createAcceptedContact db user acId cName profileId cp userContactLinkId xContactId incognitoProfile
 
 acceptContactRequestAsync :: ChatMonad m => User -> UserContactRequest -> Maybe IncognitoProfile -> m Contact
-acceptContactRequestAsync user@User {userId} UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} incognitoProfile = do
-  let (profileToSend, prefOverrides) = profileToSendOnAccept user incognitoProfile
+acceptContactRequestAsync user UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} incognitoProfile = do
+  let profileToSend = profileToSendOnAccept user incognitoProfile
   (cmdId, acId) <- agentAcceptContactAsync user True invId $ XInfo profileToSend
   withStore' $ \db -> do
-    ct@Contact {activeConn = Connection {connId}} <- createAcceptedContact db userId prefOverrides acId cName profileId p userContactLinkId xContactId incognitoProfile
+    ct@Contact {activeConn = Connection {connId}} <- createAcceptedContact db user acId cName profileId p userContactLinkId xContactId incognitoProfile
     setCommandConnId db user cmdId connId
     pure ct
 
-profileToSendOnAccept :: User -> Maybe IncognitoProfile -> (Profile, Maybe ChatPreferences)
-profileToSendOnAccept user ip =
-  let getIncognitoProfile = \case
-        NewIncognito p -> p
-        ExistingIncognito lp -> fromLocalProfile lp
-      p'@Profile {preferences} = userProfileToSend user $ getIncognitoProfile <$> ip
-      prefOverrides = ip >> preferences
-   in (p', prefOverrides)
+profileToSendOnAccept :: User -> Maybe IncognitoProfile -> Profile
+profileToSendOnAccept user ip = userProfileToSend user $ getIncognitoProfile <$> ip
+  where
+    getIncognitoProfile = \case
+      NewIncognito p -> p
+      ExistingIncognito lp -> fromLocalProfile lp
 
 deleteGroupLink' :: ChatMonad m => User -> GroupInfo -> m ()
 deleteGroupLink' user gInfo = do

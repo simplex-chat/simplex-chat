@@ -243,7 +243,10 @@ data ChatPreferences = ChatPreferences
   deriving (Eq, Show, Generic, FromJSON)
 
 defaultChatPrefs :: ChatPreferences
-defaultChatPrefs = ChatPreferences {voice = Nothing}
+defaultChatPrefs = ChatPreferences {voice = Just Preference {enable = PSOff}}
+
+emptyChatPrefs :: ChatPreferences
+emptyChatPrefs = ChatPreferences {voice = Nothing}
 
 instance ToJSON ChatPreferences where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
