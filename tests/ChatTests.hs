@@ -108,9 +108,10 @@ chatTests = do
     it "accept contact request incognito" testAcceptContactRequestIncognito
     it "join group incognito" testJoinGroupIncognito
     it "can't invite contact to whom user connected incognito to a group" testCantInviteContactIncognito
-  describe "contact aliases" $ do
+  describe "contact aliases and prefs" $ do
     it "set contact alias" testSetAlias
     it "set connection alias" testSetConnectionAlias
+    it "set contact prefs" testSetContactPrefs
   describe "SMP servers" $
     it "get and set SMP servers" testGetSetSMPServers
   describe "async connection handshake" $ do
@@ -2406,6 +2407,14 @@ testConnectIncognitoInvitationLink = testChat3 aliceProfile bobProfile cathProfi
     bob ?<# (aliceIncognito <> "> do you see that I've changed profile?")
     bob ?#> ("@" <> aliceIncognito <> " no")
     alice ?<# (bobIncognito <> "> no")
+    alice ##> "/_set prefs @2 {}"
+    alice <## "preferences were updated: contact's voice is off, user's voice is unset"
+    alice ##> "/_set prefs @2 {\"voice\": {\"enable\": \"on\"}}"
+    alice <## "preferences were updated: contact's voice is off, user's voice is on"
+    bob ##> "/_set prefs @2 {}"
+    bob <## "preferences were updated: contact's voice is on, user's voice is unset"
+    alice ##> "/_set prefs @2 {\"voice\": {\"enable\": \"off\"}}"
+    alice <## "preferences were updated: contact's voice is off, user's voice is off"
 
 testConnectIncognitoContactAddress :: IO ()
 testConnectIncognitoContactAddress = testChat2 aliceProfile bobProfile $
@@ -2705,6 +2714,29 @@ testSetConnectionAlias = testChat2 aliceProfile bobProfile $
     alice @@@ [("@bob", "")]
     alice ##> "/cs"
     alice <## "bob (Bob) (alias: friend)"
+
+testSetContactPrefs :: IO ()
+testSetContactPrefs = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    connectUsers alice bob
+    alice ##> "/_set prefs @2 {}"
+    alice <## "preferences were updated: contact's voice is off, user's voice is unset"
+    alice ##> "/_set prefs @2 {\"voice\": {\"enable\": \"on\"}}"
+    alice <## "preferences were updated: contact's voice is off, user's voice is on"
+    alice ##> "/_profile {\"displayName\": \"alice\", \"fullName\": \"\", \"preferences\": {\"voice\": {\"enable\": \"off\"}}}"
+    alice <## "user full name removed (your contacts are notified)"
+    bob <## "contact alice removed full name"
+    alice ##> "/_set prefs @2 {\"voice\": {\"enable\": \"on\"}}"
+    alice <## "preferences were updated: contact's voice is off, user's voice is on"
+    bob ##> "/_profile {\"displayName\": \"bob\", \"fullName\": \"\", \"preferences\": {\"voice\": {\"enable\": \"on\"}}}"
+    bob <## "user full name removed (your contacts are notified)"
+    alice <## "contact bob removed full name"
+    bob ##> "/_set prefs @2 {}"
+    bob <## "preferences were updated: contact's voice is on, user's voice is unset"
+    alice ##> "/_set prefs @2 {\"voice\": {\"enable\": \"off\"}}"
+    alice <## "preferences were updated: contact's voice is on, user's voice is off"
+    bob ##> "/_set prefs @2 {}"
+    bob <## "preferences were updated: contact's voice is off, user's voice is unset"
 
 testGetSetSMPServers :: IO ()
 testGetSetSMPServers =
