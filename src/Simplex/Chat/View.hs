@@ -254,19 +254,15 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} doShow = c
   DirectChat c -> case chatDir of
     CIDirectSnd -> case content of
       CISndMsgContent mc -> withSndFile to $ sndMsg to quote mc
-      CISndDeleted _ -> showSndItem to
-      CISndCall {} -> showSndItem to
-      CISndGroupInvitation {} -> showSndItem to
       CISndGroupEvent {} -> showSndItemProhibited to
+      _ -> showSndItem to
       where
         to = ttyToContact' c
     CIDirectRcv -> case content of
       CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
-      CIRcvDeleted _ -> showRcvItem from
-      CIRcvCall {} -> showRcvItem from
       CIRcvIntegrityError err -> viewRcvIntegrityError from err meta
-      CIRcvGroupInvitation {} -> showRcvItem from
       CIRcvGroupEvent {} -> showRcvItemProhibited from
+      _ -> showRcvItem from
       where
         from = ttyFromContact' c
     where
@@ -274,19 +270,15 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} doShow = c
   GroupChat g -> case chatDir of
     CIGroupSnd -> case content of
       CISndMsgContent mc -> withSndFile to $ sndMsg to quote mc
-      CISndDeleted _ -> showSndItem to
-      CISndCall {} -> showSndItem to
       CISndGroupInvitation {} -> showSndItemProhibited to
-      CISndGroupEvent {} -> showSndItem to
+      _ -> showSndItem to
       where
         to = ttyToGroup g
     CIGroupRcv m -> case content of
       CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
-      CIRcvDeleted _ -> showRcvItem from
-      CIRcvCall {} -> showRcvItem from
       CIRcvIntegrityError err -> viewRcvIntegrityError from err meta
       CIRcvGroupInvitation {} -> showRcvItemProhibited from
-      CIRcvGroupEvent {} -> showRcvItem from
+      _ -> showRcvItem from
       where
         from = ttyFromGroup' g m
     where

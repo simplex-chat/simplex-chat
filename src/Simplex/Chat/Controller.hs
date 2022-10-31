@@ -193,9 +193,13 @@ data ChatCommand
   | APISetChatSettings ChatRef ChatSettings
   | APIContactInfo ContactId
   | APIGroupMemberInfo GroupId GroupMemberId
+  | APISwitchContact ContactId
+  | APISwitchGroupMember GroupId GroupMemberId
   | ShowMessages ChatName Bool
   | ContactInfo ContactName
   | GroupMemberInfo GroupName ContactName
+  | SwitchContact ContactName
+  | SwitchGroupMember GroupName ContactName
   | ChatHelp HelpSection
   | Welcome
   | AddContact

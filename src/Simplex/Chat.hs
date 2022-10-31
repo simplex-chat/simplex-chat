@@ -718,6 +718,15 @@ processChatCommand = \case
     (g, m) <- withStore $ \db -> (,) <$> getGroupInfo db user gId <*> getGroupMember db user gId gMemberId
     connectionStats <- mapM (withAgent . flip getConnectionServers) (memberConnId m)
     pure $ CRGroupMemberInfo g m connectionStats
+  APISwitchContact contactId -> withUser $ \User {userId} -> do
+    ct <- withStore $ \db -> getContact db userId contactId
+    withAgent $ \a -> switchConnectionAsync a "" $ contactConnId ct
+    pure CRCmdOk
+  APISwitchGroupMember gId gMemberId -> withUser $ \user -> do
+    m <- withStore $ \db -> getGroupMember db user gId gMemberId
+    case memberConnId m of
+      Just connId -> withAgent (\a -> switchConnectionAsync a "" connId) $> CRCmdOk
+      _ -> throwChatError CEGroupMemberNotActive
   ShowMessages (ChatName cType name) ntfOn -> withUser $ \user -> do
     chatId <- case cType of
       CTDirect -> withStore $ \db -> getContactIdByName db user name
@@ -730,6 +739,12 @@ processChatCommand = \case
   GroupMemberInfo gName mName -> withUser $ \user -> do
     (gId, mId) <- withStore $ \db -> getGroupIdByName db user gName >>= \gId -> (gId,) <$> getGroupMemberIdByName db user gId mName
     processChatCommand $ APIGroupMemberInfo gId mId
+  SwitchContact cName -> withUser $ \user -> do
+    contactId <- withStore $ \db -> getContactIdByName db user cName
+    processChatCommand $ APISwitchContact contactId
+  SwitchGroupMember gName mName -> withUser $ \user -> do
+    (gId, mId) <- withStore $ \db -> getGroupIdByName db user gName >>= \gId -> (gId,) <$> getGroupMemberIdByName db user gId mName
+    processChatCommand $ APISwitchGroupMember gId mId
   ChatHelp section -> pure $ CRChatHelp section
   Welcome -> withUser $ pure . CRWelcome
   AddContact -> withUser $ \User {userId} -> withChatLock "addContact" . procCmd $ do
@@ -1725,6 +1740,10 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
               chatItem <- withStore $ \db -> updateDirectChatItemStatus db userId contactId (chatItemId' ci) CISSndSent
               toView $ CRChatItemStatusUpdated (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
             _ -> pure ()
+        SWITCH _phase _ -> do
+          -- ci <- ?
+          -- toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
+          pure ()
         OK ->
           -- [async agent commands] continuation on receiving OK
           withCompletedCommand conn agentMsg $ \CommandData {cmdFunction, cmdId} ->
@@ -1872,6 +1891,10 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
       SENT msgId -> do
         sentMsgDeliveryEvent conn msgId
         checkSndInlineFTComplete conn msgId
+      SWITCH _phase _ -> do
+        -- ci <- ?
+        -- toView . CRNewChatItem $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci
+        pure ()
       OK ->
         -- [async agent commands] continuation on receiving OK
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction, cmdId} ->
@@ -3151,6 +3174,10 @@ chatCommandP =
       "/_info @" *> (APIContactInfo <$> A.decimal),
       ("/info #" <|> "/i #") *> (GroupMemberInfo <$> displayName <* A.space <* optional (A.char '@') <*> displayName),
       ("/info @" <|> "/info " <|> "/i @" <|> "/i ") *> (ContactInfo <$> displayName),
+      "/_switch #" *> (APISwitchGroupMember <$> A.decimal <* A.space <*> A.decimal),
+      "/_switch @" *> (APISwitchContact <$> A.decimal),
+      "/switch #" *> (SwitchGroupMember <$> displayName <* A.space <* optional (A.char '@') <*> displayName),
+      ("/switch @" <|> "/switch ") *> (SwitchContact <$> displayName),
       ("/help files" <|> "/help file" <|> "/hf") $> ChatHelp HSFiles,
       ("/help groups" <|> "/help group" <|> "/hg") $> ChatHelp HSGroups,
       ("/help address" <|> "/ha") $> ChatHelp HSMyAddress,
