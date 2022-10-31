@@ -48,16 +48,17 @@ CREATE TABLE display_names(
 ) WITHOUT ROWID;
 CREATE TABLE contacts(
   contact_id INTEGER PRIMARY KEY,
-  contact_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL, -- NULL if it's an incognito profile
-user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
-local_display_name TEXT NOT NULL,
-is_user INTEGER NOT NULL DEFAULT 0, -- 1 if this contact is a user
+  contact_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  local_display_name TEXT NOT NULL,
+  is_user INTEGER NOT NULL DEFAULT 0, -- 1 if this contact is a user
   via_group INTEGER REFERENCES groups(group_id) ON DELETE SET NULL,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT CHECK(updated_at NOT NULL),
   xcontact_id BLOB,
   enable_ntfs INTEGER,
   unread_chat INTEGER DEFAULT 0 CHECK(unread_chat NOT NULL),
+  contact_used INTEGER DEFAULT 0 CHECK(contact_used NOT NULL),
   user_preferences TEXT DEFAULT NULL,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
@@ -280,18 +281,20 @@ CREATE TABLE contact_requests(
   ON UPDATE CASCADE ON DELETE CASCADE,
   agent_invitation_id BLOB NOT NULL,
   contact_profile_id INTEGER REFERENCES contact_profiles
-  ON DELETE SET NULL -- NULL if it's an incognito profile
-DEFERRABLE INITIALLY DEFERRED,
-local_display_name TEXT NOT NULL,
-created_at TEXT NOT NULL DEFAULT(datetime('now')),
-user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE, updated_at TEXT CHECK(updated_at NOT NULL), xcontact_id BLOB,
-FOREIGN KEY(user_id, local_display_name)
-REFERENCES display_names(user_id, local_display_name)
-ON UPDATE CASCADE
-ON DELETE CASCADE
-DEFERRABLE INITIALLY DEFERRED,
-UNIQUE(user_id, local_display_name),
-UNIQUE(user_id, contact_profile_id)
+  ON DELETE SET NULL
+  DEFERRABLE INITIALLY DEFERRED,
+  local_display_name TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  updated_at TEXT CHECK(updated_at NOT NULL),
+  xcontact_id BLOB,
+  FOREIGN KEY(user_id, local_display_name)
+  REFERENCES display_names(user_id, local_display_name)
+  ON UPDATE CASCADE
+  ON DELETE CASCADE
+  DEFERRABLE INITIALLY DEFERRED,
+  UNIQUE(user_id, local_display_name),
+  UNIQUE(user_id, contact_profile_id)
 );
 CREATE TABLE messages(
   message_id INTEGER PRIMARY KEY,

@@ -142,6 +142,7 @@ chatTests = do
     it "set chat item TTL" testSetChatItemTTL
   describe "group links" $ do
     it "create group link, join via group link" testGroupLink
+    it "sending message to contact created via group link marks it used" testGroupLinkContactUsed
     it "create group link, join via group link - incognito membership" testGroupLinkIncognitoMembership
     it "deleting invited member does not leave broken chat item" testGroupLinkDeleteInvitedMemberNoBrokenItem
 
@@ -772,7 +773,13 @@ testGroupDelete =
       cath <## "#team: you deleted the group"
       alice <##> bob
       alice <##> cath
-      bob <##> cath
+      -- unused group contacts are deleted
+      bob ##> "@cath hi"
+      bob <## "no contact cath"
+      (cath </)
+      cath ##> "@bob hi"
+      cath <## "no contact bob"
+      (bob </)
 
 testGroupSameName :: IO ()
 testGroupSameName =
@@ -3327,6 +3334,9 @@ testGroupLink =
         ]
       alice #$> ("/_get chat #1 count=100", chat, [(0, "invited via your group link")])
       alice @@@ [("#team", "invited via your group link")] -- contacts connected via group link are not in chat previews
+      -- calling /_get chat api marks it as used and adds it to chat previews
+      alice #$> ("/_get chat @2 count=100", chat, [])
+      alice @@@ [("@bob", ""), ("#team", "invited via your group link")]
       alice <##> bob
       alice @@@ [("@bob", "hey"), ("#team", "invited via your group link")]
       bob ##> "/j team"
@@ -3350,18 +3360,23 @@ testGroupLink =
       cath ##> ("/c " <> gLink)
       cath <## "connection request sent!"
       alice <## "cath_1 (Catherine): accepting request to join group #team..."
+      -- if contact existed it is merged
       concurrentlyN_
         [ do
             alice <## "cath_1 (Catherine): contact is connected"
-            alice <## "cath_1 invited to group #team via your group link",
+            alice <## "cath_1 invited to group #team via your group link"
+            alice <## "contact cath_1 is merged into cath"
+            alice <## "use @cath <message> to send messages",
           do
             cath <## "alice_1 (Alice): contact is connected"
-            cath <## "#team: alice_1 invites you to join the group as member"
+            cath <## "contact alice_1 is merged into alice"
+            cath <## "use @alice <message> to send messages"
+            cath <## "#team: alice invites you to join the group as member"
             cath <## "use /j team to accept"
         ]
       cath ##> "/j team"
       concurrentlyN_
-        [ alice <## "#team: cath_1 joined the group",
+        [ alice <## "#team: cath joined the group",
           do
             cath <## "#team: you joined the group"
             cath <## "#team: member bob (Bob) is connected",
@@ -3372,14 +3387,14 @@ testGroupLink =
       alice #> "#team hello"
       concurrently_
         (bob <# "#team alice> hello")
-        (cath <# "#team alice_1> hello")
+        (cath <# "#team alice> hello")
       bob #> "#team hi there"
       concurrently_
         (alice <# "#team bob> hi there")
         (cath <# "#team bob> hi there")
       cath #> "#team hey team"
       concurrently_
-        (alice <# "#team cath_1> hey team")
+        (alice <# "#team cath> hey team")
         (bob <# "#team cath> hey team")
 
       -- leaving team removes link
@@ -3389,10 +3404,44 @@ testGroupLink =
             alice <## "#team: you left the group"
             alice <## "use /d #team to delete the group",
           bob <## "#team: alice left the group",
-          cath <## "#team: alice_1 left the group"
+          cath <## "#team: alice left the group"
         ]
       alice ##> "/show link #team"
       alice <## "no group link, to create: /create link #team"
+
+testGroupLinkContactUsed :: IO ()
+testGroupLinkContactUsed =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "use /a team <name> to add members"
+      alice ##> "/show link #team"
+      alice <## "no group link, to create: /create link #team"
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" True
+      alice ##> "/show link #team"
+      _ <- getGroupLink alice "team" False
+      alice ##> "/create link #team"
+      alice <## "you already have link for this group, to show: /show link #team"
+      bob ##> ("/c " <> gLink)
+      bob <## "connection request sent!"
+      alice <## "bob (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ do
+            alice <## "bob (Bob): contact is connected"
+            alice <## "bob invited to group #team via your group link",
+          do
+            bob <## "alice (Alice): contact is connected"
+            bob <## "#team: alice invites you to join the group as member"
+            bob <## "use /j team to accept"
+        ]
+      -- sending message to contact marks it as used
+      alice @@@ [("#team", "invited via your group link")]
+      alice #> "@bob hello"
+      bob <# "alice> hello"
+      alice #$> ("/clear bob", id, "bob: all messages are removed locally ONLY")
+      alice @@@ [("@bob", ""), ("#team", "invited via your group link")]
 
 testGroupLinkIncognitoMembership :: IO ()
 testGroupLinkIncognitoMembership =
@@ -3552,8 +3601,10 @@ testGroupLinkDeleteInvitedMemberNoBrokenItem =
       alice <## "#team: you removed bob from the group"
       alice #$> ("/_get chat #1 count=100", chat, [])
       alice @@@ [("#team", "")]
-      alice <##> bob
-      alice @@@ [("@bob", "hey"), ("#team", "")]
+      -- removing member deletes unused group contact
+      alice ##> "@bob hi"
+      alice <## "no contact bob"
+      (bob </)
       bob ##> "/j team"
       bob <## "error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
       -- repeat request is prohibited because of the re-used XContactId, until contact is deleted
@@ -3563,11 +3614,11 @@ testGroupLinkDeleteInvitedMemberNoBrokenItem =
       bob <## "alice: contact is deleted"
       bob ##> ("/c " <> gLink)
       bob <## "connection request sent!"
-      alice <## "bob_1 (Bob): accepting request to join group #team..."
+      alice <## "bob (Bob): accepting request to join group #team..."
       concurrentlyN_
         [ do
-            alice <## "bob_1 (Bob): contact is connected"
-            alice <## "bob_1 invited to group #team via your group link",
+            alice <## "bob (Bob): contact is connected"
+            alice <## "bob invited to group #team via your group link",
           do
             bob <## "alice_1 (Alice): contact is connected"
             bob <## "#team_1 (team): alice_1 invites you to join the group as member"
@@ -3575,12 +3626,12 @@ testGroupLinkDeleteInvitedMemberNoBrokenItem =
         ]
       bob ##> "/j team_1"
       concurrently_
-        (alice <## "#team: bob_1 joined the group")
+        (alice <## "#team: bob joined the group")
         (bob <## "#team_1: you joined the group")
       alice #> "#team hello"
       bob <# "#team_1 alice_1> hello"
       bob #> "#team_1 hi there"
-      alice <# "#team bob_1> hi there"
+      alice <# "#team bob> hi there"
 
 withTestChatContactConnected :: String -> (TestCC -> IO a) -> IO a
 withTestChatContactConnected dbPrefix action =

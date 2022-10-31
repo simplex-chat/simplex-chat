@@ -911,6 +911,13 @@ func processReceivedMsg(_ res: ChatResponse) async {
             if m.hasChat(toContact.id) {
                 m.updateChatInfo(cInfo)
             }
+        case let .contactsMerged(intoContact, mergedContact):
+            if m.hasChat(mergedContact.id) {
+                if m.chatId == mergedContact.id {
+                    m.chatId = intoContact.id
+                }
+                m.removeChat(mergedContact.id)
+            }
         case let .contactsSubscribed(_, contactRefs):
             updateContactsStatus(contactRefs, status: .connected)
         case let .contactsDisconnected(_, contactRefs):

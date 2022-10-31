@@ -84,6 +84,7 @@ data Contact = Contact
     profile :: LocalProfile,
     activeConn :: Connection,
     viaGroup :: Maybe Int64,
+    contactUsed :: Bool,
     chatSettings :: ChatSettings,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
