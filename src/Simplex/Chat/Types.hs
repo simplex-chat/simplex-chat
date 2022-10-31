@@ -26,11 +26,11 @@ import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString, pack, unpack)
 import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
 import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Typeable
@@ -40,11 +40,11 @@ import Database.SQLite.Simple.Internal (Field (..))
 import Database.SQLite.Simple.Ok (Ok (Ok))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
+import Simplex.Chat.Util (safeDecodeUtf8)
 import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, fromTextField_, sumTypeJSON)
 import Simplex.Messaging.Util ((<$?>))
-import Simplex.Chat.Util (safeDecodeUtf8)
 
 class IsContact a where
   contactId' :: a -> ContactId
@@ -86,6 +86,7 @@ data Contact = Contact
     viaGroup :: Maybe Int64,
     contactUsed :: Bool,
     chatSettings :: ChatSettings,
+    userPreferences :: ChatPreferences,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
@@ -241,8 +242,8 @@ data ChatPreferences = ChatPreferences
   }
   deriving (Eq, Show, Generic, FromJSON)
 
-pattern DefaultChatPrefs :: ChatPreferences
-pattern DefaultChatPrefs = ChatPreferences {voice = Nothing}
+defaultChatPrefs :: ChatPreferences
+defaultChatPrefs = ChatPreferences {voice = Nothing}
 
 instance ToJSON ChatPreferences where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
@@ -290,8 +291,7 @@ data Profile = Profile
   { displayName :: ContactName,
     fullName :: Text,
     image :: Maybe ImageData,
-    contactPreferences :: Maybe ChatPreferences,
-    userPreferences :: Maybe ChatPreferences
+    preferences :: Maybe ChatPreferences
     -- fields that should not be read into this data type to prevent sending them as part of profile to contacts:
     -- - contact_profile_id
     -- - incognito
@@ -309,8 +309,11 @@ type LocalAlias = Text
 
 data LocalProfile = LocalProfile
   { profileId :: ProfileId,
-    localAlias :: LocalAlias,
-    profile :: Profile
+    displayName :: ContactName,
+    fullName :: Text,
+    image :: Maybe ImageData,
+    preferences :: Maybe ChatPreferences,
+    localAlias :: LocalAlias
   }
   deriving (Eq, Show, Generic, FromJSON)
 
@@ -322,18 +325,18 @@ localProfileId :: LocalProfile -> ProfileId
 localProfileId = profileId
 
 toLocalProfile :: ProfileId -> Profile -> LocalAlias -> LocalProfile
-toLocalProfile profileId Profile {displayName, fullName, image, contactPreferences, userPreferences} localAlias =
-  LocalProfile {profileId, profile = Profile{displayName, fullName, image, contactPreferences, userPreferences}, localAlias}
+toLocalProfile profileId Profile {displayName, fullName, image, preferences} localAlias =
+  LocalProfile {profileId, displayName, fullName, image, preferences, localAlias}
 
 fromLocalProfile :: LocalProfile -> Profile
-fromLocalProfile LocalProfile { profile = Profile {displayName, fullName, image, contactPreferences, userPreferences}} =
-  Profile {displayName, fullName, image, contactPreferences, userPreferences}
+fromLocalProfile LocalProfile {displayName, fullName, image, preferences} =
+  Profile {displayName, fullName, image, preferences}
 
 data GroupProfile = GroupProfile
   { displayName :: GroupName,
     fullName :: Text,
     image :: Maybe ImageData,
-    groupPreferences :: Maybe ChatPreferences
+    preferences :: Maybe ChatPreferences
   }
   deriving (Eq, Show, Generic, FromJSON)
 

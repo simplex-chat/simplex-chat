@@ -693,12 +693,16 @@ viewUserProfileUpdated Profile {displayName = n, fullName, image} Profile {displ
     notified = " (your contacts are notified)"
 
 viewContactPrefsUpdated :: Contact -> [StyledString]
-viewContactPrefsUpdated Contact{profile = LocalProfile{profile = Profile{contactPreferences, userPreferences}}} = do
-  let contactVoice = contactPreferences >>= \ChatPreferences{voice} -> voice
-  let userVoice = userPreferences >>= \ChatPreferences{voice} -> voice
-  let cVoice = if isNothing contactVoice then "unset" else "set"
-  let uVoice = if isNothing userVoice then "unset" else "set"
-  ["preferences were updated: " <> "contact's voice is " <> cVoice <> ", user's voice is " <> uVoice]
+viewContactPrefsUpdated Contact {profile = LocalProfile {preferences}, userPreferences = ChatPreferences {voice = userVoice}} =
+  let contactVoice = preferences >>= voice
+   in ["preferences were updated: " <> "contact's voice is " <> viewPreference contactVoice <> ", user's voice is " <> viewPreference userVoice]
+
+viewPreference :: Maybe Preference -> StyledString
+viewPreference = \case
+  Just Preference {enable} -> case enable of
+    PSOn -> "on"
+    PSOff -> "off"
+  _ -> "unset"
 
 viewGroupUpdated :: GroupInfo -> GroupInfo -> Maybe GroupMember -> [StyledString]
 viewGroupUpdated
@@ -724,8 +728,8 @@ viewConnectionAliasUpdated PendingContactConnection {pccConnId, localAlias}
 
 viewContactUpdated :: Contact -> Contact -> [StyledString]
 viewContactUpdated
-  Contact {localDisplayName = n, profile = LocalProfile {profile = Profile{fullName}}}
-  Contact {localDisplayName = n', profile = LocalProfile {profile = Profile{fullName = fullName'}}}
+  Contact {localDisplayName = n, profile = LocalProfile {fullName}}
+  Contact {localDisplayName = n', profile = LocalProfile {fullName = fullName'}}
     | n == n' && fullName == fullName' = []
     | n == n' = ["contact " <> ttyContact n <> fullNameUpdate]
     | otherwise =
@@ -1052,14 +1056,14 @@ ttyContact' :: Contact -> StyledString
 ttyContact' Contact {localDisplayName = c} = ttyContact c
 
 ttyFullContact :: Contact -> StyledString
-ttyFullContact Contact {localDisplayName, profile = LocalProfile {profile = Profile{fullName}}} =
+ttyFullContact Contact {localDisplayName, profile = LocalProfile {fullName}} =
   ttyFullName localDisplayName fullName
 
 ttyMember :: GroupMember -> StyledString
 ttyMember GroupMember {localDisplayName} = ttyContact localDisplayName
 
 ttyFullMember :: GroupMember -> StyledString
-ttyFullMember GroupMember {localDisplayName, memberProfile = LocalProfile {profile = Profile{fullName}}} =
+ttyFullMember GroupMember {localDisplayName, memberProfile = LocalProfile {fullName}} =
   ttyFullName localDisplayName fullName
 
 ttyFullName :: ContactName -> Text -> StyledString
