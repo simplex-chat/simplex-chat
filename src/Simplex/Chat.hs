@@ -646,10 +646,10 @@ processChatCommand = \case
     withCurrentCall contactId $ \userId ct call ->
       updateCallItemStatus userId ct call receivedStatus Nothing $> Just call
   APIUpdateProfile profile -> withUser (`updateProfile` profile)
-  APIUpdateOtherProfile contactId newUserPreferences -> withUser $ \user@User {userId} -> do
+  APISetContactPrefs contactId newUserPreferences -> withUser $ \user@User {userId} -> do
     ct <- withStore $ \db -> getContact db userId contactId
     let Contact {profile = LocalProfile {profile = Profile {userPreferences = oldUserPreferences}}} = ct
-    updateOtherProfile user ct oldUserPreferences (Just newUserPreferences)
+    updateContactPrefs user ct oldUserPreferences (Just newUserPreferences)
   APISetContactAlias contactId localAlias -> withUser $ \User {userId} -> do
     ct' <- withStore $ \db -> do
       ct <- getContact db userId contactId
@@ -1148,8 +1148,8 @@ processChatCommand = \case
             let mergedProfile = (p' :: Profile) {contactPreferences = mergedPreferences, userPreferences = Nothing}
             void (sendDirectContactMessage ct $ XInfo mergedProfile) `catchError` (toView . CRChatError)
           pure $ CRUserProfileUpdated (fromLocalProfile p) p'
-    updateOtherProfile :: User -> Contact -> Maybe ChatPreferences -> Maybe ChatPreferences -> m ChatResponse
-    updateOtherProfile _user@User {userId, profile = LocalProfile {profileId, localAlias, profile = Profile {contactPreferences = globalUserPreferences}}} ct@Contact {contactId, profile = LocalProfile {profile = oldProfile}} oldUserPreferences newUserPreferences
+    updateContactPrefs :: User -> Contact -> Maybe ChatPreferences -> Maybe ChatPreferences -> m ChatResponse
+    updateContactPrefs _user@User {userId, profile = LocalProfile {profileId, localAlias, profile = Profile {contactPreferences = globalUserPreferences}}} ct@Contact {contactId, profile = LocalProfile {profile = oldProfile}} oldUserPreferences newUserPreferences
       | oldUserPreferences == newUserPreferences = pure $ CRContactProfileUpdated ct -- nothing changed actually
       | otherwise = do
         withStore' $ \db -> updateContactUserPreferences db userId contactId newUserPreferences
@@ -3002,16 +3002,9 @@ mergeChatPreferencesToProfile oldProfile globalUserPreferences contactUserPrefer
   let mergedPreferences = mergeChatPreferences globalUserPreferences contactUserPreferences
   (oldProfile :: Profile) {contactPreferences = mergedPreferences, userPreferences = Nothing}
 
-mergeChatPreferences :: Maybe ChatPreferences -> Maybe ChatPreferences -> Maybe ChatPreferences
-mergeChatPreferences globalUserPreferences contactUserPreferences = case globalUserPreferences of
-  Nothing -> contactUserPreferences
-  Just contact -> case contactUserPreferences of
-    Nothing -> globalUserPreferences
-    Just global -> do
-      let ChatPreferences {voice = globalVoice} = global
-      let ChatPreferences {voice = contactVoice} = contact
-      let voice = fromMaybe globalVoice (Just contactVoice)
-      pure ChatPreferences {voice}
+mergeChatPreferences :: ChatPreferences -> Maybe ChatPreferences -> ChatPreferences
+mergeChatPreferences ChatPreferences {voice = globalVoice} (Just ChatPreferences {voice = contactVoice}) =
+  ChatPreferences {voice = contactVoice <|> globalVoice}
 
 getCreateActiveUser :: SQLiteStore -> IO User
 getCreateActiveUser st = do
@@ -3164,7 +3157,7 @@ chatCommandP =
       "/_call end @" *> (APIEndCall <$> A.decimal),
       "/_call status @" *> (APICallStatus <$> A.decimal <* A.space <*> strP),
       "/_call get" $> APIGetCallInvitations,
-      "/_profile @" *> (APIUpdateOtherProfile <$> A.decimal <* A.space <*> ("userPreferences=" *> jsonP)),
+      "/_profile @" *> (APISetContactPrefs <$> A.decimal <* A.space <*> ("userPreferences=" *> jsonP)),
       "/_profile " *> (APIUpdateProfile <$> jsonP),
       "/_set alias @" *> (APISetContactAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set alias :" *> (APISetConnectionAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),

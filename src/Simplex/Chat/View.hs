@@ -121,7 +121,7 @@ responseToView testView = \case
   CRSndGroupFileCancelled _ ftm fts -> viewSndGroupFileCancelled ftm fts
   CRRcvFileCancelled ft -> receivingFile_ "cancelled" ft
   CRUserProfileUpdated p p' -> viewUserProfileUpdated p p'
-  CRContactProfileUpdated ct -> viewContactProfileUpdated ct
+  CRContactProfileUpdated ct -> viewContactPrefsUpdated ct
   CRContactAliasUpdated c -> viewContactAliasUpdated c
   CRConnectionAliasUpdated c -> viewConnectionAliasUpdated c
   CRContactUpdated c c' -> viewContactUpdated c c'
@@ -692,8 +692,8 @@ viewUserProfileUpdated Profile {displayName = n, fullName, image} Profile {displ
   where
     notified = " (your contacts are notified)"
 
-viewContactProfileUpdated :: Contact -> [StyledString]
-viewContactProfileUpdated Contact{profile = LocalProfile{profile = Profile{contactPreferences, userPreferences}}} = do
+viewContactPrefsUpdated :: Contact -> [StyledString]
+viewContactPrefsUpdated Contact{profile = LocalProfile{profile = Profile{contactPreferences, userPreferences}}} = do
   let contactVoice = contactPreferences >>= \ChatPreferences{voice} -> voice
   let userVoice = userPreferences >>= \ChatPreferences{voice} -> voice
   let cVoice = if isNothing contactVoice then "unset" else "set"

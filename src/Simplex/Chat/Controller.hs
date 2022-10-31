@@ -166,7 +166,7 @@ data ChatCommand
   | APIGetCallInvitations
   | APICallStatus ContactId WebRTCCallStatus
   | APIUpdateProfile Profile
-  | APIUpdateOtherProfile Int64 ChatPreferences
+  | APISetContactPrefs Int64 ChatPreferences
   | APISetContactAlias ContactId LocalAlias
   | APISetConnectionAlias Int64 LocalAlias
   | APIParseMarkdown Text
