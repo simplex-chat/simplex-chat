@@ -40,7 +40,7 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId)
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, fromTextField_, sumTypeJSON)
+import Simplex.Messaging.Parsers (dropPrefix, fromTextField_, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Util ((<$?>))
 
 class IsContact a where
@@ -295,17 +295,48 @@ instance ToField ImageData where toField (ImageData t) = toField t
 
 instance FromField ImageData where fromField = fmap ImageData . fromField
 
+-- data GroupLinkInvitationData = GroupLinkInvitationData {
+--   groupLinkId :: GroupLinkId
+-- }
+
+data ConnReqData = CRDGroup {groupLinkId :: GroupLinkId}
+  deriving (Generic)
+
+instance ToJSON ConnReqData where
+  toJSON = J.genericToJSON . taggedObjectJSON $ dropPrefix "CRD"
+  toEncoding = J.genericToEncoding . taggedObjectJSON $ dropPrefix "CRD"
+
 data GroupInvitation = GroupInvitation
   { fromMember :: MemberIdRole,
     invitedMember :: MemberIdRole,
     connRequest :: ConnReqInvitation,
-    groupProfile :: GroupProfile
+    groupProfile :: GroupProfile --,
+    -- groupLinkId :: Maybe GroupLinkId
   }
   deriving (Eq, Show, Generic, FromJSON)
 
 instance ToJSON GroupInvitation where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+newtype GroupLinkId = GroupLinkId {unGroupLinkId :: ByteString} -- used to identify invitation via group link
+  deriving (Eq, Show)
+
+instance FromField GroupLinkId where fromField f = GroupLinkId <$> fromField f
+
+instance ToField GroupLinkId where toField (GroupLinkId m) = toField m
+
+instance StrEncoding GroupLinkId where
+  strEncode (GroupLinkId m) = strEncode m
+  strDecode s = GroupLinkId <$> strDecode s
+  strP = GroupLinkId <$> strP
+
+instance FromJSON GroupLinkId where
+  parseJSON = strParseJSON "MemberId"
+
+instance ToJSON GroupLinkId where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
 
 data MemberIdRole = MemberIdRole
   { memberId :: MemberId,
