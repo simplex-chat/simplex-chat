@@ -2408,16 +2408,16 @@ testConnectIncognitoInvitationLink = testChat3 aliceProfile bobProfile cathProfi
     bob ?#> ("@" <> aliceIncognito <> " no")
     alice ?<# (bobIncognito <> "> no")
     alice ##> "/_set prefs @2 {}"
-    alice <## "preferences were updated: contact's voice is off, user's voice is unset"
+    alice <## "preferences were updated: contact's voice messages are off, user's voice messages are unset"
     alice ##> "/_set prefs @2 {\"voice\": {\"enable\": \"on\"}}"
-    alice <## "preferences were updated: contact's voice is off, user's voice is on"
+    alice <## "preferences were updated: contact's voice messages are off, user's voice messages are on"
     -- with delay it shouldn't fail here (and without it too)
     threadDelay 1000000
     bob ##> "/_set prefs @2 {}"
-    bob <## "preferences were updated: contact's voice is on, user's voice is unset"
+    bob <## "preferences were updated: contact's voice messages are on, user's voice messages are unset"
     threadDelay 1000000
     alice ##> "/_set prefs @2 {\"voice\": {\"enable\": \"off\"}}"
-    alice <## "preferences were updated: contact's voice is off, user's voice is off"
+    alice <## "preferences were updated: contact's voice messages are off, user's voice messages are off"
 
 testConnectIncognitoContactAddress :: IO ()
 testConnectIncognitoContactAddress = testChat2 aliceProfile bobProfile $
@@ -2723,24 +2723,24 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     connectUsers alice bob
     alice ##> "/_set prefs @2 {}"
-    alice <## "preferences were updated: contact's voice is off, user's voice is unset"
+    alice <## "preferences were updated: contact's voice messages are off, user's voice messages are unset"
     alice ##> "/_set prefs @2 {\"voice\": {\"enable\": \"on\"}}"
-    alice <## "preferences were updated: contact's voice is off, user's voice is on"
+    alice <## "preferences were updated: contact's voice messages are off, user's voice messages are on"
     alice ##> "/_profile {\"displayName\": \"alice\", \"fullName\": \"\", \"preferences\": {\"voice\": {\"enable\": \"off\"}}}"
     alice <## "user full name removed (your contacts are notified)"
     bob <## "contact alice removed full name"
     alice ##> "/_set prefs @2 {\"voice\": {\"enable\": \"on\"}}"
-    alice <## "preferences were updated: contact's voice is off, user's voice is on"
+    alice <## "preferences were updated: contact's voice messages are off, user's voice messages are on"
     bob ##> "/_profile {\"displayName\": \"bob\", \"fullName\": \"\", \"preferences\": {\"voice\": {\"enable\": \"on\"}}}"
     bob <## "user full name removed (your contacts are notified)"
     alice <## "contact bob removed full name"
     bob ##> "/_set prefs @2 {}"
-    bob <## "preferences were updated: contact's voice is on, user's voice is unset"
+    bob <## "preferences were updated: contact's voice messages are on, user's voice messages are unset"
     alice ##> "/_set prefs @2 {\"voice\": {\"enable\": \"off\"}}"
-    alice <## "preferences were updated: contact's voice is on, user's voice is off"
+    alice <## "preferences were updated: contact's voice messages are on, user's voice messages are off"
     threadDelay 1000000
     bob ##> "/_set prefs @2 {}"
-    bob <## "preferences were updated: contact's voice is off, user's voice is unset"
+    bob <## "preferences were updated: contact's voice messages are off, user's voice messages are unset"
 
 testGetSetSMPServers :: IO ()
 testGetSetSMPServers =

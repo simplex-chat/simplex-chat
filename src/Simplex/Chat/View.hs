@@ -695,7 +695,7 @@ viewUserProfileUpdated Profile {displayName = n, fullName, image} Profile {displ
 viewContactPrefsUpdated :: Contact -> [StyledString]
 viewContactPrefsUpdated Contact {profile = LocalProfile {preferences}, userPreferences = ChatPreferences {voice = userVoice}} =
   let contactVoice = preferences >>= voice
-   in ["preferences were updated: " <> "contact's voice is " <> viewPreference contactVoice <> ", user's voice is " <> viewPreference userVoice]
+   in ["preferences were updated: " <> "contact's voice messages are " <> viewPreference contactVoice <> ", user's voice messages are " <> viewPreference userVoice]
 
 viewPreference :: Maybe Preference -> StyledString
 viewPreference = \case
