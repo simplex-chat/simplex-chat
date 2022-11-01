@@ -40,11 +40,10 @@ import Database.SQLite.Simple.Internal (Field (..))
 import Database.SQLite.Simple.Ok (Ok (Ok))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
-import Simplex.Chat.Util (safeDecodeUtf8)
 import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, fromTextField_, sumTypeJSON)
-import Simplex.Messaging.Util ((<$?>))
+import Simplex.Messaging.Util ((<$?>), safeDecodeUtf8)
 
 class IsContact a where
   contactId' :: a -> ContactId
