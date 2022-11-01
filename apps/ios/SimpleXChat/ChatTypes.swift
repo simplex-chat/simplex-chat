@@ -711,6 +711,11 @@ public struct GroupMember: Identifiable, Decodable {
     )
 }
 
+public struct GroupMemberRef: Decodable {
+    var groupMemberId: Int64
+    var profile: Profile
+}
+
 public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Decodable {
     case member = "member"
     case admin = "admin"
@@ -1096,6 +1101,8 @@ public enum CIContent: Decodable, ItemContent {
     case sndGroupInvitation(groupInvitation: CIGroupInvitation, memberRole: GroupMemberRole)
     case rcvGroupEvent(rcvGroupEvent: RcvGroupEvent)
     case sndGroupEvent(sndGroupEvent: SndGroupEvent)
+    case rcvConnEvent(rcvConnEvent: RcvConnEvent)
+    case sndConnEvent(sndConnEvent: SndConnEvent)
 
     public var text: String {
         get {
@@ -1111,6 +1118,8 @@ public enum CIContent: Decodable, ItemContent {
             case let .sndGroupInvitation(groupInvitation, _): return groupInvitation.text
             case let .rcvGroupEvent(rcvGroupEvent): return rcvGroupEvent.text
             case let .sndGroupEvent(sndGroupEvent): return sndGroupEvent.text
+            case let .rcvConnEvent(rcvConnEvent): return rcvConnEvent.text
+            case let .sndConnEvent(sndConnEvent): return sndConnEvent.text
             }
         }
     }
@@ -1496,6 +1505,44 @@ public enum SndGroupEvent: Decodable {
         case .groupUpdated: return NSLocalizedString("group profile updated", comment: "snd group event chat item")
         }
     }
+}
+
+public enum RcvConnEvent: Decodable {
+    case switchQueue(phase: SwitchPhase)
+    
+    var text: String {
+        switch self {
+        case let .switchQueue(phase):
+            if case .completed = phase {
+                return NSLocalizedString("changed address for you", comment: "chat item text")
+            }
+            return NSLocalizedString("changing address...", comment: "chat item text")
+        }
+    }
+}
+
+public enum SndConnEvent: Decodable {
+    case switchQueue(phase: SwitchPhase, member: GroupMemberRef?)
+    
+    var text: String {
+        switch self {
+        case let .switchQueue(phase, member):
+            var forMember = ""
+            if let m = member {
+                forMember = String.localizedStringWithFormat(NSLocalizedString(" for %@", comment: "for member name"), m.profile.profileViewName)
+            }
+            if case .completed = phase {
+                return String.localizedStringWithFormat(NSLocalizedString("you changed address%@", comment: "chat item text"), forMember)
+            }
+            return String.localizedStringWithFormat(NSLocalizedString("changing address%@...", comment: "chat item text"), forMember)
+        }
+    }
+}
+
+public enum SwitchPhase: String, Decodable {
+    case started
+    case confirmed
+    case completed
 }
 
 public enum ChatItemTTL: Hashable, Identifiable, Comparable {

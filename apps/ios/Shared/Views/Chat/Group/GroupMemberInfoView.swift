@@ -14,7 +14,7 @@ struct GroupMemberInfoView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     var groupInfo: GroupInfo
     @State var member: GroupMember
-    var connectionStats: ConnectionStats?
+    @Binding var connectionStats: ConnectionStats?
     @State private var newRole: GroupMemberRole = .member
     @State private var alert: GroupMemberInfoViewAlert?
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
@@ -77,9 +77,12 @@ struct GroupMemberInfoView: View {
                     }
                 }
 
-                if let connStats = connectionStats {
-                    Section("Servers") {
-                        // TODO network connection status
+                Section("Servers") {
+                    // TODO network connection status
+                    Button("Switch receiving address") {
+                        
+                    }
+                    if let connStats = connectionStats {
                         smpServers("Receiving via", connStats.rcvServers)
                         smpServers("Sending via", connStats.sndServers)
                     }
@@ -214,6 +217,10 @@ struct GroupMemberInfoView: View {
 
 struct GroupMemberInfoView_Previews: PreviewProvider {
     static var previews: some View {
-        GroupMemberInfoView(groupInfo: GroupInfo.sampleData, member: GroupMember.sampleData)
+        GroupMemberInfoView(
+            groupInfo: GroupInfo.sampleData,
+            member: GroupMember.sampleData,
+            connectionStats: Binding.constant(nil)
+        )
     }
 }

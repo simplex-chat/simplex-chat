@@ -30,7 +30,14 @@ func localizedInfoRow(_ title: LocalizedStringKey, _ value: LocalizedStringKey) 
 @ViewBuilder func smpServers(_ title: LocalizedStringKey, _ servers: [String]?) -> some View {
     if let servers = servers,
        servers.count > 0 {
-        infoRow(title, serverHost(servers[0]))
+        HStack {
+            Text(title).frame(width: 120, alignment: .leading)
+            Button(serverHost(servers[0])) {
+                UIPasteboard.general.string = servers.joined(separator: ";")
+            }
+            .foregroundColor(.secondary)
+            .lineLimit(1)
+        }
     }
 }
 
@@ -47,7 +54,7 @@ struct ChatInfoView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @ObservedObject var chat: Chat
     var contact: Contact
-    var connectionStats: ConnectionStats?
+    @Binding var connectionStats: ConnectionStats?
     var customUserProfile: Profile?
     @State var localAlias: String
     @FocusState private var aliasTextFieldFocused: Bool
@@ -88,12 +95,15 @@ struct ChatInfoView: View {
                     }
                 }
 
-                if let connStats = connectionStats {
-                    Section("Servers") {
-                        networkStatusRow()
-                            .onTapGesture {
-                                alert = .networkStatusAlert
-                            }
+                Section("Servers") {
+                    networkStatusRow()
+                        .onTapGesture {
+                            alert = .networkStatusAlert
+                        }
+                    Button("Switch receiving address") {
+                        
+                    }
+                    if let connStats = connectionStats {
                         smpServers("Receiving via", connStats.rcvServers)
                         smpServers("Sending via", connStats.sndServers)
                     }
@@ -258,6 +268,11 @@ struct ChatInfoView: View {
 
 struct ChatInfoView_Previews: PreviewProvider {
     static var previews: some View {
-        ChatInfoView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []), contact: Contact.sampleData, localAlias: "")
+        ChatInfoView(
+            chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []),
+            contact: Contact.sampleData,
+            connectionStats: Binding.constant(nil),
+            localAlias: ""
+        )
     }
 }
