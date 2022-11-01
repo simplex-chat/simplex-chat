@@ -55,6 +55,8 @@ public enum ChatCommand {
     case apiSetChatSettings(type: ChatType, id: Int64, chatSettings: ChatSettings)
     case apiContactInfo(contactId: Int64)
     case apiGroupMemberInfo(groupId: Int64, groupMemberId: Int64)
+    case apiSwitchContact(contactId: Int64)
+    case apiSwitchGroupMember(groupId: Int64, groupMemberId: Int64)
     case addContact
     case connect(connReq: String)
     case apiDeleteChat(type: ChatType, id: Int64)
@@ -131,6 +133,8 @@ public enum ChatCommand {
             case let .apiSetChatSettings(type, id, chatSettings): return "/_settings \(ref(type, id)) \(encodeJSON(chatSettings))"
             case let .apiContactInfo(contactId): return "/_info @\(contactId)"
             case let .apiGroupMemberInfo(groupId, groupMemberId): return "/_info #\(groupId) \(groupMemberId)"
+            case let .apiSwitchContact(contactId): return "/_switch @\(contactId)"
+            case let .apiSwitchGroupMember(groupId, groupMemberId): return "/_switch #\(groupId) \(groupMemberId)"
             case .addContact: return "/connect"
             case let .connect(connReq): return "/connect \(connReq)"
             case let .apiDeleteChat(type, id): return "/_delete \(ref(type, id))"
@@ -206,6 +210,8 @@ public enum ChatCommand {
             case .apiSetChatSettings: return "apiSetChatSettings"
             case .apiContactInfo: return "apiContactInfo"
             case .apiGroupMemberInfo: return "apiGroupMemberInfo"
+            case .apiSwitchContact: return "apiSwitchContact"
+            case .apiSwitchGroupMember: return "apiSwitchGroupMember"
             case .addContact: return "addContact"
             case .connect: return "connect"
             case .apiDeleteChat: return "apiDeleteChat"
@@ -241,7 +247,7 @@ public enum ChatCommand {
     }
 
     func smpServersStr(smpServers: [String]) -> String {
-        smpServers.isEmpty ? "default" : smpServers.joined(separator: ",")
+        smpServers.isEmpty ? "default" : smpServers.joined(separator: ";")
     }
 
     func chatItemTTLStr(seconds: Int64?) -> String {

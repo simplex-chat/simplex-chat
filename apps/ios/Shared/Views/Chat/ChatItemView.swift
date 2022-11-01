@@ -27,8 +27,10 @@ struct ChatItemView: View {
         case .rcvIntegrityError: IntegrityErrorItemView(chatItem: chatItem, showMember: showMember)
         case let .rcvGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
         case let .sndGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
-        case .rcvGroupEvent: groupEventItemView()
-        case .sndGroupEvent: groupEventItemView()
+        case .rcvGroupEvent: eventItemView()
+        case .sndGroupEvent: eventItemView()
+        case .rcvConnEvent: eventItemView()
+        case .sndConnEvent: eventItemView()
         }
     }
 
@@ -52,8 +54,8 @@ struct ChatItemView: View {
         CIGroupInvitationView(chatItem: chatItem, groupInvitation: groupInvitation, memberRole: memberRole, chatIncognito: chatInfo.incognito)
     }
 
-    private func groupEventItemView() -> some View {
-        CIGroupEventView(chatItem: chatItem)
+    private func eventItemView() -> some View {
+        CIEventView(chatItem: chatItem)
     }
 }
 

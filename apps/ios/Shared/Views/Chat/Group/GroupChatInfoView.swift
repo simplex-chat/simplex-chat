@@ -72,7 +72,7 @@ struct GroupChatInfoView: View {
                     AddGroupMembersView(chat: chat, groupInfo: groupInfo)
                 }
                 .sheet(item: $selectedMember, onDismiss: { connectionStats = nil }) { member in
-                    GroupMemberInfoView(groupInfo: groupInfo, member: member, connectionStats: connectionStats)
+                    GroupMemberInfoView(groupInfo: groupInfo, member: member, connectionStats: $connectionStats)
                 }
                 .sheet(isPresented: $showGroupProfile) {
                     GroupProfileView(groupId: groupInfo.apiId, groupProfile: groupInfo.groupProfile)

@@ -107,7 +107,7 @@ struct ChatView: View {
                         connectionStats = nil
                         customUserProfile = nil
                     }) {
-                        ChatInfoView(chat: chat, contact: contact, connectionStats: connectionStats, customUserProfile: customUserProfile, localAlias: chat.chatInfo.localAlias)
+                        ChatInfoView(chat: chat, contact: contact, connectionStats: $connectionStats, customUserProfile: customUserProfile, localAlias: chat.chatInfo.localAlias)
                     }
                 } else if case let .group(groupInfo) = cInfo {
                     Button {
@@ -393,7 +393,7 @@ struct ChatView: View {
                             }
                         }
                         .sheet(item: $selectedMember, onDismiss: { memberConnectionStats = nil }) { member in
-                            GroupMemberInfoView(groupInfo: groupInfo, member: member, connectionStats: memberConnectionStats)
+                            GroupMemberInfoView(groupInfo: groupInfo, member: member, connectionStats: $memberConnectionStats)
                         }
                 } else {
                     Rectangle().fill(.clear)

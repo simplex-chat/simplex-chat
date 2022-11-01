@@ -357,6 +357,14 @@ func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) async throws -
     throw r
 }
 
+func apiSwitchContact(contactId: Int64) async throws {
+    try await sendCommandOkResp(.apiSwitchContact(contactId: contactId))
+}
+
+func apiSwitchGroupMember(_ groupId: Int64, _ groupMemberId: Int64) async throws {
+    try await sendCommandOkResp(.apiSwitchGroupMember(groupId: groupId, groupMemberId: groupMemberId))
+}
+
 func apiAddContact() async -> String? {
     let r = await chatSendCmd(.addContact, bgTask: false)
     if case let .invitation(connReqInvitation) = r { return connReqInvitation }
