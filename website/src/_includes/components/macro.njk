@@ -4,13 +4,13 @@
         <div class="overlay-card max-w-[1276px] bg-white opacity-100 max-h-[660px] z-[10001] rounded-md shadow-[0px_3px_12px_rgba(0,0,0,0.2)] p-14 overflow-auto scale-100">
             <h1 class="text-3xl font-bold text-active-blue mb-6">{{ section.overlayContent.title }}</h1>
             <div class="flex gap-10 justify-between">
-                <div class="max-w-md">
-                    {% if section.overlayContent.contentBody %}
+                {% if section.overlayContent.contentBody %}
+                    <div class="max-w-md">
                         <div class="text-grey-black dark:text-white flex flex-col gap-6 text-base">
                             {% include section.overlayContent.contentBody %}
                         </div>
-                    {% endif %}
-                </div>
+                    </div>
+                {% endif %}
 
                 {% if section.overlayContent.showImage %}
                     <div class="max-w-md">
