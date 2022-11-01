@@ -680,16 +680,17 @@ viewContactSwitch :: Contact -> SwitchProgress -> [StyledString]
 viewContactSwitch _ (SwitchProgress _ SPConfirmed _) = []
 viewContactSwitch ct (SwitchProgress qd phase _) = case qd of
   QDRcv -> [ttyContact' ct <> ": you " <> viewSwitchPhase phase]
-  QDSnd -> [ttyContact' ct <> " " <> viewSwitchPhase phase]
+  QDSnd -> [ttyContact' ct <> " " <> viewSwitchPhase phase <> " for you"]
 
 viewGroupMemberSwitch :: GroupInfo -> GroupMember -> SwitchProgress -> [StyledString]
 viewGroupMemberSwitch _ _ (SwitchProgress _ SPConfirmed _) = []
 viewGroupMemberSwitch g m (SwitchProgress qd phase _) = case qd of
-  QDRcv -> [ttyGroup' g <> ": you " <> viewSwitchPhase phase <> " with " <> ttyMember m]
-  QDSnd -> [ttyGroup' g <> ": " <> ttyMember m <> " " <> viewSwitchPhase phase <> " with you"]
+  QDRcv -> [ttyGroup' g <> ": you " <> viewSwitchPhase phase <> " for " <> ttyMember m]
+  QDSnd -> [ttyGroup' g <> ": " <> ttyMember m <> " " <> viewSwitchPhase phase <> " for you"]
 
 viewSwitchPhase :: SwitchPhase -> StyledString
-viewSwitchPhase phase = plain (strEncode phase) <> " switching connection server"
+viewSwitchPhase SPCompleted = "changed address"
+viewSwitchPhase phase = plain (strEncode phase) <> " changing address"
 
 viewUserProfileUpdated :: Profile -> Profile -> [StyledString]
 viewUserProfileUpdated Profile {displayName = n, fullName, image} Profile {displayName = n', fullName = fullName', image = image'}

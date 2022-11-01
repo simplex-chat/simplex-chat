@@ -3638,12 +3638,12 @@ testSwitchContact =
     \alice bob -> do
       connectUsers alice bob
       alice #$> ("/switch bob", id, "ok")
-      bob <## "alice started switching connection server"
-      alice <## "bob: you started switching connection server"
-      bob <## "alice completed switching connection server"
-      alice <## "bob: you completed switching connection server"
-      alice #$> ("/_get chat @2 count=100", chat, [(1, "connection switch started"), (1, "connection switch completed")])
-      bob #$> ("/_get chat @2 count=100", chat, [(0, "connection switch started"), (0, "connection switch completed")])
+      bob <## "alice started changing address for you"
+      alice <## "bob: you started changing address"
+      bob <## "alice changed address for you"
+      alice <## "bob: you changed address"
+      alice #$> ("/_get chat @2 count=100", chat, [(1, "started changing address..."), (1, "you changed address")])
+      bob #$> ("/_get chat @2 count=100", chat, [(0, "started changing address for you..."), (0, "changed address for you")])
       alice <##> bob
 
 testSwitchGroupMember :: IO ()
@@ -3652,12 +3652,12 @@ testSwitchGroupMember =
     \alice bob -> do
       createGroup2 "team" alice bob
       alice #$> ("/switch #team bob", id, "ok")
-      bob <## "#team: alice started switching connection server with you"
-      alice <## "#team: you started switching connection server with bob"
-      bob <## "#team: alice completed switching connection server with you"
-      alice <## "#team: you completed switching connection server with bob"
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "connection switch started"), (1, "connection switch completed")])
-      bob #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (0, "connection switch started"), (0, "connection switch completed")])
+      bob <## "#team: alice started changing address for you"
+      alice <## "#team: you started changing address for bob"
+      bob <## "#team: alice changed address for you"
+      alice <## "#team: you changed address for bob"
+      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "started changing address for bob..."), (1, "you changed address for bob")])
+      bob #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (0, "started changing address for you..."), (0, "changed address for you")])
       alice #> "#team hey"
       bob <# "#team alice> hey"
       bob #> "#team hi"

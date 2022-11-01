@@ -1742,7 +1742,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
         SWITCH qd phase cStats -> do
           toView . CRContactSwitch ct $ SwitchProgress qd phase cStats
           when (phase /= SPConfirmed) $ case qd of
-            QDRcv -> createInternalChatItem (CDDirectSnd ct) (CISndConnEvent $ SCESwitch phase) Nothing
+            QDRcv -> createInternalChatItem (CDDirectSnd ct) (CISndConnEvent $ SCESwitch phase Nothing) Nothing
             QDSnd -> createInternalChatItem (CDDirectRcv ct) (CIRcvConnEvent $ RCESwitch phase) Nothing
         OK ->
           -- [async agent commands] continuation on receiving OK
@@ -1889,7 +1889,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
       SWITCH qd phase cStats -> do
         toView . CRGroupMemberSwitch gInfo m $ SwitchProgress qd phase cStats
         when (phase /= SPConfirmed) $ case qd of
-          QDRcv -> createInternalChatItem (CDGroupSnd gInfo) (CISndConnEvent $ SCESwitch phase) Nothing
+          QDRcv -> createInternalChatItem (CDGroupSnd gInfo) (CISndConnEvent . SCESwitch phase . Just $ groupMemberRef m) Nothing
           QDSnd -> createInternalChatItem (CDGroupRcv gInfo m) (CIRcvConnEvent $ RCESwitch phase) Nothing
       OK ->
         -- [async agent commands] continuation on receiving OK

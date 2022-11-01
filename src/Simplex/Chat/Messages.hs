@@ -32,7 +32,7 @@ import GHC.Generics (Generic)
 import Simplex.Chat.Markdown
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (AgentErrorType, AgentMsgId, MsgErrorType (..), MsgMeta (..), SwitchPhase)
+import Simplex.Messaging.Agent.Protocol (SwitchPhase (..), AgentErrorType, AgentMsgId, MsgErrorType (..), MsgMeta (..), SwitchPhase)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, fstToLower, singleFieldJSON, sumTypeJSON)
 import Simplex.Messaging.Protocol (MsgBody)
@@ -525,11 +525,18 @@ sndGroupEventToText = \case
 
 rcvConnEventToText :: RcvConnEvent -> Text
 rcvConnEventToText = \case
-  RCESwitch phase -> "connection switch " <> decodeLatin1 (strEncode phase)
+  RCESwitch phase -> case phase of
+    SPCompleted -> "changed address for you"
+    _ -> decodeLatin1 (strEncode phase) <> " changing address for you..."
 
 sndConnEventToText :: SndConnEvent -> Text
 sndConnEventToText = \case
-  SCESwitch phase -> "connection switch " <> decodeLatin1 (strEncode phase)
+  SCESwitch phase m -> case phase of
+    SPCompleted -> "you changed address" <> forMember m
+    _ -> decodeLatin1 (strEncode phase) <> " changing address" <> forMember m <> "..."
+  where
+    forMember member_ =
+      maybe "" (\GroupMemberRef {profile = Profile {displayName}} -> " for " <> displayName) member_
 
 profileToText :: Profile -> Text
 profileToText Profile {displayName, fullName} = displayName <> optionalFullName displayName fullName
@@ -616,7 +623,7 @@ instance ToJSON DBSndGroupEvent where
 data RcvConnEvent = RCESwitch {phase :: SwitchPhase}
   deriving (Show, Generic)
 
-data SndConnEvent = SCESwitch {phase :: SwitchPhase}
+data SndConnEvent = SCESwitch {phase :: SwitchPhase, member :: Maybe GroupMemberRef}
   deriving (Show, Generic)
 
 instance FromJSON RcvConnEvent where
