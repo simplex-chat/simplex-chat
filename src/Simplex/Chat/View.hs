@@ -67,6 +67,8 @@ responseToView testView = \case
   CRNetworkConfig cfg -> viewNetworkConfig cfg
   CRContactInfo ct cStats customUserProfile -> viewContactInfo ct cStats customUserProfile
   CRGroupMemberInfo g m cStats -> viewGroupMemberInfo g m cStats
+  CRContactSwitch ct progress -> viewContactSwitch ct progress
+  CRGroupMemberSwitch g m progress -> viewGroupMemberSwitch g m progress
   CRNewChatItem (AChatItem _ _ chat item) -> unmuted chat item $ viewChatItem chat item False
   CRLastMessages chatItems -> concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True) chatItems
   CRChatItemStatusUpdated _ -> []
@@ -254,19 +256,15 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} doShow = c
   DirectChat c -> case chatDir of
     CIDirectSnd -> case content of
       CISndMsgContent mc -> withSndFile to $ sndMsg to quote mc
-      CISndDeleted _ -> showSndItem to
-      CISndCall {} -> showSndItem to
-      CISndGroupInvitation {} -> showSndItem to
       CISndGroupEvent {} -> showSndItemProhibited to
+      _ -> showSndItem to
       where
         to = ttyToContact' c
     CIDirectRcv -> case content of
       CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
-      CIRcvDeleted _ -> showRcvItem from
-      CIRcvCall {} -> showRcvItem from
       CIRcvIntegrityError err -> viewRcvIntegrityError from err meta
-      CIRcvGroupInvitation {} -> showRcvItem from
       CIRcvGroupEvent {} -> showRcvItemProhibited from
+      _ -> showRcvItem from
       where
         from = ttyFromContact' c
     where
@@ -274,19 +272,15 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} doShow = c
   GroupChat g -> case chatDir of
     CIGroupSnd -> case content of
       CISndMsgContent mc -> withSndFile to $ sndMsg to quote mc
-      CISndDeleted _ -> showSndItem to
-      CISndCall {} -> showSndItem to
       CISndGroupInvitation {} -> showSndItemProhibited to
-      CISndGroupEvent {} -> showSndItem to
+      _ -> showSndItem to
       where
         to = ttyToGroup g
     CIGroupRcv m -> case content of
       CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
-      CIRcvDeleted _ -> showRcvItem from
-      CIRcvCall {} -> showRcvItem from
       CIRcvIntegrityError err -> viewRcvIntegrityError from err meta
       CIRcvGroupInvitation {} -> showRcvItemProhibited from
-      CIRcvGroupEvent {} -> showRcvItem from
+      _ -> showRcvItem from
       where
         from = ttyFromGroup' g m
     where
@@ -681,6 +675,22 @@ viewServers = plain . intercalate ", " . map (B.unpack . strEncode)
 
 viewServerHosts :: [SMPServer] -> StyledString
 viewServerHosts = plain . intercalate ", " . map showSMPServer
+
+viewContactSwitch :: Contact -> SwitchProgress -> [StyledString]
+viewContactSwitch _ (SwitchProgress _ SPConfirmed _) = []
+viewContactSwitch ct (SwitchProgress qd phase _) = case qd of
+  QDRcv -> [ttyContact' ct <> ": you " <> viewSwitchPhase phase]
+  QDSnd -> [ttyContact' ct <> " " <> viewSwitchPhase phase <> " for you"]
+
+viewGroupMemberSwitch :: GroupInfo -> GroupMember -> SwitchProgress -> [StyledString]
+viewGroupMemberSwitch _ _ (SwitchProgress _ SPConfirmed _) = []
+viewGroupMemberSwitch g m (SwitchProgress qd phase _) = case qd of
+  QDRcv -> [ttyGroup' g <> ": you " <> viewSwitchPhase phase <> " for " <> ttyMember m]
+  QDSnd -> [ttyGroup' g <> ": " <> ttyMember m <> " " <> viewSwitchPhase phase <> " for you"]
+
+viewSwitchPhase :: SwitchPhase -> StyledString
+viewSwitchPhase SPCompleted = "changed address"
+viewSwitchPhase phase = plain (strEncode phase) <> " changing address"
 
 viewUserProfileUpdated :: Profile -> Profile -> [StyledString]
 viewUserProfileUpdated Profile {displayName = n, fullName, image} Profile {displayName = n', fullName = fullName', image = image'}
