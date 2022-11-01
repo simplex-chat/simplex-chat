@@ -523,6 +523,8 @@ data class Contact(
   val activeConn: Connection,
   val viaGroup: Long? = null,
   val chatSettings: ChatSettings,
+  // User applies his preferences for the contact here. Named user_preferences on the contact in DB
+  val userPreferences: ChatPreferences,
   override val createdAt: Instant,
   override val updatedAt: Instant
 ): SomeChat, NamedChat {
@@ -553,6 +555,7 @@ data class Contact(
       profile = LocalProfile.sampleData,
       activeConn = Connection.sampleData,
       chatSettings = ChatSettings(true),
+      userPreferences = ChatPreferences(),
       createdAt = Clock.System.now(),
       updatedAt = Clock.System.now()
     )
@@ -586,7 +589,9 @@ class Profile(
   override val displayName: String,
   override val fullName: String,
   override val image: String? = null,
-  override val localAlias : String = ""
+  override val localAlias : String = "",
+  // Contact applies his preferences here
+  val preferences: ChatPreferences? = null
 ): NamedChat {
   val profileViewName: String
     get() {
@@ -610,6 +615,8 @@ class LocalProfile(
   override val fullName: String,
   override val image: String? = null,
   override val localAlias: String,
+  // Contact applies his preferences here
+  val preferences: ChatPreferences? = null
 ): NamedChat {
   val profileViewName: String = localAlias.ifEmpty { if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)" }
 
@@ -639,6 +646,7 @@ data class GroupInfo (
   val membership: GroupMember,
   val hostConnCustomUserProfileId: Long? = null,
   val chatSettings: ChatSettings,
+  val preferences: ChatPreferences? = null,
   override val createdAt: Instant,
   override val updatedAt: Instant
 ): SomeChat, NamedChat {
