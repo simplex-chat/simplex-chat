@@ -141,6 +141,9 @@ chatTests = do
     it "sending message to contact created via group link marks it used" testGroupLinkContactUsed
     it "create group link, join via group link - incognito membership" testGroupLinkIncognitoMembership
     it "deleting invited member does not leave broken chat item" testGroupLinkDeleteInvitedMemberNoBrokenItem
+  describe "queue rotation" $ do
+    it "switch contact to a different queue" testSwitchContact
+    it "switch group member to a different queue" testSwitchGroupMember
 
 versionTestMatrix2 :: (TestCC -> TestCC -> IO ()) -> Spec
 versionTestMatrix2 runTest = do
@@ -3628,6 +3631,37 @@ testGroupLinkDeleteInvitedMemberNoBrokenItem =
       bob <# "#team_1 alice_1> hello"
       bob #> "#team_1 hi there"
       alice <# "#team bob> hi there"
+
+testSwitchContact :: IO ()
+testSwitchContact =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice #$> ("/switch bob", id, "ok")
+      bob <## "alice started switching connection server"
+      alice <## "bob: you started switching connection server"
+      bob <## "alice completed switching connection server"
+      alice <## "bob: you completed switching connection server"
+      alice #$> ("/_get chat @2 count=100", chat, [(1, "connection switch started"), (1, "connection switch completed")])
+      bob #$> ("/_get chat @2 count=100", chat, [(0, "connection switch started"), (0, "connection switch completed")])
+      alice <##> bob
+
+testSwitchGroupMember :: IO ()
+testSwitchGroupMember =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      alice #$> ("/switch #team bob", id, "ok")
+      bob <## "#team: alice started switching connection server with you"
+      alice <## "#team: you started switching connection server with bob"
+      bob <## "#team: alice completed switching connection server with you"
+      alice <## "#team: you completed switching connection server with bob"
+      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "connection switch started"), (1, "connection switch completed")])
+      bob #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (0, "connection switch started"), (0, "connection switch completed")])
+      alice #> "#team hey"
+      bob <# "#team alice> hey"
+      bob #> "#team hi"
+      alice <# "#team bob> hi"
 
 withTestChatContactConnected :: String -> (TestCC -> IO a) -> IO a
 withTestChatContactConnected dbPrefix action =
