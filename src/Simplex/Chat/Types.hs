@@ -433,6 +433,15 @@ instance ToJSON GroupMember where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
+data GroupMemberRef = GroupMemberRef {groupMemberId :: Int64, profile :: Profile}
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON GroupMemberRef where toEncoding = J.genericToEncoding J.defaultOptions
+
+groupMemberRef :: GroupMember -> GroupMemberRef
+groupMemberRef GroupMember {groupMemberId, memberProfile = p} =
+  GroupMemberRef {groupMemberId, profile = fromLocalProfile p}
+
 memberConn :: GroupMember -> Maybe Connection
 memberConn = activeConn
 

@@ -40,7 +40,8 @@ connReqData =
   ConnReqUriData
     { crScheme = simplexChat,
       crAgentVRange = mkVersionRange 1 1,
-      crSmpQueues = [queue]
+      crSmpQueues = [queue],
+      crClientData = Nothing
     }
 
 testDhPubKey :: C.PublicKeyX448
