@@ -10,10 +10,7 @@
                 "title": "More Information",
                 "linkText": "Learn more",
                 "showImage": false,
-                "paras": [
-                    "Unlike any other existing messaging platform, SimpleX has no identifiers assigned to the users –- not even random numbers. This protects the privacy of who you are communicating with, hiding it from SimpleX platform servers and from any observers.",
-                    "E2E encryption in each queue to prevent traffic correlation between queues in case TLS is compromised."
-                ]
+                "contentBody": "overlay_content/why_privacy_matters/card_1.html"
             }
         },
         {
@@ -26,9 +23,7 @@
                 "title": "More Information",
                 "linkText": "Learn more",
                 "showImage": false,
-                "paras": [
-                    "Unlike any other existing messaging platform, SimpleX has no identifiers assigned to the users –- not even random numbers. This protects the privacy of who you are communicating with, hiding it from SimpleX platform servers and from any observers."
-                ]
+                "contentBody": "overlay_content/why_privacy_matters/card_2.html"
             }
         },
         {

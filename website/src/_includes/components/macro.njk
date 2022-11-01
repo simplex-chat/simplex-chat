@@ -5,11 +5,11 @@
             <h1 class="text-3xl font-bold text-active-blue mb-6">{{ section.overlayContent.title }}</h1>
             <div class="flex gap-10 justify-between">
                 <div class="max-w-md">
-                    <div class="text-grey-black dark:text-white flex flex-col gap-6 text-base">
-                        {% for para in section.overlayContent.paras %}
-                            <p>{{ para }}</p>
-                        {% endfor %}
-                    </div>
+                    {% if section.overlayContent.contentBody %}
+                        <div class="text-grey-black dark:text-white flex flex-col gap-6 text-base">
+                            {% include section.overlayContent.contentBody %}
+                        </div>
+                    {% endif %}
                 </div>
 
                 {% if section.overlayContent.showImage %}

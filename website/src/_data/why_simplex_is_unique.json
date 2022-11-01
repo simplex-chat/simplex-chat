@@ -11,11 +11,7 @@
                 "title": "Complete privacy of your identity, profile, contacts and metadata",
                 "linkText": "Learn how it improves privacy",
                 "showImage": true,
-                "paras": [
-                    "Unlike any other existing messaging platform, SimpleX has no identifiers assigned to the users –- not even random numbers. This protects the privacy of who you are communicating with, hiding it from SimpleX platform servers and from any observers. Unlike any other existing messaging platform, SimpleX has no identifiers assigned to the users –- not even random numbers.",
-                    "Privacy of who you are communicating with, hiding it from SimpleX platform servers and from any observers. Unlike any other existing messaging platform, SimpleX has no identifiers assigned to the users –- not even random numbers.",
-                    "This protects the privacy of who you are communicating with, hiding it from SimpleX platform servers and from any observers."
-                ]
+                "contentBody": "overlay_content/why_simplex_is_unique/card_1.html"
             }
         },
         {
@@ -29,9 +25,7 @@
                 "title": "The best protection against spam and abuse",
                 "linkText": "Learn how it improves privacy",
                 "showImage": true,
-                "paras": [
-                    "Because you have no identifier on the SimpleX platform, you cannot be contacted unless you share a one-time “burner” or temporary user address."
-                ]
+                "contentBody": "overlay_content/why_simplex_is_unique/card_2.html"
             }
         },
         {
@@ -45,9 +39,7 @@
                 "title": "Ownership, control and security of your data",
                 "linkText": "Learn how it improves privacy",
                 "showImage": true,
-                "paras": [
-                    "SimpleX stores all user data on client devices in a portable database format. The messages are held temporarily on SimpleX relay servers until they are received, then they are permanently deleted."
-                ]
+                "contentBody": "overlay_content/why_simplex_is_unique/card_3.html"
             }
         },
         {
