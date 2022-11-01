@@ -1527,14 +1527,14 @@ public enum SndConnEvent: Decodable {
     var text: String {
         switch self {
         case let .switchQueue(phase, member):
-            var forMember = ""
-            if let m = member {
-                forMember = String.localizedStringWithFormat(NSLocalizedString(" for %@", comment: "for member name"), m.profile.profileViewName)
+            if let name = member?.profile.profileViewName {
+                return phase == .completed
+                    ? String.localizedStringWithFormat(NSLocalizedString("you changed address for %@", comment: "chat item text"), name)
+                    : String.localizedStringWithFormat(NSLocalizedString("changing address for %@...", comment: "chat item text"), name)
             }
-            if case .completed = phase {
-                return String.localizedStringWithFormat(NSLocalizedString("you changed address%@", comment: "chat item text"), forMember)
-            }
-            return String.localizedStringWithFormat(NSLocalizedString("changing address%@...", comment: "chat item text"), forMember)
+            return phase == .completed
+                ? NSLocalizedString("you changed address", comment: "chat item text")
+                : NSLocalizedString("changing address...", comment: "chat item text")
         }
     }
 }
