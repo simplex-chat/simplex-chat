@@ -525,13 +525,13 @@ sndGroupEventToText = \case
 
 rcvConnEventToText :: RcvConnEvent -> Text
 rcvConnEventToText = \case
-  RCESwitch phase -> case phase of
+  RCESwitchQueue phase -> case phase of
     SPCompleted -> "changed address for you"
     _ -> decodeLatin1 (strEncode phase) <> " changing address for you..."
 
 sndConnEventToText :: SndConnEvent -> Text
 sndConnEventToText = \case
-  SCESwitch phase m -> case phase of
+  SCESwitchQueue phase m -> case phase of
     SPCompleted -> "you changed address" <> forMember m
     _ -> decodeLatin1 (strEncode phase) <> " changing address" <> forMember m <> "..."
   where
@@ -620,10 +620,10 @@ instance ToJSON DBSndGroupEvent where
   toJSON (SGE v) = J.genericToJSON (singleFieldJSON $ dropPrefix "SGE") v
   toEncoding (SGE v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "SGE") v
 
-data RcvConnEvent = RCESwitch {phase :: SwitchPhase}
+data RcvConnEvent = RCESwitchQueue {phase :: SwitchPhase}
   deriving (Show, Generic)
 
-data SndConnEvent = SCESwitch {phase :: SwitchPhase, member :: Maybe GroupMemberRef}
+data SndConnEvent = SCESwitchQueue {phase :: SwitchPhase, member :: Maybe GroupMemberRef}
   deriving (Show, Generic)
 
 instance FromJSON RcvConnEvent where
