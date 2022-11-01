@@ -123,6 +123,7 @@ responseToView testView = \case
   CRSndGroupFileCancelled _ ftm fts -> viewSndGroupFileCancelled ftm fts
   CRRcvFileCancelled ft -> receivingFile_ "cancelled" ft
   CRUserProfileUpdated p p' -> viewUserProfileUpdated p p'
+  CRContactPrefsUpdated ct -> viewContactPrefsUpdated ct
   CRContactAliasUpdated c -> viewContactAliasUpdated c
   CRConnectionAliasUpdated c -> viewConnectionAliasUpdated c
   CRContactUpdated c c' -> viewContactUpdated c c'
@@ -700,6 +701,18 @@ viewUserProfileUpdated Profile {displayName = n, fullName, image} Profile {displ
   | otherwise = ["user profile is changed to " <> ttyFullName n' fullName' <> notified]
   where
     notified = " (your contacts are notified)"
+
+viewContactPrefsUpdated :: Contact -> [StyledString]
+viewContactPrefsUpdated Contact {profile = LocalProfile {preferences}, userPreferences = ChatPreferences {voice = userVoice}} =
+  let contactVoice = preferences >>= voice
+   in ["preferences were updated: " <> "contact's voice messages are " <> viewPreference contactVoice <> ", user's voice messages are " <> viewPreference userVoice]
+
+viewPreference :: Maybe Preference -> StyledString
+viewPreference = \case
+  Just Preference {enable} -> case enable of
+    PSOn -> "on"
+    PSOff -> "off"
+  _ -> "unset"
 
 viewGroupUpdated :: GroupInfo -> GroupInfo -> Maybe GroupMember -> [StyledString]
 viewGroupUpdated

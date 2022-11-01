@@ -645,6 +645,9 @@ processChatCommand = \case
     withCurrentCall contactId $ \userId ct call ->
       updateCallItemStatus userId ct call receivedStatus Nothing $> Just call
   APIUpdateProfile profile -> withUser (`updateProfile` profile)
+  APISetContactPrefs contactId prefs' -> withUser $ \user@User {userId} -> do
+    ct <- withStore $ \db -> getContact db userId contactId
+    updateContactPrefs user ct prefs'
   APISetContactAlias contactId localAlias -> withUser $ \User {userId} -> do
     ct' <- withStore $ \db -> do
       ct <- getContact db userId contactId
@@ -754,13 +757,13 @@ processChatCommand = \case
     conn <- withStore' $ \db -> createDirectConnection db userId connId cReq ConnNew incognitoProfile
     toView $ CRNewContactConnection conn
     pure $ CRInvitation cReq
-  Connect (Just (ACR SCMInvitation cReq)) -> withUser $ \User {userId, profile} -> withChatLock "connect" . procCmd $ do
+  Connect (Just (ACR SCMInvitation cReq)) -> withUser $ \user@User {userId} -> withChatLock "connect" . procCmd $ do
     -- [incognito] generate profile to send
     incognito <- readTVarIO =<< asks incognitoMode
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
-    let profileToSend = fromMaybe (fromLocalProfile profile) incognitoProfile
+    let profileToSend = userProfileToSend user incognitoProfile Nothing
     connId <- withAgent $ \a -> joinConnection a True cReq . directMessage $ XInfo profileToSend
-    conn <- withStore' $ \db -> createDirectConnection db userId connId cReq ConnJoined incognitoProfile
+    conn <- withStore' $ \db -> createDirectConnection db userId connId cReq ConnJoined $ incognitoProfile $> profileToSend
     toView $ CRNewContactConnection conn
     pure CRSentConfirmation
   Connect (Just (ACR SCMContact cReq)) -> withUser $ \User {userId, profile} ->
@@ -1151,9 +1154,23 @@ processChatCommand = \case
           filter (\ct -> isReady ct && not (contactConnIncognito ct))
             <$> withStore' (`getUserContacts` user)
         withChatLock "updateProfile" . procCmd $ do
-          forM_ contacts $ \ct ->
-            void (sendDirectContactMessage ct $ XInfo p') `catchError` (toView . CRChatError)
+          forM_ contacts $ \ct -> do
+            let mergedProfile = userProfileToSend user' Nothing $ Just ct
+            void (sendDirectContactMessage ct $ XInfo mergedProfile) `catchError` (toView . CRChatError)
           pure $ CRUserProfileUpdated (fromLocalProfile p) p'
+    updateContactPrefs :: User -> Contact -> ChatPreferences -> m ChatResponse
+    updateContactPrefs user@User {userId} ct@Contact {contactId, activeConn = Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
+      | contactUserPrefs == contactUserPrefs' = pure $ CRContactPrefsUpdated ct -- nothing changed actually
+      | otherwise = do
+        withStore' $ \db -> updateContactUserPreferences db userId contactId contactUserPrefs'
+        -- [incognito] filter out contacts with whom user has incognito connections
+        let ct' = (ct :: Contact) {userPreferences = contactUserPrefs'}
+        incognitoProfile <- forM customUserProfileId $ \profileId -> withStore $ \db -> getProfileById db userId profileId
+        let p' = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct')
+        withChatLock "updateProfile" . procCmd $ do
+          void (sendDirectContactMessage ct' $ XInfo p') `catchError` (toView . CRChatError)
+          pure $ CRContactPrefsUpdated ct'
+
     isReady :: Contact -> Bool
     isReady ct =
       let s = connStatus $ activeConn (ct :: Contact)
@@ -1369,25 +1386,26 @@ getRcvFilePath fileId fPath_ fn = case fPath_ of
            in ifM (doesFileExist f) (tryCombine $ n + 1) (pure f)
 
 acceptContactRequest :: ChatMonad m => User -> UserContactRequest -> Maybe IncognitoProfile -> m Contact
-acceptContactRequest user@User {userId} UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} incognitoProfile = do
+acceptContactRequest user UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = cp, userContactLinkId, xContactId} incognitoProfile = do
   let profileToSend = profileToSendOnAccept user incognitoProfile
   acId <- withAgent $ \a -> acceptContact a True invId . directMessage $ XInfo profileToSend
-  withStore' $ \db -> createAcceptedContact db userId acId cName profileId p userContactLinkId xContactId incognitoProfile
+  withStore' $ \db -> createAcceptedContact db user acId cName profileId cp userContactLinkId xContactId incognitoProfile
 
 acceptContactRequestAsync :: ChatMonad m => User -> UserContactRequest -> Maybe IncognitoProfile -> m Contact
-acceptContactRequestAsync user@User {userId} UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} incognitoProfile = do
+acceptContactRequestAsync user UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} incognitoProfile = do
   let profileToSend = profileToSendOnAccept user incognitoProfile
   (cmdId, acId) <- agentAcceptContactAsync user True invId $ XInfo profileToSend
   withStore' $ \db -> do
-    ct@Contact {activeConn = Connection {connId}} <- createAcceptedContact db userId acId cName profileId p userContactLinkId xContactId incognitoProfile
+    ct@Contact {activeConn = Connection {connId}} <- createAcceptedContact db user acId cName profileId p userContactLinkId xContactId incognitoProfile
     setCommandConnId db user cmdId connId
     pure ct
 
 profileToSendOnAccept :: User -> Maybe IncognitoProfile -> Profile
-profileToSendOnAccept User {profile} = \case
-  Just (NewIncognito p) -> p
-  Just (ExistingIncognito lp) -> fromLocalProfile lp
-  Nothing -> fromLocalProfile profile
+profileToSendOnAccept user ip = userProfileToSend user (getIncognitoProfile <$> ip) Nothing
+  where
+    getIncognitoProfile = \case
+      NewIncognito p -> p
+      ExistingIncognito lp -> fromLocalProfile lp
 
 deleteGroupLink' :: ChatMonad m => User -> GroupInfo -> m ()
 deleteGroupLink' user gInfo = do
@@ -1585,7 +1603,7 @@ processAgentMessage (Just user) _ agentConnId END =
       showToast (c <> "> ") "connected to another client"
       unsetActive $ ActiveC c
     entity -> toView $ CRSubscriptionEnd entity
-processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentMessage =
+processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
   (withStore (\db -> getConnectionEntity db user $ AgentConnId agentConnId) >>= updateConnStatus) >>= \case
     RcvDirectMsgConnection conn contact_ ->
       processDirectMessage agentMessage conn contact_
@@ -1623,7 +1641,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
         CONF confId _ connInfo -> do
           -- [incognito] send saved profile
           incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
-          let profileToSend = fromLocalProfile $ fromMaybe profile incognitoProfile
+          let profileToSend = userProfileToSend user (fromLocalProfile <$> incognitoProfile) Nothing
           saveConnInfo conn connInfo
           -- [async agent commands] no continuation needed, but command should be asynchronous for stability
           allowAgentConnectionAsync user conn confId $ XInfo profileToSend
@@ -2986,6 +3004,17 @@ deleteAgentConnectionAsync' user connId (AgentConnId acId) = do
   cmdId <- withStore' $ \db -> createCommand db user (Just connId) CFDeleteConn
   withAgent $ \a -> deleteConnectionAsync a (aCorrId cmdId) acId
 
+userProfileToSend :: User -> Maybe Profile -> Maybe Contact -> Profile
+userProfileToSend user@User {profile} incognitoProfile ct =
+  let p = fromMaybe (fromLocalProfile profile) incognitoProfile
+      preferences = Just . mergeChatPreferences user $ userPreferences <$> ct
+   in (p :: Profile) {preferences}
+
+mergeChatPreferences :: User -> Maybe ChatPreferences -> ChatPreferences
+mergeChatPreferences User {profile = LocalProfile {preferences}} contactPrefs =
+  let ChatPreferences {voice = defaultVoice} = defaultChatPrefs
+   in ChatPreferences {voice = (contactPrefs >>= voice) <|> (preferences >>= voice) <|> defaultVoice}
+
 getCreateActiveUser :: SQLiteStore -> IO User
 getCreateActiveUser st = do
   user <-
@@ -3007,7 +3036,7 @@ getCreateActiveUser st = do
         loop = do
           displayName <- getContactName
           fullName <- T.pack <$> getWithPrompt "full name (optional)"
-          withTransaction st (\db -> runExceptT $ createUser db Profile {displayName, fullName, image = Nothing} True) >>= \case
+          withTransaction st (\db -> runExceptT $ createUser db Profile {displayName, fullName, image = Nothing, preferences = Just defaultChatPrefs} True) >>= \case
             Left SEDuplicateName -> do
               putStrLn "chosen display name is already used by another profile on this device, choose another one"
               loop
@@ -3140,6 +3169,7 @@ chatCommandP =
       "/_profile " *> (APIUpdateProfile <$> jsonP),
       "/_set alias @" *> (APISetContactAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set alias :" *> (APISetConnectionAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
+      "/_set prefs @" *> (APISetContactPrefs <$> A.decimal <* A.space <*> jsonP),
       "/_parse " *> (APIParseMarkdown . safeDecodeUtf8 <$> A.takeByteString),
       "/_ntf get" $> APIGetNtfToken,
       "/_ntf register " *> (APIRegisterToken <$> strP_ <*> strP),
@@ -3190,6 +3220,7 @@ chatCommandP =
       ("/members #" <|> "/members " <|> "/ms #" <|> "/ms ") *> (ListMembers <$> displayName),
       ("/groups" <|> "/gs") $> ListGroups,
       "/_group_profile #" *> (APIUpdateGroupProfile <$> A.decimal <* A.space <*> jsonP),
+      -- TODO group profile update via terminal should not reset image and preferences to Nothing (now it does)
       ("/group_profile #" <|> "/gp #" <|> "/group_profile " <|> "/gp ") *> (UpdateGroupProfile <$> displayName <* A.space <*> groupProfile),
       "/_create link #" *> (APICreateGroupLink <$> A.decimal),
       "/_delete link #" *> (APIDeleteGroupLink <$> A.decimal),
@@ -3256,13 +3287,13 @@ chatCommandP =
       pure (cName, fullName)
     userProfile = do
       (cName, fullName) <- userNames
-      pure Profile {displayName = cName, fullName, image = Nothing}
+      pure Profile {displayName = cName, fullName, image = Nothing, preferences = Nothing}
     jsonP :: J.FromJSON a => Parser a
     jsonP = J.eitherDecodeStrict' <$?> A.takeByteString
     groupProfile = do
       gName <- displayName
       fullName <- fullNameP gName
-      pure GroupProfile {displayName = gName, fullName, image = Nothing}
+      pure GroupProfile {displayName = gName, fullName, image = Nothing, preferences = Nothing}
     fullNameP name = do
       n <- (A.space *> A.takeByteString) <|> pure ""
       pure $ if B.null n then name else safeDecodeUtf8 n
