@@ -747,7 +747,7 @@ processChatCommand = \case
     -- [incognito] generate profile to send
     incognito <- readTVarIO =<< asks incognitoMode
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
-    let profileToSend = userProfileToSend user incognitoProfile
+    let profileToSend = userProfileToSend user incognitoProfile Nothing
     connId <- withAgent $ \a -> joinConnection a True cReq . directMessage $ XInfo profileToSend
     conn <- withStore' $ \db -> createDirectConnection db userId connId cReq ConnJoined $ incognitoProfile $> profileToSend
     toView $ CRNewContactConnection conn
@@ -1141,31 +1141,21 @@ processChatCommand = \case
             <$> withStore' (`getUserContacts` user)
         withChatLock "updateProfile" . procCmd $ do
           forM_ contacts $ \ct -> do
-            let mergedProfile = userProfileForContact user' ct
+            let mergedProfile = userProfileToSend user' Nothing $ Just ct
             void (sendDirectContactMessage ct $ XInfo mergedProfile) `catchError` (toView . CRChatError)
           pure $ CRUserProfileUpdated (fromLocalProfile p) p'
     updateContactPrefs :: User -> Contact -> ChatPreferences -> m ChatResponse
-    updateContactPrefs user@User {userId, profile = userProfile} ct@Contact {contactId, activeConn = Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
+    updateContactPrefs user@User {userId} ct@Contact {contactId, activeConn = Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
       | contactUserPrefs == contactUserPrefs' = pure $ CRContactPrefsUpdated ct -- nothing changed actually
       | otherwise = do
         withStore' $ \db -> updateContactUserPreferences db userId contactId contactUserPrefs'
         -- [incognito] filter out contacts with whom user has incognito connections
         let ct' = (ct :: Contact) {userPreferences = contactUserPrefs'}
-        p' <- if contactConnIncognito ct 
-          then do
-            incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
-            let profileToApply = fromLocalProfile $ fromMaybe userProfile incognitoProfile
-                preferences = Just $ mergeChatPreferences user (Just contactUserPrefs')
-              in pure $ (profileToApply :: Profile) {preferences}
-          else 
-            pure $ userProfileForContact user ct'
+        incognitoProfile <- forM customUserProfileId $ \profileId -> withStore $ \db -> getProfileById db userId profileId
+        let p' = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct')
         withChatLock "updateProfile" . procCmd $ do
           void (sendDirectContactMessage ct' $ XInfo p') `catchError` (toView . CRChatError)
           pure $ CRContactPrefsUpdated ct'
-    userProfileForContact :: User -> Contact -> Profile
-    userProfileForContact user@User {profile = p} Contact {userPreferences} =
-      let preferences = Just . mergeChatPreferences user $ Just userPreferences
-       in (fromLocalProfile p :: Profile) {preferences}
 
     isReady :: Contact -> Bool
     isReady ct =
@@ -1397,7 +1387,7 @@ acceptContactRequestAsync user UserContactRequest {agentInvitationId = AgentInvI
     pure ct
 
 profileToSendOnAccept :: User -> Maybe IncognitoProfile -> Profile
-profileToSendOnAccept user ip = userProfileToSend user $ getIncognitoProfile <$> ip
+profileToSendOnAccept user ip = userProfileToSend user (getIncognitoProfile <$> ip) Nothing
   where
     getIncognitoProfile = \case
       NewIncognito p -> p
@@ -1637,7 +1627,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
         CONF confId _ connInfo -> do
           -- [incognito] send saved profile
           incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
-          let profileToSend = userProfileToSend user $ fromLocalProfile <$> incognitoProfile
+          let profileToSend = userProfileToSend user (fromLocalProfile <$> incognitoProfile) Nothing
           saveConnInfo conn connInfo
           -- [async agent commands] no continuation needed, but command should be asynchronous for stability
           allowAgentConnectionAsync user conn confId $ XInfo profileToSend
@@ -2999,10 +2989,10 @@ deleteAgentConnectionAsync' user connId (AgentConnId acId) = do
   cmdId <- withStore' $ \db -> createCommand db user (Just connId) CFDeleteConn
   withAgent $ \a -> deleteConnectionAsync a (aCorrId cmdId) acId
 
-userProfileToSend :: User -> Maybe Profile -> Profile
-userProfileToSend user@User {profile} incognitoProfile =
+userProfileToSend :: User -> Maybe Profile -> Maybe Contact -> Profile
+userProfileToSend user@User {profile} incognitoProfile ct =
   let p = fromMaybe (fromLocalProfile profile) incognitoProfile
-      preferences = Just $ mergeChatPreferences user Nothing
+      preferences = Just . mergeChatPreferences user $ userPreferences <$> ct
    in (p :: Profile) {preferences}
 
 mergeChatPreferences :: User -> Maybe ChatPreferences -> ChatPreferences
