@@ -7,6 +7,7 @@ import ChatTests
 import Control.Monad.Except
 import Simplex.Chat.Mobile
 import Simplex.Chat.Store
+import Simplex.Chat.Types (Profile (..))
 import Test.Hspec
 
 mobileTests :: Spec
@@ -92,7 +93,7 @@ testChatApi = withTmpFiles $ do
   let dbPrefix = testDBPrefix <> "1"
       f = chatStoreFile dbPrefix
   st <- createChatStore f "myKey" True
-  Right _ <- withTransaction st $ \db -> runExceptT $ createUser db aliceProfile True
+  Right _ <- withTransaction st $ \db -> runExceptT $ createUser db aliceProfile {preferences = Nothing} True
   Right cc <- chatMigrateInit dbPrefix "myKey"
   Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix ""
   Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "anotherKey"

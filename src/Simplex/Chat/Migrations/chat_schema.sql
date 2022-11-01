@@ -15,7 +15,8 @@ CREATE TABLE contact_profiles(
   image TEXT,
   user_id INTEGER DEFAULT NULL REFERENCES users ON DELETE CASCADE,
   incognito INTEGER,
-  local_alias TEXT DEFAULT '' CHECK(local_alias NOT NULL)
+  local_alias TEXT DEFAULT '' CHECK(local_alias NOT NULL),
+  preferences TEXT
 );
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
@@ -58,6 +59,7 @@ CREATE TABLE contacts(
   enable_ntfs INTEGER,
   unread_chat INTEGER DEFAULT 0 CHECK(unread_chat NOT NULL),
   contact_used INTEGER DEFAULT 0 CHECK(contact_used NOT NULL),
+  user_preferences TEXT DEFAULT '{}' CHECK(user_preferences NOT NULL),
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -113,7 +115,8 @@ CREATE TABLE group_profiles(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
   image TEXT,
-  user_id INTEGER DEFAULT NULL REFERENCES users ON DELETE CASCADE
+  user_id INTEGER DEFAULT NULL REFERENCES users ON DELETE CASCADE,
+  preferences TEXT
 );
 CREATE TABLE groups(
   group_id INTEGER PRIMARY KEY, -- local group ID

@@ -39,11 +39,10 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Chat.Call
 import Simplex.Chat.Types
-import Simplex.Chat.Util (safeDecodeUtf8)
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (fromTextField_, fstToLower, parseAll, sumTypeJSON)
-import Simplex.Messaging.Util (eitherToMaybe, (<$?>))
+import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}

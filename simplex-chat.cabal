@@ -59,6 +59,7 @@ library
       Simplex.Chat.Migrations.M20221019_unread_chat
       Simplex.Chat.Migrations.M20221021_auto_accept__group_links
       Simplex.Chat.Migrations.M20221024_contact_used
+      Simplex.Chat.Migrations.M20221025_chat_settings
       Simplex.Chat.Migrations.M20221029_connections_group_link_id
       Simplex.Chat.Mobile
       Simplex.Chat.Options
@@ -71,7 +72,6 @@ library
       Simplex.Chat.Terminal.Notification
       Simplex.Chat.Terminal.Output
       Simplex.Chat.Types
-      Simplex.Chat.Util
       Simplex.Chat.View
   other-modules:
       Paths_simplex_chat

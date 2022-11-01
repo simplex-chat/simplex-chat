@@ -166,6 +166,7 @@ data ChatCommand
   | APIGetCallInvitations
   | APICallStatus ContactId WebRTCCallStatus
   | APIUpdateProfile Profile
+  | APISetContactPrefs Int64 ChatPreferences
   | APISetContactAlias ContactId LocalAlias
   | APISetConnectionAlias Int64 LocalAlias
   | APIParseMarkdown Text
@@ -193,9 +194,13 @@ data ChatCommand
   | APISetChatSettings ChatRef ChatSettings
   | APIContactInfo ContactId
   | APIGroupMemberInfo GroupId GroupMemberId
+  | APISwitchContact ContactId
+  | APISwitchGroupMember GroupId GroupMemberId
   | ShowMessages ChatName Bool
   | ContactInfo ContactName
   | GroupMemberInfo GroupName ContactName
+  | SwitchContact ContactName
+  | SwitchGroupMember GroupName ContactName
   | ChatHelp HelpSection
   | Welcome
   | AddContact
@@ -261,6 +266,8 @@ data ChatResponse
   | CRNetworkConfig {networkConfig :: NetworkConfig}
   | CRContactInfo {contact :: Contact, connectionStats :: ConnectionStats, customUserProfile :: Maybe Profile}
   | CRGroupMemberInfo {groupInfo :: GroupInfo, member :: GroupMember, connectionStats_ :: Maybe ConnectionStats}
+  | CRContactSwitch {contact :: Contact, switchProgress :: SwitchProgress}
+  | CRGroupMemberSwitch {groupInfo :: GroupInfo, member :: GroupMember, switchProgress :: SwitchProgress}
   | CRNewChatItem {chatItem :: AChatItem}
   | CRChatItemStatusUpdated {chatItem :: AChatItem}
   | CRChatItemUpdated {chatItem :: AChatItem}
@@ -315,6 +322,7 @@ data ChatResponse
   | CRUserProfileUpdated {fromProfile :: Profile, toProfile :: Profile}
   | CRContactAliasUpdated {toContact :: Contact}
   | CRConnectionAliasUpdated {toConnection :: PendingContactConnection}
+  | CRContactPrefsUpdated {toContact :: Contact}
   | CRContactConnecting {contact :: Contact}
   | CRContactConnected {contact :: Contact, userCustomProfile :: Maybe Profile}
   | CRContactAnotherClient {contact :: Contact}
@@ -447,6 +455,15 @@ instance ToJSON NtfMsgInfo where toEncoding = J.genericToEncoding J.defaultOptio
 
 crNtfToken :: (DeviceToken, NtfTknStatus, NotificationsMode) -> ChatResponse
 crNtfToken (token, status, ntfMode) = CRNtfToken {token, status, ntfMode}
+
+data SwitchProgress = SwitchProgress
+  { queueDirection :: QueueDirection,
+    switchPhase :: SwitchPhase,
+    connectionStats :: ConnectionStats
+  }
+  deriving (Show, Generic)
+
+instance ToJSON SwitchProgress where toEncoding = J.genericToEncoding J.defaultOptions
 
 data ChatError
   = ChatError {errorType :: ChatErrorType}

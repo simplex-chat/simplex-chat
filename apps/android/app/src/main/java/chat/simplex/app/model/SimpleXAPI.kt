@@ -608,6 +608,13 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return null
   }
 
+  suspend fun apiSetContactPrefs(contactId: Long, prefs: ChatPreferences): Contact? {
+    val r = sendCmd(CC.ApiSetContactPrefs(contactId, prefs))
+    if (r is CR.ContactPrefsUpdated) return r.toContact
+    Log.e(TAG, "apiSetContactPrefs bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
   suspend fun apiCreateUserAddress(): String? {
     val r = sendCmd(CC.CreateMyAddress())
     return when (r) {
@@ -1442,6 +1449,7 @@ sealed class CC {
   class ApiParseMarkdown(val text: String): CC()
   class ApiSetContactAlias(val contactId: Long, val localAlias: String): CC()
   class ApiSetConnectionAlias(val connId: Long, val localAlias: String): CC()
+  class ApiSetContactPrefs(val contactId: Long, val prefs: ChatPreferences): CC()
   class CreateMyAddress: CC()
   class DeleteMyAddress: CC()
   class ShowMyAddress: CC()
@@ -1505,6 +1513,7 @@ sealed class CC {
     is ApiParseMarkdown -> "/_parse $text"
     is ApiSetContactAlias -> "/_set alias @$contactId ${localAlias.trim()}"
     is ApiSetConnectionAlias -> "/_set alias :$connId ${localAlias.trim()}"
+    is ApiSetContactPrefs -> "/_set prefs @$contactId ${json.encodeToString(prefs)}"
     is CreateMyAddress -> "/address"
     is DeleteMyAddress -> "/delete_address"
     is ShowMyAddress -> "/show_address"
@@ -1569,6 +1578,7 @@ sealed class CC {
     is ApiParseMarkdown -> "apiParseMarkdown"
     is ApiSetContactAlias -> "apiSetContactAlias"
     is ApiSetConnectionAlias -> "apiSetConnectionAlias"
+    is ApiSetContactPrefs -> "apiSetContactPrefs"
     is CreateMyAddress -> "createMyAddress"
     is DeleteMyAddress -> "deleteMyAddress"
     is ShowMyAddress -> "showMyAddress"
@@ -1716,6 +1726,31 @@ data class ChatSettings(
   val enableNtfs: Boolean
 )
 
+@Serializable
+data class ChatPreferences(
+  val voice: ChatPreference? = null
+) {
+  companion object {
+    val default = ChatPreferences(
+      voice = ChatPreference(enable = PrefSwitch.OFF)
+    )
+    val empty = ChatPreferences(
+      voice = null
+    )
+  }
+}
+
+@Serializable
+data class ChatPreference(
+  val enable: PrefSwitch
+)
+
+@Serializable
+enum class PrefSwitch {
+  @SerialName("on") ON,
+  @SerialName("off") OFF
+}
+
 val json = Json {
   prettyPrint = true
   ignoreUnknownKeys = true
@@ -1768,6 +1803,7 @@ sealed class CR {
   @Serializable @SerialName("userProfileUpdated") class UserProfileUpdated(val fromProfile: Profile, val toProfile: Profile): CR()
   @Serializable @SerialName("contactAliasUpdated") class ContactAliasUpdated(val toContact: Contact): CR()
   @Serializable @SerialName("connectionAliasUpdated") class ConnectionAliasUpdated(val toConnection: PendingContactConnection): CR()
+  @Serializable @SerialName("contactPrefsUpdated") class ContactPrefsUpdated(val toContact: Contact): CR()
   @Serializable @SerialName("apiParsedMarkdown") class ParsedMarkdown(val formattedText: List<FormattedText>? = null): CR()
   @Serializable @SerialName("userContactLink") class UserContactLink(val contactLink: UserContactLinkRec): CR()
   @Serializable @SerialName("userContactLinkUpdated") class UserContactLinkUpdated(val contactLink: UserContactLinkRec): CR()
@@ -1864,6 +1900,7 @@ sealed class CR {
     is UserProfileUpdated -> "userProfileUpdated"
     is ContactAliasUpdated -> "contactAliasUpdated"
     is ConnectionAliasUpdated -> "connectionAliasUpdated"
+    is ContactPrefsUpdated -> "contactPrefsUpdated"
     is ParsedMarkdown -> "apiParsedMarkdown"
     is UserContactLink -> "userContactLink"
     is UserContactLinkUpdated -> "userContactLinkUpdated"
@@ -1958,6 +1995,7 @@ sealed class CR {
     is UserProfileUpdated -> json.encodeToString(toProfile)
     is ContactAliasUpdated -> json.encodeToString(toContact)
     is ConnectionAliasUpdated -> json.encodeToString(toConnection)
+    is ContactPrefsUpdated -> json.encodeToString(toContact)
     is ParsedMarkdown -> json.encodeToString(formattedText)
     is UserContactLink -> contactLink.responseDetails
     is UserContactLinkUpdated -> contactLink.responseDetails

@@ -32,12 +32,11 @@ import GHC.Generics (Generic)
 import Simplex.Chat.Markdown
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
-import Simplex.Chat.Util (safeDecodeUtf8)
-import Simplex.Messaging.Agent.Protocol (AgentErrorType, AgentMsgId, MsgErrorType (..), MsgMeta (..))
+import Simplex.Messaging.Agent.Protocol (SwitchPhase (..), AgentErrorType, AgentMsgId, MsgErrorType (..), MsgMeta (..), SwitchPhase)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, fstToLower, singleFieldJSON, sumTypeJSON)
 import Simplex.Messaging.Protocol (MsgBody)
-import Simplex.Messaging.Util (eitherToMaybe, (<$?>))
+import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 
 data ChatType = CTDirect | CTGroup | CTContactRequest | CTContactConnection
   deriving (Show, Generic)
@@ -524,6 +523,21 @@ sndGroupEventToText = \case
   SGEUserLeft -> "left"
   SGEGroupUpdated _ -> "group profile updated"
 
+rcvConnEventToText :: RcvConnEvent -> Text
+rcvConnEventToText = \case
+  RCESwitch phase -> case phase of
+    SPCompleted -> "changed address for you"
+    _ -> decodeLatin1 (strEncode phase) <> " changing address for you..."
+
+sndConnEventToText :: SndConnEvent -> Text
+sndConnEventToText = \case
+  SCESwitch phase m -> case phase of
+    SPCompleted -> "you changed address" <> forMember m
+    _ -> decodeLatin1 (strEncode phase) <> " changing address" <> forMember m <> "..."
+  where
+    forMember member_ =
+      maybe "" (\GroupMemberRef {profile = Profile {displayName}} -> " for " <> displayName) member_
+
 profileToText :: Profile -> Text
 profileToText Profile {displayName, fullName} = displayName <> optionalFullName displayName fullName
 
@@ -542,6 +556,8 @@ data CIContent (d :: MsgDirection) where
   CISndGroupInvitation :: CIGroupInvitation -> GroupMemberRole -> CIContent 'MDSnd
   CIRcvGroupEvent :: RcvGroupEvent -> CIContent 'MDRcv
   CISndGroupEvent :: SndGroupEvent -> CIContent 'MDSnd
+  CIRcvConnEvent :: RcvConnEvent -> CIContent 'MDRcv
+  CISndConnEvent :: SndConnEvent -> CIContent 'MDSnd
 -- ^ This type is used both in API and in DB, so we use different JSON encodings for the database and for the API
 -- ! ^ Nested sum types also have to use different encodings for database and API
 -- ! ^ to avoid breaking cross-platform compatibility, see RcvGroupEvent and SndGroupEvent
@@ -604,6 +620,44 @@ instance ToJSON DBSndGroupEvent where
   toJSON (SGE v) = J.genericToJSON (singleFieldJSON $ dropPrefix "SGE") v
   toEncoding (SGE v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "SGE") v
 
+data RcvConnEvent = RCESwitch {phase :: SwitchPhase}
+  deriving (Show, Generic)
+
+data SndConnEvent = SCESwitch {phase :: SwitchPhase, member :: Maybe GroupMemberRef}
+  deriving (Show, Generic)
+
+instance FromJSON RcvConnEvent where
+  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "RCE"
+
+instance ToJSON RcvConnEvent where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "RCE"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "RCE"
+
+newtype DBRcvConnEvent = RCE RcvConnEvent
+
+instance FromJSON DBRcvConnEvent where
+  parseJSON v = RCE <$> J.genericParseJSON (singleFieldJSON $ dropPrefix "RCE") v
+
+instance ToJSON DBRcvConnEvent where
+  toJSON (RCE v) = J.genericToJSON (singleFieldJSON $ dropPrefix "RCE") v
+  toEncoding (RCE v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "RCE") v
+
+instance FromJSON SndConnEvent where
+  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "SCE"
+
+instance ToJSON SndConnEvent where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "SCE"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "SCE"
+
+newtype DBSndConnEvent = SCE SndConnEvent
+
+instance FromJSON DBSndConnEvent where
+  parseJSON v = SCE <$> J.genericParseJSON (singleFieldJSON $ dropPrefix "SCE") v
+
+instance ToJSON DBSndConnEvent where
+  toJSON (SCE v) = J.genericToJSON (singleFieldJSON $ dropPrefix "SCE") v
+  toEncoding (SCE v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "SCE") v
+
 newtype DBMsgErrorType = DBME MsgErrorType
 
 instance FromJSON DBMsgErrorType where
@@ -653,6 +707,8 @@ ciContentToText = \case
   CISndGroupInvitation groupInvitation memberRole -> "sent " <> ciGroupInvitationToText groupInvitation memberRole
   CIRcvGroupEvent event -> rcvGroupEventToText event
   CISndGroupEvent event -> sndGroupEventToText event
+  CIRcvConnEvent event -> rcvConnEventToText event
+  CISndConnEvent event -> sndConnEventToText event
 
 msgIntegrityError :: MsgErrorType -> Text
 msgIntegrityError = \case
@@ -701,6 +757,8 @@ data JSONCIContent
   | JCISndGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   | JCIRcvGroupEvent {rcvGroupEvent :: RcvGroupEvent}
   | JCISndGroupEvent {sndGroupEvent :: SndGroupEvent}
+  | JCIRcvConnEvent {rcvConnEvent :: RcvConnEvent}
+  | JCISndConnEvent {sndConnEvent :: SndConnEvent}
   deriving (Generic)
 
 instance FromJSON JSONCIContent where
@@ -723,6 +781,8 @@ jsonCIContent = \case
   CISndGroupInvitation groupInvitation memberRole -> JCISndGroupInvitation {groupInvitation, memberRole}
   CIRcvGroupEvent rcvGroupEvent -> JCIRcvGroupEvent {rcvGroupEvent}
   CISndGroupEvent sndGroupEvent -> JCISndGroupEvent {sndGroupEvent}
+  CIRcvConnEvent rcvConnEvent -> JCIRcvConnEvent {rcvConnEvent}
+  CISndConnEvent sndConnEvent -> JCISndConnEvent {sndConnEvent}
 
 aciContentJSON :: JSONCIContent -> ACIContent
 aciContentJSON = \case
@@ -737,6 +797,8 @@ aciContentJSON = \case
   JCISndGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDSnd $ CISndGroupInvitation groupInvitation memberRole
   JCIRcvGroupEvent {rcvGroupEvent} -> ACIContent SMDRcv $ CIRcvGroupEvent rcvGroupEvent
   JCISndGroupEvent {sndGroupEvent} -> ACIContent SMDSnd $ CISndGroupEvent sndGroupEvent
+  JCIRcvConnEvent {rcvConnEvent} -> ACIContent SMDRcv $ CIRcvConnEvent rcvConnEvent
+  JCISndConnEvent {sndConnEvent} -> ACIContent SMDSnd $ CISndConnEvent sndConnEvent
 
 -- platform independent
 data DBJSONCIContent
@@ -751,6 +813,8 @@ data DBJSONCIContent
   | DBJCISndGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   | DBJCIRcvGroupEvent {rcvGroupEvent :: DBRcvGroupEvent}
   | DBJCISndGroupEvent {sndGroupEvent :: DBSndGroupEvent}
+  | DBJCIRcvConnEvent {rcvConnEvent :: DBRcvConnEvent}
+  | DBJCISndConnEvent {sndConnEvent :: DBSndConnEvent}
   deriving (Generic)
 
 instance FromJSON DBJSONCIContent where
@@ -773,6 +837,8 @@ dbJsonCIContent = \case
   CISndGroupInvitation groupInvitation memberRole -> DBJCISndGroupInvitation {groupInvitation, memberRole}
   CIRcvGroupEvent rge -> DBJCIRcvGroupEvent $ RGE rge
   CISndGroupEvent sge -> DBJCISndGroupEvent $ SGE sge
+  CIRcvConnEvent rce -> DBJCIRcvConnEvent $ RCE rce
+  CISndConnEvent sce -> DBJCISndConnEvent $ SCE sce
 
 aciContentDBJSON :: DBJSONCIContent -> ACIContent
 aciContentDBJSON = \case
@@ -787,6 +853,8 @@ aciContentDBJSON = \case
   DBJCISndGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDSnd $ CISndGroupInvitation groupInvitation memberRole
   DBJCIRcvGroupEvent (RGE rge) -> ACIContent SMDRcv $ CIRcvGroupEvent rge
   DBJCISndGroupEvent (SGE sge) -> ACIContent SMDSnd $ CISndGroupEvent sge
+  DBJCIRcvConnEvent (RCE rce) -> ACIContent SMDRcv $ CIRcvConnEvent rce
+  DBJCISndConnEvent (SCE sce) -> ACIContent SMDSnd $ CISndConnEvent sce
 
 data CICallStatus
   = CISCallPending
