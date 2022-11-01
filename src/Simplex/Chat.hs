@@ -1145,13 +1145,20 @@ processChatCommand = \case
             void (sendDirectContactMessage ct $ XInfo mergedProfile) `catchError` (toView . CRChatError)
           pure $ CRUserProfileUpdated (fromLocalProfile p) p'
     updateContactPrefs :: User -> Contact -> ChatPreferences -> m ChatResponse
-    updateContactPrefs user@User {userId} ct@Contact {contactId, userPreferences = contactUserPrefs} contactUserPrefs'
+    updateContactPrefs user@User {userId, profile = userProfile} ct@Contact {contactId, activeConn = Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
       | contactUserPrefs == contactUserPrefs' = pure $ CRContactPrefsUpdated ct -- nothing changed actually
       | otherwise = do
         withStore' $ \db -> updateContactUserPreferences db userId contactId contactUserPrefs'
         -- [incognito] filter out contacts with whom user has incognito connections
         let ct' = (ct :: Contact) {userPreferences = contactUserPrefs'}
-            p' = userProfileForContact user ct'
+        p' <- if contactConnIncognito ct 
+          then do
+            incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
+            let profileToApply = fromLocalProfile $ fromMaybe userProfile incognitoProfile
+                preferences = Just $ mergeChatPreferences user (Just contactUserPrefs')
+              in pure $ (profileToApply :: Profile) {preferences}
+          else 
+            pure $ userProfileForContact user ct'
         withChatLock "updateProfile" . procCmd $ do
           void (sendDirectContactMessage ct' $ XInfo p') `catchError` (toView . CRChatError)
           pure $ CRContactPrefsUpdated ct'

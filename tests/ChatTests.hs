@@ -2411,8 +2411,11 @@ testConnectIncognitoInvitationLink = testChat3 aliceProfile bobProfile cathProfi
     alice <## "preferences were updated: contact's voice is off, user's voice is unset"
     alice ##> "/_set prefs @2 {\"voice\": {\"enable\": \"on\"}}"
     alice <## "preferences were updated: contact's voice is off, user's voice is on"
+    -- with delay it shouldn't fail here (and without it too)
+    threadDelay 1000000
     bob ##> "/_set prefs @2 {}"
     bob <## "preferences were updated: contact's voice is on, user's voice is unset"
+    threadDelay 1000000
     alice ##> "/_set prefs @2 {\"voice\": {\"enable\": \"off\"}}"
     alice <## "preferences were updated: contact's voice is off, user's voice is off"
 
@@ -2735,6 +2738,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     bob <## "preferences were updated: contact's voice is on, user's voice is unset"
     alice ##> "/_set prefs @2 {\"voice\": {\"enable\": \"off\"}}"
     alice <## "preferences were updated: contact's voice is on, user's voice is off"
+    threadDelay 1000000
     bob ##> "/_set prefs @2 {}"
     bob <## "preferences were updated: contact's voice is off, user's voice is unset"
 
