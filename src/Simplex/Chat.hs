@@ -55,7 +55,6 @@ import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store
 import Simplex.Chat.Types
-import Simplex.Chat.Util (safeDecodeUtf8)
 import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), AgentDatabase (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Lock
@@ -300,7 +299,7 @@ processChatCommand = \case
           (agentConnId_, fileConnReq) <-
             if isJust fileInline
               then pure (Nothing, Nothing)
-              else bimap Just Just <$> withAgent (\a -> createConnection a True SCMInvitation)
+              else bimap Just Just <$> withAgent (\a -> createConnection a True SCMInvitation Nothing)
           let fileName = takeFileName file
               fileInvitation = FileInvitation {fileName, fileSize, fileConnReq, fileInline}
           withStore' $ \db -> do
@@ -751,7 +750,7 @@ processChatCommand = \case
     -- [incognito] generate profile for connection
     incognito <- readTVarIO =<< asks incognitoMode
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
-    (connId, cReq) <- withAgent $ \a -> createConnection a True SCMInvitation
+    (connId, cReq) <- withAgent $ \a -> createConnection a True SCMInvitation Nothing
     conn <- withStore' $ \db -> createDirectConnection db userId connId cReq ConnNew incognitoProfile
     toView $ CRNewContactConnection conn
     pure $ CRInvitation cReq
@@ -779,7 +778,7 @@ processChatCommand = \case
     processChatCommand $ APIClearChat (ChatRef CTDirect contactId)
   ListContacts -> withUser $ \user -> CRContactsList <$> withStore' (`getUserContacts` user)
   CreateMyAddress -> withUser $ \User {userId} -> withChatLock "createMyAddress" . procCmd $ do
-    (connId, cReq) <- withAgent $ \a -> createConnection a True SCMContact
+    (connId, cReq) <- withAgent $ \a -> createConnection a True SCMContact Nothing
     withStore $ \db -> createUserContactLink db userId connId cReq
     pure $ CRUserContactLinkCreated cReq
   DeleteMyAddress -> withUser $ \user -> withChatLock "deleteMyAddress" $ do
@@ -850,7 +849,7 @@ processChatCommand = \case
     case contactMember contact members of
       Nothing -> do
         gVar <- asks idsDrg
-        (agentConnId, cReq) <- withAgent $ \a -> createConnection a True SCMInvitation
+        (agentConnId, cReq) <- withAgent $ \a -> createConnection a True SCMInvitation Nothing
         member <- withStore $ \db -> createNewContactMember db gVar user groupId contact memRole agentConnId cReq
         sendInvitation member cReq
         pure $ CRSentGroupInvitation gInfo contact member
@@ -984,7 +983,7 @@ processChatCommand = \case
     when (userRole < GRAdmin) $ throwChatError CEGroupUserRole
     when (memberStatus membership == GSMemInvited) $ throwChatError (CEGroupNotJoined gInfo)
     unless (memberActive membership) $ throwChatError CEGroupMemberNotActive
-    (connId, cReq) <- withAgent $ \a -> createConnection a True SCMContact
+    (connId, cReq) <- withAgent $ \a -> createConnection a True SCMContact Nothing
     withStore $ \db -> createGroupLink db user gInfo connId cReq
     pure $ CRGroupLinkCreated gInfo cReq
   APIDeleteGroupLink groupId -> withUser $ \user -> withChatLock "deleteGroupLink" $ do
@@ -1318,7 +1317,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
           | fileInline == Just IFMSent -> throwChatError $ CEFileAlreadyReceiving fName
           | otherwise -> do
             -- accepting via a new connection
-            (agentConnId, fileInvConnReq) <- withAgent $ \a -> createConnection a True SCMInvitation
+            (agentConnId, fileInvConnReq) <- withAgent $ \a -> createConnection a True SCMInvitation Nothing
             ci <- withStore $ \db -> acceptRcvFileTransfer db user fileId agentConnId ConnNew filePath
             pure (XFileAcptInv sharedMsgId (Just fileInvConnReq) fName, ci)
     receiveInline :: m Bool

@@ -24,7 +24,7 @@ import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Chat.Types (Contact, ContactId)
-import Simplex.Chat.Util (safeDecodeUtf8)
+import Simplex.Messaging.Util (safeDecodeUtf8)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, fstToLower, singleFieldJSON)
