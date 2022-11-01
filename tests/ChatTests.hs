@@ -2,7 +2,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE PostfixOperators #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -108,6 +107,7 @@ chatTests = do
     it "accept contact request incognito" testAcceptContactRequestIncognito
     it "join group incognito" testJoinGroupIncognito
     it "can't invite contact to whom user connected incognito to a group" testCantInviteContactIncognito
+    it "can't see global preferences update" testCantSeeGlobalPrefsUpdateIncognito  
   describe "contact aliases and prefs" $ do
     it "set contact alias" testSetAlias
     it "set connection alias" testSetConnectionAlias
@@ -2693,6 +2693,47 @@ testCantInviteContactIncognito = testChat2 aliceProfile bobProfile $
     -- bob doesn't receive invitation
     (bob </)
 
+
+testCantSeeGlobalPrefsUpdateIncognito :: IO ()
+testCantSeeGlobalPrefsUpdateIncognito = testChat3 aliceProfile bobProfile cathProfile $
+  \alice bob cath -> do
+    alice #$> ("/incognito on", id, "ok")
+    alice ##> "/c"
+    invIncognito <- getInvitation alice
+    alice #$> ("/incognito off", id, "ok")
+    alice ##> "/c"
+    inv <- getInvitation alice
+    bob ##> ("/c " <> invIncognito)
+    bob <## "confirmation sent!"
+    aliceIncognito <- getTermLine alice
+    cath ##> ("/c " <> inv)
+    cath <## "confirmation sent!"
+    concurrentlyN_
+      [ bob <## (aliceIncognito <> ": contact is connected"),
+        do
+          alice <## ("bob (Bob): contact is connected, your incognito profile for this contact is " <> aliceIncognito)
+          alice <## "use /info bob to print out this incognito profile again",
+        do
+          cath <## "alice (Alice): contact is connected"
+      ]
+    alice <## "cath (Catherine): contact is connected"
+    alice ##> "/_profile {\"displayName\": \"alice\", \"fullName\": \"\", \"preferences\": {\"voice\": {\"enable\": \"on\"}}}"
+    alice <## "user full name removed (your contacts are notified)"
+    -- bob doesn't receive profile update
+    (bob </)
+    cath <## "contact alice removed full name"
+    bob ##> "/_set prefs @2 {\"voice\": {\"enable\": \"on\"}}"
+    bob <## "preferences were updated: contact's voice messages are off, user's voice messages are on"
+    threadDelay 1000000
+    alice ##> "/_set prefs @2 {\"voice\": {\"enable\": \"on\"}}"
+    alice <## "preferences were updated: contact's voice messages are on, user's voice messages are on"
+    threadDelay 1000000
+    alice ##> "/_set prefs @3 {\"voice\": {\"enable\": \"on\"}}"
+    alice <## "preferences were updated: contact's voice messages are off, user's voice messages are on"
+    threadDelay 1000000
+    cath ##> "/_set prefs @2 {}"
+    cath <## "preferences were updated: contact's voice messages are on, user's voice messages are unset"
+  
 testSetAlias :: IO ()
 testSetAlias = testChat2 aliceProfile bobProfile $
   \alice bob -> do
