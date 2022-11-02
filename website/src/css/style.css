@@ -530,7 +530,7 @@ header nav {
   /* font-weight: 700; */
   /* font-size: 55px; */
   /* line-height: 63px; */
-  background: linear-gradient(251.16deg, #53c1ff 1.1%, #0053d0 100.82%);
+  background: linear-gradient(270deg, #0053D0 35.85%, #0197FF 94.78%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -629,7 +629,7 @@ header nav {
   /* display: none; */
 }
 .static-phone-tablet {
-  display: none;
+  /* display: none; */
 }
 .static-phone-mobile {
   /* display: none; */
