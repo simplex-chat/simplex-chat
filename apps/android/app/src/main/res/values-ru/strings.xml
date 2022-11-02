@@ -214,8 +214,8 @@
     <string name="icon_descr_server_status_disconnected">Соединение с сервером не установлено</string>
     <string name="icon_descr_server_status_error">Ошибка соединения с сервером</string>
     <string name="icon_descr_server_status_pending">Ожидается соединение с сервером</string>
-    <string name="change_receiving_address_question">Переключить адрес получения?</string>
-    <string name="change_receiving_address_desc">Это экспериментальная функция! Она будет работать, только если на другом клиенте установлена версия 4.2. После завершения смены адреса вы увидите сообщение — убедитесь, что вы все еще можете получать сообщения от этого контакта (или члена группы).</string>
+    <string name="switch_receiving_address_question">Переключить адрес получения?</string>
+    <string name="switch_receiving_address_desc">Это экспериментальная функция! Она будет работать, только если на другом клиенте установлена версия 4.2. После завершения смены адреса вы увидите сообщение — убедитесь, что вы все еще можете получать сообщения от этого контакта (или члена группы).</string>
 
     <!-- Message Actions - SendMsgView.kt -->
     <string name="icon_descr_send_message">Отправить сообщение</string>
