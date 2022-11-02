@@ -247,7 +247,7 @@ import Data.Either (rights)
 import Data.Function (on)
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.List (find, sortBy, sortOn)
+import Data.List (sortBy, sortOn)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Maybe (fromMaybe, isJust, isNothing, listToMaybe)
 import Data.Ord (Down (..))
@@ -1868,16 +1868,14 @@ toContactMember :: User -> (GroupMemberRow :. MaybeConnectionRow) -> GroupMember
 toContactMember User {userContactId} (memberRow :. connRow) =
   (toGroupMember userContactId memberRow) {activeConn = toMaybeConnection connRow}
 
--- TODO no need to load all members to find the member who invited the user,
--- instead of findFromContact there could be a query
--- getHostMemberId_
 getGroupInvitation :: DB.Connection -> User -> GroupId -> ExceptT StoreError IO ReceivedGroupInvitation
-getGroupInvitation db user groupId = do
-  cReq <- getConnRec_ user
-  Group groupInfo@GroupInfo {membership} members <- getGroup db user groupId
-  when (memberStatus membership /= GSMemInvited) $ throwError SEGroupAlreadyJoined
-  case (cReq, findFromContact (invitedBy membership) members) of
-    (Just connRequest, Just fromMember) ->
+getGroupInvitation db user groupId =
+  getConnRec_ user >>= \case
+    Just connRequest -> do
+      groupInfo@GroupInfo {membership} <- getGroupInfo db user groupId
+      when (memberStatus membership /= GSMemInvited) $ throwError SEGroupAlreadyJoined
+      hostId <- getHostMemberId_ db user groupId
+      fromMember <- getGroupMember db user groupId hostId
       pure ReceivedGroupInvitation {fromMember, connRequest, groupInfo}
     _ -> throwError SEGroupInvitationNotFound
   where
@@ -1885,9 +1883,6 @@ getGroupInvitation db user groupId = do
     getConnRec_ User {userId} = ExceptT $ do
       firstRow fromOnly (SEGroupNotFound groupId) $
         DB.query db "SELECT g.inv_queue_info FROM groups g WHERE g.group_id = ? AND g.user_id = ?" (groupId, userId)
-    findFromContact :: InvitedBy -> [GroupMember] -> Maybe GroupMember
-    findFromContact (IBContact contactId) = find ((== Just contactId) . memberContactId)
-    findFromContact _ = const Nothing
 
 type GroupMemberRow = ((Int64, Int64, MemberId, GroupMemberRole, GroupMemberCategory, GroupMemberStatus) :. (Maybe Int64, ContactName, Maybe ContactId, ProfileId, ProfileId, ContactName, Text, Maybe ImageData, LocalAlias, Maybe ChatPreferences))
 
