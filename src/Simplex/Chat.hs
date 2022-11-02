@@ -27,6 +27,7 @@ import Data.Bifunctor (bimap, first)
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isSpace)
 import Data.Either (fromRight)
 import Data.Fixed (div')
@@ -40,6 +41,7 @@ import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, isNothing, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import Data.Time (NominalDiffTime, addUTCTime)
 import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds)
 import Data.Time.Clock.System (SystemTime, systemToUTCTime)
@@ -986,7 +988,9 @@ processChatCommand = \case
     when (userRole < GRAdmin) $ throwChatError CEGroupUserRole
     when (memberStatus membership == GSMemInvited) $ throwChatError (CEGroupNotJoined gInfo)
     unless (memberActive membership) $ throwChatError CEGroupMemberNotActive
-    (connId, cReq) <- withAgent $ \a -> createConnection a True SCMContact Nothing
+    groupLinkId <- GroupLinkId <$> (asks idsDrg >>= liftIO . (`randomBytes` 16))
+    let crClientData = safeDecodeUtf8 . LB.toStrict . J.encode $ CDGroup groupLinkId
+    (connId, cReq) <- withAgent $ \a -> createConnection a True SCMContact $ Just crClientData
     withStore $ \db -> createGroupLink db user gInfo connId cReq
     pure $ CRGroupLinkCreated gInfo cReq
   APIDeleteGroupLink groupId -> withUser $ \user -> withChatLock "deleteGroupLink" $ do
@@ -1107,7 +1111,7 @@ processChatCommand = \case
       CTGroup -> withStore $ \db -> getGroupChatItemIdByText db user cId (Just localDisplayName) (safeDecodeUtf8 msg)
       _ -> throwChatError $ CECommandError "not supported"
     connectViaContact :: UserId -> ConnectionRequestUri 'CMContact -> Profile -> m ChatResponse
-    connectViaContact userId cReq profile = withChatLock "connectViaContact" $ do
+    connectViaContact userId cReq@(CRContactUri ConnReqUriData {crClientData}) profile = withChatLock "connectViaContact" $ do
       let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
       withStore' (\db -> getConnReqContactXContactId db userId cReqHash) >>= \case
         (Just contact, _) -> pure $ CRContactAlreadyExists contact
@@ -1123,7 +1127,10 @@ processChatCommand = \case
           incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
           let profileToSend = fromMaybe profile incognitoProfile
           connId <- withAgent $ \a -> joinConnection a True cReq $ directMessage (XContact profileToSend $ Just xContactId)
-          conn <- withStore' $ \db -> createConnReqConnection db userId connId cReqHash xContactId incognitoProfile
+          groupLinkId <- fmap (join . join) . forM crClientData $ \cd -> do
+            let creqData_ = J.decode . LB.fromStrict . encodeUtf8 $ cd
+            forM creqData_ $ \(CDGroup gli) -> pure $ Just gli
+          conn <- withStore' $ \db -> createConnReqConnection db userId connId cReqHash xContactId incognitoProfile groupLinkId
           toView $ CRNewContactConnection conn
           pure $ CRSentInvitation incognitoProfile
     contactMember :: Contact -> [GroupMember] -> Maybe GroupMember
@@ -1211,7 +1218,7 @@ processChatCommand = \case
     sendGrpInvitation :: User -> Contact -> GroupInfo -> GroupMember -> ConnReqInvitation -> m ()
     sendGrpInvitation user ct@Contact {localDisplayName} GroupInfo {groupId, groupProfile, membership} GroupMember {groupMemberId, memberId, memberRole = memRole} cReq = do
       let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
-          groupInv = GroupInvitation (MemberIdRole userMemberId userRole) (MemberIdRole memberId memRole) cReq groupProfile
+          groupInv = GroupInvitation (MemberIdRole userMemberId userRole) (MemberIdRole memberId memRole) cReq groupProfile Nothing
       (msg, _) <- sendDirectContactMessage ct $ XGrpInv groupInv
       let content = CISndGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
       ci <- saveSndChatItem user (CDDirectSnd ct) msg content Nothing Nothing
@@ -1744,7 +1751,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
                       withStore $ \db -> createNewContactMemberAsync db gVar user groupId ct GRMember groupConnIds
                       probeMatchingContacts ct $ contactConnIncognito ct
                   _ -> pure ()
-            Just (gInfo@GroupInfo {membership}, m@GroupMember {activeConn}) -> do
+            Just (gInfo@GroupInfo {membership}, m@GroupMember {activeConn}) ->
               when (maybe False ((== ConnReady) . connStatus) activeConn) $ do
                 notifyMemberConnected gInfo m
                 let connectedIncognito = contactConnIncognito ct || memberIncognito membership
@@ -1797,13 +1804,14 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
                   Nothing -> messageError "implementation error: invitee does not have contact"
                   Just ct -> do
                     withStore' $ \db -> setNewContactMemberConnRequest db user m cReq
-                    sendGrpInvitation ct m
+                    groupLinkId <- withStore' $ \db -> getGroupLinkId db user gInfo
+                    sendGrpInvitation ct m groupLinkId
                     toView $ CRSentGroupInvitation gInfo ct m
                 where
-                  sendGrpInvitation :: Contact -> GroupMember -> m ()
-                  sendGrpInvitation ct GroupMember {memberId, memberRole = memRole} = do
+                  sendGrpInvitation :: Contact -> GroupMember -> Maybe GroupLinkId -> m ()
+                  sendGrpInvitation ct GroupMember {memberId, memberRole = memRole} groupLinkId = do
                     let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
-                        groupInv = GroupInvitation (MemberIdRole userMemberId userRole) (MemberIdRole memberId memRole) cReq groupProfile
+                        groupInv = GroupInvitation (MemberIdRole userMemberId userRole) (MemberIdRole memberId memRole) cReq groupProfile groupLinkId
                     (_msg, _) <- sendDirectContactMessage ct $ XGrpInv groupInv
                     -- we could link chat item with sent group invitation message (_msg)
                     createInternalChatItem (CDGroupRcv gInfo m) (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
@@ -2416,18 +2424,32 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
       toView . CRNewChatItem $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci
 
     processGroupInvitation :: Contact -> GroupInvitation -> RcvMessage -> MsgMeta -> m ()
-    processGroupInvitation ct@Contact {localDisplayName = c, activeConn = Connection {customUserProfileId}} inv@GroupInvitation {fromMember = (MemberIdRole fromMemId fromRole), invitedMember = (MemberIdRole memId memRole)} msg msgMeta = do
+    processGroupInvitation ct@Contact {localDisplayName = c, activeConn = Connection {connId, customUserProfileId}} inv@GroupInvitation {fromMember = (MemberIdRole fromMemId fromRole), invitedMember = (MemberIdRole memId memRole), connRequest, groupLinkId} msg msgMeta = do
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       when (fromRole < GRMember || fromRole < memRole) $ throwChatError (CEGroupContactRole c)
       when (fromMemId == memId) $ throwChatError CEGroupDuplicateMemberId
       -- [incognito] if direct connection with host is incognito, create membership using the same incognito profile
-      gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership = GroupMember {groupMemberId}} <- withStore $ \db -> createGroupInvitation db user ct inv customUserProfileId
-      let content = CIRcvGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
-      ci <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta content Nothing
-      withStore' $ \db -> setGroupInvitationChatItemId db user groupId (chatItemId' ci)
-      toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
-      toView $ CRReceivedGroupInvitation gInfo ct memRole
-      showToast ("#" <> localDisplayName <> " " <> c <> "> ") "invited you to join the group"
+      (gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership = membership@GroupMember {groupMemberId, memberId}}, hostId) <- withStore $ \db -> createGroupInvitation db user ct inv customUserProfileId
+      groupLinkId' <- withStore' $ \db -> getConnectionGroupLinkId db user connId
+      if sameGroupLinkId groupLinkId groupLinkId'
+        then do
+          connIds <- joinAgentConnectionAsync user True connRequest . directMessage $ XGrpAcpt memberId
+          withStore' $ \db -> do
+            createMemberConnectionAsync db user hostId connIds
+            updateGroupMemberStatusById db userId hostId GSMemAccepted
+            updateGroupMemberStatus db userId membership GSMemAccepted
+          toView $ CRUserAcceptedGroupSent gInfo {membership = membership {memberStatus = GSMemAccepted}}
+        else do
+          let content = CIRcvGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
+          ci <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta content Nothing
+          withStore' $ \db -> setGroupInvitationChatItemId db user groupId (chatItemId' ci)
+          toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
+          toView $ CRReceivedGroupInvitation gInfo ct memRole
+          showToast ("#" <> localDisplayName <> " " <> c <> "> ") "invited you to join the group"
+      where
+        sameGroupLinkId :: Maybe GroupLinkId -> Maybe GroupLinkId -> Bool
+        sameGroupLinkId (Just gli) (Just gli') = gli == gli'
+        sameGroupLinkId _ _ = False
 
     checkIntegrityCreateItem :: forall c. ChatTypeI c => ChatDirection c 'MDRcv -> MsgMeta -> m ()
     checkIntegrityCreateItem cd MsgMeta {integrity, broker = (_, brokerTs)} = case integrity of

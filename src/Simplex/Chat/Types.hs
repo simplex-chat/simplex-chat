@@ -360,48 +360,47 @@ instance ToField ImageData where toField (ImageData t) = toField t
 
 instance FromField ImageData where fromField = fmap ImageData . fromField
 
--- data GroupLinkInvitationData = GroupLinkInvitationData {
---   groupLinkId :: GroupLinkId
--- }
-
-data ConnReqData = CRDGroup {groupLinkId :: GroupLinkId}
+data CReqClientData = CDGroup {groupLinkId :: GroupLinkId}
   deriving (Generic)
 
-instance ToJSON ConnReqData where
-  toJSON = J.genericToJSON . taggedObjectJSON $ dropPrefix "CRD"
-  toEncoding = J.genericToEncoding . taggedObjectJSON $ dropPrefix "CRD"
+instance ToJSON CReqClientData where
+  toJSON = J.genericToJSON . taggedObjectJSON $ dropPrefix "CD"
+  toEncoding = J.genericToEncoding . taggedObjectJSON $ dropPrefix "CD"
 
-data GroupInvitation = GroupInvitation
-  { fromMember :: MemberIdRole,
-    invitedMember :: MemberIdRole,
-    connRequest :: ConnReqInvitation,
-    groupProfile :: GroupProfile --,
-    -- groupLinkId :: Maybe GroupLinkId
-  }
-  deriving (Eq, Show, Generic, FromJSON)
-
-instance ToJSON GroupInvitation where
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+instance FromJSON CReqClientData where
+  parseJSON = J.genericParseJSON . taggedObjectJSON $ dropPrefix "CD"
 
 newtype GroupLinkId = GroupLinkId {unGroupLinkId :: ByteString} -- used to identify invitation via group link
   deriving (Eq, Show)
 
 instance FromField GroupLinkId where fromField f = GroupLinkId <$> fromField f
 
-instance ToField GroupLinkId where toField (GroupLinkId m) = toField m
+instance ToField GroupLinkId where toField (GroupLinkId g) = toField g
 
 instance StrEncoding GroupLinkId where
-  strEncode (GroupLinkId m) = strEncode m
+  strEncode (GroupLinkId g) = strEncode g
   strDecode s = GroupLinkId <$> strDecode s
   strP = GroupLinkId <$> strP
 
 instance FromJSON GroupLinkId where
-  parseJSON = strParseJSON "MemberId"
+  parseJSON = strParseJSON "GroupLinkId"
 
 instance ToJSON GroupLinkId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
+
+data GroupInvitation = GroupInvitation
+  { fromMember :: MemberIdRole,
+    invitedMember :: MemberIdRole,
+    connRequest :: ConnReqInvitation,
+    groupProfile :: GroupProfile,
+    groupLinkId :: Maybe GroupLinkId
+  }
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON GroupInvitation where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 data MemberIdRole = MemberIdRole
   { memberId :: MemberId,
