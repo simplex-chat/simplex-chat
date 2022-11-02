@@ -626,13 +626,13 @@ header nav {
   transform: skewY(25deg);
 }
 .hero-video-phone-container {
-  display: none;
+  /* display: none; */
 }
 .static-phone-tablet {
   display: none;
 }
 .static-phone-mobile {
-  display: none;
+  /* display: none; */
 }
 @media (max-width: 768px) {
   .landing-page-header {
@@ -664,10 +664,10 @@ header nav {
     /* text-align: center; */
   }
   .hero-video-phone-container {
-    display: block;
+    /* display: block; */
   }
   .static-phone-tablet {
-    display: block;
+    /* display: block; */
     width: 80%;
   }
   #hero-video-phone-Background {
