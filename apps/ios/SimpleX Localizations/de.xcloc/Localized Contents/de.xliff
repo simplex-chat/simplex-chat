@@ -378,6 +378,11 @@
         <target>Die Mitgliederrolle ändern?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Change receiving address?" xml:space="preserve">
+        <source>Change receiving address?</source>
+        <target>***Change receiving address?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Change role" xml:space="preserve">
         <source>Change role</source>
         <target>Rolle ändern</target>
@@ -1021,6 +1026,11 @@
         <target>Fehler beim Hinzufügen von Mitgliedern</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error changing address" xml:space="preserve">
+        <source>Error changing address</source>
+        <target>***Error changing address</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error changing role" xml:space="preserve">
         <source>Error changing role</source>
         <target>Fehler beim Ändern der Rolle</target>
@@ -1059,6 +1069,11 @@
       <trans-unit id="Error deleting connection" xml:space="preserve">
         <source>Error deleting connection</source>
         <target>Fehler beim Löschen der Verbindung</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error deleting contact" xml:space="preserve">
+        <source>Error deleting contact</source>
+        <target>***Error deleting contact</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error deleting database" xml:space="preserve">
@@ -2223,6 +2238,11 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>Chat beenden?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Switch receiving address (BETA)" xml:space="preserve">
+        <source>Switch receiving address (BETA)</source>
+        <target>***Switch receiving address (BETA)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="System" xml:space="preserve">
         <source>System</source>
         <target>System</target>
@@ -2358,6 +2378,11 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>Diese Aktion kann nicht rückgängig gemacht werden - Ihr Profil und Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." xml:space="preserve">
+        <source>This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member).</source>
+        <target>***This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member).</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="This group no longer exists." xml:space="preserve">
         <source>This group no longer exists.</source>
         <target>Diese Gruppe existiert nicht mehr.</target>
@@ -2398,6 +2423,11 @@ Sie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funkt
       <trans-unit id="To support instant push notifications the chat database has to be migrated." xml:space="preserve">
         <source>To support instant push notifications the chat database has to be migrated.</source>
         <target>Um sofortige Push-Benachrichtigungen zu unterstützen, muss die Chat-Datenbank migriert werden.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Transfer images faster (BETA)" xml:space="preserve">
+        <source>Transfer images faster (BETA)</source>
+        <target>***Transfer images faster (BETA)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Trying to connect to the server used to receive messages from this contact (error: %@)." xml:space="preserve">
@@ -2886,6 +2916,11 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>Anrufen…</target>
         <note>call status</note>
       </trans-unit>
+      <trans-unit id="changed address for you" xml:space="preserve">
+        <source>changed address for you</source>
+        <target>***changed address for you</target>
+        <note>chat item text</note>
+      </trans-unit>
       <trans-unit id="changed role of %@ to %@" xml:space="preserve">
         <source>changed role of %1$@ to %2$@</source>
         <target>änderte die Rolle von %1$@ auf %2$@</target>
@@ -2895,6 +2930,16 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <source>changed your role to %@</source>
         <target>änderte Ihre Rolle auf %@</target>
         <note>rcv group event chat item</note>
+      </trans-unit>
+      <trans-unit id="changing address for %@..." xml:space="preserve">
+        <source>changing address for %@...</source>
+        <target>***changing address for %@...</target>
+        <note>chat item text</note>
+      </trans-unit>
+      <trans-unit id="changing address..." xml:space="preserve">
+        <source>changing address...</source>
+        <target>***changing address...</target>
+        <note>chat item text</note>
       </trans-unit>
       <trans-unit id="colored" xml:space="preserve">
         <source>colored</source>
@@ -3250,6 +3295,16 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <source>you are invited to group</source>
         <target>Sie sind zur Gruppe eingeladen</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="you changed address" xml:space="preserve">
+        <source>you changed address</source>
+        <target>***you changed address</target>
+        <note>chat item text</note>
+      </trans-unit>
+      <trans-unit id="you changed address for %@" xml:space="preserve">
+        <source>you changed address for %@</source>
+        <target>***you changed address for %@</target>
+        <note>chat item text</note>
       </trans-unit>
       <trans-unit id="you changed role for yourself to %@" xml:space="preserve">
         <source>you changed role for yourself to %@</source>

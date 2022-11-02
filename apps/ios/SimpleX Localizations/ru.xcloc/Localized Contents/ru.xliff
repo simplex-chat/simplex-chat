@@ -378,6 +378,11 @@
         <target>Поменять роль члена группы?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Change receiving address?" xml:space="preserve">
+        <source>Change receiving address?</source>
+        <target>Поменять адрес получения?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Change role" xml:space="preserve">
         <source>Change role</source>
         <target>Поменять роль</target>
@@ -1021,6 +1026,11 @@
         <target>Ошибка при добавлении членов группы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error changing address" xml:space="preserve">
+        <source>Error changing address</source>
+        <target>Ошибка при изменении адреса</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error changing role" xml:space="preserve">
         <source>Error changing role</source>
         <target>Ошибка при изменении роли</target>
@@ -1059,6 +1069,11 @@
       <trans-unit id="Error deleting connection" xml:space="preserve">
         <source>Error deleting connection</source>
         <target>Ошибка при удалении соединения</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error deleting contact" xml:space="preserve">
+        <source>Error deleting contact</source>
+        <target>Ошибка при удалении контакта</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error deleting database" xml:space="preserve">
@@ -2223,6 +2238,11 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Остановить чат?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Switch receiving address (BETA)" xml:space="preserve">
+        <source>Switch receiving address (BETA)</source>
+        <target>Переключить адрес получения (БЕТА)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="System" xml:space="preserve">
         <source>System</source>
         <target>Системная</target>
@@ -2358,6 +2378,11 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Это действие нельзя отменить — ваш профиль, контакты, сообщения и файлы будут безвозвратно утеряны.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." xml:space="preserve">
+        <source>This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member).</source>
+        <target>Это экспериментальная функция! Она будет работать, только если на другом клиенте установлена версия 4.2. После завершения смены адреса вы увидите сообщение — убедитесь, что вы все еще можете получать сообщения от этого контакта (или члена группы).</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="This group no longer exists." xml:space="preserve">
         <source>This group no longer exists.</source>
         <target>Эта группа больше не существует.</target>
@@ -2398,6 +2423,11 @@ You will be prompted to complete authentication before this feature is enabled.<
       <trans-unit id="To support instant push notifications the chat database has to be migrated." xml:space="preserve">
         <source>To support instant push notifications the chat database has to be migrated.</source>
         <target>Для поддержки мгновенный доставки уведомлений данные чата должны быть перемещены.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Transfer images faster (BETA)" xml:space="preserve">
+        <source>Transfer images faster (BETA)</source>
+        <target>Передавать изображения быстрее (БЕТА)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Trying to connect to the server used to receive messages from this contact (error: %@)." xml:space="preserve">
@@ -2886,6 +2916,11 @@ SimpleX серверы не могут получить доступ к ваше
         <target>входящий звонок…</target>
         <note>call status</note>
       </trans-unit>
+      <trans-unit id="changed address for you" xml:space="preserve">
+        <source>changed address for you</source>
+        <target>поменял(а) адрес для вас</target>
+        <note>chat item text</note>
+      </trans-unit>
       <trans-unit id="changed role of %@ to %@" xml:space="preserve">
         <source>changed role of %1$@ to %2$@</source>
         <target>поменял(а) роль члена %1$@ на: %2$@</target>
@@ -2895,6 +2930,16 @@ SimpleX серверы не могут получить доступ к ваше
         <source>changed your role to %@</source>
         <target>поменял(а) вашу роль на: %@</target>
         <note>rcv group event chat item</note>
+      </trans-unit>
+      <trans-unit id="changing address for %@..." xml:space="preserve">
+        <source>changing address for %@...</source>
+        <target>смена адреса для %@...</target>
+        <note>chat item text</note>
+      </trans-unit>
+      <trans-unit id="changing address..." xml:space="preserve">
+        <source>changing address...</source>
+        <target>смена адреса...</target>
+        <note>chat item text</note>
       </trans-unit>
       <trans-unit id="colored" xml:space="preserve">
         <source>colored</source>
@@ -3250,6 +3295,16 @@ SimpleX серверы не могут получить доступ к ваше
         <source>you are invited to group</source>
         <target>вы приглашены в группу</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="you changed address" xml:space="preserve">
+        <source>you changed address</source>
+        <target>вы поменяли адрес</target>
+        <note>chat item text</note>
+      </trans-unit>
+      <trans-unit id="you changed address for %@" xml:space="preserve">
+        <source>you changed address for %@</source>
+        <target>вы поменяли адрес для %@</target>
+        <note>chat item text</note>
       </trans-unit>
       <trans-unit id="you changed role for yourself to %@" xml:space="preserve">
         <source>you changed role for yourself to %@</source>
