@@ -132,6 +132,18 @@ html {
   border: 1px solid transparent;
 }
 
+.dark .only-light {
+  display: none;
+}
+
+.only-dark {
+  display: none;
+}
+
+.dark .only-dark {
+  display: inherit;
+}
+
 .dark .unique-swiper .border-gradient{
   background:
     linear-gradient(#0C0B13, #0C0B13) padding-box,
@@ -539,9 +551,8 @@ header nav {
   align-content: center;
   justify-items: center;
 }
-#hero-phone {
+#hero-phone-light, #hero-phone-dark {
   position: relative;
-
   animation-name: none;
   animation-duration: 2s;
   animation-fill-mode: forwards;
