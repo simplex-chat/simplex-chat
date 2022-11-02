@@ -22,12 +22,14 @@ struct GroupMemberInfoView: View {
     enum GroupMemberInfoViewAlert: Identifiable {
         case removeMemberAlert
         case changeMemberRoleAlert(role: GroupMemberRole)
+        case switchAddressAlert
         case error(title: LocalizedStringKey, error: LocalizedStringKey)
 
         var id: String {
             switch self {
             case .removeMemberAlert: return "removeMemberAlert"
             case let .changeMemberRoleAlert(role): return "changeMemberRoleAlert \(role.rawValue)"
+            case .switchAddressAlert: return "switchAddressAlert"
             case let .error(title, _): return "error \(title)"
             }
         }
@@ -79,15 +81,17 @@ struct GroupMemberInfoView: View {
 
                 Section("Servers") {
                     // TODO network connection status
-                    Button("Switch receiving address") {
-                        
+                    if developerTools {
+                        Button("Switch receiving address (BETA)") {
+                            alert = .switchAddressAlert
+                        }
                     }
                     if let connStats = connectionStats {
                         smpServers("Receiving via", connStats.rcvServers)
                         smpServers("Sending via", connStats.sndServers)
                     }
                 }
-
+                                       
                 if member.canBeRemoved(groupInfo: groupInfo) {
                     Section {
                         removeMemberButton()
@@ -108,6 +112,7 @@ struct GroupMemberInfoView: View {
             switch(alertItem) {
             case .removeMemberAlert: return removeMemberAlert()
             case .changeMemberRoleAlert: return changeMemberRoleAlert()
+            case .switchAddressAlert: return switchAddressAlert(switchMemberAddress)
             case let .error(title, error): return Alert(title: Text(title), message: Text(error))
             }
         }
@@ -212,6 +217,20 @@ struct GroupMemberInfoView: View {
                 newRole = member.memberRole
             }
         )
+    }
+
+    private func switchMemberAddress() {
+        Task {
+            do {
+                try await apiSwitchGroupMember(groupInfo.apiId, member.groupMemberId)
+            } catch let error {
+                logger.error("switchMemberAddress apiSwitchGroupMember error: \(responseError(error))")
+                let a = getErrorAlert(error, "Error changing address")
+                await MainActor.run {
+                    alert = .error(title: a.title, error: a.message)
+                }
+            }
+        }
     }
 }
 

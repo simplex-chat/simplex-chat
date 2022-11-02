@@ -32,7 +32,7 @@ import GHC.Generics (Generic)
 import Simplex.Chat.Markdown
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (SwitchPhase (..), AgentErrorType, AgentMsgId, MsgErrorType (..), MsgMeta (..), SwitchPhase)
+import Simplex.Messaging.Agent.Protocol (AgentErrorType, AgentMsgId, MsgErrorType (..), MsgMeta (..), SwitchPhase (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, fstToLower, singleFieldJSON, sumTypeJSON)
 import Simplex.Messaging.Protocol (MsgBody)
