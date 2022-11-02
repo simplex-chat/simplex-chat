@@ -82,7 +82,7 @@ public enum ChatCommand {
     case apiCallStatus(contact: Contact, callStatus: WebRTCCallStatus)
     case apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64))
     case apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool)
-    case receiveFile(fileId: Int64)
+    case receiveFile(fileId: Int64, inline: Bool)
     case string(String)
 
     public var cmdString: String {
@@ -159,7 +159,7 @@ public enum ChatCommand {
             case let .apiCallStatus(contact, callStatus): return "/_call status @\(contact.apiId) \(callStatus.rawValue)"
             case let .apiChatRead(type, id, itemRange: (from, to)): return "/_read chat \(ref(type, id)) from=\(from) to=\(to)"
             case let .apiChatUnread(type, id, unreadChat): return "/_unread chat \(ref(type, id)) \(onOff(unreadChat))"
-            case let .receiveFile(fileId): return "/freceive \(fileId)"
+            case let .receiveFile(fileId, inline): return "/freceive \(fileId) inline=\(onOff(inline))"
             case let .string(str): return str
             }
         }

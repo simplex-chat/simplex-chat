@@ -220,7 +220,8 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, UNMutableNotification
            if let file = cItem.file,
               file.fileSize <= maxImageSize,
               privacyAcceptImagesGroupDefault.get() {
-               cItem = apiReceiveFile(fileId: file.fileId)?.chatItem ?? cItem
+               let inline = privacyTransferImagesInlineGroupDefault.get()
+               cItem = apiReceiveFile(fileId: file.fileId, inline: inline)?.chatItem ?? cItem
            }
         }
         return cItem.isCall() ? nil : (aChatItem.chatId, createMessageReceivedNtf(cInfo, cItem))
@@ -274,8 +275,8 @@ func apiGetNtfMessage(nonce: String, encNtfInfo: String) -> NtfMessages? {
     return nil
 }
 
-func apiReceiveFile(fileId: Int64) -> AChatItem? {
-    let r = sendSimpleXCmd(.receiveFile(fileId: fileId))
+func apiReceiveFile(fileId: Int64, inline: Bool) -> AChatItem? {
+    let r = sendSimpleXCmd(.receiveFile(fileId: fileId, inline: inline))
     if case let .rcvFileAccepted(chatItem) = r { return chatItem }
     logger.error("receiveFile error: \(responseError(r))")
     return nil
