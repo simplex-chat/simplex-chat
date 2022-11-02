@@ -89,6 +89,7 @@ class AppPreferences(val context: Context) {
   val laNoticeShown = mkBoolPreference(SHARED_PREFS_LA_NOTICE_SHOWN, false)
   val webrtcIceServers = mkStrPreference(SHARED_PREFS_WEBRTC_ICE_SERVERS, null)
   val privacyAcceptImages = mkBoolPreference(SHARED_PREFS_PRIVACY_ACCEPT_IMAGES, true)
+  val privacyTransferImagesInline = mkBoolPreference(SHARED_PREFS_PRIVACY_TRANSFER_IMAGES_INLINE, false)
   val privacyLinkPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_LINK_PREVIEWS, true)
   val experimentalCalls = mkBoolPreference(SHARED_PREFS_EXPERIMENTAL_CALLS, false)
   val chatArchiveName = mkStrPreference(SHARED_PREFS_CHAT_ARCHIVE_NAME, null)
@@ -178,6 +179,7 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_LA_NOTICE_SHOWN = "LANoticeShown"
     private const val SHARED_PREFS_WEBRTC_ICE_SERVERS = "WebrtcICEServers"
     private const val SHARED_PREFS_PRIVACY_ACCEPT_IMAGES = "PrivacyAcceptImages"
+    private const val SHARED_PREFS_PRIVACY_TRANSFER_IMAGES_INLINE = "PrivacyTransferImagesInline"
     private const val SHARED_PREFS_PRIVACY_LINK_PREVIEWS = "PrivacyLinkPreviews"
     private const val SHARED_PREFS_EXPERIMENTAL_CALLS = "ExperimentalCalls"
     private const val SHARED_PREFS_CHAT_ARCHIVE_NAME = "ChatArchiveName"
@@ -739,8 +741,8 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return false
   }
 
-  suspend fun apiReceiveFile(fileId: Long): AChatItem? {
-    val r = sendCmd(CC.ReceiveFile(fileId))
+  suspend fun apiReceiveFile(fileId: Long, inline: Boolean): AChatItem? {
+    val r = sendCmd(CC.ReceiveFile(fileId, inline))
     return when (r) {
       is CR.RcvFileAccepted -> r.chatItem
       is CR.RcvFileAcceptedSndCancelled -> {
@@ -1118,7 +1120,8 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   }
 
   suspend fun receiveFile(fileId: Long) {
-    val chatItem = apiReceiveFile(fileId)
+    val inline = appPrefs.privacyTransferImagesInline.get()
+    val chatItem = apiReceiveFile(fileId, inline)
     if (chatItem != null) {
       chatItemSimpleUpdate(chatItem)
     }
@@ -1465,7 +1468,7 @@ sealed class CC {
   class ApiRejectContact(val contactReqId: Long): CC()
   class ApiChatRead(val type: ChatType, val id: Long, val range: ItemRange): CC()
   class ApiChatUnread(val type: ChatType, val id: Long, val unreadChat: Boolean): CC()
-  class ReceiveFile(val fileId: Long): CC()
+  class ReceiveFile(val fileId: Long, val inline: Boolean): CC()
 
   val cmdString: String get() = when (this) {
     is Console -> cmd
@@ -1529,7 +1532,7 @@ sealed class CC {
     is ApiCallStatus -> "/_call status @${contact.apiId} ${callStatus.value}"
     is ApiChatRead -> "/_read chat ${chatRef(type, id)} from=${range.from} to=${range.to}"
     is ApiChatUnread -> "/_unread chat ${chatRef(type, id)} ${onOff(unreadChat)}"
-    is ReceiveFile -> "/freceive $fileId"
+    is ReceiveFile -> "/freceive $fileId inline=${onOff(inline)}"
   }
 
   val cmdType: String get() = when (this) {
