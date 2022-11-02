@@ -264,13 +264,28 @@
 "Change member role?" = "Поменять роль члена группы?";
 
 /* No comment provided by engineer. */
+"Change receiving address (BETA)" = "Поменять адрес получения (БЕТА)";
+
+/* No comment provided by engineer. */
+"Change receiving address?" = "Поменять адрес получения?";
+
+/* No comment provided by engineer. */
 "Change role" = "Поменять роль";
+
+/* chat item text */
+"changed address for you" = "поменял(а) адрес для вас";
 
 /* rcv group event chat item */
 "changed role of %@ to %@" = "поменял(а) роль члена %1$@ на: %2$@";
 
 /* rcv group event chat item */
 "changed your role to %@" = "поменял(а) вашу роль на: %@";
+
+/* chat item text */
+"changing address for %@..." = "смена адреса для %@...";
+
+/* chat item text */
+"changing address..." = "смена адреса...";
 
 /* No comment provided by engineer. */
 "Chat archive" = "Архив чата";
@@ -723,6 +738,9 @@
 "Error adding member(s)" = "Ошибка при добавлении членов группы";
 
 /* No comment provided by engineer. */
+"Error changing address" = "Ошибка при изменении адреса";
+
+/* No comment provided by engineer. */
 "Error changing role" = "Ошибка при изменении роли";
 
 /* No comment provided by engineer. */
@@ -745,6 +763,9 @@
 
 /* No comment provided by engineer. */
 "Error deleting connection" = "Ошибка при удалении соединения";
+
+/* No comment provided by engineer. */
+"Error deleting contact" = "Ошибка при удалении контакта";
 
 /* No comment provided by engineer. */
 "Error deleting database" = "Ошибка при удалении данных чата";
@@ -1626,6 +1647,9 @@
 "this contact" = "этот контакт";
 
 /* No comment provided by engineer. */
+"This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." = "Это экспериментальная функция! Она будет работать, только если на другом клиенте установлена версия 4.2. После завершения смены адреса вы увидите сообщение — убедитесь, что вы все еще можете получать сообщения от этого контакта (или члена группы).";
+
+/* No comment provided by engineer. */
 "This group no longer exists." = "Эта группа больше не существует.";
 
 /* No comment provided by engineer. */
@@ -1648,6 +1672,9 @@
 
 /* No comment provided by engineer. */
 "To support instant push notifications the chat database has to be migrated." = "Для поддержки мгновенный доставки уведомлений данные чата должны быть перемещены.";
+
+/* No comment provided by engineer. */
+"Transfer images faster (BETA)" = "Передавать изображения быстрее (БЕТА)";
 
 /* No comment provided by engineer. */
 "Trying to connect to the server used to receive messages from this contact (error: %@)." = "Устанавливается соединение с сервером, через который вы получаете сообщения от этого контакта (ошибка: %@).";
@@ -1819,6 +1846,12 @@
 
 /* No comment provided by engineer. */
 "You can use markdown to format messages:" = "Вы можете форматировать сообщения:";
+
+/* chat item text */
+"you changed address" = "вы поменяли адрес";
+
+/* chat item text */
+"you changed address for %@" = "вы поменяли адрес для %@";
 
 /* snd group event chat item */
 "you changed role for yourself to %@" = "вы поменяли роль себе на: %@";

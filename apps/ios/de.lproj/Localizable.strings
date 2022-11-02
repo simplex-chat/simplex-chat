@@ -264,13 +264,28 @@
 "Change member role?" = "Die Mitgliederrolle ändern?";
 
 /* No comment provided by engineer. */
+"Change receiving address (BETA)" = "***Change receiving address (BETA)";
+
+/* No comment provided by engineer. */
+"Change receiving address?" = "***Change receiving address?";
+
+/* No comment provided by engineer. */
 "Change role" = "Rolle ändern";
+
+/* chat item text */
+"changed address for you" = "***changed address for you";
 
 /* rcv group event chat item */
 "changed role of %@ to %@" = "änderte die Rolle von %1$@ auf %2$@";
 
 /* rcv group event chat item */
 "changed your role to %@" = "änderte Ihre Rolle auf %@";
+
+/* chat item text */
+"changing address for %@..." = "***changing address for %@...";
+
+/* chat item text */
+"changing address..." = "***changing address...";
 
 /* No comment provided by engineer. */
 "Chat archive" = "Datenbank Archiv";
@@ -723,6 +738,9 @@
 "Error adding member(s)" = "Fehler beim Hinzufügen von Mitgliedern";
 
 /* No comment provided by engineer. */
+"Error changing address" = "***Error changing address";
+
+/* No comment provided by engineer. */
 "Error changing role" = "Fehler beim Ändern der Rolle";
 
 /* No comment provided by engineer. */
@@ -745,6 +763,9 @@
 
 /* No comment provided by engineer. */
 "Error deleting connection" = "Fehler beim Löschen der Verbindung";
+
+/* No comment provided by engineer. */
+"Error deleting contact" = "***Error deleting contact";
 
 /* No comment provided by engineer. */
 "Error deleting database" = "Fehler beim Löschen der Datenbank";
@@ -1626,6 +1647,9 @@
 "this contact" = "Dieser Kontakt";
 
 /* No comment provided by engineer. */
+"This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." = "***This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member).";
+
+/* No comment provided by engineer. */
 "This group no longer exists." = "Diese Gruppe existiert nicht mehr.";
 
 /* No comment provided by engineer. */
@@ -1648,6 +1672,9 @@
 
 /* No comment provided by engineer. */
 "To support instant push notifications the chat database has to be migrated." = "Um sofortige Push-Benachrichtigungen zu unterstützen, muss die Chat-Datenbank migriert werden.";
+
+/* No comment provided by engineer. */
+"Transfer images faster (BETA)" = "***Transfer images faster (BETA)";
 
 /* No comment provided by engineer. */
 "Trying to connect to the server used to receive messages from this contact (error: %@)." = "Beim Versuch die Verbindung mit dem Server aufzunehmen, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird, ist ein Fehler aufgetreten (Fehler: %@).";
@@ -1819,6 +1846,12 @@
 
 /* No comment provided by engineer. */
 "You can use markdown to format messages:" = "Um Nachrichteninhalte zu formatieren, können Sie Markdowns verwenden:";
+
+/* chat item text */
+"you changed address" = "***you changed address";
+
+/* chat item text */
+"you changed address for %@" = "***you changed address for %@";
 
 /* snd group event chat item */
 "you changed role for yourself to %@" = "Sie haben Ihre eigene Rolle auf %@ geändert";

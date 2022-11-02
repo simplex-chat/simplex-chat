@@ -105,7 +105,7 @@ struct ChatInfoView: View {
                             alert = .networkStatusAlert
                         }
                     if developerTools {
-                        Button("Switch receiving address (BETA)") {
+                        Button("Change receiving address (BETA)") {
                             alert = .switchAddressAlert
                         }
                     }
