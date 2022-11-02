@@ -991,7 +991,7 @@ processChatCommand = \case
     groupLinkId <- GroupLinkId <$> (asks idsDrg >>= liftIO . (`randomBytes` 16))
     let crClientData = safeDecodeUtf8 . LB.toStrict . J.encode $ CDGroup groupLinkId
     (connId, cReq) <- withAgent $ \a -> createConnection a True SCMContact $ Just crClientData
-    withStore $ \db -> createGroupLink db user gInfo connId cReq
+    withStore $ \db -> createGroupLink db user gInfo connId cReq groupLinkId
     pure $ CRGroupLinkCreated gInfo cReq
   APIDeleteGroupLink groupId -> withUser $ \user -> withChatLock "deleteGroupLink" $ do
     gInfo <- withStore $ \db -> getGroupInfo db user groupId

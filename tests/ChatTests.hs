@@ -107,7 +107,7 @@ chatTests = do
     it "accept contact request incognito" testAcceptContactRequestIncognito
     it "join group incognito" testJoinGroupIncognito
     it "can't invite contact to whom user connected incognito to a group" testCantInviteContactIncognito
-    it "can't see global preferences update" testCantSeeGlobalPrefsUpdateIncognito  
+    it "can't see global preferences update" testCantSeeGlobalPrefsUpdateIncognito
   describe "contact aliases and prefs" $ do
     it "set contact alias" testSetAlias
     it "set connection alias" testSetConnectionAlias
@@ -142,7 +142,6 @@ chatTests = do
     it "create group link, join via group link" testGroupLink
     it "sending message to contact created via group link marks it used" testGroupLinkContactUsed
     it "create group link, join via group link - incognito membership" testGroupLinkIncognitoMembership
-    it "deleting invited member does not leave broken chat item" testGroupLinkDeleteInvitedMemberNoBrokenItem
   describe "queue rotation" $ do
     it "switch contact to a different queue" testSwitchContact
     it "switch group member to a different queue" testSwitchGroupMember
@@ -2693,7 +2692,6 @@ testCantInviteContactIncognito = testChat2 aliceProfile bobProfile $
     -- bob doesn't receive invitation
     (bob </)
 
-
 testCantSeeGlobalPrefsUpdateIncognito :: IO ()
 testCantSeeGlobalPrefsUpdateIncognito = testChat3 aliceProfile bobProfile cathProfile $
   \alice bob cath -> do
@@ -2733,7 +2731,7 @@ testCantSeeGlobalPrefsUpdateIncognito = testChat3 aliceProfile bobProfile cathPr
     threadDelay 1000000
     cath ##> "/_set prefs @2 {}"
     cath <## "preferences were updated: contact's voice messages are on, user's voice messages are unset"
-  
+
 testSetAlias :: IO ()
 testSetAlias = testChat2 aliceProfile bobProfile $
   \alice bob -> do
@@ -3403,23 +3401,21 @@ testGroupLink =
       concurrentlyN_
         [ do
             alice <## "bob (Bob): contact is connected"
-            alice <## "bob invited to group #team via your group link",
+            alice <## "bob invited to group #team via your group link"
+            alice <## "#team: bob joined the group",
           do
             bob <## "alice (Alice): contact is connected"
-            bob <## "#team: alice invites you to join the group as member"
-            bob <## "use /j team to accept"
+            bob <## "#team: you joined the group"
         ]
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "invited via your group link")])
-      alice @@@ [("#team", "invited via your group link")] -- contacts connected via group link are not in chat previews
+      alice #$> ("/_get chat #1 count=100", chat, [(0, "invited via your group link"), (0, "connected")])
+      -- contacts connected via group link are not in chat previews
+      alice @@@ [("#team", "connected")]
+      bob @@@ [("#team", "connected")]
       -- calling /_get chat api marks it as used and adds it to chat previews
       alice #$> ("/_get chat @2 count=100", chat, [])
-      alice @@@ [("@bob", ""), ("#team", "invited via your group link")]
+      alice @@@ [("@bob", ""), ("#team", "connected")]
       alice <##> bob
-      alice @@@ [("@bob", "hey"), ("#team", "invited via your group link")]
-      bob ##> "/j team"
-      concurrently_
-        (alice <## "#team: bob joined the group")
-        (bob <## "#team: you joined the group")
+      alice @@@ [("@bob", "hey"), ("#team", "connected")]
 
       -- user address doesn't interfere
       alice ##> "/ad"
@@ -3443,18 +3439,12 @@ testGroupLink =
             alice <## "cath_1 (Catherine): contact is connected"
             alice <## "cath_1 invited to group #team via your group link"
             alice <## "contact cath_1 is merged into cath"
-            alice <## "use @cath <message> to send messages",
+            alice <## "use @cath <message> to send messages"
+            alice <## "#team: cath joined the group",
           do
             cath <## "alice_1 (Alice): contact is connected"
             cath <## "contact alice_1 is merged into alice"
             cath <## "use @alice <message> to send messages"
-            cath <## "#team: alice invites you to join the group as member"
-            cath <## "use /j team to accept"
-        ]
-      cath ##> "/j team"
-      concurrentlyN_
-        [ alice <## "#team: cath joined the group",
-          do
             cath <## "#team: you joined the group"
             cath <## "#team: member bob (Bob) is connected",
           do
@@ -3507,18 +3497,21 @@ testGroupLinkContactUsed =
       concurrentlyN_
         [ do
             alice <## "bob (Bob): contact is connected"
-            alice <## "bob invited to group #team via your group link",
+            alice <## "bob invited to group #team via your group link"
+            alice <## "#team: bob joined the group",
           do
             bob <## "alice (Alice): contact is connected"
-            bob <## "#team: alice invites you to join the group as member"
-            bob <## "use /j team to accept"
+            bob <## "#team: you joined the group"
         ]
-      -- sending message to contact marks it as used
-      alice @@@ [("#team", "invited via your group link")]
+      -- sending/receiving a message marks contact as used
+      alice @@@ [("#team", "connected")]
+      bob @@@ [("#team", "connected")]
       alice #> "@bob hello"
       bob <# "alice> hello"
       alice #$> ("/clear bob", id, "bob: all messages are removed locally ONLY")
-      alice @@@ [("@bob", ""), ("#team", "invited via your group link")]
+      alice @@@ [("@bob", ""), ("#team", "connected")]
+      bob #$> ("/clear alice", id, "alice: all messages are removed locally ONLY")
+      bob @@@ [("@alice", ""), ("#team", "connected")]
 
 testGroupLinkIncognitoMembership :: IO ()
 testGroupLinkIncognitoMembership =
@@ -3565,26 +3558,20 @@ testGroupLinkIncognitoMembership =
         [ do
             bob <## ("cath (Catherine): contact is connected, your incognito profile for this contact is " <> bobIncognito)
             bob <## "use /info cath to print out this incognito profile again"
-            bob <## "cath invited to group #team via your group link",
+            bob <## "cath invited to group #team via your group link"
+            bob <## "#team: cath joined the group",
           do
             cath <## (bobIncognito <> ": contact is connected")
-            cath <## ("#team: " <> bobIncognito <> " invites you to join the group as member")
-            cath <## "use /j team to accept"
-        ]
-      bob ?#> "@cath hi, I'm incognito"
-      cath <# (bobIncognito <> "> hi, I'm incognito")
-      cath #> ("@" <> bobIncognito <> " hey, I'm cath")
-      bob ?<# "cath> hey, I'm cath"
-      cath ##> "/j team"
-      concurrentlyN_
-        [ bob <## "#team: cath joined the group",
-          do
             cath <## "#team: you joined the group"
             cath <## "#team: member alice (Alice) is connected",
           do
             alice <## ("#team: " <> bobIncognito <> " added cath (Catherine) to the group (connecting...)")
             alice <## "#team: new member cath is connected"
         ]
+      bob ?#> "@cath hi, I'm incognito"
+      cath <# (bobIncognito <> "> hi, I'm incognito")
+      cath #> ("@" <> bobIncognito <> " hey, I'm cath")
+      bob ?<# "cath> hey, I'm cath"
       -- dan joins incognito
       dan #$> ("/incognito on", id, "ok")
       dan ##> ("/c " <> gLink)
@@ -3597,22 +3584,11 @@ testGroupLinkIncognitoMembership =
         [ do
             bob <## (danIncognito <> ": contact is connected, your incognito profile for this contact is " <> bobIncognito)
             bob <## ("use /info " <> danIncognito <> " to print out this incognito profile again")
-            bob <## (danIncognito <> " invited to group #team via your group link"),
+            bob <## (danIncognito <> " invited to group #team via your group link")
+            bob <## ("#team: " <> danIncognito <> " joined the group"),
           do
             dan <## (bobIncognito <> ": contact is connected, your incognito profile for this contact is " <> danIncognito)
             dan <## ("use /info " <> bobIncognito <> " to print out this incognito profile again")
-            dan <## ("#team: " <> bobIncognito <> " invites you to join the group as member")
-            dan <## ("use /j team to join incognito as " <> danIncognito)
-        ]
-      dan #$> ("/incognito off", id, "ok")
-      bob ?#> ("@" <> danIncognito <> " hi, I'm incognito")
-      dan ?<# (bobIncognito <> "> hi, I'm incognito")
-      dan ?#> ("@" <> bobIncognito <> " hey, me too")
-      bob ?<# (danIncognito <> "> hey, me too")
-      dan ##> "/j team"
-      concurrentlyN_
-        [ bob <## ("#team: " <> danIncognito <> " joined the group"),
-          do
             dan <## ("#team: you joined the group incognito as " <> danIncognito)
             dan
               <### [ "#team: member alice (Alice) is connected",
@@ -3625,6 +3601,11 @@ testGroupLinkIncognitoMembership =
             cath <## ("#team: " <> bobIncognito <> " added " <> danIncognito <> " to the group (connecting...)")
             cath <## ("#team: new member " <> danIncognito <> " is connected")
         ]
+      dan #$> ("/incognito off", id, "ok")
+      bob ?#> ("@" <> danIncognito <> " hi, I'm incognito")
+      dan ?<# (bobIncognito <> "> hi, I'm incognito")
+      dan ?#> ("@" <> bobIncognito <> " hey, me too")
+      bob ?<# (danIncognito <> "> hey, me too")
       alice #> "#team hello"
       concurrentlyN_
         [ bob ?<# "#team alice> hello",
@@ -3649,66 +3630,6 @@ testGroupLinkIncognitoMembership =
           bob ?<# ("#team " <> danIncognito <> "> how is it going?"),
           cath <# ("#team " <> danIncognito <> "> how is it going?")
         ]
-
-testGroupLinkDeleteInvitedMemberNoBrokenItem :: IO ()
-testGroupLinkDeleteInvitedMemberNoBrokenItem =
-  testChat2 aliceProfile bobProfile $
-    \alice bob -> do
-      alice ##> "/g team"
-      alice <## "group #team is created"
-      alice <## "use /a team <name> to add members"
-      alice ##> "/create link #team"
-      gLink <- getGroupLink alice "team" True
-      bob ##> ("/c " <> gLink)
-      bob <## "connection request sent!"
-      alice <## "bob (Bob): accepting request to join group #team..."
-      concurrentlyN_
-        [ do
-            alice <## "bob (Bob): contact is connected"
-            alice <## "bob invited to group #team via your group link",
-          do
-            bob <## "alice (Alice): contact is connected"
-            bob <## "#team: alice invites you to join the group as member"
-            bob <## "use /j team to accept"
-        ]
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "invited via your group link")])
-      alice @@@ [("#team", "invited via your group link")]
-      -- removing invited member who connected via group link does not leave broken chat item
-      alice ##> "/rm team bob"
-      alice <## "#team: you removed bob from the group"
-      alice #$> ("/_get chat #1 count=100", chat, [])
-      alice @@@ [("#team", "")]
-      -- removing member deletes unused group contact
-      alice ##> "@bob hi"
-      alice <## "no contact bob"
-      (bob </)
-      bob ##> "/j team"
-      bob <## "error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
-      -- repeat request is prohibited because of the re-used XContactId, until contact is deleted
-      bob ##> ("/c " <> gLink)
-      bob <## "alice (Alice): contact already exists"
-      bob ##> "/d alice"
-      bob <## "alice: contact is deleted"
-      bob ##> ("/c " <> gLink)
-      bob <## "connection request sent!"
-      alice <## "bob (Bob): accepting request to join group #team..."
-      concurrentlyN_
-        [ do
-            alice <## "bob (Bob): contact is connected"
-            alice <## "bob invited to group #team via your group link",
-          do
-            bob <## "alice_1 (Alice): contact is connected"
-            bob <## "#team_1 (team): alice_1 invites you to join the group as member"
-            bob <## "use /j team_1 to accept"
-        ]
-      bob ##> "/j team_1"
-      concurrently_
-        (alice <## "#team: bob joined the group")
-        (bob <## "#team_1: you joined the group")
-      alice #> "#team hello"
-      bob <# "#team_1 alice_1> hello"
-      bob #> "#team_1 hi there"
-      alice <# "#team bob> hi there"
 
 testSwitchContact :: IO ()
 testSwitchContact =

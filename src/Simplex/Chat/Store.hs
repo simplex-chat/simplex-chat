@@ -900,16 +900,16 @@ updateUserAddressAutoAccept db userId autoAccept = do
       Just AutoAccept {acceptIncognito, autoReply} -> (True, acceptIncognito, autoReply)
       _ -> (False, False, Nothing)
 
-createGroupLink :: DB.Connection -> User -> GroupInfo -> ConnId -> ConnReqContact -> ExceptT StoreError IO ()
-createGroupLink db User {userId} groupInfo@GroupInfo {groupId, localDisplayName} agentConnId cReq =
+createGroupLink :: DB.Connection -> User -> GroupInfo -> ConnId -> ConnReqContact -> GroupLinkId -> ExceptT StoreError IO ()
+createGroupLink db User {userId} groupInfo@GroupInfo {groupId, localDisplayName} agentConnId cReq groupLinkId =
   checkConstraint (SEDuplicateGroupLink groupInfo) . liftIO $ do
     currentTs <- getCurrentTime
     DB.execute
       db
-      "INSERT INTO user_contact_links (user_id, group_id, local_display_name, conn_req_contact, auto_accept, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
-      (userId, groupId, "group_link_" <> localDisplayName, cReq, True, currentTs, currentTs)
-    groupLinkId <- insertedRowId db
-    void $ createConnection_ db userId ConnUserContact (Just groupLinkId) agentConnId Nothing Nothing Nothing 0 currentTs
+      "INSERT INTO user_contact_links (user_id, group_id, group_link_id, local_display_name, conn_req_contact, auto_accept, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
+      (userId, groupId, groupLinkId, "group_link_" <> localDisplayName, cReq, True, currentTs, currentTs)
+    userContactLinkId <- insertedRowId db
+    void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId Nothing Nothing Nothing 0 currentTs
 
 getGroupLinkConnection :: DB.Connection -> User -> GroupInfo -> ExceptT StoreError IO Connection
 getGroupLinkConnection db User {userId} groupInfo@GroupInfo {groupId} =
