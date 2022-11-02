@@ -806,6 +806,7 @@
   <string name="role_in_group">Role</string>
   <string name="change_role">Change role</string>
   <string name="change_verb">Change</string>
+  <string name="switch_verb">Switch</string>
   <string name="change_member_role_question">Change group role?</string>
   <string name="member_role_will_be_changed_with_notification">The role will be changed to \"%s\". Everyone in the group will be notified.</string>
   <string name="member_role_will_be_changed_with_invitation">The role will be changed to \"%s\". The member will receive a new invitation.</string>

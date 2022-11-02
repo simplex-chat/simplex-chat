@@ -361,7 +361,7 @@ private fun showSwitchContactAddressAlert(m: ChatModel, contactId: Long) {
   AlertManager.shared.showAlertMsg(
     title = generalGetString(R.string.change_receiving_address_question),
     text = generalGetString(R.string.change_receiving_address_desc),
-    confirmText = generalGetString(R.string.change_verb),
+    confirmText = generalGetString(R.string.switch_verb),
     onConfirm = {
       switchContactAddress(m, contactId)
     }

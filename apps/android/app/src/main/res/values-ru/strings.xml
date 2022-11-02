@@ -806,6 +806,7 @@
     <string name="role_in_group">Роль</string>
     <string name="change_role">Поменять роль</string>
     <string name="change_verb">Поменять</string>
+    <string name="switch_verb">Переключить</string>
     <string name="change_member_role_question">Поменять роль в группе?</string>
     <string name="member_role_will_be_changed_with_notification">Роль будет изменена на \"%s\". Все в группе получат сообщение.</string>
     <string name="member_role_will_be_changed_with_invitation">Роль будет изменена на \"%s\". Будет отправлено новое приглашение.</string>
