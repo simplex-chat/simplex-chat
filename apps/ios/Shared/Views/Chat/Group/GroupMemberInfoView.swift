@@ -91,7 +91,7 @@ struct GroupMemberInfoView: View {
                         smpServers("Sending via", connStats.sndServers)
                     }
                 }
-                                       
+
                 if member.canBeRemoved(groupInfo: groupInfo) {
                     Section {
                         removeMemberButton()
