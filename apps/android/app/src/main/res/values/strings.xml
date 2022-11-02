@@ -65,6 +65,7 @@
   <string name="error_deleting_group">Error deleting group</string>
   <string name="error_deleting_contact_request">Error deleting contact request</string>
   <string name="error_deleting_pending_contact_connection">Error deleting pending contact connection</string>
+  <string name="error_changing_address">Error changing address</string>
 
   <!-- background service notice - SimpleXAPI.kt -->
   <string name="icon_descr_instant_notifications">Instant notifications</string>
@@ -213,6 +214,8 @@
   <string name="icon_descr_server_status_disconnected">Disconnected</string>
   <string name="icon_descr_server_status_error">Error</string>
   <string name="icon_descr_server_status_pending">Pending</string>
+  <string name="switch_receiving_address_question">Switch receiving address?</string>
+  <string name="switch_receiving_address_desc">This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member).</string>
 
   <!-- Message Actions - SendMsgView.kt -->
   <string name="icon_descr_send_message">Send Message</string>
@@ -729,6 +732,14 @@
   <string name="snd_group_event_user_left">you left</string>
   <string name="snd_group_event_group_profile_updated">group profile updated</string>
 
+  <!-- Conn event chat items -->
+  <string name="rcv_conn_event_switch_queue_phase_completed">changed address for you</string>
+  <string name="rcv_conn_event_switch_queue_phase_changing">changing address…</string>
+  <string name="snd_conn_event_switch_queue_phase_completed_for_member">you changed address for %s</string>
+  <string name="snd_conn_event_switch_queue_phase_changing_for_member">changing address for %s…</string>
+  <string name="snd_conn_event_switch_queue_phase_completed">you changed address</string>
+  <string name="snd_conn_event_switch_queue_phase_changing">changing address…</string>
+
   <!-- GroupMemberRole -->
   <string name="group_member_role_member">member</string>
   <string name="group_member_role_admin">admin</string>
@@ -796,6 +807,7 @@
   <string name="role_in_group">Role</string>
   <string name="change_role">Change role</string>
   <string name="change_verb">Change</string>
+  <string name="switch_verb">Switch</string>
   <string name="change_member_role_question">Change group role?</string>
   <string name="member_role_will_be_changed_with_notification">The role will be changed to \"%s\". Everyone in the group will be notified.</string>
   <string name="member_role_will_be_changed_with_invitation">The role will be changed to \"%s\". The member will receive a new invitation.</string>
@@ -811,6 +823,7 @@
   <string name="receiving_via">Receiving via</string>
   <string name="sending_via">Sending via</string>
   <string name="network_status">Network status</string>
+  <string name="switch_receiving_address">Switch receiving address (BETA)</string>
 
   <!-- AddGroupView.kt -->
   <string name="create_secret_group_title">Create secret group</string>
