@@ -139,6 +139,10 @@
   <string name="auth_stop_chat">Chat beenden</string>
   <string name="auth_open_chat_console">Chat-Konsole öffnen</string>
 
+  <!-- Chat Alerts - ChatItemView.kt -->
+  <string name="message_delivery_error_title">Fehler bei der Nachrichtenzustellung</string>
+  <string name="message_delivery_error_desc">Dieser Kontakt hat sehr wahrscheinlich die Verbindung mit Ihnen gelöscht.</string>
+
   <!-- Chat Actions - ChatItemView.kt (and general) -->
   <string name="reply_verb">Antwort</string>
   <string name="share_verb">Teilen</string>

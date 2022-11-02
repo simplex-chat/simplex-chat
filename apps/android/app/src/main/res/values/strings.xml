@@ -139,6 +139,10 @@
   <string name="auth_stop_chat">Stop chat</string>
   <string name="auth_open_chat_console">Open chat console</string>
 
+  <!-- Chat Alerts - ChatItemView.kt -->
+  <string name="message_delivery_error_title">Message delivery error</string>
+  <string name="message_delivery_error_desc">Most likely this contact has deleted the connection with you.</string>
+
   <!-- Chat Actions - ChatItemView.kt (and general) -->
   <string name="reply_verb">Reply</string>
   <string name="share_verb">Share</string>
