@@ -214,7 +214,7 @@
   <string name="icon_descr_server_status_disconnected">Disconnected</string>
   <string name="icon_descr_server_status_error">Error</string>
   <string name="icon_descr_server_status_pending">Pending</string>
-  <string name="change_receiving_address_question">Change receiving address?</string>
+  <string name="change_receiving_address_question">Switch receiving address?</string>
   <string name="change_receiving_address_desc">This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member).</string>
 
   <!-- Message Actions - SendMsgView.kt -->

@@ -61,11 +61,11 @@
     <string name="connection_error_auth_desc">Возможно, ваш контакт удалил ссылку, или она уже была использована. Если это не так, то это может быть ошибкой - пожалуйста, сообщите нам об этом.\nЧтобы установить соединение, попросите ваш контакт создать еще одну ссылку и проверьте ваше соединение с сетью.</string>
     <string name="error_accepting_contact_request">Ошибка при принятии запроса на соединение</string>
     <string name="sender_may_have_deleted_the_connection_request">Отправитель мог удалить запрос на соединение.</string>
-    <string name="error_deleting_contact">Ошибка удаления контакта</string>
+    <string name="error_deleting_contact">Ошибка при удалении контакта</string>
     <string name="error_deleting_group">Ошибка удаления группы</string>
     <string name="error_deleting_contact_request">Ошибка удаления запроса</string>
     <string name="error_deleting_pending_contact_connection">Ошибка удаления ожидаемого соединения</string>
-    <string name="error_changing_address">Ошибка смены адреса</string>
+    <string name="error_changing_address">Ошибка при изменении адреса</string>
 
     <!-- background service notice - SimpleXAPI.kt -->
     <string name="icon_descr_instant_notifications">Мгновенные уведомления</string>
@@ -214,8 +214,8 @@
     <string name="icon_descr_server_status_disconnected">Соединение с сервером не установлено</string>
     <string name="icon_descr_server_status_error">Ошибка соединения с сервером</string>
     <string name="icon_descr_server_status_pending">Ожидается соединение с сервером</string>
-    <string name="change_receiving_address_question">*** Change receiving address?</string>
-    <string name="change_receiving_address_desc">*** This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member).</string>
+    <string name="change_receiving_address_question">Переключить адрес получения?</string>
+    <string name="change_receiving_address_desc">Это экспериментальная функция! Она будет работать, только если на другом клиенте установлена версия 4.2. После завершения смены адреса вы увидите сообщение — убедитесь, что вы все еще можете получать сообщения от этого контакта (или члена группы).</string>
 
     <!-- Message Actions - SendMsgView.kt -->
     <string name="icon_descr_send_message">Отправить сообщение</string>
@@ -732,12 +732,12 @@
     <string name="snd_group_event_group_profile_updated">профиль группы обновлен</string>
 
     <!-- Conn event chat items -->
-    <string name="rcv_conn_event_switch_queue_phase_completed">*** changed address for you</string>
-    <string name="rcv_conn_event_switch_queue_phase_changing">*** changing address…</string>
-    <string name="snd_conn_event_switch_queue_phase_completed_for_member">*** you changed address for %s</string>
-    <string name="snd_conn_event_switch_queue_phase_changing_for_member">*** changing address for %s…</string>
-    <string name="snd_conn_event_switch_queue_phase_completed">*** you changed address</string>
-    <string name="snd_conn_event_switch_queue_phase_changing">*** changing address…</string>
+    <string name="rcv_conn_event_switch_queue_phase_completed">поменял(а) адрес для вас</string>
+    <string name="rcv_conn_event_switch_queue_phase_changing">смена адреса…</string>
+    <string name="snd_conn_event_switch_queue_phase_completed_for_member">вы поменяли адрес для %s</string>
+    <string name="snd_conn_event_switch_queue_phase_changing_for_member">смена адреса для %s…</string>
+    <string name="snd_conn_event_switch_queue_phase_completed">вы поменяли адрес</string>
+    <string name="snd_conn_event_switch_queue_phase_changing">смена адреса…</string>
 
     <!-- GroupMemberRole -->
     <string name="group_member_role_member">член группы</string>
@@ -821,7 +821,7 @@
     <string name="receiving_via">Получение через</string>
     <string name="sending_via">Отправка через</string>
     <string name="network_status">Состояние сети</string>
-    <string name="switch_receiving_address">Поменять адрес получения (BETA)</string>
+    <string name="switch_receiving_address">Переключить адрес получения (BETA)</string>
 
     <!-- AddGroupView.kt -->
     <string name="create_secret_group_title">Создать скрытую группу</string>
