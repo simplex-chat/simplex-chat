@@ -1,5 +1,5 @@
 //
-//  CIGroupEventView.swift
+//  CIEventView.swift
 //  SimpleX (iOS)
 //
 //  Created by JRoberts on 20.07.2022.
@@ -9,7 +9,7 @@
 import SwiftUI
 import SimpleXChat
 
-struct CIGroupEventView: View {
+struct CIEventView: View {
     var chatItem: ChatItem
 
     var body: some View {
@@ -43,8 +43,8 @@ struct CIGroupEventView: View {
     }
 }
 
-struct CIGroupEventView_Previews: PreviewProvider {
+struct CIEventView_Previews: PreviewProvider {
     static var previews: some View {
-        CIGroupEventView(chatItem: ChatItem.getGroupEventSample())
+        CIEventView(chatItem: ChatItem.getGroupEventSample())
     }
 }

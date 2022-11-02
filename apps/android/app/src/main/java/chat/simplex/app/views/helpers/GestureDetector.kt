@@ -214,13 +214,14 @@ fun interactionSourceWithDetection(onClick: () -> Unit, onLongClick: () -> Unit)
 }
 
 suspend fun PointerInputScope.detectTransformGestures(
+  allowIntercept: () -> Boolean,
   panZoomLock: Boolean = false,
   onGesture: (centroid: Offset, pan: Offset, zoom: Float, rotation: Float) -> Unit
 ) {
+  var zoom = 1f
   forEachGesture {
     awaitPointerEventScope {
       var rotation = 0f
-      var zoom = 1f
       var pan = Offset.Zero
       var pastTouchSlop = false
       val touchSlop = viewConfiguration.touchSlop
@@ -264,7 +265,7 @@ suspend fun PointerInputScope.detectTransformGestures(
               onGesture(centroid, panChange, zoomChange, effectiveRotation)
             }
             event.changes.fastForEach {
-              if (it.positionChanged() && zoomChange != 1f) {
+              if (it.positionChanged() && zoom != 1f && allowIntercept()) {
                 it.consume()
               }
             }
