@@ -496,6 +496,24 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return null
   }
 
+  suspend fun apiSwitchContact(contactId: Long) {
+    return when (val r = sendCmd(CC.APISwitchContact(contactId))) {
+      is CR.CmdOk -> {}
+      else -> {
+        apiErrorAlert("apiSwitchContact", generalGetString(R.string.connection_error), r)
+      }
+    }
+  }
+
+  suspend fun apiSwitchGroupMember(groupId: Long, groupMemberId: Long) {
+    return when (val r = sendCmd(CC.APISwitchGroupMember(groupId, groupMemberId))) {
+      is CR.CmdOk -> {}
+      else -> {
+        apiErrorAlert("apiSwitchGroupMember", generalGetString(R.string.error_changing_address), r)
+      }
+    }
+  }
+
   suspend fun apiAddContact(): String? {
     val r = sendCmd(CC.AddContact())
     return when (r) {
@@ -1440,6 +1458,8 @@ sealed class CC {
   class APISetChatSettings(val type: ChatType, val id: Long, val chatSettings: ChatSettings): CC()
   class APIContactInfo(val contactId: Long): CC()
   class APIGroupMemberInfo(val groupId: Long, val groupMemberId: Long): CC()
+  class APISwitchContact(val contactId: Long): CC()
+  class APISwitchGroupMember(val groupId: Long, val groupMemberId: Long): CC()
   class AddContact: CC()
   class Connect(val connReq: String): CC()
   class ApiDeleteChat(val type: ChatType, val id: Long): CC()
@@ -1504,6 +1524,8 @@ sealed class CC {
     is APISetChatSettings -> "/_settings ${chatRef(type, id)} ${json.encodeToString(chatSettings)}"
     is APIContactInfo -> "/_info @$contactId"
     is APIGroupMemberInfo -> "/_info #$groupId $groupMemberId"
+    is APISwitchContact -> "/_switch @$contactId"
+    is APISwitchGroupMember -> "/_switch #$groupId $groupMemberId"
     is AddContact -> "/connect"
     is Connect -> "/connect $connReq"
     is ApiDeleteChat -> "/_delete ${chatRef(type, id)}"
@@ -1569,6 +1591,8 @@ sealed class CC {
     is APISetChatSettings -> "/apiSetChatSettings"
     is APIContactInfo -> "apiContactInfo"
     is APIGroupMemberInfo -> "apiGroupMemberInfo"
+    is APISwitchContact -> "apiSwitchContact"
+    is APISwitchGroupMember -> "apiSwitchGroupMember"
     is AddContact -> "addContact"
     is Connect -> "connect"
     is ApiDeleteChat -> "apiDeleteChat"
@@ -1617,7 +1641,7 @@ sealed class CC {
   companion object {
     fun chatRef(chatType: ChatType, id: Long) = "${chatType.type}${id}"
 
-    fun smpServersStr(smpServers: List<String>) = if (smpServers.isEmpty()) "default" else smpServers.joinToString(separator = ",")
+    fun smpServersStr(smpServers: List<String>) = if (smpServers.isEmpty()) "default" else smpServers.joinToString(separator = ";")
   }
 }
 

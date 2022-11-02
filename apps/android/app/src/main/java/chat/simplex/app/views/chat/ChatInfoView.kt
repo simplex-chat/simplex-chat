@@ -65,6 +65,9 @@ fun ChatInfoView(
       },
       deleteContact = { deleteContactDialog(chat.chatInfo, chatModel, close) },
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) },
+      switchContactAddress = {
+        showSwitchContactAddressAlert(chatModel, contact.contactId)
+      }
     )
   }
 }
@@ -117,6 +120,7 @@ fun ChatInfoLayout(
   onLocalAliasChanged: (String) -> Unit,
   deleteContact: () -> Unit,
   clearChat: () -> Unit,
+  switchContactAddress: () -> Unit,
 ) {
   Column(
     Modifier
@@ -142,8 +146,13 @@ fun ChatInfoLayout(
 
     SectionSpacer()
 
-    if (connStats != null) {
-      SectionView(title = stringResource(R.string.conn_stats_section_title_servers)) {
+    SectionView(title = stringResource(R.string.conn_stats_section_title_servers)) {
+      if (developerTools) {
+        SectionView {
+          SwitchAddressButton(switchContactAddress)
+        }
+      }
+      if (connStats != null) {
         SectionItemView({
           AlertManager.shared.showAlertMsg(
             generalGetString(R.string.network_status),
@@ -162,8 +171,8 @@ fun ChatInfoLayout(
           SimplexServers(stringResource(R.string.sending_via), sndServers)
         }
       }
-      SectionSpacer()
     }
+    SectionSpacer()
     SectionView {
       ClearChatButton(clearChat)
       SectionDivider()
@@ -231,7 +240,9 @@ fun LocalAliasEditor(
           color = HighOrLowlight
         )
       },
-      leadingIcon = if (leadingIcon) {{ Icon(Icons.Default.Edit, null, Modifier.padding(start = 7.dp)) }} else null,
+      leadingIcon = if (leadingIcon) {
+        { Icon(Icons.Default.Edit, null, Modifier.padding(start = 7.dp)) }
+      } else null,
       color = HighOrLowlight,
       focus = focus,
       textStyle = TextStyle.Default.copy(textAlign = if (value.isEmpty() || !center) TextAlign.Start else TextAlign.Center),
@@ -312,6 +323,13 @@ fun SimplexServers(text: String, servers: List<String>) {
 }
 
 @Composable
+fun SwitchAddressButton(onClick: () -> Unit) {
+  SectionItemView(onClick) {
+    Text(stringResource(R.string.switch_receiving_address), color = MaterialTheme.colors.primary)
+  }
+}
+
+@Composable
 fun ClearChatButton(onClick: () -> Unit) {
   SettingsActionItem(
     Icons.Outlined.Restore,
@@ -340,6 +358,21 @@ private fun setContactAlias(contactApiId: Long, localAlias: String, chatModel: C
   }
 }
 
+private fun showSwitchContactAddressAlert(m: ChatModel, contactId: Long) {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(R.string.change_receiving_address_question),
+    text = generalGetString(R.string.change_receiving_address_desc),
+    confirmText = generalGetString(R.string.change_verb),
+    onConfirm = {
+      switchContactAddress(m, contactId)
+    }
+  )
+}
+
+private fun switchContactAddress(m: ChatModel, contactId: Long) = withApi {
+  m.controller.apiSwitchContact(contactId)
+}
+
 @Preview
 @Composable
 fun PreviewChatInfoLayout() {
@@ -356,7 +389,9 @@ fun PreviewChatInfoLayout() {
       connStats = null,
       onLocalAliasChanged = {},
       customUserProfile = null,
-      deleteContact = {}, clearChat = {}
+      deleteContact = {},
+      clearChat = {},
+      switchContactAddress = {},
     )
   }
 }
