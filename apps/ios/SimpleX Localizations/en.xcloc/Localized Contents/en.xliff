@@ -378,6 +378,11 @@
         <target>Change member role?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Change receiving address (BETA)" xml:space="preserve">
+        <source>Change receiving address (BETA)</source>
+        <target>Change receiving address (BETA)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Change receiving address?" xml:space="preserve">
         <source>Change receiving address?</source>
         <target>Change receiving address?</target>
@@ -2236,11 +2241,6 @@ We will be adding server redundancy to prevent lost messages.</target>
       <trans-unit id="Stop chat?" xml:space="preserve">
         <source>Stop chat?</source>
         <target>Stop chat?</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Switch receiving address (BETA)" xml:space="preserve">
-        <source>Switch receiving address (BETA)</source>
-        <target>Switch receiving address (BETA)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="System" xml:space="preserve">

@@ -264,6 +264,9 @@
 "Change member role?" = "Die Mitgliederrolle ändern?";
 
 /* No comment provided by engineer. */
+"Change receiving address (BETA)" = "***Change receiving address (BETA)";
+
+/* No comment provided by engineer. */
 "Change receiving address?" = "***Change receiving address?";
 
 /* No comment provided by engineer. */
@@ -1558,9 +1561,6 @@
 
 /* No comment provided by engineer. */
 "strike" = "durchstreichen";
-
-/* No comment provided by engineer. */
-"Switch receiving address (BETA)" = "***Switch receiving address (BETA)";
 
 /* No comment provided by engineer. */
 "System" = "System";

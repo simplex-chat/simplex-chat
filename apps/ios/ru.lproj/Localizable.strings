@@ -264,6 +264,9 @@
 "Change member role?" = "Поменять роль члена группы?";
 
 /* No comment provided by engineer. */
+"Change receiving address (BETA)" = "Поменять адрес получения (БЕТА)";
+
+/* No comment provided by engineer. */
 "Change receiving address?" = "Поменять адрес получения?";
 
 /* No comment provided by engineer. */
@@ -1558,9 +1561,6 @@
 
 /* No comment provided by engineer. */
 "strike" = "зачеркнуть";
-
-/* No comment provided by engineer. */
-"Switch receiving address (BETA)" = "Переключить адрес получения (БЕТА)";
 
 /* No comment provided by engineer. */
 "System" = "Системная";
