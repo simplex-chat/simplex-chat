@@ -13,7 +13,7 @@ struct PrivacySettings: View {
     @AppStorage(DEFAULT_PRIVACY_ACCEPT_IMAGES) private var autoAcceptImages = true
     @AppStorage(DEFAULT_PRIVACY_LINK_PREVIEWS) private var useLinkPreviews = true
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
-    @State private var transferImagesInline = false
+    @AppStorage(GROUP_DEFAULT_PRIVACY_TRANSFER_IMAGES_INLINE, store: groupDefaults) private var transferImagesInline = false
 
     var body: some View {
         VStack {
@@ -31,9 +31,6 @@ struct PrivacySettings: View {
                     if developerTools {
                         settingsRow("photo.on.rectangle") {
                             Toggle("Transfer images faster (BETA)", isOn: $transferImagesInline)
-                                .onChange(of: transferImagesInline) {
-                                    privacyTransferImagesInlineGroupDefault.set($0)
-                                }
                         }
                     }
                     settingsRow("network") {
@@ -41,9 +38,6 @@ struct PrivacySettings: View {
                     }
                 }
             }
-        }
-        .onAppear {
-            transferImagesInline = privacyTransferImagesInlineGroupDefault.get()
         }
     }
 }
