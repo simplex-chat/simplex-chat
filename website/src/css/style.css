@@ -36,7 +36,7 @@
 html {
   scroll-behavior: smooth;
   font-family: 'Gilroy', sans-serif;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.003em;
 }
 
 #comparison::before {
@@ -527,9 +527,9 @@ header nav {
 
 /* hero */
 .primary-header {
-  font-weight: 700;
-  font-size: 55px;
-  line-height: 63px;
+  /* font-weight: 700; */
+  /* font-size: 55px; */
+  /* line-height: 63px; */
   background: linear-gradient(251.16deg, #53c1ff 1.1%, #0053d0 100.82%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -540,11 +540,11 @@ header nav {
 .secondary-header {
   /* width: 499px;
   height: 86px; */
-  font-family: "Gilroy";
-  font-style: normal;
-  font-weight: 700;
+  /* font-family: "Gilroy";
+  font-style: normal; */
+  /* font-weight: 700;
   font-size: 38px;
-  line-height: 43px;
+  line-height: 43px; */
   color: #606c71;
   text-shadow: 0px 4px 74px #e9e7e2;
 }
@@ -636,32 +636,32 @@ header nav {
 }
 @media (max-width: 768px) {
   .landing-page-header {
-    text-align: center;
+    /* text-align: center;
     justify-content: center;
-    height: fit-content;
+    height: fit-content; */
   }
   .landing-page-header-div:nth-child(1) {
-    justify-content: center;
+    /* justify-content: center;
     justify-items: center;
     height: fit-content;
-    align-items: center;
+    align-items: center; */
   }
   .landing-page-second-header-div {
-    justify-content: start;
+    /* justify-content: start; */
   }
   .landing-page-second-header-div > article > .primary-header {
-    font-size: 30px;
-    line-height: normal;
+    /* font-size: 30px;
+    line-height: normal; */
   }
   .hero-phone-background {
     /* display: none; */
   }
   .primary-header {
-    text-align: center;
-    font-size: 50px;
+    /* text-align: center;
+    font-size: 50px; */
   }
   .header-description {
-    text-align: center;
+    /* text-align: center; */
   }
   .hero-video-phone-container {
     display: block;
@@ -698,10 +698,7 @@ header nav {
     display: block;
   }
   body {
-    width: fit-content;
-  }
-  .extra-icons {
-    display: none;
+    /* width: fit-content; */
   }
   #hero-video-phone-Background {
     display: none;

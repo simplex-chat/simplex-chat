@@ -9,6 +9,7 @@ module.exports = function (ty) {
   ty.addPassthroughCopy("src/assets/")
   ty.addPassthroughCopy("src/fonts")
   ty.addPassthroughCopy("src/img")
+  ty.addPassthroughCopy("src/video")
   ty.addPassthroughCopy("src/css")
   ty.addPassthroughCopy("src/js")
   ty.addPassthroughCopy("src/contact")

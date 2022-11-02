@@ -33,9 +33,7 @@ window.addEventListener("load", function () {
       img = "0".repeat(4 - img.length) + img;
       seq.push([`${imgPath}/light/10fps/${img}.webp`, `${imgPath}/dark/10fps/${img}.webp`, 1]);
     }
-
-    console.log(seq)
-    return seq
+    return seq;
   }
 
   function mkSlowImages(images) {
@@ -76,13 +74,13 @@ window.addEventListener("load", function () {
     videoEl.style.display = "block";
 
     async function preload(images) {
-      let imgEls = []
-      let resolved = false
+      let imgEls = [];
+      let resolved = false;
       return new Promise((resolve) => {
         setTimeout(() => {
           if (!resolved) {
-            resolved = true
-            resolve()
+            resolved = true;
+            resolve();
           }
         }, 2000);
         for (const [lightImg, darkImg] of images) {
@@ -92,20 +90,20 @@ window.addEventListener("load", function () {
 
         function preloadImg(img) {
           const el = document.createElement("img");
-          el.src = img
-          imgEls.push(el)
-          preloadEl.appendChild(el)
+          el.src = img;
+          imgEls.push(el);
+          preloadEl.appendChild(el);
           const loaded = () => {
-            imgEls = imgEls.filter((e) => e !== el)
+            imgEls = imgEls.filter((e) => e !== el);
             if (imgEls.length === 0 && !resolved) {
-              resolved = true
-              resolve()
+              resolved = true;
+              resolve();
             }
-          }
-          el.addEventListener('load', loaded)
-          el.addEventListener('error', loaded)
+          };
+          el.addEventListener("load", loaded);
+          el.addEventListener("error", loaded);
         }
-      })
+      });
     }
 
     async function animate(images, ms) {
@@ -124,7 +122,7 @@ window.addEventListener("load", function () {
     }
 
     async function delay(ms) {
-      return new Promise((resolve) => setTimeout(resolve, ms))
+      return new Promise((resolve) => setTimeout(resolve, ms));
     }
   }
-})();
+});

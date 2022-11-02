@@ -1,47 +1,58 @@
 <div class="first-two-sections ">
-    <div class="container flex relative justify-between">
+    <div class="md:container flex relative justify-between">
         <div class="">
-            <section class="h-full lg:h-[calc(100vh-66px)]  m-auto flex items-center justify-between landing-page-header bg-green-400">
-                <div class="h-[inherit] flex flex-col items-start justify-around landing-page-header-div">
+            <section class="lg:h-[calc(100vh-66px)] m-auto flex items-center justify-between landing-page-header ">
+                <div class="lg:h-[inherit] flex flex-col items-start lg:justify-around landing-page-header-div">
                     <img class="static-phone-tablet" src="/img/new/phone1_0036.png" alt="" style="background-image: url(/img/new/bg_gfx.png) ; background-repeat: no-repeat; background-position: center;background-size: contain;">
-                    <img class="static-phone-mobile" src="/img/new/phone1_0036mobile.png" alt="" style="background-image: url(/img/new/bg_gfx.png) ; background-repeat: no-repeat; background-position: center;background-size: contain;">
+                    <img class="static-phone-mobile" src="/img/new/mobile-hero.png" alt="" style="background-image: url(/img/new/bg_gfx.png) ; background-repeat: no-repeat; background-position: center;background-size: contain;">
         
                     <article class="w-full max-w-[500px] landing-page-header-article">
-                        <p class="primary-header mb-[25px]">Privacy redefined</p>
-                        <p class="secondary-header mb-[25px] leading-[43px] tracking-[0.01em]">The first messanger without user IDs</p>
-                        <p class="text-justify mb-[25px] leading-[24px] text-[16px] header-description">
+                        <p class="primary-header text-center font-bold text-[38px] leading-[46px] mb-[8px]">Privacy redefined</p>
+                        <p class="secondary-header text-center font-bold text-[28px] leading-[36px] mb-[8px]  tracking-[0.01em]">The first messanger without user IDs</p>
+                        <p class="text-center lg:text-justify text-[16px] leading-[24px] mb-[20px] header-description">
                             SimpleX network has no user indentifiers (not ever random numbers),
                             as all the other apps do, including WhatsApp, Telegram, Signal,
                             Matrix, Session, Briar, Jami, Speek, Cwtch, etc.
                         </p>
-                        <a href="" class="underline text-[#0053D0] block leading-[34px] text-[16px] underline-offset-2">How does it work?</a>
-                        <a href="" class="underline text-[#0053D0] block leading-[34px] text-[16px] underline-offset-2">How user IDs reduce privacy and anonymity?</a>
+                        <a href="" class="underline text-[#0053D0] block text-center text-[14px] lg:text-[16px] leading-[34px] underline-offset-2">How does it work?</a>
+                        <a href="" class="underline text-[#0053D0] block text-center text-[14px] lg:text-[16px] leading-[34px] underline-offset-2">How user IDs reduce privacy and anonymity?</a>
                     </article>
                     <article>
-                        <p class="text-[16px] leading-[26px] mb-[11px]">Get SimpleX</p>
-                        <div class="h-[40px] flex gap-4">
-                            <a href="#"><img class="h-full w-auto" src="/img/new/apple-store-btn.png" alt=""/></a>
-                            <a href="#"><img class="h-full w-auto" src="/img/new/play-store-btn.png" alt=""/></a>
-                            <a href="#"><img class="h-full w-auto" src="/img/new/f-droid-btn.png" alt=""/></a>
-                            <a href="#"><img class="h-full w-auto extra-icons" src="/img/new/test-flight.png" alt=""/></a>
-                            <a href="#"><img class="h-full w-auto extra-icons" src="/img/new/apk.png" alt=""/></a>
+                        <p class="hidden md:block text-[16px] leading-[26px] mb-[11px]">Get SimpleX</p>
+                        <div class="flex items-center justify-center gap-4 flex-wrap mt-[30px]">
+                            <a href="#"><img class="h-[40px] w-auto" src="/img/new/apple-store-btn.png" alt=""/></a>
+                            <a href="#"><img class="h-[40px] w-auto" src="/img/new/play-store-btn.png" alt=""/></a>
+                            <a href="#"><img class="h-[40px] w-auto" src="/img/new/f-droid-btn.png" alt=""/></a>
+                            <a href="#"><img class="h-[40px] w-auto" src="/img/new/test-flight.png" alt=""/></a>
+                            <a href="#"><img class="h-[40px] w-auto" src="/img/new/apk.png" alt=""/></a>
                         </div>
                     </article>
                 </div> 
             </section>
         
-            <section class="h-screen m-auto flex items-center justify-between landing-page-header">
+            <section class="lg:h-screen m-auto flex items-center justify-between landing-page-header">
                 <div class="h-[inherit] flex flex-col items-start landing-page-second-header-div justify-around">
                     <div class="hero-video-phone-container">
                         <img id="hero-video-phone-Background" src="/img/new/fastImages/Lightphone1_0020.png" />
+                        <div class="w-full h-[360px] my-10 overflow-hidden relative flex items-center justify-center bg-[#17203D]">
+                            <img src="/img/new/mobile-video-placeholder.png" alt="">
+                            <div class="absolute flex flex-col items-center gap-3">
+                                <img src="/img/new/play-btn.svg" alt="" />
+                                <p class="text-center text-[16px] leading-[24px] tracking-[0.04em] text-white">PLAY</p>
+                            </div>
+                            {# <video class="w-full absolute" controls>
+                                <source src="/video/video3.mp4" type="video/mp4">
+                            </video> #}
+                        </div>
+                        
                         {# <iframe id="hero-video-phone" src="https://www.youtube.com/embed/2IbRtjez6ag" title="Foodies Carpool Show ft WildLens By Abrar" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe> #}
                     </div>
         
                     <article class="w-full max-w-[500px] landing-page-header-article">
-                        <p class="primary-header mb-[25px] font-medium">
+                        <p class="primary-header text-center font-bold text-[28px] leading-[36px] mb-[28px]">
                             Create one to one encrypted connections with QR codes
                         </p>
-                        <p class="text-justify mb-[25px] leading-[24px] text-[16px] header-description">
+                        <p class="text-center lg:text-justify leading-[24px] text-[16px] mb-10 lg:mb-[25px] header-description">
                             SimpleX network has no user indentifiers (not ever random numbers),
                             as all the other apps do, including WhatsApp, Telegram, Signal,
                             Matrix, Session, Briar, Jami, Speek, Cwtch, etc.
@@ -50,9 +61,9 @@
                 </div>
             </section>
         </div>
-        <div class="hero-phone-background">
-            <img id="hero-phone-light" class="only-light"></img>
-            <img id="hero-phone-dark" class="only-dark"></img>
+        <div class="hero-phone-background hidden">
+            <img id="hero-phone-light" class="only-light"/>
+            <img id="hero-phone-dark" class="only-dark"/>
             <iframe id="hero-phone-video" src="https://www.youtube.com/embed/2IbRtjez6ag"
                 title="Foodies Carpool Show ft WildLens By Abrar" frameborder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
