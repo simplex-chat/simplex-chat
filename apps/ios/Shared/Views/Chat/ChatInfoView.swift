@@ -65,12 +65,16 @@ struct ChatInfoView: View {
         case deleteContactAlert
         case clearChatAlert
         case networkStatusAlert
+        case switchAddressAlert
+        case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
 
         var id: String {
             switch self {
             case .deleteContactAlert: return "deleteContactAlert"
             case .clearChatAlert: return "clearChatAlert"
             case .networkStatusAlert: return "networkStatusAlert"
+            case .switchAddressAlert: return "switchAddressAlert"
+            case let .error(title, _): return "error \(title)"
             }
         }
     }
@@ -100,8 +104,10 @@ struct ChatInfoView: View {
                         .onTapGesture {
                             alert = .networkStatusAlert
                         }
-                    Button("Switch receiving address") {
-                        
+                    if developerTools {
+                        Button("Switch receiving address (BETA)") {
+                            alert = .switchAddressAlert
+                        }
                     }
                     if let connStats = connectionStats {
                         smpServers("Receiving via", connStats.rcvServers)
@@ -129,6 +135,8 @@ struct ChatInfoView: View {
             case .deleteContactAlert: return deleteContactAlert()
             case .clearChatAlert: return clearChatAlert()
             case .networkStatusAlert: return networkStatusAlert()
+            case .switchAddressAlert: return switchAddressAlert(switchContactAddress)
+            case let .error(title, error): return mkAlert(title: title, message: error)
             }
         }
     }
@@ -236,7 +244,11 @@ struct ChatInfoView: View {
                             dismiss()
                         }
                     } catch let error {
-                        logger.error("deleteContactAlert apiDeleteChat error: \(error.localizedDescription)")
+                        logger.error("deleteContactAlert apiDeleteChat error: \(responseError(error))")
+                        let a = getErrorAlert(error, "Error deleting contact")
+                        await MainActor.run {
+                            alert = .error(title: a.title, error: a.message)
+                        }
                     }
                 }
             },
@@ -264,6 +276,29 @@ struct ChatInfoView: View {
             message: Text(chat.serverInfo.networkStatus.statusExplanation)
         )
     }
+
+    private func switchContactAddress() {
+        Task {
+            do {
+                try await apiSwitchContact(contactId: contact.apiId)
+            } catch let error {
+                logger.error("switchContactAddress apiSwitchContact error: \(responseError(error))")
+                let a = getErrorAlert(error, "Error changing address")
+                await MainActor.run {
+                    alert = .error(title: a.title, error: a.message)
+                }
+            }
+        }
+    }
+}
+
+func switchAddressAlert(_ switchAddress: @escaping () -> Void) -> Alert {
+    Alert(
+        title: Text("Change receiving address?"),
+        message: Text("This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)."),
+        primaryButton: .destructive(Text("Change"), action: switchAddress),
+        secondaryButton: .cancel()
+    )
 }
 
 struct ChatInfoView_Previews: PreviewProvider {
