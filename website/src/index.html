@@ -12,18 +12,18 @@ templateEngineOverride: njk
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[20px] mb-[90px]">
 
             {% for section in why_privacy_matters.sections %}
-                <div class="bg-white dark:bg-transparent px-[34px] flex flex-col rounded-[12px] dark:rounded-[6px] shadow-[0px_50px_61px_rgba(0,0,0,0.12)] dark:shadow-none flex-[1] border-gradient">
-                    <div class="flex items-center justify-center h-[215px]">
-                        <img src="{{ section.imgLight }}" alt="">
-                    </div>
-                    <div class="h-[152px] flex flex-col items-center justify-between">
-                        <p class="text-center font-medium leading-[28px] text-grey-black dark:text-white">{{ section.title }}</p>
-                        {% if section.overlayContent %}
-                            <a href="javascript:void(0);" data-show-overlay="{{ section.overlayContent.overlayId }}" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] underline-offset-2 mb-[53px]">{{ section.overlayContent.linkText }}</a>
-                            {{ overlay(section) }}
-                        {% endif %}
-                    </div>
+            <div class="bg-white dark:bg-transparent px-[34px] flex flex-col rounded-[12px] dark:rounded-[6px] shadow-[0px_50px_61px_rgba(0,0,0,0.12)] dark:shadow-none flex-[1] border-gradient">
+                <div class="flex items-center justify-center h-[215px]">
+                    <img src="{{ section.imgLight }}" alt="">
                 </div>
+                <div class="h-[152px] flex flex-col items-center justify-between">
+                    <p class="text-center font-medium leading-[28px] text-grey-black dark:text-white">{{ section.title }}</p>
+                    {% if section.overlayContent %}
+                    <a href="javascript:void(0);" data-show-overlay="{{ section.overlayContent.overlayId }}" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] underline-offset-2 mb-[53px]">{{ section.overlayContent.linkText }}</a>
+                    {{ overlay(section) }}
+                    {% endif %}
+                </div>
+            </div>
             {% endfor %}
 
         </div>
@@ -41,13 +41,13 @@ templateEngineOverride: njk
 
         <div class="mb-[50px] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-10 gap-y-20">
             {% for feature in features.sections %}
-                <div class="flex flex-col items-center">
-                    <div class="bg-white flex items-center justify-center w-[175px] h-[110px] rounded-[20px] border-[#859096] border-solid border-[1px] shadow-[2px_2px_0px_#859096] dark:border-none dark:shadow-none mb-[20px] border-gradient">
-                        <img src="{{ feature.imgLight }}" alt="" class="dark:hidden"/>
-                        <img src="{{ feature.imgDark }}" alt="" class="hidden dark:block"/>
-                    </div>
-                    <p class="text-grey-black dark:text-white text-[16px] font-medium text-center w-full max-w-[265px]">{{ feature.title }}</p>
+            <div class="flex flex-col items-center">
+                <div class="bg-white flex items-center justify-center w-[175px] h-[110px] rounded-[20px] border-[#859096] border-solid border-[1px] shadow-[2px_2px_0px_#859096] dark:border-none dark:shadow-none mb-[20px] border-gradient">
+                    <img src="{{ feature.imgLight }}" alt="" class="dark:hidden"/>
+                    <img src="{{ feature.imgDark }}" alt="" class="hidden dark:block"/>
                 </div>
+                <p class="text-grey-black dark:text-white text-[16px] font-medium text-center w-full max-w-[265px]">{{ feature.title }}</p>
+            </div>
             {% endfor %}
         </div>
     </div>
@@ -62,21 +62,21 @@ templateEngineOverride: njk
             <div class="swiper-wrapper mb-14">
 
                 {% for section in what_makes_simplex_private.sections %}
-                    <div class="card swiper-slide relative h-[460px] rounded-[20px] bg-card-bg-light dark:bg-card-bg-dark border-[#859096] border-solid border-[1px] dark:border-none shadow-[2px_2px_0px_#859096] dark:shadow-none overflow-hidden">
-                        <div class="flex items-center justify-center py-12 px-6 h-[322px]">
-                            <img class="w-full max-w-[223px] h-full max-h-[226px] dark:hidden" src="{{ section.imgLight }}" alt=""/>
-                            <img class="w-full max-w-[223px] h-full max-h-[226px] hidden dark:block" src="{{ section.imgDark }}" alt=""/>
-                        </div>
-                        <div class="flex flex-col items-center justify-between h-[138px] absolute bottom-0 py-6 px-8 bg-card-desc-bg-light dark:bg-card-desc-bg-dark rounded-b-[20px]">
-                            <p class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">{{ section.title }}</p>
-                            <div class="flex-1 py-6 flex flex-col gap-4">
-                                {% for point in section.points %}
-                                    <p class="text-grey-black dark:text-white text-[14px] text-center">{{ point }}</p>
-                                {% endfor %}
-                            </div>
-                            <p class="text-grey-black dark:text-white text-[12px] text-center">Tap to close</p>
-                        </div>
+                <div class="card swiper-slide relative h-[460px] rounded-[20px] bg-card-bg-light dark:bg-card-bg-dark border-[#859096] border-solid border-[1px] dark:border-none shadow-[2px_2px_0px_#859096] dark:shadow-none overflow-hidden">
+                    <div class="flex items-center justify-center py-12 px-6 h-[322px]">
+                        <img class="w-full max-w-[223px] h-full max-h-[226px] dark:hidden" src="{{ section.imgLight }}" alt=""/>
+                        <img class="w-full max-w-[223px] h-full max-h-[226px] hidden dark:block" src="{{ section.imgDark }}" alt=""/>
                     </div>
+                    <div class="flex flex-col items-center justify-between h-[138px] absolute bottom-0 py-6 px-8 bg-card-desc-bg-light dark:bg-card-desc-bg-dark rounded-b-[20px]">
+                        <p class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">{{ section.title }}</p>
+                        <div class="flex-1 py-6 flex flex-col gap-4">
+                            {% for point in section.points %}
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">{{ point }}</p>
+                            {% endfor %}
+                        </div>
+                        <p class="text-grey-black dark:text-white text-[12px] text-center">Tap to close</p>
+                    </div>
+                </div>
                 {% endfor %}
             </div>
 
@@ -139,15 +139,16 @@ templateEngineOverride: njk
 
 
 {# Comparison #}
-<section id="comparison">
-    <div class="container">
-        <p class="text-grey-black dark:text-white text-[45px] text-center font-bold mb-[21px]">Comparison with other protocols</p>
-        <div class="table-holder">
-            <table class="systems">
+<section id="comparison" class="bg-secondary-bg-light dark:bg-secondary-bg-dark py-[85px]">
+    <div class="container flex flex-col">
+        <p class="text-grey-black dark:text-white text-[35px] lg:text-[45px] text-center font-bold mb-10 lg:mb-20">Comparison with other protocols</p>
+
+        <div class="w-full overflow-auto">
+            <table class="w-full border-separate border-spacing-x-5 border-spacing-y-2">
                 <thead>
                     <tr>
                         <th></th>
-                        <th class="simplex"><img alt="simplex logo" src="img/icon.svg"/> SimpleX chat</th>
+                        <th class="flex items-center justify-center"><img class="h-6" alt="simplex logo" src="/img/new/logo-light.png"/></th>
                         <th>Signal, big platforms</th>
                         <th>XMPP, Matrix</th>
                         <th>P2P protocols</th>
@@ -155,76 +156,56 @@ templateEngineOverride: njk
                 </thead>
                 <tbody>
                     <tr>
-                        <td>Requires global identity</td>
-                        <td class="highlight good">No - private</td>
-                        <td class="highlight bad">Yes <sup>1</sup>
-                        </td>
-                        <td class="highlight bad">Yes <sup>2</sup>
-                        </td>
-                        <td class="highlight bad">Yes <sup>3</sup>
-                        </td>
+                        <td class="min-w-[210px]">Requires global identity</td>
+                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#48F6C2] text-grey-black rounded-[4px]">No - private</td>
+                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] text-[#DD0000] rounded-[4px]">Yes <sup>1</sup></td>
+                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] text-[#DD0000] rounded-[4px]">Yes <sup>2</sup></td>
+                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] text-[#DD0000] rounded-[4px]">Yes <sup>3</sup></td>
                     </tr>
                     <tr>
-                        <td>Possibility of MITM</td>
-                        <td class="highlight good">No - secure</td>
-                        <td class="highlight bad">Yes <sup>4</sup>
-                        </td>
-                        <td class="highlight bad">Yes</td>
-                        <td class="highlight bad">Yes</td>
+                        <td class="min-w-[210px]">Possibility of MITM</td>
+                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#48F6C2] text-grey-black rounded-[4px]">No - secure</td>
+                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] text-[#DD0000] rounded-[4px]">Yes <sup>4</sup></td>
+                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] text-[#DD0000] rounded-[4px]">Yes</td>
+                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] text-[#DD0000] rounded-[4px]">Yes</td>
                     </tr>
                     <tr>
-                        <td>Dependence on DNS</td>
-                        <td class="highlight good">No - resilient</td>
-                        <td class="highlight bad">Yes</td>
-                        <td class="highlight bad">Yes</td>
-                        <td class="highlight good">No</td>
+                        <td class="min-w-[210px]">Dependence on DNS</td>
+                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#48F6C2] text-grey-black rounded-[4px]">No - resilient</td>
+                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] text-[#DD0000] rounded-[4px]">Yes</td>
+                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] text-[#DD0000] rounded-[4px]">Yes</td>
+                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#48F6C2] text-grey-black rounded-[4px]">No</td>
                     </tr>
                     <tr>
-                        <td>Single or centralized network</td>
-                        <td class="highlight good">No - decentralized</td>
-                        <td class="highlight bad">Yes</td>
-                        <td class="highlight good">No - federated <sup>5</sup>
-                        </td>
-                        <td class="highlight bad">Yes <sup>6</sup>
-                        </td>
+                        <td class="min-w-[210px]">Single or centralized network</td>
+                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#48F6C2] text-grey-black rounded-[4px]">No - decentralized</td>
+                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] text-[#DD0000] rounded-[4px]">Yes</td>
+                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#48F6C2] text-grey-black rounded-[4px]">No - federated <sup>5</sup></td>
+                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] text-[#DD0000] rounded-[4px]">Yes <sup>6</sup></td>
                     </tr>
                     <tr>
-                        <td>Central component or other network-wide attack</td>
-                        <td class="highlight good">No - resilient</td>
-                        <td class="highlight bad">Yes</td>
-                        <td class="highlight bad">Yes <sup>2</sup>
-                        </td>
-                        <td class="highlight bad">Yes <sup>7</sup>
-                        </td>
+                        <td class="min-w-[210px]">Central component or other network-wide attack</td>
+                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#48F6C2] text-grey-black rounded-[4px]">No - resilient</td>
+                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] text-[#DD0000] rounded-[4px]">Yes</td>
+                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] text-[#DD0000] rounded-[4px]">Yes <sup>2</sup></td>
+                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] text-[#DD0000] rounded-[4px]">Yes <sup>7</sup></td>
                     </tr>
                 </tbody>
             </table>
         </div>
 
-        <div class="table-comments">
-            <ul class="legend">
-                <li class="good">Good</li>
-                <li class="bad">Bad</li>
-            </ul>
+        <hr class="block my-8 mx-5">
 
-            <div class="footnotes">
-                <ol>
-                    <li>Usually based on a phone number, in some cases on usernames</li>
-                    <li>DNS-based addresses</li>
-                    <li>Public key or some other globally unique ID</li>
-                    <li>If operator’s servers are compromised</li>
-                    <li>Does not protect users' metadata</li>
-                    <li>
-              While P2P are distributed, they are not federated - they operate as a single network
-            </li>
-                    <li>
-              P2P networks either have a central authority or the whole network can be compromised -
-              see
-              <a
-                href="https://github.com/simplex-chat/protocol#comparison-with-p2p-messaging-protocols"
-                >here</a
-              >
-                    </li>
+        <div>
+            <div class="px-5">
+                <ol class="text-base leading-6 list-decimal list-inside">
+                    <li> Usually based on a phone number, in some cases on usernames</li>
+                    <li> DNS-based addresses</li>
+                    <li> Public key or some other globally unique ID</li>
+                    <li> If operator’s servers are compromised</li>
+                    <li> Does not protect users' metadata</li>
+                    <li> While P2P are distributed, they are not federated - they operate as a single network</li>
+                    <li> P2P networks either have a central authority or the whole network can be compromised - <a class="underline text-primary-light dark:text-primary-dark underline-offset-2" href="https://github.com/simplex-chat/protocol#comparison-with-p2p-messaging-protocols">see here</a></li>
                 </ol>
             </div>
         </div>
@@ -237,7 +218,7 @@ templateEngineOverride: njk
 <section class="bg-white py-[85px]">
     <div class="container flex flex-col">
         <div class="mx-[40px] md:mx-[150px] lg:mx-[250px] xl:mx-96 ">
-            <p class="text-[#0053D0] text-[45px] text-center font-bold  mb-[21px]">Join <span class="text-[#3F484B]">SimpleX</span></p>
+            <p class="text-[#0053D0] text-[45px] text-center font-bold mb-[21px]">Join <span class="text-[#3F484B]">SimpleX</span></p>
             <p class="text-black text-[16px] font-normal text-center mb-[40px]">We invite you to join the conversion</p>
             <a href="#" class="flex items-center justify-center text-[#0053D0] font-medium text-base rounded-[34px] bg-[#D9ECFF] py-2 px-5 mb-5">Join the REDDIT community</a>
             <a href="#" class="flex items-center justify-center text-[#0053D0] font-medium text-base rounded-[34px] bg-[#D9ECFF] py-2 px-5 mb-5">Join us on GitHub</a>
@@ -245,8 +226,8 @@ templateEngineOverride: njk
         </div>
         <p class="text-black text-[16px] font-normal text-center mb-[20px]">Sign up for our newsletter below</p>
         <form class="flex justify-center">
-            <input type="text" class="h-[50px] rounded-l-[34px] border-[#0053D0] border-solid border-[1px] text-[#0053D0] text-[16px] font-normal text-left w-[400px] px-4" 
-               placeholder="Enter your email address">
+            <input type="text" class="h-[50px] rounded-l-[34px] border-[#0053D0] border-solid border-[1px] text-[#0053D0] text-[16px] font-normal text-left w-[400px] px-4"
+                placeholder="Enter your email address">
             <input type="submit" class="h-[50px] rounded-r-[34px] bg-[#0053D0] text-white text-[16px] font-normal text-center px-8">
         </form>
         <p class="text-[#606C71] text-[16px] font-normal text-center mt-[20px] mb-7">Success/Error message here.</p>

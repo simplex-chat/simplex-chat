@@ -39,14 +39,14 @@ html {
   letter-spacing: 0.003em;
 }
 
-#comparison::before {
+/* #comparison::before {
   display: block;
   content: " ";
   margin-top: -80px;
   height: 120px;
   visibility: hidden;
   pointer-events: none;
-}
+} */
 
 /* .nav-button-active{
     background-color: #00C8FB;
@@ -374,50 +374,6 @@ header nav {
 
 
 /* comparison */
-
-#comparison {
-  padding: 2rem 0rem;
-  overflow: hidden;
-  position: relative;
-}
-#comparison .table-holder {
-  /* align-self: start; */
-  overflow: auto;
-}
-#comparison div.container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-#comparison h2 {
-  color: tomato;
-  text-align: center;
-}
-#comparison table,
-#comparison ol,
-#comparison ul {
-  font-family: Raleway, Arial, Helvetica, sans-serif;
-  color: #062d56;
-}
-#comparison table {
-  border-collapse: separate;
-  border-spacing: 10px;
-  margin: 59px auto 0 auto;
-  background-color: #f8f8f6;
-  padding-bottom: 60px;
-}
-#comparison table th {
-  font-weight: normal;
-  height: 40px;
-}
-#comparison table th.simplex {
-  font-weight: bold;
-}
-#comparison table th.simplex img {
-  width: 25px;
-  height: 23px;
-  vertical-align: -6px;
-}
 #comparison table td,
 #comparison table th {
   font-size: 15px;
@@ -426,102 +382,6 @@ header nav {
   font-style: normal;
   line-height: 1.4;
   letter-spacing: 0.47px;
-}
-#comparison table td .equal,
-#comparison table th .equal {
-  font-size: 18px;
-}
-#comparison table td {
-  height: 40px;
-  margin: 0 10px 10px 0;
-}
-#comparison table td.highlight {
-  text-align: center;
-  color: #fff;
-  font-weight: 500;
-}
-#comparison table td.bad {
-  background-color: #f95a2c;
-}
-#comparison table td.medium {
-  background-color: #ffbd12;
-}
-#comparison table td.good {
-  background-color: #02c0ff;
-}
-#comparison .table-comments {
-  padding: 0 2rem;
-  display: flex;
-  gap: 4rem;
-}
-#comparison .table-comments ul.legend,
-#comparison .table-comments .footnotes {
-  font-size: 13px;
-  font-weight: normal;
-  font-stretch: normal;
-  font-style: normal;
-  margin-top: 29px;
-}
-#comparison .table-comments ul.legend {
-  list-style: none;
-  line-height: 2.31;
-  letter-spacing: 0.41px;
-  padding-top: 20px;
-}
-#comparison .table-comments ul.legend li.bad::before {
-  background-color: #f95a2c;
-}
-#comparison .table-comments ul.legend li.medium::before {
-  background-color: #ffbd12;
-}
-#comparison .table-comments ul.legend li.good::before {
-  background-color: #02c0ff;
-}
-#comparison .table-comments ul.legend li::before {
-  content: "";
-  display: inline-block;
-  width: 20px;
-  height: 20px;
-  margin-right: 10px;
-  vertical-align: -6px;
-}
-#comparison .table-comments .footnotes {
-  line-height: 1.62;
-  letter-spacing: 0.41px;
-}
-#comparison .table-comments .footnotes a {
-  color: #f95a2c;
-  font-weight: bold;
-  font-size: 0.8rem;
-  text-decoration: underline;
-}
-@media (max-width: 1050px) {
-  #comparison table {
-    width: 900px;
-  }
-  #comparison table td {
-    width: 190px;
-  }
-  #comparison table td.highlight {
-    width: 140px;
-  }
-  #comparison .table-comments {
-    max-width: 900px;
-  }
-}
-@media (min-width: 1050px) {
-  #comparison table {
-    width: 1050px;
-  }
-  #comparison table td {
-    width: 215px;
-  }
-  #comparison table td.highlight {
-    width: 155px;
-  }
-  #comparison .table-comments {
-    max-width: 1050px;
-  }
 }
 
 
