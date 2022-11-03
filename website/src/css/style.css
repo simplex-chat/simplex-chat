@@ -62,7 +62,7 @@ html {
 .container-md,
 .container-sm {
   width: 100%;
-  padding: 0 20px;
+  /* padding: 0 20px; */
   margin-right: auto;
   margin-left: auto;
 }
@@ -668,13 +668,13 @@ header nav {
   }
   .static-phone-tablet {
     /* display: block; */
-    width: 80%;
+    /* width: 80%; */
   }
   #hero-video-phone-Background {
-    position: relative;
+    /* position: relative; */
   }
   #hero-video-phone {
-    position: absolute;
+    /* position: absolute;
     top: 105%;
     left: 36.3%;
     width: 26.8%;
@@ -682,37 +682,37 @@ header nav {
 
     border-radius: 12px;
     border-top-left-radius: 0%;
-    border-top-right-radius: 0%;
+    border-top-right-radius: 0%; */
   }
   .nav-elements {
-    display: none;
+    /* display: none; */
   }
 }
 @media (max-width: 425px) {
   .static-phone-tablet {
-    display: none;
+    /* display: none; */
   }
   .static-phone-mobile {
-    width: 100%;
+    /* width: 100%;
 
-    display: block;
+    display: block; */
   }
   body {
     /* width: fit-content; */
   }
   #hero-video-phone-Background {
-    display: none;
+    /* display: none; */
   }
   .hero-video-phone-container {
-    margin-left: 0%;
-    width: 100%;
+    /* margin-left: 0%;
+    width: 100%; */
   }
   #hero-video-phone {
-    position: relative;
+    /* position: relative;
 
     width: 100%;
     left: 0%;
     top: 0;
-    border-radius: 0%;
+    border-radius: 0%; */
   }
 }

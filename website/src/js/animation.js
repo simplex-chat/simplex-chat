@@ -40,19 +40,19 @@ window.addEventListener("load", function () {
     return images.map(([img, n]) => [`${imgPath}/light/2fps/${img}.webp`, `${imgPath}/dark/2fps/${img}.webp`, n])
   }
 
-  function setupScroll (imgBackground) {
-    const totalHeight = this.document.body.scrollHeight - this.window.innerHeight;
-    this.window.onscroll = () => {
-      let progressHeight = (window.pageYOffset / totalHeight) * 100;
-      if (progressHeight > 10) {
-        imgBackground.style.position = "absolute";
-        imgBackground.style.top = "100%";
-      } else {
-        imgBackground.style.position = "fixed";
-        imgBackground.style.top = "auto";
-      }
-    };
-  }
+  // function setupScroll (imgBackground) {
+  //   const totalHeight = this.document.body.scrollHeight - this.window.innerHeight;
+  //   this.window.onscroll = () => {
+  //     let progressHeight = (window.pageYOffset / totalHeight) * 100;
+  //     if (progressHeight > 10) {
+  //       imgBackground.style.position = "absolute";
+  //       imgBackground.style.top = "100%";
+  //     } else {
+  //       imgBackground.style.position = "fixed";
+  //       imgBackground.style.top = "auto";
+  //     }
+  //   };
+  // }
 
   async function run() {
     const lightImageEl = document.getElementById("hero-phone-light");
@@ -62,7 +62,7 @@ window.addEventListener("load", function () {
     const videoEl = this.document.getElementById("hero-phone-video")
     if (complete || !lightImageEl || !darkImageEl || !preloadEl || !imgBackground || !videoEl) return;
     complete = true;
-    setupScroll(imgBackground)
+    // setupScroll(imgBackground)
     await preload(fastImages.concat(slowImages));
     await animate(fastImages, 100);
     await delay(500)
