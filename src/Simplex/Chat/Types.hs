@@ -252,10 +252,10 @@ instance ToJSON ChatPreferences where
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 instance ToField ChatPreferences where
-  toField = toField . safeDecodeUtf8 . LB.toStrict . J.encode
+  toField = toField . encodeJson
 
 instance FromField ChatPreferences where
-  fromField = fromTextField_ $ J.decode . LB.fromStrict . encodeUtf8
+  fromField = fromTextField_ decodeJson
 
 data Preference = Preference
   {enable :: PrefSwitch}
@@ -360,7 +360,7 @@ instance ToField ImageData where toField (ImageData t) = toField t
 
 instance FromField ImageData where fromField = fmap ImageData . fromField
 
-data CReqClientData = CDGroup {groupLinkId :: GroupLinkId}
+data CReqClientData = CRGroupData {groupLinkId :: GroupLinkId}
   deriving (Generic)
 
 instance ToJSON CReqClientData where
@@ -1163,3 +1163,9 @@ data XGrpMemIntroCont = XGrpMemIntroCont
     groupConnReq :: ConnReqInvitation
   }
   deriving (Show)
+
+encodeJson :: ToJSON a => a -> Text
+encodeJson = safeDecodeUtf8 . LB.toStrict . J.encode
+
+decodeJson :: FromJSON a => Text -> Maybe a
+decodeJson = J.decode . LB.fromStrict . encodeUtf8

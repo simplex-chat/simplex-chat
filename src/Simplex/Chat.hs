@@ -27,7 +27,6 @@ import Data.Bifunctor (bimap, first)
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
-import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isSpace)
 import Data.Either (fromRight)
 import Data.Fixed (div')
@@ -41,7 +40,6 @@ import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, isNothing, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (encodeUtf8)
 import Data.Time (NominalDiffTime, addUTCTime)
 import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds)
 import Data.Time.Clock.System (SystemTime, systemToUTCTime)
@@ -989,7 +987,7 @@ processChatCommand = \case
     when (memberStatus membership == GSMemInvited) $ throwChatError (CEGroupNotJoined gInfo)
     unless (memberActive membership) $ throwChatError CEGroupMemberNotActive
     groupLinkId <- GroupLinkId <$> (asks idsDrg >>= liftIO . (`randomBytes` 16))
-    let crClientData = safeDecodeUtf8 . LB.toStrict . J.encode $ CDGroup groupLinkId
+    let crClientData = encodeJson $ CRGroupData groupLinkId
     (connId, cReq) <- withAgent $ \a -> createConnection a True SCMContact $ Just crClientData
     withStore $ \db -> createGroupLink db user gInfo connId cReq groupLinkId
     pure $ CRGroupLinkCreated gInfo cReq
@@ -1128,8 +1126,8 @@ processChatCommand = \case
           let profileToSend = fromMaybe profile incognitoProfile
           connId <- withAgent $ \a -> joinConnection a True cReq $ directMessage (XContact profileToSend $ Just xContactId)
           groupLinkId <- fmap (join . join) . forM crClientData $ \cd -> do
-            let creqData_ = J.decode . LB.fromStrict . encodeUtf8 $ cd
-            forM creqData_ $ \(CDGroup gli) -> pure $ Just gli
+            let creqData_ = decodeJson cd
+            forM (creqData_) $ \(CRGroupData gli) -> pure $ Just gli
           conn <- withStore' $ \db -> createConnReqConnection db userId connId cReqHash xContactId incognitoProfile groupLinkId
           toView $ CRNewContactConnection conn
           pure $ CRSentInvitation incognitoProfile
