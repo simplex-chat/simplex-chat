@@ -884,20 +884,20 @@
   <string name="chat_preferences_off">No</string>
   <string name="chat_preferences_always">Always</string>
   <string name="chat_preferences_voice">Voice messages</string>
-  <string name="chat_preferences_voice_on_desc">If your contact allows to receive voice messages from you, you both will be able to send voice messages to each other. Otherwise, no one will be able to do so.</string>
+  <string name="chat_preferences_voice_on_desc">If your contact allows to receive voice messages from you, you both will be able to send voice messages to each other. Otherwise, no one will be able to do so</string>
   <string name="chat_preferences_voice_off_desc">Disallow to send voice messages to you from your contacts</string>
   <string name="chat_preferences_voice_always_desc">Allow to send voice messages to you from your contacts</string>
   <string name="chat_preferences_deletion">Full messages deletion</string>
-  <string name="chat_preferences_deletion_on_desc">If your contact allows to delete messages from you, you both will be able to delete messages sent to the other side. Otherwise, no one will be able to do so.</string>
+  <string name="chat_preferences_deletion_on_desc">If your contact allows to delete messages from you, you both will be able to delete messages sent to the other side. Otherwise, no one will be able to do so</string>
   <string name="chat_preferences_deletion_off_desc">Disallow the other side to delete messages sent to you</string>
   <string name="chat_preferences_deletion_always_desc">Allow the other side to delete messages sent to you</string>
   <string name="chat_preferences_delivery_receipts">Delivery receipts</string>
-  <string name="chat_preferences_delivery_receipts_on_desc">If your contact allows to notify you about delivered messages, you will send delivery receipts too. Otherwise, no one will send such receipts.</string>
+  <string name="chat_preferences_delivery_receipts_on_desc">If your contact allows to notify you about delivered messages, you will send delivery receipts too. Otherwise, no one will send such receipts</string>
   <string name="chat_preferences_delivery_receipts_off_desc">Disallow the other side to receive delivery receipts</string>
   <string name="chat_preferences_delivery_receipts_always_desc">Allow the other side to receive delivery receipts</string>
   <string name="confirm_saving_prefs_question">Save preferences?</string>
-  <string name="confirm_saving_prefs_info">After saving these preferences, all of your contacts will be notified (except those that you use Incognito profile for).</string>
-  <string name="confirm_saving_prefs_per_contact_info">After saving these preferences, your contact will be notified.</string>
+  <string name="confirm_saving_prefs_info">After saving these preferences, all of your contacts will be notified (except those that you use Incognito profile for)</string>
+  <string name="confirm_saving_prefs_per_contact_info">After saving these preferences, your contact will be notified</string>
 
   <string name="chat_preferences_voice_on_and_on_desc">You both will be able to send voice messages to each other</string>
   <string name="chat_preferences_voice_on_and_off_desc">None of you will be able to send voice messages until your contact chooses Yes or Always</string>

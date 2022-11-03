@@ -883,19 +883,19 @@
     <string name="chat_preferences_off">Нет</string>
     <string name="chat_preferences_always">Всегда</string>
     <string name="chat_preferences_voice">Голосовые сообщения</string>
-    <string name="chat_preferences_voice_on_desc">Если ваш контакт разрешает присылать ему голосовые сообщения, тогда вы оба можете присылать друг другу голосовые сообщения. Иначе никому это не позволено.</string>
+    <string name="chat_preferences_voice_on_desc">Если ваш контакт разрешает присылать ему голосовые сообщения, тогда вы оба можете присылать друг другу голосовые сообщения. Иначе никому это не позволено</string>
     <string name="chat_preferences_voice_off_desc">Запретить присылать вам голосовые сообщения</string>
     <string name="chat_preferences_voice_always_desc">Разрешить присылать вам голосовые сообщения</string>
     <string name="chat_preferences_deletion">Окончательное удаление сообщений</string>
-    <string name="chat_preferences_deletion_on_desc">Если ваш контакт разрешает вам удалять свои сообщения у него, тогда вы оба можете удалять свои сообщения друг у друга. Иначе никому это не позволено.</string>
+    <string name="chat_preferences_deletion_on_desc">Если ваш контакт разрешает вам удалять свои сообщения у него, тогда вы оба можете удалять свои сообщения друг у друга. Иначе никому это не позволено</string>
     <string name="chat_preferences_deletion_off_desc">Запретить вашему контакту удалять свои сообщения у вас</string>
     <string name="chat_preferences_deletion_always_desc">Разрешить вашему контакту удалять свои сообщения у вас</string>
     <string name="chat_preferences_delivery_receipts">Отчет о доставке</string>
-    <string name="chat_preferences_delivery_receipts_on_desc">Если ваш контакт разрешил уведомлять вас о доставке сообщений, тогда и он будет уведомлен о доставке его сообщений. Иначе отчетов не будет.</string>
+    <string name="chat_preferences_delivery_receipts_on_desc">Если ваш контакт разрешил уведомлять вас о доставке сообщений, тогда и он будет уведомлен о доставке его сообщений. Иначе отчетов не будет</string>
     <string name="chat_preferences_delivery_receipts_off_desc">Запретить отправку отчетов о доставке</string>
     <string name="chat_preferences_delivery_receipts_always_desc">Разрешить отправлять отчеты о доставке</string>
     <string name="confirm_saving_prefs_question">Сохранить предпочтения?</string>
-    <string name="confirm_saving_prefs_info">После сохранения, все ваши контакты будут уведомлены (кроме тех, с кем вы общаетесь с использованием Инкогнито профиля).</string>
+    <string name="confirm_saving_prefs_info">После сохранения, все ваши контакты будут уведомлены (кроме тех, с кем вы общаетесь с использованием Инкогнито профиля)</string>
     <string name="confirm_saving_prefs_per_contact_info">После сохранения, этот контакт будет уведомлен</string>
 
     <string name="chat_preferences_voice_on_and_on_desc">Вы и ваш контакт можете отправлять голосовые сообщения</string>
