@@ -987,7 +987,7 @@ processChatCommand = \case
     when (memberStatus membership == GSMemInvited) $ throwChatError (CEGroupNotJoined gInfo)
     unless (memberActive membership) $ throwChatError CEGroupMemberNotActive
     groupLinkId <- GroupLinkId <$> (asks idsDrg >>= liftIO . (`randomBytes` 16))
-    let crClientData = encodeJson $ CRGroupData groupLinkId
+    let crClientData = encodeJSON $ CRGroupData groupLinkId
     (connId, cReq) <- withAgent $ \a -> createConnection a True SCMContact $ Just crClientData
     withStore $ \db -> createGroupLink db user gInfo connId cReq groupLinkId
     pure $ CRGroupLinkCreated gInfo cReq
@@ -1125,7 +1125,7 @@ processChatCommand = \case
           incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
           let profileToSend = fromMaybe profile incognitoProfile
           connId <- withAgent $ \a -> joinConnection a True cReq $ directMessage (XContact profileToSend $ Just xContactId)
-          let groupLinkId = crClientData >>= decodeJson >>= \(CRGroupData gli) -> Just gli
+          let groupLinkId = crClientData >>= decodeJSON >>= \(CRGroupData gli) -> Just gli
           conn <- withStore' $ \db -> createConnReqConnection db userId connId cReqHash xContactId incognitoProfile groupLinkId
           toView $ CRNewContactConnection conn
           pure $ CRSentInvitation incognitoProfile

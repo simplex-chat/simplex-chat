@@ -252,10 +252,10 @@ instance ToJSON ChatPreferences where
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 instance ToField ChatPreferences where
-  toField = toField . encodeJson
+  toField = toField . encodeJSON
 
 instance FromField ChatPreferences where
-  fromField = fromTextField_ decodeJson
+  fromField = fromTextField_ decodeJSON
 
 data Preference = Preference
   {enable :: PrefSwitch}
@@ -1164,8 +1164,8 @@ data XGrpMemIntroCont = XGrpMemIntroCont
   }
   deriving (Show)
 
-encodeJson :: ToJSON a => a -> Text
-encodeJson = safeDecodeUtf8 . LB.toStrict . J.encode
+encodeJSON :: ToJSON a => a -> Text
+encodeJSON = safeDecodeUtf8 . LB.toStrict . J.encode
 
-decodeJson :: FromJSON a => Text -> Maybe a
-decodeJson = J.decode . LB.fromStrict . encodeUtf8
+decodeJSON :: FromJSON a => Text -> Maybe a
+decodeJSON = J.decode . LB.fromStrict . encodeUtf8
