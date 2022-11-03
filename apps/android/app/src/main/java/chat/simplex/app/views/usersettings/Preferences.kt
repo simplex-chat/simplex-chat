@@ -55,31 +55,39 @@ fun PreferencesView(m: ChatModel, user: User) {
   revert: () -> Unit,
   savePrefs: () -> Unit,
 ) {
-  Column(
-    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
-    horizontalAlignment = Alignment.Start,
-  ) {
-    AppBarTitle(stringResource(R.string.chat_preferences))
-    val voice = remember(prefs) {
-      val pref = prefs.voice ?: ChatPreference.voiceDefault
-      mutableStateOf(pref.toLocal())
-    }
-    VoiceSection(voice) {
-      applyPrefs(prefs.copy(voice = it.toPref(ChatPreference.voiceDefault)))
-    }
+  Column {
+    Column(
+      Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
+      horizontalAlignment = Alignment.Start,
+    ) {
+      AppBarTitle(stringResource(R.string.chat_preferences))
+      val voice = remember(prefs) {
+        val pref = prefs.voice ?: ChatPreference.voiceDefault
+        mutableStateOf(pref.toLocal())
+      }
+      VoiceSection(voice) {
+        applyPrefs(prefs.copy(voice = it.toPref(ChatPreference.voiceDefault)))
+      }
 
-    SectionSpacer()
-    val messageDelete = remember(prefs) {
-      val pref = prefs.messageDelete ?: ChatPreference.messageDeleteDefault
-      mutableStateOf(pref.toLocal())
-    }
-    MessageDeleteSection(messageDelete) {
-      applyPrefs(prefs.copy(messageDelete = it.toPref(ChatPreference.messageDeleteDefault)))
-    }
+      SectionSpacer()
+      val messageDelete = remember(prefs) {
+        val pref = prefs.messageDelete ?: ChatPreference.messageDeleteDefault
+        mutableStateOf(pref.toLocal())
+      }
+      MessageDeleteSection(messageDelete) {
+        applyPrefs(prefs.copy(messageDelete = it.toPref(ChatPreference.messageDeleteDefault)))
+      }
 
-    Spacer(Modifier.height(15.dp))
-
-    SectionCustomFooter(PaddingValues(horizontal = DEFAULT_PADDING)) {
+      SectionSpacer()
+      val deliveryReceipts = remember(prefs) {
+        val pref = prefs.deliveryReceipts ?: ChatPreference.deliveryReceiptsDefault
+        mutableStateOf(pref.toLocal())
+      }
+      DeliveryReceiptsSection(deliveryReceipts) {
+        applyPrefs(prefs.copy(deliveryReceipts = it.toPref(ChatPreference.deliveryReceiptsDefault)))
+      }
+    }
+    SectionCustomFooter(PaddingValues(DEFAULT_PADDING)) {
       ButtonsFooter(
         cancel = revert,
         save = savePrefs,
@@ -95,17 +103,17 @@ private fun VoiceSection(current: State<ChatPreferenceLocal>, onSelected: (ChatP
     listOf(
       ValueTitleDesc(ChatPreferenceLocal.ON, generalGetString(R.string.chat_preferences_on), generalGetString(R.string.chat_preferences_voice_on_desc)),
       ValueTitleDesc(ChatPreferenceLocal.OFF, generalGetString(R.string.chat_preferences_off), generalGetString(R.string.chat_preferences_voice_off_desc)),
-      ValueTitleDesc(ChatPreferenceLocal.PREFER, generalGetString(R.string.chat_preferences_prefer), generalGetString(R.string.chat_preferences_voice_prefer_desc))
+      ValueTitleDesc(ChatPreferenceLocal.ALWAYS, generalGetString(R.string.chat_preferences_always), generalGetString(R.string.chat_preferences_voice_always_desc))
     )
   }
-  SectionView {
+  SectionView(generalGetString(R.string.chat_preferences_voice).uppercase()) {
     SectionItemView {
       val mappedValues = remember { values.map { it.value to it.title } }
       ExposedDropDownSettingRow(
-        generalGetString(R.string.chat_preferences_voice),
+        generalGetString(R.string.chat_preferences_you_allow),
         mappedValues,
         current,
-        icon = Icons.Outlined.Audiotrack,
+        icon = null,
         onSelected = onSelected
       )
     }
@@ -119,17 +127,41 @@ private fun MessageDeleteSection(current: State<ChatPreferenceLocal>, onSelected
     listOf(
       ValueTitleDesc(ChatPreferenceLocal.ON, generalGetString(R.string.chat_preferences_on), generalGetString(R.string.chat_preferences_deletion_on_desc)),
       ValueTitleDesc(ChatPreferenceLocal.OFF, generalGetString(R.string.chat_preferences_off), generalGetString(R.string.chat_preferences_deletion_off_desc)),
-      ValueTitleDesc(ChatPreferenceLocal.PREFER, generalGetString(R.string.chat_preferences_prefer), generalGetString(R.string.chat_preferences_deletion_prefer_desc))
+      ValueTitleDesc(ChatPreferenceLocal.ALWAYS, generalGetString(R.string.chat_preferences_always), generalGetString(R.string.chat_preferences_deletion_always_desc))
     )
   }
-  SectionView {
+  SectionView(generalGetString(R.string.chat_preferences_deletion).uppercase()) {
     SectionItemView {
       val mappedValues = remember { values.map { it.value to it.title } }
       ExposedDropDownSettingRow(
-        generalGetString(R.string.chat_preferences_deletion),
+        generalGetString(R.string.chat_preferences_you_allow),
         mappedValues,
         current,
-        icon = Icons.Outlined.Delete,
+        icon = null,
+        onSelected = onSelected
+      )
+    }
+  }
+  SectionTextFooter(values.firstOrNull { it.value == current.value }!!.description)
+}
+
+@Composable
+private fun DeliveryReceiptsSection(current: State<ChatPreferenceLocal>, onSelected: (ChatPreferenceLocal) -> Unit) {
+  val values = remember {
+    listOf(
+      ValueTitleDesc(ChatPreferenceLocal.ON, generalGetString(R.string.chat_preferences_on), generalGetString(R.string.chat_preferences_delivery_receipts_on_desc)),
+      ValueTitleDesc(ChatPreferenceLocal.OFF, generalGetString(R.string.chat_preferences_off), generalGetString(R.string.chat_preferences_delivery_receipts_off_desc)),
+      ValueTitleDesc(ChatPreferenceLocal.ALWAYS, generalGetString(R.string.chat_preferences_always), generalGetString(R.string.chat_preferences_delivery_receipts_always_desc))
+    )
+  }
+  SectionView(generalGetString(R.string.chat_preferences_delivery_receipts).uppercase()) {
+    SectionItemView {
+      val mappedValues = remember { values.map { it.value to it.title } }
+      ExposedDropDownSettingRow(
+        generalGetString(R.string.chat_preferences_you_allow),
+        mappedValues,
+        current,
+        icon = null,
         onSelected = onSelected
       )
     }

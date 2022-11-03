@@ -41,6 +41,10 @@ fun PrivacySettingsView(
       }
       SettingsPreferenceItem(Icons.Outlined.TravelExplore, stringResource(R.string.send_link_previews), chatModel.controller.appPrefs.privacyLinkPreviews)
       SectionDivider()
+    }
+    SectionSpacer()
+
+    SectionView(stringResource(R.string.chat_preferences).uppercase()) {
       SettingsActionItem(
         Icons.Outlined.PrivacyTip,
         stringResource(R.string.chat_preferences),

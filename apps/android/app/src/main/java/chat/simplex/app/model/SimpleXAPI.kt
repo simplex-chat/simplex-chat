@@ -1757,11 +1757,13 @@ data class ChatSettings(
 data class ChatPreferences(
   val voice: ChatPreference? = null,
   val messageDelete: ChatPreference? = null,
+  val deliveryReceipts: ChatPreference? = null,
 ) {
   companion object {
     val default = ChatPreferences(
       voice = ChatPreference.voiceDefault,
       messageDelete = ChatPreference.messageDeleteDefault,
+      deliveryReceipts = ChatPreference.deliveryReceiptsDefault,
     )
   }
 }
@@ -1773,13 +1775,14 @@ data class ChatPreference(
   companion object {
     val voiceDefault = ChatPreference(enable = PrefSwitch.OFF)
     val messageDeleteDefault = ChatPreference(enable = PrefSwitch.OFF)
+    val deliveryReceiptsDefault = ChatPreference(enable = PrefSwitch.OFF)
   }
 
   fun toLocal() =
     when (enable) {
       PrefSwitch.ON -> ChatPreferenceLocal.ON
       PrefSwitch.OFF -> ChatPreferenceLocal.OFF
-      PrefSwitch.PREFER -> ChatPreferenceLocal.PREFER
+      PrefSwitch.ALWAYS -> ChatPreferenceLocal.ALWAYS
     }
 }
 
@@ -1789,18 +1792,18 @@ fun ChatPreference?.toLocal() = this?.toLocal() ?: ChatPreferenceLocal.DEFAULT
 enum class PrefSwitch {
   @SerialName("on") ON,
   @SerialName("off") OFF,
-  @SerialName("prefer") PREFER,
+  @SerialName("always") ALWAYS,
 }
 
 enum class ChatPreferenceLocal {
-  DEFAULT, ON, OFF, PREFER;
+  DEFAULT, ON, OFF, ALWAYS;
 
   fun toPref(default: ChatPreference): ChatPreference =
     when (this) {
       DEFAULT -> default
       ON -> ChatPreference(enable = PrefSwitch.ON)
       OFF -> ChatPreference(enable = PrefSwitch.OFF)
-      PREFER -> ChatPreference(enable = PrefSwitch.PREFER)
+      ALWAYS -> ChatPreference(enable = PrefSwitch.ALWAYS)
     }
 }
 

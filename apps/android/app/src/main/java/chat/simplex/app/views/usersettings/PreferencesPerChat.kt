@@ -64,35 +64,47 @@ fun PreferencesPerChatView(m: ChatModel, user: User, contact: Contact, onContact
   revert: () -> Unit,
   savePrefs: () -> Unit,
 ) {
-  Column(
-    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
-    horizontalAlignment = Alignment.Start,
-  ) {
-    AppBarTitle(String.format(stringResource(R.string.chat_preferences_for), contact.displayName))
-    val voice = remember(prefs) { mutableStateOf(prefs.voice.toLocal()) }
-    VoiceSection(
-      voice,
-      (userPrefs.voice ?: ChatPreference.voiceDefault).toLocal(),
-      contactPrefs.voice.toLocal(),
-      contact
+  Column {
+    Column(
+      Modifier
+        .weight(1f)
+        .fillMaxWidth()
+        .verticalScroll(rememberScrollState())
+        .padding(bottom = DEFAULT_PADDING),
+      horizontalAlignment = Alignment.Start,
     ) {
-      applyPrefs(prefs.copy(voice = if (it == ChatPreferenceLocal.DEFAULT) null else it.toPref(ChatPreference.voiceDefault)))
+      AppBarTitle(String.format(stringResource(R.string.chat_preferences_for), contact.displayName))
+      val voice = remember(prefs) { mutableStateOf(prefs.voice.toLocal()) }
+      VoiceSection(
+        voice,
+        (userPrefs.voice ?: ChatPreference.voiceDefault).toLocal(),
+        (contactPrefs.voice ?: ChatPreference.voiceDefault).toLocal(),
+      ) {
+        applyPrefs(prefs.copy(voice = if (it == ChatPreferenceLocal.DEFAULT) null else it.toPref(ChatPreference.voiceDefault)))
+      }
+
+      SectionSpacer()
+      val messageDelete = remember(prefs) { mutableStateOf(prefs.messageDelete.toLocal()) }
+      MessageDeleteSection(
+        messageDelete,
+        (userPrefs.messageDelete ?: ChatPreference.messageDeleteDefault).toLocal(),
+        (contactPrefs.messageDelete ?: ChatPreference.messageDeleteDefault).toLocal(),
+      ) {
+        applyPrefs(prefs.copy(messageDelete = if (it == ChatPreferenceLocal.DEFAULT) null else it.toPref(ChatPreference.messageDeleteDefault)))
+      }
+
+      SectionSpacer()
+      val deliveryReceipts = remember(prefs) { mutableStateOf(prefs.deliveryReceipts.toLocal()) }
+      DeliveryReceiptsSection(
+        deliveryReceipts,
+        (userPrefs.deliveryReceipts ?: ChatPreference.deliveryReceiptsDefault).toLocal(),
+        (contactPrefs.deliveryReceipts ?: ChatPreference.deliveryReceiptsDefault).toLocal(),
+      ) {
+        applyPrefs(prefs.copy(messageDelete = if (it == ChatPreferenceLocal.DEFAULT) null else it.toPref(ChatPreference.deliveryReceiptsDefault)))
+      }
     }
 
-    SectionSpacer()
-    val messageDelete = remember(prefs) { mutableStateOf(prefs.messageDelete.toLocal()) }
-    MessageDeleteSection(
-      messageDelete,
-      (userPrefs.messageDelete ?: ChatPreference.messageDeleteDefault).toLocal(),
-      contactPrefs.messageDelete.toLocal(),
-      contact
-    ) {
-      applyPrefs(prefs.copy(messageDelete = if (it == ChatPreferenceLocal.DEFAULT) null else it.toPref(ChatPreference.messageDeleteDefault)))
-    }
-
-    Spacer(Modifier.height(15.dp))
-
-    SectionCustomFooter(PaddingValues(horizontal = DEFAULT_PADDING)) {
+    SectionCustomFooter(PaddingValues(DEFAULT_PADDING)) {
       ButtonsFooter(
         cancel = revert,
         save = savePrefs,
@@ -107,7 +119,6 @@ private fun VoiceSection(
   current: State<ChatPreferenceLocal>,
   default: ChatPreferenceLocal,
   contactCurrent: ChatPreferenceLocal,
-  contact: Contact,
   onSelected: (ChatPreferenceLocal) -> Unit
 ) {
   fun mapValue(it: ChatPreferenceLocal): ValueTitleDesc<ChatPreferenceLocal> =
@@ -115,29 +126,29 @@ private fun VoiceSection(
       ChatPreferenceLocal.DEFAULT -> ValueTitleDesc(it, String.format(generalGetString(R.string.chat_preferences_default), mapValue(default).title), mapValue(default).description)
       ChatPreferenceLocal.ON -> ValueTitleDesc(it, generalGetString(R.string.chat_preferences_on), generalGetString(R.string.chat_preferences_voice_on_desc))
       ChatPreferenceLocal.OFF -> ValueTitleDesc(it, generalGetString(R.string.chat_preferences_off), generalGetString(R.string.chat_preferences_voice_off_desc))
-      ChatPreferenceLocal.PREFER -> ValueTitleDesc(it, generalGetString(R.string.chat_preferences_prefer), generalGetString(R.string.chat_preferences_voice_prefer_desc))
+      ChatPreferenceLocal.ALWAYS -> ValueTitleDesc(it, generalGetString(R.string.chat_preferences_always), generalGetString(R.string.chat_preferences_voice_always_desc))
     }
 
   val values = remember {
     ChatPreferenceLocal.values().map(::mapValue)
   }
-  SectionView {
+  SectionView(generalGetString(R.string.chat_preferences_voice).uppercase()) {
     SectionItemView {
       val mappedValues = remember { values.map { it.value to it.title } }
       ExposedDropDownSettingRow(
-        generalGetString(R.string.chat_preferences_voice),
+        generalGetString(R.string.chat_preferences_you_allow),
         mappedValues,
         current,
-        icon = Icons.Outlined.Audiotrack,
+        icon = null,
         onSelected = onSelected
       )
     }
     SectionDivider()
     SectionItemWithValue(
-      contact.displayName,
+      generalGetString(R.string.chat_preferences_contact_allows),
       remember { mutableStateOf(contactCurrent) },
       values,
-      icon = Icons.Outlined.AccountCircle,
+      icon = null,
       enabled = remember { mutableStateOf(false) },
       onSelected = {}
     )
@@ -150,7 +161,6 @@ private fun MessageDeleteSection(
   current: State<ChatPreferenceLocal>,
   default: ChatPreferenceLocal,
   contactCurrent: ChatPreferenceLocal,
-  contact: Contact,
   onSelected: (ChatPreferenceLocal) -> Unit
 ) {
   fun mapValue(it: ChatPreferenceLocal): ValueTitleDesc<ChatPreferenceLocal> =
@@ -158,29 +168,71 @@ private fun MessageDeleteSection(
       ChatPreferenceLocal.DEFAULT -> ValueTitleDesc(it, String.format(generalGetString(R.string.chat_preferences_default), mapValue(default).title), mapValue(default).description)
       ChatPreferenceLocal.ON -> ValueTitleDesc(it, generalGetString(R.string.chat_preferences_on), generalGetString(R.string.chat_preferences_deletion_on_desc))
       ChatPreferenceLocal.OFF -> ValueTitleDesc(it, generalGetString(R.string.chat_preferences_off), generalGetString(R.string.chat_preferences_deletion_off_desc))
-      ChatPreferenceLocal.PREFER -> ValueTitleDesc(it, generalGetString(R.string.chat_preferences_prefer), generalGetString(R.string.chat_preferences_deletion_prefer_desc))
+      ChatPreferenceLocal.ALWAYS -> ValueTitleDesc(it, generalGetString(R.string.chat_preferences_always), generalGetString(R.string.chat_preferences_deletion_always_desc))
     }
 
   val values = remember {
     ChatPreferenceLocal.values().map(::mapValue)
   }
-  SectionView {
+  SectionView(generalGetString(R.string.chat_preferences_deletion).uppercase()) {
     SectionItemView {
       val mappedValues = remember { values.map { it.value to it.title } }
       ExposedDropDownSettingRow(
-        generalGetString(R.string.chat_preferences_deletion),
+        generalGetString(R.string.chat_preferences_you_allow),
         mappedValues,
         current,
-        icon = Icons.Outlined.Delete,
+        icon = null,
         onSelected = onSelected
       )
     }
     SectionDivider()
     SectionItemWithValue(
-      contact.displayName,
+      generalGetString(R.string.chat_preferences_contact_allows),
       remember { mutableStateOf(contactCurrent) },
       values,
-      icon = Icons.Outlined.AccountCircle,
+      icon = null,
+      enabled = remember { mutableStateOf(false) },
+      onSelected = {}
+    )
+  }
+  SectionTextFooter(values.firstOrNull { it.value == current.value }!!.description)
+}
+
+@Composable
+private fun DeliveryReceiptsSection(
+  current: State<ChatPreferenceLocal>,
+  default: ChatPreferenceLocal,
+  contactCurrent: ChatPreferenceLocal,
+  onSelected: (ChatPreferenceLocal) -> Unit
+) {
+  fun mapValue(it: ChatPreferenceLocal): ValueTitleDesc<ChatPreferenceLocal> =
+    when (it) {
+      ChatPreferenceLocal.DEFAULT -> ValueTitleDesc(it, String.format(generalGetString(R.string.chat_preferences_default), mapValue(default).title), mapValue(default).description)
+      ChatPreferenceLocal.ON -> ValueTitleDesc(it, generalGetString(R.string.chat_preferences_on), generalGetString(R.string.chat_preferences_delivery_receipts_on_desc))
+      ChatPreferenceLocal.OFF -> ValueTitleDesc(it, generalGetString(R.string.chat_preferences_off), generalGetString(R.string.chat_preferences_delivery_receipts_off_desc))
+      ChatPreferenceLocal.ALWAYS -> ValueTitleDesc(it, generalGetString(R.string.chat_preferences_always), generalGetString(R.string.chat_preferences_delivery_receipts_always_desc))
+    }
+
+  val values = remember {
+    ChatPreferenceLocal.values().map(::mapValue)
+  }
+  SectionView(generalGetString(R.string.chat_preferences_delivery_receipts).uppercase()) {
+    SectionItemView {
+      val mappedValues = remember { values.map { it.value to it.title } }
+      ExposedDropDownSettingRow(
+        generalGetString(R.string.chat_preferences_you_allow),
+        mappedValues,
+        current,
+        icon = null,
+        onSelected = onSelected
+      )
+    }
+    SectionDivider()
+    SectionItemWithValue(
+      generalGetString(R.string.chat_preferences_contact_allows),
+      remember { mutableStateOf(contactCurrent) },
+      values,
+      icon = null,
       enabled = remember { mutableStateOf(false) },
       onSelected = {}
     )

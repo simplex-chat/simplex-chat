@@ -182,9 +182,11 @@ fun ChatInfoLayout(
       }
     }
     SectionSpacer()
-    SectionView {
+    SectionView(stringResource(R.string.chat_preferences).uppercase()) {
       ChatPreferencesButton(openPreferences)
-      SectionDivider()
+    }
+    SectionSpacer()
+    SectionView {
       ClearChatButton(clearChat)
       SectionDivider()
       DeleteContactButton(deleteContact)
