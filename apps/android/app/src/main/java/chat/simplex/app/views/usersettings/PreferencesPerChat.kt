@@ -100,7 +100,7 @@ fun PreferencesPerChatView(m: ChatModel, user: User, contact: Contact, onContact
         (userPrefs.deliveryReceipts ?: ChatPreference.deliveryReceiptsDefault).toLocal(),
         (contactPrefs.deliveryReceipts ?: ChatPreference.deliveryReceiptsDefault).toLocal(),
       ) {
-        applyPrefs(prefs.copy(messageDelete = if (it == ChatPreferenceLocal.DEFAULT) null else it.toPref(ChatPreference.deliveryReceiptsDefault)))
+        applyPrefs(prefs.copy(deliveryReceipts = if (it == ChatPreferenceLocal.DEFAULT) null else it.toPref(ChatPreference.deliveryReceiptsDefault)))
       }
     }
 
