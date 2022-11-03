@@ -1,6 +1,7 @@
 package chat.simplex.app.views.usersettings
 
 import SectionCustomFooter
+import SectionDivider
 import SectionItemView
 import SectionItemWithValue
 import SectionSpacer
@@ -120,7 +121,7 @@ private fun VoiceSection(
   val values = remember {
     ChatPreferenceLocal.values().map(::mapValue)
   }
-  SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING_HALF)) {
+  SectionView {
     SectionItemView {
       val mappedValues = remember { values.map { it.value to it.title } }
       ExposedDropDownSettingRow(
@@ -131,6 +132,7 @@ private fun VoiceSection(
         onSelected = onSelected
       )
     }
+    SectionDivider()
     SectionItemWithValue(
       contact.displayName,
       remember { mutableStateOf(contactCurrent) },
@@ -162,7 +164,7 @@ private fun MessageDeleteSection(
   val values = remember {
     ChatPreferenceLocal.values().map(::mapValue)
   }
-  SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING_HALF)) {
+  SectionView {
     SectionItemView {
       val mappedValues = remember { values.map { it.value to it.title } }
       ExposedDropDownSettingRow(
@@ -173,6 +175,7 @@ private fun MessageDeleteSection(
         onSelected = onSelected
       )
     }
+    SectionDivider()
     SectionItemWithValue(
       contact.displayName,
       remember { mutableStateOf(contactCurrent) },

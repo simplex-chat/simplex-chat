@@ -598,7 +598,7 @@ data class Profile(
       return if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)"
     }
 
-  fun toLocalProfile(profileId: Long): LocalProfile = LocalProfile(profileId, displayName, fullName, image, localAlias)
+  fun toLocalProfile(profileId: Long): LocalProfile = LocalProfile(profileId, displayName, fullName, image, localAlias, preferences)
 
   companion object {
     val sampleData = Profile(
@@ -620,7 +620,7 @@ class LocalProfile(
 ): NamedChat {
   val profileViewName: String = localAlias.ifEmpty { if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)" }
 
-  fun toProfile(): Profile = Profile(displayName, fullName, image, localAlias)
+  fun toProfile(): Profile = Profile(displayName, fullName, image, localAlias, preferences)
 
   companion object {
     val sampleData = LocalProfile(

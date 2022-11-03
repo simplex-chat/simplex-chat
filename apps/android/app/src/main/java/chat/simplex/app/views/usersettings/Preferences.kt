@@ -35,9 +35,10 @@ fun PreferencesView(m: ChatModel, user: User) {
     savePrefs = {
       showConfirmSavingAlert {
         withApi {
-          val updatedProfile = user.profile.toProfile().copy(preferences = currentPrefs)
-          val updatedUser = user.copy(profile = updatedProfile.toLocalProfile(user.profile.profileId))
-          if (m.controller.apiUpdateProfile(updatedProfile) != null) {
+          val newProfile = user.profile.toProfile().copy(preferences = currentPrefs)
+          val updatedProfile = m.controller.apiUpdateProfile(newProfile)
+          if (updatedProfile != null) {
+            val updatedUser = user.copy(profile = updatedProfile.toLocalProfile(user.profile.profileId))
             savedPrefs = currentPrefs
             m.currentUser.value = updatedUser
           }
@@ -97,7 +98,7 @@ private fun VoiceSection(current: State<ChatPreferenceLocal>, onSelected: (ChatP
       ValueTitleDesc(ChatPreferenceLocal.PREFER, generalGetString(R.string.chat_preferences_prefer), generalGetString(R.string.chat_preferences_voice_prefer_desc))
     )
   }
-  SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING_HALF)) {
+  SectionView {
     SectionItemView {
       val mappedValues = remember { values.map { it.value to it.title } }
       ExposedDropDownSettingRow(
@@ -121,7 +122,7 @@ private fun MessageDeleteSection(current: State<ChatPreferenceLocal>, onSelected
       ValueTitleDesc(ChatPreferenceLocal.PREFER, generalGetString(R.string.chat_preferences_prefer), generalGetString(R.string.chat_preferences_deletion_prefer_desc))
     )
   }
-  SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING_HALF)) {
+  SectionView {
     SectionItemView {
       val mappedValues = remember { values.map { it.value to it.title } }
       ExposedDropDownSettingRow(

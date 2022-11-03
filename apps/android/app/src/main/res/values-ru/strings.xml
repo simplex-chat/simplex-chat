@@ -884,7 +884,7 @@
     <string name="chat_preferences_voice_on_desc">Разрешить присылать вам голосовые сообщения</string>
     <string name="chat_preferences_voice_off_desc">Запретить присылать вам голосовые сообщения</string>
     <string name="chat_preferences_voice_prefer_desc">Если ваш контакт разрешает присылать ему голосовые сообщения вам или у него выбрана опция \'Предпочитать\', тогда вы оба можете присылать друг другу голосовые сообщения. Иначе никому это не позволено.</string>
-    <string name="chat_preferences_deletion">Удаление сообщений с вашего устройства</string>
+    <string name="chat_preferences_deletion">Удаление сообщений</string>
     <string name="chat_preferences_deletion_on_desc">Разрешить вашему контакту удалять свои сообщения у вас</string>
     <string name="chat_preferences_deletion_off_desc">Запретить вашему контакту удалять свои сообщения у вас</string>
     <string name="chat_preferences_deletion_prefer_desc">Если ваш контакт разрешает вам удалять свои сообщения у него или у него выбрана опция \'Предпочитать\', тогда вы оба можете удалять свои сообщения друг у друга. Иначе никому это не позволено.</string>
