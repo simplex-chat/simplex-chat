@@ -899,4 +899,20 @@
   <string name="confirm_saving_prefs_info">After saving these preferences, all of your contacts will be notified (except those that you use Incognito profile for).</string>
   <string name="confirm_saving_prefs_per_contact_info">After saving these preferences, your contact will be notified.</string>
 
+  <string name="chat_preferences_voice_on_and_on_desc">You both will be able to send voice messages to each other</string>
+  <string name="chat_preferences_voice_on_and_off_desc">None of you will be able to send voice messages until your contact chooses Yes or Always</string>
+  <string name="chat_preferences_voice_off_and_on_desc">None of you will be able to send voice messages until you choose Yes or Always</string>
+  <string name="chat_preferences_voice_always_and_off_desc">Your contact will be able to send voice messages to you, but you are not able to do so</string>
+  <string name="chat_preferences_voice_off_and_always_desc">You will be able to send voice messages to the other side, but not wise versa</string>
+  <string name="chat_preferences_deletion_on_and_on_desc">You both will be able to delete messages on the other side</string>
+  <string name="chat_preferences_deletion_on_and_off_desc">None of you will be able to delete messages until your contact chooses Yes or Always</string>
+  <string name="chat_preferences_deletion_off_and_on_desc">None of you will be able to delete messages until you choose Yes or Always</string>
+  <string name="chat_preferences_deletion_always_and_off_desc">Your contact will be able to delete messages on your side, but you are not able to do so</string>
+  <string name="chat_preferences_deletion_off_and_always_desc">You will be able to delete messages on the other side, but not wise versa</string>
+  <string name="chat_preferences_delivery_receipts_on_and_on_desc">You both will send delivery receipts to each other</string>
+  <string name="chat_preferences_delivery_receipts_on_and_off_desc">None of you will be able to receive delivery receipts until your contact chooses Yes or Always</string>
+  <string name="chat_preferences_delivery_receipts_off_and_on_desc">None of you will be able to receive delivery receipts until you choose Yes or Always</string>
+  <string name="chat_preferences_delivery_receipts_always_and_off_desc">Your contact will be able to receive delivery receipts from you, but you are not able to do so</string>
+  <string name="chat_preferences_delivery_receipts_off_and_always_desc">You will be able to receive delivery receipts from the other side, but not wise versa</string>
+
 </resources>
