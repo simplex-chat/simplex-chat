@@ -1,21 +1,7 @@
 <style>
-    /* Style the tab */
-    .tab {
-        display: flex;
-        list-style: none;
-        margin: 0;
-        padding: 0;
-    }
-
-    /* Style the buttons that are used to open the tab content */
-    .tab button {
-        position: relative;
-        -webkit-box-flex: 1;
-        -webkit-flex: 1;
-        -ms-flex: 1;
+    .tab-button {
         flex: 1;
-        margin-right: 6px;
-        padding: 12px;
+        padding: 8px;
         font-weight: 700;
         font-size: 20px;
         color: #a8b0b4;
@@ -25,48 +11,34 @@
         border: 1px solid transparent;
         border-radius: 6px 6px 0px 0px;
         text-align: center;
-        -webkit-transition: color 0.3s;
-        transition: color 0.3s;
+        transition: color 0.3s ease;
     }
-
-    /* Change background color of buttons on hover */
-    .tab button:hover {
+    .tab-button:hover {
         color: #6d6d6d;
     }
-
-    /* Create an active/current tablink class */
-    .tab button.active {
-        background: linear-gradient(#fff, #fff) padding-box,
-            linear-gradient(to bottom, #0053d0, transparent) border-box;
-        border: 1px solid transparent;
-        border-radius: 6px 6px 0px 0px;
+    .tab-button.active {
         color: #0053d0;
     }
-
-    /* Style the tab content */
-    .tabcontent {
-        /* display: none; */
-        padding: 1.5rem;
-    }
 </style>
-<section class="bg-white py-[45px] overflow-hidden">
+<section class="bg-white py-[80px]">
     <div class="container">
-        <p class="text-[#3F484B] text-[45px] text-center font-bold mb-[40px]">Simplex explained</p>
+        <p class="text-[35px] lg:text-[45px] text-center font-bold text-grey-black dark:text-white mb-[40px]">Simplex explained</p>
 
         <!-- Tab links -->
-        <div class="tab">
-            <button class="tablinks" onclick="" id="defaultOpen">1. What users experience</button>
-            <button class="tablinks hidden md:inline-block" onclick="">2. How does it work</button>
-            <button class="tablinks hidden md:inline-block" onclick="">3. What servers see</button>
+        <div class="tab hidden md:flex gap-2 mb-16">
+            <div class="tab-button">1. What users experience</div>
+            <div class="tab-button">2. How does it work</div>
+            <div class="tab-button">3. What servers see</div>
         </div>
 
         <!-- Tab content -->
         <div class="swiper simplex-explained-swiper">
-            <div class="swiper-wrapper">
+            <div class="swiper-wrapper h-[inherit] mb-20 md:mb-0">
 
-                <div id="London" class="tabcontent swiper-slide">
+                <div class="swiper-slide h-[inherit]">
+                    <div class="tab-button active md:hidden">1. What users experience</div>
                     <div class="flex flex-col justify-center items-center">
-                        <img class="mt-30px" src="/img/new/explained-1.svg" alt="" />
+                        <img class="h-[340px] my-16" src="/img/new/explained-1.svg" alt="" />
                         <p class="text-black text-[16px] font-normal text-center mt-[30px]">
                             Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut
                             velit nulla, ornare feugiat incidunt convallis nulla.
@@ -74,9 +46,10 @@
                     </div>
                 </div>
 
-                <div id="Paris" class="tabcontent swiper-slide">
+                <div class="swiper-slide h-[inherit]">
+                    <div class="tab-button active md:hidden">2. How does it work</div>
                     <div class="flex flex-col justify-center items-center">
-                        <img class="mt-60px" src="/img/new/explained-2.svg" alt="" />
+                        <img class="h-[340px] my-16" src="/img/new/explained-2.svg" alt="" />
                         <p class="text-black text-[16px] font-normal text-center mt-[30px]">
                             Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut
                             velit nulla, ornare feugiat incidunt convallis nulla.
@@ -84,9 +57,10 @@
                     </div>
                 </div>
 
-                <div id="Tokyo" class="tabcontent swiper-slide">
+                <div class="swiper-slide h-[inherit]">
+                    <div class="tab-button active md:hidden">3. What servers see</div>
                     <div class="flex flex-col justify-center items-center">
-                        <img class="mt-50px" src="/img/new/explained-3.svg" alt="" />
+                        <img class="h-[340px] my-16" src="/img/new/explained-3.svg" alt="" />
                         <p class="text-black text-[16px] font-normal text-center mt-[30px]">
                             Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut
                             velit nulla, ornare feugiat incidunt convallis nulla.
@@ -95,28 +69,10 @@
                 </div>
 
             </div>
-            <div class="swiper-pagination mt-100"></div>
+            <div class="swiper-pagination mt-100 md:hidden"></div>
         </div>
     </div>
 </section>
 
 <script>
-
-    document.getElementById("defaultOpen").click();
-
-    function openCity(evt, cityName) {
-        var i, tabcontent, tablinks;
-        tabcontent = document.getElementsByClassName("tabcontent");
-
-        for (i = 0; i < tabcontent.length; i++) {
-            tabcontent[i].style.display = "none";
-        }
-        tablinks = document.getElementsByClassName("tablinks");
-
-        for (i = 0; i < tablinks.length; i++) {
-            tablinks[i].className = tablinks[i].className.replace(" active", "");
-        }
-        document.getElementById(cityName).style.display = "block";
-        evt.currentTarget.className += " active";
-    }
 </script>
