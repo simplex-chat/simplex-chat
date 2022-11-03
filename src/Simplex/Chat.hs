@@ -1125,9 +1125,7 @@ processChatCommand = \case
           incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
           let profileToSend = fromMaybe profile incognitoProfile
           connId <- withAgent $ \a -> joinConnection a True cReq $ directMessage (XContact profileToSend $ Just xContactId)
-          groupLinkId <- fmap (join . join) . forM crClientData $ \cd -> do
-            let creqData_ = decodeJson cd
-            forM (creqData_) $ \(CRGroupData gli) -> pure $ Just gli
+          let groupLinkId = crClientData >>= decodeJson >>= \(CRGroupData gli) -> Just gli
           conn <- withStore' $ \db -> createConnReqConnection db userId connId cReqHash xContactId incognitoProfile groupLinkId
           toView $ CRNewContactConnection conn
           pure $ CRSentInvitation incognitoProfile
