@@ -18,7 +18,7 @@ import Data.Char (toUpper)
 import Data.Function (on)
 import Data.Int (Int64)
 import Data.List (groupBy, intercalate, intersperse, partition, sortOn)
-import Data.Maybe (isJust, isNothing)
+import Data.Maybe (isJust, isNothing, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (DiffTime)
@@ -123,10 +123,10 @@ responseToView testView = \case
   CRSndGroupFileCancelled _ ftm fts -> viewSndGroupFileCancelled ftm fts
   CRRcvFileCancelled ft -> receivingFile_ "cancelled" ft
   CRUserProfileUpdated p p' -> viewUserProfileUpdated p p'
-  CRContactPrefsUpdated ct -> viewContactPrefsUpdated ct
+  CRContactPrefsUpdated {user, fromContact, toContact, preferences} -> viewUserContactPrefsUpdated user fromContact toContact preferences
   CRContactAliasUpdated c -> viewContactAliasUpdated c
   CRConnectionAliasUpdated c -> viewConnectionAliasUpdated c
-  CRContactUpdated c c' -> viewContactUpdated c c'
+  CRContactUpdated {user, fromContact = c, toContact = c', preferences} -> viewContactUpdated c c' <> viewContactPrefsUpdated user c c' preferences
   CRContactsMerged intoCt mergedCt -> viewContactsMerged intoCt mergedCt
   CRReceivedContactRequest UserContactRequest {localDisplayName = c, profile} -> viewReceivedContactRequest c profile
   CRRcvFileStart ci -> receivingFile_' "started" ci
@@ -694,25 +694,76 @@ viewSwitchPhase SPCompleted = "changed address"
 viewSwitchPhase phase = plain (strEncode phase) <> " changing address"
 
 viewUserProfileUpdated :: Profile -> Profile -> [StyledString]
-viewUserProfileUpdated Profile {displayName = n, fullName, image} Profile {displayName = n', fullName = fullName', image = image'}
-  | n == n' && fullName == fullName' && image == image' = []
-  | n == n' && fullName == fullName' = [if isNothing image' then "profile image removed" else "profile image updated"]
-  | n == n' = ["user full name " <> (if T.null fullName' || fullName' == n' then "removed" else "changed to " <> plain fullName') <> notified]
-  | otherwise = ["user profile is changed to " <> ttyFullName n' fullName' <> notified]
+viewUserProfileUpdated Profile {displayName = n, fullName, image, preferences} Profile {displayName = n', fullName = fullName', image = image', preferences = preferences'} =
+  profileUpdated <> viewPrefsUpdated preferences preferences'
   where
+    profileUpdated
+      | n == n' && fullName == fullName' && image == image' = []
+      | n == n' && fullName == fullName' = [if isNothing image' then "profile image removed" else "profile image updated"]
+      | n == n' = ["user full name " <> (if T.null fullName' || fullName' == n' then "removed" else "changed to " <> plain fullName') <> notified]
+      | otherwise = ["user profile is changed to " <> ttyFullName n' fullName' <> notified]
     notified = " (your contacts are notified)"
 
-viewContactPrefsUpdated :: Contact -> [StyledString]
-viewContactPrefsUpdated Contact {profile = LocalProfile {preferences}, userPreferences = ChatPreferences {voice = userVoice}} =
-  let contactVoice = preferences >>= voice
-   in ["preferences were updated: " <> "contact's voice messages are " <> viewPreference contactVoice <> ", user's voice messages are " <> viewPreference userVoice]
+viewUserContactPrefsUpdated :: User -> Contact -> Contact -> PreferencesEnabled -> [StyledString]
+viewUserContactPrefsUpdated user ct ct' pss
+  | null prefs = ["your preferences for " <> ttyContact' ct' <> " did not change"]
+  | otherwise =  ("you updated preferences for " <> ttyContact' ct' <> ":") : prefs
+  where
+    prefs = viewContactPreferences user ct ct' pss
 
-viewPreference :: Maybe Preference -> StyledString
+viewContactPrefsUpdated :: User -> Contact -> Contact -> PreferencesEnabled -> [StyledString]
+viewContactPrefsUpdated user ct ct' pss
+  | null prefs = []
+  | otherwise =  (ttyContact' ct' <> " updated preferences for you:") : prefs
+  where
+    prefs = viewContactPreferences user ct ct' pss
+
+viewContactPreferences :: User -> Contact -> Contact -> PreferencesEnabled -> [StyledString]
+viewContactPreferences
+  user
+  ct@Contact {profile = LocalProfile {preferences = ctPrefs}}
+  ct'@Contact {profile = LocalProfile {preferences = ctPrefs'}}
+  pss =
+  mapMaybe (viewContactPref (userPrefs ct) (userPrefs ct') ctPrefs ctPrefs' pss) allPreferences
+  where
+    userPrefs c = mergeUserChatPrefs user c
+  
+viewContactPref :: FullChatPreferences -> FullChatPreferences -> Maybe ChatPreferences -> Maybe ChatPreferences -> PreferencesEnabled -> PrefType -> Maybe StyledString
+viewContactPref userPrefs userPrefs' ctPrefs ctPrefs' pss pt
+  | userPref == userPref' && ctPref == ctPref' = Nothing
+  | otherwise = Just $ plain (chatPrefName pt) <> ": " <> viewPrefEnabled ps <> " (you allow: " <> viewPreference userPref' <> ", contact allows: " <> viewPreference ctPref' <> ")"
+  where
+    userPref = getPreference pt userPrefs
+    userPref' = getPreference pt userPrefs'
+    ctPref = getPreference pt ctPrefs
+    ctPref' = getPreference pt ctPrefs'
+    ps = getPrefEnabled pt pss
+
+viewPrefsUpdated :: Maybe ChatPreferences -> Maybe ChatPreferences -> [StyledString]
+viewPrefsUpdated ps ps'
+  | null prefs = []
+  | otherwise = "updated preferences:" : prefs
+  where
+    prefs = mapMaybe viewPref allPreferences
+    viewPref pt
+      | pref ps == pref ps' = Nothing
+      | otherwise = Just $ plain (chatPrefName pt) <> " allowed: " <> viewPreference (pref ps')
+      where
+        pref pss = getPreference pt $ mergeChatPreferences pss Nothing
+
+viewPreference :: Preference -> StyledString
 viewPreference = \case
-  Just Preference {enable} -> case enable of
-    PSOn -> "on"
-    PSOff -> "off"
-  _ -> "unset"
+  Preference {enable} -> case enable of
+    PSOn -> "always"
+    PSOff -> "no"
+    PSMutual -> "yes"
+
+viewPrefEnabled :: PrefEnabled -> StyledString
+viewPrefEnabled = \case
+  PrefEnabled True True -> "enabled"
+  PrefEnabled False False -> "off"
+  PrefEnabled {forUser = True, forContact = False} -> "enabled for you"
+  PrefEnabled {forUser = False, forContact = True} -> "enabled for contact"
 
 viewGroupUpdated :: GroupInfo -> GroupInfo -> Maybe GroupMember -> [StyledString]
 viewGroupUpdated

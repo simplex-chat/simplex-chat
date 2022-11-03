@@ -80,7 +80,7 @@ s #==# msg = do
   s ==# msg
 
 testChatPreferences :: Maybe ChatPreferences
-testChatPreferences = Just ChatPreferences {voice = Just Preference {enable = PSOn}}
+testChatPreferences = Just ChatPreferences {voice = Just Preference {enable = PSOn}, fullDelete = Nothing, receipts = Nothing}
 
 testProfile :: Profile
 testProfile = Profile {displayName = "alice", fullName = "Alice", image = Just (ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="), preferences = testChatPreferences}

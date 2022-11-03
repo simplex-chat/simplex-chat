@@ -1160,7 +1160,7 @@ processChatCommand = \case
           pure $ CRUserProfileUpdated (fromLocalProfile p) p'
     updateContactPrefs :: User -> Contact -> ChatPreferences -> m ChatResponse
     updateContactPrefs user@User {userId} ct@Contact {contactId, activeConn = Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
-      | contactUserPrefs == contactUserPrefs' = pure $ CRContactPrefsUpdated ct -- nothing changed actually
+      | contactUserPrefs == contactUserPrefs' = pure $ CRContactPrefsUpdated user ct ct $ preferencesEnabled user ct -- nothing changed actually
       | otherwise = do
         withStore' $ \db -> updateContactUserPreferences db userId contactId contactUserPrefs'
         -- [incognito] filter out contacts with whom user has incognito connections
@@ -1169,7 +1169,7 @@ processChatCommand = \case
         let p' = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct')
         withChatLock "updateProfile" . procCmd $ do
           void (sendDirectContactMessage ct' $ XInfo p') `catchError` (toView . CRChatError)
-          pure $ CRContactPrefsUpdated ct'
+          pure $ CRContactPrefsUpdated user ct ct' $ preferencesEnabled user ct'
 
     isReady :: Contact -> Bool
     isReady ct =
@@ -2447,7 +2447,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
     xInfo :: Contact -> Profile -> m ()
     xInfo c@Contact {profile = p} p' = unless (fromLocalProfile p == p') $ do
       c' <- withStore $ \db -> updateContactProfile db userId c p'
-      toView $ CRContactUpdated c c'
+      toView $ CRContactUpdated user c c' $ preferencesEnabled user c'
 
     xInfoProbe :: Contact -> Probe -> m ()
     xInfoProbe c2 probe =
@@ -3005,15 +3005,10 @@ deleteAgentConnectionAsync' user connId (AgentConnId acId) = do
   withAgent $ \a -> deleteConnectionAsync a (aCorrId cmdId) acId
 
 userProfileToSend :: User -> Maybe Profile -> Maybe Contact -> Profile
-userProfileToSend user@User {profile} incognitoProfile ct =
-  let p = fromMaybe (fromLocalProfile profile) incognitoProfile
-      preferences = Just . mergeChatPreferences user $ userPreferences <$> ct
-   in (p :: Profile) {preferences}
-
-mergeChatPreferences :: User -> Maybe ChatPreferences -> ChatPreferences
-mergeChatPreferences User {profile = LocalProfile {preferences}} contactPrefs =
-  let ChatPreferences {voice = defaultVoice} = defaultChatPrefs
-   in ChatPreferences {voice = (contactPrefs >>= voice) <|> (preferences >>= voice) <|> defaultVoice}
+userProfileToSend User {profile = p@LocalProfile {preferences = userPrefs}} incognitoProfile ct =
+  let p' = fromMaybe (fromLocalProfile p) incognitoProfile
+      preferences = Just . toChatPrefs $ mergeChatPreferences (userPreferences <$> ct) (maybe userPrefs (const Nothing) incognitoProfile)
+   in (p' :: Profile) {preferences}
 
 getCreateActiveUser :: SQLiteStore -> IO User
 getCreateActiveUser st = do
@@ -3036,7 +3031,8 @@ getCreateActiveUser st = do
         loop = do
           displayName <- getContactName
           fullName <- T.pack <$> getWithPrompt "full name (optional)"
-          withTransaction st (\db -> runExceptT $ createUser db Profile {displayName, fullName, image = Nothing, preferences = Just defaultChatPrefs} True) >>= \case
+          let preferences = Just $ toChatPrefs defaultChatPrefs
+          withTransaction st (\db -> runExceptT $ createUser db Profile {displayName, fullName, image = Nothing, preferences} True) >>= \case
             Left SEDuplicateName -> do
               putStrLn "chosen display name is already used by another profile on this device, choose another one"
               loop
