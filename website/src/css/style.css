@@ -537,6 +537,14 @@ header nav {
   text-shadow: 0px 4px 74px #e9e7e2;
 }
 
+.dark .primary-header{
+  background: linear-gradient(270deg,#70F0F9 100%, #70F0F9 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
+}
+
 .secondary-header {
   /* width: 499px;
   height: 86px; */
@@ -547,6 +555,11 @@ header nav {
   line-height: 43px; */
   color: #606c71;
   text-shadow: 0px 4px 74px #e9e7e2;
+}
+
+.dark .secondary-header{
+  color: #fff;
+  text-shadow: none;
 }
 
 .hero-phone-background {
