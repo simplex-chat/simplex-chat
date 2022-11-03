@@ -117,16 +117,17 @@ fun ChatView(chatModel: ChatModel) {
       back = { chatModel.chatId.value = null },
       info = {
         withApi {
-          val cInfo = chat.chatInfo
-          if (cInfo is ChatInfo.Direct) {
-            val contactInfo = chatModel.controller.apiContactInfo(cInfo.apiId)
+          if (chat.chatInfo is ChatInfo.Direct) {
+            val contactInfo = chatModel.controller.apiContactInfo(chat.chatInfo.apiId)
             ModalManager.shared.showModalCloseable(true) { close ->
-              ChatInfoView(chatModel, cInfo.contact, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, close) {
+              var cInfo by remember { mutableStateOf(chat.chatInfo) }
+              ChatInfoView(chatModel, cInfo.contact, contactInfo?.first, contactInfo?.second, cInfo.localAlias, close) {
                 activeChat.value = it
+                cInfo = (it.chatInfo as ChatInfo.Direct)
               }
             }
-          } else if (cInfo is ChatInfo.Group) {
-            setGroupMembers(cInfo.groupInfo, chatModel)
+          } else if (chat.chatInfo is ChatInfo.Group) {
+            setGroupMembers(chat.chatInfo.groupInfo, chatModel)
             ModalManager.shared.showModalCloseable(true) { close ->
               GroupChatInfoView(chatModel, close)
             }

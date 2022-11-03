@@ -1755,14 +1755,13 @@ data class ChatSettings(
 
 @Serializable
 data class ChatPreferences(
-  val voice: ChatPreference? = null
+  val voice: ChatPreference? = null,
+  val messageDelete: ChatPreference? = null,
 ) {
   companion object {
     val default = ChatPreferences(
-      voice = ChatPreference(enable = PrefSwitch.OFF)
-    )
-    val empty = ChatPreferences(
-      voice = null
+      voice = ChatPreference.voiceDefault,
+      messageDelete = ChatPreference.messageDeleteDefault,
     )
   }
 }
@@ -1770,12 +1769,39 @@ data class ChatPreferences(
 @Serializable
 data class ChatPreference(
   val enable: PrefSwitch
-)
+) {
+  companion object {
+    val voiceDefault = ChatPreference(enable = PrefSwitch.OFF)
+    val messageDeleteDefault = ChatPreference(enable = PrefSwitch.OFF)
+  }
+
+  fun toLocal() =
+    when (enable) {
+      PrefSwitch.ON -> ChatPreferenceLocal.ON
+      PrefSwitch.OFF -> ChatPreferenceLocal.OFF
+      PrefSwitch.PREFER -> ChatPreferenceLocal.PREFER
+    }
+}
+
+fun ChatPreference?.toLocal() = this?.toLocal() ?: ChatPreferenceLocal.DEFAULT
 
 @Serializable
 enum class PrefSwitch {
   @SerialName("on") ON,
-  @SerialName("off") OFF
+  @SerialName("off") OFF,
+  @SerialName("prefer") PREFER,
+}
+
+enum class ChatPreferenceLocal {
+  DEFAULT, ON, OFF, PREFER;
+
+  fun toPref(default: ChatPreference): ChatPreference =
+    when (this) {
+      DEFAULT -> default
+      ON -> ChatPreference(enable = PrefSwitch.ON)
+      OFF -> ChatPreference(enable = PrefSwitch.OFF)
+      PREFER -> ChatPreference(enable = PrefSwitch.PREFER)
+    }
 }
 
 val json = Json {

@@ -554,6 +554,8 @@
     <string name="auto_accept_images">Автоприем изображений</string>
     <string name="transfer_images_faster">Передавать изображения быстрее (BETA)</string>
     <string name="send_link_previews">Отправлять картинки ссылок</string>
+    <string name="chat_preferences">Предпочтения</string>
+    <string name="chat_preferences_for">Предпочтения для %s</string>
 
     <!-- Settings sections -->
     <string name="settings_section_title_you">ВЫ</string>
@@ -872,4 +874,22 @@
     <string name="save_color">Сохранить цвет</string>
     <string name="reset_color">Сбросить цвета</string>
     <string name="color_primary">Акцент</string>
+
+    <!-- Preferences.kt -->
+    <string name="chat_preferences_default">По умолчанию (%s)</string>
+    <string name="chat_preferences_on">Включено</string>
+    <string name="chat_preferences_off">Выключено</string>
+    <string name="chat_preferences_prefer">Предпочитать</string>
+    <string name="chat_preferences_voice">Получать голосовые сообщения</string>
+    <string name="chat_preferences_voice_on_desc">Разрешить присылать вам голосовые сообщения</string>
+    <string name="chat_preferences_voice_off_desc">Запретить присылать вам голосовые сообщения</string>
+    <string name="chat_preferences_voice_prefer_desc">Если ваш контакт разрешает присылать ему голосовые сообщения вам или у него выбрана опция \'Предпочитать\', тогда вы оба можете присылать друг другу голосовые сообщения. Иначе никому это не позволено.</string>
+    <string name="chat_preferences_deletion">Удаление сообщений с вашего устройства</string>
+    <string name="chat_preferences_deletion_on_desc">Разрешить вашему контакту удалять свои сообщения у вас</string>
+    <string name="chat_preferences_deletion_off_desc">Запретить вашему контакту удалять свои сообщения у вас</string>
+    <string name="chat_preferences_deletion_prefer_desc">Если ваш контакт разрешает вам удалять свои сообщения у него или у него выбрана опция \'Предпочитать\', тогда вы оба можете удалять свои сообщения друг у друга. Иначе никому это не позволено.</string>
+    <string name="confirm_saving_prefs_question">Сохранить предпочтения?</string>
+    <string name="confirm_saving_prefs_info">После сохранения, все ваши контакты будут уведомлены (кроме тех, с кем вы общаетесь с использованием Инкогнито профиля).</string>
+    <string name="confirm_saving_prefs_per_contact_info">После сохранения, этот контакт будет уведомлен</string>
+
 </resources>

@@ -554,6 +554,8 @@
   <string name="auto_accept_images">Auto-accept images</string>
   <string name="transfer_images_faster">Transfer images faster (BETA)</string>
   <string name="send_link_previews">Send link previews</string>
+  <string name="chat_preferences">Preferences</string>
+  <string name="chat_preferences_for">Preferences for %s</string>
 
   <!-- Settings sections -->
   <string name="settings_section_title_you">YOU</string>
@@ -873,4 +875,22 @@
   <string name="save_color">Save color</string>
   <string name="reset_color">Reset colors</string>
   <string name="color_primary">Accent</string>
+
+  <!-- Preferences.kt -->
+  <string name="chat_preferences_default">Default (%s)</string>
+  <string name="chat_preferences_on">On</string>
+  <string name="chat_preferences_off">Off</string>
+  <string name="chat_preferences_prefer">Prefer</string>
+  <string name="chat_preferences_voice">Receive voice messages</string>
+  <string name="chat_preferences_voice_on_desc">Allow to send voice messages to you from your contacts</string>
+  <string name="chat_preferences_voice_off_desc">Disallow to send voice messages to you from your contacts</string>
+  <string name="chat_preferences_voice_prefer_desc">If your contact allows to receive voice messages from you or have \'Prefer\' choice selected, you both will be able to send voice messages to each other. Otherwise, no one will be able to do so.</string>
+  <string name="chat_preferences_deletion">Messages deletion</string>
+  <string name="chat_preferences_deletion_on_desc">Allow the other side to delete messages sent to you</string>
+  <string name="chat_preferences_deletion_off_desc">Disallow the other side to delete messages sent to you</string>
+  <string name="chat_preferences_deletion_prefer_desc">If your contact allows to delete messages from you or have \'Prefer\' choice selected, you both will be able to delete messages sent to the other side. Otherwise, no one will be able to do so.</string>
+  <string name="confirm_saving_prefs_question">Save preferences?</string>
+  <string name="confirm_saving_prefs_info">After saving these preferences, all of your contacts will be notified (except those that you use Incognito profile for).</string>
+  <string name="confirm_saving_prefs_per_contact_info">After saving these preferences, your contact will be notified.</string>
+
 </resources>

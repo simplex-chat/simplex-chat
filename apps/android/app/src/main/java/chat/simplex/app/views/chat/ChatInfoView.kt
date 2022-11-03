@@ -35,7 +35,7 @@ import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
-import chat.simplex.app.views.usersettings.SettingsActionItem
+import chat.simplex.app.views.usersettings.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 
@@ -62,6 +62,15 @@ fun ChatInfoView(
       developerTools,
       onLocalAliasChanged = {
         setContactAlias(chat.chatInfo.apiId, it, chatModel, onChatUpdated)
+      },
+      openPreferences = {
+        withApi {
+          ModalManager.shared.showModal(true){
+            PreferencesPerChatView(chatModel, chatModel.currentUser.value ?: return@showModal, contact) {
+              onChatUpdated(chat.copy(chatInfo = ChatInfo.Direct(it)))
+            }
+          }
+        }
       },
       deleteContact = { deleteContactDialog(chat.chatInfo, chatModel, close) },
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) },
@@ -118,6 +127,7 @@ fun ChatInfoLayout(
   localAlias: String,
   developerTools: Boolean,
   onLocalAliasChanged: (String) -> Unit,
+  openPreferences: () -> Unit,
   deleteContact: () -> Unit,
   clearChat: () -> Unit,
   switchContactAddress: () -> Unit,
@@ -173,6 +183,8 @@ fun ChatInfoLayout(
     }
     SectionSpacer()
     SectionView {
+      ChatPreferencesButton(openPreferences)
+      SectionDivider()
       ClearChatButton(clearChat)
       SectionDivider()
       DeleteContactButton(deleteContact)
@@ -329,6 +341,15 @@ fun SwitchAddressButton(onClick: () -> Unit) {
 }
 
 @Composable
+private fun ChatPreferencesButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    Icons.Outlined.PrivacyTip,
+    stringResource(R.string.chat_preferences),
+    click = onClick
+  )
+}
+
+@Composable
 fun ClearChatButton(onClick: () -> Unit) {
   SettingsActionItem(
     Icons.Outlined.Restore,
@@ -388,6 +409,7 @@ fun PreviewChatInfoLayout() {
       connStats = null,
       onLocalAliasChanged = {},
       customUserProfile = null,
+      openPreferences = {},
       deleteContact = {},
       clearChat = {},
       switchContactAddress = {},

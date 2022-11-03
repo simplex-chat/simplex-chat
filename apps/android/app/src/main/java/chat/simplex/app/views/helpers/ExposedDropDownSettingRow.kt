@@ -40,9 +40,9 @@ fun <T> ExposedDropDownSettingRow(
         tint = iconTint
       )
     }
-    Text(title, color = if (enabled.value) Color.Unspecified else HighOrLowlight)
-
-    Spacer(Modifier.fillMaxWidth().weight(1f))
+    Row(Modifier.weight(1f)) {
+      Text(title, color = if (enabled.value) Color.Unspecified else HighOrLowlight)
+    }
 
     ExposedDropdownMenuBox(
       expanded = expanded,

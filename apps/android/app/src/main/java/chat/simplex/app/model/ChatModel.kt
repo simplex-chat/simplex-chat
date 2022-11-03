@@ -585,7 +585,7 @@ class Connection(val connId: Long, val connStatus: ConnStatus, val connLevel: In
 }
 
 @Serializable
-class Profile(
+data class Profile(
   override val displayName: String,
   override val fullName: String,
   override val image: String? = null,
