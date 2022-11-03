@@ -140,15 +140,18 @@ templateEngineOverride: njk
 
 {# Comparison #}
 <section id="comparison" class="bg-secondary-bg-light dark:bg-secondary-bg-dark py-[85px]">
-    <div class="container flex flex-col">
-        <p class="text-grey-black dark:text-white text-[35px] lg:text-[45px] text-center font-bold mb-10 lg:mb-20">Comparison with other protocols</p>
+    <div class="text-grey-black dark:text-white container flex flex-col">
+        <p class="text-[35px] lg:text-[45px] text-center font-bold mb-10 lg:mb-20">Comparison with other protocols</p>
 
         <div class="w-full overflow-auto">
             <table class="w-full border-separate border-spacing-x-5 border-spacing-y-2">
                 <thead>
                     <tr>
                         <th></th>
-                        <th class="flex items-center justify-center"><img class="h-6" alt="simplex logo" src="/img/new/logo-light.png"/></th>
+                        <th class="flex items-center justify-center">
+                            <img class="h-6 dark:hidden" alt="simplex logo" src="/img/new/logo-light.png"/>
+                            <img class="h-6 hidden dark:block" alt="simplex logo" src="/img/new/logo-dark.png"/>
+                        </th>
                         <th>Signal, big platforms</th>
                         <th>XMPP, Matrix</th>
                         <th>P2P protocols</th>
@@ -158,43 +161,43 @@ templateEngineOverride: njk
                     <tr>
                         <td class="min-w-[210px]">Requires global identity</td>
                         <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#48F6C2] text-grey-black rounded-[4px]">No - private</td>
-                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] text-[#DD0000] rounded-[4px]">Yes <sup>1</sup></td>
-                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] text-[#DD0000] rounded-[4px]">Yes <sup>2</sup></td>
-                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] text-[#DD0000] rounded-[4px]">Yes <sup>3</sup></td>
+                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Yes <sup>1</sup></td>
+                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Yes <sup>2</sup></td>
+                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Yes <sup>3</sup></td>
                     </tr>
                     <tr>
                         <td class="min-w-[210px]">Possibility of MITM</td>
                         <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#48F6C2] text-grey-black rounded-[4px]">No - secure</td>
-                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] text-[#DD0000] rounded-[4px]">Yes <sup>4</sup></td>
-                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] text-[#DD0000] rounded-[4px]">Yes</td>
-                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] text-[#DD0000] rounded-[4px]">Yes</td>
+                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Yes <sup>4</sup></td>
+                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Yes</td>
+                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Yes</td>
                     </tr>
                     <tr>
                         <td class="min-w-[210px]">Dependence on DNS</td>
                         <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#48F6C2] text-grey-black rounded-[4px]">No - resilient</td>
-                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] text-[#DD0000] rounded-[4px]">Yes</td>
-                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] text-[#DD0000] rounded-[4px]">Yes</td>
+                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Yes</td>
+                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Yes</td>
                         <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#48F6C2] text-grey-black rounded-[4px]">No</td>
                     </tr>
                     <tr>
                         <td class="min-w-[210px]">Single or centralized network</td>
                         <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#48F6C2] text-grey-black rounded-[4px]">No - decentralized</td>
-                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] text-[#DD0000] rounded-[4px]">Yes</td>
+                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Yes</td>
                         <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#48F6C2] text-grey-black rounded-[4px]">No - federated <sup>5</sup></td>
-                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] text-[#DD0000] rounded-[4px]">Yes <sup>6</sup></td>
+                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Yes <sup>6</sup></td>
                     </tr>
                     <tr>
                         <td class="min-w-[210px]">Central component or other network-wide attack</td>
                         <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#48F6C2] text-grey-black rounded-[4px]">No - resilient</td>
-                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] text-[#DD0000] rounded-[4px]">Yes</td>
-                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] text-[#DD0000] rounded-[4px]">Yes <sup>2</sup></td>
-                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] text-[#DD0000] rounded-[4px]">Yes <sup>7</sup></td>
+                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Yes</td>
+                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Yes <sup>2</sup></td>
+                        <td class="text-center font-medium min-w-[152px] h-[40px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">Yes <sup>7</sup></td>
                     </tr>
                 </tbody>
             </table>
         </div>
 
-        <hr class="block my-8 mx-5">
+        <hr class="block my-12 mx-5 dark:opacity-[0.2]">
 
         <div>
             <div class="px-5">
