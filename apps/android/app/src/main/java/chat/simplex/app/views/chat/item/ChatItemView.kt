@@ -1,7 +1,6 @@
 package chat.simplex.app.views.chat.item
 
 import android.content.*
-import android.net.Uri
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -158,8 +157,10 @@ fun ChatItemView(
         is CIContent.RcvIntegrityError -> IntegrityErrorItemView(cItem, showMember = showMember)
         is CIContent.RcvGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito)
         is CIContent.SndGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito)
-        is CIContent.RcvGroupEventContent -> CIGroupEventView(cItem)
-        is CIContent.SndGroupEventContent -> CIGroupEventView(cItem)
+        is CIContent.RcvGroupEventContent -> CIEventView(cItem)
+        is CIContent.SndGroupEventContent -> CIEventView(cItem)
+        is CIContent.RcvConnEventContent -> CIEventView(cItem)
+        is CIContent.SndConnEventContent -> CIEventView(cItem)
       }
     }
   }

@@ -783,6 +783,12 @@ class GroupMember (
 }
 
 @Serializable
+class GroupMemberRef(
+  val groupMemberId: Long,
+  val profile: Profile
+)
+
+@Serializable
 enum class GroupMemberRole(val memberRole: String) {
   @SerialName("member") Member("member"), // order matters in comparisons
   @SerialName("admin") Admin("admin"),
@@ -1221,6 +1227,8 @@ sealed class CIContent: ItemContent {
   @Serializable @SerialName("sndGroupInvitation") class SndGroupInvitation(val groupInvitation: CIGroupInvitation, val memberRole: GroupMemberRole): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvGroupEvent") class RcvGroupEventContent(val rcvGroupEvent: RcvGroupEvent): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("sndGroupEvent") class SndGroupEventContent(val sndGroupEvent: SndGroupEvent): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvConnEvent") class RcvConnEventContent(val rcvConnEvent: RcvConnEvent): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("sndConnEvent") class SndConnEventContent(val sndConnEvent: SndConnEvent): CIContent() { override val msgContent: MsgContent? get() = null }
 
   override val text: String get() = when(this) {
     is SndMsgContent -> msgContent.text
@@ -1234,6 +1242,8 @@ sealed class CIContent: ItemContent {
     is SndGroupInvitation -> groupInvitation.text
     is RcvGroupEventContent -> rcvGroupEvent.text
     is SndGroupEventContent -> sndGroupEvent.text
+    is RcvConnEventContent -> rcvConnEvent.text
+    is SndConnEventContent -> sndConnEvent.text
   }
 }
 
@@ -1590,6 +1600,46 @@ sealed class SndGroupEvent() {
     is UserLeft -> generalGetString(R.string.snd_group_event_user_left)
     is GroupUpdated -> generalGetString(R.string.snd_group_event_group_profile_updated)
   }
+}
+
+@Serializable
+sealed class RcvConnEvent {
+  @Serializable @SerialName("switchQueue") class SwitchQueue(val phase: SwitchPhase): RcvConnEvent()
+
+  val text: String get() = when (this) {
+    is SwitchQueue -> when (phase) {
+      SwitchPhase.Completed -> generalGetString(R.string.rcv_conn_event_switch_queue_phase_completed)
+      else -> generalGetString(R.string.rcv_conn_event_switch_queue_phase_changing)
+    }
+  }
+}
+
+@Serializable
+sealed class SndConnEvent {
+  @Serializable @SerialName("switchQueue") class SwitchQueue(val phase: SwitchPhase, val member: GroupMemberRef? = null): SndConnEvent()
+
+  val text: String
+    get() = when (this) {
+      is SwitchQueue -> {
+        member?.profile?.profileViewName?.let {
+          return when (phase) {
+            SwitchPhase.Completed -> String.format(generalGetString(R.string.snd_conn_event_switch_queue_phase_completed_for_member), it)
+            else -> String.format(generalGetString(R.string.snd_conn_event_switch_queue_phase_changing_for_member), it)
+          }
+        }
+        when (phase) {
+          SwitchPhase.Completed -> generalGetString(R.string.snd_conn_event_switch_queue_phase_completed)
+          else -> generalGetString(R.string.snd_conn_event_switch_queue_phase_changing)
+        }
+      }
+    }
+}
+
+@Serializable
+enum class SwitchPhase {
+  @SerialName("started") Started,
+  @SerialName("confirmed") Confirmed,
+  @SerialName("completed") Completed
 }
 
 sealed class ChatItemTTL: Comparable<ChatItemTTL?> {

@@ -14,7 +14,7 @@ struct GroupMemberInfoView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     var groupInfo: GroupInfo
     @State var member: GroupMember
-    var connectionStats: ConnectionStats?
+    @Binding var connectionStats: ConnectionStats?
     @State private var newRole: GroupMemberRole = .member
     @State private var alert: GroupMemberInfoViewAlert?
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
@@ -22,12 +22,14 @@ struct GroupMemberInfoView: View {
     enum GroupMemberInfoViewAlert: Identifiable {
         case removeMemberAlert
         case changeMemberRoleAlert(role: GroupMemberRole)
+        case switchAddressAlert
         case error(title: LocalizedStringKey, error: LocalizedStringKey)
 
         var id: String {
             switch self {
             case .removeMemberAlert: return "removeMemberAlert"
             case let .changeMemberRoleAlert(role): return "changeMemberRoleAlert \(role.rawValue)"
+            case .switchAddressAlert: return "switchAddressAlert"
             case let .error(title, _): return "error \(title)"
             }
         }
@@ -77,9 +79,14 @@ struct GroupMemberInfoView: View {
                     }
                 }
 
-                if let connStats = connectionStats {
-                    Section("Servers") {
-                        // TODO network connection status
+                Section("Servers") {
+                    // TODO network connection status
+                    if developerTools {
+                        Button("Change receiving address (BETA)") {
+                            alert = .switchAddressAlert
+                        }
+                    }
+                    if let connStats = connectionStats {
                         smpServers("Receiving via", connStats.rcvServers)
                         smpServers("Sending via", connStats.sndServers)
                     }
@@ -105,6 +112,7 @@ struct GroupMemberInfoView: View {
             switch(alertItem) {
             case .removeMemberAlert: return removeMemberAlert()
             case .changeMemberRoleAlert: return changeMemberRoleAlert()
+            case .switchAddressAlert: return switchAddressAlert(switchMemberAddress)
             case let .error(title, error): return Alert(title: Text(title), message: Text(error))
             }
         }
@@ -210,10 +218,28 @@ struct GroupMemberInfoView: View {
             }
         )
     }
+
+    private func switchMemberAddress() {
+        Task {
+            do {
+                try await apiSwitchGroupMember(groupInfo.apiId, member.groupMemberId)
+            } catch let error {
+                logger.error("switchMemberAddress apiSwitchGroupMember error: \(responseError(error))")
+                let a = getErrorAlert(error, "Error changing address")
+                await MainActor.run {
+                    alert = .error(title: a.title, error: a.message)
+                }
+            }
+        }
+    }
 }
 
 struct GroupMemberInfoView_Previews: PreviewProvider {
     static var previews: some View {
-        GroupMemberInfoView(groupInfo: GroupInfo.sampleData, member: GroupMember.sampleData)
+        GroupMemberInfoView(
+            groupInfo: GroupInfo.sampleData,
+            member: GroupMember.sampleData,
+            connectionStats: Binding.constant(nil)
+        )
     }
 }

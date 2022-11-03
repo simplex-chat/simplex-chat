@@ -357,6 +357,14 @@ func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) async throws -
     throw r
 }
 
+func apiSwitchContact(contactId: Int64) async throws {
+    try await sendCommandOkResp(.apiSwitchContact(contactId: contactId))
+}
+
+func apiSwitchGroupMember(_ groupId: Int64, _ groupMemberId: Int64) async throws {
+    try await sendCommandOkResp(.apiSwitchGroupMember(groupId: groupId, groupMemberId: groupMemberId))
+}
+
 func apiAddContact() async -> String? {
     let r = await chatSendCmd(.addContact, bgTask: false)
     if case let .invitation(connReqInvitation) = r { return connReqInvitation }
@@ -541,13 +549,14 @@ func apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool) async throws {
 }
 
 func receiveFile(fileId: Int64) async {
-    if let chatItem = await apiReceiveFile(fileId: fileId) {
+    let inline = privacyTransferImagesInlineGroupDefault.get()
+    if let chatItem = await apiReceiveFile(fileId: fileId, inline: inline) {
         DispatchQueue.main.async { chatItemSimpleUpdate(chatItem) }
     }
 }
 
-func apiReceiveFile(fileId: Int64) async -> AChatItem? {
-    let r = await chatSendCmd(.receiveFile(fileId: fileId))
+func apiReceiveFile(fileId: Int64, inline: Bool) async -> AChatItem? {
+    let r = await chatSendCmd(.receiveFile(fileId: fileId, inline: inline))
     let am = AlertManager.shared
     if case let .rcvFileAccepted(chatItem) = r { return chatItem }
     if case .rcvFileAcceptedSndCancelled = r {

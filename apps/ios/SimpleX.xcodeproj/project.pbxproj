@@ -125,7 +125,7 @@
 		64328561290BEE2B00FBE5C8 /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 6432855C290BEE2B00FBE5C8 /* libgmpxx.a */; };
 		64328562290BEE2B00FBE5C8 /* libHSsimplex-chat-4.2.0-LeYwSLlznBGLTzzJTly7Iu-ghc8.10.7.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 6432855D290BEE2B00FBE5C8 /* libHSsimplex-chat-4.2.0-LeYwSLlznBGLTzzJTly7Iu-ghc8.10.7.a */; };
 		64328563290BEE2B00FBE5C8 /* libHSsimplex-chat-4.2.0-LeYwSLlznBGLTzzJTly7Iu.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 6432855E290BEE2B00FBE5C8 /* libHSsimplex-chat-4.2.0-LeYwSLlznBGLTzzJTly7Iu.a */; };
-		6440CA00288857A10062C672 /* CIGroupEventView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6440C9FF288857A10062C672 /* CIGroupEventView.swift */; };
+		6440CA00288857A10062C672 /* CIEventView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6440C9FF288857A10062C672 /* CIEventView.swift */; };
 		6440CA03288AECA70062C672 /* AddGroupMembersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6440CA02288AECA70062C672 /* AddGroupMembersView.swift */; };
 		6442E0BA287F169300CEC0F9 /* AddGroupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6442E0B9287F169300CEC0F9 /* AddGroupView.swift */; };
 		6442E0BE2880182D00CEC0F9 /* GroupChatInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6442E0BD2880182D00CEC0F9 /* GroupChatInfoView.swift */; };
@@ -324,7 +324,7 @@
 		6432855C290BEE2B00FBE5C8 /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
 		6432855D290BEE2B00FBE5C8 /* libHSsimplex-chat-4.2.0-LeYwSLlznBGLTzzJTly7Iu-ghc8.10.7.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-4.2.0-LeYwSLlznBGLTzzJTly7Iu-ghc8.10.7.a"; sourceTree = "<group>"; };
 		6432855E290BEE2B00FBE5C8 /* libHSsimplex-chat-4.2.0-LeYwSLlznBGLTzzJTly7Iu.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-4.2.0-LeYwSLlznBGLTzzJTly7Iu.a"; sourceTree = "<group>"; };
-		6440C9FF288857A10062C672 /* CIGroupEventView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIGroupEventView.swift; sourceTree = "<group>"; };
+		6440C9FF288857A10062C672 /* CIEventView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIEventView.swift; sourceTree = "<group>"; };
 		6440CA02288AECA70062C672 /* AddGroupMembersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddGroupMembersView.swift; sourceTree = "<group>"; };
 		6442E0B9287F169300CEC0F9 /* AddGroupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddGroupView.swift; sourceTree = "<group>"; };
 		6442E0BD2880182D00CEC0F9 /* GroupChatInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupChatInfoView.swift; sourceTree = "<group>"; };
@@ -647,7 +647,7 @@
 				5C029EA72837DBB3004A9677 /* CICallItemView.swift */,
 				5C3F1D552842B68D00EC8A82 /* IntegrityErrorItemView.swift */,
 				64E972062881BB22008DBC02 /* CIGroupInvitationView.swift */,
-				6440C9FF288857A10062C672 /* CIGroupEventView.swift */,
+				6440C9FF288857A10062C672 /* CIEventView.swift */,
 			);
 			path = ChatItem;
 			sourceTree = "<group>";
@@ -966,7 +966,7 @@
 				5C2E260727A2941F00F70299 /* SimpleXAPI.swift in Sources */,
 				5CB924D427A853F100ACCCDD /* SettingsButton.swift in Sources */,
 				3C714777281C081000CB4D4B /* WebRTCView.swift in Sources */,
-				6440CA00288857A10062C672 /* CIGroupEventView.swift in Sources */,
+				6440CA00288857A10062C672 /* CIEventView.swift in Sources */,
 				5CB0BA92282713FD00B3292C /* CreateProfile.swift in Sources */,
 				5C5F2B7027EBC704006A9D5F /* ProfileImage.swift in Sources */,
 				64AA1C6C27F3537400AC7277 /* DeletedItemView.swift in Sources */,

@@ -17,7 +17,7 @@ import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 
 @Composable
-fun CIGroupEventView(ci: ChatItem) {
+fun CIEventView(ci: ChatItem) {
   fun withGroupEventStyle(builder: AnnotatedString.Builder, text: String) {
     return builder.withStyle(SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Light, color = HighOrLowlight)) { append(text) }
   }
@@ -50,9 +50,9 @@ fun CIGroupEventView(ci: ChatItem) {
   name = "Dark Mode"
 )
 @Composable
-fun CIGroupEventViewPreview() {
+fun CIEventViewPreview() {
   SimpleXTheme {
-    CIGroupEventView(
+    CIEventView(
       ChatItem.getGroupEventSample()
     )
   }

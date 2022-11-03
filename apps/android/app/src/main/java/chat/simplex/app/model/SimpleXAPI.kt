@@ -89,6 +89,7 @@ class AppPreferences(val context: Context) {
   val laNoticeShown = mkBoolPreference(SHARED_PREFS_LA_NOTICE_SHOWN, false)
   val webrtcIceServers = mkStrPreference(SHARED_PREFS_WEBRTC_ICE_SERVERS, null)
   val privacyAcceptImages = mkBoolPreference(SHARED_PREFS_PRIVACY_ACCEPT_IMAGES, true)
+  val privacyTransferImagesInline = mkBoolPreference(SHARED_PREFS_PRIVACY_TRANSFER_IMAGES_INLINE, false)
   val privacyLinkPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_LINK_PREVIEWS, true)
   val experimentalCalls = mkBoolPreference(SHARED_PREFS_EXPERIMENTAL_CALLS, false)
   val chatArchiveName = mkStrPreference(SHARED_PREFS_CHAT_ARCHIVE_NAME, null)
@@ -178,6 +179,7 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_LA_NOTICE_SHOWN = "LANoticeShown"
     private const val SHARED_PREFS_WEBRTC_ICE_SERVERS = "WebrtcICEServers"
     private const val SHARED_PREFS_PRIVACY_ACCEPT_IMAGES = "PrivacyAcceptImages"
+    private const val SHARED_PREFS_PRIVACY_TRANSFER_IMAGES_INLINE = "PrivacyTransferImagesInline"
     private const val SHARED_PREFS_PRIVACY_LINK_PREVIEWS = "PrivacyLinkPreviews"
     private const val SHARED_PREFS_EXPERIMENTAL_CALLS = "ExperimentalCalls"
     private const val SHARED_PREFS_CHAT_ARCHIVE_NAME = "ChatArchiveName"
@@ -496,6 +498,24 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return null
   }
 
+  suspend fun apiSwitchContact(contactId: Long) {
+    return when (val r = sendCmd(CC.APISwitchContact(contactId))) {
+      is CR.CmdOk -> {}
+      else -> {
+        apiErrorAlert("apiSwitchContact", generalGetString(R.string.connection_error), r)
+      }
+    }
+  }
+
+  suspend fun apiSwitchGroupMember(groupId: Long, groupMemberId: Long) {
+    return when (val r = sendCmd(CC.APISwitchGroupMember(groupId, groupMemberId))) {
+      is CR.CmdOk -> {}
+      else -> {
+        apiErrorAlert("apiSwitchGroupMember", generalGetString(R.string.error_changing_address), r)
+      }
+    }
+  }
+
   suspend fun apiAddContact(): String? {
     val r = sendCmd(CC.AddContact())
     return when (r) {
@@ -739,8 +759,8 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return false
   }
 
-  suspend fun apiReceiveFile(fileId: Long): AChatItem? {
-    val r = sendCmd(CC.ReceiveFile(fileId))
+  suspend fun apiReceiveFile(fileId: Long, inline: Boolean): AChatItem? {
+    val r = sendCmd(CC.ReceiveFile(fileId, inline))
     return when (r) {
       is CR.RcvFileAccepted -> r.chatItem
       is CR.RcvFileAcceptedSndCancelled -> {
@@ -1118,7 +1138,8 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   }
 
   suspend fun receiveFile(fileId: Long) {
-    val chatItem = apiReceiveFile(fileId)
+    val inline = appPrefs.privacyTransferImagesInline.get()
+    val chatItem = apiReceiveFile(fileId, inline)
     if (chatItem != null) {
       chatItemSimpleUpdate(chatItem)
     }
@@ -1440,6 +1461,8 @@ sealed class CC {
   class APISetChatSettings(val type: ChatType, val id: Long, val chatSettings: ChatSettings): CC()
   class APIContactInfo(val contactId: Long): CC()
   class APIGroupMemberInfo(val groupId: Long, val groupMemberId: Long): CC()
+  class APISwitchContact(val contactId: Long): CC()
+  class APISwitchGroupMember(val groupId: Long, val groupMemberId: Long): CC()
   class AddContact: CC()
   class Connect(val connReq: String): CC()
   class ApiDeleteChat(val type: ChatType, val id: Long): CC()
@@ -1465,7 +1488,7 @@ sealed class CC {
   class ApiRejectContact(val contactReqId: Long): CC()
   class ApiChatRead(val type: ChatType, val id: Long, val range: ItemRange): CC()
   class ApiChatUnread(val type: ChatType, val id: Long, val unreadChat: Boolean): CC()
-  class ReceiveFile(val fileId: Long): CC()
+  class ReceiveFile(val fileId: Long, val inline: Boolean): CC()
 
   val cmdString: String get() = when (this) {
     is Console -> cmd
@@ -1504,6 +1527,8 @@ sealed class CC {
     is APISetChatSettings -> "/_settings ${chatRef(type, id)} ${json.encodeToString(chatSettings)}"
     is APIContactInfo -> "/_info @$contactId"
     is APIGroupMemberInfo -> "/_info #$groupId $groupMemberId"
+    is APISwitchContact -> "/_switch @$contactId"
+    is APISwitchGroupMember -> "/_switch #$groupId $groupMemberId"
     is AddContact -> "/connect"
     is Connect -> "/connect $connReq"
     is ApiDeleteChat -> "/_delete ${chatRef(type, id)}"
@@ -1529,7 +1554,7 @@ sealed class CC {
     is ApiCallStatus -> "/_call status @${contact.apiId} ${callStatus.value}"
     is ApiChatRead -> "/_read chat ${chatRef(type, id)} from=${range.from} to=${range.to}"
     is ApiChatUnread -> "/_unread chat ${chatRef(type, id)} ${onOff(unreadChat)}"
-    is ReceiveFile -> "/freceive $fileId"
+    is ReceiveFile -> "/freceive $fileId inline=${onOff(inline)}"
   }
 
   val cmdType: String get() = when (this) {
@@ -1569,6 +1594,8 @@ sealed class CC {
     is APISetChatSettings -> "/apiSetChatSettings"
     is APIContactInfo -> "apiContactInfo"
     is APIGroupMemberInfo -> "apiGroupMemberInfo"
+    is APISwitchContact -> "apiSwitchContact"
+    is APISwitchGroupMember -> "apiSwitchGroupMember"
     is AddContact -> "addContact"
     is Connect -> "connect"
     is ApiDeleteChat -> "apiDeleteChat"
@@ -1617,7 +1644,7 @@ sealed class CC {
   companion object {
     fun chatRef(chatType: ChatType, id: Long) = "${chatType.type}${id}"
 
-    fun smpServersStr(smpServers: List<String>) = if (smpServers.isEmpty()) "default" else smpServers.joinToString(separator = ",")
+    fun smpServersStr(smpServers: List<String>) = if (smpServers.isEmpty()) "default" else smpServers.joinToString(separator = ";")
   }
 }
 
