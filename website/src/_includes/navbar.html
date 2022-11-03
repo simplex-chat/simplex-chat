@@ -172,4 +172,19 @@ window.addEventListener('click',(e)=>{
 })
 
 themeCheck();
+
+const changeHeaderBg = ()=>{
+    const header = document.querySelector('header')
+    const scrollValue = window.scrollY
+    if(scrollValue > 5){
+        header.classList.add('bg-primary-bg-light');
+        header.classList.add('dark:bg-primary-bg-dark');
+    }
+    else{
+        header.classList.remove('bg-primary-bg-light');
+        header.classList.remove('dark:bg-primary-bg-dark');
+    }
+}
+
+window.addEventListener('scroll',changeHeaderBg);
 </SCript>

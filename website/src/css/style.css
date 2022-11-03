@@ -526,6 +526,10 @@ header nav {
 
 
 /* hero */
+header{
+  transition: all .7s ease;
+}
+
 .primary-header {
   /* font-weight: 700; */
   /* font-size: 55px; */
