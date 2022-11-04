@@ -5,10 +5,12 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
@@ -31,7 +33,8 @@ fun ContactRequestView(chatModelIncognito: Boolean, contactRequest: ChatInfo.Con
         fontWeight = FontWeight.Bold,
         color = if (chatModelIncognito) Indigo else MaterialTheme.colors.primary
       )
-      Text(stringResource(R.string.contact_wants_to_connect_with_you), maxLines = 2, color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight)
+      val height = with(LocalDensity.current) { 46.sp.toDp() }
+      Text(stringResource(R.string.contact_wants_to_connect_with_you), Modifier.heightIn(min = height), maxLines = 2, color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight)
     }
     val ts = getTimestampText(contactRequest.contactRequest.updatedAt)
     Column(
