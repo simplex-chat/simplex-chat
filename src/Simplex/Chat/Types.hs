@@ -234,21 +234,28 @@ defaultChatSettings = ChatSettings {enableNtfs = True}
 pattern DisableNtfs :: ChatSettings
 pattern DisableNtfs = ChatSettings {enableNtfs = False}
 
-data ChatFeature = CFFullDelete | CFReceipts | CFVoice
+data ChatFeature
+  = CFFullDelete
+  | -- | CFReceipts
+    CFVoice
 
 allChatFeatures :: [ChatFeature]
-allChatFeatures = [CFFullDelete, CFReceipts, CFVoice]
+allChatFeatures =
+  [ CFFullDelete,
+    -- CFReceipts,
+    CFVoice
+  ]
 
 chatPrefSel :: ChatFeature -> Preferences -> Maybe Preference
 chatPrefSel = \case
   CFFullDelete -> fullDelete
-  CFReceipts -> receipts
+  -- CFReceipts -> receipts
   CFVoice -> voice
 
 chatPrefName :: ChatFeature -> Text
 chatPrefName = \case
   CFFullDelete -> "full message deletion"
-  CFReceipts -> "delivery receipts"
+  -- CFReceipts -> "delivery receipts"
   CFVoice -> "voice messages"
 
 class HasPreferences p where
@@ -274,21 +281,21 @@ instance PreferenceI (Maybe Preferences) where
 instance PreferenceI FullPreferences where
   getPreference = \case
     CFFullDelete -> fullDelete
-    CFReceipts -> receipts
+    -- CFReceipts -> receipts
     CFVoice -> voice
   {-# INLINE getPreference #-}
 
 -- collection of optional chat preferences for the user and the contact
 data Preferences = Preferences
   { fullDelete :: Maybe Preference,
-    receipts :: Maybe Preference,
+    -- receipts :: Maybe Preference,
     voice :: Maybe Preference
   }
   deriving (Eq, Show, Generic, FromJSON)
 
 data GroupPreferences = GroupPreferences
   { fullDelete :: Maybe GroupPreference,
-    receipts :: Maybe GroupPreference,
+    -- receipts :: Maybe GroupPreference,
     voice :: Maybe GroupPreference
   }
   deriving (Eq, Show, Generic, FromJSON)
@@ -307,7 +314,7 @@ instance FromField GroupPreferences where
 -- if some of the preferences are not defined in Preferences, defaults from defaultChatPrefs are used here.
 data FullPreferences = FullPreferences
   { fullDelete :: Preference,
-    receipts :: Preference,
+    -- receipts :: Preference,
     voice :: Preference
   }
   deriving (Eq)
@@ -315,7 +322,7 @@ data FullPreferences = FullPreferences
 -- merged preferences of user for a given contact - they differentiate between specific preferences for the contact and global user preferences
 data ContactUserPreferences = ContactUserPreferences
   { fullDelete :: ContactUserPreference,
-    receipts :: ContactUserPreference,
+    -- receipts :: ContactUserPreference,
     voice :: ContactUserPreference
   }
   deriving (Show, Generic)
@@ -339,10 +346,10 @@ instance ToJSON ContactUserPref where
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CUP"
 
 toChatPrefs :: FullPreferences -> Preferences
-toChatPrefs FullPreferences {fullDelete, receipts, voice} =
+toChatPrefs FullPreferences {fullDelete, voice} =
   Preferences
     { fullDelete = Just fullDelete,
-      receipts = Just receipts,
+      -- receipts = Just receipts,
       voice = Just voice
     }
 
@@ -350,12 +357,12 @@ defaultChatPrefs :: FullPreferences
 defaultChatPrefs =
   FullPreferences
     { fullDelete = Preference {allow = FANo},
-      receipts = Preference {allow = FANo},
+      -- receipts = Preference {allow = FANo},
       voice = Preference {allow = FAYes}
     }
 
 emptyChatPrefs :: Preferences
-emptyChatPrefs = Preferences Nothing Nothing Nothing
+emptyChatPrefs = Preferences Nothing Nothing
 
 instance ToJSON Preferences where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
@@ -436,7 +443,7 @@ mergePreferences :: Maybe Preferences -> Maybe Preferences -> FullPreferences
 mergePreferences contactPrefs userPreferences =
   FullPreferences
     { fullDelete = pref CFFullDelete,
-      receipts = pref CFReceipts,
+      -- receipts = pref CFReceipts,
       voice = pref CFVoice
     }
   where
@@ -468,7 +475,7 @@ contactUserPreferences :: User -> Contact -> ContactUserPreferences
 contactUserPreferences user ct =
   ContactUserPreferences
     { fullDelete = pref CFFullDelete,
-      receipts = pref CFReceipts,
+      -- receipts = pref CFReceipts,
       voice = pref CFVoice
     }
   where
@@ -490,7 +497,7 @@ contactUserPreferences user ct =
 getContactUserPrefefence :: ChatFeature -> ContactUserPreferences -> ContactUserPreference
 getContactUserPrefefence = \case
   CFFullDelete -> fullDelete
-  CFReceipts -> receipts
+  -- CFReceipts -> receipts
   CFVoice -> voice
 
 data Profile = Profile
