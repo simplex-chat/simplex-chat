@@ -751,9 +751,9 @@ viewPrefsUpdated ps ps'
 viewPreference :: Preference -> StyledString
 viewPreference = \case
   Preference {allow} -> case allow of
-    PSAlways -> "always"
-    PSYes -> "yes"
-    PSNo -> "no"
+    FAAlways -> "always"
+    FAYes -> "yes"
+    FANo -> "no"
 
 viewCountactUserPref :: ContactUserPref -> StyledString
 viewCountactUserPref = \case

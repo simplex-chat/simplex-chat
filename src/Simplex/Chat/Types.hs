@@ -256,9 +256,11 @@ class HasPreferences p where
 
 instance HasPreferences User where
   preferences' User {profile = LocalProfile {preferences}} = preferences
+  {-# INLINE preferences' #-}
 
 instance HasPreferences Contact where
   preferences' Contact {profile = LocalProfile {preferences}} = preferences
+  {-# INLINE preferences' #-}
 
 class PreferenceI p where
   getPreference :: ChatFeature -> p -> Preference
@@ -274,6 +276,7 @@ instance PreferenceI FullPreferences where
     CFFullDelete -> fullDelete
     CFReceipts -> receipts
     CFVoice -> voice
+  {-# INLINE getPreference #-}
 
 -- collection of optional chat preferences for the user and the contact
 data Preferences = Preferences
@@ -346,9 +349,9 @@ toChatPrefs FullPreferences {fullDelete, receipts, voice} =
 defaultChatPrefs :: FullPreferences
 defaultChatPrefs =
   FullPreferences
-    { fullDelete = Preference {allow = PSNo},
-      receipts = Preference {allow = PSNo},
-      voice = Preference {allow = PSNo}
+    { fullDelete = Preference {allow = FANo},
+      receipts = Preference {allow = FANo},
+      voice = Preference {allow = FANo}
     }
 
 emptyChatPrefs :: Preferences
@@ -365,67 +368,67 @@ instance FromField Preferences where
   fromField = fromTextField_ decodeJson
 
 data Preference = Preference
-  {allow :: PrefAllowed}
+  {allow :: FeatureAllowed}
   deriving (Eq, Show, Generic, FromJSON)
 
 data GroupPreference = GroupPreference
-  {enable :: GroupPrefEnabled}
+  {enable :: GroupFeatureEnabled}
   deriving (Eq, Show, Generic, FromJSON)
 
 instance ToJSON Preference where toEncoding = J.genericToEncoding J.defaultOptions
 
 instance ToJSON GroupPreference where toEncoding = J.genericToEncoding J.defaultOptions
 
-data PrefAllowed
-  = PSAlways -- allow unconditionally
-  | PSYes -- allow, if peer allows it
-  | PSNo -- do not allo
+data FeatureAllowed
+  = FAAlways -- allow unconditionally
+  | FAYes -- allow, if peer allows it
+  | FANo -- do not allow
   deriving (Eq, Show, Generic)
 
-data GroupPrefEnabled = PSOn | PSOff
+data GroupFeatureEnabled = FEOn | FEOff
   deriving (Eq, Show, Generic)
 
-instance FromField PrefAllowed where fromField = fromBlobField_ strDecode
+instance FromField FeatureAllowed where fromField = fromBlobField_ strDecode
 
-instance ToField PrefAllowed where toField = toField . strEncode
+instance ToField FeatureAllowed where toField = toField . strEncode
 
-instance StrEncoding PrefAllowed where
+instance StrEncoding FeatureAllowed where
   strEncode = \case
-    PSAlways -> "always"
-    PSYes -> "yes"
-    PSNo -> "no"
+    FAAlways -> "always"
+    FAYes -> "yes"
+    FANo -> "no"
   strDecode = \case
-    "always" -> Right PSAlways
-    "yes" -> Right PSYes
-    "no" -> Right PSNo
-    r -> Left $ "bad PrefAllowed " <> B.unpack r
+    "always" -> Right FAAlways
+    "yes" -> Right FAYes
+    "no" -> Right FANo
+    r -> Left $ "bad FeatureAllowed " <> B.unpack r
   strP = strDecode <$?> A.takeByteString
 
-instance FromJSON PrefAllowed where
-  parseJSON = strParseJSON "PrefAllowed"
+instance FromJSON FeatureAllowed where
+  parseJSON = strParseJSON "FeatureAllowed"
 
-instance ToJSON PrefAllowed where
+instance ToJSON FeatureAllowed where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-instance FromField GroupPrefEnabled where fromField = fromBlobField_ strDecode
+instance FromField GroupFeatureEnabled where fromField = fromBlobField_ strDecode
 
-instance ToField GroupPrefEnabled where toField = toField . strEncode
+instance ToField GroupFeatureEnabled where toField = toField . strEncode
 
-instance StrEncoding GroupPrefEnabled where
+instance StrEncoding GroupFeatureEnabled where
   strEncode = \case
-    PSOn -> "on"
-    PSOff -> "off"
+    FEOn -> "on"
+    FEOff -> "off"
   strDecode = \case
-    "on" -> Right PSOn
-    "off" -> Right PSOff
-    r -> Left $ "bad GroupPrefEnabled " <> B.unpack r
+    "on" -> Right FEOn
+    "off" -> Right FEOff
+    r -> Left $ "bad GroupFeatureEnabled " <> B.unpack r
   strP = strDecode <$?> A.takeByteString
 
-instance FromJSON GroupPrefEnabled where
-  parseJSON = strParseJSON "GroupPrefEnabled"
+instance FromJSON GroupFeatureEnabled where
+  parseJSON = strParseJSON "GroupFeatureEnabled"
 
-instance ToJSON GroupPrefEnabled where
+instance ToJSON GroupFeatureEnabled where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
@@ -455,10 +458,10 @@ instance ToJSON PrefEnabled where
 
 prefEnabled :: Preference -> Preference -> PrefEnabled
 prefEnabled Preference {allow = user} Preference {allow = contact} = case (user, contact) of
-  (PSAlways, PSNo) -> PrefEnabled {forUser = False, forContact = True}
-  (PSNo, PSAlways) -> PrefEnabled {forUser = True, forContact = False}
-  (_, PSNo) -> PrefEnabled False False
-  (PSNo, _) -> PrefEnabled False False
+  (FAAlways, FANo) -> PrefEnabled {forUser = False, forContact = True}
+  (FANo, FAAlways) -> PrefEnabled {forUser = True, forContact = False}
+  (_, FANo) -> PrefEnabled False False
+  (FANo, _) -> PrefEnabled False False
   _ -> PrefEnabled True True
 
 contactUserPreferences :: User -> Contact -> ContactUserPreferences
