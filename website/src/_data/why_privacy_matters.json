@@ -2,13 +2,13 @@
     "sections": [
         {
             "id": 1,
-            "title": "Invasive and manipulative advertising and price discrimination",
+            "title": "Advertising and price discrimination",
             "imgLight": "/img/new/privacy-section-1.svg",
             "imgDark": "/img/new/privacy-section-1.svg",
             "overlayContent": {
                 "overlayId": "why-privacy-matters-1",
-                "title": "More Information",
-                "linkText": "Learn more",
+                "title": "Lack of privacy has a price",
+                "linkText": "Privacy is money",
                 "showImage": false,
                 "contentBody": "overlay_content/why_privacy_matters/card_1.html"
             }
@@ -20,17 +20,24 @@
             "imgDark": "/img/new/privacy-section-2.svg",
             "overlayContent": {
                 "overlayId": "why-privacy-matters-2",
-                "title": "More Information",
-                "linkText": "Learn more",
+                "title": "Privacy gives you power",
+                "linkText": "Privacy is power",
                 "showImage": false,
                 "contentBody": "overlay_content/why_privacy_matters/card_2.html"
             }
         },
         {
             "id": 3,
-            "title": "Protect against prosecution when you are innocent",
+            "title": "Prosecution due to innocent association",
             "imgLight": "/img/new/privacy-section-3.svg",
-            "imgDark": "/img/new/privacy-section-3.svg"
+            "imgDark": "/img/new/privacy-section-3.svg",
+            "overlayContent": {
+                "overlayId": "why-privacy-matters-3",
+                "title": "Privacy protects your freedom",
+                "linkText": "Privacy is freedom",
+                "showImage": false,
+                "contentBody": "overlay_content/why_privacy_matters/card_3.html"
+            }
         }
     ]
 }
