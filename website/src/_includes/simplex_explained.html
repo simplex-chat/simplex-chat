@@ -1,35 +1,37 @@
 <style>
     .tab-button {
-        flex: 1;
-        padding: 8px;
-        font-weight: 700;
-        font-size: 20px;
         color: #a8b0b4;
-        background: linear-gradient(#a8b0b4, rgba(0, 0, 0, 0)) padding-box;
         background: linear-gradient(#fff, #fff) padding-box,
             linear-gradient(to bottom, #a8b0b4, transparent) border-box;
         border: 1px solid transparent;
         border-radius: 6px 6px 0px 0px;
-        text-align: center;
         transition: color 0.3s ease;
+        text-decoration: underline;
+        text-underline-offset: 3px;
     }
-    .tab-button:hover {
-        color: #6d6d6d;
+    .dark .tab-button{
+        color: #fff;
+        background: linear-gradient(#0C0B13, #0C0B13) padding-box,
+            linear-gradient(to bottom, #01F1FF, transparent) border-box;
     }
     .tab-button.active {
         color: #0053d0;
+        text-decoration: none;
+    }
+    .dark .tab-button.active {
+        color: #70F0F9;
     }
 </style>
 
-<section id="simplex-explained" class="bg-white py-[80px]">
+<section id="simplex-explained" class="bg-primary-bg-light dark:bg-primary-bg-dark py-[80px]">
     <div class="container">
         <p class="text-[35px] lg:text-[45px] text-center font-bold text-grey-black dark:text-white mb-[40px]">Simplex explained</p>
 
         <!-- Tab links -->
         <div class="tabs hidden md:flex gap-2 mb-16">
-            <div data-btn-index="0" class="tab-button tab-1 cursor-pointer active">1. What users experience</div>
-            <div data-btn-index="1" class="tab-button tab-2 cursor-pointer">2. How does it work</div>
-            <div data-btn-index="2" class="tab-button tab-3 cursor-pointer">3. What servers see</div>
+            <div data-btn-index="0" class="flex-1 tab-button tab-1 p-2 text-[20px] text-center font-bold cursor-pointer active">1. What users experience</div>
+            <div data-btn-index="1" class="flex-1 tab-button tab-2 p-2 text-[20px] text-center font-bold cursor-pointer">2. How does it work</div>
+            <div data-btn-index="2" class="flex-1 tab-button tab-3 p-2 text-[20px] text-center font-bold cursor-pointer">3. What servers see</div>
         </div>
 
         <!-- Tab content -->
@@ -37,10 +39,10 @@
             <div class="swiper-wrapper h-[inherit] mb-20 md:mb-0">
 
                 <div class="swiper-slide h-[inherit]">
-                    <div class="tab-button active md:hidden">1. What users experience</div>
+                    <div class="tab-button p-2 text-[20px] text-center font-bold active md:hidden">1. What users experience</div>
                     <div class="flex flex-col justify-center items-center">
                         <img class="h-[340px] my-16" src="/img/new/explained-1.svg" alt="" />
-                        <p class="text-black text-[16px] font-normal text-center mt-[30px]">
+                        <p class="text-black dark:text-white text-[16px] font-normal text-center mt-[30px]">
                             Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut
                             velit nulla, ornare feugiat incidunt convallis nulla.
                         </p>
@@ -48,10 +50,10 @@
                 </div>
 
                 <div class="swiper-slide h-[inherit]">
-                    <div class="tab-button active md:hidden">2. How does it work</div>
+                    <div class="tab-button p-2 text-[20px] text-center font-bold active md:hidden">2. How does it work</div>
                     <div class="flex flex-col justify-center items-center">
                         <img class="h-[340px] my-16" src="/img/new/explained-2.svg" alt="" />
-                        <p class="text-black text-[16px] font-normal text-center mt-[30px]">
+                        <p class="text-black dark:text-white text-[16px] font-normal text-center mt-[30px]">
                             Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut
                             velit nulla, ornare feugiat incidunt convallis nulla.
                         </p>
@@ -59,10 +61,10 @@
                 </div>
 
                 <div class="swiper-slide h-[inherit]">
-                    <div class="tab-button active md:hidden">3. What servers see</div>
+                    <div class="tab-button p-2 text-[20px] text-center font-bold active md:hidden">3. What servers see</div>
                     <div class="flex flex-col justify-center items-center">
                         <img class="h-[340px] my-16" src="/img/new/explained-3.svg" alt="" />
-                        <p class="text-black text-[16px] font-normal text-center mt-[30px]">
+                        <p class="text-black dark:text-white text-[16px] font-normal text-center mt-[30px]">
                             Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut
                             velit nulla, ornare feugiat incidunt convallis nulla.
                         </p>
