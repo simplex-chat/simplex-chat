@@ -1038,8 +1038,13 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         chatModel.addChat(Chat(chatInfo = ChatInfo.Group(r.groupInfo), chatItems = listOf()))
         // TODO NtfManager.shared.notifyGroupInvitation
       }
-      is CR.UserAcceptedGroupSent ->
+      is CR.UserAcceptedGroupSent -> {
         chatModel.updateGroup(r.groupInfo)
+        if (r.hostContact != null) {
+          chatModel.dismissConnReqView(r.hostContact.activeConn.id)
+          chatModel.removeChat(r.hostContact.activeConn.id)
+        }
+      }
       is CR.JoinedGroupMemberConnecting ->
         chatModel.upsertGroupMember(r.groupInfo, r.member)
       is CR.DeletedMemberUser -> // TODO update user member
@@ -1860,7 +1865,7 @@ sealed class CR {
   // group events
   @Serializable @SerialName("groupCreated") class GroupCreated(val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("sentGroupInvitation") class SentGroupInvitation(val groupInfo: GroupInfo, val contact: Contact, val member: GroupMember): CR()
-  @Serializable @SerialName("userAcceptedGroupSent") class UserAcceptedGroupSent (val groupInfo: GroupInfo): CR()
+  @Serializable @SerialName("userAcceptedGroupSent") class UserAcceptedGroupSent (val groupInfo: GroupInfo, val hostContact: Contact? = null): CR()
   @Serializable @SerialName("userDeletedMember") class UserDeletedMember(val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("leftMemberUser") class LeftMemberUser(val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("groupMembers") class GroupMembers(val group: Group): CR()
