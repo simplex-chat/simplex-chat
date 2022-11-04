@@ -53,7 +53,8 @@ fun PreferencesPerChatView(m: ChatModel, user: User, contact: Contact, onContact
   )
 }
 
-@Composable fun PreferencesPerChatLayout(
+@Composable
+private fun PreferencesPerChatLayout(
   prefs: ChatPreferences,
   savedPrefs: ChatPreferences,
   userPrefs: ChatPreferences,
@@ -118,6 +119,7 @@ private fun VoiceSection(
   current: State<ChatPreferenceLocal>,
   default: ChatPreferenceLocal,
   contactCurrent: ChatPreferenceLocal,
+  advanced: Boolean = false,
   onSelected: (ChatPreferenceLocal) -> Unit
 ) {
   fun mapValue(user: ChatPreferenceLocal): ValueTitleDesc<ChatPreferenceLocal> = when (user) {
@@ -144,14 +146,7 @@ private fun VoiceSection(
   }
   SectionView(generalGetString(R.string.chat_preferences_voice).uppercase()) {
     SectionItemView {
-      val mappedValues = remember { values.map { it.value to it.title } }
-      ExposedDropDownSettingRow(
-        generalGetString(R.string.chat_preferences_you_allow),
-        mappedValues,
-        current,
-        icon = null,
-        onSelected = onSelected
-      )
+      SelectableChatPreferenceRow(current, values, advanced, onSelected)
     }
     SectionDivider()
     SectionItemWithValue(
@@ -171,6 +166,7 @@ private fun FullDeleteSection(
   current: State<ChatPreferenceLocal>,
   default: ChatPreferenceLocal,
   contactCurrent: ChatPreferenceLocal,
+  advanced: Boolean = false,
   onSelected: (ChatPreferenceLocal) -> Unit
 ) {
   fun mapValue(user: ChatPreferenceLocal): ValueTitleDesc<ChatPreferenceLocal> = when (user) {
@@ -196,14 +192,7 @@ private fun FullDeleteSection(
   }
   SectionView(generalGetString(R.string.chat_preferences_deletion).uppercase()) {
     SectionItemView {
-      val mappedValues = remember { values.map { it.value to it.title } }
-      ExposedDropDownSettingRow(
-        generalGetString(R.string.chat_preferences_you_allow),
-        mappedValues,
-        current,
-        icon = null,
-        onSelected = onSelected
-      )
+      SelectableChatPreferenceRow(current, values, advanced, onSelected)
     }
     SectionDivider()
     SectionItemWithValue(
@@ -223,6 +212,7 @@ private fun ReceiptsSection(
   current: State<ChatPreferenceLocal>,
   default: ChatPreferenceLocal,
   contactCurrent: ChatPreferenceLocal,
+  advanced: Boolean = false,
   onSelected: (ChatPreferenceLocal) -> Unit
 ) {
   fun mapValue(user: ChatPreferenceLocal): ValueTitleDesc<ChatPreferenceLocal> = when (user) {
@@ -249,14 +239,7 @@ private fun ReceiptsSection(
   }
   SectionView(generalGetString(R.string.chat_preferences_delivery_receipts).uppercase()) {
     SectionItemView {
-      val mappedValues = remember { values.map { it.value to it.title } }
-      ExposedDropDownSettingRow(
-        generalGetString(R.string.chat_preferences_you_allow),
-        mappedValues,
-        current,
-        icon = null,
-        onSelected = onSelected
-      )
+      SelectableChatPreferenceRow(current, values, advanced, onSelected)
     }
     SectionDivider()
     SectionItemWithValue(

@@ -899,18 +899,18 @@
     <string name="confirm_saving_prefs_per_contact_info">После сохранения, этот контакт будет уведомлен</string>
 
     <string name="chat_preferences_voice_yes_and_yes_desc">Вы и ваш контакт можете отправлять голосовые сообщения</string>
-    <string name="chat_preferences_voice_yes_and_no_desc">Ни вы, ни ваш контакт не сможете отправить голосовое сообщение до тех пор, пока ваш контакт не укажет Да или Всегда</string>
-    <string name="chat_preferences_voice_no_and_yes_desc">Ни вы, ни ваш контакт не сможете отправить голосовое сообщение до тех пор, пока вы не укажете Да или Всегда</string>
+    <string name="chat_preferences_voice_yes_and_no_desc">Ни вы, ни ваш контакт не сможете отправить голосовое сообщение до тех пор, пока ваш контакт тоже не разрешит</string>
+    <string name="chat_preferences_voice_no_and_yes_desc">Ни вы, ни ваш контакт не сможете отправить голосовое сообщение до тех пор, пока вы тоже не разрешите</string>
     <string name="chat_preferences_voice_always_and_no_desc">Ваш контакт может присылать вам голосовые сообщения, но вы не можете присылать их ему</string>
     <string name="chat_preferences_voice_no_and_always_desc">Вы можете отправлять голосовые сообщения вашему контакту, а ваш контакт - нет</string>
     <string name="chat_preferences_deletion_yes_and_yes_desc">Вы и ваш контакт можете удалять свои сообщения друг у друга</string>
-    <string name="chat_preferences_deletion_yes_and_no_desc">Ни вы, ни ваш контакт не сможете удалить свои сообщения друг у друга до тех пор, пока ваш контакт не укажет Да или Всегда</string>
-    <string name="chat_preferences_deletion_no_and_yes_desc">Ни вы, ни ваш контакт не сможете удалить свои сообщения друг у друга до тех пор, пока вы не укажете Да или Всегда</string>
+    <string name="chat_preferences_deletion_yes_and_no_desc">Ни вы, ни ваш контакт не сможете удалить свои сообщения друг у друга до тех пор, пока ваш контакт тоже не разрешит</string>
+    <string name="chat_preferences_deletion_no_and_yes_desc">Ни вы, ни ваш контакт не сможете удалить свои сообщения друг у друга до тех пор, пока вы тоже не разрешите</string>
     <string name="chat_preferences_deletion_always_and_no_desc">Ваш контакт может удалять свои сообщения у вас, но вы не можете удалять у него</string>
     <string name="chat_preferences_deletion_no_and_always_desc">Вы можете удалять свои сообщения у вашего контакта, однако он у вас не может</string>
     <string name="chat_preferences_delivery_receipts_yes_and_yes_desc">Вы и ваш контакт можете отправлять друг другу отчеты о прочтении</string>
-    <string name="chat_preferences_delivery_receipts_yes_and_no_desc">Ни вы, ни ваш контакт не будете отправлять отчеты о прочтении до тех пор, пока ваш контакт не укажет Да или Всегда</string>
-    <string name="chat_preferences_delivery_receipts_no_and_yes_desc">Ни вы, ни ваш контакт не будете отправлять отчеты о прочтении до тех пор, пока вы не укажете Да или Всегда</string>
+    <string name="chat_preferences_delivery_receipts_yes_and_no_desc">Ни вы, ни ваш контакт не будете отправлять отчеты о прочтении до тех пор, пока ваш контакт тоже не разрешит</string>
+    <string name="chat_preferences_delivery_receipts_no_and_yes_desc">Ни вы, ни ваш контакт не будете отправлять отчеты о прочтении до тех пор, пока вы тоже не разрешите</string>
     <string name="chat_preferences_delivery_receipts_always_and_no_desc">Ваш контакт будет получать отчеты о прочтении от вас, но вы не сможете получить их от него</string>
     <string name="chat_preferences_delivery_receipts_no_and_always_desc">Вы можете получать отчеты о прочтении от вашего контакта, но не он от вас</string>
 

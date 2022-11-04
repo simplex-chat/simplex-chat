@@ -345,18 +345,20 @@ fun SettingsPreferenceItemWithInfo(
 @Composable
 fun PreferenceToggleWithIcon(
   text: String,
-  icon: ImageVector,
-  iconColor: Color = HighOrLowlight,
+  icon: ImageVector? = null,
+  iconColor: Color? = HighOrLowlight,
   checked: Boolean,
   onChange: (Boolean) -> Unit = {},
 ) {
   Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-    Icon(
-      icon,
-      null,
-      tint = iconColor
-    )
-    Spacer(Modifier.padding(horizontal = 4.dp))
+    if (icon != null) {
+      Icon(
+        icon,
+        null,
+        tint = iconColor ?: HighOrLowlight
+      )
+      Spacer(Modifier.padding(horizontal = 4.dp))
+    }
     Text(text)
     Spacer(Modifier.fillMaxWidth().weight(1f))
     Switch(

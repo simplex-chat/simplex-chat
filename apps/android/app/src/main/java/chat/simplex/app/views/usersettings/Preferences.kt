@@ -47,7 +47,8 @@ fun PreferencesView(m: ChatModel, user: User) {
   )
 }
 
-@Composable fun PreferencesLayout(
+@Composable
+private fun PreferencesLayout(
   prefs: ChatPreferences,
   savedPrefs: ChatPreferences,
   applyPrefs: (ChatPreferences) -> Unit,
@@ -97,7 +98,7 @@ fun PreferencesView(m: ChatModel, user: User) {
 }
 
 @Composable
-private fun VoiceSection(current: State<ChatPreferenceLocal>, onSelected: (ChatPreferenceLocal) -> Unit) {
+private fun VoiceSection(current: State<ChatPreferenceLocal>, advanced: Boolean = false, onSelected: (ChatPreferenceLocal) -> Unit) {
   val values = remember {
     listOf(
       ValueTitleDesc(ChatPreferenceLocal.YES, generalGetString(R.string.chat_preferences_yes), generalGetString(R.string.chat_preferences_voice_yes_desc)),
@@ -107,21 +108,14 @@ private fun VoiceSection(current: State<ChatPreferenceLocal>, onSelected: (ChatP
   }
   SectionView(generalGetString(R.string.chat_preferences_voice).uppercase()) {
     SectionItemView {
-      val mappedValues = remember { values.map { it.value to it.title } }
-      ExposedDropDownSettingRow(
-        generalGetString(R.string.chat_preferences_you_allow),
-        mappedValues,
-        current,
-        icon = null,
-        onSelected = onSelected
-      )
+      SelectableChatPreferenceRow(current, values, advanced, onSelected)
     }
   }
   SectionTextFooter(values.firstOrNull { it.value == current.value }!!.description)
 }
 
 @Composable
-private fun FullDeleteSection(current: State<ChatPreferenceLocal>, onSelected: (ChatPreferenceLocal) -> Unit) {
+private fun FullDeleteSection(current: State<ChatPreferenceLocal>, advanced: Boolean = false, onSelected: (ChatPreferenceLocal) -> Unit) {
   val values = remember {
     listOf(
       ValueTitleDesc(ChatPreferenceLocal.YES, generalGetString(R.string.chat_preferences_yes), generalGetString(R.string.chat_preferences_deletion_yes_desc)),
@@ -131,21 +125,14 @@ private fun FullDeleteSection(current: State<ChatPreferenceLocal>, onSelected: (
   }
   SectionView(generalGetString(R.string.chat_preferences_deletion).uppercase()) {
     SectionItemView {
-      val mappedValues = remember { values.map { it.value to it.title } }
-      ExposedDropDownSettingRow(
-        generalGetString(R.string.chat_preferences_you_allow),
-        mappedValues,
-        current,
-        icon = null,
-        onSelected = onSelected
-      )
+      SelectableChatPreferenceRow(current, values, advanced, onSelected)
     }
   }
   SectionTextFooter(values.firstOrNull { it.value == current.value }!!.description)
 }
 
 @Composable
-private fun ReceiptsSection(current: State<ChatPreferenceLocal>, onSelected: (ChatPreferenceLocal) -> Unit) {
+private fun ReceiptsSection(current: State<ChatPreferenceLocal>, advanced: Boolean = false, onSelected: (ChatPreferenceLocal) -> Unit) {
   val values = remember {
     listOf(
       ValueTitleDesc(ChatPreferenceLocal.YES, generalGetString(R.string.chat_preferences_yes), generalGetString(R.string.chat_preferences_delivery_receipts_yes_desc)),
@@ -155,17 +142,38 @@ private fun ReceiptsSection(current: State<ChatPreferenceLocal>, onSelected: (Ch
   }
   SectionView(generalGetString(R.string.chat_preferences_delivery_receipts).uppercase()) {
     SectionItemView {
-      val mappedValues = remember { values.map { it.value to it.title } }
-      ExposedDropDownSettingRow(
-        generalGetString(R.string.chat_preferences_you_allow),
-        mappedValues,
-        current,
-        icon = null,
-        onSelected = onSelected
-      )
+      SelectableChatPreferenceRow(current, values, advanced, onSelected)
     }
   }
   SectionTextFooter(values.firstOrNull { it.value == current.value }!!.description)
+}
+
+@Composable
+fun SelectableChatPreferenceRow(
+  current: State<ChatPreferenceLocal>,
+  values: List<ValueTitleDesc<ChatPreferenceLocal>>,
+  advanced: Boolean = false,
+  onSelected: (ChatPreferenceLocal) -> Unit
+) {
+  if (advanced) {
+    val mappedValues = remember { values.map { it.value to it.title } }
+    ExposedDropDownSettingRow(
+      generalGetString(R.string.chat_preferences_you_allow),
+      mappedValues,
+      current,
+      icon = null,
+      onSelected = onSelected
+    )
+  } else {
+    PreferenceToggleWithIcon(
+      generalGetString(R.string.chat_preferences_you_allow),
+      null,
+      null,
+      current.value == ChatPreferenceLocal.ALWAYS || current.value == ChatPreferenceLocal.YES
+    ) {
+      onSelected(if (it) ChatPreferenceLocal.YES else ChatPreferenceLocal.NO)
+    }
+  }
 }
 
 private fun showConfirmSavingAlert(onConfirm: () -> Unit) {
