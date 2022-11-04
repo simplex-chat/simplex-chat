@@ -329,7 +329,7 @@ public enum ChatResponse: Decodable, Error {
     // group events
     case groupCreated(groupInfo: GroupInfo)
     case sentGroupInvitation(groupInfo: GroupInfo, contact: Contact, member: GroupMember)
-    case userAcceptedGroupSent(groupInfo: GroupInfo)
+    case userAcceptedGroupSent(groupInfo: GroupInfo, hostContact: Contact?)
     case userDeletedMember(groupInfo: GroupInfo, member: GroupMember)
     case leftMemberUser(groupInfo: GroupInfo)
     case groupMembers(group: Group)

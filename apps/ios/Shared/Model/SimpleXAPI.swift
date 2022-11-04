@@ -716,7 +716,7 @@ enum JoinGroupResult {
 func apiJoinGroup(_ groupId: Int64) async throws -> JoinGroupResult {
     let r = await chatSendCmd(.apiJoinGroup(groupId: groupId))
     switch r {
-    case let .userAcceptedGroupSent(groupInfo): return .joined(groupInfo: groupInfo)
+    case let .userAcceptedGroupSent(groupInfo, _): return .joined(groupInfo: groupInfo)
     case .chatCmdError(.errorAgent(.SMP(.AUTH))): return .invitationRemoved
     case .chatCmdError(.errorStore(.groupNotFound)): return .groupNotFound
     default: throw r
@@ -893,11 +893,11 @@ func processReceivedMsg(_ res: ChatResponse) async {
         case let .contactConnected(contact, _):
             if !contact.viaGroupLink {
                 m.updateContact(contact)
+                m.dismissConnReqView(contact.activeConn.id)
+                m.removeChat(contact.activeConn.id)
                 m.updateNetworkStatus(contact.id, .connected)
                 NtfManager.shared.notifyContactConnected(contact)
             }
-            m.dismissConnReqView(contact.activeConn.id)
-            m.removeChat(contact.activeConn.id)
         case let .contactConnecting(contact):
             if !contact.viaGroupLink {
                 m.updateContact(contact)
@@ -991,8 +991,12 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 chatItems: []
             ))
             // NtfManager.shared.notifyContactRequest(contactRequest) // TODO notifyGroupInvitation?
-        case let .userAcceptedGroupSent(groupInfo):
+        case let .userAcceptedGroupSent(groupInfo, hostContact):
             m.updateGroup(groupInfo)
+            if let hostContact = hostContact {
+                m.dismissConnReqView(hostContact.activeConn.id)
+                m.removeChat(hostContact.activeConn.id)
+            }
         case let .joinedGroupMemberConnecting(groupInfo, _, member):
             _ = m.upsertGroupMember(groupInfo, member)
         case let .deletedMemberUser(groupInfo, _): // TODO update user member
