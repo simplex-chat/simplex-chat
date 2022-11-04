@@ -952,11 +952,11 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       is CR.ContactConnected -> {
         if (!r.contact.viaGroupLink) {
           chatModel.updateContact(r.contact)
-          chatModel.dismissConnReqView(r.contact.activeConn.id)
-          chatModel.removeChat(r.contact.activeConn.id)
           chatModel.updateNetworkStatus(r.contact.id, Chat.NetworkStatus.Connected())
           ntfManager.notifyContactConnected(r.contact)
         }
+        chatModel.dismissConnReqView(r.contact.activeConn.id)
+        chatModel.removeChat(r.contact.activeConn.id)
       }
       is CR.ContactConnecting -> {
         if (!r.contact.viaGroupLink) {
@@ -1038,6 +1038,8 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         chatModel.addChat(Chat(chatInfo = ChatInfo.Group(r.groupInfo), chatItems = listOf()))
         // TODO NtfManager.shared.notifyGroupInvitation
       }
+      is CR.UserAcceptedGroupSent ->
+        chatModel.updateGroup(r.groupInfo)
       is CR.JoinedGroupMemberConnecting ->
         chatModel.upsertGroupMember(r.groupInfo, r.member)
       is CR.DeletedMemberUser -> // TODO update user member

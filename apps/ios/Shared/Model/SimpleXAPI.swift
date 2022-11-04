@@ -893,11 +893,11 @@ func processReceivedMsg(_ res: ChatResponse) async {
         case let .contactConnected(contact, _):
             if !contact.viaGroupLink {
                 m.updateContact(contact)
-                m.dismissConnReqView(contact.activeConn.id)
-                m.removeChat(contact.activeConn.id)
                 m.updateNetworkStatus(contact.id, .connected)
                 NtfManager.shared.notifyContactConnected(contact)
             }
+            m.dismissConnReqView(contact.activeConn.id)
+            m.removeChat(contact.activeConn.id)
         case let .contactConnecting(contact):
             if !contact.viaGroupLink {
                 m.updateContact(contact)
@@ -991,6 +991,8 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 chatItems: []
             ))
             // NtfManager.shared.notifyContactRequest(contactRequest) // TODO notifyGroupInvitation?
+        case let .userAcceptedGroupSent(groupInfo):
+            m.updateGroup(groupInfo)
         case let .joinedGroupMemberConnecting(groupInfo, _, member):
             _ = m.upsertGroupMember(groupInfo, member)
         case let .deletedMemberUser(groupInfo, _): // TODO update user member
