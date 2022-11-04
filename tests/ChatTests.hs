@@ -31,7 +31,7 @@ import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
 import System.FilePath ((</>))
 import Test.Hspec
 
-defaultPrefs :: Maybe ChatPreferences
+defaultPrefs :: Maybe Preferences
 defaultPrefs = Just $ toChatPrefs defaultChatPrefs
 
 aliceProfile :: Profile
@@ -2732,7 +2732,7 @@ testCantSeeGlobalPrefsUpdateIncognito = testChat3 aliceProfile bobProfile cathPr
     (bob </)
     cath <## "contact alice removed full name"
     cath <## "alice updated preferences for you:"
-    cath <## "voice messages: enabled for you (you allow: no, contact allows: always)"
+    cath <## "voice messages: enabled for you (you allow: default (no), contact allows: always)"
     (cath </)
     bob ##> "/_set prefs @2 {\"voice\": {\"allow\": \"always\"}}"
     bob <## ("you updated preferences for " <> aliceIncognito <> ":")
@@ -2751,7 +2751,7 @@ testCantSeeGlobalPrefsUpdateIncognito = testChat3 aliceProfile bobProfile cathPr
     alice <## "you updated preferences for cath:"
     alice <## "voice messages: off (you allow: yes, contact allows: no)"
     cath <## "alice updated preferences for you:"
-    cath <## "voice messages: off (you allow: no, contact allows: yes)"
+    cath <## "voice messages: off (you allow: default (no), contact allows: yes)"
 
 testSetAlias :: IO ()
 testSetAlias = testChat2 aliceProfile bobProfile $
@@ -2792,7 +2792,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     alice <## "you updated preferences for bob:"
     alice <## "voice messages: enabled for contact (you allow: always, contact allows: no)"
     bob <## "alice updated preferences for you:"
-    bob <## "voice messages: enabled for you (you allow: no, contact allows: always)"
+    bob <## "voice messages: enabled for you (you allow: default (no), contact allows: always)"
     (bob </)
     alice ##> "/_profile {\"displayName\": \"alice\", \"fullName\": \"\", \"preferences\": {\"voice\": {\"allow\": \"no\"}}}"
     alice <## "user full name removed (your contacts are notified)"
@@ -2801,7 +2801,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     alice <## "you updated preferences for bob:"
     alice <## "voice messages: off (you allow: yes, contact allows: no)"
     bob <## "alice updated preferences for you:"
-    bob <## "voice messages: off (you allow: no, contact allows: yes)"
+    bob <## "voice messages: off (you allow: default (no), contact allows: yes)"
     (bob </)
     bob ##> "/_profile {\"displayName\": \"bob\", \"fullName\": \"\", \"preferences\": {\"voice\": {\"allow\": \"yes\"}}}"
     bob <## "user full name removed (your contacts are notified)"
@@ -2818,7 +2818,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     alice <## "you updated preferences for bob:"
     alice <## "voice messages: off (you allow: no, contact allows: yes)"
     bob <## "alice updated preferences for you:"
-    bob <## "voice messages: off (you allow: yes, contact allows: no)"
+    bob <## "voice messages: off (you allow: default (yes), contact allows: no)"
 
 testGetSetSMPServers :: IO ()
 testGetSetSMPServers =

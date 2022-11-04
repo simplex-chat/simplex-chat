@@ -1161,9 +1161,9 @@ processChatCommand = \case
             let mergedProfile = userProfileToSend user' Nothing $ Just ct
             void (sendDirectContactMessage ct $ XInfo mergedProfile) `catchError` (toView . CRChatError)
           pure $ CRUserProfileUpdated (fromLocalProfile p) p'
-    updateContactPrefs :: User -> Contact -> ChatPreferences -> m ChatResponse
+    updateContactPrefs :: User -> Contact -> Preferences -> m ChatResponse
     updateContactPrefs user@User {userId} ct@Contact {contactId, activeConn = Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
-      | contactUserPrefs == contactUserPrefs' = pure $ CRContactPrefsUpdated ct ct $ preferencesEnabled user ct -- nothing changed actually
+      | contactUserPrefs == contactUserPrefs' = pure $ CRContactPrefsUpdated ct ct $ contactUserPreferences user ct -- nothing changed actually
       | otherwise = do
         withStore' $ \db -> updateContactUserPreferences db userId contactId contactUserPrefs'
         -- [incognito] filter out contacts with whom user has incognito connections
@@ -1172,7 +1172,7 @@ processChatCommand = \case
         let p' = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct')
         withChatLock "updateProfile" . procCmd $ do
           void (sendDirectContactMessage ct' $ XInfo p') `catchError` (toView . CRChatError)
-          pure $ CRContactPrefsUpdated ct ct' $ preferencesEnabled user ct'
+          pure $ CRContactPrefsUpdated ct ct' $ contactUserPreferences user ct'
 
     isReady :: Contact -> Bool
     isReady ct =
@@ -2465,7 +2465,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
     xInfo :: Contact -> Profile -> m ()
     xInfo c@Contact {profile = p} p' = unless (fromLocalProfile p == p') $ do
       c' <- withStore $ \db -> updateContactProfile db userId c p'
-      toView $ CRContactUpdated c c' $ preferencesEnabled user c'
+      toView $ CRContactUpdated c c' $ contactUserPreferences user c'
 
     xInfoProbe :: Contact -> Probe -> m ()
     xInfoProbe c2 probe =
@@ -3026,7 +3026,7 @@ userProfileToSend :: User -> Maybe Profile -> Maybe Contact -> Profile
 userProfileToSend user@User {profile = p} incognitoProfile ct =
   let p' = fromMaybe (fromLocalProfile p) incognitoProfile
       userPrefs = maybe (preferences' user) (const Nothing) incognitoProfile
-   in (p' :: Profile) {preferences = Just . toChatPrefs $ mergeChatPreferences (userPreferences <$> ct) userPrefs}
+   in (p' :: Profile) {preferences = Just . toChatPrefs $ mergePreferences (userPreferences <$> ct) userPrefs}
 
 getCreateActiveUser :: SQLiteStore -> IO User
 getCreateActiveUser st = do
@@ -3307,7 +3307,7 @@ chatCommandP =
     groupProfile = do
       gName <- displayName
       fullName <- fullNameP gName
-      pure GroupProfile {displayName = gName, fullName, image = Nothing, preferences = Nothing}
+      pure GroupProfile {displayName = gName, fullName, image = Nothing, groupPreferences = Nothing}
     fullNameP name = do
       n <- (A.space *> A.takeByteString) <|> pure ""
       pure $ if B.null n then name else safeDecodeUtf8 n

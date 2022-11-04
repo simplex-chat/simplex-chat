@@ -708,46 +708,45 @@ viewUserProfileUpdated Profile {displayName = n, fullName, image, preferences} P
       | otherwise = ["user profile is changed to " <> ttyFullName n' fullName' <> notified]
     notified = " (your contacts are notified)"
 
-viewUserContactPrefsUpdated :: User -> Contact -> Contact -> PreferencesEnabled -> [StyledString]
-viewUserContactPrefsUpdated user ct ct' pss
+viewUserContactPrefsUpdated :: User -> Contact -> Contact -> ContactUserPreferences -> [StyledString]
+viewUserContactPrefsUpdated user ct ct' cups
   | null prefs = ["your preferences for " <> ttyContact' ct' <> " did not change"]
   | otherwise = ("you updated preferences for " <> ttyContact' ct' <> ":") : prefs
   where
-    prefs = viewContactPreferences user ct ct' pss
+    prefs = viewContactPreferences user ct ct' cups
 
-viewContactPrefsUpdated :: User -> Contact -> Contact -> PreferencesEnabled -> [StyledString]
-viewContactPrefsUpdated user ct ct' pss
+viewContactPrefsUpdated :: User -> Contact -> Contact -> ContactUserPreferences -> [StyledString]
+viewContactPrefsUpdated user ct ct' cups
   | null prefs = []
   | otherwise = (ttyContact' ct' <> " updated preferences for you:") : prefs
   where
-    prefs = viewContactPreferences user ct ct' pss
+    prefs = viewContactPreferences user ct ct' cups
 
-viewContactPreferences :: User -> Contact -> Contact -> PreferencesEnabled -> [StyledString]
-viewContactPreferences user ct ct' pss =
-  mapMaybe (viewContactPref (mergeUserChatPrefs user ct) (mergeUserChatPrefs user ct') (preferences' ct) (preferences' ct') pss) allPreferences
+viewContactPreferences :: User -> Contact -> Contact -> ContactUserPreferences -> [StyledString]
+viewContactPreferences user ct ct' cups =
+  mapMaybe (viewContactPref (mergeUserChatPrefs user ct) (mergeUserChatPrefs user ct') (preferences' ct) cups) allChatFeatures
 
-viewContactPref :: FullChatPreferences -> FullChatPreferences -> Maybe ChatPreferences -> Maybe ChatPreferences -> PreferencesEnabled -> PrefType -> Maybe StyledString
-viewContactPref userPrefs userPrefs' ctPrefs ctPrefs' pss pt
-  | userPref == userPref' && ctPref == ctPref' = Nothing
-  | otherwise = Just $ plain (chatPrefName pt) <> ": " <> viewPrefEnabled ps <> " (you allow: " <> viewPreference userPref' <> ", contact allows: " <> viewPreference ctPref' <> ")"
+viewContactPref :: FullPreferences -> FullPreferences -> Maybe Preferences -> ContactUserPreferences -> ChatFeature -> Maybe StyledString
+viewContactPref userPrefs userPrefs' ctPrefs cups pt
+  | userPref == userPref' && ctPref == contactPreference = Nothing
+  | otherwise = Just $ plain (chatPrefName pt) <> ": " <> viewPrefEnabled enabled <> " (you allow: " <> viewCountactUserPref userPreference <> ", contact allows: " <> viewPreference contactPreference <> ")"
   where
     userPref = getPreference pt userPrefs
     userPref' = getPreference pt userPrefs'
     ctPref = getPreference pt ctPrefs
-    ctPref' = getPreference pt ctPrefs'
-    ps = getPrefEnabled pt pss
+    ContactUserPreference {enabled, userPreference, contactPreference} = getContactUserPrefefence pt cups
 
-viewPrefsUpdated :: Maybe ChatPreferences -> Maybe ChatPreferences -> [StyledString]
+viewPrefsUpdated :: Maybe Preferences -> Maybe Preferences -> [StyledString]
 viewPrefsUpdated ps ps'
   | null prefs = []
   | otherwise = "updated preferences:" : prefs
   where
-    prefs = mapMaybe viewPref allPreferences
+    prefs = mapMaybe viewPref allChatFeatures
     viewPref pt
       | pref ps == pref ps' = Nothing
       | otherwise = Just $ plain (chatPrefName pt) <> " allowed: " <> viewPreference (pref ps')
       where
-        pref pss = getPreference pt $ mergeChatPreferences pss Nothing
+        pref pss = getPreference pt $ mergePreferences pss Nothing
 
 viewPreference :: Preference -> StyledString
 viewPreference = \case
@@ -755,6 +754,11 @@ viewPreference = \case
     PSAlways -> "always"
     PSYes -> "yes"
     PSNo -> "no"
+
+viewCountactUserPref :: ContactUserPref -> StyledString
+viewCountactUserPref = \case
+  CUPUser p -> "default (" <> viewPreference p <> ")"
+  CUPContact p -> viewPreference p
 
 viewPrefEnabled :: PrefEnabled -> StyledString
 viewPrefEnabled = \case
