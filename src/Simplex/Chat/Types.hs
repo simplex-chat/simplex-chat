@@ -303,7 +303,7 @@ instance ToField GroupPreferences where
 instance FromField GroupPreferences where
   fromField = fromTextField_ decodeJson
 
--- full collection of chat preferences defined in the app - it is use to ensure we include all preferences and to simplify processing
+-- full collection of chat preferences defined in the app - it is used to ensure we include all preferences and to simplify processing
 -- if some of the preferences are not defined in Preferences, defaults from defaultChatPrefs are used here.
 data FullPreferences = FullPreferences
   { fullDelete :: Preference,
@@ -351,7 +351,7 @@ defaultChatPrefs =
   FullPreferences
     { fullDelete = Preference {allow = FANo},
       receipts = Preference {allow = FANo},
-      voice = Preference {allow = FANo}
+      voice = Preference {allow = FAYes}
     }
 
 emptyChatPrefs :: Preferences

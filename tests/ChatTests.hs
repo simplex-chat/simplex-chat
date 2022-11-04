@@ -2415,19 +2415,19 @@ testConnectIncognitoInvitationLink = testChat3 aliceProfile bobProfile cathProfi
     alice ##> "/_set prefs @2 {}"
     alice <## ("your preferences for " <> bobIncognito <> " did not change")
     (bob </)
-    alice ##> "/_set prefs @2 {\"voice\": {\"allow\": \"always\"}}"
+    alice ##> "/_set prefs @2 {\"receipts\": {\"allow\": \"always\"}}"
     alice <## ("you updated preferences for " <> bobIncognito <> ":")
-    alice <## "voice messages: enabled for contact (you allow: always, contact allows: no)"
+    alice <## "delivery receipts: enabled for contact (you allow: always, contact allows: no)"
     bob <## (aliceIncognito <> " updated preferences for you:")
-    bob <## "voice messages: enabled for you (you allow: no, contact allows: always)"
+    bob <## "delivery receipts: enabled for you (you allow: no, contact allows: always)"
     bob ##> "/_set prefs @2 {}"
     bob <## ("your preferences for " <> aliceIncognito <> " did not change")
     (alice </)
-    alice ##> "/_set prefs @2 {\"voice\": {\"allow\": \"no\"}}"
+    alice ##> "/_set prefs @2 {\"receipts\": {\"allow\": \"no\"}}"
     alice <## ("you updated preferences for " <> bobIncognito <> ":")
-    alice <## "voice messages: off (you allow: no, contact allows: no)"
+    alice <## "delivery receipts: off (you allow: no, contact allows: no)"
     bob <## (aliceIncognito <> " updated preferences for you:")
-    bob <## "voice messages: off (you allow: no, contact allows: no)"
+    bob <## "delivery receipts: off (you allow: no, contact allows: no)"
 
 testConnectIncognitoContactAddress :: IO ()
 testConnectIncognitoContactAddress = testChat2 aliceProfile bobProfile $
@@ -2723,35 +2723,35 @@ testCantSeeGlobalPrefsUpdateIncognito = testChat3 aliceProfile bobProfile cathPr
           cath <## "alice (Alice): contact is connected"
       ]
     alice <## "cath (Catherine): contact is connected"
-    alice ##> "/_profile {\"displayName\": \"alice\", \"fullName\": \"\", \"preferences\": {\"voice\": {\"allow\": \"always\"}}}"
+    alice ##> "/_profile {\"displayName\": \"alice\", \"fullName\": \"\", \"preferences\": {\"receipts\": {\"allow\": \"always\"}}}"
     alice <## "user full name removed (your contacts are notified)"
     alice <## "updated preferences:"
-    alice <## "voice messages allowed: always"
+    alice <## "delivery receipts allowed: always"
     (alice </)
     -- bob doesn't receive profile update
     (bob </)
     cath <## "contact alice removed full name"
     cath <## "alice updated preferences for you:"
-    cath <## "voice messages: enabled for you (you allow: default (no), contact allows: always)"
+    cath <## "delivery receipts: enabled for you (you allow: default (no), contact allows: always)"
     (cath </)
-    bob ##> "/_set prefs @2 {\"voice\": {\"allow\": \"always\"}}"
+    bob ##> "/_set prefs @2 {\"receipts\": {\"allow\": \"always\"}}"
     bob <## ("you updated preferences for " <> aliceIncognito <> ":")
-    bob <## "voice messages: enabled for contact (you allow: always, contact allows: no)"
+    bob <## "delivery receipts: enabled for contact (you allow: always, contact allows: no)"
     alice <## "bob updated preferences for you:"
-    alice <## "voice messages: enabled for you (you allow: no, contact allows: always)"
-    alice ##> "/_set prefs @2 {\"voice\": {\"allow\": \"yes\"}}"
+    alice <## "delivery receipts: enabled for you (you allow: no, contact allows: always)"
+    alice ##> "/_set prefs @2 {\"receipts\": {\"allow\": \"yes\"}}"
     alice <## "you updated preferences for bob:"
-    alice <## "voice messages: enabled (you allow: yes, contact allows: always)"
+    alice <## "delivery receipts: enabled (you allow: yes, contact allows: always)"
     bob <## (aliceIncognito <> " updated preferences for you:")
-    bob <## "voice messages: enabled (you allow: always, contact allows: yes)"
+    bob <## "delivery receipts: enabled (you allow: always, contact allows: yes)"
     (cath </)
-    alice ##> "/_set prefs @3 {\"voice\": {\"allow\": \"always\"}}"
+    alice ##> "/_set prefs @3 {\"receipts\": {\"allow\": \"always\"}}"
     alice <## "your preferences for cath did not change"
-    alice ##> "/_set prefs @3 {\"voice\": {\"allow\": \"yes\"}}"
+    alice ##> "/_set prefs @3 {\"receipts\": {\"allow\": \"yes\"}}"
     alice <## "you updated preferences for cath:"
-    alice <## "voice messages: off (you allow: yes, contact allows: no)"
+    alice <## "delivery receipts: off (you allow: yes, contact allows: no)"
     cath <## "alice updated preferences for you:"
-    cath <## "voice messages: off (you allow: default (no), contact allows: yes)"
+    cath <## "delivery receipts: off (you allow: default (no), contact allows: yes)"
 
 testSetAlias :: IO ()
 testSetAlias = testChat2 aliceProfile bobProfile $
@@ -2788,37 +2788,37 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     alice ##> "/_set prefs @2 {}"
     alice <## "your preferences for bob did not change"
     (bob </)
-    alice ##> "/_set prefs @2 {\"voice\": {\"allow\": \"always\"}}"
+    alice ##> "/_set prefs @2 {\"receipts\": {\"allow\": \"always\"}}"
     alice <## "you updated preferences for bob:"
-    alice <## "voice messages: enabled for contact (you allow: always, contact allows: no)"
+    alice <## "delivery receipts: enabled for contact (you allow: always, contact allows: no)"
     bob <## "alice updated preferences for you:"
-    bob <## "voice messages: enabled for you (you allow: default (no), contact allows: always)"
+    bob <## "delivery receipts: enabled for you (you allow: default (no), contact allows: always)"
     (bob </)
-    alice ##> "/_profile {\"displayName\": \"alice\", \"fullName\": \"\", \"preferences\": {\"voice\": {\"allow\": \"no\"}}}"
+    alice ##> "/_profile {\"displayName\": \"alice\", \"fullName\": \"\", \"preferences\": {\"receipts\": {\"allow\": \"no\"}}}"
     alice <## "user full name removed (your contacts are notified)"
     bob <## "contact alice removed full name"
-    alice ##> "/_set prefs @2 {\"voice\": {\"allow\": \"yes\"}}"
+    alice ##> "/_set prefs @2 {\"receipts\": {\"allow\": \"yes\"}}"
     alice <## "you updated preferences for bob:"
-    alice <## "voice messages: off (you allow: yes, contact allows: no)"
+    alice <## "delivery receipts: off (you allow: yes, contact allows: no)"
     bob <## "alice updated preferences for you:"
-    bob <## "voice messages: off (you allow: default (no), contact allows: yes)"
+    bob <## "delivery receipts: off (you allow: default (no), contact allows: yes)"
     (bob </)
-    bob ##> "/_profile {\"displayName\": \"bob\", \"fullName\": \"\", \"preferences\": {\"voice\": {\"allow\": \"yes\"}}}"
+    bob ##> "/_profile {\"displayName\": \"bob\", \"fullName\": \"\", \"preferences\": {\"receipts\": {\"allow\": \"yes\"}}}"
     bob <## "user full name removed (your contacts are notified)"
     bob <## "updated preferences:"
-    bob <## "voice messages allowed: yes"
+    bob <## "delivery receipts allowed: yes"
     alice <## "contact bob removed full name"
     alice <## "bob updated preferences for you:"
-    alice <## "voice messages: enabled (you allow: yes, contact allows: yes)"
+    alice <## "delivery receipts: enabled (you allow: yes, contact allows: yes)"
     (alice </)
     bob ##> "/_set prefs @2 {}"
     bob <## "your preferences for alice did not change"
     (alice </)
-    alice ##> "/_set prefs @2 {\"voice\": {\"allow\": \"no\"}}"
+    alice ##> "/_set prefs @2 {\"receipts\": {\"allow\": \"no\"}}"
     alice <## "you updated preferences for bob:"
-    alice <## "voice messages: off (you allow: no, contact allows: yes)"
+    alice <## "delivery receipts: off (you allow: no, contact allows: yes)"
     bob <## "alice updated preferences for you:"
-    bob <## "voice messages: off (you allow: default (yes), contact allows: no)"
+    bob <## "delivery receipts: off (you allow: default (yes), contact allows: no)"
 
 testGetSetSMPServers :: IO ()
 testGetSetSMPServers =
