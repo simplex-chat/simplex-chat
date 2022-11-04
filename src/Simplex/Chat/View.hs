@@ -18,7 +18,7 @@ import Data.Char (toUpper)
 import Data.Function (on)
 import Data.Int (Int64)
 import Data.List (groupBy, intercalate, intersperse, partition, sortOn)
-import Data.Maybe (isJust, isNothing)
+import Data.Maybe (isJust, isNothing, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (DiffTime)
@@ -49,11 +49,11 @@ import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (bshow)
 import System.Console.ANSI.Types
 
-serializeChatResponse :: ChatResponse -> String
-serializeChatResponse = unlines . map unStyle . responseToView False
+serializeChatResponse :: Maybe User -> ChatResponse -> String
+serializeChatResponse user_ = unlines . map unStyle . responseToView user_ False
 
-responseToView :: Bool -> ChatResponse -> [StyledString]
-responseToView testView = \case
+responseToView :: Maybe User -> Bool -> ChatResponse -> [StyledString]
+responseToView user_ testView = \case
   CRActiveUser User {profile} -> viewUserProfile $ fromLocalProfile profile
   CRChatStarted -> ["chat started"]
   CRChatRunning -> ["chat is running"]
@@ -114,7 +114,7 @@ responseToView testView = \case
   CRContactRequestAlreadyAccepted c -> [ttyFullContact c <> ": sent you a duplicate contact request, but you are already connected, no action needed"]
   CRUserContactLinkCreated cReq -> connReqContact_ "Your new chat address is created!" cReq
   CRUserContactLinkDeleted -> viewUserContactLinkDeleted
-  CRUserAcceptedGroupSent _g -> [] -- [ttyGroup' g <> ": joining the group..."]
+  CRUserAcceptedGroupSent _g _ -> [] -- [ttyGroup' g <> ": joining the group..."]
   CRUserDeletedMember g m -> [ttyGroup' g <> ": you removed " <> ttyMember m <> " from the group"]
   CRLeftMemberUser g -> [ttyGroup' g <> ": you left the group"] <> groupPreserved g
   CRGroupDeletedUser g -> [ttyGroup' g <> ": you deleted the group"]
@@ -123,10 +123,14 @@ responseToView testView = \case
   CRSndGroupFileCancelled _ ftm fts -> viewSndGroupFileCancelled ftm fts
   CRRcvFileCancelled ft -> receivingFile_ "cancelled" ft
   CRUserProfileUpdated p p' -> viewUserProfileUpdated p p'
-  CRContactPrefsUpdated ct -> viewContactPrefsUpdated ct
+  CRContactPrefsUpdated {fromContact, toContact, preferences} -> case user_ of
+    Just user -> viewUserContactPrefsUpdated user fromContact toContact preferences
+    _ -> ["unexpected chat event CRContactPrefsUpdated without current user"]
   CRContactAliasUpdated c -> viewContactAliasUpdated c
   CRConnectionAliasUpdated c -> viewConnectionAliasUpdated c
-  CRContactUpdated c c' -> viewContactUpdated c c'
+  CRContactUpdated {fromContact = c, toContact = c', preferences} -> case user_ of
+    Just user -> viewContactUpdated c c' <> viewContactPrefsUpdated user c c' preferences
+    _ -> ["unexpected chat event CRContactUpdated without current user"]
   CRContactsMerged intoCt mergedCt -> viewContactsMerged intoCt mergedCt
   CRReceivedContactRequest UserContactRequest {localDisplayName = c, profile} -> viewReceivedContactRequest c profile
   CRRcvFileStart ci -> receivingFile_' "started" ci
@@ -694,25 +698,74 @@ viewSwitchPhase SPCompleted = "changed address"
 viewSwitchPhase phase = plain (strEncode phase) <> " changing address"
 
 viewUserProfileUpdated :: Profile -> Profile -> [StyledString]
-viewUserProfileUpdated Profile {displayName = n, fullName, image} Profile {displayName = n', fullName = fullName', image = image'}
-  | n == n' && fullName == fullName' && image == image' = []
-  | n == n' && fullName == fullName' = [if isNothing image' then "profile image removed" else "profile image updated"]
-  | n == n' = ["user full name " <> (if T.null fullName' || fullName' == n' then "removed" else "changed to " <> plain fullName') <> notified]
-  | otherwise = ["user profile is changed to " <> ttyFullName n' fullName' <> notified]
+viewUserProfileUpdated Profile {displayName = n, fullName, image, preferences} Profile {displayName = n', fullName = fullName', image = image', preferences = prefs'} =
+  profileUpdated <> viewPrefsUpdated preferences prefs'
   where
+    profileUpdated
+      | n == n' && fullName == fullName' && image == image' = []
+      | n == n' && fullName == fullName' = [if isNothing image' then "profile image removed" else "profile image updated"]
+      | n == n' = ["user full name " <> (if T.null fullName' || fullName' == n' then "removed" else "changed to " <> plain fullName') <> notified]
+      | otherwise = ["user profile is changed to " <> ttyFullName n' fullName' <> notified]
     notified = " (your contacts are notified)"
 
-viewContactPrefsUpdated :: Contact -> [StyledString]
-viewContactPrefsUpdated Contact {profile = LocalProfile {preferences}, userPreferences = ChatPreferences {voice = userVoice}} =
-  let contactVoice = preferences >>= voice
-   in ["preferences were updated: " <> "contact's voice messages are " <> viewPreference contactVoice <> ", user's voice messages are " <> viewPreference userVoice]
+viewUserContactPrefsUpdated :: User -> Contact -> Contact -> ContactUserPreferences -> [StyledString]
+viewUserContactPrefsUpdated user ct ct' cups
+  | null prefs = ["your preferences for " <> ttyContact' ct' <> " did not change"]
+  | otherwise = ("you updated preferences for " <> ttyContact' ct' <> ":") : prefs
+  where
+    prefs = viewContactPreferences user ct ct' cups
 
-viewPreference :: Maybe Preference -> StyledString
+viewContactPrefsUpdated :: User -> Contact -> Contact -> ContactUserPreferences -> [StyledString]
+viewContactPrefsUpdated user ct ct' cups
+  | null prefs = []
+  | otherwise = (ttyContact' ct' <> " updated preferences for you:") : prefs
+  where
+    prefs = viewContactPreferences user ct ct' cups
+
+viewContactPreferences :: User -> Contact -> Contact -> ContactUserPreferences -> [StyledString]
+viewContactPreferences user ct ct' cups =
+  mapMaybe (viewContactPref (mergeUserChatPrefs user ct) (mergeUserChatPrefs user ct') (preferences' ct) cups) allChatFeatures
+
+viewContactPref :: FullPreferences -> FullPreferences -> Maybe Preferences -> ContactUserPreferences -> ChatFeature -> Maybe StyledString
+viewContactPref userPrefs userPrefs' ctPrefs cups pt
+  | userPref == userPref' && ctPref == contactPreference = Nothing
+  | otherwise = Just $ plain (chatPrefName pt) <> ": " <> viewPrefEnabled enabled <> " (you allow: " <> viewCountactUserPref userPreference <> ", contact allows: " <> viewPreference contactPreference <> ")"
+  where
+    userPref = getPreference pt userPrefs
+    userPref' = getPreference pt userPrefs'
+    ctPref = getPreference pt ctPrefs
+    ContactUserPreference {enabled, userPreference, contactPreference} = getContactUserPrefefence pt cups
+
+viewPrefsUpdated :: Maybe Preferences -> Maybe Preferences -> [StyledString]
+viewPrefsUpdated ps ps'
+  | null prefs = []
+  | otherwise = "updated preferences:" : prefs
+  where
+    prefs = mapMaybe viewPref allChatFeatures
+    viewPref pt
+      | pref ps == pref ps' = Nothing
+      | otherwise = Just $ plain (chatPrefName pt) <> " allowed: " <> viewPreference (pref ps')
+      where
+        pref pss = getPreference pt $ mergePreferences pss Nothing
+
+viewPreference :: Preference -> StyledString
 viewPreference = \case
-  Just Preference {enable} -> case enable of
-    PSOn -> "on"
-    PSOff -> "off"
-  _ -> "unset"
+  Preference {allow} -> case allow of
+    FAAlways -> "always"
+    FAYes -> "yes"
+    FANo -> "no"
+
+viewCountactUserPref :: ContactUserPref -> StyledString
+viewCountactUserPref = \case
+  CUPUser p -> "default (" <> viewPreference p <> ")"
+  CUPContact p -> viewPreference p
+
+viewPrefEnabled :: PrefEnabled -> StyledString
+viewPrefEnabled = \case
+  PrefEnabled True True -> "enabled"
+  PrefEnabled False False -> "off"
+  PrefEnabled {forUser = True, forContact = False} -> "enabled for you"
+  PrefEnabled {forUser = False, forContact = True} -> "enabled for contact"
 
 viewGroupUpdated :: GroupInfo -> GroupInfo -> Maybe GroupMember -> [StyledString]
 viewGroupUpdated

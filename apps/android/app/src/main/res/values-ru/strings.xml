@@ -32,6 +32,8 @@
     <string name="display_name_connecting">соединяется…</string>
     <string name="description_you_shared_one_time_link">вы создали одноразовую ссылку</string>
     <string name="description_you_shared_one_time_link_incognito">вы создали одноразовую ссылку инкогнито</string>
+    <string name="description_via_group_link">через ссылку группы</string>
+    <string name="description_via_group_link_incognito">инкогнито через ссылку группы</string>
     <string name="description_via_contact_address_link">через ссылку-контакт</string>
     <string name="description_via_contact_address_link_incognito">инкогнито через ссылку-контакт</string>
     <string name="description_via_one_time_link">через одноразовую ссылку</string>

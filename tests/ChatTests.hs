@@ -24,24 +24,27 @@ import qualified Data.Text as T
 import Simplex.Chat.Call
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), InlineFilesConfig (..), defaultInlineFilesConfig)
 import Simplex.Chat.Options (ChatOpts (..))
-import Simplex.Chat.Types (ConnStatus (..), GroupMemberRole (..), ImageData (..), LocalProfile (..), Profile (..), User (..), defaultChatPrefs)
+import Simplex.Chat.Types
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Util (unlessM)
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
 import System.FilePath ((</>))
 import Test.Hspec
 
+defaultPrefs :: Maybe Preferences
+defaultPrefs = Just $ toChatPrefs defaultChatPrefs
+
 aliceProfile :: Profile
-aliceProfile = Profile {displayName = "alice", fullName = "Alice", image = Nothing, preferences = Just defaultChatPrefs}
+aliceProfile = Profile {displayName = "alice", fullName = "Alice", image = Nothing, preferences = defaultPrefs}
 
 bobProfile :: Profile
-bobProfile = Profile {displayName = "bob", fullName = "Bob", image = Just (ImageData "data:image/png;base64,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"), preferences = Just defaultChatPrefs}
+bobProfile = Profile {displayName = "bob", fullName = "Bob", image = Just (ImageData "data:image/png;base64,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"), preferences = defaultPrefs}
 
 cathProfile :: Profile
-cathProfile = Profile {displayName = "cath", fullName = "Catherine", image = Nothing, preferences = Just defaultChatPrefs}
+cathProfile = Profile {displayName = "cath", fullName = "Catherine", image = Nothing, preferences = defaultPrefs}
 
 danProfile :: Profile
-danProfile = Profile {displayName = "dan", fullName = "Daniel", image = Nothing, preferences = Just defaultChatPrefs}
+danProfile = Profile {displayName = "dan", fullName = "Daniel", image = Nothing, preferences = defaultPrefs}
 
 chatTests :: Spec
 chatTests = do
@@ -107,7 +110,7 @@ chatTests = do
     it "accept contact request incognito" testAcceptContactRequestIncognito
     it "join group incognito" testJoinGroupIncognito
     it "can't invite contact to whom user connected incognito to a group" testCantInviteContactIncognito
-    it "can't see global preferences update" testCantSeeGlobalPrefsUpdateIncognito  
+    it "can't see global preferences update" testCantSeeGlobalPrefsUpdateIncognito
   describe "contact aliases and prefs" $ do
     it "set contact alias" testSetAlias
     it "set connection alias" testSetConnectionAlias
@@ -142,7 +145,6 @@ chatTests = do
     it "create group link, join via group link" testGroupLink
     it "sending message to contact created via group link marks it used" testGroupLinkContactUsed
     it "create group link, join via group link - incognito membership" testGroupLinkIncognitoMembership
-    it "deleting invited member does not leave broken chat item" testGroupLinkDeleteInvitedMemberNoBrokenItem
   describe "queue rotation" $ do
     it "switch contact to a different queue" testSwitchContact
     it "switch group member to a different queue" testSwitchGroupMember
@@ -2411,16 +2413,21 @@ testConnectIncognitoInvitationLink = testChat3 aliceProfile bobProfile cathProfi
     bob ?#> ("@" <> aliceIncognito <> " no")
     alice ?<# (bobIncognito <> "> no")
     alice ##> "/_set prefs @2 {}"
-    alice <## "preferences were updated: contact's voice messages are off, user's voice messages are unset"
-    alice ##> "/_set prefs @2 {\"voice\": {\"enable\": \"on\"}}"
-    alice <## "preferences were updated: contact's voice messages are off, user's voice messages are on"
-    -- with delay it shouldn't fail here (and without it too)
-    threadDelay 1000000
+    alice <## ("your preferences for " <> bobIncognito <> " did not change")
+    (bob </)
+    alice ##> "/_set prefs @2 {\"fullDelete\": {\"allow\": \"always\"}}"
+    alice <## ("you updated preferences for " <> bobIncognito <> ":")
+    alice <## "full message deletion: enabled for contact (you allow: always, contact allows: no)"
+    bob <## (aliceIncognito <> " updated preferences for you:")
+    bob <## "full message deletion: enabled for you (you allow: no, contact allows: always)"
     bob ##> "/_set prefs @2 {}"
-    bob <## "preferences were updated: contact's voice messages are on, user's voice messages are unset"
-    threadDelay 1000000
-    alice ##> "/_set prefs @2 {\"voice\": {\"enable\": \"off\"}}"
-    alice <## "preferences were updated: contact's voice messages are off, user's voice messages are off"
+    bob <## ("your preferences for " <> aliceIncognito <> " did not change")
+    (alice </)
+    alice ##> "/_set prefs @2 {\"fullDelete\": {\"allow\": \"no\"}}"
+    alice <## ("you updated preferences for " <> bobIncognito <> ":")
+    alice <## "full message deletion: off (you allow: no, contact allows: no)"
+    bob <## (aliceIncognito <> " updated preferences for you:")
+    bob <## "full message deletion: off (you allow: no, contact allows: no)"
 
 testConnectIncognitoContactAddress :: IO ()
 testConnectIncognitoContactAddress = testChat2 aliceProfile bobProfile $
@@ -2693,7 +2700,6 @@ testCantInviteContactIncognito = testChat2 aliceProfile bobProfile $
     -- bob doesn't receive invitation
     (bob </)
 
-
 testCantSeeGlobalPrefsUpdateIncognito :: IO ()
 testCantSeeGlobalPrefsUpdateIncognito = testChat3 aliceProfile bobProfile cathProfile $
   \alice bob cath -> do
@@ -2717,23 +2723,36 @@ testCantSeeGlobalPrefsUpdateIncognito = testChat3 aliceProfile bobProfile cathPr
           cath <## "alice (Alice): contact is connected"
       ]
     alice <## "cath (Catherine): contact is connected"
-    alice ##> "/_profile {\"displayName\": \"alice\", \"fullName\": \"\", \"preferences\": {\"voice\": {\"enable\": \"on\"}}}"
+    alice ##> "/_profile {\"displayName\": \"alice\", \"fullName\": \"\", \"preferences\": {\"fullDelete\": {\"allow\": \"always\"}}}"
     alice <## "user full name removed (your contacts are notified)"
+    alice <## "updated preferences:"
+    alice <## "full message deletion allowed: always"
+    (alice </)
     -- bob doesn't receive profile update
     (bob </)
     cath <## "contact alice removed full name"
-    bob ##> "/_set prefs @2 {\"voice\": {\"enable\": \"on\"}}"
-    bob <## "preferences were updated: contact's voice messages are off, user's voice messages are on"
-    threadDelay 1000000
-    alice ##> "/_set prefs @2 {\"voice\": {\"enable\": \"on\"}}"
-    alice <## "preferences were updated: contact's voice messages are on, user's voice messages are on"
-    threadDelay 1000000
-    alice ##> "/_set prefs @3 {\"voice\": {\"enable\": \"on\"}}"
-    alice <## "preferences were updated: contact's voice messages are off, user's voice messages are on"
-    threadDelay 1000000
-    cath ##> "/_set prefs @2 {}"
-    cath <## "preferences were updated: contact's voice messages are on, user's voice messages are unset"
-  
+    cath <## "alice updated preferences for you:"
+    cath <## "full message deletion: enabled for you (you allow: default (no), contact allows: always)"
+    (cath </)
+    bob ##> "/_set prefs @2 {\"fullDelete\": {\"allow\": \"always\"}}"
+    bob <## ("you updated preferences for " <> aliceIncognito <> ":")
+    bob <## "full message deletion: enabled for contact (you allow: always, contact allows: no)"
+    alice <## "bob updated preferences for you:"
+    alice <## "full message deletion: enabled for you (you allow: no, contact allows: always)"
+    alice ##> "/_set prefs @2 {\"fullDelete\": {\"allow\": \"yes\"}}"
+    alice <## "you updated preferences for bob:"
+    alice <## "full message deletion: enabled (you allow: yes, contact allows: always)"
+    bob <## (aliceIncognito <> " updated preferences for you:")
+    bob <## "full message deletion: enabled (you allow: always, contact allows: yes)"
+    (cath </)
+    alice ##> "/_set prefs @3 {\"fullDelete\": {\"allow\": \"always\"}}"
+    alice <## "your preferences for cath did not change"
+    alice ##> "/_set prefs @3 {\"fullDelete\": {\"allow\": \"yes\"}}"
+    alice <## "you updated preferences for cath:"
+    alice <## "full message deletion: off (you allow: yes, contact allows: no)"
+    cath <## "alice updated preferences for you:"
+    cath <## "full message deletion: off (you allow: default (no), contact allows: yes)"
+
 testSetAlias :: IO ()
 testSetAlias = testChat2 aliceProfile bobProfile $
   \alice bob -> do
@@ -2767,24 +2786,39 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     connectUsers alice bob
     alice ##> "/_set prefs @2 {}"
-    alice <## "preferences were updated: contact's voice messages are off, user's voice messages are unset"
-    alice ##> "/_set prefs @2 {\"voice\": {\"enable\": \"on\"}}"
-    alice <## "preferences were updated: contact's voice messages are off, user's voice messages are on"
-    alice ##> "/_profile {\"displayName\": \"alice\", \"fullName\": \"\", \"preferences\": {\"voice\": {\"enable\": \"off\"}}}"
+    alice <## "your preferences for bob did not change"
+    (bob </)
+    alice ##> "/_set prefs @2 {\"fullDelete\": {\"allow\": \"always\"}}"
+    alice <## "you updated preferences for bob:"
+    alice <## "full message deletion: enabled for contact (you allow: always, contact allows: no)"
+    bob <## "alice updated preferences for you:"
+    bob <## "full message deletion: enabled for you (you allow: default (no), contact allows: always)"
+    (bob </)
+    alice ##> "/_profile {\"displayName\": \"alice\", \"fullName\": \"\", \"preferences\": {\"fullDelete\": {\"allow\": \"no\"}}}"
     alice <## "user full name removed (your contacts are notified)"
     bob <## "contact alice removed full name"
-    alice ##> "/_set prefs @2 {\"voice\": {\"enable\": \"on\"}}"
-    alice <## "preferences were updated: contact's voice messages are off, user's voice messages are on"
-    bob ##> "/_profile {\"displayName\": \"bob\", \"fullName\": \"\", \"preferences\": {\"voice\": {\"enable\": \"on\"}}}"
+    alice ##> "/_set prefs @2 {\"fullDelete\": {\"allow\": \"yes\"}}"
+    alice <## "you updated preferences for bob:"
+    alice <## "full message deletion: off (you allow: yes, contact allows: no)"
+    bob <## "alice updated preferences for you:"
+    bob <## "full message deletion: off (you allow: default (no), contact allows: yes)"
+    (bob </)
+    bob ##> "/_profile {\"displayName\": \"bob\", \"fullName\": \"\", \"preferences\": {\"fullDelete\": {\"allow\": \"yes\"}}}"
     bob <## "user full name removed (your contacts are notified)"
+    bob <## "updated preferences:"
+    bob <## "full message deletion allowed: yes"
     alice <## "contact bob removed full name"
+    alice <## "bob updated preferences for you:"
+    alice <## "full message deletion: enabled (you allow: yes, contact allows: yes)"
+    (alice </)
     bob ##> "/_set prefs @2 {}"
-    bob <## "preferences were updated: contact's voice messages are on, user's voice messages are unset"
-    alice ##> "/_set prefs @2 {\"voice\": {\"enable\": \"off\"}}"
-    alice <## "preferences were updated: contact's voice messages are on, user's voice messages are off"
-    threadDelay 1000000
-    bob ##> "/_set prefs @2 {}"
-    bob <## "preferences were updated: contact's voice messages are off, user's voice messages are unset"
+    bob <## "your preferences for alice did not change"
+    (alice </)
+    alice ##> "/_set prefs @2 {\"fullDelete\": {\"allow\": \"no\"}}"
+    alice <## "you updated preferences for bob:"
+    alice <## "full message deletion: off (you allow: no, contact allows: yes)"
+    bob <## "alice updated preferences for you:"
+    bob <## "full message deletion: off (you allow: default (yes), contact allows: no)"
 
 testGetSetSMPServers :: IO ()
 testGetSetSMPServers =
@@ -3403,23 +3437,21 @@ testGroupLink =
       concurrentlyN_
         [ do
             alice <## "bob (Bob): contact is connected"
-            alice <## "bob invited to group #team via your group link",
+            alice <## "bob invited to group #team via your group link"
+            alice <## "#team: bob joined the group",
           do
             bob <## "alice (Alice): contact is connected"
-            bob <## "#team: alice invites you to join the group as member"
-            bob <## "use /j team to accept"
+            bob <## "#team: you joined the group"
         ]
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "invited via your group link")])
-      alice @@@ [("#team", "invited via your group link")] -- contacts connected via group link are not in chat previews
+      alice #$> ("/_get chat #1 count=100", chat, [(0, "invited via your group link"), (0, "connected")])
+      -- contacts connected via group link are not in chat previews
+      alice @@@ [("#team", "connected")]
+      bob @@@ [("#team", "connected")]
       -- calling /_get chat api marks it as used and adds it to chat previews
       alice #$> ("/_get chat @2 count=100", chat, [])
-      alice @@@ [("@bob", ""), ("#team", "invited via your group link")]
+      alice @@@ [("@bob", ""), ("#team", "connected")]
       alice <##> bob
-      alice @@@ [("@bob", "hey"), ("#team", "invited via your group link")]
-      bob ##> "/j team"
-      concurrently_
-        (alice <## "#team: bob joined the group")
-        (bob <## "#team: you joined the group")
+      alice @@@ [("@bob", "hey"), ("#team", "connected")]
 
       -- user address doesn't interfere
       alice ##> "/ad"
@@ -3443,18 +3475,12 @@ testGroupLink =
             alice <## "cath_1 (Catherine): contact is connected"
             alice <## "cath_1 invited to group #team via your group link"
             alice <## "contact cath_1 is merged into cath"
-            alice <## "use @cath <message> to send messages",
+            alice <## "use @cath <message> to send messages"
+            alice <## "#team: cath joined the group",
           do
             cath <## "alice_1 (Alice): contact is connected"
             cath <## "contact alice_1 is merged into alice"
             cath <## "use @alice <message> to send messages"
-            cath <## "#team: alice invites you to join the group as member"
-            cath <## "use /j team to accept"
-        ]
-      cath ##> "/j team"
-      concurrentlyN_
-        [ alice <## "#team: cath joined the group",
-          do
             cath <## "#team: you joined the group"
             cath <## "#team: member bob (Bob) is connected",
           do
@@ -3507,18 +3533,21 @@ testGroupLinkContactUsed =
       concurrentlyN_
         [ do
             alice <## "bob (Bob): contact is connected"
-            alice <## "bob invited to group #team via your group link",
+            alice <## "bob invited to group #team via your group link"
+            alice <## "#team: bob joined the group",
           do
             bob <## "alice (Alice): contact is connected"
-            bob <## "#team: alice invites you to join the group as member"
-            bob <## "use /j team to accept"
+            bob <## "#team: you joined the group"
         ]
-      -- sending message to contact marks it as used
-      alice @@@ [("#team", "invited via your group link")]
+      -- sending/receiving a message marks contact as used
+      alice @@@ [("#team", "connected")]
+      bob @@@ [("#team", "connected")]
       alice #> "@bob hello"
       bob <# "alice> hello"
       alice #$> ("/clear bob", id, "bob: all messages are removed locally ONLY")
-      alice @@@ [("@bob", ""), ("#team", "invited via your group link")]
+      alice @@@ [("@bob", ""), ("#team", "connected")]
+      bob #$> ("/clear alice", id, "alice: all messages are removed locally ONLY")
+      bob @@@ [("@alice", ""), ("#team", "connected")]
 
 testGroupLinkIncognitoMembership :: IO ()
 testGroupLinkIncognitoMembership =
@@ -3565,26 +3594,20 @@ testGroupLinkIncognitoMembership =
         [ do
             bob <## ("cath (Catherine): contact is connected, your incognito profile for this contact is " <> bobIncognito)
             bob <## "use /info cath to print out this incognito profile again"
-            bob <## "cath invited to group #team via your group link",
+            bob <## "cath invited to group #team via your group link"
+            bob <## "#team: cath joined the group",
           do
             cath <## (bobIncognito <> ": contact is connected")
-            cath <## ("#team: " <> bobIncognito <> " invites you to join the group as member")
-            cath <## "use /j team to accept"
-        ]
-      bob ?#> "@cath hi, I'm incognito"
-      cath <# (bobIncognito <> "> hi, I'm incognito")
-      cath #> ("@" <> bobIncognito <> " hey, I'm cath")
-      bob ?<# "cath> hey, I'm cath"
-      cath ##> "/j team"
-      concurrentlyN_
-        [ bob <## "#team: cath joined the group",
-          do
             cath <## "#team: you joined the group"
             cath <## "#team: member alice (Alice) is connected",
           do
             alice <## ("#team: " <> bobIncognito <> " added cath (Catherine) to the group (connecting...)")
             alice <## "#team: new member cath is connected"
         ]
+      bob ?#> "@cath hi, I'm incognito"
+      cath <# (bobIncognito <> "> hi, I'm incognito")
+      cath #> ("@" <> bobIncognito <> " hey, I'm cath")
+      bob ?<# "cath> hey, I'm cath"
       -- dan joins incognito
       dan #$> ("/incognito on", id, "ok")
       dan ##> ("/c " <> gLink)
@@ -3597,22 +3620,11 @@ testGroupLinkIncognitoMembership =
         [ do
             bob <## (danIncognito <> ": contact is connected, your incognito profile for this contact is " <> bobIncognito)
             bob <## ("use /info " <> danIncognito <> " to print out this incognito profile again")
-            bob <## (danIncognito <> " invited to group #team via your group link"),
+            bob <## (danIncognito <> " invited to group #team via your group link")
+            bob <## ("#team: " <> danIncognito <> " joined the group"),
           do
             dan <## (bobIncognito <> ": contact is connected, your incognito profile for this contact is " <> danIncognito)
             dan <## ("use /info " <> bobIncognito <> " to print out this incognito profile again")
-            dan <## ("#team: " <> bobIncognito <> " invites you to join the group as member")
-            dan <## ("use /j team to join incognito as " <> danIncognito)
-        ]
-      dan #$> ("/incognito off", id, "ok")
-      bob ?#> ("@" <> danIncognito <> " hi, I'm incognito")
-      dan ?<# (bobIncognito <> "> hi, I'm incognito")
-      dan ?#> ("@" <> bobIncognito <> " hey, me too")
-      bob ?<# (danIncognito <> "> hey, me too")
-      dan ##> "/j team"
-      concurrentlyN_
-        [ bob <## ("#team: " <> danIncognito <> " joined the group"),
-          do
             dan <## ("#team: you joined the group incognito as " <> danIncognito)
             dan
               <### [ "#team: member alice (Alice) is connected",
@@ -3625,6 +3637,11 @@ testGroupLinkIncognitoMembership =
             cath <## ("#team: " <> bobIncognito <> " added " <> danIncognito <> " to the group (connecting...)")
             cath <## ("#team: new member " <> danIncognito <> " is connected")
         ]
+      dan #$> ("/incognito off", id, "ok")
+      bob ?#> ("@" <> danIncognito <> " hi, I'm incognito")
+      dan ?<# (bobIncognito <> "> hi, I'm incognito")
+      dan ?#> ("@" <> bobIncognito <> " hey, me too")
+      bob ?<# (danIncognito <> "> hey, me too")
       alice #> "#team hello"
       concurrentlyN_
         [ bob ?<# "#team alice> hello",
@@ -3649,66 +3666,6 @@ testGroupLinkIncognitoMembership =
           bob ?<# ("#team " <> danIncognito <> "> how is it going?"),
           cath <# ("#team " <> danIncognito <> "> how is it going?")
         ]
-
-testGroupLinkDeleteInvitedMemberNoBrokenItem :: IO ()
-testGroupLinkDeleteInvitedMemberNoBrokenItem =
-  testChat2 aliceProfile bobProfile $
-    \alice bob -> do
-      alice ##> "/g team"
-      alice <## "group #team is created"
-      alice <## "use /a team <name> to add members"
-      alice ##> "/create link #team"
-      gLink <- getGroupLink alice "team" True
-      bob ##> ("/c " <> gLink)
-      bob <## "connection request sent!"
-      alice <## "bob (Bob): accepting request to join group #team..."
-      concurrentlyN_
-        [ do
-            alice <## "bob (Bob): contact is connected"
-            alice <## "bob invited to group #team via your group link",
-          do
-            bob <## "alice (Alice): contact is connected"
-            bob <## "#team: alice invites you to join the group as member"
-            bob <## "use /j team to accept"
-        ]
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "invited via your group link")])
-      alice @@@ [("#team", "invited via your group link")]
-      -- removing invited member who connected via group link does not leave broken chat item
-      alice ##> "/rm team bob"
-      alice <## "#team: you removed bob from the group"
-      alice #$> ("/_get chat #1 count=100", chat, [])
-      alice @@@ [("#team", "")]
-      -- removing member deletes unused group contact
-      alice ##> "@bob hi"
-      alice <## "no contact bob"
-      (bob </)
-      bob ##> "/j team"
-      bob <## "error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
-      -- repeat request is prohibited because of the re-used XContactId, until contact is deleted
-      bob ##> ("/c " <> gLink)
-      bob <## "alice (Alice): contact already exists"
-      bob ##> "/d alice"
-      bob <## "alice: contact is deleted"
-      bob ##> ("/c " <> gLink)
-      bob <## "connection request sent!"
-      alice <## "bob (Bob): accepting request to join group #team..."
-      concurrentlyN_
-        [ do
-            alice <## "bob (Bob): contact is connected"
-            alice <## "bob invited to group #team via your group link",
-          do
-            bob <## "alice_1 (Alice): contact is connected"
-            bob <## "#team_1 (team): alice_1 invites you to join the group as member"
-            bob <## "use /j team_1 to accept"
-        ]
-      bob ##> "/j team_1"
-      concurrently_
-        (alice <## "#team: bob joined the group")
-        (bob <## "#team_1: you joined the group")
-      alice #> "#team hello"
-      bob <# "#team_1 alice_1> hello"
-      bob #> "#team_1 hi there"
-      alice <# "#team bob> hi there"
 
 testSwitchContact :: IO ()
 testSwitchContact =

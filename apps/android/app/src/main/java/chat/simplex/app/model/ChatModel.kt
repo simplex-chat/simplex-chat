@@ -919,6 +919,7 @@ class PendingContactConnection(
   val pccAgentConnId: String,
   val pccConnStatus: ConnStatus,
   val viaContactUri: Boolean,
+  val groupLinkId: String? = null,
   val customUserProfileId: Long? = null,
   val connReqInv: String? = null,
   override val localAlias: String,
@@ -957,8 +958,11 @@ class PendingContactConnection(
     return if (initiated == null) "" else generalGetString(
       if (initiated && !viaContactUri)
         if (incognito) R.string.description_you_shared_one_time_link_incognito else R.string.description_you_shared_one_time_link
-      else if (viaContactUri )
-        if (incognito) R.string.description_via_contact_address_link_incognito else R.string.description_via_contact_address_link
+      else if (viaContactUri)
+        if (groupLinkId != null)
+          if (incognito) R.string.description_via_group_link_incognito else R.string.description_via_group_link
+        else
+          if (incognito) R.string.description_via_contact_address_link_incognito else R.string.description_via_contact_address_link
       else
         if (incognito) R.string.description_via_one_time_link_incognito else R.string.description_via_one_time_link
     )

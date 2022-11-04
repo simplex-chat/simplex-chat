@@ -89,7 +89,7 @@ defaultInlineFilesConfig =
     { offerChunks = 15, -- max when chunks are offered / received with the option - limited to 255 on the encoding level
       sendChunks = 0, -- max per file when chunks will be sent inline without acceptance
       totalSendChunks = 30, -- max per conversation when chunks will be sent inline without acceptance
-      receiveChunks = 5 -- max when chunks are accepted
+      receiveChunks = 6 -- max when chunks are accepted
     }
 
 data ActiveTo = ActiveNone | ActiveC ContactName | ActiveG GroupName
@@ -166,7 +166,7 @@ data ChatCommand
   | APIGetCallInvitations
   | APICallStatus ContactId WebRTCCallStatus
   | APIUpdateProfile Profile
-  | APISetContactPrefs Int64 ChatPreferences
+  | APISetContactPrefs Int64 Preferences
   | APISetContactAlias ContactId LocalAlias
   | APISetConnectionAlias Int64 LocalAlias
   | APIParseMarkdown Text
@@ -285,7 +285,7 @@ data ChatResponse
   | CRUserContactLink {contactLink :: UserContactLink}
   | CRUserContactLinkUpdated {contactLink :: UserContactLink}
   | CRContactRequestRejected {contactRequest :: UserContactRequest}
-  | CRUserAcceptedGroupSent {groupInfo :: GroupInfo}
+  | CRUserAcceptedGroupSent {groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRUserDeletedMember {groupInfo :: GroupInfo, member :: GroupMember}
   | CRGroupsList {groups :: [GroupInfo]}
   | CRSentGroupInvitation {groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember}
@@ -296,7 +296,7 @@ data ChatResponse
   | CRInvitation {connReqInvitation :: ConnReqInvitation}
   | CRSentConfirmation
   | CRSentInvitation {customUserProfile :: Maybe Profile}
-  | CRContactUpdated {fromContact :: Contact, toContact :: Contact}
+  | CRContactUpdated {fromContact :: Contact, toContact :: Contact, preferences :: ContactUserPreferences}
   | CRContactsMerged {intoContact :: Contact, mergedContact :: Contact}
   | CRContactDeleted {contact :: Contact}
   | CRChatCleared {chatInfo :: AChatInfo}
@@ -322,7 +322,7 @@ data ChatResponse
   | CRUserProfileUpdated {fromProfile :: Profile, toProfile :: Profile}
   | CRContactAliasUpdated {toContact :: Contact}
   | CRConnectionAliasUpdated {toConnection :: PendingContactConnection}
-  | CRContactPrefsUpdated {toContact :: Contact}
+  | CRContactPrefsUpdated {fromContact :: Contact, toContact :: Contact, preferences :: ContactUserPreferences}
   | CRContactConnecting {contact :: Contact}
   | CRContactConnected {contact :: Contact, userCustomProfile :: Maybe Profile}
   | CRContactAnotherClient {contact :: Contact}
