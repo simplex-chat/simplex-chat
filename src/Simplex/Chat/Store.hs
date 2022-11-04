@@ -434,7 +434,7 @@ createConnReqConnection db userId acId cReqHash xContactId incognitoProfile grou
     |]
     ((userId, acId, pccConnStatus, ConnContact, cReqHash, xContactId) :. (customUserProfileId, isJust groupLinkId, groupLinkId, createdAt, createdAt))
   pccConnId <- insertedRowId db
-  pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = True, viaUserContactLink = Nothing, customUserProfileId, connReqInv = Nothing, localAlias = "", createdAt, updatedAt = createdAt}
+  pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = True, viaUserContactLink = Nothing, groupLinkId, customUserProfileId, connReqInv = Nothing, localAlias = "", createdAt, updatedAt = createdAt}
 
 getConnReqContactXContactId :: DB.Connection -> UserId -> ConnReqUriHash -> IO (Maybe Contact, Maybe XContactId)
 getConnReqContactXContactId db userId cReqHash = do
@@ -482,7 +482,7 @@ createDirectConnection db userId acId cReq pccConnStatus incognitoProfile = do
     |]
     (userId, acId, cReq, pccConnStatus, ConnContact, customUserProfileId, createdAt, createdAt)
   pccConnId <- insertedRowId db
-  pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = False, viaUserContactLink = Nothing, customUserProfileId, connReqInv = Just cReq, localAlias = "", createdAt, updatedAt = createdAt}
+  pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = False, viaUserContactLink = Nothing, groupLinkId = Nothing, customUserProfileId, connReqInv = Just cReq, localAlias = "", createdAt, updatedAt = createdAt}
 
 createIncognitoProfile_ :: DB.Connection -> UserId -> UTCTime -> Profile -> IO Int64
 createIncognitoProfile_ db userId createdAt Profile {displayName, fullName, image} = do
@@ -1203,7 +1203,7 @@ getPendingContactConnections db User {userId} = do
     <$> DB.queryNamed
       db
       [sql|
-        SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, via_user_contact_link, custom_user_profile_id, conn_req_inv, local_alias, created_at, updated_at
+        SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, via_user_contact_link, group_link_id, custom_user_profile_id, conn_req_inv, local_alias, created_at, updated_at
         FROM connections
         WHERE user_id = :user_id
           AND conn_type = :conn_type
@@ -3342,13 +3342,13 @@ getContactConnectionChatPreviews_ db User {userId} _ =
     <$> DB.query
       db
       [sql|
-        SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, via_user_contact_link, custom_user_profile_id, conn_req_inv, local_alias, created_at, updated_at
+        SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, via_user_contact_link, group_link_id, custom_user_profile_id, conn_req_inv, local_alias, created_at, updated_at
         FROM connections
-        WHERE user_id = ? AND conn_type = ? AND contact_id IS NULL AND conn_level = 0 AND via_group_link = 0 AND via_contact IS NULL
+        WHERE user_id = ? AND conn_type = ? AND contact_id IS NULL AND conn_level = 0 AND via_contact IS NULL AND (via_group_link = 0 || (via_group_link = 1 AND group_link_id IS NOT NULL))
       |]
       (userId, ConnContact)
   where
-    toContactConnectionChatPreview :: (Int64, ConnId, ConnStatus, Maybe ByteString, Maybe Int64, Maybe Int64, Maybe ConnReqInvitation, LocalAlias, UTCTime, UTCTime) -> AChat
+    toContactConnectionChatPreview :: (Int64, ConnId, ConnStatus, Maybe ByteString, Maybe Int64, Maybe GroupLinkId, Maybe Int64, Maybe ConnReqInvitation, LocalAlias, UTCTime, UTCTime) -> AChat
     toContactConnectionChatPreview connRow =
       let conn = toPendingContactConnection connRow
           stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
@@ -3360,7 +3360,7 @@ getPendingContactConnection db userId connId = do
     DB.query
       db
       [sql|
-        SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, via_user_contact_link, custom_user_profile_id, conn_req_inv, local_alias, created_at, updated_at
+        SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, via_user_contact_link, group_link_id, custom_user_profile_id, conn_req_inv, local_alias, created_at, updated_at
         FROM connections
         WHERE user_id = ?
           AND connection_id = ?
@@ -3394,9 +3394,9 @@ updateGroupSettings :: DB.Connection -> User -> Int64 -> ChatSettings -> IO ()
 updateGroupSettings db User {userId} groupId ChatSettings {enableNtfs} =
   DB.execute db "UPDATE groups SET enable_ntfs = ? WHERE user_id = ? AND group_id = ?" (enableNtfs, userId, groupId)
 
-toPendingContactConnection :: (Int64, ConnId, ConnStatus, Maybe ByteString, Maybe Int64, Maybe Int64, Maybe ConnReqInvitation, LocalAlias, UTCTime, UTCTime) -> PendingContactConnection
-toPendingContactConnection (pccConnId, acId, pccConnStatus, connReqHash, viaUserContactLink, customUserProfileId, connReqInv, localAlias, createdAt, updatedAt) =
-  PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = isJust connReqHash, viaUserContactLink, customUserProfileId, connReqInv, localAlias, createdAt, updatedAt}
+toPendingContactConnection :: (Int64, ConnId, ConnStatus, Maybe ByteString, Maybe Int64, Maybe GroupLinkId, Maybe Int64, Maybe ConnReqInvitation, LocalAlias, UTCTime, UTCTime) -> PendingContactConnection
+toPendingContactConnection (pccConnId, acId, pccConnStatus, connReqHash, viaUserContactLink, groupLinkId, customUserProfileId, connReqInv, localAlias, createdAt, updatedAt) =
+  PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = isJust connReqHash, viaUserContactLink, groupLinkId, customUserProfileId, connReqInv, localAlias, createdAt, updatedAt}
 
 getDirectChat :: DB.Connection -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTDirect)
 getDirectChat db user contactId pagination search_ = do

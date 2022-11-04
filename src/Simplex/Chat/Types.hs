@@ -935,6 +935,7 @@ data PendingContactConnection = PendingContactConnection
     pccConnStatus :: ConnStatus,
     viaContactUri :: Bool,
     viaUserContactLink :: Maybe Int64,
+    groupLinkId :: Maybe GroupLinkId,
     customUserProfileId :: Maybe Int64,
     connReqInv :: Maybe ConnReqInvitation,
     localAlias :: Text,
