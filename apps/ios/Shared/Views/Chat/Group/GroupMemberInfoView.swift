@@ -82,7 +82,7 @@ struct GroupMemberInfoView: View {
                 Section("Servers") {
                     // TODO network connection status
                     if developerTools {
-                        Button("Switch receiving address (BETA)") {
+                        Button("Change receiving address (BETA)") {
                             alert = .switchAddressAlert
                         }
                     }

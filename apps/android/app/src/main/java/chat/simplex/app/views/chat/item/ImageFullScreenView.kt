@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import chat.simplex.app.R
@@ -25,6 +26,7 @@ import coil.request.ImageRequest
 import coil.size.Size
 import com.google.accompanist.pager.*
 import kotlinx.coroutines.launch
+import kotlin.math.absoluteValue
 
 interface ImageGalleryProvider {
   val initialIndex: Int
@@ -88,6 +90,8 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
         var scale by remember { mutableStateOf(1f) }
         var translationX by remember { mutableStateOf(0f) }
         var translationY by remember { mutableStateOf(0f) }
+        var viewWidth by remember { mutableStateOf(0) }
+        var allowTranslate by remember { mutableStateOf(true) }
         LaunchedEffect(settledCurrentPage) {
           scale = 1f
           translationX = 0f
@@ -113,6 +117,9 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
           contentDescription = stringResource(R.string.image_descr),
           contentScale = ContentScale.Fit,
           modifier = Modifier
+            .onGloballyPositioned {
+              viewWidth = it.size.width
+            }
             .graphicsLayer(
               scaleX = scale,
               scaleY = scale,
@@ -121,12 +128,14 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
             )
             .pointerInput(Unit) {
               detectTransformGestures(
+                { allowTranslate },
                 onGesture = { _, pan, gestureZoom, _ ->
                   scale = (scale * gestureZoom).coerceIn(1f, 20f)
-                  if (scale > 1) {
+                  allowTranslate = viewWidth * (scale - 1f) - ((translationX + pan.x * scale).absoluteValue * 2) > 0
+                  if (scale > 1 && allowTranslate) {
                     translationX += pan.x * scale
                     translationY += pan.y * scale
-                  } else {
+                  } else if (allowTranslate) {
                     translationX = 0f
                     translationY = 0f
                   }

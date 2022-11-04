@@ -726,7 +726,7 @@ msgDirToDeletedContent_ msgDir mode = case msgDir of
 
 -- platform independent
 instance ToField (CIContent d) where
-  toField = toField . safeDecodeUtf8 . LB.toStrict . J.encode . dbJsonCIContent
+  toField = toField . encodeJSON . dbJsonCIContent
 
 -- platform specific
 instance ToJSON (CIContent d) where
@@ -742,7 +742,7 @@ instance FromJSON ACIContent where
   parseJSON = fmap aciContentJSON . J.parseJSON
 
 -- platform independent
-instance FromField ACIContent where fromField = fromTextField_ $ fmap aciContentDBJSON . J.decode . LB.fromStrict . encodeUtf8
+instance FromField ACIContent where fromField = fromTextField_ $ fmap aciContentDBJSON . decodeJSON
 
 -- platform specific
 data JSONCIContent

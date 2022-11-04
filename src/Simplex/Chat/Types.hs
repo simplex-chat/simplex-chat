@@ -42,8 +42,8 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId)
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, fromTextField_, sumTypeJSON)
-import Simplex.Messaging.Util ((<$?>), safeDecodeUtf8)
+import Simplex.Messaging.Parsers (dropPrefix, fromTextField_, sumTypeJSON, taggedObjectJSON)
+import Simplex.Messaging.Util (safeDecodeUtf8, (<$?>))
 
 class IsContact a where
   contactId' :: a -> ContactId
@@ -252,10 +252,10 @@ instance ToJSON ChatPreferences where
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 instance ToField ChatPreferences where
-  toField = toField . safeDecodeUtf8 . LB.toStrict . J.encode
+  toField = toField . encodeJSON
 
 instance FromField ChatPreferences where
-  fromField = fromTextField_ $ J.decode . LB.fromStrict . encodeUtf8
+  fromField = fromTextField_ decodeJSON
 
 data Preference = Preference
   {enable :: PrefSwitch}
@@ -360,11 +360,41 @@ instance ToField ImageData where toField (ImageData t) = toField t
 
 instance FromField ImageData where fromField = fmap ImageData . fromField
 
+data CReqClientData = CRGroupData {groupLinkId :: GroupLinkId}
+  deriving (Generic)
+
+instance ToJSON CReqClientData where
+  toJSON = J.genericToJSON . taggedObjectJSON $ dropPrefix "CD"
+  toEncoding = J.genericToEncoding . taggedObjectJSON $ dropPrefix "CD"
+
+instance FromJSON CReqClientData where
+  parseJSON = J.genericParseJSON . taggedObjectJSON $ dropPrefix "CD"
+
+newtype GroupLinkId = GroupLinkId {unGroupLinkId :: ByteString} -- used to identify invitation via group link
+  deriving (Eq, Show)
+
+instance FromField GroupLinkId where fromField f = GroupLinkId <$> fromField f
+
+instance ToField GroupLinkId where toField (GroupLinkId g) = toField g
+
+instance StrEncoding GroupLinkId where
+  strEncode (GroupLinkId g) = strEncode g
+  strDecode s = GroupLinkId <$> strDecode s
+  strP = GroupLinkId <$> strP
+
+instance FromJSON GroupLinkId where
+  parseJSON = strParseJSON "GroupLinkId"
+
+instance ToJSON GroupLinkId where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
 data GroupInvitation = GroupInvitation
   { fromMember :: MemberIdRole,
     invitedMember :: MemberIdRole,
     connRequest :: ConnReqInvitation,
-    groupProfile :: GroupProfile
+    groupProfile :: GroupProfile,
+    groupLinkId :: Maybe GroupLinkId
   }
   deriving (Eq, Show, Generic, FromJSON)
 
@@ -905,6 +935,7 @@ data PendingContactConnection = PendingContactConnection
     pccConnStatus :: ConnStatus,
     viaContactUri :: Bool,
     viaUserContactLink :: Maybe Int64,
+    groupLinkId :: Maybe GroupLinkId,
     customUserProfileId :: Maybe Int64,
     connReqInv :: Maybe ConnReqInvitation,
     localAlias :: Text,
@@ -1133,3 +1164,9 @@ data XGrpMemIntroCont = XGrpMemIntroCont
     groupConnReq :: ConnReqInvitation
   }
   deriving (Show)
+
+encodeJSON :: ToJSON a => a -> Text
+encodeJSON = safeDecodeUtf8 . LB.toStrict . J.encode
+
+decodeJSON :: FromJSON a => Text -> Maybe a
+decodeJSON = J.decode . LB.fromStrict . encodeUtf8

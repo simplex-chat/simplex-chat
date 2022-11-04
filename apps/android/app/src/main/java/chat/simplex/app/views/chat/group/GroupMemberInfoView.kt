@@ -24,6 +24,7 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.SimplexServers
+import chat.simplex.app.views.chat.SwitchAddressButton
 import chat.simplex.app.views.chatlist.openChat
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.SettingsActionItem
@@ -81,6 +82,9 @@ fun GroupMemberInfoView(
             }
           }
         }
+      },
+      switchMemberAddress = {
+        switchMemberAddress(chatModel, groupInfo, member)
       }
     )
   }
@@ -113,6 +117,7 @@ fun GroupMemberInfoLayout(
   openDirectChat: () -> Unit,
   removeMember: () -> Unit,
   onRoleSelected: (GroupMemberRole) -> Unit,
+  switchMemberAddress: () -> Unit,
 ) {
   Column(
     Modifier
@@ -154,12 +159,15 @@ fun GroupMemberInfoLayout(
       }
     }
     SectionSpacer()
-
-    if (connStats != null) {
-      val rcvServers = connStats.rcvServers
-      val sndServers = connStats.sndServers
-      if ((rcvServers != null && rcvServers.isNotEmpty()) || (sndServers != null && sndServers.isNotEmpty())) {
-        SectionView(title = stringResource(R.string.conn_stats_section_title_servers)) {
+    SectionView(title = stringResource(R.string.conn_stats_section_title_servers)) {
+      if (developerTools) {
+        SwitchAddressButton(switchMemberAddress)
+        SectionDivider()
+      }
+      if (connStats != null) {
+        val rcvServers = connStats.rcvServers
+        val sndServers = connStats.sndServers
+        if ((rcvServers != null && rcvServers.isNotEmpty()) || (sndServers != null && sndServers.isNotEmpty())) {
           if (rcvServers != null && rcvServers.isNotEmpty()) {
             SimplexServers(stringResource(R.string.receiving_via), rcvServers)
             if (sndServers != null && sndServers.isNotEmpty()) {
@@ -170,9 +178,9 @@ fun GroupMemberInfoLayout(
             SimplexServers(stringResource(R.string.sending_via), sndServers)
           }
         }
-        SectionSpacer()
       }
     }
+    SectionSpacer()
 
     if (member.canBeRemoved(groupInfo)) {
       SectionView {
@@ -280,6 +288,10 @@ private fun updateMemberRoleDialog(
   )
 }
 
+private fun switchMemberAddress(m: ChatModel, groupInfo: GroupInfo, member: GroupMember) = withApi {
+  m.controller.apiSwitchGroupMember(groupInfo.apiId, member.groupMemberId)
+}
+
 @Preview
 @Composable
 fun PreviewGroupMemberInfoLayout() {
@@ -292,7 +304,8 @@ fun PreviewGroupMemberInfoLayout() {
       developerTools = false,
       openDirectChat = {},
       removeMember = {},
-      onRoleSelected = {}
+      onRoleSelected = {},
+      switchMemberAddress = {},
     )
   }
 }
