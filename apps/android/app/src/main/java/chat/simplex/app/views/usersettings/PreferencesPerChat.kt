@@ -83,23 +83,23 @@ fun PreferencesPerChatView(m: ChatModel, user: User, contact: Contact, onContact
       }
 
       SectionSpacer()
-      val messageDelete = remember(prefs) { mutableStateOf(prefs.messageDelete.toLocal()) }
-      MessageDeleteSection(
-        messageDelete,
-        (userPrefs.messageDelete ?: ChatPreference.messageDeleteDefault).toLocal(),
-        (contactPrefs.messageDelete ?: ChatPreference.messageDeleteDefault).toLocal(),
+      val fullDelete = remember(prefs) { mutableStateOf(prefs.fullDelete.toLocal()) }
+      FullDeleteSection(
+        fullDelete,
+        (userPrefs.fullDelete ?: ChatPreference.fullDeleteDefault).toLocal(),
+        (contactPrefs.fullDelete ?: ChatPreference.fullDeleteDefault).toLocal(),
       ) {
-        applyPrefs(prefs.copy(messageDelete = if (it == ChatPreferenceLocal.DEFAULT) null else it.toPref(ChatPreference.messageDeleteDefault)))
+        applyPrefs(prefs.copy(fullDelete = if (it == ChatPreferenceLocal.DEFAULT) null else it.toPref(ChatPreference.fullDeleteDefault)))
       }
 
       SectionSpacer()
-      val deliveryReceipts = remember(prefs) { mutableStateOf(prefs.deliveryReceipts.toLocal()) }
-      DeliveryReceiptsSection(
-        deliveryReceipts,
-        (userPrefs.deliveryReceipts ?: ChatPreference.deliveryReceiptsDefault).toLocal(),
-        (contactPrefs.deliveryReceipts ?: ChatPreference.deliveryReceiptsDefault).toLocal(),
+      val receipts = remember(prefs) { mutableStateOf(prefs.receipts.toLocal()) }
+      ReceiptsSection(
+        receipts,
+        (userPrefs.receipts ?: ChatPreference.receiptsDefault).toLocal(),
+        (contactPrefs.receipts ?: ChatPreference.receiptsDefault).toLocal(),
       ) {
-        applyPrefs(prefs.copy(deliveryReceipts = if (it == ChatPreferenceLocal.DEFAULT) null else it.toPref(ChatPreference.deliveryReceiptsDefault)))
+        applyPrefs(prefs.copy(receipts = if (it == ChatPreferenceLocal.DEFAULT) null else it.toPref(ChatPreference.receiptsDefault)))
       }
     }
 
@@ -122,19 +122,19 @@ private fun VoiceSection(
 ) {
   fun mapValue(user: ChatPreferenceLocal): ValueTitleDesc<ChatPreferenceLocal> = when (user) {
     ChatPreferenceLocal.DEFAULT -> ValueTitleDesc(user, String.format(generalGetString(R.string.chat_preferences_default), mapValue(default).title), mapValue(default).description)
-    ChatPreferenceLocal.ON -> when (contactCurrent) {
-      ChatPreferenceLocal.ON, ChatPreferenceLocal.ALWAYS -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_on), generalGetString(R.string.chat_preferences_voice_on_and_on_desc))
-      ChatPreferenceLocal.OFF -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_on), generalGetString(R.string.chat_preferences_voice_on_and_off_desc))
+    ChatPreferenceLocal.YES -> when (contactCurrent) {
+      ChatPreferenceLocal.YES, ChatPreferenceLocal.ALWAYS -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_yes), generalGetString(R.string.chat_preferences_voice_yes_and_yes_desc))
+      ChatPreferenceLocal.NO -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_yes), generalGetString(R.string.chat_preferences_voice_yes_and_no_desc))
       ChatPreferenceLocal.DEFAULT -> error("Shouldn't be here")
     }
-    ChatPreferenceLocal.OFF -> when (contactCurrent) {
-      ChatPreferenceLocal.ON, ChatPreferenceLocal.OFF -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_off), generalGetString(R.string.chat_preferences_voice_off_and_on_desc))
-      ChatPreferenceLocal.ALWAYS -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_off), generalGetString(R.string.chat_preferences_voice_off_and_always_desc))
+    ChatPreferenceLocal.NO -> when (contactCurrent) {
+      ChatPreferenceLocal.YES, ChatPreferenceLocal.NO -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_no), generalGetString(R.string.chat_preferences_voice_no_and_yes_desc))
+      ChatPreferenceLocal.ALWAYS -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_no), generalGetString(R.string.chat_preferences_voice_no_and_always_desc))
       ChatPreferenceLocal.DEFAULT -> error("Shouldn't be here")
     }
     ChatPreferenceLocal.ALWAYS -> when (contactCurrent) {
-      ChatPreferenceLocal.ON, ChatPreferenceLocal.ALWAYS -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_always), generalGetString(R.string.chat_preferences_voice_on_and_on_desc))
-      ChatPreferenceLocal.OFF -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_always), generalGetString(R.string.chat_preferences_voice_always_and_off_desc))
+      ChatPreferenceLocal.YES, ChatPreferenceLocal.ALWAYS -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_always), generalGetString(R.string.chat_preferences_voice_yes_and_yes_desc))
+      ChatPreferenceLocal.NO -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_always), generalGetString(R.string.chat_preferences_voice_always_and_no_desc))
       ChatPreferenceLocal.DEFAULT -> error("Shouldn't be here")
     }
   }
@@ -167,7 +167,7 @@ private fun VoiceSection(
 }
 
 @Composable
-private fun MessageDeleteSection(
+private fun FullDeleteSection(
   current: State<ChatPreferenceLocal>,
   default: ChatPreferenceLocal,
   contactCurrent: ChatPreferenceLocal,
@@ -175,19 +175,19 @@ private fun MessageDeleteSection(
 ) {
   fun mapValue(user: ChatPreferenceLocal): ValueTitleDesc<ChatPreferenceLocal> = when (user) {
     ChatPreferenceLocal.DEFAULT -> ValueTitleDesc(user, String.format(generalGetString(R.string.chat_preferences_default), mapValue(default).title), mapValue(default).description)
-    ChatPreferenceLocal.ON -> when (contactCurrent) {
-      ChatPreferenceLocal.ON, ChatPreferenceLocal.ALWAYS -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_on), generalGetString(R.string.chat_preferences_deletion_on_and_on_desc))
-      ChatPreferenceLocal.OFF -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_on), generalGetString(R.string.chat_preferences_deletion_on_and_off_desc))
+    ChatPreferenceLocal.YES -> when (contactCurrent) {
+      ChatPreferenceLocal.YES, ChatPreferenceLocal.ALWAYS -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_yes), generalGetString(R.string.chat_preferences_deletion_yes_and_yes_desc))
+      ChatPreferenceLocal.NO -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_yes), generalGetString(R.string.chat_preferences_deletion_yes_and_no_desc))
       ChatPreferenceLocal.DEFAULT -> error("Shouldn't be here")
     }
-    ChatPreferenceLocal.OFF -> when (contactCurrent) {
-      ChatPreferenceLocal.ON, ChatPreferenceLocal.OFF -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_off), generalGetString(R.string.chat_preferences_deletion_off_and_on_desc))
-      ChatPreferenceLocal.ALWAYS -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_off), generalGetString(R.string.chat_preferences_deletion_off_and_always_desc))
+    ChatPreferenceLocal.NO -> when (contactCurrent) {
+      ChatPreferenceLocal.YES, ChatPreferenceLocal.NO -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_no), generalGetString(R.string.chat_preferences_deletion_no_and_yes_desc))
+      ChatPreferenceLocal.ALWAYS -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_no), generalGetString(R.string.chat_preferences_deletion_no_and_always_desc))
       ChatPreferenceLocal.DEFAULT -> error("Shouldn't be here")
     }
     ChatPreferenceLocal.ALWAYS -> when (contactCurrent) {
-      ChatPreferenceLocal.ON, ChatPreferenceLocal.ALWAYS -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_always), generalGetString(R.string.chat_preferences_deletion_on_and_on_desc))
-      ChatPreferenceLocal.OFF -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_always), generalGetString(R.string.chat_preferences_deletion_always_and_off_desc))
+      ChatPreferenceLocal.YES, ChatPreferenceLocal.ALWAYS -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_always), generalGetString(R.string.chat_preferences_deletion_yes_and_yes_desc))
+      ChatPreferenceLocal.NO -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_always), generalGetString(R.string.chat_preferences_deletion_always_and_no_desc))
       ChatPreferenceLocal.DEFAULT -> error("Shouldn't be here")
     }
   }
@@ -219,7 +219,7 @@ private fun MessageDeleteSection(
 }
 
 @Composable
-private fun DeliveryReceiptsSection(
+private fun ReceiptsSection(
   current: State<ChatPreferenceLocal>,
   default: ChatPreferenceLocal,
   contactCurrent: ChatPreferenceLocal,
@@ -227,19 +227,19 @@ private fun DeliveryReceiptsSection(
 ) {
   fun mapValue(user: ChatPreferenceLocal): ValueTitleDesc<ChatPreferenceLocal> = when (user) {
     ChatPreferenceLocal.DEFAULT -> ValueTitleDesc(user, String.format(generalGetString(R.string.chat_preferences_default), mapValue(default).title), mapValue(default).description)
-    ChatPreferenceLocal.ON -> when (contactCurrent) {
-      ChatPreferenceLocal.ON, ChatPreferenceLocal.ALWAYS -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_on), generalGetString(R.string.chat_preferences_delivery_receipts_on_and_on_desc))
-      ChatPreferenceLocal.OFF -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_on), generalGetString(R.string.chat_preferences_delivery_receipts_on_and_off_desc))
+    ChatPreferenceLocal.YES -> when (contactCurrent) {
+      ChatPreferenceLocal.YES, ChatPreferenceLocal.ALWAYS -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_yes), generalGetString(R.string.chat_preferences_delivery_receipts_yes_and_yes_desc))
+      ChatPreferenceLocal.NO -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_yes), generalGetString(R.string.chat_preferences_delivery_receipts_yes_and_no_desc))
       ChatPreferenceLocal.DEFAULT -> error("Shouldn't be here")
     }
-    ChatPreferenceLocal.OFF -> when (contactCurrent) {
-      ChatPreferenceLocal.ON, ChatPreferenceLocal.OFF -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_off), generalGetString(R.string.chat_preferences_delivery_receipts_off_and_on_desc))
-      ChatPreferenceLocal.ALWAYS -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_off), generalGetString(R.string.chat_preferences_delivery_receipts_off_and_always_desc))
+    ChatPreferenceLocal.NO -> when (contactCurrent) {
+      ChatPreferenceLocal.YES, ChatPreferenceLocal.NO -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_no), generalGetString(R.string.chat_preferences_delivery_receipts_no_and_yes_desc))
+      ChatPreferenceLocal.ALWAYS -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_no), generalGetString(R.string.chat_preferences_delivery_receipts_no_and_always_desc))
       ChatPreferenceLocal.DEFAULT -> error("Shouldn't be here")
     }
     ChatPreferenceLocal.ALWAYS -> when (contactCurrent) {
-      ChatPreferenceLocal.ON, ChatPreferenceLocal.ALWAYS -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_always), generalGetString(R.string.chat_preferences_delivery_receipts_on_and_on_desc))
-      ChatPreferenceLocal.OFF -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_always), generalGetString(R.string.chat_preferences_delivery_receipts_always_and_off_desc))
+      ChatPreferenceLocal.YES, ChatPreferenceLocal.ALWAYS -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_always), generalGetString(R.string.chat_preferences_delivery_receipts_yes_and_yes_desc))
+      ChatPreferenceLocal.NO -> ValueTitleDesc(user, generalGetString(R.string.chat_preferences_always), generalGetString(R.string.chat_preferences_delivery_receipts_always_and_no_desc))
       ChatPreferenceLocal.DEFAULT -> error("Shouldn't be here")
     }
   }

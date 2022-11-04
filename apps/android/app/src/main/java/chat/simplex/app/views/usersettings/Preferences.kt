@@ -13,7 +13,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
@@ -70,21 +69,21 @@ fun PreferencesView(m: ChatModel, user: User) {
       }
 
       SectionSpacer()
-      val messageDelete = remember(prefs) {
-        val pref = prefs.messageDelete ?: ChatPreference.messageDeleteDefault
+      val fullDelete = remember(prefs) {
+        val pref = prefs.fullDelete ?: ChatPreference.fullDeleteDefault
         mutableStateOf(pref.toLocal())
       }
-      MessageDeleteSection(messageDelete) {
-        applyPrefs(prefs.copy(messageDelete = it.toPref(ChatPreference.messageDeleteDefault)))
+      FullDeleteSection(fullDelete) {
+        applyPrefs(prefs.copy(fullDelete = it.toPref(ChatPreference.fullDeleteDefault)))
       }
 
       SectionSpacer()
-      val deliveryReceipts = remember(prefs) {
-        val pref = prefs.deliveryReceipts ?: ChatPreference.deliveryReceiptsDefault
+      val receipts = remember(prefs) {
+        val pref = prefs.receipts ?: ChatPreference.receiptsDefault
         mutableStateOf(pref.toLocal())
       }
-      DeliveryReceiptsSection(deliveryReceipts) {
-        applyPrefs(prefs.copy(deliveryReceipts = it.toPref(ChatPreference.deliveryReceiptsDefault)))
+      DeliveryReceiptsSection(receipts) {
+        applyPrefs(prefs.copy(receipts = it.toPref(ChatPreference.receiptsDefault)))
       }
     }
     SectionCustomFooter(PaddingValues(DEFAULT_PADDING)) {
@@ -101,8 +100,8 @@ fun PreferencesView(m: ChatModel, user: User) {
 private fun VoiceSection(current: State<ChatPreferenceLocal>, onSelected: (ChatPreferenceLocal) -> Unit) {
   val values = remember {
     listOf(
-      ValueTitleDesc(ChatPreferenceLocal.ON, generalGetString(R.string.chat_preferences_on), generalGetString(R.string.chat_preferences_voice_on_desc)),
-      ValueTitleDesc(ChatPreferenceLocal.OFF, generalGetString(R.string.chat_preferences_off), generalGetString(R.string.chat_preferences_voice_off_desc)),
+      ValueTitleDesc(ChatPreferenceLocal.YES, generalGetString(R.string.chat_preferences_yes), generalGetString(R.string.chat_preferences_voice_yes_desc)),
+      ValueTitleDesc(ChatPreferenceLocal.NO, generalGetString(R.string.chat_preferences_no), generalGetString(R.string.chat_preferences_voice_no_desc)),
       ValueTitleDesc(ChatPreferenceLocal.ALWAYS, generalGetString(R.string.chat_preferences_always), generalGetString(R.string.chat_preferences_voice_always_desc))
     )
   }
@@ -122,11 +121,11 @@ private fun VoiceSection(current: State<ChatPreferenceLocal>, onSelected: (ChatP
 }
 
 @Composable
-private fun MessageDeleteSection(current: State<ChatPreferenceLocal>, onSelected: (ChatPreferenceLocal) -> Unit) {
+private fun FullDeleteSection(current: State<ChatPreferenceLocal>, onSelected: (ChatPreferenceLocal) -> Unit) {
   val values = remember {
     listOf(
-      ValueTitleDesc(ChatPreferenceLocal.ON, generalGetString(R.string.chat_preferences_on), generalGetString(R.string.chat_preferences_deletion_on_desc)),
-      ValueTitleDesc(ChatPreferenceLocal.OFF, generalGetString(R.string.chat_preferences_off), generalGetString(R.string.chat_preferences_deletion_off_desc)),
+      ValueTitleDesc(ChatPreferenceLocal.YES, generalGetString(R.string.chat_preferences_yes), generalGetString(R.string.chat_preferences_deletion_yes_desc)),
+      ValueTitleDesc(ChatPreferenceLocal.NO, generalGetString(R.string.chat_preferences_no), generalGetString(R.string.chat_preferences_deletion_no_desc)),
       ValueTitleDesc(ChatPreferenceLocal.ALWAYS, generalGetString(R.string.chat_preferences_always), generalGetString(R.string.chat_preferences_deletion_always_desc))
     )
   }
@@ -146,11 +145,11 @@ private fun MessageDeleteSection(current: State<ChatPreferenceLocal>, onSelected
 }
 
 @Composable
-private fun DeliveryReceiptsSection(current: State<ChatPreferenceLocal>, onSelected: (ChatPreferenceLocal) -> Unit) {
+private fun ReceiptsSection(current: State<ChatPreferenceLocal>, onSelected: (ChatPreferenceLocal) -> Unit) {
   val values = remember {
     listOf(
-      ValueTitleDesc(ChatPreferenceLocal.ON, generalGetString(R.string.chat_preferences_on), generalGetString(R.string.chat_preferences_delivery_receipts_on_desc)),
-      ValueTitleDesc(ChatPreferenceLocal.OFF, generalGetString(R.string.chat_preferences_off), generalGetString(R.string.chat_preferences_delivery_receipts_off_desc)),
+      ValueTitleDesc(ChatPreferenceLocal.YES, generalGetString(R.string.chat_preferences_yes), generalGetString(R.string.chat_preferences_delivery_receipts_yes_desc)),
+      ValueTitleDesc(ChatPreferenceLocal.NO, generalGetString(R.string.chat_preferences_no), generalGetString(R.string.chat_preferences_delivery_receipts_no_desc)),
       ValueTitleDesc(ChatPreferenceLocal.ALWAYS, generalGetString(R.string.chat_preferences_always), generalGetString(R.string.chat_preferences_delivery_receipts_always_desc))
     )
   }

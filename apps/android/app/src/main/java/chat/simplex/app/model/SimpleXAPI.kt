@@ -74,7 +74,7 @@ class AppPreferences(val context: Context) {
   val autoRestartWorkerVersion = mkIntPreference(SHARED_PREFS_AUTO_RESTART_WORKER_VERSION, 0)
   val webrtcPolicyRelay = mkBoolPreference(SHARED_PREFS_WEBRTC_POLICY_RELAY, true)
   private val _callOnLockScreen = mkStrPreference(SHARED_PREFS_WEBRTC_CALLS_ON_LOCK_SCREEN, CallOnLockScreen.default.name)
-  val callOnLockScreen: Preference<CallOnLockScreen> = Preference(
+  val callOnLockScreen: SharedPreference<CallOnLockScreen> = SharedPreference(
     get = fun(): CallOnLockScreen {
       val value = _callOnLockScreen.get() ?: return CallOnLockScreen.default
       return try {
@@ -119,33 +119,33 @@ class AppPreferences(val context: Context) {
   val primaryColor = mkIntPreference(SHARED_PREFS_PRIMARY_COLOR, LightColorPalette.primary.toArgb())
 
   private fun mkIntPreference(prefName: String, default: Int) =
-    Preference(
+    SharedPreference(
       get = fun() = sharedPreferences.getInt(prefName, default),
       set = fun(value) = sharedPreferences.edit().putInt(prefName, value).apply()
     )
 
   private fun mkLongPreference(prefName: String, default: Long) =
-    Preference(
+    SharedPreference(
       get = fun() = sharedPreferences.getLong(prefName, default),
       set = fun(value) = sharedPreferences.edit().putLong(prefName, value).apply()
     )
 
-  private fun mkTimeoutPreference(prefName: String, default: Long, proxyDefault: Long): Preference<Long> {
+  private fun mkTimeoutPreference(prefName: String, default: Long, proxyDefault: Long): SharedPreference<Long> {
     val d = if (networkUseSocksProxy.get()) proxyDefault else default
-    return Preference(
+    return SharedPreference(
       get = fun() = sharedPreferences.getLong(prefName, d),
       set = fun(value) = sharedPreferences.edit().putLong(prefName, value).apply()
     )
   }
 
   private fun mkBoolPreference(prefName: String, default: Boolean) =
-    Preference(
+    SharedPreference(
       get = fun() = sharedPreferences.getBoolean(prefName, default),
       set = fun(value) = sharedPreferences.edit().putBoolean(prefName, value).apply()
     )
 
-  private fun mkStrPreference(prefName: String, default: String?): Preference<String?> =
-    Preference(
+  private fun mkStrPreference(prefName: String, default: String?): SharedPreference<String?> =
+    SharedPreference(
       get = fun() = sharedPreferences.getString(prefName, default),
       set = fun(value) = sharedPreferences.edit().putString(prefName, value).apply()
     )
@@ -154,8 +154,8 @@ class AppPreferences(val context: Context) {
   * Provide `[commit] = true` to save preferences right now, not after some unknown period of time.
   * So in case of a crash this value will be saved 100%
   * */
-  private fun mkDatePreference(prefName: String, default: Instant?, commit: Boolean = false): Preference<Instant?> =
-    Preference(
+  private fun mkDatePreference(prefName: String, default: Instant?, commit: Boolean = false): SharedPreference<Instant?> =
+    SharedPreference(
       get = {
         val pref = sharedPreferences.getString(prefName, default?.toEpochMilliseconds()?.toString())
         pref?.let { Instant.fromEpochMilliseconds(pref.toLong()) }
@@ -1421,7 +1421,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   }
 }
 
-class Preference<T>(val get: () -> T, val set: (T) -> Unit)
+class SharedPreference<T>(val get: () -> T, val set: (T) -> Unit)
 
 // ChatCommand
 sealed class CC {
@@ -1755,55 +1755,93 @@ data class ChatSettings(
 
 @Serializable
 data class ChatPreferences(
+  val fullDelete: ChatPreference? = null,
+  val receipts: ChatPreference? = null,
   val voice: ChatPreference? = null,
-  val messageDelete: ChatPreference? = null,
-  val deliveryReceipts: ChatPreference? = null,
 ) {
   companion object {
     val default = ChatPreferences(
+      fullDelete = ChatPreference.fullDeleteDefault,
+      receipts = ChatPreference.receiptsDefault,
       voice = ChatPreference.voiceDefault,
-      messageDelete = ChatPreference.messageDeleteDefault,
-      deliveryReceipts = ChatPreference.deliveryReceiptsDefault,
+    )
+  }
+}
+
+@Serializable
+data class GroupPreferences(
+  val fullDelete: GroupPreference? = null,
+  val receipts: GroupPreference? = null,
+  val voice: GroupPreference? = null,
+) {
+  companion object {
+    val default = GroupPreferences(
+      fullDelete = GroupPreference.fullDeleteDefault,
+      receipts = GroupPreference.receiptsDefault,
+      voice = GroupPreference.voiceDefault,
     )
   }
 }
 
 @Serializable
 data class ChatPreference(
-  val enable: PrefSwitch
+  val allow: PrefAllowed
 ) {
   companion object {
-    val voiceDefault = ChatPreference(enable = PrefSwitch.OFF)
-    val messageDeleteDefault = ChatPreference(enable = PrefSwitch.OFF)
-    val deliveryReceiptsDefault = ChatPreference(enable = PrefSwitch.OFF)
+    val fullDeleteDefault = ChatPreference(allow = PrefAllowed.NO)
+    val receiptsDefault = ChatPreference(allow = PrefAllowed.NO)
+    val voiceDefault = ChatPreference(allow = PrefAllowed.NO)
   }
 
   fun toLocal() =
-    when (enable) {
-      PrefSwitch.ON -> ChatPreferenceLocal.ON
-      PrefSwitch.OFF -> ChatPreferenceLocal.OFF
-      PrefSwitch.ALWAYS -> ChatPreferenceLocal.ALWAYS
+    when (allow) {
+      PrefAllowed.YES -> ChatPreferenceLocal.YES
+      PrefAllowed.NO -> ChatPreferenceLocal.NO
+      PrefAllowed.ALWAYS -> ChatPreferenceLocal.ALWAYS
     }
 }
 
 fun ChatPreference?.toLocal() = this?.toLocal() ?: ChatPreferenceLocal.DEFAULT
 
 @Serializable
-enum class PrefSwitch {
-  @SerialName("on") ON,
-  @SerialName("off") OFF,
+data class GroupPreference(
+  val enable: GroupPrefEnabled
+) {
+  companion object {
+    val fullDeleteDefault = GroupPreference(enable = GroupPrefEnabled.NO)
+    val receiptsDefault = GroupPreference(enable = GroupPrefEnabled.NO)
+    val voiceDefault = GroupPreference(enable = GroupPrefEnabled.NO)
+  }
+
+  fun toLocal() =
+    when (enable) {
+      GroupPrefEnabled.YES -> ChatPreferenceLocal.YES
+      GroupPrefEnabled.NO -> ChatPreferenceLocal.NO
+    }
+}
+
+@Serializable
+enum class PrefAllowed {
+  @SerialName("on") YES,
+  @SerialName("off") NO,
   @SerialName("always") ALWAYS,
 }
 
+@Serializable
+enum class GroupPrefEnabled {
+  @SerialName("on") YES,
+  @SerialName("off") NO,
+}
+
 enum class ChatPreferenceLocal {
-  DEFAULT, ON, OFF, ALWAYS;
+  DEFAULT, YES, NO, ALWAYS;
 
   fun toPref(default: ChatPreference): ChatPreference =
     when (this) {
       DEFAULT -> default
-      ON -> ChatPreference(enable = PrefSwitch.ON)
-      OFF -> ChatPreference(enable = PrefSwitch.OFF)
-      ALWAYS -> ChatPreference(enable = PrefSwitch.ALWAYS)
+      YES -> ChatPreference(allow = PrefAllowed.YES)
+      NO -> ChatPreference(allow = PrefAllowed.NO)
+      ALWAYS -> ChatPreference(allow = PrefAllowed.ALWAYS)
     }
 }
 

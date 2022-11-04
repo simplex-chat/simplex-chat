@@ -80,8 +80,8 @@ fun SettingsLayout(
   stopped: Boolean,
   encrypted: Boolean,
   incognito: MutableState<Boolean>,
-  incognitoPref: Preference<Boolean>,
-  developerTools: Preference<Boolean>,
+  incognitoPref: SharedPreference<Boolean>,
+  developerTools: SharedPreference<Boolean>,
   userDisplayName: String,
   setPerformLA: (Boolean) -> Unit,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
@@ -163,7 +163,7 @@ fun SettingsLayout(
 
 @Composable
 fun SettingsIncognitoActionItem(
-  incognitoPref: Preference<Boolean>,
+  incognitoPref: SharedPreference<Boolean>,
   incognito: MutableState<Boolean>,
   stopped: Boolean,
   onClickInfo: () -> Unit,
@@ -313,7 +313,7 @@ fun SettingsActionItem(icon: ImageVector, text: String, click: (() -> Unit)? = n
 }
 
 @Composable
-fun SettingsPreferenceItem(icon: ImageVector, text: String, pref: Preference<Boolean>, prefState: MutableState<Boolean>? = null) {
+fun SettingsPreferenceItem(icon: ImageVector, text: String, pref: SharedPreference<Boolean>, prefState: MutableState<Boolean>? = null) {
   SectionItemView() {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Icon(icon, text, tint = HighOrLowlight)
@@ -330,7 +330,7 @@ fun SettingsPreferenceItemWithInfo(
   text: String,
   stopped: Boolean,
   onClickInfo: () -> Unit,
-  pref: Preference<Boolean>,
+  pref: SharedPreference<Boolean>,
   prefState: MutableState<Boolean>? = null
 ) {
   SectionItemView(onClickInfo) {
@@ -386,8 +386,8 @@ fun PreviewSettingsLayout() {
       stopped = false,
       encrypted = false,
       incognito = remember { mutableStateOf(false) },
-      incognitoPref = Preference({ false }, {}),
-      developerTools = Preference({ false }, {}),
+      incognitoPref = SharedPreference({ false }, {}),
+      developerTools = SharedPreference({ false }, {}),
       userDisplayName = "Alice",
       setPerformLA = {},
       showModal = { {} },

@@ -690,6 +690,7 @@ class GroupProfile (
   override val fullName: String,
   override val image: String? = null,
   override val localAlias: String = "",
+  val groupPreferences: GroupPreferences? = null
 ): NamedChat {
   companion object {
     val sampleData = GroupProfile(
