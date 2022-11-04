@@ -11,7 +11,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -535,7 +534,7 @@ fun ChatListNavLinkLayout(
   showMenu: MutableState<Boolean>,
   stopped: Boolean
 ) {
-  var modifier = Modifier.fillMaxWidth().heightIn(min = 88.dp)
+  var modifier = Modifier.fillMaxWidth()
   if (!stopped) modifier = modifier.combinedClickable(onClick = click, onLongClick = { showMenu.value = true })
   Surface(modifier) {
     Row(
