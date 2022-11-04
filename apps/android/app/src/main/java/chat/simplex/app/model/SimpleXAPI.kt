@@ -952,18 +952,18 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       is CR.ContactConnected -> {
         if (!r.contact.viaGroupLink) {
           chatModel.updateContact(r.contact)
-          chatModel.dismissConnReqView(r.contact.activeConn.id)
-          chatModel.removeChat(r.contact.activeConn.id)
           chatModel.updateNetworkStatus(r.contact.id, Chat.NetworkStatus.Connected())
           ntfManager.notifyContactConnected(r.contact)
         }
+        chatModel.dismissConnReqView(r.contact.activeConn.id)
+        chatModel.removeChat(r.contact.activeConn.id)
       }
       is CR.ContactConnecting -> {
         if (!r.contact.viaGroupLink) {
           chatModel.updateContact(r.contact)
-          chatModel.dismissConnReqView(r.contact.activeConn.id)
-          chatModel.removeChat(r.contact.activeConn.id)
         }
+        chatModel.dismissConnReqView(r.contact.activeConn.id)
+        chatModel.removeChat(r.contact.activeConn.id)
       }
       is CR.ReceivedContactRequest -> {
         val contactRequest = r.contactRequest

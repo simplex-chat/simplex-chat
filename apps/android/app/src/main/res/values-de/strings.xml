@@ -26,16 +26,18 @@
   <string name="invalid_message_format">Unzulässiges Nachrichtenformat</string>
 
   <!-- PendingContactConnection - ChatModel.kt -->
-  <string name="connection_local_display_name">Verbindung <xliff:g id="connection ID" example="1">%1$d</xliff:g></string>
-  <string name="display_name_connection_established">Verbindung hergestellt</string>
-  <string name="display_name_invited_to_connect">Für eine Verbindung eingeladen</string>
-  <string name="display_name_connecting">verbinde …</string>
-  <string name="description_you_shared_one_time_link">Sie haben einen Einmal-Link geteilt</string>
-  <string name="description_you_shared_one_time_link_incognito">Sie haben Inkognito einen Einmal-Link geteilt</string>
-  <string name="description_via_contact_address_link">Über einen Kontaktadressen Link</string>
-  <string name="description_via_contact_address_link_incognito">Inkognito über einen Kontaktadressen Link</string>
-  <string name="description_via_one_time_link">Über einen Einmal-Link</string>
-  <string name="description_via_one_time_link_incognito">Inkognito über einen Einmal-Link</string>
+  <string name="connection_local_display_name">verbindung <xliff:g id="connection ID" example="1">%1$d</xliff:g></string>
+  <string name="display_name_connection_established">verbindung hergestellt</string>
+  <string name="display_name_invited_to_connect">für eine Verbindung eingeladen</string>
+  <string name="display_name_connecting">verbinde…</string>
+  <string name="description_you_shared_one_time_link">sie haben einen Einmal-Link geteilt</string>
+  <string name="description_you_shared_one_time_link_incognito">sie haben Inkognito einen Einmal-Link geteilt</string>
+  <string name="description_via_group_link">***via group link</string>
+  <string name="description_via_group_link_incognito">***incognito via group link</string>
+  <string name="description_via_contact_address_link">über einen Kontaktadressen Link</string>
+  <string name="description_via_contact_address_link_incognito">inkognito über einen Kontaktadressen Link</string>
+  <string name="description_via_one_time_link">über einen Einmal-Link</string>
+  <string name="description_via_one_time_link_incognito">inkognito über einen Einmal-Link</string>
 
   <!-- SimpleXAPI.kt -->
   <string name="error_saving_smp_servers">Fehler beim Speichern der SMP-Server</string>
