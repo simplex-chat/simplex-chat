@@ -1038,6 +1038,8 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         chatModel.addChat(Chat(chatInfo = ChatInfo.Group(r.groupInfo), chatItems = listOf()))
         // TODO NtfManager.shared.notifyGroupInvitation
       }
+      is CR.UserAcceptedGroupSent ->
+        chatModel.updateGroup(r.groupInfo)
       is CR.JoinedGroupMemberConnecting ->
         chatModel.upsertGroupMember(r.groupInfo, r.member)
       is CR.DeletedMemberUser -> // TODO update user member

@@ -991,6 +991,8 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 chatItems: []
             ))
             // NtfManager.shared.notifyContactRequest(contactRequest) // TODO notifyGroupInvitation?
+        case let .userAcceptedGroupSent(groupInfo):
+            m.updateGroup(groupInfo)
         case let .joinedGroupMemberConnecting(groupInfo, _, member):
             _ = m.upsertGroupMember(groupInfo, member)
         case let .deletedMemberUser(groupInfo, _): // TODO update user member
