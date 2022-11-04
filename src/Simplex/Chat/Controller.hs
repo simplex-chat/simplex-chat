@@ -285,7 +285,7 @@ data ChatResponse
   | CRUserContactLink {contactLink :: UserContactLink}
   | CRUserContactLinkUpdated {contactLink :: UserContactLink}
   | CRContactRequestRejected {contactRequest :: UserContactRequest}
-  | CRUserAcceptedGroupSent {groupInfo :: GroupInfo}
+  | CRUserAcceptedGroupSent {groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRUserDeletedMember {groupInfo :: GroupInfo, member :: GroupMember}
   | CRGroupsList {groups :: [GroupInfo]}
   | CRSentGroupInvitation {groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember}

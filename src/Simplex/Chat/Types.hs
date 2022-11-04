@@ -305,10 +305,10 @@ instance ToJSON GroupPreferences where
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 instance ToField GroupPreferences where
-  toField = toField . encodeJson
+  toField = toField . encodeJSON
 
 instance FromField GroupPreferences where
-  fromField = fromTextField_ decodeJson
+  fromField = fromTextField_ decodeJSON
 
 -- full collection of chat preferences defined in the app - it is used to ensure we include all preferences and to simplify processing
 -- if some of the preferences are not defined in Preferences, defaults from defaultChatPrefs are used here.
@@ -369,10 +369,10 @@ instance ToJSON Preferences where
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 instance ToField Preferences where
-  toField = toField . encodeJson
+  toField = toField . encodeJSON
 
 instance FromField Preferences where
-  fromField = fromTextField_ decodeJson
+  fromField = fromTextField_ decodeJSON
 
 data Preference = Preference
   {allow :: FeatureAllowed}
@@ -1146,6 +1146,7 @@ data PendingContactConnection = PendingContactConnection
     pccConnStatus :: ConnStatus,
     viaContactUri :: Bool,
     viaUserContactLink :: Maybe Int64,
+    groupLinkId :: Maybe GroupLinkId,
     customUserProfileId :: Maybe Int64,
     connReqInv :: Maybe ConnReqInvitation,
     localAlias :: Text,
@@ -1375,8 +1376,8 @@ data XGrpMemIntroCont = XGrpMemIntroCont
   }
   deriving (Show)
 
-encodeJson :: ToJSON a => a -> Text
-encodeJson = safeDecodeUtf8 . LB.toStrict . J.encode
+encodeJSON :: ToJSON a => a -> Text
+encodeJSON = safeDecodeUtf8 . LB.toStrict . J.encode
 
-decodeJson :: FromJSON a => Text -> Maybe a
-decodeJson = J.decode . LB.fromStrict . encodeUtf8
+decodeJSON :: FromJSON a => Text -> Maybe a
+decodeJSON = J.decode . LB.fromStrict . encodeUtf8

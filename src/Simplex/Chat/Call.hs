@@ -21,7 +21,7 @@ import Data.Time.Clock (UTCTime)
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
-import Simplex.Chat.Types (Contact, ContactId, decodeJson, encodeJson)
+import Simplex.Chat.Types (Contact, ContactId, decodeJSON, encodeJSON)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, fstToLower, singleFieldJSON)
@@ -100,10 +100,10 @@ instance ToJSON CallState where
   toEncoding = J.genericToEncoding $ singleFieldJSON fstToLower
 
 instance ToField CallState where
-  toField = toField . encodeJson
+  toField = toField . encodeJSON
 
 instance FromField CallState where
-  fromField = fromTextField_ decodeJson
+  fromField = fromTextField_ decodeJSON
 
 newtype CallId = CallId ByteString
   deriving (Eq, Show)

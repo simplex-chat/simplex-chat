@@ -32,6 +32,8 @@
   <string name="display_name_connecting">connecting…</string>
   <string name="description_you_shared_one_time_link">you shared one-time link</string>
   <string name="description_you_shared_one_time_link_incognito">you shared one-time link incognito</string>
+  <string name="description_via_group_link">via group link</string>
+  <string name="description_via_group_link_incognito">incognito via group link</string>
   <string name="description_via_contact_address_link">via contact address link</string>
   <string name="description_via_contact_address_link_incognito">incognito via contact address link</string>
   <string name="description_via_one_time_link">via one-time link</string>
