@@ -391,10 +391,10 @@ instance ToJSON MsgContent where
     MCFile t -> J.pairs $ "type" .= MCFile_ <> "text" .= t
 
 instance ToField MsgContent where
-  toField = toField . encodeJson
+  toField = toField . encodeJSON
 
 instance FromField MsgContent where
-  fromField = fromTextField_ decodeJson
+  fromField = fromTextField_ decodeJSON
 
 data CMEventTag (e :: MsgEncoding) where
   XMsgNew_ :: CMEventTag 'Json

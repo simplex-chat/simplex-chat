@@ -108,6 +108,12 @@
         "invitedMember": {"ref": "memberIdRole"},
         "connRequest": {"ref": "connReqUri"},
         "groupProfile": {"ref": "profile"}
+      },
+      "optionalProperties": {
+        "groupLinkId": {"ref": "base64url"},
+        "metadata": {
+          "comment": "used to identify invitation via group link"
+        }
       }
     },
     "memberIdRole": {
