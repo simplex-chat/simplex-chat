@@ -901,9 +901,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
         case let .contactConnecting(contact):
             if !contact.viaGroupLink {
                 m.updateContact(contact)
+                m.dismissConnReqView(contact.activeConn.id)
+                m.removeChat(contact.activeConn.id)
             }
-            m.dismissConnReqView(contact.activeConn.id)
-            m.removeChat(contact.activeConn.id)
         case let .receivedContactRequest(contactRequest):
             let cInfo = ChatInfo.contactRequest(contactRequest: contactRequest)
             if m.hasChat(contactRequest.id) {

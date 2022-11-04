@@ -961,9 +961,9 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       is CR.ContactConnecting -> {
         if (!r.contact.viaGroupLink) {
           chatModel.updateContact(r.contact)
+          chatModel.dismissConnReqView(r.contact.activeConn.id)
+          chatModel.removeChat(r.contact.activeConn.id)
         }
-        chatModel.dismissConnReqView(r.contact.activeConn.id)
-        chatModel.removeChat(r.contact.activeConn.id)
       }
       is CR.ReceivedContactRequest -> {
         val contactRequest = r.contactRequest
