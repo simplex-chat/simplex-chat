@@ -251,6 +251,18 @@ chatPrefName = \case
   PTReceipts -> "delivery receipts"
   PTVoice -> "voice messages"
 
+class HasChatPreferences p where
+  preferences' :: p -> Maybe ChatPreferences
+
+instance HasChatPreferences User where
+  preferences' User {profile = LocalProfile {preferences}} = preferences
+
+instance HasChatPreferences Contact where
+  preferences' Contact {profile = LocalProfile {preferences}} = preferences
+
+instance HasChatPreferences GroupInfo where
+  preferences' GroupInfo {groupProfile = GroupProfile {preferences}} = preferences
+
 class PreferenceI p where
   getPreference :: PrefType -> p -> Preference
 
@@ -280,6 +292,20 @@ data FullChatPreferences = FullChatPreferences
   }
   deriving (Eq)
 
+data ContactUserPref = CUP Preference | CUPDefault Preference
+
+data ContactUserPreference = ContactUserPreference
+  { enabled :: PrefEnabled,
+    userPreference :: ContactUserPref,
+    contactPreference :: Preference
+  }
+
+data ContactUserPreferences = ContactUserPreferences
+  { fullDelete :: ContactUserPref,
+    receipts :: ContactUserPref,
+    voice :: ContactUserPref
+  }
+
 toChatPrefs :: FullChatPreferences -> ChatPreferences
 toChatPrefs FullChatPreferences {fullDelete', receipts', voice'} =
   ChatPreferences
@@ -289,11 +315,12 @@ toChatPrefs FullChatPreferences {fullDelete', receipts', voice'} =
     }
 
 defaultChatPrefs :: FullChatPreferences
-defaultChatPrefs = FullChatPreferences
-  { fullDelete' = Preference {enable = PSOff},
-    receipts' = Preference {enable = PSOff},
-    voice' = Preference {enable = PSOff}
-  }
+defaultChatPrefs =
+  FullChatPreferences
+    { fullDelete' = Preference {allow = PSNo},
+      receipts' = Preference {allow = PSNo},
+      voice' = Preference {allow = PSNo}
+    }
 
 emptyChatPrefs :: ChatPreferences
 emptyChatPrefs = ChatPreferences Nothing Nothing Nothing
@@ -309,39 +336,39 @@ instance FromField ChatPreferences where
   fromField = fromTextField_ decodeJson
 
 data Preference = Preference
-  {enable :: PrefSwitch}
+  {allow :: PrefAllow}
   deriving (Eq, Show, Generic, FromJSON)
 
 instance ToJSON Preference where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
-data PrefSwitch
-  = PSOn -- enabled unconditionally
-  | PSOff -- disabled unconditionally
-  | PSMutual -- enabled (On) if it's set to enabled (On) or Mutual by another party
+data PrefAllow
+  = PSAlways -- allow unconditionally
+  | PSYes -- allow, if peer allows it
+  | PSNo -- do not allo
   deriving (Eq, Show, Generic)
 
-instance FromField PrefSwitch where fromField = fromBlobField_ strDecode
+instance FromField PrefAllow where fromField = fromBlobField_ strDecode
 
-instance ToField PrefSwitch where toField = toField . strEncode
+instance ToField PrefAllow where toField = toField . strEncode
 
-instance StrEncoding PrefSwitch where
+instance StrEncoding PrefAllow where
   strEncode = \case
-    PSOn -> "on"
-    PSOff -> "off"
-    PSMutual -> "mutual"
+    PSAlways -> "always"
+    PSYes -> "yes"
+    PSNo -> "no"
   strDecode = \case
-    "on" -> Right PSOn
-    "off" -> Right PSOff
-    "mutual" -> Right PSMutual
-    r -> Left $ "bad PrefSwitch " <> B.unpack r
+    "always" -> Right PSAlways
+    "yes" -> Right PSYes
+    "no" -> Right PSNo
+    r -> Left $ "bad PrefAllow " <> B.unpack r
   strP = strDecode <$?> A.takeByteString
 
-instance FromJSON PrefSwitch where
-  parseJSON = strParseJSON "PrefSwitch"
+instance FromJSON PrefAllow where
+  parseJSON = strParseJSON "PrefAllow"
 
-instance ToJSON PrefSwitch where
+instance ToJSON PrefAllow where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
@@ -358,8 +385,9 @@ mergeChatPreferences contactPrefs userPreferences =
        in fromMaybe (getPreference pt defaultChatPrefs) $ (contactPrefs >>= sel) <|> (userPreferences >>= sel)
 
 mergeUserChatPrefs :: User -> Contact -> FullChatPreferences
-mergeUserChatPrefs User {profile = LocalProfile {preferences}} ct@Contact {userPreferences} =
-  mergeChatPreferences (Just userPreferences) (maybe preferences (const Nothing) $ customUserProfileId' ct)
+mergeUserChatPrefs user ct =
+  let userPrefs = maybe (preferences' user) (const Nothing) (customUserProfileId' ct)
+   in mergeChatPreferences (Just $ userPreferences ct) userPrefs
 
 data PrefEnabled = PrefEnabled {forUser :: Bool, forContact :: Bool}
   deriving (Show, Generic)
@@ -369,12 +397,12 @@ instance ToJSON PrefEnabled where
   toEncoding = J.genericToEncoding J.defaultOptions
 
 prefEnabled :: Preference -> Preference -> PrefEnabled
-prefEnabled Preference {enable = user} Preference {enable = contact} = case (user, contact) of
-  (PSOn, PSOff) -> PrefEnabled {forUser = False, forContact = True}
-  (PSOff, PSOn) -> PrefEnabled {forUser = True, forContact = False}
-  (_, PSOff) -> PrefEnabled {forUser = False, forContact = False}
-  (PSOff, _) -> PrefEnabled {forUser = False, forContact = False}
-  _ -> PrefEnabled {forUser = True, forContact = True}
+prefEnabled Preference {allow = user} Preference {allow = contact} = case (user, contact) of
+  (PSAlways, PSNo) -> PrefEnabled {forUser = False, forContact = True}
+  (PSNo, PSAlways) -> PrefEnabled {forUser = True, forContact = False}
+  (_, PSNo) -> PrefEnabled False False
+  (PSNo, _) -> PrefEnabled False False
+  _ -> PrefEnabled True True
 
 data PreferencesEnabled = PreferencesEnabled
   { sFullDelete :: PrefEnabled,
@@ -388,7 +416,7 @@ instance ToJSON PreferencesEnabled where
   toEncoding = J.genericToEncoding J.defaultOptions
 
 preferencesEnabled :: User -> Contact -> PreferencesEnabled
-preferencesEnabled user ct@Contact {profile = LocalProfile {preferences}} =
+preferencesEnabled user ct =
   PreferencesEnabled
     { sFullDelete = prefEnabled (fullDelete' userPrefs) (fullDelete' ctPrefs),
       sReceipts = prefEnabled (receipts' userPrefs) (receipts' ctPrefs),
@@ -396,7 +424,7 @@ preferencesEnabled user ct@Contact {profile = LocalProfile {preferences}} =
     }
   where
     userPrefs = mergeUserChatPrefs user ct
-    ctPrefs = mergeChatPreferences preferences Nothing
+    ctPrefs = mergeChatPreferences (preferences' ct) Nothing
 
 getPrefEnabled :: PrefType -> PreferencesEnabled -> PrefEnabled
 getPrefEnabled = \case

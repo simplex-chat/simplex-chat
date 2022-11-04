@@ -2415,7 +2415,7 @@ testConnectIncognitoInvitationLink = testChat3 aliceProfile bobProfile cathProfi
     alice ##> "/_set prefs @2 {}"
     alice <## ("your preferences for " <> bobIncognito <> " did not change")
     (bob </)
-    alice ##> "/_set prefs @2 {\"voice\": {\"enable\": \"on\"}}"
+    alice ##> "/_set prefs @2 {\"voice\": {\"allow\": \"always\"}}"
     alice <## ("you updated preferences for " <> bobIncognito <> ":")
     alice <## "voice messages: enabled for contact (you allow: always, contact allows: no)"
     bob <## (aliceIncognito <> " updated preferences for you:")
@@ -2423,7 +2423,7 @@ testConnectIncognitoInvitationLink = testChat3 aliceProfile bobProfile cathProfi
     bob ##> "/_set prefs @2 {}"
     bob <## ("your preferences for " <> aliceIncognito <> " did not change")
     (alice </)
-    alice ##> "/_set prefs @2 {\"voice\": {\"enable\": \"off\"}}"
+    alice ##> "/_set prefs @2 {\"voice\": {\"allow\": \"no\"}}"
     alice <## ("you updated preferences for " <> bobIncognito <> ":")
     alice <## "voice messages: off (you allow: no, contact allows: no)"
     bob <## (aliceIncognito <> " updated preferences for you:")
@@ -2723,7 +2723,7 @@ testCantSeeGlobalPrefsUpdateIncognito = testChat3 aliceProfile bobProfile cathPr
           cath <## "alice (Alice): contact is connected"
       ]
     alice <## "cath (Catherine): contact is connected"
-    alice ##> "/_profile {\"displayName\": \"alice\", \"fullName\": \"\", \"preferences\": {\"voice\": {\"enable\": \"on\"}}}"
+    alice ##> "/_profile {\"displayName\": \"alice\", \"fullName\": \"\", \"preferences\": {\"voice\": {\"allow\": \"always\"}}}"
     alice <## "user full name removed (your contacts are notified)"
     alice <## "updated preferences:"
     alice <## "voice messages allowed: always"
@@ -2734,20 +2734,20 @@ testCantSeeGlobalPrefsUpdateIncognito = testChat3 aliceProfile bobProfile cathPr
     cath <## "alice updated preferences for you:"
     cath <## "voice messages: enabled for you (you allow: no, contact allows: always)"
     (cath </)
-    bob ##> "/_set prefs @2 {\"voice\": {\"enable\": \"on\"}}"
+    bob ##> "/_set prefs @2 {\"voice\": {\"allow\": \"always\"}}"
     bob <## ("you updated preferences for " <> aliceIncognito <> ":")
     bob <## "voice messages: enabled for contact (you allow: always, contact allows: no)"
     alice <## "bob updated preferences for you:"
     alice <## "voice messages: enabled for you (you allow: no, contact allows: always)"
-    alice ##> "/_set prefs @2 {\"voice\": {\"enable\": \"mutual\"}}"
+    alice ##> "/_set prefs @2 {\"voice\": {\"allow\": \"yes\"}}"
     alice <## "you updated preferences for bob:"
     alice <## "voice messages: enabled (you allow: yes, contact allows: always)"
     bob <## (aliceIncognito <> " updated preferences for you:")
     bob <## "voice messages: enabled (you allow: always, contact allows: yes)"
     (cath </)
-    alice ##> "/_set prefs @3 {\"voice\": {\"enable\": \"on\"}}"
+    alice ##> "/_set prefs @3 {\"voice\": {\"allow\": \"always\"}}"
     alice <## "your preferences for cath did not change"
-    alice ##> "/_set prefs @3 {\"voice\": {\"enable\": \"mutual\"}}"
+    alice ##> "/_set prefs @3 {\"voice\": {\"allow\": \"yes\"}}"
     alice <## "you updated preferences for cath:"
     alice <## "voice messages: off (you allow: yes, contact allows: no)"
     cath <## "alice updated preferences for you:"
@@ -2788,22 +2788,22 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     alice ##> "/_set prefs @2 {}"
     alice <## "your preferences for bob did not change"
     (bob </)
-    alice ##> "/_set prefs @2 {\"voice\": {\"enable\": \"on\"}}"
+    alice ##> "/_set prefs @2 {\"voice\": {\"allow\": \"always\"}}"
     alice <## "you updated preferences for bob:"
     alice <## "voice messages: enabled for contact (you allow: always, contact allows: no)"
     bob <## "alice updated preferences for you:"
     bob <## "voice messages: enabled for you (you allow: no, contact allows: always)"
     (bob </)
-    alice ##> "/_profile {\"displayName\": \"alice\", \"fullName\": \"\", \"preferences\": {\"voice\": {\"enable\": \"off\"}}}"
+    alice ##> "/_profile {\"displayName\": \"alice\", \"fullName\": \"\", \"preferences\": {\"voice\": {\"allow\": \"no\"}}}"
     alice <## "user full name removed (your contacts are notified)"
     bob <## "contact alice removed full name"
-    alice ##> "/_set prefs @2 {\"voice\": {\"enable\": \"mutual\"}}"
+    alice ##> "/_set prefs @2 {\"voice\": {\"allow\": \"yes\"}}"
     alice <## "you updated preferences for bob:"
-    alice <## "voice messages: off (you allow: yes, contact allows: no)"    
+    alice <## "voice messages: off (you allow: yes, contact allows: no)"
     bob <## "alice updated preferences for you:"
     bob <## "voice messages: off (you allow: no, contact allows: yes)"
     (bob </)
-    bob ##> "/_profile {\"displayName\": \"bob\", \"fullName\": \"\", \"preferences\": {\"voice\": {\"enable\": \"mutual\"}}}"
+    bob ##> "/_profile {\"displayName\": \"bob\", \"fullName\": \"\", \"preferences\": {\"voice\": {\"allow\": \"yes\"}}}"
     bob <## "user full name removed (your contacts are notified)"
     bob <## "updated preferences:"
     bob <## "voice messages allowed: yes"
@@ -2812,10 +2812,9 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     alice <## "voice messages: enabled (you allow: yes, contact allows: yes)"
     (alice </)
     bob ##> "/_set prefs @2 {}"
-    -- TODO it should show change to default, and say that nothing is sent to alice
     bob <## "your preferences for alice did not change"
     (alice </)
-    alice ##> "/_set prefs @2 {\"voice\": {\"enable\": \"off\"}}"
+    alice ##> "/_set prefs @2 {\"voice\": {\"allow\": \"no\"}}"
     alice <## "you updated preferences for bob:"
     alice <## "voice messages: off (you allow: no, contact allows: yes)"
     bob <## "alice updated preferences for you:"

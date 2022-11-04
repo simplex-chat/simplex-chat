@@ -40,7 +40,8 @@ runInputLoop ct cc = forever $ do
     CRChatCmdError _ -> when (isMessage cmd) $ echo s
     _ -> pure ()
   let testV = testView $ config cc
-  printToTerminal ct $ responseToView testV r
+  user <- readTVarIO $ currentUser cc
+  printToTerminal ct $ responseToView user testV r
   where
     echo s = printToTerminal ct [plain s]
     isMessage = \case

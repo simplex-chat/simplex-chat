@@ -49,11 +49,11 @@ import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (bshow)
 import System.Console.ANSI.Types
 
-serializeChatResponse :: ChatResponse -> String
-serializeChatResponse = unlines . map unStyle . responseToView False
+serializeChatResponse :: Maybe User -> ChatResponse -> String
+serializeChatResponse user_ = unlines . map unStyle . responseToView user_ False
 
-responseToView :: Bool -> ChatResponse -> [StyledString]
-responseToView testView = \case
+responseToView :: Maybe User -> Bool -> ChatResponse -> [StyledString]
+responseToView user_ testView = \case
   CRActiveUser User {profile} -> viewUserProfile $ fromLocalProfile profile
   CRChatStarted -> ["chat started"]
   CRChatRunning -> ["chat is running"]
@@ -123,10 +123,14 @@ responseToView testView = \case
   CRSndGroupFileCancelled _ ftm fts -> viewSndGroupFileCancelled ftm fts
   CRRcvFileCancelled ft -> receivingFile_ "cancelled" ft
   CRUserProfileUpdated p p' -> viewUserProfileUpdated p p'
-  CRContactPrefsUpdated {user, fromContact, toContact, preferences} -> viewUserContactPrefsUpdated user fromContact toContact preferences
+  CRContactPrefsUpdated {fromContact, toContact, preferences} -> case user_ of
+    Just user -> viewUserContactPrefsUpdated user fromContact toContact preferences
+    _ -> ["unexpected chat event CRContactPrefsUpdated without current user"]
   CRContactAliasUpdated c -> viewContactAliasUpdated c
   CRConnectionAliasUpdated c -> viewConnectionAliasUpdated c
-  CRContactUpdated {user, fromContact = c, toContact = c', preferences} -> viewContactUpdated c c' <> viewContactPrefsUpdated user c c' preferences
+  CRContactUpdated {fromContact = c, toContact = c', preferences} -> case user_ of
+    Just user -> viewContactUpdated c c' <> viewContactPrefsUpdated user c c' preferences
+    _ -> ["unexpected chat event CRContactUpdated without current user"]
   CRContactsMerged intoCt mergedCt -> viewContactsMerged intoCt mergedCt
   CRReceivedContactRequest UserContactRequest {localDisplayName = c, profile} -> viewReceivedContactRequest c profile
   CRRcvFileStart ci -> receivingFile_' "started" ci
@@ -694,8 +698,8 @@ viewSwitchPhase SPCompleted = "changed address"
 viewSwitchPhase phase = plain (strEncode phase) <> " changing address"
 
 viewUserProfileUpdated :: Profile -> Profile -> [StyledString]
-viewUserProfileUpdated Profile {displayName = n, fullName, image, preferences} Profile {displayName = n', fullName = fullName', image = image', preferences = preferences'} =
-  profileUpdated <> viewPrefsUpdated preferences preferences'
+viewUserProfileUpdated Profile {displayName = n, fullName, image, preferences} Profile {displayName = n', fullName = fullName', image = image', preferences = prefs'} =
+  profileUpdated <> viewPrefsUpdated preferences prefs'
   where
     profileUpdated
       | n == n' && fullName == fullName' && image == image' = []
@@ -707,27 +711,21 @@ viewUserProfileUpdated Profile {displayName = n, fullName, image, preferences} P
 viewUserContactPrefsUpdated :: User -> Contact -> Contact -> PreferencesEnabled -> [StyledString]
 viewUserContactPrefsUpdated user ct ct' pss
   | null prefs = ["your preferences for " <> ttyContact' ct' <> " did not change"]
-  | otherwise =  ("you updated preferences for " <> ttyContact' ct' <> ":") : prefs
+  | otherwise = ("you updated preferences for " <> ttyContact' ct' <> ":") : prefs
   where
     prefs = viewContactPreferences user ct ct' pss
 
 viewContactPrefsUpdated :: User -> Contact -> Contact -> PreferencesEnabled -> [StyledString]
 viewContactPrefsUpdated user ct ct' pss
   | null prefs = []
-  | otherwise =  (ttyContact' ct' <> " updated preferences for you:") : prefs
+  | otherwise = (ttyContact' ct' <> " updated preferences for you:") : prefs
   where
     prefs = viewContactPreferences user ct ct' pss
 
 viewContactPreferences :: User -> Contact -> Contact -> PreferencesEnabled -> [StyledString]
-viewContactPreferences
-  user
-  ct@Contact {profile = LocalProfile {preferences = ctPrefs}}
-  ct'@Contact {profile = LocalProfile {preferences = ctPrefs'}}
-  pss =
-  mapMaybe (viewContactPref (userPrefs ct) (userPrefs ct') ctPrefs ctPrefs' pss) allPreferences
-  where
-    userPrefs c = mergeUserChatPrefs user c
-  
+viewContactPreferences user ct ct' pss =
+  mapMaybe (viewContactPref (mergeUserChatPrefs user ct) (mergeUserChatPrefs user ct') (preferences' ct) (preferences' ct') pss) allPreferences
+
 viewContactPref :: FullChatPreferences -> FullChatPreferences -> Maybe ChatPreferences -> Maybe ChatPreferences -> PreferencesEnabled -> PrefType -> Maybe StyledString
 viewContactPref userPrefs userPrefs' ctPrefs ctPrefs' pss pt
   | userPref == userPref' && ctPref == ctPref' = Nothing
@@ -753,10 +751,10 @@ viewPrefsUpdated ps ps'
 
 viewPreference :: Preference -> StyledString
 viewPreference = \case
-  Preference {enable} -> case enable of
-    PSOn -> "always"
-    PSOff -> "no"
-    PSMutual -> "yes"
+  Preference {allow} -> case allow of
+    PSAlways -> "always"
+    PSYes -> "yes"
+    PSNo -> "no"
 
 viewPrefEnabled :: PrefEnabled -> StyledString
 viewPrefEnabled = \case
