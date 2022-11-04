@@ -314,11 +314,14 @@ header nav {
   background-color: #70F0F9;
 }
 
+/* What makes simplex private */
 .card{
   cursor: pointer;
 }
 
-.card, .card > div:nth-child(2) {
+.card, 
+.card > div:nth-child(2),
+.card > div:nth-child(1) {
   transition: all .5s ease;
 }
 
@@ -331,12 +334,18 @@ header nav {
 }
 .card > div:nth-child(2) > *:nth-child(3) {
   transform: translateY(40px);
-  transition: all .5s ease-out;
 }
 
-.card:hover > div:nth-child(2),
+.card:hover > div:nth-child(1) {
+  height: 200px;
+  padding: 12px 10px;
+}
+.card:hover > div:nth-child(2) {
+  height: 270px;
+  padding: 8px 16px;
+}
 .card.card-active > div:nth-child(2) {
-  height: 460px;
+  height: 470px;
 }
 
 .card:hover > div:nth-child(2) > *:nth-child(2),
@@ -344,7 +353,7 @@ header nav {
 .card.card-active > div:nth-child(2) > *:nth-child(2),
 .card.card-active > div:nth-child(2) > *:nth-child(3) {
   opacity: 1;
-  max-height: 460px;
+  max-height: 470px;
   transform: translateY(0px);
 }
 

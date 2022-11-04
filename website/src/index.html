@@ -62,14 +62,14 @@ templateEngineOverride: njk
             <div class="swiper-wrapper mb-14">
 
                 {% for section in what_makes_simplex_private.sections %}
-                <div class="card swiper-slide relative h-[460px] rounded-[20px] bg-card-bg-light dark:bg-card-bg-dark border-[#859096] border-solid border-[1px] dark:border-none shadow-[2px_2px_0px_#859096] dark:shadow-none overflow-hidden">
+                <div class="card swiper-slide relative h-[470px] rounded-[20px] bg-card-bg-light dark:bg-card-bg-dark border-[#859096] border-solid border-[1px] dark:border-none shadow-[2px_2px_0px_#859096] dark:shadow-none overflow-hidden">
                     <div class="flex items-center justify-center py-12 px-6 h-[322px]">
                         <img class="w-full max-w-[223px] h-full max-h-[226px] dark:hidden" src="{{ section.imgLight }}" alt=""/>
                         <img class="w-full max-w-[223px] h-full max-h-[226px] hidden dark:block" src="{{ section.imgDark }}" alt=""/>
                     </div>
-                    <div class="flex flex-col items-center justify-between h-[138px] absolute bottom-0 py-6 px-8 bg-card-desc-bg-light dark:bg-card-desc-bg-dark rounded-b-[20px]">
+                    <div class="flex flex-col items-center justify-between h-[138px] absolute bottom-0 py-6 px-4 bg-card-desc-bg-light dark:bg-card-desc-bg-dark rounded-b-[20px]">
                         <p class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">{{ section.title }}</p>
-                        <div class="flex-1 py-6 flex flex-col gap-4">
+                        <div class="flex-1 py-3 flex flex-col gap-3">
                             {% for point in section.points %}
                             <p class="text-grey-black dark:text-white text-[14px] text-center">{{ point }}</p>
                             {% endfor %}
