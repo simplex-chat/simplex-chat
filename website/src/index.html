@@ -218,33 +218,36 @@ templateEngineOverride: njk
 
 {# join simplex #}
 <!-- Section 09 -->
-<section class="bg-white py-[85px]">
-    <div class="container flex flex-col">
-        <div class="mx-[40px] md:mx-[150px] lg:mx-[250px] xl:mx-96 ">
-            <p class="text-[#0053D0] text-[45px] text-center font-bold mb-[21px]">Join <span class="text-[#3F484B]">SimpleX</span></p>
-            <p class="text-black text-[16px] font-normal text-center mb-[40px]">We invite you to join the conversion</p>
-            <a href="#" class="flex items-center justify-center text-[#0053D0] font-medium text-base rounded-[34px] bg-[#D9ECFF] py-2 px-5 mb-5">Join the REDDIT community</a>
-            <a href="#" class="flex items-center justify-center text-[#0053D0] font-medium text-base rounded-[34px] bg-[#D9ECFF] py-2 px-5 mb-5">Join us on GitHub</a>
-            <a href="#" class="flex items-center justify-center text-[#0053D0] font-medium text-base rounded-[34px] bg-white border border-[#0053D0] py-2 px-5 mb-14">Donate here to help us</a>
+<section class="bg-primary-bg-light dark:bg-primary-bg-dark py-[85px]">
+    <div class="container flex flex-col items-center">
+        <p class="text-[35px] lg:text-[45px] text-grey-black dark:text-white text-center font-bold mb-4"><span class="text-active-blue">Join</span> SimpleX</p>
+        <p class="text-black dark:text-white text-base text-center mb-10">We invite you to join the conversion</p>
+        
+        <div class="flex flex-col items-center gap-5 self-stretch mb-10">
+            <a href="#" class="flex items-center justify-center h-11 w-full max-w-[294px] font-medium text-base rounded-[34px] tracking-[0.02em] text-primary-light dark:text-primary-dark dark:bg-primary-bg-dark dark:border-primary-dark dark:border  bg-[#D9ECFF]">Join the REDDIT community</a>
+            <a href="#" class="flex items-center justify-center h-11 w-full max-w-[294px] font-medium text-base rounded-[34px] tracking-[0.02em] text-primary-light dark:text-primary-dark dark:bg-primary-bg-dark dark:border-primary-dark dark:border  bg-[#D9ECFF]">Join us on GitHub</a>
+            <a href="#" class="flex items-center justify-center h-11 w-full max-w-[294px] font-medium text-base rounded-[34px] tracking-[0.02em] text-primary-light dark:text-primary-dark dark:bg-primary-bg-dark dark:border-primary-dark dark:border-none bg-white dark:bg-[rgba(112,240,249,0.2)] border border-[#0053D0]">Donate here to help us</a>
         </div>
-        <p class="text-black text-[16px] font-normal text-center mb-[20px]">Sign up for our newsletter below</p>
-        <form class="flex justify-center">
-            <input type="text" class="h-[50px] rounded-l-[34px] border-[#0053D0] border-solid border-[1px] text-[#0053D0] text-[16px] font-normal text-left w-[400px] px-4"
-                placeholder="Enter your email address">
-            <input type="submit" class="h-[50px] rounded-r-[34px] bg-[#0053D0] text-white text-[16px] font-normal text-center px-8">
-        </form>
-        <p class="text-[#606C71] text-[16px] font-normal text-center mt-[20px] mb-7">Success/Error message here.</p>
-        <hr class="border-[#A8B0B4] border-[1px]"/>
-        <p class="text-black text-[16px] font-normal text-center m-[30px]">Get SimpleX</p>
 
-        <article>
-            <div class="h-[40px] flex justify-center px-28 md:gap-4">
-                <a href="#"><img class="h-full w-auto" src="/img/new/apple-store-btn.png" alt=""></a>
-                <a href="#"><img class="h-full w-auto hidden md:inline-block" src="/img/new/play-store-btn.png" alt=""></a>
-                <a href="#"><img class="h-full w-auto hidden md:inline-block " src="/img/new/f-droid-btn.png" alt=""></a>
-                <a href="#"><img class="h-full w-auto hidden md:inline-block " src="/img/new/test-flight.png" alt=""></a>
-                <a href="#"><img class="h-full w-auto hidden md:inline-block " src="/img/new/apk.png" alt=""></a>
-            </div>
-        </article>
+        <p class="text-black dark:text-white text-base text-center mb-5">Sign up for our newsletter below</p>
+        
+        <form class="flex items-center w-full max-w-[540px] mb-4">
+            <input type="text" class="h-[44px] rounded-l-[34px] bg-transparent border border-primary-light focus:outline-none text-primary-light dark:text-primary-dark text-base w-full max-w-[400px] px-5"
+                placeholder="Enter your email address">
+            <input type="submit" class="h-[44px] rounded-r-[34px] bg-primary-light text-white text-center px-8">
+        </form>
+
+        <p class="text-[#606C71] dark:text-white text-center">Success/Error message here.</p>
+        
+        <hr class="block my-10 mx-5 dark:opacity-[0.2] w-full">
+
+        <p class="text-black dark:text-white text-center mb-5">Get SimpleX</p>
+        <div class="flex items-center justify-center gap-4 flex-wrap">
+            <a href="#"><img class="h-[40px] w-auto" src="/img/new/apple-store-btn.png" alt=""/></a>
+            <a href="#"><img class="h-[40px] w-auto" src="/img/new/play-store-btn.png" alt=""/></a>
+            <a href="#"><img class="h-[40px] w-auto" src="/img/new/f-droid-btn.png" alt=""/></a>
+            <a href="#"><img class="h-[40px] w-auto" src="/img/new/test-flight.png" alt=""/></a>
+            <a href="#"><img class="h-[40px] w-auto" src="/img/new/apk.png" alt=""/></a>
+        </div>
     </div>
 </section>
