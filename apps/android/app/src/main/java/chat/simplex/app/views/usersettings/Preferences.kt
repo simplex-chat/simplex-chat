@@ -82,7 +82,7 @@ fun PreferencesView(m: ChatModel, user: User) {
         val pref = prefs.receipts ?: ChatPreference.receiptsDefault
         mutableStateOf(pref.toLocal())
       }
-      DeliveryReceiptsSection(receipts) {
+      ReceiptsSection(receipts) {
         applyPrefs(prefs.copy(receipts = it.toPref(ChatPreference.receiptsDefault)))
       }
     }
