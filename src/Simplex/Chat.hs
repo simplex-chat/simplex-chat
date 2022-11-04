@@ -871,7 +871,7 @@ processChatCommand = \case
         updateGroupMemberStatus db userId fromMember GSMemAccepted
         updateGroupMemberStatus db userId membership GSMemAccepted
       updateCIGroupInvitationStatus user
-      pure $ CRUserAcceptedGroupSent g {membership = membership {memberStatus = GSMemAccepted}}
+      pure $ CRUserAcceptedGroupSent g {membership = membership {memberStatus = GSMemAccepted}} Nothing
     where
       updateCIGroupInvitationStatus user@User {userId} = do
         AChatItem _ _ cInfo ChatItem {content, meta = CIMeta {itemId}} <- withStore $ \db -> getChatItemByGroupId db user groupId
@@ -2434,7 +2434,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
             createMemberConnectionAsync db user hostId connIds
             updateGroupMemberStatusById db userId hostId GSMemAccepted
             updateGroupMemberStatus db userId membership GSMemAccepted
-          toView $ CRUserAcceptedGroupSent gInfo {membership = membership {memberStatus = GSMemAccepted}}
+          toView $ CRUserAcceptedGroupSent gInfo {membership = membership {memberStatus = GSMemAccepted}} (Just ct)
         else do
           let content = CIRcvGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
           ci <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta content Nothing
