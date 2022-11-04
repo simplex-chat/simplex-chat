@@ -433,6 +433,7 @@ public struct PendingContactConnection: Decodable, NamedChat {
     var pccAgentConnId: String
     var pccConnStatus: ConnStatus
     public var viaContactUri: Bool
+    public var groupLinkId: String?
     public var customUserProfileId: Int64?
     public var connReqInv: String?
     public var localAlias: String
@@ -477,10 +478,18 @@ public struct PendingContactConnection: Decodable, NamedChat {
                         desc = NSLocalizedString("you shared one-time link", comment: "chat list item description")
                     }
                 } else if viaContactUri {
-                    if incognito {
-                        desc = NSLocalizedString("incognito via contact address link", comment: "chat list item description")
+                    if groupLinkId != nil {
+                        if incognito {
+                            desc = NSLocalizedString("incognito via group link", comment: "chat list item description")
+                        } else {
+                            desc = NSLocalizedString("via group link", comment: "chat list item description")
+                        }
                     } else {
-                        desc = NSLocalizedString("via contact address link", comment: "chat list item description")
+                        if incognito {
+                            desc = NSLocalizedString("incognito via contact address link", comment: "chat list item description")
+                        } else {
+                            desc = NSLocalizedString("via contact address link", comment: "chat list item description")
+                        }
                     }
                 } else {
                     if incognito {
