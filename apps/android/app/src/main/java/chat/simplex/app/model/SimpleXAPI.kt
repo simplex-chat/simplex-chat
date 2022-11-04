@@ -1785,19 +1785,19 @@ data class GroupPreferences(
 
 @Serializable
 data class ChatPreference(
-  val allow: PrefAllowed
+  val allow: FeatureAllowed
 ) {
   companion object {
-    val fullDeleteDefault = ChatPreference(allow = PrefAllowed.NO)
-    val receiptsDefault = ChatPreference(allow = PrefAllowed.NO)
-    val voiceDefault = ChatPreference(allow = PrefAllowed.NO)
+    val fullDeleteDefault = ChatPreference(allow = FeatureAllowed.NO)
+    val receiptsDefault = ChatPreference(allow = FeatureAllowed.NO)
+    val voiceDefault = ChatPreference(allow = FeatureAllowed.NO)
   }
 
   fun toLocal() =
     when (allow) {
-      PrefAllowed.YES -> ChatPreferenceLocal.YES
-      PrefAllowed.NO -> ChatPreferenceLocal.NO
-      PrefAllowed.ALWAYS -> ChatPreferenceLocal.ALWAYS
+      FeatureAllowed.YES -> ChatPreferenceLocal.YES
+      FeatureAllowed.NO -> ChatPreferenceLocal.NO
+      FeatureAllowed.ALWAYS -> ChatPreferenceLocal.ALWAYS
     }
 }
 
@@ -1805,30 +1805,30 @@ fun ChatPreference?.toLocal() = this?.toLocal() ?: ChatPreferenceLocal.DEFAULT
 
 @Serializable
 data class GroupPreference(
-  val enable: GroupPrefEnabled
+  val enable: GroupFeatureEnabled
 ) {
   companion object {
-    val fullDeleteDefault = GroupPreference(enable = GroupPrefEnabled.NO)
-    val receiptsDefault = GroupPreference(enable = GroupPrefEnabled.NO)
-    val voiceDefault = GroupPreference(enable = GroupPrefEnabled.NO)
+    val fullDeleteDefault = GroupPreference(enable = GroupFeatureEnabled.NO)
+    val receiptsDefault = GroupPreference(enable = GroupFeatureEnabled.NO)
+    val voiceDefault = GroupPreference(enable = GroupFeatureEnabled.NO)
   }
 
   fun toLocal() =
     when (enable) {
-      GroupPrefEnabled.YES -> ChatPreferenceLocal.YES
-      GroupPrefEnabled.NO -> ChatPreferenceLocal.NO
+      GroupFeatureEnabled.YES -> ChatPreferenceLocal.YES
+      GroupFeatureEnabled.NO -> ChatPreferenceLocal.NO
     }
 }
 
 @Serializable
-enum class PrefAllowed {
+enum class FeatureAllowed {
   @SerialName("on") YES,
   @SerialName("off") NO,
   @SerialName("always") ALWAYS,
 }
 
 @Serializable
-enum class GroupPrefEnabled {
+enum class GroupFeatureEnabled {
   @SerialName("on") YES,
   @SerialName("off") NO,
 }
@@ -1839,9 +1839,9 @@ enum class ChatPreferenceLocal {
   fun toPref(default: ChatPreference): ChatPreference =
     when (this) {
       DEFAULT -> default
-      YES -> ChatPreference(allow = PrefAllowed.YES)
-      NO -> ChatPreference(allow = PrefAllowed.NO)
-      ALWAYS -> ChatPreference(allow = PrefAllowed.ALWAYS)
+      YES -> ChatPreference(allow = FeatureAllowed.YES)
+      NO -> ChatPreference(allow = FeatureAllowed.NO)
+      ALWAYS -> ChatPreference(allow = FeatureAllowed.ALWAYS)
     }
 }
 
