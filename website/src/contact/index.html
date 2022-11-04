@@ -1,211 +1,166 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Contact</title>
-        <link rel="stylesheet" href="/css/swiper-bundle.min.css">
-        <link rel="stylesheet" href="/css/tailwind.css" />
-        <link rel="stylesheet" href="/css/style.css" />
-        <style>
-            .primary-header-contact {
-                font-weight: 700;
-                font-size: 38px;
-                line-height: 43px;
-                background: linear-gradient(251.16deg, #53c1ff 1.1%, #0053d0 100.82%);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                background-clip: text;
-                text-shadow: 0px 4px 74px #e9e7e2;
-              }
-              
-.secondary-header-contact {
-    width: 499px;
-    height: 86px;
-    font-family: "Gilroy";
-    font-style: normal;
-    font-weight: 700;
-    font-size: 20px;
-    line-height: 28px;
-    color: #606c71;
-    text-shadow: 0px 4px 74px #e9e7e2;
-  }
-  
-            .content_copy_with_tooltip {
-                background-color: #f8f8f6;
-                border-radius: 50px;
-                padding-bottom: 4px;
-                padding-top: 8px;
-                margin-top: 16px;
-                margin-bottom: 16px;
-            }
-            .content_copy_with_tooltip .tooltip {
-                vertical-align: -6px;
-            }
-            .content_copy_with_tooltip .content {
-                font-size: 15px;
-            }
-            .contact-tab > div:last-child{
-                opacity: 0;
-                max-height: 0;
-                transition: all 0.9s ease;
-                visibility: hidden;
-            transform: translateY(10px);
-            }   
-            .contact-tab > div:last-child.active{
-                opacity: 1;
-                max-height: 300px;
-                visibility: visible;
-                transform: translateY(0px);
-            }
+---
+layout: layouts/main.html
+title: "SimpleX Chat - Contact"
+templateEngineOverride: njk
+---
+
+<style>
+    .primary-header-contact {
+        font-weight: 700;
+        font-size: 38px;
+        line-height: 43px;
+        background: linear-gradient(251.16deg, #53c1ff 1.1%, #0053d0 100.82%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        text-shadow: 0px 4px 74px #e9e7e2;
+    }  
+    .secondary-header-contact {
+        width: 499px;
+        height: 86px;
+        font-family: "Gilroy";
+        font-style: normal;
+        font-weight: 700;
+        font-size: 20px;
+        line-height: 28px;
+        color: #606c71;
+        text-shadow: 0px 4px 74px #e9e7e2;
+    }
+    .content_copy_with_tooltip {
+        background-color: #f8f8f6;
+        border-radius: 50px;
+        padding-bottom: 4px;
+        padding-top: 8px;
+        margin-top: 16px;
+        margin-bottom: 16px;
+    }
+    .content_copy_with_tooltip .tooltip {
+        vertical-align: -6px;
+    }
+    .content_copy_with_tooltip .content {
+        font-size: 15px;
+    }
+    .contact-tab > div:last-child{
+        opacity: 0;
+        max-height: 0;
+        transition: all 0.9s ease;
+        visibility: hidden;
+    transform: translateY(10px);
+    }   
+    .contact-tab > div:last-child.active{
+        opacity: 1;
+        max-height: 300px;
+        visibility: visible;
+        transform: translateY(0px);
+    }
+</style>
+
+<section class="hidden h-screen m-auto items-center justify-between landing-page-header container lg:flex">
+    <div class="h-[inherit] flex flex-col items-start ">
+        <article class="w-full mt-[190px] max-w-[500px]">
+            <p class="primary-header-contact mb-[25px]">You have been sent a link to connect on SimpleX Chat</p>
+            <p class="secondary-header-contact mb-[25px] leading-[43px]">Scan the QR code with the SimpleX Chat app on your phone or tablet.</p>
+            <p class="text-justify text-[#3F484B] leading-[24px] text-[16px]">Not downloaded the SimpleX Chat yet?</p>
+            <p class="text-justify text-[#3F484B] leading-[24px] mb-[24px] text-[16px]">Use the links below to download the app.</p>
+        </article>
+        <article>
+            <div class="h-[40px] flex gap-4">
+                <a href="#"><img class="h-full w-auto" src="/img/new/apple-store-btn.png" alt=""></a>
+                <a href="#"><img class="h-full w-auto" src="/img/new/play-store-btn.png" alt=""></a>
+                <a href="#"><img class="h-full w-auto" src="/img/new/f-droid-btn.png" alt=""></a>
+                <a href="#"><img class="h-full w-auto" src="/img/new/test-flight.png" alt=""></a>
+                <a href="#"><img class="h-full w-auto" src="/img/new/apk.png" alt=""></a>
+            </div>
+        </article>
+    </div>
+
+    <div class="relative top-0 ">
+        <img class="relative top-0" src="/img/new/bg_gfx.png" alt="">
+        <img class="absolute top-[30px] left-[67px]" src="/img/new/QRcode-phone.png" alt="">
+    </div>
+</section>
 
 
-        </style>
-    </head>
+<section class="flex h-screen m-auto items-center justify-between landing-page-header container lg:hidden">
+    <div class="h-[inherit] flex flex-col items-center justify-center">
+        <p class="text-[28px] font-bold bg-gradient-to-r from-[#0053d0] to-[#53C1FF] text-center bg-clip-text text-transparent mb-[30px]">You have been sent a link to connect on SimpleX Chat!</p>
+        <p class="text-[20px] text-[#3F484B] font-medium mb-[25px] leading-[28px] ">To make a connection:</p>
+        <div class="mb-4 relative">
+            <div class="relative flex flex-col justify-center items-center h-[131px] w-[368px] rounded-[30px] border-[1px] border-[#A8B0B4] border-opacity-60 ">
+                <p class="text-[20px] text-[#3F484B] font-medium leading-[28px] mb-[20px]">Install SimpleX app</p>
+                <a href="#"><img class="h-[38px] w-[155px]" src="/img/new/apple-store-btn.png" alt=""></a>
+            </div>
+            <div class="absolute bg-[#0197FF] h-[44px] w-[44px] rounded-full flex items-center justify-center top-0 left-0 translate-x-[-30%] translate-y-[-30%]">
+                <p class="text-[16px] text-white font-bold leading-[36px]">1</p>
+            </div>
+        </div>
 
-    <body class="overflow-x-hidden">
-        {% include "navbar.html" %}
+        <div class="mb-4 relative">
+            <div class="relative flex flex-col justify-center items-center h-[131px] w-[368px] rounded-[30px] border-[1px] border-[#A8B0B4] border-opacity-60 ">
+                <p class="text-[20px] text-[#3F484B] font-medium leading-[28px] mb-[20px]">Connect in app</p>
+                <a href="#" class="bg-[#0053D0] text-white py-3 px-8 rounded-[34px] text-[16px] leading-[19px] tracking-[0.02em]">Open Simplex app</a>
 
-        <section class="hidden h-screen m-auto items-center justify-between landing-page-header container lg:flex">
-            <div class="h-[inherit] flex flex-col items-start ">
-                <article class="w-full mt-[190px] max-w-[500px]">
-                    <p class="primary-header-contact mb-[25px]">You have been sent a link to connect on SimpleX Chat</p>
-                    <p class="secondary-header-contact mb-[25px] leading-[43px]">Scan the QR code with the SimpleX Chat app on your phone or tablet.</p>
-                    <p class="text-justify text-[#3F484B] leading-[24px] text-[16px]">Not downloaded the SimpleX Chat yet?</p>
-                    <p class="text-justify text-[#3F484B] leading-[24px] mb-[24px] text-[16px]">Use the links below to download the app.</p>
-                </article>
-                <article>
-                    <div class="h-[40px] flex gap-4">
-                        <a href="#"><img class="h-full w-auto" src="/img/new/apple-store-btn.png" alt=""></a>
-                        <a href="#"><img class="h-full w-auto" src="/img/new/play-store-btn.png" alt=""></a>
-                        <a href="#"><img class="h-full w-auto" src="/img/new/f-droid-btn.png" alt=""></a>
-                        <a href="#"><img class="h-full w-auto" src="/img/new/test-flight.png" alt=""></a>
-                        <a href="#"><img class="h-full w-auto" src="/img/new/apk.png" alt=""></a>
-                    </div>
-                </article>
+            </div>
+            <div class="absolute z-20 bg-[#0197FF] h-[44px] w-[44px] rounded-full flex items-center justify-center top-0 left-0 translate-x-[-30%] translate-y-[-30%]">
+                <p class="text-[16px] text-white font-bold leading-[36px]">2</p>
+            </div>
+        </div>
+
+        <div class="mb-4 relative">
+            <div class="relative flex flex-col justify-center items-center h-[131px] w-[368px] rounded-[30px] border-[1px] border-[#A8B0B4] border-opacity-60 ">
+                <p class="text-[20px] text-[#3F484B] text-center font-medium leading-[28px] p-12 mb-[20px]">Tap the <span class="text-[#0197FF]">‘connect’</span> button in the app</p>
+            </div>
+            <div class="absolute flex bg-[#0197FF] h-[44px] w-[44px] rounded-full items-center justify-center top-0 left-0 translate-x-[-30%] translate-y-[-30%]">
+                <p class="text-[16px] text-white font-bold leading-[36px]">3</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<section class="bg-[#F3F6F7] py-[50px]">
+    <div class="container">
+        <div>
+
+            <div class="contact-tab">
+                <p class="text-[#3F484B] text-[20px] font-bold leading-7 mb-6 contact-tab-btn cursor-pointer">Installing SimpleX chat to terminal</p>
+
+                <div class="active">
+                    <p class="text-[#3F484B] text-[16px] font-normal leading-6">Use this command:</p>
+                    <p class="bg-white flex rounded p-3 my-3 justify-between shadow-[inset_0px_2px_2px_rgba(0,0,0,0.15)]">
+                        <span class="text-[#3F484B] font-light text-[14px] leading-6">curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash</span><img class="content_copy" src="/img/new/content-copy.svg">
+                    </p>
+                    <p class="flex text-[#3F484B] text-[16px] font-medium leading-6 my-11">See SimpleX Chat&nbsp;<span class="flex text-[#0053D0] underline text-[16px] font-medium leading-6">GitHub repository&nbsp;<img class="h-[24px] w-[24px]" src="/img/new/gitHub.svg" alt=""></span>&nbsp;the instructions how to download or compile it from the source code.</p>
+                </div>
             </div>
 
-            <div class="relative top-0 ">
-                <img class="relative top-0" src="/img/new/bg_gfx.png" alt="">
-                <img class="absolute top-[30px] left-[67px]" src="/img/new/QRcode-phone.png" alt="">
+            <hr class="border-[#A8B0B4] border-[1px] mb-6"/>
+
+
+            <div class="contact-tab">
+                <p class="text-[#3F484B] text-[20px] font-bold leading-7 contact-tab-btn cursor-pointer">If you already installed SimpleX Chat for the terminal</p>
+                <div class="">
+                    <p class="flex text-[#3F484B] text-[16px] font-medium leading-6 my-11">If you already installed&nbsp;<span class="flex text-[#0053D0] underline text-[16px] font-medium leading-6">SimpleX Chat for the terminal&nbsp;</span>&nbsp;v1.0.0+, copy the command below and use it in the chat:</p>
+                    <p class="bg-white flex rounded p-3 my-3 justify-between shadow-[inset_0px_2px_2px_rgba(0,0,0,0.15)]">
+                        <span class="text-[#3F484B] font-light text-[14px] leading-6">/c https://simplex.chat/contact#/?v=1&smp=smp://u2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU=@smp4.simplex.im/KBCmxJ3-lEjpWLPPkI6OWPk-YJneU5uY%23MCowBQYDK2VuAyEAtixHJWDXvYWcoe-77vIfjvI6XWEuzUsapMS9nVHP_Go=</span><img class="content_copy" src="/img/new/content-copy.svg">
+                    </p>
+                </div>
+
             </div>
-        </section>
+        </div>
 
+        <div>
+        </div>
+    </div>
+</section>
 
-        <section class="flex h-screen m-auto items-center justify-between landing-page-header container lg:hidden">
-            <div class="h-[inherit] flex flex-col items-center justify-center">
-                <p class="text-[28px] font-bold bg-gradient-to-r from-[#0053d0] to-[#53C1FF] text-center bg-clip-text text-transparent mb-[30px]">You have been sent a link to connect on SimpleX Chat!</p>
-                <p class="text-[20px] text-[#3F484B] font-medium mb-[25px] leading-[28px] ">To make a connection:</p>
-                <div class="mb-4 relative">
-                    <div class="relative flex flex-col justify-center items-center h-[131px] w-[368px] rounded-[30px] border-[1px] border-[#A8B0B4] border-opacity-60 ">
-                        <p class="text-[20px] text-[#3F484B] font-medium leading-[28px] mb-[20px]">Install SimpleX app</p>
-                        <a href="#"><img class="h-[38px] w-[155px]" src="/img/new/apple-store-btn.png" alt=""></a>
-                    </div>
-                    <div class="absolute bg-[#0197FF] h-[44px] w-[44px] rounded-full flex items-center justify-center top-0 left-0 translate-x-[-30%] translate-y-[-30%]">
-                        <p class="text-[16px] text-white font-bold leading-[36px]">1</p>
-                    </div>
-                </div>
+{# join simplex #}
+{% include "sections/join_simplex.html" %}
 
-                <div class="mb-4 relative">
-                    <div class="relative flex flex-col justify-center items-center h-[131px] w-[368px] rounded-[30px] border-[1px] border-[#A8B0B4] border-opacity-60 ">
-                        <p class="text-[20px] text-[#3F484B] font-medium leading-[28px] mb-[20px]">Connect in app</p>
-                        <a href="#" class="bg-[#0053D0] text-white py-3 px-8 rounded-[34px] text-[16px] leading-[19px] tracking-[0.02em]">Open Simplex app</a>
-
-                    </div>
-                    <div class="absolute z-20 bg-[#0197FF] h-[44px] w-[44px] rounded-full flex items-center justify-center top-0 left-0 translate-x-[-30%] translate-y-[-30%]">
-                        <p class="text-[16px] text-white font-bold leading-[36px]">2</p>
-                    </div>
-                </div>
-
-                <div class="mb-4 relative">
-                    <div class="relative flex flex-col justify-center items-center h-[131px] w-[368px] rounded-[30px] border-[1px] border-[#A8B0B4] border-opacity-60 ">
-                        <p class="text-[20px] text-[#3F484B] text-center font-medium leading-[28px] p-12 mb-[20px]">Tap the <span class="text-[#0197FF]">‘connect’</span> button in the app</p>
-                    </div>
-                    <div class="absolute flex bg-[#0197FF] h-[44px] w-[44px] rounded-full items-center justify-center top-0 left-0 translate-x-[-30%] translate-y-[-30%]">
-                        <p class="text-[16px] text-white font-bold leading-[36px]">3</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-
-        <section class="bg-[#F3F6F7] py-[50px]">
-            <div class="container">
-                <div>
-
-                    <div class="contact-tab">
-                        <p class="text-[#3F484B] text-[20px] font-bold leading-7 mb-6 contact-tab-btn cursor-pointer">Installing SimpleX chat to terminal</p>
-
-                        <div class="active">
-                            <p class="text-[#3F484B] text-[16px] font-normal leading-6">Use this command:</p>
-                            <p class="bg-white flex rounded p-3 my-3 justify-between shadow-[inset_0px_2px_2px_rgba(0,0,0,0.15)]">
-                                <span class="text-[#3F484B] font-light text-[14px] leading-6">curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash</span><img class="content_copy" src="/img/new/content-copy.svg">
-                            </p>
-                            <p class="flex text-[#3F484B] text-[16px] font-medium leading-6 my-11">See SimpleX Chat&nbsp;<span class="flex text-[#0053D0] underline text-[16px] font-medium leading-6">GitHub repository&nbsp;<img class="h-[24px] w-[24px]" src="/img/new/gitHub.svg" alt=""></span>&nbsp;the instructions how to download or compile it from the source code.</p>
-                        </div>
-                    </div>
-
-                    <hr class="border-[#A8B0B4] border-[1px] mb-6"/>
-
-
-                    <div class="contact-tab">
-                        <p class="text-[#3F484B] text-[20px] font-bold leading-7 contact-tab-btn cursor-pointer">If you already installed SimpleX Chat for the terminal</p>
-                        <div class="">
-                            <p class="flex text-[#3F484B] text-[16px] font-medium leading-6 my-11">If you already installed&nbsp;<span class="flex text-[#0053D0] underline text-[16px] font-medium leading-6">SimpleX Chat for the terminal&nbsp;</span>&nbsp;v1.0.0+, copy the command below and use it in the chat:</p>
-                            <p class="bg-white flex rounded p-3 my-3 justify-between shadow-[inset_0px_2px_2px_rgba(0,0,0,0.15)]">
-                                <span class="text-[#3F484B] font-light text-[14px] leading-6">/c https://simplex.chat/contact#/?v=1&smp=smp://u2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU=@smp4.simplex.im/KBCmxJ3-lEjpWLPPkI6OWPk-YJneU5uY%23MCowBQYDK2VuAyEAtixHJWDXvYWcoe-77vIfjvI6XWEuzUsapMS9nVHP_Go=</span><img class="content_copy" src="/img/new/content-copy.svg">
-                            </p>
-                        </div>
-
-                    </div>
-                </div>
-
-                <div>
-                </div>
-            </div>
-        </section>
-
-        <section class="bg-white py-[85px]">
-            <div class="container flex flex-col">
-                <div class="mx-[40px] md:mx-[150px] lg:mx-[250px] xl:mx-96 ">
-                    <p class="text-[#0053D0] text-[45px] text-center font-bold  mb-[21px]">Join <span class="text-[#3F484B]">SimpleX</span></p>
-                    <p class="text-black text-[16px] font-normal text-center mb-[40px]">We invite you to join the conversion</p>
-                    <a href="#" class="flex items-center justify-center text-[#0053D0] font-medium text-base rounded-[34px] bg-[#D9ECFF] py-2 px-5 mb-5">Join the REDDIT community</a>
-                    <a href="#" class="flex items-center justify-center text-[#0053D0] font-medium text-base rounded-[34px] bg-[#D9ECFF] py-2 px-5 mb-5">Join us on GitHub</a>
-                    <a href="#" class="flex items-center justify-center text-[#0053D0] font-medium text-base rounded-[34px] bg-white border border-[#0053D0] py-2 px-5 mb-14">Donate here to help us</a>
-                </div>
-                <p class="text-black text-[16px] font-normal text-center mb-[20px]">Sign up for our newsletter below</p>
-                <form class="flex justify-center">
-                    <input type="text" class="h-[50px] rounded-l-[34px] border-[#0053D0] border-solid border-[1px] text-[#0053D0] text-[16px] font-normal text-left w-[400px] px-4" 
-                       placeholder="Enter your email address">
-                    <input type="submit" class="h-[50px] rounded-r-[34px] bg-[#0053D0] text-white text-[16px] font-normal text-center px-8">
-                </form>
-                <p class="text-[#606C71] text-[16px] font-normal text-center mt-[20px] mb-7">Success/Error message here.</p>
-                <hr class="border-[#A8B0B4] border-[1px]"/>
-                <p class="text-black text-[16px] font-normal text-center m-[30px]">Get SimpleX</p>
-        
-                <article>
-                    <div class="h-[40px] flex justify-center px-28 md:gap-4">
-                        <a href="#"><img class="h-full w-auto" src="/img/new/apple-store-btn.png" alt=""></a>
-                        <a href="#"><img class="h-full w-auto hidden md:inline-block" src="/img/new/play-store-btn.png" alt=""></a>
-                        <a href="#"><img class="h-full w-auto hidden md:inline-block " src="/img/new/f-droid-btn.png" alt=""></a>
-                        <a href="#"><img class="h-full w-auto hidden md:inline-block " src="/img/new/test-flight.png" alt=""></a>
-                        <a href="#"><img class="h-full w-auto hidden md:inline-block " src="/img/new/apk.png" alt=""></a>
-                    </div>
-                </article>
-            </div>
-        </section>
-
-        {% include "footer.html" %}
-
-
-        <script>
-            window.addEventListener('click',(e)=>{
-            if(e.target.closest('.contact-tab-btn')){
-                e.target.closest('.contact-tab').querySelector('div').classList.toggle('active')
-            }
-            })
-        </script>
-    </body>
-</html>
+<script>
+window.addEventListener('click',(e)=>{
+    if(e.target.closest('.contact-tab-btn')){
+        e.target.closest('.contact-tab').querySelector('div').classList.toggle('active')
+    }
+})
+</script>
