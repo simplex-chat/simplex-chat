@@ -117,15 +117,16 @@ fun ChatPreviewView(chat: Chat, chatModelIncognito: Boolean, currentUserProfileD
         chatPreviewImageOverlayIcon()
       }
     }
-    val height = with(LocalDensity.current) { 73.sp.toDp() }
     Column(
       modifier = Modifier
-        .heightIn(min = height)
         .padding(horizontal = 8.dp)
         .weight(1F)
     ) {
       chatPreviewTitle()
-      chatPreviewText(chatModelIncognito)
+      val height = with(LocalDensity.current) { 46.sp.toDp() }
+      Row(Modifier.heightIn(min = height)) {
+        chatPreviewText(chatModelIncognito)
+      }
     }
     val ts = chat.chatItems.lastOrNull()?.timestampText ?: getTimestampText(chat.chatInfo.updatedAt)
 
