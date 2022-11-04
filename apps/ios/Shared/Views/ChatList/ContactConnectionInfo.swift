@@ -46,17 +46,19 @@ struct ContactConnectionInfo: View {
                 .onTapGesture { aliasTextFieldFocused = false }
 
                 Section {
-                    HStack(spacing: 20) {
-                        Image(systemName: "pencil")
-                            .foregroundColor(.secondary)
-                            .padding(.leading, 6)
-                            .onTapGesture { aliasTextFieldFocused = true }
-                        TextField("Set contact name…", text: $localAlias)
-                            .autocapitalization(.none)
-                            .autocorrectionDisabled(true)
-                            .focused($aliasTextFieldFocused)
-                            .submitLabel(.done)
-                            .onSubmit(setConnectionAlias)
+                    if contactConnection.groupLinkId == nil {
+                        HStack(spacing: 20) {
+                            Image(systemName: "pencil")
+                                .foregroundColor(.secondary)
+                                .padding(.leading, 6)
+                                .onTapGesture { aliasTextFieldFocused = true }
+                            TextField("Set contact name…", text: $localAlias)
+                                .autocapitalization(.none)
+                                .autocorrectionDisabled(true)
+                                .focused($aliasTextFieldFocused)
+                                .submitLabel(.done)
+                                .onSubmit(setConnectionAlias)
+                        }
                     }
 
                     if contactConnection.initiated,
