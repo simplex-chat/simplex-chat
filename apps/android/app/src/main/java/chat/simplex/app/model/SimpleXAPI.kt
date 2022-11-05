@@ -1766,7 +1766,7 @@ data class ChatPreferences(
 ) {
   companion object {
     val default = ChatPreferences(
-      voice = ChatPreference(enable = PrefSwitch.OFF)
+      voice = ChatPreference(allow = PrefAllowed.NO)
     )
     val empty = ChatPreferences(
       voice = null
@@ -1776,13 +1776,14 @@ data class ChatPreferences(
 
 @Serializable
 data class ChatPreference(
-  val enable: PrefSwitch
+  val allow: PrefAllowed
 )
 
 @Serializable
-enum class PrefSwitch {
-  @SerialName("on") ON,
-  @SerialName("off") OFF
+enum class PrefAllowed {
+  @SerialName("always") ALWAYS,
+  @SerialName("yes") YES,
+  @SerialName("no") NO
 }
 
 val json = Json {
