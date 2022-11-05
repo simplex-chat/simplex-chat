@@ -362,24 +362,36 @@ header nav {
 }
 
 
-/* simplex unique */
-/* 268  -> 660 */
-/* .card-content{
-  transition: all .5s ease;
-  height: 268px;
+/* SimpleX Unique */
+.simplex-unique-card .card-content{
+  transition: all .5s ease-out;
 }
-.simplex-unique-card{
-  transition: all .5s ease;
+@media (max-width: 768px) {
+  .simplex-unique-card .card-content .content-body{
+    height: 0;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(80px);
+    transition: all .7s ease;
+  }
+  .simplex-unique-card.active-card .card-content .content-body{
+    max-height: 540px;
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0px);
+  }
+  .simplex-unique-card.active-card .card-content{
+    height: 540px;
+  }
+  .open-card-btn svg,
+  .close-card-btn svg{
+    transition: all .5s ease;
+  }
+  .open-card-btn:hover svg,
+  .close-card-btn:hover svg{
+    transform: rotate(180deg);
+  }
 }
-
-.card-content:hover {
-  max-height: 660px;
-  transition: all .5s ease;
-}
-
-.card-image{
-  transition: all .5s ease;
-} */
 
 
 /* comparison */
