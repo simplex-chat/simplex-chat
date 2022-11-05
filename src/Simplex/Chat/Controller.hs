@@ -89,7 +89,7 @@ defaultInlineFilesConfig =
     { offerChunks = 15, -- max when chunks are offered / received with the option - limited to 255 on the encoding level
       sendChunks = 0, -- max per file when chunks will be sent inline without acceptance
       totalSendChunks = 30, -- max per conversation when chunks will be sent inline without acceptance
-      receiveChunks = 5 -- max when chunks are accepted
+      receiveChunks = 6 -- max when chunks are accepted
     }
 
 data ActiveTo = ActiveNone | ActiveC ContactName | ActiveG GroupName

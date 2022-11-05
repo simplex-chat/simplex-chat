@@ -575,11 +575,11 @@ data CReqClientData = CRGroupData {groupLinkId :: GroupLinkId}
   deriving (Generic)
 
 instance ToJSON CReqClientData where
-  toJSON = J.genericToJSON . taggedObjectJSON $ dropPrefix "CD"
-  toEncoding = J.genericToEncoding . taggedObjectJSON $ dropPrefix "CD"
+  toJSON = J.genericToJSON . taggedObjectJSON $ dropPrefix "CR"
+  toEncoding = J.genericToEncoding . taggedObjectJSON $ dropPrefix "CR"
 
 instance FromJSON CReqClientData where
-  parseJSON = J.genericParseJSON . taggedObjectJSON $ dropPrefix "CD"
+  parseJSON = J.genericParseJSON . taggedObjectJSON $ dropPrefix "CR"
 
 newtype GroupLinkId = GroupLinkId {unGroupLinkId :: ByteString} -- used to identify invitation via group link
   deriving (Eq, Show)
