@@ -52,7 +52,8 @@ struct ScanToConnectView: View {
     func processQRCode(_ resp: Result<ScanResult, ScanError>) {
         switch resp {
         case let .success(r):
-            if checkLinkGroupData(parseLinkQueryData(r.string)) {
+            if let crData = parseLinkQueryData(r.string),
+               checkCRDataGroup(crData) {
                 dismiss()
                 AlertManager.shared.showAlert(groupLinkAlert(r.string))
             } else {

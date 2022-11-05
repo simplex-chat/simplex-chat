@@ -82,7 +82,8 @@ struct PasteToConnectView: View {
 
     private func connect() {
         let link = connectionLink.trimmingCharacters(in: .whitespaces)
-        if checkLinkGroupData(parseLinkQueryData(link)) {
+        if let crData = parseLinkQueryData(link),
+           checkCRDataGroup(crData) {
             dismiss()
             AlertManager.shared.showAlert(groupLinkAlert(link))
         } else {

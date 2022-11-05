@@ -78,27 +78,26 @@ func connectViaLink(_ connectionLink: String, _ dismiss: DismissAction? = nil) {
     }
 }
 
-func parseLinkQueryData(_ connectionLink: String) -> [String: String] {
+struct CRData: Decodable {
+    var type: String;
+    var groupLinkId: String?
+}
+
+func parseLinkQueryData(_ connectionLink: String) -> CRData? {
     if let hashIndex = connectionLink.firstIndex(of: "#"),
        let urlQuery = URL(string: String(connectionLink[connectionLink.index(after: hashIndex)...])),
        let components = URLComponents(url: urlQuery, resolvingAgainstBaseURL: false),
        let data = components.queryItems?.first(where: { $0.name == "data" })?.value,
        let d = data.data(using: .utf8),
-       let decoded = try? JSONSerialization.jsonObject(with: d, options: []) as? [String: String] {
-        return decoded
+       let crData = try? getJSONDecoder().decode(CRData.self, from: d) {
+        return crData
     } else {
-        return [:]
+        return nil
     }
 }
 
-func checkLinkGroupData(_ decoded: [String: String]) -> Bool {
-    if let type = decoded["type"],
-       type == "cRGroupData", // TODO replace with "groupData"
-       decoded["groupLinkId"] != nil {
-        return true
-    } else {
-        return false
-    }
+func checkCRDataGroup(_ crData: CRData) -> Bool {
+    return crData.type == "cRGroupData" && crData.groupLinkId != nil // TODO replace with type == "group"
 }
 
 func groupLinkAlert(_ connectionLink: String) -> Alert {
