@@ -323,6 +323,7 @@
   <string name="invalid_contact_link">Ungültiger Link!</string>
   <string name="this_link_is_not_a_valid_connection_link">Dieser Link ist kein gültiger Verbindungslink!</string>
   <string name="connection_request_sent">Verbindungsanfrage gesendet!</string>
+  <string name="you_will_be_connected_when_group_host_device_is_online">***You will be connected to group when the group host\'s device is online, please wait or check later!</string>
   <string name="you_will_be_connected_when_your_connection_request_is_accepted">Sie werden verbunden, sobald Ihre Verbindungsanfrage akzeptiert wird, bitte warten oder schauen Sie später nochmal nach!</string>
   <string name="you_will_be_connected_when_your_contacts_device_is_online">Sie werden verbunden, wenn das Gerät Ihres Kontakts online ist, bitte warten oder schauen Sie später nochmal nach!</string>
   <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Zeigen Sie Ihrem Kontakt den QR-Code aus der App zum Scannen.</string>
