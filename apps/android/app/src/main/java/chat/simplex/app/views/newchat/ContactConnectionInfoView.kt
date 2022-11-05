@@ -91,7 +91,9 @@ private fun ContactConnectionInfoLayout(
     }
     Text(
       stringResource(
-        if (contactConnection.viaContactUri) R.string.you_will_be_connected_when_your_connection_request_is_accepted
+        if (contactConnection.viaContactUri)
+          if (contactConnection.groupLinkId != null) R.string.you_will_be_connected_when_group_host_device_is_online
+          else R.string.you_will_be_connected_when_your_connection_request_is_accepted
         else R.string.you_will_be_connected_when_your_contacts_device_is_online
       ),
       Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING)
