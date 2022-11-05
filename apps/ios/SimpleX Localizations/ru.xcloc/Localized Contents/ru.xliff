@@ -498,6 +498,11 @@
         <target>Соединиться через ссылку-контакт?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Connect via group link?" xml:space="preserve">
+        <source>Connect via group link?</source>
+        <target>Соединиться через ссылку группы?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Connect via link" xml:space="preserve">
         <source>Connect via link</source>
         <target>Соединиться через ссылку</target>
@@ -2712,6 +2717,11 @@ To connect, please ask your contact to create another connection link and check 
         <target>Вы отправили приглашение в группу</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="You will be connected to group when the group host's device is online, please wait or check later!" xml:space="preserve">
+        <source>You will be connected to group when the group host's device is online, please wait or check later!</source>
+        <target>Соединение с группой будет установлено, когда хост группы будет онлайн. Пожалуйста, подождите или проверьте позже!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="You will be connected when your connection request is accepted, please wait or check later!" xml:space="preserve">
         <source>You will be connected when your connection request is accepted, please wait or check later!</source>
         <target>Соединение будет установлено, когда ваш запрос будет принят. Пожалуйста, подождите или проверьте позже!</target>
@@ -2725,6 +2735,11 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="You will be required to authenticate when you start or resume the app after 30 seconds in background." xml:space="preserve">
         <source>You will be required to authenticate when you start or resume the app after 30 seconds in background.</source>
         <target>Вы будете аутентифицированы при запуске и возобновлении приложения, которое было 30 секунд в фоновом режиме.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You will join a group this link refers to and connect to its group members." xml:space="preserve">
+        <source>You will join a group this link refers to and connect to its group members.</source>
+        <target>Вы вступите в группу, на которую ссылается эта ссылка, и соединитесь с её членами.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will stop receiving messages from this group. Chat history will be preserved." xml:space="preserve">
@@ -3086,6 +3101,11 @@ SimpleX серверы не могут получить доступ к ваше
         <target>инкогнито через ссылку-контакт</target>
         <note>chat list item description</note>
       </trans-unit>
+      <trans-unit id="incognito via group link" xml:space="preserve">
+        <source>incognito via group link</source>
+        <target>инкогнито через ссылку группы</target>
+        <note>chat list item description</note>
+      </trans-unit>
       <trans-unit id="incognito via one-time link" xml:space="preserve">
         <source>incognito via one-time link</source>
         <target>инкогнито через одноразовую ссылку</target>
@@ -3259,6 +3279,11 @@ SimpleX серверы не могут получить доступ к ваше
       <trans-unit id="via contact address link" xml:space="preserve">
         <source>via contact address link</source>
         <target>через ссылку-контакт</target>
+        <note>chat list item description</note>
+      </trans-unit>
+      <trans-unit id="via group link" xml:space="preserve">
+        <source>via group link</source>
+        <target>через ссылку группы</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="via one-time link" xml:space="preserve">
