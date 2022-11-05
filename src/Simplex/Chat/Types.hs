@@ -571,15 +571,15 @@ instance ToField ImageData where toField (ImageData t) = toField t
 
 instance FromField ImageData where fromField = fmap ImageData . fromField
 
-data CReqClientData = CRGroupData {groupLinkId :: GroupLinkId}
+data CReqClientData = CRDataGroup {groupLinkId :: GroupLinkId}
   deriving (Generic)
 
 instance ToJSON CReqClientData where
-  toJSON = J.genericToJSON . taggedObjectJSON $ dropPrefix "CR"
-  toEncoding = J.genericToEncoding . taggedObjectJSON $ dropPrefix "CR"
+  toJSON = J.genericToJSON . taggedObjectJSON $ dropPrefix "CRData"
+  toEncoding = J.genericToEncoding . taggedObjectJSON $ dropPrefix "CRData"
 
 instance FromJSON CReqClientData where
-  parseJSON = J.genericParseJSON . taggedObjectJSON $ dropPrefix "CR"
+  parseJSON = J.genericParseJSON . taggedObjectJSON $ dropPrefix "CRData"
 
 newtype GroupLinkId = GroupLinkId {unGroupLinkId :: ByteString} -- used to identify invitation via group link
   deriving (Eq, Show)
