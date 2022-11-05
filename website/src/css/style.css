@@ -614,3 +614,13 @@ header{
     border-radius: 0%; */
   }
 }
+
+/* Overlays */
+.overlay a{
+  color: #0053D0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.dark .overlay a{
+  color: #70F0F9;
+}
