@@ -79,7 +79,7 @@ func connectViaLink(_ connectionLink: String, _ dismiss: DismissAction? = nil) {
 }
 
 struct CRData: Decodable {
-    var type: String;
+    var type: String
     var groupLinkId: String?
 }
 
