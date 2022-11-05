@@ -125,7 +125,10 @@ struct ContactConnectionInfo: View {
 
     private func contactConnectionText(_ contactConnection: PendingContactConnection) -> LocalizedStringKey {
         contactConnection.viaContactUri
-        ? "You will be connected when your connection request is accepted, please wait or check later!"
+        ? (contactConnection.groupLinkId != nil
+           ? "You will be connected to group when the group host's device is online, please wait or check later!"
+           : "You will be connected when your connection request is accepted, please wait or check later!"
+        )
         : "You will be connected when your contact's device is online, please wait or check later!"
     }
 }

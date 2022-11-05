@@ -52,7 +52,12 @@ struct ScanToConnectView: View {
     func processQRCode(_ resp: Result<ScanResult, ScanError>) {
         switch resp {
         case let .success(r):
-            Task { connectViaLink(r.string, dismiss) }
+            if checkLinkGroupData(parseLinkQueryData(r.string)) {
+                dismiss()
+                AlertManager.shared.showAlert(groupLinkAlert(r.string))
+            } else {
+                Task { connectViaLink(r.string, dismiss) }
+            }
         case let .failure(e):
             logger.error("ConnectContactView.processQRCode QR code error: \(e.localizedDescription)")
             dismiss()

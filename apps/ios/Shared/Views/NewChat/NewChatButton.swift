@@ -78,6 +78,40 @@ func connectViaLink(_ connectionLink: String, _ dismiss: DismissAction? = nil) {
     }
 }
 
+func parseLinkQueryData(_ connectionLink: String) -> [String: String] {
+    if let hashIndex = connectionLink.firstIndex(of: "#"),
+       let urlQuery = URL(string: String(connectionLink[connectionLink.index(after: hashIndex)...])),
+       let components = URLComponents(url: urlQuery, resolvingAgainstBaseURL: false),
+       let data = components.queryItems?.first(where: { $0.name == "data" })?.value,
+       let d = data.data(using: .utf8),
+       let decoded = try? JSONSerialization.jsonObject(with: d, options: []) as? [String: String] {
+        return decoded
+    } else {
+        return [:]
+    }
+}
+
+func checkLinkGroupData(_ decoded: [String: String]) -> Bool {
+    if let type = decoded["type"],
+       type == "cRGroupData", // TODO replace with "groupData"
+       decoded["groupLinkId"] != nil {
+        return true
+    } else {
+        return false
+    }
+}
+
+func groupLinkAlert(_ connectionLink: String) -> Alert {
+    return Alert(
+        title: Text("Connect via group link?"),
+        message: Text("You will join a group this link refers to and connect to its group members."),
+        primaryButton: .default(Text("Connect")) {
+            connectViaLink(connectionLink)
+        },
+        secondaryButton: .cancel()
+    )
+}
+
 func connectionReqSentAlert(_ type: ConnReqType) {
     AlertManager.shared.showAlertMsg(
         title: "Connection request sent!",
