@@ -28,11 +28,17 @@
                         <div class="pt-14 md:pt-0 card-content pb-[60px]">
                             <div class="content-head">
                                 <p class="text-[35px] lg:text-[65px] font-bold tracking-[0.06em] text-active-blue text-center md:text-left">#{{ section.id }}</p>
-                                <p class="w-full max-w-[617px] text-[25px] leading-[33px] lg:text-[35px] lg:leading-[45px] text-center md:text-left font-bold text-grey-black dark:text-white">{{ section.title }}</p>
+                                <p class="w-full max-w-[617px] text-[25px] leading-[33px] lg:text-[35px] lg:leading-[45px] text-center md:text-left font-bold text-grey-black dark:text-white">{{ section.title | safe }}</p>
                             </div>
 
                             <div class="content-body hidden md:block">
-                                <p class="w-full max-w-[541px] text-[16px] leading-[24px] tracking-[0.02em] mb-[36px] text-grey-black dark:text-white text-center md:text-left">{{ section.desc }}</p>
+                                {% if section.descBody %}
+                                    <div class="w-full max-w-[541px] text-[16px] leading-[24px] tracking-[0.02em] mb-[36px] text-grey-black dark:text-white text-center md:text-left">
+                                        {% include section.descBody %}
+                                    </div>
+                                {% else %}
+                                    <p class="w-full max-w-[541px] text-[16px] leading-[24px] tracking-[0.02em] mb-[36px] text-grey-black dark:text-white text-center md:text-left">{{ section.desc | safe }}</p>
+                                {% endif %}
                                 {% if section.overlayContent %}
                                     <a href="javascript:void(0)" data-show-overlay="{{ section.overlayContent.overlayId }}" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] underline-offset-4 tracking-[0.02em] text-center md:text-left">{{ section.overlayContent.linkText }}</a>
                                 {% endif %}

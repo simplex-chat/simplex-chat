@@ -10,7 +10,7 @@ templateEngineOverride: njk
 <section class="bg-secondary-bg-light dark:bg-secondary-bg-dark py-[85px] px-5">
     <div class="container">
         <p class="text-grey-black dark:text-white text-[45px] text-center font-bold mb-[32px]">Why privacy <span class="gradient-text">matters</span></p>
-        <p class="text-center text-[20px] font-medium mb-[86px] text-black dark:text-white">Preserving the privacy of your meta-data - <span class="text-active-blue">who you talk with</span> - protect you from:</p>
+        <p class="text-center text-[20px] font-medium mb-[86px] text-black dark:text-white">Preserving the privacy of your metadata &mdash; <span class="text-active-blue">who you talk with</span> &mdash; protects you from:</p>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[20px] mb-[90px]">
 
             {% for section in why_privacy_matters.sections %}
@@ -29,7 +29,7 @@ templateEngineOverride: njk
             {% endfor %}
 
         </div>
-        <p class="text-center w-full max-w-[900px] text-[20px] leading-[28px] m-auto text-black dark:text-white">Or choose the app that lets you send stickers and offer lots of fun features in exchange for selling your data to the highest bidder.</p>
+        <p class="text-center w-full max-w-[900px] text-[20px] leading-[28px] m-auto text-black dark:text-white">Make sure your messenger can't access your data!</p>
     </div>
 </section>
 
@@ -48,7 +48,7 @@ templateEngineOverride: njk
                     <img src="{{ feature.imgLight }}" alt="" class="dark:hidden"/>
                     <img src="{{ feature.imgDark }}" alt="" class="hidden dark:block"/>
                 </div>
-                <p class="text-grey-black dark:text-white text-[16px] font-medium text-center w-full max-w-[265px]">{{ feature.title }}</p>
+                <p class="text-grey-black dark:text-white text-[16px] font-medium text-center w-full max-w-[265px]">{{ feature.title | safe }}</p>
             </div>
             {% endfor %}
         </div>
