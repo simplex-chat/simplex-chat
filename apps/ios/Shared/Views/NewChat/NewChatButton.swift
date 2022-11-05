@@ -97,7 +97,7 @@ func parseLinkQueryData(_ connectionLink: String) -> CRData? {
 }
 
 func checkCRDataGroup(_ crData: CRData) -> Bool {
-    return crData.type == "cRGroupData" && crData.groupLinkId != nil // TODO replace with type == "group"
+    return crData.type == "group" && crData.groupLinkId != nil
 }
 
 func groupLinkAlert(_ connectionLink: String) -> Alert {
