@@ -993,5 +993,3 @@ public enum SMPAgentError: Decodable {
     case A_VERSION
     case A_ENCRYPTION
 }
-
-
