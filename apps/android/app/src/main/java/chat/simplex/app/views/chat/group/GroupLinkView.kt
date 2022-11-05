@@ -74,18 +74,8 @@ fun GroupLinkLayout(
       verticalArrangement = Arrangement.SpaceEvenly
     ) {
       if (groupLink == null) {
-        Text(
-          stringResource(R.string.if_you_later_delete_link_you_wont_lose_members),
-          Modifier.padding(bottom = 12.dp),
-          lineHeight = 22.sp
-        )
         SimpleButton(stringResource(R.string.button_create_group_link), icon = Icons.Outlined.AddLink, click = createLink)
       } else {
-        Text(
-          stringResource(R.string.if_you_delete_group_link_you_wont_lose_members),
-          Modifier.padding(bottom = 12.dp),
-          lineHeight = 22.sp
-        )
         QRCode(groupLink, Modifier.weight(1f, fill = false).aspectRatio(1f))
         Row(
           horizontalArrangement = Arrangement.spacedBy(10.dp),

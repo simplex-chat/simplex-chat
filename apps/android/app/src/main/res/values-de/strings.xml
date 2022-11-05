@@ -399,9 +399,7 @@
   <string name="create_address">Adresse erstellen</string>
   <string name="delete_address__question">Adresse löschen?</string>
   <string name="all_your_contacts_will_remain_connected">Alle Ihre Kontakte bleiben verbunden.</string>
-  <string name="you_can_share_your_address_anybody_will_be_able_to_connect">Sie können Ihre Adresse als Link oder als QR-Code teilen – Jeder kann sich mit Ihnen verbinden.</string>
-  <string name="if_you_delete_address_you_wont_lose_contacts">Wenn Sie diese Adresse löschen, werden Sie Ihre Kontakte nicht verlieren.</string>
-  <string name="if_you_later_delete_address_you_wont_lose_contacts">Wenn Sie diese Adresse später löschen, werden Sie Ihre mit dieser Adresse verbundenen Kontakte nicht verlieren.</string>
+  <string name="you_can_share_your_address_anybody_will_be_able_to_connect">Sie können Ihre Adresse als Link oder als QR-Code teilen – Jeder kann sich darüber mit Ihnen verbinden. Sie werden Ihre mit dieser Adresse verbundenen Kontakte nicht verlieren, wenn Sie diese Adresse später löschen.</string>
   <string name="share_link">Link teilen</string>
   <string name="delete_address">Adresse löschen</string>
 
@@ -789,9 +787,7 @@
   <string name="button_create_group_link">Link erzeugen</string>
   <string name="delete_link_question">Link löschen?</string>
   <string name="delete_link">Link löschen</string>
-  <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Sie können diesen Link oder QR-Code teilen - Damit kann jede Person der Gruppe beitreten.</string>
-  <string name="if_you_later_delete_link_you_wont_lose_members">Wenn Sie den Link später löschen, werden Sie keine Gruppenmitglieder verlieren, die der Gruppe darüber beigetreten sind.</string>
-  <string name="if_you_delete_group_link_you_wont_lose_members">Wenn Sie den Link löschen, werden Sie keine Gruppenmitglieder verlieren, die der Gruppe darüber beigetreten sind.</string>
+  <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Sie können diesen Link oder QR-Code teilen - Damit kann jede Person der Gruppe beitreten. Wenn Sie den Link später löschen, werden Sie keine Gruppenmitglieder verlieren, die der Gruppe darüber beigetreten sind.</string>
   <string name="all_group_members_will_remain_connected">Alle Gruppenmitglieder bleiben verbunden.</string>
   <string name="error_creating_link_for_group">Fehler beim Erzeugen des Gruppen-Links</string>
   <string name="error_deleting_link_for_group">Fehler beim Löschen des Gruppen-Links</string>

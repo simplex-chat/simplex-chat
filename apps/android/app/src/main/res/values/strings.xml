@@ -399,9 +399,7 @@
   <string name="create_address">Create address</string>
   <string name="delete_address__question">Delete address?</string>
   <string name="all_your_contacts_will_remain_connected">All your contacts will remain connected.</string>
-  <string name="you_can_share_your_address_anybody_will_be_able_to_connect">You can share your address as a link or as a QR code - anybody will be able to connect to you.</string>
-  <string name="if_you_later_delete_address_you_wont_lose_contacts">If you later delete it - you won\'t lose your contacts made via the address.</string>
-  <string name="if_you_delete_address_you_wont_lose_contacts">If you delete it - you won\'t lose your contacts made via this address.</string>
+  <string name="you_can_share_your_address_anybody_will_be_able_to_connect">You can share your address as a link or as a QR code - anybody will be able to connect to you. You won\'t lose your contacts if you later delete it.</string>
   <string name="share_link">Share link</string>
   <string name="delete_address">Delete address</string>
 
@@ -789,9 +787,7 @@
   <string name="button_create_group_link">Create link</string>
   <string name="delete_link_question">Delete link?</string>
   <string name="delete_link">Delete link</string>
-  <string name="you_can_share_group_link_anybody_will_be_able_to_connect">You can share a link or a QR code - anybody will be able to join the group.</string>
-  <string name="if_you_later_delete_link_you_wont_lose_members">If you later delete it - you won\'t lose members of the group connected via the link.</string>
-  <string name="if_you_delete_group_link_you_wont_lose_members">If you delete it - you won\'t lose members of the group connected via this link.</string>
+  <string name="you_can_share_group_link_anybody_will_be_able_to_connect">You can share a link or a QR code - anybody will be able to join the group. You won\'t lose members of the group if you later delete it.</string>
   <string name="all_group_members_will_remain_connected">All group members will remain connected.</string>
   <string name="error_creating_link_for_group">Error creating group link</string>
   <string name="error_deleting_link_for_group">Error deleting group link</string>

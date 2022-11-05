@@ -646,7 +646,7 @@ data class GroupInfo (
   val membership: GroupMember,
   val hostConnCustomUserProfileId: Long? = null,
   val chatSettings: ChatSettings,
-  val preferences: ChatPreferences? = null,
+//  val groupPreferences: GroupPreferences? = null,
   override val createdAt: Instant,
   override val updatedAt: Instant
 ): SomeChat, NamedChat {
