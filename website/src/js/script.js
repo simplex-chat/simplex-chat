@@ -28,7 +28,7 @@
 // btnMobile.addEventListener('click', toggleMenu);
 // btnMobile.addEventListener('touchstart', toggleMenu);
 
-const swiper = new Swiper('.unique-swiper', {
+const uniqueSwiper = new Swiper('.unique-swiper', {
     slidesPerView: 1,
     spaceBetween: 80,
     // autoplay: {
@@ -37,12 +37,12 @@ const swiper = new Swiper('.unique-swiper', {
     // },
     direction: 'horizontal',
     pagination: {
-        el: '.swiper-pagination',
+        el: '.simplex-unique-swiper-pagination',
         clickable: true,
     },
     navigation: {
-        nextEl: '.unique-swiper-swiper-button-next',
-        prevEl: '.unique-swiper-swiper-button-prev',
+        nextEl: '.unique-swiper-button-next',
+        prevEl: '.unique-swiper-button-prev',
     },
 });
 
@@ -60,8 +60,8 @@ const privateSwiper = new Swiper('.private-swiper', {
     },
 
     navigation: {
-        nextEl: '.private-swiper-swiper-button-next',
-        prevEl: '.private-swiper-swiper-button-prev',
+        nextEl: '.private-swiper-button-next',
+        prevEl: '.private-swiper-button-prev',
     },
 
     breakpoints: {
@@ -80,7 +80,7 @@ const privateSwiper = new Swiper('.private-swiper', {
     },
 });
 
-const swiper2 = new Swiper(".simplex-explained-swiper", {
+const simplexExplainedSwiper = new Swiper(".simplex-explained-swiper", {
     slidesPerView: 1,
     spaceBetween: 80,
     // autoplay: {
@@ -89,12 +89,8 @@ const swiper2 = new Swiper(".simplex-explained-swiper", {
     // },
     direction: "horizontal",
     pagination: {
-        el: ".swiper-pagination",
+        el: ".simplex-explained-swiper-pagination",
         clickable: true
-    },
-    navigation: {
-        nextEl: ".swiper-button-next",
-        prevEl: ".swiper-button-prev"
     }
 });
 
