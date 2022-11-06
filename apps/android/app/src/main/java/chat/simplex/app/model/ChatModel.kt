@@ -313,6 +313,10 @@ class ChatModel(val controller: ChatController) {
       if (memberIndex >= 0) {
         groupMembers[memberIndex] = member
         false
+      } else if (groupInfo.membership.groupMemberId == member.groupMemberId) {
+        // Current user was updated (like his role, for example)
+        updateChatInfo(ChatInfo.Group(groupInfo))
+        true
       } else {
         groupMembers.add(member)
         true
@@ -448,7 +452,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
   }
 
   @Serializable @SerialName("group")
-  class Group(val groupInfo: GroupInfo): ChatInfo() {
+  data class Group(val groupInfo: GroupInfo): ChatInfo() {
     override val chatType get() = ChatType.Group
     override val localDisplayName get() = groupInfo.localDisplayName
     override val id get() = groupInfo.id
@@ -700,7 +704,7 @@ class GroupProfile (
 }
 
 @Serializable
-class GroupMember (
+data class GroupMember (
   val groupMemberId: Long,
   val groupId: Long,
   val memberId: String,

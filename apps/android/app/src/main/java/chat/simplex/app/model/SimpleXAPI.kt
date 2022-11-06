@@ -1222,12 +1222,23 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       // service or periodic mode was chosen and battery optimization is disabled
       SimplexApp.context.schedulePeriodicServiceRestartWorker()
       SimplexApp.context.schedulePeriodicWakeUp()
+      chatModel.appOpenUrl.value?.let {
+        chatModel.appOpenUrl.value = null
+        connectIfOpenedViaUri(it, chatModel)
+      }
     }
   }
 
   private fun showBGServiceNotice(mode: NotificationsMode) = AlertManager.shared.showAlert {
+    val hideAlert: () -> Unit = {
+      AlertManager.shared.hideAlert()
+      chatModel.appOpenUrl.value?.let {
+        chatModel.appOpenUrl.value = null
+        connectIfOpenedViaUri(it, chatModel)
+      }
+    }
     AlertDialog(
-      onDismissRequest = AlertManager.shared::hideAlert,
+      onDismissRequest = hideAlert,
       title = {
         Row {
           Icon(
@@ -1253,7 +1264,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         }
       },
       confirmButton = {
-        TextButton(onClick = AlertManager.shared::hideAlert) { Text(stringResource(R.string.ok)) }
+        TextButton(onClick = hideAlert) { Text(stringResource(R.string.ok)) }
       }
     )
   }
@@ -1294,8 +1305,15 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   }
 
   private fun showDisablingServiceNotice(mode: NotificationsMode) = AlertManager.shared.showAlert {
+    val hideAlert: () -> Unit = {
+      AlertManager.shared.hideAlert()
+      chatModel.appOpenUrl.value?.let {
+        chatModel.appOpenUrl.value = null
+        connectIfOpenedViaUri(it, chatModel)
+      }
+    }
     AlertDialog(
-      onDismissRequest = AlertManager.shared::hideAlert,
+      onDismissRequest = hideAlert,
       title = {
         Row {
           Icon(
@@ -1318,7 +1336,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         }
       },
       confirmButton = {
-        TextButton(onClick = AlertManager.shared::hideAlert) { Text(stringResource(R.string.ok)) }
+        TextButton(onClick = hideAlert) { Text(stringResource(R.string.ok)) }
       }
     )
   }
