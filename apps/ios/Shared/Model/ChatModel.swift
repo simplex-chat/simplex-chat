@@ -393,6 +393,10 @@ final class ChatModel: ObservableObject {
                     self.groupMembers[i] = member
                 }
                 return false
+            } else if (groupInfo.membership.groupMemberId == member.groupMemberId) {
+                // Current user was updated (like his role, for example)
+                updateGroup(groupInfo)
+                return true
             } else {
                 withAnimation { groupMembers.append(member) }
                 return true
