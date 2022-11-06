@@ -70,10 +70,10 @@ templateEngineOverride: njk
                         <img class="w-full max-w-[223px] h-full max-h-[226px] hidden dark:block" src="{{ section.imgDark }}" alt=""/>
                     </div>
                     <div class="flex flex-col items-center justify-between h-[138px] absolute bottom-0 py-6 px-6 bg-card-desc-bg-light dark:bg-card-desc-bg-dark rounded-b-[20px]">
-                        <p class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">{{ section.title }}</p>
+                        <p class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">{{ section.title | safe }}</p>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             {% for point in section.points %}
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">{{ point }}</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">{{ point | safe }}</p>
                             {% endfor %}
                         </div>
                         <p class="text-grey-black dark:text-white text-[12px] text-center">Tap to close</p>
@@ -104,8 +104,12 @@ templateEngineOverride: njk
                     <img src="/img/new/network-1-dark.svg" alt="" class="hidden dark:block"/>
                 </div>
                 <div class="flex flex-col items-center justify-center">
-                    <p class="text-active-blue text-[20px] font-bold text-center">Unlike P2P network</p>
-                    <p class="text-black dark:text-white text-[16px] font-normal text-center mb-[32px]"> Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut velit nulla, ornare feugiat risus tempor, tincidunt convallis nulla.</p>
+                    <p class="text-active-blue text-[20px] font-bold text-center">Unlike P2P networks</p>
+                    <p class="text-black dark:text-white text-[16px] font-normal text-center mb-[32px]">
+                        All messages are sent via the servers, both providing better
+                        metadata privacy and reliable asynchronous message delivery,
+                        while avoiding many <a href="#">problems of P2P networks</a>.
+                    </p>
                 </div>
             </div>
 
@@ -115,8 +119,11 @@ templateEngineOverride: njk
                     <img src="/img/new/network-2-dark.svg" alt="" class="hidden dark:block"/>
                 </div>
                 <div class="flex flex-col items-center justify-center">
-                    <p class="text-active-blue text-[20px] font-bold text-center">Unlike federate network</p>
-                    <p class="text-black dark:text-white text-[16px] font-normal text-center mb-[32px]"> Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut velit nulla, ornare feugiat risus tempor, tincidunt convallis nulla.</p>
+                    <p class="text-active-blue text-[20px] font-bold text-center">Unlike federate networks</p>
+                    <p class="text-black dark:text-white text-[16px] font-normal text-center mb-[32px]">
+                        SimpleX relay servers do NOT store user profiles, contacts and delivered messages,
+                        do NOT connect to each other, and there is NO servers directory.
+                    </p>
                 </div>
             </div>
 
@@ -126,7 +133,11 @@ templateEngineOverride: njk
                     <img src="/img/new/network-3-dark.svg" alt="" class="hidden dark:block"/>
                 </div>
                 <div class="flex flex-col items-center justify-center">
-                    <p class="text-black dark:text-white text-[16px] font-normal text-center"> Each SimpleX server provides <span class="text-active-blue">unidirectional queues</span> Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut velit nulla, ornare feugiat.</p>
+                    <p class="text-active-blue text-[20px] font-bold text-center">SimpleX network</p>
+                    <p class="text-black dark:text-white text-[16px] font-normal text-center">
+                        servers provide <span class="text-active-blue">unidirectional queues</span>
+                        to connect the users, but the have no visibility of the network connection graph &mdash; only the users do.
+                    </p>
                 </div>
             </div>
 
