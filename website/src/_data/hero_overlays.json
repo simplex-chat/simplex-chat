@@ -6,7 +6,7 @@
             "imgDark": "/img/new/explained-2.svg",
             "overlayContent": {
                 "overlayId": "hero-overlay-1",
-                "title": "How does it work?",
+                "title": "How does SimpleX work?",
                 "showImage": true,
                 "contentBody": "overlay_content/hero/card_1.html"
             }
@@ -17,7 +17,7 @@
             "imgDark": "/img/new/explained-1.svg",
             "overlayContent": {
                 "overlayId": "hero-overlay-2",
-                "title": "How user IDs reduce privacy and anonymity?",
+                "title": "Why user IDs are bad for privacy?",
                 "showImage": true,
                 "contentBody": "overlay_content/hero/card_2.html"
             }
