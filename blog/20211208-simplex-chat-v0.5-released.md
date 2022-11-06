@@ -2,6 +2,7 @@
 layout: layouts/article.html
 title: "SimpleX announces SimpleX Chat v0.5"
 date: 2021-12-08
+preview: Support for long-term user addresses in terminal app.
 permalink: "/blog/20211208-simplex-chat-v0.5-released.html"
 ---
 

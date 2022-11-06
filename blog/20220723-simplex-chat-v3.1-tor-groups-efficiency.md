@@ -1,11 +1,14 @@
 ---
 layout: layouts/article.html
-title: "SimpleX Chat v3.1-beta is released"
+title: "SimpleX Chat v3.1-beta is released &mdash; improved battery/traffic usage"
 date: 2022-07-23
+image: ./images/20220723-group-invite.png
+imageBottom: true
+previewBody: blog_previews/20220723.html
 permalink: "/blog/20220723-simplex-chat-v3.1-tor-groups-efficiency.html"
 ---
 
-# SimpleX Chat v3.1-beta is released
+# SimpleX Chat v3.1-beta is released - improved battery/traffic usage
 
 **Published:** Jul 23, 2022
 
