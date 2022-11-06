@@ -108,7 +108,8 @@ templateEngineOverride: njk
                     <p class="text-black dark:text-white text-[16px] font-normal text-center mb-[32px]">
                         All messages are sent via the servers, both providing better
                         metadata privacy and reliable asynchronous message delivery,
-                        while avoiding many <a href="#">problems of P2P networks</a>.
+                        while avoiding many <a href="javascript:void(0)" data-show-overlay="{{ simplex_network_overlay.sections[0].overlayContent.overlayId }}" class="open-overlay-btn">problems of P2P networks</a>.
+                        {{ overlay(simplex_network_overlay.sections[0]) }}
                     </p>
                 </div>
             </div>
