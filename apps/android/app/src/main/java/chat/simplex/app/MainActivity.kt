@@ -65,6 +65,7 @@ class MainActivity: FragmentActivity() {
     // Only needed to be processed on first creation of activity
     if (savedInstanceState == null) {
       processNotificationIntent(intent, m)
+      processIntent(intent, m)
       processExternalIntent(intent, m)
     }
     setContent {
