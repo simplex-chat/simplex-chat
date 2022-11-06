@@ -616,11 +616,13 @@ header{
 }
 
 /* Overlays */
-.overlay a{
+.overlay a,
+p a{
   color: #0053D0;
   text-decoration: underline;
   text-underline-offset: 2px;
 }
-.dark .overlay a{
+.dark .overlay a,
+.dark p a{
   color: #70F0F9;
 }
