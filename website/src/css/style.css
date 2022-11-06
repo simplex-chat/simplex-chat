@@ -301,13 +301,16 @@ header nav {
 
 .swiper-scrollbar-horizontal {
   margin-top: 40px !important;
-  width: 300px !important;
+  width: 302.06px !important;
+  height: 7.73px !important;
   left: 50% !important;
   transform: translateX(-50%) !important;
   transform: translateX(-50%) !important;
 }
 
 .swiper-scrollbar-drag {
+  width: 112px !important;
+  height: 8px !important;
   background-color: #0197FF;
 }
 .dark .swiper-scrollbar-drag{
