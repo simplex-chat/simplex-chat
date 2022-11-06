@@ -25,9 +25,9 @@ main = do
         welcome opts
         t <- withTerminal pure
         simplexChatTerminal terminalChatConfig opts t
-    else simplexChatCore terminalChatConfig opts Nothing $ \_ cc -> do
+    else simplexChatCore terminalChatConfig opts Nothing $ \user cc -> do
       r <- sendChatCmd cc chatCmd
-      putStrLn $ serializeChatResponse r
+      putStrLn $ serializeChatResponse (Just user) r
       threadDelay $ chatCmdDelay opts * 1000000
 
 welcome :: ChatOpts -> IO ()

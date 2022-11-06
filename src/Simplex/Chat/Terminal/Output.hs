@@ -75,8 +75,10 @@ withTermLock ChatTerminal {termLock} action = do
 runTerminalOutput :: ChatTerminal -> ChatController -> IO ()
 runTerminalOutput ct cc = do
   let testV = testView $ config cc
-  forever $
-    atomically (readTBQueue $ outputQ cc) >>= printToTerminal ct . responseToView testV . snd
+  forever $ do
+    (_, r) <- atomically . readTBQueue $ outputQ cc
+    user <- readTVarIO $ currentUser cc
+    printToTerminal ct $ responseToView user testV r
 
 printToTerminal :: ChatTerminal -> [StyledString] -> IO ()
 printToTerminal ct s =

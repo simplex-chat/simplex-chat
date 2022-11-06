@@ -41,7 +41,7 @@ CREATE TABLE display_names (
 
 CREATE TABLE contacts (
   contact_id INTEGER PRIMARY KEY,
-  contact_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL, -- NULL if it's an incognito profile
+  contact_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   local_display_name TEXT NOT NULL,
   is_user INTEGER NOT NULL DEFAULT 0, -- 1 if this contact is a user
@@ -223,7 +223,7 @@ CREATE TABLE contact_requests (
     ON UPDATE CASCADE ON DELETE CASCADE,
   agent_invitation_id  BLOB NOT NULL,
   contact_profile_id INTEGER REFERENCES contact_profiles
-    ON DELETE SET NULL -- NULL if it's an incognito profile
+    ON DELETE SET NULL
     DEFERRABLE INITIALLY DEFERRED,
   local_display_name TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),

@@ -62,6 +62,13 @@ struct ChatView: View {
         .navigationTitle(cInfo.chatViewName)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
+        .onAppear {
+            if chat.chatStats.unreadChat {
+                Task {
+                    await markChatUnread(chat, unreadChat: false)
+                }
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
@@ -100,7 +107,7 @@ struct ChatView: View {
                         connectionStats = nil
                         customUserProfile = nil
                     }) {
-                        ChatInfoView(chat: chat, contact: contact, connectionStats: connectionStats, customUserProfile: customUserProfile, localAlias: chat.chatInfo.localAlias)
+                        ChatInfoView(chat: chat, contact: contact, connectionStats: $connectionStats, customUserProfile: customUserProfile, localAlias: chat.chatInfo.localAlias)
                     }
                 } else if case let .group(groupInfo) = cInfo {
                     Button {
@@ -386,7 +393,7 @@ struct ChatView: View {
                             }
                         }
                         .sheet(item: $selectedMember, onDismiss: { memberConnectionStats = nil }) { member in
-                            GroupMemberInfoView(groupInfo: groupInfo, member: member, connectionStats: memberConnectionStats)
+                            GroupMemberInfoView(groupInfo: groupInfo, member: member, connectionStats: $memberConnectionStats)
                         }
                 } else {
                     Rectangle().fill(.clear)
@@ -487,7 +494,7 @@ struct ChatView: View {
             )
         }
 
-        return ChatItemView(chatInfo: chat.chatInfo, chatItem: ci, showMember: showMember, maxWidth: maxWidth)
+        return ChatItemView(chatInfo: chat.chatInfo, chatItem: ci, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy)
             .uiKitContextMenu(actions: menu)
             .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {
                 Button("Delete for me", role: .destructive) {

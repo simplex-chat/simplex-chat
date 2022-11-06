@@ -32,6 +32,8 @@
     <string name="display_name_connecting">соединяется…</string>
     <string name="description_you_shared_one_time_link">вы создали одноразовую ссылку</string>
     <string name="description_you_shared_one_time_link_incognito">вы создали одноразовую ссылку инкогнито</string>
+    <string name="description_via_group_link">через ссылку группы</string>
+    <string name="description_via_group_link_incognito">инкогнито через ссылку группы</string>
     <string name="description_via_contact_address_link">через ссылку-контакт</string>
     <string name="description_via_contact_address_link_incognito">инкогнито через ссылку-контакт</string>
     <string name="description_via_one_time_link">через одноразовую ссылку</string>
@@ -61,12 +63,11 @@
     <string name="connection_error_auth_desc">Возможно, ваш контакт удалил ссылку, или она уже была использована. Если это не так, то это может быть ошибкой - пожалуйста, сообщите нам об этом.\nЧтобы установить соединение, попросите ваш контакт создать еще одну ссылку и проверьте ваше соединение с сетью.</string>
     <string name="error_accepting_contact_request">Ошибка при принятии запроса на соединение</string>
     <string name="sender_may_have_deleted_the_connection_request">Отправитель мог удалить запрос на соединение.</string>
-    <string name="cannot_delete_contact">Невозможно удалить контакт!</string>
-    <string name="contact_cannot_be_deleted_as_they_are_in_groups">Контакт <xliff:g id="contactName" example="Jane Doe">%1$s!</xliff:g> не может быть удален, так как является членом групп(ы) <xliff:g id="groups" example="[team, chess club]">%2$s</xliff:g>.</string>
-    <string name="error_deleting_contact">Ошибка удаления контакта</string>
+    <string name="error_deleting_contact">Ошибка при удалении контакта</string>
     <string name="error_deleting_group">Ошибка удаления группы</string>
     <string name="error_deleting_contact_request">Ошибка удаления запроса</string>
     <string name="error_deleting_pending_contact_connection">Ошибка удаления ожидаемого соединения</string>
+    <string name="error_changing_address">Ошибка при изменении адреса</string>
 
     <!-- background service notice - SimpleXAPI.kt -->
     <string name="icon_descr_instant_notifications">Мгновенные уведомления</string>
@@ -170,13 +171,20 @@
     <string name="chat_with_developers">Соединиться с разработчиками</string>
     <string name="you_have_no_chats">У вас нет чатов</string>
 
+    <!-- ShareListView.kt -->
+    <string name="share_message">Отправить сообщение…</string>
+    <string name="share_image">Отправить изображение…</string>
+    <string name="share_file">Отправить файл…</string>
+
     <!-- ComposeView.kt, helpers -->
     <string name="attach">Прикрепить</string>
     <string name="icon_descr_context">Значок контекста</string>
     <string name="icon_descr_cancel_image_preview">Удалить превью изображения</string>
     <string name="icon_descr_cancel_file_preview">Удалить превью файла</string>
+    <string name="images_limit_title">Слишком много изображений!</string>
+    <string name="images_limit_desc">Только 10 изображений могут быть отправлены одномоментно</string>
 
-    <!-- Images - CIImageView.kt -->
+    <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
     <string name="image_descr">Изображение</string>
     <string name="icon_descr_waiting_for_image">Ожидается прием изображения</string>
     <string name="icon_descr_asked_to_receive">Предложено получить изображение</string>
@@ -208,6 +216,8 @@
     <string name="icon_descr_server_status_disconnected">Соединение с сервером не установлено</string>
     <string name="icon_descr_server_status_error">Ошибка соединения с сервером</string>
     <string name="icon_descr_server_status_pending">Ожидается соединение с сервером</string>
+    <string name="switch_receiving_address_question">Переключить адрес получения?</string>
+    <string name="switch_receiving_address_desc">Это экспериментальная функция! Она будет работать, только если на другом клиенте установлена версия 4.2. После завершения смены адреса вы увидите сообщение — убедитесь, что вы все еще можете получать сообщения от этого контакта (или члена группы).</string>
 
     <!-- Message Actions - SendMsgView.kt -->
     <string name="icon_descr_send_message">Отправить сообщение</string>
@@ -266,6 +276,8 @@
     <string name="delete_contact_menu_action">Удалить</string>
     <string name="delete_group_menu_action">Удалить</string>
     <string name="mark_read">Прочитано</string>
+    <string name="mark_unread">Не прочитано</string>
+    <string name="set_contact_name">Имя контакта</string>
 
     <!-- Actions - ChatListNavLinkView.kt -->
     <string name="mute_chat">Без звука</string>
@@ -302,14 +314,18 @@
     <string name="icon_descr_email">Email</string>
     <string name="icon_descr_more_button">Больше</string>
 
+    <!-- Connection info - ContactConnectionInfoView.kt -->
+    <string name="show_QR_code">Показать QR код</string>
+
     <!-- Add Contact - AddContactView.kt -->
     <string name="invalid_QR_code">Неверный QR код</string>
     <string name="this_QR_code_is_not_a_link">Этот QR код не является ссылкой!</string>
     <string name="invalid_contact_link">Неверная ссылка!</string>
     <string name="this_link_is_not_a_valid_connection_link">Эта ссылка не является ссылкой-приглашением!</string>
     <string name="connection_request_sent">Запрос на соединение послан!</string>
-    <string name="you_will_be_connected_when_your_connection_request_is_accepted">Соединение будет установлено когда ваш запрос будет принят. Пожалуйста, подождите или проверьте позже!</string>
-    <string name="you_will_be_connected_when_your_contacts_device_is_online">Соединение будет установлено когда ваш контакт будет онлайн. Пожалуйста, подождите или проверьте позже!</string>
+    <string name="you_will_be_connected_when_group_host_device_is_online">Соединение с группой будет установлено, когда хост группы будет онлайн. Пожалуйста, подождите или проверьте позже!</string>
+    <string name="you_will_be_connected_when_your_connection_request_is_accepted">Соединение будет установлено, когда ваш запрос будет принят. Пожалуйста, подождите или проверьте позже!</string>
+    <string name="you_will_be_connected_when_your_contacts_device_is_online">Соединение будет установлено, когда ваш контакт будет онлайн. Пожалуйста, подождите или проверьте позже!</string>
     <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Ваш контакт может сосканировать QR код в приложении.</string>
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Если вы не можете встретиться лично, вы можете <b>показать QR код во время видеозвонка</b> или поделиться ссылкой.</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">Ваш профиль будет отправлен\nвашему контакту</string>
@@ -380,11 +396,15 @@
     <string name="create_address">Создать адрес</string>
     <string name="delete_address__question">Удалить адрес?</string>
     <string name="all_your_contacts_will_remain_connected">Все контакты, которые соединились через этот адрес, сохранятся.</string>
-    <string name="you_can_share_your_address_anybody_will_be_able_to_connect">Вы можете использовать адрес как ссылку или как QR код - через него можно с вами соединиться.</string>
-    <string name="if_you_later_delete_address_you_wont_lose_contacts">Вы сможете удалить адрес, сохранив контакты, которые через него соединились.</string>
-    <string name="if_you_delete_address_you_wont_lose_contacts">Вы можете удалить адрес, сохранив контакты, которые через него соединились.</string>
+    <string name="you_can_share_your_address_anybody_will_be_able_to_connect">Вы можете использовать ваш адрес как ссылку или как QR код - кто угодно сможет соединиться с вами. Вы сможете удалить адрес, сохранив контакты, которые через него соединились.</string>
     <string name="share_link">Поделиться\nссылкой</string>
     <string name="delete_address">Удалить\nадрес</string>
+
+    <!-- AcceptRequestsView.kt -->
+    <string name="contact_requests">Запросы контактов</string>
+    <string name="accept_requests">Принимать запросы</string>
+    <string name="accept_automatically">Автоматически</string>
+    <string name="section_title_welcome_message">ПРИВЕТСТВЕННОЕ СООБЩЕНИЕ</string>
 
     <!-- User profile details - UserProfileView.kt -->
     <string name="display_name__field">Имя профиля:</string>
@@ -533,6 +553,7 @@
     <string name="privacy_and_security">Конфиденциальность</string>
     <string name="your_privacy">Конфиденциальность</string>
     <string name="auto_accept_images">Автоприем изображений</string>
+    <string name="transfer_images_faster">Передавать изображения быстрее (BETA)</string>
     <string name="send_link_previews">Отправлять картинки ссылок</string>
 
     <!-- Settings sections -->
@@ -584,12 +605,22 @@
     <string name="restart_the_app_to_create_a_new_chat_profile">Перезапустите приложение, чтобы создать новый профиль.</string>
     <string name="you_must_use_the_most_recent_version_of_database">Используйте самую последнюю версию архива чата и ТОЛЬКО на одном устройстве, иначе вы можете перестать получать сообщения от некоторых контактов.</string>
     <string name="stop_chat_to_enable_database_actions">Остановите чат, чтобы разблокировать операции с архивом чата.</string>
-    <string name="files_section">ФАЙЛЫ</string>
+    <string name="data_section">ДАННЫЕ</string>
     <string name="delete_files_and_media">Удалить файлы и медиа</string>
     <string name="delete_files_and_media_question">Удалить файлы и медиа?</string>
     <string name="delete_files_and_media_desc">Это действие нельзя отменить — все полученные и отправленные файлы будут удалены. Изображения останутся в низком разрешении.</string>
     <string name="no_received_app_files">Нет полученных или отправленных файлов</string>
     <string name="total_files_count_and_size">%d файл(ов) общим размером %s</string>
+    <string name="chat_item_ttl_none">никогда</string>
+    <string name="chat_item_ttl_day">1 день</string>
+    <string name="chat_item_ttl_week">1 неделю</string>
+    <string name="chat_item_ttl_month">1 месяц</string>
+    <string name="chat_item_ttl_seconds">%s секунд</string>
+    <string name="delete_messages_after">Удалять сообщения через</string>
+    <string name="enable_automatic_deletion_question">Включить автоматическое удаление сообщений?</string>
+    <string name="enable_automatic_deletion_message">Это действие нельзя отменить — все сообщения, отправленные или полученные раньше чем выбрано, будут удалены. Это может занять несколько минут.</string>
+    <string name="delete_messages">Удалить сообщения</string>
+    <string name="error_changing_message_deletion">Ошибка при изменении настройки</string>
 
     <!-- DatabaseEncryptionView.kt -->
     <string name="save_passphrase_in_keychain">Сохранить пароль в Keystore</string>
@@ -689,13 +720,26 @@
     <string name="rcv_group_event_member_added">пригласил(а) <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
     <string name="rcv_group_event_member_connected">соединен(а)</string>
     <string name="rcv_group_event_member_left">покинул(а) группу</string>
+    <string name="rcv_group_event_changed_member_role">поменял(а) роль члена %s на: %s</string>
+    <string name="rcv_group_event_changed_your_role">поменял(а) вашу роль на: %s</string>
     <string name="rcv_group_event_member_deleted">удалил(а) <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
     <string name="rcv_group_event_user_deleted">удалил(а) вас из группы</string>
     <string name="rcv_group_event_group_deleted">удалил(а) группу</string>
     <string name="rcv_group_event_updated_group_profile">обновил(а) профиль группы</string>
+    <string name="rcv_group_event_invited_via_your_group_link">приглашен(а) через вашу ссылку группы</string>
+    <string name="snd_group_event_changed_member_role">вы поменяли роль члена %s на: %s</string>
+    <string name="snd_group_event_changed_role_for_yourself">вы поменяли роль себе на: %s</string>
     <string name="snd_group_event_member_deleted">вы удалили <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
     <string name="snd_group_event_user_left">вы покинули группу</string>
     <string name="snd_group_event_group_profile_updated">профиль группы обновлен</string>
+
+    <!-- Conn event chat items -->
+    <string name="rcv_conn_event_switch_queue_phase_completed">поменял(а) адрес для вас</string>
+    <string name="rcv_conn_event_switch_queue_phase_changing">смена адреса…</string>
+    <string name="snd_conn_event_switch_queue_phase_completed_for_member">вы поменяли адрес для %s</string>
+    <string name="snd_conn_event_switch_queue_phase_changing_for_member">смена адреса для %s…</string>
+    <string name="snd_conn_event_switch_queue_phase_completed">вы поменяли адрес</string>
+    <string name="snd_conn_event_switch_queue_phase_changing">смена адреса…</string>
 
     <!-- GroupMemberRole -->
     <string name="group_member_role_member">член группы</string>
@@ -739,6 +783,14 @@
     <string name="delete_group_for_self_cannot_undo_warning">Группа будет удалена для вас - это действие нельзя отменить!</string>
     <string name="button_leave_group">Выйти из группы</string>
     <string name="button_edit_group_profile">Редактировать профиль группы</string>
+    <string name="group_link">Ссылка группы</string>
+    <string name="button_create_group_link">Создать ссылку</string>
+    <string name="delete_link_question">Удалить ссылку?</string>
+    <string name="delete_link">Удалить ссылку</string>
+    <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Вы можете поделиться ссылкой или QR кодом - через них можно присоединиться к группе. Вы сможете удалить ссылку, сохранив членов группы, которые через нее соединились.</string>
+    <string name="all_group_members_will_remain_connected">Все члены группы, которые соединились через эту ссылку, останутся в группе.</string>
+    <string name="error_creating_link_for_group">Ошибка при создании ссылки группы</string>
+    <string name="error_deleting_link_for_group">Ошибка при удалении ссылки группы</string>
 
     <!-- For Console chat info section -->
     <string name="section_title_for_console">ДЛЯ КОНСОЛИ</string>
@@ -751,6 +803,15 @@
     <string name="member_will_be_removed_from_group_cannot_be_undone">Член группы будет удален - это действие нельзя отменить!</string>
     <string name="remove_member_confirmation">Удалить</string>
     <string name="member_info_section_title_member">ЧЛЕН ГРУППЫ</string>
+    <string name="role_in_group">Роль</string>
+    <string name="change_role">Поменять роль</string>
+    <string name="change_verb">Поменять</string>
+    <string name="switch_verb">Переключить</string>
+    <string name="change_member_role_question">Поменять роль в группе?</string>
+    <string name="member_role_will_be_changed_with_notification">Роль будет изменена на \"%s\". Все в группе получат сообщение.</string>
+    <string name="member_role_will_be_changed_with_invitation">Роль будет изменена на \"%s\". Будет отправлено новое приглашение.</string>
+    <string name="error_removing_member">Ошибка при удалении члена группы</string>
+    <string name="error_changing_role">Ошибка при изменении роли</string>
     <string name="info_row_group">Группа</string>
     <string name="info_row_connection">Соединение</string>
     <string name="conn_level_desc_direct">прямое</string>
@@ -761,6 +822,7 @@
     <string name="receiving_via">Получение через</string>
     <string name="sending_via">Отправка через</string>
     <string name="network_status">Состояние сети</string>
+    <string name="switch_receiving_address">Переключить адрес получения (BETA)</string>
 
     <!-- AddGroupView.kt -->
     <string name="create_secret_group_title">Создать скрытую группу</string>

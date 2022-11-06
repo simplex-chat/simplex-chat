@@ -388,6 +388,7 @@ export interface CRContactConnecting extends CR {
 export interface CRContactConnected extends CR {
   type: "contactConnected"
   contact: Contact
+  userCustomProfile?: Profile
 }
 
 export interface CRContactAnotherClient extends CR {
@@ -553,6 +554,7 @@ export interface CRGroupMembers extends CR {
 export interface CRUserAcceptedGroupSent extends CR {
   type: "userAcceptedGroupSent"
   groupInfo: GroupInfo
+  hostContact?: Contact // included when joining group via group link
 }
 
 export interface CRUserDeletedMember extends CR {

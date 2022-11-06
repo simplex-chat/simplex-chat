@@ -283,12 +283,14 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
         public var direct: ChatInfo
         public var group: ChatInfo
         public var contactRequest: ChatInfo
+        public var contactConnection: ChatInfo
     }
 
     public static var sampleData: ChatInfo.SampleData = SampleData(
         direct: ChatInfo.direct(contact: Contact.sampleData),
         group: ChatInfo.group(groupInfo: GroupInfo.sampleData),
-        contactRequest: ChatInfo.contactRequest(contactRequest: UserContactRequest.sampleData)
+        contactRequest: ChatInfo.contactRequest(contactRequest: UserContactRequest.sampleData),
+        contactConnection: ChatInfo.contactConnection(contactConnection: PendingContactConnection.getSampleData())
     )
 }
 
@@ -301,13 +303,15 @@ public struct ChatData: Decodable, Identifiable {
 }
 
 public struct ChatStats: Decodable {
-    public init(unreadCount: Int = 0, minUnreadItemId: Int64 = 0) {
+    public init(unreadCount: Int = 0, minUnreadItemId: Int64 = 0, unreadChat: Bool = false) {
         self.unreadCount = unreadCount
         self.minUnreadItemId = minUnreadItemId
+        self.unreadChat = unreadChat
     }
 
     public var unreadCount: Int = 0
     public var minUnreadItemId: Int64 = 0
+    public var unreadChat: Bool = false
 }
 
 public struct Contact: Identifiable, Decodable, NamedChat {
@@ -331,6 +335,10 @@ public struct Contact: Identifiable, Decodable, NamedChat {
 
     public var isIndirectContact: Bool {
         activeConn.connLevel > 0 || viaGroup != nil
+    }
+
+    public var viaGroupLink: Bool {
+        activeConn.viaGroupLink
     }
 
     public var contactConnIncognito: Bool {
@@ -364,6 +372,7 @@ public struct Connection: Decodable {
     var connId: Int64
     var connStatus: ConnStatus
     public var connLevel: Int
+    public var viaGroupLink: Bool
     public var customUserProfileId: Int64?
 
     public var id: ChatId { get { ":\(connId)" } }
@@ -371,7 +380,8 @@ public struct Connection: Decodable {
     static let sampleData = Connection(
         connId: 1,
         connStatus: .ready,
-        connLevel: 0
+        connLevel: 0,
+        viaGroupLink: false
     )
 }
 
@@ -419,11 +429,14 @@ public struct UserContactRequest: Decodable, NamedChat {
 }
 
 public struct PendingContactConnection: Decodable, NamedChat {
-    var pccConnId: Int64
+    public var pccConnId: Int64
     var pccAgentConnId: String
     var pccConnStatus: ConnStatus
     public var viaContactUri: Bool
+    public var groupLinkId: String?
     public var customUserProfileId: Int64?
+    public var connReqInv: String?
+    public var localAlias: String
     var createdAt: Date
     public var updatedAt: Date
 
@@ -448,7 +461,6 @@ public struct PendingContactConnection: Decodable, NamedChat {
     }
     public var fullName: String { get { "" } }
     public var image: String? { get { nil } }
-    public var localAlias: String { "" }
     public var initiated: Bool { get { (pccConnStatus.initiated ?? false) && !viaContactUri } }
 
     public var incognito: Bool {
@@ -466,10 +478,18 @@ public struct PendingContactConnection: Decodable, NamedChat {
                         desc = NSLocalizedString("you shared one-time link", comment: "chat list item description")
                     }
                 } else if viaContactUri {
-                    if incognito {
-                        desc = NSLocalizedString("incognito via contact address link", comment: "chat list item description")
+                    if groupLinkId != nil {
+                        if incognito {
+                            desc = NSLocalizedString("incognito via group link", comment: "chat list item description")
+                        } else {
+                            desc = NSLocalizedString("via group link", comment: "chat list item description")
+                        }
                     } else {
-                        desc = NSLocalizedString("via contact address link", comment: "chat list item description")
+                        if incognito {
+                            desc = NSLocalizedString("incognito via contact address link", comment: "chat list item description")
+                        } else {
+                            desc = NSLocalizedString("via contact address link", comment: "chat list item description")
+                        }
                     }
                 } else {
                     if incognito {
@@ -491,6 +511,7 @@ public struct PendingContactConnection: Decodable, NamedChat {
             pccAgentConnId: "abcd",
             pccConnStatus: status,
             viaContactUri: viaContactUri,
+            localAlias: "",
             createdAt: .now,
             updatedAt: .now
         )
@@ -667,10 +688,16 @@ public struct GroupMember: Identifiable, Decodable {
         }
     }
 
-    public func canBeRemoved(membership: GroupMember) -> Bool {
-        let userRole = membership.memberRole
+    public func canBeRemoved(groupInfo: GroupInfo) -> Bool {
+        let userRole = groupInfo.membership.memberRole
         return memberStatus != .memRemoved && memberStatus != .memLeft
-            && userRole >= .admin && userRole >= memberRole && membership.memberCurrent
+            && userRole >= .admin && userRole >= memberRole && groupInfo.membership.memberCurrent
+    }
+
+    public func canChangeRoleTo(groupInfo: GroupInfo) -> [GroupMemberRole]? {
+        if !canBeRemoved(groupInfo: groupInfo) { return nil }
+        let userRole = groupInfo.membership.memberRole
+        return GroupMemberRole.allCases.filter { $0 <= userRole }
     }
 
     public var memberIncognito: Bool {
@@ -693,6 +720,11 @@ public struct GroupMember: Identifiable, Decodable {
     )
 }
 
+public struct GroupMemberRef: Decodable {
+    var groupMemberId: Int64
+    var profile: Profile
+}
+
 public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Decodable {
     case member = "member"
     case admin = "admin"
@@ -700,11 +732,11 @@ public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Dec
 
     public var id: Self { self }
 
-    public var text: LocalizedStringKey {
+    public var text: String {
         switch self {
-        case .member: return "member"
-        case .admin: return "admin"
-        case .owner: return "owner"
+        case .member: return NSLocalizedString("member", comment: "member role")
+        case .admin: return NSLocalizedString("admin", comment: "member role")
+        case .owner: return NSLocalizedString("owner", comment: "member role")
         }
     }
 
@@ -890,6 +922,26 @@ public struct ChatItem: Identifiable, Decodable {
         }
     }
 
+    public var isMutedMemberEvent: Bool {
+        switch content {
+        case let .rcvGroupEvent(event):
+            switch event {
+            case .groupUpdated: return true
+            case .memberConnected: return true
+            case .memberRole: return true
+            case .userRole: return false
+            case .userDeleted: return false
+            case .groupDeleted: return false
+            case .memberAdded: return false
+            case .memberLeft: return false
+            case .memberDeleted: return false
+            case .invitedViaGroupLink: return false
+            }
+        case .sndGroupEvent: return true
+        default: return false
+        }
+    }
+
     public var memberDisplayName: String? {
         get {
             if case let .groupRcv(groupMember) = chatDir {
@@ -1058,6 +1110,8 @@ public enum CIContent: Decodable, ItemContent {
     case sndGroupInvitation(groupInvitation: CIGroupInvitation, memberRole: GroupMemberRole)
     case rcvGroupEvent(rcvGroupEvent: RcvGroupEvent)
     case sndGroupEvent(sndGroupEvent: SndGroupEvent)
+    case rcvConnEvent(rcvConnEvent: RcvConnEvent)
+    case sndConnEvent(sndConnEvent: SndConnEvent)
 
     public var text: String {
         get {
@@ -1073,6 +1127,8 @@ public enum CIContent: Decodable, ItemContent {
             case let .sndGroupInvitation(groupInvitation, _): return groupInvitation.text
             case let .rcvGroupEvent(rcvGroupEvent): return rcvGroupEvent.text
             case let .sndGroupEvent(sndGroupEvent): return sndGroupEvent.text
+            case let .rcvConnEvent(rcvConnEvent): return rcvConnEvent.text
+            case let .sndConnEvent(sndConnEvent): return sndConnEvent.text
             }
         }
     }
@@ -1090,7 +1146,7 @@ public enum CIContent: Decodable, ItemContent {
 
 public struct CIQuote: Decodable, ItemContent {
     var chatDir: CIDirection?
-    var itemId: Int64?
+    public var itemId: Int64?
     var sharedMsgId: String? = nil
     var sentAt: Date
     public var content: MsgContent
@@ -1167,7 +1223,7 @@ public enum MsgContent {
     // TODO include original JSON, possibly using https://github.com/zoul/generic-json-swift
     case unknown(type: String, text: String)
 
-    var text: String {
+    public var text: String {
         get {
             switch self {
             case let .text(text): return text
@@ -1411,10 +1467,13 @@ public enum RcvGroupEvent: Decodable {
     case memberAdded(groupMemberId: Int64, profile: Profile)
     case memberConnected
     case memberLeft
+    case memberRole(groupMemberId: Int64, profile: Profile, role: GroupMemberRole)
+    case userRole(role: GroupMemberRole)
     case memberDeleted(groupMemberId: Int64, profile: Profile)
     case userDeleted
     case groupDeleted
     case groupUpdated(groupProfile: GroupProfile)
+    case invitedViaGroupLink
 
     var text: String {
         switch self {
@@ -1422,26 +1481,123 @@ public enum RcvGroupEvent: Decodable {
             return String.localizedStringWithFormat(NSLocalizedString("invited %@", comment: "rcv group event chat item"), profile.profileViewName)
         case .memberConnected: return NSLocalizedString("member connected", comment: "rcv group event chat item")
         case .memberLeft: return NSLocalizedString("left", comment: "rcv group event chat item")
+        case let .memberRole(_, profile, role):
+            return  String.localizedStringWithFormat(NSLocalizedString("changed role of %@ to %@", comment: "rcv group event chat item"), profile.profileViewName, role.text)
+        case let .userRole(role):
+            return String.localizedStringWithFormat(NSLocalizedString("changed your role to %@", comment: "rcv group event chat item"), role.text)
         case let .memberDeleted(_, profile):
             return String.localizedStringWithFormat(NSLocalizedString("removed %@", comment: "rcv group event chat item"), profile.profileViewName)
         case .userDeleted: return NSLocalizedString("removed you", comment: "rcv group event chat item")
         case .groupDeleted: return NSLocalizedString("deleted group", comment: "rcv group event chat item")
         case .groupUpdated: return NSLocalizedString("updated group profile", comment: "rcv group event chat item")
+        case .invitedViaGroupLink: return NSLocalizedString("invited via your group link", comment: "rcv group event chat item")
         }
     }
 }
 
 public enum SndGroupEvent: Decodable {
+    case memberRole(groupMemberId: Int64, profile: Profile, role: GroupMemberRole)
+    case userRole(role: GroupMemberRole)
     case memberDeleted(groupMemberId: Int64, profile: Profile)
     case userLeft
     case groupUpdated(groupProfile: GroupProfile)
 
     var text: String {
         switch self {
+        case let .memberRole(_, profile, role):
+            return  String.localizedStringWithFormat(NSLocalizedString("you changed role of %@ to %@", comment: "snd group event chat item"), profile.profileViewName, role.text)
+        case let .userRole(role):
+            return String.localizedStringWithFormat(NSLocalizedString("you changed role for yourself to %@", comment: "snd group event chat item"), role.text)
         case let .memberDeleted(_, profile):
             return String.localizedStringWithFormat(NSLocalizedString("you removed %@", comment: "snd group event chat item"), profile.profileViewName)
         case .userLeft: return NSLocalizedString("you left", comment: "snd group event chat item")
         case .groupUpdated: return NSLocalizedString("group profile updated", comment: "snd group event chat item")
         }
+    }
+}
+
+public enum RcvConnEvent: Decodable {
+    case switchQueue(phase: SwitchPhase)
+    
+    var text: String {
+        switch self {
+        case let .switchQueue(phase):
+            if case .completed = phase {
+                return NSLocalizedString("changed address for you", comment: "chat item text")
+            }
+            return NSLocalizedString("changing address...", comment: "chat item text")
+        }
+    }
+}
+
+public enum SndConnEvent: Decodable {
+    case switchQueue(phase: SwitchPhase, member: GroupMemberRef?)
+    
+    var text: String {
+        switch self {
+        case let .switchQueue(phase, member):
+            if let name = member?.profile.profileViewName {
+                return phase == .completed
+                    ? String.localizedStringWithFormat(NSLocalizedString("you changed address for %@", comment: "chat item text"), name)
+                    : String.localizedStringWithFormat(NSLocalizedString("changing address for %@...", comment: "chat item text"), name)
+            }
+            return phase == .completed
+                ? NSLocalizedString("you changed address", comment: "chat item text")
+                : NSLocalizedString("changing address...", comment: "chat item text")
+        }
+    }
+}
+
+public enum SwitchPhase: String, Decodable {
+    case started
+    case confirmed
+    case completed
+}
+
+public enum ChatItemTTL: Hashable, Identifiable, Comparable {
+    case day
+    case week
+    case month
+    case seconds(_ seconds: Int64)
+    case none
+
+    public var id: Self { self }
+
+    public init(_ seconds: Int64?) {
+        switch seconds {
+        case 86400: self = .day
+        case 7 * 86400: self = .week
+        case 30 * 86400: self = .month
+        case let .some(n): self = .seconds(n)
+        case .none: self = .none
+        }
+    }
+
+    public var deleteAfterText: LocalizedStringKey {
+        switch self {
+        case .day: return "1 day"
+        case .week: return "1 week"
+        case .month: return "1 month"
+        case let .seconds(seconds): return "\(seconds) second(s)"
+        case .none: return "never"
+        }
+    }
+
+    public var seconds: Int64? {
+        switch self {
+        case .day: return 86400
+        case .week: return 7 * 86400
+        case .month: return 30 * 86400
+        case let .seconds(seconds): return seconds
+        case .none: return nil
+        }
+    }
+
+    private var comparisonValue: Int64 {
+        self.seconds ?? Int64.max
+    }
+
+    public static func < (lhs: Self, rhs: Self) -> Bool {
+        return lhs.comparisonValue < rhs.comparisonValue
     }
 }

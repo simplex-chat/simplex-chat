@@ -33,7 +33,7 @@ CREATE TABLE chat_items (
   created_by_msg_id INTEGER UNIQUE REFERENCES messages (message_id) ON DELETE SET NULL,
   item_sent INTEGER NOT NULL, -- 0 for received, 1 for sent
   item_ts TEXT NOT NULL, -- broker_ts of creating message for received, created_at for sent
-  item_deleted INTEGER NOT NULL DEFAULT 0, -- 1 for deleted,
+  item_deleted INTEGER NOT NULL DEFAULT 0, -- 1 for deleted, -- ! legacy field that was used for group chat items when they weren't fully deleted
   item_content TEXT NOT NULL, -- JSON
   item_text TEXT NOT NULL, -- textual representation
   created_at TEXT NOT NULL DEFAULT (datetime('now')),

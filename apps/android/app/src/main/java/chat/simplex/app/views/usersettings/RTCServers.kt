@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
-import chat.simplex.app.ui.theme.HighOrLowlight
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.call.parseRTCIceServers
 import chat.simplex.app.views.helpers.*
 
@@ -97,96 +97,95 @@ fun RTCServersLayout(
   saveRTCServers: () -> Unit,
   editOn: () -> Unit,
 ) {
-  Column(
-    Modifier.fillMaxWidth(),
-    horizontalAlignment = Alignment.Start,
-    verticalArrangement = Arrangement.spacedBy(8.dp)
-  ) {
-    Text(
-      stringResource(R.string.your_ICE_servers),
-      Modifier.padding(bottom = 24.dp),
-      style = MaterialTheme.typography.h1
-    )
-    SectionItemViewSpaceBetween(padding = PaddingValues()) {
-      Text(stringResource(R.string.configure_ICE_servers), Modifier.padding(end = 24.dp))
-      Switch(
-        checked = isUserRTCServers,
-        onCheckedChange = isUserRTCServersOnOff,
-        colors = SwitchDefaults.colors(
-          checkedThumbColor = MaterialTheme.colors.primary,
-          uncheckedThumbColor = HighOrLowlight
-        ),
-      )
-    }
+  Column {
+    AppBarTitle(stringResource(R.string.your_ICE_servers))
+    Column(
+      Modifier
+        .fillMaxWidth()
+        .padding(horizontal = DEFAULT_PADDING),
+      verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+      SectionItemViewSpaceBetween(padding = PaddingValues()) {
+        Text(stringResource(R.string.configure_ICE_servers), Modifier.padding(end = 24.dp))
+        Switch(
+          checked = isUserRTCServers,
+          onCheckedChange = isUserRTCServersOnOff,
+          colors = SwitchDefaults.colors(
+            checkedThumbColor = MaterialTheme.colors.primary,
+            uncheckedThumbColor = HighOrLowlight
+          ),
+        )
+      }
 
-    if (!isUserRTCServers) {
-      Text(stringResource(R.string.using_simplex_chat_servers), lineHeight = 22.sp)
-    } else {
-      Text(stringResource(R.string.enter_one_ICE_server_per_line))
-      if (editRTCServers) {
-        TextEditor(Modifier.height(160.dp), text = userRTCServersStr)
+      if (!isUserRTCServers) {
+        Text(stringResource(R.string.using_simplex_chat_servers), lineHeight = 22.sp)
+      } else {
+        Text(stringResource(R.string.enter_one_ICE_server_per_line))
+        if (editRTCServers) {
+          TextEditor(Modifier.height(160.dp), text = userRTCServersStr)
 
-        Row(
-          Modifier.fillMaxWidth(),
-          horizontalArrangement = Arrangement.SpaceBetween,
-          verticalAlignment = Alignment.CenterVertically
-        ) {
-          Column(horizontalAlignment = Alignment.Start) {
-            Row {
+          Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            Column(horizontalAlignment = Alignment.Start) {
+              Row {
+                Text(
+                  stringResource(R.string.cancel_verb),
+                  color = MaterialTheme.colors.primary,
+                  modifier = Modifier
+                    .clickable(onClick = cancelEdit)
+                )
+                Spacer(Modifier.padding(horizontal = 8.dp))
+                Text(
+                  stringResource(R.string.save_servers_button),
+                  color = MaterialTheme.colors.primary,
+                  modifier = Modifier.clickable(onClick = {
+                    saveRTCServers()
+                  })
+                )
+              }
+            }
+            Column(horizontalAlignment = Alignment.End) {
+              howToButton()
+            }
+          }
+        } else {
+          Surface(
+            modifier = Modifier
+              .height(160.dp)
+              .fillMaxWidth(),
+            shape = RoundedCornerShape(10.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colors.secondary)
+          ) {
+            SelectionContainer(
+              Modifier.verticalScroll(rememberScrollState())
+            ) {
               Text(
-                stringResource(R.string.cancel_verb),
-                color = MaterialTheme.colors.primary,
-                modifier = Modifier
-                  .clickable(onClick = cancelEdit)
-              )
-              Spacer(Modifier.padding(horizontal = 8.dp))
-              Text(
-                stringResource(R.string.save_servers_button),
-                color = MaterialTheme.colors.primary,
-                modifier = Modifier.clickable(onClick = {
-                  saveRTCServers()
-                })
+                userRTCServersStr.value,
+                Modifier
+                  .padding(vertical = 5.dp, horizontal = 7.dp),
+                style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 14.sp),
               )
             }
           }
-          Column(horizontalAlignment = Alignment.End) {
-            howToButton()
-          }
-        }
-      } else {
-        Surface(
-          modifier = Modifier
-            .height(160.dp)
-            .fillMaxWidth(),
-          shape = RoundedCornerShape(10.dp),
-          border = BorderStroke(1.dp, MaterialTheme.colors.secondary)
-        ) {
-          SelectionContainer(
-            Modifier.verticalScroll(rememberScrollState())
+          Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
           ) {
-            Text(
-              userRTCServersStr.value,
-              Modifier
-                .padding(vertical = 5.dp, horizontal = 7.dp),
-              style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 14.sp),
-            )
-          }
-        }
-        Row(
-          Modifier.fillMaxWidth(),
-          horizontalArrangement = Arrangement.SpaceBetween,
-          verticalAlignment = Alignment.CenterVertically
-        ) {
-          Column(horizontalAlignment = Alignment.Start) {
-            Text(
-              stringResource(R.string.edit_verb),
-              color = MaterialTheme.colors.primary,
-              modifier = Modifier
-                .clickable(onClick = editOn)
-            )
-          }
-          Column(horizontalAlignment = Alignment.End) {
-            howToButton()
+            Column(horizontalAlignment = Alignment.Start) {
+              Text(
+                stringResource(R.string.edit_verb),
+                color = MaterialTheme.colors.primary,
+                modifier = Modifier
+                  .clickable(onClick = editOn)
+              )
+            }
+            Column(horizontalAlignment = Alignment.End) {
+              howToButton()
+            }
           }
         }
       }

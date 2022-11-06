@@ -1,7 +1,6 @@
 package chat.simplex.app.views.chat
 
 import ComposeFileView
-import ComposeImageView
 import android.Manifest
 import android.app.Activity
 import android.content.*
@@ -51,7 +50,7 @@ import java.io.File
 sealed class ComposePreview {
   @Serializable object NoPreview: ComposePreview()
   @Serializable class CLinkPreview(val linkPreview: LinkPreview?): ComposePreview()
-  @Serializable class ImagePreview(val image: String): ComposePreview()
+  @Serializable class ImagePreview(val images: List<String>): ComposePreview()
   @Serializable class FilePreview(val fileName: String): ComposePreview()
 }
 
@@ -120,7 +119,7 @@ fun chatItemPreview(chatItem: ChatItem): ComposePreview {
   return when (val mc = chatItem.content.msgContent) {
     is MsgContent.MCText -> ComposePreview.NoPreview
     is MsgContent.MCLink -> ComposePreview.CLinkPreview(linkPreview = mc.preview)
-    is MsgContent.MCImage -> ComposePreview.ImagePreview(image = mc.image)
+    is MsgContent.MCImage -> ComposePreview.ImagePreview(images = listOf(mc.image))
     is MsgContent.MCFile -> {
       val fileName = chatItem.file?.fileName ?: ""
       ComposePreview.FilePreview(fileName)
@@ -146,8 +145,7 @@ fun ComposeView(
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   val textStyle = remember { mutableStateOf(smallFont) }
   // attachments
-  val chosenImage = remember { mutableStateOf<Bitmap?>(null) }
-  val chosenAnimImage = remember { mutableStateOf<Uri?>(null) }
+  val chosenContent = remember { mutableStateOf<List<UploadContent>>(emptyList()) }
   val chosenFile = remember { mutableStateOf<Uri?>(null) }
   val photoUri = remember { mutableStateOf<Uri?>(null) }
   val photoTmpFile = remember { mutableStateOf<File?>(null) }
@@ -184,9 +182,9 @@ fun ComposeView(
 
   val cameraLauncher = rememberLauncherForActivityResult(contract = ComposeTakePicturePreview()) { bitmap: Bitmap? ->
     if (bitmap != null) {
-      chosenImage.value = bitmap
       val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
-      composeState.value = composeState.value.copy(preview = ComposePreview.ImagePreview(imagePreview))
+      chosenContent.value = listOf(UploadContent.SimpleImage(bitmap))
+      composeState.value = composeState.value.copy(preview = ComposePreview.ImagePreview(listOf(imagePreview)))
     }
   }
   val cameraPermissionLauncher = rememberPermissionLauncher { isGranted: Boolean ->
@@ -196,42 +194,46 @@ fun ComposeView(
       Toast.makeText(context, generalGetString(R.string.toast_permission_denied), Toast.LENGTH_SHORT).show()
     }
   }
-  val processPickedImage = { uri: Uri? ->
-    if (uri != null) {
+  val processPickedImage = { uris: List<Uri>, text: String? ->
+    val content = ArrayList<UploadContent>()
+    val imagesPreview = ArrayList<String>()
+    uris.forEach { uri ->
       val source = ImageDecoder.createSource(context.contentResolver, uri)
       val drawable = ImageDecoder.decodeDrawable(source)
-      val bitmap = ImageDecoder.decodeBitmap(source)
+      var bitmap: Bitmap? = ImageDecoder.decodeBitmap(source)
       if (drawable is AnimatedImageDrawable) {
         // It's a gif or webp
         val fileSize = getFileSize(context, uri)
         if (fileSize != null && fileSize <= MAX_FILE_SIZE) {
-          chosenAnimImage.value = uri
+          content.add(UploadContent.AnimatedImage(uri))
         } else {
+          bitmap = null
           AlertManager.shared.showAlertMsg(
             generalGetString(R.string.large_file),
             String.format(generalGetString(R.string.maximum_supported_file_size), formatBytes(MAX_FILE_SIZE))
           )
         }
       } else {
-        chosenImage.value = bitmap
+        if (bitmap != null) content.add(UploadContent.SimpleImage(bitmap))
       }
-
-      if (chosenImage.value != null || chosenAnimImage.value != null) {
-        val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
-        composeState.value = composeState.value.copy(preview = ComposePreview.ImagePreview(imagePreview))
+      if (bitmap != null) {
+        imagesPreview.add(resizeImageToStrSize(bitmap, maxDataSize = 14000))
       }
     }
+
+    if (imagesPreview.isNotEmpty()) {
+      chosenContent.value = content
+      composeState.value = composeState.value.copy(message = text ?: composeState.value.message, preview = ComposePreview.ImagePreview(imagesPreview))
+    }
   }
-  val galleryLauncher = rememberLauncherForActivityResult(contract = PickFromGallery(), processPickedImage)
-  val galleryLauncherFallback = rememberGetContentLauncher(processPickedImage)
-  val filesLauncher = rememberGetContentLauncher { uri: Uri? ->
+  val processPickedFile = { uri: Uri?, text: String? ->
     if (uri != null) {
       val fileSize = getFileSize(context, uri)
       if (fileSize != null && fileSize <= MAX_FILE_SIZE) {
         val fileName = getFileName(SimplexApp.context, uri)
         if (fileName != null) {
           chosenFile.value = uri
-          composeState.value = composeState.value.copy(preview = ComposePreview.FilePreview(fileName))
+          composeState.value = composeState.value.copy(message = text ?: composeState.value.message, preview = ComposePreview.FilePreview(fileName))
         }
       } else {
         AlertManager.shared.showAlertMsg(
@@ -241,6 +243,9 @@ fun ComposeView(
       }
     }
   }
+  val galleryLauncher = rememberLauncherForActivityResult(contract = PickFromGallery()) { processPickedImage(it, null) }
+  val galleryLauncherFallback = rememberGetMultipleContentsLauncher { processPickedImage(it, null) }
+  val filesLauncher = rememberGetContentLauncher { processPickedFile(it, null) }
 
   LaunchedEffect(attachmentOption.value) {
     when (attachmentOption.value) {
@@ -288,6 +293,9 @@ fun ComposeView(
         val lp = getLinkPreview(url)
         if (lp != null && pendingLinkUrl.value == url) {
           composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(lp))
+          pendingLinkUrl.value = null
+        } else if (pendingLinkUrl.value == url) {
+          composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
           pendingLinkUrl.value = null
         }
       }
@@ -345,8 +353,7 @@ fun ComposeView(
   fun clearState() {
     composeState.value = ComposeState(useLinkPreviews = useLinkPreviews)
     textStyle.value = smallFont
-    chosenImage.value = null
-    chosenAnimImage.value = null
+    chosenContent.value = emptyList()
     chosenFile.value = null
     linkUrl.value = null
     prevLinkUrl.value = null
@@ -376,33 +383,30 @@ fun ComposeView(
         }
       }
       else -> {
-        var mc: MsgContent? = null
-        var file: String? = null
+        val msgs: ArrayList<MsgContent> = ArrayList()
+        val files: ArrayList<String> = ArrayList()
         when (val preview = cs.preview) {
-          ComposePreview.NoPreview -> mc = MsgContent.MCText(cs.message)
-          is ComposePreview.CLinkPreview -> mc = checkLinkPreview()
+          ComposePreview.NoPreview -> msgs.add(MsgContent.MCText(cs.message))
+          is ComposePreview.CLinkPreview -> msgs.add(checkLinkPreview())
           is ComposePreview.ImagePreview -> {
-            val chosenImageVal = chosenImage.value
-            if (chosenImageVal != null) {
-              file = saveImage(context, chosenImageVal)
-              if (file != null) {
-                mc = MsgContent.MCImage(cs.message, preview.image)
+            chosenContent.value.forEachIndexed { index, it ->
+              val file = when (it) {
+                is UploadContent.SimpleImage -> saveImage(context, it.bitmap)
+                is UploadContent.AnimatedImage -> saveAnimImage(context, it.uri)
               }
-            }
-            val chosenGifImageVal = chosenAnimImage.value
-            if (chosenGifImageVal != null) {
-              file = saveAnimImage(context, chosenGifImageVal)
               if (file != null) {
-                mc = MsgContent.MCImage(cs.message, preview.image)
+                files.add(file)
+                msgs.add(MsgContent.MCImage(if (msgs.isEmpty()) cs.message else "", preview.images[index]))
               }
             }
           }
           is ComposePreview.FilePreview -> {
             val chosenFileVal = chosenFile.value
             if (chosenFileVal != null) {
-              file = saveFileFromUri(context, chosenFileVal)
+              val file = saveFileFromUri(context, chosenFileVal)
               if (file != null) {
-                mc = MsgContent.MCFile(cs.message)
+                files.add((file))
+                msgs.add(MsgContent.MCFile(if (msgs.isEmpty()) cs.message else ""))
               }
             }
           }
@@ -411,17 +415,19 @@ fun ComposeView(
           is ComposeContextItem.QuotedItem -> contextItem.chatItem.id
           else -> null
         }
-
-        if (mc != null) {
+        if (msgs.isNotEmpty()) {
           withApi {
-            val aChatItem = chatModel.controller.apiSendMessage(
-              type = cInfo.chatType,
-              id = cInfo.apiId,
-              file = file,
-              quotedItemId = quotedItemId,
-              mc = mc
-            )
-            if (aChatItem != null) chatModel.addChatItem(cInfo, aChatItem.chatItem)
+            msgs.forEachIndexed { index, content ->
+              if (index > 0) delay(100)
+              val aChatItem = chatModel.controller.apiSendMessage(
+                type = cInfo.chatType,
+                id = cInfo.apiId,
+                file = files.getOrNull(index),
+                quotedItemId = if (index == 0) quotedItemId else null,
+                mc = content
+              )
+              if (aChatItem != null) chatModel.addChatItem(cInfo, aChatItem.chatItem)
+            }
             clearState()
           }
         } else {
@@ -453,10 +459,9 @@ fun ComposeView(
     composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
   }
 
-  fun cancelImage() {
+  fun cancelImages() {
     composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
-    chosenImage.value = null
-    chosenAnimImage.value = null
+    chosenContent.value = emptyList()
   }
 
   fun cancelFile() {
@@ -470,8 +475,8 @@ fun ComposeView(
       ComposePreview.NoPreview -> {}
       is ComposePreview.CLinkPreview -> ComposeLinkView(preview.linkPreview, ::cancelLinkPreview)
       is ComposePreview.ImagePreview -> ComposeImageView(
-        preview.image,
-        ::cancelImage,
+        preview.images,
+        ::cancelImages,
         cancelEnabled = !composeState.value.editing
       )
       is ComposePreview.FilePreview -> ComposeFileView(
@@ -493,6 +498,16 @@ fun ComposeView(
         clearState()
       }
     }
+  }
+
+  LaunchedEffect(chatModel.sharedContent.value) {
+    when (val shared = chatModel.sharedContent.value) {
+      is SharedContent.Text -> onMessageChange(shared.text)
+      is SharedContent.Images -> processPickedImage(shared.uris, shared.text)
+      is SharedContent.File -> processPickedFile(shared.uri, shared.text)
+      null -> {}
+    }
+    chatModel.sharedContent.value = null
   }
 
   Column {
@@ -535,8 +550,28 @@ fun ComposeView(
   }
 }
 
-class PickFromGallery: ActivityResultContract<Int, Uri?>() {
-  override fun createIntent(context: Context, input: Int) = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI)
+class PickFromGallery: ActivityResultContract<Int, List<Uri>>() {
+  override fun createIntent(context: Context, input: Int) =
+    Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI).apply {
+      putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+      type = "image/*"
+    }
 
-  override fun parseResult(resultCode: Int, intent: Intent?): Uri? = intent?.data
+  override fun parseResult(resultCode: Int, intent: Intent?): List<Uri> =
+    if (intent?.data != null)
+      listOf(intent.data!!)
+    else if (intent?.clipData != null)
+      with(intent.clipData!!) {
+        val uris = ArrayList<Uri>()
+        for (i in 0 until kotlin.math.min(itemCount, 10)) {
+          val uri = getItemAt(i).uri
+          if (uri != null) uris.add(uri)
+        }
+        if (itemCount > 10) {
+          AlertManager.shared.showAlertMsg(R.string.images_limit_title, R.string.images_limit_desc)
+        }
+        uris
+      }
+    else
+      emptyList()
 }

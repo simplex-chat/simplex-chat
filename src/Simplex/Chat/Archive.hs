@@ -1,6 +1,5 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -22,7 +21,7 @@ import qualified Database.SQLite3 as SQL
 import Simplex.Chat.Controller
 import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), sqlString)
-import Simplex.Messaging.Util (unlessM, whenM)
+import Simplex.Messaging.Util
 import System.FilePath
 import UnliftIO.Directory
 import UnliftIO.Exception (SomeException, bracket, catch)
