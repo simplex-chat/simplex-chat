@@ -530,7 +530,7 @@ public enum ChatResponse: Decodable, Error {
             case let .contactsList(contacts): return String(describing: contacts)
             case let .groupCreated(groupInfo): return String(describing: groupInfo)
             case let .sentGroupInvitation(groupInfo, contact, member): return "groupInfo: \(groupInfo)\ncontact: \(contact)\nmember: \(member)"
-            case let .userAcceptedGroupSent(groupInfo): return String(describing: groupInfo)
+            case let .userAcceptedGroupSent(groupInfo, hostContact): return "groupInfo: \(groupInfo)\nhostContact: \(String(describing: hostContact))"
             case let .userDeletedMember(groupInfo, member): return "groupInfo: \(groupInfo)\nmember: \(member)"
             case let .leftMemberUser(groupInfo): return String(describing: groupInfo)
             case let .groupMembers(group): return String(describing: group)
