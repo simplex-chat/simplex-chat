@@ -213,7 +213,7 @@ header nav {
   transform: rotate(180deg);
 }
 
-@media (max-width: 1400px) {
+/* @media (max-width: 1400px) {
     .landing-page-header-article-paragraph {
         width: 21rem;
     }
@@ -221,7 +221,7 @@ header nav {
     .socials {
         flex-wrap: nowrap;
     }
-}
+} */
 
 @media (min-width:1024px) {
 
