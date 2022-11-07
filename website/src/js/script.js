@@ -141,16 +141,22 @@ const isMobile = {
 };
 
 window.addEventListener('load', () => {
+    const googlePlayBtn = document.querySelector('.google-play-btn');
+    const appleStoreBtn = document.querySelector('.apple-store-btn');
+    const fDroidBtn = document.querySelector('.f-droid-btn');
+    if(!googlePlayBtn || !appleStoreBtn || !fDroidBtn) return;
+
+
     if (isMobile.Android()) {
-        document.querySelector('.google-play-btn').classList.remove('hidden');
-        document.querySelector('.f-droid-btn').classList.remove('hidden');
+        googlePlayBtn.classList.remove('hidden');
+        fDroidBtn.classList.remove('hidden');
     }
     else if (isMobile.iOS()) {
-        document.querySelector('.apple-store-btn').classList.remove('hidden');
+        appleStoreBtn.classList.remove('hidden');
     }
     else {
-        document.querySelector('.apple-store-btn').classList.remove('hidden');
-        document.querySelector('.google-play-btn').classList.remove('hidden');
-        document.querySelector('.f-droid-btn').classList.remove('hidden');
+        appleStoreBtn.classList.remove('hidden');
+        googlePlayBtn.classList.remove('hidden');
+        fDroidBtn.classList.remove('hidden');
     }
 })
