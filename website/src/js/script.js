@@ -125,3 +125,28 @@ window.addEventListener('click', (e) => {
     }
     // -----------------------------------------------
 })
+
+
+const isMobile = {
+    Android: function () {
+        return navigator.userAgent.match(/Android/i);
+    },
+    iOS: function () {
+        return navigator.userAgent.match(/iPhone|iPad|iPod/i);
+    }
+};
+
+window.addEventListener('load', () => {
+    if (isMobile.Android()) {
+        document.querySelector('.google-play-btn').classList.remove('hidden');
+        document.querySelector('.f-droid-btn').classList.remove('hidden');
+    }
+    else if (isMobile.iOS()) {
+        document.querySelector('.apple-store-btn').classList.remove('hidden');
+    }
+    else {
+        document.querySelector('.apple-store-btn').classList.remove('hidden');
+        document.querySelector('.google-play-btn').classList.remove('hidden');
+        document.querySelector('.f-droid-btn').classList.remove('hidden');
+    }
+})

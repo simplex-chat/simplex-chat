@@ -87,7 +87,7 @@ templateEngineOverride: njk
             </div>
         </div>
 
-        <div class="h-full pt-[30px] w-full w-[630px] relative">
+        <div class="h-full pt-[30px] w-[630px] relative">
             <div class="relative h-full w-[inherit] flex items-center justify-center">
                 <div class="absolute mt-[-100px]">
                     <img class="" src="/img/new/contact_page_mobile.png" alt="">
@@ -109,16 +109,20 @@ templateEngineOverride: njk
             <p class="text-[28px] font-bold text-center max-w-[602px] mb-[40px] primary-header-contact">You have been sent a link to connect on SimpleX Chat!</p>
             <p class="text-[20px] leading-[28px] text-grey-black dark:text-white font-medium mb-[30px]">To make a connection:</p>
 
-            <div class="flex flex-col justify-center items-center w-full max-w-[368px] h-[131px] rounded-[30px] border-[1px] border-[#A8B0B4] dark:border-white border-opacity-60 mb-6 relative">
+            <div class="flex flex-col justify-center items-center p-4 w-full max-w-[468px] min-h-[131px] rounded-[30px] border-[1px] border-[#A8B0B4] dark:border-white border-opacity-60 mb-6 relative">
                 <p class="text-xl font-medium text-grey-black dark:text-white mb-4">Install SimpleX app</p>
-                <a href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apple_store.svg" /></a>
+                <div class="flex flex-wrap items-center justify-center gap-2">
+                    <a class="apple-store-btn hidden" href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apple_store.svg" /></a>
+                    <a class="google-play-btn hidden" href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank" title="Public iOS preview on TestFlight"><img class="h-[40px] w-auto" src="/img/new/google_play.svg" /></a>
+                    <a class="f-droid-btn hidden" href="https://app.simplex.chat" target="_blank" title="SimpleX F-Droid Repository"><img class="h-[40px] w-auto" src="/img/new/f_droid.svg" /></a>
+                </div>
 
                 <div class="absolute bg-[#0197FF] h-[44px] w-[44px] rounded-full flex items-center justify-center top-0 left-0 translate-x-[-30%] translate-y-[-30%]">
                     <p class="text-base text-white font-bold leading-[36px]">1</p>
                 </div>
             </div>
 
-            <div class="flex flex-col justify-center items-center w-full max-w-[368px] h-[131px] rounded-[30px] border-[1px] border-[#A8B0B4] dark:border-white border-opacity-60 mb-6 relative">
+            <div class="flex flex-col justify-center items-center w-full max-w-[468px] h-[131px] rounded-[30px] border-[1px] border-[#A8B0B4] dark:border-white border-opacity-60 mb-6 relative">
                 <p class="text-xl font-medium text-grey-black dark:text-white mb-4">Connect in app</p>
                 <a href="#" class="bg-[#0053D0] text-white py-3 px-8 rounded-[34px] h-[44px] text-[16px] leading-[19px] tracking-[0.02em]">Open Simplex app</a>
 
@@ -127,7 +131,7 @@ templateEngineOverride: njk
                 </div>
             </div>
 
-            <div class="flex flex-col justify-center items-center w-full max-w-[368px] h-[131px] rounded-[30px] border-[1px] border-[#A8B0B4] dark:border-white border-opacity-60 relative">
+            <div class="flex flex-col justify-center items-center w-full max-w-[468px] h-[131px] rounded-[30px] border-[1px] border-[#A8B0B4] dark:border-white border-opacity-60 relative">
                 <p class="text-xl font-medium text-grey-black dark:text-white max-w-[230px] text-center">Tap the <span class="text-active-blue">‘connect’</span> button in the app</p>
 
                 <div class="absolute bg-[#0197FF] h-[44px] w-[44px] rounded-full flex items-center justify-center top-0 left-0 translate-x-[-30%] translate-y-[-30%]">
