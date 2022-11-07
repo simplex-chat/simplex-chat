@@ -3,7 +3,11 @@ layout: layouts/main.html
 title: "SimpleX Chat - Invitation"
 templateEngineOverride: njk
 ---
-{% block scripts %}
+{% block meta_tags %}
+<meta property="og:url" content="https://simplex.chat/" />
+{% endblock %}
+
+{% block js_scripts %}
 <script src="/js/qrcode.js"></script>
 <script async defer src="/js/index.js"></script>
 {% endblock %}

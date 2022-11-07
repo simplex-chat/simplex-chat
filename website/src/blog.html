@@ -1,93 +1,78 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>SimpleX blog: the latest news</title>
-        <meta name="description" content="SimpleX Chat - a private and encrypted messenger without any user IDs (not even random ones)! Make a private connection via link / QR code to send messages and make calls." />
-        <meta name="Content-Type" content="text/html;charset=utf-8" />
-        <meta property="og:type" content="website" />
-        <meta property="og:title" content="SimpleX blog: the latest news" />
-        <meta property="og:description" content="SimpleX Chat - a private and encrypted messenger without any user IDs (not even random ones)! Make a private connection via link / QR code to send messages and make calls."/>
-        <meta property="og:url" content="https://simplex.chat/blog" />
-        <meta property="og:image" content="https://simplex.chat/img/share_simplex.png" />
-        <meta name="twitter:card" content="summary" />
-        <link href="/css/tailwind.css" rel="stylesheet"/>
-        {# <link href="/css/blogs.css" rel="stylesheet" /> #}
-        <link href="/css/style.css" rel="stylesheet"/>
-        <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico">
-        <style>
-            #blog-list ul li {
-                list-style: disc;
-            }
-            #blog-list ul {
-                list-style-position: inside;
-                overflow: auto;
-            }
-            #blog-list ul li {
-                -webkit-margin-start: 1rem;
-                color: #000;
-            }
-            .dark #blog-list ul li {
-                color: #fff;
-            }
-            #blog-list ul li::marker {
-                color: black;
-            }
-            .dark #blog-list ul li::marker {
-                color: white;
-            }
-        </style>
-    </head>
-    <body class="bg-white dark:bg-[#0C0B13]">
-        <section class="w-full bg-transparent fixed top-0 z-50">
-            {% include "navbar.html" %}
-        </section>
+---
+layout: layouts/main.html
+title: "SimpleX blog: the latest news"
+description: "SimpleX Chat - a private and encrypted messenger without any user IDs (not even random ones)! Make a private connection via link / QR code to send messages and make calls."
+templateEngineOverride: njk
+active_blog: true
+---
+{% block meta_tags %}
+    <meta property="og:url" content="https://simplex.chat/blog"/>
+{% endblock %}
 
-        <section class="py-10 px-5 mt-[66px]" id="blog-list">
-            <div class="container">
-                <p class="text-[38px] text-center font-bold text-active-blue mb-9">Latest news</p>
+{% block css_links %}
+    <style>
+        #blog-list ul li {
+            list-style: disc;
+        }
+        #blog-list ul {
+            list-style-position: inside;
+            overflow: auto;
+        }
+        #blog-list ul li {
+            -webkit-margin-start: 1rem;
+            color: #000;
+        }
+        .dark #blog-list ul li {
+            color: #fff;
+        }
+        #blog-list ul li::marker {
+            color: black;
+        }
+        .dark #blog-list ul li::marker {
+            color: white;
+        }
+    </style>
+{% endblock %}
 
-                {% for blog in collections.blogs %}
-                    <article class="w-full flex flex-col items-center md:flex-row rounded-[4px] overflow-hidden shadow-[0px_20px_30px_rgba(0,0,0,0.12)] mb-8">
-                        <div class="min-h-[200px] h-[inherit] p-4 self-stretch md:w-[168px] bg-[#D9E7ED] dark:bg-[#17203D] flex items-center justify-center flex-[1] relative">
-                            <div class="min-h-[inherit] h-full w-full flex items-center justify-center relative">
-                                {% if blog.data.image %}
-                                    {% if blog.data.imageBottom %}
-                                        <img width=240 class="h-auto" src="{{ blog.data.image }}" alt="" srcset=""/>
-                                    {% else %}
-                                        <img width=240 class="h-auto" src="{{ blog.data.image }}" alt="" srcset=""/>
-                                    {% endif %}
-                                {% else %}
-                                    <img class="h-[44px] dark:hidden" src="/img/new/logo-symbol-light.svg" alt="" srcset=""/>
-                                    <img class="h-[44px] hidden dark:inline-block" src="/img/new/logo-symbol-dark.svg" alt="" srcset=""/>
-                                {% endif %}
+<section class="py-10 px-5 mt-[66px]" id="blog-list">
+    <div class="container">
+        <p class="text-[38px] text-center font-bold text-active-blue mb-9">Latest news</p>
+
+        {% for blog in collections.blogs %}
+            <article class="w-full flex flex-col items-center md:flex-row rounded-[4px] overflow-hidden shadow-[0px_20px_30px_rgba(0,0,0,0.12)] mb-8">
+                <div class="min-h-[200px] h-[inherit] p-4 self-stretch md:w-[168px] bg-[#D9E7ED] dark:bg-[#17203D] flex items-center justify-center flex-[1] relative">
+                    <div class="min-h-[inherit] h-full w-full flex items-center justify-center relative">
+                        {% if blog.data.image %}
+                            {% if blog.data.imageBottom %}
+                                <img width=240 class="h-auto" src="{{ blog.data.image }}" alt="" srcset=""/>
+                            {% else %}
+                                <img width=240 class="h-auto" src="{{ blog.data.image }}" alt="" srcset=""/>
+                            {% endif %}
+                        {% else %}
+                            <img class="h-[44px] dark:hidden" src="/img/new/logo-symbol-light.svg" alt="" srcset=""/>
+                            <img class="h-[44px] hidden dark:inline-block" src="/img/new/logo-symbol-dark.svg" alt="" srcset=""/>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="p-6 md:py-8 flex-[2.5] flex flex-col bg-white dark:bg-[#11182F]">
+                    <div>
+                        <h1 class="text-grey-black dark:text-white text-lg md:text-xl font-bold ">
+                            <a href="{{ blog.url }}">{{ blog.data.title | safe }}</a>
+                        </h1>
+                        <p class="text-sm text-[#A8B0B4] font-medium mt-2 mb-4 tracking-[0.03em]">
+                            {{ blog.data.date.toUTCString().split(' ').slice(0, 4).join(' ') }}
+                        </p>
+                        {% if blog.data.previewBody %}
+                            <div class="mb-4 dark:text-white">
+                                {% include blog.data.previewBody %}
                             </div>
-                        </div>
-                        <div class="p-6 md:py-8 flex-[2.5] flex flex-col bg-white dark:bg-[#11182F]">
-                            <div>
-                                <h1 class="text-grey-black dark:text-white text-lg md:text-xl font-bold ">
-                                    <a href="{{ blog.url }}">{{ blog.data.title | safe }}</a>
-                                </h1>
-                                <p class="text-sm text-[#A8B0B4] font-medium mt-2 mb-4 tracking-[0.03em]">
-                                    {{ blog.data.date.toUTCString().split(' ').slice(0, 4).join(' ') }}
-                                </p>
-                                {% if blog.data.previewBody %}
-                                    <div class="mb-4 dark:text-white">
-                                        {% include blog.data.previewBody %}
-                                    </div>
-                                {% elif blog.data.preview %}
-                                    <p class="dark:text-white mb-4">{{ blog.data.preview | safe }}</p>
-                                {% endif %}
-                            </div>
-                            <a class="block text-primary-light dark:text-[#70F0F9] text-base font-medium tracking-[0.03em] mt-auto" href="{{ blog.url }}">Read More</a>
-                        </div>
-                    </article>
-                {% endfor %}
-            </div>
-        </section>
-
-        {% include "footer.html" %}
-    </body>
-</html>
+                        {% elif blog.data.preview %}
+                            <p class="dark:text-white mb-4">{{ blog.data.preview | safe }}</p>
+                        {% endif %}
+                    </div>
+                    <a class="block text-primary-light dark:text-[#70F0F9] text-base font-medium tracking-[0.03em] mt-auto" href="{{ blog.url }}">Read More</a>
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+</section>
