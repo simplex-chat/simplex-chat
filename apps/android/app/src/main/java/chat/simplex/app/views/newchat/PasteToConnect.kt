@@ -35,8 +35,8 @@ fun PasteToConnectView(chatModel: ChatModel, close: () -> Unit) {
     connectViaLink = { connReqUri ->
       try {
         val uri = Uri.parse(connReqUri)
-        withUriAction(uri) { action ->
-          if (connectViaUri(chatModel, action, uri)) {
+        withUriAction(uri) { linkType ->
+          if (connectViaUri(chatModel, linkType, uri)) {
             close()
           }
         }
