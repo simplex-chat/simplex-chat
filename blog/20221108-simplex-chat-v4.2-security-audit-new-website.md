@@ -64,15 +64,17 @@ We will be arranging to review these areas separately.
 
 ## The new website
 
-TODO
+Our [previous website](https://old-website.simplex.chat) was created 2 years ago to present the idea, there was no SimpleX Chat at the time - we only had a prototype implementation of SimpleX Messaging Protocol server.
+
+A lot of people told us that our website didn't explain who SimpleX Chat is for, what problems it solves, and how it is different from the alternatives. So, while we love to be focused on the chat application, we decided to make the new one.
+
+We hope that our [new website](https://simplex.chat) better answers these questions. If you think something should be added/removed/changed - please let us know. Thank you!
 
 ## SimpleX Chat v4.2 released!
 
-TODO
-
 New in this release:
 
-- fixed issues from the security audit!
+- fixed 3 issues from the security audit!
 - group links - group admins can create the links for new members to join
 - auto-accept contact requests + configure whether to accept incognito and welcome message
 - change group member role
@@ -82,3 +84,42 @@ Beta features (enable Developer tools to try them):
 
 - manually switch contact or member to another address / server (it has to be supported by both clients to work)
 - receive files faster (enable it in Privacy & Security settings)
+
+### Group links
+
+It's been requested by many users - to be able to join a groups via link. Because SimpleX Chat groups are fully decentralised, and there is no server-side state, joining via these links requires the participation of the link creator who has to be online.
+
+The way it works under the hood is similar to how contact addresses work:
+
+1. Group admin or owner creates a long term address that is technically the same as a user address, but it is associated with a specific group.
+2. The user that joins the group can identify that this link belongs to some group by an additional piece of data in the link - `{"type": "group", "groupLinkId": "some random string"}`. The ID in this link does not represent a group identity, every time any user creates a new link for the same group, this ID will be different. This ID is used by the joining client to identify the group and automatically accept the invitation when it is received.
+3. When admin receives a connection request, they automatically accept it and send invitation link to join the group.
+4. The joining user compares the ID in the invitation with the ID in the link, and if they match – automatically accepts the invitation.
+
+After that it works as when joining via the invitation - the joining user will be establishing the connection with all existing members to be able to send messages to the group.
+
+The group link can be created via the group page, as shown on the picture.
+
+We have several groups you can join to ask any questions or just to test the app:
+
+- [#SimpleX-Group](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FEW7RUP8bVZdaNw07iCG5ef9Da_AcyxEI%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAmDV_MoWveKlcq2ZQCqOkIlnCPkwgwI_VnhBPa2ZDmAs%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion): a general group with more than a 100 members where you can ask any questions.
+
+- Several groups by countries/languages: [\#SimpleX-DE](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FmIorjTDPG24jdLKXwutS6o9hdQQRZwfQ%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEA9N0BZaECrAw3we3S1Wq4QO7NERBuPt9447immrB50wo%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22S8aISlOgkTMytSox9gAM2Q%3D%3D%22%7D) (German), [\#SimpleX-US](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FlTWmQplLEaoJyHnEL1-B3f2PtDsikcTs%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEA-hMBlsQjNxK2vaVhqW_UyAVtuoYqgYTigK4B9dJ9CGc%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22G0UtRHIn0TmPoo08h_cbTA%3D%3D%22%7D) (US/English), [\#SimpleX-France](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2F11r6XyjwVMj0WDIUMbmNDXO996M_EN_1%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAXDmc2Lrj9WQOjEcWa0DeQHF3HcYOp9b68s8M_BJ7gEk%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22EZCeSYpeIBkaQwCcpcF00w%3D%3D%22%7D), [\#SimpleX-RU](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FZSYM278L5WoZiApx3925EAjSXcsAVNVu%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEA7RJ2wfT8zdfOLyE5OtWLEAPowj-q6F2HB0ExbATw8Gk%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22fsVoklNGptt7n-droqJYUQ%3D%3D%22%7D) (Russian), [#SimpleX-NL](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FmP0LbswSbfxoVkkxiWE2NYnBCgZ9Snvj%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAVwZuSsw4Mf52EaBNdNI3RebsLm0jg65ZIkcmH9E5uy8%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22M9xIULUNZx51Wsa5Kdb0Sg%3D%3D%22%7D) (Netherlands/Dutch), [#SimpleX-IT](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FaZ_wjh6QAYHB-LjyGtp8bllkzoq880u-%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEA-_Wulzc3j16i7t77XJ5wgwxeW8_Ea8GxetMo7K4MgjI%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22QWmXdrFzIeMd2OoEPMFkBQ%3D%3D%22%7D) (Italian).
+
+You can join these groups either by opening these links in the app or by opening in desktop browser and by scanning QR code:
+
+Let me know if you'd like to add some other countries to the list, and join via the apps to share what's going on.
+
+Currently there is a bug that prevents joining two groups via the links created by the same contact - this will be fixed in 4.2.1 in a few days. You can work around this bug by removing the contact of the user who creating the link before joining the next group - e.g., if you want to join more than one group via the above links, you need to delete `admin` contact before joining the second group.
+
+# Auto-accept contact requests
+
+When somebody connects to you via your long-term address you have to accept a connection request (it shows in blue color in the list of chats). The feature that we added in this release allows to configure the app to accept contact requests automatically, and also choose whether this contact should receive your main profile or a random incognito profile, and add an optional auto-reply message.
+
+I can be useful if you publish your address on your webpage and you do not want to screen people who want to connect to you, for example if it is an online store.
+
+# Some small things
+
+Change group member role is a basic feature, but it was only added in this release.
+
+Also you can now mark the whole conversation as unread, for example if you accidentally marked all messages as read and you want to review it later.
