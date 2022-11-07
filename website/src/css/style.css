@@ -152,14 +152,39 @@ html {
   border: 1px solid transparent;
 }
 
+/* Nav and Menu */
+#why-simplex::before,
+#features::before,
+#simplex-privacy::before,
+#simplex-network::before {
+  display: block;
+  content: " ";
+  margin-top: -26px;
+  height: 66px;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.menu-link{
+  font-size: 16px;
+  line-height: 33.42px;
+  color: #0D0E12;
+}
+.dark .menu-link{
+  color: #fff;
+}
+
 @media (min-width:1024px) {
-  .nav-link-text {
+  .nav-link-text,
+  .menu-link {
+    display: inline-block;
     position: relative;
     color: #0D0E12;
   }
-
+  
   .nav-link-text::before,
-  .active .nav-link-text::before {
+  .active .nav-link-text::before,
+  .menu-link::before {
     content: "";
     position: absolute;
     width: 0;
@@ -169,12 +194,20 @@ html {
     /* background-color: initial; */
     transition: width 0.25s ease-out;
   }
+  
+  .menu-link::before {
+    background-color: #0D0E12;
+  }
+  .dark .menu-link::before {
+    background-color: #fff;
+  }
 
   .active .nav-link-text::before {
     width: 100%;
   }
 
-  .nav-link:hover .nav-link-text::before {
+  .nav-link:hover .nav-link-text::before,
+  .menu-link:hover::before {
     width: 100%;
     left: 0;
     right: auto;
@@ -453,7 +486,7 @@ header{
 .hero-phone-background {
   background-image: url("/img/new/bg_gfx.png");
   background-repeat: no-repeat;
-  /* background-position: center; */
+  background-position: center;
   background-size: contain;
   /* width: 644px;
   height: 644px;

@@ -1,8 +1,8 @@
 <div class="first-two-sections pt-[66px] bg-white dark:bg-gradient-radial-mobile dark:lg:bg-gradient-radial">
     <div class="md:flex md:flex-col-reverse md:items-center xl:flex xl:flex-row xl:items-start relative xl:justify-between xl:gap-10 container">
         <div class="">
-            <section class="xl:h-[calc(100vh-66px)] m-auto w-full flex items-center justify-between landing-page-header px-5">
-                <div class="xl:h-[inherit] flex flex-col items-center xl:items-start xl:justify-around w-full landing-page-header-div">
+            <section class="xl:h-[calc(100vh-66px)] xl:max-h-[888px] m-auto w-full flex items-center justify-between landing-page-header px-5">
+                <div class="xl:h-full flex flex-col items-center xl:items-start xl:justify-around w-full landing-page-header-div">
                     {# <img class="static-phone-tablet hidden md:block xl:hidden" src="/img/new/tab-hero.svg" alt="" /> #}
                     <img class="static-phone-mobile md:hidden" src="/img/new/mobile-hero.png" alt="" />
 
@@ -32,8 +32,8 @@
                 </div>
             </section>
 
-            <section class="xl:h-[calc(100vh-66px)] m-auto flex items-center justify-between landing-page-header w-full">
-                <div class="h-[inherit] w-full flex flex-col items-start landing-page-second-header-div justify-around">
+            <section class="xl:h-[calc(100vh-66px)] xl:max-h-[888px]">
+                <div class="h-[calc(100%-81.42px)] w-full flex flex-col items-start justify-around">
                     <div class="hero-video-phone-container w-full xl:hidden">
                         <div class="hidden relative md:flex items-center justify-center">
                             <img id="hero-video-phone-Background hidden md:block" src="/img/new/tab-video.svg" />
@@ -72,10 +72,17 @@
                             You can also connect by sharing an invitation link.
                         </p>
                     </article>
+
+                    <div class="w-full container px-5 hidden md:flex items-center justify-center gap-[50px] py-[24px] xl:absolute bottom-0 z-10">
+                        <a href="#why-simplex" class="menu-link">Why SimpleX</a>
+                        <a href="#features" class="menu-link">Features</a>
+                        <a href="#simplex-privacy" class="menu-link">SimpleX privacy</a>
+                        <a href="#simplex-network" class="menu-link">SimpleX network</a>
+                    </div>
                 </div>
             </section>
         </div>
-        <div class="hero-phone-background hidden md:flex md:static md:max-w-[490px] xl:flex items-center justify-center h-fit xl:min-w-[600px] xl:sticky top-[calc((100vh-600px)/2)] py-8">
+        <div class="hero-phone-background hidden md:flex md:static md:max-w-[490px] md:mb-6 xl:mb-0 xl:flex items-center justify-center h-fit xl:h-[calc(100vh-66px)] xl:max-h-[888px] xl:min-w-[600px] xl:sticky top-[66px]">
             <img id="hero-phone-light" class="only-light"/>
             <img id="hero-phone-dark" class="only-dark"/>
             <div id="hero-phone-preload" style="display: none"></div>
