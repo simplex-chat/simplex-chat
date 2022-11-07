@@ -26,29 +26,44 @@ import chat.simplex.app.views.chat.item.SentColorLight
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
+import java.net.URL
 
 private const val OG_SELECT_QUERY = "meta[property^=og:]"
+private const val ICON_SELECT_QUERY = "link[rel^=icon],link[rel^=apple-touch-icon],link[rel^=shortcut icon]"
+private val IMAGE_SUFFIXES = listOf(".jpg", ".png", ".ico", ".webp", ".gif")
 
 suspend fun getLinkPreview(url: String): LinkPreview? {
   return withContext(Dispatchers.IO) {
     try {
-      val response = Jsoup.connect(url)
-        .ignoreContentType(true)
-        .timeout(10000)
-        .followRedirects(true)
-        .execute()
-      val doc = response.parse()
-      val ogTags = doc.select(OG_SELECT_QUERY)
-      val imageUri = ogTags.firstOrNull { it.attr("property") == "og:image" }?.attr("content")
+      val title: String?
+      val u = kotlin.runCatching { URL(url) }.getOrNull() ?: return@withContext null
+      var imageUri = when {
+        IMAGE_SUFFIXES.any { u.path.lowercase().endsWith(it) } -> {
+          title = u.path.substringAfterLast("/")
+          url
+        }
+        else -> {
+          val response = Jsoup.connect(url)
+            .ignoreContentType(true)
+            .timeout(10000)
+            .followRedirects(true)
+            .execute()
+          val doc = response.parse()
+          val ogTags = doc.select(OG_SELECT_QUERY)
+          title = ogTags.firstOrNull { it.attr("property") == "og:title" }?.attr("content") ?: doc.title()
+          ogTags.firstOrNull { it.attr("property") == "og:image" }?.attr("content")
+            ?: doc.select(ICON_SELECT_QUERY).firstOrNull { it.attr("rel").contains("icon") }?.attr("href")
+        }
+      }
       if (imageUri != null) {
+        imageUri = normalizeImageUri(u, imageUri)
         try {
-          val stream = java.net.URL(imageUri).openStream()
+          val stream = URL(imageUri).openStream()
           val image = resizeImageToStrSize(BitmapFactory.decodeStream(stream), maxDataSize = 14000)
 //          TODO add once supported in iOS
 //          val description = ogTags.firstOrNull {
 //            it.attr("property") == "og:description"
 //          }?.attr("content") ?: ""
-          val title = ogTags.firstOrNull { it.attr("property") == "og:title" }?.attr("content")
           if (title != null) {
             return@withContext LinkPreview(url, title, description = "", image)
           }
@@ -62,8 +77,6 @@ suspend fun getLinkPreview(url: String): LinkPreview? {
     return@withContext null
   }
 }
-
-
 
 @Composable
 fun ComposeLinkView(linkPreview: LinkPreview?, cancelPreview: () -> Unit) {
@@ -127,6 +140,37 @@ fun ChatItemLinkView(linkPreview: LinkPreview) {
   }
 }
 
+private fun normalizeImageUri(u: URL, imageUri: String) = when {
+  !imageUri.lowercase().startsWith("http") -> {
+    "${u.protocol}://${u.host}" +
+        if (imageUri.startsWith("/"))
+          imageUri
+        else
+        // When an icon is used as an image with relative href path like: site=site.com, <link rel="icon" href="icon.png">
+          if (u.path.endsWith("/")) u.path + imageUri
+          else u.path.substringBeforeLast("/") + "/$imageUri"
+  }
+  else -> imageUri
+}
+
+/*fun normalizeImageUriTest() {
+  val expect = mapOf<Pair<URL, String>, String>(
+    URL("https://example.com") to "icon.png" to "https://example.com/icon.png",
+    URL("https://example.com/") to "icon.png" to "https://example.com/icon.png",
+    URL("https://example.com/") to "/icon.png" to "https://example.com/icon.png",
+    URL("https://example.com") to "assets/images/favicon.png" to "https://example.com/assets/images/favicon.png",
+    URL("https://example.com/") to "assets/images/favicon.png" to "https://example.com/assets/images/favicon.png",
+    URL("https://example.com/dir") to "/favicon.png" to "https://example.com/favicon.png",
+    URL("https://example.com/dir/") to "favicon.png" to "https://example.com/dir/favicon.png",
+    URL("https://example.com/dir/") to "/favicon.png" to "https://example.com/favicon.png",
+    URL("https://example.com/dir/page") to "favicon.png" to "https://example.com/dir/favicon.png",
+    URL("https://example.com/abcde.gif") to "https://example.com/abcde.gif" to "https://example.com/abcde.gif",
+    URL("https://example.com/abcde.gif?a=b") to "https://example.com/abcde.gif?a=b" to "https://example.com/abcde.gif?a=b",
+  )
+  expect.forEach {
+    Log.d(TAG, "Image URI ${normalizeImageUri(it.key.first, it.key.second)} == ${normalizeImageUri(it.key.first, it.key.second) == it.value}")
+  }
+}*/
 
 @Preview(showBackground = true)
 @Preview(

@@ -31,13 +31,12 @@ import Simplex.Chat.Markdown (ParsedMarkdown (..), parseMaybeMarkdownList)
 import Simplex.Chat.Options
 import Simplex.Chat.Store
 import Simplex.Chat.Types
-import Simplex.Chat.Util (safeDecodeUtf8)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (yesToMigrations), createAgentStore)
 import Simplex.Messaging.Agent.Store.SQLite (closeSQLiteStore)
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (CorrId (..))
-import Simplex.Messaging.Util (catchAll)
+import Simplex.Messaging.Util (catchAll, safeDecodeUtf8)
 import System.Timeout (timeout)
 
 foreign export ccall "chat_migrate_init" cChatMigrateInit :: CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString

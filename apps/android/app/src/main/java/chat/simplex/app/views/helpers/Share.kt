@@ -3,13 +3,15 @@ package chat.simplex.app.views.helpers
 import android.content.*
 import android.net.Uri
 import android.provider.MediaStore
+import android.webkit.MimeTypeMap
 import android.widget.Toast
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.core.content.ContextCompat
-import chat.simplex.app.R
+import androidx.core.content.FileProvider
+import chat.simplex.app.*
 import chat.simplex.app.model.CIFile
 import java.io.BufferedOutputStream
 import java.io.File
@@ -19,6 +21,22 @@ fun shareText(cxt: Context, text: String) {
     action = Intent.ACTION_SEND
     putExtra(Intent.EXTRA_TEXT, text)
     type = "text/plain"
+  }
+  val shareIntent = Intent.createChooser(sendIntent, null)
+  cxt.startActivity(shareIntent)
+}
+
+fun shareFile(cxt: Context, text: String, filePath: String) {
+  val uri = FileProvider.getUriForFile(SimplexApp.context, "${BuildConfig.APPLICATION_ID}.provider", File(filePath))
+  val ext = filePath.substringAfterLast(".")
+  val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext) ?: return
+  val sendIntent: Intent = Intent().apply {
+    action = Intent.ACTION_SEND
+    /*if (text.isNotEmpty()) {
+      putExtra(Intent.EXTRA_TEXT, text)
+    }*/
+    putExtra(Intent.EXTRA_STREAM, uri)
+    type = mimeType
   }
   val shareIntent = Intent.createChooser(sendIntent, null)
   cxt.startActivity(shareIntent)
@@ -40,8 +58,7 @@ fun rememberSaveFileLauncher(cxt: Context, ciFile: CIFile?): ManagedActivityResu
           val contentResolver = cxt.contentResolver
           contentResolver.openOutputStream(destination)?.let { stream ->
             val outputStream = BufferedOutputStream(stream)
-            val file = File(filePath)
-            outputStream.write(file.readBytes())
+            File(filePath).inputStream().use { it.copyTo(outputStream) }
             outputStream.close()
             Toast.makeText(cxt, generalGetString(R.string.file_saved), Toast.LENGTH_SHORT).show()
           }
@@ -52,30 +69,32 @@ fun rememberSaveFileLauncher(cxt: Context, ciFile: CIFile?): ManagedActivityResu
     }
   )
 
+fun imageMimeType(fileName: String): String {
+  val lowercaseName = fileName.lowercase()
+  return when {
+    lowercaseName.endsWith(".png") -> "image/png"
+    lowercaseName.endsWith(".gif") -> "image/gif"
+    lowercaseName.endsWith(".webp") -> "image/webp"
+    lowercaseName.endsWith(".avif") -> "image/avif"
+    lowercaseName.endsWith(".svg") -> "image/svg+xml"
+    else -> "image/jpeg"
+  }
+}
+
 fun saveImage(cxt: Context, ciFile: CIFile?) {
   val filePath = getLoadedFilePath(cxt, ciFile)
   val fileName = ciFile?.fileName
   if (filePath != null && fileName != null) {
     val values = ContentValues()
-    val lowercaseName = fileName.lowercase()
-    val mimeType = when {
-      lowercaseName.endsWith(".png") -> "image/png"
-      lowercaseName.endsWith(".gif") -> "image/gif"
-      lowercaseName.endsWith(".webp") -> "image/webp"
-      lowercaseName.endsWith(".avif") -> "image/avif"
-      lowercaseName.endsWith(".svg") -> "image/svg+xml"
-      else -> "image/jpeg"
-    }
     values.put(MediaStore.Images.Media.DATE_TAKEN, System.currentTimeMillis())
-    values.put(MediaStore.Images.Media.MIME_TYPE, mimeType)
+    values.put(MediaStore.Images.Media.MIME_TYPE, imageMimeType(fileName))
     values.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
     values.put(MediaStore.MediaColumns.TITLE, fileName)
     val uri = cxt.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
     uri?.let {
       cxt.contentResolver.openOutputStream(uri)?.let { stream ->
         val outputStream = BufferedOutputStream(stream)
-        val file = File(filePath)
-        outputStream.write(file.readBytes())
+        File(filePath).inputStream().use { it.copyTo(outputStream) }
         outputStream.close()
         Toast.makeText(cxt, generalGetString(R.string.image_saved), Toast.LENGTH_SHORT).show()
       }

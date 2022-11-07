@@ -50,14 +50,10 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
       chatModel.incognito,
       chatModel.controller.appPrefs.incognito,
       developerTools = chatModel.controller.appPrefs.developerTools,
+      user.displayName,
       setPerformLA = setPerformLA,
       showModal = { modalView -> { ModalManager.shared.showModal { modalView(chatModel) } } },
-      showSettingsModal = { modalView -> { ModalManager.shared.showCustomModal { close ->
-        ModalView(close = close, modifier = Modifier,
-          background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight) {
-          modalView(chatModel)
-        }
-      } } },
+      showSettingsModal = { modalView -> { ModalManager.shared.showModal(true) { modalView(chatModel) } } },
       showCustomModal = { modalView -> { ModalManager.shared.showCustomModal { close -> modalView(chatModel, close) } } },
       showTerminal = { ModalManager.shared.showCustomModal { close -> TerminalView(chatModel, close) } },
 //      showVideoChatPrototype = { ModalManager.shared.showCustomModal { close -> CallViewDebug(close) } },
@@ -86,6 +82,7 @@ fun SettingsLayout(
   incognito: MutableState<Boolean>,
   incognitoPref: Preference<Boolean>,
   developerTools: Preference<Boolean>,
+  userDisplayName: String,
   setPerformLA: (Boolean) -> Unit,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
@@ -99,21 +96,23 @@ fun SettingsLayout(
       Modifier
         .fillMaxSize()
         .background(if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight)
-        .padding(top = 16.dp)
+        .padding(top = DEFAULT_PADDING)
     ) {
       Text(
         stringResource(R.string.your_settings),
         style = MaterialTheme.typography.h1,
-        modifier = Modifier.padding(start = 16.dp)
+        modifier = Modifier.padding(horizontal = DEFAULT_PADDING),
+        overflow = TextOverflow.Ellipsis,
       )
-      SectionSpacer()
+
+      Spacer(Modifier.height(30.dp))
 
       SectionView(stringResource(R.string.settings_section_title_you)) {
         SectionItemView(showCustomModal { chatModel, close -> UserProfileView(chatModel, close) }, 80.dp, disabled = stopped) {
           ProfilePreview(profile, stopped = stopped)
         }
         SectionDivider()
-        SettingsIncognitoActionItem(incognitoPref, incognito, stopped) { onClickIncognitoInfo(showModal) }
+        SettingsIncognitoActionItem(incognitoPref, incognito, stopped) { showModal { IncognitoView() }() }
         SectionDivider()
         SettingsActionItem(Icons.Outlined.QrCode, stringResource(R.string.your_simplex_contact_address), showModal { CreateLinkView(it, CreateLinkTab.LONG_TERM) }, disabled = stopped)
         SectionDivider()
@@ -122,20 +121,20 @@ fun SettingsLayout(
       SectionSpacer()
 
       SectionView(stringResource(R.string.settings_section_title_settings)) {
-        SettingsActionItem(Icons.Outlined.Bolt, stringResource(R.string.notifications), showSettingsModal { NotificationsSettingsView(it, showCustomModal) }, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.Bolt, stringResource(R.string.notifications), showSettingsModal { NotificationsSettingsView(it) }, disabled = stopped)
         SectionDivider()
         SettingsActionItem(Icons.Outlined.Videocam, stringResource(R.string.settings_audio_video_calls), showSettingsModal { CallSettingsView(it, showModal) }, disabled = stopped)
         SectionDivider()
         SettingsActionItem(Icons.Outlined.Lock, stringResource(R.string.privacy_and_security), showSettingsModal { PrivacySettingsView(it, setPerformLA) }, disabled = stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.LightMode, stringResource(R.string.appearance_settings), showSettingsModal { AppearanceView(showCustomModal) }, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.LightMode, stringResource(R.string.appearance_settings), showSettingsModal { AppearanceView() }, disabled = stopped)
         SectionDivider()
         SettingsActionItem(Icons.Outlined.WifiTethering, stringResource(R.string.network_and_servers), showSettingsModal { NetworkAndServersView(it, showModal, showSettingsModal) }, disabled = stopped)
       }
       SectionSpacer()
 
       SectionView(stringResource(R.string.settings_section_title_help)) {
-        SettingsActionItem(Icons.Outlined.HelpOutline, stringResource(R.string.how_to_use_simplex_chat), showModal { HelpView(it) }, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.HelpOutline, stringResource(R.string.how_to_use_simplex_chat), showModal { HelpView(userDisplayName) }, disabled = stopped)
         SectionDivider()
         SettingsActionItem(Icons.Outlined.Info, stringResource(R.string.about_simplex_chat), showModal { SimpleXInfo(it, onboarding = false) })
         SectionDivider()
@@ -178,10 +177,6 @@ fun SettingsIncognitoActionItem(
     incognitoPref,
     incognito
   )
-}
-
-private val onClickIncognitoInfo: ((@Composable (ChatModel) -> Unit) -> (() -> Unit)) -> Unit = { showModal ->
-  showModal { IncognitoView() }()
 }
 
 @Composable
@@ -311,7 +306,7 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
 @Composable
 fun SettingsActionItem(icon: ImageVector, text: String, click: (() -> Unit)? = null, textColor: Color = Color.Unspecified, iconColor: Color = HighOrLowlight, disabled: Boolean = false) {
   SectionItemView(click, disabled = disabled) {
-    Icon(icon, text, tint = iconColor)
+    Icon(icon, text, tint = if (disabled) HighOrLowlight else iconColor)
     Spacer(Modifier.padding(horizontal = 4.dp))
     Text(text, color = if (disabled) HighOrLowlight else textColor)
   }
@@ -338,12 +333,42 @@ fun SettingsPreferenceItemWithInfo(
   pref: Preference<Boolean>,
   prefState: MutableState<Boolean>? = null
 ) {
-  SectionItemView() {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { onClickInfo() }) {
+  SectionItemView(onClickInfo) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
       Icon(icon, text, tint = if (stopped) HighOrLowlight else iconTint)
       Spacer(Modifier.padding(horizontal = 4.dp))
       SharedPreferenceToggleWithIcon(text, Icons.Outlined.Info, stopped, onClickInfo, pref, prefState)
     }
+  }
+}
+
+@Composable
+fun PreferenceToggleWithIcon(
+  text: String,
+  icon: ImageVector,
+  iconColor: Color = HighOrLowlight,
+  checked: Boolean,
+  onChange: (Boolean) -> Unit = {},
+) {
+  Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+    Icon(
+      icon,
+      null,
+      tint = iconColor
+    )
+    Spacer(Modifier.padding(horizontal = 4.dp))
+    Text(text)
+    Spacer(Modifier.fillMaxWidth().weight(1f))
+    Switch(
+      checked = checked,
+      onCheckedChange = {
+        onChange(it)
+      },
+      colors = SwitchDefaults.colors(
+        checkedThumbColor = MaterialTheme.colors.primary,
+        uncheckedThumbColor = HighOrLowlight
+      )
+    )
   }
 }
 
@@ -361,12 +386,13 @@ fun PreviewSettingsLayout() {
       stopped = false,
       encrypted = false,
       incognito = remember { mutableStateOf(false) },
-      incognitoPref = Preference({ false}, {}),
+      incognitoPref = Preference({ false }, {}),
       developerTools = Preference({ false }, {}),
+      userDisplayName = "Alice",
       setPerformLA = {},
       showModal = { {} },
       showSettingsModal = { {} },
-      showCustomModal = { {} },
+      showCustomModal = { {}},
       showTerminal = {},
 //      showVideoChatPrototype = {}
     )

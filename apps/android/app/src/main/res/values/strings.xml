@@ -32,6 +32,8 @@
   <string name="display_name_connecting">connecting…</string>
   <string name="description_you_shared_one_time_link">you shared one-time link</string>
   <string name="description_you_shared_one_time_link_incognito">you shared one-time link incognito</string>
+  <string name="description_via_group_link">via group link</string>
+  <string name="description_via_group_link_incognito">incognito via group link</string>
   <string name="description_via_contact_address_link">via contact address link</string>
   <string name="description_via_contact_address_link_incognito">incognito via contact address link</string>
   <string name="description_via_one_time_link">via one-time link</string>
@@ -61,12 +63,11 @@
   <string name="connection_error_auth_desc">Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection.</string>
   <string name="error_accepting_contact_request">Error accepting contact request</string>
   <string name="sender_may_have_deleted_the_connection_request">Sender may have deleted the connection request.</string>
-  <string name="cannot_delete_contact">Can\'t delete contact!</string>
-  <string name="contact_cannot_be_deleted_as_they_are_in_groups">Contact <xliff:g id="contactName" example="Jane Doe">%1$s!</xliff:g> cannot be deleted, they are a member of the group(s) <xliff:g id="groups" example="[team, chess club]">%2$s</xliff:g>.</string>
   <string name="error_deleting_contact">Error deleting contact</string>
   <string name="error_deleting_group">Error deleting group</string>
   <string name="error_deleting_contact_request">Error deleting contact request</string>
   <string name="error_deleting_pending_contact_connection">Error deleting pending contact connection</string>
+  <string name="error_changing_address">Error changing address</string>
 
   <!-- background service notice - SimpleXAPI.kt -->
   <string name="icon_descr_instant_notifications">Instant notifications</string>
@@ -170,13 +171,20 @@
   <string name="chat_with_developers">Chat with the developers</string>
   <string name="you_have_no_chats">You have no chats</string>
 
+  <!-- ShareListView.kt -->
+  <string name="share_message">Share message…</string>
+  <string name="share_image">Share image…</string>
+  <string name="share_file">Share file…</string>
+
   <!-- ComposeView.kt, helpers -->
   <string name="attach">Attach</string>
   <string name="icon_descr_context">Context icon</string>
   <string name="icon_descr_cancel_image_preview">Cancel image preview</string>
   <string name="icon_descr_cancel_file_preview">Cancel file preview</string>
+  <string name="images_limit_title">Too many images!</string>
+  <string name="images_limit_desc">Only 10 images can be sent at the same time</string>
 
-  <!-- Images - CIImageView.kt -->
+  <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
   <string name="image_descr">Image</string>
   <string name="icon_descr_waiting_for_image">Waiting for image</string>
   <string name="icon_descr_asked_to_receive">Asked to receive the image</string>
@@ -208,6 +216,8 @@
   <string name="icon_descr_server_status_disconnected">Disconnected</string>
   <string name="icon_descr_server_status_error">Error</string>
   <string name="icon_descr_server_status_pending">Pending</string>
+  <string name="switch_receiving_address_question">Switch receiving address?</string>
+  <string name="switch_receiving_address_desc">This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member).</string>
 
   <!-- Message Actions - SendMsgView.kt -->
   <string name="icon_descr_send_message">Send Message</string>
@@ -266,6 +276,8 @@
   <string name="delete_contact_menu_action">Delete</string>
   <string name="delete_group_menu_action">Delete</string>
   <string name="mark_read">Mark read</string>
+  <string name="mark_unread">Mark unread</string>
+  <string name="set_contact_name">Set contact name</string>
 
   <!-- Actions - ChatListNavLinkView.kt -->
   <string name="mute_chat">Mute</string>
@@ -302,15 +314,19 @@
   <string name="icon_descr_email">Email</string>
   <string name="icon_descr_more_button">More</string>
 
+  <!-- Connection info - ContactConnectionInfoView.kt -->
+  <string name="show_QR_code">Show QR code</string>
+
   <!-- Add Contact - AddContactView.kt -->
   <string name="invalid_QR_code">Invalid QR code</string>
   <string name="this_QR_code_is_not_a_link">This QR code is not a link!</string>
   <string name="invalid_contact_link">Invalid link!</string>
   <string name="this_link_is_not_a_valid_connection_link">This link is not a valid connection link!</string>
   <string name="connection_request_sent">Connection request sent!</string>
+  <string name="you_will_be_connected_when_group_host_device_is_online">You will be connected to group when the group host\'s device is online, please wait or check later!</string>
   <string name="you_will_be_connected_when_your_connection_request_is_accepted">You will be connected when your connection request is accepted, please wait or check later!</string>
   <string name="you_will_be_connected_when_your_contacts_device_is_online">You will be connected when your contact\'s device is online, please wait or check later!</string>
-  <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Your contact can scan it from the app.</string>
+  <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Your contact can scan QR code from the app.</string>
   <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">If you can\'t meet in person, <b>show QR code in the video call</b>, or share the link.</string>
   <string name="your_chat_profile_will_be_sent_to_your_contact">Your chat profile will be sent\nto your contact</string>
   <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">If you cannot meet in person, you can <b>scan QR code in the video call</b>, or your contact can share an invitation link.</string>
@@ -383,11 +399,15 @@
   <string name="create_address">Create address</string>
   <string name="delete_address__question">Delete address?</string>
   <string name="all_your_contacts_will_remain_connected">All your contacts will remain connected.</string>
-  <string name="you_can_share_your_address_anybody_will_be_able_to_connect">You can share your address as a link or as a QR code - anybody will be able to connect to you.</string>
-  <string name="if_you_later_delete_address_you_wont_lose_contacts">If you later delete it - you won\'t lose your contacts made via the address.</string>
-  <string name="if_you_delete_address_you_wont_lose_contacts">If you delete it - you won\'t lose your contacts made via this address.</string>
+  <string name="you_can_share_your_address_anybody_will_be_able_to_connect">You can share your address as a link or as a QR code - anybody will be able to connect to you. You won\'t lose your contacts if you later delete it.</string>
   <string name="share_link">Share link</string>
   <string name="delete_address">Delete address</string>
+
+  <!-- AcceptRequestsView.kt -->
+  <string name="contact_requests">Contact requests</string>
+  <string name="accept_requests">Accept requests</string>
+  <string name="accept_automatically">Automatically</string>
+  <string name="section_title_welcome_message">WELCOME MESSAGE</string>
 
   <!-- User profile details - UserProfileView.kt -->
   <string name="display_name__field">Display name:</string>
@@ -533,6 +553,7 @@
   <string name="privacy_and_security">Privacy &amp; security</string>
   <string name="your_privacy">Your privacy</string>
   <string name="auto_accept_images">Auto-accept images</string>
+  <string name="transfer_images_faster">Transfer images faster (BETA)</string>
   <string name="send_link_previews">Send link previews</string>
 
   <!-- Settings sections -->
@@ -584,12 +605,22 @@
   <string name="restart_the_app_to_create_a_new_chat_profile">Restart the app to create a new chat profile.</string>
   <string name="you_must_use_the_most_recent_version_of_database">You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts.</string>
   <string name="stop_chat_to_enable_database_actions">Stop chat to enable database actions.</string>
-  <string name="files_section">FILES</string>
+  <string name="data_section">DATA</string>
   <string name="delete_files_and_media">Delete files \&amp; media</string>
   <string name="delete_files_and_media_question">Delete files and media?</string>
   <string name="delete_files_and_media_desc">This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain.</string>
   <string name="no_received_app_files">No received or sent files</string>
   <string name="total_files_count_and_size">%d file(s) with total size of %s</string>
+  <string name="chat_item_ttl_none">never</string>
+  <string name="chat_item_ttl_day">1 day</string>
+  <string name="chat_item_ttl_week">1 week</string>
+  <string name="chat_item_ttl_month">1 month</string>
+  <string name="chat_item_ttl_seconds">%s second(s)</string>
+  <string name="delete_messages_after">Delete messages after</string>
+  <string name="enable_automatic_deletion_question">Enable automatic message deletion?</string>
+  <string name="enable_automatic_deletion_message">This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes.</string>
+  <string name="delete_messages">Delete messages</string>
+  <string name="error_changing_message_deletion">Error changing setting</string>
 
   <!-- DatabaseEncryptionView.kt -->
   <string name="save_passphrase_in_keychain">Save passphrase in Keystore</string>
@@ -689,13 +720,26 @@
   <string name="rcv_group_event_member_added">invited <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
   <string name="rcv_group_event_member_connected">connected</string>
   <string name="rcv_group_event_member_left">left</string>
+  <string name="rcv_group_event_changed_member_role">changed role of %s to %s</string>
+  <string name="rcv_group_event_changed_your_role">changed your role to %s</string>
   <string name="rcv_group_event_member_deleted">removed <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
   <string name="rcv_group_event_user_deleted">removed you</string>
   <string name="rcv_group_event_group_deleted">deleted group</string>
   <string name="rcv_group_event_updated_group_profile">updated group profile</string>
+  <string name="rcv_group_event_invited_via_your_group_link">invited via your group link</string>
+  <string name="snd_group_event_changed_member_role">you changed role of %s to %s</string>
+  <string name="snd_group_event_changed_role_for_yourself">you changed role for yourself to %s</string>
   <string name="snd_group_event_member_deleted">you removed <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
   <string name="snd_group_event_user_left">you left</string>
   <string name="snd_group_event_group_profile_updated">group profile updated</string>
+
+  <!-- Conn event chat items -->
+  <string name="rcv_conn_event_switch_queue_phase_completed">changed address for you</string>
+  <string name="rcv_conn_event_switch_queue_phase_changing">changing address…</string>
+  <string name="snd_conn_event_switch_queue_phase_completed_for_member">you changed address for %s</string>
+  <string name="snd_conn_event_switch_queue_phase_changing_for_member">changing address for %s…</string>
+  <string name="snd_conn_event_switch_queue_phase_completed">you changed address</string>
+  <string name="snd_conn_event_switch_queue_phase_changing">changing address…</string>
 
   <!-- GroupMemberRole -->
   <string name="group_member_role_member">member</string>
@@ -739,6 +783,14 @@
   <string name="delete_group_for_self_cannot_undo_warning">Group will be deleted for you - this cannot be undone!</string>
   <string name="button_leave_group">Leave group</string>
   <string name="button_edit_group_profile">Edit group profile</string>
+  <string name="group_link">Group link</string>
+  <string name="button_create_group_link">Create link</string>
+  <string name="delete_link_question">Delete link?</string>
+  <string name="delete_link">Delete link</string>
+  <string name="you_can_share_group_link_anybody_will_be_able_to_connect">You can share a link or a QR code - anybody will be able to join the group. You won\'t lose members of the group if you later delete it.</string>
+  <string name="all_group_members_will_remain_connected">All group members will remain connected.</string>
+  <string name="error_creating_link_for_group">Error creating group link</string>
+  <string name="error_deleting_link_for_group">Error deleting group link</string>
 
   <!-- For Console chat info section -->
   <string name="section_title_for_console">FOR CONSOLE</string>
@@ -751,6 +803,15 @@
   <string name="member_will_be_removed_from_group_cannot_be_undone">Member will be removed from group - this cannot be undone!</string>
   <string name="remove_member_confirmation">Remove</string>
   <string name="member_info_section_title_member">MEMBER</string>
+  <string name="role_in_group">Role</string>
+  <string name="change_role">Change role</string>
+  <string name="change_verb">Change</string>
+  <string name="switch_verb">Switch</string>
+  <string name="change_member_role_question">Change group role?</string>
+  <string name="member_role_will_be_changed_with_notification">The role will be changed to \"%s\". Everyone in the group will be notified.</string>
+  <string name="member_role_will_be_changed_with_invitation">The role will be changed to \"%s\". The member will receive a new invitation.</string>
+  <string name="error_removing_member">Error removing member</string>
+  <string name="error_changing_role">Error changing role</string>
   <string name="info_row_group">Group</string>
   <string name="info_row_connection">Connection</string>
   <string name="conn_level_desc_direct">direct</string>
@@ -761,6 +822,7 @@
   <string name="receiving_via">Receiving via</string>
   <string name="sending_via">Sending via</string>
   <string name="network_status">Network status</string>
+  <string name="switch_receiving_address">Switch receiving address (BETA)</string>
 
   <!-- AddGroupView.kt -->
   <string name="create_secret_group_title">Create secret group</string>

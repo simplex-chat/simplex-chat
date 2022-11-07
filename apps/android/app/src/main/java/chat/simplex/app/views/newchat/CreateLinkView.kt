@@ -5,12 +5,15 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
+import chat.simplex.app.ui.theme.DEFAULT_PADDING
 import chat.simplex.app.ui.theme.HighOrLowlight
+import chat.simplex.app.views.helpers.ModalManager
 import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.usersettings.UserAddressView
 
@@ -21,29 +24,42 @@ enum class CreateLinkTab {
 @Composable
 fun CreateLinkView(m: ChatModel, initialSelection: CreateLinkTab) {
   val selection = remember { mutableStateOf(initialSelection) }
-  val connReqInvitation = remember { mutableStateOf("") }
-  val creatingConnReq = remember { mutableStateOf(false) }
+  val connReqInvitation = rememberSaveable { m.connReqInv }
+  val creatingConnReq = rememberSaveable { mutableStateOf(false) }
   LaunchedEffect(selection.value) {
-    if (selection.value == CreateLinkTab.ONE_TIME && connReqInvitation.value.isEmpty() && !creatingConnReq.value) {
+    if (selection.value == CreateLinkTab.ONE_TIME && connReqInvitation.value.isNullOrEmpty() && !creatingConnReq.value) {
       createInvitation(m, creatingConnReq, connReqInvitation)
+    }
+  }
+  /** When [AddContactView] is open, we don't need to drop [chatModel.connReqInv].
+   * Otherwise, it will be called here AFTER [AddContactView] is launched and will clear the value too soon.
+   * It will be dropped automatically when connection established or when user goes away from this screen.
+   **/
+  DisposableEffect(Unit) {
+    onDispose {
+      if (!ModalManager.shared.hasModalsOpen()) {
+        m.connReqInv.value = null
+      }
     }
   }
   val tabTitles = CreateLinkTab.values().map {
     when {
-      it == CreateLinkTab.ONE_TIME && connReqInvitation.value.isEmpty() -> stringResource(R.string.create_one_time_link)
+      it == CreateLinkTab.ONE_TIME && connReqInvitation.value.isNullOrEmpty() -> stringResource(R.string.create_one_time_link)
       it == CreateLinkTab.ONE_TIME -> stringResource(R.string.one_time_link)
       it == CreateLinkTab.LONG_TERM -> stringResource(R.string.your_contact_address)
       else -> ""
     }
   }
   Column(
-    Modifier.fillMaxHeight(),
+    Modifier
+      .fillMaxHeight()
+      .padding(horizontal = DEFAULT_PADDING),
     verticalArrangement = Arrangement.SpaceBetween
   ) {
     Column(Modifier.weight(1f)) {
       when (selection.value) {
         CreateLinkTab.ONE_TIME -> {
-          AddContactView(m, connReqInvitation.value)
+          AddContactView(connReqInvitation.value ?: "", m.incognito.value)
         }
         CreateLinkTab.LONG_TERM -> {
           UserAddressView(m)
@@ -76,7 +92,7 @@ fun CreateLinkView(m: ChatModel, initialSelection: CreateLinkTab) {
   }
 }
 
-private fun createInvitation(m: ChatModel, creatingConnReq: MutableState<Boolean>, connReqInvitation: MutableState<String>) {
+private fun createInvitation(m: ChatModel, creatingConnReq: MutableState<Boolean>, connReqInvitation: MutableState<String?>) {
   creatingConnReq.value = true
   withApi {
     val connReq = m.controller.apiAddContact()

@@ -1,5 +1,7 @@
 package chat.simplex.app.views.helpers
 
+import android.R.attr.factor
+import android.R.color
 import android.content.Context
 import android.content.res.Resources
 import android.graphics.*
@@ -306,9 +308,10 @@ fun getFileSize(context: Context, uri: Uri): Long? {
 
 fun saveImage(context: Context, image: Bitmap): String? {
   return try {
-    val dataResized = resizeImageToDataSize(image, maxDataSize = MAX_IMAGE_SIZE)
+    val ext = if (image.hasAlpha()) "png" else "jpg"
+    val dataResized = resizeImageToDataSize(image, ext == "png", maxDataSize = MAX_IMAGE_SIZE)
     val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-    val fileToSave = uniqueCombine(context, "IMG_${timestamp}.jpg")
+    val fileToSave = uniqueCombine(context, "IMG_${timestamp}.$ext")
     val file = File(getAppFilePath(context, fileToSave))
     val output = FileOutputStream(file)
     dataResized.writeTo(output)
@@ -428,6 +431,9 @@ fun directoryFileCountAndSize(dir: String): Pair<Int, Long> { // count, size in 
   }
   return fileCount to bytes
 }
+
+fun Color.darker(factor: Float = 0.1f): Color =
+  Color(max(red * (1 - factor), 0f), max(green * (1 - factor), 0f), max(blue * (1 - factor), 0f), alpha)
 
 fun ByteArray.toBase64String() = Base64.encodeToString(this, Base64.DEFAULT)
 

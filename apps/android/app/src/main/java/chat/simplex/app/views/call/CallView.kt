@@ -5,7 +5,9 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.pm.ActivityInfo
+import android.media.AudioDeviceInfo
 import android.media.AudioManager
+import android.os.Build
 import android.util.Log
 import android.view.ViewGroup
 import android.webkit.*
@@ -32,12 +34,13 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewClientCompat
+import chat.simplex.app.*
 import chat.simplex.app.R
-import chat.simplex.app.TAG
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.ProfileImage
 import chat.simplex.app.views.helpers.withApi
+import chat.simplex.app.views.usersettings.NotificationsMode
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -51,6 +54,23 @@ fun ActiveCallView(chatModel: ChatModel) {
     val call = chatModel.activeCall.value
     if (call != null) withApi { chatModel.callManager.endCall(call) }
   })
+  val ntfModeService = remember { chatModel.controller.appPrefs.notificationsMode.get() == NotificationsMode.SERVICE.name }
+  LaunchedEffect(Unit) {
+    // Start service when call happening since it's not already started.
+    // It's needed to prevent Android from shutting down a microphone after a minute or so when screen is off
+    if (!ntfModeService) SimplexService.start(SimplexApp.context)
+  }
+  DisposableEffect(Unit) {
+    onDispose {
+      // Stop it when call ended
+      if (!ntfModeService) SimplexService.stop(SimplexApp.context)
+      // Clear selected communication device to default value after we changed it in call
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        val am = SimplexApp.context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        am.clearCommunicationDevice()
+      }
+    }
+  }
   val cxt = LocalContext.current
   val scope = rememberCoroutineScope()
   Box(Modifier.fillMaxSize()) {
@@ -165,9 +185,19 @@ private fun setCallSound(cxt: Context, call: Call) {
   if (call.soundSpeaker) {
     am.mode = AudioManager.MODE_NORMAL
     am.isSpeakerphoneOn = true
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      am.availableCommunicationDevices.firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }?.let {
+        am.setCommunicationDevice(it)
+      }
+    }
   } else {
     am.mode = AudioManager.MODE_IN_CALL
     am.isSpeakerphoneOn = false
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      am.availableCommunicationDevices.firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_EARPIECE }?.let {
+        am.setCommunicationDevice(it)
+      }
+    }
   }
 }
 

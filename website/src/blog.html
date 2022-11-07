@@ -4,10 +4,18 @@
         <meta charset="UTF-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>SimpleX blog: the latest news</title>
+        <meta name="description" content="SimpleX Chat - a private and encrypted messenger without any user IDs (not even random ones)! Make a private connection via link / QR code to send messages and make calls." />
+        <meta name="Content-Type" content="text/html;charset=utf-8" />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="SimpleX blog: the latest news" />
+        <meta property="og:description" content="SimpleX Chat - a private and encrypted messenger without any user IDs (not even random ones)! Make a private connection via link / QR code to send messages and make calls."/>
+        <meta property="og:url" content="https://simplex.chat/blog" />
+        <meta property="og:image" content="https://simplex.chat/img/share_simplex.png" />
+        <meta name="twitter:card" content="summary" />
         <link href="/css/tailwind.css" rel="stylesheet"/>
         {# <link href="/css/blogs.css" rel="stylesheet" /> #}
         <link href="/css/style.css" rel="stylesheet"/>
-        <title>Blogs</title>
         <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico">
         <style>
             #blog-list ul li {
@@ -47,9 +55,9 @@
                             <div class="min-h-[inherit] h-full w-full flex items-center justify-center relative">
                                 {% if blog.data.image %}
                                     {% if blog.data.imageBottom %}
-                                        <img class="absolute max-h-full w-auto" src="{{ blog.data.image }}" alt="" srcset=""/>
+                                        <img width=240 class="h-auto" src="{{ blog.data.image }}" alt="" srcset=""/>
                                     {% else %}
-                                        <img class="absolute max-h-full w-auto" src="{{ blog.data.image }}" alt="" srcset=""/>
+                                        <img width=240 class="h-auto" src="{{ blog.data.image }}" alt="" srcset=""/>
                                     {% endif %}
                                 {% else %}
                                     <img class="h-[44px] dark:hidden" src="/img/new/logo-symbol-light.svg" alt="" srcset=""/>

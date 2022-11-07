@@ -1,33 +1,33 @@
 @font-face {
-  font-family: "Gilroy";
+  font-family: Gilroy;
   src: url("/fonts/GilroyRegular/font.woff2") format("woff2"), url("webFonts/GilroyRegular/font.woff") format("woff");
   font-weight: 400;
   font-style: normal;
 }
 
 @font-face {
-  font-family: "Gilroy";
+  font-family: Gilroy;
   src: url("/fonts/GilroyLight/font.woff2") format("woff2"), url("webFonts/GilroyLight/font.woff") format("woff");
   font-weight: 300;
   font-style: normal;
 }
 
 @font-face {
-  font-family: "Gilroy";
+  font-family: Gilroy;
   src: url("/fonts/GilroyMedium/font.woff2") format("woff2"), url("webFonts/GilroyMedium/font.woff") format("woff");
   font-weight: 500;
   font-style: normal;
 }
 
 @font-face {
-  font-family: "Gilroy";
+  font-family: Gilroy;
   src: url("/fonts/GilroyBold/font.woff2") format("woff2"), url("webFonts/GilroyBold/font.woff") format("woff");
   font-weight: 700;
   font-style: normal;
 }
 
 @font-face {
-  font-family: "Gilroy";
+  font-family: Gilroy;
   src: url("/fonts/GilroyRegularItalic/font.woff2") format("woff2"), url("webFonts/GilroyRegularItalic/font.woff") format("woff");
   font-weight: 400;
   font-style: italic;
@@ -35,7 +35,7 @@
 
 html {
   scroll-behavior: smooth;
-  font-family: 'Gilroy', sans-serif;
+  font-family: Gilroy, Helvetica, sans-serif;;
   letter-spacing: 0.003em;
 }
 
@@ -149,7 +149,7 @@ html {
   background:
     linear-gradient(#0C0B13, #0C0B13) padding-box,
     linear-gradient(to bottom, transparent, #01F1FF 58%) border-box;
-  border: 1px solid transparent; 
+  border: 1px solid transparent;
 }
 
 @media (min-width:1024px) {
@@ -322,7 +322,7 @@ header nav {
   cursor: pointer;
 }
 
-.card, 
+.card,
 .card > div:nth-child(2),
 .card > div:nth-child(1) {
   transition: all .5s ease;
@@ -438,15 +438,20 @@ header{
 .hero-phone-background {
   background-image: url("/img/new/bg_gfx.png");
   background-repeat: no-repeat;
-  background-position: center;
+  /* background-position: center; */
   background-size: contain;
+  width: 644px;
+  height: 644px;
+  margin-bottom: 5rem;
+
 
   /* position: fixed; */
 
-  justify-content: center;
+  /* justify-content: center;
   align-items: center;
   align-content: center;
   justify-items: center;
+  */
 }
 #hero-phone-light, #hero-phone-dark {
   position: relative;
@@ -454,14 +459,22 @@ header{
   animation-duration: 2s;
   animation-fill-mode: forwards;
 }
+
 #hero-phone-video {
   position: absolute;
-  width: 218px;
-  height: 475px;
   border-radius: 12px;
   animation-name: none;
   animation-duration: 2s;
   animation-fill-mode: forwards;
+
+  width: 256px;
+  height: 595px;
+  margin-left: 0.3rem;
+  margin-bottom: 2.8rem;
+}
+
+.description {
+    width: 31rem;
 }
 
 @keyframes small {

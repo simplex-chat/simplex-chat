@@ -147,13 +147,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
       .verticalScroll(rememberScrollState()),
     horizontalAlignment = Alignment.Start,
   ) {
-    Text(
-      stringResource(R.string.network_settings_title),
-      Modifier.padding(start = 16.dp, bottom = 24.dp),
-      style = MaterialTheme.typography.h1
-    )
-    SectionSpacer()
-
+    AppBarTitle(stringResource(R.string.network_settings_title))
     SectionView {
       SectionItemView {
         ResetToDefaultsButton(reset, disabled = resetDisabled)

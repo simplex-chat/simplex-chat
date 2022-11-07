@@ -2,6 +2,7 @@ package chat.simplex.app.views
 
 import android.content.Context
 import android.content.res.Configuration
+import android.os.SystemClock
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -31,18 +32,28 @@ import chat.simplex.app.views.helpers.*
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
 
+private val lastSuccessfulAuth: MutableState<Long?> = mutableStateOf(null)
+
 @Composable
 fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
   val composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = false)) }
-  BackHandler(onBack = close)
-  val authorized = remember { mutableStateOf(!chatModel.controller.appPrefs.performLA.get()) }
+  val lastSuccessfulAuth = remember { lastSuccessfulAuth }
+  BackHandler(onBack = {
+    lastSuccessfulAuth.value = null
+    close()
+  })
+  val authorized = remember { !chatModel.controller.appPrefs.performLA.get() }
   val context = LocalContext.current
-  LaunchedEffect(authorized.value) {
-    if (!authorized.value) {
-      runAuth(authorized = authorized, context)
+  LaunchedEffect(lastSuccessfulAuth.value) {
+    if (!authorized && !authorizedPreviously(lastSuccessfulAuth)) {
+      runAuth(lastSuccessfulAuth, context)
     }
   }
-  if (authorized.value) {
+  if (authorized || authorizedPreviously(lastSuccessfulAuth)) {
+    LaunchedEffect(Unit) {
+      // Update auth each time user visits this screen in authenticated state just to prolong authorized time
+      lastSuccessfulAuth.value = SystemClock.elapsedRealtime()
+    }
     TerminalLayout(
       chatModel.terminalItems,
       composeState,
@@ -61,7 +72,7 @@ fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
             stringResource(R.string.auth_unlock),
             icon = Icons.Outlined.Lock,
             click = {
-              runAuth(authorized = authorized, context)
+              runAuth(lastSuccessfulAuth, context)
             }
           )
         }
@@ -70,15 +81,18 @@ fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
   }
 }
 
-private fun runAuth(authorized: MutableState<Boolean>, context: Context) {
+private fun authorizedPreviously(lastSuccessfulAuth: State<Long?>): Boolean =
+  lastSuccessfulAuth.value?.let { SystemClock.elapsedRealtime() - it < 30_000 } ?: false
+
+private fun runAuth(lastSuccessfulAuth: MutableState<Long?>, context: Context) {
   authenticate(
     generalGetString(R.string.auth_open_chat_console),
     generalGetString(R.string.auth_log_in_using_credential),
     context as FragmentActivity,
     completed = { laResult ->
-      when (laResult) {
-        LAResult.Success, LAResult.Unavailable -> authorized.value = true
-        is LAResult.Error, LAResult.Failed -> authorized.value = false
+      lastSuccessfulAuth.value = when (laResult) {
+        LAResult.Success, LAResult.Unavailable -> SystemClock.elapsedRealtime()
+        is LAResult.Error, LAResult.Failed -> null
       }
     }
   )
@@ -139,9 +153,14 @@ fun TerminalLayout(
   }
 }
 
+private var lazyListState = 0 to 0
+
 @Composable
 fun TerminalLog(terminalItems: List<TerminalItem>) {
-  val listState = rememberLazyListState()
+  val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
+  DisposableEffect(Unit) {
+    onDispose { lazyListState = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
+  }
   val reversedTerminalItems by remember { derivedStateOf { terminalItems.reversed() } }
   LazyColumn(state = listState, reverseLayout = true) {
     items(reversedTerminalItems) { item ->
@@ -150,14 +169,14 @@ fun TerminalLog(terminalItems: List<TerminalItem>) {
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         modifier = Modifier
-          .padding(horizontal = 8.dp, vertical = 4.dp)
+          .fillMaxWidth()
           .clickable {
             ModalManager.shared.showModal {
               SelectionContainer(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 Text(item.details)
               }
             }
-          }
+          }.padding(horizontal = 8.dp, vertical = 4.dp)
       )
     }
   }

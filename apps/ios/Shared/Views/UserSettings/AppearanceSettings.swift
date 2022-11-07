@@ -38,6 +38,7 @@ struct AppearanceSettings: View {
                             Text(interfaceStyleNames[interfaceStyles.firstIndex(of: style) ?? 0])
                         }
                     }
+                    .frame(height: 36)
                     ColorPicker("Accent color", selection: $uiTintColor, supportsOpacity: false)
                 } header: {
                     Text("Colors")

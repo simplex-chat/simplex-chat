@@ -10,14 +10,14 @@
                         <p class="primary-header text-center xl:text-left font-bold text-[38px] md:text-[55px] leading-[46px] md:leading-[63px] mb-2 xl:mb-8">Privacy redefined</p>
                         <p class="secondary-header text-center xl:text-left font-bold text-[28px] md:text-[38px] leading-[36px] md:leading-[43px] mb-2 xl:mb-8 tracking-[0.01em]">The first messenger<br>without user IDs</p>
                         <p class="text-black dark:text-white text-center xl:text-justify text-[16px] leading-[24px] mb-[20px] header-description">
-                            SimpleX network has no user indentifiers, <strong>not ever random numbers</strong>,
-                            unlike other messaging apps, including Signal, Matrix, Session, Briar, Jami, Cwtch, etc.
+                            Other apps have user IDs: Signal, Matrix, Session, Briar, Jami, Cwtch, etc.<br>
+                            SimpleX does not, <strong>not even random numbers</strong>.<br>
+                            This radically improves your privacy.
                         </p>
-                        <a href="javascript:void(0)" data-show-overlay="{{ hero_overlays.sections[0].overlayContent.overlayId }}" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-center xl:text-left text-[14px] xl:text-[16px] leading-[34px] underline-offset-2">How does it work?</a>
-                        {{ overlay(hero_overlays.sections[0]) }}
-
-                        <a href="javascript:void(0)" data-show-overlay="{{ hero_overlays.sections[1].overlayContent.overlayId }}" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-center xl:text-left text-[14px] xl:text-[16px] leading-[34px] underline-offset-2">How user IDs reduce privacy and anonymity?</a>
+                        <a href="javascript:void(0)" data-show-overlay="{{ hero_overlays.sections[1].overlayContent.overlayId }}" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-center xl:text-left text-[14px] xl:text-[16px] leading-[34px] underline-offset-2">Why user IDs are bad for privacy?</a>
                         {{ overlay(hero_overlays.sections[1]) }}
+                        <a href="javascript:void(0)" data-show-overlay="{{ hero_overlays.sections[0].overlayContent.overlayId }}" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-center xl:text-left text-[14px] xl:text-[16px] leading-[34px] underline-offset-2">How does SimpleX work?</a>
+                        {{ overlay(hero_overlays.sections[0]) }}
                     </article>
                     <article class="w-full xl:max-w-[600px]">
                         <p class="text-black dark:text-white hidden md:block text-center xl:text-left text-[16px] leading-[26px] mb-[11px] md:mt-6">Get SimpleX</p>
@@ -49,7 +49,7 @@
                                 <p class="text-center text-[16px] leading-[24px] tracking-[0.04em] text-white">PLAY</p>
                             </div>
                             {# <video class="w-full absolute" controls>
-                                <source src="/video/video3.mp4" type="video/mp4">
+                                <source src="/video/connect.mp4" type="video/mp4">
                             </video> #}
                         </div>
                         
@@ -58,7 +58,7 @@
         
                     <article class="w-full xl:max-w-[600px] landing-page-header-article px-5">
                         <p class="text-active-blue text-center xl:text-left font-bold text-[28px] md:text-[35px] leading-[36px] md:leading-[43px] mb-[28px]">
-                            Make a private and encrypted connection using a QR code
+                            Make a private connection
                         </p>
                         <p class="text-center text-black dark:text-white xl:text-justify leading-[24px] text-[16px] mb-10 xl:mb-[25px] header-description">
                             The video shows how you connect to your friend via their 1-time QR-code, in person or via a video link.
@@ -73,7 +73,7 @@
             <img id="hero-phone-dark" class="only-dark"/>
             <div id="hero-phone-preload" style="display: none"></div>
             <video id="hero-phone-video" class="w-full hidden" controls>
-                <source src="/video/video3.mp4" type="video/mp4">
+                <source src="/video/connect.mp4" type="video/mp4">
             </video>
         </div>
     </div>

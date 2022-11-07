@@ -4,16 +4,16 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.AddLink
-import androidx.compose.material.icons.outlined.Link
-import androidx.compose.runtime.Composable
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import chat.simplex.app.model.PendingContactConnection
-import chat.simplex.app.model.getTimestampText
+import androidx.compose.ui.unit.sp
+import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.ProfileImage
 
@@ -36,7 +36,8 @@ fun ContactConnectionView(contactConnection: PendingContactConnection) {
         fontWeight = FontWeight.Bold,
         color = HighOrLowlight
       )
-      Text(contactConnection.description, maxLines = 2, color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight)
+      val height = with(LocalDensity.current) { 46.sp.toDp() }
+      Text(contactConnection.description, Modifier.heightIn(min = height), maxLines = 2, color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight)
     }
     val ts = getTimestampText(contactConnection.updatedAt)
     Column(

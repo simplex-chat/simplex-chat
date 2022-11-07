@@ -46,26 +46,16 @@ fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
       addMembers = {
         withApi {
           setGroupMembers(groupInfo, chatModel)
-          ModalManager.shared.showCustomModal { close ->
-            ModalView(
-              close = close, modifier = Modifier,
-              background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
-            ) {
-              AddGroupMembersView(groupInfo, chatModel, close)
-            }
+          ModalManager.shared.showModalCloseable(true) { close ->
+            AddGroupMembersView(groupInfo, chatModel, close)
           }
         }
       },
       showMemberInfo = { member ->
         withApi {
           val stats = chatModel.controller.apiGroupMemberInfo(groupInfo.groupId, member.groupMemberId)
-          ModalManager.shared.showCustomModal { closeCurrent ->
-            ModalView(
-              close = closeCurrent, modifier = Modifier,
-              background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
-            ) {
-              GroupMemberInfoView(groupInfo, member, stats, chatModel, closeCurrent) { closeCurrent(); close() }
-            }
+          ModalManager.shared.showModalCloseable(true) { closeCurrent ->
+            GroupMemberInfoView(groupInfo, member, stats, chatModel, closeCurrent) { closeCurrent(); close() }
           }
         }
       },
@@ -75,6 +65,12 @@ fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
       deleteGroup = { deleteGroupDialog(chat.chatInfo, groupInfo, chatModel, close) },
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) },
       leaveGroup = { leaveGroupDialog(groupInfo, chatModel, close) },
+      manageGroupLink = {
+        withApi {
+          val groupLink = chatModel.controller.apiGetGroupLink(groupInfo.groupId)
+          ModalManager.shared.showModal { GroupLinkView(chatModel, groupInfo, groupLink) }
+        }
+      }
     )
   }
 }
@@ -127,6 +123,7 @@ fun GroupChatInfoLayout(
   deleteGroup: () -> Unit,
   clearChat: () -> Unit,
   leaveGroup: () -> Unit,
+  manageGroupLink: () -> Unit,
 ) {
   Column(
     Modifier
@@ -144,10 +141,12 @@ fun GroupChatInfoLayout(
 
     SectionView(title = String.format(generalGetString(R.string.group_info_section_title_num_members), members.count() + 1)) {
       if (groupInfo.canAddMembers) {
-        SectionItemView {
+        SectionItemView(manageGroupLink) { GroupLinkButton() }
+        SectionDivider()
+        val onAddMembersClick = if (chat.chatInfo.incognito) ::cantInviteIncognitoAlert else addMembers
+        SectionItemView(onAddMembersClick) {
           val tint = if (chat.chatInfo.incognito) HighOrLowlight else MaterialTheme.colors.primary
-          val onClick = if (chat.chatInfo.incognito) ::cantInviteIncognitoAlert else addMembers
-          AddMembersButton(tint, onClick)
+          AddMembersButton(tint)
         }
         SectionDivider()
       }
@@ -160,28 +159,19 @@ fun GroupChatInfoLayout(
       MembersList(members, showMemberInfo)
     }
     SectionSpacer()
-
     SectionView {
       if (groupInfo.canEdit) {
-        SectionItemView {
-          EditGroupProfileButton(editGroupProfile)
-        }
+        SectionItemView(editGroupProfile) { EditGroupProfileButton() }
         SectionDivider()
       }
-      SectionItemView {
-        ClearChatButton(clearChat)
-      }
+      ClearChatButton(clearChat)
       if (groupInfo.canDelete) {
         SectionDivider()
-        SectionItemView {
-          DeleteGroupButton(deleteGroup)
-        }
+        SectionItemView(deleteGroup) { DeleteGroupButton() }
       }
       if (groupInfo.membership.memberCurrent) {
         SectionDivider()
-        SectionItemView {
-          LeaveGroupButton(leaveGroup)
-        }
+        SectionItemView(leaveGroup) { LeaveGroupButton() }
       }
     }
     SectionSpacer()
@@ -222,11 +212,9 @@ fun GroupChatInfoHeader(cInfo: ChatInfo) {
 }
 
 @Composable
-fun AddMembersButton(tint: Color = MaterialTheme.colors.primary, addMembers: () -> Unit) {
+fun AddMembersButton(tint: Color = MaterialTheme.colors.primary) {
   Row(
-    Modifier
-      .fillMaxSize()
-      .clickable { addMembers() },
+    Modifier.fillMaxSize(),
     verticalAlignment = Alignment.CenterVertically
   ) {
     Icon(
@@ -243,8 +231,8 @@ fun AddMembersButton(tint: Color = MaterialTheme.colors.primary, addMembers: () 
 fun MembersList(members: List<GroupMember>, showMemberInfo: (GroupMember) -> Unit) {
   Column {
     members.forEachIndexed { index, member ->
-      SectionItemView(minHeight = 50.dp) {
-        MemberRow(member, showMemberInfo)
+      SectionItemView({ showMemberInfo(member) }, minHeight = 50.dp) {
+        MemberRow(member)
       }
       if (index < members.lastIndex) {
         SectionDivider()
@@ -254,10 +242,9 @@ fun MembersList(members: List<GroupMember>, showMemberInfo: (GroupMember) -> Uni
 }
 
 @Composable
-fun MemberRow(member: GroupMember, showMemberInfo: ((GroupMember) -> Unit)? = null, user: Boolean = false) {
-  val modifier = if (showMemberInfo != null) Modifier.clickable { showMemberInfo(member) } else Modifier
+fun MemberRow(member: GroupMember, user: Boolean = false) {
   Row(
-    modifier.fillMaxSize(),
+    Modifier.fillMaxWidth(),
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
   ) {
@@ -290,11 +277,27 @@ fun MemberRow(member: GroupMember, showMemberInfo: ((GroupMember) -> Unit)? = nu
 }
 
 @Composable
-fun EditGroupProfileButton(editGroupProfile: () -> Unit) {
+fun GroupLinkButton() {
   Row(
     Modifier
-      .fillMaxSize()
-      .clickable { editGroupProfile() },
+      .fillMaxSize(),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Icon(
+      Icons.Outlined.Link,
+      stringResource(R.string.group_link),
+      tint = MaterialTheme.colors.primary
+    )
+    Spacer(Modifier.size(8.dp))
+    Text(stringResource(R.string.group_link), color = MaterialTheme.colors.primary)
+  }
+}
+
+@Composable
+fun EditGroupProfileButton() {
+  Row(
+    Modifier
+      .fillMaxSize(),
     verticalAlignment = Alignment.CenterVertically
   ) {
     Icon(
@@ -308,11 +311,9 @@ fun EditGroupProfileButton(editGroupProfile: () -> Unit) {
 }
 
 @Composable
-fun LeaveGroupButton(leaveGroup: () -> Unit) {
+fun LeaveGroupButton() {
   Row(
-    Modifier
-      .fillMaxSize()
-      .clickable { leaveGroup() },
+    Modifier.fillMaxSize(),
     verticalAlignment = Alignment.CenterVertically
   ) {
     Icon(
@@ -326,11 +327,9 @@ fun LeaveGroupButton(leaveGroup: () -> Unit) {
 }
 
 @Composable
-fun DeleteGroupButton(deleteGroup: () -> Unit) {
+fun DeleteGroupButton() {
   Row(
-    Modifier
-      .fillMaxSize()
-      .clickable { deleteGroup() },
+    Modifier.fillMaxSize(),
     verticalAlignment = Alignment.CenterVertically
   ) {
     Icon(
@@ -356,7 +355,7 @@ fun PreviewGroupChatInfoLayout() {
       groupInfo = GroupInfo.sampleData,
       members = listOf(GroupMember.sampleData, GroupMember.sampleData, GroupMember.sampleData),
       developerTools = false,
-      addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {},
+      addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}, manageGroupLink = {},
     )
   }
 }

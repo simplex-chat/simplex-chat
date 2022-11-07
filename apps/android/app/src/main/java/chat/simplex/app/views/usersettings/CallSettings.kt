@@ -15,8 +15,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
-import chat.simplex.app.views.helpers.ExposedDropDownSettingRow
-import chat.simplex.app.views.helpers.generalGetString
+import chat.simplex.app.views.helpers.*
 
 @Composable
 fun CallSettingsView(m: ChatModel,
@@ -40,12 +39,8 @@ fun CallSettingsLayout(
     horizontalAlignment = Alignment.Start,
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
+    AppBarTitle(stringResource(R.string.your_calls))
     val lockCallState = remember { mutableStateOf(callOnLockScreen.get()) }
-    Text(
-      stringResource(R.string.your_calls),
-      Modifier.padding(start = 16.dp, bottom = 24.dp),
-      style = MaterialTheme.typography.h1
-    )
     SectionView(stringResource(R.string.settings_section_title_settings)) {
       SectionItemView() {
         SharedPreferenceToggle(stringResource(R.string.connect_calls_via_relay), webrtcPolicyRelay)

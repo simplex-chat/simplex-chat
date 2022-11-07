@@ -1,6 +1,7 @@
 package chat.simplex.app.views.usersettings
 
 import SectionCustomFooter
+import SectionDivider
 import SectionItemViewSpaceBetween
 import SectionSpacer
 import SectionView
@@ -23,13 +24,14 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.capitalize
+import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import chat.simplex.app.*
 import chat.simplex.app.R
-import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import com.godaddy.android.colorpicker.*
@@ -40,9 +42,7 @@ enum class AppIcon(val resId: Int) {
 }
 
 @Composable
-fun AppearanceView(
-  showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
-) {
+fun AppearanceView() {
   val appIcon = remember { mutableStateOf(findEnabledIcon()) }
 
   fun setAppIcon(newIcon: AppIcon) {
@@ -65,19 +65,15 @@ fun AppearanceView(
   AppearanceLayout(
     appIcon,
     changeIcon = ::setAppIcon,
-    showThemeSelector = showCustomModal { _, close ->
-      ModalView(
-        close = close, modifier = Modifier,
-        background = if (isInDarkTheme()) colors.background else SettingsBackgroundLight
-      ) { ThemeSelectorView() }
+    showThemeSelector = {
+      ModalManager.shared.showModal(true) {
+        ThemeSelectorView()
+      }
     },
     editPrimaryColor = { primary ->
-      showCustomModal { _, close ->
-        ModalView(
-          close = close, modifier = Modifier,
-          background = if (isInDarkTheme()) colors.background else SettingsBackgroundLight
-        ) { ColorEditor(primary, close) }
-      }()
+      ModalManager.shared.showModalCloseable { close ->
+        ColorEditor(primary, close)
+      }
     },
   )
 }
@@ -92,12 +88,8 @@ fun AppearanceView(
     Modifier.fillMaxWidth(),
     horizontalAlignment = Alignment.Start,
   ) {
-    Text(
-      stringResource(R.string.appearance_settings),
-      Modifier.padding(start = 16.dp, bottom = 24.dp),
-      style = MaterialTheme.typography.h1
-    )
-    SectionView(stringResource(R.string.settings_section_title_icon)) {
+    AppBarTitle(stringResource(R.string.appearance_settings))
+    SectionView(stringResource(R.string.settings_section_title_icon), padding = PaddingValues(horizontal = DEFAULT_PADDING_HALF)) {
       LazyRow {
         items(AppIcon.values().size, { index -> AppIcon.values()[index] }) { index ->
           val item = AppIcon.values()[index]
@@ -123,19 +115,14 @@ fun AppearanceView(
     SectionSpacer()
     val currentTheme by CurrentColors.collectAsState()
     SectionView(stringResource(R.string.settings_section_title_themes)) {
-      Column(
-        Modifier.padding(horizontal = 8.dp)
-      ) {
-        SectionItemViewSpaceBetween(showThemeSelector, padding = PaddingValues()) {
-          Text(generalGetString(R.string.theme))
-        }
-        Spacer(Modifier.padding(horizontal = 4.dp))
-
-        SectionItemViewSpaceBetween({ editPrimaryColor(currentTheme.first.primary) }, padding = PaddingValues()) {
-          val title = generalGetString(R.string.color_primary)
-          Text(title)
-          Icon(Icons.Filled.Circle, title, tint = colors.primary)
-        }
+      SectionItemViewSpaceBetween(showThemeSelector) {
+        Text(generalGetString(R.string.theme))
+      }
+      SectionDivider()
+      SectionItemViewSpaceBetween({ editPrimaryColor(currentTheme.first.primary) }) {
+        val title = generalGetString(R.string.color_primary)
+        Text(title)
+        Icon(Icons.Filled.Circle, title, tint = colors.primary)
       }
     }
     if (currentTheme.first.primary != LightColorPalette.primary) {
@@ -161,6 +148,7 @@ fun ColorEditor(
     Modifier
       .fillMaxWidth()
   ) {
+    AppBarTitle(stringResource(R.string.color_primary))
     var currentColor by remember { mutableStateOf(initialColor) }
     ColorPicker(initialColor) {
       currentColor = it

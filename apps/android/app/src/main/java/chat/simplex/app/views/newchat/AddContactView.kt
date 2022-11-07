@@ -9,7 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.TheaterComedy
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Share
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -24,34 +24,32 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 
 @Composable
-fun AddContactView(chatModel: ChatModel, connReqInvitation: String) {
+fun AddContactView(connReqInvitation: String, connIncognito: Boolean) {
   val cxt = LocalContext.current
   AddContactLayout(
-    chatModelIncognito = chatModel.incognito.value,
     connReq = connReqInvitation,
+    connIncognito = connIncognito,
     share = { shareText(cxt, connReqInvitation) }
   )
 }
 
 @Composable
-fun AddContactLayout(chatModelIncognito: Boolean, connReq: String, share: () -> Unit) {
+fun AddContactLayout(connReq: String, connIncognito: Boolean, share: () -> Unit) {
   BoxWithConstraints {
     val screenHeight = maxHeight
     Column(
-      Modifier.verticalScroll(rememberScrollState()).padding(bottom = 16.dp),
+      Modifier
+        .verticalScroll(rememberScrollState())
+        .padding(bottom = 16.dp),
       verticalArrangement = Arrangement.SpaceBetween,
     ) {
-      Text(
-        stringResource(R.string.add_contact),
-        Modifier.padding(bottom = 16.dp),
-        style = MaterialTheme.typography.h1,
-      )
+      AppBarTitle(stringResource(R.string.add_contact), false)
       Text(
         stringResource(R.string.show_QR_code_for_your_contact_to_scan_from_the_app__multiline),
       )
       Row {
         InfoAboutIncognito(
-          chatModelIncognito,
+          connIncognito,
           true,
           generalGetString(R.string.incognito_random_profile_description),
           generalGetString(R.string.your_profile_will_be_sent)
@@ -77,7 +75,7 @@ fun AddContactLayout(chatModelIncognito: Boolean, connReq: String, share: () -> 
         annotatedStringResource(R.string.if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel),
         lineHeight = 22.sp,
         modifier = Modifier
-          .padding(bottom = if (screenHeight > 600.dp) 8.dp else 0.dp)
+          .padding(top = 16.dp, bottom = if (screenHeight > 600.dp) 16.dp else 0.dp)
       )
       Row(
         Modifier.fillMaxWidth(),
@@ -134,8 +132,8 @@ fun InfoAboutIncognito(chatModelIncognito: Boolean, supportedIncognito: Boolean 
 fun PreviewAddContactView() {
   SimpleXTheme {
     AddContactLayout(
-      chatModelIncognito = false,
       connReq = "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D",
+      connIncognito = false,
       share = {}
     )
   }
