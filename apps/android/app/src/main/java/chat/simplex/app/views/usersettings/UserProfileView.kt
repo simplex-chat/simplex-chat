@@ -12,6 +12,7 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,7 +35,7 @@ import kotlinx.coroutines.launch
 fun UserProfileView(chatModel: ChatModel, close: () -> Unit) {
   val user = chatModel.currentUser.value
   if (user != null) {
-    val editProfile = remember { mutableStateOf(false) }
+    val editProfile = rememberSaveable { mutableStateOf(false) }
     var profile by remember { mutableStateOf(user.profile.toProfile()) }
     UserProfileLayout(
       editProfile = editProfile,
@@ -67,8 +68,8 @@ fun UserProfileLayout(
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val displayName = remember { mutableStateOf(profile.displayName) }
   val fullName = remember { mutableStateOf(profile.fullName) }
-  val chosenImage = remember { mutableStateOf<Bitmap?>(null) }
-  val profileImage = remember { mutableStateOf(profile.image) }
+  val chosenImage = rememberSaveable { mutableStateOf<Bitmap?>(null) }
+  val profileImage = rememberSaveable { mutableStateOf(profile.image) }
   val scope = rememberCoroutineScope()
   val scrollState = rememberScrollState()
   val keyboardState by getKeyboardState()

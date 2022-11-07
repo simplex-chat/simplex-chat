@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.outlined.Reply
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -147,8 +148,8 @@ fun ComposeView(
   // attachments
   val chosenContent = remember { mutableStateOf<List<UploadContent>>(emptyList()) }
   val chosenFile = remember { mutableStateOf<Uri?>(null) }
-  val photoUri = remember { mutableStateOf<Uri?>(null) }
-  val photoTmpFile = remember { mutableStateOf<File?>(null) }
+  val photoUri = rememberSaveable { mutableStateOf<Uri?>(null) }
+  val photoTmpFile = rememberSaveable { mutableStateOf<File?>(null) }
 
   class ComposeTakePicturePreview: ActivityResultContract<Void?, Bitmap?>() {
     @CallSuper

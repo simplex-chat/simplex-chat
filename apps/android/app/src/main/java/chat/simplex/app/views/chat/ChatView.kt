@@ -93,8 +93,6 @@ fun ChatView(chatModel: ChatModel) {
     }
   }
   val view = LocalView.current
-  DisposableEffect(Unit) { onDispose { hideKeyboard(view) } }
-
   if (activeChat.value == null || user == null) {
     chatModel.chatId.value = null
   } else {
@@ -128,8 +126,12 @@ fun ChatView(chatModel: ChatModel) {
       searchText,
       useLinkPreviews = useLinkPreviews,
       chatModelIncognito = chatModel.incognito.value,
-      back = { chatModel.chatId.value = null },
+      back = {
+        hideKeyboard(view)
+        chatModel.chatId.value = null
+      },
       info = {
+        hideKeyboard(view)
         withApi {
           val cInfo = chat.chatInfo
           if (cInfo is ChatInfo.Direct) {
@@ -146,6 +148,7 @@ fun ChatView(chatModel: ChatModel) {
         }
       },
       showMemberInfo = { groupInfo: GroupInfo, member: GroupMember ->
+        hideKeyboard(view)
         withApi {
           val stats = chatModel.controller.apiGroupMemberInfo(groupInfo.groupId, member.groupMemberId)
           ModalManager.shared.showModalCloseable(true) { close ->
@@ -189,6 +192,7 @@ fun ChatView(chatModel: ChatModel) {
         }
       },
       acceptCall = { contact ->
+        hideKeyboard(view)
         val invitation = chatModel.callInvitations.remove(contact.id)
         if (invitation == null) {
           AlertManager.shared.showAlertMsg("Call already ended!")
@@ -197,6 +201,7 @@ fun ChatView(chatModel: ChatModel) {
         }
       },
       addMembers = { groupInfo ->
+        hideKeyboard(view)
         withApi {
           setGroupMembers(groupInfo, chatModel)
           ModalManager.shared.showModalCloseable(true) { close ->

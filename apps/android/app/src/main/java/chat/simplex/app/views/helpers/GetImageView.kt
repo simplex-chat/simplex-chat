@@ -19,8 +19,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Collections
 import androidx.compose.material.icons.outlined.PhotoCamera
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
@@ -30,8 +31,12 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import chat.simplex.app.*
 import chat.simplex.app.R
+import chat.simplex.app.model.json
+import chat.simplex.app.views.chat.ComposeState
 import chat.simplex.app.views.chat.PickFromGallery
 import chat.simplex.app.views.newchat.ActionButton
+import kotlinx.serialization.builtins.*
+import kotlinx.serialization.decodeFromString
 import java.io.ByteArrayOutputStream
 import java.io.File
 import kotlin.math.min
@@ -106,14 +111,9 @@ fun base64ToBitmap(base64ImageString: String): Bitmap {
   }
 }
 
-class CustomTakePicturePreview: ActivityResultContract<Void?, Bitmap?>() {
-  private var uri: Uri? = null
-  private var tmpFile: File? = null
-  lateinit var externalContext: Context
-
+class CustomTakePicturePreview(var uri: Uri?, var tmpFile: File?): ActivityResultContract<Void?, Bitmap?>() {
   @CallSuper
   override fun createIntent(context: Context, input: Void?): Intent {
-    externalContext = context
     tmpFile = File.createTempFile("image", ".bmp", context.filesDir)
     uri = FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.provider", tmpFile!!)
     return Intent(MediaStore.ACTION_IMAGE_CAPTURE)
@@ -127,7 +127,7 @@ class CustomTakePicturePreview: ActivityResultContract<Void?, Bitmap?>() {
 
   override fun parseResult(resultCode: Int, intent: Intent?): Bitmap? {
     return if (resultCode == Activity.RESULT_OK && uri != null) {
-      val source = ImageDecoder.createSource(externalContext.contentResolver, uri!!)
+      val source = ImageDecoder.createSource(SimplexApp.context.contentResolver, uri!!)
       val bitmap = ImageDecoder.decodeBitmap(source)
       tmpFile?.delete()
       bitmap
@@ -136,6 +136,18 @@ class CustomTakePicturePreview: ActivityResultContract<Void?, Bitmap?>() {
       tmpFile?.delete()
       null
     }
+  }
+
+  companion object {
+    fun saver(): Saver<CustomTakePicturePreview, *> = Saver(
+      save = { json.encodeToString(ListSerializer(String.serializer().nullable), listOf(it.uri?.toString(), it.tmpFile?.toString())) },
+      restore = {
+        val data = json.decodeFromString(ListSerializer(String.serializer().nullable), it)
+        val uri = if (data[0] != null) Uri.parse(data[0]) else null
+        val tmpFile = if (data[1] != null) File(data[1]) else null
+        CustomTakePicturePreview(uri, tmpFile)
+      }
+    )
   }
 }
 //class GetGalleryContent: ActivityResultContracts.GetContent() {
@@ -148,8 +160,12 @@ class CustomTakePicturePreview: ActivityResultContract<Void?, Bitmap?>() {
 //fun rememberGalleryLauncher(cb: (Uri?) -> Unit): ManagedActivityResultLauncher<String, Uri?> =
 //  rememberLauncherForActivityResult(contract = GetGalleryContent(), cb)
 @Composable
-fun rememberCameraLauncher(cb: (Bitmap?) -> Unit): ManagedActivityResultLauncher<Void?, Bitmap?> =
-  rememberLauncherForActivityResult(contract = CustomTakePicturePreview(), cb)
+fun rememberCameraLauncher(cb: (Bitmap?) -> Unit): ManagedActivityResultLauncher<Void?, Bitmap?> {
+  val contract = rememberSaveable(stateSaver = CustomTakePicturePreview.saver()) {
+    mutableStateOf(CustomTakePicturePreview(null, null))
+  }
+  return rememberLauncherForActivityResult(contract = contract.value, cb)
+}
 
 @Composable
 fun rememberPermissionLauncher(cb: (Boolean) -> Unit): ManagedActivityResultLauncher<String, Boolean> =
