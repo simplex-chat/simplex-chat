@@ -1,79 +1,12 @@
----
-layout: layouts/main.html
-title: "SimpleX Chat - Contact"
-ogURL: "https://simplex.chat/"
-templateEngineOverride: njk
----
 {% block js_scripts %}
     <script src="/js/qrcode.js"></script>
-    <script async defer src="/js/index.js"></script>
+    <script async defer src="/js/contact.js"></script>
 {% endblock %}
 
-<style>
-    .primary-header-contact {
-        background: linear-gradient(251.16deg, #53c1ff 1.1%, #0053d0 100.82%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        text-shadow: 0px 4px 74px #e9e7e2;
-    }
-    .dark .primary-header-contact{
-        background: linear-gradient(270deg,#70F0F9 100%, #70F0F9 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        text-shadow: none;
-      }
-    .secondary-header-contact {
-        text-shadow: 0px 4px 74px #e9e7e2;
-    }
-    .dark .secondary-header-contact {
-        text-shadow: none;
-    }
-    .content_copy_with_tooltip {
-        background-color: #f8f8f6;
-        border-radius: 50px;
-        padding-bottom: 4px;
-        padding-top: 8px;
-        margin-top: 16px;
-        margin-bottom: 16px;
-    }
-    .content_copy_with_tooltip .tooltip {
-        vertical-align: -6px;
-    }
-    .content_copy_with_tooltip .content {
-        font-size: 15px;
-    }
-    .contact-tab > .contact-tab-content{
-        opacity: 0;
-        max-height: 0;
-        transition: all 0.5s ease;
-        visibility: hidden;
-        transform: translateY(10px);
-        overflow: hidden;
-    }
-    .contact-tab svg{
-        transform: rotate(-180deg);
-        transition: all .5s ease;
-    }
-    .contact-tab.active > .contact-tab-content{
-        opacity: 1;
-        max-height: 300px;
-        visibility: visible;
-        transform: translateY(0px);
-    }
-    .for-tablet .contact-tab.active > .contact-tab-content{
-        min-height: 450px;
-    }
-    .contact-tab.active svg,
-    .contact-tab:hover svg{
-        transform: rotate(0deg);
-    }
-</style>
 <section class="hidden xl:block h-screen pt-[66px] bg-white dark:bg-gradient-radial-mobile dark:lg:bg-gradient-radial">
     <div class="container m-auto h-full flex items-center justify-between px-5">
         <div class="flex flex-col items-start justify-center w-full h-full">
-            <p class="text-[38px] leading-[43px] font-bold max-w-[500px] mb-[30px] primary-header-contact">You have been sent a link to connect on SimpleX Chat</p>
+            <p class="text-[38px] leading-[43px] font-bold max-w-[500px] mb-[30px] primary-header-contact">{{ header }}</p>
             <p class="text-[20px] leading-[28px] text-[#606C71] dark:text-white font-bold max-w-[475px] mb-[80px] secondary-header-contact">Scan the QR code with the SimpleX Chat app on your phone or tablet.</p>
             <p class="text-grey-black dark:text-white text-base">Not downloaded the SimpleX Chat yet?</p>
             <p class="text-grey-black dark:text-white text-base mb-[24px]">Use the links below to download the app.</p>
@@ -87,13 +20,13 @@ templateEngineOverride: njk
             </div>
         </div>
 
-        <div class="h-full pt-[30px] w-full min-w-[600px] max-w-[601px] relative">
+        <div class="h-full pt-[30px] w-[630px] relative">
             <div class="relative h-full w-[inherit] flex items-center justify-center">
                 <div class="absolute mt-[-100px]">
                     <img class="" src="/img/new/contact_page_mobile.png" alt="">
                 </div>
 
-                <div class="z-10 flex flex-col items-center pt-[40px]">
+                <div class="z-10 flex flex-col items-center pt-[40px] ml-[-15px]">
                     <p class="text-base font-medium">Scan QR code from mobile app</p>
                     <canvas id="conn_req_uri_qrcode"></canvas>
                 </div>
@@ -106,19 +39,23 @@ templateEngineOverride: njk
 <section class="block xl:hidden pt-[106px] pb-[90px] bg-white dark:bg-gradient-radial-mobile dark:lg:bg-gradient-radial">
     <div class="container m-auto h-full px-5">
         <div class="flex flex-col items-center">
-            <p class="text-[28px] font-bold text-center max-w-[602px] mb-[40px] primary-header-contact">You have been sent a link to connect on SimpleX Chat!</p>
+            <p class="text-[28px] font-bold text-center max-w-[602px] mb-[40px] primary-header-contact">{{ header }}</p>
             <p class="text-[20px] leading-[28px] text-grey-black dark:text-white font-medium mb-[30px]">To make a connection:</p>
 
-            <div class="flex flex-col justify-center items-center w-full max-w-[368px] h-[131px] rounded-[30px] border-[1px] border-[#A8B0B4] dark:border-white border-opacity-60 mb-6 relative">
+            <div class="flex flex-col justify-center items-center p-4 w-full max-w-[468px] min-h-[131px] rounded-[30px] border-[1px] border-[#A8B0B4] dark:border-white border-opacity-60 mb-6 relative">
                 <p class="text-xl font-medium text-grey-black dark:text-white mb-4">Install SimpleX app</p>
-                <a href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apple_store.svg" /></a>
+                <div class="flex flex-wrap items-center justify-center gap-2">
+                    <a class="apple-store-btn hidden" href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apple_store.svg" /></a>
+                    <a class="google-play-btn hidden" href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank" title="Public iOS preview on TestFlight"><img class="h-[40px] w-auto" src="/img/new/google_play.svg" /></a>
+                    <a class="f-droid-btn hidden" href="https://app.simplex.chat" target="_blank" title="SimpleX F-Droid Repository"><img class="h-[40px] w-auto" src="/img/new/f_droid.svg" /></a>
+                </div>
 
                 <div class="absolute bg-[#0197FF] h-[44px] w-[44px] rounded-full flex items-center justify-center top-0 left-0 translate-x-[-30%] translate-y-[-30%]">
                     <p class="text-base text-white font-bold leading-[36px]">1</p>
                 </div>
             </div>
 
-            <div class="flex flex-col justify-center items-center w-full max-w-[368px] h-[131px] rounded-[30px] border-[1px] border-[#A8B0B4] dark:border-white border-opacity-60 mb-6 relative">
+            <div class="flex flex-col justify-center items-center w-full max-w-[468px] h-[131px] rounded-[30px] border-[1px] border-[#A8B0B4] dark:border-white border-opacity-60 mb-6 relative">
                 <p class="text-xl font-medium text-grey-black dark:text-white mb-4">Connect in app</p>
                 <a href="#" class="bg-[#0053D0] text-white py-3 px-8 rounded-[34px] h-[44px] text-[16px] leading-[19px] tracking-[0.02em]">Open Simplex app</a>
 
@@ -127,7 +64,7 @@ templateEngineOverride: njk
                 </div>
             </div>
 
-            <div class="flex flex-col justify-center items-center w-full max-w-[368px] h-[131px] rounded-[30px] border-[1px] border-[#A8B0B4] dark:border-white border-opacity-60 relative">
+            <div class="flex flex-col justify-center items-center w-full max-w-[468px] h-[131px] rounded-[30px] border-[1px] border-[#A8B0B4] dark:border-white border-opacity-60 relative">
                 <p class="text-xl font-medium text-grey-black dark:text-white max-w-[230px] text-center">Tap the <span class="text-active-blue">‘connect’</span> button in the app</p>
 
                 <div class="absolute bg-[#0197FF] h-[44px] w-[44px] rounded-full flex items-center justify-center top-0 left-0 translate-x-[-30%] translate-y-[-30%]">
@@ -139,13 +76,13 @@ templateEngineOverride: njk
 </section>
 
 
-<section class="hidden md:block bg-secondary-bg-light dark:bg-secondary-bg-dark py-[60px]">
+<section class="hidden md:block bg-secondary-bg-light dark:bg-secondary-bg-dark py-[20px]">
     <div class="container px-5">
         <div class="text-grey-black dark:text-white">
             
             {# For Tablet #}
             <div class="hidden md:block xl:hidden for-tablet">
-                <div class="contact-tab active">
+                <div class="contact-tab">
                     <div class="flex items-center justify-between my-[40px] contact-tab-btn cursor-pointer">
                         <p class="text-xl font-bold">Scan the QR code with the SimpleX Chat app</p>
                         <svg class="fill-grey-black dark:fill-white" width="10" height="5" viewBox="0 0 10 5" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -163,7 +100,7 @@ templateEngineOverride: njk
             
             {# For Desktop #}
             <div class="hidden xl:block">
-                <div class="contact-tab active">
+                <div class="contact-tab">
                     <div class="flex items-center justify-between my-[40px] contact-tab-btn cursor-pointer">
                         <p class="text-xl font-bold">Installing SimpleX chat to terminal</p>
                         <svg class="fill-grey-black dark:fill-white" width="10" height="5" viewBox="0 0 10 5" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -220,11 +157,3 @@ templateEngineOverride: njk
 
 {# join simplex #}
 {% include "sections/join_simplex.html" %}
-
-<script>
-window.addEventListener('click',(e)=>{
-    if(e.target.closest('.contact-tab-btn')){
-        e.target.closest('.contact-tab').classList.toggle('active')
-    }
-})
-</script>

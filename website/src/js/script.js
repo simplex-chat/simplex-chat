@@ -124,6 +124,10 @@ window.addEventListener('click', (e) => {
         document.body.classList.toggle('lock-scroll');
     }
     // -----------------------------------------------
+    // ---------- For Contact & Invitation Page tabs
+    else if(e.target.closest('.contact-tab-btn')){
+        e.target.closest('.contact-tab').classList.toggle('active')
+    }
 })
 
 

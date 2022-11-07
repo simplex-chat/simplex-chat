@@ -561,3 +561,64 @@ p a{
 .dark p a{
   color: #70F0F9;
 }
+
+/* For Contact & Invitation Page */
+.primary-header-contact {
+  background: linear-gradient(251.16deg, #53c1ff 1.1%, #0053d0 100.82%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0px 4px 74px #e9e7e2;
+}
+.dark .primary-header-contact{
+  background: linear-gradient(270deg,#70F0F9 100%, #70F0F9 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
+}
+.secondary-header-contact {
+  text-shadow: 0px 4px 74px #e9e7e2;
+}
+.dark .secondary-header-contact {
+  text-shadow: none;
+}
+.content_copy_with_tooltip {
+  background-color: #f8f8f6;
+  border-radius: 50px;
+  padding-bottom: 4px;
+  padding-top: 8px;
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+.content_copy_with_tooltip .tooltip {
+  vertical-align: -6px;
+}
+.content_copy_with_tooltip .content {
+  font-size: 15px;
+}
+.contact-tab > .contact-tab-content{
+  opacity: 0;
+  max-height: 0;
+  transition: all 0.5s ease;
+  visibility: hidden;
+  transform: translateY(10px);
+  overflow: hidden;
+}
+.contact-tab svg{
+  transform: rotate(-180deg);
+  transition: all .5s ease;
+}
+.contact-tab.active > .contact-tab-content{
+  opacity: 1;
+  max-height: 300px;
+  visibility: visible;
+  transform: translateY(0px);
+}
+.for-tablet .contact-tab.active > .contact-tab-content{
+  min-height: 450px;
+}
+.contact-tab.active svg,
+.contact-tab:hover svg{
+  transform: rotate(0deg);
+}
