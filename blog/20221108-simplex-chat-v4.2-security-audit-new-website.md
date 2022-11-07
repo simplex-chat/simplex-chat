@@ -110,16 +110,70 @@ You can join these groups either by opening these links in the app or by opening
 
 Let me know if you'd like to add some other countries to the list, and join via the apps to share what's going on.
 
-Currently there is a bug that prevents joining two groups via the links created by the same contact - this will be fixed in 4.2.1 in a few days. You can work around this bug by removing the contact of the user who creating the link before joining the next group - e.g., if you want to join more than one group via the above links, you need to delete `admin` contact before joining the second group.
-
-# Auto-accept contact requests
+### Auto-accept contact requests
 
 When somebody connects to you via your long-term address you have to accept a connection request (it shows in blue color in the list of chats). The feature that we added in this release allows to configure the app to accept contact requests automatically, and also choose whether this contact should receive your main profile or a random incognito profile, and add an optional auto-reply message.
 
-I can be useful if you publish your address on your webpage and you do not want to screen people who want to connect to you, for example if it is an online store.
+It is useful if you publish your address on your webpage, do not want to screen people who want to connect to you and want to send a standard welcome message, for example if it is an online store.
 
-# Some small things
+Our @simplex chat account that you connect to when you choose "Connect to developers" in the app has been using this feature for a long time, from this releases it is also available in mobile UIs.
 
-Change group member role is a basic feature, but it was only added in this release.
+### Some small things
 
-Also you can now mark the whole conversation as unread, for example if you accidentally marked all messages as read and you want to review it later.
+1. Change group member role is a very basic feature, but it was only added in this release.
+
+2. You can now mark the whole conversation as unread, for example if you accidentally marked all messages as read and you want to review it later.
+
+3. You now can send stickers and GIFs from Android keyboards, and, finally, the bug with backspace button is resolved as well.
+
+### Change your delivery address (BETA)
+
+You can now manually switch any of your contacts or a connection with a group member to a new server address, as long as they run a new version of the app. To use this feature, enable Developer tools and choose "Change receiving address" on the contact page.
+
+That is a major improvement of metadata privacy of SimpleX protocols, because previously, while we didn't have user identifiers, the pair-wise identifiers of the messaging queues used to deliver messages have been used for as long as you have a contact. With this feature these identifiers become temporary, and in a near future we will be adding automatic rotation of delivery addresses.
+
+It is also useful when you want to migrate message reception to another server, for example, if you used SimpleX Chat default servers and now want to self-host your own. Or, maybe, you need to change the address of your server. Previously it would require creating new contacts and losing conversation histories, while now all you have to do is to change server configuration in the app and when the change of the address is triggered (currently, only manually, and in the near future - automatically), your contacts will be migrated to a new server, without you doing anything - it only requires each party sending 2 messages to negotiate the reconnection, and it would also rotate the encryption keys used for the outer layer of E2E encryption.
+
+### Receive images and small files faster (BETA)
+
+From version 4.2 all files smaller than ~90kb will be sent in the same connection where you have the chat, and files smaller than ~237kb (the limit for image size) can also be optionally received in the same connection – the latter requires enabling "Transfer images faster" in Privacy & security settings (it will be available after you enable Developer tools). There are two reasons why it is not on by default yet: 1) we need to test it is stable, and the early tests already show it is; 2) there is an impact on metadata privacy of having a burst of traffic in the same connection where you are having the main conversation.
+
+This functionality was created for the future voice messages, as they need to be sent without acceptance, so that the recipients will be able to listen to them even when the sender is offline.
+
+## SimpleX platform
+
+Some links to answer the most common questions:
+
+[How can SimpleX deliver messages without user identifiers](./20220511-simplex-chat-v2-images-files.md#the-first-messaging-platform-without-user-identifiers).
+
+[What are the risks to have identifiers assigned to the users](./20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md#why-having-users-identifiers-is-bad-for-the-users).
+
+[Technical details and limitations](./20220723-simplex-chat-v3.1-tor-groups-efficiency.md#privacy-technical-details-and-limitations).
+
+[How SimpleX is different from Session, Matrix, Signal, etc.](https://github.com/simplex-chat/simplex-chat/blob/stable/README.md#frequently-asked-questions).
+
+Please also see the information on our [new website](https://simplex.chat) - it also answers all these questions.
+
+## Help us with donations
+
+Huge thank you to everybody who donated to SimpleX Chat!
+
+We are prioritizing users privacy and security - it would be impossible without your support.
+
+Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, - so anybody can build the future implementations of the clients and the servers. We are building SimpleX platform based on the same principles as email and web, but much more private and secure.
+
+Your donations help us raise more funds – any amount, even the price of the cup of coffee, makes a big difference for us.
+
+It is possible to donate via:
+
+- [GitHub](https://github.com/sponsors/simplex-chat) - it is commission-free for us.
+- [OpenCollective](https://opencollective.com/simplex-chat) - it charges a commission, and also accepts donations in many crypto-currencies.
+- Monero wallet: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt
+- Bitcoin wallet: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
+- please let us know, via GitHub issue or chat, if you want to create a donation in some other cryptocurrency - we will add the address to the list.
+
+Thank you,
+
+Evgeny
+
+SimpleX Chat founder
