@@ -55,9 +55,9 @@
                             <div class="min-h-[inherit] h-full w-full flex items-center justify-center relative">
                                 {% if blog.data.image %}
                                     {% if blog.data.imageBottom %}
-                                        <img class="absolute max-h-full w-auto" src="{{ blog.data.image }}" alt="" srcset=""/>
+                                        <img width=240 class="h-auto" src="{{ blog.data.image }}" alt="" srcset=""/>
                                     {% else %}
-                                        <img class="absolute max-h-full w-auto" src="{{ blog.data.image }}" alt="" srcset=""/>
+                                        <img width=240 class="h-auto" src="{{ blog.data.image }}" alt="" srcset=""/>
                                     {% endif %}
                                 {% else %}
                                     <img class="h-[44px] dark:hidden" src="/img/new/logo-symbol-light.svg" alt="" srcset=""/>

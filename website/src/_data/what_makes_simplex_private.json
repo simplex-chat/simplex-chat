@@ -42,11 +42,11 @@
         },
         {
             "id": 2,
-            "title": "Server encryption<br>for delivered messages",
+            "title": "Additional layer of<br>server encryption",
             "imgLight": "/img/new/private-2.svg",
             "imgDark": "/img/new/private-2-dark.svg",
             "points": [
-                "Additional layer of server encryption for messages delivered to the recipient, to prevent the correlation between received and sent server traffic in case TLS is compromised."
+                "Additional layer of server encryption for delivery to the recipient, to prevent the correlation between received and sent server traffic if TLS is compromised."
             ]
         },
         {
