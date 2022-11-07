@@ -47,7 +47,6 @@ fun ChatInfoView(
   customUserProfile: Profile?,
   localAlias: String,
   close: () -> Unit,
-  onChatUpdated: (Chat) -> Unit,
 ) {
   BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
@@ -61,7 +60,7 @@ fun ChatInfoView(
       localAlias,
       developerTools,
       onLocalAliasChanged = {
-        setContactAlias(chat.chatInfo.apiId, it, chatModel, onChatUpdated)
+        setContactAlias(chat.chatInfo.apiId, it, chatModel)
       },
       deleteContact = { deleteContactDialog(chat.chatInfo, chatModel, close) },
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) },
@@ -350,10 +349,9 @@ fun DeleteContactButton(onClick: () -> Unit) {
   )
 }
 
-private fun setContactAlias(contactApiId: Long, localAlias: String, chatModel: ChatModel, onChatUpdated: (Chat) -> Unit) = withApi {
+private fun setContactAlias(contactApiId: Long, localAlias: String, chatModel: ChatModel) = withApi {
   chatModel.controller.apiSetContactAlias(contactApiId, localAlias)?.let {
     chatModel.updateContact(it)
-    onChatUpdated(chatModel.getChat(chatModel.chatId.value ?: return@withApi) ?: return@withApi)
   }
 }
 
