@@ -307,9 +307,9 @@ class ChatModel(val controller: ChatController) {
   }
 
   fun upsertGroupMember(groupInfo: GroupInfo, member: GroupMember): Boolean {
+    // user member was updated
     if (groupInfo.membership.groupMemberId == member.groupMemberId) {
-      // Current user was updated (like his role, for example)
-      updateChatInfo(ChatInfo.Group(groupInfo))
+      updateGroup(groupInfo)
       return false
     }
     // update current chat
