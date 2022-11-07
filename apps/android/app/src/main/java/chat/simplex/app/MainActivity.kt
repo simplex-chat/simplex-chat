@@ -33,8 +33,7 @@ import chat.simplex.app.views.chat.ChatView
 import chat.simplex.app.views.chatlist.*
 import chat.simplex.app.views.database.DatabaseErrorView
 import chat.simplex.app.views.helpers.*
-import chat.simplex.app.views.newchat.connectViaUri
-import chat.simplex.app.views.newchat.withUriAction
+import chat.simplex.app.views.newchat.*
 import chat.simplex.app.views.onboarding.*
 import kotlinx.coroutines.delay
 
@@ -428,16 +427,16 @@ fun connectIfOpenedViaUri(uri: Uri, chatModel: ChatModel) {
   } else {
     withUriAction(uri) { action ->
       val title = when (action) {
-        "contact" -> generalGetString(R.string.connect_via_contact_link)
-        "invitation" -> generalGetString(R.string.connect_via_invitation_link)
-        else -> {
-          Log.e(TAG, "URI has unexpected action. Alert shown.")
-          action
-        }
+        ConnectionLinkType.CONTACT -> generalGetString(R.string.connect_via_contact_link)
+        ConnectionLinkType.INVITATION -> generalGetString(R.string.connect_via_invitation_link)
+        ConnectionLinkType.GROUP -> generalGetString(R.string.connect_via_group_link)
       }
       AlertManager.shared.showAlertMsg(
         title = title,
-        text = generalGetString(R.string.profile_will_be_sent_to_contact_sending_link),
+        text = if (action == ConnectionLinkType.GROUP)
+          generalGetString(R.string.you_will_join_group)
+        else
+          generalGetString(R.string.profile_will_be_sent_to_contact_sending_link),
         confirmText = generalGetString(R.string.connect_via_link_verb),
         onConfirm = {
           withApi {

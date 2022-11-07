@@ -6,7 +6,9 @@
     <!-- Connect via Link - MainActivity.kt -->
     <string name="connect_via_contact_link">Соединиться через ссылку-контакт?</string>
     <string name="connect_via_invitation_link">Соединиться через ссылку-приглашение?</string>
+    <string name="connect_via_group_link">Соединиться через ссылку группы?</string>
     <string name="profile_will_be_sent_to_contact_sending_link">Ваш профиль будет отправлен контакту, от которого вы получили эту ссылку.</string>
+    <string name="you_will_join_group">Вы соединитесь с группой, для которой создана эта ссылка, а также с ее участниками.</string>
     <string name="connect_via_link_verb">Соединиться</string>
 
     <!-- Server info - ChatModel.kt -->
