@@ -5,18 +5,16 @@
   window.onload = run
 
   async function run() {
-    // const connURIel = document.getElementById("conn_req_uri_text");
-    // const mobileConnURIanchor = document.getElementById("mobile_conn_req_uri");
-    // const connQRCode = document.getElementById("conn_req_uri_qrcode");
-    // if (complete || !connURIel || !mobileConnURIanchor || !connQRCode) return
-    // complete = true
+    const connURIel = document.getElementById("conn_req_uri_text");
+    const mobileConnURIanchor = document.getElementById("mobile_conn_req_uri");
+    const connQRCodes = document.getElementsByClassName("conn_req_uri_qrcode");
+    console.log(connQRCodes);
+    if (complete || !connURIel || !mobileConnURIanchor || connQRCodes < 2) return
+    complete = true
     const connURI = document.location.toString().replace(/\/(contact|invitation)\//, "/$1");
-    // connURIel.innerText = "/c " + connURI;
-    // mobileConnURIanchor.href = connURI.replace("https://simplex.chat", "simplex:");
-    // if (document.location.pathname.indexOf("/contact") >= 0) {
-    //   let connModeEl = document.querySelector("#conn_req .conn_mode")
-    //   if (connModeEl) connModeEl.innerText = "address of";
-    // }
+    connURIel.innerText = "/c " + connURI;
+    const parsedURI = new URL(connURI)
+    mobileConnURIanchor.href = "simplex:" + parsedURI.pathname + parsedURI.hash
     // const els = document.querySelectorAll(".content_copy_with_tooltip");
     // if (navigator.clipboard) {
     //   els.forEach(contentCopyWithTooltip)
@@ -24,9 +22,8 @@
     //   const tooltips = document.querySelectorAll(".content_copy_with_tooltip .tooltip");
     //   tooltips.forEach(el => el.style.visibility = "hidden")
     // }
-
-    const connQRCodes = document.querySelectorAll("#conn_req_uri_qrcode");
-    connQRCodes.forEach(async connQRCode => {
+    
+    for (const connQRCode of connQRCodes) {
       try {
         await QRCode.toCanvas(connQRCode, connURI, {
           errorCorrectionLevel: "M",
@@ -37,7 +34,7 @@
       } catch (err) {
         console.error(err);
       }
-    });
+    }
 
     function contentCopyWithTooltip(parent) {
       const content = parent.querySelector(".content");

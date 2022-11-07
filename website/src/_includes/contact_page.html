@@ -28,7 +28,7 @@
 
                 <div class="z-10 flex flex-col items-center pt-[40px] ml-[-15px]">
                     <p class="text-base font-medium">Scan QR code from mobile app</p>
-                    <canvas id="conn_req_uri_qrcode"></canvas>
+                    <canvas class="conn_req_uri_qrcode"></canvas>
                 </div>
             </div>
         </div>
@@ -57,7 +57,7 @@
 
             <div class="flex flex-col justify-center items-center w-full max-w-[468px] h-[131px] rounded-[30px] border-[1px] border-[#A8B0B4] dark:border-white border-opacity-60 mb-6 relative">
                 <p class="text-xl font-medium text-grey-black dark:text-white mb-4">Connect in app</p>
-                <a href="#" class="bg-[#0053D0] text-white py-3 px-8 rounded-[34px] h-[44px] text-[16px] leading-[19px] tracking-[0.02em]">Open Simplex app</a>
+                <a id="mobile_conn_req_uri" class="bg-[#0053D0] text-white py-3 px-8 rounded-[34px] h-[44px] text-[16px] leading-[19px] tracking-[0.02em]">Open Simplex app</a>
 
                 <div class="absolute bg-[#0197FF] h-[44px] w-[44px] rounded-full flex items-center justify-center top-0 left-0 translate-x-[-30%] translate-y-[-30%]">
                     <p class="text-base text-white font-bold leading-[36px]">2</p>
@@ -93,7 +93,7 @@
     
                     <div class="contact-tab-content flex flex-col gap-10">
                         <p class="text-base mb-5">Explainer text here...</p>
-                        <canvas class="self-center" id="conn_req_uri_qrcode"></canvas>
+                        <canvas class="self-center conn_req_uri_qrcode"></canvas>
                     </div>
                 </div>
             </div>
@@ -113,7 +113,7 @@
                         <p class="text-base mb-4">Use this command:</p>
                         <p class="bg-white flex items-center justify-between rounded p-3 shadow-[inset_0px_2px_2px_rgba(0,0,0,0.15)] mb-8">
                             <span class="text-grey-black font-light text-[14px] leading-6">curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash</span>
-                            <img class="content_copy" src="/img/new/content-copy.svg" />
+                            <!-- <img class="content_copy" src="/img/new/content-copy.svg" /> -->
                         </p>
                         
                         <p class="flex text-base font-medium mb-[76px]">See SimpleX Chat &nbsp;
@@ -145,8 +145,8 @@
                             v1.0.0+, copy the command below and use it in the chat:
                         </p>
                         <p class="bg-white flex items-center justify-between rounded p-3 shadow-[inset_0px_2px_2px_rgba(0,0,0,0.15)] mb-[36px]">
-                            <span class="text-grey-black font-light text-[14px] leading-6">/c https://simplex.chat/contact#/?v=1&smp=smp://u2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU=@smp4.simplex.im/KBCmxJ3-lEjpWLPPkI6OWPk-YJneU5uY%23MCowBQYDK2VuAyEAtixHJWDXvYWcoe-77vIfjvI6XWEuzUsapMS9nVHP_Go=</span>
-                            <img class="content_copy" src="/img/new/content-copy.svg" />
+                            <span id="conn_req_uri_text" class="text-grey-black font-light text-[14px] leading-6">/c https://simplex.chat/contact#/?v=1&smp=smp://u2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU=@smp4.simplex.im/KBCmxJ3-lEjpWLPPkI6OWPk-YJneU5uY%23MCowBQYDK2VuAyEAtixHJWDXvYWcoe-77vIfjvI6XWEuzUsapMS9nVHP_Go=</span>
+                            <!-- <img class="content_copy" src="/img/new/content-copy.svg" /> -->
                         </p>
                     </div>
                 </div>
