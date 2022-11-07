@@ -25,8 +25,7 @@ import androidx.compose.ui.unit.sp
 import androidx.fragment.app.FragmentActivity
 import chat.simplex.app.R
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.SimpleButton
-import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.*
 import chat.simplex.app.views.helpers.*
 import com.google.accompanist.insets.ProvideWindowInsets
@@ -172,7 +171,7 @@ fun TerminalLog(terminalItems: List<TerminalItem>) {
           .fillMaxWidth()
           .clickable {
             ModalManager.shared.showModal {
-              SelectionContainer(modifier = Modifier.verticalScroll(rememberScrollState())) {
+              SelectionContainer(modifier = Modifier.padding(horizontal = DEFAULT_PADDING).verticalScroll(rememberScrollState())) {
                 Text(item.details)
               }
             }
