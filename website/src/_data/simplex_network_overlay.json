@@ -6,7 +6,7 @@
             "imgDark": "/img/new/network-1-dark.svg",
             "overlayContent": {
                 "overlayId": "simplex-network-overlay-1",
-                "title": "Problems of P2P networks",
+                "title": "Comparison with P2P messaging protocols",
                 "showImage": true,
                 "contentBody": "overlay_content/simplex_network/card_1.html"
             }
