@@ -1035,7 +1035,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         }
       }
       is CR.ReceivedGroupInvitation -> {
-        chatModel.addChat(Chat(chatInfo = ChatInfo.Group(r.groupInfo), chatItems = listOf()))
+        chatModel.updateGroup(r.groupInfo) // update so that repeat group invitations are not duplicated
         // TODO NtfManager.shared.notifyGroupInvitation
       }
       is CR.UserAcceptedGroupSent -> {
