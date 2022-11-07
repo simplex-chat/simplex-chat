@@ -2,23 +2,10 @@
 layout: layouts/main.html
 title: "SimpleX Chat: private and secure messenger without any user IDs (not even random)"
 description: "SimpleX Chat - a private and encrypted messenger without any user IDs (not even random ones)! Make a private connection via link / QR code to send messages and make calls."
+ogURL: "https://simplex.chat/"
 templateEngineOverride: njk
 active_home: true
 ---
-{% block meta_tags %}
-    <meta property="og:url" content="https://simplex.chat/" />
-{% endblock %}
-
-{% block css_links %}
-    <link rel="stylesheet" href="/css/swiper-bundle.min.css">
-{% endblock %}
-
-{% block js_scripts %}
-    <script defer src="/js/animation.js"></script>
-    <script defer src="/js/swiper-bundle.min.js"></script>
-    <script defer src="/js/script.js"></script>
-{% endblock %}
-
 {%- from "components/macro.njk" import overlay -%}
 
 {% include "hero.html" %}

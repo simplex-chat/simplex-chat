@@ -12,10 +12,10 @@
         <meta property="og:description" content="{{ description }}"/>
         <meta property="og:image" content="https://simplex.chat/img/share_simplex.png"/>
         <meta name="twitter:card" content="summary"/>
-        {% block meta_tags %}{% endblock %}
+        <meta property="og:url" content="{{ ogURL }}" />
         <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico"/>
-
-        {% block css_links %}{% endblock %}
+        
+        <link rel="stylesheet" href="/css/swiper-bundle.min.css">
         <link href="/css/tailwind.css" rel="stylesheet"/>
         <link rel="stylesheet" href="/css/style.css">
 
@@ -29,5 +29,9 @@
         {{ content | safe }}
 
         {% include "footer.html" %}
+
+        <script src="/js/animation.js"></script>
+        <script src="/js/swiper-bundle.min.js"></script>
+        <script src="/js/script.js"></script>
     </body>
 </html>
