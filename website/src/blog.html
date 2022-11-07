@@ -39,22 +39,22 @@ active_blog: true
         <p class="text-[38px] text-center font-bold text-active-blue mb-9">Latest news</p>
 
         {% for blog in collections.blogs %}
-            <article class="w-full flex flex-col items-center md:flex-row rounded-[4px] overflow-hidden shadow-[0px_20px_30px_rgba(0,0,0,0.12)] mb-8">
-                <div class="min-h-[200px] h-[inherit] p-4 self-stretch md:w-[168px] bg-[#D9E7ED] dark:bg-[#17203D] flex items-center justify-center flex-[1] relative">
-                    <div class="min-h-[inherit] h-full w-full flex items-center justify-center relative">
+            <article class="w-full flex flex-col items-start md:flex-row rounded-[4px] overflow-hidden shadow-[0px_20px_30px_rgba(0,0,0,0.12)] dark:shadow-none bg-white dark:bg-[#11182F] mb-8">
+                <div class="min-h-[200px] h-[inherit] self-stretch md:w-[168px] bg-[#D9E7ED] dark:bg-[#17203D] flex items-center justify-center flex-[1] relative">
+                    <div class="min-h-[inherit] h-full w-full flex items-end px-4 pt-4 justify-center relative">
                         {% if blog.data.image %}
                             {% if blog.data.imageBottom %}
-                                <img width=240 class="h-auto" src="{{ blog.data.image }}" alt="" srcset=""/>
+                                <img class="w-full max-w-[240px] h-auto" src="{{ blog.data.image }}" alt="" srcset=""/>
                             {% else %}
-                                <img width=240 class="h-auto" src="{{ blog.data.image }}" alt="" srcset=""/>
+                                <img class="mb-4 w-full max-w-[240px] h-auto" src="{{ blog.data.image }}" alt="" srcset=""/>
                             {% endif %}
                         {% else %}
-                            <img class="h-[44px] dark:hidden" src="/img/new/logo-symbol-light.svg" alt="" srcset=""/>
-                            <img class="h-[44px] hidden dark:inline-block" src="/img/new/logo-symbol-dark.svg" alt="" srcset=""/>
+                            <img class="h-[44px] self-center dark:hidden" src="/img/new/logo-symbol-light.svg" alt="" srcset=""/>
+                            <img class="h-[44px] self-center hidden dark:inline-block" src="/img/new/logo-symbol-dark.svg" alt="" srcset=""/>
                         {% endif %}
                     </div>
                 </div>
-                <div class="p-6 md:py-8 flex-[2.5] flex flex-col bg-white dark:bg-[#11182F]">
+                <div class="p-6 md:py-8 flex-[2.5] flex flex-col">
                     <div>
                         <h1 class="text-grey-black dark:text-white text-lg md:text-xl font-bold ">
                             <a href="{{ blog.url }}">{{ blog.data.title | safe }}</a>
