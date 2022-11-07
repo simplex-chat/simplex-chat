@@ -455,9 +455,9 @@ header{
   background-repeat: no-repeat;
   /* background-position: center; */
   background-size: contain;
-  width: 644px;
+  /* width: 644px;
   height: 644px;
-  margin-bottom: 5rem;
+  margin-bottom: 5rem; */
 
 
   /* position: fixed; */
@@ -476,17 +476,18 @@ header{
 }
 
 #hero-phone-video {
-    position: absolute;
+    /* position: absolute;
     border-radius: 10px;
-    animation-name: none;
-    border-top-right-radius: 25px;
-    border-top-left-radius: 32px;
+    background-color: black;
+    animation-name: none; */
+    /* border-top-right-radius: 25px; */
+    /* border-top-left-radius: 32px; */
     animation-duration: 2s;
     animation-fill-mode: forwards;
-    height: 580px;
-    width: 256px;
-    margin-left: 0.3rem;
-    margin-bottom: 0.1rem;
+    /* height: 580px;
+    width: 256px; */
+    /* margin-left: 0.3rem;
+    margin-bottom: 0.1rem; */
 }
 
 .description {
@@ -494,16 +495,12 @@ header{
 }
 
 @media (max-width: 1400px) {
-    #hero-phone-video {
+    /* #hero-phone-video {
         border-radius: 15px;
         height: 500px;
         width: 227px;
         margin-bottom: 4.7rem;
-      }
-
-      #hero-phone-light, #hero-phone-dark {
-        margin-bottom: 5rem;
-      }
+      } */
 }
 
 @keyframes small {

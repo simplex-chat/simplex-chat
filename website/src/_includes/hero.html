@@ -1,9 +1,9 @@
 <div class="first-two-sections pt-[66px] bg-white dark:bg-gradient-radial-mobile dark:lg:bg-gradient-radial">
-    <div class="xl:flex relative xl:justify-between xl:gap-10 container">
+    <div class="md:flex md:flex-col-reverse md:items-center xl:flex xl:flex-row xl:items-start relative xl:justify-between xl:gap-10 container">
         <div class="">
             <section class="xl:h-[calc(100vh-66px)] m-auto w-full flex items-center justify-between landing-page-header px-5">
                 <div class="xl:h-[inherit] flex flex-col items-center xl:items-start xl:justify-around w-full landing-page-header-div">
-                    <img class="static-phone-tablet hidden md:block xl:hidden" src="/img/new/tab-hero.svg" alt="" />
+                    {# <img class="static-phone-tablet hidden md:block xl:hidden" src="/img/new/tab-hero.svg" alt="" /> #}
                     <img class="static-phone-mobile md:hidden" src="/img/new/mobile-hero.png" alt="" />
 
                     <article class="w-full xl:max-w-[600px] landing-page-header-article">
@@ -37,17 +37,24 @@
                     <div class="hero-video-phone-container w-full xl:hidden">
                         <div class="hidden relative md:flex items-center justify-center">
                             <img id="hero-video-phone-Background hidden md:block" src="/img/new/tab-video.svg" />
-                            <div class="absolute flex flex-col items-center gap-3">
+                            <video class="absolute rounded-lg top-10 w-[235px] ml-[-6px] mt-1" controls>
+                                <source src="/video/connect.mp4" type="video/mp4">
+                            </video>
+                            
+                            {# <div class="absolute flex flex-col items-center gap-3">
                                 <img src="/img/new/play-btn.svg" alt="" />
                                 <p class="text-center text-[16px] leading-[24px] tracking-[0.04em] text-white">PLAY</p>
-                            </div>
+                            </div> #}
                         </div>
-                        <div class="w-full md:hidden h-[360px] my-10 overflow-hidden relative flex items-center justify-center bg-[#17203D]">
-                            <img src="/img/new/mobile-video-placeholder.png" alt="">
+                        <div class="w-full md:hidden my-10 relative flex items-center justify-center bg-[#17203D]">
+                            <video class="w-full" controls>
+                                <source src="/video/connect.mp4" type="video/mp4">
+                            </video>
+                            {# <img src="/img/new/mobile-video-placeholder.png" alt="">
                             <div class="absolute flex flex-col items-center gap-3">
                                 <img src="/img/new/play-btn.svg" alt="" />
                                 <p class="text-center text-[16px] leading-[24px] tracking-[0.04em] text-white">PLAY</p>
-                            </div>
+                            </div> #}
                             {# <video class="w-full absolute" controls>
                                 <source src="/video/connect.mp4" type="video/mp4">
                             </video> #}
@@ -68,11 +75,11 @@
                 </div>
             </section>
         </div>
-        <div class="hero-phone-background hidden xl:flex items-center justify-center h-fit w-[540px] sticky top-[calc((100vh-540px)/2)] py-8">
+        <div class="hero-phone-background hidden md:flex md:static md:max-w-[490px] xl:flex items-center justify-center h-fit xl:min-w-[600px] xl:sticky top-[calc((100vh-600px)/2)] py-8">
             <img id="hero-phone-light" class="only-light"/>
             <img id="hero-phone-dark" class="only-dark"/>
             <div id="hero-phone-preload" style="display: none"></div>
-            <video id="hero-phone-video" class="w-full hidden" controls>
+            <video id="hero-phone-video" class="absolute hidden rounded-[12px] bg-black w-[238px] mr-[-4px] mt-[14px]" controls>
                 <source src="/video/connect.mp4" type="video/mp4">
             </video>
         </div>

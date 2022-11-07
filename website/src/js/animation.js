@@ -71,7 +71,9 @@ window.addEventListener("load", function () {
     lightImageEl.style.animationName = "big";
     darkImageEl.style.animationName = "big";
     videoEl.style.animationName = "bigvideo";
-    videoEl.style.display = "block";
+    if (window.innerWidth > 1279) {
+      videoEl.style.display = "block";
+    }
 
     async function preload(images) {
       let imgEls = [];
