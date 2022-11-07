@@ -1,187 +1,229 @@
-<!DOCTYPE html>
-<html lang="en-US">
+---
+layout: layouts/main.html
+title: "SimpleX Chat - Invitation"
+templateEngineOverride: njk
+---
+{% block scripts %}
+<script src="/js/qrcode.js"></script>
+<script async defer src="/js/index.js"></script>
+{% endblock %}
 
-<head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SimpleX chat: private, secure, no global identities</title>
-  <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico">
-  <meta
-    name="description"
-    content="Free open-source chat protocol and software - complete privacy, security and ownership of your contacts and messages."
-  />
-  <meta name="Content-Type" content="text/html;charset=utf-8" />
-  <meta name="twitter:card" content="summary" />
-  <link href="/css/tailwind.css" rel="stylesheet" />
-  <link href="../css/contact.css" rel="stylesheet" />
-  <script src="../contact/qrcode.js"></script>
-  <link href="../css/style.css" rel="stylesheet" />
-  <script async defer src="../contact/index.js"></script>
-  <script async defer src="https://buttons.github.io/buttons.js"></script>
-</head>
+<style>
+    .primary-header-contact {
+        background: linear-gradient(251.16deg, #53c1ff 1.1%, #0053d0 100.82%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        text-shadow: 0px 4px 74px #e9e7e2;
+    }
+    .dark .primary-header-contact{
+        background: linear-gradient(270deg,#70F0F9 100%, #70F0F9 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        text-shadow: none;
+      }
+    .secondary-header-contact {
+        text-shadow: 0px 4px 74px #e9e7e2;
+    }
+    .dark .secondary-header-contact {
+        text-shadow: none;
+    }
+    .content_copy_with_tooltip {
+        background-color: #f8f8f6;
+        border-radius: 50px;
+        padding-bottom: 4px;
+        padding-top: 8px;
+        margin-top: 16px;
+        margin-bottom: 16px;
+    }
+    .content_copy_with_tooltip .tooltip {
+        vertical-align: -6px;
+    }
+    .content_copy_with_tooltip .content {
+        font-size: 15px;
+    }
+    .contact-tab > .contact-tab-content{
+        opacity: 0;
+        max-height: 0;
+        transition: all 0.5s ease;
+        visibility: hidden;
+        transform: translateY(10px);
+        overflow: hidden;
+    }
+    .contact-tab svg{
+        transform: rotate(-180deg);
+        transition: all .5s ease;
+    }
+    .contact-tab.active > .contact-tab-content{
+        opacity: 1;
+        max-height: 300px;
+        visibility: visible;
+        transform: translateY(0px);
+    }
+    .for-tablet .contact-tab.active > .contact-tab-content{
+        min-height: 450px;
+    }
+    .contact-tab.active svg,
+    .contact-tab:hover svg{
+        transform: rotate(0deg);
+    }
+</style>
+<section class="hidden xl:block h-screen pt-[66px] bg-white dark:bg-gradient-radial-mobile dark:lg:bg-gradient-radial">
+    <div class="container m-auto h-full flex items-center justify-between px-5">
+        <div class="flex flex-col items-start justify-center w-full h-full">
+            <p class="text-[38px] leading-[43px] font-bold max-w-[500px] mb-[30px] primary-header-contact">You have been sent a link to connect on SimpleX Chat</p>
+            <p class="text-[20px] leading-[28px] text-[#606C71] dark:text-white font-bold max-w-[475px] mb-[80px] secondary-header-contact">Scan the QR code with the SimpleX Chat app on your phone or tablet.</p>
+            <p class="text-grey-black dark:text-white text-base">Not downloaded the SimpleX Chat yet?</p>
+            <p class="text-grey-black dark:text-white text-base mb-[24px]">Use the links below to download the app.</p>
 
-<body>
-  {% include "nav.html" %}
-
-  <section id="conn_req">
-    <div class="container">
-      <h2>This link is the <span class=conn_mode>invitation from</span> a SimpleX Chat user</h2>
-      <div class="app__links">
-        <a href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img src="../img/apple_store.svg" height="42"></a>
-        <a href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank"><img src="../img/google_play.svg" height="41"></a>
-        <a href="https://app.simplex.chat" target="_blank" title="SimpleX F-Droid Repository"><img src="../img/f_droid.svg" height="41"></a>
-        <a href="https://testflight.apple.com/join/DWuT2LQu" target="_blank" title="Public iOS preview on TestFlight"><img src="../img/testflight.png" width="41" height="41"></a>
-        <a href="https://github.com/simplex-chat/website/raw/master/simplex.apk" target="_blank"><img src="../img/apk_icon.png" width="41" height="41"></a>
-      </div>
-      <div class="conn_req_uri">
-        <div class="d-none-992">
-          <p>If you already installed <a class="chat-for-terminal"
-              href="https://github.com/simplex-chat/simplex-chat">SimpleX Chat for the
-              terminal</a> v1.0.0+, copy the command below and use it in the chat:
-          </p>
-
-          <p class="content_copy_with_tooltip">
-            <textarea readonly class="content" id="conn_req_uri_text"></textarea>
-            <span class="tooltip">
-              <span class="tooltiptext" id="copy_conn_req_uri_tooltip">Copy to clipboard</span>
-              <img class="content_copy" id="copy_conn_req_uri" src="../img/icons/content-copy.svg">
-            </span>
-          </p>
-        </div>
-
-        <div class="conn_req__qrcode">
-          <img class="d-none-576" src="../img/mobile.png" alt="">
-          <div>
-            <p class="d-none-576">Scan QR code from mobile app</p>
-            <p class="d-none-on-mobile">
-              To make a connection:
-            </p>
-            <ol class="d-none-on-mobile">
-              <li>install SimpleX app</li>
-              <li>tap the button below</li>
-              <li>tap <strong>Connect</strong> button in the app</li>
-            </ol>
-            <div class="open-in-mobile">
-              <a id="mobile_conn_req_uri" href="" target="_blank">
-                <span class="button">Connect in SimpleX app</span></a>
+            <div class="flex items-center justify-center gap-4 flex-wrap">
+                <a href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apple_store.svg" /></a>
+                <a href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank" title="Public iOS preview on TestFlight"><img class="h-[40px] w-auto" src="/img/new/google_play.svg" /></a>
+                <a href="https://app.simplex.chat" target="_blank" title="SimpleX F-Droid Repository"><img class="h-[40px] w-auto" src="/img/new/f_droid.svg" /></a>
+                <a href="https://testflight.apple.com/join/DWuT2LQu" target="_blank"><img class="h-[40px] w-auto" src="/img/new/testflight.png" /></a>
+                <a href="https://github.com/simplex-chat/website/raw/master/simplex.apk" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apk_icon.png" /></a>
             </div>
-            <canvas id="conn_req_uri_qrcode" class="d-none-576"></canvas>
-          </div>
         </div>
-      </div>
-    </div>
-  </section>
 
-  <section id="install_chat">
-    <div class="container">
-      <h2>To install SimpleX Chat for the terminal</h2>
-      <div class="install__command d-none-576">
-        <p>
-          use this command:
-        </p>
-        <div class="content_copy_with_tooltip install">
-          <p class="content">curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh
-            |
-            bash
-            <span class="tooltip">
-              <span class="tooltiptext">Copy to clipboard</span>
-              <img class="content_copy" src="../img/icons/content-copy.svg">
-            </span>
-          </p>
+        <div class="h-full pt-[30px] w-full min-w-[600px] max-w-[601px] relative">
+            <div class="relative h-full w-[inherit] flex items-center justify-center">
+                <div class="absolute mt-[-100px]">
+                    <img class="" src="/img/new/contact_page_mobile.png" alt="">
+                </div>
+
+                <div class="z-10 flex flex-col items-center pt-[40px]">
+                    <p class="text-base font-medium">Scan QR code from mobile app</p>
+                    <canvas id="conn_req_uri_qrcode"></canvas>
+                </div>
+            </div>
         </div>
-      </div>
-
-      <div class="github__redirection">
-        <p>
-          See SimpleX Chat
-          <a href="https://github.com/simplex-chat/simplex-chat">GitHub repository</a>
-          <a href="https://github.com/simplex-chat/simplex-chat" class="github"><img src="../img/icons/github.svg"></a>
-          for the instructions how to download or compile it from the source code.
-        </p>
-      </div>
-
     </div>
-  </section>
+</section>
 
-  <section id="simplex">
-    <div class="container">
-      <article id="use-simplex" class="half">
-        <h3>Use SimpleX</h3>
-        <p>
-          SimpleX chat terminal client
-          <a href="https://github.com/simplex-chat/simplex-chat/releases/tag/v2.0.0" target="_blank">v2.0.0</a> is
-          released!<br />
-          – groups and files<br />
-          – two-layer E2E encryption, with double-ratchet algorithm<br />
-          – protocol is compatible with mobile apps<br />
-        </p>
-        <p>
-          You can use our servers or deploy your own, e.g. using 
-          <a href="https://github.com/simplex-chat/simplexmq#deploy-smp-server-on-linode" target="_blank">
-            StackScript on Linode</a>.
-        </p>
-        <p>
-          Sign up to be updated about the new releases.
-        </p>
-        <form class="sign-up"
-          action="https://chat.us2.list-manage.com/subscribe/post?u=ddd892b258ae36e5438e6d4e1&amp;id=ad6037a2fe"
-          method="post" target="_blank" novalidate>
-          <div>
-            <input name="EMAIL" placeholder="Your email" />
-            <span style="position: absolute; left: -5000px" aria-hidden="true">
-              <input type="text" name="b_ddd892b258ae36e5438e6d4e1_ad6037a2fe" tabindex="-1" value="" />
-            </span>
-            <button type="submit">Submit</button>
-          </div>
-        </form>
-      </article>
 
-      <article id="join-simplex" class="half">
-        <h3>Join SimpleX</h3>
-        <p>
-          The project can move faster with your help.<br />
-          We develop it in Haskell.
-        </p>
+<section class="block xl:hidden pt-[106px] pb-[90px] bg-white dark:bg-gradient-radial-mobile dark:lg:bg-gradient-radial">
+    <div class="container m-auto h-full px-5">
+        <div class="flex flex-col items-center">
+            <p class="text-[28px] font-bold text-center max-w-[602px] mb-[40px] primary-header-contact">You have been sent a link to connect on SimpleX Chat!</p>
+            <p class="text-[20px] leading-[28px] text-grey-black dark:text-white font-medium mb-[30px]">To make a connection:</p>
 
-        <div id="contacts">
-          <p>
-            <a href="mailto:chat@simplex.chat">
-              <span class="button">Email</span>&nbsp; chat@simplex.chat</a>
-          </p>
-          <p>
-            <a href="https://github.com/simplex-chat/simplex-chat" target="_blank"><span
-                class="button">Join</span>&nbsp; github.com/simplex-chat</a>
-          </p>
-          <p>
-            <a href="https://opencollective.com/simplex-chat" target="_blank"><span class="button">Donate</span>&nbsp;
-              opencollective.com/simplex-chat</a> <strong>(now accepts crypto)</strong>
-          </p>
+            <div class="flex flex-col justify-center items-center w-full max-w-[368px] h-[131px] rounded-[30px] border-[1px] border-[#A8B0B4] dark:border-white border-opacity-60 mb-6 relative">
+                <p class="text-xl font-medium text-grey-black dark:text-white mb-4">Install SimpleX app</p>
+                <a href="#"><img class="h-[38px] w-[155px]" src="/img/new/apple-store-btn.png" alt=""></a>
+
+                <div class="absolute bg-[#0197FF] h-[44px] w-[44px] rounded-full flex items-center justify-center top-0 left-0 translate-x-[-30%] translate-y-[-30%]">
+                    <p class="text-base text-white font-bold leading-[36px]">1</p>
+                </div>
+            </div>
+
+            <div class="flex flex-col justify-center items-center w-full max-w-[368px] h-[131px] rounded-[30px] border-[1px] border-[#A8B0B4] dark:border-white border-opacity-60 mb-6 relative">
+                <p class="text-xl font-medium text-grey-black dark:text-white mb-4">Connect in app</p>
+                <a href="#" class="bg-[#0053D0] text-white py-3 px-8 rounded-[34px] h-[44px] text-[16px] leading-[19px] tracking-[0.02em]">Open Simplex app</a>
+
+                <div class="absolute bg-[#0197FF] h-[44px] w-[44px] rounded-full flex items-center justify-center top-0 left-0 translate-x-[-30%] translate-y-[-30%]">
+                    <p class="text-base text-white font-bold leading-[36px]">2</p>
+                </div>
+            </div>
+
+            <div class="flex flex-col justify-center items-center w-full max-w-[368px] h-[131px] rounded-[30px] border-[1px] border-[#A8B0B4] dark:border-white border-opacity-60 relative">
+                <p class="text-xl font-medium text-grey-black dark:text-white max-w-[230px] text-center">Tap the <span class="text-active-blue">‘connect’</span> button in the app</p>
+
+                <div class="absolute bg-[#0197FF] h-[44px] w-[44px] rounded-full flex items-center justify-center top-0 left-0 translate-x-[-30%] translate-y-[-30%]">
+                    <p class="text-base text-white font-bold leading-[36px]">3</p>
+                </div>
+            </div>
         </div>
-      </article>
     </div>
-  </section>
+</section>
 
-  <footer>
-    <div class="container">
-      <img alt="simplex logo" class="logo d-none-992" src="../img/simplex.svg" />
-      <p class="copyright">&#169; 2020-2022 SimpleX | Open-Source Project <span class="d-none-576">|</span>
-        <a class="d-none-576" href="https://github.com/simplex-chat" target="_blank"><img
-            src="../img/icons/github.svg"></a>
-        <a class="d-none-576" href="https://www.reddit.com/r/SimpleXChat/" target="_blank"><img
-            src="../img/icons/reddit.svg"></a>
-        <a class="d-none-576" href="https://twitter.com/simplexchat" target="_blank"><img
-            src="../img/icons/twitter.svg"></a>
-        <a class="d-none-576" href="https://www.linkedin.com/company/simplex-chat/" target="_blank"><img
-            src="../img/icons/linkedin.svg"></a>
-        <a class="d-none-576" href="mailto:chat@simplex.chat" target="_blank"><img src="../img/icons/email.svg"></a>
-      </p>
-      <div class="github d-none-992">
-        <a class="github-button" href="https://github.com/simplex-chat/protocol" data-size="large"
-          data-show-count="true" aria-label="Star simplex-chat on GitHub">Star</a>
-      </div>
+
+<section class="hidden md:block bg-secondary-bg-light dark:bg-secondary-bg-dark py-[60px]">
+    <div class="container px-5">
+        <div class="text-grey-black dark:text-white">
+            
+            {# For Tablet #}
+            <div class="hidden md:block xl:hidden for-tablet">
+                <div class="contact-tab active">
+                    <div class="flex items-center justify-between my-[40px] contact-tab-btn cursor-pointer">
+                        <p class="text-xl font-bold">Scan the QR code with the SimpleX Chat app</p>
+                        <svg class="fill-grey-black dark:fill-white" width="10" height="5" viewBox="0 0 10 5" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" clip-rule="evenodd" d="M8.40813 4.79332C8.69689 5.06889 9.16507 5.06889 9.45384 4.79332C9.7426 4.51775 9.7426 4.07097 9.45384 3.7954L5.69327 0.206676C5.65717 0.17223 5.61827 0.142089 5.57727 0.116255C5.29026 -0.064587 4.90023 -0.0344467 4.64756 0.206676L0.886983 3.7954C0.598219 4.07097 0.598219 4.51775 0.886983 4.79332C1.17575 5.06889 1.64393 5.06889 1.93269 4.79332L5.17041 1.70356L8.40813 4.79332Z"/>
+                        </svg> 
+                    </div>
+                    
+    
+                    <div class="contact-tab-content flex flex-col gap-10">
+                        <p class="text-base mb-5">Explainer text here...</p>
+                        <canvas class="self-center" id="conn_req_uri_qrcode"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            {# For Desktop #}
+            <div class="hidden xl:block">
+                <div class="contact-tab active">
+                    <div class="flex items-center justify-between my-[40px] contact-tab-btn cursor-pointer">
+                        <p class="text-xl font-bold">Installing SimpleX chat to terminal</p>
+                        <svg class="fill-grey-black dark:fill-white" width="10" height="5" viewBox="0 0 10 5" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" clip-rule="evenodd" d="M8.40813 4.79332C8.69689 5.06889 9.16507 5.06889 9.45384 4.79332C9.7426 4.51775 9.7426 4.07097 9.45384 3.7954L5.69327 0.206676C5.65717 0.17223 5.61827 0.142089 5.57727 0.116255C5.29026 -0.064587 4.90023 -0.0344467 4.64756 0.206676L0.886983 3.7954C0.598219 4.07097 0.598219 4.51775 0.886983 4.79332C1.17575 5.06889 1.64393 5.06889 1.93269 4.79332L5.17041 1.70356L8.40813 4.79332Z"/>
+                        </svg> 
+                    </div>
+                    
+    
+                    <div class="contact-tab-content">
+                        <p class="text-base mb-4">Use this command:</p>
+                        <p class="bg-white flex items-center justify-between rounded p-3 shadow-[inset_0px_2px_2px_rgba(0,0,0,0.15)] mb-8">
+                            <span class="text-grey-black font-light text-[14px] leading-6">curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash</span>
+                            <img class="content_copy" src="/img/new/content-copy.svg" />
+                        </p>
+                        
+                        <p class="flex text-base font-medium mb-[76px]">See SimpleX Chat &nbsp;
+                            <a href="" class="flex gap-1 no-underline">
+                                <span class="text-primary-light dark:text-primary-dark underline underline-offset-4 text-base font-medium">GitHub repository</span>
+                                <svg class="fill-primary-light dark:fill-primary-dark" width="24" height="24" viewBox="0 0 41 41" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M20.2907 0.926758C9.24635 0.926758 0.290527 10.1075 0.290527 21.4331C0.290527 30.4933 6.02118 38.18 13.9679 40.8915C14.9674 41.0813 15.3344 40.4467 15.3344 39.905C15.3344 39.4161 15.3158 37.8007 15.3072 36.0872C9.74314 37.3277 8.56906 33.6677 8.56906 33.6677C7.65927 31.2975 6.3484 30.6672 6.3484 30.6672C4.53379 29.3945 6.48519 29.4206 6.48519 29.4206C8.49355 29.5653 9.55105 31.5338 9.55105 31.5338C11.3349 34.6688 14.2298 33.7624 15.3711 33.2385C15.5506 31.9131 16.069 31.0085 16.6409 30.4964C12.1986 29.9779 7.52878 28.2195 7.52878 20.3621C7.52878 18.1232 8.31007 16.294 9.58947 14.8579C9.38181 14.3414 8.69723 12.2557 9.78322 9.43111C9.78322 9.43111 11.4627 8.87998 15.2847 11.5331C16.8801 11.0787 18.591 10.8509 20.2907 10.8431C21.9904 10.8509 23.7027 11.0787 25.301 11.5331C29.1183 8.87998 30.7955 9.43111 30.7955 9.43111C31.8842 12.2557 31.1992 14.3414 30.9916 14.8579C32.274 16.294 33.05 18.1232 33.05 20.3621C33.05 28.2382 28.3712 29.9724 23.9176
+                                        30.4801C24.635 31.1165 25.2742 32.3644 25.2742 34.2776C25.2742 37.0214 25.251 39.2296 25.251 39.905C25.251 40.4507 25.611 41.0902 26.6248 40.8888C34.5672 38.1742 40.2905 30.4903 40.2905 21.4331C40.2905 10.1075 31.336 0.926758 20.2907 0.926758Z" />
+                                </svg>
+                            </a>
+                            &nbsp;
+                            the instructions how to download or compile it from the source code.</p>
+                    </div>
+                </div>
+    
+                <hr class="block mb-7 dark:opacity-[0.2] w-full">
+    
+                <div class="contact-tab">
+                    <div class="flex items-center justify-between my-[40px] contact-tab-btn cursor-pointer">
+                        <p class="text-xl font-bold">If you already installed SimpleX Chat for the terminal</p>
+                        <svg class="fill-grey-black dark:fill-white" width="10" height="5" viewBox="0 0 10 5" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" clip-rule="evenodd" d="M8.40813 4.79332C8.69689 5.06889 9.16507 5.06889 9.45384 4.79332C9.7426 4.51775 9.7426 4.07097 9.45384 3.7954L5.69327 0.206676C5.65717 0.17223 5.61827 0.142089 5.57727 0.116255C5.29026 -0.064587 4.90023 -0.0344467 4.64756 0.206676L0.886983 3.7954C0.598219 4.07097 0.598219 4.51775 0.886983 4.79332C1.17575 5.06889 1.64393 5.06889 1.93269 4.79332L5.17041 1.70356L8.40813 4.79332Z"/>
+                        </svg> 
+                    </div>
+                    
+                    <div class="contact-tab-content">
+                        <p class="text-base font-medium mb-[46px]">If you already installed&nbsp;
+                            <a href="" class="text-base font-medium">SimpleX Chat for the terminal</a>&nbsp;
+                            v1.0.0+, copy the command below and use it in the chat:
+                        </p>
+                        <p class="bg-white flex items-center justify-between rounded p-3 shadow-[inset_0px_2px_2px_rgba(0,0,0,0.15)] mb-[36px]">
+                            <span class="text-grey-black font-light text-[14px] leading-6">/c https://simplex.chat/contact#/?v=1&smp=smp://u2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU=@smp4.simplex.im/KBCmxJ3-lEjpWLPPkI6OWPk-YJneU5uY%23MCowBQYDK2VuAyEAtixHJWDXvYWcoe-77vIfjvI6XWEuzUsapMS9nVHP_Go=</span>
+                            <img class="content_copy" src="/img/new/content-copy.svg" />
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-  </footer>
-</body>
+</section>
 
-</html>
+{# join simplex #}
+{% include "sections/join_simplex.html" %}
+
+<script>
+window.addEventListener('click',(e)=>{
+    if(e.target.closest('.contact-tab-btn')){
+        e.target.closest('.contact-tab').classList.toggle('active')
+    }
+})
+</script>
