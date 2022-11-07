@@ -8,6 +8,10 @@
         <div class="flex flex-col items-start justify-center w-full h-full">
             <p class="text-[38px] leading-[43px] font-bold max-w-[500px] mb-[30px] primary-header-contact">{{ header }}</p>
             <p class="text-[20px] leading-[28px] text-[#606C71] dark:text-white font-bold max-w-[475px] mb-[80px] secondary-header-contact">Scan the QR code with the SimpleX Chat app on your phone or tablet.</p>
+            <p class="text-grey-black dark:text-white text-base mb-[16px]">
+                The public keys and message queue address in this link are NOT sent over the network when you view this page &mdash;
+                they are contained in the hash fragment of the link URL.
+            </p>
             <p class="text-grey-black dark:text-white text-base">Not downloaded the SimpleX Chat yet?</p>
             <p class="text-grey-black dark:text-white text-base mb-[24px]">Use the links below to download the app.</p>
 
@@ -92,7 +96,10 @@
                     
     
                     <div class="contact-tab-content flex flex-col gap-10">
-                        <p class="text-base mb-5">Explainer text here...</p>
+                        <p class="text-base mb-5">
+                            The public keys and message queue address in this link are NOT sent over the network when you view this page &mdash;<br>
+                            they are contained in the hash fragment of the link URL.
+                        </p>
                         <canvas class="self-center conn_req_uri_qrcode"></canvas>
                     </div>
                 </div>
