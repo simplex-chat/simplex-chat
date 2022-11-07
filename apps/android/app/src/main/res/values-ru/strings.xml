@@ -139,6 +139,10 @@
     <string name="auth_stop_chat">Остановить чат</string>
     <string name="auth_open_chat_console">Открыть консоль</string>
 
+    <!-- Chat Alerts - ChatItemView.kt -->
+    <string name="message_delivery_error_title">Ошибка доставки сообщения</string>
+    <string name="message_delivery_error_desc">Скорее всего, этот контакт удалил соединение с вами.</string>
+
     <!-- Chat Actions - ChatItemView.kt (and general) -->
     <string name="reply_verb">Ответить</string>
     <string name="share_verb">Поделиться</string>
