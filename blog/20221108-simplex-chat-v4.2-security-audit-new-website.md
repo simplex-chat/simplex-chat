@@ -23,6 +23,8 @@ Trail of Bits, a US based security and technology consultancy whose clients incl
 
 Overall we have SimpleX Chat in a decent shape, with most reviewed areas other than identified issues being "satisfactory" and authentication and access controls being "strong".
 
+The issues are explained below, and the full security review is available via [this link](https://github.com/trailofbits/publications#security-reviews).
+
 We are hugely thankful for Trails Of Bits for the work they did, helping us identify these issues and strengthening the security of SimpleX Chat.
 
 ### Medium severity issues
