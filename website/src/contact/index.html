@@ -6,7 +6,7 @@ templateEngineOverride: njk
 ---
 {% block js_scripts %}
     <script src="/js/qrcode.js"></script>
-    <script async defer src="/js/index.js"></script>
+    <script async defer src="/js/contact.js"></script>
 {% endblock %}
 
 <style>
@@ -87,13 +87,13 @@ templateEngineOverride: njk
             </div>
         </div>
 
-        <div class="h-full pt-[30px] w-full min-w-[600px] max-w-[601px] relative">
+        <div class="h-full pt-[30px] w-full w-[630px] relative">
             <div class="relative h-full w-[inherit] flex items-center justify-center">
                 <div class="absolute mt-[-100px]">
                     <img class="" src="/img/new/contact_page_mobile.png" alt="">
                 </div>
 
-                <div class="z-10 flex flex-col items-center pt-[40px]">
+                <div class="z-10 flex flex-col items-center pt-[40px] ml-[-15px]">
                     <p class="text-base font-medium">Scan QR code from mobile app</p>
                     <canvas id="conn_req_uri_qrcode"></canvas>
                 </div>
@@ -139,13 +139,13 @@ templateEngineOverride: njk
 </section>
 
 
-<section class="hidden md:block bg-secondary-bg-light dark:bg-secondary-bg-dark py-[60px]">
+<section class="hidden md:block bg-secondary-bg-light dark:bg-secondary-bg-dark py-[20px]">
     <div class="container px-5">
         <div class="text-grey-black dark:text-white">
             
             {# For Tablet #}
             <div class="hidden md:block xl:hidden for-tablet">
-                <div class="contact-tab active">
+                <div class="contact-tab">
                     <div class="flex items-center justify-between my-[40px] contact-tab-btn cursor-pointer">
                         <p class="text-xl font-bold">Scan the QR code with the SimpleX Chat app</p>
                         <svg class="fill-grey-black dark:fill-white" width="10" height="5" viewBox="0 0 10 5" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -163,7 +163,7 @@ templateEngineOverride: njk
             
             {# For Desktop #}
             <div class="hidden xl:block">
-                <div class="contact-tab active">
+                <div class="contact-tab">
                     <div class="flex items-center justify-between my-[40px] contact-tab-btn cursor-pointer">
                         <p class="text-xl font-bold">Installing SimpleX chat to terminal</p>
                         <svg class="fill-grey-black dark:fill-white" width="10" height="5" viewBox="0 0 10 5" fill="none" xmlns="http://www.w3.org/2000/svg">
