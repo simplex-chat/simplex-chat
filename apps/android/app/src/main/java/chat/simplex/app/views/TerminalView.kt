@@ -163,7 +163,8 @@ fun TerminalLog(terminalItems: List<TerminalItem>) {
   val reversedTerminalItems by remember { derivedStateOf { terminalItems.reversed() } }
   LazyColumn(state = listState, reverseLayout = true) {
     items(reversedTerminalItems) { item ->
-      Text("${item.date.toString().subSequence(11, 19)} ${item.label}",
+      Text(
+        "${item.date.toString().subSequence(11, 19)} ${item.label}",
         style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 18.sp, color = MaterialTheme.colors.primary),
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
@@ -171,8 +172,8 @@ fun TerminalLog(terminalItems: List<TerminalItem>) {
           .fillMaxWidth()
           .clickable {
             ModalManager.shared.showModal {
-              SelectionContainer(modifier = Modifier.padding(horizontal = DEFAULT_PADDING).verticalScroll(rememberScrollState())) {
-                Text(item.details)
+              SelectionContainer(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                Text(item.details, modifier = Modifier.padding(horizontal = DEFAULT_PADDING).padding(bottom = DEFAULT_PADDING))
               }
             }
           }.padding(horizontal = 8.dp, vertical = 4.dp)
