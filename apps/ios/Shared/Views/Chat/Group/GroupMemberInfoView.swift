@@ -51,26 +51,14 @@ struct GroupMemberInfoView: View {
                     Section("Member") {
                         infoRow("Group", groupInfo.displayName)
 
-                        HStack {
-                            if let roles = member.canChangeRoleTo(groupInfo: groupInfo) {
-                                Picker("Change role", selection: $newRole) {
-                                    ForEach(roles) { role in
-                                        Text(role.text)
-                                            .foregroundStyle(.secondary)
-                                    }
+                        if let roles = member.canChangeRoleTo(groupInfo: groupInfo) {
+                            Picker("Change role", selection: $newRole) {
+                                ForEach(roles) { role in
+                                    Text(role.text)
                                 }
-                            } else {
-                                Text("Role")
-                                Spacer()
-                                Text(member.memberRole.text)
-                                    .foregroundStyle(.secondary)
                             }
-                        }
-                        .onAppear { newRole = member.memberRole }
-                        .onChange(of: newRole) { _ in
-                            if newRole != member.memberRole {
-                                alert = .changeMemberRoleAlert(mem: member, role: newRole)
-                            }
+                        } else {
+                            infoRow("Role", member.memberRole.text)
                         }
 
                         // TODO invited by - need to get contact by contact id
@@ -107,6 +95,12 @@ struct GroupMemberInfoView: View {
                     }
                 }
                 .navigationBarHidden(true)
+                .onAppear { newRole = member.memberRole }
+                .onChange(of: newRole) { _ in
+                    if newRole != member.memberRole {
+                        alert = .changeMemberRoleAlert(mem: member, role: newRole)
+                    }
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
