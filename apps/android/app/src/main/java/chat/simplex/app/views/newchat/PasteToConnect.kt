@@ -49,11 +49,7 @@ fun PasteToConnectView(chatModel: ChatModel, close: () -> Unit) {
               title = generalGetString(R.string.connect_via_group_link),
               text = generalGetString(R.string.you_will_join_group),
               confirmText = generalGetString(R.string.connect_via_link_verb),
-              onConfirm = {
-                withApi {
-                  action()
-                }
-              }
+              onConfirm = { withApi { action() } }
             )
           } else action()
         }
