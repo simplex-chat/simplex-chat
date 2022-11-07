@@ -64,7 +64,7 @@ sealed class CReqClientData {
 
 fun withUriAction(uri: Uri, run: suspend (ConnectionLinkType) -> Unit) {
   val action = uri.path?.drop(1)?.replace("/", "")
-  val data = uri.toString().replace("#/", "/").toUri().getQueryParameter("data")
+  val data = uri.toString().replaceFirst("#/", "/").toUri().getQueryParameter("data")
   val type = when {
     data != null -> {
       val parsed = runCatching {
