@@ -3,6 +3,7 @@ package chat.simplex.app.views.newchat
 import android.content.ClipboardManager
 import android.content.res.Configuration
 import android.net.Uri
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -17,6 +18,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.getSystemService
 import chat.simplex.app.R
+import chat.simplex.app.TAG
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
@@ -36,9 +38,24 @@ fun PasteToConnectView(chatModel: ChatModel, close: () -> Unit) {
       try {
         val uri = Uri.parse(connReqUri)
         withUriAction(uri) { linkType ->
-          if (connectViaUri(chatModel, linkType, uri)) {
-            close()
+          val action = suspend {
+            Log.d(TAG, "connectViaUri: connecting")
+            if (connectViaUri(chatModel, linkType, uri)) {
+              close()
+            }
           }
+          if (linkType == ConnectionLinkType.GROUP) {
+            AlertManager.shared.showAlertMsg(
+              title = generalGetString(R.string.connect_via_group_link),
+              text = generalGetString(R.string.you_will_join_group),
+              confirmText = generalGetString(R.string.connect_via_link_verb),
+              onConfirm = {
+                withApi {
+                  action()
+                }
+              }
+            )
+          } else action()
         }
       } catch (e: RuntimeException) {
         AlertManager.shared.showAlertMsg(
