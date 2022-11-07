@@ -160,7 +160,9 @@ fun CIImageView(
         placeholder = BitmapPainter(imageBitmap.asImageBitmap()), // show original image while it's still loading by coil
         imageLoader = imageLoader
       )
+      val view = LocalView.current
       imageView(imagePainter, onClick = {
+        hideKeyboard(view)
         if (getLoadedFilePath(context, file) != null) {
           ModalManager.shared.showCustomModal(animated = false) { close ->
             ImageFullScreenView(imageProvider, close)

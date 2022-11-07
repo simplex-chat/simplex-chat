@@ -1,8 +1,10 @@
 package chat.simplex.app.views.chat
 
+import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.net.Uri
+import android.view.inputmethod.InputMethodManager
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.*
@@ -90,6 +92,8 @@ fun ChatView(chatModel: ChatModel) {
         }
     }
   }
+  val view = LocalView.current
+  DisposableEffect(Unit) { onDispose { hideKeyboard(view) } }
 
   if (activeChat.value == null || user == null) {
     chatModel.chatId.value = null
