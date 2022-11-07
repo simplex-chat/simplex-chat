@@ -266,12 +266,17 @@ header nav {
 }
 
 /* Swipe Sections */
-
 .hash-number {
   background: linear-gradient(251.16deg, #53C1FF 1.1%, #0053D0 100.82%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.swiper-button-disabled{
+  opacity: 0;
+  pointer-events: none;
+  display: none !important;
 }
 
 .swiper-pagination-bullet {
