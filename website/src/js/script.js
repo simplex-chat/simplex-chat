@@ -77,9 +77,6 @@ window.addEventListener('load', function () {
         observer.observe(targetNode, { attributes: true });
     }
     function clickHandler(e) {
-        e.preventDefault()
-        e.stopPropagation()
-
         if (e.target.closest('.nav-link')) {
             if (e.target.closest('.nav-link').classList.contains('active')) {
                 e.target.closest('.nav-link').classList.remove('active')
@@ -146,8 +143,18 @@ window.addEventListener('load', function () {
         }
     }
 
-    window.addEventListener('click', clickHandler)
-    window.addEventListener('touchstart', clickHandler)
+    $(this).on('click touchstart', function (event) {
+        if (event.type == "touchstart") {
+            $(this).off('click');
+            clickHandler(event)
+        } else if (event.type == "click") {
+            $(this).off('touchstart');
+            clickHandler(event)
+        }
+    });
+    
+    // window.addEventListener('click', clickHandler)
+    // window.addEventListener('touchstart', clickHandler)
     window.addEventListener('scroll', changeHeaderBg)
 })
 
