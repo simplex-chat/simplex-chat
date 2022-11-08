@@ -2,6 +2,7 @@
 layout: layouts/article.html
 title: "SimpleX announces SimpleX Chat v0.4"
 date: 2021-09-14
+preview: Terminal app now supports groups and file transfers.
 permalink: "/blog/20210914-simplex-chat-v0.4-released.html"
 ---
 

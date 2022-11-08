@@ -1,0 +1,103 @@
+{
+    "sections": [
+        {
+            "id": 10,
+            "title": "Temporary anonymous pairwise identifiers",
+            "imgLight": "/img/new/private-10.svg",
+            "imgDark": "/img/new/private-10-dark.svg",
+            "points": [
+                "SimpleX uses temporary anonymous pairwise addresses and credentials for each user contact or group member.",
+                "It allows to deliver messages without user profile identifiers, providing better meta-data privacy than alternatives."
+            ]
+        },
+        {
+            "id": 6,
+            "title": "Out-of-band<br>key exchange",
+            "imgLight": "/img/new/private-6.svg",
+            "imgDark": "/img/new/private-6-dark.svg",
+            "points": [
+                "Many communication platforms are vulnerable to MITM attacks by servers or network providers.",
+                "To prevent it SimpleX apps pass one-time keys out-of-band, when you share an address as a link or a QR code."
+            ]
+        },
+        {
+            "id": 1,
+            "title": "2-layers of<br>end-to-end encryption",
+            "imgLight": "/img/new/private-1.svg",
+            "imgDark": "/img/new/private-1-dark.svg",
+            "points": [
+                "Double-ratchet protocol &mdash;<br>OTR messaging with perfect forward secrecy and break-in recovery.",
+                "NaCL cryptobox in each queue to prevent traffic correlation between message queues if TLS is compromised."
+            ]
+        },
+        {
+            "id": 7,
+            "title": "Message integrity<br>verification",
+            "imgLight": "/img/new/private-7.svg",
+            "imgDark": "/img/new/private-7-dark.svg",
+            "points": [
+                "To guarantee integrity the messages are sequentially numbered and include the hash of the previous message.",
+                "If any message is added, removed or changed the recipient will be alerted."
+            ]
+        },
+        {
+            "id": 2,
+            "title": "Additional layer of<br>server encryption",
+            "imgLight": "/img/new/private-2.svg",
+            "imgDark": "/img/new/private-2-dark.svg",
+            "points": [
+                "Additional layer of server encryption for delivery to the recipient, to prevent the correlation between received and sent server traffic if TLS is compromised."
+            ]
+        },
+        {
+            "id": 8,
+            "title": "Message mixing<br>to reduce correlation",
+            "imgLight": "/img/new/private-8.svg",
+            "imgDark": "/img/new/private-8-dark.svg",
+            "points": [
+                "SimpleX servers act as low latency mix nodes &mdash; the incoming and outgoing messages have different order."
+            ]
+        },
+        {
+            "id": 3,
+            "title": "Secure authenticated<br>TLS transport",
+            "imgLight": "/img/new/private-3.svg",
+            "imgDark": "/img/new/private-3-dark.svg",
+            "points": [
+                "Only TLS 1.2/1.3 with strong algorithms is used for client-server connections.",
+                "Server fingerprint and channel binding prevent MITM and replay attacks.",
+                "Connection resumption is disabled to prevent session attacks."
+            ]
+        },
+        {
+            "id": 4,
+            "title": "Optional<br>access via Tor",
+            "imgLight": "/img/new/private-4.svg",
+            "imgDark": "/img/new/private-4-dark.svg",
+            "points": [
+                "To protect your IP address you can access the servers via Tor or some other transport overlay network.",
+                "To use SimpleX via Tor please install <a href=\"https://guardianproject.info/apps/org.torproject.android/\" target=\"_blank\">Orbot app</a> and enable SOCKS5 proxy (or VPN <a href=\"https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone\" target=\"_blank\">on iOS</a>)."
+            ]
+        },
+        {
+            "id": 9,
+            "title": "Unidirectional<br>message queues",
+            "imgLight": "/img/new/private-9.svg",
+            "imgDark": "/img/new/private-9-dark.svg",
+            "points": [
+                "Each message queue passes messages in one direction, with the different send and receive addresses.",
+                "It reduces the attack vectors, compared with traditional message brokers, and available meta-data."
+            ]
+        },
+        {
+            "id": 5,
+            "title": "Multiple layers of<br>content padding",
+            "imgLight": "/img/new/private-5.svg",
+            "imgDark": "/img/new/private-5-dark.svg",
+            "points": [
+                "SimpleX uses content padding for each encryption layer to frustrate message size attacks.",
+                "It makes messages of different sizes look the same to the servers and network observers."
+            ]
+        }
+    ]
+}

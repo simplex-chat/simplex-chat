@@ -1,0 +1,52 @@
+{
+    "sections": [
+        {
+            "id": 1,
+            "title": "E2E-encrypted messages with markdown and editing",
+            "imgLight": "/img/new/feature-1.svg",
+            "imgDark": "/img/new/feature-1-dark.svg"
+        },
+        {
+            "id": 2,
+            "title": "E2E-encrypted<br>images and files",
+            "imgLight": "/img/new/feature-2.svg",
+            "imgDark": "/img/new/feature-2-dark.svg"
+        },
+        {
+            "id": 3,
+            "title": "Decentralized secret groups &mdash;<br>only users know they exist",
+            "imgLight": "/img/new/feature-3.svg",
+            "imgDark": "/img/new/feature-3-dark.svg"
+        },
+        {
+            "id": 4,
+            "title": "E2E-encrypted voice messages <em>(coming soon)</em>",
+            "imgLight": "/img/new/feature-4.svg",
+            "imgDark": "/img/new/feature-4-dark.svg"
+        },
+        {
+            "id": 5,
+            "title": "Disappearing secret conversations <em>(coming soon)</em>",
+            "imgLight": "/img/new/feature-5.svg",
+            "imgDark": "/img/new/feature-5-dark.svg"
+        },
+        {
+            "id": 6,
+            "title": "E2E-encrypted<br>audio and video calls",
+            "imgLight": "/img/new/feature-6.svg",
+            "imgDark": "/img/new/feature-6-dark.svg"
+        },
+        {
+            "id": 7,
+            "title": "Portable encrypted database &mdash; move your profile to another device",
+            "imgLight": "/img/new/feature-7.svg",
+            "imgDark": "/img/new/feature-7-dark.svg"
+        },
+        {
+            "id": 8,
+            "title": "Incognito mode &mdash;<br>unique to SimpleX Chat",
+            "imgLight": "/img/new/feature-8.svg",
+            "imgDark": "/img/new/feature-8-dark.svg"
+        }
+    ]
+}
