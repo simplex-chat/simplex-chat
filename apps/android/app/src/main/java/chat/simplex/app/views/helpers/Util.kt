@@ -311,6 +311,12 @@ fun getFileSize(context: Context, uri: Uri): Long? {
   }
 }
 
+fun saveImage(context: Context, uri: Uri): String? {
+  val source = ImageDecoder.createSource(SimplexApp.context.contentResolver, uri)
+  val bitmap = ImageDecoder.decodeBitmap(source)
+  return saveImage(context, bitmap)
+}
+
 fun saveImage(context: Context, image: Bitmap): String? {
   return try {
     val ext = if (image.hasAlpha()) "png" else "jpg"

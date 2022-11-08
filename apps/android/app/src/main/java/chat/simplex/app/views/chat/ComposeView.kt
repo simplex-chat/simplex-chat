@@ -2,7 +2,6 @@ package chat.simplex.app.views.chat
 
 import ComposeFileView
 import android.Manifest
-import android.app.Activity
 import android.content.*
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -10,11 +9,9 @@ import android.graphics.ImageDecoder
 import android.graphics.drawable.AnimatedImageDrawable
 import android.net.Uri
 import android.provider.MediaStore
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
-import androidx.annotation.CallSuper
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -35,7 +32,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import androidx.core.content.FileProvider
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
@@ -45,7 +41,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
-import java.io.File
 
 @Serializable
 sealed class ComposePreview {
@@ -138,53 +133,22 @@ fun ComposeView(
   showChooseAttachment: () -> Unit
 ) {
   val context = LocalContext.current
-  val linkUrl = remember { mutableStateOf<String?>(null) }
-  val prevLinkUrl = remember { mutableStateOf<String?>(null) }
-  val pendingLinkUrl = remember { mutableStateOf<String?>(null) }
-  val cancelledLinks = remember { mutableSetOf<String>() }
+  val linkUrl = rememberSaveable { mutableStateOf<String?>(null) }
+  val prevLinkUrl = rememberSaveable { mutableStateOf<String?>(null) }
+  val pendingLinkUrl = rememberSaveable { mutableStateOf<String?>(null) }
+  val cancelledLinks = rememberSaveable { mutableSetOf<String>() }
   val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   val textStyle = remember { mutableStateOf(smallFont) }
   // attachments
-  val chosenContent = remember { mutableStateOf<List<UploadContent>>(emptyList()) }
-  val chosenFile = remember { mutableStateOf<Uri?>(null) }
-  val photoUri = rememberSaveable { mutableStateOf<Uri?>(null) }
-  val photoTmpFile = rememberSaveable { mutableStateOf<File?>(null) }
-
-  class ComposeTakePicturePreview: ActivityResultContract<Void?, Bitmap?>() {
-    @CallSuper
-    override fun createIntent(context: Context, input: Void?): Intent {
-      photoTmpFile.value = File.createTempFile("image", ".bmp", SimplexApp.context.filesDir)
-      photoUri.value = FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.provider", photoTmpFile.value!!)
-      return Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-        .putExtra(MediaStore.EXTRA_OUTPUT, photoUri.value)
-    }
-
-    override fun getSynchronousResult(
-      context: Context,
-      input: Void?
-    ): SynchronousResult<Bitmap?>? = null
-
-    override fun parseResult(resultCode: Int, intent: Intent?): Bitmap? {
-      val photoUriVal = photoUri.value
-      val photoTmpFileVal = photoTmpFile.value
-      return if (resultCode == Activity.RESULT_OK && photoUriVal != null && photoTmpFileVal != null) {
-        val source = ImageDecoder.createSource(SimplexApp.context.contentResolver, photoUriVal)
-        val bitmap = ImageDecoder.decodeBitmap(source)
-        photoTmpFileVal.delete()
-        bitmap
-      } else {
-        Log.e(TAG, "Getting image from camera cancelled or failed.")
-        photoTmpFile.value?.delete()
-        null
-      }
-    }
-  }
-
-  val cameraLauncher = rememberLauncherForActivityResult(contract = ComposeTakePicturePreview()) { bitmap: Bitmap? ->
-    if (bitmap != null) {
+  val chosenContent = rememberSaveable { mutableStateOf<List<UploadContent>>(emptyList()) }
+  val chosenFile = rememberSaveable { mutableStateOf<Uri?>(null) }
+  val cameraLauncher = rememberCameraLauncher { uri: Uri? ->
+    if (uri != null) {
+      val source = ImageDecoder.createSource(SimplexApp.context.contentResolver, uri)
+      val bitmap = ImageDecoder.decodeBitmap(source)
       val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
-      chosenContent.value = listOf(UploadContent.SimpleImage(bitmap))
+      chosenContent.value = listOf(UploadContent.SimpleImage(uri))
       composeState.value = composeState.value.copy(preview = ComposePreview.ImagePreview(listOf(imagePreview)))
     }
   }
@@ -215,7 +179,7 @@ fun ComposeView(
           )
         }
       } else {
-        if (bitmap != null) content.add(UploadContent.SimpleImage(bitmap))
+        content.add(UploadContent.SimpleImage(uri))
       }
       if (bitmap != null) {
         imagesPreview.add(resizeImageToStrSize(bitmap, maxDataSize = 14000))
@@ -392,7 +356,7 @@ fun ComposeView(
           is ComposePreview.ImagePreview -> {
             chosenContent.value.forEachIndexed { index, it ->
               val file = when (it) {
-                is UploadContent.SimpleImage -> saveImage(context, it.bitmap)
+                is UploadContent.SimpleImage -> saveImage(context, it.uri)
                 is UploadContent.AnimatedImage -> saveAnimImage(context, it.uri)
               }
               if (file != null) {
