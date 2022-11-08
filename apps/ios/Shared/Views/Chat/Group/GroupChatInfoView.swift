@@ -13,7 +13,6 @@ struct GroupChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
     @ObservedObject var chat: Chat
-    var groupInfo: GroupInfo
     @ObservedObject private var alertManager = AlertManager.shared
     @State private var alert: GroupChatInfoViewAlert? = nil
     @State private var groupLink: String?
@@ -24,99 +23,108 @@ struct GroupChatInfoView: View {
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     enum GroupChatInfoViewAlert: Identifiable {
-        case deleteGroupAlert
+        case deleteGroupAlert(gInfo: GroupInfo)
         case clearChatAlert
         case leaveGroupAlert
         case cantInviteIncognitoAlert
 
-        var id: GroupChatInfoViewAlert { get { self } }
+        var id: String {
+            switch self {
+            case .deleteGroupAlert: return "deleteGroupAlert"
+            case .clearChatAlert: return "clearChatAlert"
+            case .leaveGroupAlert: return "leaveGroupAlert"
+            case .cantInviteIncognitoAlert: return "cantInviteIncognitoAlert"
+            }
+        }
     }
 
     var body: some View {
         NavigationView {
-            let members = chatModel.groupMembers
-                .filter { $0.memberStatus != .memLeft && $0.memberStatus != .memRemoved }
-                .sorted { $0.displayName.lowercased() < $1.displayName.lowercased() }
+            if case let .group(groupInfo) = chat.chatInfo {
+                let members = chatModel.groupMembers
+                    .filter { $0.memberStatus != .memLeft && $0.memberStatus != .memRemoved }
+                    .sorted { $0.displayName.lowercased() < $1.displayName.lowercased() }
 
-            List {
-                groupInfoHeader()
-                    .listRowBackground(Color.clear)
+                List {
+                    groupInfoHeader()
+                        .listRowBackground(Color.clear)
 
-                Section("\(members.count + 1) members") {
-                    if groupInfo.canAddMembers {
-                        groupLinkButton()
-                        if (chat.chatInfo.incognito) {
-                            Label("Invite members", systemImage: "plus")
-                                .foregroundColor(Color(uiColor: .tertiaryLabel))
-                                .onTapGesture { alert = .cantInviteIncognitoAlert }
-                        } else {
-                            addMembersButton()
+                    Section("\(members.count + 1) members") {
+                        if groupInfo.canAddMembers {
+                            groupLinkButton(groupInfo)
+                            if (chat.chatInfo.incognito) {
+                                Label("Invite members", systemImage: "plus")
+                                    .foregroundColor(Color(uiColor: .tertiaryLabel))
+                                    .onTapGesture { alert = .cantInviteIncognitoAlert }
+                            } else {
+                                addMembersButton(groupInfo)
+                            }
+                        }
+                        memberView(groupInfo.membership, user: true)
+                        ForEach(members) { member in
+                            Button {
+                                Task {
+                                    do {
+                                        let stats = try await apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
+                                        await MainActor.run { connectionStats = stats }
+                                    } catch let error {
+                                        logger.error("apiGroupMemberInfo error: \(responseError(error))")
+                                    }
+                                    await MainActor.run { selectedMember = member }
+                                }
+                            } label: { memberView(member) }
                         }
                     }
-                    memberView(groupInfo.membership, user: true)
-                    ForEach(members) { member in
-                        Button {
-                            Task {
-                                do {
-                                    let stats = try await apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
-                                    await MainActor.run { connectionStats = stats }
-                                } catch let error {
-                                    logger.error("apiGroupMemberInfo error: \(responseError(error))")
-                                }
-                                await MainActor.run { selectedMember = member }
-                            }
-                        } label: { memberView(member) }
+                    .sheet(isPresented: $showAddMembersSheet) {
+                        AddGroupMembersView(chat: chat, groupInfo: groupInfo)
                     }
-                }
-                .sheet(isPresented: $showAddMembersSheet) {
-                    AddGroupMembersView(chat: chat, groupInfo: groupInfo)
-                }
-                .sheet(item: $selectedMember, onDismiss: {
-                    selectedMember = nil
-                    connectionStats = nil
-                }) { _ in
-                    GroupMemberInfoView(groupInfo: groupInfo, member: $selectedMember, connectionStats: $connectionStats)
-                }
-                .sheet(isPresented: $showGroupProfile) {
-                    GroupProfileView(groupId: groupInfo.apiId, groupProfile: groupInfo.groupProfile)
-                }
+                    .sheet(item: $selectedMember, onDismiss: {
+                        selectedMember = nil
+                        connectionStats = nil
+                    }) { _ in
+                        GroupMemberInfoView(groupInfo: groupInfo, member: $selectedMember, connectionStats: $connectionStats)
+                    }
+                    .sheet(isPresented: $showGroupProfile) {
+                        GroupProfileView(groupId: groupInfo.apiId, groupProfile: groupInfo.groupProfile)
+                    }
 
-                Section {
-                    if groupInfo.canEdit {
-                        editGroupButton()
+                    Section {
+                        if groupInfo.canEdit {
+                            editGroupButton()
+                        }
+                        clearChatButton()
+                        if groupInfo.canDelete {
+                            deleteGroupButton(groupInfo)
+                        }
+                        if groupInfo.membership.memberCurrent {
+                            leaveGroupButton()
+                        }
                     }
-                    clearChatButton()
-                    if groupInfo.canDelete {
-                        deleteGroupButton()
-                    }
-                    if groupInfo.membership.memberCurrent {
-                        leaveGroupButton()
+
+                    if developerTools {
+                        Section(header: Text("For console")) {
+                            infoRow("Local name", chat.chatInfo.localDisplayName)
+                            infoRow("Database ID", "\(chat.chatInfo.apiId)")
+                        }
                     }
                 }
-
-                if developerTools {
-                    Section(header: Text("For console")) {
-                        infoRow("Local name", chat.chatInfo.localDisplayName)
-                        infoRow("Database ID", "\(chat.chatInfo.apiId)")
+                .navigationBarHidden(true)
+                .onAppear {
+                    do {
+                        groupLink = try apiGetGroupLink(groupInfo.groupId)
+                    } catch let error {
+                        logger.error("GroupChatInfoView apiGetGroupLink: \(responseError(error))")
                     }
                 }
             }
-            .navigationBarHidden(true)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .alert(item: $alert) { alertItem in
             switch(alertItem) {
-            case .deleteGroupAlert: return deleteGroupAlert()
+            case let .deleteGroupAlert(gInfo): return deleteGroupAlert(gInfo)
             case .clearChatAlert: return clearChatAlert()
             case .leaveGroupAlert: return leaveGroupAlert()
             case .cantInviteIncognitoAlert: return cantInviteIncognitoAlert()
-            }
-        }
-        .onAppear {
-            do {
-                groupLink = try apiGetGroupLink(groupInfo.groupId)
-            } catch let error {
-                logger.error("GroupChatInfoView apiGetGroupLink: \(responseError(error))")
             }
         }
     }
@@ -141,7 +149,7 @@ struct GroupChatInfoView: View {
         .frame(maxWidth: .infinity, alignment: .center)
     }
 
-    private func addMembersButton() -> some View {
+    private func addMembersButton(_ groupInfo: GroupInfo) -> some View {
         Button {
             Task {
                 let groupMembers = await apiListMembers(groupInfo.groupId)
@@ -186,7 +194,7 @@ struct GroupChatInfoView: View {
         }
     }
 
-    private func groupLinkButton() -> some View {
+    private func groupLinkButton(_ groupInfo: GroupInfo) -> some View {
         NavigationLink {
             GroupLinkView(groupId: groupInfo.groupId, groupLink: $groupLink)
                 .navigationBarTitleDisplayMode(.inline)
@@ -204,9 +212,9 @@ struct GroupChatInfoView: View {
         }
     }
 
-    func deleteGroupButton() -> some View {
+    func deleteGroupButton(_ groupInfo: GroupInfo) -> some View {
         Button(role: .destructive) {
-            alert = .deleteGroupAlert
+            alert = .deleteGroupAlert(gInfo: groupInfo)
         } label: {
             Label("Delete group", systemImage: "trash")
                 .foregroundColor(Color.red)
@@ -232,10 +240,10 @@ struct GroupChatInfoView: View {
     }
 
     // TODO reuse this and clearChatAlert with ChatInfoView
-    private func deleteGroupAlert() -> Alert {
+    private func deleteGroupAlert(_ groupInfo: GroupInfo) -> Alert {
         return Alert(
             title: Text("Delete group?"),
-            message: deleteGroupAlertMessage(),
+            message: deleteGroupAlertMessage(groupInfo),
             primaryButton: .destructive(Text("Delete")) {
                 Task {
                     do {
@@ -254,7 +262,7 @@ struct GroupChatInfoView: View {
         )
     }
 
-    private func deleteGroupAlertMessage() -> Text {
+    private func deleteGroupAlertMessage(_ groupInfo: GroupInfo) -> Text {
         groupInfo.membership.memberCurrent ? Text("Group will be deleted for all members - this cannot be undone!") : Text("Group will be deleted for you - this cannot be undone!")
     }
 
@@ -296,6 +304,6 @@ func cantInviteIncognitoAlert() -> Alert {
 
 struct GroupChatInfoView_Previews: PreviewProvider {
     static var previews: some View {
-        GroupChatInfoView(chat: Chat(chatInfo: ChatInfo.sampleData.group, chatItems: []), groupInfo: GroupInfo.sampleData)
+        GroupChatInfoView(chat: Chat(chatInfo: ChatInfo.sampleData.group, chatItems: []))
     }
 }

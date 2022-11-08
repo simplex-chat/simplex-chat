@@ -122,7 +122,7 @@ struct ChatView: View {
                         ChatInfoToolbar(chat: chat)
                     }
                     .sheet(isPresented: $showChatInfoSheet) {
-                        GroupChatInfoView(chat: chat, groupInfo: groupInfo)
+                        GroupChatInfoView(chat: chat)
                     }
                 }
             }
