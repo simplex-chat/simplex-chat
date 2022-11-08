@@ -216,6 +216,7 @@ It is possible to donate via:
 - [OpenCollective](https://opencollective.com/simplex-chat) - it charges a commission, and also accepts donations in crypto-currencies.
 - Monero wallet: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt
 - Bitcoin wallet: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
+- please let us know, via GitHub issue or chat, if you want to create a donation in some other cryptocurrency - we will add the address to the list.
 
 Thank you,
 
