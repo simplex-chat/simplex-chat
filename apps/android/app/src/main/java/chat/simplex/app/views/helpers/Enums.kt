@@ -33,6 +33,6 @@ enum class NewChatSheetState {
 }
 
 sealed class UploadContent {
-  data class SimpleImage(val bitmap: Bitmap): UploadContent()
+  data class SimpleImage(val uri: Uri): UploadContent()
   data class AnimatedImage(val uri: Uri): UploadContent()
 }

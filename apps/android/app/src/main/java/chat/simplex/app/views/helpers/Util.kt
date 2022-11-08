@@ -14,7 +14,9 @@ import android.text.SpannedString
 import android.text.style.*
 import android.util.Base64
 import android.util.Log
+import android.view.View
 import android.view.ViewTreeObserver
+import android.view.inputmethod.InputMethodManager
 import androidx.annotation.StringRes
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
@@ -68,6 +70,9 @@ fun getKeyboardState(): State<KeyboardState> {
 
   return keyboardState
 }
+
+fun hideKeyboard(view: View) =
+  (SimplexApp.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(view.windowToken, 0)
 
 // Resource to annotated string from
 // https://stackoverflow.com/questions/68549248/android-jetpack-compose-how-to-show-styled-text-from-string-resources
@@ -304,6 +309,12 @@ fun getFileSize(context: Context, uri: Uri): Long? {
     cursor.moveToFirst()
     cursor.getLong(sizeIndex)
   }
+}
+
+fun saveImage(context: Context, uri: Uri): String? {
+  val source = ImageDecoder.createSource(SimplexApp.context.contentResolver, uri)
+  val bitmap = ImageDecoder.decodeBitmap(source)
+  return saveImage(context, bitmap)
 }
 
 fun saveImage(context: Context, image: Bitmap): String? {
