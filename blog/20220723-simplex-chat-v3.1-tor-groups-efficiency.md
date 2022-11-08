@@ -41,7 +41,7 @@ curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/inst
 
 Groups have been supported by SimpleX Chat core for a very long time, but there was no user interface in the mobile apps to use them - users had to use chat console to create groups, add members, and accept invitations.
 
-This release allows accepting the invitations to join groups via mobile apps UI, making it much easier to create groups - only one user (a group owner) needs to use chat console, while all other groups members just need to tap a button in the UI to join or leave the group. Full group UI is coming in v3.1 in 1-2 weeks, but you can already start using groups today by installing beta-versions of mobile apps via [TestFlight](https://testflight.apple.com/join/DWuT2LQu), [Google PlayStore Beta](https://play.google.com/apps/testing/chat.simplex.app) and [APK download](https://github.com/simplex-chat/simplex-chat/releases/download/v3.1.0-beta.0/simplex.apk).
+This release allows accepting the invitations to join groups via mobile apps UI, making it much easier to create groups - only one user (a group owner) needs to use chat console, while all other groups members just need to tap a button in the UI to join or leave the group. Full group UI is coming in v3.1 in 1-2 weeks, but you can already start using groups today by installing beta-versions of mobile apps via [TestFlight](https://testflight.apple.com/join/DWuT2LQu), [Google PlayStore Beta](https://play.google.com/apps/testing/chat.simplex.app) and [APK download](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk).
 
 To manage groups via terminal app or via chat console in the mobile apps you have to use these commands:
 
