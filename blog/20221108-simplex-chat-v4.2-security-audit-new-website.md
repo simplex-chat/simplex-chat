@@ -2,6 +2,7 @@
 layout: layouts/article.html
 title: "Security audit by Trail of Bits, the new website and v4.2 released"
 date: 2022-09-28
+image: ./images/20221108-trail-of-bits.png
 permalink: "/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html"
 ---
 
@@ -12,6 +13,8 @@ permalink: "/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html"
 Please note: This is work in progress to reserve permalink, to be published on November 8
 
 ## Security audit by Trail of Bits
+
+<img src="./images/20221108-trail-of-bits.png">
 
 When we first launched the app in March the response on Reddit was: "Have you been audited or should we just ignore you?".
 
