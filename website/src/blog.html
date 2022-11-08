@@ -59,7 +59,7 @@ active_blog: true
                             <a href="{{ blog.url }}">{{ blog.data.title | safe }}</a>
                         </h1>
                         <p class="text-sm text-[#A8B0B4] font-medium mt-2 mb-4 tracking-[0.03em]">
-                            {{ blog.data.date.toUTCString().split(' ').slice(0, 4).join(' ') }}
+                            {{ blog.data.date.toUTCString().split(' ').slice(1, 4).join(' ') }}
                         </p>
                         {% if blog.data.previewBody %}
                             <div class="mb-4 dark:text-white">
