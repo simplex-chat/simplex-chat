@@ -2,7 +2,7 @@
 layout: layouts/article.html
 title: "SimpleX announces SimpleX Chat v3 &mdash; with encrypted calls and iOS push notifications"
 date: 2022-07-11
-image: ./images/20220711-call.png
+image: images/20220711-call.png
 previewBody: blog_previews/20220711.html
 permalink: "/blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.html"
 ---

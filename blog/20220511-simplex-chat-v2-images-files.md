@@ -2,7 +2,7 @@
 layout: layouts/article.html
 title: "SimpleX Chat v2.0 - sending images and files in mobile apps"
 date: 2022-05-11
-image: ./images/20220511-images-files.png
+image: images/20220511-images-files.png
 preview: Read how SimpleX delivers messages without having user profile identifiers of any kind.
 permalink: "/blog/20220511-simplex-chat-v2-images-files.html"
 ---

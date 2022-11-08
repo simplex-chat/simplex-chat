@@ -2,7 +2,7 @@
 layout: layouts/article.html
 title: "SimpleX Chat v2.2 - the new privacy and security features"
 date: 2022-06-04
-image: ./images/20220604-privacy-settings.png
+image: images/20220604-privacy-settings.png
 imageBottom: true
 previewBody: blog_previews/20220604.html
 permalink: "/blog/20220604-simplex-chat-new-privacy-security-settings.html"

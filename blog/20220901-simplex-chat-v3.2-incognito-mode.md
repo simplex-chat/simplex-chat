@@ -2,7 +2,7 @@
 layout: layouts/article.html
 title: "SimpleX Chat v3.2 is released &mdash; meet Incognito mode, unique to Simplex Chat"
 date: 2022-09-01
-image: ./images/20220901-incognito1.png
+image: images/20220901-incognito1.png
 imageBottom: true
 previewBody: blog_previews/20220901.html
 permalink: "/blog/20220901-simplex-chat-v3.2-incognito-mode.html"
