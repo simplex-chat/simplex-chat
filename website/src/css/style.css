@@ -652,3 +652,49 @@ p a{
 .contact-tab:hover svg{
   transform: rotate(0deg);
 }
+
+/* Simplex Explained Tabs */
+.tab-button {
+  color: #a8b0b4;
+  background: linear-gradient(#fff, #fff) padding-box,
+      linear-gradient(to bottom, #a8b0b4, transparent) border-box;
+  border: 1px solid transparent;
+  border-radius: 6px 6px 0px 0px;
+  transition: color 0.3s ease;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.dark .tab-button{
+  color: #fff;
+  background: linear-gradient(#0C0B13, #0C0B13) padding-box,
+      linear-gradient(to bottom, #01F1FF, transparent) border-box;
+}
+.tab-button.active {
+  color: #0053d0;
+  text-decoration: none;
+}
+.dark .tab-button.active {
+  color: #70F0F9;
+}
+
+/* Blog List */
+#blog-list ul li {
+  list-style: disc;
+}
+#blog-list ul {
+  list-style-position: inside;
+  overflow: auto;
+}
+#blog-list ul li {
+  -webkit-margin-start: 1rem;
+  color: #000;
+}
+.dark #blog-list ul li {
+  color: #fff;
+}
+#blog-list ul li::marker {
+  color: black;
+}
+.dark #blog-list ul li::marker {
+  color: white;
+}

@@ -1,28 +1,3 @@
-<style>
-    .tab-button {
-        color: #a8b0b4;
-        background: linear-gradient(#fff, #fff) padding-box,
-            linear-gradient(to bottom, #a8b0b4, transparent) border-box;
-        border: 1px solid transparent;
-        border-radius: 6px 6px 0px 0px;
-        transition: color 0.3s ease;
-        text-decoration: underline;
-        text-underline-offset: 3px;
-    }
-    .dark .tab-button{
-        color: #fff;
-        background: linear-gradient(#0C0B13, #0C0B13) padding-box,
-            linear-gradient(to bottom, #01F1FF, transparent) border-box;
-    }
-    .tab-button.active {
-        color: #0053d0;
-        text-decoration: none;
-    }
-    .dark .tab-button.active {
-        color: #70F0F9;
-    }
-</style>
-
 <section id="simplex-explained" class="bg-primary-bg-light dark:bg-primary-bg-dark py-[80px] px-5">
     <div class="container">
         <p class="text-[35px] lg:text-[45px] text-center font-bold text-grey-black dark:text-white mb-[40px]">Simplex explained</p>
@@ -82,35 +57,3 @@
         </div>
     </div>
 </section>
-
-<script>
-   
-window.addEventListener("load", function () {
-    const simplexExplainedSwiper__bullets = document.querySelectorAll(".simplex-explained-swiper .swiper-pagination > span");
-    const simplexExplainedSwiper__tabs = document.querySelectorAll("#simplex-explained .tabs .tab-button");
-
-    const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-            if (mutation.type === "attributes" && mutation.attributeName === "class" && mutation.target.classList.contains("swiper-pagination")) {
-                simplexExplainedSwiper__bullets.forEach((el,index) => {
-                    if (el.classList.contains("swiper-pagination-bullet-active")) {
-                        simplexExplainedSwiper__tabs[index].classList.add("active");
-                    } else {
-                        simplexExplainedSwiper__tabs[index].classList.remove("active");
-                    }
-                });
-            }
-        });
-    }); 
-
-    const targetNode = document.querySelector(".simplex-explained-swiper .swiper-pagination");
-    observer.observe(targetNode, { attributes: true });
-
-    window.addEventListener('click',e=>{
-        if(e.target.closest("#simplex-explained .tabs .tab-button")){
-            const index = e.target.closest("#simplex-explained .tabs .tab-button").dataset.btnIndex;
-            simplexExplainedSwiper__bullets[index].click();
-        }
-    })
-});
-</script>

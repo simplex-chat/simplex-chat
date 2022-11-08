@@ -6,31 +6,6 @@ ogURL: "https://simplex.chat/blog"
 templateEngineOverride: njk
 active_blog: true
 ---
-{% block css_links %}
-    <style>
-        #blog-list ul li {
-            list-style: disc;
-        }
-        #blog-list ul {
-            list-style-position: inside;
-            overflow: auto;
-        }
-        #blog-list ul li {
-            -webkit-margin-start: 1rem;
-            color: #000;
-        }
-        .dark #blog-list ul li {
-            color: #fff;
-        }
-        #blog-list ul li::marker {
-            color: black;
-        }
-        .dark #blog-list ul li::marker {
-            color: white;
-        }
-    </style>
-{% endblock %}
-
 <section class="py-10 px-5 mt-[66px]" id="blog-list">
     <div class="container">
         <p class="text-[38px] text-center font-bold text-active-blue mb-9">Latest news</p>

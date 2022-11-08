@@ -71,17 +71,3 @@
         {{ overlay(section) }}
     {% endif %}
 {% endfor %}
-
-<script>
-    window.addEventListener('load', function() {
-        window.addEventListener('click',e=>{
-            if(e.target.closest('.open-card-btn') || e.target.closest('.close-card-btn')){
-                e.target.closest('.simplex-unique-card').classList.toggle('active-card');
-                e.target.closest('.hide-show-btn').querySelector('.open-card-btn').classList.toggle('hidden');
-                e.target.closest('.hide-show-btn').querySelector('.open-card-btn').classList.toggle('flex');
-                e.target.closest('.hide-show-btn').querySelector('.close-card-btn').classList.toggle('hidden');
-                e.target.closest('.hide-show-btn').querySelector('.close-card-btn').classList.toggle('flex');
-            }
-        })
-    });
-</script>
