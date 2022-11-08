@@ -3,6 +3,7 @@ layout: layouts/article.html
 title: "Security audit by Trail of Bits, the new website and v4.2 released"
 date: 2022-09-28
 image: ./images/20221108-trail-of-bits.png
+previewBody: blog_previews/20221108.html
 permalink: "/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html"
 ---
 
@@ -78,8 +79,7 @@ New in this release:
 - fixed 3 issues from the security audit!
 - group links - group admins can create the links for new members to join
 - auto-accept contact requests + configure whether to accept incognito and welcome message
-- change group member role
-- mark chat as unread
+- small things: change group member role, mark chat as unread, send stickers and GIFs from Android keyboards.
 
 Beta features (enable Developer tools to try them):
 
