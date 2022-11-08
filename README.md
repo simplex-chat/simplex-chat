@@ -43,7 +43,7 @@
 - [For developers](#for-developers)
 - [Roadmap](#roadmap)
 - [Help us with donations](#help-us-with-donations)
-- [Disclaimer, License](#disclaimer)
+- [Disclaimers, Security contact, License](#disclaimers)
 
 ## Why privacy matters
 
@@ -177,20 +177,20 @@ If you are considering developing with SimpleX platform please get in touch for 
 - ✅ Manual chat history deletion.
 - ✅ End-to-end encrypted WebRTC audio and video calls via the mobile apps.
 - ✅ Privacy preserving instant notifications for iOS using Apple Push Notification service.
-- ✅ Chat database export and import
+- ✅ Chat database export and import.
 - ✅ Chat groups in mobile apps.
 - ✅ Connecting to messaging servers via Tor.
 - ✅ Dual server addresses to access messaging servers as v3 hidden services.
 - ✅ Chat server and TypeScript client SDK to develop chat interfaces, integrations and chat bots (ready for announcement).
 - ✅ Incognito mode to share a new random name with each contact.
 - ✅ Chat database encryption.
-- 🏗 Automatic chat history deletion.
+- ✅ Automatic chat history deletion.
+- ✅ Links to join groups and improve groups stability.
 - 🏗 SMP queue redundancy and rotation.
-- 🏗 Links to join groups and improve groups stability.
-- Feeds/broadcasts
+- 🏗 Voice messages.
+- Feeds/broadcasts.
 - Disappearing messages, with mutual agreement.
-- Voice messages
-- Video messages
+- Video messages.
 - Web widgets for custom interactivity in the chats.
 - Message delivery confirmation.
 - Supporting the same profile on multiple devices.
@@ -226,11 +226,27 @@ Evgeny
 
 SimpleX Chat founder
 
-## Disclaimer
+## Disclaimers
 
-[SimpleX protocols and security model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) was reviewed and had many improvements in v1.0.0; we are currently arranging for the independent implementation audit.
+[SimpleX protocols and security model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) was reviewed, and had many breaking changes and improvements in v1.0.0.
 
-You are likely to discover some bugs - we would really appreciate if you use it and let us know anything that needs to be fixed or improved.
+The security audit was performed in October 2022 by [Trail of Bits](https://www.trailofbits.com/about), and most fixes were released in v4.2.0 – see [the announcement](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.html).
+
+SimpleX Chat is still a relatively early stage platform (the mobile apps were released in March 2022), so you may discover some bugs and missing features. We would really appreciate if you let us know anything that needs to be fixed or improved.
+
+The default servers configured in the app are provided on the best effort basis. We are currently not guaranteeing any SLAs, although historically our servers had over 99.9% uptime each.
+
+We have never provided or have been requested access to our servers or any information from our servers by any third parties. If we are ever requested to provide such access or information, we will be following due legal process.
+
+We do not log IP addresses of the users and we do not perform any traffic correlation on our servers. If transport level security is critical you must use Tor or some other similar network to access messaging servers. We will be improving the client applications to reduce the opportunities for traffic correlation.
+
+Please read more in [Terms & privacy policy](./PRIVACY.md).
+
+## Security contact
+
+To report a security vulnerability, please send us email to chat@simplex.chat. We will coordinate the fix and disclosure. Please do NOT report security vulnerabilities via GitHub issues.
+
+Please treat any findings of possible traffic correlation attacks allowing to correlate two different conversations to the same user, other than covered in [the threat model](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md#threat-model), as security vulnerabilities, and follow this disclosure process.
 
 ## License
 
