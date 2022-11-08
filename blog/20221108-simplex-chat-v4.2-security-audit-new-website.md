@@ -115,7 +115,7 @@ Let me know if you'd like to add some other countries to the list, and join via 
 
 ### Auto-accept contact requests
 
-<img src="./images/20221108-address1.png" width="330"> <img src="./images/20220928-address2.png" width="330">
+<img src="./images/20221108-address1.png" width="330"> <img src="./images/20221108-address2.png" width="330">
 
 When somebody connects to you via your long-term address you have to manually accept a connection request (it shows in blue color in the list of chats). The feature that we added in this release allows to configure the app to accept contact requests automatically, and also choose whether this contact should receive your main profile or a random incognito profile (independent of the current app setting), and add an optional auto-reply message.
 
