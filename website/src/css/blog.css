@@ -1,71 +1,164 @@
-h1 {
-  font-size: 1.8rem;
-  font-weight: 600;
-  letter-spacing: 0.6px;
+#article h1 {
+  font-size: 38px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: -webkit-linear-gradient(to bottom, #53C1FF -50%, #0053D0 160%);
+  background: linear-gradient(to bottom, #53C1FF -50%, #0053D0 160%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-fill-color: transparent;
+
+  margin-bottom: 32px;
 }
 
-section.container > div > p:nth-child(2) {
+@media (min-width:768px) {
+  #article h1 {
+    font-size: 45px;
+    margin-bottom: 50px;
+  }
+}
+
+.dark #article h1 {
+  background: -webkit-linear-gradient(to bottom, #70F0F9 100%, #70F0F9 100%);
+  background: linear-gradient(to bottom, #70F0F9 100%, #70F0F9 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-fill-color: transparent;
+}
+
+section.container>div>p:nth-child(2) {
   margin: 0;
-  margin-bottom: 2rem;
-  margin-top: 4px;
-  font-size: 1rem;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  color:
+    #3F484B;
 }
 
-h2 {
-  font-size: 1.6rem;
-  font-weight: 600;
-  letter-spacing: 0.6px;
-  margin-bottom: 1rem;
-  margin-top: 2.2rem;
+.dark section.container>div>p:nth-child(2) {
+  color: #A8B0B4;
 }
 
-h3 {
-  font-size: 1.2rem;
-  font-weight: 600;
-  letter-spacing: 0.6px;
-  margin-bottom: 1rem;
-  margin-top: 1.8rem;
+#article h2 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #3F484B;
 }
 
-ul li,
-ol li {
-  text-decoration: none;
-  /* list-style: none; */
-  font-size: 1.1rem;
-  line-height: 30px;
-  letter-spacing: 0.6px;
-  margin: 0.5rem 0;
-  -webkit-margin-start: 1rem;
+@media (min-width:768px) {
+  #article h2 {
+    font-size: 38px;
+  }
 }
-ul,
-ol {
+
+.dark #article h2 {
+  color: white;
+}
+
+#article h3 {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #606C71;
+
+  margin: 50px 0 25px 0;
+}
+
+@media (min-width:768px) {
+  #article h3 {
+    font-size: 28px;
+  }
+}
+
+.dark #article h3 {
+  color: white;
+}
+
+#article p {
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  color: black;
+  margin: 1.2rem 0;
+}
+
+.dark #article p {
+  color: white;
+}
+
+#article ul,
+#article ol {
   list-style-position: inside;
-  /* list-style-type: decimal; */
   overflow: auto;
+  margin: 1rem 0;
 }
-ul li::marker,
-ol li::marker {
-  /* content: "->   "; */
-  font-weight: 600;
-  /* color: #fbd561; */
+
+#article ul li,
+#article ol li {
+  -webkit-margin-start: 1rem;
+  color: #000;
 }
+
+.dark #article ul li,
+.dark #article ol li {
+  color: #fff;
+}
+
+#article ul li::marker,
+#article ol li::marker {
+  color: black;
+}
+
+.dark #article ul li::marker,
+.dark #article ol li::marker {
+  color: white;
+}
+
+#article ul li a,
+#article ol li a {
+  line-height: 30px;
+}
+
+#article ul li {
+  list-style: disc;
+}
+
+#article ol li {
+  list-style: decimal;
+}
+
+#article a {
+  color: #0053D0;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.dark #article a {
+  color: #70F0F9;
+}
+
 pre {
   overflow: auto;
 }
+
+.dark pre {
+  color: white;
+}
+
 /* code{
     width: 100%;
     height: auto;
 } */
 
-p {
-  margin: 1rem 0;
-}
+
 
 html {
   scroll-behavior: smooth;
 }
 
-h1::before,
+/* h1::before,
 h2::before,
 h3::before {
   display: block;
@@ -74,8 +167,35 @@ h3::before {
   height: 80px;
   visibility: hidden;
   pointer-events: none;
-}
+} */
 
 :focus {
   outline: none;
+}
+
+p,
+a,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+li,
+ul,
+ol,
+span,
+div,
+blockquote,
+pre,
+code {
+  clear: both;
+}
+
+#article p img {
+  float: left;
+}
+
+#article img {
+  margin-bottom: 1.5rem;
 }

@@ -6,7 +6,9 @@
   <!-- Connect via Link - MainActivity.kt -->
   <string name="connect_via_contact_link">Connect via contact link?</string>
   <string name="connect_via_invitation_link">Connect via invitation link?</string>
+  <string name="connect_via_group_link">Connect via group link?</string>
   <string name="profile_will_be_sent_to_contact_sending_link">Your profile will be sent to the contact that you received this link from.</string>
+  <string name="you_will_join_group">You will join a group this link refers to and connect to its group members.</string>
   <string name="connect_via_link_verb">Connect</string>
 
   <!-- Server info - ChatModel.kt -->
@@ -138,6 +140,10 @@
   <string name="auth_retry">Retry</string>
   <string name="auth_stop_chat">Stop chat</string>
   <string name="auth_open_chat_console">Open chat console</string>
+
+  <!-- Chat Alerts - ChatItemView.kt -->
+  <string name="message_delivery_error_title">Message delivery error</string>
+  <string name="message_delivery_error_desc">Most likely this contact has deleted the connection with you.</string>
 
   <!-- Chat Actions - ChatItemView.kt (and general) -->
   <string name="reply_verb">Reply</string>

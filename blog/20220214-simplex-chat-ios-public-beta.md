@@ -2,6 +2,7 @@
 layout: layouts/article.html
 title: "SimpleX announces SimpleX Chat public beta for iOS"
 date: 2022-02-14
+preview: Our first prototype of mobile UI for iOS is available!
 permalink: "/blog/20220214-simplex-chat-ios-public-beta.html"
 ---
 

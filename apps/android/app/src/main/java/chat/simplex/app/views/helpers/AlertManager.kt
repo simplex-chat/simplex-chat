@@ -3,25 +3,20 @@ package chat.simplex.app.views.helpers
 import android.util.Log
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.ExperimentalComposeUiApi
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import chat.simplex.app.R
 import chat.simplex.app.TAG
 
 class AlertManager {
-  var alertView = mutableStateOf<(@Composable () -> Unit)?>(null)
-  var presentAlert = mutableStateOf<Boolean>(false)
+  var alertViews = mutableStateListOf<(@Composable () -> Unit)>()
 
   fun showAlert(alert: @Composable () -> Unit) {
     Log.d(TAG, "AlertManager.showAlert")
-    alertView.value = alert
-    presentAlert.value = true
+    alertViews.add(alert)
   }
 
   fun hideAlert() {
-    presentAlert.value = false
-    alertView.value = null
+    alertViews.removeLastOrNull()
   }
 
   fun showAlertDialogButtons(
@@ -101,7 +96,7 @@ class AlertManager {
 
   @Composable
   fun showInView() {
-    if (presentAlert.value) alertView.value?.invoke()
+    remember { alertViews }.lastOrNull()?.invoke()
   }
 
   companion object {

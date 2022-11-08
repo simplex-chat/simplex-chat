@@ -243,7 +243,7 @@ fun ComposeView(
       }
     }
   }
-  val galleryLauncher = rememberLauncherForActivityResult(contract = PickFromGallery()) { processPickedImage(it, null) }
+  val galleryLauncher = rememberLauncherForActivityResult(contract = PickMultipleFromGallery()) { processPickedImage(it, null) }
   val galleryLauncherFallback = rememberGetMultipleContentsLauncher { processPickedImage(it, null) }
   val filesLauncher = rememberGetContentLauncher { processPickedFile(it, null) }
 
@@ -550,7 +550,16 @@ fun ComposeView(
   }
 }
 
-class PickFromGallery: ActivityResultContract<Int, List<Uri>>() {
+class PickFromGallery: ActivityResultContract<Int, Uri?>() {
+  override fun createIntent(context: Context, input: Int) =
+    Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI).apply {
+      type = "image/*"
+    }
+
+  override fun parseResult(resultCode: Int, intent: Intent?): Uri? = intent?.data
+}
+
+class PickMultipleFromGallery: ActivityResultContract<Int, List<Uri>>() {
   override fun createIntent(context: Context, input: Int) =
     Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI).apply {
       putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)

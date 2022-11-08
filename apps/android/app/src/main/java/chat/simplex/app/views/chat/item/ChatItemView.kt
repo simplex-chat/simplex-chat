@@ -56,10 +56,21 @@ fun ChatItemView(
       .fillMaxWidth(),
     contentAlignment = alignment,
   ) {
+    val onClick = {
+      when (cItem.meta.itemStatus) {
+        is CIStatus.SndErrorAuth -> {
+          showMsgDeliveryErrorAlert(generalGetString(R.string.message_delivery_error_desc))
+        }
+        is CIStatus.SndError -> {
+          showMsgDeliveryErrorAlert(generalGetString(R.string.unknown_error) + ": ${cItem.meta.itemStatus.agentError.string}")
+        }
+        else -> {}
+      }
+    }
     Column(
       Modifier
         .clip(RoundedCornerShape(18.dp))
-        .combinedClickable(onLongClick = { showMenu.value = true }, onClick = {})
+        .combinedClickable(onLongClick = { showMenu.value = true }, onClick = onClick)
     ) {
       @Composable fun ContentItem() {
         if (cItem.file == null && cItem.quotedItem == null && isShortEmoji(cItem.content.text)) {
@@ -207,6 +218,13 @@ fun deleteMessageAlertDialog(chatItem: ChatItem, deleteMessage: (Long, CIDeleteM
         }
       }
     }
+  )
+}
+
+private fun showMsgDeliveryErrorAlert(description: String) {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(R.string.message_delivery_error_title),
+    text = description,
   )
 }
 
