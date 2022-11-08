@@ -2,6 +2,7 @@
 layout: layouts/article.html
 title: "Instant notifications for SimpleX Chat mobile apps"
 date: 2022-04-04
+preview: Design of private instant notifications on Android and for push notifications for iOS.
 permalink: "/blog/20220404-simplex-chat-instant-notifications.html"
 ---
 
@@ -63,7 +64,7 @@ How does it work? When the app is first started on an Android device, it starts 
 
 This service continues running when the app is switched off, and it is restarted when the device is restarted even if you don't open the app - so the message notifications arrive instantly every time. To maximize battery life, it can be turned off by switching off "Private notifications". You will still receive notifications while the app is running or in the background.
 
-So, for Android we can now deliver instant message notifications without compromising users' privacy in any way. The app version 1.5 that includes private instant notifications is now available on [Play Store](https://play.google.com/store/apps/details?id=chat.simplex.app), in our [F-Droid repo](https://app.simplex.chat/) and via direct [APK](https://github.com/simplex-chat/website/raw/master/simplex.apk) downloads!
+So, for Android we can now deliver instant message notifications without compromising users' privacy in any way. The app version 1.5 that includes private instant notifications is now available on [Play Store](https://play.google.com/store/apps/details?id=chat.simplex.app), in our [F-Droid repo](https://app.simplex.chat/) and via direct [APK](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk) downloads!
 
 Please let us what needs to be improved - it's only the first version of instant notifications for Android!
 

@@ -65,20 +65,30 @@ fun ChatView(chatModel: ChatModel) {
   LaunchedEffect(Unit) {
     // snapshotFlow here is because it reacts much faster on changes in chatModel.chatId.value.
     // With LaunchedEffect(chatModel.chatId.value) there is a noticeable delay before reconstruction of the view
-    snapshotFlow { chatModel.chatId.value }
-      .distinctUntilChanged()
-      .collect {
-        if (activeChat.value?.id != chatModel.chatId.value) {
-          activeChat.value = if (chatModel.chatId.value == null) {
-            null
-          } else {
+    launch {
+      snapshotFlow { chatModel.chatId.value }
+        .distinctUntilChanged()
+        .collect {
+          if (activeChat.value?.id != chatModel.chatId.value && chatModel.chatId.value != null) {
             // Redisplay the whole hierarchy if the chat is different to make going from groups to direct chat working correctly
             // Also for situation when chatId changes after clicking in notification, etc
-            chatModel.getChat(chatModel.chatId.value!!)
+            activeChat.value = chatModel.getChat(chatModel.chatId.value!!)
           }
+          markUnreadChatAsRead(activeChat, chatModel)
         }
-        markUnreadChatAsRead(activeChat, chatModel)
-      }
+    }
+    launch {
+      // .toList() is important for making observation working
+      snapshotFlow { chatModel.chats.toList() }
+        .distinctUntilChanged()
+        .collect { chats ->
+          chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }.let {
+            // Only changed chatInfo is important thing. Other properties can be skipped for reducing recompositions
+            if (it?.chatInfo != activeChat.value?.chatInfo) {
+              activeChat.value = it
+          }}
+        }
+    }
   }
 
   if (activeChat.value == null || user == null) {
@@ -121,9 +131,7 @@ fun ChatView(chatModel: ChatModel) {
           if (cInfo is ChatInfo.Direct) {
             val contactInfo = chatModel.controller.apiContactInfo(cInfo.apiId)
             ModalManager.shared.showModalCloseable(true) { close ->
-              ChatInfoView(chatModel, cInfo.contact, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, close) {
-                activeChat.value = it
-              }
+              ChatInfoView(chatModel, cInfo.contact, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, close)
             }
           } else if (cInfo is ChatInfo.Group) {
             setGroupMembers(cInfo.groupInfo, chatModel)

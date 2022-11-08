@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{{ title }}</title>
+        <meta name="description" content="{{ description }}"/>
+        <meta name="Content-Type" content="text/html;charset=utf-8"/>
+        <meta property="og:type" content="website"/>
+        <meta property="og:title" content="{{ title }}"/>
+        <meta property="og:description" content="{{ description }}"/>
+        <meta property="og:image" content="https://simplex.chat/img/share_simplex.png"/>
+        <meta name="twitter:card" content="summary"/>
+        <meta property="og:url" content="{{ ogURL }}" />
+        <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico"/>
+        
+        <link rel="stylesheet" href="/css/swiper-bundle.min.css">
+        <link href="/css/tailwind.css" rel="stylesheet"/>
+        <link rel="stylesheet" href="/css/style.css">
+
+        {% block js_scripts %}{% endblock %}
+    </head>
+    <body class="bg-white dark:bg-[#0C0B13]">
+        <section class="w-full bg-transparent fixed top-0 z-50">
+            {% include "navbar.html" %}
+        </section>
+
+        {{ content | safe }}
+
+        {% include "footer.html" %}
+
+        <script src="/js/animation.js"></script>
+        <script src="/js/swiper-bundle.min.js"></script>
+        <script src="/js/script.js"></script>
+    </body>
+</html>

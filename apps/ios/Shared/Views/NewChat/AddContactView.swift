@@ -56,6 +56,7 @@ struct AddContactView: View {
             .padding()
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
+        .onAppear { chatModel.connReqInv = connReqInvitation }
     }
 }
 

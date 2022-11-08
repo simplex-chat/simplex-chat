@@ -2,6 +2,7 @@
 layout: layouts/article.html
 title: "SimpleX announces SimpleX Chat mobile apps for iOS and Android"
 date: 2022-03-08
+preview: Brand new mobile apps with battle-tested Haskell core.
 permalink: "/blog/20220308-simplex-chat-mobile-apps.html"
 ---
 
@@ -11,7 +12,7 @@ permalink: "/blog/20220308-simplex-chat-mobile-apps.html"
 
 ## SimpleX Chat is the first chat platform that is 100% private by design - it has no access to your connections graph
 
-We have now released iPhone and Android apps to [Apple AppStore](https://apps.apple.com/us/app/simplex-chat/id1605771084) and [Google Play Store](https://play.google.com/store/apps/details?id=chat.simplex.app), [APK for Android](https://github.com/simplex-chat/website/raw/master/simplex.apk) is also available for direct download.
+We have now released iPhone and Android apps to [Apple AppStore](https://apps.apple.com/us/app/simplex-chat/id1605771084) and [Google Play Store](https://play.google.com/store/apps/details?id=chat.simplex.app), [APK for Android](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk) is also available for direct download.
 
 **Please note**: the current version is only supported on iPhone 8+ and on Android 10+ - we are planning to add support for iPad and older devices very soon, and we will announce it on our [Reddit](https://www.reddit.com/r/SimpleXChat/) and [Twitter](https://twitter.com/SimpleXChat) channels - please subscribe to follow our updates there.
 

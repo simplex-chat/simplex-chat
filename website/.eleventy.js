@@ -7,7 +7,9 @@ const uri = require('fast-uri')
 module.exports = function (ty) {
   // Keeps the same directory structure.
   ty.addPassthroughCopy("src/assets/")
+  ty.addPassthroughCopy("src/fonts")
   ty.addPassthroughCopy("src/img")
+  ty.addPassthroughCopy("src/video")
   ty.addPassthroughCopy("src/css")
   ty.addPassthroughCopy("src/js")
   ty.addPassthroughCopy("src/contact/*.js")

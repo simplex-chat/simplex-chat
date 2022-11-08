@@ -1,0 +1,116 @@
+<style>
+    .tab-button {
+        color: #a8b0b4;
+        background: linear-gradient(#fff, #fff) padding-box,
+            linear-gradient(to bottom, #a8b0b4, transparent) border-box;
+        border: 1px solid transparent;
+        border-radius: 6px 6px 0px 0px;
+        transition: color 0.3s ease;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+    }
+    .dark .tab-button{
+        color: #fff;
+        background: linear-gradient(#0C0B13, #0C0B13) padding-box,
+            linear-gradient(to bottom, #01F1FF, transparent) border-box;
+    }
+    .tab-button.active {
+        color: #0053d0;
+        text-decoration: none;
+    }
+    .dark .tab-button.active {
+        color: #70F0F9;
+    }
+</style>
+
+<section id="simplex-explained" class="bg-primary-bg-light dark:bg-primary-bg-dark py-[80px] px-5">
+    <div class="container">
+        <p class="text-[35px] lg:text-[45px] text-center font-bold text-grey-black dark:text-white mb-[40px]">Simplex explained</p>
+
+        <!-- Tab links -->
+        <div class="tabs hidden md:flex gap-2 mb-16">
+            <div data-btn-index="0" class="flex-1 tab-button tab-1 p-2 text-[20px] text-center font-bold cursor-pointer active">1. What users experience</div>
+            <div data-btn-index="1" class="flex-1 tab-button tab-2 p-2 text-[20px] text-center font-bold cursor-pointer">2. How does it work</div>
+            <div data-btn-index="2" class="flex-1 tab-button tab-3 p-2 text-[20px] text-center font-bold cursor-pointer">3. What servers see</div>
+        </div>
+
+        <!-- Tab content -->
+        <div class="swiper simplex-explained-swiper">
+            <div class="swiper-wrapper h-[inherit] mb-20 md:mb-0">
+
+                <div class="swiper-slide h-[inherit]">
+                    <div class="tab-button p-2 text-[20px] text-center font-bold active md:hidden">1. What users experience</div>
+                    <div class="flex flex-col justify-center items-center">
+                        <img class="h-[340px] my-16" src="/img/new/explained-1.svg" alt="" />
+                        <p class="text-black dark:text-white text-[16px] font-normal text-center mt-[30px]">
+                            You can create contacts and groups, and have two-way conversations, as in any other messenger.
+                        </p>
+                        <p class="text-black dark:text-white text-[16px] font-normal text-center">
+                            How can it work with unidirectional queues and without user profile identifiers?
+                        </p>
+                    </div>
+                </div>
+
+                <div class="swiper-slide h-[inherit]">
+                    <div class="tab-button p-2 text-[20px] text-center font-bold active md:hidden">2. How does it work</div>
+                    <div class="flex flex-col justify-center items-center">
+                        <img class="h-[340px] my-16" src="/img/new/explained-2.svg" alt="" />
+                        <p class="text-black dark:text-white text-[16px] font-normal text-center mt-[30px]">
+                            For each connection you use two separate messaging queues to send and receive messages via different servers.
+                        </p>
+                        <p class="text-black dark:text-white text-[16px] font-normal text-center">
+                            Servers only pass messages one way, without having the full picture of user's conversation or connections.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="swiper-slide h-[inherit]">
+                    <div class="tab-button p-2 text-[20px] text-center font-bold active md:hidden">3. What servers see</div>
+                    <div class="flex flex-col justify-center items-center">
+                        <img class="h-[340px] my-16" src="/img/new/explained-3.svg" alt="" />
+                        <p class="text-black dark:text-white text-[16px] font-normal text-center mt-[30px]">
+                            The servers have separate anonymous credentials for each queue, and do not know which users they belong to.
+                        </p>
+                        <p class="text-black dark:text-white text-[16px] font-normal text-center">
+                            Users can further improve metadata privacy by using Tor to access servers, preventing corellation by IP address.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+            <div class="swiper-pagination simplex-explained-swiper-pagination mt-100 md:hidden"></div>
+        </div>
+    </div>
+</section>
+
+<script>
+   
+window.addEventListener("load", function () {
+    const simplexExplainedSwiper__bullets = document.querySelectorAll(".simplex-explained-swiper .swiper-pagination > span");
+    const simplexExplainedSwiper__tabs = document.querySelectorAll("#simplex-explained .tabs .tab-button");
+
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.type === "attributes" && mutation.attributeName === "class" && mutation.target.classList.contains("swiper-pagination")) {
+                simplexExplainedSwiper__bullets.forEach((el,index) => {
+                    if (el.classList.contains("swiper-pagination-bullet-active")) {
+                        simplexExplainedSwiper__tabs[index].classList.add("active");
+                    } else {
+                        simplexExplainedSwiper__tabs[index].classList.remove("active");
+                    }
+                });
+            }
+        });
+    }); 
+
+    const targetNode = document.querySelector(".simplex-explained-swiper .swiper-pagination");
+    observer.observe(targetNode, { attributes: true });
+
+    window.addEventListener('click',e=>{
+        if(e.target.closest("#simplex-explained .tabs .tab-button")){
+            const index = e.target.closest("#simplex-explained .tabs .tab-button").dataset.btnIndex;
+            simplexExplainedSwiper__bullets[index].click();
+        }
+    })
+});
+</script>

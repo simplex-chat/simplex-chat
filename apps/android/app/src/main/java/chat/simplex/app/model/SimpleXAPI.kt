@@ -244,6 +244,10 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         chatModel.onboardingStage.value = OnboardingStage.OnboardingComplete
         chatModel.controller.appPrefs.chatLastStart.set(Clock.System.now())
         chatModel.chatRunning.value = true
+        chatModel.appOpenUrl.value?.let {
+          chatModel.appOpenUrl.value = null
+          connectIfOpenedViaUri(it, chatModel)
+        }
         startReceiver()
         Log.d(TAG, "startChat: started")
       } else {
@@ -1035,7 +1039,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         }
       }
       is CR.ReceivedGroupInvitation -> {
-        chatModel.addChat(Chat(chatInfo = ChatInfo.Group(r.groupInfo), chatItems = listOf()))
+        chatModel.updateGroup(r.groupInfo) // update so that repeat group invitations are not duplicated
         // TODO NtfManager.shared.notifyGroupInvitation
       }
       is CR.UserAcceptedGroupSent -> {
@@ -1222,23 +1226,12 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       // service or periodic mode was chosen and battery optimization is disabled
       SimplexApp.context.schedulePeriodicServiceRestartWorker()
       SimplexApp.context.schedulePeriodicWakeUp()
-      chatModel.appOpenUrl.value?.let {
-        chatModel.appOpenUrl.value = null
-        connectIfOpenedViaUri(it, chatModel)
-      }
     }
   }
 
   private fun showBGServiceNotice(mode: NotificationsMode) = AlertManager.shared.showAlert {
-    val hideAlert: () -> Unit = {
-      AlertManager.shared.hideAlert()
-      chatModel.appOpenUrl.value?.let {
-        chatModel.appOpenUrl.value = null
-        connectIfOpenedViaUri(it, chatModel)
-      }
-    }
     AlertDialog(
-      onDismissRequest = hideAlert,
+      onDismissRequest = AlertManager.shared::hideAlert,
       title = {
         Row {
           Icon(
@@ -1264,7 +1257,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         }
       },
       confirmButton = {
-        TextButton(onClick = hideAlert) { Text(stringResource(R.string.ok)) }
+        TextButton(onClick = AlertManager.shared::hideAlert) { Text(stringResource(R.string.ok)) }
       }
     )
   }
@@ -1305,15 +1298,8 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   }
 
   private fun showDisablingServiceNotice(mode: NotificationsMode) = AlertManager.shared.showAlert {
-    val hideAlert: () -> Unit = {
-      AlertManager.shared.hideAlert()
-      chatModel.appOpenUrl.value?.let {
-        chatModel.appOpenUrl.value = null
-        connectIfOpenedViaUri(it, chatModel)
-      }
-    }
     AlertDialog(
-      onDismissRequest = hideAlert,
+      onDismissRequest = AlertManager.shared::hideAlert,
       title = {
         Row {
           Icon(
@@ -1336,7 +1322,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         }
       },
       confirmButton = {
-        TextButton(onClick = hideAlert) { Text(stringResource(R.string.ok)) }
+        TextButton(onClick = AlertManager.shared::hideAlert) { Text(stringResource(R.string.ok)) }
       }
     )
   }

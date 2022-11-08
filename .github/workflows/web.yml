@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - stable
+      - website
     paths:
       - website/**
       - images/**
