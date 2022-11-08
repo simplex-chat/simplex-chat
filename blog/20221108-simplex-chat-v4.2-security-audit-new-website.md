@@ -10,8 +10,6 @@ permalink: "/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html"
 
 **Published:** Nov 8, 2022
 
-Please note: This is work in progress to reserve permalink, to be published on November 8
-
 ## Security audit by Trail of Bits
 
 <img src="./images/20221108-trail-of-bits.png" width=240>
