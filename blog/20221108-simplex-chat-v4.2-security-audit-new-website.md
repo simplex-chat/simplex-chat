@@ -127,11 +127,11 @@ Our @simplex account that you connect to when you choose "Connect to developers"
 
 ### Some small things
 
-1. Change group member role is a very basic feature, but it was only added in this release.
+1. Changing group member role is a very basic feature, but it was only added in this release.
 
-2. You can now mark the whole conversation as unread, for example if you accidentally marked all messages as read and you want to review it later.
+2. You can now mark a conversation as unread, for example if you accidentally marked all messages as read and you want to review it later.
 
-3. You now can send stickers and GIFs from Android keyboards, and, finally, the bug with backspace button is resolved as well.
+3. Send stickers and GIFs from Android keyboards, and, finally, the bug with backspace button is resolved as well.
 
 ### Change your delivery address (BETA)
 
@@ -139,7 +139,7 @@ Our @simplex account that you connect to when you choose "Connect to developers"
 
 To manually switch any of your contacts (or a group member to a new server address) enable Developer tools and choose "Change receiving address" on the contact page. As long as they run a new version of the app and online, the switch should only take a few seconds.
 
-That is a major improvement of metadata privacy of SimpleX protocols, because previously, while we didn't have user identifiers, the pairwise identifiers of messaging queues used to deliver messages were used for as long as you the contact existed. Now these identifiers are temporary, and in a near future we will be adding automatic rotation of these delivery addresses.
+That is a major improvement of metadata privacy of SimpleX protocols, because previously, while we didn't have user identifiers, the pairwise identifiers of messaging queues used to deliver messages were used for as long as the contact existed. Now these identifiers are temporary, and in a near future we will be adding automatic rotation of these delivery addresses.
 
 It is also useful when you want to migrate message delivery to another server, for example, if you used SimpleX Chat default servers and now want to self-host your own. Or, maybe, you need to change the address of your server. Previously it would require creating new contacts and losing conversation histories, and now all you have to do is to change server configuration in the app, and when the change of the address is triggered (currently, only manually, and in the near future - automatically), your contacts will be migrated to a new server, without you doing anything - it only requires each party sending 2 messages to negotiate the reconnection, and it would also rotate the encryption keys used for the outer layer of E2E encryption.
 
@@ -181,7 +181,7 @@ It is possible to donate via:
 - [OpenCollective](https://opencollective.com/simplex-chat) - it charges a commission, and also accepts donations in many crypto-currencies.
 - Monero wallet: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt
 - Bitcoin wallet: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
-- please let us know, via GitHub issue or chat, if you want to create a donation in some other cryptocurrency - we will add the address to the list.
+- please let us know, via GitHub issue or chat, if you want to make a donation in some other cryptocurrency - we will add the address to the list.
 
 Thank you,
 
