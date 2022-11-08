@@ -14,9 +14,9 @@ Please note: This is work in progress to reserve permalink, to be published on N
 
 ## Security audit by Trail of Bits
 
-<img src="./images/20221108-trail-of-bits.png">
+<img src="./images/20221108-trail-of-bits.png" width=240>
 
-When we first launched the app in March the response on Reddit was: "Have you been audited or should we just ignore you?".
+When we first launched the app in March the response on Reddit was: _"Have you been audited or should we just ignore you?"_.
 
 We have a growing number of enthusiasts using SimpleX Chat who can accept the security risks of unaudited system, but the users who depend on their security were patiently waiting until some independent experts validate our claims.
 
@@ -114,6 +114,8 @@ You can join these groups either by opening these links in the app or by opening
 Let me know if you'd like to add some other countries to the list, and join via the apps to share what's going on and ask any questions!
 
 ### Auto-accept contact requests
+
+<img src="./images/20221108-address1.png" width="330"> <img src="./images/20220928-address2.png" width="330">
 
 When somebody connects to you via your long-term address you have to manually accept a connection request (it shows in blue color in the list of chats). The feature that we added in this release allows to configure the app to accept contact requests automatically, and also choose whether this contact should receive your main profile or a random incognito profile (independent of the current app setting), and add an optional auto-reply message.
 
