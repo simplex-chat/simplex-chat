@@ -235,7 +235,7 @@ The default servers configured in the app are provided on the best effort basis.
 
 We have never provided or have been requested access to our servers or any information from our servers by any third parties. If we are ever requested to provide such access or information, we will be following due legal process.
 
-We do not log IP addresses of the users and we do not perform any traffic correlation on our servers. If transport level security is critical you must use Tor or some other similar network. We will be improving the client applications to reduce the opportunities for traffic level correlation.
+We do not log IP addresses of the users and we do not perform any traffic correlation on our servers. If transport level security is critical you must use Tor or some other similar network to access messaging servers. We will be improving the client applications to reduce the opportunities for traffic correlation.
 
 Please read more in [Terms & privacy policy](./PRIVACY.md).
 
