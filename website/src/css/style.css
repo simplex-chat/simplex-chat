@@ -686,6 +686,8 @@ p a{
   overflow: auto;
 }
 #blog-list ul li {
+  margin-right: 0;
+  margin-left: 0;
   -webkit-margin-start: 1rem;
   color: #000;
 }
