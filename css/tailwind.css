@@ -870,6 +870,10 @@ video {
   margin-bottom: 5rem;
 }
 
+.mb-\[12px\] {
+  margin-bottom: 12px;
+}
+
 .mb-\[75px\] {
   margin-bottom: 75px;
 }
