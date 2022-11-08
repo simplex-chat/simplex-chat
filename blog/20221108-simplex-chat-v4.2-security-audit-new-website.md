@@ -113,7 +113,7 @@ We have several groups you can join to ask any questions or just to test the app
 
 You can join these groups either by opening these links in the app or by opening them in desktop browser and scanning QR code.
 
-Let me know if you'd like to add some other countries to the list, and join via the apps to share what's going on and ask any questions!
+Let me know if you'd like to add some other countries to the list. Join via the apps to share what's going on and ask any questions!
 
 ### Auto-accept contact requests
 
