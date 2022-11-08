@@ -40,7 +40,8 @@ struct GroupChatInfoView: View {
 
     var body: some View {
         NavigationView {
-            if case let .group(groupInfo) = chat.chatInfo {
+            let cInfo = chat.chatInfo
+            if let groupInfo = cInfo.groupInfo {
                 let members = chatModel.groupMembers
                     .filter { $0.memberStatus != .memLeft && $0.memberStatus != .memRemoved }
                     .sorted { $0.displayName.lowercased() < $1.displayName.lowercased() }
@@ -49,8 +50,14 @@ struct GroupChatInfoView: View {
                     groupInfoHeader()
                         .listRowBackground(Color.clear)
 
+                    if cInfo.canAddMembers {
+                        Text("test")
+                    }
+
+                    Text("cInfo.groupCanAddMembers: \(String(cInfo.canAddMembers))")
+
                     Section("\(members.count + 1) members") {
-                        if groupInfo.canAddMembers {
+                        if cInfo.canAddMembers {
                             groupLinkButton(groupInfo)
                             if (chat.chatInfo.incognito) {
                                 Label("Invite members", systemImage: "plus")
@@ -144,6 +151,9 @@ struct GroupChatInfoView: View {
                 Text(cInfo.fullName)
                     .font(.title2)
                     .lineLimit(2)
+            }
+            if cInfo.canAddMembers {
+                Text("test 2")
             }
         }
         .frame(maxWidth: .infinity, alignment: .center)

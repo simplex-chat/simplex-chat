@@ -107,6 +107,10 @@ public protocol NamedChat {
     var localAlias: String { get }
 }
 
+public protocol GroupChat {
+    var canAddMembers: Bool { get }
+}
+
 extension NamedChat {
     public var chatViewName: String {
         localAlias == ""
@@ -117,7 +121,7 @@ extension NamedChat {
 
 public typealias ChatId = String
 
-public enum ChatInfo: Identifiable, Decodable, NamedChat {
+public enum ChatInfo: Identifiable, Decodable, NamedChat, GroupChat {
     case direct(contact: Contact)
     case group(groupInfo: GroupInfo)
     case contactRequest(contactRequest: UserContactRequest)
@@ -252,6 +256,35 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
             }
         }
     }
+
+    public var groupInfo: GroupInfo? {
+        get {
+            switch self {
+            case let .group(groupInfo): return groupInfo
+            default: return nil
+            }
+        }
+    }
+
+    public var canAddMembers: Bool {
+        get {
+            switch self {
+            case let .group(groupInfo): return groupInfo.canAddMembers
+            default: return false
+            }
+        }
+    }
+
+//    public var displayName: String {
+//        get {
+//            switch self {
+//            case let .direct(contact): return contact.displayName
+//            case let .group(groupInfo): return groupInfo.displayName
+//            case let .contactRequest(contactRequest): return contactRequest.displayName
+//            case let .contactConnection(contactConnection): return contactConnection.displayName
+//            }
+//        }
+//    }
 
     public var ntfsEnabled: Bool {
         switch self {
@@ -552,7 +585,7 @@ public struct Group: Decodable {
     }
 }
 
-public struct GroupInfo: Identifiable, Decodable, NamedChat {
+public class GroupInfo: ObservableObject, Identifiable, Decodable, NamedChat, GroupChat {
     public var groupId: Int64
     var localDisplayName: GroupName
     public var groupProfile: GroupProfile
@@ -580,7 +613,34 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
     }
 
     public var canAddMembers: Bool {
-        return membership.memberRole >= .admin && membership.memberActive
+        get { membership.memberRole >= .admin && membership.memberActive }
+    }
+
+//    init(chatInfo: ChatInfo, chatItems: [ChatItem] = [], chatStats: ChatStats = ChatStats(), serverInfo: ServerInfo = ServerInfo(networkStatus: .unknown)) {
+//        self.chatInfo = chatInfo
+//        self.chatItems = chatItems
+//        self.chatStats = chatStats
+//        self.serverInfo = serverInfo
+//    }
+
+    init(
+        groupId: Int64,
+        localDisplayName: GroupName,
+        groupProfile: GroupProfile,
+        membership: GroupMember,
+        hostConnCustomUserProfileId: Int64?,
+        chatSettings: ChatSettings,
+        createdAt: Date,
+        updatedAt: Date
+    ) {
+        self.groupId = groupId
+        self.localDisplayName = localDisplayName
+        self.groupProfile = groupProfile
+        self.membership = membership
+        self.hostConnCustomUserProfileId = hostConnCustomUserProfileId
+        self.chatSettings = chatSettings
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
     }
 
     public static let sampleData = GroupInfo(
@@ -656,19 +716,37 @@ public struct GroupMember: Identifiable, Decodable {
         }
     }
 
+//    public var memberActive: Bool {
+//        switch memberStatus {
+//        case .memRemoved: return false
+//        case .memLeft: return false
+//        case .memGroupDeleted: return false
+//        case .memInvited: return false
+//        case .memIntroduced: return false
+//        case .memIntroInvited: return false
+//        case .memAccepted: return false
+//        case .memAnnounced: return false
+//        case .memConnected: return true
+//        case .memComplete: return true
+//        case .memCreator: return true
+//        }
+//    }
+
     public var memberActive: Bool {
-        switch memberStatus {
-        case .memRemoved: return false
-        case .memLeft: return false
-        case .memGroupDeleted: return false
-        case .memInvited: return false
-        case .memIntroduced: return false
-        case .memIntroInvited: return false
-        case .memAccepted: return false
-        case .memAnnounced: return false
-        case .memConnected: return true
-        case .memComplete: return true
-        case .memCreator: return true
+        get {
+            switch memberStatus {
+            case .memRemoved: return false
+            case .memLeft: return false
+            case .memGroupDeleted: return false
+            case .memInvited: return false
+            case .memIntroduced: return false
+            case .memIntroInvited: return false
+            case .memAccepted: return false
+            case .memAnnounced: return false
+            case .memConnected: return true
+            case .memComplete: return true
+            case .memCreator: return true
+            }
         }
     }
 
