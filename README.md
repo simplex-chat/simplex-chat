@@ -24,7 +24,7 @@
 - 🚀 [TestFlight preview for iOS](https://testflight.apple.com/join/DWuT2LQu) with the new features 1-2 weeks earlier - **limited to 10,000 users**!
 - 🖥 Available as a terminal (console) app / CLI on Linux, MacOS, Windows.
 
-**NEW**: v4.0 is released - now local chat database is encrypted with passphrase! See [the release announcement](./blog/20220928-simplex-chat-v4-encrypted-database.md).
+**NEW**: Security audit by [Trail of Bits](https://www.trailofbits.com/about), the [new website](https://simplex.chat) and v4.2 released! [See the announcement](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.html)
 
 ## Contents
 
@@ -83,7 +83,7 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 Recent updates:
 
-[Nov 08, 2022. Security audit by Trail of Bits, the new website and v4.2 released](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.html)
+[Nov 08, 2022. Security audit by Trail of Bits, the new website and v4.2 released](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md)
 
 [Sep 28, 2022. v4.0: encrypted local chat database and many other changes](./blog/20220928-simplex-chat-v4-encrypted-database.md)
 
@@ -151,7 +151,6 @@ We plan to add soon:
 1. Message queue rotation. Currently the queues created between two users are used until the contact is deleted, providing a long-term pairwise identifiers of the conversation. We are planning to add queue rotation to make these identifiers termporary and rotate based on some schedule TBC (e.g., every X messages, or every X hours/days).
 2. Local files encryption. Currently the images and files you send and receive are stored in the app unencrypted, you can delete them via `Settings / Database passphrase & export`.
 3. Message "mixing" - adding latency to message delivery, to protect against traffic correlation by message time.
-4. Independent implementation audit.
 
 ## For developers
 

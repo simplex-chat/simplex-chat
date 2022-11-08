@@ -1,6 +1,6 @@
 # Blog
 
-Nov 8, 2022 [Security audit by Trail of Bits, the new website and v4.2 released](./20221108-simplex-chat-v4.2-security-audit-new-website.html)
+Nov 8, 2022 [Security audit by Trail of Bits, the new website and v4.2 released](./20221108-simplex-chat-v4.2-security-audit-new-website.md)
 
 _"Have you been audited or should we just ignore you?"_
 
