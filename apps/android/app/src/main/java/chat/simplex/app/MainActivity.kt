@@ -104,6 +104,16 @@ class MainActivity: FragmentActivity() {
     }
   }
 
+  override fun onPause() {
+    super.onPause()
+    /**
+    * When new activity is created after a click on notification, the old one receives onPause before
+    * recreation but receives onStop after recreation. So using both (onPause and onStop) to prevent
+    * unwanted multiple auth dialogs from [runAuthenticate]
+    * */
+    enteredBackground.value = elapsedRealtime()
+  }
+
   override fun onStop() {
     super.onStop()
     enteredBackground.value = elapsedRealtime()
