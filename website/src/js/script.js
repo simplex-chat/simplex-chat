@@ -1,33 +1,3 @@
-// console.log(window.location.href)
-// if(window.location.href.includes('comparison')){
-//     console.log('Comparison');
-//     document.querySelector('.comparison-nav-btn').classList.add('nav-button-active');
-// }
-// else if(window.location.href.includes('blog')){
-//     document.querySelector('.blog-nav-btn').classList.add('nav-button-active');
-// }
-// const btnMobile = document.getElementById('btn-mobile');
-// const hamburger = document.getElementById('hamburger');
-// const cross = document.getElementById('cross');
-
-// function toggleMenu(event) {
-//   if (event.type === 'touchstart') event.preventDefault();
-//   const nav = document.querySelector('nav');
-//   nav.classList.toggle('active');
-//   hamburger.classList.toggle('hidden');
-//   cross.classList.toggle('hidden');
-
-//   const active = nav.classList.contains('active');
-//   if (active) {
-
-//   } else {
-
-//   }
-// }
-
-// btnMobile.addEventListener('click', toggleMenu);
-// btnMobile.addEventListener('touchstart', toggleMenu);
-
 const uniqueSwiper = new Swiper('.unique-swiper', {
     slidesPerView: 1,
     spaceBetween: 80,
@@ -94,13 +64,18 @@ const simplexExplainedSwiper = new Swiper(".simplex-explained-swiper", {
     }
 });
 
-const closeOverlay = (e) => {
+function closeOverlay (e) {
     e.target.closest('.overlay').classList.remove('flex');
     e.target.closest('.overlay').classList.add('hidden');
     document.body.classList.toggle('lock-scroll');
 }
 
-window.addEventListener('click', (e) => {
+window.addEventListener('click', clickHandler)
+window.addEventListener('touchstart', clickHandler)
+
+function clickHandler(e) {
+    console.log(e)
+    e.stopPropagation()
     if (e.target.closest('.card')) {
         e.target.closest('.card').classList.toggle('card-active');
         e.target.closest('.card').classList.toggle('no-hover');
@@ -128,16 +103,11 @@ window.addEventListener('click', (e) => {
     else if(e.target.closest('.contact-tab-btn')){
         e.target.closest('.contact-tab').classList.toggle('active')
     }
-})
-
+}
 
 const isMobile = {
-    Android: function () {
-        return navigator.userAgent.match(/Android/i);
-    },
-    iOS: function () {
-        return navigator.userAgent.match(/iPhone|iPad|iPod/i);
-    }
+    Android: () => navigator.userAgent.match(/Android/i),
+    iOS: () => navigator.userAgent.match(/iPhone|iPad|iPod/i)
 };
 
 window.addEventListener('load', () => {
