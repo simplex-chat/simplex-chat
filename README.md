@@ -175,20 +175,20 @@ If you are considering developing with SimpleX platform please get in touch for 
 - ✅ Manual chat history deletion.
 - ✅ End-to-end encrypted WebRTC audio and video calls via the mobile apps.
 - ✅ Privacy preserving instant notifications for iOS using Apple Push Notification service.
-- ✅ Chat database export and import
+- ✅ Chat database export and import.
 - ✅ Chat groups in mobile apps.
 - ✅ Connecting to messaging servers via Tor.
 - ✅ Dual server addresses to access messaging servers as v3 hidden services.
 - ✅ Chat server and TypeScript client SDK to develop chat interfaces, integrations and chat bots (ready for announcement).
 - ✅ Incognito mode to share a new random name with each contact.
 - ✅ Chat database encryption.
-- 🏗 Automatic chat history deletion.
+- ✅ Automatic chat history deletion.
+- ✅ Links to join groups and improve groups stability.
 - 🏗 SMP queue redundancy and rotation.
-- 🏗 Links to join groups and improve groups stability.
-- Feeds/broadcasts
+- 🏗 Voice messages.
+- Feeds/broadcasts.
 - Disappearing messages, with mutual agreement.
-- Voice messages
-- Video messages
+- Video messages.
 - Web widgets for custom interactivity in the chats.
 - Message delivery confirmation.
 - Supporting the same profile on multiple devices.
