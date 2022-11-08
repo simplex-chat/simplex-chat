@@ -11,15 +11,25 @@
     <meta property="og:title" content="{{ title }}" />
     <meta property="og:url" content="{{ permalink }}" />
     {% if image %}
-      <meta property="og:image" content="./images/20220511-images-files.png" />
+    <meta property="og:image" content="./images/20220511-images-files.png" />
     {% else %}
-      <meta property="og:image" content="https://simplex.chat/img/share_simplex.png" />
+    <meta property="og:image" content="https://simplex.chat/img/share_simplex.png" />
     {% endif %}
     <meta name="twitter:card" content="summary" />
     <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico" />
     <link href="/css/tailwind.css" rel="stylesheet" />
     <link rel="stylesheet" href="/css/blog.css" />
     <link href="/css/style.css" rel="stylesheet" />
+    <script>
+      function themeCheck() {
+          const userTheme = localStorage.getItem('theme')
+          const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
+          if (userTheme === 'dark' || (!userTheme && systemTheme)) {
+              document.documentElement.classList.add('dark')
+          }
+      }
+      themeCheck()
+  </script>
   </head>
 
   <body class="bg-[#F3F6F7] dark:bg-[#0C0B13]">
@@ -36,4 +46,7 @@
     {% include "footer.html" %}
   </body>
 
+  <script src="/js/swiper-bundle.min.js"></script>
+  <script src="/js/jquery-3.6.1.slim.min.js"></script>
+  <script src="/js/script.js"></script>
 </html>

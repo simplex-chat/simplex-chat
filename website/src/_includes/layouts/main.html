@@ -19,6 +19,17 @@
         <link href="/css/tailwind.css" rel="stylesheet"/>
         <link rel="stylesheet" href="/css/style.css">
 
+        <script>
+            function themeCheck() {
+                const userTheme = localStorage.getItem('theme')
+                const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
+                if (userTheme === 'dark' || (!userTheme && systemTheme)) {
+                    document.documentElement.classList.add('dark')
+                }
+            }
+            themeCheck()
+        </script>
+
         {% block js_scripts %}{% endblock %}
     </head>
     <body class="bg-white dark:bg-[#0C0B13]">
@@ -32,6 +43,7 @@
 
         <script src="/js/animation.js"></script>
         <script src="/js/swiper-bundle.min.js"></script>
+        <script src="/js/jquery-3.6.1.slim.min.js"></script>
         <script src="/js/script.js"></script>
     </body>
 </html>
