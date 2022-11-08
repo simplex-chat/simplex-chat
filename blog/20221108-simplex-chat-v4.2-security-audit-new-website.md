@@ -1,7 +1,7 @@
 ---
 layout: layouts/article.html
 title: "Security audit by Trail of Bits, the new website and v4.2 released"
-date: 2022-09-28
+date: 2022-11-08
 image: ./images/20221108-trail-of-bits.png
 previewBody: blog_previews/20221108.html
 permalink: "/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html"
