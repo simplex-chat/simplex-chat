@@ -43,8 +43,10 @@ fun AddGroupMembersView(groupInfo: GroupInfo, chatModel: ChatModel, close: () ->
     selectedContacts = selectedContacts,
     selectedRole = selectedRole,
     inviteMembers = {
+      // A copy of the list to prevent ConcurrentModification exception
+      val contacts = selectedContacts.toList()
       withApi {
-        for (contactId in selectedContacts) {
+        for (contactId in contacts) {
           val member = chatModel.controller.apiAddMember(groupInfo.groupId, contactId, selectedRole.value)
           if (member != null) {
             chatModel.upsertGroupMember(groupInfo, member)
