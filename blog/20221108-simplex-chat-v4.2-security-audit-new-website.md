@@ -90,6 +90,8 @@ Beta features (enable Developer tools to try them):
 
 ### Group links
 
+<img src="./images/20221108-group1.png" width="288"> &nbsp;&nbsp; <img src="./images/20221108-group2.png" width="288">
+
 It's been requested by many users - to be able to join a group via link. Because SimpleX Chat groups are fully decentralised, and there is no server-side state, joining via these links requires the participation of the link creator who has to be online to accept the group joining request.
 
 The way it works under the hood is similar to how contact addresses work:
@@ -133,6 +135,8 @@ Our @simplex account that you connect to when you choose "Connect to developers"
 
 ### Change your delivery address (BETA)
 
+<img src="./images/20221108-switch-address.png" width="288">
+
 To manually switch any of your contacts (or a group member to a new server address) enable Developer tools and choose "Change receiving address" on the contact page. As long as they run a new version of the app and online, the switch should only take a few seconds.
 
 That is a major improvement of metadata privacy of SimpleX protocols, because previously, while we didn't have user identifiers, the pairwise identifiers of messaging queues used to deliver messages were used for as long as you the contact existed. Now these identifiers are temporary, and in a near future we will be adding automatic rotation of these delivery addresses.
@@ -140,6 +144,8 @@ That is a major improvement of metadata privacy of SimpleX protocols, because pr
 It is also useful when you want to migrate message delivery to another server, for example, if you used SimpleX Chat default servers and now want to self-host your own. Or, maybe, you need to change the address of your server. Previously it would require creating new contacts and losing conversation histories, and now all you have to do is to change server configuration in the app, and when the change of the address is triggered (currently, only manually, and in the near future - automatically), your contacts will be migrated to a new server, without you doing anything - it only requires each party sending 2 messages to negotiate the reconnection, and it would also rotate the encryption keys used for the outer layer of E2E encryption.
 
 ### Receive images and small files faster (BETA)
+
+<img src="./images/20221108-faster-images.png" width="288">
 
 From version 4.2 all files smaller than ~92kb (equal to 6 message blocks) will be sent in the same connection where you have the chat, and files smaller than ~231kb (the limit for image size) can also be optionally received via the same connection – the latter requires enabling "Transfer images faster" in Privacy & security settings (it will be available after you enable Developer tools). There are two reasons why it is not on by default yet: 1) we wanted to ensure it is stable; 2) there is a small effect on metadata privacy of having a burst of traffic in the same connection where you are having the main conversation.
 
