@@ -264,8 +264,17 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   private fun startReceiver() {
     Log.d(TAG, "ChatController startReceiver")
     if (receiverStarted) return
-    thread(name="receiver") {
-      GlobalScope.launch { withContext(Dispatchers.IO) { recvMspLoop() } }
+    receiverStarted = true
+    CoroutineScope(Dispatchers.IO).launch {
+      while (true) {
+        val ctrl = ctrl
+        if (ctrl == null) {
+          receiverStarted = false
+          return@launch
+        }
+        val msg = recvMsg(ctrl)
+        if (msg != null) processReceivedMsg(msg)
+      }
     }
   }
 
@@ -291,24 +300,16 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     }
   }
 
-  private suspend fun recvMsg(ctrl: ChatCtrl): CR? {
-    return withContext(Dispatchers.IO) {
-      val json = chatRecvMsgWait(ctrl, MESSAGE_TIMEOUT)
-      if (json == "") {
-        null
-      } else {
-        val r = APIResponse.decodeStr(json).resp
-        Log.d(TAG, "chatRecvMsg: ${r.responseType}")
-        if (r is CR.Response || r is CR.Invalid) Log.d(TAG, "chatRecvMsg json: $json")
-        r
-      }
+  private fun recvMsg(ctrl: ChatCtrl): CR? {
+    val json = chatRecvMsgWait(ctrl, MESSAGE_TIMEOUT)
+    return if (json == "") {
+      null
+    } else {
+      val r = APIResponse.decodeStr(json).resp
+      Log.d(TAG, "chatRecvMsg: ${r.responseType}")
+      if (r is CR.Response || r is CR.Invalid) Log.d(TAG, "chatRecvMsg json: $json")
+      r
     }
-  }
-
-  private suspend fun recvMspLoop() {
-    val msg = recvMsg(ctrl ?: return)
-    if (msg != null) processReceivedMsg(msg)
-    recvMspLoop()
   }
 
   suspend fun apiGetActiveUser(): User? {
