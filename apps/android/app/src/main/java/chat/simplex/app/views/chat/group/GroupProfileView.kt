@@ -2,6 +2,7 @@ package chat.simplex.app.views.chat.group
 
 import android.content.res.Configuration
 import android.graphics.Bitmap
+import android.net.Uri
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -54,7 +55,7 @@ fun GroupProfileLayout(
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val displayName = remember { mutableStateOf(groupProfile.displayName) }
   val fullName = remember { mutableStateOf(groupProfile.fullName) }
-  val chosenImage = rememberSaveable { mutableStateOf<Bitmap?>(null) }
+  val chosenImage = rememberSaveable { mutableStateOf<Uri?>(null) }
   val profileImage = rememberSaveable { mutableStateOf(groupProfile.image) }
   val scope = rememberCoroutineScope()
   val scrollState = rememberScrollState()

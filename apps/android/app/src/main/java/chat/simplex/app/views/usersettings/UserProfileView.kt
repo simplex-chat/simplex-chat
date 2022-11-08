@@ -2,6 +2,7 @@ package chat.simplex.app.views.usersettings
 
 import android.content.res.Configuration
 import android.graphics.Bitmap
+import android.net.Uri
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -68,7 +69,7 @@ fun UserProfileLayout(
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val displayName = remember { mutableStateOf(profile.displayName) }
   val fullName = remember { mutableStateOf(profile.fullName) }
-  val chosenImage = rememberSaveable { mutableStateOf<Bitmap?>(null) }
+  val chosenImage = rememberSaveable { mutableStateOf<Uri?>(null) }
   val profileImage = rememberSaveable { mutableStateOf(profile.image) }
   val scope = rememberCoroutineScope()
   val scrollState = rememberScrollState()

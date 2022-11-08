@@ -111,10 +111,12 @@ fun base64ToBitmap(base64ImageString: String): Bitmap {
   }
 }
 
-class CustomTakePicturePreview(var uri: Uri?, var tmpFile: File?): ActivityResultContract<Void?, Bitmap?>() {
+class CustomTakePicturePreview(var uri: Uri?, var tmpFile: File?): ActivityResultContract<Void?, Uri?>() {
   @CallSuper
   override fun createIntent(context: Context, input: Void?): Intent {
     tmpFile = File.createTempFile("image", ".bmp", context.filesDir)
+    // Since the class should return Uri, the file should be deleted somewhere else. And in order to be sure, delegate this to system
+    tmpFile?.deleteOnExit()
     uri = FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.provider", tmpFile!!)
     return Intent(MediaStore.ACTION_IMAGE_CAPTURE)
       .putExtra(MediaStore.EXTRA_OUTPUT, uri)
@@ -123,17 +125,13 @@ class CustomTakePicturePreview(var uri: Uri?, var tmpFile: File?): ActivityResul
   override fun getSynchronousResult(
     context: Context,
     input: Void?
-  ): SynchronousResult<Bitmap?>? = null
+  ): SynchronousResult<Uri?>? = null
 
-  override fun parseResult(resultCode: Int, intent: Intent?): Bitmap? {
+  override fun parseResult(resultCode: Int, intent: Intent?): Uri? {
     return if (resultCode == Activity.RESULT_OK && uri != null) {
-      val source = ImageDecoder.createSource(SimplexApp.context.contentResolver, uri!!)
-      val bitmap = ImageDecoder.decodeBitmap(source)
-      tmpFile?.delete()
-      bitmap
+      uri
     } else {
       Log.e(TAG, "Getting image from camera cancelled or failed.")
-      tmpFile?.delete()
       null
     }
   }
@@ -160,7 +158,7 @@ class CustomTakePicturePreview(var uri: Uri?, var tmpFile: File?): ActivityResul
 //fun rememberGalleryLauncher(cb: (Uri?) -> Unit): ManagedActivityResultLauncher<String, Uri?> =
 //  rememberLauncherForActivityResult(contract = GetGalleryContent(), cb)
 @Composable
-fun rememberCameraLauncher(cb: (Bitmap?) -> Unit): ManagedActivityResultLauncher<Void?, Bitmap?> {
+fun rememberCameraLauncher(cb: (Uri?) -> Unit): ManagedActivityResultLauncher<Void?, Uri?> {
   val contract = rememberSaveable(stateSaver = CustomTakePicturePreview.saver()) {
     mutableStateOf(CustomTakePicturePreview(null, null))
   }
@@ -181,7 +179,7 @@ fun rememberGetMultipleContentsLauncher(cb: (List<Uri>) -> Unit): ManagedActivit
 
 @Composable
 fun GetImageBottomSheet(
-  imageBitmap: MutableState<Bitmap?>,
+  imageBitmap: MutableState<Uri?>,
   onImageChange: (Bitmap) -> Unit,
   hideBottomSheet: () -> Unit
 ) {
@@ -190,15 +188,17 @@ fun GetImageBottomSheet(
     if (uri != null) {
       val source = ImageDecoder.createSource(context.contentResolver, uri)
       val bitmap = ImageDecoder.decodeBitmap(source)
-      imageBitmap.value = bitmap
+      imageBitmap.value = uri
       onImageChange(bitmap)
     }
   }
   val galleryLauncher = rememberLauncherForActivityResult(contract = PickFromGallery()) { processPickedImage(it) }
   val galleryLauncherFallback = rememberGetContentLauncher { processPickedImage(it) }
-  val cameraLauncher = rememberCameraLauncher { bitmap: Bitmap? ->
-    if (bitmap != null) {
-      imageBitmap.value = bitmap
+  val cameraLauncher = rememberCameraLauncher { uri: Uri? ->
+    if (uri != null) {
+      imageBitmap.value = uri
+      val source = ImageDecoder.createSource(SimplexApp.context.contentResolver, uri)
+      val bitmap = ImageDecoder.decodeBitmap(source)
       onImageChange(bitmap)
     }
   }
