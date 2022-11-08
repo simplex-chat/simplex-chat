@@ -2,8 +2,7 @@ package chat.simplex.app.views.helpers
 
 import android.Manifest
 import android.app.Activity
-import android.content.Context
-import android.content.Intent
+import android.content.*
 import android.content.pm.PackageManager
 import android.graphics.*
 import android.net.Uri
@@ -31,6 +30,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import chat.simplex.app.*
 import chat.simplex.app.R
+import chat.simplex.app.views.chat.PickFromGallery
 import chat.simplex.app.views.newchat.ActionButton
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -170,7 +170,7 @@ fun GetImageBottomSheet(
   hideBottomSheet: () -> Unit
 ) {
   val context = LocalContext.current
-  val galleryLauncher = rememberGetContentLauncher { uri: Uri? ->
+  val processPickedImage = { uri: Uri? ->
     if (uri != null) {
       val source = ImageDecoder.createSource(context.contentResolver, uri)
       val bitmap = ImageDecoder.decodeBitmap(source)
@@ -178,6 +178,8 @@ fun GetImageBottomSheet(
       onImageChange(bitmap)
     }
   }
+  val galleryLauncher = rememberLauncherForActivityResult(contract = PickFromGallery()) { processPickedImage(it) }
+  val galleryLauncherFallback = rememberGetContentLauncher { processPickedImage(it) }
   val cameraLauncher = rememberCameraLauncher { bitmap: Bitmap? ->
     if (bitmap != null) {
       imageBitmap.value = bitmap
@@ -219,7 +221,11 @@ fun GetImageBottomSheet(
         }
       }
       ActionButton(null, stringResource(R.string.from_gallery_button), icon = Icons.Outlined.Collections) {
-        galleryLauncher.launch("image/*")
+        try {
+          galleryLauncher.launch(0)
+        } catch (e: ActivityNotFoundException) {
+          galleryLauncherFallback.launch("image/*")
+        }
         hideBottomSheet()
       }
     }

@@ -6,7 +6,9 @@
   <!-- Connect via Link - MainActivity.kt -->
   <string name="connect_via_contact_link">Über den Kontakt-Link verbinden?</string>
   <string name="connect_via_invitation_link">Über den Einladungs-Link verbinden?</string>
+  <string name="connect_via_group_link">Über den Gruppen-Link verbinden?</string>
   <string name="profile_will_be_sent_to_contact_sending_link">Ihr Profil wird an den Kontakt gesendet von dem Sie diesen Link erhalten haben.</string>
+  <string name="you_will_join_group">Sie werden der Gruppe beitreten, auf die sich dieser Link bezieht und sich mit deren Gruppenmitgliedern verbinden.</string>
   <string name="connect_via_link_verb">Verbinden</string>
 
   <!-- Server info - ChatModel.kt -->
@@ -138,6 +140,10 @@
   <string name="auth_retry">Wiederholen</string>
   <string name="auth_stop_chat">Chat beenden</string>
   <string name="auth_open_chat_console">Chat-Konsole öffnen</string>
+
+  <!-- Chat Alerts - ChatItemView.kt -->
+  <string name="message_delivery_error_title">Fehler bei der Nachrichtenzustellung</string>
+  <string name="message_delivery_error_desc">Dieser Kontakt hat sehr wahrscheinlich die Verbindung mit Ihnen gelöscht.</string>
 
   <!-- Chat Actions - ChatItemView.kt (and general) -->
   <string name="reply_verb">Antwort</string>

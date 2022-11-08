@@ -392,8 +392,11 @@ struct ChatView: View {
                                 await MainActor.run { selectedMember = member }
                             }
                         }
-                        .sheet(item: $selectedMember, onDismiss: { memberConnectionStats = nil }) { member in
-                            GroupMemberInfoView(groupInfo: groupInfo, member: member, connectionStats: $memberConnectionStats)
+                        .sheet(item: $selectedMember, onDismiss: {
+                            selectedMember = nil
+                            memberConnectionStats = nil
+                        }) { _ in
+                            GroupMemberInfoView(groupInfo: groupInfo, member: $selectedMember, connectionStats: $memberConnectionStats)
                         }
                 } else {
                     Rectangle().fill(.clear)

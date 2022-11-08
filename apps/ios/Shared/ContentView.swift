@@ -70,6 +70,7 @@ struct ContentView: View {
             dismissAllSheets(animated: false) {
                 justAuthenticate()
             }
+            chatModel.chatId = nil
         }
     }
 

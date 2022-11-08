@@ -986,10 +986,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 _ = m.upsertChatItem(cInfo, cItem)
             }
         case let .receivedGroupInvitation(groupInfo, _, _):
-            m.addChat(Chat(
-                chatInfo: .group(groupInfo: groupInfo),
-                chatItems: []
-            ))
+            m.updateGroup(groupInfo) // update so that repeat group invitations are not duplicated
             // NtfManager.shared.notifyContactRequest(contactRequest) // TODO notifyGroupInvitation?
         case let .userAcceptedGroupSent(groupInfo, hostContact):
             m.updateGroup(groupInfo)

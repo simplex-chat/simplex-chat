@@ -42,7 +42,7 @@
 - [Privacy: technical details and limitations](#privacy-technical-details-and-limitations)
 - [For developers](#for-developers)
 - [Roadmap](#roadmap)
-- [Help us pay for 3rd party security audit](#help-us-pay-for-3rd-party-security-audit)
+- [Help us with donations](#help-us-with-donations)
 - [Disclaimer, License](#disclaimer)
 
 ## Why privacy matters
@@ -200,17 +200,15 @@ If you are considering developing with SimpleX platform please get in touch for 
 - Desktop client.
 - Using the same profile on multiple devices.
 
-## Help us pay for 3rd party security audit
+## Help us with donations
 
-I will get straight to the point: I ask you to support SimpleX Chat with donations.
+Huge thank you to everybody who donated to SimpleX Chat!
 
-We are prioritizing users privacy and security - it would be impossible without your support we were lucky to have so far.
-
-We are planning a 3rd party security audit for the app, and it would hugely help us if some part of this $20,000+ expense could be covered with donations.
+We are prioritizing users privacy and security - it would be impossible without your support.
 
 Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, - so anybody can build the future implementations of the clients and the servers. We are building SimpleX platform based on the same principles as email and web, but much more private and secure.
 
-If you are already using SimpleX Chat, or plan to use it in the future when it has more features, please consider making a donation - it will help us to raise more funds. Donating any amount, even the price of the cup of coffee, would make a huge difference for us.
+Your donations help us raise more funds – any amount, even the price of the cup of coffee, would make a big difference for us.
 
 It is possible to donate via:
 
