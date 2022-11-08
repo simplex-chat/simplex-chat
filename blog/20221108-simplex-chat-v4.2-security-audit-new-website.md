@@ -28,7 +28,7 @@ Overall we have SimpleX Chat in a decent shape, with most reviewed areas other t
 
 The issues are explained below, and the full security review is available via [this link](https://github.com/trailofbits/publications#security-reviews).
 
-We are hugely thankful to Trails Of Bits and their engineers for the work they did, helping us identify these issues and strengthening the security of SimpleX Chat.
+We are hugely thankful to Trails Of Bits and their engineers for the work they did, helping us identify these issues and strengthen the security of SimpleX Chat.
 
 ### Medium severity issues
 
