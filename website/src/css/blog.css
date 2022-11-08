@@ -66,13 +66,26 @@ section.container>div>p:nth-child(2) {
   margin: 50px 0 25px 0;
 }
 
+#article h4 {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #606C71;
+
+  margin: 50px 0 25px 0;
+}
+
 @media (min-width:768px) {
   #article h3 {
     font-size: 28px;
   }
+
+  #article h4 {
+    font-size: 20px;
+  }
 }
 
-.dark #article h3 {
+.dark #article h3, .dark #article h4 {
   color: white;
 }
 
