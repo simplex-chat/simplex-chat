@@ -16,6 +16,11 @@ const uniqueSwiper = new Swiper('.unique-swiper', {
     },
 });
 
+const isMobile = {
+    Android: () => navigator.userAgent.match(/Android/i),
+    iOS: () => navigator.userAgent.match(/iPhone|iPad|iPod/i)
+};
+
 const privateSwiper = new Swiper('.private-swiper', {
     slidesPerView: 1,
     spaceBetween: 20,
@@ -67,15 +72,18 @@ const simplexExplainedSwiper = new Swiper(".simplex-explained-swiper", {
 function closeOverlay (e) {
     e.target.closest('.overlay').classList.remove('flex');
     e.target.closest('.overlay').classList.add('hidden');
-    document.body.classList.toggle('lock-scroll');
+    document.body.classList.remove('lock-scroll');
 }
 
 window.addEventListener('click', clickHandler)
-window.addEventListener('touchstart', clickHandler)
+
+if (isMobile.iOS) {
+    for (const btn of document.getElementsByClassName("close-overlay-btn")) {
+        btn.addEventListener("touchend", (e) => setTimeout(() => closeOverlay(e), 100))
+    }
+}
 
 function clickHandler(e) {
-    console.log(e)
-    e.stopPropagation()
     if (e.target.closest('.card')) {
         e.target.closest('.card').classList.toggle('card-active');
         e.target.closest('.card').classList.toggle('no-hover');
@@ -104,11 +112,6 @@ function clickHandler(e) {
         e.target.closest('.contact-tab').classList.toggle('active')
     }
 }
-
-const isMobile = {
-    Android: () => navigator.userAgent.match(/Android/i),
-    iOS: () => navigator.userAgent.match(/iPhone|iPad|iPod/i)
-};
 
 window.addEventListener('load', () => {
     const googlePlayBtn = document.querySelector('.google-play-btn');

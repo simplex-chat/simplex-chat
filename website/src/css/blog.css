@@ -97,7 +97,9 @@ section.container>div>p:nth-child(2) {
 
 #article ul li,
 #article ol li {
-  -webkit-margin-start: 1rem;
+  margin-right: 0;
+  margin-left: 0;
+  -webkit-margin-start: 1.1rem;;
   color: #000;
 }
 
