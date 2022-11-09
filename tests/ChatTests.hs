@@ -3467,6 +3467,11 @@ testGroupLink =
       alice ##> "/show link #team"
       alice <## "no group link, to create: /create link #team"
       alice ##> "/create link #team"
+      _ <- getGroupLink alice "team" True
+      alice ##> "/delete link #team"
+      alice <## "Group link is deleted - joined members will remain connected."
+      alice <## "To create a new group link use /create link #team"
+      alice ##> "/create link #team"
       gLink <- getGroupLink alice "team" True
       alice ##> "/show link #team"
       _ <- getGroupLink alice "team" False
