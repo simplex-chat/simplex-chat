@@ -270,12 +270,12 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         /** Global [ctrl] can be null. It's needed for having the same [ChatModel] that already made in [ChatController] without the need
          * to change it everywhere in code after changing a database.
          * Since it can be changed in background thread, making this check to prevent NullPointerException */
-        val ctrl = ctrl
-        if (ctrl == null) {
+        val _ctrl = ctrl
+        if (_ctrl == null) {
           receiverStarted = false
           break
         }
-        val msg = recvMsg(ctrl)
+        val msg = recvMsg(_ctrl)
         if (msg != null) processReceivedMsg(msg)
       }
     }
