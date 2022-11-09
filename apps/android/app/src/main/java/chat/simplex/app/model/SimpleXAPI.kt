@@ -267,6 +267,9 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     receiverStarted = true
     CoroutineScope(Dispatchers.IO).launch {
       while (true) {
+        /** Global [ctrl] can be null. It's needed for having the same [ChatModel] that already made in [ChatController] without the need
+         * to change it everywhere in code after changing a database.
+         * Since it can be changed in background thread, making this check to prevent NullPointerException */
         val ctrl = ctrl
         if (ctrl == null) {
           receiverStarted = false
