@@ -61,6 +61,7 @@ chatTests = do
     it "create group with the same displayName" testGroupSameName
     it "invitee delete group when in status invited" testGroupDeleteWhenInvited
     it "re-add member in status invited" testGroupReAddInvited
+    it "re-add member in status invited, change role" testGroupReAddInvitedChangeRole
     it "delete contact before they accept group invitation, contact joins group" testGroupDeleteInvitedContact
     it "member profile is kept when deleting group if other groups have this member" testDeleteGroupMemberProfileKept
     it "remove contact from group and add again" testGroupRemoveAdd
@@ -856,6 +857,46 @@ testGroupReAddInvited =
             bob <## "#team_1 (team): alice invites you to join the group as admin"
             bob <## "use /j team_1 to accept"
         ]
+
+testGroupReAddInvitedChangeRole :: IO ()
+testGroupReAddInvitedChangeRole =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "use /a team <name> to add members"
+      alice ##> "/a team bob"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #team sent to bob",
+          do
+            bob <## "#team: alice invites you to join the group as admin"
+            bob <## "use /j team to accept"
+        ]
+      -- alice re-adds bob, he sees it as the same group
+      alice ##> "/a team bob owner"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #team sent to bob",
+          do
+            bob <## "#team: alice invites you to join the group as owner"
+            bob <## "use /j team to accept"
+        ]
+      -- bob joins as owner
+      bob ##> "/j team"
+      concurrently_
+        (alice <## "#team: bob joined the group")
+        (bob <## "#team: you joined the group")
+      bob ##> "/d #team"
+      concurrentlyN_
+        [ bob <## "#team: you deleted the group",
+          do
+            alice <## "#team: bob deleted the group"
+            alice <## "use /d #team to delete the local copy of the group"
+        ]
+      bob ##> "#team hi"
+      bob <## "no group #team"
+      alice ##> "/d #team"
+      alice <## "#team: you deleted the group"
 
 testGroupDeleteInvitedContact :: IO ()
 testGroupDeleteInvitedContact =
