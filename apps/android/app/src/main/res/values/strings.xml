@@ -680,6 +680,7 @@
   <string name="restore_database_alert_desc">Please enter the previous password after restoring database backup. This action can not be undone.</string>
   <string name="restore_database_alert_confirm">Restore</string>
   <string name="database_restore_error">Restore database error</string>
+  <string name="restored_from_backup_broken_text">Looks like you restored the app\'s data from a backup (using TitaniumBackup or similar tool). Encryption passphrase should be entered manually. \n\nIf it\'s not the case, please, contact devs</string>
 
   <!-- ChatModel.chatRunning interactions -->
   <string name="chat_is_stopped_indication">Chat is stopped</string>
