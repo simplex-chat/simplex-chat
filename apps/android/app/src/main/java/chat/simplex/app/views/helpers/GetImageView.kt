@@ -2,8 +2,7 @@ package chat.simplex.app.views.helpers
 
 import android.Manifest
 import android.app.Activity
-import android.content.Context
-import android.content.Intent
+import android.content.*
 import android.content.pm.PackageManager
 import android.graphics.*
 import android.net.Uri
@@ -20,8 +19,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Collections
 import androidx.compose.material.icons.outlined.PhotoCamera
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
@@ -31,7 +31,12 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import chat.simplex.app.*
 import chat.simplex.app.R
+import chat.simplex.app.model.json
+import chat.simplex.app.views.chat.ComposeState
+import chat.simplex.app.views.chat.PickFromGallery
 import chat.simplex.app.views.newchat.ActionButton
+import kotlinx.serialization.builtins.*
+import kotlinx.serialization.decodeFromString
 import java.io.ByteArrayOutputStream
 import java.io.File
 import kotlin.math.min
@@ -106,15 +111,12 @@ fun base64ToBitmap(base64ImageString: String): Bitmap {
   }
 }
 
-class CustomTakePicturePreview: ActivityResultContract<Void?, Bitmap?>() {
-  private var uri: Uri? = null
-  private var tmpFile: File? = null
-  lateinit var externalContext: Context
-
+class CustomTakePicturePreview(var uri: Uri?, var tmpFile: File?): ActivityResultContract<Void?, Uri?>() {
   @CallSuper
   override fun createIntent(context: Context, input: Void?): Intent {
-    externalContext = context
     tmpFile = File.createTempFile("image", ".bmp", context.filesDir)
+    // Since the class should return Uri, the file should be deleted somewhere else. And in order to be sure, delegate this to system
+    tmpFile?.deleteOnExit()
     uri = FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.provider", tmpFile!!)
     return Intent(MediaStore.ACTION_IMAGE_CAPTURE)
       .putExtra(MediaStore.EXTRA_OUTPUT, uri)
@@ -123,19 +125,27 @@ class CustomTakePicturePreview: ActivityResultContract<Void?, Bitmap?>() {
   override fun getSynchronousResult(
     context: Context,
     input: Void?
-  ): SynchronousResult<Bitmap?>? = null
+  ): SynchronousResult<Uri?>? = null
 
-  override fun parseResult(resultCode: Int, intent: Intent?): Bitmap? {
+  override fun parseResult(resultCode: Int, intent: Intent?): Uri? {
     return if (resultCode == Activity.RESULT_OK && uri != null) {
-      val source = ImageDecoder.createSource(externalContext.contentResolver, uri!!)
-      val bitmap = ImageDecoder.decodeBitmap(source)
-      tmpFile?.delete()
-      bitmap
+      uri
     } else {
       Log.e(TAG, "Getting image from camera cancelled or failed.")
-      tmpFile?.delete()
       null
     }
+  }
+
+  companion object {
+    fun saver(): Saver<CustomTakePicturePreview, *> = Saver(
+      save = { json.encodeToString(ListSerializer(String.serializer().nullable), listOf(it.uri?.toString(), it.tmpFile?.toString())) },
+      restore = {
+        val data = json.decodeFromString(ListSerializer(String.serializer().nullable), it)
+        val uri = if (data[0] != null) Uri.parse(data[0]) else null
+        val tmpFile = if (data[1] != null) File(data[1]) else null
+        CustomTakePicturePreview(uri, tmpFile)
+      }
+    )
   }
 }
 //class GetGalleryContent: ActivityResultContracts.GetContent() {
@@ -148,8 +158,12 @@ class CustomTakePicturePreview: ActivityResultContract<Void?, Bitmap?>() {
 //fun rememberGalleryLauncher(cb: (Uri?) -> Unit): ManagedActivityResultLauncher<String, Uri?> =
 //  rememberLauncherForActivityResult(contract = GetGalleryContent(), cb)
 @Composable
-fun rememberCameraLauncher(cb: (Bitmap?) -> Unit): ManagedActivityResultLauncher<Void?, Bitmap?> =
-  rememberLauncherForActivityResult(contract = CustomTakePicturePreview(), cb)
+fun rememberCameraLauncher(cb: (Uri?) -> Unit): ManagedActivityResultLauncher<Void?, Uri?> {
+  val contract = rememberSaveable(stateSaver = CustomTakePicturePreview.saver()) {
+    mutableStateOf(CustomTakePicturePreview(null, null))
+  }
+  return rememberLauncherForActivityResult(contract = contract.value, cb)
+}
 
 @Composable
 fun rememberPermissionLauncher(cb: (Boolean) -> Unit): ManagedActivityResultLauncher<String, Boolean> =
@@ -165,22 +179,26 @@ fun rememberGetMultipleContentsLauncher(cb: (List<Uri>) -> Unit): ManagedActivit
 
 @Composable
 fun GetImageBottomSheet(
-  imageBitmap: MutableState<Bitmap?>,
+  imageBitmap: MutableState<Uri?>,
   onImageChange: (Bitmap) -> Unit,
   hideBottomSheet: () -> Unit
 ) {
   val context = LocalContext.current
-  val galleryLauncher = rememberGetContentLauncher { uri: Uri? ->
+  val processPickedImage = { uri: Uri? ->
     if (uri != null) {
       val source = ImageDecoder.createSource(context.contentResolver, uri)
       val bitmap = ImageDecoder.decodeBitmap(source)
-      imageBitmap.value = bitmap
+      imageBitmap.value = uri
       onImageChange(bitmap)
     }
   }
-  val cameraLauncher = rememberCameraLauncher { bitmap: Bitmap? ->
-    if (bitmap != null) {
-      imageBitmap.value = bitmap
+  val galleryLauncher = rememberLauncherForActivityResult(contract = PickFromGallery()) { processPickedImage(it) }
+  val galleryLauncherFallback = rememberGetContentLauncher { processPickedImage(it) }
+  val cameraLauncher = rememberCameraLauncher { uri: Uri? ->
+    if (uri != null) {
+      imageBitmap.value = uri
+      val source = ImageDecoder.createSource(SimplexApp.context.contentResolver, uri)
+      val bitmap = ImageDecoder.decodeBitmap(source)
       onImageChange(bitmap)
     }
   }
@@ -219,7 +237,11 @@ fun GetImageBottomSheet(
         }
       }
       ActionButton(null, stringResource(R.string.from_gallery_button), icon = Icons.Outlined.Collections) {
-        galleryLauncher.launch("image/*")
+        try {
+          galleryLauncher.launch(0)
+        } catch (e: ActivityNotFoundException) {
+          galleryLauncherFallback.launch("image/*")
+        }
         hideBottomSheet()
       }
     }

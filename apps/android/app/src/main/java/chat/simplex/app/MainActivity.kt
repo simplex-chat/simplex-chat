@@ -33,8 +33,7 @@ import chat.simplex.app.views.chat.ChatView
 import chat.simplex.app.views.chatlist.*
 import chat.simplex.app.views.database.DatabaseErrorView
 import chat.simplex.app.views.helpers.*
-import chat.simplex.app.views.newchat.connectViaUri
-import chat.simplex.app.views.newchat.withUriAction
+import chat.simplex.app.views.newchat.*
 import chat.simplex.app.views.onboarding.*
 import kotlinx.coroutines.delay
 
@@ -65,6 +64,7 @@ class MainActivity: FragmentActivity() {
     // Only needed to be processed on first creation of activity
     if (savedInstanceState == null) {
       processNotificationIntent(intent, m)
+      processIntent(intent, m)
       processExternalIntent(intent, m)
     }
     setContent {
@@ -101,6 +101,16 @@ class MainActivity: FragmentActivity() {
     if (enteredBackgroundVal == null || elapsedRealtime() - enteredBackgroundVal >= 30_000) {
       runAuthenticate()
     }
+  }
+
+  override fun onPause() {
+    super.onPause()
+    /**
+    * When new activity is created after a click on notification, the old one receives onPause before
+    * recreation but receives onStop after recreation. So using both (onPause and onStop) to prevent
+    * unwanted multiple auth dialogs from [runAuthenticate]
+    * */
+    enteredBackground.value = elapsedRealtime()
   }
 
   override fun onStop() {
@@ -425,23 +435,23 @@ fun connectIfOpenedViaUri(uri: Uri, chatModel: ChatModel) {
     // TODO open from chat list view
     chatModel.appOpenUrl.value = uri
   } else {
-    withUriAction(uri) { action ->
-      val title = when (action) {
-        "contact" -> generalGetString(R.string.connect_via_contact_link)
-        "invitation" -> generalGetString(R.string.connect_via_invitation_link)
-        else -> {
-          Log.e(TAG, "URI has unexpected action. Alert shown.")
-          action
-        }
+    withUriAction(uri) { linkType ->
+      val title = when (linkType) {
+        ConnectionLinkType.CONTACT -> generalGetString(R.string.connect_via_contact_link)
+        ConnectionLinkType.INVITATION -> generalGetString(R.string.connect_via_invitation_link)
+        ConnectionLinkType.GROUP -> generalGetString(R.string.connect_via_group_link)
       }
       AlertManager.shared.showAlertMsg(
         title = title,
-        text = generalGetString(R.string.profile_will_be_sent_to_contact_sending_link),
+        text = if (linkType == ConnectionLinkType.GROUP)
+          generalGetString(R.string.you_will_join_group)
+        else
+          generalGetString(R.string.profile_will_be_sent_to_contact_sending_link),
         confirmText = generalGetString(R.string.connect_via_link_verb),
         onConfirm = {
           withApi {
             Log.d(TAG, "connectIfOpenedViaUri: connecting")
-            connectViaUri(chatModel, action, uri)
+            connectViaUri(chatModel, linkType, uri)
           }
         }
       )

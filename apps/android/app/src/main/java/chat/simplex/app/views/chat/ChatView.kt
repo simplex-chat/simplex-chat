@@ -1,8 +1,10 @@
 package chat.simplex.app.views.chat
 
+import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.net.Uri
+import android.view.inputmethod.InputMethodManager
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.*
@@ -65,22 +67,32 @@ fun ChatView(chatModel: ChatModel) {
   LaunchedEffect(Unit) {
     // snapshotFlow here is because it reacts much faster on changes in chatModel.chatId.value.
     // With LaunchedEffect(chatModel.chatId.value) there is a noticeable delay before reconstruction of the view
-    snapshotFlow { chatModel.chatId.value }
-      .distinctUntilChanged()
-      .collect {
-        if (activeChat.value?.id != chatModel.chatId.value) {
-          activeChat.value = if (chatModel.chatId.value == null) {
-            null
-          } else {
+    launch {
+      snapshotFlow { chatModel.chatId.value }
+        .distinctUntilChanged()
+        .collect {
+          if (activeChat.value?.id != chatModel.chatId.value && chatModel.chatId.value != null) {
             // Redisplay the whole hierarchy if the chat is different to make going from groups to direct chat working correctly
             // Also for situation when chatId changes after clicking in notification, etc
-            chatModel.getChat(chatModel.chatId.value!!)
+            activeChat.value = chatModel.getChat(chatModel.chatId.value!!)
           }
+          markUnreadChatAsRead(activeChat, chatModel)
         }
-        markUnreadChatAsRead(activeChat, chatModel)
-      }
+    }
+    launch {
+      // .toList() is important for making observation working
+      snapshotFlow { chatModel.chats.toList() }
+        .distinctUntilChanged()
+        .collect { chats ->
+          chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }.let {
+            // Only changed chatInfo is important thing. Other properties can be skipped for reducing recompositions
+            if (it?.chatInfo != activeChat.value?.chatInfo) {
+              activeChat.value = it
+          }}
+        }
+    }
   }
-
+  val view = LocalView.current
   if (activeChat.value == null || user == null) {
     chatModel.chatId.value = null
   } else {
@@ -114,16 +126,18 @@ fun ChatView(chatModel: ChatModel) {
       searchText,
       useLinkPreviews = useLinkPreviews,
       chatModelIncognito = chatModel.incognito.value,
-      back = { chatModel.chatId.value = null },
+      back = {
+        hideKeyboard(view)
+        chatModel.chatId.value = null
+      },
       info = {
+        hideKeyboard(view)
         withApi {
           val cInfo = chat.chatInfo
           if (cInfo is ChatInfo.Direct) {
             val contactInfo = chatModel.controller.apiContactInfo(cInfo.apiId)
             ModalManager.shared.showModalCloseable(true) { close ->
-              ChatInfoView(chatModel, cInfo.contact, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, close) {
-                activeChat.value = it
-              }
+              ChatInfoView(chatModel, cInfo.contact, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, close)
             }
           } else if (cInfo is ChatInfo.Group) {
             setGroupMembers(cInfo.groupInfo, chatModel)
@@ -134,6 +148,7 @@ fun ChatView(chatModel: ChatModel) {
         }
       },
       showMemberInfo = { groupInfo: GroupInfo, member: GroupMember ->
+        hideKeyboard(view)
         withApi {
           val stats = chatModel.controller.apiGroupMemberInfo(groupInfo.groupId, member.groupMemberId)
           ModalManager.shared.showModalCloseable(true) { close ->
@@ -177,6 +192,7 @@ fun ChatView(chatModel: ChatModel) {
         }
       },
       acceptCall = { contact ->
+        hideKeyboard(view)
         val invitation = chatModel.callInvitations.remove(contact.id)
         if (invitation == null) {
           AlertManager.shared.showAlertMsg("Call already ended!")
@@ -185,6 +201,7 @@ fun ChatView(chatModel: ChatModel) {
         }
       },
       addMembers = { groupInfo ->
+        hideKeyboard(view)
         withApi {
           setGroupMembers(groupInfo, chatModel)
           ModalManager.shared.showModalCloseable(true) { close ->

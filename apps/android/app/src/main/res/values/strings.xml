@@ -6,7 +6,9 @@
   <!-- Connect via Link - MainActivity.kt -->
   <string name="connect_via_contact_link">Connect via contact link?</string>
   <string name="connect_via_invitation_link">Connect via invitation link?</string>
+  <string name="connect_via_group_link">Connect via group link?</string>
   <string name="profile_will_be_sent_to_contact_sending_link">Your profile will be sent to the contact that you received this link from.</string>
+  <string name="you_will_join_group">You will join a group this link refers to and connect to its group members.</string>
   <string name="connect_via_link_verb">Connect</string>
 
   <!-- Server info - ChatModel.kt -->
@@ -138,6 +140,10 @@
   <string name="auth_retry">Retry</string>
   <string name="auth_stop_chat">Stop chat</string>
   <string name="auth_open_chat_console">Open chat console</string>
+
+  <!-- Chat Alerts - ChatItemView.kt -->
+  <string name="message_delivery_error_title">Message delivery error</string>
+  <string name="message_delivery_error_desc">Most likely this contact has deleted the connection with you.</string>
 
   <!-- Chat Actions - ChatItemView.kt (and general) -->
   <string name="reply_verb">Reply</string>
@@ -323,6 +329,7 @@
   <string name="invalid_contact_link">Invalid link!</string>
   <string name="this_link_is_not_a_valid_connection_link">This link is not a valid connection link!</string>
   <string name="connection_request_sent">Connection request sent!</string>
+  <string name="you_will_be_connected_when_group_host_device_is_online">You will be connected to group when the group host\'s device is online, please wait or check later!</string>
   <string name="you_will_be_connected_when_your_connection_request_is_accepted">You will be connected when your connection request is accepted, please wait or check later!</string>
   <string name="you_will_be_connected_when_your_contacts_device_is_online">You will be connected when your contact\'s device is online, please wait or check later!</string>
   <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Your contact can scan QR code from the app.</string>
@@ -398,9 +405,7 @@
   <string name="create_address">Create address</string>
   <string name="delete_address__question">Delete address?</string>
   <string name="all_your_contacts_will_remain_connected">All your contacts will remain connected.</string>
-  <string name="you_can_share_your_address_anybody_will_be_able_to_connect">You can share your address as a link or as a QR code - anybody will be able to connect to you.</string>
-  <string name="if_you_later_delete_address_you_wont_lose_contacts">If you later delete it - you won\'t lose your contacts made via the address.</string>
-  <string name="if_you_delete_address_you_wont_lose_contacts">If you delete it - you won\'t lose your contacts made via this address.</string>
+  <string name="you_can_share_your_address_anybody_will_be_able_to_connect">You can share your address as a link or as a QR code - anybody will be able to connect to you. You won\'t lose your contacts if you later delete it.</string>
   <string name="share_link">Share link</string>
   <string name="delete_address">Delete address</string>
 
@@ -788,9 +793,7 @@
   <string name="button_create_group_link">Create link</string>
   <string name="delete_link_question">Delete link?</string>
   <string name="delete_link">Delete link</string>
-  <string name="you_can_share_group_link_anybody_will_be_able_to_connect">You can share a link or a QR code - anybody will be able to join the group.</string>
-  <string name="if_you_later_delete_link_you_wont_lose_members">If you later delete it - you won\'t lose members of the group connected via the link.</string>
-  <string name="if_you_delete_group_link_you_wont_lose_members">If you delete it - you won\'t lose members of the group connected via this link.</string>
+  <string name="you_can_share_group_link_anybody_will_be_able_to_connect">You can share a link or a QR code - anybody will be able to join the group. You won\'t lose members of the group if you later delete it.</string>
   <string name="all_group_members_will_remain_connected">All group members will remain connected.</string>
   <string name="error_creating_link_for_group">Error creating group link</string>
   <string name="error_deleting_link_for_group">Error deleting group link</string>

@@ -264,16 +264,16 @@
 "Change member role?" = "Die Mitgliederrolle ändern?";
 
 /* No comment provided by engineer. */
-"Change receiving address (BETA)" = "***Change receiving address (BETA)";
+"Change receiving address (BETA)" = "Wechseln der Empfängeradresse (BETA)";
 
 /* No comment provided by engineer. */
-"Change receiving address?" = "***Change receiving address?";
+"Change receiving address?" = "Empfängeradresse wechseln?";
 
 /* No comment provided by engineer. */
 "Change role" = "Rolle ändern";
 
 /* chat item text */
-"changed address for you" = "***changed address for you";
+"changed address for you" = "wechselte die Adresse für Sie";
 
 /* rcv group event chat item */
 "changed role of %@ to %@" = "änderte die Rolle von %1$@ auf %2$@";
@@ -282,10 +282,10 @@
 "changed your role to %@" = "änderte Ihre Rolle auf %@";
 
 /* chat item text */
-"changing address for %@..." = "***changing address for %@...";
+"changing address for %@..." = "Wechseln der Adresse für %@ ...";
 
 /* chat item text */
-"changing address..." = "***changing address...";
+"changing address..." = "Wechseln der Adresse ...";
 
 /* No comment provided by engineer. */
 "Chat archive" = "Datenbank Archiv";
@@ -358,6 +358,9 @@
 
 /* No comment provided by engineer. */
 "Connect via contact link?" = "Über den Kontakt-Link verbinden?";
+
+/* No comment provided by engineer. */
+"Connect via group link?" = "Über den Gruppen-Link verbinden?";
 
 /* No comment provided by engineer. */
 "Connect via link" = "Über einen Link verbinden";
@@ -738,7 +741,7 @@
 "Error adding member(s)" = "Fehler beim Hinzufügen von Mitgliedern";
 
 /* No comment provided by engineer. */
-"Error changing address" = "***Error changing address";
+"Error changing address" = "Fehler beim Wechseln der Adresse";
 
 /* No comment provided by engineer. */
 "Error changing role" = "Fehler beim Ändern der Rolle";
@@ -765,7 +768,7 @@
 "Error deleting connection" = "Fehler beim Löschen der Verbindung";
 
 /* No comment provided by engineer. */
-"Error deleting contact" = "***Error deleting contact";
+"Error deleting contact" = "Fehler beim Löschen des Kontakts";
 
 /* No comment provided by engineer. */
 "Error deleting database" = "Fehler beim Löschen der Datenbank";
@@ -843,7 +846,7 @@
 "Exporting database archive..." = "Export des Datenbankarchivs...";
 
 /* No comment provided by engineer. */
-"File will be received when your contact is online, please wait or check later!" = "Die Datei wird empfangen, wenn Ihr Kontakt online ist, bitte warten oder schauen Sie später nochmal nach!";
+"File will be received when your contact is online, please wait or check later!" = "Die Datei wird empfangen, sobald Ihr Kontakt online ist. Bitte warten oder schauen Sie später nochmal nach!";
 
 /* No comment provided by engineer. */
 "File: %@" = "Datei: %@";
@@ -939,7 +942,7 @@
 "Ignore" = "Ignorieren";
 
 /* No comment provided by engineer. */
-"Image will be received when your contact is online, please wait or check later!" = "Das Bild wird empfangen, sobald Ihr Kontakt online ist, bitte warten oder schauen Sie später nochmal nach!";
+"Image will be received when your contact is online, please wait or check later!" = "Das Bild wird empfangen, sobald Ihr Kontakt online ist. Bitte warten oder schauen Sie später nochmal nach!";
 
 /* No comment provided by engineer. */
 "Immune to spam and abuse" = "Immun gegen Spam und Missbrauch";
@@ -966,7 +969,10 @@
 "Incognito mode protects the privacy of your main profile name and image — for each new contact a new random profile is created." = "Der Inkognito-Modus schützt die Privatsphäre Ihres Hauptprofilnamens und -bildes – für jeden neuen Kontakt wird ein neues Zufallsprofil erstellt.";
 
 /* chat list item description */
-"incognito via contact address link" = "Inkognito über einen Kontaktadressen Link";
+"incognito via contact address link" = "Inkognito über einen Kontaktadressen-Link";
+
+/* chat list item description */
+"incognito via group link" = "Inkognito über einen Gruppen-Link";
 
 /* chat list item description */
 "incognito via one-time link" = "Inkognito über einen Einmal-Link";
@@ -1068,7 +1074,7 @@
 "Leave group?" = "Die Gruppe verlassen?";
 
 /* rcv group event chat item */
-"left" = "verlassen";
+"left" = "hat die Gruppe verlassen";
 
 /* No comment provided by engineer. */
 "Light" = "Hell";
@@ -1104,7 +1110,7 @@
 "Member" = "Mitglied";
 
 /* rcv group event chat item */
-"member connected" = "beigetreten";
+"member connected" = "ist der Gruppe beigetreten";
 
 /* No comment provided by engineer. */
 "Member role will be changed to \"%@\". All group members will be notified." = "Die Mitgliederrolle wird auf \"%@\" geändert. Alle Mitglieder der Gruppe werden benachrichtigt.";
@@ -1248,7 +1254,7 @@
 "Open Settings" = "Geräte-Einstellungen öffnen";
 
 /* No comment provided by engineer. */
-"Open-source protocol and code – anybody can run the servers." = "Open-Source-Protokoll und -Code – Jeder kann seine eigenen Server aufsetzen und nutzen.";
+"Open-source protocol and code – anybody can run the servers." = "Open-Source-Protokoll und -Code – Jede Person kann ihre eigenen Server aufsetzen und nutzen.";
 
 /* No comment provided by engineer. */
 "or chat with the developers" = "oder chatten Sie mit den Entwicklern";
@@ -1290,7 +1296,7 @@
 "Please enter correct current passphrase." = "Bitte geben Sie das korrekte, aktuelle Passwort ein.";
 
 /* No comment provided by engineer. */
-"Please enter the previous password after restoring database backup. This action can not be undone." = "Bitte geben Sie das vorherige Passwort ein, nachdem Sie die Datenbanksicherung wiederhergestellt haben. Diese Aktion kann nicht rückgängig gemacht werden.";
+"Please enter the previous password after restoring database backup. This action can not be undone." = "Bitte geben Sie das vorherige Passwort ein, nachdem Sie die Datenbanksicherung wiederhergestellt haben. Diese Aktion kann nicht rückgängig gemacht werden!";
 
 /* No comment provided by engineer. */
 "Please restart the app and migrate the database to enable push notifications." = "Bitte führen Sie einen Neustart der App durch und migrieren Sie die Datenbank, um Benachrichtigungen zu aktivieren.";
@@ -1635,19 +1641,19 @@
 "Theme" = "Design";
 
 /* No comment provided by engineer. */
-"This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." = "Diese Aktion kann nicht rückgängig gemacht werden - Alle empfangenen und gesendeten Dateien und Medien werden gelöscht. Bilder mit niedriger Auflösung bleiben erhalten.";
+"This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." = "Diese Aktion kann nicht rückgängig gemacht werden! Alle empfangenen und gesendeten Dateien und Medien werden gelöscht. Bilder mit niedriger Auflösung bleiben erhalten.";
 
 /* No comment provided by engineer. */
-"This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." = "Diese Aktion kann nicht rückgängig gemacht werden - Alle empfangenen und gesendeten Nachrichten, die über den ausgewählten Zeitraum hinaus gehen, werden gelöscht. Dies kann mehrere Minuten dauern.";
+"This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." = "Diese Aktion kann nicht rückgängig gemacht werden! Alle empfangenen und gesendeten Nachrichten, die über den ausgewählten Zeitraum hinaus gehen, werden gelöscht. Dieser Vorgang kann mehrere Minuten dauern.";
 
 /* No comment provided by engineer. */
-"This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." = "Diese Aktion kann nicht rückgängig gemacht werden - Ihr Profil und Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren.";
+"This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." = "Diese Aktion kann nicht rückgängig gemacht werden! Ihr Profil und Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren.";
 
 /* notification title */
 "this contact" = "Dieser Kontakt";
 
 /* No comment provided by engineer. */
-"This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." = "***This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member).";
+"This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." = "Diese Funktion ist experimentell! Sie wird nur funktionieren, wenn der Kontakt ebenfalls die SimpleX-Version 4.2 installiert hat. Sobald der Address-Wechsel abgeschlossen ist, sollten Sie die Nachricht im Chat-Verlauf sehen. Bitte prüfen Sie, ob Sie weiterhin Nachrichten von diesem Kontakt (oder Gruppenmitglied) empfangen können.";
 
 /* No comment provided by engineer. */
 "This group no longer exists." = "Diese Gruppe existiert nicht mehr.";
@@ -1674,7 +1680,7 @@
 "To support instant push notifications the chat database has to be migrated." = "Um sofortige Push-Benachrichtigungen zu unterstützen, muss die Chat-Datenbank migriert werden.";
 
 /* No comment provided by engineer. */
-"Transfer images faster (BETA)" = "***Transfer images faster (BETA)";
+"Transfer images faster (BETA)" = "Bilder schneller übertragen (BETA)";
 
 /* No comment provided by engineer. */
 "Trying to connect to the server used to receive messages from this contact (error: %@)." = "Beim Versuch die Verbindung mit dem Server aufzunehmen, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird, ist ein Fehler aufgetreten (Fehler: %@).";
@@ -1758,7 +1764,10 @@
 "v%@ (%@)" = "v%@ (%@)";
 
 /* chat list item description */
-"via contact address link" = "über einen Kontaktadressen Link";
+"via contact address link" = "über einen Kontaktadressen-Link";
+
+/* chat list item description */
+"via group link" = "über einen Gruppen-Link";
 
 /* chat list item description */
 "via one-time link" = "über einen Einmal-Link";
@@ -1839,7 +1848,7 @@
 "You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." = "Sie können diesen Link oder QR-Code teilen - Damit kann jede Person der Gruppe beitreten. Wenn Sie den Link später löschen, werden Sie keine Gruppenmitglieder verlieren, die der Gruppe darüber beigetreten sind.";
 
 /* No comment provided by engineer. */
-"You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it." = "Sie können Ihre Adresse als Link oder als QR-Code teilen – Jeder kann sich darüber mit Ihnen verbinden. Sie werden Ihre mit dieser Adresse verbundenen Kontakte nicht verlieren, wenn Sie diese Adresse später löschen.";
+"You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it." = "Sie können Ihre Adresse als Link oder als QR-Code teilen – Jede Person kann sich darüber mit Ihnen verbinden. Sie werden Ihre mit dieser Adresse verbundenen Kontakte nicht verlieren, wenn Sie diese Adresse später löschen.";
 
 /* No comment provided by engineer. */
 "You can start chat via app Settings / Database or by restarting the app" = "Sie können den Chat über die App-Einstellungen / Datenbank oder durch Neustart der App starten.";
@@ -1848,10 +1857,10 @@
 "You can use markdown to format messages:" = "Um Nachrichteninhalte zu formatieren, können Sie Markdowns verwenden:";
 
 /* chat item text */
-"you changed address" = "***you changed address";
+"you changed address" = "Sie haben die Adresse gewechselt";
 
 /* chat item text */
-"you changed address for %@" = "***you changed address for %@";
+"you changed address for %@" = "Sie haben die Adresse für %@ gewechselt";
 
 /* snd group event chat item */
 "you changed role for yourself to %@" = "Sie haben Ihre eigene Rolle auf %@ geändert";
@@ -1902,13 +1911,19 @@
 "you shared one-time link incognito" = "Sie haben Inkognito einen Einmal-Link geteilt";
 
 /* No comment provided by engineer. */
-"You will be connected when your connection request is accepted, please wait or check later!" = "Sie werden verbunden, sobald Ihre Verbindungsanfrage akzeptiert wird, bitte warten oder schauen Sie später nochmal nach!";
+"You will be connected to group when the group host's device is online, please wait or check later!" = "Sie werden mit der Gruppe verbunden, sobald das Endgerät des Gruppen-Hosts online ist. Bitte warten oder schauen Sie später nochmal nach!";
 
 /* No comment provided by engineer. */
-"You will be connected when your contact's device is online, please wait or check later!" = "Sie werden verbunden, wenn das Gerät Ihres Kontakts online ist, bitte warten oder schauen Sie später nochmal nach!";
+"You will be connected when your connection request is accepted, please wait or check later!" = "Sie werden verbunden, sobald Ihre Verbindungsanfrage akzeptiert wird. Bitte warten oder schauen Sie später nochmal nach!";
+
+/* No comment provided by engineer. */
+"You will be connected when your contact's device is online, please wait or check later!" = "Sie werden verbunden, sobald das Endgerät Ihres Kontakts online ist. Bitte warten oder schauen Sie später nochmal nach!";
 
 /* No comment provided by engineer. */
 "You will be required to authenticate when you start or resume the app after 30 seconds in background." = "Sie müssen sich authentifizieren, wenn Sie die im Hintergrund befindliche App nach 30 Sekunden starten oder fortsetzen.";
+
+/* No comment provided by engineer. */
+"You will join a group this link refers to and connect to its group members." = "Sie werden der Gruppe beitreten, auf die sich dieser Link bezieht und sich mit deren Gruppenmitgliedern verbinden.";
 
 /* No comment provided by engineer. */
 "You will stop receiving messages from this group. Chat history will be preserved." = "Sie werden von dieser Gruppe keine Nachrichten mehr erhalten. Der Chatverlauf wird beibehalten.";

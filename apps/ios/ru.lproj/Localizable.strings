@@ -360,6 +360,9 @@
 "Connect via contact link?" = "Соединиться через ссылку-контакт?";
 
 /* No comment provided by engineer. */
+"Connect via group link?" = "Соединиться через ссылку группы?";
+
+/* No comment provided by engineer. */
 "Connect via link" = "Соединиться через ссылку";
 
 /* No comment provided by engineer. */
@@ -967,6 +970,9 @@
 
 /* chat list item description */
 "incognito via contact address link" = "инкогнито через ссылку-контакт";
+
+/* chat list item description */
+"incognito via group link" = "инкогнито через ссылку группы";
 
 /* chat list item description */
 "incognito via one-time link" = "инкогнито через одноразовую ссылку";
@@ -1761,6 +1767,9 @@
 "via contact address link" = "через ссылку-контакт";
 
 /* chat list item description */
+"via group link" = "через ссылку группы";
+
+/* chat list item description */
 "via one-time link" = "через одноразовую ссылку";
 
 /* No comment provided by engineer. */
@@ -1902,6 +1911,9 @@
 "you shared one-time link incognito" = "вы создали ссылку инкогнито";
 
 /* No comment provided by engineer. */
+"You will be connected to group when the group host's device is online, please wait or check later!" = "Соединение с группой будет установлено, когда хост группы будет онлайн. Пожалуйста, подождите или проверьте позже!";
+
+/* No comment provided by engineer. */
 "You will be connected when your connection request is accepted, please wait or check later!" = "Соединение будет установлено, когда ваш запрос будет принят. Пожалуйста, подождите или проверьте позже!";
 
 /* No comment provided by engineer. */
@@ -1909,6 +1921,9 @@
 
 /* No comment provided by engineer. */
 "You will be required to authenticate when you start or resume the app after 30 seconds in background." = "Вы будете аутентифицированы при запуске и возобновлении приложения, которое было 30 секунд в фоновом режиме.";
+
+/* No comment provided by engineer. */
+"You will join a group this link refers to and connect to its group members." = "Вы вступите в группу, на которую ссылается эта ссылка, и соединитесь с её членами.";
 
 /* No comment provided by engineer. */
 "You will stop receiving messages from this group. Chat history will be preserved." = "Вы перестанете получать сообщения от этой группы. История чата будет сохранена.";

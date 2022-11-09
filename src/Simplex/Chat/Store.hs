@@ -1736,8 +1736,24 @@ deleteGroupConnectionsAndFiles db User {userId} GroupInfo {groupId} members = do
 deleteGroupItemsAndMembers :: DB.Connection -> User -> GroupInfo -> [GroupMember] -> IO ()
 deleteGroupItemsAndMembers db user@User {userId} GroupInfo {groupId} members = do
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
+  void $ runExceptT cleanupHostGroupLinkConn_ -- to allow repeat connection via the same group link if one was used
   DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_id = ?" (userId, groupId)
   forM_ members $ \m -> cleanupMemberContactAndProfile_ db user m
+  where
+    cleanupHostGroupLinkConn_ = do
+      hostId <- getHostMemberId_ db user groupId
+      liftIO $
+        DB.execute
+          db
+          [sql|
+            UPDATE connections SET via_contact_uri_hash = NULL, xcontact_id = NULL
+            WHERE user_id = ? AND via_group_link = 1 AND contact_id IN (
+              SELECT contact_id
+              FROM group_members
+              WHERE user_id = ? AND group_member_id = ?
+            )
+          |]
+          (userId, userId, hostId)
 
 deleteGroup :: DB.Connection -> User -> GroupInfo -> IO ()
 deleteGroup db User {userId} GroupInfo {groupId, localDisplayName} = do

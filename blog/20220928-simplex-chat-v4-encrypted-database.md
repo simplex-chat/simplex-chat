@@ -2,6 +2,9 @@
 layout: layouts/article.html
 title: "SimpleX Chat v4.0 with encrypted database is released"
 date: 2022-09-28
+image: images/20220928-passphrase.png
+imageBottom: true
+previewBody: blog_previews/20220928.html
 permalink: "/blog/20220928-simplex-chat-v4-encrypted-database.html"
 ---
 

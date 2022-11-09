@@ -61,6 +61,7 @@ chatTests = do
     it "create group with the same displayName" testGroupSameName
     it "invitee delete group when in status invited" testGroupDeleteWhenInvited
     it "re-add member in status invited" testGroupReAddInvited
+    it "re-add member in status invited, change role" testGroupReAddInvitedChangeRole
     it "delete contact before they accept group invitation, contact joins group" testGroupDeleteInvitedContact
     it "member profile is kept when deleting group if other groups have this member" testDeleteGroupMemberProfileKept
     it "remove contact from group and add again" testGroupRemoveAdd
@@ -143,6 +144,7 @@ chatTests = do
     it "set chat item TTL" testSetChatItemTTL
   describe "group links" $ do
     it "create group link, join via group link" testGroupLink
+    it "delete group, re-join via same link" testGroupLinkDeleteGroupRejoin
     it "sending message to contact created via group link marks it used" testGroupLinkContactUsed
     it "create group link, join via group link - incognito membership" testGroupLinkIncognitoMembership
   describe "queue rotation" $ do
@@ -856,6 +858,46 @@ testGroupReAddInvited =
             bob <## "#team_1 (team): alice invites you to join the group as admin"
             bob <## "use /j team_1 to accept"
         ]
+
+testGroupReAddInvitedChangeRole :: IO ()
+testGroupReAddInvitedChangeRole =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "use /a team <name> to add members"
+      alice ##> "/a team bob"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #team sent to bob",
+          do
+            bob <## "#team: alice invites you to join the group as admin"
+            bob <## "use /j team to accept"
+        ]
+      -- alice re-adds bob, he sees it as the same group
+      alice ##> "/a team bob owner"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #team sent to bob",
+          do
+            bob <## "#team: alice invites you to join the group as owner"
+            bob <## "use /j team to accept"
+        ]
+      -- bob joins as owner
+      bob ##> "/j team"
+      concurrently_
+        (alice <## "#team: bob joined the group")
+        (bob <## "#team: you joined the group")
+      bob ##> "/d #team"
+      concurrentlyN_
+        [ bob <## "#team: you deleted the group",
+          do
+            alice <## "#team: bob deleted the group"
+            alice <## "use /d #team to delete the local copy of the group"
+        ]
+      bob ##> "#team hi"
+      bob <## "no group #team"
+      alice ##> "/d #team"
+      alice <## "#team: you deleted the group"
 
 testGroupDeleteInvitedContact :: IO ()
 testGroupDeleteInvitedContact =
@@ -3426,6 +3468,11 @@ testGroupLink =
       alice ##> "/show link #team"
       alice <## "no group link, to create: /create link #team"
       alice ##> "/create link #team"
+      _ <- getGroupLink alice "team" True
+      alice ##> "/delete link #team"
+      alice <## "Group link is deleted - joined members will remain connected."
+      alice <## "To create a new group link use /create link #team"
+      alice ##> "/create link #team"
       gLink <- getGroupLink alice "team" True
       alice ##> "/show link #team"
       _ <- getGroupLink alice "team" False
@@ -3512,6 +3559,60 @@ testGroupLink =
       alice ##> "/show link #team"
       alice <## "no group link, to create: /create link #team"
 
+testGroupLinkDeleteGroupRejoin :: IO ()
+testGroupLinkDeleteGroupRejoin =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "use /a team <name> to add members"
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" True
+      bob ##> ("/c " <> gLink)
+      bob <## "connection request sent!"
+      alice <## "bob (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ do
+            alice <## "bob (Bob): contact is connected"
+            alice <## "bob invited to group #team via your group link"
+            alice <## "#team: bob joined the group",
+          do
+            bob <## "alice (Alice): contact is connected"
+            bob <## "#team: you joined the group"
+        ]
+      -- use contact so it's not deleted when deleting group
+      bob <##> alice
+      bob ##> "/l team"
+      concurrentlyN_
+        [ do
+            bob <## "#team: you left the group"
+            bob <## "use /d #team to delete the group",
+          alice <## "#team: bob left the group"
+        ]
+      bob ##> "/d #team"
+      bob <## "#team: you deleted the group"
+      -- re-join via same link
+      bob ##> ("/c " <> gLink)
+      bob <## "connection request sent!"
+      alice <## "bob_1 (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ do
+            alice <## "bob_1 (Bob): contact is connected"
+            alice <## "bob_1 invited to group #team via your group link"
+            alice <## "contact bob_1 is merged into bob"
+            alice <## "use @bob <message> to send messages"
+            alice <## "#team: bob joined the group",
+          do
+            bob <## "alice_1 (Alice): contact is connected"
+            bob <## "contact alice_1 is merged into alice"
+            bob <## "use @alice <message> to send messages"
+            bob <## "#team: you joined the group"
+        ]
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
+
 testGroupLinkContactUsed :: IO ()
 testGroupLinkContactUsed =
   testChat2 aliceProfile bobProfile $
@@ -3519,14 +3620,8 @@ testGroupLinkContactUsed =
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "use /a team <name> to add members"
-      alice ##> "/show link #team"
-      alice <## "no group link, to create: /create link #team"
       alice ##> "/create link #team"
       gLink <- getGroupLink alice "team" True
-      alice ##> "/show link #team"
-      _ <- getGroupLink alice "team" False
-      alice ##> "/create link #team"
-      alice <## "you already have link for this group, to show: /show link #team"
       bob ##> ("/c " <> gLink)
       bob <## "connection request sent!"
       alice <## "bob (Bob): accepting request to join group #team..."

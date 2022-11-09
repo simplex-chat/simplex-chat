@@ -329,7 +329,7 @@ public enum ChatResponse: Decodable, Error {
     // group events
     case groupCreated(groupInfo: GroupInfo)
     case sentGroupInvitation(groupInfo: GroupInfo, contact: Contact, member: GroupMember)
-    case userAcceptedGroupSent(groupInfo: GroupInfo)
+    case userAcceptedGroupSent(groupInfo: GroupInfo, hostContact: Contact?)
     case userDeletedMember(groupInfo: GroupInfo, member: GroupMember)
     case leftMemberUser(groupInfo: GroupInfo)
     case groupMembers(group: Group)
@@ -530,7 +530,7 @@ public enum ChatResponse: Decodable, Error {
             case let .contactsList(contacts): return String(describing: contacts)
             case let .groupCreated(groupInfo): return String(describing: groupInfo)
             case let .sentGroupInvitation(groupInfo, contact, member): return "groupInfo: \(groupInfo)\ncontact: \(contact)\nmember: \(member)"
-            case let .userAcceptedGroupSent(groupInfo): return String(describing: groupInfo)
+            case let .userAcceptedGroupSent(groupInfo, hostContact): return "groupInfo: \(groupInfo)\nhostContact: \(String(describing: hostContact))"
             case let .userDeletedMember(groupInfo, member): return "groupInfo: \(groupInfo)\nmember: \(member)"
             case let .leftMemberUser(groupInfo): return String(describing: groupInfo)
             case let .groupMembers(group): return String(describing: group)
@@ -634,16 +634,16 @@ public struct NetCfg: Codable, Equatable {
 
     public static let defaults: NetCfg = NetCfg(
         socksProxy: nil,
-        tcpConnectTimeout: 7_500_000,
-        tcpTimeout: 5_000_000,
+        tcpConnectTimeout: 10_000_000,
+        tcpTimeout: 7_000_000,
         tcpKeepAlive: KeepAliveOpts.defaults,
         smpPingInterval: 600_000_000
     )
 
     public static let proxyDefaults: NetCfg = NetCfg(
         socksProxy: nil,
-        tcpConnectTimeout: 15_000_000,
-        tcpTimeout: 10_000_000,
+        tcpConnectTimeout: 20_000_000,
+        tcpTimeout: 15_000_000,
         tcpKeepAlive: KeepAliveOpts.defaults,
         smpPingInterval: 600_000_000
     )

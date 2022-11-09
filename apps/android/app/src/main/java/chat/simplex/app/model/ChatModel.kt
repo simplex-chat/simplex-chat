@@ -307,6 +307,11 @@ class ChatModel(val controller: ChatController) {
   }
 
   fun upsertGroupMember(groupInfo: GroupInfo, member: GroupMember): Boolean {
+    // user member was updated
+    if (groupInfo.membership.groupMemberId == member.groupMemberId) {
+      updateGroup(groupInfo)
+      return false
+    }
     // update current chat
     return if (chatId.value == groupInfo.id) {
       val memberIndex = groupMembers.indexOfFirst { it.id == member.id }
@@ -426,7 +431,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
   abstract val incognito: Boolean
 
   @Serializable @SerialName("direct")
-  class Direct(val contact: Contact): ChatInfo() {
+  data class Direct(val contact: Contact): ChatInfo() {
     override val chatType get() = ChatType.Direct
     override val localDisplayName get() = contact.localDisplayName
     override val id get() = contact.id
@@ -448,7 +453,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
   }
 
   @Serializable @SerialName("group")
-  class Group(val groupInfo: GroupInfo): ChatInfo() {
+  data class Group(val groupInfo: GroupInfo): ChatInfo() {
     override val chatType get() = ChatType.Group
     override val localDisplayName get() = groupInfo.localDisplayName
     override val id get() = groupInfo.id
@@ -646,7 +651,7 @@ data class GroupInfo (
   val membership: GroupMember,
   val hostConnCustomUserProfileId: Long? = null,
   val chatSettings: ChatSettings,
-  val preferences: ChatPreferences? = null,
+//  val groupPreferences: GroupPreferences? = null,
   override val createdAt: Instant,
   override val updatedAt: Instant
 ): SomeChat, NamedChat {
@@ -700,7 +705,7 @@ class GroupProfile (
 }
 
 @Serializable
-class GroupMember (
+data class GroupMember (
   val groupMemberId: Long,
   val groupId: Long,
   val memberId: String,

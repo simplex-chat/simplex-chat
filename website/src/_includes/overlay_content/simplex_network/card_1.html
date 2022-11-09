@@ -1,0 +1,53 @@
+<p>
+    <a href="https://en.wikipedia.org/wiki/Peer-to-peer">P2P</a>
+    messaging protocols and apps have various problems that make
+    them less reliable than SimpleX, more complex to analyse,
+    and vulnerable to several types of attack.
+</p>
+<ol style="list-style: auto; padding-left: 1em;">
+    <li>
+        P2P networks rely on some variant of
+        <a href="https://en.wikipedia.org/wiki/Distributed_hash_table">DHT</a>
+        to route messages. DHT designs have to balance delivery guarantee and latency.
+        SimpleX has both better delivery guarantee and lower latency than P2P, because
+        the message can be redundantly passed via several servers in parallel,
+        using the servers chosen by the recipient.
+        In P2P networks the message is passed through <em>O(log N)</em> nodes
+        sequentially, using nodes chosen by the algorithm.
+    </li>
+    <li>
+        SimpleX design, unlike most P2P networks, has no global user identifiers
+        of any kind, even temporary, and only uses temporary pairwise identifiers,
+        providing better anonymity and metadata protection.
+    </li>
+    <li>
+        P2P does not solve
+        <a href="https://en.wikipedia.org/wiki/Man-in-the-middle_attack">MITM attack</a>
+        problem, and most existing implementations do not use out-of-band messages
+        for the initial key exchange. SimpleX uses out-of-band messages or, in some
+        cases, pre-existing secure and trusted connections for the initial key exchange.
+    </li>
+    <li>
+        P2P implementations can be blocked by some Internet providers (like
+        <a href="https://en.wikipedia.org/wiki/BitTorrent">BitTorrent</a>).
+        SimpleX is transport agnostic - it can work over standard web protocols, e.g. WebSockets.
+    </li>
+    <li>
+        All known P2P networks may be vulnerable to
+        <a href="https://en.wikipedia.org/wiki/Sybil_attack">Sybil attack</a>,
+        because each node is discoverable, and the network operates as a whole.
+        Known measures to mitigate it require either a centralized component or expensive
+        <a href="https://en.wikipedia.org/wiki/Proof_of_work">proof of work</a>.
+        SimpleX network has no server discoverability, it is fragmented and operates
+        as multiple isolated sub-networks,
+        making network-wide attacks impossible.
+    </li>
+    <li>
+        P2P networks may be vulnerable to
+        <a href="https://www.usenix.org/conference/woot15/workshop-program/presentation/p2p-file-sharing-hell-exploiting-bittorrent">DRDoS attack</a>,
+        when the clients can rebroadcast and amplify traffic, resulting in network-wide
+        denial of service.
+        SimpleX clients only relay traffic from known connection
+        and cannot be used by an attacker to amplify the traffic in the whole network.
+    </li>
+</ol>

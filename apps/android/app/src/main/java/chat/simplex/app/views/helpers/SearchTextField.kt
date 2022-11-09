@@ -40,6 +40,12 @@ fun SearchTextField(modifier: Modifier, placeholder: String, onValueChange: (Str
     keyboard?.show()
   }
 
+  DisposableEffect(Unit) {
+    onDispose {
+      if (searchText.text.isNotEmpty()) onValueChange("")
+    }
+  }
+
   val enabled = true
   val colors = TextFieldDefaults.textFieldColors(
     backgroundColor = Color.Unspecified,

@@ -27,7 +27,6 @@ import Data.Bifunctor (bimap, first)
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
-import Data.Char (isSpace)
 import Data.Either (fromRight)
 import Data.Fixed (div')
 import Data.Functor (($>))
@@ -64,7 +63,7 @@ import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (base64P, parseAll)
+import Simplex.Messaging.Parsers (base64P)
 import Simplex.Messaging.Protocol (ErrorType (..), MsgBody, MsgFlags (..), NtfServer)
 import qualified Simplex.Messaging.Protocol as SMP
 import qualified Simplex.Messaging.TMap as TM
@@ -219,7 +218,7 @@ execChatCommand s = case parseChatCommand s of
   Right cmd -> either CRChatCmdError id <$> runExceptT (processChatCommand cmd)
 
 parseChatCommand :: ByteString -> Either String ChatCommand
-parseChatCommand = parseAll chatCommandP . B.dropWhileEnd isSpace
+parseChatCommand = A.parseOnly chatCommandP
 
 toView :: ChatMonad m => ChatResponse -> m ()
 toView event = do
@@ -856,10 +855,11 @@ processChatCommand = \case
         member <- withStore $ \db -> createNewContactMember db gVar user groupId contact memRole agentConnId cReq
         sendInvitation member cReq
         pure $ CRSentGroupInvitation gInfo contact member
-      Just member@GroupMember {groupMemberId, memberStatus}
-        | memberStatus == GSMemInvited ->
+      Just member@GroupMember {groupMemberId, memberStatus, memberRole = mRole}
+        | memberStatus == GSMemInvited -> do
+          unless (mRole == memRole) $ withStore' $ \db -> updateGroupMemberRole db user member memRole
           withStore' (\db -> getMemberInvitation db user groupMemberId) >>= \case
-            Just cReq -> sendInvitation member cReq $> CRSentGroupInvitation gInfo contact member
+            Just cReq -> sendInvitation member {memberRole = memRole} cReq $> CRSentGroupInvitation gInfo contact member {memberRole = memRole}
             Nothing -> throwChatError $ CEGroupCantResendInvitation gInfo cName
         | otherwise -> throwChatError $ CEGroupDuplicateMember cName
   APIJoinGroup groupId -> withUser $ \user@User {userId} -> do
@@ -3137,7 +3137,7 @@ withStore action = do
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
-  A.choice
+  choice
     [ "/mute " *> ((`ShowMessages` False) <$> chatNameP'),
       "/unmute " *> ((`ShowMessages` True) <$> chatNameP'),
       ("/user " <|> "/u ") *> (CreateActiveUser <$> userProfile),
@@ -3279,6 +3279,7 @@ chatCommandP =
       "/debug locks" $> DebugLocks
     ]
   where
+    choice = A.choice . map (\p -> p <* A.takeWhile (== ' ') <* A.endOfInput)
     imagePrefix = (<>) <$> "data:" <*> ("image/png;base64," <|> "image/jpg;base64,")
     imageP = safeDecodeUtf8 <$> ((<>) <$> imagePrefix <*> (B64.encode <$> base64P))
     chatTypeP = A.char '@' $> CTDirect <|> A.char '#' $> CTGroup <|> A.char ':' $> CTContactConnection
