@@ -270,7 +270,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         val ctrl = ctrl
         if (ctrl == null) {
           receiverStarted = false
-          return@launch
+          break
         }
         val msg = recvMsg(ctrl)
         if (msg != null) processReceivedMsg(msg)
