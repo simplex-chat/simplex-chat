@@ -23,7 +23,7 @@ internal class Cryptor {
         warningIsShown = true
         AlertManager.shared.showAlertMsg(
           title = generalGetString(R.string.wrong_passphrase),
-          text = generalGetString(R.string.restored_from_backup_broken_text)
+          text = generalGetString(R.string.restored_from_backup_broken_desc)
         )
       }
       return null

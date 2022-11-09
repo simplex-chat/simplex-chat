@@ -183,6 +183,8 @@
     <string name="icon_descr_cancel_file_preview">Удалить превью файла</string>
     <string name="images_limit_title">Слишком много изображений!</string>
     <string name="images_limit_desc">Только 10 изображений могут быть отправлены одномоментно</string>
+    <string name="image_decoding_exception_title">Ошибка декодирования</string>
+    <string name="image_decoding_exception_desc">Не получается декодировать изображение. Пожалуйста, попробуйте другое или свяжитесь с разработчиками</string>
 
     <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
     <string name="image_descr">Изображение</string>
@@ -674,7 +676,7 @@
     <string name="restore_database_alert_desc">Введите предыдущий пароль после восстановления резервной копии. Это действие нельзя отменить.</string>
     <string name="restore_database_alert_confirm">Восстановить</string>
     <string name="database_restore_error">Ошибка при восстановлении базы данных</string>
-    <string name="restored_from_backup_broken_text">Похоже, вы восстановили данные программы из бэкапа (используя TitaniumBackup или похожий инструмент). Нужно ввести пароль от базы данных вручную. \n\nЕсли причина не в этом, пожалуйста, свяжитесь с разработчиками</string>
+    <string name="restored_from_backup_broken_desc">Похоже, вы восстановили данные программы из бэкапа (используя TitaniumBackup или похожий инструмент). Нужно ввести пароль от базы данных вручную. \n\nЕсли причина не в этом, пожалуйста, свяжитесь с разработчиками</string>
 
     <!-- ChatModel.chatRunning interactions -->
     <string name="chat_is_stopped_indication">Чат остановлен</string>

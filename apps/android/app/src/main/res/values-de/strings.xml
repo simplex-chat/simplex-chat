@@ -183,6 +183,8 @@
   <string name="icon_descr_cancel_file_preview">Dateivorschau abbrechen</string>
   <string name="images_limit_title">Zu viele Bilder!</string>
   <string name="images_limit_desc">Es können nur 10 Bilder auf einmal gesendet werden</string>
+  <string name="image_decoding_exception_title">***Decoding error</string>
+  <string name="image_decoding_exception_desc">***The image cannot be decoded. Please, try with different image or contact devs</string>
 
   <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
   <string name="image_descr">Bild</string>
@@ -674,7 +676,7 @@
   <string name="restore_database_alert_desc">Bitte geben Sie das vorherige Passwort ein, nachdem Sie die Datenbanksicherung wiederhergestellt haben. Diese Aktion kann nicht rückgängig gemacht werden.</string>
   <string name="restore_database_alert_confirm">Wiederherstellen</string>
   <string name="database_restore_error">Fehler bei der Wiederherstellung der Datenbank</string>
-  <string name="restored_from_backup_broken_text">***Looks like you restored the app\'s data from a backup (using TitaniumBackup or similar tool). Encryption passphrase should be entered manually. \n\nIf it\'s not the case, please, contact devs</string>
+  <string name="restored_from_backup_broken_desc">***Looks like you restored the app\'s data from a backup (using TitaniumBackup or similar tool). Encryption passphrase should be entered manually. \n\nIf it\'s not the case, please, contact devs</string>
 
   <!-- ChatModel.chatRunning interactions -->
   <string name="chat_is_stopped_indication">Chat wurde beendet</string>
