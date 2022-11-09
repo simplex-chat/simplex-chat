@@ -1703,8 +1703,8 @@ data class NetCfg(
     val defaults: NetCfg =
       NetCfg(
         socksProxy = null,
-        tcpConnectTimeout = 7_500_000,
-        tcpTimeout = 5_000_000,
+        tcpConnectTimeout = 10_000000,
+        tcpTimeout = 7_000000,
         tcpKeepAlive = KeepAliveOpts.defaults,
         smpPingInterval = 600_000_000
       )
@@ -1712,8 +1712,8 @@ data class NetCfg(
     val proxyDefaults: NetCfg =
       NetCfg(
         socksProxy = ":9050",
-        tcpConnectTimeout = 15_000_000,
-        tcpTimeout = 10_000_000,
+        tcpConnectTimeout = 20_000000,
+        tcpTimeout = 15_000000,
         tcpKeepAlive = KeepAliveOpts.defaults,
         smpPingInterval = 600_000_000
       )
