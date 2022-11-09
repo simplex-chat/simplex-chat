@@ -63,7 +63,7 @@ fun ActiveCallView(chatModel: ChatModel) {
   DisposableEffect(Unit) {
     onDispose {
       // Stop it when call ended
-      if (!ntfModeService) SimplexService.stop(SimplexApp.context)
+      if (!ntfModeService) SimplexService.safeStopService(SimplexApp.context)
       // Clear selected communication device to default value after we changed it in call
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         val am = SimplexApp.context.getSystemService(Context.AUDIO_SERVICE) as AudioManager

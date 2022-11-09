@@ -10,7 +10,6 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.work.*
 import chat.simplex.app.views.helpers.*
-import chat.simplex.app.views.onboarding.OnboardingStage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -20,7 +19,6 @@ import kotlinx.coroutines.withContext
 
 class SimplexService: Service() {
   private var wakeLock: PowerManager.WakeLock? = null
-  private var isServiceStarted = false
   private var isStartingService = false
   private var notificationManager: NotificationManager? = null
   private var serviceNotification: Notification? = null
@@ -48,11 +46,32 @@ class SimplexService: Service() {
     notificationManager = createNotificationChannel()
     serviceNotification = createNotification(title, text)
     startForeground(SIMPLEX_SERVICE_ID, serviceNotification)
+    /**
+     * The reason [stopAfterStart] exists is because when the service is not called [startForeground] yet, and
+     * we call [stopSelf] on the same service, [ForegroundServiceDidNotStartInTimeException] will be thrown.
+     * To prevent that, we can call [stopSelf] only when the service made [startForeground] call
+     * */
+    if (stopAfterStart) {
+      stopForeground(true)
+      stopSelf()
+    } else {
+      isServiceStarted = true
+    }
   }
 
   override fun onDestroy() {
     Log.d(TAG, "Simplex service destroyed")
-    stopService()
+    try {
+      wakeLock?.let {
+        while (it.isHeld) it.release() // release all, in case acquired more than once
+      }
+      wakeLock = null
+    } catch (e: Exception) {
+      Log.d(TAG, "Exception while releasing wakelock: ${e.message}")
+    }
+    isServiceStarted = false
+    stopAfterStart = false
+    saveServiceState(this, ServiceState.STOPPED)
 
     // If notification service is enabled and battery optimization is disabled, restart the service
     if (SimplexApp.context.allowToStartServiceAfterAppExit())
@@ -62,7 +81,7 @@ class SimplexService: Service() {
 
   private fun startService() {
     Log.d(TAG, "SimplexService startService")
-    if (isServiceStarted || isStartingService) return
+    if (wakeLock != null || isStartingService) return
     val self = this
     isStartingService = true
     withApi {
@@ -73,10 +92,9 @@ class SimplexService: Service() {
         if (chatDbStatus != DBMigrationResult.OK) {
           Log.w(chat.simplex.app.TAG, "SimplexService: problem with the database: $chatDbStatus")
           showPassphraseNotification(chatDbStatus)
-          stopService()
+          safeStopService(self)
           return@withApi
         }
-        isServiceStarted = true
         saveServiceState(self, ServiceState.STARTED)
         wakeLock = (getSystemService(Context.POWER_SERVICE) as PowerManager).run {
           newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG).apply {
@@ -87,22 +105,6 @@ class SimplexService: Service() {
         isStartingService = false
       }
     }
-  }
-
-  private fun stopService() {
-    Log.d(TAG, "Stopping foreground service")
-    try {
-      wakeLock?.let {
-        while (it.isHeld) it.release() // release all, in case acquired more than once
-      }
-      wakeLock = null
-      stopForeground(true)
-      stopSelf()
-    } catch (e: Exception) {
-      Log.d(TAG, "Service stopped without being started: ${e.message}")
-    }
-    isServiceStarted = false
-    saveServiceState(this, ServiceState.STOPPED)
   }
 
   private fun createNotificationChannel(): NotificationManager? {
@@ -235,6 +237,9 @@ class SimplexService: Service() {
     private const val SHARED_PREFS_SERVICE_STATE = "SIMPLEX_SERVICE_STATE"
     private const val WORK_NAME_ONCE = "ServiceStartWorkerOnce"
 
+    private var isServiceStarted = false
+    private var stopAfterStart = false
+
     fun scheduleStart(context: Context) {
       Log.d(TAG, "Enqueuing work to start subscriber service")
       val workManager = WorkManager.getInstance(context)
@@ -244,7 +249,17 @@ class SimplexService: Service() {
 
     suspend fun start(context: Context) = serviceAction(context, Action.START)
 
-    fun stop(context: Context) = context.stopService(Intent(context, SimplexService::class.java))
+    /**
+     * If there is a need to stop the service, use this function only. It makes sure that the service will be stopped without an
+     * exception related to foreground services lifecycle
+     * */
+    fun safeStopService(context: Context) {
+      if (isServiceStarted) {
+        context.stopService(Intent(context, SimplexService::class.java))
+      } else {
+        stopAfterStart = true
+      }
+    }
 
     private suspend fun serviceAction(context: Context, action: Action) {
       Log.d(TAG, "SimplexService serviceAction: ${action.name}")

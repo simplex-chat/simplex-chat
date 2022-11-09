@@ -1220,7 +1220,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         chatModel.notificationsMode.value = NotificationsMode.OFF
         SimplexService.StartReceiver.toggleReceiver(false)
         MessagesFetcherWorker.cancelAll()
-        SimplexService.stop(SimplexApp.context)
+        SimplexService.safeStopService(SimplexApp.context)
       } else {
         // show battery optimization notice
         showBGServiceNoticeIgnoreOptimization(mode)
