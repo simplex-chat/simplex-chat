@@ -634,16 +634,16 @@ public struct NetCfg: Codable, Equatable {
 
     public static let defaults: NetCfg = NetCfg(
         socksProxy: nil,
-        tcpConnectTimeout: 10_000000,
-        tcpTimeout: 7_000000,
+        tcpConnectTimeout: 10_000_000,
+        tcpTimeout: 7_000_000,
         tcpKeepAlive: KeepAliveOpts.defaults,
         smpPingInterval: 600_000_000
     )
 
     public static let proxyDefaults: NetCfg = NetCfg(
         socksProxy: nil,
-        tcpConnectTimeout: 20_000000,
-        tcpTimeout: 15_000000,
+        tcpConnectTimeout: 20_000_000,
+        tcpTimeout: 15_000_000,
         tcpKeepAlive: KeepAliveOpts.defaults,
         smpPingInterval: 600_000_000
     )
