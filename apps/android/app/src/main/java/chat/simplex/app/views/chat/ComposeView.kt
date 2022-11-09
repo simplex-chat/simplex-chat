@@ -6,6 +6,7 @@ import android.content.*
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
+import android.graphics.ImageDecoder.DecodeException
 import android.graphics.drawable.AnimatedImageDrawable
 import android.net.Uri
 import android.provider.MediaStore
@@ -164,8 +165,17 @@ fun ComposeView(
     val imagesPreview = ArrayList<String>()
     uris.forEach { uri ->
       val source = ImageDecoder.createSource(context.contentResolver, uri)
-      val drawable = ImageDecoder.decodeDrawable(source)
-      var bitmap: Bitmap? = ImageDecoder.decodeBitmap(source)
+      val drawable = try {
+        ImageDecoder.decodeDrawable(source)
+      } catch (e: DecodeException) {
+        AlertManager.shared.showAlertMsg(
+          title = generalGetString(R.string.image_decoding_exception_title),
+          text = generalGetString(R.string.image_decoding_exception_desc)
+        )
+        Log.e(TAG, "Error while decoding drawable: ${e.stackTraceToString()}")
+        null
+      }
+      var bitmap: Bitmap? = if (drawable != null) ImageDecoder.decodeBitmap(source) else null
       if (drawable is AnimatedImageDrawable) {
         // It's a gif or webp
         val fileSize = getFileSize(context, uri)
