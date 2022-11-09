@@ -3423,14 +3423,19 @@ testGroupLink =
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "use /a team <name> to add members"
-      alice ##> "/show link #team"
-      alice <## "no group link, to create: /create link #team"
-      alice ##> "/create link #team"
+      alice ##> "/show_link #team"
+      alice <## "no group link, to create: /create_link #team"
+      alice ##> "/create_link #team"
+      _ <- getGroupLink alice "team" True
+      alice ##> "/delete_link #team"
+      alice <## "Group link is deleted - joined members will remain connected."
+      alice <## "To create a new group link use /create_link #team"
+      alice ##> "/create_link #team"
       gLink <- getGroupLink alice "team" True
-      alice ##> "/show link #team"
+      alice ##> "/show_link #team"
       _ <- getGroupLink alice "team" False
-      alice ##> "/create link #team"
-      alice <## "you already have link for this group, to show: /show link #team"
+      alice ##> "/create_link #team"
+      alice <## "you already have link for this group, to show: /show_link #team"
       bob ##> ("/c " <> gLink)
       bob <## "connection request sent!"
       alice <## "bob (Bob): accepting request to join group #team..."
@@ -3509,8 +3514,8 @@ testGroupLink =
           bob <## "#team: alice left the group",
           cath <## "#team: alice left the group"
         ]
-      alice ##> "/show link #team"
-      alice <## "no group link, to create: /create link #team"
+      alice ##> "/show_link #team"
+      alice <## "no group link, to create: /create_link #team"
 
 testGroupLinkContactUsed :: IO ()
 testGroupLinkContactUsed =
@@ -3519,14 +3524,14 @@ testGroupLinkContactUsed =
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "use /a team <name> to add members"
-      alice ##> "/show link #team"
-      alice <## "no group link, to create: /create link #team"
-      alice ##> "/create link #team"
+      alice ##> "/show_link #team"
+      alice <## "no group link, to create: /create_link #team"
+      alice ##> "/create_link #team"
       gLink <- getGroupLink alice "team" True
-      alice ##> "/show link #team"
+      alice ##> "/show_link #team"
       _ <- getGroupLink alice "team" False
-      alice ##> "/create link #team"
-      alice <## "you already have link for this group, to show: /show link #team"
+      alice ##> "/create_link #team"
+      alice <## "you already have link for this group, to show: /show_link #team"
       bob ##> ("/c " <> gLink)
       bob <## "connection request sent!"
       alice <## "bob (Bob): accepting request to join group #team..."
@@ -3584,7 +3589,7 @@ testGroupLinkIncognitoMembership =
         (alice <## ("#team: " <> bobIncognito <> " joined the group"))
         (bob <## ("#team: you joined the group incognito as " <> bobIncognito))
       -- bob creates group link, cath joins
-      bob ##> "/create link #team"
+      bob ##> "/create_link #team"
       gLink <- getGroupLink bob "team" True
       cath ##> ("/c " <> gLink)
       cath <## "connection request sent!"
@@ -3985,6 +3990,6 @@ getGroupLink cc gName created = do
   link <- getTermLine cc
   cc <## ""
   cc <## "Anybody can connect to you and join group with: /c <group_link_above>"
-  cc <## ("to show it again: /show link #" <> gName)
-  cc <## ("to delete it: /delete link #" <> gName <> " (joined members will remain connected to you)")
+  cc <## ("to show it again: /show_link #" <> gName)
+  cc <## ("to delete it: /delete_link #" <> gName <> " (joined members will remain connected to you)")
   pure link
