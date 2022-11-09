@@ -14,7 +14,6 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.TheaterComedy
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -35,18 +34,18 @@ import chat.simplex.app.views.usersettings.SettingsActionItem
 fun AddGroupMembersView(groupInfo: GroupInfo, chatModel: ChatModel, close: () -> Unit) {
   val selectedContacts = remember { mutableStateListOf<Long>() }
   val selectedRole = remember { mutableStateOf(GroupMemberRole.Member) }
-
+  var allowModifyMembers by remember { mutableStateOf(true) }
   BackHandler(onBack = close)
   AddGroupMembersLayout(
     groupInfo = groupInfo,
     contactsToAdd = getContactsToAdd(chatModel),
     selectedContacts = selectedContacts,
     selectedRole = selectedRole,
+    allowModifyMembers = allowModifyMembers,
     inviteMembers = {
-      // A copy of the list to prevent ConcurrentModification exception
-      val contacts = selectedContacts.toList()
+      allowModifyMembers = false
       withApi {
-        for (contactId in contacts) {
+        for (contactId in selectedContacts) {
           val member = chatModel.controller.apiAddMember(groupInfo.groupId, contactId, selectedRole.value)
           if (member != null) {
             chatModel.upsertGroupMember(groupInfo, member)
@@ -81,8 +80,9 @@ fun getContactsToAdd(chatModel: ChatModel): List<Contact> {
 fun AddGroupMembersLayout(
   groupInfo: GroupInfo,
   contactsToAdd: List<Contact>,
-  selectedContacts: SnapshotStateList<Long>,
+  selectedContacts: List<Long>,
   selectedRole: MutableState<GroupMemberRole>,
+  allowModifyMembers: Boolean,
   inviteMembers: () -> Unit,
   clearSelection: () -> Unit,
   addContact: (Long) -> Unit,
@@ -121,18 +121,18 @@ fun AddGroupMembersLayout(
     } else {
       SectionView {
         SectionItemView {
-          RoleSelectionRow(groupInfo, selectedRole)
+          RoleSelectionRow(groupInfo, selectedRole, allowModifyMembers)
         }
         SectionDivider()
-        InviteMembersButton(inviteMembers, disabled = selectedContacts.isEmpty())
+        InviteMembersButton(inviteMembers, disabled = selectedContacts.isEmpty() || !allowModifyMembers)
       }
       SectionCustomFooter {
-        InviteSectionFooter(selectedContactsCount = selectedContacts.count(), clearSelection)
+        InviteSectionFooter(selectedContactsCount = selectedContacts.size, allowModifyMembers, clearSelection)
       }
       SectionSpacer()
 
       SectionView {
-        ContactList(contacts = contactsToAdd, selectedContacts, groupInfo, addContact, removeContact)
+        ContactList(contacts = contactsToAdd, selectedContacts, groupInfo, allowModifyMembers, addContact, removeContact)
       }
       SectionSpacer()
     }
@@ -140,7 +140,7 @@ fun AddGroupMembersLayout(
 }
 
 @Composable
-private fun RoleSelectionRow(groupInfo: GroupInfo, selectedRole: MutableState<GroupMemberRole>) {
+private fun RoleSelectionRow(groupInfo: GroupInfo, selectedRole: MutableState<GroupMemberRole>, enabled: Boolean) {
   Row(
     Modifier.fillMaxWidth(),
     verticalAlignment = Alignment.CenterVertically,
@@ -152,7 +152,7 @@ private fun RoleSelectionRow(groupInfo: GroupInfo, selectedRole: MutableState<Gr
       values,
       selectedRole,
       icon = null,
-      enabled = remember { mutableStateOf(true) },
+      enabled = rememberUpdatedState(enabled),
       onSelected = { selectedRole.value = it }
     )
   }
@@ -171,7 +171,7 @@ fun InviteMembersButton(onClick: () -> Unit, disabled: Boolean) {
 }
 
 @Composable
-fun InviteSectionFooter(selectedContactsCount: Int, clearSelection: () -> Unit) {
+fun InviteSectionFooter(selectedContactsCount: Int, enabled: Boolean, clearSelection: () -> Unit) {
   Row(
     Modifier.fillMaxWidth(),
     horizontalArrangement = Arrangement.SpaceBetween,
@@ -184,11 +184,11 @@ fun InviteSectionFooter(selectedContactsCount: Int, clearSelection: () -> Unit) 
         fontSize = 12.sp
       )
       Box(
-        Modifier.clickable { clearSelection() }
+        Modifier.clickable { if (enabled) clearSelection() }
       ) {
         Text(
           stringResource(R.string.clear_contacts_selection_button),
-          color = MaterialTheme.colors.primary,
+          color = if (enabled) MaterialTheme.colors.primary else HighOrLowlight,
           fontSize = 12.sp
         )
       }
@@ -205,8 +205,9 @@ fun InviteSectionFooter(selectedContactsCount: Int, clearSelection: () -> Unit) 
 @Composable
 fun ContactList(
   contacts: List<Contact>,
-  selectedContacts: SnapshotStateList<Long>,
+  selectedContacts: List<Long>,
   groupInfo: GroupInfo,
+  enabled: Boolean,
   addContact: (Long) -> Unit,
   removeContact: (Long) -> Unit
 ) {
@@ -214,7 +215,8 @@ fun ContactList(
     contacts.forEachIndexed { index, contact ->
       ContactCheckRow(
         contact, groupInfo, addContact, removeContact,
-        checked = selectedContacts.contains(contact.apiId)
+        checked = selectedContacts.contains(contact.apiId),
+        enabled = enabled,
       )
       if (index < contacts.lastIndex) {
         SectionDivider()
@@ -229,7 +231,8 @@ fun ContactCheckRow(
   groupInfo: GroupInfo,
   addContact: (Long) -> Unit,
   removeContact: (Long) -> Unit,
-  checked: Boolean
+  checked: Boolean,
+  enabled: Boolean,
 ) {
   val prohibitedToInviteIncognito = !groupInfo.membership.memberIncognito && contact.contactConnIncognito
   val icon: ImageVector
@@ -239,12 +242,14 @@ fun ContactCheckRow(
     iconColor = HighOrLowlight
   } else if (checked) {
     icon = Icons.Filled.CheckCircle
-    iconColor = MaterialTheme.colors.primary
+    iconColor = if (enabled) MaterialTheme.colors.primary else HighOrLowlight
   } else {
     icon = Icons.Outlined.Circle
     iconColor = HighOrLowlight
   }
   SectionItemView(click = {
+    if (!enabled) return@SectionItemView
+
     if (prohibitedToInviteIncognito) {
       showProhibitedToInviteIncognitoAlertDialog()
     } else if (!checked)
@@ -284,6 +289,7 @@ fun PreviewAddGroupMembersLayout() {
       contactsToAdd = listOf(Contact.sampleData, Contact.sampleData, Contact.sampleData),
       selectedContacts = remember { mutableStateListOf() },
       selectedRole = remember { mutableStateOf(GroupMemberRole.Admin) },
+      allowModifyMembers = true,
       inviteMembers = {},
       clearSelection = {},
       addContact = {},
