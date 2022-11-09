@@ -25,7 +25,7 @@ We have a growing number of enthusiasts using SimpleX Chat who can accept the se
 
 Overall we have SimpleX Chat in a decent shape, with most reviewed areas other than identified issues being marked as "satisfactory", and authentication and access controls as "strong".
 
-The issues are explained below, and the full security review is available via [this link](https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SimpleX_Chat_Final_Report_11_03_2022.pdf).
+The issues are explained below, and the full security review is available via [Trail of Bits publications](https://github.com/trailofbits/publications#technology-product-reviews).
 
 We are hugely thankful to Trails Of Bits and their engineers for the work they did, helping us identify these issues and strengthen the security of SimpleX Chat.
 
