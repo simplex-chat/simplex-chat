@@ -1347,15 +1347,9 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
                   appPrefs.performLA.set(true)
                   laTurnedOnAlert()
                 }
-                is LAResult.Error -> {
+                is LAResult.Error, LAResult.Failed -> {
                   chatModel.performLA.value = false
                   appPrefs.performLA.set(false)
-                  laErrorToast(appContext, laResult.errString)
-                }
-                LAResult.Failed -> {
-                  chatModel.performLA.value = false
-                  appPrefs.performLA.set(false)
-                  laFailedToast(appContext)
                 }
                 LAResult.Unavailable -> {
                   chatModel.performLA.value = false
