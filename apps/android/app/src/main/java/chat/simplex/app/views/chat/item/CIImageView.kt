@@ -1,3 +1,5 @@
+package chat.simplex.app.views.chat.item
+
 import android.graphics.Bitmap
 import android.os.Build.VERSION.SDK_INT
 import androidx.compose.foundation.Image
@@ -7,11 +9,9 @@ import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.MoreHoriz
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -19,11 +19,13 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.layoutId
+import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
-import chat.simplex.app.BuildConfig
+import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.CIFile
 import chat.simplex.app.model.CIFileStatus
@@ -39,6 +41,7 @@ import java.io.File
 fun CIImageView(
   image: String,
   file: CIFile?,
+  imageProvider: () -> ImageGalleryProvider,
   showMenu: MutableState<Boolean>,
   receiveFile: (Long) -> Unit
 ) {
@@ -92,6 +95,12 @@ fun CIImageView(
   }
 
   @Composable
+  fun imageViewFullWidth(): Dp {
+    val approximatePadding = 100.dp
+    return with(LocalDensity.current) { minOf(1000.dp, LocalView.current.width.toDp() - approximatePadding) }
+  }
+
+  @Composable
   fun imageView(imageBitmap: Bitmap, onClick: () -> Unit) {
     Image(
       imageBitmap.asImageBitmap(),
@@ -99,7 +108,7 @@ fun CIImageView(
       // .width(1000.dp) is a hack for image to increase IntrinsicSize of FramedItemView
       // if text is short and take all available width if text is long
       modifier = Modifier
-        .width(1000.dp)
+        .width(if (imageBitmap.width * 0.97 <= imageBitmap.height) imageViewFullWidth() * 0.75f else 1000.dp)
         .combinedClickable(
           onLongClick = { showMenu.value = true },
           onClick = onClick
@@ -116,7 +125,7 @@ fun CIImageView(
       // .width(1000.dp) is a hack for image to increase IntrinsicSize of FramedItemView
       // if text is short and take all available width if text is long
       modifier = Modifier
-        .width(1000.dp)
+        .width(if (painter.intrinsicSize.width * 0.97 <= painter.intrinsicSize.height) imageViewFullWidth() * 0.75f else 1000.dp)
         .combinedClickable(
           onLongClick = { showMenu.value = true },
           onClick = onClick
@@ -132,29 +141,32 @@ fun CIImageView(
     return false
   }
 
-  Box(contentAlignment = Alignment.TopEnd) {
+  fun imageAndFilePath(file: CIFile?): Pair<Bitmap?, String?> {
+    val imageBitmap: Bitmap? = getLoadedImage(SimplexApp.context, file)
+    val filePath = getLoadedFilePath(SimplexApp.context, file)
+    return imageBitmap to filePath
+  }
+
+  Box(
+    Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID),
+    contentAlignment = Alignment.TopEnd
+  ) {
     val context = LocalContext.current
-    val imageBitmap: Bitmap? = getLoadedImage(context, file)
-    val filePath = getLoadedFilePath(context, file)
+    val (imageBitmap, filePath) = remember(file) { imageAndFilePath(file) }
     if (imageBitmap != null && filePath != null) {
-      val uri = FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.provider", File(filePath))
-      val imageLoader = ImageLoader.Builder(context)
-        .components {
-          if (SDK_INT >= 28) {
-            add(ImageDecoderDecoder.Factory())
-          } else {
-            add(GifDecoder.Factory())
-          }
-        }
-        .build()
+      val uri = remember(filePath) { FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.provider", File(filePath))  }
       val imagePainter = rememberAsyncImagePainter(
         ImageRequest.Builder(context).data(data = uri).size(coil.size.Size.ORIGINAL).build(),
         placeholder = BitmapPainter(imageBitmap.asImageBitmap()), // show original image while it's still loading by coil
         imageLoader = imageLoader
       )
+      val view = LocalView.current
       imageView(imagePainter, onClick = {
+        hideKeyboard(view)
         if (getLoadedFilePath(context, file) != null) {
-          ModalManager.shared.showCustomModal { close -> ImageFullScreenView(imageBitmap, uri, close) }
+          ModalManager.shared.showCustomModal(animated = false) { close ->
+            ImageFullScreenView(imageProvider, close)
+          }
         }
       })
     } else {
@@ -186,3 +198,13 @@ fun CIImageView(
     loadingIndicator()
   }
 }
+
+private val imageLoader = ImageLoader.Builder(SimplexApp.context)
+  .components {
+    if (SDK_INT >= 28) {
+      add(ImageDecoderDecoder.Factory())
+    } else {
+      add(GifDecoder.Factory())
+    }
+  }
+  .build()

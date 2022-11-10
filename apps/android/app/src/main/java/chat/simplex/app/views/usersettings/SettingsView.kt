@@ -342,6 +342,36 @@ fun SettingsPreferenceItemWithInfo(
   }
 }
 
+@Composable
+fun PreferenceToggleWithIcon(
+  text: String,
+  icon: ImageVector,
+  iconColor: Color = HighOrLowlight,
+  checked: Boolean,
+  onChange: (Boolean) -> Unit = {},
+) {
+  Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+    Icon(
+      icon,
+      null,
+      tint = iconColor
+    )
+    Spacer(Modifier.padding(horizontal = 4.dp))
+    Text(text)
+    Spacer(Modifier.fillMaxWidth().weight(1f))
+    Switch(
+      checked = checked,
+      onCheckedChange = {
+        onChange(it)
+      },
+      colors = SwitchDefaults.colors(
+        checkedThumbColor = MaterialTheme.colors.primary,
+        uncheckedThumbColor = HighOrLowlight
+      )
+    )
+  }
+}
+
 @Preview(showBackground = true)
 @Preview(
   uiMode = Configuration.UI_MODE_NIGHT_YES,

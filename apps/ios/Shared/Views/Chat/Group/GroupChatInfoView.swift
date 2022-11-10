@@ -16,6 +16,7 @@ struct GroupChatInfoView: View {
     var groupInfo: GroupInfo
     @ObservedObject private var alertManager = AlertManager.shared
     @State private var alert: GroupChatInfoViewAlert? = nil
+    @State private var groupLink: String?
     @State private var showAddMembersSheet: Bool = false
     @State private var selectedMember: GroupMember? = nil
     @State private var showGroupProfile: Bool = false
@@ -43,6 +44,7 @@ struct GroupChatInfoView: View {
 
                 Section("\(members.count + 1) members") {
                     if groupInfo.canAddMembers {
+                        groupLinkButton()
                         if (chat.chatInfo.incognito) {
                             Label("Invite members", systemImage: "plus")
                                 .foregroundColor(Color(uiColor: .tertiaryLabel))
@@ -69,8 +71,11 @@ struct GroupChatInfoView: View {
                 .sheet(isPresented: $showAddMembersSheet) {
                     AddGroupMembersView(chat: chat, groupInfo: groupInfo)
                 }
-                .sheet(item: $selectedMember, onDismiss: { connectionStats = nil }) { member in
-                    GroupMemberInfoView(groupInfo: groupInfo, member: member, connectionStats: connectionStats)
+                .sheet(item: $selectedMember, onDismiss: {
+                    selectedMember = nil
+                    connectionStats = nil
+                }) { _ in
+                    GroupMemberInfoView(groupInfo: groupInfo, member: $selectedMember, connectionStats: $connectionStats)
                 }
                 .sheet(isPresented: $showGroupProfile) {
                     GroupProfileView(groupId: groupInfo.apiId, groupProfile: groupInfo.groupProfile)
@@ -105,7 +110,13 @@ struct GroupChatInfoView: View {
             case .clearChatAlert: return clearChatAlert()
             case .leaveGroupAlert: return leaveGroupAlert()
             case .cantInviteIncognitoAlert: return cantInviteIncognitoAlert()
-
+            }
+        }
+        .onAppear {
+            do {
+                groupLink = try apiGetGroupLink(groupInfo.groupId)
+            } catch let error {
+                logger.error("GroupChatInfoView apiGetGroupLink: \(responseError(error))")
             }
         }
     }
@@ -172,6 +183,16 @@ struct GroupChatInfoView: View {
                 Text(member.memberRole.text)
                     .foregroundColor(.secondary)
             }
+        }
+    }
+
+    private func groupLinkButton() -> some View {
+        NavigationLink {
+            GroupLinkView(groupId: groupInfo.groupId, groupLink: $groupLink)
+                .navigationBarTitleDisplayMode(.inline)
+        } label: {
+            Label("Group link", systemImage: "link")
+                .foregroundColor(.accentColor)
         }
     }
 

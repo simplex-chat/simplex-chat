@@ -11,6 +11,13 @@ import SwiftUI
 enum CreateLinkTab {
     case oneTime
     case longTerm
+
+    var title: LocalizedStringKey {
+        switch self {
+        case .oneTime: return "One-time invitation link"
+        case .longTerm: return "Your contact address"
+        }
+    }
 }
 
 struct CreateLinkView: View {
@@ -18,11 +25,21 @@ struct CreateLinkView: View {
     @State var selection: CreateLinkTab
     @State var connReqInvitation: String = ""
     @State private var creatingConnReq = false
-    var viaSettings = false
+    var viaNavLink = false
 
     var body: some View {
+        if viaNavLink {
+            createLinkView()
+        } else {
+            NavigationView {
+                createLinkView()
+            }
+        }
+    }
+
+    private func createLinkView() -> some View {
         TabView(selection: $selection) {
-            AddContactView(connReqInvitation: connReqInvitation, viaSettings: viaSettings)
+            AddContactView(connReqInvitation: connReqInvitation)
                 .tabItem {
                     Label(
                         connReqInvitation == ""
@@ -32,7 +49,7 @@ struct CreateLinkView: View {
                     )
                 }
                 .tag(CreateLinkTab.oneTime)
-            UserAddress(viaSettings: viaSettings)
+            UserAddress()
                 .tabItem {
                     Label("Your contact address", systemImage: "infinity.circle")
                 }
@@ -45,6 +62,8 @@ struct CreateLinkView: View {
         }
         .onAppear { m.connReqInv = connReqInvitation }
         .onDisappear { m.connReqInv = nil }
+        .navigationTitle(selection.title)
+        .navigationBarTitleDisplayMode(.large)
     }
 
     private func createInvitation() {

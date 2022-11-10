@@ -24,16 +24,8 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 
 @Composable
-fun AddContactView(chatModel: ChatModel, connReqInvitation: String, connIncognito: Boolean) {
+fun AddContactView(connReqInvitation: String, connIncognito: Boolean) {
   val cxt = LocalContext.current
-  LaunchedEffect(connReqInvitation) {
-    if (connReqInvitation.isNotEmpty()) {
-      chatModel.connReqInv.value = connReqInvitation
-    }
-  }
-  DisposableEffect(Unit) {
-    onDispose { chatModel.connReqInv.value = null }
-  }
   AddContactLayout(
     connReq = connReqInvitation,
     connIncognito = connIncognito,
@@ -83,7 +75,7 @@ fun AddContactLayout(connReq: String, connIncognito: Boolean, share: () -> Unit)
         annotatedStringResource(R.string.if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel),
         lineHeight = 22.sp,
         modifier = Modifier
-          .padding(bottom = if (screenHeight > 600.dp) 8.dp else 0.dp)
+          .padding(top = 16.dp, bottom = if (screenHeight > 600.dp) 16.dp else 0.dp)
       )
       Row(
         Modifier.fillMaxWidth(),

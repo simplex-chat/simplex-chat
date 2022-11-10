@@ -19,24 +19,13 @@ package chat.simplex.app.views.helpers
 import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.forEachGesture
+import androidx.compose.foundation.gestures.*
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.pointer.AwaitPointerEventScope
-import androidx.compose.ui.input.pointer.PointerEventTimeoutCancellationException
-import androidx.compose.ui.input.pointer.PointerEvent
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.PointerInputChange
-import androidx.compose.ui.input.pointer.PointerInputScope
-import androidx.compose.ui.input.pointer.changedToDown
-import androidx.compose.ui.input.pointer.changedToDownIgnoreConsumed
-import androidx.compose.ui.input.pointer.changedToUp
-import androidx.compose.ui.input.pointer.consumeAllChanges
-import androidx.compose.ui.input.pointer.consumeDownChange
-import androidx.compose.ui.input.pointer.isOutOfBounds
-import androidx.compose.ui.input.pointer.positionChangeConsumed
+import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.util.fastAll
@@ -45,6 +34,8 @@ import androidx.compose.ui.util.fastForEach
 import chat.simplex.app.TAG
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
+import kotlin.math.PI
+import kotlin.math.abs
 
 /**
  * See original code here: [androidx.compose.foundation.gestures.detectTapGestures]
@@ -220,4 +211,67 @@ fun interactionSourceWithDetection(onClick: () -> Unit, onLongClick: () -> Unit)
     }
   }
   return interactionSource
+}
+
+suspend fun PointerInputScope.detectTransformGestures(
+  allowIntercept: () -> Boolean,
+  panZoomLock: Boolean = false,
+  onGesture: (centroid: Offset, pan: Offset, zoom: Float, rotation: Float) -> Unit
+) {
+  var zoom = 1f
+  forEachGesture {
+    awaitPointerEventScope {
+      var rotation = 0f
+      var pan = Offset.Zero
+      var pastTouchSlop = false
+      val touchSlop = viewConfiguration.touchSlop
+      var lockedToPanZoom = false
+
+      awaitFirstDown(requireUnconsumed = false)
+      do {
+        val event = awaitPointerEvent()
+        val canceled = event.changes.fastAny { it.isConsumed }
+        if (!canceled) {
+          val zoomChange = event.calculateZoom()
+          val rotationChange = event.calculateRotation()
+          val panChange = event.calculatePan()
+
+          if (!pastTouchSlop) {
+            zoom *= zoomChange
+            rotation += rotationChange
+            pan += panChange
+
+            val centroidSize = event.calculateCentroidSize(useCurrent = false)
+            val zoomMotion = abs(1 - zoom) * centroidSize
+            val rotationMotion = abs(rotation * PI.toFloat() * centroidSize / 180f)
+            val panMotion = pan.getDistance()
+
+            if (zoomMotion > touchSlop ||
+              rotationMotion > touchSlop ||
+              panMotion > touchSlop
+            ) {
+              pastTouchSlop = true
+              lockedToPanZoom = panZoomLock && rotationMotion < touchSlop
+            }
+          }
+
+          if (pastTouchSlop) {
+            val centroid = event.calculateCentroid(useCurrent = false)
+            val effectiveRotation = if (lockedToPanZoom) 0f else rotationChange
+            if (effectiveRotation != 0f ||
+              zoomChange != 1f ||
+              panChange != Offset.Zero
+            ) {
+              onGesture(centroid, panChange, zoomChange, effectiveRotation)
+            }
+            event.changes.fastForEach {
+              if (it.positionChanged() && zoom != 1f && allowIntercept()) {
+                it.consume()
+              }
+            }
+          }
+        }
+      } while (!canceled && event.changes.fastAny { it.pressed })
+    }
+  }
 }

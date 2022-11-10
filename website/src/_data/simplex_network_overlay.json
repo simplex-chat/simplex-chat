@@ -1,0 +1,15 @@
+{
+    "sections": [
+        {
+            "id": 1,
+            "imgLight": "/img/new/network-1.svg",
+            "imgDark": "/img/new/network-1-dark.svg",
+            "overlayContent": {
+                "overlayId": "simplex-network-overlay-1",
+                "title": "Comparison with P2P messaging protocols",
+                "showImage": true,
+                "contentBody": "overlay_content/simplex_network/card_1.html"
+            }
+        }
+    ]
+}

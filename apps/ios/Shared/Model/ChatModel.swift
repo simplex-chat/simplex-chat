@@ -30,7 +30,7 @@ final class ChatModel: ObservableObject {
     @Published var groupMembers: [GroupMember] = []
     // items in the terminal view
     @Published var terminalItems: [TerminalItem] = []
-    @Published var userAddress: String?
+    @Published var userAddress: UserContactLink?
     @Published var userSMPServers: [String]?
     @Published var chatItemTTL: ChatItemTTL = .none
     @Published var appOpenUrl: URL?
@@ -98,7 +98,7 @@ final class ChatModel: ObservableObject {
     }
 
     func updateContact(_ contact: Contact) {
-        updateChat(.direct(contact: contact), addMissing: !contact.isIndirectContact)
+        updateChat(.direct(contact: contact), addMissing: !contact.isIndirectContact && !contact.viaGroupLink)
     }
 
     func updateGroup(_ groupInfo: GroupInfo) {
@@ -110,6 +110,17 @@ final class ChatModel: ObservableObject {
             updateChatInfo(cInfo)
         } else if addMissing {
             addChat(Chat(chatInfo: cInfo, chatItems: []))
+        }
+    }
+
+    private func _updateChat(_ id: ChatId, _ update: @escaping (Chat) -> Void) {
+        if let i = getChatIndex(id) {
+            // we need to separately update the chat object, as it is ObservedObject,
+            // and chat in the list so the list view is updated...
+            // simply updating chats[i] replaces the object without updating the current object in the list
+            let chat = chats[i]
+            update(chat)
+            chats[i] = chat
         }
     }
 
@@ -178,7 +189,7 @@ final class ChatModel: ObservableObject {
         }
         // add to current chat
         if chatId == cInfo.id {
-            withAnimation { reversedChatItems.insert(cItem, at: 0) }
+            _ = _upsertChatItem(cInfo, cItem)
         }
     }
 
@@ -186,7 +197,11 @@ final class ChatModel: ObservableObject {
         // update previews
         var res: Bool
         if let chat = getChat(cInfo.id) {
-            if let pItem = chat.chatItems.last, pItem.id == cItem.id {
+            if let pItem = chat.chatItems.last {
+                if pItem.id == cItem.id || (chatId == cInfo.id && reversedChatItems.first(where: { $0.id == cItem.id }) == nil) {
+                    chat.chatItems = [cItem]
+                }
+            } else {
                 chat.chatItems = [cItem]
             }
             res = false
@@ -195,19 +210,23 @@ final class ChatModel: ObservableObject {
             res = true
         }
         // update current chat
-        if chatId == cInfo.id {
-            if let i = reversedChatItems.firstIndex(where: { $0.id == cItem.id }) {
-                withAnimation(.default) {
-                    self.reversedChatItems[i] = cItem
-                    self.reversedChatItems[i].viewTimestamp = .now
+        return chatId == cInfo.id ? _upsertChatItem(cInfo, cItem) : res
+    }
+
+    private func _upsertChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) -> Bool {
+        if let i = reversedChatItems.firstIndex(where: { $0.id == cItem.id }) {
+            let ci = reversedChatItems[i]
+            withAnimation(.default) {
+                self.reversedChatItems[i] = cItem
+                self.reversedChatItems[i].viewTimestamp = .now
+                if case .sndNew = cItem.meta.itemStatus {
+                    self.reversedChatItems[i].meta = ci.meta
                 }
-                return false
-            } else {
-                withAnimation { reversedChatItems.insert(cItem, at: 0) }
-                return true
             }
+            return false
         } else {
-            return res
+            withAnimation { reversedChatItems.insert(cItem, at: 0) }
+            return true
         }
     }
     
@@ -231,9 +250,25 @@ final class ChatModel: ObservableObject {
         }
     }
 
+    func nextChatItemData<T>(_ chatItemId: Int64, previous: Bool, map: @escaping (ChatItem) -> T?) -> T? {
+        guard var i = reversedChatItems.firstIndex(where: { $0.id == chatItemId }) else { return nil }
+        if previous {
+            while i < reversedChatItems.count - 1 {
+                i += 1
+                if let res = map(reversedChatItems[i]) { return res }
+            }
+        } else {
+            while i > 0 {
+                i -= 1
+                if let res = map(reversedChatItems[i]) { return res }
+            }
+        }
+        return nil
+    }
+
     func markChatItemsRead(_ cInfo: ChatInfo) {
         // update preview
-        if let chat = getChat(cInfo.id) {
+        _updateChat(cInfo.id) { chat in
             NtfManager.shared.decNtfBadgeCount(by: chat.chatStats.unreadCount)
             chat.chatStats = ChatStats()
         }
@@ -258,11 +293,11 @@ final class ChatModel: ObservableObject {
         if let cItem = aboveItem {
             if chatId == cInfo.id, let i = reversedChatItems.firstIndex(where: { $0.id == cItem.id }) {
                 markCurrentChatRead(fromIndex: i)
-                if let chat = getChat(cInfo.id) {
+                _updateChat(cInfo.id) { chat in
                     var unreadBelow = 0
                     var j = i - 1
                     while j >= 0 {
-                        if case .rcvNew = reversedChatItems[j].meta.itemStatus {
+                        if case .rcvNew = self.reversedChatItems[j].meta.itemStatus {
                             unreadBelow += 1
                         }
                         j -= 1
@@ -277,6 +312,12 @@ final class ChatModel: ObservableObject {
             }
         } else {
             markChatItemsRead(cInfo)
+        }
+    }
+   
+    func markChatUnread(_ cInfo: ChatInfo, unreadChat: Bool = true) {
+        _updateChat(cInfo.id) { chat in
+            chat.chatStats.unreadChat = unreadChat
         }
     }
 
@@ -345,6 +386,11 @@ final class ChatModel: ObservableObject {
     }
 
     func upsertGroupMember(_ groupInfo: GroupInfo, _ member: GroupMember) -> Bool {
+        // user member was updated
+        if groupInfo.membership.groupMemberId == member.groupMemberId {
+            updateGroup(groupInfo)
+            return false
+        }
         // update current chat
         if chatId == groupInfo.id {
             if let i = groupMembers.firstIndex(where: { $0.id == member.id }) {

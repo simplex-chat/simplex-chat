@@ -63,3 +63,5 @@ private fun fromEndToStartTransition() =
   )
 
 private fun <T> animationSpec() = tween<T>(durationMillis = 250, easing = FastOutSlowInEasing)
+
+fun <T> newChatSheetAnimSpec() = tween<T>(256, 0, LinearEasing)

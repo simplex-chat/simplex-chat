@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -84,7 +85,8 @@ fun ChatPreviewView(chat: Chat, chatModelIncognito: Boolean, currentUserProfileD
       MarkdownText(
         ci.text,
         ci.formattedText,
-        sender = null,
+        sender = if (cInfo is ChatInfo.Group && !ci.chatDir.sent) ci.memberDisplayName else null,
+        senderBold = true,
         metaText = null,
         maxLines = 2,
         overflow = TextOverflow.Ellipsis,
@@ -121,7 +123,10 @@ fun ChatPreviewView(chat: Chat, chatModelIncognito: Boolean, currentUserProfileD
         .weight(1F)
     ) {
       chatPreviewTitle()
-      chatPreviewText(chatModelIncognito)
+      val height = with(LocalDensity.current) { 46.sp.toDp() }
+      Row(Modifier.heightIn(min = height)) {
+        chatPreviewText(chatModelIncognito)
+      }
     }
     val ts = chat.chatItems.lastOrNull()?.timestampText ?: getTimestampText(chat.chatInfo.updatedAt)
 
@@ -136,13 +141,13 @@ fun ChatPreviewView(chat: Chat, chatModelIncognito: Boolean, currentUserProfileD
       )
       val n = chat.chatStats.unreadCount
       val showNtfsIcon = !chat.chatInfo.ntfsEnabled && (chat.chatInfo is ChatInfo.Direct || chat.chatInfo is ChatInfo.Group)
-      if (n > 0) {
+      if (n > 0 || chat.chatStats.unreadChat) {
         Box(
           Modifier.padding(top = 24.dp),
           contentAlignment = Alignment.Center
         ) {
           Text(
-            unreadCountStr(n),
+            if (n > 0) unreadCountStr(n) else "",
             color = MaterialTheme.colors.onPrimary,
             fontSize = 11.sp,
             modifier = Modifier

@@ -14,6 +14,7 @@ struct ChatItemView: View {
     var chatItem: ChatItem
     var showMember = false
     var maxWidth: CGFloat = .infinity
+    @State var scrollProxy: ScrollViewProxy? = nil
 
     var body: some View {
         switch chatItem.content {
@@ -26,8 +27,10 @@ struct ChatItemView: View {
         case .rcvIntegrityError: IntegrityErrorItemView(chatItem: chatItem, showMember: showMember)
         case let .rcvGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
         case let .sndGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
-        case .rcvGroupEvent: groupEventItemView()
-        case .sndGroupEvent: groupEventItemView()
+        case .rcvGroupEvent: eventItemView()
+        case .sndGroupEvent: eventItemView()
+        case .rcvConnEvent: eventItemView()
+        case .sndConnEvent: eventItemView()
         }
     }
 
@@ -35,7 +38,7 @@ struct ChatItemView: View {
         if (chatItem.quotedItem == nil && chatItem.file == nil && isShortEmoji(chatItem.content.text)) {
             EmojiItemView(chatItem: chatItem)
         } else {
-            FramedItemView(chatInfo: chatInfo, chatItem: chatItem, showMember: showMember, maxWidth: maxWidth)
+            FramedItemView(chatInfo: chatInfo, chatItem: chatItem, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy)
         }
     }
 
@@ -51,8 +54,8 @@ struct ChatItemView: View {
         CIGroupInvitationView(chatItem: chatItem, groupInvitation: groupInvitation, memberRole: memberRole, chatIncognito: chatInfo.incognito)
     }
 
-    private func groupEventItemView() -> some View {
-        CIGroupEventView(chatItem: chatItem)
+    private func eventItemView() -> some View {
+        CIEventView(chatItem: chatItem)
     }
 }
 

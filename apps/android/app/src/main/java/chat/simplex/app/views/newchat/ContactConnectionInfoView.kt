@@ -30,31 +30,27 @@ fun ContactConnectionInfoView(
   focusAlias: Boolean,
   close: () -> Unit
 ) {
-  /** When [AddContactView] is open, we don't need to drop [chatModel.connReqInv]. It will be managed by [AddContactView] itself
-   * Otherwise it will be called here AFTER [AddContactView] is launched and will clear the value too soon */
-  val allowDispose = remember { mutableStateOf(true) }
   LaunchedEffect(connReqInvitation) {
-    allowDispose.value = true
     chatModel.connReqInv.value = connReqInvitation
   }
+  /** When [AddContactView] is open, we don't need to drop [chatModel.connReqInv].
+   * Otherwise, it will be called here AFTER [AddContactView] is launched and will clear the value too soon.
+   * It will be dropped automatically when connection established or when user goes away from this screen.
+   **/
   DisposableEffect(Unit) {
     onDispose {
-      if (allowDispose.value) {
+      if (!ModalManager.shared.hasModalsOpen()) {
         chatModel.connReqInv.value = null
       }
     }
   }
   ContactConnectionInfoLayout(
     connReq = connReqInvitation,
-    contactConnection.localAlias,
-    contactConnection.initiated,
-    contactConnection.viaContactUri,
-    contactConnection.incognito,
+    contactConnection,
     focusAlias,
     deleteConnection = { deleteContactConnectionAlert(contactConnection, chatModel, close) },
     onLocalAliasChanged = { setContactAlias(contactConnection, it, chatModel) },
     showQr = {
-      allowDispose.value = false
       ModalManager.shared.showModal {
         Column(
           Modifier
@@ -62,7 +58,7 @@ fun ContactConnectionInfoView(
             .padding(horizontal = DEFAULT_PADDING),
           verticalArrangement = Arrangement.SpaceBetween
         ) {
-          AddContactView(chatModel, connReqInvitation ?: return@showModal, contactConnection.incognito)
+          AddContactView(connReqInvitation ?: return@showModal, contactConnection.incognito)
         }
       }
     }
@@ -72,10 +68,7 @@ fun ContactConnectionInfoView(
 @Composable
 private fun ContactConnectionInfoLayout(
   connReq: String?,
-  localAlias: String,
-  connectionInitiated: Boolean,
-  connectionViaContactUri: Boolean,
-  connectionIncognito: Boolean,
+  contactConnection: PendingContactConnection,
   focusAlias: Boolean,
   deleteConnection: () -> Unit,
   onLocalAliasChanged: (String) -> Unit,
@@ -87,23 +80,27 @@ private fun ContactConnectionInfoLayout(
   ) {
     AppBarTitle(
       stringResource(
-        if (connectionInitiated) R.string.you_invited_your_contact
+        if (contactConnection.initiated) R.string.you_invited_your_contact
         else R.string.you_accepted_connection
       )
     )
-    Row(Modifier.padding(bottom = DEFAULT_PADDING)) {
-      LocalAliasEditor(localAlias, center = false, leadingIcon = true, focus = focusAlias, updateValue = onLocalAliasChanged)
+    if (contactConnection.groupLinkId == null) {
+      Row(Modifier.padding(bottom = DEFAULT_PADDING)) {
+        LocalAliasEditor(contactConnection.localAlias, center = false, leadingIcon = true, focus = focusAlias, updateValue = onLocalAliasChanged)
+      }
     }
     Text(
       stringResource(
-        if (connectionViaContactUri) R.string.you_will_be_connected_when_your_connection_request_is_accepted
+        if (contactConnection.viaContactUri)
+          if (contactConnection.groupLinkId != null) R.string.you_will_be_connected_when_group_host_device_is_online
+          else R.string.you_will_be_connected_when_your_connection_request_is_accepted
         else R.string.you_will_be_connected_when_your_contacts_device_is_online
       ),
       Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING)
     )
     SectionView {
-      if (!connReq.isNullOrEmpty() && connectionInitiated) {
-        ShowQrButton(connectionIncognito, showQr)
+      if (!connReq.isNullOrEmpty() && contactConnection.initiated) {
+        ShowQrButton(contactConnection.incognito, showQr)
         SectionDivider()
       }
       DeleteButton(deleteConnection)
@@ -149,11 +146,8 @@ private fun setContactAlias(contactConnection: PendingContactConnection, localAl
 private fun PreviewContactConnectionInfoView() {
   SimpleXTheme {
     ContactConnectionInfoLayout(
-      localAlias = "",
       connReq = "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D",
-      connectionInitiated = true,
-      connectionViaContactUri = true,
-      connectionIncognito = false,
+      PendingContactConnection.getSampleData(),
       focusAlias = false,
       deleteConnection = {},
       onLocalAliasChanged = {},

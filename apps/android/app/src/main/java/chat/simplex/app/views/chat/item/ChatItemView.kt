@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
@@ -34,13 +35,15 @@ fun ChatItemView(
   composeState: MutableState<ComposeState>,
   cxt: Context,
   uriHandler: UriHandler? = null,
+  imageProvider: (() -> ImageGalleryProvider)? = null,
   showMember: Boolean = false,
   chatModelIncognito: Boolean,
   useLinkPreviews: Boolean,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   receiveFile: (Long) -> Unit,
   joinGroup: (Long) -> Unit,
-  acceptCall: (Contact) -> Unit
+  acceptCall: (Contact) -> Unit,
+  scrollToItem: (Long) -> Unit,
 ) {
   val context = LocalContext.current
   val sent = cItem.chatDir.sent
@@ -53,17 +56,28 @@ fun ChatItemView(
       .fillMaxWidth(),
     contentAlignment = alignment,
   ) {
+    val onClick = {
+      when (cItem.meta.itemStatus) {
+        is CIStatus.SndErrorAuth -> {
+          showMsgDeliveryErrorAlert(generalGetString(R.string.message_delivery_error_desc))
+        }
+        is CIStatus.SndError -> {
+          showMsgDeliveryErrorAlert(generalGetString(R.string.unknown_error) + ": ${cItem.meta.itemStatus.agentError.string}")
+        }
+        else -> {}
+      }
+    }
     Column(
       Modifier
         .clip(RoundedCornerShape(18.dp))
-        .combinedClickable(onLongClick = { showMenu.value = true }, onClick = {})
+        .combinedClickable(onLongClick = { showMenu.value = true }, onClick = onClick)
     ) {
       @Composable fun ContentItem() {
         if (cItem.file == null && cItem.quotedItem == null && isShortEmoji(cItem.content.text)) {
           EmojiItemView(cItem)
         } else {
           val onLinkLongClick = { _: String -> showMenu.value = true }
-          FramedItemView(cInfo, cItem, uriHandler, showMember = showMember, showMenu, receiveFile, onLinkLongClick)
+          FramedItemView(cInfo, cItem, uriHandler, imageProvider, showMember = showMember, showMenu, receiveFile, onLinkLongClick, scrollToItem)
         }
         DropdownMenu(
           expanded = showMenu.value,
@@ -79,7 +93,11 @@ fun ChatItemView(
             showMenu.value = false
           })
           ItemAction(stringResource(R.string.share_verb), Icons.Outlined.Share, onClick = {
-            shareText(cxt, cItem.content.text)
+            val filePath = getLoadedFilePath(SimplexApp.context, cItem.file)
+            when {
+              filePath != null -> shareFile(cxt, cItem.text, filePath)
+              else -> shareText(cxt, cItem.content.text)
+            }
             showMenu.value = false
           })
           ItemAction(stringResource(R.string.copy_verb), Icons.Outlined.ContentCopy, onClick = {
@@ -150,8 +168,10 @@ fun ChatItemView(
         is CIContent.RcvIntegrityError -> IntegrityErrorItemView(cItem, showMember = showMember)
         is CIContent.RcvGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito)
         is CIContent.SndGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito)
-        is CIContent.RcvGroupEventContent -> CIGroupEventView(cItem)
-        is CIContent.SndGroupEventContent -> CIGroupEventView(cItem)
+        is CIContent.RcvGroupEventContent -> CIEventView(cItem)
+        is CIContent.SndGroupEventContent -> CIEventView(cItem)
+        is CIContent.RcvConnEventContent -> CIEventView(cItem)
+        is CIContent.SndConnEventContent -> CIEventView(cItem)
       }
     }
   }
@@ -201,6 +221,13 @@ fun deleteMessageAlertDialog(chatItem: ChatItem, deleteMessage: (Long, CIDeleteM
   )
 }
 
+private fun showMsgDeliveryErrorAlert(description: String) {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(R.string.message_delivery_error_title),
+    text = description,
+  )
+}
+
 @Preview
 @Composable
 fun PreviewChatItemView() {
@@ -218,7 +245,8 @@ fun PreviewChatItemView() {
       deleteMessage = { _, _ -> },
       receiveFile = {},
       joinGroup = {},
-      acceptCall = { _ -> }
+      acceptCall = { _ -> },
+      scrollToItem = {},
     )
   }
 }
@@ -238,7 +266,8 @@ fun PreviewChatItemViewDeletedContent() {
       deleteMessage = { _, _ -> },
       receiveFile = {},
       joinGroup = {},
-      acceptCall = { _ -> }
+      acceptCall = { _ -> },
+      scrollToItem = {},
     )
   }
 }

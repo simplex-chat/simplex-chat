@@ -1,6 +1,7 @@
 package chat.simplex.app.views.newchat
 
 import android.graphics.Bitmap
+import android.net.Uri
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -8,6 +9,7 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowForwardIos
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -60,8 +62,8 @@ fun AddGroupLayout(chatModelIncognito: Boolean, createGroup: (GroupProfile) -> U
   val scope = rememberCoroutineScope()
   val displayName = remember { mutableStateOf("") }
   val fullName = remember { mutableStateOf("") }
-  val profileImage = remember { mutableStateOf<String?>(null) }
-  val chosenImage = remember { mutableStateOf<Bitmap?>(null) }
+  val chosenImage = rememberSaveable { mutableStateOf<Uri?>(null) }
+  val profileImage = rememberSaveable { mutableStateOf<String?>(null) }
   val focusRequester = remember { FocusRequester() }
 
   ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {

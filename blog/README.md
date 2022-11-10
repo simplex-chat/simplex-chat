@@ -1,5 +1,21 @@
 # Blog
 
+Nov 8, 2022 [Security audit by Trail of Bits, the new website and v4.2 released](./20221108-simplex-chat-v4.2-security-audit-new-website.md)
+
+_"Have you been audited or should we just ignore you?"_
+
+SimpleX Chat has now been audited by [Trail of Bits](https://www.trailofbits.com/about), 4 issues were identified, and 3 of them are fixed in 4.2
+
+The new website is live: https://simplex.chat
+
+v4.2 is released:
+
+- group links - group admins can create the links for new members to join
+- auto-accept contact requests + configure whether to accept incognito and welcome message
+- small things: change group member role, mark chat as unread, send stickers and GIFs from Android keyboards.
+- manually switch contact or member to another address / server (BETA)
+- receive files faster (BETA)
+
 Sep 28, 2022 [v4: local database encryption](./20220928-simplex-chat-v4-encrypted-database.md)
 
 - encrypted local chat database - if you already use the app, you can encrypt the database in the app settings

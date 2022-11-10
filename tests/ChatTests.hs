@@ -1,7 +1,9 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module ChatTests where
 
@@ -9,34 +11,40 @@ import ChatClient
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Concurrent.STM
-import Control.Monad (forM_, when)
+import Control.Monad (forM_, unless, when)
 import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isDigit)
+import Data.List (isPrefixOf)
+import Data.Maybe (fromMaybe)
+import Data.String
 import qualified Data.Text as T
 import Simplex.Chat.Call
-import Simplex.Chat.Controller (ChatController (..))
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), InlineFilesConfig (..), defaultInlineFilesConfig)
 import Simplex.Chat.Options (ChatOpts (..))
-import Simplex.Chat.Types (ConnStatus (..), GroupMemberRole (..), ImageData (..), LocalProfile (..), Profile (..), User (..))
+import Simplex.Chat.Types
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Util (unlessM)
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
 import System.FilePath ((</>))
 import Test.Hspec
 
+defaultPrefs :: Maybe Preferences
+defaultPrefs = Just $ toChatPrefs defaultChatPrefs
+
 aliceProfile :: Profile
-aliceProfile = Profile {displayName = "alice", fullName = "Alice", image = Nothing}
+aliceProfile = Profile {displayName = "alice", fullName = "Alice", image = Nothing, preferences = defaultPrefs}
 
 bobProfile :: Profile
-bobProfile = Profile {displayName = "bob", fullName = "Bob", image = Just (ImageData "data:image/png;base64,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")}
+bobProfile = Profile {displayName = "bob", fullName = "Bob", image = Just (ImageData "data:image/png;base64,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"), preferences = defaultPrefs}
 
 cathProfile :: Profile
-cathProfile = Profile {displayName = "cath", fullName = "Catherine", image = Nothing}
+cathProfile = Profile {displayName = "cath", fullName = "Catherine", image = Nothing, preferences = defaultPrefs}
 
 danProfile :: Profile
-danProfile = Profile {displayName = "dan", fullName = "Daniel", image = Nothing}
+danProfile = Profile {displayName = "dan", fullName = "Daniel", image = Nothing, preferences = defaultPrefs}
 
 chatTests :: Spec
 chatTests = do
@@ -53,6 +61,9 @@ chatTests = do
     it "create group with the same displayName" testGroupSameName
     it "invitee delete group when in status invited" testGroupDeleteWhenInvited
     it "re-add member in status invited" testGroupReAddInvited
+    it "re-add member in status invited, change role" testGroupReAddInvitedChangeRole
+    it "delete contact before they accept group invitation, contact joins group" testGroupDeleteInvitedContact
+    it "member profile is kept when deleting group if other groups have this member" testDeleteGroupMemberProfileKept
     it "remove contact from group and add again" testGroupRemoveAdd
     it "list groups containing group invitations" testGroupList
     it "group message quoted replies" testGroupMessageQuotedReply
@@ -66,15 +77,18 @@ chatTests = do
     it "update user profiles and notify contacts" testUpdateProfile
     it "update user profile with image" testUpdateProfileImage
   describe "sending and receiving files" $ do
-    it "send and receive file" testFileTransfer
-    it "send and receive a small file" testSmallFileTransfer
-    it "sender cancelled file transfer before transfer" testFileSndCancelBeforeTransfer
+    describe "send and receive file" $ fileTestMatrix2 runTestFileTransfer
+    it "send and receive file inline (without accepting)" testInlineFileTransfer
+    it "receive file inline with inline=on option" testReceiveInline
+    describe "send and receive a small file" $ fileTestMatrix2 runTestSmallFileTransfer
+    describe "sender cancelled file transfer before transfer" $ fileTestMatrix2 runTestFileSndCancelBeforeTransfer
     it "sender cancelled file transfer during transfer" testFileSndCancelDuringTransfer
     it "recipient cancelled file transfer" testFileRcvCancel
-    it "send and receive file to group" testGroupFileTransfer
-    it "sender cancelled group file transfer before transfer" testGroupFileSndCancelBeforeTransfer
+    describe "send and receive file to group" $ fileTestMatrix3 runTestGroupFileTransfer
+    it "send and receive file inline to group (without accepting)" testInlineGroupFileTransfer
+    describe "sender cancelled group file transfer before transfer" $ fileTestMatrix3 runTestGroupFileSndCancelBeforeTransfer
   describe "messages with files" $ do
-    it "send and receive message with file" testMessageWithFile
+    describe "send and receive message with file" $ fileTestMatrix2 runTestMessageWithFile
     it "send and receive image" testSendImage
     it "files folder: send and receive image" testFilesFoldersSendImage
     it "files folder: sender deleted file during transfer" testFilesFoldersImageSndDelete
@@ -90,15 +104,18 @@ chatTests = do
     it "reject contact and delete contact link" testRejectContactAndDeleteUserContact
     it "delete connection requests when contact link deleted" testDeleteConnectionRequests
     it "auto-reply message" testAutoReplyMessage
+    it "auto-reply message in incognito" testAutoReplyMessageInIncognito
   describe "incognito mode" $ do
     it "connect incognito via invitation link" testConnectIncognitoInvitationLink
     it "connect incognito via contact address" testConnectIncognitoContactAddress
     it "accept contact request incognito" testAcceptContactRequestIncognito
     it "join group incognito" testJoinGroupIncognito
     it "can't invite contact to whom user connected incognito to a group" testCantInviteContactIncognito
-  describe "contact aliases" $ do
+    it "can't see global preferences update" testCantSeeGlobalPrefsUpdateIncognito
+  describe "contact aliases and prefs" $ do
     it "set contact alias" testSetAlias
     it "set connection alias" testSetConnectionAlias
+    it "set contact prefs" testSetContactPrefs
   describe "SMP servers" $
     it "get and set SMP servers" testGetSetSMPServers
   describe "async connection handshake" $ do
@@ -125,45 +142,69 @@ chatTests = do
     it "mute/unmute group" testMuteGroup
   describe "chat item expiration" $ do
     it "set chat item TTL" testSetChatItemTTL
+  describe "group links" $ do
+    it "create group link, join via group link" testGroupLink
+    it "delete group, re-join via same link" testGroupLinkDeleteGroupRejoin
+    it "sending message to contact created via group link marks it used" testGroupLinkContactUsed
+    it "create group link, join via group link - incognito membership" testGroupLinkIncognitoMembership
+  describe "queue rotation" $ do
+    it "switch contact to a different queue" testSwitchContact
+    it "switch group member to a different queue" testSwitchGroupMember
 
 versionTestMatrix2 :: (TestCC -> TestCC -> IO ()) -> Spec
 versionTestMatrix2 runTest = do
   it "v2" $ testChat2 aliceProfile bobProfile runTest
   it "v1" $ testChatCfg2 testCfgV1 aliceProfile bobProfile runTest
-  it "v1 to v2" . withTmpFiles $
-    withNewTestChat "alice" aliceProfile $ \alice ->
-      withNewTestChatV1 "bob" bobProfile $ \bob ->
-        runTest alice bob
-  it "v2 to v1" . withTmpFiles $
-    withNewTestChatV1 "alice" aliceProfile $ \alice ->
-      withNewTestChat "bob" bobProfile $ \bob ->
-        runTest alice bob
+  it "v1 to v2" $ runTestCfg2 testCfg testCfgV1 runTest
+  it "v2 to v1" $ runTestCfg2 testCfgV1 testCfg runTest
 
 versionTestMatrix3 :: (TestCC -> TestCC -> TestCC -> IO ()) -> Spec
 versionTestMatrix3 runTest = do
   it "v2" $ testChat3 aliceProfile bobProfile cathProfile runTest
 
 -- it "v1" $ testChatCfg3 testCfgV1 aliceProfile bobProfile cathProfile runTest
--- it "v1 to v2" . withTmpFiles $
---   withNewTestChat "alice" aliceProfile $ \alice ->
---     withNewTestChatV1 "bob" bobProfile $ \bob ->
---       withNewTestChatV1 "cath" cathProfile $ \cath ->
---         runTest alice bob cath
--- it "v2+v1 to v2" . withTmpFiles $
---   withNewTestChat "alice" aliceProfile $ \alice ->
---     withNewTestChat "bob" bobProfile $ \bob ->
---       withNewTestChatV1 "cath" cathProfile $ \cath ->
---         runTest alice bob cath
--- it "v2 to v1" . withTmpFiles $
---   withNewTestChatV1 "alice" aliceProfile $ \alice ->
---     withNewTestChat "bob" bobProfile $ \bob ->
---       withNewTestChat "cath" cathProfile $ \cath ->
---         runTest alice bob cath
--- it "v2+v1 to v1" . withTmpFiles $
---   withNewTestChatV1 "alice" aliceProfile $ \alice ->
---     withNewTestChat "bob" bobProfile $ \bob ->
---       withNewTestChatV1 "cath" cathProfile $ \cath ->
---         runTest alice bob cath
+-- it "v1 to v2" $ runTestCfg3 testCfg testCfgV1 testCfgV1 runTest
+-- it "v2+v1 to v2" $ runTestCfg3 testCfg testCfg testCfgV1 runTest
+-- it "v2 to v1" $ runTestCfg3 testCfgV1 testCfg testCfg runTest
+-- it "v2+v1 to v1" $ runTestCfg3 testCfgV1 testCfg testCfgV1 runTest
+
+inlineCfg :: Integer -> ChatConfig
+inlineCfg n = testCfg {inlineFiles = defaultInlineFilesConfig {offerChunks = n, receiveChunks = n}}
+
+fileTestMatrix2 :: (TestCC -> TestCC -> IO ()) -> Spec
+fileTestMatrix2 runTest = do
+  it "via connection" $ runTestCfg2 viaConn viaConn runTest
+  it "inline (accepting)" $ runTestCfg2 inline inline runTest
+  it "via connection (inline offered)" $ runTestCfg2 inline viaConn runTest
+  it "via connection (inline supported)" $ runTestCfg2 viaConn inline runTest
+  where
+    inline = inlineCfg 100
+    viaConn = inlineCfg 0
+
+fileTestMatrix3 :: (TestCC -> TestCC -> TestCC -> IO ()) -> Spec
+fileTestMatrix3 runTest = do
+  it "via connection" $ runTestCfg3 viaConn viaConn viaConn runTest
+  it "inline" $ runTestCfg3 inline inline inline runTest
+  it "via connection (inline offered)" $ runTestCfg3 inline viaConn viaConn runTest
+  it "via connection (inline supported)" $ runTestCfg3 viaConn inline inline runTest
+  where
+    inline = inlineCfg 100
+    viaConn = inlineCfg 0
+
+runTestCfg2 :: ChatConfig -> ChatConfig -> (TestCC -> TestCC -> IO ()) -> IO ()
+runTestCfg2 aliceCfg bobCfg runTest =
+  withTmpFiles $
+    withNewTestChatCfg aliceCfg "alice" aliceProfile $ \alice ->
+      withNewTestChatCfg bobCfg "bob" bobProfile $ \bob ->
+        runTest alice bob
+
+runTestCfg3 :: ChatConfig -> ChatConfig -> ChatConfig -> (TestCC -> TestCC -> TestCC -> IO ()) -> IO ()
+runTestCfg3 aliceCfg bobCfg cathCfg runTest =
+  withTmpFiles $
+    withNewTestChatCfg aliceCfg "alice" aliceProfile $ \alice ->
+      withNewTestChatCfg bobCfg "bob" bobProfile $ \bob ->
+        withNewTestChatCfg cathCfg "cath" cathProfile $ \cath ->
+          runTest alice bob cath
 
 testAddContact :: Spec
 testAddContact = versionTestMatrix2 runTestAddContact
@@ -179,6 +220,10 @@ testAddContact = versionTestMatrix2 runTestAddContact
       chatsEmpty alice bob
       alice #> "@bob hello there 🙂"
       bob <# "alice> hello there 🙂"
+      alice ##> "/_unread chat @2 on"
+      alice <## "ok"
+      alice ##> "/_unread chat @2 off"
+      alice <## "ok"
       chatsOneMessage alice bob
       bob #> "@alice hello there"
       alice <# "bob> hello there"
@@ -435,12 +480,12 @@ testGroupShared alice bob cath checkMessages = do
   concurrently_
     (bob <# "#team alice> hello")
     (cath <# "#team alice> hello")
-  threadDelay 1000000 -- server assigns timestamps with one second precision
+  when checkMessages $ threadDelay 1000000 -- server assigns timestamps with one second precision
   bob #> "#team hi there"
   concurrently_
     (alice <# "#team bob> hi there")
     (cath <# "#team bob> hi there")
-  threadDelay 1000000
+  when checkMessages $ threadDelay 1000000
   cath #> "#team hey team"
   concurrently_
     (alice <# "#team cath> hey team")
@@ -481,6 +526,20 @@ testGroupShared alice bob cath checkMessages = do
   cath ##> "#team hello"
   cath <## "you are no longer a member of the group"
   bob <##> cath
+  -- delete contact
+  alice ##> "/d bob"
+  alice <## "bob: contact is deleted"
+  alice ##> "@bob hey"
+  alice <## "no contact bob"
+  when checkMessages $ threadDelay 1000000
+  alice #> "#team checking connection"
+  bob <# "#team alice> checking connection"
+  when checkMessages $ threadDelay 1000000
+  bob #> "#team received"
+  alice <# "#team bob> received"
+  when checkMessages $ do
+    alice @@@ [("@cath", "sent invitation to join group team as admin"), ("#team", "received")]
+    bob @@@ [("@alice", "received invitation to join group team as admin"), ("@cath", "hey"), ("#team", "received")]
   -- test clearing chat
   alice #$> ("/clear #team", id, "#team: all messages are removed locally ONLY")
   alice #$> ("/_get chat #1 count=100", chat, [])
@@ -508,6 +567,8 @@ testGroupShared alice bob cath checkMessages = do
       alice #$> ("/_read chat #1", id, "ok")
       bob #$> ("/_read chat #1", id, "ok")
       cath #$> ("/_read chat #1", id, "ok")
+      alice #$> ("/_unread chat #1 on", id, "ok")
+      alice #$> ("/_unread chat #1 off", id, "ok")
 
 testGroup2 :: IO ()
 testGroup2 =
@@ -715,6 +776,15 @@ testGroupDelete =
       cath <## "you are no longer a member of the group"
       cath ##> "/d #team"
       cath <## "#team: you deleted the group"
+      alice <##> bob
+      alice <##> cath
+      -- unused group contacts are deleted
+      bob ##> "@cath hi"
+      bob <## "no contact cath"
+      (cath </)
+      cath ##> "@bob hi"
+      cath <## "no contact bob"
+      (bob </)
 
 testGroupSameName :: IO ()
 testGroupSameName =
@@ -788,6 +858,144 @@ testGroupReAddInvited =
             bob <## "#team_1 (team): alice invites you to join the group as admin"
             bob <## "use /j team_1 to accept"
         ]
+
+testGroupReAddInvitedChangeRole :: IO ()
+testGroupReAddInvitedChangeRole =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "use /a team <name> to add members"
+      alice ##> "/a team bob"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #team sent to bob",
+          do
+            bob <## "#team: alice invites you to join the group as admin"
+            bob <## "use /j team to accept"
+        ]
+      -- alice re-adds bob, he sees it as the same group
+      alice ##> "/a team bob owner"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #team sent to bob",
+          do
+            bob <## "#team: alice invites you to join the group as owner"
+            bob <## "use /j team to accept"
+        ]
+      -- bob joins as owner
+      bob ##> "/j team"
+      concurrently_
+        (alice <## "#team: bob joined the group")
+        (bob <## "#team: you joined the group")
+      bob ##> "/d #team"
+      concurrentlyN_
+        [ bob <## "#team: you deleted the group",
+          do
+            alice <## "#team: bob deleted the group"
+            alice <## "use /d #team to delete the local copy of the group"
+        ]
+      bob ##> "#team hi"
+      bob <## "no group #team"
+      alice ##> "/d #team"
+      alice <## "#team: you deleted the group"
+
+testGroupDeleteInvitedContact :: IO ()
+testGroupDeleteInvitedContact =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "use /a team <name> to add members"
+      alice ##> "/a team bob"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #team sent to bob",
+          do
+            bob <## "#team: alice invites you to join the group as admin"
+            bob <## "use /j team to accept"
+        ]
+      alice ##> "/d bob"
+      alice <## "bob: contact is deleted"
+      bob ##> "/j team"
+      concurrently_
+        (alice <## "#team: bob joined the group")
+        (bob <## "#team: you joined the group")
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
+      alice ##> "@bob hey"
+      alice <## "no contact bob"
+      bob #> "@alice hey"
+      (alice </)
+
+testDeleteGroupMemberProfileKept :: IO ()
+testDeleteGroupMemberProfileKept =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      -- group 1
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "use /a team <name> to add members"
+      alice ##> "/a team bob"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #team sent to bob",
+          do
+            bob <## "#team: alice invites you to join the group as admin"
+            bob <## "use /j team to accept"
+        ]
+      bob ##> "/j team"
+      concurrently_
+        (alice <## "#team: bob joined the group")
+        (bob <## "#team: you joined the group")
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
+      -- group 2
+      alice ##> "/g club"
+      alice <## "group #club is created"
+      alice <## "use /a club <name> to add members"
+      alice ##> "/a club bob"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #club sent to bob",
+          do
+            bob <## "#club: alice invites you to join the group as admin"
+            bob <## "use /j club to accept"
+        ]
+      bob ##> "/j club"
+      concurrently_
+        (alice <## "#club: bob joined the group")
+        (bob <## "#club: you joined the group")
+      alice #> "#club hello"
+      bob <# "#club alice> hello"
+      bob #> "#club hi there"
+      alice <# "#club bob> hi there"
+      -- delete contact
+      alice ##> "/d bob"
+      alice <## "bob: contact is deleted"
+      alice ##> "@bob hey"
+      alice <## "no contact bob"
+      bob #> "@alice hey"
+      (alice </)
+      -- delete group 1
+      alice ##> "/d #team"
+      concurrentlyN_
+        [ alice <## "#team: you deleted the group",
+          do
+            bob <## "#team: alice deleted the group"
+            bob <## "use /d #team to delete the local copy of the group"
+        ]
+      alice ##> "#team hi"
+      alice <## "no group #team"
+      bob ##> "/d #team"
+      bob <## "#team: you deleted the group"
+      -- group 2 still works
+      alice #> "#club checking connection"
+      bob <# "#club alice> checking connection"
+      bob #> "#club received"
+      alice <# "#club bob> received"
 
 testGroupRemoveAdd :: IO ()
 testGroupRemoveAdd =
@@ -1348,68 +1556,108 @@ testUpdateProfileImage =
       bob <## "use @alice2 <message> to send messages"
       (bob </)
 
-testFileTransfer :: IO ()
-testFileTransfer =
-  testChat2 aliceProfile bobProfile $
-    \alice bob -> do
-      connectUsers alice bob
-      startFileTransfer alice bob
-      concurrentlyN_
-        [ do
-            bob #> "@alice receiving here..."
-            bob <## "completed receiving file 1 (test.jpg) from alice",
-          do
-            alice <# "bob> receiving here..."
-            alice <## "completed sending file 1 (test.jpg) to bob"
-        ]
-      src <- B.readFile "./tests/fixtures/test.jpg"
-      dest <- B.readFile "./tests/tmp/test.jpg"
-      dest `shouldBe` src
+runTestFileTransfer :: TestCC -> TestCC -> IO ()
+runTestFileTransfer alice bob = do
+  connectUsers alice bob
+  startFileTransfer' alice bob "test.pdf" "266.0 KiB / 272376 bytes"
+  concurrentlyN_
+    [ do
+        bob #> "@alice receiving here..."
+        bob <## "completed receiving file 1 (test.pdf) from alice",
+      alice
+        <### [ WithTime "bob> receiving here...",
+               "completed sending file 1 (test.pdf) to bob"
+             ]
+    ]
+  src <- B.readFile "./tests/fixtures/test.pdf"
+  dest <- B.readFile "./tests/tmp/test.pdf"
+  dest `shouldBe` src
 
-testSmallFileTransfer :: IO ()
-testSmallFileTransfer =
-  testChat2 aliceProfile bobProfile $
-    \alice bob -> do
-      connectUsers alice bob
-      alice #> "/f @bob ./tests/fixtures/test.txt"
-      alice <## "use /fc 1 to cancel sending"
-      bob <# "alice> sends file test.txt (11 bytes / 11 bytes)"
-      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
-      bob ##> "/fr 1 ./tests/tmp"
-      bob <## "saving file 1 from alice to ./tests/tmp/test.txt"
-      concurrentlyN_
-        [ do
-            bob <## "started receiving file 1 (test.txt) from alice"
-            bob <## "completed receiving file 1 (test.txt) from alice",
-          do
-            alice <## "started sending file 1 (test.txt) to bob"
-            alice <## "completed sending file 1 (test.txt) to bob"
-        ]
-      src <- B.readFile "./tests/fixtures/test.txt"
-      dest <- B.readFile "./tests/tmp/test.txt"
-      dest `shouldBe` src
+testInlineFileTransfer :: IO ()
+testInlineFileTransfer =
+  testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    bob ##> "/_files_folder ./tests/tmp/"
+    bob <## "ok"
+    alice #> "/f @bob ./tests/fixtures/test.jpg"
+    -- below is not shown in "sent" mode
+    -- alice <## "use /fc 1 to cancel sending"
+    bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+    -- below is not shown in "sent" mode
+    -- bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+    bob <## "started receiving file 1 (test.jpg) from alice"
+    concurrently_
+      (alice <## "completed sending file 1 (test.jpg) to bob")
+      (bob <## "completed receiving file 1 (test.jpg) from alice")
+    src <- B.readFile "./tests/fixtures/test.jpg"
+    dest <- B.readFile "./tests/tmp/test.jpg"
+    dest `shouldBe` src
+  where
+    cfg = testCfg {inlineFiles = defaultInlineFilesConfig {offerChunks = 100, sendChunks = 100, receiveChunks = 100}}
 
-testFileSndCancelBeforeTransfer :: IO ()
-testFileSndCancelBeforeTransfer =
-  testChat2 aliceProfile bobProfile $
-    \alice bob -> do
-      connectUsers alice bob
-      alice #> "/f @bob ./tests/fixtures/test.txt"
-      alice <## "use /fc 1 to cancel sending"
-      bob <# "alice> sends file test.txt (11 bytes / 11 bytes)"
-      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
-      alice ##> "/fc 1"
-      concurrentlyN_
-        [ alice <## "cancelled sending file 1 (test.txt) to bob",
-          bob <## "alice cancelled sending file 1 (test.txt)"
-        ]
-      alice ##> "/fs 1"
-      alice <## "sending file 1 (test.txt) cancelled: bob"
-      alice <## "file transfer cancelled"
-      bob ##> "/fs 1"
-      bob <## "receiving file 1 (test.txt) cancelled"
-      bob ##> "/fr 1 ./tests/tmp"
-      bob <## "file cancelled: test.txt"
+testReceiveInline :: IO ()
+testReceiveInline =
+  testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    alice #> "/f @bob ./tests/fixtures/test.jpg"
+    alice <## "use /fc 1 to cancel sending"
+    bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+    bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+    bob ##> "/fr 1 inline=on ./tests/tmp"
+    bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
+    alice <## "started sending file 1 (test.jpg) to bob"
+    alice <## "completed sending file 1 (test.jpg) to bob"
+    bob <## "started receiving file 1 (test.jpg) from alice"
+    bob <## "completed receiving file 1 (test.jpg) from alice"
+    src <- B.readFile "./tests/fixtures/test.jpg"
+    dest <- B.readFile "./tests/tmp/test.jpg"
+    dest `shouldBe` src
+  where
+    cfg = testCfg {inlineFiles = defaultInlineFilesConfig {offerChunks = 10, receiveChunks = 5}}
+
+runTestSmallFileTransfer :: TestCC -> TestCC -> IO ()
+runTestSmallFileTransfer alice bob = do
+  connectUsers alice bob
+  alice #> "/f @bob ./tests/fixtures/test.txt"
+  alice <## "use /fc 1 to cancel sending"
+  bob <# "alice> sends file test.txt (11 bytes / 11 bytes)"
+  bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+  bob ##> "/fr 1 ./tests/tmp"
+  bob <## "saving file 1 from alice to ./tests/tmp/test.txt"
+  concurrentlyN_
+    [ do
+        bob <## "started receiving file 1 (test.txt) from alice"
+        bob <## "completed receiving file 1 (test.txt) from alice",
+      do
+        alice <## "started sending file 1 (test.txt) to bob"
+        alice <## "completed sending file 1 (test.txt) to bob"
+    ]
+  src <- B.readFile "./tests/fixtures/test.txt"
+  dest <- B.readFile "./tests/tmp/test.txt"
+  dest `shouldBe` src
+
+runTestFileSndCancelBeforeTransfer :: TestCC -> TestCC -> IO ()
+runTestFileSndCancelBeforeTransfer alice bob = do
+  connectUsers alice bob
+  alice #> "/f @bob ./tests/fixtures/test.txt"
+  alice <## "use /fc 1 to cancel sending"
+  bob <# "alice> sends file test.txt (11 bytes / 11 bytes)"
+  bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+  alice ##> "/fc 1"
+  concurrentlyN_
+    [ alice <##. "cancelled sending file 1 (test.txt)",
+      bob <## "alice cancelled sending file 1 (test.txt)"
+    ]
+  alice ##> "/fs 1"
+  alice
+    <##.. [ "sending file 1 (test.txt): no file transfers",
+            "sending file 1 (test.txt) cancelled: bob"
+          ]
+  alice <## "file transfer cancelled"
+  bob ##> "/fs 1"
+  bob <## "receiving file 1 (test.txt) cancelled"
+  bob ##> "/fr 1 ./tests/tmp"
+  bob <## "file cancelled: test.txt"
 
 testFileSndCancelDuringTransfer :: IO ()
 testFileSndCancelDuringTransfer =
@@ -1453,101 +1701,138 @@ testFileRcvCancel =
         ]
       checkPartialTransfer "test.jpg"
 
-testGroupFileTransfer :: IO ()
-testGroupFileTransfer =
-  testChat3 aliceProfile bobProfile cathProfile $
+runTestGroupFileTransfer :: TestCC -> TestCC -> TestCC -> IO ()
+runTestGroupFileTransfer alice bob cath = do
+  createGroup3 "team" alice bob cath
+  alice #> "/f #team ./tests/fixtures/test.jpg"
+  alice <## "use /fc 1 to cancel sending"
+  concurrentlyN_
+    [ do
+        bob <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+        bob <## "use /fr 1 [<dir>/ | <path>] to receive it",
+      do
+        cath <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+        cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
+    ]
+  alice ##> "/fs 1"
+  getTermLine alice >>= (`shouldStartWith` "sending file 1 (test.jpg): no file transfers")
+  bob ##> "/fr 1 ./tests/tmp/"
+  bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
+  concurrentlyN_
+    [ do
+        alice <## "started sending file 1 (test.jpg) to bob"
+        alice <## "completed sending file 1 (test.jpg) to bob"
+        alice ##> "/fs 1"
+        alice <## "sending file 1 (test.jpg) complete: bob",
+      do
+        bob <## "started receiving file 1 (test.jpg) from alice"
+        bob <## "completed receiving file 1 (test.jpg) from alice"
+    ]
+  cath ##> "/fr 1 ./tests/tmp/"
+  cath <## "saving file 1 from alice to ./tests/tmp/test_1.jpg"
+  concurrentlyN_
+    [ do
+        alice <## "started sending file 1 (test.jpg) to cath"
+        alice <## "completed sending file 1 (test.jpg) to cath"
+        alice ##> "/fs 1"
+        getTermLine alice >>= (`shouldStartWith` "sending file 1 (test.jpg) complete"),
+      do
+        cath <## "started receiving file 1 (test.jpg) from alice"
+        cath <## "completed receiving file 1 (test.jpg) from alice"
+    ]
+  src <- B.readFile "./tests/fixtures/test.jpg"
+  dest1 <- B.readFile "./tests/tmp/test.jpg"
+  dest2 <- B.readFile "./tests/tmp/test_1.jpg"
+  dest1 `shouldBe` src
+  dest2 `shouldBe` src
+
+testInlineGroupFileTransfer :: IO ()
+testInlineGroupFileTransfer =
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
+      bob ##> "/_files_folder ./tests/tmp/bob/"
+      bob <## "ok"
+      cath ##> "/_files_folder ./tests/tmp/cath/"
+      cath <## "ok"
       alice #> "/f #team ./tests/fixtures/test.jpg"
-      alice <## "use /fc 1 to cancel sending"
+      -- below is not shown in "sent" mode
+      -- alice <## "use /fc 1 to cancel sending"
       concurrentlyN_
         [ do
+            alice
+              <### [ "completed sending file 1 (test.jpg) to bob",
+                     "completed sending file 1 (test.jpg) to cath"
+                   ]
+            alice ##> "/fs 1"
+            alice <##. "sending file 1 (test.jpg) complete",
+          do
             bob <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
-            bob <## "use /fr 1 [<dir>/ | <path>] to receive it",
+            bob <## "started receiving file 1 (test.jpg) from alice"
+            bob <## "completed receiving file 1 (test.jpg) from alice",
           do
             cath <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
-            cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
-        ]
-      alice ##> "/fs 1"
-      getTermLine alice >>= (`shouldStartWith` "sending file 1 (test.jpg): no file transfers")
-      bob ##> "/fr 1 ./tests/tmp/"
-      bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
-      concurrentlyN_
-        [ do
-            alice <## "started sending file 1 (test.jpg) to bob"
-            alice <## "completed sending file 1 (test.jpg) to bob"
-            alice ##> "/fs 1"
-            alice <## "sending file 1 (test.jpg) complete: bob",
-          do
-            bob <## "started receiving file 1 (test.jpg) from alice"
-            bob <## "completed receiving file 1 (test.jpg) from alice"
-        ]
-      cath ##> "/fr 1 ./tests/tmp/"
-      cath <## "saving file 1 from alice to ./tests/tmp/test_1.jpg"
-      concurrentlyN_
-        [ do
-            alice <## "started sending file 1 (test.jpg) to cath"
-            alice <## "completed sending file 1 (test.jpg) to cath"
-            alice ##> "/fs 1"
-            getTermLine alice >>= (`shouldStartWith` "sending file 1 (test.jpg) complete"),
-          do
             cath <## "started receiving file 1 (test.jpg) from alice"
             cath <## "completed receiving file 1 (test.jpg) from alice"
         ]
-
-testGroupFileSndCancelBeforeTransfer :: IO ()
-testGroupFileSndCancelBeforeTransfer =
-  testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
-      createGroup3 "team" alice bob cath
-      alice #> "/f #team ./tests/fixtures/test.txt"
-      alice <## "use /fc 1 to cancel sending"
-      concurrentlyN_
-        [ do
-            bob <# "#team alice> sends file test.txt (11 bytes / 11 bytes)"
-            bob <## "use /fr 1 [<dir>/ | <path>] to receive it",
-          do
-            cath <# "#team alice> sends file test.txt (11 bytes / 11 bytes)"
-            cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
-        ]
-      alice ##> "/fc 1"
-      concurrentlyN_
-        [ alice <## "cancelled sending file 1 (test.txt)",
-          bob <## "alice cancelled sending file 1 (test.txt)",
-          cath <## "alice cancelled sending file 1 (test.txt)"
-        ]
-      alice ##> "/fs 1"
-      alice <## "sending file 1 (test.txt): no file transfers, file transfer cancelled"
-      bob ##> "/fs 1"
-      bob <## "receiving file 1 (test.txt) cancelled"
-      bob ##> "/fr 1 ./tests/tmp"
-      bob <## "file cancelled: test.txt"
-
-testMessageWithFile :: IO ()
-testMessageWithFile =
-  testChat2 aliceProfile bobProfile $
-    \alice bob -> do
-      connectUsers alice bob
-      alice ##> "/_send @2 json {\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"hi, sending a file\"}}"
-      alice <# "@bob hi, sending a file"
-      alice <# "/f @bob ./tests/fixtures/test.jpg"
-      alice <## "use /fc 1 to cancel sending"
-      bob <# "alice> hi, sending a file"
-      bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
-      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
-      bob ##> "/fr 1 ./tests/tmp"
-      bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
-      concurrently_
-        (bob <## "started receiving file 1 (test.jpg) from alice")
-        (alice <## "started sending file 1 (test.jpg) to bob")
-      concurrently_
-        (bob <## "completed receiving file 1 (test.jpg) from alice")
-        (alice <## "completed sending file 1 (test.jpg) to bob")
       src <- B.readFile "./tests/fixtures/test.jpg"
-      dest <- B.readFile "./tests/tmp/test.jpg"
-      dest `shouldBe` src
-      alice #$> ("/_get chat @2 count=100", chatF, [((1, "hi, sending a file"), Just "./tests/fixtures/test.jpg")])
-      bob #$> ("/_get chat @2 count=100", chatF, [((0, "hi, sending a file"), Just "./tests/tmp/test.jpg")])
+      dest1 <- B.readFile "./tests/tmp/bob/test.jpg"
+      dest2 <- B.readFile "./tests/tmp/cath/test.jpg"
+      dest1 `shouldBe` src
+      dest2 `shouldBe` src
+  where
+    cfg = testCfg {inlineFiles = defaultInlineFilesConfig {offerChunks = 100, sendChunks = 100, totalSendChunks = 100, receiveChunks = 100}}
+
+runTestGroupFileSndCancelBeforeTransfer :: TestCC -> TestCC -> TestCC -> IO ()
+runTestGroupFileSndCancelBeforeTransfer alice bob cath = do
+  createGroup3 "team" alice bob cath
+  alice #> "/f #team ./tests/fixtures/test.txt"
+  alice <## "use /fc 1 to cancel sending"
+  concurrentlyN_
+    [ do
+        bob <# "#team alice> sends file test.txt (11 bytes / 11 bytes)"
+        bob <## "use /fr 1 [<dir>/ | <path>] to receive it",
+      do
+        cath <# "#team alice> sends file test.txt (11 bytes / 11 bytes)"
+        cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
+    ]
+  alice ##> "/fc 1"
+  concurrentlyN_
+    [ alice <## "cancelled sending file 1 (test.txt)",
+      bob <## "alice cancelled sending file 1 (test.txt)",
+      cath <## "alice cancelled sending file 1 (test.txt)"
+    ]
+  alice ##> "/fs 1"
+  alice <## "sending file 1 (test.txt): no file transfers"
+  alice <## "file transfer cancelled"
+  bob ##> "/fs 1"
+  bob <## "receiving file 1 (test.txt) cancelled"
+  bob ##> "/fr 1 ./tests/tmp"
+  bob <## "file cancelled: test.txt"
+
+runTestMessageWithFile :: TestCC -> TestCC -> IO ()
+runTestMessageWithFile alice bob = do
+  connectUsers alice bob
+  alice ##> "/_send @2 json {\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"hi, sending a file\"}}"
+  alice <# "@bob hi, sending a file"
+  alice <# "/f @bob ./tests/fixtures/test.jpg"
+  alice <## "use /fc 1 to cancel sending"
+  bob <# "alice> hi, sending a file"
+  bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+  bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+  bob ##> "/fr 1 ./tests/tmp"
+  bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
+  concurrently_
+    (bob <## "started receiving file 1 (test.jpg) from alice")
+    (alice <## "started sending file 1 (test.jpg) to bob")
+  concurrently_
+    (bob <## "completed receiving file 1 (test.jpg) from alice")
+    (alice <## "completed sending file 1 (test.jpg) to bob")
+  src <- B.readFile "./tests/fixtures/test.jpg"
+  dest <- B.readFile "./tests/tmp/test.jpg"
+  dest `shouldBe` src
+  alice #$> ("/_get chat @2 count=100", chatF, [((1, "hi, sending a file"), Just "./tests/fixtures/test.jpg")])
+  bob #$> ("/_get chat @2 count=100", chatF, [((0, "hi, sending a file"), Just "./tests/tmp/test.jpg")])
 
 testSendImage :: IO ()
 testSendImage =
@@ -2087,7 +2372,7 @@ testAutoReplyMessage = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     alice ##> "/ad"
     cLink <- getContactLink alice True
-    alice ##> "/auto_accept on text hello!"
+    alice ##> "/auto_accept on incognito=off text hello!"
     alice <## "auto_accept on"
     alice <## "auto reply:"
     alice <## "hello!"
@@ -2102,6 +2387,32 @@ testAutoReplyMessage = testChat2 aliceProfile bobProfile $
         do
           alice <## "bob (Bob): contact is connected"
           alice <# "@bob hello!"
+      ]
+
+testAutoReplyMessageInIncognito :: IO ()
+testAutoReplyMessageInIncognito = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    alice ##> "/ad"
+    cLink <- getContactLink alice True
+    alice ##> "/auto_accept on incognito=on text hello!"
+    alice <## "auto_accept on, incognito"
+    alice <## "auto reply:"
+    alice <## "hello!"
+
+    bob ##> ("/c " <> cLink)
+    bob <## "connection request sent!"
+    alice <## "bob (Bob): accepting contact request..."
+    aliceIncognito <- getTermLine alice
+    concurrentlyN_
+      [ do
+          bob <## (aliceIncognito <> ": contact is connected")
+          bob <# (aliceIncognito <> "> hello!"),
+        do
+          alice <## ("bob (Bob): contact is connected, your incognito profile for this contact is " <> aliceIncognito)
+          alice
+            <### [ "use /info bob to print out this incognito profile again",
+                   WithTime "i @bob hello!"
+                 ]
       ]
 
 testConnectIncognitoInvitationLink :: IO ()
@@ -2143,6 +2454,22 @@ testConnectIncognitoInvitationLink = testChat3 aliceProfile bobProfile cathProfi
     bob ?<# (aliceIncognito <> "> do you see that I've changed profile?")
     bob ?#> ("@" <> aliceIncognito <> " no")
     alice ?<# (bobIncognito <> "> no")
+    alice ##> "/_set prefs @2 {}"
+    alice <## ("your preferences for " <> bobIncognito <> " did not change")
+    (bob </)
+    alice ##> "/_set prefs @2 {\"fullDelete\": {\"allow\": \"always\"}}"
+    alice <## ("you updated preferences for " <> bobIncognito <> ":")
+    alice <## "full message deletion: enabled for contact (you allow: always, contact allows: no)"
+    bob <## (aliceIncognito <> " updated preferences for you:")
+    bob <## "full message deletion: enabled for you (you allow: no, contact allows: always)"
+    bob ##> "/_set prefs @2 {}"
+    bob <## ("your preferences for " <> aliceIncognito <> " did not change")
+    (alice </)
+    alice ##> "/_set prefs @2 {\"fullDelete\": {\"allow\": \"no\"}}"
+    alice <## ("you updated preferences for " <> bobIncognito <> ":")
+    alice <## "full message deletion: off (you allow: no, contact allows: no)"
+    bob <## (aliceIncognito <> " updated preferences for you:")
+    bob <## "full message deletion: off (you allow: no, contact allows: no)"
 
 testConnectIncognitoContactAddress :: IO ()
 testConnectIncognitoContactAddress = testChat2 aliceProfile bobProfile $
@@ -2275,7 +2602,7 @@ testJoinGroupIncognito = testChat4 aliceProfile bobProfile cathProfile danProfil
         do
           dan <## "#secret_club: you joined the group"
           dan
-            <### [ "#secret_club: member " <> cathIncognito <> " is connected",
+            <### [ ConsoleString $ "#secret_club: member " <> cathIncognito <> " is connected",
                    "#secret_club: member bob_1 (Bob) is connected",
                    "contact bob_1 is merged into bob",
                    "use @bob <message> to send messages"
@@ -2335,28 +2662,28 @@ testJoinGroupIncognito = testChat4 aliceProfile bobProfile cathProfile danProfil
     alice
       <### [ "alice (Alice): owner, you, created group",
              "bob (Bob): admin, invited, connected",
-             cathIncognito <> ": admin, invited, connected",
+             ConsoleString $ cathIncognito <> ": admin, invited, connected",
              "dan (Daniel): admin, invited, connected"
            ]
     bob ##> "/ms secret_club"
     bob
       <### [ "alice (Alice): owner, host, connected",
              "bob (Bob): admin, you, connected",
-             cathIncognito <> ": admin, connected",
+             ConsoleString $ cathIncognito <> ": admin, connected",
              "dan (Daniel): admin, connected"
            ]
     cath ##> "/ms secret_club"
     cath
       <### [ "alice (Alice): owner, host, connected",
              "bob_1 (Bob): admin, connected",
-             "i " <> cathIncognito <> ": admin, you, connected",
+             ConsoleString $ "i " <> cathIncognito <> ": admin, you, connected",
              "dan_1 (Daniel): admin, connected"
            ]
     dan ##> "/ms secret_club"
     dan
       <### [ "alice (Alice): owner, host, connected",
              "bob (Bob): admin, connected",
-             cathIncognito <> ": admin, connected",
+             ConsoleString $ cathIncognito <> ": admin, connected",
              "dan (Daniel): admin, you, connected"
            ]
     -- remove member
@@ -2415,6 +2742,59 @@ testCantInviteContactIncognito = testChat2 aliceProfile bobProfile $
     -- bob doesn't receive invitation
     (bob </)
 
+testCantSeeGlobalPrefsUpdateIncognito :: IO ()
+testCantSeeGlobalPrefsUpdateIncognito = testChat3 aliceProfile bobProfile cathProfile $
+  \alice bob cath -> do
+    alice #$> ("/incognito on", id, "ok")
+    alice ##> "/c"
+    invIncognito <- getInvitation alice
+    alice #$> ("/incognito off", id, "ok")
+    alice ##> "/c"
+    inv <- getInvitation alice
+    bob ##> ("/c " <> invIncognito)
+    bob <## "confirmation sent!"
+    aliceIncognito <- getTermLine alice
+    cath ##> ("/c " <> inv)
+    cath <## "confirmation sent!"
+    concurrentlyN_
+      [ bob <## (aliceIncognito <> ": contact is connected"),
+        do
+          alice <## ("bob (Bob): contact is connected, your incognito profile for this contact is " <> aliceIncognito)
+          alice <## "use /info bob to print out this incognito profile again",
+        do
+          cath <## "alice (Alice): contact is connected"
+      ]
+    alice <## "cath (Catherine): contact is connected"
+    alice ##> "/_profile {\"displayName\": \"alice\", \"fullName\": \"\", \"preferences\": {\"fullDelete\": {\"allow\": \"always\"}}}"
+    alice <## "user full name removed (your contacts are notified)"
+    alice <## "updated preferences:"
+    alice <## "full message deletion allowed: always"
+    (alice </)
+    -- bob doesn't receive profile update
+    (bob </)
+    cath <## "contact alice removed full name"
+    cath <## "alice updated preferences for you:"
+    cath <## "full message deletion: enabled for you (you allow: default (no), contact allows: always)"
+    (cath </)
+    bob ##> "/_set prefs @2 {\"fullDelete\": {\"allow\": \"always\"}}"
+    bob <## ("you updated preferences for " <> aliceIncognito <> ":")
+    bob <## "full message deletion: enabled for contact (you allow: always, contact allows: no)"
+    alice <## "bob updated preferences for you:"
+    alice <## "full message deletion: enabled for you (you allow: no, contact allows: always)"
+    alice ##> "/_set prefs @2 {\"fullDelete\": {\"allow\": \"yes\"}}"
+    alice <## "you updated preferences for bob:"
+    alice <## "full message deletion: enabled (you allow: yes, contact allows: always)"
+    bob <## (aliceIncognito <> " updated preferences for you:")
+    bob <## "full message deletion: enabled (you allow: always, contact allows: yes)"
+    (cath </)
+    alice ##> "/_set prefs @3 {\"fullDelete\": {\"allow\": \"always\"}}"
+    alice <## "your preferences for cath did not change"
+    alice ##> "/_set prefs @3 {\"fullDelete\": {\"allow\": \"yes\"}}"
+    alice <## "you updated preferences for cath:"
+    alice <## "full message deletion: off (you allow: yes, contact allows: no)"
+    cath <## "alice updated preferences for you:"
+    cath <## "full message deletion: off (you allow: default (no), contact allows: yes)"
+
 testSetAlias :: IO ()
 testSetAlias = testChat2 aliceProfile bobProfile $
   \alice bob -> do
@@ -2442,6 +2822,45 @@ testSetConnectionAlias = testChat2 aliceProfile bobProfile $
     alice @@@ [("@bob", "")]
     alice ##> "/cs"
     alice <## "bob (Bob) (alias: friend)"
+
+testSetContactPrefs :: IO ()
+testSetContactPrefs = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    connectUsers alice bob
+    alice ##> "/_set prefs @2 {}"
+    alice <## "your preferences for bob did not change"
+    (bob </)
+    alice ##> "/_set prefs @2 {\"fullDelete\": {\"allow\": \"always\"}}"
+    alice <## "you updated preferences for bob:"
+    alice <## "full message deletion: enabled for contact (you allow: always, contact allows: no)"
+    bob <## "alice updated preferences for you:"
+    bob <## "full message deletion: enabled for you (you allow: default (no), contact allows: always)"
+    (bob </)
+    alice ##> "/_profile {\"displayName\": \"alice\", \"fullName\": \"\", \"preferences\": {\"fullDelete\": {\"allow\": \"no\"}}}"
+    alice <## "user full name removed (your contacts are notified)"
+    bob <## "contact alice removed full name"
+    alice ##> "/_set prefs @2 {\"fullDelete\": {\"allow\": \"yes\"}}"
+    alice <## "you updated preferences for bob:"
+    alice <## "full message deletion: off (you allow: yes, contact allows: no)"
+    bob <## "alice updated preferences for you:"
+    bob <## "full message deletion: off (you allow: default (no), contact allows: yes)"
+    (bob </)
+    bob ##> "/_profile {\"displayName\": \"bob\", \"fullName\": \"\", \"preferences\": {\"fullDelete\": {\"allow\": \"yes\"}}}"
+    bob <## "user full name removed (your contacts are notified)"
+    bob <## "updated preferences:"
+    bob <## "full message deletion allowed: yes"
+    alice <## "contact bob removed full name"
+    alice <## "bob updated preferences for you:"
+    alice <## "full message deletion: enabled (you allow: yes, contact allows: yes)"
+    (alice </)
+    bob ##> "/_set prefs @2 {}"
+    bob <## "your preferences for alice did not change"
+    (alice </)
+    alice ##> "/_set prefs @2 {\"fullDelete\": {\"allow\": \"no\"}}"
+    alice <## "you updated preferences for bob:"
+    alice <## "full message deletion: off (you allow: no, contact allows: yes)"
+    bob <## "alice updated preferences for you:"
+    bob <## "full message deletion: off (you allow: default (yes), contact allows: no)"
 
 testGetSetSMPServers :: IO ()
 testGetSetSMPServers =
@@ -3039,6 +3458,341 @@ testSetChatItemTTL =
       alice #$> ("/ttl none", id, "ok")
       alice #$> ("/ttl", id, "old messages are not being deleted")
 
+testGroupLink :: IO ()
+testGroupLink =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "use /a team <name> to add members"
+      alice ##> "/show link #team"
+      alice <## "no group link, to create: /create link #team"
+      alice ##> "/create link #team"
+      _ <- getGroupLink alice "team" True
+      alice ##> "/delete link #team"
+      alice <## "Group link is deleted - joined members will remain connected."
+      alice <## "To create a new group link use /create link #team"
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" True
+      alice ##> "/show link #team"
+      _ <- getGroupLink alice "team" False
+      alice ##> "/create link #team"
+      alice <## "you already have link for this group, to show: /show link #team"
+      bob ##> ("/c " <> gLink)
+      bob <## "connection request sent!"
+      alice <## "bob (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ do
+            alice <## "bob (Bob): contact is connected"
+            alice <## "bob invited to group #team via your group link"
+            alice <## "#team: bob joined the group",
+          do
+            bob <## "alice (Alice): contact is connected"
+            bob <## "#team: you joined the group"
+        ]
+      alice #$> ("/_get chat #1 count=100", chat, [(0, "invited via your group link"), (0, "connected")])
+      -- contacts connected via group link are not in chat previews
+      alice @@@ [("#team", "connected")]
+      bob @@@ [("#team", "connected")]
+      -- calling /_get chat api marks it as used and adds it to chat previews
+      alice #$> ("/_get chat @2 count=100", chat, [])
+      alice @@@ [("@bob", ""), ("#team", "connected")]
+      alice <##> bob
+      alice @@@ [("@bob", "hey"), ("#team", "connected")]
+
+      -- user address doesn't interfere
+      alice ##> "/ad"
+      cLink <- getContactLink alice True
+      cath ##> ("/c " <> cLink)
+      alice <#? cath
+      alice ##> "/ac cath"
+      alice <## "cath (Catherine): accepting contact request..."
+      concurrently_
+        (cath <## "alice (Alice): contact is connected")
+        (alice <## "cath (Catherine): contact is connected")
+      alice <##> cath
+
+      -- third member
+      cath ##> ("/c " <> gLink)
+      cath <## "connection request sent!"
+      alice <## "cath_1 (Catherine): accepting request to join group #team..."
+      -- if contact existed it is merged
+      concurrentlyN_
+        [ do
+            alice <## "cath_1 (Catherine): contact is connected"
+            alice <## "cath_1 invited to group #team via your group link"
+            alice <## "contact cath_1 is merged into cath"
+            alice <## "use @cath <message> to send messages"
+            alice <## "#team: cath joined the group",
+          do
+            cath <## "alice_1 (Alice): contact is connected"
+            cath <## "contact alice_1 is merged into alice"
+            cath <## "use @alice <message> to send messages"
+            cath <## "#team: you joined the group"
+            cath <## "#team: member bob (Bob) is connected",
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+      alice #> "#team hello"
+      concurrently_
+        (bob <# "#team alice> hello")
+        (cath <# "#team alice> hello")
+      bob #> "#team hi there"
+      concurrently_
+        (alice <# "#team bob> hi there")
+        (cath <# "#team bob> hi there")
+      cath #> "#team hey team"
+      concurrently_
+        (alice <# "#team cath> hey team")
+        (bob <# "#team cath> hey team")
+
+      -- leaving team removes link
+      alice ##> "/l team"
+      concurrentlyN_
+        [ do
+            alice <## "#team: you left the group"
+            alice <## "use /d #team to delete the group",
+          bob <## "#team: alice left the group",
+          cath <## "#team: alice left the group"
+        ]
+      alice ##> "/show link #team"
+      alice <## "no group link, to create: /create link #team"
+
+testGroupLinkDeleteGroupRejoin :: IO ()
+testGroupLinkDeleteGroupRejoin =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "use /a team <name> to add members"
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" True
+      bob ##> ("/c " <> gLink)
+      bob <## "connection request sent!"
+      alice <## "bob (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ do
+            alice <## "bob (Bob): contact is connected"
+            alice <## "bob invited to group #team via your group link"
+            alice <## "#team: bob joined the group",
+          do
+            bob <## "alice (Alice): contact is connected"
+            bob <## "#team: you joined the group"
+        ]
+      -- use contact so it's not deleted when deleting group
+      bob <##> alice
+      bob ##> "/l team"
+      concurrentlyN_
+        [ do
+            bob <## "#team: you left the group"
+            bob <## "use /d #team to delete the group",
+          alice <## "#team: bob left the group"
+        ]
+      bob ##> "/d #team"
+      bob <## "#team: you deleted the group"
+      -- re-join via same link
+      bob ##> ("/c " <> gLink)
+      bob <## "connection request sent!"
+      alice <## "bob_1 (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ do
+            alice <## "bob_1 (Bob): contact is connected"
+            alice <## "bob_1 invited to group #team via your group link"
+            alice <## "contact bob_1 is merged into bob"
+            alice <## "use @bob <message> to send messages"
+            alice <## "#team: bob joined the group",
+          do
+            bob <## "alice_1 (Alice): contact is connected"
+            bob <## "contact alice_1 is merged into alice"
+            bob <## "use @alice <message> to send messages"
+            bob <## "#team: you joined the group"
+        ]
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
+
+testGroupLinkContactUsed :: IO ()
+testGroupLinkContactUsed =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "use /a team <name> to add members"
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" True
+      bob ##> ("/c " <> gLink)
+      bob <## "connection request sent!"
+      alice <## "bob (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ do
+            alice <## "bob (Bob): contact is connected"
+            alice <## "bob invited to group #team via your group link"
+            alice <## "#team: bob joined the group",
+          do
+            bob <## "alice (Alice): contact is connected"
+            bob <## "#team: you joined the group"
+        ]
+      -- sending/receiving a message marks contact as used
+      alice @@@ [("#team", "connected")]
+      bob @@@ [("#team", "connected")]
+      alice #> "@bob hello"
+      bob <# "alice> hello"
+      alice #$> ("/clear bob", id, "bob: all messages are removed locally ONLY")
+      alice @@@ [("@bob", ""), ("#team", "connected")]
+      bob #$> ("/clear alice", id, "alice: all messages are removed locally ONLY")
+      bob @@@ [("@alice", ""), ("#team", "connected")]
+
+testGroupLinkIncognitoMembership :: IO ()
+testGroupLinkIncognitoMembership =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
+    \alice bob cath dan -> do
+      -- bob connected incognito to alice
+      alice ##> "/c"
+      inv <- getInvitation alice
+      bob #$> ("/incognito on", id, "ok")
+      bob ##> ("/c " <> inv)
+      bob <## "confirmation sent!"
+      bobIncognito <- getTermLine bob
+      concurrentlyN_
+        [ do
+            bob <## ("alice (Alice): contact is connected, your incognito profile for this contact is " <> bobIncognito)
+            bob <## "use /info alice to print out this incognito profile again",
+          alice <## (bobIncognito <> ": contact is connected")
+        ]
+      bob #$> ("/incognito off", id, "ok")
+      -- alice creates group
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "use /a team <name> to add members"
+      -- alice invites bob
+      alice ##> ("/a team " <> bobIncognito)
+      concurrentlyN_
+        [ alice <## ("invitation to join the group #team sent to " <> bobIncognito),
+          do
+            bob <## "#team: alice invites you to join the group as admin"
+            bob <## ("use /j team to join incognito as " <> bobIncognito)
+        ]
+      bob ##> "/j team"
+      concurrently_
+        (alice <## ("#team: " <> bobIncognito <> " joined the group"))
+        (bob <## ("#team: you joined the group incognito as " <> bobIncognito))
+      -- bob creates group link, cath joins
+      bob ##> "/create link #team"
+      gLink <- getGroupLink bob "team" True
+      cath ##> ("/c " <> gLink)
+      cath <## "connection request sent!"
+      bob <## "cath (Catherine): accepting request to join group #team..."
+      _ <- getTermLine bob
+      concurrentlyN_
+        [ do
+            bob <## ("cath (Catherine): contact is connected, your incognito profile for this contact is " <> bobIncognito)
+            bob <## "use /info cath to print out this incognito profile again"
+            bob <## "cath invited to group #team via your group link"
+            bob <## "#team: cath joined the group",
+          do
+            cath <## (bobIncognito <> ": contact is connected")
+            cath <## "#team: you joined the group"
+            cath <## "#team: member alice (Alice) is connected",
+          do
+            alice <## ("#team: " <> bobIncognito <> " added cath (Catherine) to the group (connecting...)")
+            alice <## "#team: new member cath is connected"
+        ]
+      bob ?#> "@cath hi, I'm incognito"
+      cath <# (bobIncognito <> "> hi, I'm incognito")
+      cath #> ("@" <> bobIncognito <> " hey, I'm cath")
+      bob ?<# "cath> hey, I'm cath"
+      -- dan joins incognito
+      dan #$> ("/incognito on", id, "ok")
+      dan ##> ("/c " <> gLink)
+      danIncognito <- getTermLine dan
+      dan <## "connection request sent incognito!"
+      bob <## (danIncognito <> ": accepting request to join group #team...")
+      _ <- getTermLine bob
+      _ <- getTermLine dan
+      concurrentlyN_
+        [ do
+            bob <## (danIncognito <> ": contact is connected, your incognito profile for this contact is " <> bobIncognito)
+            bob <## ("use /info " <> danIncognito <> " to print out this incognito profile again")
+            bob <## (danIncognito <> " invited to group #team via your group link")
+            bob <## ("#team: " <> danIncognito <> " joined the group"),
+          do
+            dan <## (bobIncognito <> ": contact is connected, your incognito profile for this contact is " <> danIncognito)
+            dan <## ("use /info " <> bobIncognito <> " to print out this incognito profile again")
+            dan <## ("#team: you joined the group incognito as " <> danIncognito)
+            dan
+              <### [ "#team: member alice (Alice) is connected",
+                     "#team: member cath (Catherine) is connected"
+                   ],
+          do
+            alice <## ("#team: " <> bobIncognito <> " added " <> danIncognito <> " to the group (connecting...)")
+            alice <## ("#team: new member " <> danIncognito <> " is connected"),
+          do
+            cath <## ("#team: " <> bobIncognito <> " added " <> danIncognito <> " to the group (connecting...)")
+            cath <## ("#team: new member " <> danIncognito <> " is connected")
+        ]
+      dan #$> ("/incognito off", id, "ok")
+      bob ?#> ("@" <> danIncognito <> " hi, I'm incognito")
+      dan ?<# (bobIncognito <> "> hi, I'm incognito")
+      dan ?#> ("@" <> bobIncognito <> " hey, me too")
+      bob ?<# (danIncognito <> "> hey, me too")
+      alice #> "#team hello"
+      concurrentlyN_
+        [ bob ?<# "#team alice> hello",
+          cath <# "#team alice> hello",
+          dan ?<# "#team alice> hello"
+        ]
+      bob ?#> "#team hi there"
+      concurrentlyN_
+        [ alice <# ("#team " <> bobIncognito <> "> hi there"),
+          cath <# ("#team " <> bobIncognito <> "> hi there"),
+          dan ?<# ("#team " <> bobIncognito <> "> hi there")
+        ]
+      cath #> "#team hey"
+      concurrentlyN_
+        [ alice <# "#team cath> hey",
+          bob ?<# "#team cath> hey",
+          dan ?<# "#team cath> hey"
+        ]
+      dan ?#> "#team how is it going?"
+      concurrentlyN_
+        [ alice <# ("#team " <> danIncognito <> "> how is it going?"),
+          bob ?<# ("#team " <> danIncognito <> "> how is it going?"),
+          cath <# ("#team " <> danIncognito <> "> how is it going?")
+        ]
+
+testSwitchContact :: IO ()
+testSwitchContact =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice #$> ("/switch bob", id, "ok")
+      bob <## "alice started changing address for you"
+      alice <## "bob: you started changing address"
+      bob <## "alice changed address for you"
+      alice <## "bob: you changed address"
+      alice #$> ("/_get chat @2 count=100", chat, [(1, "started changing address..."), (1, "you changed address")])
+      bob #$> ("/_get chat @2 count=100", chat, [(0, "started changing address for you..."), (0, "changed address for you")])
+      alice <##> bob
+
+testSwitchGroupMember :: IO ()
+testSwitchGroupMember =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      alice #$> ("/switch #team bob", id, "ok")
+      bob <## "#team: alice started changing address for you"
+      alice <## "#team: you started changing address for bob"
+      bob <## "#team: alice changed address for you"
+      alice <## "#team: you changed address for bob"
+      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "started changing address for bob..."), (1, "you changed address for bob")])
+      bob #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (0, "started changing address for you..."), (0, "changed address for you")])
+      alice #> "#team hey"
+      bob <# "#team alice> hey"
+      bob #> "#team hi"
+      alice <# "#team bob> hi"
+
 withTestChatContactConnected :: String -> (TestCC -> IO a) -> IO a
 withTestChatContactConnected dbPrefix action =
   withTestChat dbPrefix $ \cc -> do
@@ -3225,20 +3979,49 @@ send :: TestCC -> String -> IO ()
 send TestCC {chatController = cc} cmd = atomically $ writeTBQueue (inputQ cc) cmd
 
 (<##) :: TestCC -> String -> Expectation
-cc <## line = getTermLine cc `shouldReturn` line
+cc <## line = do
+  l <- getTermLine cc
+  when (l /= line) $ print ("expected: " <> line, ", got: " <> l)
+  l `shouldBe` line
 
-getInAnyOrder :: (String -> String) -> TestCC -> [String] -> Expectation
+(<##.) :: TestCC -> String -> Expectation
+cc <##. line = do
+  l <- getTermLine cc
+  let prefix = line `isPrefixOf` l
+  unless prefix $ print ("expected to start from: " <> line, ", got: " <> l)
+  prefix `shouldBe` True
+
+(<##..) :: TestCC -> [String] -> Expectation
+cc <##.. ls = do
+  l <- getTermLine cc
+  let prefix = any (`isPrefixOf` l) ls
+  unless prefix $ print ("expected to start from one of: " <> show ls, ", got: " <> l)
+  prefix `shouldBe` True
+
+data ConsoleResponse = ConsoleString String | WithTime String
+  deriving (Show)
+
+instance IsString ConsoleResponse where fromString = ConsoleString
+
+-- this assumes that the string can only match one option
+getInAnyOrder :: (String -> String) -> TestCC -> [ConsoleResponse] -> Expectation
 getInAnyOrder _ _ [] = pure ()
 getInAnyOrder f cc ls = do
   line <- f <$> getTermLine cc
-  if line `elem` ls
-    then getInAnyOrder f cc $ filter (/= line) ls
+  let rest = filter (not . expected line) ls
+  if length rest < length ls
+    then getInAnyOrder f cc rest
     else error $ "unexpected output: " <> line
+  where
+    expected :: String -> ConsoleResponse -> Bool
+    expected l = \case
+      ConsoleString s -> l == s
+      WithTime s -> dropTime_ l == Just s
 
-(<###) :: TestCC -> [String] -> Expectation
+(<###) :: TestCC -> [ConsoleResponse] -> Expectation
 (<###) = getInAnyOrder id
 
-(<##?) :: TestCC -> [String] -> Expectation
+(<##?) :: TestCC -> [ConsoleResponse] -> Expectation
 (<##?) = getInAnyOrder dropTime
 
 (<#) :: TestCC -> String -> Expectation
@@ -3260,12 +4043,15 @@ cc1 <#? cc2 = do
   cc1 <## ("to reject: /rc " <> name <> " (the sender will NOT be notified)")
 
 dropTime :: String -> String
-dropTime msg = case splitAt 6 msg of
-  ([m, m', ':', s, s', ' '], text) ->
-    if all isDigit [m, m', s, s'] then text else err
-  _ -> err
+dropTime msg = fromMaybe err $ dropTime_ msg
   where
     err = error $ "invalid time: " <> msg
+
+dropTime_ :: String -> Maybe String
+dropTime_ msg = case splitAt 6 msg of
+  ([m, m', ':', s, s', ' '], text) ->
+    if all isDigit [m, m', s, s'] then Just text else Nothing
+  _ -> Nothing
 
 getInvitation :: TestCC -> IO String
 getInvitation cc = do
@@ -3285,4 +4071,15 @@ getContactLink cc created = do
   cc <## "Anybody can send you contact requests with: /c <contact_link_above>"
   cc <## "to show it again: /sa"
   cc <## "to delete it: /da (accepted contacts will remain connected)"
+  pure link
+
+getGroupLink :: TestCC -> String -> Bool -> IO String
+getGroupLink cc gName created = do
+  cc <## if created then "Group link is created!" else "Group link:"
+  cc <## ""
+  link <- getTermLine cc
+  cc <## ""
+  cc <## "Anybody can connect to you and join group with: /c <group_link_above>"
+  cc <## ("to show it again: /show link #" <> gName)
+  cc <## ("to delete it: /delete link #" <> gName <> " (joined members will remain connected to you)")
   pure link

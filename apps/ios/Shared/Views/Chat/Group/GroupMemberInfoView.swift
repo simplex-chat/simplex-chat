@@ -13,21 +13,23 @@ struct GroupMemberInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
     var groupInfo: GroupInfo
-    @State var member: GroupMember
-    var connectionStats: ConnectionStats?
+    @Binding var member: GroupMember?
+    @Binding var connectionStats: ConnectionStats?
     @State private var newRole: GroupMemberRole = .member
     @State private var alert: GroupMemberInfoViewAlert?
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     enum GroupMemberInfoViewAlert: Identifiable {
-        case removeMemberAlert
-        case changeMemberRoleAlert(role: GroupMemberRole)
-        case error(title: LocalizedStringKey, error: String)
+        case removeMemberAlert(mem: GroupMember)
+        case changeMemberRoleAlert(mem: GroupMember, role: GroupMemberRole)
+        case switchAddressAlert
+        case error(title: LocalizedStringKey, error: LocalizedStringKey)
 
         var id: String {
             switch self {
             case .removeMemberAlert: return "removeMemberAlert"
-            case let .changeMemberRoleAlert(role): return "changeMemberRoleAlert \(role.rawValue)"
+            case let .changeMemberRoleAlert(_, role): return "changeMemberRoleAlert \(role.rawValue)"
+            case .switchAddressAlert: return "switchAddressAlert"
             case let .error(title, _): return "error \(title)"
             }
         }
@@ -35,76 +37,78 @@ struct GroupMemberInfoView: View {
 
     var body: some View {
         NavigationView {
-            List {
-                groupMemberInfoHeader()
-                    .listRowBackground(Color.clear)
+            if let member = member {
+                List {
+                    groupMemberInfoHeader(member)
+                        .listRowBackground(Color.clear)
 
-                if let contactId = member.memberContactId {
-                    Section {
-                        openDirectChatButton(contactId)
+                    if let contactId = member.memberContactId {
+                        Section {
+                            openDirectChatButton(contactId)
+                        }
                     }
-                }
 
-                Section("Member") {
-                    infoRow("Group", groupInfo.displayName)
+                    Section("Member") {
+                        infoRow("Group", groupInfo.displayName)
 
-                    HStack {
                         if let roles = member.canChangeRoleTo(groupInfo: groupInfo) {
                             Picker("Change role", selection: $newRole) {
                                 ForEach(roles) { role in
                                     Text(role.text)
-                                        .foregroundStyle(.secondary)
                                 }
                             }
                         } else {
-                            Text("Role")
-                            Spacer()
-                            Text(member.memberRole.text)
-                                .foregroundStyle(.secondary)
+                            infoRow("Role", member.memberRole.text)
                         }
-                    }
-                    .onAppear { newRole = member.memberRole }
-                    .onChange(of: newRole) { _ in
-                        if newRole != member.memberRole {
-                            alert = .changeMemberRoleAlert(role: newRole)
+
+                        // TODO invited by - need to get contact by contact id
+                        if let conn = member.activeConn {
+                            let connLevelDesc = conn.connLevel == 0 ? NSLocalizedString("direct", comment: "connection level description") : String.localizedStringWithFormat(NSLocalizedString("indirect (%d)", comment: "connection level description"), conn.connLevel)
+                            infoRow("Connection", connLevelDesc)
                         }
                     }
 
-                    // TODO invited by - need to get contact by contact id
-                    if let conn = member.activeConn {
-                        let connLevelDesc = conn.connLevel == 0 ? NSLocalizedString("direct", comment: "connection level description") : String.localizedStringWithFormat(NSLocalizedString("indirect (%d)", comment: "connection level description"), conn.connLevel)
-                        infoRow("Connection", connLevelDesc)
-                    }
-                }
-
-                if let connStats = connectionStats {
                     Section("Servers") {
                         // TODO network connection status
-                        smpServers("Receiving via", connStats.rcvServers)
-                        smpServers("Sending via", connStats.sndServers)
+                        if developerTools {
+                            Button("Change receiving address (BETA)") {
+                                alert = .switchAddressAlert
+                            }
+                        }
+                        if let connStats = connectionStats {
+                            smpServers("Receiving via", connStats.rcvServers)
+                            smpServers("Sending via", connStats.sndServers)
+                        }
+                    }
+
+                    if member.canBeRemoved(groupInfo: groupInfo) {
+                        Section {
+                            removeMemberButton(member)
+                        }
+                    }
+
+                    if developerTools {
+                        Section("For console") {
+                            infoRow("Local name", member.localDisplayName)
+                            infoRow("Database ID", "\(member.groupMemberId)")
+                        }
                     }
                 }
-
-                if member.canBeRemoved(groupInfo: groupInfo) {
-                    Section {
-                        removeMemberButton()
-                    }
-                }
-
-                if developerTools {
-                    Section("For console") {
-                        infoRow("Local name", member.localDisplayName)
-                        infoRow("Database ID", "\(member.groupMemberId)")
+                .navigationBarHidden(true)
+                .onAppear { newRole = member.memberRole }
+                .onChange(of: newRole) { _ in
+                    if newRole != member.memberRole {
+                        alert = .changeMemberRoleAlert(mem: member, role: newRole)
                     }
                 }
             }
-            .navigationBarHidden(true)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .alert(item: $alert) { alertItem in
             switch(alertItem) {
-            case .removeMemberAlert: return removeMemberAlert()
-            case .changeMemberRoleAlert: return changeMemberRoleAlert()
+            case let .removeMemberAlert(mem): return removeMemberAlert(mem)
+            case let .changeMemberRoleAlert(mem, _): return changeMemberRoleAlert(mem)
+            case .switchAddressAlert: return switchAddressAlert(switchMemberAddress)
             case let .error(title, error): return Alert(title: Text(title), message: Text(error))
             }
         }
@@ -134,18 +138,18 @@ struct GroupMemberInfoView: View {
         }
     }
 
-    private func groupMemberInfoHeader() -> some View {
+    private func groupMemberInfoHeader(_ mem: GroupMember) -> some View {
         VStack {
-            ProfileImage(imageStr: member.image, color: Color(uiColor: .tertiarySystemFill))
+            ProfileImage(imageStr: mem.image, color: Color(uiColor: .tertiarySystemFill))
                 .frame(width: 192, height: 192)
                 .padding(.top, 12)
                 .padding()
-            Text(member.displayName)
+            Text(mem.displayName)
                 .font(.largeTitle)
                 .lineLimit(1)
                 .padding(.bottom, 2)
-            if member.fullName != "" && member.fullName != member.displayName {
-                Text(member.fullName)
+            if mem.fullName != "" && mem.fullName != mem.displayName {
+                Text(mem.fullName)
                     .font(.title2)
                     .lineLimit(2)
             }
@@ -153,30 +157,31 @@ struct GroupMemberInfoView: View {
         .frame(maxWidth: .infinity, alignment: .center)
     }
 
-    func removeMemberButton() -> some View {
+    func removeMemberButton(_ mem: GroupMember) -> some View {
         Button(role: .destructive) {
-            alert = .removeMemberAlert
+            alert = .removeMemberAlert(mem: mem)
         } label: {
             Label("Remove member", systemImage: "trash")
                 .foregroundColor(Color.red)
         }
     }
 
-    private func removeMemberAlert() -> Alert {
+    private func removeMemberAlert(_ mem: GroupMember) -> Alert {
         Alert(
             title: Text("Remove member?"),
             message: Text("Member will be removed from group - this cannot be undone!"),
             primaryButton: .destructive(Text("Remove")) {
                 Task {
                     do {
-                        let member = try await apiRemoveMember(groupInfo.groupId, member.groupMemberId)
+                        let updatedMember = try await apiRemoveMember(groupInfo.groupId, mem.groupMemberId)
                         await MainActor.run {
-                            _ = chatModel.upsertGroupMember(groupInfo, member)
+                            _ = chatModel.upsertGroupMember(groupInfo, updatedMember)
                             dismiss()
                         }
                     } catch let error {
                         logger.error("apiRemoveMember error: \(responseError(error))")
-                        alert = errorAlert(error, "Error removing member")
+                        let a = getErrorAlert(error, "Error removing member")
+                        alert = .error(title: a.title, error: a.message)
                     }
                 }
             },
@@ -184,45 +189,56 @@ struct GroupMemberInfoView: View {
         )
     }
 
-    private func changeMemberRoleAlert() -> Alert {
+    private func changeMemberRoleAlert(_ mem: GroupMember) -> Alert {
         Alert(
             title: Text("Change member role?"),
-            message: member.memberCurrent ? Text("Member role will be changed to \"\(newRole.text)\". All group members will be notified.") : Text("Member role will be changed to \"\(newRole.text)\". The member will receive a new invitation."),
+            message: mem.memberCurrent ? Text("Member role will be changed to \"\(newRole.text)\". All group members will be notified.") : Text("Member role will be changed to \"\(newRole.text)\". The member will receive a new invitation."),
             primaryButton: .default(Text("Change")) {
                 Task {
                     do {
-                        let mem = try await apiMemberRole(groupInfo.groupId, member.groupMemberId, newRole)
+                        let updatedMember = try await apiMemberRole(groupInfo.groupId, mem.groupMemberId, newRole)
                         await MainActor.run {
-                            member = mem
-                            _ = chatModel.upsertGroupMember(groupInfo, mem)
+                            member = updatedMember
+                            _ = chatModel.upsertGroupMember(groupInfo, updatedMember)
                         }
+                        
                     } catch let error {
-                        newRole = member.memberRole
+                        newRole = mem.memberRole
                         logger.error("apiMemberRole error: \(responseError(error))")
-                        alert = errorAlert(error, "Error changing role")
+                        let a = getErrorAlert(error, "Error changing role")
+                        alert = .error(title: a.title, error: a.message)
                     }
                 }
             },
             secondaryButton: .cancel {
-                newRole = member.memberRole
+                newRole = mem.memberRole
             }
         )
     }
 
-    private func errorAlert(_ error: Error, _ title: LocalizedStringKey) -> GroupMemberInfoViewAlert {
-        switch error as? ChatResponse {
-        case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
-            return .error(title: "Connection timeout", error: NSLocalizedString("Please check your network connection and try again.", comment: "alert message"))
-        case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
-            return .error(title: "Connection error", error: NSLocalizedString("Please check your network connection and try again.", comment: "alert message"))
-        default:
-            return .error(title: title, error: responseError(error))
+    private func switchMemberAddress() {
+        Task {
+            do {
+                if let member = member {
+                    try await apiSwitchGroupMember(groupInfo.apiId, member.groupMemberId)
+                }
+            } catch let error {
+                logger.error("switchMemberAddress apiSwitchGroupMember error: \(responseError(error))")
+                let a = getErrorAlert(error, "Error changing address")
+                await MainActor.run {
+                    alert = .error(title: a.title, error: a.message)
+                }
+            }
         }
     }
 }
 
 struct GroupMemberInfoView_Previews: PreviewProvider {
     static var previews: some View {
-        GroupMemberInfoView(groupInfo: GroupInfo.sampleData, member: GroupMember.sampleData)
+        GroupMemberInfoView(
+            groupInfo: GroupInfo.sampleData,
+            member: Binding.constant(GroupMember.sampleData),
+            connectionStats: Binding.constant(nil)
+        )
     }
 }

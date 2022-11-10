@@ -8,22 +8,19 @@
 
 import SwiftUI
 import CoreImage.CIFilterBuiltins
+import SimpleXChat
 
 struct AddContactView: View {
     @EnvironmentObject private var chatModel: ChatModel
+    var contactConnection: PendingContactConnection? = nil
     var connReqInvitation: String
-    var viaSettings = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading) {
-                Text("One-time invitation link")
-                    .font(.largeTitle)
-                    .bold()
-                    .padding(viaSettings ? .bottom : .vertical)
                 Text("Your contact can scan it from the app.")
                     .padding(.bottom, 4)
-                if (chatModel.incognito) {
+                if (contactConnection?.incognito ?? chatModel.incognito) {
                     HStack {
                         Image(systemName: "theatermasks").foregroundColor(.indigo).font(.footnote)
                         Spacer().frame(width: 8)
@@ -59,6 +56,7 @@ struct AddContactView: View {
             .padding()
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
+        .onAppear { chatModel.connReqInv = connReqInvitation }
     }
 }
 

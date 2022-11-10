@@ -14,6 +14,7 @@ let GROUP_DEFAULT_DB_CONTAINER = "dbContainer"
 public let GROUP_DEFAULT_CHAT_LAST_START = "chatLastStart"
 let GROUP_DEFAULT_NTF_PREVIEW_MODE = "ntfPreviewMode"
 let GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
+public let GROUP_DEFAULT_PRIVACY_TRANSFER_IMAGES_INLINE = "privacyTransferImagesInline"
 let GROUP_DEFAULT_NTF_BADGE_COUNT = "ntgBadgeCount"
 let GROUP_DEFAULT_NETWORK_USE_ONION_HOSTS = "networkUseOnionHosts"
 let GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT = "networkTCPConnectTimeout"
@@ -91,6 +92,8 @@ public let ntfPreviewModeGroupDefault = EnumDefault<NotificationPreviewMode>(
 public let incognitoGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_INCOGNITO)
 
 public let privacyAcceptImagesGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES)
+
+public let privacyTransferImagesInlineGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PRIVACY_TRANSFER_IMAGES_INLINE)
 
 public let ntfBadgeCountGroupDefault = IntDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_NTF_BADGE_COUNT)
 
