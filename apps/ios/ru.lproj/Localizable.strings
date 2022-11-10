@@ -29,7 +29,13 @@
 ")" = ")";
 
 /* No comment provided by engineer. */
+"[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Помочь](https://github.com/simplex-chat/simplex-chat#contribute)";
+
+/* No comment provided by engineer. */
 "[Send us email](mailto:chat@simplex.chat)" = "[Отправить email](mailto:chat@simplex.chat)";
+
+/* No comment provided by engineer. */
+"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Отметить звездочкой на GitHub](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
 "**Add new contact**: to create your one-time QR Code for your contact." = "**Добавить новый контакт**: чтобы создать одноразовый QR код или ссылку для вашего контакта.";
@@ -1323,6 +1329,9 @@
 "Push notifications" = "Доставка уведомлений";
 
 /* No comment provided by engineer. */
+"Rate the app" = "Оценить приложение";
+
+/* No comment provided by engineer. */
 "Read" = "Прочитано";
 
 /* No comment provided by engineer. */
@@ -1470,6 +1479,9 @@
 "Send notifications:" = "Отправлять уведомления:";
 
 /* No comment provided by engineer. */
+"Send questions and ideas" = "Отправьте вопросы и идеи";
+
+/* No comment provided by engineer. */
 "Sender cancelled file transfer." = "Отправитель отменил передачу файла.";
 
 /* No comment provided by engineer. */
@@ -1567,6 +1579,9 @@
 
 /* No comment provided by engineer. */
 "strike" = "зачеркнуть";
+
+/* No comment provided by engineer. */
+"Support SimpleX Chat" = "Поддержать SimpleX Chat";
 
 /* No comment provided by engineer. */
 "System" = "Системная";
@@ -1825,6 +1840,9 @@
 
 /* No comment provided by engineer. */
 "You are already connected to %@ via this link." = "Вы уже соединены с %@ через эту ссылку.";
+
+/* No comment provided by engineer. */
+"You are already connected to %@." = "Вы уже соединены с %@.";
 
 /* No comment provided by engineer. */
 "You are connected to the server used to receive messages from this contact." = "Установлено соединение с сервером, через который вы получаете сообщения от этого контакта.";

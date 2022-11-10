@@ -29,7 +29,13 @@
 ")" = ")";
 
 /* No comment provided by engineer. */
+"[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "*** [Contribute](https://github.com/simplex-chat/simplex-chat#contribute)";
+
+/* No comment provided by engineer. */
 "[Send us email](mailto:chat@simplex.chat)" = "[Senden Sie uns eine E-Mail](mailto:chat@simplex.chat)";
+
+/* No comment provided by engineer. */
+"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "*** [Star on GitHub](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
 "**Add new contact**: to create your one-time QR Code for your contact." = "**Fügen Sie einen neuen Kontakt hinzu**: Erzeugen Sie einen Einmal-QR-Code oder -Link für Ihren Kontakt.";
@@ -1323,6 +1329,9 @@
 "Push notifications" = "Push-Benachrichtigungen";
 
 /* No comment provided by engineer. */
+"Rate the app" = "*** Rate the app";
+
+/* No comment provided by engineer. */
 "Read" = "Lesen";
 
 /* No comment provided by engineer. */
@@ -1470,6 +1479,9 @@
 "Send notifications:" = "Benachrichtigungen senden:";
 
 /* No comment provided by engineer. */
+"Send questions and ideas" = "*** Send questions and ideas";
+
+/* No comment provided by engineer. */
 "Sender cancelled file transfer." = "Der Absender hat die Dateiübertragung abgebrochen.";
 
 /* No comment provided by engineer. */
@@ -1567,6 +1579,9 @@
 
 /* No comment provided by engineer. */
 "strike" = "durchstreichen";
+
+/* No comment provided by engineer. */
+"Support SimpleX Chat" = "*** Support SimpleX Chat";
 
 /* No comment provided by engineer. */
 "System" = "System";
@@ -1825,6 +1840,9 @@
 
 /* No comment provided by engineer. */
 "You are already connected to %@ via this link." = "Sie sind bereits über diesen Link mit %@ verbunden.";
+
+/* No comment provided by engineer. */
+"You are already connected to %@." = "Sie sind bereits mit %@ verbunden.";
 
 /* No comment provided by engineer. */
 "You are connected to the server used to receive messages from this contact." = "Sie sind mit dem Server verbunden, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird.";
