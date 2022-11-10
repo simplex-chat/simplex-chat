@@ -131,9 +131,6 @@
     <string name="auth_enable_simplex_lock">Включить блокировку SimpleX</string>
     <string name="auth_disable_simplex_lock">Отключить блокировку SimpleX</string>
     <string name="auth_confirm_credential">Пройдите аутентификацию</string>
-    <string name="auth_error">Ошибка аутентификации</string>
-    <string name="auth_error_w_desc">Ошибка аутентификации: <xliff:g id="desc">%1$s</xliff:g></string>
-    <string name="auth_failed">Ошибка аутентификации</string>
     <string name="auth_unavailable">Аутентификация недоступна</string>
     <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Аутентификация устройства не включена. Вы можете включить блокировку SimpleX в Настройках после включения аутентификации.</string>
     <string name="auth_device_authentication_is_disabled_turning_off">Аутентификация устройства выключена. Отключение блокировки SimpleX Chat.</string>

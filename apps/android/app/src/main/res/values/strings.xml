@@ -131,9 +131,6 @@
   <string name="auth_enable_simplex_lock">Enable SimpleX Lock</string>
   <string name="auth_disable_simplex_lock">Disable SimpleX Lock</string>
   <string name="auth_confirm_credential">Confirm your credential</string>
-  <string name="auth_error">Authentication error</string>
-  <string name="auth_error_w_desc">Authentication error: <xliff:g id="desc">%1$s</xliff:g></string>
-  <string name="auth_failed">Authentication failed</string>
   <string name="auth_unavailable">Authentication unavailable</string>
   <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication.</string>
   <string name="auth_device_authentication_is_disabled_turning_off">Device authentication is disabled. Turning off SimpleX Lock.</string>
