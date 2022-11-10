@@ -78,25 +78,25 @@ class ModalManager {
   @Composable
   fun showInView() {
     AnimateScreens(modalCount) {
-    // Without animation
-    if (modalCount.value > 0 && modalViews.lastOrNull()?.first == false) {
-      modalViews.lastOrNull()?.second?.invoke(::closeModal)
-      return
-    }
-    AnimatedContent(targetState = modalCount.value,
-      transitionSpec = {
-        if (targetState > initialState) {
-          fromEndToStartTransition()
-        } else {
-          fromStartToEndTransition()
-        }.using(SizeTransform(clip = false))
+      // Without animation
+      if (modalCount.value > 0 && modalViews.lastOrNull()?.first == false) {
+        modalViews.lastOrNull()?.second?.invoke(::closeModal)
+        return@AnimateScreens
       }
-    ) {
-      modalViews.getOrNull(it - 1)?.second?.invoke(::closeModal)
->>>>>>> master
-      // This is needed because if we delete from modalViews immediately on request, animation will be bad
-      if (toRemove.isNotEmpty() && it == modalCount.value && transition.currentState == EnterExitState.Visible && !transition.isRunning) {
-        runAtomically { toRemove.removeIf { elem -> modalViews.removeAt(elem); true } }
+      AnimatedContent(targetState = modalCount.value,
+        transitionSpec = {
+          if (targetState > initialState) {
+            fromEndToStartTransition()
+          } else {
+            fromStartToEndTransition()
+          }.using(SizeTransform(clip = false))
+        }
+      ) {
+        modalViews.getOrNull(it - 1)?.second?.invoke(::closeModal)
+        // This is needed because if we delete from modalViews immediately on request, animation will be bad
+        if (toRemove.isNotEmpty() && it == modalCount.value && transition.currentState == EnterExitState.Visible && !transition.isRunning) {
+          runAtomically { toRemove.removeIf { elem -> modalViews.removeAt(elem); true } }
+        }
       }
     }
   }
@@ -136,7 +136,6 @@ private fun <T> animationSpec() = tween<T>(durationMillis = 250, easing = FastOu
 //  private fun <T> animationSpecFromStart() = tween<T>(durationMillis = 150, easing = FastOutLinearInEasing)
 //  private fun <T> animationSpecFromEnd() = tween<T>(durationMillis = 100, easing = FastOutSlowInEasing)
 
->>>>>>> master
   companion object {
     val shared = ModalManager()
   }
