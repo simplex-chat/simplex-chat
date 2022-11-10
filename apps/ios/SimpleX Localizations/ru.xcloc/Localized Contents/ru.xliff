@@ -2888,7 +2888,7 @@ SimpleX серверы не могут получить доступ к ваше
       </trans-unit>
       <trans-unit id="[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" xml:space="preserve">
         <source>[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)</source>
-        <target>[Помочь](https://github.com/simplex-chat/simplex-chat#contribute)</target>
+        <target>[Улучшить](https://github.com/simplex-chat/simplex-chat#contribute)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="[Send us email](mailto:chat@simplex.chat)" xml:space="preserve">
