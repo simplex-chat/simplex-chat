@@ -144,12 +144,9 @@ class MainActivity: FragmentActivity() {
         this@MainActivity,
         completed = { laResult ->
           when (laResult) {
-            LAResult.Success -> {
+            LAResult.Success ->
               userAuthorized.value = true
-            }
-            is LAResult.Error ->
-              laFailed.value = true
-            LAResult.Failed ->
+            is LAResult.Error, LAResult.Failed ->
               laFailed.value = true
             LAResult.Unavailable -> {
               userAuthorized.value = true
@@ -186,11 +183,7 @@ class MainActivity: FragmentActivity() {
             prefPerformLA.set(true)
             laTurnedOnAlert()
           }
-          is LAResult.Error -> {
-            m.performLA.value = false
-            prefPerformLA.set(false)
-          }
-          LAResult.Failed -> {
+          is LAResult.Error, LAResult.Failed -> {
             m.performLA.value = false
             prefPerformLA.set(false)
           }
@@ -217,11 +210,7 @@ class MainActivity: FragmentActivity() {
             m.performLA.value = false
             prefPerformLA.set(false)
           }
-          is LAResult.Error -> {
-            m.performLA.value = true
-            prefPerformLA.set(true)
-          }
-          LAResult.Failed -> {
+          is LAResult.Error, LAResult.Failed -> {
             m.performLA.value = true
             prefPerformLA.set(true)
           }

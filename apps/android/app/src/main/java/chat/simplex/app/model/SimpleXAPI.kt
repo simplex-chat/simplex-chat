@@ -1347,11 +1347,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
                   appPrefs.performLA.set(true)
                   laTurnedOnAlert()
                 }
-                is LAResult.Error -> {
-                  chatModel.performLA.value = false
-                  appPrefs.performLA.set(false)
-                }
-                LAResult.Failed -> {
+                is LAResult.Error, LAResult.Failed -> {
                   chatModel.performLA.value = false
                   appPrefs.performLA.set(false)
                 }
