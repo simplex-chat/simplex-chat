@@ -137,7 +137,6 @@
   <string name="auth_unavailable">Authentifizierung nicht verfügbar</string>
   <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Geräteauthentifizierung ist nicht aktiviert. Sie können die SimpleX Sperre über die Einstellungen aktivieren, sobald Sie die Geräteauthentifizierung aktiviert haben.</string>
   <string name="auth_device_authentication_is_disabled_turning_off">Geräteauthentifizierung ist deaktiviert. SimpleX Sperre ist abgeschaltet.</string>
-  <string name="auth_retry">Wiederholen</string>
   <string name="auth_stop_chat">Chat beenden</string>
   <string name="auth_open_chat_console">Chat-Konsole öffnen</string>
 

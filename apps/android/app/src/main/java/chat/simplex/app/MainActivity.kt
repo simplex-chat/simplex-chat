@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Replay
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -147,14 +148,10 @@ class MainActivity: FragmentActivity() {
             LAResult.Success -> {
               userAuthorized.value = true
             }
-            is LAResult.Error -> {
+            is LAResult.Error ->
               laFailed.value = true
-              laErrorToast(applicationContext, laResult.errString)
-            }
-            LAResult.Failed -> {
+            LAResult.Failed ->
               laFailed.value = true
-              laFailedToast(applicationContext)
-            }
             LAResult.Unavailable -> {
               userAuthorized.value = true
               m.performLA.value = false
@@ -193,12 +190,10 @@ class MainActivity: FragmentActivity() {
           is LAResult.Error -> {
             m.performLA.value = false
             prefPerformLA.set(false)
-            laErrorToast(applicationContext, laResult.errString)
           }
           LAResult.Failed -> {
             m.performLA.value = false
             prefPerformLA.set(false)
-            laFailedToast(applicationContext)
           }
           LAResult.Unavailable -> {
             m.performLA.value = false
@@ -226,12 +221,10 @@ class MainActivity: FragmentActivity() {
           is LAResult.Error -> {
             m.performLA.value = true
             prefPerformLA.set(true)
-            laErrorToast(applicationContext, laResult.errString)
           }
           LAResult.Failed -> {
             m.performLA.value = true
             prefPerformLA.set(true)
-            laFailedToast(applicationContext)
           }
           LAResult.Unavailable -> {
             m.performLA.value = false
@@ -298,14 +291,14 @@ fun MainPage(
   }
 
   @Composable
-  fun retryAuthView() {
+  fun authView() {
     Box(
       Modifier.fillMaxSize(),
       contentAlignment = Alignment.Center
     ) {
       SimpleButton(
-        stringResource(R.string.auth_retry),
-        icon = Icons.Outlined.Replay,
+        stringResource(R.string.auth_unlock),
+        icon = Icons.Outlined.Lock,
         click = {
           laFailed.value = false
           runAuthenticate()
@@ -326,7 +319,7 @@ fun MainPage(
       onboarding == null || userCreated == null -> SplashView()
       !chatsAccessAuthorized -> {
         if (chatModel.controller.appPrefs.performLA.get() && laFailed.value) {
-          retryAuthView()
+          authView()
         } else {
           SplashView()
         }
