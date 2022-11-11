@@ -58,7 +58,7 @@
   <string name="error_receiving_file">Error receiving file</string>
   <string name="error_creating_address">Error creating address</string>
   <string name="contact_already_exists">Contact already exists</string>
-  <string name="you_are_already_connected_to_vName_via_this_link">You are already connected to <xliff:g id="contactName" example="Alice">%1$s!</xliff:g> via this link.</string>
+  <string name="you_are_already_connected_to_vName_via_this_link">You are already connected to <xliff:g id="contactName" example="Alice">%1$s!</xliff:g>.</string>
   <string name="invalid_connection_link">Invalid connection link</string>
   <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Please check that you used the correct link or ask your contact to send you another one.</string>
   <string name="connection_error_auth">Connection error (AUTH)</string>
@@ -360,12 +360,15 @@
   <string name="how_to_use_simplex_chat">How to use it</string>
   <string name="markdown_help">Markdown help</string>
   <string name="markdown_in_messages">Markdown in messages</string>
-  <string name="chat_with_the_founder">Connect to the developers</string>
+  <string name="chat_with_the_founder">Send questions and ideas</string>
   <string name="send_us_an_email">Send us email</string>
   <string name="chat_lock">SimpleX Lock</string>
   <string name="chat_console">Chat console</string>
   <string name="smp_servers">SMP servers</string>
   <string name="install_simplex_chat_for_terminal">Install <xliff:g id="appNameFull">SimpleX Chat</xliff:g> for terminal</string>
+  <string name="star_on_github">Star on GitHub</string>
+  <string name="contribute">Contribute</string>
+  <string name="rate_the_app">Rate the app</string>
   <string name="use_simplex_chat_servers__question">Use <xliff:g id="appNameFull">SimpleX Chat</xliff:g> servers?</string>
   <string name="saved_SMP_servers_will_be_removed">Saved SMP servers will be removed.</string>
   <string name="your_SMP_servers">Your SMP servers</string>
@@ -566,6 +569,7 @@
   <string name="settings_section_title_you">YOU</string>
   <string name="settings_section_title_settings">SETTINGS</string>
   <string name="settings_section_title_help">HELP</string>
+  <string name="settings_section_title_support">SUPPORT SIMPLEX CHAT</string>
   <string name="settings_section_title_develop">DEVELOP</string>
   <string name="settings_section_title_device">DEVICE</string>
   <string name="settings_section_title_chats">CHATS</string>
