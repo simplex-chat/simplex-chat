@@ -517,11 +517,11 @@ instance ToJSON Profile where
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 -- check if profiles match ignoring preferences
-profilesMatch :: Contact -> Contact -> Bool
-profilesMatch Contact {profile = p1} Contact {profile = p2} =
-  let Profile {displayName = n1, fullName = fn1, image = i1} = fromLocalProfile p1
-      Profile {displayName = n2, fullName = fn2, image = i2} = fromLocalProfile p2
-   in n1 == n2 && fn1 == fn2 && i1 == i2
+profilesMatch :: Profile -> Profile -> Bool
+profilesMatch
+  Profile {displayName = n1, fullName = fn1, image = i1}
+  Profile {displayName = n2, fullName = fn2, image = i2} =
+    n1 == n2 && fn1 == fn2 && i1 == i2
 
 data IncognitoProfile = NewIncognito Profile | ExistingIncognito LocalProfile
 
