@@ -345,7 +345,13 @@ fun MainPage(
               var currentChatId by rememberSaveable { mutableStateOf(chatModel.chatId.value) }
               val offset = remember { Animatable(if (chatModel.chatId.value == null) 0f else maxWidth.value) }
               var allowHide by rememberSaveable { mutableStateOf(false) }
-              Column(Modifier.graphicsLayer { allowHide = offset.value == 0f && chatModel.chatId.value == null; translationX = -offset.value.dp.toPx() }) {
+              Column(
+                Modifier
+                  .graphicsLayer {
+                    allowHide = offset.value == 0f && chatModel.chatId.value == null
+                    translationX = -offset.value.dp.toPx()
+                  }
+              ) {
                 if (chatModel.chatId.value == null || !allowHide) {
                   val stopped = chatModel.chatRunning.value == false
                   if (chatModel.sharedContent.value == null)
@@ -358,7 +364,7 @@ fun MainPage(
               val onComposed: () -> Unit = onComposed@{
                 scope.launch {
                   offset.animateTo(
-                    if (chatModel.chatId.value == null) 0.dp.value else maxWidth.value,
+                    if (chatModel.chatId.value == null) 0f else maxWidth.value,
                     chatListAnimationSpec()
                   )
                   if (offset.value == 0f) {
