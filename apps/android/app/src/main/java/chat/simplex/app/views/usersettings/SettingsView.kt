@@ -283,7 +283,7 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
   }
   ) {
     Icon(
-      Icons.Outlined.Star,
+      Icons.Outlined.StarOutline,
       contentDescription = "Google Play",
       tint = HighOrLowlight,
     )
