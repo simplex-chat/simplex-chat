@@ -2481,16 +2481,15 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
         forM_ r . uncurry $ probeMatch c1
 
     probeMatch :: Contact -> Contact -> Probe -> m ()
-    probeMatch c1@Contact {contactId = ctId1, profile = p1} c2@Contact {contactId = ctId2, profile = p2} probe =
-      when (profilesMatch (fromLocalProfile p1) (fromLocalProfile p2)) $ do
+    probeMatch c1 c2 probe =
+      when (profilesMatch c1 c2) $ do
         void . sendDirectContactMessage c1 $ XInfoProbeOk probe
-        unless (ctId1 == ctId2) $ mergeContacts c1 c2
+        mergeContacts c1 c2
 
     xInfoProbeOk :: Contact -> Probe -> m ()
-    xInfoProbeOk c1@Contact {contactId = ctId1} probe = do
+    xInfoProbeOk c1 probe = do
       r <- withStore' $ \db -> matchSentProbe db userId c1 probe
-      forM_ r $ \c2@Contact {contactId = ctId2} ->
-        unless (ctId1 == ctId2) $ mergeContacts c1 c2
+      forM_ r $ \c2 -> mergeContacts c1 c2
 
     -- to party accepting call
     xCallInv :: Contact -> CallId -> CallInvitation -> RcvMessage -> MsgMeta -> m ()
@@ -2592,9 +2591,10 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
       messageError $ eventName <> ": wrong call state " <> T.pack (show $ callStateTag callState)
 
     mergeContacts :: Contact -> Contact -> m ()
-    mergeContacts to from = do
-      withStore' $ \db -> mergeContactRecords db userId to from
-      toView $ CRContactsMerged to from
+    mergeContacts to@Contact {contactId = toId} from@Contact {contactId = fromId} =
+      unless (toId == fromId) $ do
+        withStore' $ \db -> mergeContactRecords db userId to from
+        toView $ CRContactsMerged to from
 
     saveConnInfo :: Connection -> ConnInfo -> m ()
     saveConnInfo activeConn connInfo = do
