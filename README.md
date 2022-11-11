@@ -200,7 +200,6 @@ If you are considering developing with SimpleX platform please get in touch for 
 - Channels server for large groups and broadcast channels.
 - Media server to optimize sending large files to groups.
 - Desktop client.
-- Using the same profile on multiple devices.
 
 ## Contribute
 
