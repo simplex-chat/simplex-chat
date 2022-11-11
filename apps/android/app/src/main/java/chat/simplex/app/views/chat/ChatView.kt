@@ -490,13 +490,6 @@ fun BoxWithConstraintsScope.ChatItemsList(
       scope.launch { listState.animateScrollToItem(kotlin.math.min(reversedChatItems.lastIndex, index + 1), -maxHeightRounded) }
     }
   }
-  val dismissState = rememberDismissState(initialValue = DismissValue.Default) { false }
-  val directions = setOf(DismissDirection.EndToStart)
-  val swipeableModifier = SwipeToDismissModifier(
-    state = dismissState,
-    directions = directions,
-    swipeDistance = with(LocalDensity.current) { 30.dp.toPx() },
-  )
   LaunchedEffect(Unit) {
     var stopListening = false
     snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastIndex }
@@ -514,6 +507,13 @@ fun BoxWithConstraintsScope.ChatItemsList(
         // With default touchSlop when you scroll LazyColumn, you can unintentionally open reply view
         LocalViewConfiguration provides LocalViewConfiguration.current.bigTouchSlop()
       ) {
+        val dismissState = rememberDismissState(initialValue = DismissValue.Default) { false }
+        val directions = setOf(DismissDirection.EndToStart)
+        val swipeableModifier = SwipeToDismissModifier(
+          state = dismissState,
+          directions = directions,
+          swipeDistance = with(LocalDensity.current) { 30.dp.toPx() },
+        )
         val swipedToEnd = (dismissState.overflow.value > 0f && directions.contains(DismissDirection.StartToEnd))
         val swipedToStart = (dismissState.overflow.value < 0f && directions.contains(DismissDirection.EndToStart))
         if (dismissState.isAnimationRunning && (swipedToStart || swipedToEnd)) {
