@@ -40,6 +40,7 @@ import chat.simplex.app.views.newchat.*
 import chat.simplex.app.views.onboarding.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 
 class MainActivity: FragmentActivity() {
@@ -361,7 +362,7 @@ fun MainPage(
                 }
               }
               val scope = rememberCoroutineScope()
-              val onComposed: () -> Unit = onComposed@{
+              val onComposed: () -> Unit = {
                 scope.launch {
                   offset.animateTo(
                     if (chatModel.chatId.value == null) 0f else maxWidth.value,
@@ -373,12 +374,23 @@ fun MainPage(
                 }
               }
               LaunchedEffect(Unit) {
-                snapshotFlow { chatModel.chatId.value }
-                  .distinctUntilChanged()
-                  .collect {
-                    if (it != null) currentChatId = it
-                    else onComposed()
-                  }
+                launch {
+                  snapshotFlow { chatModel.chatId.value }
+                    .distinctUntilChanged()
+                    .collect {
+                      if (it != null) currentChatId = it
+                      else onComposed()
+                    }
+                }
+                launch {
+                  snapshotFlow { chatModel.sharedContent.value }
+                    .distinctUntilChanged()
+                    .filter { it != null }
+                    .collect {
+                      chatModel.chatId.value = null
+                      currentChatId = null
+                    }
+                }
               }
               Column(Modifier.graphicsLayer { translationX = maxWidth.toPx() - offset.value.dp.toPx() }) {
                 if (currentChatId != null) {
