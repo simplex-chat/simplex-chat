@@ -188,6 +188,7 @@ struct SettingsView: View {
                             }
                         }
                     }
+                    .disabled(chatModel.chatRunning != true)
                     settingsRow("envelope") { Text("[Send us email](mailto:chat@simplex.chat)") }
                 }
 
@@ -208,7 +209,6 @@ struct SettingsView: View {
                         Text("[Star on GitHub](https://github.com/simplex-chat/simplex-chat)")
                             .padding(.leading, indent)
                     }
-                    .disabled(chatModel.chatRunning != true)
                 }
 
                 Section("Develop") {
