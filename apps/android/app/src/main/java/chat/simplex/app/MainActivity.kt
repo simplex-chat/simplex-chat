@@ -9,6 +9,7 @@ import android.os.SystemClock.elapsedRealtime
 import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
@@ -19,7 +20,9 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.*
 import chat.simplex.app.model.ChatModel
@@ -36,6 +39,8 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.*
 import chat.simplex.app.views.onboarding.*
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
 
 class MainActivity: FragmentActivity() {
   companion object {
@@ -336,14 +341,44 @@ fun MainPage(
           if (chatModel.showCallView.value) ActiveCallView(chatModel)
           else {
             showAdvertiseLAAlert = true
-            val stopped = chatModel.chatRunning.value == false
-            AnimateScreensNullable(chatModel.chatId) { currentChatId ->
-              if (currentChatId == null) {
-                if (chatModel.sharedContent.value == null)
-                  ChatListView(chatModel, setPerformLA, stopped)
-                else
-                  ShareListView(chatModel, stopped)
-              } else ChatView(currentChatId, chatModel)
+            BoxWithConstraints {
+              var currentChatId by rememberSaveable { mutableStateOf(chatModel.chatId.value) }
+              val offset = remember { Animatable(if (chatModel.chatId.value == null) 0f else maxWidth.value) }
+              var allowHide by rememberSaveable { mutableStateOf(false) }
+              Column(Modifier.graphicsLayer { allowHide = offset.value == 0f && chatModel.chatId.value == null; translationX = -offset.value.dp.toPx() }) {
+                if (chatModel.chatId.value == null || !allowHide) {
+                  val stopped = chatModel.chatRunning.value == false
+                  if (chatModel.sharedContent.value == null)
+                    ChatListView(chatModel, setPerformLA, stopped)
+                  else
+                    ShareListView(chatModel, stopped)
+                }
+              }
+              val scope = rememberCoroutineScope()
+              val onComposed: () -> Unit = onComposed@{
+                scope.launch {
+                  offset.animateTo(
+                    if (chatModel.chatId.value == null) 0.dp.value else maxWidth.value,
+                    chatListAnimationSpec()
+                  )
+                  if (offset.value == 0f) {
+                    currentChatId = null
+                  }
+                }
+              }
+              LaunchedEffect(Unit) {
+                snapshotFlow { chatModel.chatId.value }
+                  .distinctUntilChanged()
+                  .collect {
+                    if (it != null) currentChatId = it
+                    else onComposed()
+                  }
+              }
+              Column(Modifier.graphicsLayer { translationX = maxWidth.toPx() - offset.value.dp.toPx() }) {
+                if (currentChatId != null) {
+                  ChatView(currentChatId ?: return@Column, chatModel, onComposed)
+                }
+              }
             }
           }
         }

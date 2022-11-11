@@ -1671,9 +1671,9 @@ sealed class ChatPagination {
   }
 
   companion object {
-    const val INITIAL_COUNT = 50
-    const val PRELOAD_COUNT = 50
-    const val UNTIL_PRELOAD_COUNT = 30
+    const val INITIAL_COUNT = 100
+    const val PRELOAD_COUNT = 100
+    const val UNTIL_PRELOAD_COUNT = 50
   }
 }
 

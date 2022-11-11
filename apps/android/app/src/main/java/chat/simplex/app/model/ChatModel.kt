@@ -21,6 +21,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
 
+@Stable
 class ChatModel(val controller: ChatController) {
   val onboardingStage = mutableStateOf<OnboardingStage?>(null)
   val currentUser = mutableStateOf<User?>(null)
@@ -382,7 +383,7 @@ interface SomeChat {
   val updatedAt: Instant
 }
 
-@Serializable
+@Serializable @Stable
 data class Chat (
   val chatInfo: ChatInfo,
   val chatItems: List<ChatItem>,
@@ -1015,7 +1016,7 @@ class AChatItem (
   val chatItem: ChatItem
 )
 
-@Serializable
+@Serializable @Stable
 data class ChatItem (
   val chatDir: CIDirection,
   val meta: CIMeta,
