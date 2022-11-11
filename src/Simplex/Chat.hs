@@ -765,13 +765,13 @@ processChatCommand = \case
     conn <- withStore' $ \db -> createDirectConnection db userId connId cReq ConnJoined $ incognitoProfile $> profileToSend
     toView $ CRNewContactConnection conn
     pure CRSentConfirmation
-  Connect (Just (ACR SCMContact cReq)) -> withUser $ \User {userId, profile} ->
+  Connect (Just (ACR SCMContact cReq)) -> withUser $ \user ->
     -- [incognito] generate profile to send
-    connectViaContact userId cReq $ fromLocalProfile profile
+    connectViaContact user cReq
   Connect Nothing -> throwChatError CEInvalidConnReq
-  ConnectSimplex -> withUser $ \User {userId, profile} ->
+  ConnectSimplex -> withUser $ \user ->
     -- [incognito] generate profile to send
-    connectViaContact userId adminContactReq $ fromLocalProfile profile
+    connectViaContact user adminContactReq
   DeleteContact cName -> withUser $ \user -> do
     contactId <- withStore $ \db -> getContactIdByName db user cName
     processChatCommand $ APIDeleteChat (ChatRef CTDirect contactId)
@@ -1108,8 +1108,8 @@ processChatCommand = \case
       CTDirect -> withStore $ \db -> getDirectChatItemIdByText db userId cId SMDSnd (safeDecodeUtf8 msg)
       CTGroup -> withStore $ \db -> getGroupChatItemIdByText db user cId (Just localDisplayName) (safeDecodeUtf8 msg)
       _ -> throwChatError $ CECommandError "not supported"
-    connectViaContact :: UserId -> ConnectionRequestUri 'CMContact -> Profile -> m ChatResponse
-    connectViaContact userId cReq@(CRContactUri ConnReqUriData {crClientData}) profile = withChatLock "connectViaContact" $ do
+    connectViaContact :: User -> ConnectionRequestUri 'CMContact -> m ChatResponse
+    connectViaContact user@User {userId} cReq@(CRContactUri ConnReqUriData {crClientData}) = withChatLock "connectViaContact" $ do
       let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
       withStore' (\db -> getConnReqContactXContactId db userId cReqHash) >>= \case
         (Just contact, _) -> pure $ CRContactAlreadyExists contact
@@ -1123,7 +1123,7 @@ processChatCommand = \case
           -- alternatively we can re-send the main profile even if incognito mode is enabled
           incognito <- readTVarIO =<< asks incognitoMode
           incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
-          let profileToSend = fromMaybe profile incognitoProfile
+          let profileToSend = userProfileToSend user incognitoProfile Nothing
           connId <- withAgent $ \a -> joinConnection a True cReq $ directMessage (XContact profileToSend $ Just xContactId)
           let groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
           conn <- withStore' $ \db -> createConnReqConnection db userId connId cReqHash xContactId incognitoProfile groupLinkId
@@ -1639,7 +1639,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
       _ -> Nothing
 
     processDirectMessage :: ACommand 'Agent -> Connection -> Maybe Contact -> m ()
-    processDirectMessage agentMsg conn@Connection {connId, viaUserContactLink, customUserProfileId} = \case
+    processDirectMessage agentMsg conn@Connection {connId, viaUserContactLink, groupLinkId, customUserProfileId} = \case
       Nothing -> case agentMsg of
         CONF confId _ connInfo -> do
           -- [incognito] send saved profile
@@ -1734,6 +1734,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
               toView $ CRContactConnected ct (fmap fromLocalProfile incognitoProfile)
               setActive $ ActiveC c
               showToast (c <> "> ") "connected"
+              forM_ groupLinkId $ \_ -> probeMatchingContacts ct $ contactConnIncognito ct
               forM_ viaUserContactLink $ \userContactLinkId ->
                 withStore' (\db -> getUserContactLinkById db userId userContactLinkId) >>= \case
                   Just (UserContactLink {autoAccept = Just AutoAccept {autoReply = mc_}}, groupId_) -> do
@@ -1745,7 +1746,6 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
                       gVar <- asks idsDrg
                       groupConnIds <- createAgentConnectionAsync user CFCreateConnGrpInv True SCMInvitation
                       withStore $ \db -> createNewContactMemberAsync db gVar user groupId ct GRMember groupConnIds
-                      probeMatchingContacts ct $ contactConnIncognito ct
                   _ -> pure ()
             Just (gInfo@GroupInfo {membership}, m@GroupMember {activeConn}) ->
               when (maybe False ((== ConnReady) . connStatus) activeConn) $ do
@@ -2420,13 +2420,12 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
       toView . CRNewChatItem $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci
 
     processGroupInvitation :: Contact -> GroupInvitation -> RcvMessage -> MsgMeta -> m ()
-    processGroupInvitation ct@Contact {localDisplayName = c, activeConn = Connection {connId, customUserProfileId}} inv@GroupInvitation {fromMember = (MemberIdRole fromMemId fromRole), invitedMember = (MemberIdRole memId memRole), connRequest, groupLinkId} msg msgMeta = do
+    processGroupInvitation ct@Contact {localDisplayName = c, activeConn = Connection {customUserProfileId, groupLinkId = groupLinkId'}} inv@GroupInvitation {fromMember = (MemberIdRole fromMemId fromRole), invitedMember = (MemberIdRole memId memRole), connRequest, groupLinkId} msg msgMeta = do
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       when (fromRole < GRMember || fromRole < memRole) $ throwChatError (CEGroupContactRole c)
       when (fromMemId == memId) $ throwChatError CEGroupDuplicateMemberId
       -- [incognito] if direct connection with host is incognito, create membership using the same incognito profile
       (gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership = membership@GroupMember {groupMemberId, memberId}}, hostId) <- withStore $ \db -> createGroupInvitation db user ct inv customUserProfileId
-      groupLinkId' <- withStore' $ \db -> getConnectionGroupLinkId db user connId
       if sameGroupLinkId groupLinkId groupLinkId'
         then do
           connIds <- joinAgentConnectionAsync user True connRequest . directMessage $ XGrpAcpt memberId
@@ -2482,15 +2481,20 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
         forM_ r . uncurry $ probeMatch c1
 
     probeMatch :: Contact -> Contact -> Probe -> m ()
-    probeMatch c1@Contact {profile = p1} c2@Contact {profile = p2} probe =
-      when (fromLocalProfile p1 == fromLocalProfile p2) $ do
-        void . sendDirectContactMessage c1 $ XInfoProbeOk probe
-        mergeContacts c1 c2
+    probeMatch c1@Contact {contactId = cId1, profile = p1} c2@Contact {contactId = cId2, profile = p2} probe =
+      if profilesMatch (fromLocalProfile p1) (fromLocalProfile p2) && cId1 /= cId2
+        then do
+          void . sendDirectContactMessage c1 $ XInfoProbeOk probe
+          mergeContacts c1 c2
+        else messageWarning "probeMatch ignored: profiles don't match or same contact id"
 
     xInfoProbeOk :: Contact -> Probe -> m ()
-    xInfoProbeOk c1 probe = do
+    xInfoProbeOk c1@Contact {contactId = cId1} probe = do
       r <- withStore' $ \db -> matchSentProbe db userId c1 probe
-      forM_ r $ \c2 -> mergeContacts c1 c2
+      forM_ r $ \c2@Contact {contactId = cId2} ->
+        if cId1 /= cId2
+          then mergeContacts c1 c2
+          else messageWarning "xInfoProbeOk ignored: same contact id"
 
     -- to party accepting call
     xCallInv :: Contact -> CallId -> CallInvitation -> RcvMessage -> MsgMeta -> m ()
