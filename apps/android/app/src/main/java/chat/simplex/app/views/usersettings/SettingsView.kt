@@ -277,7 +277,11 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
 }
 
 @Composable private fun RateAppItem(uriHandler: UriHandler) {
-  SectionItemView({ uriHandler.openUri("http://play.google.com/store/apps/details?id=chat.simplex.app") }) {
+  SectionItemView({
+    runCatching { uriHandler.openUri("market://details?id=chat.simplex.app") }
+      .onFailure { uriHandler.openUri("https://play.google.com/store/apps/details?id=chat.simplex.app") }
+  }
+  ) {
     Icon(
       Icons.Outlined.Star,
       contentDescription = "Google Play",
