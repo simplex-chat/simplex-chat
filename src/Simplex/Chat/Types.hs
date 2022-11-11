@@ -516,6 +516,13 @@ instance ToJSON Profile where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
+-- check if profiles match ignoring preferences
+profilesMatch :: Profile -> Profile -> Bool
+profilesMatch
+  Profile {displayName = n1, fullName = fn1, image = i1}
+  Profile {displayName = n2, fullName = fn2, image = i2} =
+    n1 == n2 && fn1 == fn2 && i1 == i2
+
 data IncognitoProfile = NewIncognito Profile | ExistingIncognito LocalProfile
 
 type LocalAlias = Text
@@ -1124,6 +1131,7 @@ data Connection = Connection
     viaContact :: Maybe Int64, -- group member contact ID, if not direct connection
     viaUserContactLink :: Maybe Int64, -- user contact link ID, if connected via "user address"
     viaGroupLink :: Bool, -- whether contact connected via group link
+    groupLinkId :: Maybe GroupLinkId,
     customUserProfileId :: Maybe Int64,
     connType :: ConnType,
     connStatus :: ConnStatus,

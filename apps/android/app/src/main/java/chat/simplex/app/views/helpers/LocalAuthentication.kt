@@ -89,18 +89,6 @@ fun laTurnedOnAlert() = AlertManager.shared.showAlertMsg(
   generalGetString(R.string.auth_you_will_be_required_to_authenticate_when_you_start_or_resume)
 )
 
-fun laErrorToast(context: Context, errString: CharSequence) = Toast.makeText(
-  context,
-  if (errString.isNotEmpty()) String.format(generalGetString(R.string.auth_error_w_desc), errString) else generalGetString(R.string.auth_error),
-  Toast.LENGTH_SHORT
-).show()
-
-fun laFailedToast(context: Context) = Toast.makeText(
-  context,
-  generalGetString(R.string.auth_failed),
-  Toast.LENGTH_SHORT
-).show()
-
 fun laUnavailableInstructionAlert() = AlertManager.shared.showAlertMsg(
   generalGetString(R.string.auth_unavailable),
   generalGetString(R.string.auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled)

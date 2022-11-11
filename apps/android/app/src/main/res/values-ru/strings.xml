@@ -58,7 +58,7 @@
     <string name="error_receiving_file">Ошибка при получении файла</string>
     <string name="error_creating_address">Ошибка при создании адреса</string>
     <string name="contact_already_exists">Существующий контакт</string>
-    <string name="you_are_already_connected_to_vName_via_this_link">Вы уже соединены с <xliff:g id="contactName" example="Alice">%1$s!</xliff:g> через эту ссылку.</string>
+    <string name="you_are_already_connected_to_vName_via_this_link">Вы уже соединены с контактом <xliff:g id="contactName" example="Alice">%1$s!</xliff:g>.</string>
     <string name="invalid_connection_link">Ошибка в ссылке контакта</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Пожалуйста, проверьте, что вы использовали правильную ссылку, или попросите ваш контакт отправить вам новую.</string>
     <string name="connection_error_auth">Ошибка соединения (AUTH)</string>
@@ -131,13 +131,9 @@
     <string name="auth_enable_simplex_lock">Включить блокировку SimpleX</string>
     <string name="auth_disable_simplex_lock">Отключить блокировку SimpleX</string>
     <string name="auth_confirm_credential">Пройдите аутентификацию</string>
-    <string name="auth_error">Ошибка аутентификации</string>
-    <string name="auth_error_w_desc">Ошибка аутентификации: <xliff:g id="desc">%1$s</xliff:g></string>
-    <string name="auth_failed">Ошибка аутентификации</string>
     <string name="auth_unavailable">Аутентификация недоступна</string>
     <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Аутентификация устройства не включена. Вы можете включить блокировку SimpleX в Настройках после включения аутентификации.</string>
     <string name="auth_device_authentication_is_disabled_turning_off">Аутентификация устройства выключена. Отключение блокировки SimpleX Chat.</string>
-    <string name="auth_retry">Повторить</string>
     <string name="auth_stop_chat">Остановить чат</string>
     <string name="auth_open_chat_console">Открыть консоль</string>
 
@@ -357,12 +353,15 @@
     <string name="how_to_use_simplex_chat">Как использовать</string>
     <string name="markdown_help">Форматирование сообщений</string>
     <string name="markdown_in_messages">Форматирование сообщений</string>
-    <string name="chat_with_the_founder">Соединиться с разработчиками</string>
+    <string name="chat_with_the_founder">Отправьте вопросы и идеи</string>
     <string name="send_us_an_email">Отправить email</string>
     <string name="chat_lock">Блокировка SimpleX</string>
     <string name="chat_console">Консоль</string>
     <string name="smp_servers">SMP серверы</string>
     <string name="install_simplex_chat_for_terminal"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> для терминала</string>
+    <string name="star_on_github">Поставить звездочку в GitHub</string>
+    <string name="contribute">Внести свой вклад</string>
+    <string name="rate_the_app">Оценить приложение</string>
     <string name="use_simplex_chat_servers__question">Использовать серверы предосталенные <xliff:g id="appNameFull">SimpleX Chat</xliff:g>?</string>
     <string name="saved_SMP_servers_will_be_removed">Сохраненные SMP серверы будут удалены.</string>
     <string name="your_SMP_servers">Ваши SMP серверы</string>
@@ -566,6 +565,7 @@
     <string name="settings_section_title_you">ВЫ</string>
     <string name="settings_section_title_settings">НАСТРОЙКИ</string>
     <string name="settings_section_title_help">ПОМОЩЬ</string>
+    <string name="settings_section_title_support">ПОДДЕРЖАТЬ SIMPLEX CHAT</string>
     <string name="settings_section_title_develop">ДЛЯ РАЗРАБОТЧИКОВ</string>
     <string name="settings_section_title_device">УСТРОЙСТВО</string>
     <string name="settings_section_title_chats">ЧАТЫ</string>

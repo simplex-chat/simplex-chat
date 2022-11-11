@@ -379,9 +379,13 @@ func apiConnect(connReq: String) async -> ConnReqType? {
     case .sentConfirmation: return .invitation
     case .sentInvitation: return .contact
     case let .contactAlreadyExists(contact):
+        let m = ChatModel.shared
+        if let c = m.getContactChat(contact.contactId) {
+            await MainActor.run { m.chatId = c.id }
+        }
         am.showAlertMsg(
             title: "Contact already exists",
-            message: "You are already connected to \(contact.displayName) via this link."
+            message: "You are already connected to \(contact.displayName)."
         )
         return nil
     case .chatCmdError(.error(.invalidConnReq)):

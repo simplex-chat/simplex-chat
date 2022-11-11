@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import StoreKit
 import SimpleXChat
 
 let simplexTeamURL = URL(string: "simplex:/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D")!
@@ -70,6 +71,7 @@ func setGroupDefaults() {
 struct SettingsView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var sceneDelegate: SceneDelegate
     @Binding var showSettings: Bool
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State private var settingsSheet: SettingsSheet?
@@ -179,35 +181,54 @@ struct SettingsView: View {
                         settingsRow("textformat") { Text("Markdown in messages") }
                     }
                     settingsRow("number") {
-                        Button {
+                        Button("Send questions and ideas") {
                             showSettings = false
                             DispatchQueue.main.async {
                                 UIApplication.shared.open(simplexTeamURL)
                             }
-                        } label: {
-                            Text("Chat with the developers")
                         }
                     }
                     .disabled(chatModel.chatRunning != true)
                     settingsRow("envelope") { Text("[Send us email](mailto:chat@simplex.chat)") }
                 }
 
-                Section("Develop") {
-                    NavigationLink {
-                        TerminalView()
-                    } label: {
-                        settingsRow("terminal") { Text("Chat console") }
-                    }
-                    settingsRow("chevron.left.forwardslash.chevron.right") {
-                        Toggle("Developer tools", isOn: $developerTools)
+                Section("Support SimpleX Chat") {
+                    settingsRow("keyboard") { Text("[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)") }
+                    settingsRow("star") {
+                        Button("Rate the app") {
+                            if let scene = sceneDelegate.windowScene {
+                                SKStoreReviewController.requestReview(in: scene)
+                            }
+                        }
                     }
                     ZStack(alignment: .leading) {
                         Image(colorScheme == .dark ? "github_light" : "github")
                             .resizable()
                             .frame(width: 24, height: 24)
                             .opacity(0.5)
-                        Text("Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)")
+                        Text("[Star on GitHub](https://github.com/simplex-chat/simplex-chat)")
                             .padding(.leading, indent)
+                    }
+                }
+
+                Section("Develop") {
+                    settingsRow("chevron.left.forwardslash.chevron.right") {
+                        Toggle("Developer tools", isOn: $developerTools)
+                    }
+                    if developerTools {
+                        NavigationLink {
+                            TerminalView()
+                        } label: {
+                            settingsRow("terminal") { Text("Chat console") }
+                        }
+                        ZStack(alignment: .leading) {
+                            Image(colorScheme == .dark ? "github_light" : "github")
+                                .resizable()
+                                .frame(width: 24, height: 24)
+                                .opacity(0.5)
+                            Text("Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)")
+                                .padding(.leading, indent)
+                        }
                     }
 //                    NavigationLink {
 //                        ExperimentalFeaturesView()
