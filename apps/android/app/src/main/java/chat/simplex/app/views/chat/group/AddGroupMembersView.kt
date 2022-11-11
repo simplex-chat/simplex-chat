@@ -247,16 +247,18 @@ fun ContactCheckRow(
     icon = Icons.Outlined.Circle
     iconColor = HighOrLowlight
   }
-  SectionItemView(click = {
-    if (!enabled) return@SectionItemView
-
-    if (prohibitedToInviteIncognito) {
-      showProhibitedToInviteIncognitoAlertDialog()
-    } else if (!checked)
-      addContact(contact.apiId)
-    else
-      removeContact(contact.apiId)
-  }) {
+  SectionItemView(
+    click = if (enabled) {
+      {
+        if (prohibitedToInviteIncognito) {
+          showProhibitedToInviteIncognitoAlertDialog()
+        } else if (!checked)
+          addContact(contact.apiId)
+        else
+          removeContact(contact.apiId)
+      }
+    } else null
+  ) {
     ProfileImage(size = 36.dp, contact.image)
     Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
     Text(
