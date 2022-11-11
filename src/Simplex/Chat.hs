@@ -2482,7 +2482,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
 
     probeMatch :: Contact -> Contact -> Probe -> m ()
     probeMatch c1@Contact {contactId = ctId1, profile = p1} c2@Contact {contactId = ctId2, profile = p2} probe =
-      when (fromLocalProfile p1 == fromLocalProfile p2) $ do
+      when (profilesMatch (fromLocalProfile p1) (fromLocalProfile p2)) $ do
         void . sendDirectContactMessage c1 $ XInfoProbeOk probe
         unless (ctId1 == ctId2) $ mergeContacts c1 c2
 

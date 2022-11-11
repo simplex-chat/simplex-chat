@@ -516,6 +516,13 @@ instance ToJSON Profile where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
+-- check if profiles match ignoring preferences
+profilesMatch :: Profile -> Profile -> Bool
+profilesMatch
+  Profile {displayName = dn1, fullName = fn1, image = i1}
+  Profile {displayName = dn2, fullName = fn2, image = i2} =
+    dn1 == dn2 && fn1 == fn2 && i1 == i2
+
 data IncognitoProfile = NewIncognito Profile | ExistingIncognito LocalProfile
 
 type LocalAlias = Text
