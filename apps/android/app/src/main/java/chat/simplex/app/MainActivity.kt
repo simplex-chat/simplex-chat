@@ -346,7 +346,7 @@ fun MainPage(
               var currentChatId by rememberSaveable { mutableStateOf(chatModel.chatId.value) }
               val offset = remember { Animatable(if (chatModel.chatId.value == null) 0f else maxWidth.value) }
               var allowHide by rememberSaveable { mutableStateOf(false) }
-              Column(
+              Box(
                 Modifier
                   .graphicsLayer {
                     allowHide = offset.value == 0f && chatModel.chatId.value == null
@@ -392,9 +392,9 @@ fun MainPage(
                     }
                 }
               }
-              Column(Modifier.graphicsLayer { translationX = maxWidth.toPx() - offset.value.dp.toPx() }) {
+              Box (Modifier.graphicsLayer { translationX = maxWidth.toPx() - offset.value.dp.toPx() }) Box2@ {
                 if (currentChatId != null) {
-                  ChatView(currentChatId ?: return@Column, chatModel, onComposed)
+                  ChatView(currentChatId ?: return@Box2, chatModel, onComposed)
                 }
               }
             }
