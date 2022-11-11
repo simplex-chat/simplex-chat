@@ -42,6 +42,7 @@
 - [Privacy: technical details and limitations](#privacy-technical-details-and-limitations)
 - [For developers](#for-developers)
 - [Roadmap](#roadmap)
+- [Contribute](#contribute)
 - [Help us with donations](#help-us-with-donations)
 - [Disclaimers, Security contact, License](#disclaimers)
 
@@ -199,7 +200,15 @@ If you are considering developing with SimpleX platform please get in touch for 
 - Channels server for large groups and broadcast channels.
 - Media server to optimize sending large files to groups.
 - Desktop client.
-- Using the same profile on multiple devices.
+
+## Contribute
+
+We would love to have you join the development! You can contribute to SimpleX Chat with:
+
+- developing features - please connect to us via chat so we can help you get started.
+- writing a tutorial or recipes about hosting servers, chat bot automations, etc.
+- translate UI to some language - we are currently setting up the UI to simplify it, please get in touch and let us know if you would be able to support and update the translations.
+- translate website homepage - there is a lot of content we would like to share, it would help to bring the new users.
 
 ## Help us with donations
 

@@ -428,11 +428,6 @@
         <target>Der Chat ist beendet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat with the developers" xml:space="preserve">
-        <source>Chat with the developers</source>
-        <target>Chatten Sie mit den Entwicklern</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Chats" xml:space="preserve">
         <source>Chats</source>
         <target>Chats</target>
@@ -1888,6 +1883,11 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>Push-Benachrichtigungen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Rate the app" xml:space="preserve">
+        <source>Rate the app</source>
+        <target>*** Rate the app</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Read" xml:space="preserve">
         <source>Read</source>
         <target>Lesen</target>
@@ -2103,6 +2103,11 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>Benachrichtigungen senden:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Send questions and ideas" xml:space="preserve">
+        <source>Send questions and ideas</source>
+        <target>*** Send questions and ideas</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Sender cancelled file transfer." xml:space="preserve">
         <source>Sender cancelled file transfer.</source>
         <target>Der Absender hat die Dateiübertragung abgebrochen.</target>
@@ -2246,6 +2251,11 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       <trans-unit id="Stop chat?" xml:space="preserve">
         <source>Stop chat?</source>
         <target>Chat beenden?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Support SimpleX Chat" xml:space="preserve">
+        <source>Support SimpleX Chat</source>
+        <target>*** Support SimpleX Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="System" xml:space="preserve">
@@ -2617,9 +2627,9 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>Sie haben die Verbindung akzeptiert</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You are already connected to %@ via this link." xml:space="preserve">
-        <source>You are already connected to %@ via this link.</source>
-        <target>Sie sind bereits über diesen Link mit %@ verbunden.</target>
+      <trans-unit id="You are already connected to %@." xml:space="preserve">
+        <source>You are already connected to %@.</source>
+        <target>Sie sind bereits mit %@ verbunden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are connected to the server used to receive messages from this contact." xml:space="preserve">
@@ -2866,9 +2876,19 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>Meine Einstellungen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" xml:space="preserve">
+        <source>[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)</source>
+        <target>*** [Contribute](https://github.com/simplex-chat/simplex-chat#contribute)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="[Send us email](mailto:chat@simplex.chat)" xml:space="preserve">
         <source>[Send us email](mailto:chat@simplex.chat)</source>
         <target>[Senden Sie uns eine E-Mail](mailto:chat@simplex.chat)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" xml:space="preserve">
+        <source>[Star on GitHub](https://github.com/simplex-chat/simplex-chat)</source>
+        <target>*** [Star on GitHub](https://github.com/simplex-chat/simplex-chat)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="_italic_" xml:space="preserve">

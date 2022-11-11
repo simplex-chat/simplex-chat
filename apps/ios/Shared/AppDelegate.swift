@@ -102,9 +102,11 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
 class SceneDelegate: NSObject, ObservableObject, UIWindowSceneDelegate {
     var window: UIWindow?
+    var windowScene: UIWindowScene?
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         guard let windowScene = scene as? UIWindowScene else { return }
+        self.windowScene = windowScene
         window = windowScene.keyWindow
         window?.tintColor = UIColor(cgColor: getUIAccentColorDefault())
         window?.overrideUserInterfaceStyle = getUserInterfaceStyleDefault()
