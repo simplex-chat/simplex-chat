@@ -2489,10 +2489,10 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
         else messageWarning "probeMatch ignored: profiles don't match or same contact id"
 
     xInfoProbeOk :: Contact -> Probe -> m ()
-    xInfoProbeOk c1@Contact {contactId = ctId1} probe = do
+    xInfoProbeOk c1@Contact {contactId = cId1} probe = do
       r <- withStore' $ \db -> matchSentProbe db userId c1 probe
-      forM_ r $ \c2@Contact {contactId = ctId2} ->
-        if ctId1 /= ctId2
+      forM_ r $ \c2@Contact {contactId = cId2} ->
+        if cId1 /= cId2
           then mergeContacts c1 c2
           else messageWarning "xInfoProbeOk ignored: same contact id"
 
