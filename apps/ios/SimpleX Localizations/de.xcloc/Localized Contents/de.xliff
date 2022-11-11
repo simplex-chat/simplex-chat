@@ -428,11 +428,6 @@
         <target>Der Chat ist beendet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat with the developers" xml:space="preserve">
-        <source>Chat with the developers</source>
-        <target>Chatten Sie mit den Entwicklern</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Chats" xml:space="preserve">
         <source>Chats</source>
         <target>Chats</target>
@@ -2630,11 +2625,6 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
       <trans-unit id="You accepted connection" xml:space="preserve">
         <source>You accepted connection</source>
         <target>Sie haben die Verbindung akzeptiert</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="You are already connected to %@ via this link." xml:space="preserve">
-        <source>You are already connected to %@ via this link.</source>
-        <target>Sie sind bereits über diesen Link mit %@ verbunden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are already connected to %@." xml:space="preserve">

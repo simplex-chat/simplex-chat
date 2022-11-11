@@ -315,9 +315,6 @@
 "Chat is stopped" = "Der Chat ist beendet";
 
 /* No comment provided by engineer. */
-"Chat with the developers" = "Chatten Sie mit den Entwicklern";
-
-/* No comment provided by engineer. */
 "Chats" = "Chats";
 
 /* No comment provided by engineer. */
@@ -1837,9 +1834,6 @@
 
 /* No comment provided by engineer. */
 "You accepted connection" = "Sie haben die Verbindung akzeptiert";
-
-/* No comment provided by engineer. */
-"You are already connected to %@ via this link." = "Sie sind bereits über diesen Link mit %@ verbunden.";
 
 /* No comment provided by engineer. */
 "You are already connected to %@." = "Sie sind bereits mit %@ verbunden.";

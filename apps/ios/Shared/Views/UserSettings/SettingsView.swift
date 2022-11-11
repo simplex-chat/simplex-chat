@@ -226,7 +226,7 @@ struct SettingsView: View {
                                 .resizable()
                                 .frame(width: 24, height: 24)
                                 .opacity(0.5)
-                            Text("Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat/blob/stable/docs/CLI.md)")
+                            Text("Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)")
                                 .padding(.leading, indent)
                         }
                     }

@@ -428,11 +428,6 @@
         <target>Chat is stopped</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat with the developers" xml:space="preserve">
-        <source>Chat with the developers</source>
-        <target>Chat with the developers</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Chats" xml:space="preserve">
         <source>Chats</source>
         <target>Chats</target>
@@ -2630,11 +2625,6 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="You accepted connection" xml:space="preserve">
         <source>You accepted connection</source>
         <target>You accepted connection</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="You are already connected to %@ via this link." xml:space="preserve">
-        <source>You are already connected to %@ via this link.</source>
-        <target>You are already connected to %@ via this link.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are already connected to %@." xml:space="preserve">
