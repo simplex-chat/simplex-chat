@@ -13,17 +13,17 @@ import javax.crypto.spec.GCMParameterSpec
 @SuppressLint("ObsoleteSdkInt")
 internal class Cryptor {
   private var keyStore: KeyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
-  private var warningIsShown = false
+  private var warningShown = false
 
   fun decryptData(data: ByteArray, iv: ByteArray, alias: String): String? {
     val secretKey = getSecretKey(alias)
     if (secretKey == null) {
-      if (!warningIsShown) {
+      if (!warningShown) {
         // Repeated calls will not show the alert again
-        warningIsShown = true
+        warningShown = true
         AlertManager.shared.showAlertMsg(
           title = generalGetString(R.string.wrong_passphrase),
-          text = generalGetString(R.string.restored_from_backup_broken_text)
+          text = generalGetString(R.string.restore_passphrase_not_found_desc)
         )
       }
       return null
