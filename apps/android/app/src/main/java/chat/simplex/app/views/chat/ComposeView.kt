@@ -10,6 +10,7 @@ import android.graphics.ImageDecoder.DecodeException
 import android.graphics.drawable.AnimatedImageDrawable
 import android.net.Uri
 import android.provider.MediaStore
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
@@ -66,7 +67,7 @@ data class ComposeState(
   val inProgress: Boolean = false,
   val useLinkPreviews: Boolean
 ) {
-  constructor(editingItem: ChatItem, useLinkPreviews: Boolean): this (
+  constructor(editingItem: ChatItem, useLinkPreviews: Boolean): this(
     editingItem.content.text,
     chatItemPreview(editingItem),
     ComposeContextItem.EditingItem(editingItem),
