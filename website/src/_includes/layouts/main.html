@@ -7,12 +7,18 @@
         <title>{{ title }}</title>
         <meta name="description" content="{{ description }}"/>
         <meta name="Content-Type" content="text/html;charset=utf-8"/>
+        {% if path %}
+            <meta http-equiv="onion-location" content="{% cfg 'onionLocation' %}{{ path }}" />
+            <meta property="og:url" content="{% cfg 'siteLocation' %}{{ path }}" />
+        {% else %}
+            <meta http-equiv="onion-location" content="{% cfg 'onionLocation' %}/" />
+            <meta property="og:url" content="{% cfg 'siteLocation' %}/" />
+        {% endif %}
         <meta property="og:type" content="website"/>
         <meta property="og:title" content="{{ title }}"/>
         <meta property="og:description" content="{{ description }}"/>
-        <meta property="og:image" content="https://simplex.chat/img/share_simplex.png"/>
+        <meta property="og:image" content="{% cfg 'siteLocation' %}/img/share_simplex.png"/>
         <meta name="twitter:card" content="summary"/>
-        <meta property="og:url" content="{{ ogURL }}" />
         <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico"/>
         
         <link rel="stylesheet" href="/css/swiper-bundle.min.css">

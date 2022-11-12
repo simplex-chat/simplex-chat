@@ -158,8 +158,8 @@ fun SettingsLayout(
       SectionView(stringResource(R.string.settings_section_title_develop)) {
         val devTools = remember { mutableStateOf(developerTools.get()) }
         SettingsPreferenceItem(Icons.Outlined.Construction, stringResource(R.string.settings_developer_tools), developerTools, devTools)
+        SectionDivider()
         if (devTools.value) {
-          SectionDivider()
           ChatConsoleItem(showTerminal)
           SectionDivider()
           InstallTerminalAppItem(uriHandler)

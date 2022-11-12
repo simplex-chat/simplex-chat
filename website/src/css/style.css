@@ -155,8 +155,8 @@ html {
 /* Nav and Menu */
 #why-simplex::before,
 #features::before,
-#simplex-privacy::before,
-#simplex-network::before {
+#privacy::before,
+#network::before {
   display: block;
   content: " ";
   margin-top: -26px;
