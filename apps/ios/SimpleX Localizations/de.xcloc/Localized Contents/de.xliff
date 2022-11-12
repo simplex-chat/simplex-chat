@@ -1885,7 +1885,7 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       </trans-unit>
       <trans-unit id="Rate the app" xml:space="preserve">
         <source>Rate the app</source>
-        <target>*** Rate the app</target>
+        <target>Bewerte die App</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Read" xml:space="preserve">
@@ -2105,7 +2105,7 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       </trans-unit>
       <trans-unit id="Send questions and ideas" xml:space="preserve">
         <source>Send questions and ideas</source>
-        <target>*** Send questions and ideas</target>
+        <target>Senden Sie Fragen und Ideen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sender cancelled file transfer." xml:space="preserve">
@@ -2255,7 +2255,7 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       </trans-unit>
       <trans-unit id="Support SimpleX Chat" xml:space="preserve">
         <source>Support SimpleX Chat</source>
-        <target>*** Support SimpleX Chat</target>
+        <target>Unterstützen SimpleX Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="System" xml:space="preserve">
@@ -2395,7 +2395,7 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       </trans-unit>
       <trans-unit id="This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." xml:space="preserve">
         <source>This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member).</source>
-        <target>Diese Funktion ist experimentell! Sie wird nur funktionieren, wenn der Kontakt ebenfalls die SimpleX-Version 4.2 installiert hat. Sobald der Address-Wechsel abgeschlossen ist, sollten Sie die Nachricht im Chat-Verlauf sehen. Bitte prüfen Sie, ob Sie weiterhin Nachrichten von diesem Kontakt (oder Gruppenmitglied) empfangen können.</target>
+        <target>Diese Funktion ist experimentell! Sie wird nur funktionieren, wenn der Kontakt ebenfalls die SimpleX-Version 4.2 installiert hat. Sobald der Adress-Wechsel abgeschlossen ist, sollten Sie die Nachricht im Chat-Verlauf sehen. Bitte prüfen Sie, ob Sie weiterhin Nachrichten von diesem Kontakt (oder Gruppenmitglied) empfangen können.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This group no longer exists." xml:space="preserve">
@@ -2878,7 +2878,7 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
       </trans-unit>
       <trans-unit id="[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" xml:space="preserve">
         <source>[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)</source>
-        <target>*** [Contribute](https://github.com/simplex-chat/simplex-chat#contribute)</target>
+        <target>[Beitragen](https://github.com/simplex-chat/simplex-chat#contribute)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="[Send us email](mailto:chat@simplex.chat)" xml:space="preserve">
@@ -2888,7 +2888,7 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
       </trans-unit>
       <trans-unit id="[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" xml:space="preserve">
         <source>[Star on GitHub](https://github.com/simplex-chat/simplex-chat)</source>
-        <target>*** [Star on GitHub](https://github.com/simplex-chat/simplex-chat)</target>
+        <target>[Stern auf GitHub](https://github.com/simplex-chat/simplex-chat)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="_italic_" xml:space="preserve">

@@ -17,7 +17,7 @@ import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isDigit)
-import Data.List (isPrefixOf)
+import Data.List (isPrefixOf, isSuffixOf)
 import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
@@ -3518,18 +3518,20 @@ testGroupLink =
       alice <## "cath_1 (Catherine): accepting request to join group #team..."
       -- if contact existed it is merged
       concurrentlyN_
-        [ do
-            alice <## "cath_1 (Catherine): contact is connected"
-            alice <## "cath_1 invited to group #team via your group link"
-            alice <## "contact cath_1 is merged into cath"
-            alice <## "use @cath <message> to send messages"
-            alice <## "#team: cath joined the group",
-          do
-            cath <## "alice_1 (Alice): contact is connected"
-            cath <## "contact alice_1 is merged into alice"
-            cath <## "use @alice <message> to send messages"
-            cath <## "#team: you joined the group"
-            cath <## "#team: member bob (Bob) is connected",
+        [ alice
+            <### [ "cath_1 (Catherine): contact is connected",
+                   "contact cath_1 is merged into cath",
+                   "use @cath <message> to send messages",
+                   EndsWith "invited to group #team via your group link",
+                   EndsWith "joined the group"
+                 ],
+          cath
+            <### [ "alice_1 (Alice): contact is connected",
+                   "contact alice_1 is merged into alice",
+                   "use @alice <message> to send messages",
+                   "#team: you joined the group",
+                   "#team: member bob (Bob) is connected"
+                 ],
           do
             bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
             bob <## "#team: new member cath is connected"
@@ -3596,17 +3598,19 @@ testGroupLinkDeleteGroupRejoin =
       bob <## "connection request sent!"
       alice <## "bob_1 (Bob): accepting request to join group #team..."
       concurrentlyN_
-        [ do
-            alice <## "bob_1 (Bob): contact is connected"
-            alice <## "bob_1 invited to group #team via your group link"
-            alice <## "contact bob_1 is merged into bob"
-            alice <## "use @bob <message> to send messages"
-            alice <## "#team: bob joined the group",
-          do
-            bob <## "alice_1 (Alice): contact is connected"
-            bob <## "contact alice_1 is merged into alice"
-            bob <## "use @alice <message> to send messages"
-            bob <## "#team: you joined the group"
+        [ alice
+            <### [ "bob_1 (Bob): contact is connected",
+                   "contact bob_1 is merged into bob",
+                   "use @bob <message> to send messages",
+                   EndsWith "invited to group #team via your group link",
+                   EndsWith "joined the group"
+                 ],
+          bob
+            <### [ "alice_1 (Alice): contact is connected",
+                   "contact alice_1 is merged into alice",
+                   "use @alice <message> to send messages",
+                   "#team: you joined the group"
+                 ]
         ]
       alice #> "#team hello"
       bob <# "#team alice> hello"
@@ -3998,7 +4002,7 @@ cc <##.. ls = do
   unless prefix $ print ("expected to start from one of: " <> show ls, ", got: " <> l)
   prefix `shouldBe` True
 
-data ConsoleResponse = ConsoleString String | WithTime String
+data ConsoleResponse = ConsoleString String | WithTime String | EndsWith String
   deriving (Show)
 
 instance IsString ConsoleResponse where fromString = ConsoleString
@@ -4017,6 +4021,7 @@ getInAnyOrder f cc ls = do
     expected l = \case
       ConsoleString s -> l == s
       WithTime s -> dropTime_ l == Just s
+      EndsWith s -> s `isSuffixOf` l
 
 (<###) :: TestCC -> [ConsoleResponse] -> Expectation
 (<###) = getInAnyOrder id

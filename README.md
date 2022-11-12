@@ -186,20 +186,29 @@ If you are considering developing with SimpleX platform please get in touch for 
 - ✅ Chat database encryption.
 - ✅ Automatic chat history deletion.
 - ✅ Links to join groups and improve groups stability.
-- 🏗 SMP queue redundancy and rotation.
-- 🏗 Voice messages.
-- Feeds/broadcasts.
-- Disappearing messages, with mutual agreement.
+- 🏗 SMP queue redundancy and rotation (manual is supported).
+- 🏗 Voice messages (with recipient opt-out per contact).
+- 🏗 Basic authentication for SMP servers (to authorize creating new queues).
+- View deleted messages, full message deletion by sender (with recipient opt-in per contact).
+- Block screenshots and view in recent apps.
+- Optionally avoid re-using the same TCP session for multiple connections.
+- Access password/pin (with optional alternative access password).
+- Ephemeral/disappearing/OTR conversations with the existing contacts.
+- Media server to optimize sending large files to groups.
 - Video messages.
+- Message delivery confirmation (with sender opt-in or opt-out per contact, TBC).
+- Multiple user profiles in the same chat database.
+- Advanced server configuration.
+- Feeds/broadcasts.
+- Unconfirmed: disappearing messages (with recipient opt-in per-contact).
 - Web widgets for custom interactivity in the chats.
-- Message delivery confirmation.
+- Programmable chat automations / rules (automatic replies/forward/deletion/sending, reminders, etc.).
 - Supporting the same profile on multiple devices.
+- Desktop client.
 - Privacy-preserving identity server for optional DNS-based contact/group addresses to simplify connection and discovery, but not used to deliver messages:
   - keep all your contacts and groups even if you lose the domain.
   - the server doesn't have information about your contacts and groups.
 - Channels server for large groups and broadcast channels.
-- Media server to optimize sending large files to groups.
-- Desktop client.
 
 ## Contribute
 
