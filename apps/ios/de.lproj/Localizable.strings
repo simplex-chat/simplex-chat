@@ -29,13 +29,13 @@
 ")" = ")";
 
 /* No comment provided by engineer. */
-"[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "*** [Contribute](https://github.com/simplex-chat/simplex-chat#contribute)";
+"[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Beitragen](https://github.com/simplex-chat/simplex-chat#contribute)";
 
 /* No comment provided by engineer. */
 "[Send us email](mailto:chat@simplex.chat)" = "[Senden Sie uns eine E-Mail](mailto:chat@simplex.chat)";
 
 /* No comment provided by engineer. */
-"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "*** [Star on GitHub](https://github.com/simplex-chat/simplex-chat)";
+"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Stern auf GitHub](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
 "**Add new contact**: to create your one-time QR Code for your contact." = "**Fügen Sie einen neuen Kontakt hinzu**: Erzeugen Sie einen Einmal-QR-Code oder -Link für Ihren Kontakt.";
@@ -1326,7 +1326,7 @@
 "Push notifications" = "Push-Benachrichtigungen";
 
 /* No comment provided by engineer. */
-"Rate the app" = "*** Rate the app";
+"Rate the app" = "Bewerte die App";
 
 /* No comment provided by engineer. */
 "Read" = "Lesen";
@@ -1476,7 +1476,7 @@
 "Send notifications:" = "Benachrichtigungen senden:";
 
 /* No comment provided by engineer. */
-"Send questions and ideas" = "*** Send questions and ideas";
+"Send questions and ideas" = "Senden Sie Fragen und Ideen";
 
 /* No comment provided by engineer. */
 "Sender cancelled file transfer." = "Der Absender hat die Dateiübertragung abgebrochen.";
@@ -1578,7 +1578,7 @@
 "strike" = "durchstreichen";
 
 /* No comment provided by engineer. */
-"Support SimpleX Chat" = "*** Support SimpleX Chat";
+"Support SimpleX Chat" = "Unterstützen SimpleX Chat";
 
 /* No comment provided by engineer. */
 "System" = "System";
