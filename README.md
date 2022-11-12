@@ -42,6 +42,7 @@
 - [Privacy: technical details and limitations](#privacy-technical-details-and-limitations)
 - [For developers](#for-developers)
 - [Roadmap](#roadmap)
+- [Join a user group](#join-a-user-group)
 - [Contribute](#contribute)
 - [Help us with donations](#help-us-with-donations)
 - [Disclaimers, Security contact, License](#disclaimers)
@@ -209,6 +210,18 @@ If you are considering developing with SimpleX platform please get in touch for 
   - keep all your contacts and groups even if you lose the domain.
   - the server doesn't have information about your contacts and groups.
 - Channels server for large groups and broadcast channels.
+
+## Join a user group
+
+You can join a general group with more than a 100 members: [#SimpleX-Group](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FWHV0YU1sYlU7NqiEHkHDB6gxO1ofTync%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAWbebOqVYuBXaiqHcXYjEHCpYi6VzDlu6CVaijDTmsQU%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22mL-7Divb94GGmGmRBef5Dg%3D%3D%22%7D).
+
+You can also join groups by countries/languages, they are smaller: [\#SimpleX-DE](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FmIorjTDPG24jdLKXwutS6o9hdQQRZwfQ%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEA9N0BZaECrAw3we3S1Wq4QO7NERBuPt9447immrB50wo%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22S8aISlOgkTMytSox9gAM2Q%3D%3D%22%7D) (German), [\#SimpleX-US](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FlTWmQplLEaoJyHnEL1-B3f2PtDsikcTs%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEA-hMBlsQjNxK2vaVhqW_UyAVtuoYqgYTigK4B9dJ9CGc%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22G0UtRHIn0TmPoo08h_cbTA%3D%3D%22%7D) (US/English), [\#SimpleX-France](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2F11r6XyjwVMj0WDIUMbmNDXO996M_EN_1%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAXDmc2Lrj9WQOjEcWa0DeQHF3HcYOp9b68s8M_BJ7gEk%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22EZCeSYpeIBkaQwCcpcF00w%3D%3D%22%7D), [\#SimpleX-RU](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FZSYM278L5WoZiApx3925EAjSXcsAVNVu%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEA7RJ2wfT8zdfOLyE5OtWLEAPowj-q6F2HB0ExbATw8Gk%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22fsVoklNGptt7n-droqJYUQ%3D%3D%22%7D) (Russian), [#SimpleX-NL](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FmP0LbswSbfxoVkkxiWE2NYnBCgZ9Snvj%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAVwZuSsw4Mf52EaBNdNI3RebsLm0jg65ZIkcmH9E5uy8%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22M9xIULUNZx51Wsa5Kdb0Sg%3D%3D%22%7D) (Netherlands/Dutch), [#SimpleX-IT](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FaZ_wjh6QAYHB-LjyGtp8bllkzoq880u-%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEA-_Wulzc3j16i7t77XJ5wgwxeW8_Ea8GxetMo7K4MgjI%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22QWmXdrFzIeMd2OoEPMFkBQ%3D%3D%22%7D) (Italian).
+
+You can join these groups either by opening these links in the app or by opening them in desktop browser and scanning QR code.
+
+Let me know if you'd like to add some other countries to the list.
+
+Join via the app to share what's going on and ask any questions!
 
 ## Contribute
 
