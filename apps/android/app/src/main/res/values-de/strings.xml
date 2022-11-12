@@ -185,6 +185,8 @@
   <string name="icon_descr_cancel_file_preview">Dateivorschau abbrechen</string>
   <string name="images_limit_title">Zu viele Bilder!</string>
   <string name="images_limit_desc">Es können nur 10 Bilder auf einmal gesendet werden</string>
+  <string name="image_decoding_exception_title">***Decoding error</string>
+  <string name="image_decoding_exception_desc">***The image cannot be decoded. Please, try a different image or contact developers.</string>
 
   <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
   <string name="image_descr">Bild</string>
