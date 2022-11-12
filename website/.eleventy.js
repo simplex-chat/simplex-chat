@@ -5,7 +5,7 @@ const slugify = require("slugify")
 const uri = require('fast-uri')
 
 const globalConfig = {
-  onionLocation: "https://isdb4l77sjqoy2qq7ipum6x3at6hyn3jmxfx4zdhc72ufbmuq4ilwkqd.onion",
+  onionLocation: "http://isdb4l77sjqoy2qq7ipum6x3at6hyn3jmxfx4zdhc72ufbmuq4ilwkqd.onion",
   siteLocation: "https://simplex.chat"
 }
 
