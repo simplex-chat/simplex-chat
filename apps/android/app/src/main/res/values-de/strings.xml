@@ -221,7 +221,7 @@
   <string name="icon_descr_server_status_error">Fehler</string>
   <string name="icon_descr_server_status_pending">Ausstehend</string>
   <string name="switch_receiving_address_question">Empfängeradresse wechseln?</string>
-  <string name="switch_receiving_address_desc">Diese Funktion ist experimentell! Sie wird nur funktionieren, wenn der Kontakt ebenfalls die SimpleX-Version 4.2 installiert hat. Sobald der Address-Wechsel abgeschlossen ist, sollten Sie die Nachricht im Chat-Verlauf sehen. Bitte prüfen Sie, ob Sie weiterhin Nachrichten von diesem Kontakt (oder Gruppenmitglied) empfangen können.</string>
+  <string name="switch_receiving_address_desc">Diese Funktion ist experimentell! Sie wird nur funktionieren, wenn der Kontakt ebenfalls die SimpleX-Version 4.2 installiert hat. Sobald der Adress-Wechsel abgeschlossen ist, sollten Sie die Nachricht im Chat-Verlauf sehen. Bitte prüfen Sie, ob Sie weiterhin Nachrichten von diesem Kontakt (oder Gruppenmitglied) empfangen können.</string>
 
   <!-- Message Actions - SendMsgView.kt -->
   <string name="icon_descr_send_message">Nachricht senden</string>
