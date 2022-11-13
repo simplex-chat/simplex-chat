@@ -158,7 +158,7 @@ struct DatabaseView: View {
 
             Section {
                 Picker("Delete messages after", selection: $chatItemTTL) {
-                    ForEach([ChatItemTTL.none, ChatItemTTL.month, ChatItemTTL.week, ChatItemTTL.day]) { ttl in
+                    ForEach(ChatItemTTL.values) { ttl in
                         Text(ttl.deleteAfterText).tag(ttl)
                     }
                     if case .seconds = chatItemTTL {
