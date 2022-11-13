@@ -85,29 +85,32 @@ move <binary> %APPDATA%/local/bin/simplex-chat.exe
 On Linux, you can build the chat executable using [docker build with custom output](https://docs.docker.com/engine/reference/commandline/build/#custom-build-outputs):
 
 ```shell
-$ git clone git@github.com:simplex-chat/simplex-chat.git
-$ cd simplex-chat
-$ git checkout stable
-$ DOCKER_BUILDKIT=1 docker build --output ~/.local/bin .
+git clone git@github.com:simplex-chat/simplex-chat.git
+cd simplex-chat
+git checkout stable
+DOCKER_BUILDKIT=1 docker build --output ~/.local/bin .
 ```
 
-> **Please note:** If you encounter `` version `GLIBC_2.28' not found `` error, rebuild it with `haskell:8.10.4-stretch` base image (change it in your local [Dockerfile](Dockerfile)).
+> **Please note:** If you encounter `` version `GLIBC_2.28' not found `` error, rebuild it with `haskell:8.10.7-stretch` base image (change it in your local [Dockerfile](Dockerfile)).
 
-#### Using Haskell stack
+#### In any OS
 
-Install [Haskell stack](https://docs.haskellstack.org/en/stable/README/):
+1. Install [Haskell GHCup](https://www.haskell.org/ghcup/):
 
 ```shell
-curl -sSL https://get.haskellstack.org/ | sh
+curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
 ```
 
-and build the project:
+2. You will only need GHC 8.10.7 and cabal, HLS is only needed if you plan to contribute code.
+
+3. Build the project:
 
 ```shell
-$ git clone git@github.com:simplex-chat/simplex-chat.git
-$ cd simplex-chat
-$ git checkout stable
-$ stack install
+git clone git@github.com:simplex-chat/simplex-chat.git
+cd simplex-chat
+git checkout stable
+cabal update
+cabal install
 ```
 
 ## Usage
