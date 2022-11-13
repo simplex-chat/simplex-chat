@@ -95,15 +95,13 @@ DOCKER_BUILDKIT=1 docker build --output ~/.local/bin .
 
 #### In any OS
 
-1. Install [Haskell GHCup](https://www.haskell.org/ghcup/):
+1. Install [Haskell GHCup](https://www.haskell.org/ghcup/), GHC 8.10.7 and cabal:
 
 ```shell
 curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
 ```
 
-2. You will only need GHC 8.10.7 and cabal, HLS is only needed if you plan to contribute code.
-
-3. Build the project:
+2. Build the project:
 
 ```shell
 git clone git@github.com:simplex-chat/simplex-chat.git
