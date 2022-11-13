@@ -141,7 +141,7 @@ You can still talk to people using default or any other server - it only affects
 
 Run `simplex-chat -h` to see all available options.
 
-### Access messaging servers via Tor (BETA)
+### Access messaging servers via Tor
 
 Install Tor and run it as SOCKS5 proxy on port 9050, e.g. on Mac you can:
 
