@@ -618,7 +618,7 @@ viewUserProfile Profile {displayName, fullName} =
     "(the updated profile will be sent to all your contacts)"
   ]
 
-viewSMPServers :: [SMPServer] -> Bool -> [StyledString]
+viewSMPServers :: [SMPServerWithAuth] -> Bool -> [StyledString]
 viewSMPServers smpServers testView =
   if testView
     then [customSMPServers]
@@ -675,7 +675,7 @@ viewConnectionStats ConnectionStats {rcvServers, sndServers} =
   ["receiving messages via: " <> viewServerHosts rcvServers | not $ null rcvServers]
     <> ["sending messages via: " <> viewServerHosts sndServers | not $ null sndServers]
 
-viewServers :: [SMPServer] -> StyledString
+viewServers :: [SMPServerWithAuth] -> StyledString
 viewServers = plain . intercalate ", " . map (B.unpack . strEncode)
 
 viewServerHosts :: [SMPServer] -> StyledString

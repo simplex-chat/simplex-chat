@@ -186,7 +186,7 @@ data ChatCommand
   | APIDeleteGroupLink GroupId
   | APIGetGroupLink GroupId
   | GetUserSMPServers
-  | SetUserSMPServers [SMPServer]
+  | SetUserSMPServers [SMPServerWithAuth]
   | APISetChatItemTTL (Maybe Int64)
   | APIGetChatItemTTL
   | APISetNetworkConfig NetworkConfig
@@ -261,7 +261,7 @@ data ChatResponse
   | CRApiChat {chat :: AChat}
   | CRLastMessages {chatItems :: [AChatItem]}
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
-  | CRUserSMPServers {smpServers :: [SMPServer]}
+  | CRUserSMPServers {smpServers :: [SMPServerWithAuth]}
   | CRChatItemTTL {chatItemTTL :: Maybe Int64}
   | CRNetworkConfig {networkConfig :: NetworkConfig}
   | CRContactInfo {contact :: Contact, connectionStats :: ConnectionStats, customUserProfile :: Maybe Profile}
