@@ -37,6 +37,7 @@ fun CIFileView(
 ) {
   val context = LocalContext.current
   val saveFileLauncher = rememberSaveFileLauncher(cxt = context, ciFile = file)
+  // Pair(Progress, Duration)
   val voiceInfo = remember { mutableStateOf(0 to 0) }
   val voicePlaying = rememberSaveable { mutableStateOf(false) }
   LaunchedEffect(file?.fileName, file?.fileStatus) {

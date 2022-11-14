@@ -107,7 +107,6 @@ fun SendMsgView(
           }
         }
         editText.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        editText.isEnabled = recordingTimeRange.first == 0L || !allowVoiceRecord
         editText.maxLines = 16
         editText.inputType = InputType.TYPE_TEXT_FLAG_CAP_SENTENCES or editText.inputType
         editText.setTextColor(textColor.toArgb())
@@ -121,7 +120,6 @@ fun SendMsgView(
         editText.doOnTextChanged { text, _, _, _ -> onMessageChange(text.toString()) }
         editText
       }) {
-        it.isEnabled = recordingTimeRange.first == 0L || !allowVoiceRecord
         it.setTextColor(textColor.toArgb())
         it.textSize = textStyle.value.fontSize.value
         DrawableCompat.setTint(it.background, tintColor.toArgb())
@@ -150,7 +148,7 @@ fun SendMsgView(
             color = HighOrLowlight,
             strokeWidth = 3.dp
           )
-        } else if ((recordingTimeRange.first == 0L && cs.message.isNotEmpty()) || !allowVoiceRecord || !attachEnabled) {
+        } else if ((recordingTimeRange.first == 0L && cs.message.isNotEmpty()) || !allowVoiceRecord || !attachEnabled || cs.preview !is ComposePreview.NoPreview) {
           Icon(
             icon,
             stringResource(R.string.icon_descr_send_message),
@@ -168,12 +166,12 @@ fun SendMsgView(
           )
         }
       }
-      if (cs.message.isEmpty() && allowVoiceRecord && attachEnabled) {
+      if ((cs.message.isEmpty() || recordingTimeRange.first > 0L) && allowVoiceRecord && attachEnabled) {
         Row(
           if (recordingTimeRange.first == 0L)
-            Modifier.height(36.dp)
+            Modifier.height(36.dp).padding(top = 2.dp)
           else
-            Modifier.clickable(false, onClick = {}).background(MaterialTheme.colors.background).height(36.dp),
+            Modifier.clickable(false, onClick = {}).background(MaterialTheme.colors.background).height(38.dp).padding(top = 2.dp),
           verticalAlignment = Alignment.CenterVertically
         ) {
           val permissionsState = rememberMultiplePermissionsState(
@@ -253,6 +251,7 @@ fun SendMsgView(
             tint = MaterialTheme.colors.primary,
             modifier = Modifier
               .size(36.dp)
+              .padding(2.dp)
               .clickable(
                 onClick = {},
                 role = Role.Button,
