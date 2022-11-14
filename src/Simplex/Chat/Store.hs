@@ -438,15 +438,15 @@ createConnReqConnection db userId acId cReqHash xContactId incognitoProfile grou
   pccConnId <- insertedRowId db
   pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = True, viaUserContactLink = Nothing, groupLinkId, customUserProfileId, connReqInv = Nothing, localAlias = "", createdAt, updatedAt = createdAt}
 
-getConnReqContactXContactId :: DB.Connection -> UserId -> ConnReqUriHash -> IO (Maybe Contact, Maybe XContactId)
-getConnReqContactXContactId db userId cReqHash = do
+getConnReqContactXContactId :: DB.Connection -> User -> ConnReqUriHash -> IO (Maybe Contact, Maybe XContactId)
+getConnReqContactXContactId db user@User {userId} cReqHash = do
   getContact' >>= \case
     c@(Just _) -> pure (c, Nothing)
     Nothing -> (Nothing,) <$> getXContactId
   where
     getContact' :: IO (Maybe Contact)
     getContact' =
-      maybeFirstRow toContact $
+      maybeFirstRow (toContact user) $
         DB.query
           db
           [sql|
@@ -534,11 +534,14 @@ createConnection_ db userId connType entityId acId viaContact viaUserContactLink
   where
     ent ct = if connType == ct then entityId else Nothing
 
-createDirectContact :: DB.Connection -> UserId -> Connection -> Profile -> ExceptT StoreError IO Contact
-createDirectContact db userId activeConn@Connection {connId, localAlias} profile = do
+createDirectContact :: DB.Connection -> User -> Connection -> Profile -> ExceptT StoreError IO Contact
+createDirectContact db user@User {userId} activeConn@Connection {connId, localAlias} profile@Profile {preferences} = do
   createdAt <- liftIO getCurrentTime
   (localDisplayName, contactId, profileId) <- createContact_ db userId connId profile localAlias Nothing createdAt
-  pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile localAlias, activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences = emptyChatPrefs, createdAt, updatedAt = createdAt}
+  let lp = toLocalProfile profileId profile localAlias
+      userPreferences = emptyChatPrefs
+      mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
+  pure $ Contact {contactId, localDisplayName, profile = lp, activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt, updatedAt = createdAt}
 
 createContact_ :: DB.Connection -> UserId -> Int64 -> Profile -> LocalAlias -> Maybe Int64 -> UTCTime -> ExceptT StoreError IO (Text, ContactId, ProfileId)
 createContact_ db userId connId Profile {displayName, fullName, image, preferences} localAlias viaGroup currentTs =
@@ -632,24 +635,33 @@ updateUserProfile db User {userId, userContactId, localDisplayName, profile = Lo
       updateContactProfile_' db userId profileId p' currentTs
       updateContact_ db userId userContactId localDisplayName newName currentTs
 
-updateContactProfile :: DB.Connection -> UserId -> Contact -> Profile -> ExceptT StoreError IO Contact
-updateContactProfile db userId c@Contact {contactId, localDisplayName, profile = LocalProfile {profileId, displayName, localAlias}} p'@Profile {displayName = newName}
-  | displayName == newName =
-    liftIO $ updateContactProfile_ db userId profileId p' $> (c :: Contact) {profile = toLocalProfile profileId p' localAlias}
-  | otherwise =
-    ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
-      currentTs <- getCurrentTime
-      updateContactProfile_' db userId profileId p' currentTs
-      updateContact_ db userId contactId localDisplayName ldn currentTs
-      pure . Right $ (c :: Contact) {localDisplayName = ldn, profile = toLocalProfile profileId p' localAlias}
+updateContactProfile :: DB.Connection -> User -> Contact -> Profile -> ExceptT StoreError IO Contact
+updateContactProfile
+  db
+  user@User {userId}
+  c@Contact {contactId, localDisplayName, profile = LocalProfile {profileId, displayName, localAlias}, activeConn, userPreferences}
+  p'@Profile {displayName = newName, preferences} = do
+    let profile = toLocalProfile profileId p' localAlias
+        mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
+    if displayName == newName
+      then do
+        liftIO $ updateContactProfile_ db userId profileId p'
+        pure $ c {profile, mergedPreferences}
+      else ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
+        currentTs <- getCurrentTime
+        updateContactProfile_' db userId profileId p' currentTs
+        updateContact_ db userId contactId localDisplayName ldn currentTs
+        pure . Right $ c {localDisplayName = ldn, profile, mergedPreferences}
 
-updateContactUserPreferences :: DB.Connection -> UserId -> Int64 -> Preferences -> IO ()
-updateContactUserPreferences db userId contactId userPreferences = do
+updateContactUserPreferences :: DB.Connection -> User -> Contact -> Preferences -> IO Contact
+updateContactUserPreferences db user@User{userId} c@Contact{contactId, activeConn} userPreferences = do
   updatedAt <- getCurrentTime
   DB.execute
     db
     "UPDATE contacts SET user_preferences = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?"
     (userPreferences, updatedAt, userId, contactId)
+  let mergedPreferences = contactUserPreferences user userPreferences (preferences' c) $ connIncognito activeConn
+  pure $ c {mergedPreferences, userPreferences}
 
 updateContactAlias :: DB.Connection -> UserId -> Contact -> LocalAlias -> IO Contact
 updateContactAlias db userId c@Contact {profile = lp@LocalProfile {profileId}} localAlias = do
@@ -722,33 +734,35 @@ updateContact_ db userId contactId displayName newName updatedAt = do
 
 type ContactRow = (ContactId, ProfileId, ContactName, Maybe Int64, ContactName, Text, Maybe ImageData, LocalAlias, Bool, Maybe Bool) :. (Maybe Preferences, Preferences, UTCTime, UTCTime)
 
-toContact :: ContactRow :. ConnectionRow -> Contact
-toContact (((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, localAlias, contactUsed, enableNtfs_) :. (preferences, userPreferences, createdAt, updatedAt)) :. connRow) =
+toContact :: User -> ContactRow :. ConnectionRow -> Contact
+toContact user (((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, localAlias, contactUsed, enableNtfs_) :. (preferences, userPreferences, createdAt, updatedAt)) :. connRow) =
   let profile = LocalProfile {profileId, displayName, fullName, image, preferences, localAlias}
       activeConn = toConnection connRow
       chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_}
-   in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, createdAt, updatedAt}
+      mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
+   in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt}
 
-toContactOrError :: ContactRow :. MaybeConnectionRow -> Either StoreError Contact
-toContactOrError (((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, localAlias, contactUsed, enableNtfs_) :. (preferences, userPreferences, createdAt, updatedAt)) :. connRow) =
+toContactOrError :: User -> ContactRow :. MaybeConnectionRow -> Either StoreError Contact
+toContactOrError user (((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, localAlias, contactUsed, enableNtfs_) :. (preferences, userPreferences, createdAt, updatedAt)) :. connRow) =
   let profile = LocalProfile {profileId, displayName, fullName, image, preferences, localAlias}
       chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_}
    in case toMaybeConnection connRow of
         Just activeConn ->
-          Right Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, createdAt, updatedAt}
+          let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
+           in Right Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt}
         _ -> Left $ SEContactNotReady localDisplayName
 
 -- TODO return the last connection that is ready, not any last connection
 -- requires updating connection status
 getContactByName :: DB.Connection -> User -> ContactName -> ExceptT StoreError IO Contact
-getContactByName db user@User {userId} localDisplayName = do
+getContactByName db user localDisplayName = do
   cId <- getContactIdByName db user localDisplayName
-  getContact db userId cId
+  getContact db user cId
 
 getUserContacts :: DB.Connection -> User -> IO [Contact]
-getUserContacts db User {userId} = do
+getUserContacts db user@User {userId} = do
   contactIds <- map fromOnly <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ?" (Only userId)
-  rights <$> mapM (runExceptT . getContact db userId) contactIds
+  rights <$> mapM (runExceptT . getContact db user) contactIds
 
 createUserContactLink :: DB.Connection -> UserId -> ConnId -> ConnReqContact -> ExceptT StoreError IO ()
 createUserContactLink db userId agentConnId cReq =
@@ -977,8 +991,8 @@ getGroupLinkId db User {userId} GroupInfo {groupId} =
   fmap join . maybeFirstRow fromOnly $
     DB.query db "SELECT group_link_id FROM user_contact_links WHERE user_id = ? AND group_id = ? LIMIT 1" (userId, groupId)
 
-createOrUpdateContactRequest :: DB.Connection -> UserId -> Int64 -> InvitationId -> Profile -> Maybe XContactId -> ExceptT StoreError IO ContactOrRequest
-createOrUpdateContactRequest db userId userContactLinkId invId Profile {displayName, fullName, image, preferences} xContactId_ =
+createOrUpdateContactRequest :: DB.Connection -> User -> Int64 -> InvitationId -> Profile -> Maybe XContactId -> ExceptT StoreError IO ContactOrRequest
+createOrUpdateContactRequest db user@User {userId} userContactLinkId invId Profile {displayName, fullName, image, preferences} xContactId_ =
   liftIO (maybeM getContact' xContactId_) >>= \case
     Just contact -> pure $ CORContact contact
     Nothing -> CORRequest <$> createOrUpdate_
@@ -1014,7 +1028,7 @@ createOrUpdateContactRequest db userId userContactLinkId invId Profile {displayN
           insertedRowId db
     getContact' :: XContactId -> IO (Maybe Contact)
     getContact' xContactId =
-      maybeFirstRow toContact $
+      maybeFirstRow (toContact user) $
         DB.query
           db
           [sql|
@@ -1133,20 +1147,21 @@ deleteContactRequest db userId contactRequestId = do
   DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?" (userId, contactRequestId)
 
 createAcceptedContact :: DB.Connection -> User -> ConnId -> ContactName -> ProfileId -> Profile -> Int64 -> Maybe XContactId -> Maybe IncognitoProfile -> IO Contact
-createAcceptedContact db User {userId, profile = LocalProfile {preferences}} agentConnId localDisplayName profileId profile userContactLinkId xContactId incognitoProfile = do
+createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}} agentConnId localDisplayName profileId profile userContactLinkId xContactId incognitoProfile = do
   DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
   createdAt <- getCurrentTime
   customUserProfileId <- forM incognitoProfile $ \case
     NewIncognito p -> createIncognitoProfile_ db userId createdAt p
     ExistingIncognito LocalProfile {profileId = pId} -> pure pId
-  let contactUserPrefs = fromMaybe emptyChatPrefs $ incognitoProfile >> preferences
+  let userPreferences = fromMaybe emptyChatPrefs $ incognitoProfile >> preferences
   DB.execute
     db
     "INSERT INTO contacts (user_id, local_display_name, contact_profile_id, enable_ntfs, user_preferences, created_at, updated_at, xcontact_id) VALUES (?,?,?,?,?,?,?,?)"
-    (userId, localDisplayName, profileId, True, contactUserPrefs, createdAt, createdAt, xContactId)
+    (userId, localDisplayName, profileId, True, userPreferences, createdAt, createdAt, xContactId)
   contactId <- insertedRowId db
   activeConn <- createConnection_ db userId ConnContact (Just contactId) agentConnId Nothing (Just userContactLinkId) customUserProfileId 0 createdAt
-  pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile "", activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences = contactUserPrefs, createdAt = createdAt, updatedAt = createdAt}
+  let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
+  pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile "", activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = createdAt, updatedAt = createdAt}
 
 getLiveSndFileTransfers :: DB.Connection -> User -> IO [SndFileTransfer]
 getLiveSndFileTransfers db User {userId} = do
@@ -1249,8 +1264,8 @@ toMaybeConnection ((Just connId, Just agentConnId, Just connLevel, viaContact, v
   Just $ toConnection ((connId, agentConnId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. Only createdAt)
 toMaybeConnection _ = Nothing
 
-getMatchingContacts :: DB.Connection -> UserId -> Contact -> IO [Contact]
-getMatchingContacts db userId Contact {contactId, profile = LocalProfile {displayName, fullName, image}} = do
+getMatchingContacts :: DB.Connection -> User -> Contact -> IO [Contact]
+getMatchingContacts db user@User {userId} Contact {contactId, profile = LocalProfile {displayName, fullName, image}} = do
   contactIds <-
     map fromOnly
       <$> DB.query
@@ -1264,7 +1279,7 @@ getMatchingContacts db userId Contact {contactId, profile = LocalProfile {displa
             AND ((p.image IS NULL AND ? IS NULL) OR p.image = ?)
         |]
         (userId, contactId, displayName, fullName, image, image)
-  rights <$> mapM (runExceptT . getContact db userId) contactIds
+  rights <$> mapM (runExceptT . getContact db user) contactIds
 
 createSentProbe :: DB.Connection -> TVar ChaChaDRG -> UserId -> Contact -> ExceptT StoreError IO (Probe, Int64)
 createSentProbe db gVar userId _to@Contact {contactId} =
@@ -1291,8 +1306,8 @@ deleteSentProbe db userId probeId =
     "DELETE FROM sent_probes WHERE user_id = ? AND sent_probe_id = ?"
     (userId, probeId)
 
-matchReceivedProbe :: DB.Connection -> UserId -> Contact -> Probe -> IO (Maybe Contact)
-matchReceivedProbe db userId _from@Contact {contactId} (Probe probe) = do
+matchReceivedProbe :: DB.Connection -> User -> Contact -> Probe -> IO (Maybe Contact)
+matchReceivedProbe db user@User {userId} _from@Contact {contactId} (Probe probe) = do
   let probeHash = C.sha256Hash probe
   contactIds <-
     map fromOnly
@@ -1312,10 +1327,10 @@ matchReceivedProbe db userId _from@Contact {contactId} (Probe probe) = do
     (contactId, probe, probeHash, userId, currentTs, currentTs)
   case contactIds of
     [] -> pure Nothing
-    cId : _ -> eitherToMaybe <$> runExceptT (getContact db userId cId)
+    cId : _ -> eitherToMaybe <$> runExceptT (getContact db user cId)
 
-matchReceivedProbeHash :: DB.Connection -> UserId -> Contact -> ProbeHash -> IO (Maybe (Contact, Probe))
-matchReceivedProbeHash db userId _from@Contact {contactId} (ProbeHash probeHash) = do
+matchReceivedProbeHash :: DB.Connection -> User -> Contact -> ProbeHash -> IO (Maybe (Contact, Probe))
+matchReceivedProbeHash db user@User {userId} _from@Contact {contactId} (ProbeHash probeHash) = do
   namesAndProbes <-
     DB.query
       db
@@ -1335,10 +1350,10 @@ matchReceivedProbeHash db userId _from@Contact {contactId} (ProbeHash probeHash)
     [] -> pure Nothing
     (cId, probe) : _ ->
       either (const Nothing) (Just . (,Probe probe))
-        <$> runExceptT (getContact db userId cId)
+        <$> runExceptT (getContact db user cId)
 
-matchSentProbe :: DB.Connection -> UserId -> Contact -> Probe -> IO (Maybe Contact)
-matchSentProbe db userId _from@Contact {contactId} (Probe probe) = do
+matchSentProbe :: DB.Connection -> User -> Contact -> Probe -> IO (Maybe Contact)
+matchSentProbe db user@User {userId} _from@Contact {contactId} (Probe probe) = do
   contactIds <-
     map fromOnly
       <$> DB.query
@@ -1353,7 +1368,7 @@ matchSentProbe db userId _from@Contact {contactId} (Probe probe) = do
         (userId, probe, contactId)
   case contactIds of
     [] -> pure Nothing
-    cId : _ -> eitherToMaybe <$> runExceptT (getContact db userId cId)
+    cId : _ -> eitherToMaybe <$> runExceptT (getContact db user cId)
 
 mergeContactRecords :: DB.Connection -> UserId -> Contact -> Contact -> IO ()
 mergeContactRecords db userId Contact {contactId = toContactId} Contact {contactId = fromContactId, localDisplayName} = do
@@ -1438,7 +1453,8 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
     toContact' contactId activeConn [(profileId, localDisplayName, displayName, fullName, image, localAlias, viaGroup, contactUsed, enableNtfs_) :. (preferences, userPreferences, createdAt, updatedAt)] =
       let profile = LocalProfile {profileId, displayName, fullName, image, preferences, localAlias}
           chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_}
-       in Right $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, createdAt, updatedAt}
+          mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
+       in Right Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt}
     toContact' _ _ _ = Left $ SEInternalError "referenced contact not found"
     getGroupAndMember_ :: Int64 -> Connection -> ExceptT StoreError IO (GroupInfo, GroupMember)
     getGroupAndMember_ groupMemberId c = ExceptT $ do
@@ -1976,8 +1992,8 @@ createNewContactMemberAsync db gVar user@User {userId, userContactId} groupId Co
         )
 
 getContactViaMember :: DB.Connection -> User -> GroupMember -> IO (Maybe Contact)
-getContactViaMember db User {userId} GroupMember {groupMemberId} =
-  maybeFirstRow toContact $
+getContactViaMember db user@User {userId} GroupMember {groupMemberId} =
+  maybeFirstRow (toContact user) $
     DB.query
       db
       [sql|
@@ -2102,7 +2118,7 @@ cleanupMemberContactAndProfile_ :: DB.Connection -> User -> GroupMember -> IO ()
 cleanupMemberContactAndProfile_ db user@User {userId} m@GroupMember {groupMemberId, localDisplayName, memberContactId, memberContactProfileId, memberProfile = LocalProfile {profileId}} =
   case memberContactId of
     Just contactId ->
-      runExceptT (getContact db userId contactId) >>= \case
+      runExceptT (getContact db user contactId) >>= \case
         Right ct@Contact {activeConn = Connection {connLevel, viaGroupLink}, contactUsed} ->
           unless ((connLevel == 0 && not viaGroupLink) || contactUsed) $ deleteContact db user ct
         _ -> pure ()
@@ -2320,7 +2336,7 @@ getViaGroupMember db User {userId, userContactId} Contact {contactId} =
        in (groupInfo, (member :: GroupMember) {activeConn = toMaybeConnection connRow})
 
 getViaGroupContact :: DB.Connection -> User -> GroupMember -> IO (Maybe Contact)
-getViaGroupContact db User {userId} GroupMember {groupMemberId} =
+getViaGroupContact db user@User {userId} GroupMember {groupMemberId} =
   maybeFirstRow toContact' $
     DB.query
       db
@@ -2347,7 +2363,8 @@ getViaGroupContact db User {userId} GroupMember {groupMemberId} =
       let profile = LocalProfile {profileId, displayName, fullName, image, preferences, localAlias}
           chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_}
           activeConn = toConnection connRow
-       in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, createdAt, updatedAt}
+          mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
+       in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt}
 
 createSndDirectFileTransfer :: DB.Connection -> UserId -> Contact -> FilePath -> FileInvitation -> Maybe ConnId -> Integer -> IO FileTransferMeta
 createSndDirectFileTransfer db userId Contact {contactId} filePath FileInvitation {fileName, fileSize, fileInline} acId_ chunkSize = do
@@ -2659,7 +2676,7 @@ getRcvFileTransfer db user@User {userId} fileId = do
         rfi_ = \case
           (Just filePath, Just connId, Just agentConnId, _, _, _, _) -> pure $ Just RcvFileInfo {filePath, connId, agentConnId}
           (Just filePath, Nothing, Nothing, Just contactId, _, _, True) -> do
-            Contact {activeConn = Connection {connId, agentConnId}} <- getContact db userId contactId
+            Contact {activeConn = Connection {connId, agentConnId}} <- getContact db user contactId
             pure $ Just RcvFileInfo {filePath, connId, agentConnId}
           (Just filePath, Nothing, Nothing, _, Just groupId, Just groupMemberId, True) -> do
             getGroupMember db user groupId groupMemberId >>= \case
@@ -3194,7 +3211,7 @@ getChatPreviews db user withPCC = do
     ts (AChat _ Chat {chatInfo}) = chatInfoUpdatedAt chatInfo
 
 getDirectChatPreviews_ :: DB.Connection -> User -> IO [AChat]
-getDirectChatPreviews_ db User {userId} = do
+getDirectChatPreviews_ db user@User {userId} = do
   tz <- getCurrentTimeZone
   currentTs <- getCurrentTime
   map (toDirectChatPreview tz currentTs)
@@ -3253,7 +3270,7 @@ getDirectChatPreviews_ db User {userId} = do
   where
     toDirectChatPreview :: TimeZone -> UTCTime -> ContactRow :. ConnectionRow :. ChatStatsRow :. MaybeChatItemRow :. QuoteRow -> AChat
     toDirectChatPreview tz currentTs (contactRow :. connRow :. statsRow :. ciRow_) =
-      let contact = toContact $ contactRow :. connRow
+      let contact = toContact user $ contactRow :. connRow
           ci_ = toDirectChatItemList tz currentTs ciRow_
           stats = toChatStats statsRow
        in AChat SCTDirect $ Chat (DirectChat contact) ci_ stats
@@ -3420,8 +3437,8 @@ getDirectChat db user contactId pagination search_ = do
     CPBefore beforeId count -> getDirectChatBefore_ db user contactId beforeId count search
 
 getDirectChatLast_ :: DB.Connection -> User -> Int64 -> Int -> String -> ExceptT StoreError IO (Chat 'CTDirect)
-getDirectChatLast_ db User {userId} contactId count search = do
-  contact <- getContact db userId contactId
+getDirectChatLast_ db user@User {userId} contactId count search = do
+  contact <- getContact db user contactId
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   chatItems <- ExceptT getDirectChatItemsLast_
   pure $ Chat (DirectChat contact) (reverse chatItems) stats
@@ -3451,8 +3468,8 @@ getDirectChatLast_ db User {userId} contactId count search = do
           (userId, contactId, search, count)
 
 getDirectChatAfter_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTDirect)
-getDirectChatAfter_ db User {userId} contactId afterChatItemId count search = do
-  contact <- getContact db userId contactId
+getDirectChatAfter_ db user@User {userId} contactId afterChatItemId count search = do
+  contact <- getContact db user contactId
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   chatItems <- ExceptT getDirectChatItemsAfter_
   pure $ Chat (DirectChat contact) chatItems stats
@@ -3483,8 +3500,8 @@ getDirectChatAfter_ db User {userId} contactId afterChatItemId count search = do
           (userId, contactId, search, afterChatItemId, count)
 
 getDirectChatBefore_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTDirect)
-getDirectChatBefore_ db User {userId} contactId beforeChatItemId count search = do
-  contact <- getContact db userId contactId
+getDirectChatBefore_ db user@User {userId} contactId beforeChatItemId count search = do
+  contact <- getContact db user contactId
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   chatItems <- ExceptT getDirectChatItemsBefore_
   pure $ Chat (DirectChat contact) (reverse chatItems) stats
@@ -3519,9 +3536,9 @@ getContactIdByName db User {userId} cName =
   ExceptT . firstRow fromOnly (SEContactNotFoundByName cName) $
     DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND local_display_name = ?" (userId, cName)
 
-getContact :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO Contact
-getContact db userId contactId =
-  ExceptT . fmap join . firstRow toContactOrError (SEContactNotFound contactId) $
+getContact :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO Contact
+getContact db user@User {userId} contactId =
+  ExceptT . fmap join . firstRow (toContactOrError user) (SEContactNotFound contactId) $
     DB.query
       db
       [sql|
@@ -4076,7 +4093,7 @@ getChatItemByGroupId db user@User {userId} groupId = do
 getAChatItem_ :: DB.Connection -> User -> ChatItemId -> ChatRef -> ExceptT StoreError IO AChatItem
 getAChatItem_ db user@User {userId} itemId = \case
   ChatRef CTDirect contactId -> do
-    ct <- getContact db userId contactId
+    ct <- getContact db user contactId
     (CChatItem msgDir ci) <- getDirectChatItem db userId contactId itemId
     pure $ AChatItem SCTDirect msgDir (DirectChat ct) ci
   ChatRef CTGroup groupId -> do

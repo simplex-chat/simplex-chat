@@ -86,7 +86,8 @@ data Contact = Contact
     viaGroup :: Maybe Int64,
     contactUsed :: Bool,
     chatSettings :: ChatSettings,
-    userPreferences :: Preferences,
+    userPreferences :: UserPreferences,
+    mergedPreferences :: ContactUserPreferences,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
@@ -100,13 +101,10 @@ contactConn :: Contact -> Connection
 contactConn = activeConn
 
 contactConnId :: Contact -> ConnId
-contactConnId Contact {activeConn} = aConnId activeConn
+contactConnId = aConnId . contactConn
 
 contactConnIncognito :: Contact -> Bool
-contactConnIncognito = isJust . customUserProfileId'
-
-customUserProfileId' :: Contact -> Maybe Int64
-customUserProfileId' Contact {activeConn} = customUserProfileId (activeConn :: Connection)
+contactConnIncognito = connIncognito . contactConn
 
 data ContactRef = ContactRef
   { contactId :: ContactId,
@@ -293,6 +291,10 @@ data Preferences = Preferences
   }
   deriving (Eq, Show, Generic, FromJSON)
 
+type UserPreferences = Preferences
+
+type ContactPreferences = Preferences
+
 data GroupPreferences = GroupPreferences
   { fullDelete :: Maybe GroupPreference,
     -- receipts :: Maybe GroupPreference,
@@ -325,17 +327,17 @@ data ContactUserPreferences = ContactUserPreferences
     -- receipts :: ContactUserPreference,
     voice :: ContactUserPreference
   }
-  deriving (Show, Generic)
+  deriving (Eq, Show, Generic)
 
 data ContactUserPreference = ContactUserPreference
   { enabled :: PrefEnabled,
     userPreference :: ContactUserPref,
     contactPreference :: Preference
   }
-  deriving (Show, Generic)
+  deriving (Eq, Show, Generic)
 
 data ContactUserPref = CUPContact {preference :: Preference} | CUPUser {preference :: Preference}
-  deriving (Show, Generic)
+  deriving (Eq, Show, Generic)
 
 instance ToJSON ContactUserPreferences where toEncoding = J.genericToEncoding J.defaultOptions
 
@@ -452,12 +454,15 @@ mergePreferences contactPrefs userPreferences =
        in fromMaybe (getPreference pt defaultChatPrefs) $ (contactPrefs >>= sel) <|> (userPreferences >>= sel)
 
 mergeUserChatPrefs :: User -> Contact -> FullPreferences
-mergeUserChatPrefs user ct =
-  let userPrefs = if contactConnIncognito ct then Nothing else preferences' user
-   in mergePreferences (Just $ userPreferences ct) userPrefs
+mergeUserChatPrefs user ct = mergeUserChatPrefs' user (contactConnIncognito ct) (userPreferences ct)
+
+mergeUserChatPrefs' :: User -> Bool -> UserPreferences -> FullPreferences
+mergeUserChatPrefs' user connectedIncognito userPreferences =
+  let userPrefs = if connectedIncognito then Nothing else preferences' user
+   in mergePreferences (Just userPreferences) userPrefs
 
 data PrefEnabled = PrefEnabled {forUser :: Bool, forContact :: Bool}
-  deriving (Show, Generic)
+  deriving (Eq, Show, Generic)
 
 instance ToJSON PrefEnabled where
   toJSON = J.genericToJSON J.defaultOptions
@@ -471,8 +476,8 @@ prefEnabled Preference {allow = user} Preference {allow = contact} = case (user,
   (FANo, _) -> PrefEnabled False False
   _ -> PrefEnabled True True
 
-contactUserPreferences :: User -> Contact -> ContactUserPreferences
-contactUserPreferences user ct =
+contactUserPreferences :: User -> UserPreferences -> Maybe ContactPreferences -> Bool -> ContactUserPreferences
+contactUserPreferences user userPreferences contactPreferences connectedIncognito =
   ContactUserPreferences
     { fullDelete = pref CFFullDelete,
       -- receipts = pref CFReceipts,
@@ -483,19 +488,19 @@ contactUserPreferences user ct =
       ContactUserPreference
         { enabled = prefEnabled userPref ctPref,
           -- incognito contact cannot have default user preference used
-          userPreference = if contactConnIncognito ct then CUPContact ctUserPref else maybe (CUPUser userPref) CUPContact ctUserPref_,
+          userPreference = if connectedIncognito then CUPContact ctUserPref else maybe (CUPUser userPref) CUPContact ctUserPref_,
           contactPreference = ctPref
         }
       where
-        ctUserPref = getPreference pt $ userPreferences ct
-        ctUserPref_ = chatPrefSel pt $ userPreferences ct
+        ctUserPref = getPreference pt userPreferences
+        ctUserPref_ = chatPrefSel pt userPreferences
         userPref = getPreference pt ctUserPrefs
         ctPref = getPreference pt ctPrefs
-    ctUserPrefs = mergeUserChatPrefs user ct
-    ctPrefs = mergePreferences (preferences' ct) Nothing
+    ctUserPrefs = mergeUserChatPrefs' user connectedIncognito userPreferences
+    ctPrefs = mergePreferences contactPreferences Nothing
 
-getContactUserPrefefence :: ChatFeature -> ContactUserPreferences -> ContactUserPreference
-getContactUserPrefefence = \case
+getContactUserPreference :: ChatFeature -> ContactUserPreferences -> ContactUserPreference
+getContactUserPreference = \case
   CFFullDelete -> fullDelete
   -- CFReceipts -> receipts
   CFVoice -> voice
@@ -1143,6 +1148,9 @@ data Connection = Connection
 
 aConnId :: Connection -> ConnId
 aConnId Connection {agentConnId = AgentConnId cId} = cId
+
+connIncognito :: Connection -> Bool
+connIncognito Connection {customUserProfileId} = isJust customUserProfileId
 
 instance ToJSON Connection where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}

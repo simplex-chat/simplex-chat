@@ -125,13 +125,13 @@ responseToView user_ testView ts = \case
   CRSndGroupFileCancelled _ ftm fts -> viewSndGroupFileCancelled ftm fts
   CRRcvFileCancelled ft -> receivingFile_ "cancelled" ft
   CRUserProfileUpdated p p' -> viewUserProfileUpdated p p'
-  CRContactPrefsUpdated {fromContact, toContact, preferences} -> case user_ of
-    Just user -> viewUserContactPrefsUpdated user fromContact toContact preferences
+  CRContactPrefsUpdated {fromContact, toContact} -> case user_ of
+    Just user -> viewUserContactPrefsUpdated user fromContact toContact
     _ -> ["unexpected chat event CRContactPrefsUpdated without current user"]
   CRContactAliasUpdated c -> viewContactAliasUpdated c
   CRConnectionAliasUpdated c -> viewConnectionAliasUpdated c
-  CRContactUpdated {fromContact = c, toContact = c', preferences} -> case user_ of
-    Just user -> viewContactUpdated c c' <> viewContactPrefsUpdated user c c' preferences
+  CRContactUpdated {fromContact = c, toContact = c'} -> case user_ of
+    Just user -> viewContactUpdated c c' <> viewContactPrefsUpdated user c c'
     _ -> ["unexpected chat event CRContactUpdated without current user"]
   CRContactsMerged intoCt mergedCt -> viewContactsMerged intoCt mergedCt
   CRReceivedContactRequest UserContactRequest {localDisplayName = c, profile} -> viewReceivedContactRequest c profile
@@ -710,15 +710,15 @@ viewUserProfileUpdated Profile {displayName = n, fullName, image, preferences} P
       | otherwise = ["user profile is changed to " <> ttyFullName n' fullName' <> notified]
     notified = " (your contacts are notified)"
 
-viewUserContactPrefsUpdated :: User -> Contact -> Contact -> ContactUserPreferences -> [StyledString]
-viewUserContactPrefsUpdated user ct ct' cups
+viewUserContactPrefsUpdated :: User -> Contact -> Contact -> [StyledString]
+viewUserContactPrefsUpdated user ct ct'@Contact {mergedPreferences = cups}
   | null prefs = ["your preferences for " <> ttyContact' ct' <> " did not change"]
   | otherwise = ("you updated preferences for " <> ttyContact' ct' <> ":") : prefs
   where
     prefs = viewContactPreferences user ct ct' cups
 
-viewContactPrefsUpdated :: User -> Contact -> Contact -> ContactUserPreferences -> [StyledString]
-viewContactPrefsUpdated user ct ct' cups
+viewContactPrefsUpdated :: User -> Contact -> Contact -> [StyledString]
+viewContactPrefsUpdated user ct ct'@Contact {mergedPreferences = cups}
   | null prefs = []
   | otherwise = (ttyContact' ct' <> " updated preferences for you:") : prefs
   where
@@ -736,7 +736,7 @@ viewContactPref userPrefs userPrefs' ctPrefs cups pt
     userPref = getPreference pt userPrefs
     userPref' = getPreference pt userPrefs'
     ctPref = getPreference pt ctPrefs
-    ContactUserPreference {enabled, userPreference, contactPreference} = getContactUserPrefefence pt cups
+    ContactUserPreference {enabled, userPreference, contactPreference} = getContactUserPreference pt cups
 
 viewPrefsUpdated :: Maybe Preferences -> Maybe Preferences -> [StyledString]
 viewPrefsUpdated ps ps'
