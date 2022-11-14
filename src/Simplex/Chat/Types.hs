@@ -322,9 +322,7 @@ mergeGroupPreferences groupPreferences =
       voice = pref CFVoice
     }
   where
-    pref pt =
-      let sel = groupPrefSel pt
-       in fromMaybe (getGroupPreference pt defaultGroupPrefs) (groupPreferences >>= sel)
+    pref pt = fromMaybe (getGroupPreference pt defaultGroupPrefs) (groupPreferences >>= groupPrefSel pt)
 
 -- full collection of chat preferences defined in the app - it is used to ensure we include all preferences and to simplify processing
 -- if some of the preferences are not defined in Preferences, defaults from defaultChatPrefs are used here.
