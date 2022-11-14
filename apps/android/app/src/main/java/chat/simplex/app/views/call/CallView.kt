@@ -432,7 +432,7 @@ fun WebRTCView(callCommand: MutableState<WCallCommand?>, onResponse: (WVAPIMessa
           }
         }
       ) { wv ->
-        Log.d(TAG, "LALAL WebRTCView: webview ready")
+        Log.d(TAG, "WebRTCView: webview ready")
         // for debugging
         // wv.evaluateJavascript("sendMessageToNative = ({resp}) => WebRTCInterface.postMessage(JSON.stringify({command: resp}))", null)
         scope.launch {
