@@ -61,6 +61,46 @@ func fileModificationDate(_ path: String) -> Date? {
     }
 }
 
+public func deleteAppFiles() {
+    let fm = FileManager.default
+    do {
+        let fileNames = try fm.contentsOfDirectory(atPath: getAppFilesDirectory().path)
+        for fileName in fileNames {
+            removeFile(fileName)
+        }
+    } catch {
+        logger.error("FileUtils deleteAppFiles error: \(error.localizedDescription)")
+    }
+}
+
+func fileSize(_ url: URL) -> Int? { // in bytes
+    do {
+        let val = try url.resourceValues(forKeys: [.totalFileAllocatedSizeKey, .fileAllocatedSizeKey])
+        return val.totalFileAllocatedSize ?? val.fileAllocatedSize
+    } catch {
+        logger.error("FileUtils fileSize error: \(error.localizedDescription)")
+        return nil
+    }
+}
+
+public func directoryFileCountAndSize(_ dir: URL) -> (Int, Int)? { // size in bytes
+    let fm = FileManager.default
+    if let enumerator = fm.enumerator(at: dir, includingPropertiesForKeys: [.totalFileAllocatedSizeKey, .fileAllocatedSizeKey], options: [], errorHandler: { (_, error) -> Bool in
+        logger.error("FileUtils directoryFileCountAndSize error: \(error.localizedDescription)")
+        return false
+    }) {
+        var fileCount = 0
+        var bytes = 0
+        for case let url as URL in enumerator {
+            fileCount += 1
+            bytes += fileSize(url) ?? 0
+        }
+        return (fileCount, bytes)
+    } else {
+        return nil
+    }
+}
+
 public func hasBackup(newerThan date: Date) -> Bool {
     let dbPath = getAppDatabasePath().path
     return hasBackupFile(dbPath + AGENT_DB_BAK, newerThan: date)

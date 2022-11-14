@@ -4,14 +4,25 @@ const markdownItReplaceLink = require('markdown-it-replace-link')
 const slugify = require("slugify")
 const uri = require('fast-uri')
 
+const globalConfig = {
+  onionLocation: "http://isdb4l77sjqoy2qq7ipum6x3at6hyn3jmxfx4zdhc72ufbmuq4ilwkqd.onion",
+  siteLocation: "https://simplex.chat"
+}
+
 module.exports = function (ty) {
+  ty.addShortcode("cfg", (name) => globalConfig[name])
+
   // Keeps the same directory structure.
   ty.addPassthroughCopy("src/assets/")
+  ty.addPassthroughCopy("src/fonts")
   ty.addPassthroughCopy("src/img")
+  ty.addPassthroughCopy("src/video")
   ty.addPassthroughCopy("src/css")
   ty.addPassthroughCopy("src/js")
-  ty.addPassthroughCopy("src/contact")
-  ty.addPassthroughCopy("src/app-demo")
+  ty.addPassthroughCopy("src/contact/*.js")
+  ty.addPassthroughCopy("src/call")
+  ty.addPassthroughCopy("src/hero-phone")
+  ty.addPassthroughCopy("src/hero-phone-dark")
   ty.addPassthroughCopy("src/blog/images")
   ty.addPassthroughCopy("src/images")
   ty.addPassthroughCopy("src/CNAME")

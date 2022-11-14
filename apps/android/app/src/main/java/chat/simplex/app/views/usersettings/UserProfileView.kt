@@ -2,6 +2,7 @@ package chat.simplex.app.views.usersettings
 
 import android.content.res.Configuration
 import android.graphics.Bitmap
+import android.net.Uri
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -12,6 +13,7 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -23,8 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.HighOrLowlight
-import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.isValidDisplayName
 import com.google.accompanist.insets.ProvideWindowInsets
@@ -35,12 +36,12 @@ import kotlinx.coroutines.launch
 fun UserProfileView(chatModel: ChatModel, close: () -> Unit) {
   val user = chatModel.currentUser.value
   if (user != null) {
-    val editProfile = remember { mutableStateOf(false) }
+    val editProfile = rememberSaveable { mutableStateOf(false) }
     var profile by remember { mutableStateOf(user.profile.toProfile()) }
     UserProfileLayout(
-      close = close,
       editProfile = editProfile,
       profile = profile,
+      close,
       saveProfile = { displayName, fullName, image ->
         withApi {
           val p = Profile(displayName, fullName, image)
@@ -60,21 +61,20 @@ fun UserProfileView(chatModel: ChatModel, close: () -> Unit) {
 
 @Composable
 fun UserProfileLayout(
-  close: () -> Unit,
   editProfile: MutableState<Boolean>,
   profile: Profile,
+  close: () -> Unit,
   saveProfile: (String, String, String?) -> Unit,
 ) {
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val displayName = remember { mutableStateOf(profile.displayName) }
   val fullName = remember { mutableStateOf(profile.fullName) }
-  val chosenImage = remember { mutableStateOf<Bitmap?>(null) }
-  val profileImage = remember { mutableStateOf(profile.image) }
+  val chosenImage = rememberSaveable { mutableStateOf<Uri?>(null) }
+  val profileImage = rememberSaveable { mutableStateOf(profile.image) }
   val scope = rememberCoroutineScope()
   val scrollState = rememberScrollState()
   val keyboardState by getKeyboardState()
   var savedKeyboardState by remember { mutableStateOf(keyboardState) }
-
   ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
     ModalBottomSheetLayout(
       scrimColor = Color.Black.copy(alpha = 0.12F),
@@ -94,15 +94,10 @@ fun UserProfileLayout(
         Column(
           Modifier
             .verticalScroll(scrollState)
-            .padding(bottom = 16.dp),
+            .padding(horizontal = DEFAULT_PADDING),
           horizontalAlignment = Alignment.Start
         ) {
-          Text(
-            stringResource(R.string.your_chat_profile),
-            Modifier.padding(bottom = 24.dp),
-            style = MaterialTheme.typography.h1,
-            color = MaterialTheme.colors.onBackground
-          )
+          AppBarTitle(stringResource(R.string.your_chat_profile), false)
           Text(
             stringResource(R.string.your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it),
             Modifier.padding(bottom = 24.dp),
@@ -279,8 +274,8 @@ fun DeleteImageButton(click: () -> Unit) {
 fun PreviewUserProfileLayoutEditOff() {
   SimpleXTheme {
     UserProfileLayout(
-      close = {},
       profile = Profile.sampleData,
+      close = {},
       editProfile = remember { mutableStateOf(false) },
       saveProfile = { _, _, _ -> }
     )
@@ -297,8 +292,8 @@ fun PreviewUserProfileLayoutEditOff() {
 fun PreviewUserProfileLayoutEditOn() {
   SimpleXTheme {
     UserProfileLayout(
-      close = {},
       profile = Profile.sampleData,
+      close = {},
       editProfile = remember { mutableStateOf(true) },
       saveProfile = { _, _, _ -> }
     )

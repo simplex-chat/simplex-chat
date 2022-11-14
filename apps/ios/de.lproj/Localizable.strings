@@ -1,0 +1,2014 @@
+/* No comment provided by engineer. */
+"\n" = "\n";
+
+/* No comment provided by engineer. */
+" " = " ";
+
+/* No comment provided by engineer. */
+" (" = " (";
+
+/* No comment provided by engineer. */
+" (can be copied)" = " (kann kopiert werden)";
+
+/* No comment provided by engineer. */
+"_italic_" = "\\_kursiv_";
+
+/* No comment provided by engineer. */
+", " = ", ";
+
+/* No comment provided by engineer. */
+": " = ": ";
+
+/* No comment provided by engineer. */
+"!1 colored!" = "!1 farbig!";
+
+/* No comment provided by engineer. */
+"(" = "(";
+
+/* No comment provided by engineer. */
+")" = ")";
+
+/* No comment provided by engineer. */
+"[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Beitragen](https://github.com/simplex-chat/simplex-chat#contribute)";
+
+/* No comment provided by engineer. */
+"[Send us email](mailto:chat@simplex.chat)" = "[Senden Sie uns eine E-Mail](mailto:chat@simplex.chat)";
+
+/* No comment provided by engineer. */
+"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Stern auf GitHub](https://github.com/simplex-chat/simplex-chat)";
+
+/* No comment provided by engineer. */
+"**Add new contact**: to create your one-time QR Code for your contact." = "**Fügen Sie einen neuen Kontakt hinzu**: Erzeugen Sie einen Einmal-QR-Code oder -Link für Ihren Kontakt.";
+
+/* No comment provided by engineer. */
+"**Create link / QR code** for your contact to use." = "**Generieren Sie einen Einladungs-Link / QR code** für Ihren Kontakt.";
+
+/* No comment provided by engineer. */
+"**e2e encrypted** audio call" = "**E2E-verschlüsselter** Audioanruf";
+
+/* No comment provided by engineer. */
+"**e2e encrypted** video call" = "**E2E-verschlüsselter** Videoanruf";
+
+/* No comment provided by engineer. */
+"**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." = "**Mehr Privatsphäre**: Es wird alle 20 Minuten auf neue Nachrichten geprüft. Nur Ihr Geräte-Token wird dem SimpleX-Chat-Server mitgeteilt, aber nicht wie viele Kontakte Sie haben oder welche Nachrichten Sie empfangen.";
+
+/* No comment provided by engineer. */
+"**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." = "**Beste Privatsphäre**: Es wird kein SimpleX-Chat-Benachrichtigungs-Server genutzt, Nachrichten werden in regelmäßigen Abständen im Hintergrund geprüft (dies hängt davon ab, wie häufig Sie die App nutzen).";
+
+/* No comment provided by engineer. */
+"**Paste received link** or open it in the browser and tap **Open in mobile app**." = "**Fügen Sie den von Ihrem Kontakt erhaltenen Link ein** oder öffnen Sie ihn im Browser und tippen Sie auf **In mobiler App öffnen**.";
+
+/* No comment provided by engineer. */
+"**Please note**: you will NOT be able to recover or change passphrase if you lose it." = "**Bitte beachten Sie**: Sie können das Passwort NICHT wiederherstellen oder ändern, wenn Sie es vergessen haben oder verlieren.";
+
+/* No comment provided by engineer. */
+"**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." = "**Empfohlen**: Nur Ihr Geräte-Token und ihre Benachrichtigungen werden an den SimpleX-Chat-Benachrichtigungs-Server gesendet, aber weder der Nachrichteninhalt noch deren Größe oder von wem sie gesendet wurde.";
+
+/* No comment provided by engineer. */
+"**Scan QR code**: to connect to your contact in person or via video call." = "**Scannen Sie den QR-Code**, um sich während einem persönlichen Treffen oder per Videoanruf mit Ihrem Kontakt zu verbinden.";
+
+/* No comment provided by engineer. */
+"**Warning**: Instant push notifications require passphrase saved in Keychain." = "**Warnung**: Sofortige Push-Benachrichtigungen erfordern die Eingabe eines Passworts, welches in Ihrem Schlüsselbund gespeichert ist.";
+
+/* No comment provided by engineer. */
+"*bold*" = "\\*fett*";
+
+/* No comment provided by engineer. */
+"#secret#" = "#geheim#";
+
+/* No comment provided by engineer. */
+"%@" = "%@";
+
+/* No comment provided by engineer. */
+"%@ / %@" = "%@ / %@";
+
+/* No comment provided by engineer. */
+"%@ %@" = "%@ %@";
+
+/* notification title */
+"%@ is connected!" = "%@ ist mit Ihnen verbunden!";
+
+/* notification title */
+"%@ wants to connect!" = "%@ will sich mit Ihnen verbinden!";
+
+/* integrity error chat item */
+"%d skipped message(s)" = "%d übersprungene Nachricht(en)";
+
+/* No comment provided by engineer. */
+"%lld" = "%lld";
+
+/* No comment provided by engineer. */
+"%lld %@" = "%lld %@";
+
+/* No comment provided by engineer. */
+"%lld contact(s) selected" = "%lld Kontakt(e) ausgewählt";
+
+/* No comment provided by engineer. */
+"%lld file(s) with total size of %@" = "%lld Datei(en) mit einem Gesamtspeicherverbrauch von %@";
+
+/* No comment provided by engineer. */
+"%lld members" = "%lld Mitglieder";
+
+/* No comment provided by engineer. */
+"%lld second(s)" = "%lld Sekunde(n)";
+
+/* No comment provided by engineer. */
+"%lldk" = "%lldk";
+
+/* No comment provided by engineer. */
+"`a + b`" = "\\`a + b`";
+
+/* No comment provided by engineer. */
+"~strike~" = "\\~durchstreichen~";
+
+/* No comment provided by engineer. */
+"1 day" = "täglich";
+
+/* No comment provided by engineer. */
+"1 month" = "monatlich";
+
+/* No comment provided by engineer. */
+"1 week" = "wöchentlich";
+
+/* No comment provided by engineer. */
+"6" = "6";
+
+/* notification title */
+"A new contact" = "Ein neuer Kontakt";
+
+/* No comment provided by engineer. */
+"A random profile will be sent to the contact that you received this link from" = "Ein zufälliges Profil wird an den Kontakt gesendet, von dem Sie diesen Link erhalten haben.";
+
+/* No comment provided by engineer. */
+"A random profile will be sent to your contact" = "Ein zufälliges Profil wird an Ihren Kontakt gesendet.";
+
+/* No comment provided by engineer. */
+"About SimpleX" = "Über SimpleX";
+
+/* No comment provided by engineer. */
+"About SimpleX Chat" = "Über SimpleX Chat";
+
+/* No comment provided by engineer. */
+"above, then choose:" = "Danach die gewünschte Aktion auswählen:";
+
+/* No comment provided by engineer. */
+"Accent color" = "Akzentfarbe";
+
+/* accept contact request via notification
+   accept incoming call via notification */
+"Accept" = "Annehmen";
+
+/* No comment provided by engineer. */
+"Accept contact" = "Kontakt annehmen";
+
+/* notification body */
+"Accept contact request from %@?" = "Die Kontaktanfrage von %@ annehmen?";
+
+/* No comment provided by engineer. */
+"Accept incognito" = "Inkognito akzeptieren";
+
+/* No comment provided by engineer. */
+"Accept requests" = "Anfragen annehmen";
+
+/* call status */
+"accepted call" = "Anruf angenommen";
+
+/* member role */
+"admin" = "Admin";
+
+/* No comment provided by engineer. */
+"Advanced network settings" = "Erweiterte Netzwerkeinstellungen";
+
+/* No comment provided by engineer. */
+"All group members will remain connected." = "Alle Gruppenmitglieder bleiben verbunden.";
+
+/* No comment provided by engineer. */
+"All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." = "Alle Nachrichten werden gelöscht - dies kann nicht rückgängig gemacht werden! Die Nachrichten werden NUR bei Ihnen gelöscht.";
+
+/* No comment provided by engineer. */
+"All your contacts will remain connected" = "Alle Ihre Kontakte bleiben verbunden.";
+
+/* No comment provided by engineer. */
+"Already connected?" = "Sind Sie bereits verbunden?";
+
+/* No comment provided by engineer. */
+"Answer call" = "Anruf annehmen";
+
+/* No comment provided by engineer. */
+"App icon" = "App Icon";
+
+/* No comment provided by engineer. */
+"Appearance" = "Design";
+
+/* No comment provided by engineer. */
+"Attach" = "Anhängen";
+
+/* No comment provided by engineer. */
+"Audio & video calls" = "Audio- & Videoanrufe";
+
+/* No comment provided by engineer. */
+"audio call (not e2e encrypted)" = "Audioanruf (nicht E2E verschlüsselt)";
+
+/* No comment provided by engineer. */
+"Authentication failed" = "Authentifizierung fehlgeschlagen";
+
+/* No comment provided by engineer. */
+"Authentication unavailable" = "Authentifizierung nicht verfügbar";
+
+/* No comment provided by engineer. */
+"Auto-accept images" = "Bilder automatisch akzeptieren";
+
+/* No comment provided by engineer. */
+"Automatically" = "Automatisch";
+
+/* integrity error chat item */
+"bad message hash" = "Ungültiger Nachrichten-Hash";
+
+/* integrity error chat item */
+"bad message ID" = "Ungültige Nachrichten-ID";
+
+/* No comment provided by engineer. */
+"bold" = "fett";
+
+/* No comment provided by engineer. */
+"Call already ended!" = "Anruf ist bereits beendet!";
+
+/* call status */
+"call error" = "Fehler bei Anruf";
+
+/* call status */
+"call in progress" = "Anruf läuft";
+
+/* call status */
+"calling…" = "Anrufen…";
+
+/* No comment provided by engineer. */
+"Calls" = "Anrufe";
+
+/* No comment provided by engineer. */
+"Can't invite contact!" = "Kontakt kann nicht eingeladen werden!";
+
+/* No comment provided by engineer. */
+"Can't invite contacts!" = "Kontakte können nicht eingeladen werden!";
+
+/* No comment provided by engineer. */
+"Cancel" = "Abbrechen";
+
+/* No comment provided by engineer. */
+"Cannot access keychain to save database password" = "Die App kann nicht auf den Schlüsselbund zugreifen, um das Datenbank-Passwort zu speichern.";
+
+/* No comment provided by engineer. */
+"Cannot receive file" = "Datei kann nicht empfangen werden";
+
+/* No comment provided by engineer. */
+"Change" = "Ändern";
+
+/* No comment provided by engineer. */
+"Change database passphrase?" = "Datenbank-Passwort ändern?";
+
+/* No comment provided by engineer. */
+"Change member role?" = "Die Mitgliederrolle ändern?";
+
+/* No comment provided by engineer. */
+"Change receiving address (BETA)" = "Wechseln der Empfängeradresse (BETA)";
+
+/* No comment provided by engineer. */
+"Change receiving address?" = "Empfängeradresse wechseln?";
+
+/* No comment provided by engineer. */
+"Change role" = "Rolle ändern";
+
+/* chat item text */
+"changed address for you" = "wechselte die Adresse für Sie";
+
+/* rcv group event chat item */
+"changed role of %@ to %@" = "änderte die Rolle von %1$@ auf %2$@";
+
+/* rcv group event chat item */
+"changed your role to %@" = "änderte Ihre Rolle auf %@";
+
+/* chat item text */
+"changing address for %@..." = "Wechseln der Adresse für %@ ...";
+
+/* chat item text */
+"changing address..." = "Wechseln der Adresse ...";
+
+/* No comment provided by engineer. */
+"Chat archive" = "Datenbank Archiv";
+
+/* No comment provided by engineer. */
+"Chat console" = "Chat Konsole";
+
+/* No comment provided by engineer. */
+"Chat database" = "Chat-Datenbank";
+
+/* No comment provided by engineer. */
+"Chat database deleted" = "Chat-Datenbank gelöscht";
+
+/* No comment provided by engineer. */
+"Chat database imported" = "Chat-Datenbank importiert";
+
+/* No comment provided by engineer. */
+"Chat is running" = "Der Chat läuft";
+
+/* No comment provided by engineer. */
+"Chat is stopped" = "Der Chat ist beendet";
+
+/* No comment provided by engineer. */
+"Chats" = "Chats";
+
+/* No comment provided by engineer. */
+"Choose file" = "Datei auswählen";
+
+/* No comment provided by engineer. */
+"Choose from library" = "Aus dem Fotoalbum auswählen";
+
+/* No comment provided by engineer. */
+"Clear" = "Löschen";
+
+/* No comment provided by engineer. */
+"Clear conversation" = "Chatinhalte löschen";
+
+/* No comment provided by engineer. */
+"Clear conversation?" = "Unterhaltung löschen?";
+
+/* No comment provided by engineer. */
+"colored" = "farbig";
+
+/* No comment provided by engineer. */
+"Colors" = "Farben";
+
+/* No comment provided by engineer. */
+"complete" = "vollständig";
+
+/* No comment provided by engineer. */
+"Configure ICE servers" = "ICE-Server konfigurieren";
+
+/* No comment provided by engineer. */
+"Configure SMP servers" = "SMP-Server konfigurieren";
+
+/* No comment provided by engineer. */
+"Confirm" = "Bestätigen";
+
+/* No comment provided by engineer. */
+"Confirm new passphrase…" = "Neues Passwort bestätigen…";
+
+/* No comment provided by engineer. */
+"Connect" = "Verbinden";
+
+/* No comment provided by engineer. */
+"connect to SimpleX Chat developers." = "Mit den SimpleX Chat Entwicklern verbinden.";
+
+/* No comment provided by engineer. */
+"Connect via contact link?" = "Über den Kontakt-Link verbinden?";
+
+/* No comment provided by engineer. */
+"Connect via group link?" = "Über den Gruppen-Link verbinden?";
+
+/* No comment provided by engineer. */
+"Connect via link" = "Über einen Link verbinden";
+
+/* No comment provided by engineer. */
+"Connect via link / QR code" = "Über einen Link / QR-Code verbinden";
+
+/* No comment provided by engineer. */
+"Connect via one-time link?" = "Über einen Einmal-Link verbinden?";
+
+/* No comment provided by engineer. */
+"Connect via relay" = "Über ein Relais verbinden";
+
+/* No comment provided by engineer. */
+"connected" = "Verbunden";
+
+/* No comment provided by engineer. */
+"connecting" = "verbinde";
+
+/* No comment provided by engineer. */
+"connecting (accepted)" = "Verbindung (angenommen)";
+
+/* No comment provided by engineer. */
+"connecting (announced)" = "Verbindung (angekündigt)";
+
+/* No comment provided by engineer. */
+"connecting (introduced)" = "Verbindung (erstellt)";
+
+/* No comment provided by engineer. */
+"connecting (introduction invitation)" = "Verbindung (eingeladen)";
+
+/* call status */
+"connecting call" = "Anruf wird verbunden…";
+
+/* No comment provided by engineer. */
+"Connecting server…" = "Mit dem Server verbinden…";
+
+/* No comment provided by engineer. */
+"Connecting server… (error: %@)" = "Mit dem Server verbinden… (Fehler: %@)";
+
+/* chat list item title */
+"connecting…" = "Verbinde…";
+
+/* No comment provided by engineer. */
+"Connection" = "Verbindung steht";
+
+/* No comment provided by engineer. */
+"Connection error" = "Verbindungsfehler";
+
+/* No comment provided by engineer. */
+"Connection error (AUTH)" = "Verbindungsfehler (AUTH)";
+
+/* chat list item title (it should not be shown */
+"connection established" = "Verbindung hergestellt";
+
+/* No comment provided by engineer. */
+"Connection request" = "Verbindungsanfrage";
+
+/* No comment provided by engineer. */
+"Connection request sent!" = "Verbindungsanfrage wurde gesendet!";
+
+/* No comment provided by engineer. */
+"Connection timeout" = "Verbindungszeitüberschreitung";
+
+/* connection information */
+"connection:%@" = "Verbindung:%@";
+
+/* No comment provided by engineer. */
+"Contact already exists" = "Der Kontakt ist bereits vorhanden";
+
+/* No comment provided by engineer. */
+"Contact and all messages will be deleted - this cannot be undone!" = "Der Kontakt und alle Nachrichten werden gelöscht - dies kann nicht rückgängig gemacht werden!";
+
+/* No comment provided by engineer. */
+"contact has e2e encryption" = "Kontakt nutzt E2E-Verschlüsselung";
+
+/* No comment provided by engineer. */
+"contact has no e2e encryption" = "Kontakt nutzt keine E2E-Verschlüsselung";
+
+/* notification */
+"Contact hidden:" = "Kontakt verborgen:";
+
+/* notification */
+"Contact is connected" = "Mit Ihrem Kontakt verbunden";
+
+/* No comment provided by engineer. */
+"Contact is not connected yet!" = "Ihr Kontakt ist noch nicht verbunden!";
+
+/* No comment provided by engineer. */
+"Contact name" = "Kontaktname";
+
+/* No comment provided by engineer. */
+"Contact requests" = "Kontaktanfragen";
+
+/* chat item action */
+"Copy" = "Kopieren";
+
+/* No comment provided by engineer. */
+"Create" = "Erstellen";
+
+/* No comment provided by engineer. */
+"Create address" = "Adresse erstellen";
+
+/* No comment provided by engineer. */
+"Create link" = "Link erzeugen";
+
+/* No comment provided by engineer. */
+"Create one-time invitation link" = "Erstellen Sie einen einmaligen Einladungslink";
+
+/* No comment provided by engineer. */
+"Create secret group" = "Geheime Gruppe erstellen";
+
+/* No comment provided by engineer. */
+"Create your profile" = "Erstellen Sie Ihr Profil";
+
+/* No comment provided by engineer. */
+"Created on %@" = "Erstellt am %@";
+
+/* No comment provided by engineer. */
+"creator" = "Ersteller";
+
+/* No comment provided by engineer. */
+"Current passphrase…" = "Aktuelles Passwort…";
+
+/* No comment provided by engineer. */
+"Currently maximum supported file size is %@." = "Die derzeit maximal unterstützte Dateigröße beträgt %@.";
+
+/* No comment provided by engineer. */
+"Dark" = "Dunkel";
+
+/* No comment provided by engineer. */
+"Data" = "Daten";
+
+/* No comment provided by engineer. */
+"Database encrypted!" = "Datenbank verschlüsselt!";
+
+/* No comment provided by engineer. */
+"Database encryption passphrase will be updated and stored in the keychain.\n" = "Das Passwort für die Datenbankverschlüsselung wird aktualisiert und im Keychain gespeichert.\n";
+
+/* No comment provided by engineer. */
+"Database encryption passphrase will be updated.\n" = "Das Passwort für die Datenbankverschlüsselung wird aktualisiert.\n";
+
+/* No comment provided by engineer. */
+"Database error" = "Datenbankfehler";
+
+/* No comment provided by engineer. */
+"Database ID" = "Datenbank-ID";
+
+/* No comment provided by engineer. */
+"Database is encrypted using a random passphrase, you can change it." = "Die Datenbank wird mit einem zufälligen Passwort verschlüsselt, Sie können es ändern.";
+
+/* No comment provided by engineer. */
+"Database is encrypted using a random passphrase. Please change it before exporting." = "Die Datenbank ist mit einem zufälligen Passwort verschlüsselt. Bitte ändern Sie es vor dem Exportieren.";
+
+/* No comment provided by engineer. */
+"Database passphrase" = "Datenbank-Passwort";
+
+/* No comment provided by engineer. */
+"Database passphrase & export" = "Datenbank-Passwort & -Export";
+
+/* No comment provided by engineer. */
+"Database passphrase is different from saved in the keychain." = "Das Datenbank-Passwort unterscheidet sich von dem im Keychain gespeicherten.";
+
+/* No comment provided by engineer. */
+"Database passphrase is required to open chat." = "Das Datenbank-Passwort ist erforderlich, um den Chat zu öffnen.";
+
+/* No comment provided by engineer. */
+"Database will be encrypted and the passphrase stored in the keychain.\n" = "Die Datenbank wird verschlüsselt, und das Passwort im Keychain gespeichert.\n";
+
+/* No comment provided by engineer. */
+"Database will be encrypted.\n" = "Die Datenbank wird verschlüsselt.\n";
+
+/* No comment provided by engineer. */
+"Database will be migrated when the app restarts" = "Die Datenbank wird beim nächsten Start der App migriert";
+
+/* No comment provided by engineer. */
+"Decentralized" = "Dezentral";
+
+/* chat item action */
+"Delete" = "Löschen";
+
+/* No comment provided by engineer. */
+"Delete address" = "Adresse löschen";
+
+/* No comment provided by engineer. */
+"Delete address?" = "Adresse löschen?";
+
+/* No comment provided by engineer. */
+"Delete archive" = "Archiv löschen";
+
+/* No comment provided by engineer. */
+"Delete chat archive?" = "Chat Archiv löschen?";
+
+/* No comment provided by engineer. */
+"Delete chat profile?" = "Chat-Profil löschen?";
+
+/* No comment provided by engineer. */
+"Delete connection" = "Verbindung löschen";
+
+/* No comment provided by engineer. */
+"Delete contact" = "Kontakt löschen";
+
+/* No comment provided by engineer. */
+"Delete Contact" = "Kontakt löschen";
+
+/* No comment provided by engineer. */
+"Delete contact?" = "Kontakt löschen?";
+
+/* No comment provided by engineer. */
+"Delete database" = "Datenbank löschen";
+
+/* No comment provided by engineer. */
+"Delete files & media" = "Dateien & Medien löschen";
+
+/* No comment provided by engineer. */
+"Delete files and media?" = "Dateien und Medien löschen?";
+
+/* No comment provided by engineer. */
+"Delete for everyone" = "Für Alle löschen";
+
+/* No comment provided by engineer. */
+"Delete for me" = "Nur bei mir löschen";
+
+/* No comment provided by engineer. */
+"Delete group" = "Gruppe löschen";
+
+/* No comment provided by engineer. */
+"Delete group?" = "Gruppe löschen?";
+
+/* No comment provided by engineer. */
+"Delete invitation" = "Einladung löschen";
+
+/* No comment provided by engineer. */
+"Delete link" = "Link löschen";
+
+/* No comment provided by engineer. */
+"Delete link?" = "Link löschen?";
+
+/* No comment provided by engineer. */
+"Delete message?" = "Die Nachricht löschen?";
+
+/* No comment provided by engineer. */
+"Delete messages" = "Nachrichten löschen";
+
+/* No comment provided by engineer. */
+"Delete messages after" = "Löschen der Nachrichten";
+
+/* No comment provided by engineer. */
+"Delete old database" = "Alte Datenbank löschen";
+
+/* No comment provided by engineer. */
+"Delete old database?" = "Alte Datenbank löschen?";
+
+/* No comment provided by engineer. */
+"Delete pending connection" = "Ausstehende Verbindung löschen";
+
+/* No comment provided by engineer. */
+"Delete pending connection?" = "Die ausstehende Verbindung löschen?";
+
+/* deleted chat item */
+"deleted" = "Gelöscht";
+
+/* rcv group event chat item */
+"deleted group" = "Gruppe gelöscht";
+
+/* No comment provided by engineer. */
+"Develop" = "Entwicklung";
+
+/* No comment provided by engineer. */
+"Developer tools" = "Entwicklertools";
+
+/* No comment provided by engineer. */
+"Device" = "Gerät";
+
+/* No comment provided by engineer. */
+"Device authentication is disabled. Turning off SimpleX Lock." = "Die Geräteauthentifizierung ist deaktiviert. SimpleX Sperre ist abgeschaltet.";
+
+/* No comment provided by engineer. */
+"Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." = "Die Geräteauthentifizierung ist deaktiviert. Sie können die SimpleX Sperre über die Einstellungen aktivieren, sobald Sie die Geräteauthentifizierung aktiviert haben.";
+
+/* connection level description */
+"direct" = "direkt";
+
+/* authentication reason */
+"Disable SimpleX Lock" = "SimpleX Sperre deaktivieren";
+
+/* No comment provided by engineer. */
+"Display name" = "Angezeigter Name";
+
+/* No comment provided by engineer. */
+"Display name:" = "Angezeigter Name:";
+
+/* No comment provided by engineer. */
+"Do it later" = "Später wiederholen";
+
+/* No comment provided by engineer. */
+"Do NOT use SimpleX for emergency calls." = "Nutzen Sie SimpleX nicht für Notrufe.";
+
+/* integrity error chat item */
+"duplicate message" = "Doppelte Nachricht";
+
+/* No comment provided by engineer. */
+"e2e encrypted" = "E2E-verschlüsselt";
+
+/* chat item action */
+"Edit" = "Bearbeiten";
+
+/* No comment provided by engineer. */
+"Edit group profile" = "Gruppenprofil bearbeiten";
+
+/* No comment provided by engineer. */
+"Enable" = "Aktivieren";
+
+/* No comment provided by engineer. */
+"Enable automatic message deletion?" = "Automatisches Löschen von Nachrichten aktivieren?";
+
+/* No comment provided by engineer. */
+"Enable instant notifications?" = "Sofortige Benachrichtigungen aktivieren?";
+
+/* No comment provided by engineer. */
+"Enable notifications" = "Benachrichtigungen aktivieren";
+
+/* No comment provided by engineer. */
+"Enable periodic notifications?" = "Regelmäßige Benachrichtigungen aktivieren?";
+
+/* authentication reason */
+"Enable SimpleX Lock" = "SimpleX Sperre aktivieren";
+
+/* No comment provided by engineer. */
+"Enable TCP keep-alive" = "TCP-Keep-alive aktivieren";
+
+/* No comment provided by engineer. */
+"Encrypt" = "Verschlüsseln";
+
+/* No comment provided by engineer. */
+"Encrypt database?" = "Datenbank verschlüsseln?";
+
+/* No comment provided by engineer. */
+"Encrypted database" = "Verschlüsselte Datenbank";
+
+/* notification */
+"Encrypted message or another event" = "Verschlüsselte Nachricht oder ein anderes Ereignis";
+
+/* notification */
+"Encrypted message: database error" = "Verschlüsselte Nachricht: Datenbankfehler";
+
+/* notification */
+"Encrypted message: keychain error" = "Verschlüsselte Nachricht: Schlüsselbundfehler";
+
+/* notification */
+"Encrypted message: no passphrase" = "Verschlüsselte Nachricht: Fehlendes Passwort";
+
+/* notification */
+"Encrypted message: unexpected error" = "Verschlüsselte Nachricht: Unerwarteter Fehler";
+
+/* No comment provided by engineer. */
+"ended" = "beendet";
+
+/* call status */
+"ended call %@" = "Anruf beendet %@";
+
+/* No comment provided by engineer. */
+"Enter correct passphrase." = "Geben Sie das korrekte Passwort ein.";
+
+/* No comment provided by engineer. */
+"Enter passphrase…" = "Passwort eingeben…";
+
+/* No comment provided by engineer. */
+"error" = "Fehler";
+
+/* No comment provided by engineer. */
+"Error accepting contact request" = "Fehler beim Annehmen der Kontaktanfrage";
+
+/* No comment provided by engineer. */
+"Error accessing database file" = "Fehler beim Zugriff auf die Datenbankdatei";
+
+/* No comment provided by engineer. */
+"Error adding member(s)" = "Fehler beim Hinzufügen von Mitgliedern";
+
+/* No comment provided by engineer. */
+"Error changing address" = "Fehler beim Wechseln der Adresse";
+
+/* No comment provided by engineer. */
+"Error changing role" = "Fehler beim Ändern der Rolle";
+
+/* No comment provided by engineer. */
+"Error changing setting" = "Fehler beim Ändern der Einstellung";
+
+/* No comment provided by engineer. */
+"Error creating address" = "Fehler beim Erstellen der Adresse";
+
+/* No comment provided by engineer. */
+"Error creating group" = "Fehler beim Erzeugen der Gruppe";
+
+/* No comment provided by engineer. */
+"Error creating group link" = "Fehler beim Erzeugen des Gruppen-Links";
+
+/* No comment provided by engineer. */
+"Error deleting chat database" = "Fehler beim Löschen der Chat-Datenbank";
+
+/* No comment provided by engineer. */
+"Error deleting chat!" = "Fehler beim Löschen des Chats!";
+
+/* No comment provided by engineer. */
+"Error deleting connection" = "Fehler beim Löschen der Verbindung";
+
+/* No comment provided by engineer. */
+"Error deleting contact" = "Fehler beim Löschen des Kontakts";
+
+/* No comment provided by engineer. */
+"Error deleting database" = "Fehler beim Löschen der Datenbank";
+
+/* No comment provided by engineer. */
+"Error deleting old database" = "Fehler beim Löschen der alten Datenbank";
+
+/* No comment provided by engineer. */
+"Error deleting token" = "Fehler beim Löschen des Tokens";
+
+/* No comment provided by engineer. */
+"Error enabling notifications" = "Fehler beim Aktivieren der Benachrichtigungen";
+
+/* No comment provided by engineer. */
+"Error encrypting database" = "Fehler beim Verschlüsseln der Datenbank";
+
+/* No comment provided by engineer. */
+"Error exporting chat database" = "Fehler beim Exportieren der Chat-Datenbank";
+
+/* No comment provided by engineer. */
+"Error importing chat database" = "Fehler beim Importieren der Chat-Datenbank";
+
+/* No comment provided by engineer. */
+"Error joining group" = "Fehler beim Beitritt zur Gruppe";
+
+/* No comment provided by engineer. */
+"Error receiving file" = "Fehler beim Empfangen der Datei";
+
+/* No comment provided by engineer. */
+"Error removing member" = "Fehler beim Entfernen des Mitglieds";
+
+/* No comment provided by engineer. */
+"Error saving group profile" = "Fehler beim Speichern des Gruppenprofils";
+
+/* No comment provided by engineer. */
+"Error saving ICE servers" = "Fehler beim Speichern der ICE-Server";
+
+/* No comment provided by engineer. */
+"Error saving SMP servers" = "Fehler beim Speichern der SMP Server";
+
+/* No comment provided by engineer. */
+"Error sending message" = "Fehler beim Senden der Nachricht";
+
+/* No comment provided by engineer. */
+"Error starting chat" = "Fehler beim Starten des Chats";
+
+/* No comment provided by engineer. */
+"Error stopping chat" = "Fehler beim Beenden des Chats";
+
+/* No comment provided by engineer. */
+"Error updating message" = "Fehler beim Aktualisieren der Nachricht";
+
+/* No comment provided by engineer. */
+"Error updating settings" = "Fehler beim Aktualisieren der Einstellungen";
+
+/* No comment provided by engineer. */
+"Error: %@" = "Fehler: %@";
+
+/* No comment provided by engineer. */
+"Error: no database file" = "Fehler: Keine Datenbankdatei";
+
+/* No comment provided by engineer. */
+"Error: URL is invalid" = "Fehler: URL ist ungültig";
+
+/* No comment provided by engineer. */
+"Export database" = "Datenbank exportieren";
+
+/* No comment provided by engineer. */
+"Export error:" = "Fehler beim Export:";
+
+/* No comment provided by engineer. */
+"Exported database archive." = "Exportiertes Datenbankarchiv.";
+
+/* No comment provided by engineer. */
+"Exporting database archive..." = "Export des Datenbankarchivs...";
+
+/* No comment provided by engineer. */
+"File will be received when your contact is online, please wait or check later!" = "Die Datei wird empfangen, sobald Ihr Kontakt online ist. Bitte warten oder schauen Sie später nochmal nach!";
+
+/* No comment provided by engineer. */
+"File: %@" = "Datei: %@";
+
+/* No comment provided by engineer. */
+"For console" = "Für Konsole";
+
+/* No comment provided by engineer. */
+"Full name (optional)" = "Vollständiger Name (optional)";
+
+/* No comment provided by engineer. */
+"Full name:" = "Vollständiger Name:";
+
+/* No comment provided by engineer. */
+"Group" = "Gruppe";
+
+/* No comment provided by engineer. */
+"group deleted" = "Gruppe gelöscht";
+
+/* No comment provided by engineer. */
+"Group display name" = "Anzeigename der Gruppe";
+
+/* No comment provided by engineer. */
+"Group full name (optional)" = "Vollständiger Gruppenname (optional)";
+
+/* No comment provided by engineer. */
+"Group image" = "Gruppenbild";
+
+/* No comment provided by engineer. */
+"Group invitation" = "Gruppeneinladung";
+
+/* No comment provided by engineer. */
+"Group invitation expired" = "Die Gruppeneinladung ist abgelaufen";
+
+/* No comment provided by engineer. */
+"Group invitation is no longer valid, it was removed by sender." = "Die Gruppeneinladung ist nicht mehr gültig, sie wurde vom Absender entfernt.";
+
+/* No comment provided by engineer. */
+"Group link" = "Gruppen-Link";
+
+/* notification */
+"Group message:" = "Grppennachricht:";
+
+/* No comment provided by engineer. */
+"Group profile is stored on members' devices, not on the servers." = "Das Gruppenprofil wird nur auf den Mitglieds-Systemen gespeichtert und nicht auf den Servern.";
+
+/* snd group event chat item */
+"group profile updated" = "Gruppenprofil aktualisiert";
+
+/* No comment provided by engineer. */
+"Group will be deleted for all members - this cannot be undone!" = "Die Gruppe wird für alle Mitglieder gelöscht - dies kann nicht rückgängig gemacht werden!";
+
+/* No comment provided by engineer. */
+"Group will be deleted for you - this cannot be undone!" = "Die Gruppe wird für Sie gelöscht - dies kann nicht rückgängig gemacht werden!";
+
+/* No comment provided by engineer. */
+"Help" = "Hilfe";
+
+/* No comment provided by engineer. */
+"Hidden" = "Verborgen";
+
+/* No comment provided by engineer. */
+"How it works" = "Wie es funktioniert";
+
+/* No comment provided by engineer. */
+"How SimpleX works" = "Wie SimpleX funktioniert";
+
+/* No comment provided by engineer. */
+"How to" = "Anleitung";
+
+/* No comment provided by engineer. */
+"How to use it" = "Wie man SimpleX nutzt";
+
+/* No comment provided by engineer. */
+"How to use markdown" = "Markdowns verwenden";
+
+/* No comment provided by engineer. */
+"ICE servers (one per line)" = "ICE-Server (einer pro Zeile)";
+
+/* No comment provided by engineer. */
+"If the video fails to connect, flip the camera to resolve it." = "Wenn der Videoanruf nicht funktioniert, wechseln Sie die Kamera, um das Problem zu lösen.";
+
+/* No comment provided by engineer. */
+"If you can't meet in person, **show QR code in the video call**, or share the link." = "Wenn Sie sich nicht persönlich treffen können, können Sie den **QR-Code während eines Videoanrufs anzeigen** oder den Einladungslink über einen anderen Kanal mit Ihrem Kontakt teilen.";
+
+/* No comment provided by engineer. */
+"If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." = "Wenn Sie sich nicht persönlich treffen können, können Sie den **QR-Code während eines Videoanrufs scannen** oder Ihr Kontakt kann den Einladungslink über einen anderen Kanal mit Ihnen teilen.";
+
+/* No comment provided by engineer. */
+"If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." = "Tippen Sie unten auf **Später wiederholen**, wenn Sie den Chat jetzt benötigen (es wird Ihnen angeboten, die Datenbank bei einem Neustart der App zu migrieren).";
+
+/* No comment provided by engineer. */
+"Ignore" = "Ignorieren";
+
+/* No comment provided by engineer. */
+"Image will be received when your contact is online, please wait or check later!" = "Das Bild wird empfangen, sobald Ihr Kontakt online ist. Bitte warten oder schauen Sie später nochmal nach!";
+
+/* No comment provided by engineer. */
+"Immune to spam and abuse" = "Immun gegen Spam und Missbrauch";
+
+/* No comment provided by engineer. */
+"Import" = "Importieren";
+
+/* No comment provided by engineer. */
+"Import chat database?" = "Chat-Datenbank importieren?";
+
+/* No comment provided by engineer. */
+"Import database" = "Datenbank importieren";
+
+/* No comment provided by engineer. */
+"Incognito" = "Inkognito";
+
+/* No comment provided by engineer. */
+"Incognito mode" = "Inkognito Modus";
+
+/* No comment provided by engineer. */
+"Incognito mode is not supported here - your main profile will be sent to group members" = "Der Inkognito-Modus wird hier nicht unterstützt - Ihr Hauptprofil wird an die Gruppenmitglieder gesendet";
+
+/* No comment provided by engineer. */
+"Incognito mode protects the privacy of your main profile name and image — for each new contact a new random profile is created." = "Der Inkognito-Modus schützt die Privatsphäre Ihres Hauptprofilnamens und -bildes – für jeden neuen Kontakt wird ein neues Zufallsprofil erstellt.";
+
+/* chat list item description */
+"incognito via contact address link" = "Inkognito über einen Kontaktadressen-Link";
+
+/* chat list item description */
+"incognito via group link" = "Inkognito über einen Gruppen-Link";
+
+/* chat list item description */
+"incognito via one-time link" = "Inkognito über einen Einmal-Link";
+
+/* notification */
+"Incoming audio call" = "Eingehender Audioanruf";
+
+/* notification */
+"Incoming call" = "Eingehender Anruf";
+
+/* notification */
+"Incoming video call" = "Eingehender Videoanruf";
+
+/* connection level description */
+"indirect (%d)" = "indirekt (%d)";
+
+/* No comment provided by engineer. */
+"Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "Installieren Sie [SimpleX Chat als Terminalanwendung](https://github.com/simplex-chat/simplex-chat)";
+
+/* No comment provided by engineer. */
+"Instant push notifications will be hidden!\n" = "Sofortige Push-Benachrichtigungen werden verborgen!\n";
+
+/* No comment provided by engineer. */
+"Instantly" = "Sofort";
+
+/* No comment provided by engineer. */
+"Invalid connection link" = "Ungültiger Verbindungslink";
+
+/* No comment provided by engineer. */
+"Invitation expired!" = "Einladung abgelaufen!";
+
+/* group name */
+"invitation to group %@" = "Einladung zur Gruppe %@";
+
+/* No comment provided by engineer. */
+"Invite members" = "Mitglieder einladen";
+
+/* No comment provided by engineer. */
+"Invite to group" = "In Gruppe einladen";
+
+/* No comment provided by engineer. */
+"invited" = "eingeladen";
+
+/* rcv group event chat item */
+"invited %@" = "hat %@ eingeladen.";
+
+/* chat list item title */
+"invited to connect" = "Für eine Verbindung eingeladen";
+
+/* rcv group event chat item */
+"invited via your group link" = "wurde über Ihren Gruppen-Link eingeladen";
+
+/* No comment provided by engineer. */
+"iOS Keychain is used to securely store passphrase - it allows receiving push notifications." = "Für die sichere Speicherung des Passworts wird der iOS Schlüsselbund verwendet - dies erlaubt den Empfang von Push-Benachrichtigungen.";
+
+/* No comment provided by engineer. */
+"iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications." = "Für die sichere Speicherung des Passworts nach dem Neustart der App und dem Wechsel des Passworts wird der iOS Schlüsselbund verwendet - dies erlaubt den Empfang von Push-Benachrichtigungen.";
+
+/* No comment provided by engineer. */
+"It allows having many anonymous connections without any shared data between them in a single chat profile." = "Er ermöglicht mehrere anonyme Verbindungen in einem einzigen Chat-Profil ohne Daten zwischen diesen zu teilen.";
+
+/* No comment provided by engineer. */
+"It can happen when:\n1. The messages expire on the server if they were not received for 30 days,\n2. The server you use to receive the messages from this contact was updated and restarted.\n3. The connection is compromised.\nPlease connect to the developers via Settings to receive the updates about the servers.\nWe will be adding server redundancy to prevent lost messages." = "Dies kann unter folgenden Umständen passieren:\n1. Die Nachrichten verfallen auf dem Server, wenn sie 30 Tage lang nicht empfangen wurden.\n2. Der Server, den Sie zum Empfang der Nachrichten von diesem Kontakt verwenden, wurde aktualisiert und neu gestartet.\n3. Die Verbindung ist kompromittiert.\nBitte nehmen Sie über die Einstellungen Verbindung mit den Entwicklern auf, um Updates zu den Servern zu erhalten.\nWir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu verhindern.";
+
+/* No comment provided by engineer. */
+"It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "Es sieht so aus, dass Sie bereits über diesen Link verbunden sind. Wenn das nicht der Fall, gab es einen Fehler (%@).";
+
+/* No comment provided by engineer. */
+"italic" = "kursiv";
+
+/* No comment provided by engineer. */
+"Join" = "Beitreten";
+
+/* No comment provided by engineer. */
+"join as %@" = "beitreten als %@";
+
+/* No comment provided by engineer. */
+"Join group" = "Treten Sie der Gruppe bei";
+
+/* No comment provided by engineer. */
+"Join incognito" = "Inkognito beitreten";
+
+/* No comment provided by engineer. */
+"Joining group" = "Der Gruppe beitreten";
+
+/* No comment provided by engineer. */
+"Keychain error" = "Schlüsselbundfehler";
+
+/* No comment provided by engineer. */
+"Large file!" = "Große Datei!";
+
+/* No comment provided by engineer. */
+"Leave" = "Verlassen";
+
+/* No comment provided by engineer. */
+"Leave group" = "Gruppe verlassen";
+
+/* No comment provided by engineer. */
+"Leave group?" = "Die Gruppe verlassen?";
+
+/* rcv group event chat item */
+"left" = "hat die Gruppe verlassen";
+
+/* No comment provided by engineer. */
+"Light" = "Hell";
+
+/* No comment provided by engineer. */
+"Limitations" = "Einschränkungen";
+
+/* No comment provided by engineer. */
+"Local name" = "Lokaler Name";
+
+/* No comment provided by engineer. */
+"Make a private connection" = "Stellen Sie eine private Verbindung her";
+
+/* No comment provided by engineer. */
+"Make sure SMP server addresses are in correct format, line separated and are not duplicated." = "Stellen Sie sicher, dass die SMP-Server Adressen das richtige Format haben, zeilenweise angeordnet und nicht kopiert sind.";
+
+/* No comment provided by engineer. */
+"Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." = "Stellen Sie sicher, dass die WebRTC ICE-Server Adressen das richtige Format haben, zeilenweise angeordnet und nicht kopiert sind.";
+
+/* No comment provided by engineer. */
+"Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" = "Viele Menschen haben gefragt: *Wie kann SimpleX Nachrichten zustellen, wenn es keine Benutzerkennungen hat?*";
+
+/* No comment provided by engineer. */
+"Mark read" = "Als gelesen markieren";
+
+/* No comment provided by engineer. */
+"Markdown in messages" = "Markdowns in Nachrichten";
+
+/* member role */
+"member" = "Mitglied";
+
+/* No comment provided by engineer. */
+"Member" = "Mitglied";
+
+/* rcv group event chat item */
+"member connected" = "ist der Gruppe beigetreten";
+
+/* No comment provided by engineer. */
+"Member role will be changed to \"%@\". All group members will be notified." = "Die Mitgliederrolle wird auf \"%@\" geändert. Alle Mitglieder der Gruppe werden benachrichtigt.";
+
+/* No comment provided by engineer. */
+"Member role will be changed to \"%@\". The member will receive a new invitation." = "Die Mitgliederrolle wird auf \"%@\" geändert. Das Mitglied wird eine neue Einladung erhalten.";
+
+/* No comment provided by engineer. */
+"Member will be removed from group - this cannot be undone!" = "Das Mitglied wird aus der Gruppe entfernt - dies kann nicht rückgängig gemacht werden!";
+
+/* No comment provided by engineer. */
+"Message delivery error" = "Fehler bei der Nachrichtenzustellung";
+
+/* notification */
+"message received" = "Nachricht empfangen";
+
+/* No comment provided by engineer. */
+"Message text" = "Nachrichtentext";
+
+/* No comment provided by engineer. */
+"Messages" = "Nachrichten";
+
+/* No comment provided by engineer. */
+"Migrating database archive..." = "Das Datenbankarchiv wird migriert...";
+
+/* No comment provided by engineer. */
+"Migration error:" = "Fehler bei der Migration:";
+
+/* No comment provided by engineer. */
+"Migration failed. Tap **Skip** below to continue using the current database. Please report the issue to the app developers via chat or email [chat@simplex.chat](mailto:chat@simplex.chat)." = "Die Migration schlug fehl. Um die momentan genutzte Datenbank weiter zu verwenden, tippen Sie unten auf **Überspringen**. Bitte melden Sie diesen Fehler über Chat oder E-Mail [chat@simplex.chat](mailto:chat@simplex.chat) an die App-Entwickler.";
+
+/* No comment provided by engineer. */
+"Migration is completed" = "Die Migration wurde abgeschlossen";
+
+/* call status */
+"missed call" = "Anruf verpasst";
+
+/* No comment provided by engineer. */
+"Most likely this contact has deleted the connection with you." = "Dieser Kontakt hat sehr wahrscheinlich die Verbindung mit Ihnen gelöscht.";
+
+/* No comment provided by engineer. */
+"Mute" = "Stummschalten";
+
+/* No comment provided by engineer. */
+"Name" = "Name";
+
+/* No comment provided by engineer. */
+"Network & servers" = "Netzwerk & Server";
+
+/* No comment provided by engineer. */
+"Network settings" = "Netzwerkeinstellungen";
+
+/* No comment provided by engineer. */
+"Network status" = "Netzwerkstatus";
+
+/* No comment provided by engineer. */
+"never" = "nie";
+
+/* notification */
+"New contact request" = "Neue Kontaktanfrage";
+
+/* notification */
+"New contact:" = "Neuer Kontakt:";
+
+/* No comment provided by engineer. */
+"New database archive" = "Neues Datenbankarchiv";
+
+/* No comment provided by engineer. */
+"New member role" = "Neue Mitgliedsrolle";
+
+/* notification */
+"new message" = "Neue Nachricht";
+
+/* notification */
+"New message" = "Neue Nachricht";
+
+/* No comment provided by engineer. */
+"New passphrase…" = "Neues Passwort…";
+
+/* No comment provided by engineer. */
+"No" = "Nein";
+
+/* No comment provided by engineer. */
+"No contacts selected" = "Keine Kontakte ausgewählt";
+
+/* No comment provided by engineer. */
+"No contacts to add" = "Keine Kontakte zum Hinzufügen";
+
+/* No comment provided by engineer. */
+"No device token!" = "Kein Geräte-Token!";
+
+/* No comment provided by engineer. */
+"no e2e encryption" = "Keine E2E-Verschlüsselung";
+
+/* No comment provided by engineer. */
+"No group!" = "Die Gruppe wurde nicht gefunden!";
+
+/* No comment provided by engineer. */
+"No received or sent files" = "Keine empfangenen oder gesendeten Dateien";
+
+/* No comment provided by engineer. */
+"Notifications" = "Benachrichtigungen";
+
+/* No comment provided by engineer. */
+"Notifications are disabled!" = "Benachrichtigungen sind deaktiviert!";
+
+/* No comment provided by engineer. */
+"Off (Local)" = "Aus (Lokal)";
+
+/* No comment provided by engineer. */
+"Ok" = "Ok";
+
+/* No comment provided by engineer. */
+"Old database" = "Alte Datenbank";
+
+/* No comment provided by engineer. */
+"Old database archive" = "Altes Datenbankarchiv";
+
+/* No comment provided by engineer. */
+"One-time invitation link" = "Einmal-Einladungslink";
+
+/* No comment provided by engineer. */
+"Onion hosts will be required for connection. Requires enabling VPN." = "Für die Verbindung werden Onion-Hosts benötigt. Dies erfordert die Aktivierung eines VPNs.";
+
+/* No comment provided by engineer. */
+"Onion hosts will be used when available. Requires enabling VPN." = "Onion-Hosts werden verwendet, sobald sie verfügbar sind. Dies erfordert die Aktivierung eines VPNs.";
+
+/* No comment provided by engineer. */
+"Onion hosts will not be used." = "Onion-Hosts werden nicht verwendet.";
+
+/* No comment provided by engineer. */
+"Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." = "Nur die Endgeräte speichern Benutzerprofile, Kontakte, Gruppen und Nachrichten, die über eine **2-Schichten Ende-zu-Ende-Verschlüsselung** gesendet werden.";
+
+/* No comment provided by engineer. */
+"Open chat" = "Chat öffnen";
+
+/* authentication reason */
+"Open chat console" = "Chat-Konsole öffnen";
+
+/* No comment provided by engineer. */
+"Open Settings" = "Geräte-Einstellungen öffnen";
+
+/* No comment provided by engineer. */
+"Open-source protocol and code – anybody can run the servers." = "Open-Source-Protokoll und -Code – Jede Person kann ihre eigenen Server aufsetzen und nutzen.";
+
+/* No comment provided by engineer. */
+"or chat with the developers" = "oder chatten Sie mit den Entwicklern";
+
+/* member role */
+"owner" = "Eigentümer";
+
+/* No comment provided by engineer. */
+"Paste" = "Einfügen";
+
+/* No comment provided by engineer. */
+"Paste image" = "Bild einfügen";
+
+/* No comment provided by engineer. */
+"Paste received link" = "Fügen Sie den erhaltenen Link ein";
+
+/* No comment provided by engineer. */
+"Paste the link you received into the box below to connect with your contact." = "Um sich mit Ihrem Kontakt zu verbinden, fügen Sie den erhaltenen Link in das Feld unten ein.";
+
+/* No comment provided by engineer. */
+"peer-to-peer" = "Peer-to-Peer";
+
+/* No comment provided by engineer. */
+"People can connect to you only via the links you share." = "Verbindungen mit Kontakten sind nur über Links möglich, die Sie oder Ihre Kontakte untereinander teilen.";
+
+/* No comment provided by engineer. */
+"Periodically" = "Regelmäßig";
+
+/* No comment provided by engineer. */
+"PING interval" = "PING-Intervall";
+
+/* No comment provided by engineer. */
+"Please check that you used the correct link or ask your contact to send you another one." = "Überprüfen Sie bitte, ob Sie den richtigen Link genutzt haben oder bitten Sie Ihren Kontakt nochmal darum, Ihnen einen Link zuzusenden.";
+
+/* No comment provided by engineer. */
+"Please check your network connection and try again." = "Bitte überprüfen Sie Ihre Netzwerkverbindung und versuchen Sie es erneut.";
+
+/* No comment provided by engineer. */
+"Please enter correct current passphrase." = "Bitte geben Sie das korrekte, aktuelle Passwort ein.";
+
+/* No comment provided by engineer. */
+"Please enter the previous password after restoring database backup. This action can not be undone." = "Bitte geben Sie das vorherige Passwort ein, nachdem Sie die Datenbanksicherung wiederhergestellt haben. Diese Aktion kann nicht rückgängig gemacht werden!";
+
+/* No comment provided by engineer. */
+"Please restart the app and migrate the database to enable push notifications." = "Bitte führen Sie einen Neustart der App durch und migrieren Sie die Datenbank, um Benachrichtigungen zu aktivieren.";
+
+/* No comment provided by engineer. */
+"Please store passphrase securely, you will NOT be able to access chat if you lose it." = "Bitte bewahren Sie das Passwort sicher auf, Sie können NICHT mehr auf den Chat zugreifen, wenn Sie es vergessen haben oder verlieren.";
+
+/* No comment provided by engineer. */
+"Please store passphrase securely, you will NOT be able to change it if you lose it." = "Bitte bewahren Sie das Passwort sicher auf, Sie können es NICHT mehr ändern, wenn Sie es vergessen haben oder verlieren.";
+
+/* No comment provided by engineer. */
+"Privacy & security" = "Datenschutz & Sicherheit";
+
+/* No comment provided by engineer. */
+"Privacy redefined" = "Datenschutz neu definiert";
+
+/* No comment provided by engineer. */
+"Profile image" = "Profilbild";
+
+/* No comment provided by engineer. */
+"Protocol timeout" = "Protokollzeitüberschreitung";
+
+/* No comment provided by engineer. */
+"Push notifications" = "Push-Benachrichtigungen";
+
+/* No comment provided by engineer. */
+"Rate the app" = "Bewerte die App";
+
+/* No comment provided by engineer. */
+"Read" = "Lesen";
+
+/* No comment provided by engineer. */
+"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "Erfahren Sie in unserem [GitHub-Repository](https://github.com/simplex-chat/simplex-chat#readme) mehr dazu.";
+
+/* No comment provided by engineer. */
+"Read more in our GitHub repository." = "Erfahren Sie in unserem GitHub-Repository mehr dazu.";
+
+/* No comment provided by engineer. */
+"received answer…" = "Antwort erhalten…";
+
+/* No comment provided by engineer. */
+"received confirmation…" = "Bestätigung erhalten…";
+
+/* notification */
+"Received file event" = "Datei-Ereignis empfangen";
+
+/* No comment provided by engineer. */
+"Receiving via" = "Empfangen über";
+
+/* reject incoming call via notification */
+"Reject" = "Ablehnen";
+
+/* No comment provided by engineer. */
+"Reject contact (sender NOT notified)" = "Kontakt ablehnen (der Absender wird NICHT benachrichtigt)";
+
+/* No comment provided by engineer. */
+"Reject contact request" = "Kontaktanfrage ablehnen";
+
+/* call status */
+"rejected call" = "Abgelehnter Anruf";
+
+/* No comment provided by engineer. */
+"Relay server is only used if necessary. Another party can observe your IP address." = "Relais-Server werden nur genutzt, wenn sie benötigt werden. Ihre IP-Adresse kann von Anderen erfasst werden.";
+
+/* No comment provided by engineer. */
+"Relay server protects your IP address, but it can observe the duration of the call." = "Relais-Server schützen Ihre IP-Adresse, aber sie können die Anrufdauer erfassen.";
+
+/* No comment provided by engineer. */
+"Remove" = "Entfernen";
+
+/* No comment provided by engineer. */
+"Remove member" = "Mitglied entfernen";
+
+/* No comment provided by engineer. */
+"Remove member?" = "Das Mitglied entfernen?";
+
+/* No comment provided by engineer. */
+"Remove passphrase from keychain?" = "Passwort aus dem Schlüsselbund entfernen?";
+
+/* No comment provided by engineer. */
+"removed" = "entfernt";
+
+/* rcv group event chat item */
+"removed %@" = "hat %@ aus der Gruppe entfernt";
+
+/* rcv group event chat item */
+"removed you" = "hat Sie aus der Gruppe entfernt";
+
+/* chat item action */
+"Reply" = "Antwort";
+
+/* No comment provided by engineer. */
+"Required" = "Erforderlich";
+
+/* No comment provided by engineer. */
+"Reset colors" = "Farben zurücksetzen";
+
+/* No comment provided by engineer. */
+"Reset to defaults" = "Auf Standardwerte zurücksetzen";
+
+/* No comment provided by engineer. */
+"Restart the app to create a new chat profile" = "Um ein neues Chat-Profil zu erstellen, starten Sie die App neu.";
+
+/* No comment provided by engineer. */
+"Restart the app to use imported chat database" = "Um die importierte Chat-Datenbank zu verwenden, starten Sie die App neu";
+
+/* No comment provided by engineer. */
+"Restore" = "Wiederherstellen";
+
+/* No comment provided by engineer. */
+"Restore database backup" = "Datenbanksicherung wiederherstellen";
+
+/* No comment provided by engineer. */
+"Restore database backup?" = "Die Datenbanksicherung wiederherstellen?";
+
+/* No comment provided by engineer. */
+"Restore database error" = "Fehler bei der Wiederherstellung der Datenbank";
+
+/* No comment provided by engineer. */
+"Revert" = "Zurückkehren";
+
+/* No comment provided by engineer. */
+"Role" = "Rolle";
+
+/* No comment provided by engineer. */
+"Run chat" = "Chat starten";
+
+/* chat item action */
+"Save" = "Speichern";
+
+/* No comment provided by engineer. */
+"Save (and notify contacts)" = "Speichern (und Kontakte benachrichtigen)";
+
+/* No comment provided by engineer. */
+"Save archive" = "Archiv speichern";
+
+/* No comment provided by engineer. */
+"Save group profile" = "Gruppenprofil speichern";
+
+/* No comment provided by engineer. */
+"Save passphrase and open chat" = "Passwort speichern und Chat öffnen";
+
+/* No comment provided by engineer. */
+"Save passphrase in Keychain" = "Passwort im Schlüsselbund speichern";
+
+/* No comment provided by engineer. */
+"Saved SMP servers will be removed" = "Gespeicherte SMP-Server werden entfernt";
+
+/* No comment provided by engineer. */
+"Saved WebRTC ICE servers will be removed" = "Gespeicherte WebRTC ICE-Server werden entfernt";
+
+/* No comment provided by engineer. */
+"Scan QR code" = "QR-Code scannen";
+
+/* No comment provided by engineer. */
+"Search" = "Suche";
+
+/* network option */
+"sec" = "sek";
+
+/* No comment provided by engineer. */
+"secret" = "geheim";
+
+/* No comment provided by engineer. */
+"Send direct message" = "Direktnachricht senden";
+
+/* No comment provided by engineer. */
+"Send link previews" = "Link-Vorschau senden";
+
+/* No comment provided by engineer. */
+"Send notifications" = "Benachrichtigungen senden";
+
+/* No comment provided by engineer. */
+"Send notifications:" = "Benachrichtigungen senden:";
+
+/* No comment provided by engineer. */
+"Send questions and ideas" = "Senden Sie Fragen und Ideen";
+
+/* No comment provided by engineer. */
+"Sender cancelled file transfer." = "Der Absender hat die Dateiübertragung abgebrochen.";
+
+/* No comment provided by engineer. */
+"Sender may have deleted the connection request." = "Der Absender hat möglicherweise die Verbindungsanfrage gelöscht.";
+
+/* No comment provided by engineer. */
+"Sending via" = "Senden über";
+
+/* notification */
+"Sent file event" = "Datei-Ereignis wurde gesendet";
+
+/* No comment provided by engineer. */
+"Servers" = "Server";
+
+/* No comment provided by engineer. */
+"Set contact name…" = "Kontaktname festlegen…";
+
+/* No comment provided by engineer. */
+"Set passphrase to export" = "Passwort für den Export festlegen";
+
+/* No comment provided by engineer. */
+"Set timeouts for proxy/VPN" = "Zeitüberschreitungen für Proxy/VPN einstellen";
+
+/* No comment provided by engineer. */
+"Settings" = "Einstellungen";
+
+/* chat item action */
+"Share" = "Teilen";
+
+/* No comment provided by engineer. */
+"Share invitation link" = "Einladungslink teilen";
+
+/* No comment provided by engineer. */
+"Share link" = "Link teilen";
+
+/* No comment provided by engineer. */
+"Share one-time invitation link" = "Einmal-Einladungslink teilen";
+
+/* No comment provided by engineer. */
+"Show preview" = "Vorschau anzeigen";
+
+/* No comment provided by engineer. */
+"Show QR code" = "QR-Code anzeigen";
+
+/* notification */
+"SimpleX encrypted message or connection event" = "SimpleX verschlüsselte Nachricht oder Verbindungs-Ereignis";
+
+/* No comment provided by engineer. */
+"SimpleX Lock" = "SimpleX Sperre";
+
+/* No comment provided by engineer. */
+"SimpleX Lock turned on" = "SimpleX Sperre aktiviert";
+
+/* No comment provided by engineer. */
+"Skip" = "Überspringen";
+
+/* No comment provided by engineer. */
+"Skipped messages" = "Übersprungene Nachrichten";
+
+/* No comment provided by engineer. */
+"SMP servers" = "SMP-Server";
+
+/* No comment provided by engineer. */
+"SMP servers (one per line)" = "SMP-Server (einer pro Zeile)";
+
+/* notification title */
+"Somebody" = "Jemand";
+
+/* No comment provided by engineer. */
+"Start a new chat" = "Starten Sie einen neuen Chat";
+
+/* No comment provided by engineer. */
+"Start chat" = "Starten Sie den Chat";
+
+/* No comment provided by engineer. */
+"Start migration" = "Starten Sie die Migration";
+
+/* No comment provided by engineer. */
+"starting…" = "Verbindung wird gestartet…";
+
+/* No comment provided by engineer. */
+"Stop" = "Beenden";
+
+/* No comment provided by engineer. */
+"Stop chat to enable database actions" = "Chat beenden, um Datenbankaktionen zu erlauben";
+
+/* No comment provided by engineer. */
+"Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." = "Beenden Sie den Chat, um die Chat-Datenbank zu exportieren, zu importieren oder zu löschen. Solange der Chat angehalten ist, können Sie keine Nachrichten empfangen oder senden.";
+
+/* No comment provided by engineer. */
+"Stop chat?" = "Chat beenden?";
+
+/* authentication reason */
+"Stop SimpleX" = "Stoppen Sie SimpleX";
+
+/* No comment provided by engineer. */
+"strike" = "durchstreichen";
+
+/* No comment provided by engineer. */
+"Support SimpleX Chat" = "Unterstützen SimpleX Chat";
+
+/* No comment provided by engineer. */
+"System" = "System";
+
+/* No comment provided by engineer. */
+"Take picture" = "Machen Sie ein Foto";
+
+/* No comment provided by engineer. */
+"Tap button " = "Schaltfläche antippen ";
+
+/* No comment provided by engineer. */
+"Tap to join" = "Zum Beitreten tippen";
+
+/* No comment provided by engineer. */
+"Tap to join incognito" = "Tippen, um Inkognito beizutreten";
+
+/* No comment provided by engineer. */
+"Tap to start a new chat" = "Tippen, um einen neuen Chat zu starten";
+
+/* No comment provided by engineer. */
+"TCP connection timeout" = "Timeout der TCP-Verbindung";
+
+/* No comment provided by engineer. */
+"TCP_KEEPCNT" = "TCP_KEEPCNT";
+
+/* No comment provided by engineer. */
+"TCP_KEEPIDLE" = "TCP_KEEPIDLE";
+
+/* No comment provided by engineer. */
+"TCP_KEEPINTVL" = "TCP_KEEPINTVL";
+
+/* No comment provided by engineer. */
+"Thank you for installing SimpleX Chat!" = "Vielen Dank, dass Sie SimpleX Chat installiert haben!";
+
+/* No comment provided by engineer. */
+"The 1st platform without any user identifiers – private by design." = "Die erste Plattform ohne Benutzerkennungen – Privat per Design";
+
+/* No comment provided by engineer. */
+"The app can notify you when you receive messages or contact requests - please open settings to enable." = "Wenn sie Nachrichten oder Kontaktanfragen empfangen, kann Sie die App benachrichtigen - Um dies zu aktivieren, öffnen Sie bitte die Einstellungen.";
+
+/* No comment provided by engineer. */
+"The attempt to change database passphrase was not completed." = "Die Änderung des Datenbank-Passworts konnte nicht abgeschlossen werden.";
+
+/* No comment provided by engineer. */
+"The connection you accepted will be cancelled!" = "Die von Ihnen akzeptierte Verbindung wird abgebrochen!";
+
+/* No comment provided by engineer. */
+"The contact you shared this link with will NOT be able to connect!" = "Der Kontakt, mit dem Sie diesen Link geteilt haben, kann sich NICHT verbinden!";
+
+/* No comment provided by engineer. */
+"The created archive is available via app Settings / Database / Old database archive." = "Das erzeugte Archiv ist über Einstellungen / Datenbank / Altes Datenbankarchiv verfügbar.";
+
+/* No comment provided by engineer. */
+"The group is fully decentralized – it is visible only to the members." = "Die Gruppe ist vollständig dezentralisiert – sie ist nur für Mitglieder sichtbar.";
+
+/* No comment provided by engineer. */
+"The microphone does not work when the app is in the background." = "Das Mikrofon wird nicht funktionieren, wenn sich die App im Hintergrund befindet.";
+
+/* No comment provided by engineer. */
+"The next generation of private messaging" = "Die nächste Generation von privatem Messaging";
+
+/* No comment provided by engineer. */
+"The old database was not removed during the migration, it can be deleted." = "Die alte Datenbank wurde während der Migration nicht entfernt. Sie kann gelöscht werden.";
+
+/* No comment provided by engineer. */
+"The profile is only shared with your contacts." = "Das Profil wird nur mit Ihren Kontakten geteilt.";
+
+/* No comment provided by engineer. */
+"The sender will NOT be notified" = "Der Absender wird NICHT benachrichtigt";
+
+/* No comment provided by engineer. */
+"Theme" = "Design";
+
+/* No comment provided by engineer. */
+"This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." = "Diese Aktion kann nicht rückgängig gemacht werden! Alle empfangenen und gesendeten Dateien und Medien werden gelöscht. Bilder mit niedriger Auflösung bleiben erhalten.";
+
+/* No comment provided by engineer. */
+"This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." = "Diese Aktion kann nicht rückgängig gemacht werden! Alle empfangenen und gesendeten Nachrichten, die über den ausgewählten Zeitraum hinaus gehen, werden gelöscht. Dieser Vorgang kann mehrere Minuten dauern.";
+
+/* No comment provided by engineer. */
+"This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." = "Diese Aktion kann nicht rückgängig gemacht werden! Ihr Profil und Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren.";
+
+/* notification title */
+"this contact" = "Dieser Kontakt";
+
+/* No comment provided by engineer. */
+"This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member)." = "Diese Funktion ist experimentell! Sie wird nur funktionieren, wenn der Kontakt ebenfalls die SimpleX-Version 4.2 installiert hat. Sobald der Adress-Wechsel abgeschlossen ist, sollten Sie die Nachricht im Chat-Verlauf sehen. Bitte prüfen Sie, ob Sie weiterhin Nachrichten von diesem Kontakt (oder Gruppenmitglied) empfangen können.";
+
+/* No comment provided by engineer. */
+"This group no longer exists." = "Diese Gruppe existiert nicht mehr.";
+
+/* No comment provided by engineer. */
+"To ask any questions and to receive updates:" = "Um Fragen zu stellen und Aktualisierungen zu erhalten:";
+
+/* No comment provided by engineer. */
+"To find the profile used for an incognito connection, tap the contact or group name on top of the chat." = "Um das für eine Inkognito-Verbindung verwendete Profil zu finden, tippen Sie oben im Chat auf den Kontakt- oder Gruppennamen.";
+
+/* No comment provided by engineer. */
+"To make a new connection" = "Um eine Verbindung mit einem neuen Kontakt zu erstellen";
+
+/* No comment provided by engineer. */
+"To prevent the call interruption, enable Do Not Disturb mode." = "Aktivieren Sie den \"Nicht stören\" Modus, um Anruf-Unterbrechungen zu vermeiden.";
+
+/* No comment provided by engineer. */
+"To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." = "Zum Schutz Ihrer Privatsphäre verwendet SimpleX an Stelle von Benutzer-IDs, die von allen anderen Plattformen verwendet werden, Kennungen für Nachrichtenwarteschlangen, die für jeden Ihrer Kontakte individuell sind.";
+
+/* No comment provided by engineer. */
+"To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled." = "Um Ihre Informationen zu schützen, schalten Sie die SimpleX Sperre ein.\nSie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funktion aktiviert wird.";
+
+/* No comment provided by engineer. */
+"To support instant push notifications the chat database has to be migrated." = "Um sofortige Push-Benachrichtigungen zu unterstützen, muss die Chat-Datenbank migriert werden.";
+
+/* No comment provided by engineer. */
+"Transfer images faster (BETA)" = "Bilder schneller übertragen (BETA)";
+
+/* No comment provided by engineer. */
+"Trying to connect to the server used to receive messages from this contact (error: %@)." = "Beim Versuch die Verbindung mit dem Server aufzunehmen, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird, ist ein Fehler aufgetreten (Fehler: %@).";
+
+/* No comment provided by engineer. */
+"Trying to connect to the server used to receive messages from this contact." = "Versuche die Verbindung mit dem Server aufzunehmen, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird.";
+
+/* No comment provided by engineer. */
+"Turn off" = "Abschalten";
+
+/* No comment provided by engineer. */
+"Turn off notifications?" = "Benachrichtigungen abschalten?";
+
+/* No comment provided by engineer. */
+"Turn on" = "Einschalten";
+
+/* No comment provided by engineer. */
+"Unexpected error: %@" = "Unerwarteter Fehler: %@";
+
+/* No comment provided by engineer. */
+"Unexpected migration state" = "Unerwarteter Migrationsstatus";
+
+/* connection info */
+"unknown" = "Unbekannt";
+
+/* No comment provided by engineer. */
+"Unknown database error: %@" = "Unbekannter Datenbankfehler: %@";
+
+/* No comment provided by engineer. */
+"Unknown error" = "Unbekannter Fehler";
+
+/* No comment provided by engineer. */
+"Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "Entweder hat Ihr Kontakt die Verbindung gelöscht, oder dieser Link wurde bereits verwendet, es könnte sich um einen Fehler handeln - Bitte melden Sie es uns.\nBitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um sich neu verbinden zu können und stellen Sie sicher, dass Sie eine stabile Netzwerk-Verbindung haben.";
+
+/* authentication reason */
+"Unlock" = "Entsperren";
+
+/* No comment provided by engineer. */
+"Unmute" = "Stummschaltung aufheben";
+
+/* No comment provided by engineer. */
+"Unread" = "Ungelesen";
+
+/* No comment provided by engineer. */
+"Update" = "Aktualisieren";
+
+/* No comment provided by engineer. */
+"Update .onion hosts setting?" = "Einstellung für .onion-Hosts aktualisieren?";
+
+/* No comment provided by engineer. */
+"Update database passphrase" = "Datenbank-Passwort aktualisieren";
+
+/* No comment provided by engineer. */
+"Update network settings?" = "Netzwerkeinstellungen aktualisieren?";
+
+/* rcv group event chat item */
+"updated group profile" = "Aktualisiertes Gruppenprofil";
+
+/* No comment provided by engineer. */
+"Updating settings will re-connect the client to all servers." = "Die Aktualisierung der Einstellungen wird den Client wieder mit allen Servern verbinden.";
+
+/* No comment provided by engineer. */
+"Updating this setting will re-connect the client to all servers." = "Die Aktualisierung dieser Einstellung wird den Client wieder mit allen Servern verbinden.";
+
+/* No comment provided by engineer. */
+"Use .onion hosts" = "Verwende .onion-Hosts";
+
+/* No comment provided by engineer. */
+"Use chat" = "Verwenden Sie Chat";
+
+/* No comment provided by engineer. */
+"Use SimpleX Chat servers?" = "Verwenden Sie SimpleX Chat Server?";
+
+/* No comment provided by engineer. */
+"Using .onion hosts requires compatible VPN provider." = "Für die Nutzung von .onion-Hosts sind kompatible VPN-Anbieter erforderlich.";
+
+/* No comment provided by engineer. */
+"Using SimpleX Chat servers." = "Verwende SimpleX Chat Server.";
+
+/* No comment provided by engineer. */
+"v%@ (%@)" = "v%@ (%@)";
+
+/* chat list item description */
+"via contact address link" = "über einen Kontaktadressen-Link";
+
+/* chat list item description */
+"via group link" = "über einen Gruppen-Link";
+
+/* chat list item description */
+"via one-time link" = "über einen Einmal-Link";
+
+/* No comment provided by engineer. */
+"via relay" = "über Relais";
+
+/* No comment provided by engineer. */
+"Video call" = "Videoanruf";
+
+/* No comment provided by engineer. */
+"video call (not e2e encrypted)" = "Videoanruf (nicht E2E verschlüsselt)";
+
+/* No comment provided by engineer. */
+"waiting for answer…" = "Warten auf Antwort…";
+
+/* No comment provided by engineer. */
+"waiting for confirmation…" = "Warten auf Bestätigung…";
+
+/* No comment provided by engineer. */
+"Waiting for file" = "Warte auf Datei";
+
+/* No comment provided by engineer. */
+"Waiting for image" = "Warten auf ein Bild";
+
+/* No comment provided by engineer. */
+"wants to connect to you!" = "möchte sich mit Ihnen verbinden!";
+
+/* No comment provided by engineer. */
+"WebRTC ICE servers" = "WebRTC ICE-Server";
+
+/* No comment provided by engineer. */
+"Welcome %@!" = "Willkommen %@!";
+
+/* No comment provided by engineer. */
+"Welcome message" = "Begrüßungsmeldung";
+
+/* No comment provided by engineer. */
+"When available" = "Wenn verfügbar";
+
+/* No comment provided by engineer. */
+"When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." = "Wenn Sie ein Inkognito-Profil mit Jemandem teilen, wird dieses Profil auch für die Gruppen verwendet, für die Sie von diesem Kontakt eingeladen werden.";
+
+/* No comment provided by engineer. */
+"Wrong database passphrase" = "Falsches Datenbank-Passwort";
+
+/* No comment provided by engineer. */
+"Wrong passphrase!" = "Falsches Passwort!";
+
+/* No comment provided by engineer. */
+"You" = "Meine Daten";
+
+/* No comment provided by engineer. */
+"You accepted connection" = "Sie haben die Verbindung akzeptiert";
+
+/* No comment provided by engineer. */
+"You are already connected to %@." = "Sie sind bereits mit %@ verbunden.";
+
+/* No comment provided by engineer. */
+"You are connected to the server used to receive messages from this contact." = "Sie sind mit dem Server verbunden, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird.";
+
+/* No comment provided by engineer. */
+"you are invited to group" = "Sie sind zur Gruppe eingeladen";
+
+/* No comment provided by engineer. */
+"You are invited to group" = "Sie sind zu der Gruppe eingeladen";
+
+/* No comment provided by engineer. */
+"You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button." = "Sie können sich auch verbinden, indem Sie auf den Link klicken. Wenn er im Browser geöffnet wird, klicken Sie auf die Schaltfläche **In mobiler App öffnen**.";
+
+/* notification body */
+"You can now send messages to %@" = "Sie können nun Nachrichten an %@ versenden";
+
+/* No comment provided by engineer. */
+"You can set lock screen notification preview via settings." = "Über die Geräte-Einstellungen können Sie die Benachrichtigungsvorschau im Sperrbildschirm erlauben.";
+
+/* No comment provided by engineer. */
+"You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." = "Sie können diesen Link oder QR-Code teilen - Damit kann jede Person der Gruppe beitreten. Wenn Sie den Link später löschen, werden Sie keine Gruppenmitglieder verlieren, die der Gruppe darüber beigetreten sind.";
+
+/* No comment provided by engineer. */
+"You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it." = "Sie können Ihre Adresse als Link oder als QR-Code teilen – Jede Person kann sich darüber mit Ihnen verbinden. Sie werden Ihre mit dieser Adresse verbundenen Kontakte nicht verlieren, wenn Sie diese Adresse später löschen.";
+
+/* No comment provided by engineer. */
+"You can start chat via app Settings / Database or by restarting the app" = "Sie können den Chat über die App-Einstellungen / Datenbank oder durch Neustart der App starten.";
+
+/* No comment provided by engineer. */
+"You can use markdown to format messages:" = "Um Nachrichteninhalte zu formatieren, können Sie Markdowns verwenden:";
+
+/* chat item text */
+"you changed address" = "Sie haben die Adresse gewechselt";
+
+/* chat item text */
+"you changed address for %@" = "Sie haben die Adresse für %@ gewechselt";
+
+/* snd group event chat item */
+"you changed role for yourself to %@" = "Sie haben Ihre eigene Rolle auf %@ geändert";
+
+/* snd group event chat item */
+"you changed role of %@ to %@" = "Sie haben die Rolle von %1$@ auf %2$@ geändert";
+
+/* No comment provided by engineer. */
+"You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." = "Sie legen fest, über welche Server Sie Ihre Nachrichten **empfangen** und an Ihre Kontakte **senden**.";
+
+/* No comment provided by engineer. */
+"You could not be verified; please try again." = "Sie konnten nicht überprüft werden; bitte versuchen Sie es erneut.";
+
+/* No comment provided by engineer. */
+"You have no chats" = "Sie haben keine Chats";
+
+/* No comment provided by engineer. */
+"You have to enter passphrase every time the app starts - it is not stored on the device." = "Sie müssen das Passwort jedes Mal eingeben, wenn die App startet. Es wird nicht auf dem Gerät gespeichert.";
+
+/* No comment provided by engineer. */
+"You invited your contact" = "Sie haben Ihren Kontakt eingeladen";
+
+/* No comment provided by engineer. */
+"You joined this group" = "Sie sind dieser Gruppe beigetreten";
+
+/* No comment provided by engineer. */
+"You joined this group. Connecting to inviting group member." = "Sie sind dieser Gruppe beigetreten. Sie werden mit dem einladenden Gruppenmitglied verbunden.";
+
+/* snd group event chat item */
+"you left" = "Sie haben verlassen";
+
+/* No comment provided by engineer. */
+"You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." = "Sie dürfen die neueste Version Ihrer Chat-Datenbank NUR auf einem Gerät verwenden, andernfalls erhalten Sie möglicherweise keine Nachrichten mehr von einigen Ihrer Kontakte.";
+
+/* No comment provided by engineer. */
+"You rejected group invitation" = "Sie haben die Gruppeneinladung abgelehnt";
+
+/* snd group event chat item */
+"you removed %@" = "entfernt %@ aus der Gruppe";
+
+/* No comment provided by engineer. */
+"You sent group invitation" = "Sie haben eine Gruppeneinladung gesendet";
+
+/* chat list item description */
+"you shared one-time link" = "Sie haben einen Einmal-Link geteilt";
+
+/* chat list item description */
+"you shared one-time link incognito" = "Sie haben Inkognito einen Einmal-Link geteilt";
+
+/* No comment provided by engineer. */
+"You will be connected to group when the group host's device is online, please wait or check later!" = "Sie werden mit der Gruppe verbunden, sobald das Endgerät des Gruppen-Hosts online ist. Bitte warten oder schauen Sie später nochmal nach!";
+
+/* No comment provided by engineer. */
+"You will be connected when your connection request is accepted, please wait or check later!" = "Sie werden verbunden, sobald Ihre Verbindungsanfrage akzeptiert wird. Bitte warten oder schauen Sie später nochmal nach!";
+
+/* No comment provided by engineer. */
+"You will be connected when your contact's device is online, please wait or check later!" = "Sie werden verbunden, sobald das Endgerät Ihres Kontakts online ist. Bitte warten oder schauen Sie später nochmal nach!";
+
+/* No comment provided by engineer. */
+"You will be required to authenticate when you start or resume the app after 30 seconds in background." = "Sie müssen sich authentifizieren, wenn Sie die im Hintergrund befindliche App nach 30 Sekunden starten oder fortsetzen.";
+
+/* No comment provided by engineer. */
+"You will join a group this link refers to and connect to its group members." = "Sie werden der Gruppe beitreten, auf die sich dieser Link bezieht und sich mit deren Gruppenmitgliedern verbinden.";
+
+/* No comment provided by engineer. */
+"You will stop receiving messages from this group. Chat history will be preserved." = "Sie werden von dieser Gruppe keine Nachrichten mehr erhalten. Der Chatverlauf wird beibehalten.";
+
+/* No comment provided by engineer. */
+"you: " = "Sie: ";
+
+/* No comment provided by engineer. */
+"You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile" = "Sie versuchen, einen Kontakt, mit dem Sie ein Inkognito-Profil geteilt haben, in die Gruppe einzuladen, in der Sie Ihr Hauptprofil verwenden.";
+
+/* No comment provided by engineer. */
+"You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" = "Sie verwenden ein Inkognito-Profil für diese Gruppe. Um zu verhindern, dass Sie Ihr Hauptprofil teilen, ist in diesem Fall das Einladen von Kontakten nicht erlaubt.";
+
+/* No comment provided by engineer. */
+"Your calls" = "Anrufe";
+
+/* No comment provided by engineer. */
+"Your chat database" = "Meine Chat-Datenbank";
+
+/* No comment provided by engineer. */
+"Your chat database is not encrypted - set passphrase to encrypt it." = "Ihre Chat-Datenbank ist nicht verschlüsselt. Bitte legen Sie ein Passwort fest, um sie zu schützen.";
+
+/* No comment provided by engineer. */
+"Your chat profile" = "Mein Chat-Profil";
+
+/* No comment provided by engineer. */
+"Your chat profile will be sent to group members" = "Ihr Chat-Profil wird an Gruppenmitglieder gesendet";
+
+/* No comment provided by engineer. */
+"Your chat profile will be sent to your contact" = "Ihr Chat-Profil wird an Ihren Kontakt gesendet";
+
+/* No comment provided by engineer. */
+"Your chats" = "Meine Chats";
+
+/* No comment provided by engineer. */
+"Your contact address" = "Meine Kontaktadresse";
+
+/* No comment provided by engineer. */
+"Your contact can scan it from the app." = "Zeigen Sie Ihrem Kontakt den QR-Code aus der App zum Scannen.";
+
+/* No comment provided by engineer. */
+"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Damit die Verbindung hergestellt werden kann, muss Ihr Kontakt online sein.\nSie können diese Verbindung abbrechen und den Kontakt entfernen (und es später nochmals mit einem neuen Link versuchen).";
+
+/* No comment provided by engineer. */
+"Your contact sent a file that is larger than currently supported maximum size (%@)." = "Ihr Kontakt hat eine Datei gesendet, die größer ist als die derzeit unterstützte maximale Größe (%@).";
+
+/* No comment provided by engineer. */
+"Your current chat database will be DELETED and REPLACED with the imported one." = "Ihre aktuelle Chat-Datenbank wird GELÖSCHT und durch die Importierte ERSETZT.";
+
+/* No comment provided by engineer. */
+"Your ICE servers" = "Ihre ICE-Server";
+
+/* No comment provided by engineer. */
+"Your privacy" = "Meine Privatsphäre";
+
+/* No comment provided by engineer. */
+"Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "Ihr Profil wird auf Ihrem Gerät gespeichert und nur mit Ihren Kontakten geteilt.\nSimpleX-Server können Ihr Profil nicht einsehen.";
+
+/* No comment provided by engineer. */
+"Your profile will be sent to the contact that you received this link from" = "Ihr Profil wird an den Kontakt gesendet, von dem Sie diesen Link erhalten haben.";
+
+/* No comment provided by engineer. */
+"Your profile, contacts and delivered messages are stored on your device." = "Ihr Profil, Ihre Kontakte und zugestellten Nachrichten werden auf Ihrem Gerät gespeichert.";
+
+/* No comment provided by engineer. */
+"Your random profile" = "Ihr Zufallsprofil";
+
+/* No comment provided by engineer. */
+"Your settings" = "Meine Einstellungen";
+
+/* No comment provided by engineer. */
+"Your SimpleX contact address" = "Meine SimpleX Kontaktadresse";
+
+/* No comment provided by engineer. */
+"Your SMP servers" = "Ihre SMP-Server";
+

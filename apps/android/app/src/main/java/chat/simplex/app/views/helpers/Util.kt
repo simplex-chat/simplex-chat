@@ -1,5 +1,7 @@
 package chat.simplex.app.views.helpers
 
+import android.R.attr.factor
+import android.R.color
 import android.content.Context
 import android.content.res.Resources
 import android.graphics.*
@@ -12,7 +14,9 @@ import android.text.SpannedString
 import android.text.style.*
 import android.util.Base64
 import android.util.Log
+import android.view.View
 import android.view.ViewTreeObserver
+import android.view.inputmethod.InputMethodManager
 import androidx.annotation.StringRes
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
@@ -25,8 +29,7 @@ import androidx.compose.ui.unit.*
 import androidx.core.content.FileProvider
 import androidx.core.net.toFile
 import androidx.core.text.HtmlCompat
-import chat.simplex.app.BuildConfig
-import chat.simplex.app.SimplexApp
+import chat.simplex.app.*
 import chat.simplex.app.model.CIFile
 import kotlinx.coroutines.*
 import java.io.*
@@ -68,6 +71,9 @@ fun getKeyboardState(): State<KeyboardState> {
 
   return keyboardState
 }
+
+fun hideKeyboard(view: View) =
+  (SimplexApp.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(view.windowToken, 0)
 
 // Resource to annotated string from
 // https://stackoverflow.com/questions/68549248/android-jetpack-compose-how-to-show-styled-text-from-string-resources
@@ -307,11 +313,18 @@ fun getFileSize(context: Context, uri: Uri): Long? {
   }
 }
 
+fun saveImage(context: Context, uri: Uri): String? {
+  val source = ImageDecoder.createSource(SimplexApp.context.contentResolver, uri)
+  val bitmap = ImageDecoder.decodeBitmap(source)
+  return saveImage(context, bitmap)
+}
+
 fun saveImage(context: Context, image: Bitmap): String? {
   return try {
-    val dataResized = resizeImageToDataSize(image, maxDataSize = MAX_IMAGE_SIZE)
+    val ext = if (image.hasAlpha()) "png" else "jpg"
+    val dataResized = resizeImageToDataSize(image, ext == "png", maxDataSize = MAX_IMAGE_SIZE)
     val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-    val fileToSave = uniqueCombine(context, "IMG_${timestamp}.jpg")
+    val fileToSave = uniqueCombine(context, "IMG_${timestamp}.$ext")
     val file = File(getAppFilePath(context, fileToSave))
     val output = FileOutputStream(file)
     dataResized.writeTo(output)
@@ -409,6 +422,34 @@ fun removeFile(context: Context, fileName: String): Boolean {
   }
   return fileDeleted
 }
+
+fun deleteAppFiles(context: Context) {
+  val dir = File(getAppFilesDirectory(context))
+  try {
+    dir.list()?.forEach {
+      removeFile(context, it)
+    }
+  } catch (e: java.lang.Exception) {
+    Log.e(TAG, "Util deleteAppFiles error: ${e.stackTraceToString()}")
+  }
+}
+
+fun directoryFileCountAndSize(dir: String): Pair<Int, Long> { // count, size in bytes
+  var fileCount = 0
+  var bytes = 0L
+  try {
+    File(dir).listFiles()?.forEach {
+      fileCount++
+      bytes += it.length()
+    }
+  } catch (e: java.lang.Exception) {
+    Log.e(TAG, "Util directoryFileCountAndSize error: ${e.stackTraceToString()}")
+  }
+  return fileCount to bytes
+}
+
+fun Color.darker(factor: Float = 0.1f): Color =
+  Color(max(red * (1 - factor), 0f), max(green * (1 - factor), 0f), max(blue * (1 - factor), 0f), alpha)
 
 fun ByteArray.toBase64String() = Base64.encodeToString(this, Base64.DEFAULT)
 

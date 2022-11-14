@@ -16,8 +16,8 @@ import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Styled
 import Simplex.Chat.Terminal.Output
-import Simplex.Chat.Util (safeDecodeUtf8)
 import Simplex.Chat.View
+import Simplex.Messaging.Util (safeDecodeUtf8)
 import System.Exit (exitSuccess)
 import System.Terminal hiding (insertChars)
 import UnliftIO.STM
@@ -40,7 +40,8 @@ runInputLoop ct cc = forever $ do
     CRChatCmdError _ -> when (isMessage cmd) $ echo s
     _ -> pure ()
   let testV = testView $ config cc
-  printToTerminal ct $ responseToView testV r
+  user <- readTVarIO $ currentUser cc
+  printToTerminal ct $ responseToView user testV r
   where
     echo s = printToTerminal ct [plain s]
     isMessage = \case

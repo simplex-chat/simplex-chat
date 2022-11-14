@@ -1,0 +1,43 @@
+{
+    "sections": [
+        {
+            "id": 1,
+            "title": "Advertising and price discrimination",
+            "imgLight": "/img/new/privacy-section-1.svg",
+            "imgDark": "/img/new/privacy-section-1.svg",
+            "overlayContent": {
+                "overlayId": "why-privacy-matters-1",
+                "title": "Privacy saves you money",
+                "linkText": "Privacy saves you money",
+                "showImage": false,
+                "contentBody": "overlay_content/why_privacy_matters/card_1.html"
+            }
+        },
+        {
+            "id": 2,
+            "title": "Manipulation of elections",
+            "imgLight": "/img/new/privacy-section-2.svg",
+            "imgDark": "/img/new/privacy-section-2.svg",
+            "overlayContent": {
+                "overlayId": "why-privacy-matters-2",
+                "title": "Privacy gives you power",
+                "linkText": "Privacy gives you power",
+                "showImage": false,
+                "contentBody": "overlay_content/why_privacy_matters/card_2.html"
+            }
+        },
+        {
+            "id": 3,
+            "title": "Prosecution due to innocent association",
+            "imgLight": "/img/new/privacy-section-3.svg",
+            "imgDark": "/img/new/privacy-section-3.svg",
+            "overlayContent": {
+                "overlayId": "why-privacy-matters-3",
+                "title": "Privacy protects your freedom",
+                "linkText": "Privacy protects your freedom",
+                "showImage": false,
+                "contentBody": "overlay_content/why_privacy_matters/card_3.html"
+            }
+        }
+    ]
+}

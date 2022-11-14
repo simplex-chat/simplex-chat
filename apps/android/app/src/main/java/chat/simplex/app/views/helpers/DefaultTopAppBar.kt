@@ -5,8 +5,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowBackIos
-import androidx.compose.material.icons.outlined.Menu
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,7 +17,7 @@ import chat.simplex.app.ui.theme.*
 @Composable
 fun DefaultTopAppBar(
   navigationButton: @Composable RowScope.() -> Unit,
-  title: @Composable () -> Unit,
+  title: (@Composable () -> Unit)?,
   onTitleClick: (() -> Unit)? = null,
   showSearch: Boolean,
   onSearchValueChanged: (String) -> Unit,
@@ -33,7 +32,7 @@ fun DefaultTopAppBar(
     modifier = modifier,
     title = {
       if (!showSearch) {
-        title()
+        title?.invoke()
       } else {
         SearchTextField(Modifier.fillMaxWidth(), stringResource(android.R.string.search_go), onSearchValueChanged)
       }
@@ -41,7 +40,7 @@ fun DefaultTopAppBar(
     backgroundColor = if (isInDarkTheme()) ToolbarDark else ToolbarLight,
     navigationIcon = navigationButton,
     buttons = if (!showSearch) buttons else emptyList(),
-    centered = !showSearch
+    centered = !showSearch,
   )
 }
 
@@ -91,7 +90,6 @@ private fun TopAppBar(
         content = navigationIcon
       )
     }
-
     Row(
       Modifier
         .fillMaxHeight()
@@ -118,6 +116,6 @@ private fun TopAppBar(
 }
 
 val AppBarHeight = 56.dp
-private val AppBarHorizontalPadding = 4.dp
-private val TitleInsetWithoutIcon = 16.dp - AppBarHorizontalPadding
-private val TitleInsetWithIcon = 72.dp
+val AppBarHorizontalPadding = 4.dp
+private val TitleInsetWithoutIcon = DEFAULT_PADDING - AppBarHorizontalPadding
+val TitleInsetWithIcon = 72.dp

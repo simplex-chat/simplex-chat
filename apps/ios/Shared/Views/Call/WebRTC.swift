@@ -394,3 +394,48 @@ struct RTCIceServer: Codable, Equatable {
     var username: String? = nil
     var credential: String? = nil
 }
+
+// the servers are expected in this format:
+// stun:stun.simplex.im:443
+// turn:private:yleob6AVkiNI87hpR94Z@turn.simplex.im:443
+func parseRTCIceServer(_ str: String) -> RTCIceServer? {
+    var s = replaceScheme(str, "stun:")
+    s = replaceScheme(s, "turn:")
+    if let u: URL = URL(string: s),
+       let scheme = u.scheme,
+       let host = u.host,
+       let port = u.port,
+       u.path == "" && (scheme == "stun" || scheme == "turn")  {
+        return RTCIceServer(
+            urls: ["\(scheme):\(host):\(port)"],
+            username: u.user,
+            credential: u.password
+        )
+    }
+    return nil
+}
+
+private func replaceScheme(_ s: String, _ scheme: String) -> String {
+    s.starts(with: scheme)
+    ? s.replacingOccurrences(of: scheme, with: scheme + "//", options: .anchored, range: nil)
+    : s
+}
+
+func parseRTCIceServers(_ servers: [String]) -> [RTCIceServer]? {
+    var iceServers: [RTCIceServer] = []
+    for s in servers {
+        if let server = parseRTCIceServer(s) {
+            iceServers.append(server)
+        } else {
+            return nil
+        }
+    }
+    return iceServers.isEmpty ? nil : iceServers
+}
+
+func getIceServers() -> [RTCIceServer]? {
+    if let servers = UserDefaults.standard.stringArray(forKey: DEFAULT_WEBRTC_ICE_SERVERS) {
+        return parseRTCIceServers(servers)
+    }
+    return nil
+}

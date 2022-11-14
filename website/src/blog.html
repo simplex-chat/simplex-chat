@@ -1,48 +1,77 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="/css/tailwind.css" rel="stylesheet" />
-    <link href="/css/blogs.css" rel="stylesheet" />
-    <link href="/css/style.css" rel="stylesheet" />
-    <title>Blogs</title>
-    <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico">
-    <script async defer src="https://buttons.github.io/buttons.js"></script>
-</head>
-<body class="bg-gray-100">
-    {% include "nav.html" %}
-    
-    <section class="container">
-        {% for blog in collections.blogs  %}
-        <article class="bg-white my-3 py-8 px-6 sm:px-8 md:px-12 lg:px-16 rounded-lg hover:shadow-md ">
-            <h1 class="text-xl font-medium">{{ blog.data.title }}</h1>
-            <p class="text-sm">{{ blog.data.date.toUTCString().split(' ').slice(0, 4).join(' ') }}</p>
-            <a class="inline-block mt-5 hover:underline" href="{{ blog.url }}">Read More</a>
-            <br>
-        </article>
+---
+layout: layouts/main.html
+title: "SimpleX blog: the latest news"
+description: "SimpleX Chat - a private and encrypted messenger without any user IDs (not even random ones)! Make a private connection via link / QR code to send messages and make calls."
+path: /blog
+templateEngineOverride: njk
+active_blog: true
+---
+{% block css_links %}
+    <style>
+        #blog-list ul li {
+            list-style: disc;
+            margin-right: 0;
+            margin-left: 0;
+        }
+        #blog-list ul {
+            list-style-position: inside;
+            overflow: auto;
+        }
+        #blog-list ul li {
+            -webkit-margin-start: 1.1rem;
+            color: #000;
+        }
+        .dark #blog-list ul li {
+            color: #fff;
+        }
+        #blog-list ul li::marker {
+            color: black;
+        }
+        .dark #blog-list ul li::marker {
+            color: white;
+        }
+    </style>
+{% endblock %}
+
+<section class="py-10 px-5 mt-[66px]" id="blog-list">
+    <div class="container">
+        <p class="text-[38px] text-center font-bold text-active-blue mb-9">Latest news</p>
+
+        {% for blog in collections.blogs %}
+            <article class="w-full flex flex-col items-start md:flex-row rounded-[4px] overflow-hidden shadow-[0px_20px_30px_rgba(0,0,0,0.12)] dark:shadow-none bg-white dark:bg-[#11182F] mb-8">
+                <div class="min-h-[200px] h-[inherit] self-stretch md:w-[168px] bg-[#D9E7ED] dark:bg-[#17203D] flex items-center justify-center flex-[1] relative">
+                    <div class="min-h-[inherit] h-full w-full flex items-end px-4 pt-4 justify-center relative">
+                        {% if blog.data.image %}
+                            {% if blog.data.imageBottom %}
+                                <img class="w-full max-w-[240px] h-auto" src="{{ blog.data.image }}" alt="" srcset=""/>
+                            {% else %}
+                                <img class="mb-4 self-center w-full max-w-[240px] h-auto" src="{{ blog.data.image }}" alt="" srcset=""/>
+                            {% endif %}
+                        {% else %}
+                            <img class="h-[44px] self-center dark:hidden" src="/img/new/logo-symbol-light.svg" alt="" srcset=""/>
+                            <img class="h-[44px] self-center hidden dark:inline-block" src="/img/new/logo-symbol-dark.svg" alt="" srcset=""/>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="p-6 md:py-8 flex-[2.5] flex flex-col">
+                    <div>
+                        <h1 class="text-grey-black dark:text-white text-lg md:text-xl font-bold ">
+                            <a href="{{ blog.url }}">{{ blog.data.title | safe }}</a>
+                        </h1>
+                        <p class="text-sm text-[#A8B0B4] font-medium mt-2 mb-4 tracking-[0.03em]">
+                            {{ blog.data.date.toUTCString().split(' ').slice(1, 4).join(' ') }}
+                        </p>
+                        {% if blog.data.previewBody %}
+                            <div class="mb-4 dark:text-white">
+                                {% include blog.data.previewBody %}
+                            </div>
+                        {% elif blog.data.preview %}
+                            <p class="dark:text-white mb-4">{{ blog.data.preview | safe }}</p>
+                        {% endif %}
+                    </div>
+                    <a class="block text-primary-light dark:text-[#70F0F9] text-base font-medium tracking-[0.03em] mt-auto" href="{{ blog.url }}">Read More</a>
+                </div>
+            </article>
         {% endfor %}
-    </section>
-    <footer>
-        <div class="container">
-          <img alt="simplex logo" class="logo d-none-992" src="/img/simplex.svg" />
-          <p class="copyright">&#169; 2020-22 SimpleX | Open-Source Project <span class="d-none-576">|</span>
-            <a class="d-none-576" href="https://github.com/simplex-chat" target="_blank"><img
-                src="/img/icons/github.svg"></a>
-            <a class="d-none-576" href="https://www.reddit.com/r/SimpleXChat/" target="_blank"><img
-                src="/img/icons/reddit.svg"></a>
-            <a class="d-none-576" href="https://twitter.com/simplexchat" target="_blank"><img
-                src="/img/icons/twitter.svg"></a>
-            <a class="d-none-576" href="https://www.linkedin.com/company/simplex-chat/" target="_blank"><img
-                src="/img/icons/linkedin.svg"></a>
-            <a class="d-none-576" href="mailto:chat@simplex.chat" target="_blank"><img src="/img/icons/email.svg"></a>
-          </p>
-          <div class="github d-none-992">
-            <a class="github-button" href="https://github.com/simplex-chat/protocol" data-size="large"
-              data-show-count="true" aria-label="Star simplex-chat on GitHub">Star</a>
-          </div>
-        </div>
-    </footer>
-</body>
-</html>
+    </div>
+</section>

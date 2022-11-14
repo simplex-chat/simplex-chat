@@ -5,6 +5,9 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+{-# HLINT ignore "Use newtype instead of data" #-}
 
 module Simplex.Chat.Call where
 
@@ -12,16 +15,13 @@ import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
-import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
 import Data.Text (Text)
-import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
-import Simplex.Chat.Types (Contact, ContactId)
-import Simplex.Chat.Util (safeDecodeUtf8)
+import Simplex.Chat.Types (Contact, ContactId, decodeJSON, encodeJSON)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, fstToLower, singleFieldJSON)
@@ -100,10 +100,10 @@ instance ToJSON CallState where
   toEncoding = J.genericToEncoding $ singleFieldJSON fstToLower
 
 instance ToField CallState where
-  toField = toField . safeDecodeUtf8 . LB.toStrict . J.encode
+  toField = toField . encodeJSON
 
 instance FromField CallState where
-  fromField = fromTextField_ $ J.decode . LB.fromStrict . encodeUtf8
+  fromField = fromTextField_ decodeJSON
 
 newtype CallId = CallId ByteString
   deriving (Eq, Show)

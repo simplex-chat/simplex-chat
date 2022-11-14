@@ -2,6 +2,7 @@
 layout: layouts/article.html
 title: "SimpleX announces SimpleX Chat v1"
 date: 2022-01-12
+preview: Major protocol changes address all design mistakes identified during concept review by an independent expert.
 permalink: "/blog/20220112-simplex-chat-v1-released.html"
 ---
 

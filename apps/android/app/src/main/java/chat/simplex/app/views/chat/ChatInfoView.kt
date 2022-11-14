@@ -35,6 +35,7 @@ import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.usersettings.SettingsActionItem
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 
@@ -46,7 +47,6 @@ fun ChatInfoView(
   customUserProfile: Profile?,
   localAlias: String,
   close: () -> Unit,
-  onChatUpdated: (Chat) -> Unit,
 ) {
   BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
@@ -60,10 +60,13 @@ fun ChatInfoView(
       localAlias,
       developerTools,
       onLocalAliasChanged = {
-        setContactAlias(chat.chatInfo.apiId, it, chatModel, onChatUpdated)
+        setContactAlias(chat.chatInfo.apiId, it, chatModel)
       },
       deleteContact = { deleteContactDialog(chat.chatInfo, chatModel, close) },
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) },
+      switchContactAddress = {
+        showSwitchContactAddressAlert(chatModel, contact.contactId)
+      }
     )
   }
 }
@@ -116,6 +119,7 @@ fun ChatInfoLayout(
   onLocalAliasChanged: (String) -> Unit,
   deleteContact: () -> Unit,
   clearChat: () -> Unit,
+  switchContactAddress: () -> Unit,
 ) {
   Column(
     Modifier
@@ -141,9 +145,17 @@ fun ChatInfoLayout(
 
     SectionSpacer()
 
-    if (connStats != null) {
-      SectionView(title = stringResource(R.string.conn_stats_section_title_servers)) {
-        SectionItemView {
+    SectionView(title = stringResource(R.string.conn_stats_section_title_servers)) {
+      if (developerTools) {
+        SwitchAddressButton(switchContactAddress)
+        SectionDivider()
+      }
+      if (connStats != null) {
+        SectionItemView({
+          AlertManager.shared.showAlertMsg(
+            generalGetString(R.string.network_status),
+            chat.serverInfo.networkStatus.statusExplanation
+          )}) {
           NetworkStatusRow(chat.serverInfo.networkStatus)
         }
         val rcvServers = connStats.rcvServers
@@ -157,16 +169,12 @@ fun ChatInfoLayout(
           SimplexServers(stringResource(R.string.sending_via), sndServers)
         }
       }
-      SectionSpacer()
     }
+    SectionSpacer()
     SectionView {
-      SectionItemView {
-        ClearChatButton(clearChat)
-      }
+      ClearChatButton(clearChat)
       SectionDivider()
-      SectionItemView {
-        DeleteContactButton(deleteContact)
-      }
+      DeleteContactButton(deleteContact)
     }
     SectionSpacer()
 
@@ -207,21 +215,35 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
 }
 
 @Composable
-private fun LocalAliasEditor(initialValue: String, updateValue: (String) -> Unit) {
+fun LocalAliasEditor(
+  initialValue: String,
+  center: Boolean = true,
+  leadingIcon: Boolean = false,
+  focus: Boolean = false,
+  updateValue: (String) -> Unit
+) {
   var value by rememberSaveable { mutableStateOf(initialValue) }
-  Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+  val modifier = if (center)
+    Modifier.padding(horizontal = if (!leadingIcon) DEFAULT_PADDING else 0.dp).widthIn(min = 100.dp)
+  else
+    Modifier.padding(horizontal = if (!leadingIcon) DEFAULT_PADDING else 0.dp).fillMaxWidth()
+  Row(Modifier.fillMaxWidth(), horizontalArrangement = if (center) Arrangement.Center else Arrangement.Start) {
     DefaultBasicTextField(
-      Modifier.padding(horizontal = 10.dp).widthIn(min = 100.dp),
+      modifier,
       value,
       {
         Text(
           generalGetString(R.string.text_field_set_contact_placeholder),
-          textAlign = TextAlign.Center,
+          textAlign = if (center) TextAlign.Center else TextAlign.Start,
           color = HighOrLowlight
         )
       },
+      leadingIcon = if (leadingIcon) {
+        { Icon(Icons.Default.Edit, null, Modifier.padding(start = 7.dp)) }
+      } else null,
       color = HighOrLowlight,
-      textStyle = TextStyle.Default.copy(textAlign = if (value.isEmpty()) TextAlign.Start else TextAlign.Center),
+      focus = focus,
+      textStyle = TextStyle.Default.copy(textAlign = if (value.isEmpty() || !center) TextAlign.Start else TextAlign.Center),
       keyboardActions = KeyboardActions(onDone = { updateValue(value) })
     ) {
       value = it
@@ -244,14 +266,7 @@ private fun LocalAliasEditor(initialValue: String, updateValue: (String) -> Unit
 @Composable
 fun NetworkStatusRow(networkStatus: Chat.NetworkStatus) {
   Row(
-    Modifier
-      .fillMaxSize()
-      .clickable {
-        AlertManager.shared.showAlertMsg(
-          generalGetString(R.string.network_status),
-          networkStatus.statusExplanation
-        )
-      },
+    Modifier.fillMaxSize(),
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
   ) {
@@ -306,46 +321,53 @@ fun SimplexServers(text: String, servers: List<String>) {
 }
 
 @Composable
-fun ClearChatButton(clearChat: () -> Unit) {
-  Row(
-    Modifier
-      .fillMaxSize()
-      .clickable { clearChat() },
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    Icon(
-      Icons.Outlined.Restore,
-      stringResource(R.string.clear_chat_button),
-      tint = WarningOrange
-    )
-    Spacer(Modifier.size(8.dp))
-    Text(stringResource(R.string.clear_chat_button), color = WarningOrange)
+fun SwitchAddressButton(onClick: () -> Unit) {
+  SectionItemView(onClick) {
+    Text(stringResource(R.string.switch_receiving_address), color = MaterialTheme.colors.primary)
   }
 }
 
 @Composable
-fun DeleteContactButton(deleteContact: () -> Unit) {
-  Row(
-    Modifier
-      .fillMaxSize()
-      .clickable { deleteContact() },
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    Icon(
-      Icons.Outlined.Delete,
-      stringResource(R.string.button_delete_contact),
-      tint = Color.Red
-    )
-    Spacer(Modifier.size(8.dp))
-    Text(stringResource(R.string.button_delete_contact), color = Color.Red)
+fun ClearChatButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    Icons.Outlined.Restore,
+    stringResource(R.string.clear_chat_button),
+    click = onClick,
+    textColor = WarningOrange,
+    iconColor = WarningOrange,
+  )
+}
+
+@Composable
+fun DeleteContactButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    Icons.Outlined.Delete,
+    stringResource(R.string.button_delete_contact),
+    click = onClick,
+    textColor = Color.Red,
+    iconColor = Color.Red,
+  )
+}
+
+private fun setContactAlias(contactApiId: Long, localAlias: String, chatModel: ChatModel) = withApi {
+  chatModel.controller.apiSetContactAlias(contactApiId, localAlias)?.let {
+    chatModel.updateContact(it)
   }
 }
 
-private fun setContactAlias(contactApiId: Long, localAlias: String, chatModel: ChatModel, onChatUpdated: (Chat) -> Unit) = withApi {
-  chatModel.controller.apiSetContactAlias(contactApiId, localAlias)?.let {
-    chatModel.updateContact(it)
-    onChatUpdated(chatModel.getChat(chatModel.chatId.value ?: return@withApi) ?: return@withApi)
-  }
+private fun showSwitchContactAddressAlert(m: ChatModel, contactId: Long) {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(R.string.switch_receiving_address_question),
+    text = generalGetString(R.string.switch_receiving_address_desc),
+    confirmText = generalGetString(R.string.switch_verb),
+    onConfirm = {
+      switchContactAddress(m, contactId)
+    }
+  )
+}
+
+private fun switchContactAddress(m: ChatModel, contactId: Long) = withApi {
+  m.controller.apiSwitchContact(contactId)
 }
 
 @Preview
@@ -364,7 +386,9 @@ fun PreviewChatInfoLayout() {
       connStats = null,
       onLocalAliasChanged = {},
       customUserProfile = null,
-      deleteContact = {}, clearChat = {}
+      deleteContact = {},
+      clearChat = {},
+      switchContactAddress = {},
     )
   }
 }

@@ -1,0 +1,106 @@
+<div class="first-two-sections pt-[66px] bg-white dark:bg-gradient-radial-mobile dark:lg:bg-gradient-radial">
+    <div class="md:flex md:flex-col-reverse md:items-center xl:flex xl:flex-row xl:items-start relative xl:justify-between xl:gap-10 container">
+        <div class="">
+            <section class="xl:h-[calc(100vh-66px)] xl:max-h-[888px] m-auto w-full flex items-center justify-between landing-page-header px-5">
+                <div class="xl:h-full flex flex-col items-center xl:items-start xl:justify-around w-full landing-page-header-div">
+                    {# <img class="static-phone-tablet hidden md:block xl:hidden" src="/img/new/tab-hero.svg" alt="" /> #}
+                    <img class="static-phone-mobile md:hidden" src="/img/new/mobile-hero.png" alt="" />
+
+                    <article class="w-full xl:max-w-[600px] landing-page-header-article">
+                        <p class="primary-header text-center xl:text-left font-bold text-[38px] md:text-[55px] leading-[46px] md:leading-[63px] mb-2 xl:mb-8">Privacy redefined</p>
+                        <p class="secondary-header text-center xl:text-left font-bold text-[28px] md:text-[38px] leading-[36px] md:leading-[43px] mb-2 xl:mb-8 tracking-[0.01em]">The first messenger<br>without user IDs</p>
+                        <p class="landing-page-header-article-paragraph text-black dark:text-white text-center xl:text-justify text-[16px] leading-[24px] mb-[20px] header-description">
+                            Other apps have user IDs: Signal, Matrix, Session, Briar, Jami, Cwtch, etc.<br>
+                            SimpleX does not, <strong>not even random numbers</strong>.<br>
+                            This radically improves your privacy.
+                        </p>
+                        <a href="javascript:void(0)" data-show-overlay="{{ hero_overlays.sections[1].overlayContent.overlayId }}" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-center xl:text-left text-[14px] xl:text-[16px] leading-[34px] underline-offset-2">Why user IDs are bad for privacy?</a>
+                        {{ overlay(hero_overlays.sections[1]) }}
+                        <a href="javascript:void(0)" data-show-overlay="{{ hero_overlays.sections[0].overlayContent.overlayId }}" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-center xl:text-left text-[14px] xl:text-[16px] leading-[34px] underline-offset-2">How does SimpleX work?</a>
+                        {{ overlay(hero_overlays.sections[0]) }}
+                    </article>
+                    <article class="w-full xl:max-w-[600px]">
+                        <p class="text-black dark:text-white hidden md:block text-center xl:text-left text-[16px] leading-[26px] mb-[11px] md:mt-6">Get SimpleX</p>
+                        <div class="socials flex items-center justify-center xl:justify-start gap-4 flex-wrap mt-[30px]">
+                            <a href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apple_store.svg" /></a>
+                            <a href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank" title="Public iOS preview on TestFlight"><img class="h-[40px] w-auto" src="/img/new/google_play.svg" /></a>
+                            <a href="https://app.simplex.chat" target="_blank" title="SimpleX F-Droid Repository"><img class="h-[40px] w-auto" src="/img/new/f_droid.svg" /></a>
+                            <a href="https://testflight.apple.com/join/DWuT2LQu" target="_blank"><img class="h-[40px] w-auto" src="/img/new/testflight.png" /></a>
+                            <a href="https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apk_icon.png" /></a>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
+            <section class="xl:h-[calc(100vh-66px)] xl:max-h-[888px]">
+                <div class="h-[calc(100%-81.42px)] w-full flex flex-col items-start justify-around">
+                    <div class="hero-video-phone-container w-full xl:hidden">
+                        <div class="hidden relative md:flex items-center justify-center">
+                            <img id="hero-video-phone-Background hidden md:block" src="/img/new/tab-video.svg" />
+                            <video class="absolute rounded-lg top-10 w-[235px] ml-[-6px] mt-1" controls>
+                                <source src="/video/connect.mp4" type="video/mp4">
+                            </video>
+                            
+                            {# <div class="absolute flex flex-col items-center gap-3">
+                                <img src="/img/new/play-btn.svg" alt="" />
+                                <p class="text-center text-[16px] leading-[24px] tracking-[0.04em] text-white">PLAY</p>
+                            </div> #}
+                        </div>
+                        <div class="w-full md:hidden my-10 relative flex items-center justify-center bg-[#17203D]">
+                            <video class="w-full" controls>
+                                <source src="/video/connect.mp4" type="video/mp4">
+                            </video>
+                            {# <img src="/img/new/mobile-video-placeholder.png" alt="">
+                            <div class="absolute flex flex-col items-center gap-3">
+                                <img src="/img/new/play-btn.svg" alt="" />
+                                <p class="text-center text-[16px] leading-[24px] tracking-[0.04em] text-white">PLAY</p>
+                            </div> #}
+                            {# <video class="w-full absolute" controls>
+                                <source src="/video/connect.mp4" type="video/mp4">
+                            </video> #}
+                        </div>
+
+                        {# <iframe id="hero-video-phone" src="https://www.youtube.com/embed/2IbRtjez6ag" title="Foodies Carpool Show ft WildLens By Abrar" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe> #}
+                    </div>
+
+                    <article class="w-full xl:max-w-[600px] landing-page-header-article px-5">
+                        <p class="text-active-blue text-center xl:text-left font-bold text-[28px] md:text-[35px] leading-[36px] md:leading-[43px] mb-[28px]">
+                            Make a private connection
+                        </p>
+                        <p class="text-center text-black dark:text-white xl:text-justify leading-[24px] text-[16px] mb-10 xl:mb-[25px] header-description">
+                            The video shows how you connect to your friend via their 1-time QR-code, in person or via a video link.
+                            You can also connect by sharing an invitation link.
+                        </p>
+                    </article>
+
+                    <div class="w-full container px-5 hidden md:flex items-center justify-center gap-[50px] py-[24px] xl:absolute bottom-0 z-10">
+                        <a href="#why-simplex" class="menu-link">Why SimpleX</a>
+                        <a href="#features" class="menu-link">Features</a>
+                        <a href="#privacy" class="menu-link">SimpleX privacy</a>
+                        <a href="#network" class="menu-link">SimpleX network</a>
+                    </div>
+                </div>
+            </section>
+        </div>
+        <div class="hero-phone-background hidden md:flex md:static md:max-w-[490px] md:mb-6 xl:mb-0 xl:flex items-center justify-center h-fit xl:h-[calc(100vh-66px)] xl:max-h-[888px] xl:min-w-[600px] xl:sticky top-[66px]">
+            <img id="hero-phone-light" class="only-light"/>
+            <img id="hero-phone-dark" class="only-dark"/>
+            <div id="hero-phone-preload" style="display: none"></div>
+            <video id="hero-phone-video" class="absolute hidden rounded-[12px] bg-black w-[238px] mr-[-4px] mt-[14px]" controls>
+                <source src="/video/connect.mp4" type="video/mp4">
+            </video>
+        </div>
+    </div>
+</div>
+
+<script>
+    var navBar = document.querySelector("nav");
+    var landingPageHeader = document.querySelector('.landing-page-header');
+    //landingPageHeader.style.height = window.innerHeight - navBar.offsetHeight + 'px';
+
+    // event listener for changing height of section according to window height
+    //window.addEventListener('resize', function () {
+    //    landingPageHeader.style.height = window.innerHeight - navBar.offsetHeight + 'px';
+    //});
+
+</script>

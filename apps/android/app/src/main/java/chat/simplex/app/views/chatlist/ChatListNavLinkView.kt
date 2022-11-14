@@ -5,7 +5,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.TheaterComedy
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,18 +22,20 @@ import chat.simplex.app.views.chat.group.deleteGroupDialog
 import chat.simplex.app.views.chat.group.leaveGroupDialog
 import chat.simplex.app.views.chat.item.ItemAction
 import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.newchat.ContactConnectionInfoView
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
 
 @Composable
 fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
   val showMenu = remember { mutableStateOf(false) }
-  var showMarkRead by remember { mutableStateOf(false) }
+  val showMarkRead = remember(chat.chatStats.unreadCount, chat.chatStats.unreadChat) {
+    chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat
+  }
   val stopped = chatModel.chatRunning.value == false
-  LaunchedEffect(chat.id, chat.chatStats.unreadCount > 0) {
+  LaunchedEffect(chat.id) {
     showMenu.value = false
     delay(500L)
-    showMarkRead = chat.chatStats.unreadCount > 0
   }
   when (chat.chatInfo) {
     is ChatInfo.Direct ->
@@ -63,7 +65,11 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
     is ChatInfo.ContactConnection ->
       ChatListNavLinkLayout(
         chatLinkPreview = { ContactConnectionView(chat.chatInfo.contactConnection) },
-        click = { contactConnectionAlertDialog(chat.chatInfo.contactConnection, chatModel) },
+        click = {
+          ModalManager.shared.showModalCloseable(true) { close ->
+            ContactConnectionInfoView(chatModel, chat.chatInfo.contactConnection.connReqInv, chat.chatInfo.contactConnection, false, close)
+          }
+        },
         dropdownMenuItems = { ContactConnectionMenuItems(chat.chatInfo, chatModel, showMenu) },
         showMenu,
         stopped
@@ -118,6 +124,8 @@ suspend fun setGroupMembers(groupInfo: GroupInfo, chatModel: ChatModel) {
 fun ContactMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>, showMarkRead: Boolean) {
   if (showMarkRead) {
     MarkReadChatAction(chat, chatModel, showMenu)
+  } else {
+    MarkUnreadChatAction(chat, chatModel, showMenu)
   }
   ToggleNotificationsChatAction(chat, chatModel, chat.chatInfo.ntfsEnabled, showMenu)
   ClearChatAction(chat, chatModel, showMenu)
@@ -136,6 +144,8 @@ fun GroupMenuItems(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showM
     else -> {
       if (showMarkRead) {
         MarkReadChatAction(chat, chatModel, showMenu)
+      } else {
+        MarkUnreadChatAction(chat, chatModel, showMenu)
       }
       ToggleNotificationsChatAction(chat, chatModel, chat.chatInfo.ntfsEnabled, showMenu)
       ClearChatAction(chat, chatModel, showMenu)
@@ -163,6 +173,30 @@ fun MarkReadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<
 }
 
 @Composable
+fun MarkUnreadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+  DropdownMenuItem({
+    markChatUnread(chat, chatModel)
+    showMenu.value = false
+  }) {
+    Row {
+      Text(
+        stringResource(R.string.mark_unread),
+        modifier = Modifier
+          .fillMaxWidth()
+          .weight(1F)
+          .padding(end = 15.dp),
+        color = MaterialTheme.colors.onBackground
+      )
+      Icon(
+        Icons.Outlined.MarkChatUnread,
+        stringResource(R.string.mark_unread),
+        tint = MaterialTheme.colors.onBackground
+      )
+    }
+  }
+}
+
+@Composable
 fun ToggleNotificationsChatAction(chat: Chat, chatModel: ChatModel, ntfsEnabled: Boolean, showMenu: MutableState<Boolean>) {
   ItemAction(
     if (ntfsEnabled) stringResource(R.string.mute_chat) else stringResource(R.string.unmute_chat),
@@ -177,7 +211,7 @@ fun ToggleNotificationsChatAction(chat: Chat, chatModel: ChatModel, ntfsEnabled:
 @Composable
 fun ClearChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
-    stringResource(R.string.clear_verb),
+    stringResource(R.string.clear_chat_menu_action),
     Icons.Outlined.Restore,
     onClick = {
       clearChatDialog(chat.chatInfo, chatModel)
@@ -190,7 +224,7 @@ fun ClearChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boo
 @Composable
 fun DeleteContactAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
-    stringResource(R.string.delete_verb),
+    stringResource(R.string.delete_contact_menu_action),
     Icons.Outlined.Delete,
     onClick = {
       deleteContactDialog(chat.chatInfo, chatModel)
@@ -203,7 +237,7 @@ fun DeleteContactAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState
 @Composable
 fun DeleteGroupAction(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
-    stringResource(R.string.delete_verb),
+    stringResource(R.string.delete_group_menu_action),
     Icons.Outlined.Delete,
     onClick = {
       deleteGroupDialog(chat.chatInfo, groupInfo, chatModel)
@@ -265,28 +299,65 @@ fun ContactRequestMenuItems(chatInfo: ChatInfo.ContactRequest, chatModel: ChatMo
 @Composable
 fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
+    stringResource(R.string.set_contact_name),
+    Icons.Outlined.Edit,
+    onClick = {
+      ModalManager.shared.showModalCloseable(true) { close ->
+        ContactConnectionInfoView(chatModel, chatInfo.contactConnection.connReqInv, chatInfo.contactConnection, true, close)
+      }
+      showMenu.value = false
+    },
+  )
+  ItemAction(
     stringResource(R.string.delete_verb),
     Icons.Outlined.Delete,
     onClick = {
-      deleteContactConnectionAlert(chatInfo.contactConnection, chatModel)
+      deleteContactConnectionAlert(chatInfo.contactConnection, chatModel) {}
       showMenu.value = false
     },
     color = Color.Red
   )
 }
 
-fun markChatRead(chat: Chat, chatModel: ChatModel) {
-  // Just to be sure
-  if (chat.chatStats.unreadCount == 0) return
-
-  val minUnreadItemId = chat.chatStats.minUnreadItemId
-  chatModel.markChatItemsRead(chat.chatInfo)
+fun markChatRead(c: Chat, chatModel: ChatModel) {
+  var chat = c
   withApi {
-    chatModel.controller.apiChatRead(
+    if (chat.chatStats.unreadCount > 0) {
+      val minUnreadItemId = chat.chatStats.minUnreadItemId
+      chatModel.markChatItemsRead(chat.chatInfo)
+      chatModel.controller.apiChatRead(
+        chat.chatInfo.chatType,
+        chat.chatInfo.apiId,
+        CC.ItemRange(minUnreadItemId, chat.chatItems.last().id)
+      )
+      chat = chatModel.getChat(chat.id) ?: return@withApi
+    }
+    if (chat.chatStats.unreadChat) {
+      val success = chatModel.controller.apiChatUnread(
+        chat.chatInfo.chatType,
+        chat.chatInfo.apiId,
+        false
+      )
+      if (success) {
+        chatModel.replaceChat(chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = false)))
+      }
+    }
+  }
+}
+
+fun markChatUnread(chat: Chat, chatModel: ChatModel) {
+  // Just to be sure
+  if (chat.chatStats.unreadChat) return
+
+  withApi {
+    val success = chatModel.controller.apiChatUnread(
       chat.chatInfo.chatType,
       chat.chatInfo.apiId,
-      CC.ItemRange(minUnreadItemId, chat.chatItems.last().id)
+      true
     )
+    if (success) {
+      chatModel.replaceChat(chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = true)))
+    }
   }
 }
 
@@ -337,7 +408,7 @@ fun contactConnectionAlertDialog(connection: PendingContactConnection, chatModel
       ) {
         TextButton(onClick = {
           AlertManager.shared.hideAlert()
-          deleteContactConnectionAlert(connection, chatModel)
+          deleteContactConnectionAlert(connection, chatModel) {}
         }) {
           Text(stringResource(R.string.delete_verb))
         }
@@ -350,7 +421,7 @@ fun contactConnectionAlertDialog(connection: PendingContactConnection, chatModel
   )
 }
 
-fun deleteContactConnectionAlert(connection: PendingContactConnection, chatModel: ChatModel) {
+fun deleteContactConnectionAlert(connection: PendingContactConnection, chatModel: ChatModel, onSuccess: () -> Unit) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.delete_pending_connection__question),
     text = generalGetString(
@@ -363,6 +434,7 @@ fun deleteContactConnectionAlert(connection: PendingContactConnection, chatModel
         AlertManager.shared.hideAlert()
         if (chatModel.controller.apiDeleteChat(ChatType.ContactConnection, connection.apiId)) {
           chatModel.removeChat(connection.id)
+          onSuccess()
         }
       }
     }
@@ -462,7 +534,7 @@ fun ChatListNavLinkLayout(
   showMenu: MutableState<Boolean>,
   stopped: Boolean
 ) {
-  var modifier = Modifier.fillMaxWidth().height(88.dp)
+  var modifier = Modifier.fillMaxWidth()
   if (!stopped) modifier = modifier.combinedClickable(onClick = click, onLongClick = { showMenu.value = true })
   Surface(modifier) {
     Row(

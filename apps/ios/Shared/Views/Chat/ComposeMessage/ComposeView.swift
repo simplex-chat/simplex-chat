@@ -12,7 +12,7 @@ import SimpleXChat
 enum ComposePreview {
     case noPreview
     case linkPreview(linkPreview: LinkPreview?)
-    case imagePreview(imagePreview: String)
+    case imagePreviews(imagePreviews: [String])
     case filePreview(fileName: String)
 }
 
@@ -26,7 +26,8 @@ struct ComposeState {
     var message: String
     var preview: ComposePreview
     var contextItem: ComposeContextItem
-    var inProgress: Bool = false
+    var inProgress = false
+    var disabled = false
     var useLinkPreviews: Bool = UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
 
     init(
@@ -66,7 +67,7 @@ struct ComposeState {
 
     func sendEnabled() -> Bool {
         switch preview {
-        case .imagePreview:
+        case .imagePreviews:
             return true
         case .filePreview:
             return true
@@ -77,7 +78,7 @@ struct ComposeState {
 
     func linkPreviewAllowed() -> Bool {
         switch preview {
-        case .imagePreview:
+        case .imagePreviews:
             return false
         case .filePreview:
             return false
@@ -104,7 +105,7 @@ func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
     case let .link(_, preview: preview):
         chatItemPreview = .linkPreview(linkPreview: preview)
     case let .image(_, image: image):
-        chatItemPreview = .imagePreview(imagePreview: image)
+        chatItemPreview = .imagePreviews(imagePreviews: [image])
     case .file:
         chatItemPreview = .filePreview(fileName: chatItem.file?.fileName ?? "")
     default:
@@ -127,7 +128,7 @@ struct ComposeView: View {
     @State private var showChooseSource = false
     @State private var showImagePicker = false
     @State private var showTakePhoto = false
-    @State var chosenImage: UIImage? = nil
+    @State var chosenImages: [UIImage] = []
     @State private var showFileImporter = false
     @State var chosenFile: URL? = nil
     
@@ -179,7 +180,7 @@ struct ComposeView: View {
             }
             if UIPasteboard.general.hasImages {
                 Button("Paste image") {
-                    chosenImage = UIPasteboard.general.image
+                    chosenImages = imageList(UIPasteboard.general.image)
                 }
             }
             Button("Choose file") {
@@ -189,20 +190,35 @@ struct ComposeView: View {
         .fullScreenCover(isPresented: $showTakePhoto) {
             ZStack {
                 Color.black.edgesIgnoringSafeArea(.all)
-                CameraImagePicker(image: $chosenImage)
+                CameraImageListPicker(images: $chosenImages)
             }
         }
         .sheet(isPresented: $showImagePicker) {
-            LibraryImagePicker(image: $chosenImage) {
-                didSelectItem in showImagePicker = false
+            LibraryImageListPicker(images: $chosenImages, selectionLimit: 10) { itemsSelected in
+                showImagePicker = false
+                if itemsSelected {
+                    DispatchQueue.main.async {
+                        composeState = composeState.copy(preview: .imagePreviews(imagePreviews: []))
+                    }
+                }
             }
         }
-        .onChange(of: chosenImage) { image in
-            if let image = image,
-               let imagePreview = resizeImageToStrSize(image, maxDataSize: 14000) {
-                composeState = composeState.copy(preview: .imagePreview(imagePreview: imagePreview))
-            } else {
-                composeState = composeState.copy(preview: .noPreview)
+        .onChange(of: chosenImages) { images in
+            Task {
+                var imgs: [String] = []
+                for image in images {
+                    if let img = resizeImageToStrSize(image, maxDataSize: 14000) {
+                        imgs.append(img)
+                        await MainActor.run {
+                            composeState = composeState.copy(preview: .imagePreviews(imagePreviews: imgs))
+                        }
+                    }
+                }
+                if imgs.count == 0 {
+                    await MainActor.run {
+                        composeState = composeState.copy(preview: .noPreview)
+                    }
+                }
             }
         }
         .fileImporter(
@@ -242,12 +258,12 @@ struct ComposeView: View {
             EmptyView()
         case let .linkPreview(linkPreview: preview):
             ComposeLinkView(linkPreview: preview, cancelPreview: cancelLinkPreview)
-        case let .imagePreview(imagePreview: img):
+        case let .imagePreviews(imagePreviews: images):
             ComposeImageView(
-                image: img,
+                images: images,
                 cancelImage: {
                     composeState = composeState.copy(preview: .noPreview)
-                    chosenImage = nil
+                    chosenImages = []
                 },
                 cancelEnabled: !composeState.editing())
         case let .filePreview(fileName: fileName):
@@ -284,64 +300,88 @@ struct ComposeView: View {
         logger.debug("ChatView sendMessage")
         Task {
             logger.debug("ChatView sendMessage: in Task")
-            do {
-                switch composeState.contextItem {
-                case let .editingItem(chatItem: ei):
-                    if let oldMsgContent = ei.content.msgContent {
+            switch composeState.contextItem {
+            case let .editingItem(chatItem: ei):
+                if let oldMsgContent = ei.content.msgContent {
+                    do {
+                        await sending()
+                        let mc = updateMsgContent(oldMsgContent)
                         let chatItem = try await apiUpdateChatItem(
                             type: chat.chatInfo.chatType,
                             id: chat.chatInfo.apiId,
                             itemId: ei.id,
-                            msg: updateMsgContent(oldMsgContent)
-                        )
-                        DispatchQueue.main.async {
-                            let _ = self.chatModel.upsertChatItem(self.chat.chatInfo, chatItem)
-                        }
-                    }
-                default:
-                    var mc: MsgContent? = nil
-                    var file: String? = nil
-                    switch (composeState.preview) {
-                    case .noPreview:
-                        mc = .text(composeState.message)
-                    case .linkPreview:
-                        mc = checkLinkPreview()
-                    case let .imagePreview(imagePreview: image):
-                        if let uiImage = chosenImage,
-                           let savedFile = saveImage(uiImage) {
-                            mc = .image(text: composeState.message, image: image)
-                            file = savedFile
-                        }
-                    case .filePreview:
-                        if let fileURL = chosenFile,
-                           let savedFile = saveFileFromURL(fileURL) {
-                            mc = .file(composeState.message)
-                            file = savedFile
-                        }
-                    }
-
-                    var quotedItemId: Int64? = nil
-                    switch (composeState.contextItem) {
-                    case let .quotedItem(chatItem: quotedItem):
-                        quotedItemId = quotedItem.id
-                    default:
-                        quotedItemId = nil
-                    }
-                    if let mc = mc {
-                        let chatItem = try await apiSendMessage(
-                            type: chat.chatInfo.chatType,
-                            id: chat.chatInfo.apiId,
-                            file: file,
-                            quotedItemId: quotedItemId,
                             msg: mc
                         )
-                        chatModel.addChatItem(chat.chatInfo, chatItem)
+                        await MainActor.run {
+                            clearState()
+                            let _ = self.chatModel.upsertChatItem(self.chat.chatInfo, chatItem)
+                        }
+                    } catch {
+                        logger.error("ChatView.sendMessage error: \(error.localizedDescription)")
+                        await MainActor.run {
+                            composeState.disabled = false
+                            composeState.inProgress = false
+                        }
+                        AlertManager.shared.showAlertMsg(title: "Error updating message", message: "Error: \(responseError(error))")
+                    }
+                } else {
+                    await MainActor.run { clearState() }
+                }
+            default:
+                await sending()
+                var quoted: Int64? = nil
+                if case let .quotedItem(chatItem: quotedItem) = composeState.contextItem {
+                    quoted = quotedItem.id
+                }
+
+                switch (composeState.preview) {
+                case .noPreview:
+                    await send(.text(composeState.message), quoted: quoted)
+                case .linkPreview:
+                    await send(checkLinkPreview(), quoted: quoted)
+                case let .imagePreviews(imagePreviews: images):
+                    var text = composeState.message
+                    var sent = false
+                    for i in 0..<min(chosenImages.count, images.count) {
+                        if i > 0 { _ = try? await Task.sleep(nanoseconds: 100_000000) }
+                        if let savedFile = saveImage(chosenImages[i]) {
+                            await send(.image(text: text, image: images[i]), quoted: quoted, file: savedFile)
+                            text = ""
+                            quoted = nil
+                            sent = true
+                        }
+                    }
+                    if !sent {
+                        await send(.text(composeState.message), quoted: quoted)
+                    }
+                case .filePreview:
+                    if let fileURL = chosenFile,
+                       let savedFile = saveFileFromURL(fileURL) {
+                        await send(.file(composeState.message), quoted: quoted, file: savedFile)
                     }
                 }
-                clearState()
-            } catch {
-                clearState()
-                logger.error("ChatView.sendMessage error: \(error.localizedDescription)")
+            }
+            await MainActor.run { clearState() }
+        }
+
+        func sending() async {
+            await MainActor.run { composeState.disabled = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                if composeState.disabled { composeState.inProgress = true }
+            }
+        }
+
+        func send(_ mc: MsgContent, quoted: Int64?, file: String? = nil) async {
+            if let chatItem = await apiSendMessage(
+                type: chat.chatInfo.chatType,
+                id: chat.chatInfo.apiId,
+                file: file,
+                quotedItemId: quoted,
+                msg: mc
+            ) {
+                await MainActor.run {
+                    chatModel.addChatItem(chat.chatInfo, chatItem)
+                }
             }
         }
     }
@@ -352,7 +392,7 @@ struct ComposeView: View {
         prevLinkUrl = nil
         pendingLinkUrl = nil
         cancelledLinks = []
-        chosenImage = nil
+        chosenImages = []
         chosenFile = nil
     }
 

@@ -28,6 +28,7 @@ fun DefaultBasicTextField(
   modifier: Modifier,
   initialValue: String,
   placeholder: (@Composable () -> Unit)? = null,
+  leadingIcon: (@Composable () -> Unit)? = null,
   focus: Boolean = false,
   color: Color = MaterialTheme.colors.onBackground,
   textStyle: TextStyle = TextStyle.Default,
@@ -44,8 +45,8 @@ fun DefaultBasicTextField(
 
   LaunchedEffect(Unit) {
     if (!focus) return@LaunchedEffect
+    delay(300)
     focusRequester.requestFocus()
-    delay(200)
     keyboard?.show()
   }
   val enabled = true
@@ -100,6 +101,7 @@ fun DefaultBasicTextField(
         placeholder = placeholder,
         singleLine = true,
         enabled = enabled,
+        leadingIcon = leadingIcon,
         interactionSource = interactionSource,
         contentPadding = TextFieldDefaults.textFieldWithLabelPadding(start = 0.dp, end = 0.dp),
         visualTransformation = VisualTransformation.None,

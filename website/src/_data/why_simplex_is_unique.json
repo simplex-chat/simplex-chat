@@ -1,0 +1,60 @@
+{
+    "sections": [
+        {
+            "id": 1,
+            "title": "You have complete privacy",
+            "descBody": "sections/simplex_unique/card_1.html",
+            "imgLight": "/img/new/unique-section-1.png",
+            "imgDark": "/img/new/unique-section-1-dark.png",
+            "overlayContent": {
+                "overlayId": "why-simplex-is-unique-1",
+                "title": "Full privacy of your identity, profile, contacts and metadata",
+                "linkText": "Learn more",
+                "showImage": true,
+                "contentBody": "overlay_content/why_simplex_is_unique/card_1.html"
+            }
+        },
+        {
+            "id": 2,
+            "title": "You are protected<br>from spam and abuse",
+            "descBody": "sections/simplex_unique/card_2.html",
+            "imgLight": "/img/new/unique-section-2.png",
+            "imgDark": "/img/new/unique-section-2-dark.png",
+            "overlayContent": {
+                "overlayId": "why-simplex-is-unique-2",
+                "title": "The best protection from spam and abuse",
+                "linkText": "Learn more",
+                "showImage": true,
+                "contentBody": "overlay_content/why_simplex_is_unique/card_2.html"
+            }
+        },
+        {
+            "id": 3,
+            "title": "You control your data",
+            "descBody": "sections/simplex_unique/card_3.html",
+            "imgLight": "/img/new/unique-section-3.png",
+            "imgDark": "/img/new/unique-section-3-dark.png",
+            "overlayContent": {
+                "overlayId": "why-simplex-is-unique-3",
+                "title": "Ownership, control and security of your data",
+                "linkText": "Learn more",
+                "showImage": true,
+                "contentBody": "overlay_content/why_simplex_is_unique/card_3.html"
+            }
+        },
+        {
+            "id": 4,
+            "title": "You own SimpleX network",
+            "descBody": "sections/simplex_unique/card_4.html",
+            "imgLight": "/img/new/unique-section-4.png",
+            "imgDark": "/img/new/unique-section-4-dark.png",
+            "overlayContent": {
+                "overlayId": "why-simplex-is-unique-4",
+                "title": "Fully decentralised &mdash; users own the SimpleX network",
+                "linkText": "Learn more",
+                "showImage": true,
+                "contentBody": "overlay_content/why_simplex_is_unique/card_4.html"
+            }
+        }
+    ]
+}

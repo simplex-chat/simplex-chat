@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.os.Parcelable
 import android.os.SystemClock.elapsedRealtime
 import android.util.Log
 import androidx.activity.compose.setContent
@@ -13,13 +14,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Replay
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.*
 import chat.simplex.app.model.ChatModel
@@ -30,12 +30,10 @@ import chat.simplex.app.views.SplashView
 import chat.simplex.app.views.call.ActiveCallView
 import chat.simplex.app.views.call.IncomingCallAlertView
 import chat.simplex.app.views.chat.ChatView
-import chat.simplex.app.views.chatlist.ChatListView
-import chat.simplex.app.views.chatlist.openChat
+import chat.simplex.app.views.chatlist.*
 import chat.simplex.app.views.database.DatabaseErrorView
 import chat.simplex.app.views.helpers.*
-import chat.simplex.app.views.newchat.connectViaUri
-import chat.simplex.app.views.newchat.withUriAction
+import chat.simplex.app.views.newchat.*
 import chat.simplex.app.views.onboarding.*
 import kotlinx.coroutines.delay
 
@@ -66,6 +64,8 @@ class MainActivity: FragmentActivity() {
     // Only needed to be processed on first creation of activity
     if (savedInstanceState == null) {
       processNotificationIntent(intent, m)
+      processIntent(intent, m)
+      processExternalIntent(intent, m)
     }
     setContent {
       SimpleXTheme {
@@ -92,14 +92,25 @@ class MainActivity: FragmentActivity() {
   override fun onNewIntent(intent: Intent?) {
     super.onNewIntent(intent)
     processIntent(intent, vm.chatModel)
+    processExternalIntent(intent, vm.chatModel)
   }
 
   override fun onStart() {
     super.onStart()
     val enteredBackgroundVal = enteredBackground.value
-    if (enteredBackgroundVal == null || elapsedRealtime() - enteredBackgroundVal >= 30 * 1e+3) {
+    if (enteredBackgroundVal == null || elapsedRealtime() - enteredBackgroundVal >= 30_000) {
       runAuthenticate()
     }
+  }
+
+  override fun onPause() {
+    super.onPause()
+    /**
+    * When new activity is created after a click on notification, the old one receives onPause before
+    * recreation but receives onStop after recreation. So using both (onPause and onStop) to prevent
+    * unwanted multiple auth dialogs from [runAuthenticate]
+    * */
+    enteredBackground.value = elapsedRealtime()
   }
 
   override fun onStop() {
@@ -113,6 +124,10 @@ class MainActivity: FragmentActivity() {
       // When pressed Back and there is no one wants to process the back event, clear auth state to force re-auth on launch
       clearAuthState()
       laFailed.value = true
+    }
+    if (!onBackPressedDispatcher.hasEnabledCallbacks()) {
+      // Drop shared content
+      SimplexApp.context.chatModel.sharedContent.value = null
     }
   }
 
@@ -129,17 +144,10 @@ class MainActivity: FragmentActivity() {
         this@MainActivity,
         completed = { laResult ->
           when (laResult) {
-            LAResult.Success -> {
+            LAResult.Success ->
               userAuthorized.value = true
-            }
-            is LAResult.Error -> {
+            is LAResult.Error, LAResult.Failed ->
               laFailed.value = true
-              laErrorToast(applicationContext, laResult.errString)
-            }
-            LAResult.Failed -> {
-              laFailed.value = true
-              laFailedToast(applicationContext)
-            }
             LAResult.Unavailable -> {
               userAuthorized.value = true
               m.performLA.value = false
@@ -175,15 +183,9 @@ class MainActivity: FragmentActivity() {
             prefPerformLA.set(true)
             laTurnedOnAlert()
           }
-          is LAResult.Error -> {
+          is LAResult.Error, LAResult.Failed -> {
             m.performLA.value = false
             prefPerformLA.set(false)
-            laErrorToast(applicationContext, laResult.errString)
-          }
-          LAResult.Failed -> {
-            m.performLA.value = false
-            prefPerformLA.set(false)
-            laFailedToast(applicationContext)
           }
           LAResult.Unavailable -> {
             m.performLA.value = false
@@ -208,15 +210,9 @@ class MainActivity: FragmentActivity() {
             m.performLA.value = false
             prefPerformLA.set(false)
           }
-          is LAResult.Error -> {
+          is LAResult.Error, LAResult.Failed -> {
             m.performLA.value = true
             prefPerformLA.set(true)
-            laErrorToast(applicationContext, laResult.errString)
-          }
-          LAResult.Failed -> {
-            m.performLA.value = true
-            prefPerformLA.set(true)
-            laFailedToast(applicationContext)
           }
           LAResult.Unavailable -> {
             m.performLA.value = false
@@ -283,14 +279,14 @@ fun MainPage(
   }
 
   @Composable
-  fun retryAuthView() {
+  fun authView() {
     Box(
       Modifier.fillMaxSize(),
       contentAlignment = Alignment.Center
     ) {
       SimpleButton(
-        stringResource(R.string.auth_retry),
-        icon = Icons.Outlined.Replay,
+        stringResource(R.string.auth_unlock),
+        icon = Icons.Outlined.Lock,
         click = {
           laFailed.value = false
           runAuthenticate()
@@ -311,7 +307,7 @@ fun MainPage(
       onboarding == null || userCreated == null -> SplashView()
       !chatsAccessAuthorized -> {
         if (chatModel.controller.appPrefs.performLA.get() && laFailed.value) {
-          retryAuthView()
+          authView()
         } else {
           SplashView()
         }
@@ -322,15 +318,17 @@ fun MainPage(
           else {
             showAdvertiseLAAlert = true
             val stopped = chatModel.chatRunning.value == false
-            if (chatModel.chatId.value == null) ChatListView(chatModel, setPerformLA, stopped)
+            if (chatModel.chatId.value == null) {
+              if (chatModel.sharedContent.value == null)
+                ChatListView(chatModel, setPerformLA, stopped)
+              else
+                ShareListView(chatModel, stopped)
+            }
             else ChatView(chatModel)
           }
         }
       }
-      onboarding == OnboardingStage.Step1_SimpleXInfo ->
-        Box(Modifier.padding(horizontal = 20.dp)) {
-          SimpleXInfo(chatModel, onboarding = true)
-        }
+      onboarding == OnboardingStage.Step1_SimpleXInfo -> SimpleXInfo(chatModel, onboarding = true)
       onboarding == OnboardingStage.Step2_CreateProfile -> CreateProfile(chatModel)
     }
     ModalManager.shared.showInView()
@@ -380,29 +378,61 @@ fun processIntent(intent: Intent?, chatModel: ChatModel) {
   }
 }
 
+fun processExternalIntent(intent: Intent?, chatModel: ChatModel) {
+  when (intent?.action) {
+    Intent.ACTION_SEND -> {
+      // Close active chat and show a list of chats
+      chatModel.chatId.value = null
+      chatModel.clearOverlays.value = true
+      when {
+        "text/plain" == intent.type -> intent.getStringExtra(Intent.EXTRA_TEXT)?.let {
+          chatModel.sharedContent.value = SharedContent.Text(it)
+        }
+        intent.type?.startsWith("image/") == true -> (intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri)?.let {
+          chatModel.sharedContent.value = SharedContent.Images(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", listOf(it))
+        } // All other mime types
+        else -> (intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri)?.let {
+          chatModel.sharedContent.value = SharedContent.File(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", it)
+        }
+      }
+    }
+    Intent.ACTION_SEND_MULTIPLE -> {
+      // Close active chat and show a list of chats
+      chatModel.chatId.value = null
+      chatModel.clearOverlays.value = true
+      when {
+        intent.type?.startsWith("image/") == true -> (intent.getParcelableArrayListExtra<Parcelable>(Intent.EXTRA_STREAM) as? List<Uri>)?.let {
+          chatModel.sharedContent.value = SharedContent.Images(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", it)
+        } // All other mime types
+        else -> {}
+      }
+    }
+  }
+}
+
 fun connectIfOpenedViaUri(uri: Uri, chatModel: ChatModel) {
   Log.d(TAG, "connectIfOpenedViaUri: opened via link")
   if (chatModel.currentUser.value == null) {
     // TODO open from chat list view
     chatModel.appOpenUrl.value = uri
   } else {
-    withUriAction(uri) { action ->
-      val title = when (action) {
-        "contact" -> generalGetString(R.string.connect_via_contact_link)
-        "invitation" -> generalGetString(R.string.connect_via_invitation_link)
-        else -> {
-          Log.e(TAG, "URI has unexpected action. Alert shown.")
-          action
-        }
+    withUriAction(uri) { linkType ->
+      val title = when (linkType) {
+        ConnectionLinkType.CONTACT -> generalGetString(R.string.connect_via_contact_link)
+        ConnectionLinkType.INVITATION -> generalGetString(R.string.connect_via_invitation_link)
+        ConnectionLinkType.GROUP -> generalGetString(R.string.connect_via_group_link)
       }
       AlertManager.shared.showAlertMsg(
         title = title,
-        text = generalGetString(R.string.profile_will_be_sent_to_contact_sending_link),
+        text = if (linkType == ConnectionLinkType.GROUP)
+          generalGetString(R.string.you_will_join_group)
+        else
+          generalGetString(R.string.profile_will_be_sent_to_contact_sending_link),
         confirmText = generalGetString(R.string.connect_via_link_verb),
         onConfirm = {
           withApi {
             Log.d(TAG, "connectIfOpenedViaUri: connecting")
-            connectViaUri(chatModel, action, uri)
+            connectViaUri(chatModel, linkType, uri)
           }
         }
       )

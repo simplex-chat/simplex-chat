@@ -108,6 +108,12 @@
         "invitedMember": {"ref": "memberIdRole"},
         "connRequest": {"ref": "connReqUri"},
         "groupProfile": {"ref": "profile"}
+      },
+      "optionalProperties": {
+        "groupLinkId": {"ref": "base64url"},
+        "metadata": {
+          "comment": "used to identify invitation via group link"
+        }
       }
     },
     "memberIdRole": {
@@ -128,6 +134,9 @@
         "groupConnReq": {"ref": "connReqUri"},
         "directConnReq": {"ref": "connReqUri"}
       }
+    },
+    "groupMemberRole": {
+      "enum": ["author", "member", "admin", "owner"]
     },
     "callInvitation": {
       "properties": {
@@ -370,6 +379,17 @@
           "properties": {
             "memberId": {"ref": "base64url"},
             "profile": {"ref": "profile"}
+          }
+        }
+      }
+    },
+    "x.grp.mem.role": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "memberId": {"ref": "base64url"},
+            "role": {"ref": "groupMemberRole"}
           }
         }
       }

@@ -129,7 +129,7 @@ public func createErrorNtf(_ dbStatus: DBMigrationResult) -> UNMutableNotificati
     case .errorKeychain:
         title = NSLocalizedString("Encrypted message: keychain error", comment: "notification")
     case .unknown:
-        title = NSLocalizedString("Encrypted message: unexpeсted error", comment: "notification")
+        title = NSLocalizedString("Encrypted message: unexpected error", comment: "notification")
     case .ok:
         title = NSLocalizedString("Encrypted message or another event", comment: "notification")
     }

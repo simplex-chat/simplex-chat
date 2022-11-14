@@ -62,6 +62,13 @@ struct ChatView: View {
         .navigationTitle(cInfo.chatViewName)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
+        .onAppear {
+            if chat.chatStats.unreadChat {
+                Task {
+                    await markChatUnread(chat, unreadChat: false)
+                }
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
@@ -100,7 +107,7 @@ struct ChatView: View {
                         connectionStats = nil
                         customUserProfile = nil
                     }) {
-                        ChatInfoView(chat: chat, contact: contact, connectionStats: connectionStats, customUserProfile: customUserProfile, localAlias: chat.chatInfo.localAlias)
+                        ChatInfoView(chat: chat, contact: contact, connectionStats: $connectionStats, customUserProfile: customUserProfile, localAlias: chat.chatInfo.localAlias)
                     }
                 } else if case let .group(groupInfo) = cInfo {
                     Button {
@@ -215,7 +222,7 @@ struct ChatView: View {
                                 itemsInView.insert(ci.viewId)
                                 loadChatItems(cInfo, ci, proxy)
                                 if ci.isRcvNew() {
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                                         if chatModel.chatId == cInfo.id && itemsInView.contains(ci.viewId) {
                                             Task {
                                                 await apiMarkChatItemRead(cInfo, ci)
@@ -385,8 +392,11 @@ struct ChatView: View {
                                 await MainActor.run { selectedMember = member }
                             }
                         }
-                        .sheet(item: $selectedMember, onDismiss: { memberConnectionStats = nil }) { member in
-                            GroupMemberInfoView(groupInfo: groupInfo, member: member, connectionStats: memberConnectionStats)
+                        .sheet(item: $selectedMember, onDismiss: {
+                            selectedMember = nil
+                            memberConnectionStats = nil
+                        }) { _ in
+                            GroupMemberInfoView(groupInfo: groupInfo, member: $selectedMember, connectionStats: $memberConnectionStats)
                         }
                 } else {
                     Rectangle().fill(.clear)
@@ -487,7 +497,7 @@ struct ChatView: View {
             )
         }
 
-        return ChatItemView(chatInfo: chat.chatInfo, chatItem: ci, showMember: showMember, maxWidth: maxWidth)
+        return ChatItemView(chatInfo: chat.chatInfo, chatItem: ci, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy)
             .uiKitContextMenu(actions: menu)
             .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {
                 Button("Delete for me", role: .destructive) {

@@ -18,12 +18,12 @@ struct AddGroupMembersView: View {
     var showFooterCounter: Bool = true
     var addedMembersCb: ((Set<Int64>) -> Void)? = nil
     @State private var selectedContacts = Set<Int64>()
-    @State private var selectedRole: GroupMemberRole = .admin
+    @State private var selectedRole: GroupMemberRole = .member
     @State private var alert: AddGroupMembersAlert?
 
     private enum AddGroupMembersAlert: Identifiable {
         case prohibitedToInviteIncognito
-        case error(title: LocalizedStringKey, error: String = "")
+        case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
 
         var id: String {
             switch self {
@@ -101,7 +101,7 @@ struct AddGroupMembersView: View {
                     message: Text("You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile")
                 )
             case let .error(title, error):
-                return Alert(title: Text(title), message: Text("\(error)"))
+                return Alert(title: Text(title), message: Text(error))
             }
         }
     }
@@ -128,7 +128,8 @@ struct AddGroupMembersView: View {
                 await MainActor.run { dismiss() }
                 if let cb = addedMembersCb { cb(selectedContacts) }
             } catch {
-                alert = .error(title: "Error adding member(s)", error: responseError(error))
+                let a = getErrorAlert(error, "Error adding member(s)")
+                alert = .error(title: a.title, error: a.message)
             }
         }
     }

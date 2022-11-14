@@ -15,11 +15,13 @@ private let sentQuoteColorLight = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, 
 private let sentQuoteColorDark = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.09)
 
 struct FramedItemView: View {
+    @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme
     var chatInfo: ChatInfo
     var chatItem: ChatItem
     var showMember = false
     var maxWidth: CGFloat = .infinity
+    @State var scrollProxy: ScrollViewProxy? = nil
     @State var msgWidth: CGFloat = 0
     @State var imgWidth: CGFloat? = nil
     @State var metaColor = Color.secondary
@@ -30,6 +32,14 @@ struct FramedItemView: View {
             VStack(alignment: .leading, spacing: 0) {
                 if let qi = chatItem.quotedItem {
                     ciQuoteView(qi)
+                        .onTapGesture {
+                            if let proxy = scrollProxy,
+                               let ci = m.reversedChatItems.first(where: { $0.id == qi.itemId }) {
+                                   withAnimation {
+                                       proxy.scrollTo(ci.viewId, anchor: .bottom)
+                                   }
+                            }
+                        }
                 }
 
                 if chatItem.formattedText == nil && chatItem.file == nil && isShortEmoji(chatItem.content.text) {
@@ -45,7 +55,7 @@ struct FramedItemView: View {
                 } else {
                     switch (chatItem.content.msgContent) {
                     case let .image(text, image):
-                        CIImageView(image: image, file: chatItem.file, maxWidth: maxWidth, imgWidth: $imgWidth)
+                        CIImageView(chatItem: chatItem, image: image, maxWidth: maxWidth, imgWidth: $imgWidth, scrollProxy: scrollProxy)
                             .overlay(DetermineWidth())
                         if text == "" {
                             Color.clear
@@ -159,13 +169,16 @@ struct FramedItemView: View {
     }
 
     @ViewBuilder private func ciMsgContentView(_ ci: ChatItem, _ showMember: Bool = false) -> some View {
+        let rtl = isRightToLeft(chatItem.text)
         let v = MsgContentView(
             text: ci.text,
             formattedText: ci.formattedText,
             sender: showMember ? ci.memberDisplayName : nil,
             metaText: ci.timestampText,
-            edited: ci.meta.itemEdited
+            edited: ci.meta.itemEdited,
+            rightToLeft: rtl
         )
+        .multilineTextAlignment(rtl ? .trailing : .leading)
         .padding(.vertical, 6)
         .padding(.horizontal, 12)
         .overlay(DetermineWidth())
@@ -180,6 +193,13 @@ struct FramedItemView: View {
     }
 }
 
+func isRightToLeft(_ s: String) -> Bool {
+    if let lang = CFStringTokenizerCopyBestStringLanguage(s as CFString, CFRange(location: 0, length: min(s.count, 80))) {
+        return NSLocale.characterDirection(forLanguage: lang as String) == .rightToLeft
+    }
+    return false
+}
+
 private struct MetaColorPreferenceKey: PreferenceKey {
     static var defaultValue = Color.secondary
     static func reduce(value: inout Color, nextValue: () -> Color) {
@@ -187,8 +207,17 @@ private struct MetaColorPreferenceKey: PreferenceKey {
     }
 }
 
+func onlyImage(_ ci: ChatItem) -> Bool {
+    if case let .image(text, _) = ci.content.msgContent {
+        return ci.quotedItem == nil && text == ""
+    }
+    return false
+}
+
 func chatItemFrameColor(_ ci: ChatItem, _ colorScheme: ColorScheme) -> Color {
-    ci.chatDir.sent
+    onlyImage(ci)
+    ? Color.clear
+    : ci.chatDir.sent
     ? (colorScheme == .light ? sentColorLight : sentColorDark)
     : Color(uiColor: .tertiarySystemGroupedBackground)
 }

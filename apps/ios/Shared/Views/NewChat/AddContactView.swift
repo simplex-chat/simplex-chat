@@ -8,19 +8,19 @@
 
 import SwiftUI
 import CoreImage.CIFilterBuiltins
+import SimpleXChat
 
 struct AddContactView: View {
-    @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject private var chatModel: ChatModel
+    var contactConnection: PendingContactConnection? = nil
     var connReqInvitation: String
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading) {
-                Text("One-time invitation link")
-                    .font(.title)
-                    .padding(.vertical)
                 Text("Your contact can scan it from the app.")
                     .padding(.bottom, 4)
-                if (chatModel.incognito) {
+                if (contactConnection?.incognito ?? chatModel.incognito) {
                     HStack {
                         Image(systemName: "theatermasks").foregroundColor(.indigo).font(.footnote)
                         Spacer().frame(width: 8)
@@ -35,8 +35,15 @@ struct AddContactView: View {
                     }
                     .padding(.bottom)
                 }
-                QRCode(uri: connReqInvitation)
-                    .padding(.bottom)
+                if connReqInvitation != "" {
+                    QRCode(uri: connReqInvitation).padding(.bottom)
+                } else {
+                    ProgressView()
+                        .progressViewStyle(.circular)
+                        .scaleEffect(2)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical)
+                }
                 Text("If you can't meet in person, **show QR code in the video call**, or share the link.")
                     .padding(.bottom)
                 Button {
@@ -47,8 +54,9 @@ struct AddContactView: View {
                 .frame(maxWidth: .infinity, alignment: .center)
             }
             .padding()
-            .frame(maxHeight: .infinity, alignment: .top)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
+        .onAppear { chatModel.connReqInv = connReqInvitation }
     }
 }
 

@@ -11,41 +11,24 @@ import SimpleXChat
 
 struct CIImageView: View {
     @Environment(\.colorScheme) var colorScheme
+    let chatItem: ChatItem
     let image: String
-    let file: CIFile?
     let maxWidth: CGFloat
     @Binding var imgWidth: CGFloat?
-    @State var showFullScreenImage = false
+    @State var scrollProxy: ScrollViewProxy?
+    @State private var showFullScreenImage = false
 
     var body: some View {
+        let file = chatItem.file
         VStack(alignment: .center, spacing: 6) {
             if let uiImage = getLoadedImage(file) {
                 imageView(uiImage)
                 .fullScreenCover(isPresented: $showFullScreenImage) {
-                    ZStack {
-                        Color.black.edgesIgnoringSafeArea(.all)
-                        ZoomableScrollView {
-                            ZStack {
-                                Color.black.edgesIgnoringSafeArea(.all)
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFit()
-                            }
-                        }
-                    }
-                    .onTapGesture { showFullScreenImage = false }
-                    .gesture(
-                        DragGesture(minimumDistance: 80).onChanged { gesture in
-                            let t = gesture.translation
-                            if t.height > 60 && t.height > abs(t.width)  {
-                                showFullScreenImage = false
-                            }
-                        }
-                    )
+                    FullScreenImageView(chatItem: chatItem, image: uiImage, showView: $showFullScreenImage, scrollProxy: scrollProxy)
                 }
                 .onTapGesture { showFullScreenImage = true }
             } else if let data = Data(base64Encoded: dropImagePrefix(image)),
-              let uiImage = UIImage(data: data) {
+                      let uiImage = UIImage(data: data) {
                 imageView(uiImage)
                     .onTapGesture {
                         if let file = file {
@@ -84,7 +67,7 @@ struct CIImageView: View {
     }
 
     @ViewBuilder private func loadingIndicator() -> some View {
-        if let file = file {
+        if let file = chatItem.file {
             switch file.fileStatus {
             case .sndTransfer:
                 ProgressView()

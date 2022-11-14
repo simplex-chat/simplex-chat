@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import StoreKit
 import SimpleXChat
 
 let simplexTeamURL = URL(string: "simplex:/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D")!
@@ -19,6 +20,7 @@ let DEFAULT_SHOW_LA_NOTICE = "showLocalAuthenticationNotice"
 let DEFAULT_LA_NOTICE_SHOWN = "localAuthenticationNoticeShown"
 let DEFAULT_PERFORM_LA = "performLocalAuthentication"
 let DEFAULT_WEBRTC_POLICY_RELAY = "webrtcPolicyRelay"
+let DEFAULT_WEBRTC_ICE_SERVERS = "webrtcICEServers"
 let DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
 let DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews"
 let DEFAULT_EXPERIMENTAL_CALLS = "experimentalCalls"
@@ -32,6 +34,7 @@ let DEFAULT_ACCENT_COLOR_RED = "accentColorRed"
 let DEFAULT_ACCENT_COLOR_GREEN = "accentColorGreen"
 let DEFAULT_ACCENT_COLOR_BLUE = "accentColorBlue"
 let DEFAULT_USER_INTERFACE_STYLE = "userInterfaceStyle"
+let DEFAULT_CONNECT_VIA_LINK_TAB = "connectViaLinkTab"
 
 let appDefaults: [String: Any] = [
     DEFAULT_SHOW_LA_NOTICE: false,
@@ -48,6 +51,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_ACCENT_COLOR_GREEN: 0.533,
     DEFAULT_ACCENT_COLOR_BLUE: 1.000,
     DEFAULT_USER_INTERFACE_STYLE: 0,
+    DEFAULT_CONNECT_VIA_LINK_TAB: "scan"
 ]
 
 private var indent: CGFloat = 36
@@ -58,6 +62,8 @@ let encryptionStartedDefault = BoolDefault(defaults: UserDefaults.standard, forK
 
 let encryptionStartedAtDefault = DateDefault(defaults: UserDefaults.standard, forKey: DEFAULT_ENCRYPTION_STARTED_AT)
 
+let connectViaLinkTabDefault = EnumDefault<ConnectViaLinkTab>(defaults: UserDefaults.standard, forKey: DEFAULT_CONNECT_VIA_LINK_TAB, withDefault: .scan)
+
 func setGroupDefaults() {
     privacyAcceptImagesGroupDefault.set(UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_ACCEPT_IMAGES))
 }
@@ -65,6 +71,7 @@ func setGroupDefaults() {
 struct SettingsView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var sceneDelegate: SceneDelegate
     @Binding var showSettings: Bool
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State private var settingsSheet: SettingsSheet?
@@ -88,15 +95,15 @@ struct SettingsView: View {
                         .disabled(chatModel.chatRunning != true)
 
                     NavigationLink {
-                        UserAddress()
-                            .navigationTitle("Your chat address")
+                        CreateLinkView(selection: .longTerm, viaNavLink: true)
+                            .navigationBarTitleDisplayMode(.inline)
                     } label: {
                         settingsRow("qrcode") { Text("Your SimpleX contact address") }
                     }
                     .disabled(chatModel.chatRunning != true)
 
                     NavigationLink {
-                        DatabaseView(showSettings: $showSettings)
+                        DatabaseView(showSettings: $showSettings, chatItemTTL: chatModel.chatItemTTL)
                             .navigationTitle("Your chat database")
                     } label: {
                         let color: Color = chatModel.chatDbEncrypted == false ? .orange : .secondary
@@ -174,35 +181,54 @@ struct SettingsView: View {
                         settingsRow("textformat") { Text("Markdown in messages") }
                     }
                     settingsRow("number") {
-                        Button {
+                        Button("Send questions and ideas") {
                             showSettings = false
                             DispatchQueue.main.async {
                                 UIApplication.shared.open(simplexTeamURL)
                             }
-                        } label: {
-                            Text("Chat with the developers")
                         }
                     }
                     .disabled(chatModel.chatRunning != true)
                     settingsRow("envelope") { Text("[Send us email](mailto:chat@simplex.chat)") }
                 }
 
-                Section("Develop") {
-                    NavigationLink {
-                        TerminalView()
-                    } label: {
-                        settingsRow("terminal") { Text("Chat console") }
-                    }
-                    settingsRow("gear") {
-                        Toggle("Developer tools", isOn: $developerTools)
+                Section("Support SimpleX Chat") {
+                    settingsRow("keyboard") { Text("[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)") }
+                    settingsRow("star") {
+                        Button("Rate the app") {
+                            if let scene = sceneDelegate.windowScene {
+                                SKStoreReviewController.requestReview(in: scene)
+                            }
+                        }
                     }
                     ZStack(alignment: .leading) {
                         Image(colorScheme == .dark ? "github_light" : "github")
                             .resizable()
                             .frame(width: 24, height: 24)
                             .opacity(0.5)
-                        Text("Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)")
+                        Text("[Star on GitHub](https://github.com/simplex-chat/simplex-chat)")
                             .padding(.leading, indent)
+                    }
+                }
+
+                Section("Develop") {
+                    settingsRow("chevron.left.forwardslash.chevron.right") {
+                        Toggle("Developer tools", isOn: $developerTools)
+                    }
+                    if developerTools {
+                        NavigationLink {
+                            TerminalView()
+                        } label: {
+                            settingsRow("terminal") { Text("Chat console") }
+                        }
+                        ZStack(alignment: .leading) {
+                            Image(colorScheme == .dark ? "github_light" : "github")
+                                .resizable()
+                                .frame(width: 24, height: 24)
+                                .opacity(0.5)
+                            Text("Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)")
+                                .padding(.leading, indent)
+                        }
                     }
 //                    NavigationLink {
 //                        ExperimentalFeaturesView()

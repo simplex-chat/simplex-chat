@@ -1,5 +1,5 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -19,9 +19,9 @@ import Data.Functor (($>))
 import qualified Data.Text as T
 import qualified Database.SQLite3 as SQL
 import Simplex.Chat.Controller
-import Simplex.Messaging.Agent.Client (agentStore)
+import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), sqlString)
-import Simplex.Messaging.Util (unlessM, whenM)
+import Simplex.Messaging.Util
 import System.FilePath
 import UnliftIO.Directory
 import UnliftIO.Exception (SomeException, bracket, catch)
@@ -97,7 +97,7 @@ storageFiles :: ChatMonad m => m StorageFiles
 storageFiles = do
   ChatController {chatStore, filesFolder, smpAgent} <- ask
   let SQLiteStore {dbFilePath = chatDb, dbEncrypted = chatEncrypted} = chatStore
-      SQLiteStore {dbFilePath = agentDb, dbEncrypted = agentEncrypted} = agentStore smpAgent
+      SQLiteStore {dbFilePath = agentDb, dbEncrypted = agentEncrypted} = agentClientStore smpAgent
   filesPath <- readTVarIO filesFolder
   pure StorageFiles {chatDb, chatEncrypted, agentDb, agentEncrypted, filesPath}
 
