@@ -640,11 +640,12 @@ updateContactProfile db user@User {userId} c p'
   | displayName == newName = do
     liftIO $ updateContactProfile_ db userId profileId p'
     pure $ c {profile, mergedPreferences}
-  | otherwise = ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
-    currentTs <- getCurrentTime
-    updateContactProfile_' db userId profileId p' currentTs
-    updateContact_ db userId contactId localDisplayName ldn currentTs
-    pure . Right $ c {localDisplayName = ldn, profile, mergedPreferences}
+  | otherwise =
+    ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
+      currentTs <- getCurrentTime
+      updateContactProfile_' db userId profileId p' currentTs
+      updateContact_ db userId contactId localDisplayName ldn currentTs
+      pure . Right $ c {localDisplayName = ldn, profile, mergedPreferences}
   where
     Contact {contactId, localDisplayName, profile = LocalProfile {profileId, displayName, localAlias}, activeConn, userPreferences} = c
     Profile {displayName = newName, preferences} = p'
