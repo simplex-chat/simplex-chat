@@ -807,7 +807,7 @@ processChatCommand = \case
     contacts <- withStore' (`getUserContacts` user)
     withChatLock "sendMessageBroadcast" . procCmd $ do
       let mc = MCText $ safeDecodeUtf8 msg
-          cts = filter isReady contacts
+          cts = filter (\ct -> isReady ct && isDirect ct) contacts
       forM_ cts $ \ct ->
         void
           ( do
@@ -816,6 +816,9 @@ processChatCommand = \case
           )
           `catchError` (toView . CRChatError)
       CRBroadcastSent mc (length cts) <$> liftIO getZonedTime
+    where
+      isDirect Contact {contactUsed, activeConn = Connection {connLevel, viaGroupLink}} =
+        (connLevel == 0 && not viaGroupLink) || contactUsed
   SendMessageQuote cName (AMsgDirection msgDir) quotedMsg msg -> withUser $ \user@User {userId} -> do
     contactId <- withStore $ \db -> getContactIdByName db user cName
     quotedItemId <- withStore $ \db -> getDirectChatItemIdByText db userId contactId msgDir (safeDecodeUtf8 quotedMsg)
