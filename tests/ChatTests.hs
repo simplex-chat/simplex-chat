@@ -118,7 +118,7 @@ chatTests = do
     it "set contact prefs" testSetContactPrefs
   describe "SMP servers" $ do
     it "get and set SMP servers" testGetSetSMPServers
-    fit "test SMP server connection" testTestSMPServerConnection
+    it "test SMP server connection" testTestSMPServerConnection
   describe "async connection handshake" $ do
     it "connect when initiating client goes offline" testAsyncInitiatingOffline
     it "connect when accepting client goes offline" testAsyncAcceptingOffline
@@ -2885,9 +2885,9 @@ testTestSMPServerConnection =
       alice <## "SMP server test passed"
       alice ##> "/smp test smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:5001"
       alice <## "SMP server test passed"
-      alice ##> "/smp test smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh=@localhost:5001"
-      alice <## "SMP server test failed"
-      alice <## ""
+      alice ##> "/smp test smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZwjI=@localhost:5001"
+      alice <## "SMP server test failed at Connect, error: BROKER NETWORK"
+      alice <## "Possibly, certificate fingerprint in server address is incorrect"
 
 testAsyncInitiatingOffline :: IO ()
 testAsyncInitiatingOffline = withTmpFiles $ do
