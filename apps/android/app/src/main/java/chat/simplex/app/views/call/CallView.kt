@@ -356,6 +356,7 @@ fun CallInfoView(call: Call, alignment: Alignment.Horizontal) {
 
 @Composable
 fun WebRTCView(callCommand: MutableState<WCallCommand?>, onResponse: (WVAPIMessage) -> Unit) {
+  val scope = rememberCoroutineScope()
   val webView = remember { mutableStateOf<WebView?>(null) }
   val permissionsState = rememberMultiplePermissionsState(
     permissions = listOf(
@@ -431,10 +432,10 @@ fun WebRTCView(callCommand: MutableState<WCallCommand?>, onResponse: (WVAPIMessa
           }
         }
       ) { wv ->
-        Log.d(TAG, "WebRTCView: webview ready")
+        Log.d(TAG, "LALAL WebRTCView: webview ready")
         // for debugging
         // wv.evaluateJavascript("sendMessageToNative = ({resp}) => WebRTCInterface.postMessage(JSON.stringify({command: resp}))", null)
-        CoroutineScope(Dispatchers.Main).launch {
+        scope.launch {
           delay(2000L)
           wv.evaluateJavascript("sendMessageToNative = (msg) => WebRTCInterface.postMessage(JSON.stringify(msg))", null)
           webView.value = wv
