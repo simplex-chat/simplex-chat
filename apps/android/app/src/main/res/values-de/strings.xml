@@ -221,7 +221,7 @@
   <string name="icon_descr_server_status_error">Fehler</string>
   <string name="icon_descr_server_status_pending">Ausstehend</string>
   <string name="switch_receiving_address_question">Empfängeradresse wechseln?</string>
-  <string name="switch_receiving_address_desc">Diese Funktion ist experimentell! Sie wird nur funktionieren, wenn der Kontakt ebenfalls die SimpleX-Version 4.2 installiert hat. Sobald der Adress-Wechsel abgeschlossen ist, sollten Sie die Nachricht im Chat-Verlauf sehen. Bitte prüfen Sie, ob Sie weiterhin Nachrichten von diesem Kontakt (oder Gruppenmitglied) empfangen können.</string>
+  <string name="switch_receiving_address_desc">Diese Funktion ist experimentell! Sie wird nur funktionieren, wenn der Kontakt ebenfalls eine SimpleX-Version ab v4.2 installiert hat. Sobald der Adress-Wechsel abgeschlossen ist, sollten Sie die Nachricht im Chat-Verlauf sehen. Bitte prüfen Sie, ob Sie weiterhin Nachrichten von diesem Kontakt (oder Gruppenmitglied) empfangen können.</string>
 
   <!-- Message Actions - SendMsgView.kt -->
   <string name="icon_descr_send_message">Nachricht senden</string>
@@ -358,15 +358,15 @@
   <string name="how_to_use_simplex_chat">Wie man SimpleX nutzt</string>
   <string name="markdown_help">Markdown Hilfe</string>
   <string name="markdown_in_messages">Markdown in Nachrichten</string>
-  <string name="chat_with_the_founder">Senden Sie Fragen und Ideen</string>
+  <string name="chat_with_the_founder">Senden Sie Ihre Fragen und Ideen</string>
   <string name="send_us_an_email">Senden Sie uns eine E-Mail</string>
   <string name="chat_lock">SimpleX Sperre</string>
   <string name="chat_console">Chat Konsole</string>
   <string name="smp_servers">SMP-Server</string>
   <string name="install_simplex_chat_for_terminal">Installieren Sie <xliff:g id="appNameFull">SimpleX Chat</xliff:g> als Terminalanwendung</string>
-  <string name="star_on_github">Stern auf GitHub</string>
-  <string name="contribute">Beitragen</string>
-  <string name="rate_the_app">Bewerte die App</string>
+  <string name="star_on_github">Einen Stern auf GitHub vergeben</string>
+  <string name="contribute">Unterstützen Sie uns</string>
+  <string name="rate_the_app">Bewerten Sie die App</string>
   <string name="use_simplex_chat_servers__question">Verwenden Sie <xliff:g id="appNameFull">SimpleX Chat</xliff:g> Server?</string>
   <string name="saved_SMP_servers_will_be_removed">Gespeicherte SMP-Server werden entfernt.</string>
   <string name="your_SMP_servers">Ihre SMP-Server</string>
@@ -567,7 +567,7 @@
   <string name="settings_section_title_you">MEINE DATEN</string>
   <string name="settings_section_title_settings">EINSTELLUNGEN</string>
   <string name="settings_section_title_help">HILFE</string>
-  <string name="settings_section_title_support">UNTERSTÜTZEN SIMPLEX CHAT</string>
+  <string name="settings_section_title_support">UNTERSTÜTZUNG VON SimpleX CHAT</string>
   <string name="settings_section_title_develop">ENTWICKLUNG</string>
   <string name="settings_section_title_device">GERÄT</string>
   <string name="settings_section_title_chats">CHATS</string>
