@@ -49,10 +49,12 @@ import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (bshow)
 import System.Console.ANSI.Types
 
-serializeChatResponse :: Maybe User -> UTCTime -> ChatResponse -> String
+type CurrentTime = UTCTime
+
+serializeChatResponse :: Maybe User -> CurrentTime -> ChatResponse -> String
 serializeChatResponse user_ ts = unlines . map unStyle . responseToView user_ False ts
 
-responseToView :: Maybe User -> Bool -> UTCTime -> ChatResponse -> [StyledString]
+responseToView :: Maybe User -> Bool -> CurrentTime -> ChatResponse -> [StyledString]
 responseToView user_ testView ts = \case
   CRActiveUser User {profile} -> viewUserProfile $ fromLocalProfile profile
   CRChatStarted -> ["chat started"]
@@ -256,7 +258,7 @@ showSMPServer = B.unpack . strEncode . host
 viewHostEvent :: AProtocolType -> TransportHost -> String
 viewHostEvent p h = map toUpper (B.unpack $ strEncode p) <> " host " <> B.unpack (strEncode h)
 
-viewChatItem :: forall c d. MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> UTCTime -> [StyledString]
+viewChatItem :: forall c d. MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> CurrentTime -> [StyledString]
 viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} doShow ts = case chat of
   DirectChat c -> case chatDir of
     CIDirectSnd -> case content of
@@ -309,7 +311,7 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} doShow ts 
     plainContent = plain . ciContentToText
     prohibited = styled (colored Red) ("[prohibited - it's a bug if this chat item was created in this context, please report it to dev team]" :: String)
 
-viewItemUpdate :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> UTCTime -> [StyledString]
+viewItemUpdate :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> CurrentTime -> [StyledString]
 viewItemUpdate chat ChatItem {chatDir, meta, content, quotedItem} ts = case chat of
   DirectChat Contact {localDisplayName = c} -> case chatDir of
     CIDirectRcv -> case content of
@@ -329,7 +331,7 @@ viewItemUpdate chat ChatItem {chatDir, meta, content, quotedItem} ts = case chat
     CIGroupSnd -> ["message updated"]
   _ -> []
 
-viewItemDelete :: ChatInfo c -> ChatItem c d -> ChatItem c' d' -> UTCTime -> [StyledString]
+viewItemDelete :: ChatInfo c -> ChatItem c d -> ChatItem c' d' -> CurrentTime -> [StyledString]
 viewItemDelete chat ChatItem {chatDir, meta, content = deletedContent} ChatItem {content = toContent} ts = case chat of
   DirectChat Contact {localDisplayName = c} -> case (chatDir, deletedContent, toContent) of
     (CIDirectRcv, CIRcvMsgContent mc, CIRcvDeleted mode) -> case mode of
@@ -365,7 +367,7 @@ msgPreview = msgPlain . preview . msgContentText
       | T.length t <= 120 = t
       | otherwise = T.take 120 t <> "..."
 
-viewRcvIntegrityError :: StyledString -> MsgErrorType -> UTCTime -> CIMeta 'MDRcv -> [StyledString]
+viewRcvIntegrityError :: StyledString -> MsgErrorType -> CurrentTime -> CIMeta 'MDRcv -> [StyledString]
 viewRcvIntegrityError from msgErr ts meta = receivedWithTime_ ts from [] meta $ viewMsgIntegrityError msgErr
 
 viewMsgIntegrityError :: MsgErrorType -> [StyledString]
@@ -802,16 +804,16 @@ viewContactUpdated
     where
       fullNameUpdate = if T.null fullName' || fullName' == n' then " removed full name" else " updated full name: " <> plain fullName'
 
-viewReceivedMessage :: StyledString -> [StyledString] -> MsgContent -> UTCTime -> CIMeta d -> [StyledString]
+viewReceivedMessage :: StyledString -> [StyledString] -> MsgContent -> CurrentTime -> CIMeta d -> [StyledString]
 viewReceivedMessage from quote mc ts meta = receivedWithTime_ ts from quote meta (ttyMsgContent mc)
 
-receivedWithTime_ :: UTCTime -> StyledString -> [StyledString] -> CIMeta d -> [StyledString] -> [StyledString]
+receivedWithTime_ :: CurrentTime -> StyledString -> [StyledString] -> CIMeta d -> [StyledString] -> [StyledString]
 receivedWithTime_ ts from quote CIMeta {localItemTs} styledMsg = do
   prependFirst (ttyMsgTime ts localItemTs <> " " <> from) (quote <> prependFirst indent styledMsg)
   where
     indent = if null quote then "" else "      "
 
-ttyMsgTime :: UTCTime -> ZonedTime -> StyledString
+ttyMsgTime :: CurrentTime -> ZonedTime -> StyledString
 ttyMsgTime ts t =
   let localTime = zonedTimeToLocalTime t
       tz = zonedTimeZone t
@@ -822,15 +824,15 @@ ttyMsgTime ts t =
           else "%H:%M"
    in styleTime $ formatTime defaultTimeLocale fmt localTime
 
-viewSentMessage :: StyledString -> [StyledString] -> MsgContent -> UTCTime -> CIMeta d -> [StyledString]
+viewSentMessage :: StyledString -> [StyledString] -> MsgContent -> CurrentTime -> CIMeta d -> [StyledString]
 viewSentMessage to quote mc ts = sentWithTime_ ts (prependFirst to $ quote <> prependFirst indent (ttyMsgContent mc))
   where
     indent = if null quote then "" else "      "
 
-viewSentBroadcast :: MsgContent -> Int -> UTCTime -> ZonedTime -> [StyledString]
+viewSentBroadcast :: MsgContent -> Int -> CurrentTime -> ZonedTime -> [StyledString]
 viewSentBroadcast mc n ts t = prependFirst (highlight' "/feed" <> " (" <> sShow n <> ") " <> ttyMsgTime ts t <> " ") (ttyMsgContent mc)
 
-viewSentFileInvitation :: StyledString -> CIFile d -> UTCTime -> CIMeta d -> [StyledString]
+viewSentFileInvitation :: StyledString -> CIFile d -> CurrentTime -> CIMeta d -> [StyledString]
 viewSentFileInvitation to CIFile {fileId, filePath, fileStatus} ts = case filePath of
   Just fPath -> sentWithTime_ ts $ ttySentFile fPath
   _ -> const []
@@ -840,7 +842,7 @@ viewSentFileInvitation to CIFile {fileId, filePath, fileStatus} ts = case filePa
       CIFSSndTransfer -> []
       _ -> ["use " <> highlight ("/fc " <> show fileId) <> " to cancel sending"]
 
-sentWithTime_ :: UTCTime -> [StyledString] -> CIMeta d -> [StyledString]
+sentWithTime_ :: CurrentTime -> [StyledString] -> CIMeta d -> [StyledString]
 sentWithTime_ ts styledMsg CIMeta {localItemTs} =
   prependFirst (ttyMsgTime ts localItemTs <> " ") styledMsg
 
@@ -871,7 +873,7 @@ sendingFile_ status ft@SndFileTransfer {recipientDisplayName = c} =
 sndFile :: SndFileTransfer -> StyledString
 sndFile SndFileTransfer {fileId, fileName} = fileTransferStr fileId fileName
 
-viewReceivedFileInvitation :: StyledString -> CIFile d -> UTCTime -> CIMeta d -> [StyledString]
+viewReceivedFileInvitation :: StyledString -> CIFile d -> CurrentTime -> CIMeta d -> [StyledString]
 viewReceivedFileInvitation from file ts meta = receivedWithTime_ ts from [] meta (receivedFileInvitation_ file)
 
 receivedFileInvitation_ :: CIFile d -> [StyledString]
