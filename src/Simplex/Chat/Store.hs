@@ -3680,15 +3680,16 @@ updateGroupProfile db User {userId} g@GroupInfo {groupId, localDisplayName, grou
         (ldn, currentTs, userId, groupId)
       DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (localDisplayName, userId)
 
-getAllChatItems :: DB.Connection -> User -> ChatPagination -> ExceptT StoreError IO [AChatItem]
-getAllChatItems db user pagination = do
+getAllChatItems :: DB.Connection -> User -> ChatPagination -> Maybe String -> ExceptT StoreError IO [AChatItem]
+getAllChatItems db user pagination search_ = do
+  let search = fromMaybe "" search_
   case pagination of
-    CPLast count -> getAllChatItemsLast_ db user count
+    CPLast count -> getAllChatItemsLast_ db user count search
     CPAfter _afterId _count -> throwError $ SEInternalError "not implemented"
     CPBefore _beforeId _count -> throwError $ SEInternalError "not implemented"
 
-getAllChatItemsLast_ :: DB.Connection -> User -> Int -> ExceptT StoreError IO [AChatItem]
-getAllChatItemsLast_ db user@User {userId} count = do
+getAllChatItemsLast_ :: DB.Connection -> User -> Int -> String -> ExceptT StoreError IO [AChatItem]
+getAllChatItemsLast_ db user@User {userId} count search = do
   itemRefs <-
     liftIO $
       reverse . rights . map toChatItemRef
@@ -3697,11 +3698,11 @@ getAllChatItemsLast_ db user@User {userId} count = do
           [sql|
             SELECT chat_item_id, contact_id, group_id
             FROM chat_items
-            WHERE user_id = ?
+            WHERE user_id = ? AND item_text LIKE '%' || ? || '%'
             ORDER BY item_ts DESC, chat_item_id DESC
             LIMIT ?
           |]
-          (userId, count)
+          (userId, search, count)
   mapM (uncurry $ getAChatItem_ db user) itemRefs
 
 getGroupIdByName :: DB.Connection -> User -> GroupName -> ExceptT StoreError IO GroupId

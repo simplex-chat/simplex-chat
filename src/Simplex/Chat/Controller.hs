@@ -235,7 +235,7 @@ data ChatCommand
   | DeleteGroupLink GroupName
   | ShowGroupLink GroupName
   | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: ByteString, message :: ByteString}
-  | LastMessages (Maybe ChatName) Int
+  | LastMessages (Maybe ChatName) Int (Maybe String)
   | SendFile ChatName FilePath
   | SendImage ChatName FilePath
   | ForwardFile ChatName FileTransferId

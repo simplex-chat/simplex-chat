@@ -1015,11 +1015,11 @@ processChatCommand = \case
     quotedItemId <- withStore $ \db -> getGroupChatItemIdByText db user groupId cName (safeDecodeUtf8 quotedMsg)
     let mc = MCText $ safeDecodeUtf8 msg
     processChatCommand . APISendMessage (ChatRef CTGroup groupId) $ ComposedMessage Nothing (Just quotedItemId) mc
-  LastMessages (Just chatName) count -> withUser $ \user -> do
+  LastMessages (Just chatName) count search -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
-    CRLastMessages . aChatItems . chat <$> processChatCommand (APIGetChat chatRef (CPLast count) Nothing)
-  LastMessages Nothing count -> withUser $ \user -> withStore $ \db ->
-    CRLastMessages <$> getAllChatItems db user (CPLast count)
+    CRLastMessages . aChatItems . chat <$> processChatCommand (APIGetChat chatRef (CPLast count) search)
+  LastMessages Nothing count search -> withUser $ \user -> withStore $ \db ->
+    CRLastMessages <$> getAllChatItems db user (CPLast count) search
   SendFile chatName f -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     processChatCommand . APISendMessage chatRef $ ComposedMessage (Just f) Nothing (MCFile "")
@@ -3166,7 +3166,7 @@ chatCommandP =
       "/sql chat " *> (ExecChatStoreSQL <$> textP),
       "/sql agent " *> (ExecAgentStoreSQL <$> textP),
       "/_get chats" *> (APIGetChats <$> (" pcc=on" $> True <|> " pcc=off" $> False <|> pure False)),
-      "/_get chat " *> (APIGetChat <$> chatRefP <* A.space <*> chatPaginationP <*> optional searchP),
+      "/_get chat " *> (APIGetChat <$> chatRefP <* A.space <*> chatPaginationP <*> optional (" search=" *> stringP)),
       "/_get items count=" *> (APIGetChatItems <$> A.decimal),
       "/_send " *> (APISendMessage <$> chatRefP <*> (" json " *> jsonP <|> " text " *> (ComposedMessage Nothing Nothing <$> mcTextP))),
       "/_update item " *> (APIUpdateChatItem <$> chatRefP <* A.space <*> A.decimal <* A.space <*> msgContentP),
@@ -3259,7 +3259,8 @@ chatCommandP =
       ("\\ " <|> "\\") *> (DeleteMessage <$> chatNameP <* A.space <*> A.takeByteString),
       ("! " <|> "!") *> (EditMessage <$> chatNameP <* A.space <*> (quotedMsg <|> pure "") <*> A.takeByteString),
       "/feed " *> (SendMessageBroadcast <$> A.takeByteString),
-      ("/tail" <|> "/t") *> (LastMessages <$> optional (A.space *> chatNameP) <*> msgCountP),
+      ("/tail" <|> "/t") *> (LastMessages <$> optional (A.space *> chatNameP) <*> msgCountP <*> pure Nothing),
+      ("/search" <|> "/?") *> (LastMessages <$> optional (A.space *> chatNameP) <*> msgCountP <*> (Just <$> (A.space *> stringP))),
       ("/file " <|> "/f ") *> (SendFile <$> chatNameP' <* A.space <*> filePath),
       ("/image " <|> "/img ") *> (SendImage <$> chatNameP' <* A.space <*> filePath),
       ("/fforward " <|> "/ff ") *> (ForwardFile <$> chatNameP' <* A.space <*> A.decimal),
@@ -3319,8 +3320,8 @@ chatCommandP =
       n <- (A.space *> A.takeByteString) <|> pure ""
       pure $ if B.null n then name else safeDecodeUtf8 n
     textP = safeDecodeUtf8 <$> A.takeByteString
-    filePath = T.unpack . safeDecodeUtf8 <$> A.takeByteString
-    searchP = T.unpack . safeDecodeUtf8 <$> (" search=" *> A.takeByteString)
+    stringP = T.unpack . safeDecodeUtf8 <$> A.takeByteString
+    filePath = stringP
     memberRole =
       A.choice
         [ " owner" $> GROwner,
