@@ -326,21 +326,17 @@ fun MainPage(
             BoxWithConstraints {
               var currentChatId by rememberSaveable { mutableStateOf(chatModel.chatId.value) }
               val offset = remember { Animatable(if (chatModel.chatId.value == null) 0f else maxWidth.value) }
-              var allowHide by rememberSaveable { mutableStateOf(false) }
               Box(
                 Modifier
                   .graphicsLayer {
-                    allowHide = offset.value == 0f && chatModel.chatId.value == null
                     translationX = -offset.value.dp.toPx()
                   }
               ) {
-                if (chatModel.chatId.value == null || !allowHide) {
                   val stopped = chatModel.chatRunning.value == false
                   if (chatModel.sharedContent.value == null)
                     ChatListView(chatModel, setPerformLA, stopped)
                   else
                     ShareListView(chatModel, stopped)
-                }
               }
               val scope = rememberCoroutineScope()
               val onComposed: () -> Unit = {
@@ -374,8 +370,8 @@ fun MainPage(
                 }
               }
               Box (Modifier.graphicsLayer { translationX = maxWidth.toPx() - offset.value.dp.toPx() }) Box2@ {
-                if (currentChatId != null) {
-                  ChatView(currentChatId ?: return@Box2, chatModel, onComposed)
+                currentChatId?.let {
+                  ChatView(it, chatModel, onComposed)
                 }
               }
             }

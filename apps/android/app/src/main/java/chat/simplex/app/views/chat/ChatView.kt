@@ -104,7 +104,6 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
     }
 
     ChatLayout(
-      user,
       chat,
       unreadCount,
       composeState,
@@ -232,7 +231,6 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
 
 @Composable
 fun ChatLayout(
-  user: User,
   chat: Chat,
   unreadCount: State<Int>,
   composeState: MutableState<ComposeState>,
@@ -290,7 +288,7 @@ fun ChatLayout(
         ) { contentPadding ->
           BoxWithConstraints(Modifier.fillMaxHeight().padding(contentPadding)) {
             ChatItemsList(
-              user, chat, unreadCount, composeState, chatItems, searchValue,
+              chat, unreadCount, composeState, chatItems, searchValue,
               useLinkPreviews, chatModelIncognito, showMemberInfo, loadPrevMessages, deleteMessage,
               receiveFile, joinGroup, acceptCall, markRead, setFloatingButton, onComposed,
             )
@@ -443,7 +441,6 @@ val CIListStateSaver = run {
 
 @Composable
 fun BoxWithConstraintsScope.ChatItemsList(
-  user: User,
   chat: Chat,
   unreadCount: State<Int>,
   composeState: MutableState<ComposeState>,
@@ -938,7 +935,6 @@ fun PreviewChatLayout() {
     val unreadCount = remember { mutableStateOf(chatItems.count { it.isRcvNew }) }
     val searchValue = remember { mutableStateOf("") }
     ChatLayout(
-      user = User.sampleData,
       chat = Chat(
         chatInfo = ChatInfo.Direct.sampleData,
         chatItems = chatItems,
@@ -996,7 +992,6 @@ fun PreviewGroupChatLayout() {
     val unreadCount = remember { mutableStateOf(chatItems.count { it.isRcvNew }) }
     val searchValue = remember { mutableStateOf("") }
     ChatLayout(
-      user = User.sampleData,
       chat = Chat(
         chatInfo = ChatInfo.Group.sampleData,
         chatItems = chatItems,
