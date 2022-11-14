@@ -42,8 +42,7 @@ import chat.simplex.app.views.helpers.ProfileImage
 import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.usersettings.NotificationsMode
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 
@@ -435,7 +434,7 @@ fun WebRTCView(callCommand: MutableState<WCallCommand?>, onResponse: (WVAPIMessa
         Log.d(TAG, "WebRTCView: webview ready")
         // for debugging
         // wv.evaluateJavascript("sendMessageToNative = ({resp}) => WebRTCInterface.postMessage(JSON.stringify({command: resp}))", null)
-        withApi {
+        CoroutineScope(Dispatchers.Main).launch {
           delay(2000L)
           wv.evaluateJavascript("sendMessageToNative = (msg) => WebRTCInterface.postMessage(JSON.stringify(msg))", null)
           webView.value = wv
