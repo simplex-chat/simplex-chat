@@ -36,7 +36,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.*
 
-fun withApi(action: suspend CoroutineScope.() -> Unit): Job = CoroutineScope(Dispatchers.Default).launch { action() }
+fun withApi(action: suspend CoroutineScope.() -> Unit): Job = withScope(GlobalScope, action)
 
 fun withScope(scope: CoroutineScope, action: suspend CoroutineScope.() -> Unit): Job =
   scope.launch { withContext(Dispatchers.Main, action) }
