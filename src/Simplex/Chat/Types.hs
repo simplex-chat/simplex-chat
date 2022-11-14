@@ -66,6 +66,7 @@ data User = User
     userContactId :: ContactId,
     localDisplayName :: ContactName,
     profile :: LocalProfile,
+    fullPreferences :: FullPreferences,
     activeUser :: Bool
   }
   deriving (Show, Generic, FromJSON)
@@ -205,6 +206,7 @@ data GroupInfo = GroupInfo
   { groupId :: GroupId,
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
+    fullGroupPreferences :: FullGroupPreferences,
     membership :: GroupMember,
     hostConnCustomUserProfileId :: Maybe ProfileId,
     chatSettings :: ChatSettings,
@@ -312,6 +314,18 @@ instance ToField GroupPreferences where
 instance FromField GroupPreferences where
   fromField = fromTextField_ decodeJSON
 
+mergeGroupPreferences :: Maybe GroupPreferences -> FullGroupPreferences
+mergeGroupPreferences groupPreferences =
+  FullGroupPreferences
+    { fullDelete = pref CFFullDelete,
+      -- receipts = pref CFReceipts,
+      voice = pref CFVoice
+    }
+  where
+    pref pt =
+      let sel = groupPrefSel pt
+       in fromMaybe (getGroupPreference pt defaultGroupPrefs) (groupPreferences >>= sel)
+
 -- full collection of chat preferences defined in the app - it is used to ensure we include all preferences and to simplify processing
 -- if some of the preferences are not defined in Preferences, defaults from defaultChatPrefs are used here.
 data FullPreferences = FullPreferences
@@ -319,7 +333,20 @@ data FullPreferences = FullPreferences
     -- receipts :: Preference,
     voice :: Preference
   }
-  deriving (Eq)
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON FullPreferences where toEncoding = J.genericToEncoding J.defaultOptions
+
+-- full collection of group preferences defined in the app - it is used to ensure we include all preferences and to simplify processing
+-- if some of the preferences are not defined in GroupPreferences, defaults from defaultGroupPrefs are used here.
+data FullGroupPreferences = FullGroupPreferences
+  { fullDelete :: GroupPreference,
+    -- receipts :: GroupPreference,
+    voice :: GroupPreference
+  }
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON FullGroupPreferences where toEncoding = J.genericToEncoding J.defaultOptions
 
 -- merged preferences of user for a given contact - they differentiate between specific preferences for the contact and global user preferences
 data ContactUserPreferences = ContactUserPreferences
@@ -363,6 +390,14 @@ defaultChatPrefs =
       voice = Preference {allow = FAYes}
     }
 
+defaultGroupPrefs :: FullGroupPreferences
+defaultGroupPrefs =
+  FullGroupPreferences
+    { fullDelete = GroupPreference {enable = FEOff},
+      -- receipts = GroupPreference {enable = FEOff},
+      voice = GroupPreference {enable = FEOn}
+    }
+
 emptyChatPrefs :: Preferences
 emptyChatPrefs = Preferences Nothing Nothing
 
@@ -387,6 +422,28 @@ data GroupPreference = GroupPreference
 instance ToJSON Preference where toEncoding = J.genericToEncoding J.defaultOptions
 
 instance ToJSON GroupPreference where toEncoding = J.genericToEncoding J.defaultOptions
+
+groupPrefSel :: ChatFeature -> GroupPreferences -> Maybe GroupPreference
+groupPrefSel = \case
+  CFFullDelete -> fullDelete
+  -- CFReceipts -> receipts
+  CFVoice -> voice
+
+class GroupPreferenceI p where
+  getGroupPreference :: ChatFeature -> p -> GroupPreference
+
+instance GroupPreferenceI GroupPreferences where
+  getGroupPreference pt prefs = fromMaybe (getGroupPreference pt defaultGroupPrefs) (groupPrefSel pt prefs)
+
+instance GroupPreferenceI (Maybe GroupPreferences) where
+  getGroupPreference pt prefs = fromMaybe (getGroupPreference pt defaultGroupPrefs) (groupPrefSel pt =<< prefs)
+
+instance GroupPreferenceI FullGroupPreferences where
+  getGroupPreference = \case
+    CFFullDelete -> fullDelete
+    -- CFReceipts -> receipts
+    CFVoice -> voice
+  {-# INLINE getGroupPreference #-}
 
 data FeatureAllowed
   = FAAlways -- allow unconditionally
