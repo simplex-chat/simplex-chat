@@ -207,6 +207,7 @@
   <string name="file_saved">Datei gespeichert</string>
   <string name="file_not_found">Datei nicht gefunden</string>
   <string name="error_saving_file">Fehler beim Speichern der Datei</string>
+  <string name="voice_message">***Voice message</string>
 
   <!-- Chat Info Settings - ChatInfoView.kt -->
   <string name="notifications">Benachrichtigungen</string>

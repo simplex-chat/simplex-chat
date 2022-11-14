@@ -223,7 +223,6 @@ fun interactionSourceWithTapDetection(onPress: () -> Unit, onClick: () -> Unit, 
         is PressInteraction.Press -> {
           firstTapTime = System.currentTimeMillis(); onPress()
         }
-
         is PressInteraction.Release -> if (firstTapTime + 1000L < System.currentTimeMillis()) onRelease() else onClick()
         is PressInteraction.Cancel -> onCancel()
       }
