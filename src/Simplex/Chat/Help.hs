@@ -199,7 +199,7 @@ settingsInfo =
     styleMarkdown
     [ green "Chat settings:",
       indent <> highlight "/network                 " <> " - show / set network access options",
-      indent <> highlight "/smp_servers             " <> " - show / set custom SMP servers",
+      indent <> highlight "/smp                     " <> " - show / set custom SMP servers",
       indent <> highlight "/info <contact>          " <> " - information about contact connection",
       indent <> highlight "/info #<group> <member>  " <> " - information about member connection",
       indent <> highlight "/(un)mute <contact>      " <> " - (un)mute contact, the last messages can be printed with /tail command",

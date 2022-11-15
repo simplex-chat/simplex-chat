@@ -39,7 +39,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Store (AutoAccept, StoreError, UserContactLink)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent (AgentClient)
-import Simplex.Messaging.Agent.Client (AgentLocks)
+import Simplex.Messaging.Agent.Client (AgentLocks, SMPTestFailure)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, InitialAgentServers, NetworkConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
@@ -187,6 +187,7 @@ data ChatCommand
   | APIGetGroupLink GroupId
   | GetUserSMPServers
   | SetUserSMPServers [SMPServerWithAuth]
+  | TestSMPServer SMPServerWithAuth
   | APISetChatItemTTL (Maybe Int64)
   | APIGetChatItemTTL
   | APISetNetworkConfig NetworkConfig
@@ -262,6 +263,7 @@ data ChatResponse
   | CRLastMessages {chatItems :: [AChatItem]}
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
   | CRUserSMPServers {smpServers :: [SMPServerWithAuth]}
+  | CRSMPTestResult {smpTestFailure :: Maybe SMPTestFailure}
   | CRChatItemTTL {chatItemTTL :: Maybe Int64}
   | CRNetworkConfig {networkConfig :: NetworkConfig}
   | CRContactInfo {contact :: Contact, connectionStats :: ConnectionStats, customUserProfile :: Maybe Profile}
