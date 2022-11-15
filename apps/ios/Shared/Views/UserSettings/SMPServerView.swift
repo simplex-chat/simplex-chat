@@ -24,7 +24,7 @@ struct SMPServerView: View {
         return VStack {
             List {
                 Section("Preset server address") {
-                    Text(server.address)
+                    Text(server.server)
                 }
                 useServerSection()
             }
@@ -35,7 +35,7 @@ struct SMPServerView: View {
         VStack {
             List {
                 Section("Your server address") {
-                    TextEditor(text: $server.address)
+                    TextEditor(text: $server.server)
                         .multilineTextAlignment(.leading)
                         .autocorrectionDisabled(true)
                         .autocapitalization(.none)
@@ -45,7 +45,7 @@ struct SMPServerView: View {
                 }
                 useServerSection()
                 Section("Add to another device") {
-                    QRCode(uri: server.address)
+                    QRCode(uri: server.server)
                         .listRowInsets(EdgeInsets(top: 12, leading: 12, bottom: 12, trailing: 12))
                 }
             }
@@ -56,6 +56,7 @@ struct SMPServerView: View {
         Section("Use server") {
             HStack {
                 Button("Test server") {
+                    Task { await testServerConnection(server: $server) }
                 }
                 Spacer()
                 showTestStatus(server: server)
@@ -64,6 +65,35 @@ struct SMPServerView: View {
             Button("Remove server", role: .destructive) {
 
             }
+        }
+    }
+}
+
+@ViewBuilder func showTestStatus(server: ServerCfg) -> some View {
+    switch server.tested {
+    case .some(true):
+        Image(systemName: "checkmark")
+            .foregroundColor(.green)
+    case .some(false):
+        Image(systemName: "multiply")
+            .foregroundColor(.red)
+    case .none:
+        Color.clear
+    }
+}
+
+func testServerConnection(server: Binding<ServerCfg>) async {
+    do {
+        let r = try await testSMPServer(smpServer: server.wrappedValue.server)
+        await MainActor.run {
+            switch r {
+            case .success: server.wrappedValue.tested = true
+            case .failure: server.wrappedValue.tested = false
+            }
+        }
+    } catch let error {
+        await MainActor.run {
+            server.wrappedValue.tested = false
         }
     }
 }

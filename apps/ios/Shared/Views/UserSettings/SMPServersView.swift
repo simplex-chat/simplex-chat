@@ -55,6 +55,14 @@ struct SMPServersView: View {
         }
         .confirmationDialog("Save servers?", isPresented: $showSaveAlert, titleVisibility: .visible) {
             Button("Test & save servers") {
+                for i in 0..<servers.count {
+                    servers[i].tested = nil
+                }
+                Task {
+                    for i in 0..<servers.count {
+                        await testServerConnection(server: $servers[i])
+                    }
+                }
             }
             Button("Save servers") {
             }
@@ -76,7 +84,7 @@ struct SMPServersView: View {
                 .navigationBarTitle("Server")
                 .navigationBarTitleDisplayMode(.large)
         } label: {
-            let v = Text(srv.address)
+            let v = Text(srv.server)
             HStack {
                 showTestStatus(server: srv)
                     .frame(width: 16, alignment: .center)
@@ -88,19 +96,6 @@ struct SMPServersView: View {
                 }
             }
         }
-    }
-}
-
-@ViewBuilder func showTestStatus(server: ServerCfg) -> some View {
-    switch server.tested {
-    case .some(true):
-        Image(systemName: "checkmark")
-            .foregroundColor(.green)
-    case .some(false):
-        Image(systemName: "multiply")
-            .foregroundColor(.red)
-    case .none:
-        Color.clear
     }
 }
 

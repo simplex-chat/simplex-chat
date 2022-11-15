@@ -297,6 +297,7 @@ import Simplex.Chat.Migrations.M20221024_contact_used
 import Simplex.Chat.Migrations.M20221025_chat_settings
 import Simplex.Chat.Migrations.M20221029_group_link_id
 import Simplex.Chat.Migrations.M20221112_server_password
+import Simplex.Chat.Migrations.M20221115_server_cfg
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..))
@@ -304,7 +305,7 @@ import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
-import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), SMPServerWithAuth, pattern SMPServer)
+import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), pattern SMPServer)
 import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8)
 import UnliftIO.STM
@@ -344,7 +345,8 @@ schemaMigrations =
     ("20221024_contact_used", m20221024_contact_used),
     ("20221025_chat_settings", m20221025_chat_settings),
     ("20221029_group_link_id", m20221029_group_link_id),
-    ("20221112_server_password", m20221112_server_password)
+    ("20221112_server_password", m20221112_server_password),
+    ("20221115_server_cfg", m20221115_server_cfg)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -4257,35 +4259,38 @@ toGroupChatItemList tz currentTs userContactId (((Just itemId, Just itemTs, Just
   either (const []) (: []) $ toGroupChatItem tz currentTs userContactId (((itemId, itemTs, itemContent, itemText, itemStatus, sharedMsgId, itemDeleted, itemEdited, createdAt, updatedAt) :. fileRow) :. memberRow_ :. quoteRow :. quotedMemberRow_)
 toGroupChatItemList _ _ _ _ = []
 
-getSMPServers :: DB.Connection -> User -> IO [SMPServerWithAuth]
+getSMPServers :: DB.Connection -> User -> IO [ServerCfg]
 getSMPServers db User {userId} =
-  map toSmpServer
+  map toServerCfg
     <$> DB.query
       db
       [sql|
-        SELECT host, port, key_hash, basic_auth
+        SELECT host, port, key_hash, basic_auth, preset, tested, enabled
         FROM smp_servers
         WHERE user_id = ?;
       |]
       (Only userId)
   where
-    toSmpServer :: (NonEmpty TransportHost, String, C.KeyHash, Maybe Text) -> SMPServerWithAuth
-    toSmpServer (host, port, keyHash, auth_) = ProtoServerWithAuth (SMPServer host port keyHash) (BasicAuth . encodeUtf8 <$> auth_)
+    toServerCfg :: (NonEmpty TransportHost, String, C.KeyHash, Maybe Text, Bool, Maybe Bool, Bool) -> ServerCfg
+    toServerCfg (host, port, keyHash, auth_, preset, tested, enabled) =
+      let server = ProtoServerWithAuth (SMPServer host port keyHash) (BasicAuth . encodeUtf8 <$> auth_)
+       in ServerCfg {server, preset, tested, enabled}
 
-overwriteSMPServers :: DB.Connection -> User -> [SMPServerWithAuth] -> ExceptT StoreError IO ()
-overwriteSMPServers db User {userId} smpServers =
+overwriteSMPServers :: DB.Connection -> User -> [ServerCfg] -> ExceptT StoreError IO ()
+overwriteSMPServers db User {userId} servers =
   checkConstraint SEUniqueID . ExceptT $ do
     currentTs <- getCurrentTime
     DB.execute db "DELETE FROM smp_servers WHERE user_id = ?" (Only userId)
-    forM_ smpServers $ \(ProtoServerWithAuth ProtocolServer {host, port, keyHash} auth_) ->
+    forM_ servers $ \ServerCfg {server, preset, tested, enabled} -> do
+      let ProtoServerWithAuth ProtocolServer {host, port, keyHash} auth_ = server
       DB.execute
         db
         [sql|
           INSERT INTO smp_servers
-            (host, port, key_hash, basic_auth, user_id, created_at, updated_at)
-          VALUES (?,?,?,?,?,?,?)
+            (host, port, key_hash, basic_auth, preset, tested, enabled, user_id, created_at, updated_at)
+          VALUES (?,?,?,?,?,?,?,?,?,?)
         |]
-        (host, port, keyHash, safeDecodeUtf8 . unBasicAuth <$> auth_, userId, currentTs, currentTs)
+        (host, port, keyHash, safeDecodeUtf8 . unBasicAuth <$> auth_, preset, tested, enabled, userId, currentTs, currentTs)
     pure $ Right ()
 
 createCall :: DB.Connection -> User -> Call -> UTCTime -> IO ()
