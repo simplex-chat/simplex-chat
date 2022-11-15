@@ -3,6 +3,9 @@ package chat.simplex.app.views.usersettings
 import android.annotation.SuppressLint
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import chat.simplex.app.R
+import chat.simplex.app.views.helpers.AlertManager
+import chat.simplex.app.views.helpers.generalGetString
 import java.security.KeyStore
 import javax.crypto.*
 import javax.crypto.spec.GCMParameterSpec
@@ -10,11 +13,24 @@ import javax.crypto.spec.GCMParameterSpec
 @SuppressLint("ObsoleteSdkInt")
 internal class Cryptor {
   private var keyStore: KeyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+  private var warningShown = false
 
-  fun decryptData(data: ByteArray, iv: ByteArray, alias: String): String {
+  fun decryptData(data: ByteArray, iv: ByteArray, alias: String): String? {
+    val secretKey = getSecretKey(alias)
+    if (secretKey == null) {
+      if (!warningShown) {
+        // Repeated calls will not show the alert again
+        warningShown = true
+        AlertManager.shared.showAlertMsg(
+          title = generalGetString(R.string.wrong_passphrase),
+          text = generalGetString(R.string.restore_passphrase_not_found_desc)
+        )
+      }
+      return null
+    }
     val cipher: Cipher = Cipher.getInstance(TRANSFORMATION)
     val spec = GCMParameterSpec(128, iv)
-    cipher.init(Cipher.DECRYPT_MODE, getSecretKey(alias), spec)
+    cipher.init(Cipher.DECRYPT_MODE, secretKey, spec)
     return String(cipher.doFinal(data))
   }
 
@@ -29,7 +45,7 @@ internal class Cryptor {
     keyStore.deleteEntry(alias)
   }
 
-  private fun createSecretKey(alias: String): SecretKey {
+  private fun createSecretKey(alias: String): SecretKey? {
     if (keyStore.containsAlias(alias)) return getSecretKey(alias)
     val keyGenerator: KeyGenerator = KeyGenerator.getInstance(KEY_ALGORITHM, "AndroidKeyStore")
     keyGenerator.init(
@@ -41,8 +57,8 @@ internal class Cryptor {
     return keyGenerator.generateKey()
   }
 
-  private fun getSecretKey(alias: String): SecretKey {
-    return (keyStore.getEntry(alias, null) as KeyStore.SecretKeyEntry).secretKey
+  private fun getSecretKey(alias: String): SecretKey? {
+    return (keyStore.getEntry(alias, null) as? KeyStore.SecretKeyEntry)?.secretKey
   }
 
   companion object {

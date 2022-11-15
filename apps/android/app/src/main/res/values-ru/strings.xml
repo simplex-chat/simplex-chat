@@ -185,6 +185,8 @@
     <string name="icon_descr_cancel_file_preview">Удалить превью файла</string>
     <string name="images_limit_title">Слишком много изображений!</string>
     <string name="images_limit_desc">Только 10 изображений могут быть отправлены одномоментно</string>
+    <string name="image_decoding_exception_title">Ошибка декодирования</string>
+    <string name="image_decoding_exception_desc">Не получается декодировать изображение. Пожалуйста, попробуйте другое изображение или свяжитесь с разработчиками.</string>
 
     <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
     <string name="image_descr">Изображение</string>
@@ -680,6 +682,7 @@
     <string name="restore_database_alert_desc">Введите предыдущий пароль после восстановления резервной копии. Это действие нельзя отменить.</string>
     <string name="restore_database_alert_confirm">Восстановить</string>
     <string name="database_restore_error">Ошибка при восстановлении базы данных</string>
+    <string name="restore_passphrase_not_found_desc">Пароль не найден в Keystore, пожалуйста, введите его вручную. Это могло произойти, если вы восстановили данные приложения с помощью инструмента резервного копирования. Если это не так, пожалуйста, свяжитесь с разработчиками.</string>
 
     <!-- ChatModel.chatRunning interactions -->
     <string name="chat_is_stopped_indication">Чат остановлен</string>

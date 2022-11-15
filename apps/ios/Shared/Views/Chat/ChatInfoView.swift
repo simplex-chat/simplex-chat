@@ -99,6 +99,16 @@ struct ChatInfoView: View {
                     }
                 }
 
+                Section("Preferences") {
+                    NavigationLink {
+                        ContactPreferencesView()
+                            .navigationBarTitle("Contact preferences")
+                            .navigationBarTitleDisplayMode(.large)
+                    } label: {
+                        Text("Contact preferences")
+                    }
+                }
+
                 Section("Servers") {
                     networkStatusRow()
                         .onTapGesture {

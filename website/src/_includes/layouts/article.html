@@ -7,13 +7,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SimpleX blog: {{ title }}</title>
     <meta name="Content-Type" content="text/html;charset=utf-8" />
+    <meta http-equiv="onion-location" content="{% cfg 'onionLocation' %}{{ permalink }}" />
+    <meta property="og:url" content="{% cfg 'siteLocation' %}{{ permalink }}" />
     <meta property="og:type" content="article" />
     <meta property="og:title" content="{{ title }}" />
-    <meta property="og:url" content="{{ permalink }}" />
     {% if image %}
-      <meta property="og:image" content="https://simplex.chat/blog/{{ image }}" />
+      <meta property="og:image" content="{% cfg 'siteLocation' %}/blog/{{ image }}" />
     {% else %}
-      <meta property="og:image" content="https://simplex.chat/img/share_simplex.png" />
+      <meta property="og:image" content="{% cfg 'siteLocation' %}/img/share_simplex.png" />
     {% endif %}
     <meta name="twitter:card" content="summary" />
     <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico" />
