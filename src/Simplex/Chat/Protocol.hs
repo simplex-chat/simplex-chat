@@ -327,11 +327,19 @@ msgContentText = \case
   MCLink {text} -> text
   MCImage {text} -> text
   MCVoice {text, duration} ->
-    if T.null text then voiceMessage else text <> "; " <> voiceMessage
+    if T.null text then msg else text <> "; " <> msg
     where
-      voiceMessage = T.pack $ "voice message " <> show duration <> "s"
+      msg = "voice message " <> durationText duration <> "s"
   MCFile t -> t
   MCUnknown {text} -> text
+
+durationText :: Int -> Text
+durationText duration =
+  let (mins, secs) = duration `divMod` 60 in T.pack $ "(" <> with0 mins <> ":" <> with0 secs <> ")"
+  where
+    with0 n
+      | n < 9 = '0' : show n
+      | otherwise = show n
 
 msgContentTag :: MsgContent -> MsgContentTag
 msgContentTag = \case
