@@ -1454,7 +1454,7 @@ object MsgContentSerializer : KSerializer<MsgContent> {
         }
       is MsgContent.MCVoice ->
         buildJsonObject {
-          put("type", "image")
+          put("type", "voice")
           put("text", value.text)
           put("duration", value.duration)
         }
