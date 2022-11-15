@@ -59,10 +59,10 @@ fun SendMsgView(
   showRecordingUi: (Boolean) -> Unit,
   textStyle: MutableState<TextStyle>
 ) {
-  val cs = composeState.value
-  val attachEnabled = !composeState.value.editing
   Column(Modifier.padding(vertical = 8.dp)) {
     Box {
+      val cs = composeState.value
+      val attachEnabled = !composeState.value.editing
       val filePath = rememberSaveable { mutableStateOf(null as String?) }
       var recordingTimeRange by rememberSaveable(saver = LongRange.saver) { mutableStateOf(0L..0L) } // since..to
       val showVoiceButton = ((cs.message.isEmpty() || recordingTimeRange.first > 0L) && allowVoiceRecord && attachEnabled && cs.preview is ComposePreview.NoPreview) || filePath.value != null
@@ -70,16 +70,8 @@ fun SendMsgView(
       Box(Modifier.align(Alignment.BottomEnd)) {
         val icon = if (cs.editing) Icons.Filled.Check else Icons.Outlined.ArrowUpward
         val color = if (cs.sendEnabled()) MaterialTheme.colors.primary else HighOrLowlight
-        if (cs.inProgress
-          && (cs.preview is ComposePreview.ImagePreview || cs.preview is ComposePreview.FilePreview)
-        ) {
-          CircularProgressIndicator(
-            Modifier
-              .size(36.dp)
-              .padding(4.dp),
-            color = HighOrLowlight,
-            strokeWidth = 3.dp
-          )
+        if (cs.inProgress && (cs.preview is ComposePreview.ImagePreview || cs.preview is ComposePreview.FilePreview)) {
+          CircularProgressIndicator(Modifier.size(36.dp).padding(4.dp), color = HighOrLowlight, strokeWidth = 3.dp)
         } else if (!showVoiceButton) {
           Icon(
             icon,
@@ -147,10 +139,8 @@ fun SendMsgView(
               else
                 ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
             }
-            onDispose {
-              // Unlock orientation
-              activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-            }
+            // Unlock orientation
+            onDispose { activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED }
           }
           val cleanUp = { remove: Boolean ->
             if (remove) filePath.value?.let { File(it).delete() }
