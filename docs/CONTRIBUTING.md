@@ -13,4 +13,10 @@ package direct-sqlcipher
     flags: +openssl
 ```
 
-OpenSSL can be installed with `brew install openssl`
+## OpenSSL on macOS
+
+macOS comes with LibreSSL as default thus modern OpenSSL packages must be installed to compile SimpleX from source.
+
+OpenSSL can be installed using Homebrew package manager with `brew install openssl@3`
+
+You will have to add `/opt/homebrew/opt/openssl@3/bin` to your PATH in order to have things working properly
