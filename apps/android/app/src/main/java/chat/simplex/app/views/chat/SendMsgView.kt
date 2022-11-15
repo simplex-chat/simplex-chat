@@ -1,10 +1,11 @@
 package chat.simplex.app.views.chat
 
 import android.Manifest
-import android.content.Context
-import android.content.res.Configuration
-import android.widget.Toast
 import android.annotation.SuppressLint
+import android.app.Activity
+import android.content.Context
+import android.content.pm.ActivityInfo
+import android.content.res.Configuration
 import android.text.InputType
 import android.view.ViewGroup
 import android.view.inputmethod.*
@@ -18,7 +19,6 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
@@ -48,8 +48,6 @@ import chat.simplex.app.views.helpers.*
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import kotlinx.coroutines.*
 import java.io.*
-import chat.simplex.app.views.helpers.SharedContent
-import kotlinx.coroutines.delay
 
 @Composable
 fun SendMsgView(
@@ -194,28 +192,43 @@ fun SendMsgView(
             }
           }
           val recordingInProgress = rememberSaveable { mutableStateOf(false) }
+          val stopRecordingAndAddAudio = {
+            rec.stop(recordingInProgress)
+            filePath.value?.let(onAudioAdded)
+            recordingTimeRange = recordingTimeRange.first..System.currentTimeMillis()
+          }
           val startStopRecording = {
             when {
               !permissionsState.allPermissionsGranted -> permissionsState.launchMultiplePermissionRequest()
-              recordingInProgress.value -> {
-                rec.stop(recordingInProgress)
-                filePath.value?.let(onAudioAdded)
-                recordingTimeRange = recordingTimeRange.first..System.currentTimeMillis()
-              }
+              recordingInProgress.value -> stopRecordingAndAddAudio()
               filePath.value == null -> {
                 showRecordingUi(true)
                 recordingTimeRange = System.currentTimeMillis()..0L
-                filePath.value = rec.start(recordingInProgress) {
-                  filePath.value?.let(onAudioAdded)
-                  recordingTimeRange = recordingTimeRange.first..System.currentTimeMillis()
-                }
+                filePath.value = rec.start(recordingInProgress, stopRecordingAndAddAudio)
               }
+            }
+          }
+          var stopRecOnNextClick by remember { mutableStateOf(false) }
+          val context = LocalContext.current
+          DisposableEffect(stopRecOnNextClick) {
+            val activity = context as? Activity ?: return@DisposableEffect onDispose {}
+            if (stopRecOnNextClick) {
+              // Lock orientation to current orientation because screen rotation will break the recording
+              activity.requestedOrientation = if (activity.resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT)
+                ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+              else
+                ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            }
+            onDispose {
+              // Unlock orientation
+              activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
             }
           }
           val cleanUp = { remove: Boolean ->
             if (remove) filePath.value?.let { File(it).delete() }
             filePath.value = null
             recordingInProgress.value = false
+            stopRecOnNextClick = false
             recordingTimeRange = 0L..0L
             showRecordingUi(false)
           }
@@ -227,10 +240,12 @@ fun SendMsgView(
               if (!recordingInProgress.value && filePath.value != null) {
                 sendMessage()
                 cleanUp(false)
+              } else if (stopRecOnNextClick) {
+                stopRecordingAndAddAudio()
+                stopRecOnNextClick = false
               } else {
-                Toast.makeText(SimplexApp.context, generalGetString(R.string.tap_and_hold_to_record), Toast.LENGTH_LONG).show()
-                rec.cancel(filePath.value!!, recordingInProgress)
-                cleanUp(true)
+                // tapped and didn't hold a finger
+                stopRecOnNextClick = true
               }
             },
             onCancel = startStopRecording,
@@ -268,7 +283,7 @@ fun SendMsgView(
           }
           Spacer(Modifier.weight(1f))
           Icon(
-            if (recordingTimeRange.last != 0L) Icons.Outlined.ArrowUpward else Icons.Default.Mic,
+            if (recordingTimeRange.last != 0L) Icons.Outlined.ArrowUpward else if (stopRecOnNextClick) Icons.Default.Stop else Icons.Default.Mic,
             stringResource(R.string.icon_descr_record_audio),
             tint = MaterialTheme.colors.primary,
             modifier = Modifier
