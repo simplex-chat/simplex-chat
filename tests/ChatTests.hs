@@ -116,8 +116,9 @@ chatTests = do
     it "set contact alias" testSetAlias
     it "set connection alias" testSetConnectionAlias
     it "set contact prefs" testSetContactPrefs
-  describe "SMP servers" $
+  describe "SMP servers" $ do
     it "get and set SMP servers" testGetSetSMPServers
+    it "test SMP server connection" testTestSMPServerConnection
   describe "async connection handshake" $ do
     it "connect when initiating client goes offline" testAsyncInitiatingOffline
     it "connect when accepting client goes offline" testAsyncAcceptingOffline
@@ -2875,6 +2876,18 @@ testGetSetSMPServers =
       alice #$> ("/smp_servers", id, "smp://2345-w==@smp2.example.im, smp://3456-w==@smp3.example.im:5224")
       alice #$> ("/smp_servers default", id, "ok")
       alice #$> ("/smp_servers", id, "no custom SMP servers saved")
+
+testTestSMPServerConnection :: IO ()
+testTestSMPServerConnection =
+  testChat2 aliceProfile bobProfile $
+    \alice _ -> do
+      alice ##> "/smp test smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:5001"
+      alice <## "SMP server test passed"
+      alice ##> "/smp test smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:5001"
+      alice <## "SMP server test passed"
+      alice ##> "/smp test smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZwjI=@localhost:5001"
+      alice <## "SMP server test failed at Connect, error: BROKER NETWORK"
+      alice <## "Possibly, certificate fingerprint in server address is incorrect"
 
 testAsyncInitiatingOffline :: IO ()
 testAsyncInitiatingOffline = withTmpFiles $ do
