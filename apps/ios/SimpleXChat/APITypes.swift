@@ -613,7 +613,7 @@ public struct ArchiveConfig: Encodable {
     }
 }
 
-public struct DBEncryptionConfig: Encodable {
+public struct DBEncryptionConfig: Codable {
     public init(currentKey: String, newKey: String) {
         self.currentKey = currentKey
         self.newKey = newKey
@@ -621,6 +621,106 @@ public struct DBEncryptionConfig: Encodable {
 
     public var currentKey: String
     public var newKey: String
+}
+
+public struct SMPServerCfg: Identifiable, Decodable {
+    public var server: SMPServerAddress
+    public var tested: Bool
+    public var enabled: Bool
+//    public var sendEnabled: Bool // can we potentially want to prevent sending on the servers we use to receive?
+// Even if we don't see the use case, it's probably better to allow it in the model
+// In any case, "trusted/known" servers are out of scope of this change
+
+    public init(server: SMPServerAddress, tested: Bool, enabled: Bool) {
+        self.server = server
+        self.tested = tested
+        self.enabled = enabled
+    }
+
+    public var id: String { server.id }
+
+    public struct SampleData {
+        public var name: SMPServerCfg
+        public var params: SMPServerCfg
+    }
+
+    public static var sampleData = SampleData(
+        name: SMPServerCfg(
+            server: .name(name: .smp8),
+            tested: true,
+            enabled: true
+        ),
+        params: SMPServerCfg(
+            server: .params(params: SMPServerParams.sampleData),
+            tested: true,
+            enabled: false
+        )
+    )
+}
+
+public enum SMPServerAddress: Codable {
+    case name(name: SMPServerName)
+    case params(params: SMPServerParams)
+
+    public var id: String {
+        switch self {
+        case let .name(name): return name.rawValue
+        case let .params(params): return params.uri
+        }
+    }
+
+    public var label: String {
+        switch self {
+        case let .name(name): return name.hostname
+        case let .params(params): return params.hostnames.first ?? "invalid server"
+        }
+    }
+}
+
+public enum SMPServerName: String, Codable {
+    case smp8
+    case smp9
+    case smp10
+
+    public var hostname: String {
+        switch self {
+        case .smp8: return "smp8.simplex.im"
+        case .smp9: return "smp9.simplex.im"
+        case .smp10: return "smp10.simplex.im"
+        }
+    }
+}
+
+public struct SMPServerParams: Codable {
+    public var hostnames: [String]
+    public var port: String
+    public var keyHash: String
+    public var basicAuth: String
+
+    public init(hostnames: [String], port: String, keyHash: String, basicAuth: String = "") {
+        self.hostnames = hostnames
+        self.port = port
+        self.keyHash = keyHash
+        self.basicAuth = basicAuth
+    }
+
+    public var uri: String {
+        "smp://\(keyHash)\(basicAuth == "" ? "" : ":" + basicAuth)@\(hostnames.joined(separator: ","))"
+    }
+
+    static public var empty = SMPServerParams(
+        hostnames: [],
+        port: "",
+        keyHash: "",
+        basicAuth: ""
+    )
+
+    static public var sampleData = SMPServerParams(
+        hostnames: ["smp.simplex.im", "1234.onion"],
+        port: "",
+        keyHash: "LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=",
+        basicAuth: "server_password"
+    )
 }
 
 public struct NetCfg: Codable, Equatable {
