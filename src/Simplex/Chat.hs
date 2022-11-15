@@ -387,6 +387,7 @@ processChatCommand = \case
             MCFile _ -> False
             MCLink {} -> True
             MCImage {} -> True
+            MCVoice {} -> False
             MCUnknown {} -> True
           qText = msgContentText qmc
           qFileName = maybe qText (T.pack . (fileName :: CIFile d -> String)) ciFile_

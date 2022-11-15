@@ -29,6 +29,7 @@ import Data.ByteString.Internal (c2w, w2c)
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Type.Equality
@@ -263,7 +264,7 @@ cmToQuotedMsg = \case
   ACME _ (XMsgNew (MCQuote quotedMsg _)) -> Just quotedMsg
   _ -> Nothing
 
-data MsgContentTag = MCText_ | MCLink_ | MCImage_ | MCFile_ | MCUnknown_ Text
+data MsgContentTag = MCText_ | MCLink_ | MCImage_ | MCVoice_ | MCFile_ | MCUnknown_ Text
 
 instance StrEncoding MsgContentTag where
   strEncode = \case
@@ -271,11 +272,13 @@ instance StrEncoding MsgContentTag where
     MCLink_ -> "link"
     MCImage_ -> "image"
     MCFile_ -> "file"
+    MCVoice_ -> "voice"
     MCUnknown_ t -> encodeUtf8 t
   strDecode = \case
     "text" -> Right MCText_
     "link" -> Right MCLink_
     "image" -> Right MCImage_
+    "voice" -> Right MCVoice_
     "file" -> Right MCFile_
     t -> Right . MCUnknown_ $ safeDecodeUtf8 t
   strP = strDecode <$?> A.takeTill (== ' ')
@@ -313,6 +316,7 @@ data MsgContent
   = MCText Text
   | MCLink {text :: Text, preview :: LinkPreview}
   | MCImage {text :: Text, image :: ImageData}
+  | MCVoice {text :: Text, duration :: Int}
   | MCFile Text
   | MCUnknown {tag :: Text, text :: Text, json :: J.Object}
   deriving (Eq, Show)
@@ -322,6 +326,10 @@ msgContentText = \case
   MCText t -> t
   MCLink {text} -> text
   MCImage {text} -> text
+  MCVoice {text, duration} ->
+    if T.null text then voiceMessage else text <> "; " <> voiceMessage
+    where
+      voiceMessage = T.pack $ "voice message " <> show duration <> "s"
   MCFile t -> t
   MCUnknown {text} -> text
 
@@ -330,6 +338,7 @@ msgContentTag = \case
   MCText _ -> MCText_
   MCLink {} -> MCLink_
   MCImage {} -> MCImage_
+  MCVoice {} -> MCVoice_
   MCFile {} -> MCFile_
   MCUnknown {tag} -> MCUnknown_ tag
 
@@ -356,6 +365,10 @@ instance FromJSON MsgContent where
         text <- v .: "text"
         image <- v .: "image"
         pure MCImage {image, text}
+      MCVoice_ -> do
+        text <- v .: "text"
+        duration <- v .: "duration"
+        pure MCVoice {text, duration}
       MCFile_ -> MCFile <$> v .: "text"
       MCUnknown_ tag -> do
         text <- fromMaybe unknownMsgType <$> v .:? "text"
@@ -382,12 +395,14 @@ instance ToJSON MsgContent where
     MCText t -> J.object ["type" .= MCText_, "text" .= t]
     MCLink {text, preview} -> J.object ["type" .= MCLink_, "text" .= text, "preview" .= preview]
     MCImage {text, image} -> J.object ["type" .= MCImage_, "text" .= text, "image" .= image]
+    MCVoice {text, duration} -> J.object ["type" .= MCVoice_, "text" .= text, "duration" .= duration]
     MCFile t -> J.object ["type" .= MCFile_, "text" .= t]
   toEncoding = \case
     MCUnknown {json} -> JE.value $ J.Object json
     MCText t -> J.pairs $ "type" .= MCText_ <> "text" .= t
     MCLink {text, preview} -> J.pairs $ "type" .= MCLink_ <> "text" .= text <> "preview" .= preview
     MCImage {text, image} -> J.pairs $ "type" .= MCImage_ <> "text" .= text <> "image" .= image
+    MCVoice {text, duration} -> J.pairs $ "type" .= MCVoice_ <> "text" .= text <> "duration" .= duration
     MCFile t -> J.pairs $ "type" .= MCFile_ <> "text" .= t
 
 instance ToField MsgContent where
