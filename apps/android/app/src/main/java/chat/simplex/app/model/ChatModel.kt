@@ -1303,6 +1303,9 @@ class CIFile(
 
   fun isVoiceMessage() = fileName.endsWith(".m4a") || fileName.endsWith(".amr") || fileName.endsWith(".ogg")
 
+  @Transient
+  val audioInfo = mutableStateOf(ProgressAndDuration())
+
   companion object {
     fun getSample(
       fileId: Long = 1,
@@ -1336,6 +1339,7 @@ sealed class MsgContent {
   @Serializable(with = MsgContentSerializer::class) class MCText(override val text: String): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCLink(override val text: String, val preview: LinkPreview): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCImage(override val text: String, val image: String): MsgContent()
+  @Serializable(with = MsgContentSerializer::class) class MCVoice(override val text: String, val duration: Int): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCFile(override val text: String): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCUnknown(val type: String? = null, override val text: String, val json: JsonElement): MsgContent()
 
@@ -1343,6 +1347,7 @@ sealed class MsgContent {
     is MCText -> "text $text"
     is MCLink -> "json ${json.encodeToString(this)}"
     is MCImage -> "json ${json.encodeToString(this)}"
+    is MCVoice-> "json ${json.encodeToString(this)}"
     is MCFile -> "json ${json.encodeToString(this)}"
     is MCUnknown -> "json $json"
   }
@@ -1446,6 +1451,12 @@ object MsgContentSerializer : KSerializer<MsgContent> {
           put("type", "image")
           put("text", value.text)
           put("image", value.image)
+        }
+      is MsgContent.MCVoice ->
+        buildJsonObject {
+          put("type", "image")
+          put("text", value.text)
+          put("duration", value.duration)
         }
       is MsgContent.MCFile ->
         buildJsonObject {

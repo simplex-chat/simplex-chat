@@ -1094,6 +1094,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
           r.chatItem.chatInfo.chatType == ChatType.Direct
           && mc is MsgContent.MCFile
           && fileName != null
+          && !cItem.file.isVoiceMessage()
         ) {
           removeFile(appContext, fileName)
         }

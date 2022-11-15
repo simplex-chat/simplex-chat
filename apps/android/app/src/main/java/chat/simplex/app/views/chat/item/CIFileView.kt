@@ -38,34 +38,32 @@ fun CIFileView(
   val context = LocalContext.current
   val saveFileLauncher = rememberSaveFileLauncher(cxt = context, ciFile = file)
   // Pair(Progress, Duration)
-  val voiceInfo = remember { mutableStateOf(0 to 0) }
+  val audioInfo = remember(file) { file?.audioInfo ?: mutableStateOf(ProgressAndDuration()) }
   val voicePlaying = rememberSaveable { mutableStateOf(false) }
   LaunchedEffect(file?.fileName, file?.fileStatus) {
-    if (file != null && file.loaded && file.isVoiceMessage() && voiceInfo.value.second == 0) {
+    if (file != null && file.loaded && file.isVoiceMessage() && audioInfo.value.duration == 0) {
       val filePath = getLoadedFilePath(context, file)
       if (filePath != null && File(filePath).exists()) {
-        voiceInfo.value = voiceInfo.value.first to AudioPlayer.duration(filePath)
+        audioInfo.value = ProgressAndDuration(audioInfo.value.progress, AudioPlayer.duration(filePath))
       }
     }
   }
 
   LaunchedEffect(voicePlaying.value) {
-    if (voicePlaying.value) {
-      while (isActive && voicePlaying.value) {
-        voiceInfo.value = AudioPlayer.progressAndDuration()
-        if (voiceInfo.value.first == voiceInfo.value.second) {
-          voiceInfo.value = 0 to voiceInfo.value.second
-          voicePlaying.value = false
-        }
-        delay(100)
+    while (isActive && voicePlaying.value) {
+      audioInfo.value = AudioPlayer.progressAndDurationOrEnded()
+      if (audioInfo.value.progress == audioInfo.value.duration) {
+        audioInfo.value = ProgressAndDuration(0, audioInfo.value.duration)
+        voicePlaying.value = false
       }
+      delay(100)
     }
   }
 
   LaunchedEffect(AudioPlayer.currentlyPlaying.value) {
-    val current = AudioPlayer.currentlyPlaying.value ?: return@LaunchedEffect
+    val currentFileName = AudioPlayer.currentlyPlaying.value?.first ?: return@LaunchedEffect
     file?.filePath ?: return@LaunchedEffect
-    if (!current.endsWith(File.separator + file.filePath) && voicePlaying.value) {
+    if (!currentFileName.endsWith(File.separator + file.filePath) && voicePlaying.value) {
       voicePlaying.value = false
     }
   }
@@ -108,11 +106,13 @@ fun CIFileView(
     if (file != null) {
       if (file.isVoiceMessage() && file.loaded) {
         if (!voicePlaying.value) {
-          AudioPlayer.start(getAppFilePath(context, file.filePath ?: return), voiceInfo.value.first)
+          voicePlaying.value = AudioPlayer.start(getAppFilePath(context, file.filePath ?: return), audioInfo.value.progress) {
+            voicePlaying.value = false
+          }
         } else {
-          voiceInfo.value = AudioPlayer.pause() to voiceInfo.value.second
+          audioInfo.value = ProgressAndDuration(AudioPlayer.pause(), audioInfo.value.duration)
+          voicePlaying.value = false
         }
-        voicePlaying.value = !voicePlaying.value
         return
       }
       when (file.fileStatus) {
@@ -216,7 +216,7 @@ fun CIFileView(
           maxLines = 1
         )
         val text = if (file.isVoiceMessage()) {
-          val time = if (voicePlaying.value) voiceInfo.value.first else voiceInfo.value.second
+          val time = if (voicePlaying.value) audioInfo.value.progress else audioInfo.value.duration
           val mins = time / 1000 / 60
           val secs = time / 1000 % 60
           String.format("%02d:%02d", mins, secs)

@@ -324,6 +324,7 @@ fun ComposeView(
       is MsgContent.MCText -> checkLinkPreview()
       is MsgContent.MCLink -> checkLinkPreview()
       is MsgContent.MCImage -> MsgContent.MCImage(cs.message, image = msgContent.image)
+      is MsgContent.MCVoice -> MsgContent.MCVoice(cs.message, duration = msgContent.duration)
       is MsgContent.MCFile -> MsgContent.MCFile(cs.message)
       is MsgContent.MCUnknown -> MsgContent.MCUnknown(type = msgContent.type, text = cs.message, json = msgContent.json)
     }
@@ -506,7 +507,7 @@ fun ComposeView(
       horizontalArrangement = Arrangement.spacedBy(2.dp)
     ) {
       val attachEnabled = !composeState.value.editing
-      var showRecordingUi by remember { mutableStateOf(false) }
+      var showRecordingUi by rememberSaveable { mutableStateOf(false) }
       if (!showRecordingUi) {
         Box(Modifier.padding(bottom = 12.dp)) {
           Icon(

@@ -19,6 +19,7 @@ import android.view.ViewTreeObserver
 import android.view.inputmethod.InputMethodManager
 import androidx.annotation.StringRes
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.Saver
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.*
@@ -221,7 +222,7 @@ private fun spannableStringToAnnotatedString(
 // maximum image file size to be auto-accepted
 const val MAX_IMAGE_SIZE: Long = 236700
 const val MAX_IMAGE_SIZE_AUTO_RCV: Long = MAX_IMAGE_SIZE * 2
-const val MAX_VOICE_SIZE_AUTO_RCV: Long = MAX_IMAGE_SIZE_AUTO_RCV
+const val MAX_VOICE_SIZE_AUTO_RCV: Long = 94680 // 6 chunks * 15780 bytes per chunk
 const val MAX_FILE_SIZE: Long = 8000000
 
 fun getFilesDirectory(context: Context): String {
@@ -454,3 +455,9 @@ fun Color.darker(factor: Float = 0.1f): Color =
 fun ByteArray.toBase64String() = Base64.encodeToString(this, Base64.DEFAULT)
 
 fun String.toByteArrayFromBase64() = Base64.decode(this, Base64.DEFAULT)
+
+val LongRange.Companion.saver
+  get() = Saver<MutableState<LongRange>, Pair<Long, Long>>(
+    save = { it.value.first to it.value.last },
+    restore = { mutableStateOf(it.first..it.second) }
+    )

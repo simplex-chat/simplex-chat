@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
@@ -58,7 +59,6 @@ fun SendMsgView(
   textStyle: MutableState<TextStyle>
 ) {
   val cs = composeState.value
-  var recordingTimeRange by remember { mutableStateOf(0L..0L) } // since..to
   val attachEnabled = !composeState.value.editing
   var showKeyboard by remember { mutableStateOf(false) }
   LaunchedEffect(cs.contextItem) {
@@ -83,6 +83,9 @@ fun SendMsgView(
 
   Column(Modifier.padding(vertical = 8.dp)) {
     Box {
+      val filePath = rememberSaveable { mutableStateOf(null as String?) }
+      var recordingTimeRange by rememberSaveable(saver = LongRange.saver) { mutableStateOf(0L..0L) } // since..to
+      val showVoiceButton = ((cs.message.isEmpty() || recordingTimeRange.first > 0L) && allowVoiceRecord && attachEnabled && cs.preview is ComposePreview.NoPreview) || filePath.value != null
       AndroidView(modifier = Modifier, factory = {
         val editText = @SuppressLint("AppCompatCustomView") object: EditText(it) {
           override fun setOnReceiveContentListener(
@@ -148,7 +151,7 @@ fun SendMsgView(
             color = HighOrLowlight,
             strokeWidth = 3.dp
           )
-        } else if ((recordingTimeRange.first == 0L && cs.message.isNotEmpty()) || !allowVoiceRecord || !attachEnabled || cs.preview !is ComposePreview.NoPreview) {
+        } else if (!showVoiceButton) {
           Icon(
             icon,
             stringResource(R.string.icon_descr_send_message),
@@ -166,12 +169,12 @@ fun SendMsgView(
           )
         }
       }
-      if ((cs.message.isEmpty() || recordingTimeRange.first > 0L) && allowVoiceRecord && attachEnabled) {
+      if (showVoiceButton) {
         Row(
           if (recordingTimeRange.first == 0L)
-            Modifier.height(36.dp).padding(top = 2.dp)
+            Modifier.matchParentSize()
           else
-            Modifier.clickable(false, onClick = {}).background(MaterialTheme.colors.background).height(38.dp).padding(top = 2.dp),
+            Modifier.clickable(false, onClick = {}).background(MaterialTheme.colors.background).matchParentSize(),
           verticalAlignment = Alignment.CenterVertically
         ) {
           val permissionsState = rememberMultiplePermissionsState(
@@ -188,7 +191,6 @@ fun SendMsgView(
             }
           }
           val recordingInProgress = rememberSaveable { mutableStateOf(false) }
-          val filePath = remember { mutableStateOf(null as String?) }
           val startStopRecording = {
             when {
               !permissionsState.allPermissionsGranted -> permissionsState.launchMultiplePermissionRequest()
@@ -197,7 +199,6 @@ fun SendMsgView(
                 filePath.value?.let(onAudioAdded)
                 recordingTimeRange = recordingTimeRange.first..System.currentTimeMillis()
               }
-
               filePath.value == null -> {
                 showRecordingUi(true)
                 filePath.value = rec.start(recordingInProgress)
@@ -220,11 +221,11 @@ fun SendMsgView(
               if (!recordingInProgress.value && filePath.value != null) {
                 sendMessage()
                 cleanUp(false)
-                return@interactionSourceWithTapDetection
+              } else {
+                Toast.makeText(SimplexApp.context, generalGetString(R.string.tap_and_hold_to_record), Toast.LENGTH_LONG).show()
+                rec.cancel(filePath.value!!, recordingInProgress)
+                cleanUp(true)
               }
-              Toast.makeText(SimplexApp.context, generalGetString(R.string.tap_and_hold_to_record), Toast.LENGTH_LONG).show()
-              rec.cancel(filePath.value!!, recordingInProgress)
-              cleanUp(true)
             },
             onCancel = startStopRecording,
             onRelease = startStopRecording
@@ -251,7 +252,7 @@ fun SendMsgView(
             tint = MaterialTheme.colors.primary,
             modifier = Modifier
               .size(36.dp)
-              .padding(2.dp)
+              .padding(4.dp)
               .clickable(
                 onClick = {},
                 role = Role.Button,
@@ -262,7 +263,7 @@ fun SendMsgView(
           DisposableEffect(Unit) {
             onDispose {
               rec.stop(recordingInProgress)
-              cleanUp(true)
+              //cleanUp(true)
             }
           }
         }
