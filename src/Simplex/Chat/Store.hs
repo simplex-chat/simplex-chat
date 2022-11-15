@@ -535,13 +535,13 @@ createConnection_ db userId connType entityId acId viaContact viaUserContactLink
     ent ct = if connType == ct then entityId else Nothing
 
 createDirectContact :: DB.Connection -> User -> Connection -> Profile -> ExceptT StoreError IO Contact
-createDirectContact db user@User {userId} activeConn@Connection {connId, localAlias} profile@Profile {preferences} = do
+createDirectContact db user@User {userId} activeConn@Connection {connId, localAlias} p@Profile {preferences} = do
   createdAt <- liftIO getCurrentTime
-  (localDisplayName, contactId, profileId) <- createContact_ db userId connId profile localAlias Nothing createdAt
-  let lp = toLocalProfile profileId profile localAlias
+  (localDisplayName, contactId, profileId) <- createContact_ db userId connId p localAlias Nothing createdAt
+  let profile = toLocalProfile profileId p localAlias
       userPreferences = emptyChatPrefs
       mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
-  pure $ Contact {contactId, localDisplayName, profile = lp, activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt, updatedAt = createdAt}
+  pure $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt, updatedAt = createdAt}
 
 createContact_ :: DB.Connection -> UserId -> Int64 -> Profile -> LocalAlias -> Maybe Int64 -> UTCTime -> ExceptT StoreError IO (Text, ContactId, ProfileId)
 createContact_ db userId connId Profile {displayName, fullName, image, preferences} localAlias viaGroup currentTs =
