@@ -279,7 +279,7 @@ processChatCommand = \case
   APIGetChatItems _pagination -> pure $ chatCmdError "not implemented"
   APISendMessage (ChatRef cType chatId) (ComposedMessage file_ quotedItemId_ mc) -> withUser $ \user@User {userId} -> withChatLock "sendMessage" $ case cType of
     CTDirect -> do
-      ct@Contact {localDisplayName = c, contactUsed} <- withStore $ \db -> getContact db userId chatId
+      ct@Contact {localDisplayName = c, contactUsed} <- withStore $ \db -> getContact db user chatId
       unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
       (fileInvitation_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer ct
       (msgContainer, quotedItem_) <- prepareMsg fileInvitation_
@@ -396,7 +396,7 @@ processChatCommand = \case
       unzipMaybe3 _ = (Nothing, Nothing, Nothing)
   APIUpdateChatItem (ChatRef cType chatId) itemId mc -> withUser $ \user@User {userId} -> withChatLock "updateChatItem" $ case cType of
     CTDirect -> do
-      (ct@Contact {contactId, localDisplayName = c}, ci) <- withStore $ \db -> (,) <$> getContact db userId chatId <*> getDirectChatItem db userId chatId itemId
+      (ct@Contact {contactId, localDisplayName = c}, ci) <- withStore $ \db -> (,) <$> getContact db user chatId <*> getDirectChatItem db userId chatId itemId
       case ci of
         CChatItem SMDSnd ChatItem {meta = CIMeta {itemSharedMsgId}, content = ciContent} -> do
           case (ciContent, itemSharedMsgId) of
@@ -425,7 +425,7 @@ processChatCommand = \case
     CTContactConnection -> pure $ chatCmdError "not supported"
   APIDeleteChatItem (ChatRef cType chatId) itemId mode -> withUser $ \user@User {userId} -> withChatLock "deleteChatItem" $ case cType of
     CTDirect -> do
-      (ct@Contact {localDisplayName = c}, CChatItem msgDir deletedItem@ChatItem {meta = CIMeta {itemSharedMsgId}, file}) <- withStore $ \db -> (,) <$> getContact db userId chatId <*> getDirectChatItem db userId chatId itemId
+      (ct@Contact {localDisplayName = c}, CChatItem msgDir deletedItem@ChatItem {meta = CIMeta {itemSharedMsgId}, file}) <- withStore $ \db -> (,) <$> getContact db user chatId <*> getDirectChatItem db userId chatId itemId
       case (mode, msgDir, itemSharedMsgId) of
         (CIDMInternal, _, _) -> do
           deleteCIFile user file
@@ -468,10 +468,10 @@ processChatCommand = \case
     CTGroup -> withStore' (\db -> updateGroupChatItemsRead db chatId fromToIds) $> CRCmdOk
     CTContactRequest -> pure $ chatCmdError "not supported"
     CTContactConnection -> pure $ chatCmdError "not supported"
-  APIChatUnread (ChatRef cType chatId) unreadChat -> withUser $ \user@User {userId} -> case cType of
+  APIChatUnread (ChatRef cType chatId) unreadChat -> withUser $ \user -> case cType of
     CTDirect -> do
       withStore $ \db -> do
-        ct <- getContact db userId chatId
+        ct <- getContact db user chatId
         liftIO $ updateContactUnreadChat db user ct unreadChat
       pure CRCmdOk
     CTGroup -> do
@@ -482,7 +482,7 @@ processChatCommand = \case
     _ -> pure $ chatCmdError "not supported"
   APIDeleteChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
     CTDirect -> do
-      ct@Contact {localDisplayName} <- withStore $ \db -> getContact db userId chatId
+      ct@Contact {localDisplayName} <- withStore $ \db -> getContact db user chatId
       filesInfo <- withStore' $ \db -> getContactFileInfo db user ct
       conns <- withStore $ \db -> getContactConnections db userId ct
       withChatLock "deleteChat direct" . procCmd $ do
@@ -516,9 +516,9 @@ processChatCommand = \case
         withStore' $ \db -> deleteGroup db user gInfo
         pure $ CRGroupDeletedUser gInfo
     CTContactRequest -> pure $ chatCmdError "not supported"
-  APIClearChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
+  APIClearChat (ChatRef cType chatId) -> withUser $ \user -> case cType of
     CTDirect -> do
-      ct <- withStore $ \db -> getContact db userId chatId
+      ct <- withStore $ \db -> getContact db user chatId
       filesInfo <- withStore' $ \db -> getContactFileInfo db user ct
       maxItemTs_ <- withStore' $ \db -> getContactMaxItemTs db user ct
       forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
@@ -561,7 +561,7 @@ processChatCommand = \case
     pure $ CRContactRequestRejected cReq
   APISendCallInvitation contactId callType -> withUser $ \user@User {userId} -> do
     -- party initiating call
-    ct <- withStore $ \db -> getContact db userId contactId
+    ct <- withStore $ \db -> getContact db user contactId
     calls <- asks currentCalls
     withChatLock "sendCallInvitation" $ do
       callId <- CallId <$> (asks idsDrg >>= liftIO . (`randomBytes` 16))
@@ -629,27 +629,27 @@ processChatCommand = \case
       (SndMessage {msgId}, _) <- sendDirectContactMessage ct (XCallEnd callId)
       updateCallItemStatus userId ct call WCSDisconnected $ Just msgId
       pure Nothing
-  APIGetCallInvitations -> withUser $ \User {userId} -> do
+  APIGetCallInvitations -> withUser $ \user -> do
     calls <- asks currentCalls >>= readTVarIO
     let invs = mapMaybe callInvitation $ M.elems calls
-    CRCallInvitations <$> mapM (rcvCallInvitation userId) invs
+    CRCallInvitations <$> mapM (rcvCallInvitation user) invs
     where
       callInvitation Call {contactId, callState, callTs} = case callState of
         CallInvitationReceived {peerCallType, sharedKey} -> Just (contactId, callTs, peerCallType, sharedKey)
         _ -> Nothing
-      rcvCallInvitation userId (contactId, callTs, peerCallType, sharedKey) = do
-        contact <- withStore (\db -> getContact db userId contactId)
+      rcvCallInvitation user (contactId, callTs, peerCallType, sharedKey) = do
+        contact <- withStore (\db -> getContact db user contactId)
         pure RcvCallInvitation {contact, callType = peerCallType, sharedKey, callTs}
   APICallStatus contactId receivedStatus ->
     withCurrentCall contactId $ \userId ct call ->
       updateCallItemStatus userId ct call receivedStatus Nothing $> Just call
   APIUpdateProfile profile -> withUser (`updateProfile` profile)
-  APISetContactPrefs contactId prefs' -> withUser $ \user@User {userId} -> do
-    ct <- withStore $ \db -> getContact db userId contactId
+  APISetContactPrefs contactId prefs' -> withUser $ \user -> do
+    ct <- withStore $ \db -> getContact db user contactId
     updateContactPrefs user ct prefs'
-  APISetContactAlias contactId localAlias -> withUser $ \User {userId} -> do
+  APISetContactAlias contactId localAlias -> withUser $ \user@User {userId} -> do
     ct' <- withStore $ \db -> do
-      ct <- getContact db userId contactId
+      ct <- getContact db user contactId
       liftIO $ updateContactAlias db userId ct localAlias
     pure $ CRContactAliasUpdated ct'
   APISetConnectionAlias connId localAlias -> withUser $ \User {userId} -> do
@@ -692,10 +692,10 @@ processChatCommand = \case
   APIGetChatItemTTL -> CRChatItemTTL <$> withUser (\user -> withStore' (`getChatItemTTL` user))
   APISetNetworkConfig cfg -> withUser' $ \_ -> withAgent (`setNetworkConfig` cfg) $> CRCmdOk
   APIGetNetworkConfig -> CRNetworkConfig <$> withUser' (\_ -> withAgent getNetworkConfig)
-  APISetChatSettings (ChatRef cType chatId) chatSettings -> withUser $ \user@User {userId} -> case cType of
+  APISetChatSettings (ChatRef cType chatId) chatSettings -> withUser $ \user -> case cType of
     CTDirect -> do
       ct <- withStore $ \db -> do
-        ct <- getContact db userId chatId
+        ct <- getContact db user chatId
         liftIO $ updateContactSettings db user chatId chatSettings
         pure ct
       withAgent $ \a -> toggleConnectionNtfs a (contactConnId ct) (enableNtfs chatSettings)
@@ -709,9 +709,9 @@ processChatCommand = \case
         withAgent (\a -> toggleConnectionNtfs a connId $ enableNtfs chatSettings) `catchError` (toView . CRChatError)
       pure CRCmdOk
     _ -> pure $ chatCmdError "not supported"
-  APIContactInfo contactId -> withUser $ \User {userId} -> do
+  APIContactInfo contactId -> withUser $ \user@User {userId} -> do
     -- [incognito] print user's incognito profile for this contact
-    ct@Contact {activeConn = Connection {customUserProfileId}} <- withStore $ \db -> getContact db userId contactId
+    ct@Contact {activeConn = Connection {customUserProfileId}} <- withStore $ \db -> getContact db user contactId
     incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
     connectionStats <- withAgent (`getConnectionServers` contactConnId ct)
     pure $ CRContactInfo ct connectionStats (fmap fromLocalProfile incognitoProfile)
@@ -719,8 +719,8 @@ processChatCommand = \case
     (g, m) <- withStore $ \db -> (,) <$> getGroupInfo db user gId <*> getGroupMember db user gId gMemberId
     connectionStats <- mapM (withAgent . flip getConnectionServers) (memberConnId m)
     pure $ CRGroupMemberInfo g m connectionStats
-  APISwitchContact contactId -> withUser $ \User {userId} -> do
-    ct <- withStore $ \db -> getContact db userId contactId
+  APISwitchContact contactId -> withUser $ \user -> do
+    ct <- withStore $ \db -> getContact db user contactId
     withAgent $ \a -> switchConnectionAsync a "" $ contactConnId ct
     pure CRCmdOk
   APISwitchGroupMember gId gMemberId -> withUser $ \user -> do
@@ -837,9 +837,9 @@ processChatCommand = \case
     gVar <- asks idsDrg
     groupInfo <- withStore (\db -> createNewGroup db gVar user gProfile)
     pure $ CRGroupCreated groupInfo
-  APIAddMember groupId contactId memRole -> withUser $ \user@User {userId} -> withChatLock "addMember" $ do
+  APIAddMember groupId contactId memRole -> withUser $ \user -> withChatLock "addMember" $ do
     -- TODO for large groups: no need to load all members to determine if contact is a member
-    (group, contact) <- withStore $ \db -> (,) <$> getGroup db user groupId <*> getContact db userId contactId
+    (group, contact) <- withStore $ \db -> (,) <$> getGroup db user groupId <*> getContact db user contactId
     let Group gInfo@GroupInfo {membership} members = group
         GroupMember {memberRole = userRole} = membership
         Contact {localDisplayName = cName} = contact
@@ -891,7 +891,7 @@ processChatCommand = \case
         Just m -> changeMemberRole user gInfo members m $ SGEMemberRole memberId (fromLocalProfile $ memberProfile m) memRole
         _ -> throwChatError CEGroupMemberNotFound
     where
-      changeMemberRole user@User {userId} gInfo@GroupInfo {membership} members m gEvent = do
+      changeMemberRole user gInfo@GroupInfo {membership} members m gEvent = do
         let GroupMember {memberId = mId, memberRole = mRole, memberStatus = mStatus, memberContactId, localDisplayName = cName} = m
             GroupMember {memberRole = userRole} = membership
             canChangeRole = userRole >= GRAdmin && userRole >= mRole && userRole >= memRole && memberCurrent membership
@@ -901,7 +901,7 @@ processChatCommand = \case
             withStore' $ \db -> updateGroupMemberRole db user m memRole
             case mStatus of
               GSMemInvited -> do
-                withStore (\db -> (,) <$> mapM (getContact db userId) memberContactId <*> liftIO (getMemberInvitation db user $ groupMemberId' m)) >>= \case
+                withStore (\db -> (,) <$> mapM (getContact db user) memberContactId <*> liftIO (getMemberInvitation db user $ groupMemberId' m)) >>= \case
                   (Just ct, Just cReq) -> sendGrpInvitation user ct gInfo (m :: GroupMember) {memberRole = memRole} cReq
                   _ -> throwChatError $ CEGroupCantResendInvitation gInfo cName
               _ -> do
@@ -1051,7 +1051,7 @@ processChatCommand = \case
             sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
             withStore (\db -> getChatRefByFileId db user fileId) >>= \case
               ChatRef CTDirect contactId -> do
-                contact <- withStore $ \db -> getContact db userId contactId
+                contact <- withStore $ \db -> getContact db user contactId
                 void . sendDirectContactMessage contact $ XFileCancel sharedMsgId
               ChatRef CTGroup groupId -> do
                 Group gInfo ms <- withStore $ \db -> getGroup db user groupId
@@ -1114,7 +1114,7 @@ processChatCommand = \case
     connectViaContact :: User -> ConnectionRequestUri 'CMContact -> m ChatResponse
     connectViaContact user@User {userId} cReq@(CRContactUri ConnReqUriData {crClientData}) = withChatLock "connectViaContact" $ do
       let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
-      withStore' (\db -> getConnReqContactXContactId db userId cReqHash) >>= \case
+      withStore' (\db -> getConnReqContactXContactId db user cReqHash) >>= \case
         (Just contact, _) -> pure $ CRContactAlreadyExists contact
         (_, xContactId_) -> procCmd $ do
           let randomXContactId = XContactId <$> (asks idsDrg >>= liftIO . (`randomBytes` 16))
@@ -1165,25 +1165,22 @@ processChatCommand = \case
             void (sendDirectContactMessage ct $ XInfo mergedProfile) `catchError` (toView . CRChatError)
           pure $ CRUserProfileUpdated (fromLocalProfile p) p'
     updateContactPrefs :: User -> Contact -> Preferences -> m ChatResponse
-    updateContactPrefs user@User {userId} ct@Contact {contactId, activeConn = Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
-      | contactUserPrefs == contactUserPrefs' = pure $ CRContactPrefsUpdated ct ct $ contactUserPreferences user ct -- nothing changed actually
+    updateContactPrefs user@User {userId} ct@Contact {activeConn = Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
+      | contactUserPrefs == contactUserPrefs' = pure $ CRContactPrefsUpdated ct ct
       | otherwise = do
-        withStore' $ \db -> updateContactUserPreferences db userId contactId contactUserPrefs'
-        -- [incognito] filter out contacts with whom user has incognito connections
-        let ct' = (ct :: Contact) {userPreferences = contactUserPrefs'}
+        ct' <- withStore' $ \db -> updateContactUserPreferences db user ct contactUserPrefs'
         incognitoProfile <- forM customUserProfileId $ \profileId -> withStore $ \db -> getProfileById db userId profileId
         let p' = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct')
         withChatLock "updateProfile" . procCmd $ do
           void (sendDirectContactMessage ct' $ XInfo p') `catchError` (toView . CRChatError)
-          pure $ CRContactPrefsUpdated ct ct' $ contactUserPreferences user ct'
-
+          pure $ CRContactPrefsUpdated ct ct'
     isReady :: Contact -> Bool
     isReady ct =
       let s = connStatus $ activeConn (ct :: Contact)
        in s == ConnReady || s == ConnSndReady
     withCurrentCall :: ContactId -> (UserId -> Contact -> Call -> m (Maybe Call)) -> m ChatResponse
     withCurrentCall ctId action = withUser $ \user@User {userId} -> do
-      ct <- withStore $ \db -> getContact db userId ctId
+      ct <- withStore $ \db -> getContact db user ctId
       calls <- asks currentCalls
       withChatLock "currentCall" $
         atomically (TM.lookup ctId calls) >>= \case
@@ -1313,7 +1310,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
       chatRef <- withStore $ \db -> getChatRefByFileId db user fileId
       case (chatRef, grpMemberId) of
         (ChatRef CTDirect contactId, Nothing) -> do
-          ct <- withStore $ \db -> getContact db userId contactId
+          ct <- withStore $ \db -> getContact db user contactId
           (msg, ci) <- acceptFile
           void $ sendDirectContactMessage ct msg
           pure ci
@@ -2057,7 +2054,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
       where
         profileContactRequest :: InvitationId -> Profile -> Maybe XContactId -> m ()
         profileContactRequest invId p xContactId_ = do
-          withStore (\db -> createOrUpdateContactRequest db userId userContactLinkId invId p xContactId_) >>= \case
+          withStore (\db -> createOrUpdateContactRequest db user userContactLinkId invId p xContactId_) >>= \case
             CORContact contact -> toView $ CRContactRequestAlreadyAccepted contact
             CORRequest cReq@UserContactRequest {localDisplayName} -> do
               withStore' (\db -> getUserContactLinkById db userId userContactLinkId) >>= \case
@@ -2151,7 +2148,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
       if connectedIncognito
         then withStore' $ \db -> deleteSentProbe db userId probeId
         else do
-          cs <- withStore' $ \db -> getMatchingContacts db userId ct
+          cs <- withStore' $ \db -> getMatchingContacts db user ct
           let probeHash = ProbeHash $ C.sha256Hash (unProbe probe)
           forM_ cs $ \c -> sendProbeHash c probeHash probeId `catchError` const (pure ())
       where
@@ -2466,21 +2463,21 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
 
     xInfo :: Contact -> Profile -> m ()
     xInfo c@Contact {profile = p} p' = unless (fromLocalProfile p == p') $ do
-      c' <- withStore $ \db -> updateContactProfile db userId c p'
-      toView $ CRContactUpdated c c' $ contactUserPreferences user c'
+      c' <- withStore $ \db -> updateContactProfile db user c p'
+      toView $ CRContactUpdated c c'
 
     xInfoProbe :: Contact -> Probe -> m ()
     xInfoProbe c2 probe =
       -- [incognito] unless connected incognito
       unless (contactConnIncognito c2) $ do
-        r <- withStore' $ \db -> matchReceivedProbe db userId c2 probe
+        r <- withStore' $ \db -> matchReceivedProbe db user c2 probe
         forM_ r $ \c1 -> probeMatch c1 c2 probe
 
     xInfoProbeCheck :: Contact -> ProbeHash -> m ()
     xInfoProbeCheck c1 probeHash =
       -- [incognito] unless connected incognito
       unless (contactConnIncognito c1) $ do
-        r <- withStore' $ \db -> matchReceivedProbeHash db userId c1 probeHash
+        r <- withStore' $ \db -> matchReceivedProbeHash db user c1 probeHash
         forM_ r . uncurry $ probeMatch c1
 
     probeMatch :: Contact -> Contact -> Probe -> m ()
@@ -2493,7 +2490,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
 
     xInfoProbeOk :: Contact -> Probe -> m ()
     xInfoProbeOk c1@Contact {contactId = cId1} probe = do
-      r <- withStore' $ \db -> matchSentProbe db userId c1 probe
+      r <- withStore' $ \db -> matchSentProbe db user c1 probe
       forM_ r $ \c2@Contact {contactId = cId2} ->
         if cId1 /= cId2
           then mergeContacts c1 c2
@@ -2608,7 +2605,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
       ChatMessage {chatMsgEvent} <- parseChatMessage connInfo
       case chatMsgEvent of
         XInfo p -> do
-          ct <- withStore $ \db -> createDirectContact db userId activeConn p
+          ct <- withStore $ \db -> createDirectContact db user activeConn p
           toView $ CRContactConnecting ct
         -- TODO show/log error, other events in SMP confirmation
         _ -> pure ()
