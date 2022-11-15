@@ -358,13 +358,13 @@
   <string name="how_to_use_simplex_chat">Wie man SimpleX nutzt</string>
   <string name="markdown_help">Markdown Hilfe</string>
   <string name="markdown_in_messages">Markdown in Nachrichten</string>
-  <string name="chat_with_the_founder">Senden Sie Ihre Fragen und Ideen</string>
+  <string name="chat_with_the_founder">Senden Sie Fragen und Ideen</string>
   <string name="send_us_an_email">Senden Sie uns eine E-Mail</string>
   <string name="chat_lock">SimpleX Sperre</string>
   <string name="chat_console">Chat Konsole</string>
   <string name="smp_servers">SMP-Server</string>
   <string name="install_simplex_chat_for_terminal">Installieren Sie <xliff:g id="appNameFull">SimpleX Chat</xliff:g> als Terminalanwendung</string>
-  <string name="star_on_github">Einen Stern auf GitHub vergeben</string>
+  <string name="star_on_github">Stern auf GitHub vergeben</string>
   <string name="contribute">Unterstützen Sie uns</string>
   <string name="rate_the_app">Bewerten Sie die App</string>
   <string name="use_simplex_chat_servers__question">Verwenden Sie <xliff:g id="appNameFull">SimpleX Chat</xliff:g> Server?</string>
