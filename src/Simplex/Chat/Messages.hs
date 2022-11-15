@@ -881,14 +881,9 @@ ciCallInfoText status duration = case status of
   CISCallRejected -> "rejected"
   CISCallAccepted -> "accepted"
   CISCallNegotiated -> "connecting..."
-  CISCallProgress -> "in progress " <> d
-  CISCallEnded -> "ended " <> d
+  CISCallProgress -> "in progress " <> durationText duration
+  CISCallEnded -> "ended " <> durationText duration
   CISCallError -> "error"
-  where
-    d = let (mins, secs) = duration `divMod` 60 in T.pack $ "(" <> with0 mins <> ":" <> with0 secs <> ")"
-    with0 n
-      | n < 9 = '0' : show n
-      | otherwise = show n
 
 data SChatType (c :: ChatType) where
   SCTDirect :: SChatType 'CTDirect
