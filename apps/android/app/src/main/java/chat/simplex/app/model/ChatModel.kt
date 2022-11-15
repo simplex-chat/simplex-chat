@@ -1421,6 +1421,10 @@ object MsgContentSerializer : KSerializer<MsgContent> {
             val image = json["image"]?.jsonPrimitive?.content ?: "unknown message format"
             MsgContent.MCImage(text, image)
           }
+          "voice" -> {
+            val duration = json["duration"]?.jsonPrimitive?.intOrNull ?: 0
+            MsgContent.MCVoice(text, duration)
+          }
           "file" -> MsgContent.MCFile(text)
           else -> MsgContent.MCUnknown(t, text, json)
         }

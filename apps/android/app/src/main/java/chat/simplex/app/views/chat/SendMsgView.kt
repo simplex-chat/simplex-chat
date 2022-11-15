@@ -61,84 +61,12 @@ fun SendMsgView(
 ) {
   val cs = composeState.value
   val attachEnabled = !composeState.value.editing
-  var showKeyboard by remember { mutableStateOf(false) }
-  LaunchedEffect(cs.contextItem) {
-    when (cs.contextItem) {
-      is ComposeContextItem.QuotedItem -> {
-        delay(100)
-        showKeyboard = true
-      }
-      is ComposeContextItem.EditingItem -> {
-        // Keyboard will not show up if we try to show it too fast
-        delay(300)
-        showKeyboard = true
-      }
-    }
-  }
-  val textColor = MaterialTheme.colors.onBackground
-  val tintColor = MaterialTheme.colors.secondary
-  val paddingStart = with(LocalDensity.current) { 12.dp.roundToPx() }
-  val paddingTop = with(LocalDensity.current) { 7.dp.roundToPx() }
-  val paddingEnd = with(LocalDensity.current) { 45.dp.roundToPx() }
-  val paddingBottom = with(LocalDensity.current) { 7.dp.roundToPx() }
-
   Column(Modifier.padding(vertical = 8.dp)) {
     Box {
       val filePath = rememberSaveable { mutableStateOf(null as String?) }
       var recordingTimeRange by rememberSaveable(saver = LongRange.saver) { mutableStateOf(0L..0L) } // since..to
       val showVoiceButton = ((cs.message.isEmpty() || recordingTimeRange.first > 0L) && allowVoiceRecord && attachEnabled && cs.preview is ComposePreview.NoPreview) || filePath.value != null
-      AndroidView(modifier = Modifier, factory = {
-        val editText = @SuppressLint("AppCompatCustomView") object: EditText(it) {
-          override fun setOnReceiveContentListener(
-            mimeTypes: Array<out String>?,
-            listener: android.view.OnReceiveContentListener?
-          ) {
-            super.setOnReceiveContentListener(mimeTypes, listener)
-          }
-          override fun onCreateInputConnection(editorInfo: EditorInfo): InputConnection {
-            val connection = super.onCreateInputConnection(editorInfo)
-            EditorInfoCompat.setContentMimeTypes(editorInfo, arrayOf("image/*"))
-            val onCommit = InputConnectionCompat.OnCommitContentListener { inputContentInfo, _, _ ->
-              try {
-                inputContentInfo.requestPermission()
-              } catch (e: Exception) {
-                return@OnCommitContentListener false
-              }
-              SimplexApp.context.chatModel.sharedContent.value = SharedContent.Images("", listOf(inputContentInfo.contentUri))
-              true
-            }
-            return InputConnectionCompat.createWrapper(connection, editorInfo, onCommit)
-          }
-        }
-        editText.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        editText.maxLines = 16
-        editText.inputType = InputType.TYPE_TEXT_FLAG_CAP_SENTENCES or editText.inputType
-        editText.setTextColor(textColor.toArgb())
-        editText.textSize = textStyle.value.fontSize.value
-        val drawable = it.getDrawable(R.drawable.send_msg_view_background)!!
-        DrawableCompat.setTint(drawable, tintColor.toArgb())
-        editText.background = drawable
-        editText.setPadding(paddingStart, paddingTop, paddingEnd, paddingBottom)
-        editText.setText(cs.message)
-        editText.textCursorDrawable?.let { DrawableCompat.setTint(it, HighOrLowlight.toArgb()) }
-        editText.doOnTextChanged { text, _, _, _ -> onMessageChange(text.toString()) }
-        editText
-      }) {
-        it.setTextColor(textColor.toArgb())
-        it.textSize = textStyle.value.fontSize.value
-        DrawableCompat.setTint(it.background, tintColor.toArgb())
-        if (cs.message != it.text.toString()) {
-          it.setText(cs.message)
-          // Set cursor to the end of the text
-          it.setSelection(it.text.length)
-        }
-        if (showKeyboard) {
-          it.requestFocus()
-          val imm: InputMethodManager = SimplexApp.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-          imm.showSoftInput(it, InputMethodManager.SHOW_IMPLICIT)
-          showKeyboard = false
-        }
-      }
+      NativeKeyboard(composeState, textStyle, onMessageChange)
       Box(Modifier.align(Alignment.BottomEnd)) {
         val icon = if (cs.editing) Icons.Filled.Check else Icons.Outlined.ArrowUpward
         val color = if (cs.sendEnabled()) MaterialTheme.colors.primary else HighOrLowlight
@@ -304,6 +232,89 @@ fun SendMsgView(
           }
         }
       }
+    }
+  }
+}
+
+@Composable
+private fun NativeKeyboard(
+  composeState: MutableState<ComposeState>,
+  textStyle: MutableState<TextStyle>,
+  onMessageChange: (String) -> Unit
+) {
+  val cs = composeState.value
+  val textColor = MaterialTheme.colors.onBackground
+  val tintColor = MaterialTheme.colors.secondary
+  val paddingStart = with(LocalDensity.current) { 12.dp.roundToPx() }
+  val paddingTop = with(LocalDensity.current) { 7.dp.roundToPx() }
+  val paddingEnd = with(LocalDensity.current) { 45.dp.roundToPx() }
+  val paddingBottom = with(LocalDensity.current) { 7.dp.roundToPx() }
+
+  var showKeyboard by remember { mutableStateOf(false) }
+  LaunchedEffect(cs.contextItem) {
+    when (cs.contextItem) {
+      is ComposeContextItem.QuotedItem -> {
+        delay(100)
+        showKeyboard = true
+      }
+      is ComposeContextItem.EditingItem -> {
+        // Keyboard will not show up if we try to show it too fast
+        delay(300)
+        showKeyboard = true
+      }
+    }
+  }
+
+  AndroidView(modifier = Modifier, factory = {
+    val editText = @SuppressLint("AppCompatCustomView") object: EditText(it) {
+      override fun setOnReceiveContentListener(
+        mimeTypes: Array<out String>?,
+        listener: android.view.OnReceiveContentListener?
+      ) {
+        super.setOnReceiveContentListener(mimeTypes, listener)
+      }
+      override fun onCreateInputConnection(editorInfo: EditorInfo): InputConnection {
+        val connection = super.onCreateInputConnection(editorInfo)
+        EditorInfoCompat.setContentMimeTypes(editorInfo, arrayOf("image/*"))
+        val onCommit = InputConnectionCompat.OnCommitContentListener { inputContentInfo, _, _ ->
+          try {
+            inputContentInfo.requestPermission()
+          } catch (e: Exception) {
+            return@OnCommitContentListener false
+          }
+          SimplexApp.context.chatModel.sharedContent.value = SharedContent.Images("", listOf(inputContentInfo.contentUri))
+          true
+        }
+        return InputConnectionCompat.createWrapper(connection, editorInfo, onCommit)
+      }
+    }
+    editText.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+    editText.maxLines = 16
+    editText.inputType = InputType.TYPE_TEXT_FLAG_CAP_SENTENCES or editText.inputType
+    editText.setTextColor(textColor.toArgb())
+    editText.textSize = textStyle.value.fontSize.value
+    val drawable = it.getDrawable(R.drawable.send_msg_view_background)!!
+    DrawableCompat.setTint(drawable, tintColor.toArgb())
+    editText.background = drawable
+    editText.setPadding(paddingStart, paddingTop, paddingEnd, paddingBottom)
+    editText.setText(cs.message)
+    editText.textCursorDrawable?.let { DrawableCompat.setTint(it, HighOrLowlight.toArgb()) }
+    editText.doOnTextChanged { text, _, _, _ -> onMessageChange(text.toString()) }
+    editText
+  }) {
+    it.setTextColor(textColor.toArgb())
+    it.textSize = textStyle.value.fontSize.value
+    DrawableCompat.setTint(it.background, tintColor.toArgb())
+    if (cs.message != it.text.toString()) {
+      it.setText(cs.message)
+      // Set cursor to the end of the text
+      it.setSelection(it.text.length)
+    }
+    if (showKeyboard) {
+      it.requestFocus()
+      val imm: InputMethodManager = SimplexApp.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+      imm.showSoftInput(it, InputMethodManager.SHOW_IMPLICIT)
+      showKeyboard = false
     }
   }
 }
