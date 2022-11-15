@@ -2255,7 +2255,7 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       </trans-unit>
       <trans-unit id="Support SimpleX Chat" xml:space="preserve">
         <source>Support SimpleX Chat</source>
-        <target>UNTERSTÜTZUNG VON SimpleX CHAT</target>
+        <target>Unterstützung von SimpleX Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="System" xml:space="preserve">
