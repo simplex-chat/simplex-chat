@@ -29,8 +29,6 @@ fun PrivacySettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
     SectionView(stringResource(R.string.settings_section_title_chats)) {
       SettingsPreferenceItem(Icons.Outlined.Image, stringResource(R.string.auto_accept_images), chatModel.controller.appPrefs.privacyAcceptImages)
       SectionDivider()
-      SettingsPreferenceItem(Icons.Outlined.RecordVoiceOver, stringResource(R.string.auto_accept_voice), chatModel.controller.appPrefs.privacyAcceptVoice)
-      SectionDivider()
       if (chatModel.controller.appPrefs.developerTools.get()) {
         SettingsPreferenceItem(Icons.Outlined.ImageAspectRatio, stringResource(R.string.transfer_images_faster), chatModel.controller.appPrefs.privacyTransferImagesInline)
         SectionDivider()

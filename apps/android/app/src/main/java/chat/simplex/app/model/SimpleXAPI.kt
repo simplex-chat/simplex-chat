@@ -89,7 +89,6 @@ class AppPreferences(val context: Context) {
   val laNoticeShown = mkBoolPreference(SHARED_PREFS_LA_NOTICE_SHOWN, false)
   val webrtcIceServers = mkStrPreference(SHARED_PREFS_WEBRTC_ICE_SERVERS, null)
   val privacyAcceptImages = mkBoolPreference(SHARED_PREFS_PRIVACY_ACCEPT_IMAGES, true)
-  val privacyAcceptVoice = mkBoolPreference(SHARED_PREFS_PRIVACY_ACCEPT_VOICE, true)
   val privacyTransferImagesInline = mkBoolPreference(SHARED_PREFS_PRIVACY_TRANSFER_IMAGES_INLINE, false)
   val privacyLinkPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_LINK_PREVIEWS, true)
   val experimentalCalls = mkBoolPreference(SHARED_PREFS_EXPERIMENTAL_CALLS, false)
@@ -180,7 +179,6 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_LA_NOTICE_SHOWN = "LANoticeShown"
     private const val SHARED_PREFS_WEBRTC_ICE_SERVERS = "WebrtcICEServers"
     private const val SHARED_PREFS_PRIVACY_ACCEPT_IMAGES = "PrivacyAcceptImages"
-    private const val SHARED_PREFS_PRIVACY_ACCEPT_VOICE = "PrivacyAcceptVoice"
     private const val SHARED_PREFS_PRIVACY_TRANSFER_IMAGES_INLINE = "PrivacyTransferImagesInline"
     private const val SHARED_PREFS_PRIVACY_LINK_PREVIEWS = "PrivacyLinkPreviews"
     private const val SHARED_PREFS_EXPERIMENTAL_CALLS = "ExperimentalCalls"
@@ -1016,7 +1014,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         val file = cItem.file
         if (cItem.content.msgContent is MsgContent.MCImage && file != null && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV && appPrefs.privacyAcceptImages.get()) {
           withApi { receiveFile(file.fileId) }
-        } else if (cItem.content.msgContent is MsgContent.MCFile && file != null && file.isVoiceMessage() && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && appPrefs.privacyAcceptVoice.get()) {
+        } else if (cItem.content.msgContent is MsgContent.MCFile && file != null && file.isVoiceMessage() && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && appPrefs.privacyAcceptImages.get()) {
           withApi { receiveFile(file.fileId) }
         }
         if (!cItem.chatDir.sent && !cItem.isCall && !cItem.isMutedMemberEvent && (!isAppOnForeground(appContext) || chatModel.chatId.value != cInfo.id)) {

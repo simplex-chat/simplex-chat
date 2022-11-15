@@ -22,12 +22,15 @@ import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -182,7 +185,7 @@ fun SendMsgView(
               Manifest.permission.RECORD_AUDIO,
             )
           )
-          val rec: Recorder = remember { RecorderNative() }
+          val rec: Recorder = remember { RecorderNative(MAX_VOICE_SIZE_FOR_SENDING) }
           var now by remember { mutableStateOf(System.currentTimeMillis()) }
           LaunchedEffect(Unit) {
             while (isActive) {
@@ -201,8 +204,11 @@ fun SendMsgView(
               }
               filePath.value == null -> {
                 showRecordingUi(true)
-                filePath.value = rec.start(recordingInProgress)
                 recordingTimeRange = System.currentTimeMillis()..0L
+                filePath.value = rec.start(recordingInProgress) {
+                  filePath.value?.let(onAudioAdded)
+                  recordingTimeRange = recordingTimeRange.first..System.currentTimeMillis()
+                }
               }
             }
           }
@@ -238,12 +244,27 @@ fun SendMsgView(
               modifier = Modifier.size(28.dp).clickable { cleanUp(true) }
             )
             Spacer(Modifier.width(5.dp))
-            val diff = if (recordingTimeRange.last == 0L) now - recordingTimeRange.first else recordingTimeRange.last - recordingTimeRange.first
-            Text(
-              "%02d:%02d.%01d".format(diff / 1000 / 60, diff / 1000 % 60, diff % 1000 / 100),
-              style = TextStyle.Default.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold),
-              color = HighOrLowlight,
-            )
+            Box {
+              val diff = if (recordingTimeRange.last == 0L) now - recordingTimeRange.first else recordingTimeRange.last - recordingTimeRange.first
+              val text = "%02d:%02d.%01d".format(diff / 1000 / 60, diff / 1000 % 60, diff % 1000 / 100)
+              var maxWidth by remember { mutableStateOf(0.dp) }
+              val density = LocalDensity.current.density
+              Text(
+                text,
+                Modifier.onGloballyPositioned { maxWidth = (it.size.width / density).dp },
+                style = TextStyle.Default.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold),
+                color = HighOrLowlight,
+              )
+              Text(
+                text,
+                Modifier.requiredWidth(((diff.toDouble() / MAX_VOICE_MILLIS_FOR_SENDING) * maxWidth.value).dp).clipToBounds(),
+                style = TextStyle.Default.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colors.primary,
+                maxLines = 1,
+                overflow = TextOverflow.Visible,
+                softWrap = false,
+              )
+            }
           }
           Spacer(Modifier.weight(1f))
           Icon(

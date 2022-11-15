@@ -222,7 +222,11 @@ private fun spannableStringToAnnotatedString(
 // maximum image file size to be auto-accepted
 const val MAX_IMAGE_SIZE: Long = 236700
 const val MAX_IMAGE_SIZE_AUTO_RCV: Long = MAX_IMAGE_SIZE * 2
-const val MAX_VOICE_SIZE_AUTO_RCV: Long = 94680 // 6 chunks * 15780 bytes per chunk
+const val MAX_VOICE_SIZE_AUTO_RCV: Long = MAX_IMAGE_SIZE_AUTO_RCV
+
+const val MAX_VOICE_SIZE_FOR_SENDING: Long = 94680 // 6 chunks * 15780 bytes per chunk
+const val MAX_VOICE_MILLIS_FOR_SENDING: Long = 44_000 // approximately is ok
+
 const val MAX_FILE_SIZE: Long = 8000000
 
 fun getFilesDirectory(context: Context): String {

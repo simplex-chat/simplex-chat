@@ -1,6 +1,7 @@
 package chat.simplex.app.views.helpers
 
 import android.media.*
+import android.media.MediaRecorder.MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED
 import android.os.Build
 import android.util.Log
 import androidx.compose.runtime.MutableState
@@ -10,7 +11,7 @@ import chat.simplex.app.TAG
 import java.io.*
 
 interface Recorder {
-  fun start(recordingInProgress: MutableState<Boolean>): String
+  fun start(recordingInProgress: MutableState<Boolean>, onStop: () -> Unit): String
   fun stop(recordingInProgress: MutableState<Boolean>)
   fun cancel(filePath: String, recordingInProgress: MutableState<Boolean>)
 }
@@ -20,27 +21,37 @@ data class ProgressAndDuration(
   val duration: Int = 0
 )
 
-class RecorderNative: Recorder {
-  private val recorder =
+class RecorderNative(val recordedBytesLimit: Long): Recorder {
+  private var recorder: MediaRecorder? = null
+  private fun initRecorder() =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
       MediaRecorder(SimplexApp.context)
     } else {
       MediaRecorder()
     }
 
-  override fun start(recordingInProgress: MutableState<Boolean>): String {
+  override fun start(recordingInProgress: MutableState<Boolean>, onStop: () -> Unit): String {
     recordingInProgress.value = true
-    recorder.setAudioSource(MediaRecorder.AudioSource.MIC)
-    recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-    recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-    recorder.setAudioChannels(1)
-    recorder.setAudioSamplingRate(16000)
-    recorder.setAudioEncodingBitRate(16000)
-    recorder.setMaxDuration(-1)
+    val rec: MediaRecorder
+    recorder = initRecorder().also { rec = it }
+    rec.setAudioSource(MediaRecorder.AudioSource.MIC)
+    rec.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+    rec.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+    rec.setAudioChannels(1)
+    rec.setAudioSamplingRate(16000)
+    rec.setAudioEncodingBitRate(16000)
+    rec.setMaxDuration(-1)
+    rec.setMaxFileSize(recordedBytesLimit)
     val filePath = getAppFilePath(SimplexApp.context, uniqueCombine(SimplexApp.context, getAppFilePath(SimplexApp.context, "voice.m4a")))
-    recorder.setOutputFile(filePath)
-    recorder.prepare()
-    recorder.start()
+    rec.setOutputFile(filePath)
+    rec.prepare()
+    rec.start()
+    rec.setOnInfoListener { mr, what, extra ->
+      if (what == MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED) {
+        stop(recordingInProgress)
+        onStop()
+      }
+    }
     return filePath
   }
 
@@ -48,11 +59,16 @@ class RecorderNative: Recorder {
     if (!recordingInProgress.value) return
     recordingInProgress.value = false
     runCatching {
-      recorder.stop()
+      recorder?.stop()
     }
     runCatching {
-      recorder.reset()
+      recorder?.reset()
     }
+    runCatching {
+      // release all resources
+      recorder?.release()
+    }
+    recorder = null
   }
 
   override fun cancel(filePath: String, recordingInProgress: MutableState<Boolean>) {

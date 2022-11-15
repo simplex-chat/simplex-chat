@@ -563,7 +563,6 @@
   <string name="privacy_and_security">Datenschutz &amp; Sicherheit</string>
   <string name="your_privacy">Meine Privatsphäre</string>
   <string name="auto_accept_images">Bilder automatisch akzeptieren</string>
-  <string name="auto_accept_voice">***Auto-accept voice messages</string>
   <string name="transfer_images_faster">Bilder schneller übertragen (BETA)</string>
   <string name="send_link_previews">Link-Vorschau senden</string>
 
