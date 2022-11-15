@@ -407,6 +407,9 @@ defaultChatPrefs =
       voice = Preference {allow = FAYes}
     }
 
+emptyChatPrefs :: Preferences
+emptyChatPrefs = Preferences Nothing Nothing
+
 defaultGroupPrefs :: FullGroupPreferences
 defaultGroupPrefs =
   FullGroupPreferences
@@ -414,9 +417,6 @@ defaultGroupPrefs =
       -- receipts = GroupPreference {enable = FEOff},
       voice = GroupPreference {enable = FEOn}
     }
-
-emptyChatPrefs :: Preferences
-emptyChatPrefs = Preferences Nothing Nothing
 
 data Preference = Preference
   {allow :: FeatureAllowed}
