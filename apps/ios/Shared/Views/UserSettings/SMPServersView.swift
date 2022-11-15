@@ -10,11 +10,14 @@ import SwiftUI
 import SimpleXChat
 
 struct SMPServersView: View {
-    @State var servers: [SMPServerCfg] = [
-        SMPServerCfg.sampleData.name,
-        SMPServerCfg.sampleData.params
+    @Environment(\.editMode) var editMode
+    @State var servers: [ServerCfg] = [
+        ServerCfg.sampleData.preset,
+        ServerCfg.sampleData.custom,
+        ServerCfg.sampleData.untested,
     ]
     @State var showAddServer = false
+    @State var showSaveAlert = false
 
     var body: some View {
         List {
@@ -28,37 +31,76 @@ struct SMPServersView: View {
                 .onDelete { indexSet in
                     servers.remove(atOffsets: indexSet)
                 }
-                Button("Add server…") {
-                    showAddServer = true
+                if isEditing {
+                    Button("Add server…") {
+                        showAddServer = true
+                    }
                 }
+            }
+        }
+        .onChange(of: isEditing) { value in
+            if value == false {
+                showSaveAlert = true
             }
         }
         .toolbar { EditButton() }
         .confirmationDialog("Add server…", isPresented: $showAddServer, titleVisibility: .hidden) {
             Button("Scan server QR code") {
-
             }
             Button("Add preset servers") {
             }
             Button("Enter server manually") {
-                servers.append(SMPServerCfg(server: .params(params: SMPServerParams.empty), tested: false, enabled: false))
+                servers.append(ServerCfg.empty)
+            }
+        }
+        .confirmationDialog("Save servers?", isPresented: $showSaveAlert, titleVisibility: .visible) {
+            Button("Test & save servers") {
+            }
+            Button("Save servers") {
+            }
+            Button("Revert changes") {
+            }
+            Button("Cancel", role: .cancel) {
+                editMode?.wrappedValue = .active
             }
         }
     }
 
-    private func smpServerView(_ srv: SMPServerCfg) -> some View {
+    private var isEditing: Bool {
+        editMode?.wrappedValue.isEditing == true
+    }
+
+    private func smpServerView(_ srv: ServerCfg) -> some View {
         NavigationLink {
             SMPServerView(server: srv)
                 .navigationBarTitle("Server")
                 .navigationBarTitleDisplayMode(.large)
         } label: {
-            let v = Text(srv.server.label)
-            if srv.enabled {
-                v
-            } else {
-                (v + Text(" (disabled)")).foregroundColor(.secondary)
+            let v = Text(srv.address)
+            HStack {
+                showTestStatus(server: srv)
+                    .frame(width: 16, alignment: .center)
+                    .padding(.trailing, 4)
+                if srv.enabled {
+                    v
+                } else {
+                    (v + Text(" (disabled)")).foregroundColor(.secondary)
+                }
             }
         }
+    }
+}
+
+@ViewBuilder func showTestStatus(server: ServerCfg) -> some View {
+    switch server.tested {
+    case .some(true):
+        Image(systemName: "checkmark")
+            .foregroundColor(.green)
+    case .some(false):
+        Image(systemName: "multiply")
+            .foregroundColor(.red)
+    case .none:
+        Color.clear
     }
 }
 

@@ -623,75 +623,68 @@ public struct DBEncryptionConfig: Codable {
     public var newKey: String
 }
 
-public struct SMPServerCfg: Identifiable, Decodable {
-    public var server: SMPServerAddress
-    public var tested: Bool
+public struct ServerCfg: Identifiable, Decodable {
+    public var address: String
+    public var preset: Bool
+    public var tested: Bool?
     public var enabled: Bool
 //    public var sendEnabled: Bool // can we potentially want to prevent sending on the servers we use to receive?
 // Even if we don't see the use case, it's probably better to allow it in the model
 // In any case, "trusted/known" servers are out of scope of this change
 
-    public init(server: SMPServerAddress, tested: Bool, enabled: Bool) {
-        self.server = server
+    public init(address: String, preset: Bool, tested: Bool?, enabled: Bool) {
+        self.address = address
+        self.preset = preset
         self.tested = tested
         self.enabled = enabled
     }
 
-    public var id: String { server.id }
+    public var id: String { address }
+
+    public static var empty = ServerCfg(address: "", preset: false, tested: false, enabled: true)
 
     public struct SampleData {
-        public var name: SMPServerCfg
-        public var params: SMPServerCfg
+        public var preset: ServerCfg
+        public var custom: ServerCfg
+        public var untested: ServerCfg
     }
 
     public static var sampleData = SampleData(
-        name: SMPServerCfg(
-            server: .name(name: .smp8),
+        preset: ServerCfg(
+            address: "smp8.simplex.im",
+            preset: true,
             tested: true,
             enabled: true
         ),
-        params: SMPServerCfg(
-            server: .params(params: SMPServerParams.sampleData),
-            tested: true,
+        custom: ServerCfg(
+            address: "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@smp.simplex.im,1234.onion",
+            preset: false,
+            tested: false,
             enabled: false
+        ),
+        untested: ServerCfg(
+            address: "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@smp1.simplex.im,5678.onion",
+            preset: false,
+            tested: nil,
+            enabled: true
         )
     )
 }
 
-public enum SMPServerAddress: Codable {
-    case name(name: SMPServerName)
-    case params(params: SMPServerParams)
-
-    public var id: String {
-        switch self {
-        case let .name(name): return name.rawValue
-        case let .params(params): return params.uri
-        }
-    }
-
-    public var label: String {
-        switch self {
-        case let .name(name): return name.hostname
-        case let .params(params): return params.hostnames.first ?? "invalid server"
-        }
-    }
+public enum SMPTestStep: String, Decodable {
+    case connect
+    case sreateQueue
+    case secureQueue
+    case deleteQueue
+    case disconnect
 }
 
-public enum SMPServerName: String, Codable {
-    case smp8
-    case smp9
-    case smp10
-
-    public var hostname: String {
-        switch self {
-        case .smp8: return "smp8.simplex.im"
-        case .smp9: return "smp9.simplex.im"
-        case .smp10: return "smp10.simplex.im"
-        }
-    }
+public struct SMPTestFailure: Decodable {
+    var testStep: SMPTestStep
+    var testError: AgentErrorType
 }
 
-public struct SMPServerParams: Codable {
+public struct ServerAddress {
     public var hostnames: [String]
     public var port: String
     public var keyHash: String
@@ -708,14 +701,14 @@ public struct SMPServerParams: Codable {
         "smp://\(keyHash)\(basicAuth == "" ? "" : ":" + basicAuth)@\(hostnames.joined(separator: ","))"
     }
 
-    static public var empty = SMPServerParams(
+    static public var empty = ServerAddress(
         hostnames: [],
         port: "",
         keyHash: "",
         basicAuth: ""
     )
 
-    static public var sampleData = SMPServerParams(
+    static public var sampleData = ServerAddress(
         hostnames: ["smp.simplex.im", "1234.onion"],
         port: "",
         keyHash: "LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=",
