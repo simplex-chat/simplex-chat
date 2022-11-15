@@ -14,6 +14,7 @@ public struct User: Decodable, NamedChat {
     var userContactId: Int64
     var localDisplayName: ContactName
     public var profile: LocalProfile
+    public var fullPreferences: FullPreferences
     var activeUser: Bool
 
     public var displayName: String { get { profile.displayName } }
@@ -26,6 +27,7 @@ public struct User: Decodable, NamedChat {
         userContactId: 1,
         localDisplayName: "alice",
         profile: LocalProfile.sampleData,
+        fullPreferences: FullPreferences.sampleData,
         activeUser: true
     )
 }
@@ -35,15 +37,17 @@ public typealias ContactName = String
 public typealias GroupName = String
 
 public struct Profile: Codable, NamedChat {
-    public init(displayName: String, fullName: String, image: String? = nil) {
+    public init(displayName: String, fullName: String, image: String? = nil, preferences: Preferences? = nil) {
         self.displayName = displayName
         self.fullName = fullName
         self.image = image
+        self.preferences = preferences
     }
 
     public var displayName: String
     public var fullName: String
     public var image: String?
+    public var preferences: Preferences?
     public var localAlias: String { get { "" } }
 
     var profileViewName: String {
@@ -57,11 +61,12 @@ public struct Profile: Codable, NamedChat {
 }
 
 public struct LocalProfile: Codable, NamedChat {
-    public init(profileId: Int64, displayName: String, fullName: String, image: String? = nil, localAlias: String) {
+    public init(profileId: Int64, displayName: String, fullName: String, image: String? = nil, preferences: Preferences? = nil, localAlias: String) {
         self.profileId = profileId
         self.displayName = displayName
         self.fullName = fullName
         self.image = image
+        self.preferences = preferences
         self.localAlias = localAlias
     }
 
@@ -69,6 +74,7 @@ public struct LocalProfile: Codable, NamedChat {
     public var displayName: String
     public var fullName: String
     public var image: String?
+    public var preferences: Preferences?
     public var localAlias: String
 
     var profileViewName: String {
@@ -81,6 +87,7 @@ public struct LocalProfile: Codable, NamedChat {
         profileId: 1,
         displayName: "alice",
         fullName: "Alice",
+        preferences: Preferences.sampleData,
         localAlias: ""
     )
 }
@@ -117,7 +124,7 @@ extension NamedChat {
 
 public typealias ChatId = String
 
-public struct FullPreferences: Decodable {
+public struct FullPreferences: Decodable, Equatable {
     public var fullDelete: Preference
     public var voice: Preference
 
@@ -125,9 +132,27 @@ public struct FullPreferences: Decodable {
         self.fullDelete = fullDelete
         self.voice = voice
     }
+
+    public static let sampleData = FullPreferences(fullDelete: Preference(allow: .no), voice: Preference(allow: .yes))
 }
 
-public struct Preference: Codable {
+public struct Preferences: Codable {
+    public var fullDelete: Preference?
+    public var voice: Preference?
+
+    public init(fullDelete: Preference?, voice: Preference?) {
+        self.fullDelete = fullDelete
+        self.voice = voice
+    }
+
+    public static let sampleData = Preferences(fullDelete: Preference(allow: .no), voice: Preference(allow: .yes))
+}
+
+public func toPreferences(_ fullPreferences: FullPreferences) -> Preferences {
+    Preferences(fullDelete: fullPreferences.fullDelete, voice: fullPreferences.voice)
+}
+
+public struct Preference: Codable, Equatable {
     public var allow: FeatureAllowed
 
     public init(allow: FeatureAllowed) {
@@ -143,6 +168,19 @@ public struct ContactUserPreferences: Decodable {
         self.fullDelete = fullDelete
         self.voice = voice
     }
+
+    public static let sampleData = ContactUserPreferences(
+        fullDelete: ContactUserPreference(
+            enabled: FeatureEnabled(forUser: false, forContact: false),
+            userPreference: .user(preference: Preference(allow: .no)),
+            contactPreference: Preference(allow: .no)
+        ),
+        voice: ContactUserPreference(
+            enabled: FeatureEnabled(forUser: true, forContact: true),
+            userPreference: .user(preference: Preference(allow: .yes)),
+            contactPreference: Preference(allow: .yes)
+        )
+    )
 }
 
 public struct ContactUserPreference: Decodable {
@@ -288,6 +326,54 @@ public enum FeatureAllowed: String, Codable, Identifiable {
         case .always: return NSLocalizedString("always", comment: "pref value")
         case .yes: return NSLocalizedString("yes", comment: "pref value")
         case .no: return NSLocalizedString("no", comment: "pref value")
+        }
+    }
+}
+
+public struct FullGroupPreferences: Decodable {
+    public var fullDelete: GroupPreference
+    public var voice: GroupPreference
+
+    public init(fullDelete: GroupPreference, voice: GroupPreference) {
+        self.fullDelete = fullDelete
+        self.voice = voice
+    }
+
+    public static let sampleData = FullGroupPreferences(fullDelete: GroupPreference(enable: .off), voice: GroupPreference(enable: .on))
+}
+
+public struct GroupPreferences: Codable {
+    public var fullDelete: GroupPreference?
+    public var voice: GroupPreference?
+
+    public init(fullDelete: GroupPreference?, voice: GroupPreference?) {
+        self.fullDelete = fullDelete
+        self.voice = voice
+    }
+
+    public static let sampleData = GroupPreferences(fullDelete: GroupPreference(enable: .off), voice: GroupPreference(enable: .on))
+}
+
+public struct GroupPreference: Codable {
+    public var enable: GroupFeatureEnabled
+
+    public init(enable: GroupFeatureEnabled) {
+        self.enable = enable
+    }
+}
+
+public enum GroupFeatureEnabled: String, Codable, Identifiable {
+    case on
+    case off
+
+    public static var values: [GroupFeatureEnabled] { [.on, .off] }
+
+    public var id: Self { self }
+
+    public var text: String {
+        switch self {
+        case .on: return NSLocalizedString("on", comment: "group pref value")
+        case .off: return NSLocalizedString("off", comment: "group pref value")
         }
     }
 }
@@ -496,6 +582,8 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     public var activeConn: Connection
     public var viaGroup: Int64?
     public var chatSettings: ChatSettings
+    public var userPreferences: Preferences
+    public var mergedPreferences: ContactUserPreferences
     var createdAt: Date
     var updatedAt: Date
 
@@ -526,6 +614,8 @@ public struct Contact: Identifiable, Decodable, NamedChat {
         profile: LocalProfile.sampleData,
         activeConn: Connection.sampleData,
         chatSettings: ChatSettings.defaults,
+        userPreferences: Preferences.sampleData,
+        mergedPreferences: ContactUserPreferences.sampleData,
         createdAt: .now,
         updatedAt: .now
     )
@@ -731,6 +821,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
     public var groupId: Int64
     var localDisplayName: GroupName
     public var groupProfile: GroupProfile
+    public var fullGroupPreferences: FullGroupPreferences
     public var membership: GroupMember
     public var hostConnCustomUserProfileId: Int64?
     public var chatSettings: ChatSettings
@@ -762,6 +853,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
         groupId: 1,
         localDisplayName: "team",
         groupProfile: GroupProfile.sampleData,
+        fullGroupPreferences: FullGroupPreferences.sampleData,
         membership: GroupMember.sampleData,
         hostConnCustomUserProfileId: nil,
         chatSettings: ChatSettings.defaults,
@@ -771,15 +863,17 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
 }
 
 public struct GroupProfile: Codable, NamedChat {
-    public init(displayName: String, fullName: String, image: String? = nil) {
+    public init(displayName: String, fullName: String, image: String? = nil, groupPreferences: GroupPreferences? = nil) {
         self.displayName = displayName
         self.fullName = fullName
         self.image = image
+        self.groupPreferences = groupPreferences
     }
 
     public var displayName: String
     public var fullName: String
     public var image: String?
+    public var groupPreferences: GroupPreferences?
     public var localAlias: String { "" }
 
     public static let sampleData = GroupProfile(

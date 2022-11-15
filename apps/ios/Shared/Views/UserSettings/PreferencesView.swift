@@ -10,23 +10,25 @@ import SwiftUI
 import SimpleXChat
 
 struct PreferencesView: View {
-    @State var allowFullDeletion = FeatureAllowed.yes
-    @State var allowVoice = FeatureAllowed.yes
+    @EnvironmentObject var chatModel: ChatModel
+    @State var profile: LocalProfile
+    @State var preferences: FullPreferences
+    @State var currentPreferences: FullPreferences
 
     var body: some View {
         VStack {
             List {
-                featureSection(.fullDelete, $allowFullDeletion)
-                featureSection(.voice, $allowVoice)
+                featureSection(.fullDelete, $preferences.fullDelete.allow)
+                featureSection(.voice, $preferences.voice.allow)
 
                 Section {
                     HStack {
-                        Text("Reset")
+                        Button("Reset") { preferences = currentPreferences }
                         Spacer()
-                        Text("Save")
+                        Button("Save") { savePreferences() }
                     }
                     .foregroundColor(.accentColor)
-                    .disabled(true)
+                    .disabled(currentPreferences == preferences)
                 }
                 .listRowBackground(Color.clear)
             }
@@ -48,10 +50,33 @@ struct PreferencesView: View {
                 .frame(height: 36, alignment: .topLeading)
         }
     }
+
+    private func savePreferences() {
+        Task {
+            do {
+                var p = fromLocalProfile(profile)
+                p.preferences = toPreferences(preferences)
+                if let newProfile = try await apiUpdateProfile(profile: p) {
+                    DispatchQueue.main.async {
+                        if let profileId = chatModel.currentUser?.profile.profileId {
+                            chatModel.currentUser?.profile = toLocalProfile(profileId, newProfile, "")
+                            chatModel.currentUser?.fullPreferences = preferences
+                        }
+                    }
+                }
+            } catch {
+                logger.error("PreferencesView apiUpdateProfile error: \(responseError(error))")
+            }
+        }
+    }
 }
 
 struct PreferencesView_Previews: PreviewProvider {
     static var previews: some View {
-        PreferencesView()
+        PreferencesView(
+            profile: LocalProfile(profileId: 1, displayName: "alice", fullName: "", localAlias: ""),
+            preferences: FullPreferences.sampleData,
+            currentPreferences: FullPreferences.sampleData
+        )
     }
 }
