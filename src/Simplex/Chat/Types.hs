@@ -66,6 +66,7 @@ data User = User
     userContactId :: ContactId,
     localDisplayName :: ContactName,
     profile :: LocalProfile,
+    fullPreferences :: FullPreferences,
     activeUser :: Bool
   }
   deriving (Show, Generic, FromJSON)
@@ -87,6 +88,7 @@ data Contact = Contact
     contactUsed :: Bool,
     chatSettings :: ChatSettings,
     userPreferences :: Preferences,
+    mergedPreferences :: ContactUserPreferences,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
@@ -100,13 +102,10 @@ contactConn :: Contact -> Connection
 contactConn = activeConn
 
 contactConnId :: Contact -> ConnId
-contactConnId Contact {activeConn} = aConnId activeConn
+contactConnId = aConnId . contactConn
 
 contactConnIncognito :: Contact -> Bool
-contactConnIncognito = isJust . customUserProfileId'
-
-customUserProfileId' :: Contact -> Maybe Int64
-customUserProfileId' Contact {activeConn} = customUserProfileId (activeConn :: Connection)
+contactConnIncognito = connIncognito . contactConn
 
 data ContactRef = ContactRef
   { contactId :: ContactId,
@@ -207,6 +206,7 @@ data GroupInfo = GroupInfo
   { groupId :: GroupId,
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
+    fullGroupPreferences :: FullGroupPreferences,
     membership :: GroupMember,
     hostConnCustomUserProfileId :: Maybe ProfileId,
     chatSettings :: ChatSettings,
@@ -293,6 +293,39 @@ data Preferences = Preferences
   }
   deriving (Eq, Show, Generic, FromJSON)
 
+instance ToJSON Preferences where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+instance ToField Preferences where
+  toField = toField . encodeJSON
+
+instance FromField Preferences where
+  fromField = fromTextField_ decodeJSON
+
+groupPrefSel :: ChatFeature -> GroupPreferences -> Maybe GroupPreference
+groupPrefSel = \case
+  CFFullDelete -> fullDelete
+  -- CFReceipts -> receipts
+  CFVoice -> voice
+
+class GroupPreferenceI p where
+  getGroupPreference :: ChatFeature -> p -> GroupPreference
+
+instance GroupPreferenceI GroupPreferences where
+  getGroupPreference pt prefs = fromMaybe (getGroupPreference pt defaultGroupPrefs) (groupPrefSel pt prefs)
+
+instance GroupPreferenceI (Maybe GroupPreferences) where
+  getGroupPreference pt prefs = fromMaybe (getGroupPreference pt defaultGroupPrefs) (groupPrefSel pt =<< prefs)
+
+instance GroupPreferenceI FullGroupPreferences where
+  getGroupPreference = \case
+    CFFullDelete -> fullDelete
+    -- CFReceipts -> receipts
+    CFVoice -> voice
+  {-# INLINE getGroupPreference #-}
+
+-- collection of optional group preferences
 data GroupPreferences = GroupPreferences
   { fullDelete :: Maybe GroupPreference,
     -- receipts :: Maybe GroupPreference,
@@ -317,7 +350,20 @@ data FullPreferences = FullPreferences
     -- receipts :: Preference,
     voice :: Preference
   }
-  deriving (Eq)
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON FullPreferences where toEncoding = J.genericToEncoding J.defaultOptions
+
+-- full collection of group preferences defined in the app - it is used to ensure we include all preferences and to simplify processing
+-- if some of the preferences are not defined in GroupPreferences, defaults from defaultGroupPrefs are used here.
+data FullGroupPreferences = FullGroupPreferences
+  { fullDelete :: GroupPreference,
+    -- receipts :: GroupPreference,
+    voice :: GroupPreference
+  }
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON FullGroupPreferences where toEncoding = J.genericToEncoding J.defaultOptions
 
 -- merged preferences of user for a given contact - they differentiate between specific preferences for the contact and global user preferences
 data ContactUserPreferences = ContactUserPreferences
@@ -325,17 +371,17 @@ data ContactUserPreferences = ContactUserPreferences
     -- receipts :: ContactUserPreference,
     voice :: ContactUserPreference
   }
-  deriving (Show, Generic)
+  deriving (Eq, Show, Generic)
 
 data ContactUserPreference = ContactUserPreference
   { enabled :: PrefEnabled,
     userPreference :: ContactUserPref,
     contactPreference :: Preference
   }
-  deriving (Show, Generic)
+  deriving (Eq, Show, Generic)
 
 data ContactUserPref = CUPContact {preference :: Preference} | CUPUser {preference :: Preference}
-  deriving (Show, Generic)
+  deriving (Eq, Show, Generic)
 
 instance ToJSON ContactUserPreferences where toEncoding = J.genericToEncoding J.defaultOptions
 
@@ -364,25 +410,23 @@ defaultChatPrefs =
 emptyChatPrefs :: Preferences
 emptyChatPrefs = Preferences Nothing Nothing
 
-instance ToJSON Preferences where
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
-
-instance ToField Preferences where
-  toField = toField . encodeJSON
-
-instance FromField Preferences where
-  fromField = fromTextField_ decodeJSON
+defaultGroupPrefs :: FullGroupPreferences
+defaultGroupPrefs =
+  FullGroupPreferences
+    { fullDelete = GroupPreference {enable = FEOff},
+      -- receipts = GroupPreference {enable = FEOff},
+      voice = GroupPreference {enable = FEOn}
+    }
 
 data Preference = Preference
   {allow :: FeatureAllowed}
   deriving (Eq, Show, Generic, FromJSON)
 
+instance ToJSON Preference where toEncoding = J.genericToEncoding J.defaultOptions
+
 data GroupPreference = GroupPreference
   {enable :: GroupFeatureEnabled}
   deriving (Eq, Show, Generic, FromJSON)
-
-instance ToJSON Preference where toEncoding = J.genericToEncoding J.defaultOptions
 
 instance ToJSON GroupPreference where toEncoding = J.genericToEncoding J.defaultOptions
 
@@ -390,9 +434,6 @@ data FeatureAllowed
   = FAAlways -- allow unconditionally
   | FAYes -- allow, if peer allows it
   | FANo -- do not allow
-  deriving (Eq, Show, Generic)
-
-data GroupFeatureEnabled = FEOn | FEOff
   deriving (Eq, Show, Generic)
 
 instance FromField FeatureAllowed where fromField = fromBlobField_ strDecode
@@ -417,6 +458,9 @@ instance FromJSON FeatureAllowed where
 instance ToJSON FeatureAllowed where
   toJSON = strToJSON
   toEncoding = strToJEncoding
+
+data GroupFeatureEnabled = FEOn | FEOff
+  deriving (Eq, Show, Generic)
 
 instance FromField GroupFeatureEnabled where fromField = fromBlobField_ strDecode
 
@@ -452,12 +496,25 @@ mergePreferences contactPrefs userPreferences =
        in fromMaybe (getPreference pt defaultChatPrefs) $ (contactPrefs >>= sel) <|> (userPreferences >>= sel)
 
 mergeUserChatPrefs :: User -> Contact -> FullPreferences
-mergeUserChatPrefs user ct =
-  let userPrefs = if contactConnIncognito ct then Nothing else preferences' user
-   in mergePreferences (Just $ userPreferences ct) userPrefs
+mergeUserChatPrefs user ct = mergeUserChatPrefs' user (contactConnIncognito ct) (userPreferences ct)
+
+mergeUserChatPrefs' :: User -> Bool -> Preferences -> FullPreferences
+mergeUserChatPrefs' user connectedIncognito userPreferences =
+  let userPrefs = if connectedIncognito then Nothing else preferences' user
+   in mergePreferences (Just userPreferences) userPrefs
+
+mergeGroupPreferences :: Maybe GroupPreferences -> FullGroupPreferences
+mergeGroupPreferences groupPreferences =
+  FullGroupPreferences
+    { fullDelete = pref CFFullDelete,
+      -- receipts = pref CFReceipts,
+      voice = pref CFVoice
+    }
+  where
+    pref pt = fromMaybe (getGroupPreference pt defaultGroupPrefs) (groupPreferences >>= groupPrefSel pt)
 
 data PrefEnabled = PrefEnabled {forUser :: Bool, forContact :: Bool}
-  deriving (Show, Generic)
+  deriving (Eq, Show, Generic)
 
 instance ToJSON PrefEnabled where
   toJSON = J.genericToJSON J.defaultOptions
@@ -471,8 +528,8 @@ prefEnabled Preference {allow = user} Preference {allow = contact} = case (user,
   (FANo, _) -> PrefEnabled False False
   _ -> PrefEnabled True True
 
-contactUserPreferences :: User -> Contact -> ContactUserPreferences
-contactUserPreferences user ct =
+contactUserPreferences :: User -> Preferences -> Maybe Preferences -> Bool -> ContactUserPreferences
+contactUserPreferences user userPreferences contactPreferences connectedIncognito =
   ContactUserPreferences
     { fullDelete = pref CFFullDelete,
       -- receipts = pref CFReceipts,
@@ -483,19 +540,19 @@ contactUserPreferences user ct =
       ContactUserPreference
         { enabled = prefEnabled userPref ctPref,
           -- incognito contact cannot have default user preference used
-          userPreference = if contactConnIncognito ct then CUPContact ctUserPref else maybe (CUPUser userPref) CUPContact ctUserPref_,
+          userPreference = if connectedIncognito then CUPContact ctUserPref else maybe (CUPUser userPref) CUPContact ctUserPref_,
           contactPreference = ctPref
         }
       where
-        ctUserPref = getPreference pt $ userPreferences ct
-        ctUserPref_ = chatPrefSel pt $ userPreferences ct
+        ctUserPref = getPreference pt userPreferences
+        ctUserPref_ = chatPrefSel pt userPreferences
         userPref = getPreference pt ctUserPrefs
         ctPref = getPreference pt ctPrefs
-    ctUserPrefs = mergeUserChatPrefs user ct
-    ctPrefs = mergePreferences (preferences' ct) Nothing
+    ctUserPrefs = mergeUserChatPrefs' user connectedIncognito userPreferences
+    ctPrefs = mergePreferences contactPreferences Nothing
 
-getContactUserPrefefence :: ChatFeature -> ContactUserPreferences -> ContactUserPreference
-getContactUserPrefefence = \case
+getContactUserPreference :: ChatFeature -> ContactUserPreferences -> ContactUserPreference
+getContactUserPreference = \case
   CFFullDelete -> fullDelete
   -- CFReceipts -> receipts
   CFVoice -> voice
@@ -1143,6 +1200,9 @@ data Connection = Connection
 
 aConnId :: Connection -> ConnId
 aConnId Connection {agentConnId = AgentConnId cId} = cId
+
+connIncognito :: Connection -> Bool
+connIncognito Connection {customUserProfileId} = isJust customUserProfileId
 
 instance ToJSON Connection where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}

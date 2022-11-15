@@ -32,9 +32,9 @@ activeUserExists = "{\"resp\":{\"type\":\"chatCmdError\",\"chatError\":{\"type\"
 
 activeUser :: String
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-activeUser = "{\"resp\":{\"activeUser\":{\"user\":{\"userId\":1,\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"activeUser\":true}}}}"
+activeUser = "{\"resp\":{\"activeUser\":{\"user\":{\"userId\":1,\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"fullDelete\":{\"allow\":\"no\"},\"voice\":{\"allow\":\"yes\"}},\"activeUser\":true}}}"
 #else
-activeUser = "{\"resp\":{\"type\":\"activeUser\",\"user\":{\"userId\":1,\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"activeUser\":true}}}"
+activeUser = "{\"resp\":{\"type\":\"activeUser\",\"user\":{\"userId\":1,\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"fullDelete\":{\"allow\":\"no\"},\"voice\":{\"allow\":\"yes\"}},\"activeUser\":true}}}"
 #endif
 
 chatStarted :: String
