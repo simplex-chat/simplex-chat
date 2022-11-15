@@ -327,7 +327,7 @@ msgContentText = \case
   MCLink {text} -> text
   MCImage {text} -> text
   MCVoice {text, duration} ->
-    if T.null text then msg else text <> "; " <> msg
+    if T.null text then msg else msg <> "; " <> text
     where
       msg = "voice message " <> durationText duration <> "s"
   MCFile t -> t
