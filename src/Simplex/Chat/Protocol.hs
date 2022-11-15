@@ -329,7 +329,7 @@ msgContentText = \case
   MCVoice {text, duration} ->
     if T.null text then msg else msg <> "; " <> text
     where
-      msg = "voice message " <> durationText duration <> "s"
+      msg = "voice message " <> durationText duration
   MCFile t -> t
   MCUnknown {text} -> text
 
@@ -338,7 +338,7 @@ durationText duration =
   let (mins, secs) = duration `divMod` 60 in T.pack $ "(" <> with0 mins <> ":" <> with0 secs <> ")"
   where
     with0 n
-      | n < 9 = '0' : show n
+      | n <= 9 = '0' : show n
       | otherwise = show n
 
 msgContentTag :: MsgContent -> MsgContentTag
