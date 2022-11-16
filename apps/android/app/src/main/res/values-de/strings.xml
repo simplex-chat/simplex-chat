@@ -210,7 +210,7 @@
 
   <!-- Voice messages -->
   <string name="voice_message">***Voice message</string>
-  <string name="voice_message_send_text">Voice message…</string>
+  <string name="voice_message_send_text">***Voice message…</string>
 
   <!-- Chat Info Settings - ChatInfoView.kt -->
   <string name="notifications">Benachrichtigungen</string>
