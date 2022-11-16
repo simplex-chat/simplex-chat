@@ -207,7 +207,10 @@
     <string name="file_saved">Файл сохранен</string>
     <string name="file_not_found">Файл не найден</string>
     <string name="error_saving_file">Ошибка сохранения файла</string>
+
+    <!-- Voice messages -->
     <string name="voice_message">Голосовое сообщение</string>
+    <string name="voice_message_send_text">Голосовое сообщение…</string>
 
     <!-- Chat Info Settings - ChatInfoView.kt -->
     <string name="notifications">Уведомления</string>

@@ -293,9 +293,9 @@ private fun NativeKeyboard(
   }
   if (composeState.value.preview is ComposePreview.AudioPreview) {
     Text(
-      generalGetString(R.string.voice_message),
+      generalGetString(R.string.voice_message_send_text),
       Modifier.padding(padding),
-      color = textColor,
+      color = HighOrLowlight,
       style = textStyle.value.copy(fontStyle = FontStyle.Italic)
     )
   }
