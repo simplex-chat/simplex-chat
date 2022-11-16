@@ -22,15 +22,10 @@ struct PreferencesView: View {
                 featureSection(.voice, $preferences.voice.allow)
 
                 Section {
-                    HStack {
-                        Button("Reset") { preferences = currentPreferences }
-                        Spacer()
-                        Button("Save") { savePreferences() }
-                    }
-                    .foregroundColor(.accentColor)
-                    .disabled(currentPreferences == preferences)
+                    Button("Reset", role: .destructive) { preferences = currentPreferences }
+                    Button("Save (and notify contacts)") { savePreferences() }
                 }
-                .listRowBackground(Color.clear)
+                .disabled(currentPreferences == preferences)
             }
         }
     }
@@ -62,6 +57,7 @@ struct PreferencesView: View {
                             chatModel.currentUser?.profile = toLocalProfile(profileId, newProfile, "")
                             chatModel.currentUser?.fullPreferences = preferences
                         }
+                        currentPreferences = preferences
                     }
                 }
             } catch {
