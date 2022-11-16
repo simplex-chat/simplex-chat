@@ -52,7 +52,9 @@ struct GroupChatInfoView: View {
                         .navigationBarTitle("Group preferences")
                         .navigationBarTitleDisplayMode(.large)
                     } label: {
-                        Text("Group preferences")
+                        settingsRow("switch.2") {
+                            Text("Group preferences")
+                        }
                     }
                 } header: {
                     Text("Preferences")

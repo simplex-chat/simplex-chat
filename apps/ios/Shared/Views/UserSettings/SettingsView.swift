@@ -103,30 +103,15 @@ struct SettingsView: View {
                     .disabled(chatModel.chatRunning != true)
 
                     NavigationLink {
-                        DatabaseView(showSettings: $showSettings, chatItemTTL: chatModel.chatItemTTL)
-                            .navigationTitle("Your chat database")
-                    } label: {
-                        let color: Color = chatModel.chatDbEncrypted == false ? .orange : .secondary
-                        settingsRow("internaldrive", color: color) {
-                            HStack {
-                                Text("Database passphrase & export")
-                                Spacer()
-                                if chatModel.chatRunning == false {
-                                    Image(systemName: "exclamationmark.octagon.fill").foregroundColor(.red)
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                Section("Settings") {
-                    NavigationLink {
                         PreferencesView(profile: user.profile, preferences: user.fullPreferences, currentPreferences: user.fullPreferences)
                             .navigationTitle("Your preferences")
                     } label: {
-                        settingsRow("list.bullet") { Text("Chat preferences") }
+                        settingsRow("switch.2") { Text("Chat preferences") }
                     }
-
+                    .disabled(chatModel.chatRunning != true)
+                }
+                
+                Section("Settings") {
                     NavigationLink {
                         NotificationsView()
                             .navigationTitle("Notifications")
@@ -135,6 +120,12 @@ struct SettingsView: View {
                             notificationsIcon()
                             Text("Notifications")
                         }
+                    }
+                    NavigationLink {
+                        NetworkAndServers()
+                            .navigationTitle("Network & servers")
+                    } label: {
+                        settingsRow("externaldrive.connected.to.line.below") { Text("Network & servers") }
                     }
                     NavigationLink {
                         CallSettings()
@@ -156,12 +147,7 @@ struct SettingsView: View {
                             settingsRow("sun.max") { Text("Appearance") }
                         }
                     }
-                    NavigationLink {
-                        NetworkAndServers()
-                            .navigationTitle("Network & servers")
-                    } label: {
-                        settingsRow("externaldrive.connected.to.line.below") { Text("Network & servers") }
-                    }
+                    chatDatabaseRow()
                 }
                 .disabled(chatModel.chatRunning != true)
 
@@ -281,6 +267,24 @@ struct SettingsView: View {
                 }
             }
             .padding(.leading, indent)
+        }
+    }
+    
+    private func chatDatabaseRow() -> some View {
+        NavigationLink {
+            DatabaseView(showSettings: $showSettings, chatItemTTL: chatModel.chatItemTTL)
+                .navigationTitle("Your chat database")
+        } label: {
+            let color: Color = chatModel.chatDbEncrypted == false ? .orange : .secondary
+            settingsRow("internaldrive", color: color) {
+                HStack {
+                    Text("Database passphrase & export")
+                    Spacer()
+                    if chatModel.chatRunning == false {
+                        Image(systemName: "exclamationmark.octagon.fill").foregroundColor(.red)
+                    }
+                }
+            }
         }
     }
 
