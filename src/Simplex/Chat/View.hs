@@ -18,6 +18,7 @@ import Data.Char (toUpper)
 import Data.Function (on)
 import Data.Int (Int64)
 import Data.List (groupBy, intercalate, intersperse, partition, sortOn)
+import qualified Data.List.NonEmpty as L
 import Data.Maybe (isJust, isNothing, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -37,6 +38,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Store (AutoAccept (..), StoreError (..), UserContactLink (..))
 import Simplex.Chat.Styled
 import Simplex.Chat.Types
+import Simplex.Messaging.Agent.Client (SMPTestFailure (..), SMPTestStep (..))
 import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..))
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Crypto as C
@@ -64,7 +66,8 @@ responseToView user_ testView ts = \case
   CRApiChats chats -> if testView then testViewChats chats else [plain . bshow $ J.encode chats]
   CRApiChat chat -> if testView then testViewChat chat else [plain . bshow $ J.encode chat]
   CRApiParsedMarkdown ft -> [plain . bshow $ J.encode ft]
-  CRUserSMPServers smpServers -> viewSMPServers smpServers testView
+  CRUserSMPServers smpServers _ -> viewSMPServers (L.toList smpServers) testView
+  CRSmpTestResult testFailure -> viewSMPTestResult testFailure
   CRChatItemTTL ttl -> viewChatItemTTL ttl
   CRNetworkConfig cfg -> viewNetworkConfig cfg
   CRContactInfo ct cStats customUserProfile -> viewContactInfo ct cStats customUserProfile
@@ -620,15 +623,16 @@ viewUserProfile Profile {displayName, fullName} =
     "(the updated profile will be sent to all your contacts)"
   ]
 
-viewSMPServers :: [SMPServerWithAuth] -> Bool -> [StyledString]
+viewSMPServers :: [ServerCfg] -> Bool -> [StyledString]
 viewSMPServers smpServers testView =
   if testView
     then [customSMPServers]
     else
       [ customSMPServers,
         "",
-        "use " <> highlight' "/smp_servers <srv1[,srv2,...]>" <> " to switch to custom SMP servers",
-        "use " <> highlight' "/smp_servers default" <> " to remove custom SMP servers and use default",
+        "use " <> highlight' "/smp test <srv>" <> " to test SMP server connection",
+        "use " <> highlight' "/smp set <srv1[,srv2,...]>" <> " to switch to custom SMP servers",
+        "use " <> highlight' "/smp default" <> " to remove custom SMP servers and use default",
         "(chat option " <> highlight' "-s" <> " (" <> highlight' "--server" <> ") has precedence over saved SMP servers for chat session)"
       ]
   where
@@ -636,6 +640,16 @@ viewSMPServers smpServers testView =
       if null smpServers
         then "no custom SMP servers saved"
         else viewServers smpServers
+
+viewSMPTestResult :: Maybe SMPTestFailure -> [StyledString]
+viewSMPTestResult = \case
+  Just SMPTestFailure {testStep, testError} ->
+    result
+      <> ["Server requires authentication to create queues, check password" | testStep == TSCreateQueue && testError == SMP SMP.AUTH]
+      <> ["Possibly, certificate fingerprint in server address is incorrect" | testStep == TSConnect && testError == BROKER NETWORK]
+    where
+      result = ["SMP server test failed at " <> plain (drop 2 $ show testStep) <> ", error: " <> plain (strEncode testError)]
+  _ -> ["SMP server test passed"]
 
 viewChatItemTTL :: Maybe Int64 -> [StyledString]
 viewChatItemTTL = \case
@@ -652,7 +666,7 @@ viewNetworkConfig :: NetworkConfig -> [StyledString]
 viewNetworkConfig NetworkConfig {socksProxy, tcpTimeout} =
   [ plain $ maybe "direct network connection" (("using SOCKS5 proxy " <>) . show) socksProxy,
     "TCP timeout: " <> sShow tcpTimeout,
-    "use `/network socks=<on/off/[ipv4]:port>[ timeout=<seconds>]` to change settings"
+    "use " <> highlight' "/network socks=<on/off/[ipv4]:port>[ timeout=<seconds>]" <> " to change settings"
   ]
 
 viewContactInfo :: Contact -> ConnectionStats -> Maybe Profile -> [StyledString]
@@ -677,8 +691,8 @@ viewConnectionStats ConnectionStats {rcvServers, sndServers} =
   ["receiving messages via: " <> viewServerHosts rcvServers | not $ null rcvServers]
     <> ["sending messages via: " <> viewServerHosts sndServers | not $ null sndServers]
 
-viewServers :: [SMPServerWithAuth] -> StyledString
-viewServers = plain . intercalate ", " . map (B.unpack . strEncode)
+viewServers :: [ServerCfg] -> StyledString
+viewServers = plain . intercalate ", " . map (B.unpack . strEncode . (\ServerCfg {server} -> server))
 
 viewServerHosts :: [SMPServer] -> StyledString
 viewServerHosts = plain . intercalate ", " . map showSMPServer

@@ -319,6 +319,17 @@ func setUserSMPServers(smpServers: [String]) async throws {
     try await sendCommandOkResp(.setUserSMPServers(smpServers: smpServers))
 }
 
+func testSMPServer(smpServer: String) async throws -> Result<(), SMPTestFailure> {
+    let r = await chatSendCmd(.testSMPServer(smpServer: smpServer))
+    if case let .sMPTestResult(testFailure) = r {
+        if let t = testFailure {
+            return .failure(t)
+        }
+        return .success(())
+    }
+    throw r
+}
+
 func getChatItemTTL() throws -> ChatItemTTL {
     let r = chatSendCmdSync(.apiGetChatItemTTL)
     if case let .chatItemTTL(chatItemTTL) = r { return ChatItemTTL(chatItemTTL) }

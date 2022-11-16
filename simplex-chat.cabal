@@ -62,6 +62,7 @@ library
       Simplex.Chat.Migrations.M20221025_chat_settings
       Simplex.Chat.Migrations.M20221029_group_link_id
       Simplex.Chat.Migrations.M20221112_server_password
+      Simplex.Chat.Migrations.M20221115_server_cfg
       Simplex.Chat.Mobile
       Simplex.Chat.Options
       Simplex.Chat.ProfileGenerator

@@ -44,6 +44,7 @@ import GHC.Generics (Generic)
 import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, fromTextField_, sumTypeJSON, taggedObjectJSON)
+import Simplex.Messaging.Protocol (SMPServerWithAuth)
 import Simplex.Messaging.Util (safeDecodeUtf8, (<$?>))
 
 class IsContact a where
@@ -1449,3 +1450,18 @@ encodeJSON = safeDecodeUtf8 . LB.toStrict . J.encode
 
 decodeJSON :: FromJSON a => Text -> Maybe a
 decodeJSON = J.decode . LB.fromStrict . encodeUtf8
+
+data ServerCfg = ServerCfg
+  { server :: SMPServerWithAuth,
+    preset :: Bool,
+    tested :: Maybe Bool,
+    enabled :: Bool
+  }
+  deriving (Show, Generic)
+
+instance ToJSON ServerCfg where
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+
+instance FromJSON ServerCfg where
+  parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}

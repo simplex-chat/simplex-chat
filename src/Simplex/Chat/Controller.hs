@@ -23,6 +23,7 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (ord)
 import Data.Int (Int64)
+import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
 import Data.String
 import Data.Text (Text)
@@ -39,7 +40,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Store (AutoAccept, StoreError, UserContactLink)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent (AgentClient)
-import Simplex.Messaging.Agent.Client (AgentLocks)
+import Simplex.Messaging.Agent.Client (AgentLocks, SMPTestFailure)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, InitialAgentServers, NetworkConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
@@ -186,7 +187,8 @@ data ChatCommand
   | APIDeleteGroupLink GroupId
   | APIGetGroupLink GroupId
   | GetUserSMPServers
-  | SetUserSMPServers [SMPServerWithAuth]
+  | SetUserSMPServers SMPServersConfig
+  | TestSMPServer SMPServerWithAuth
   | APISetChatItemTTL (Maybe Int64)
   | APIGetChatItemTTL
   | APISetNetworkConfig NetworkConfig
@@ -261,7 +263,8 @@ data ChatResponse
   | CRApiChat {chat :: AChat}
   | CRLastMessages {chatItems :: [AChatItem]}
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
-  | CRUserSMPServers {smpServers :: [SMPServerWithAuth]}
+  | CRUserSMPServers {smpServers :: NonEmpty ServerCfg, presetSMPServers :: NonEmpty SMPServerWithAuth}
+  | CRSmpTestResult {smpTestFailure :: Maybe SMPTestFailure}
   | CRChatItemTTL {chatItemTTL :: Maybe Int64}
   | CRNetworkConfig {networkConfig :: NetworkConfig}
   | CRContactInfo {contact :: Contact, connectionStats :: ConnectionStats, customUserProfile :: Maybe Profile}
@@ -383,6 +386,9 @@ instance ToJSON ChatResponse where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CR"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
 
+data SMPServersConfig = SMPServersConfig {smpServers :: [ServerCfg]}
+  deriving (Show, Generic, FromJSON)
+
 data ArchiveConfig = ArchiveConfig {archivePath :: FilePath, disableCompression :: Maybe Bool, parentTempDirectory :: Maybe FilePath}
   deriving (Show, Generic, FromJSON)
 
@@ -464,6 +470,24 @@ data SwitchProgress = SwitchProgress
   deriving (Show, Generic)
 
 instance ToJSON SwitchProgress where toEncoding = J.genericToEncoding J.defaultOptions
+
+data ParsedServerAddress = ParsedServerAddress
+  { serverAddress :: Maybe ServerAddress,
+    parseError :: String
+  }
+  deriving (Show, Generic)
+
+instance ToJSON ParsedServerAddress where toEncoding = J.genericToEncoding J.defaultOptions
+
+data ServerAddress = ServerAddress
+  { hostnames :: NonEmpty String,
+    port :: String,
+    keyHash :: String,
+    basicAuth :: String
+  }
+  deriving (Show, Generic)
+
+instance ToJSON ServerAddress where toEncoding = J.genericToEncoding J.defaultOptions
 
 data ChatError
   = ChatError {errorType :: ChatErrorType}
