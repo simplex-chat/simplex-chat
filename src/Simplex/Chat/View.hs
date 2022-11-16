@@ -18,6 +18,7 @@ import Data.Char (toUpper)
 import Data.Function (on)
 import Data.Int (Int64)
 import Data.List (groupBy, intercalate, intersperse, partition, sortOn)
+import qualified Data.List.NonEmpty as L
 import Data.Maybe (isJust, isNothing, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -65,8 +66,8 @@ responseToView user_ testView ts = \case
   CRApiChats chats -> if testView then testViewChats chats else [plain . bshow $ J.encode chats]
   CRApiChat chat -> if testView then testViewChat chat else [plain . bshow $ J.encode chat]
   CRApiParsedMarkdown ft -> [plain . bshow $ J.encode ft]
-  CRUserSMPServers smpServers -> viewSMPServers smpServers testView
-  CRSMPTestResult testFailure -> viewSMPTestResult testFailure
+  CRUserSMPServers smpServers _ -> viewSMPServers (L.toList smpServers) testView
+  CRSmpTestResult testFailure -> viewSMPTestResult testFailure
   CRChatItemTTL ttl -> viewChatItemTTL ttl
   CRNetworkConfig cfg -> viewNetworkConfig cfg
   CRContactInfo ct cStats customUserProfile -> viewContactInfo ct cStats customUserProfile
@@ -622,7 +623,7 @@ viewUserProfile Profile {displayName, fullName} =
     "(the updated profile will be sent to all your contacts)"
   ]
 
-viewSMPServers :: [SMPServerWithAuth] -> Bool -> [StyledString]
+viewSMPServers :: [ServerCfg] -> Bool -> [StyledString]
 viewSMPServers smpServers testView =
   if testView
     then [customSMPServers]
@@ -690,8 +691,8 @@ viewConnectionStats ConnectionStats {rcvServers, sndServers} =
   ["receiving messages via: " <> viewServerHosts rcvServers | not $ null rcvServers]
     <> ["sending messages via: " <> viewServerHosts sndServers | not $ null sndServers]
 
-viewServers :: [SMPServerWithAuth] -> StyledString
-viewServers = plain . intercalate ", " . map (B.unpack . strEncode)
+viewServers :: [ServerCfg] -> StyledString
+viewServers = plain . intercalate ", " . map (B.unpack . strEncode . (\ServerCfg {server} -> server))
 
 viewServerHosts :: [SMPServer] -> StyledString
 viewServerHosts = plain . intercalate ", " . map showSMPServer

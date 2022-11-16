@@ -133,13 +133,14 @@ createChatDatabase filePrefix key yesToMigrations = do
 
 newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> IO ChatController
 newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agentConfig = aCfg, tbqSize, defaultServers} ChatOpts {smpServers, networkConfig, logConnections, logServerHosts} sendToast = do
-  let config = cfg {subscriptionEvents = logConnections, hostEvents = logServerHosts}
+  servers <- resolveServers defaultServers
+  let servers' = servers {netCfg = networkConfig}
+      config = cfg {subscriptionEvents = logConnections, hostEvents = logServerHosts, defaultServers = servers'}
       sendNotification = fromMaybe (const $ pure ()) sendToast
       firstTime = dbNew chatStore
   activeTo <- newTVarIO ActiveNone
   currentUser <- newTVarIO user
-  servers <- resolveServers defaultServers
-  smpAgent <- getSMPAgentClient aCfg {database = AgentDB agentStore} servers {netCfg = networkConfig}
+  smpAgent <- getSMPAgentClient aCfg {database = AgentDB agentStore} servers'
   agentAsync <- newTVarIO Nothing
   idsDrg <- newTVarIO =<< drgNew
   inputQ <- newTBQueueIO tbqSize
@@ -157,13 +158,20 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, incognitoMode, filesFolder, expireCIsAsync, expireCIs}
   where
     resolveServers :: InitialAgentServers -> IO InitialAgentServers
-    resolveServers ss@InitialAgentServers {smp = defaultSMPServers} = case nonEmpty smpServers of
-      Just smpServers' -> pure ss {smp = smpServers'}
+    resolveServers ss = case nonEmpty smpServers of
+      Just smpServers' -> pure ss {smp = L.map (\ServerCfg {server} -> server) smpServers'}
       _ -> case user of
-        Just usr -> do
-          userSmpServers <- withTransaction chatStore (`getSMPServers` usr)
-          pure ss {smp = fromMaybe defaultSMPServers $ nonEmpty userSmpServers}
+        Just user' -> do
+          userSmpServers <- withTransaction chatStore (`getSMPServers` user')
+          pure ss {smp = activeAgentServers cfg userSmpServers}
         _ -> pure ss
+
+activeAgentServers :: ChatConfig -> [ServerCfg] -> NonEmpty SMPServerWithAuth
+activeAgentServers ChatConfig {defaultServers = InitialAgentServers {smp = defaultSMPServers}} =
+  fromMaybe defaultSMPServers
+    . nonEmpty
+    . map (\ServerCfg {server} -> server)
+    . filter (\ServerCfg {enabled} -> enabled)
 
 startChatController :: (MonadUnliftIO m, MonadReader ChatController m) => User -> Bool -> Bool -> m (Async ())
 startChatController user subConns enableExpireCIs = do
@@ -669,13 +677,19 @@ processChatCommand = \case
         msgTs' = systemToUTCTime . (SMP.msgTs :: SMP.NMsgMeta -> SystemTime) <$> ntfMsgMeta
     connEntity <- withStore (\db -> Just <$> getConnectionEntity db user (AgentConnId ntfConnId)) `catchError` \_ -> pure Nothing
     pure CRNtfMessages {connEntity, msgTs = msgTs', ntfMessages}
-  GetUserSMPServers -> CRUserSMPServers <$> withUser (\user -> withStore' (`getSMPServers` user))
-  SetUserSMPServers smpServers -> withUser $ \user -> withChatLock "setUserSMPServers" $ do
-    withStore $ \db -> overwriteSMPServers db user smpServers
+  GetUserSMPServers -> do
     ChatConfig {defaultServers = InitialAgentServers {smp = defaultSMPServers}} <- asks config
-    withAgent $ \a -> setSMPServers a (fromMaybe defaultSMPServers (nonEmpty smpServers))
+    smpServers <- withUser (\user -> withStore' (`getSMPServers` user))
+    let smpServers' = fromMaybe (L.map toServerCfg defaultSMPServers) $ nonEmpty smpServers
+    pure $ CRUserSMPServers smpServers' defaultSMPServers
+    where
+      toServerCfg server = ServerCfg {server, preset = True, tested = Nothing, enabled = True}
+  SetUserSMPServers (SMPServersConfig smpServers) -> withUser $ \user -> withChatLock "setUserSMPServers" $ do
+    withStore $ \db -> overwriteSMPServers db user smpServers
+    cfg <- asks config
+    withAgent $ \a -> setSMPServers a $ activeAgentServers cfg smpServers
     pure CRCmdOk
-  TestSMPServer smpServer -> CRSMPTestResult <$> withAgent (`testSMPServerConnection` smpServer)
+  TestSMPServer smpServer -> CRSmpTestResult <$> withAgent (`testSMPServerConnection` smpServer)
   APISetChatItemTTL newTTL_ -> withUser' $ \user ->
     checkStoreNotChanged $
       withChatLock "setChatItemTTL" $ do
@@ -3201,12 +3215,14 @@ chatCommandP =
       "/_remove #" *> (APIRemoveMember <$> A.decimal <* A.space <*> A.decimal),
       "/_leave #" *> (APILeaveGroup <$> A.decimal),
       "/_members #" *> (APIListMembers <$> A.decimal),
-      "/smp_servers default" $> SetUserSMPServers [],
-      "/smp_servers " *> (SetUserSMPServers <$> smpServersP),
+      -- /smp_servers is deprecated, use /smp and /_smp
+      "/smp_servers default" $> SetUserSMPServers (SMPServersConfig []),
+      "/smp_servers " *> (SetUserSMPServers . SMPServersConfig <$> smpServersP),
       "/smp_servers" $> GetUserSMPServers,
-      "/smp default" $> SetUserSMPServers [],
+      "/smp default" $> SetUserSMPServers (SMPServersConfig []),
       "/smp test " *> (TestSMPServer <$> strP),
-      "/smp " *> (SetUserSMPServers <$> smpServersP),
+      "/_smp " *> (SetUserSMPServers <$> jsonP),
+      "/smp " *> (SetUserSMPServers . SMPServersConfig <$> smpServersP),
       "/smp" $> GetUserSMPServers,
       "/_ttl " *> (APISetChatItemTTL <$> ciTTLDecimal),
       "/ttl " *> (APISetChatItemTTL <$> ciTTL),
