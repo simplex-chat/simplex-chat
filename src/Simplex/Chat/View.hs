@@ -18,6 +18,7 @@ import Data.Char (toUpper)
 import Data.Function (on)
 import Data.Int (Int64)
 import Data.List (groupBy, intercalate, intersperse, partition, sortOn)
+import qualified Data.List.NonEmpty as L
 import Data.Maybe (isJust, isNothing, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -65,7 +66,7 @@ responseToView user_ testView ts = \case
   CRApiChats chats -> if testView then testViewChats chats else [plain . bshow $ J.encode chats]
   CRApiChat chat -> if testView then testViewChat chat else [plain . bshow $ J.encode chat]
   CRApiParsedMarkdown ft -> [plain . bshow $ J.encode ft]
-  CRUserSMPServers smpServers _ -> viewSMPServers smpServers testView
+  CRUserSMPServers smpServers _ -> viewSMPServers (L.toList smpServers) testView
   CRSmpTestResult testFailure -> viewSMPTestResult testFailure
   CRChatItemTTL ttl -> viewChatItemTTL ttl
   CRNetworkConfig cfg -> viewNetworkConfig cfg

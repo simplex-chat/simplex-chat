@@ -678,7 +678,11 @@ processChatCommand = \case
     pure CRNtfMessages {connEntity, msgTs = msgTs', ntfMessages}
   GetUserSMPServers -> do
     ChatConfig {defaultServers = InitialAgentServers {smp = defaultSMPServers}} <- asks config
-    (`CRUserSMPServers` defaultSMPServers) <$> withUser (\user -> withStore' (`getSMPServers` user))
+    smpServers <- withUser (\user -> withStore' (`getSMPServers` user))
+    let smpServers' = fromMaybe (L.map toServerCfg defaultSMPServers) $ nonEmpty smpServers
+    pure $ CRUserSMPServers smpServers' defaultSMPServers
+    where
+      toServerCfg server = ServerCfg {server, preset = True, tested = Nothing, enabled = True}
   SetUserSMPServers (SMPServersConfig smpServers) -> withUser $ \user -> withChatLock "setUserSMPServers" $ do
     withStore $ \db -> overwriteSMPServers db user smpServers
     cfg <- asks config
