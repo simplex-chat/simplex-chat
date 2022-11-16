@@ -676,7 +676,9 @@ processChatCommand = \case
         msgTs' = systemToUTCTime . (SMP.msgTs :: SMP.NMsgMeta -> SystemTime) <$> ntfMsgMeta
     connEntity <- withStore (\db -> Just <$> getConnectionEntity db user (AgentConnId ntfConnId)) `catchError` \_ -> pure Nothing
     pure CRNtfMessages {connEntity, msgTs = msgTs', ntfMessages}
-  GetUserSMPServers -> CRUserSMPServers <$> withUser (\user -> withStore' (`getSMPServers` user))
+  GetUserSMPServers -> do
+    ChatConfig {defaultServers = InitialAgentServers {smp = defaultSMPServers}} <- asks config
+    (`CRUserSMPServers` defaultSMPServers) <$> withUser (\user -> withStore' (`getSMPServers` user))
   SetUserSMPServers (SMPServersConfig smpServers) -> withUser $ \user -> withChatLock "setUserSMPServers" $ do
     withStore $ \db -> overwriteSMPServers db user smpServers
     cfg <- asks config

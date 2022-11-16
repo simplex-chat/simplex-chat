@@ -263,7 +263,7 @@ data ChatResponse
   | CRApiChat {chat :: AChat}
   | CRLastMessages {chatItems :: [AChatItem]}
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
-  | CRUserSMPServers {smpServers :: [ServerCfg]}
+  | CRUserSMPServers {smpServers :: [ServerCfg], presetSMPServers :: NonEmpty SMPServerWithAuth}
   | CRSmpTestResult {smpTestFailure :: Maybe SMPTestFailure}
   | CRChatItemTTL {chatItemTTL :: Maybe Int64}
   | CRNetworkConfig {networkConfig :: NetworkConfig}
