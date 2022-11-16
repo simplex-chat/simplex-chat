@@ -55,7 +55,7 @@ fun SendMsgView(
   allowVoiceRecord: Boolean,
   sendMessage: () -> Unit,
   onMessageChange: (String) -> Unit,
-  onAudioAdded: (String) -> Unit,
+  onAudioAdded: (String, Int) -> Unit,
   showRecordingUi: (Boolean) -> Unit,
   textStyle: MutableState<TextStyle>
 ) {
@@ -114,7 +114,7 @@ fun SendMsgView(
           val recordingInProgress = rememberSaveable { mutableStateOf(false) }
           val stopRecordingAndAddAudio = {
             rec.stop(recordingInProgress)
-            filePath.value?.let(onAudioAdded)
+            filePath.value?.let { onAudioAdded(it, (recordingTimeRange.last - recordingTimeRange.first).toInt() / 1000) }
             recordingTimeRange = recordingTimeRange.first..System.currentTimeMillis()
           }
           val startStopRecording = {
@@ -325,7 +325,7 @@ fun PreviewSendMsgView() {
       allowVoiceRecord = false,
       sendMessage = {},
       onMessageChange = { _ -> },
-      onAudioAdded = {},
+      onAudioAdded = { _, _ -> },
       showRecordingUi = {},
       textStyle = textStyle
     )
@@ -349,7 +349,7 @@ fun PreviewSendMsgViewEditing() {
       allowVoiceRecord = false,
       sendMessage = {},
       onMessageChange = { _ -> },
-      onAudioAdded = {},
+      onAudioAdded = { _, _ -> },
       showRecordingUi = {},
       textStyle = textStyle
     )
@@ -373,7 +373,7 @@ fun PreviewSendMsgViewInProgress() {
       allowVoiceRecord = false,
       sendMessage = {},
       onMessageChange = { _ -> },
-      onAudioAdded = {},
+      onAudioAdded = { _, _ -> },
       showRecordingUi = {},
       textStyle = textStyle
     )

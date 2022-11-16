@@ -17,17 +17,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
+import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
-import kotlinx.datetime.Clock
-import java.io.File
 
 @Composable
 fun CIAudioView(
@@ -38,35 +36,25 @@ fun CIAudioView(
 ) {
   val context = LocalContext.current
   val saveFileLauncher = rememberSaveFileLauncher(cxt = context, ciFile = file)
-  val audioInfo = remember(file) { file?.audioInfo ?: mutableStateOf(ProgressAndDuration(duration = duration)) }
-  val voicePlaying = rememberSaveable { mutableStateOf(false) }
-  LaunchedEffect(file?.fileName, file?.fileStatus) {
-    if (file != null && file.loaded && audioInfo.value.duration == 0) {
-      val filePath = getLoadedFilePath(context, file)
-      if (filePath != null && File(filePath).exists()) {
-        audioInfo.value = ProgressAndDuration(audioInfo.value.progress, AudioPlayer.duration(filePath))
-      }
-    }
-  }
 
-  LaunchedEffect(voicePlaying.value) {
-    while (isActive && voicePlaying.value) {
-      audioInfo.value = AudioPlayer.progressAndDurationOrEnded()
-      if (audioInfo.value.progress == audioInfo.value.duration) {
-        audioInfo.value = ProgressAndDuration(0, audioInfo.value.duration)
-        voicePlaying.value = false
-      }
-      delay(100)
+  val audioPlaying = rememberSaveable { mutableStateOf(false) }
+  val audioInfo = remember(file) {
+    if (file != null) {
+      if (file.audioInfo == null) file.audioInfo = mutableStateOf(ProgressAndDuration(duration = duration))
+      file.audioInfo!!
+    } else mutableStateOf(ProgressAndDuration(duration = duration))
+  }
+  val play = play@ {
+    audioPlaying.value = AudioPlayer.start(getAppFilePath(SimplexApp.context, file?.filePath ?: return@play), audioInfo.value.progress) {
+      audioPlaying.value = false
     }
   }
-
-  LaunchedEffect(AudioPlayer.currentlyPlaying.value) {
-    val currentFileName = AudioPlayer.currentlyPlaying.value?.first ?: return@LaunchedEffect
-    file?.filePath ?: return@LaunchedEffect
-    if (!currentFileName.endsWith(File.separator + file.filePath) && voicePlaying.value) {
-      voicePlaying.value = false
-    }
+  val pause = {
+    audioInfo.value = ProgressAndDuration(AudioPlayer.pause(), audioInfo.value.duration)
+    audioPlaying.value = false
   }
+  val filePath = remember(file?.fileId, file?.fileStatus) { getLoadedFilePath(context, file) }
+  MiniAudioPlayer(filePath, audioPlaying, audioInfo)
 
   @Composable
   fun fileIcon(
@@ -105,14 +93,7 @@ fun CIAudioView(
   fun fileAction() {
     if (file != null) {
       if (file.loaded) {
-        if (!voicePlaying.value) {
-          voicePlaying.value = AudioPlayer.start(getAppFilePath(context, file.filePath ?: return), audioInfo.value.progress) {
-            voicePlaying.value = false
-          }
-        } else {
-          audioInfo.value = ProgressAndDuration(AudioPlayer.pause(), audioInfo.value.duration)
-          voicePlaying.value = false
-        }
+        if (!audioPlaying.value) play() else pause()
         return
       }
       when (file.fileStatus) {
@@ -168,7 +149,7 @@ fun CIAudioView(
             contentAlignment = Alignment.Center
           ) {
             Icon(
-              if (voicePlaying.value) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+              if (audioPlaying.value) Icons.Filled.Pause else Icons.Filled.PlayArrow,
               stringResource(R.string.icon_descr_file),
               Modifier.size(36.dp),
               tint = HighOrLowlight,
@@ -215,7 +196,7 @@ fun CIAudioView(
           stringResource(R.string.voice_message),
           maxLines = 1
         )
-        val time = if (voicePlaying.value) audioInfo.value.progress else audioInfo.value.duration
+        val time = if (audioPlaying.value) audioInfo.value.progress else audioInfo.value.duration
         val mins = time / 1000 / 60
         val secs = time / 1000 % 60
         Text(
@@ -229,4 +210,33 @@ fun CIAudioView(
       Text(metaReserve)
     }
   }
+}
+
+@Composable
+fun MiniAudioPlayer(filePath: String?, playing: MutableState<Boolean>, info: MutableState<ProgressAndDuration>): Pair<MutableState<ProgressAndDuration>, MutableState<Boolean>> {
+  val audioInfo = remember { info }
+  val audioPlaying = rememberSaveable { playing }
+  LaunchedEffect(filePath) {
+    if (filePath != null && audioInfo.value.duration == 0) {
+        audioInfo.value = ProgressAndDuration(audioInfo.value.progress, AudioPlayer.duration(filePath))
+    }
+  }
+  LaunchedEffect(audioPlaying.value) {
+    while (isActive && audioPlaying.value) {
+      audioInfo.value = AudioPlayer.progressAndDurationOrEnded()
+      if (audioInfo.value.progress == audioInfo.value.duration) {
+        audioInfo.value = ProgressAndDuration(0, audioInfo.value.duration)
+        audioPlaying.value = false
+      }
+      delay(100)
+    }
+  }
+  LaunchedEffect(AudioPlayer.currentlyPlaying.value) {
+    val currentFileName = AudioPlayer.currentlyPlaying.value?.first ?: return@LaunchedEffect
+    filePath ?: return@LaunchedEffect
+    if (currentFileName != filePath && audioPlaying.value) {
+      audioPlaying.value = false
+    }
+  }
+  return audioInfo to audioPlaying
 }

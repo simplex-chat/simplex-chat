@@ -6,6 +6,7 @@ import android.os.Build
 import android.util.Log
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.Saver
 import chat.simplex.app.SimplexApp
 import chat.simplex.app.TAG
 import java.io.*
@@ -19,7 +20,15 @@ interface Recorder {
 data class ProgressAndDuration(
   val progress: Int = 0,
   val duration: Int = 0
-)
+) {
+  companion object {
+    val Saver
+      get() = Saver<MutableState<ProgressAndDuration>, Pair<Int, Int>>(
+        save = { it.value.progress to it.value.duration },
+        restore = { mutableStateOf(ProgressAndDuration(it.first, it.second)) }
+      )
+  }
+}
 
 class RecorderNative(val recordedBytesLimit: Long): Recorder {
   private var recorder: MediaRecorder? = null

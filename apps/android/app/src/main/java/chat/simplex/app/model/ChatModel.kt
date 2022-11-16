@@ -21,7 +21,6 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
 
-@Stable
 class ChatModel(val controller: ChatController) {
   val onboardingStage = mutableStateOf<OnboardingStage?>(null)
   val currentUser = mutableStateOf<User?>(null)
@@ -383,7 +382,7 @@ interface SomeChat {
   val updatedAt: Instant
 }
 
-@Serializable @Stable
+@Serializable
 data class Chat (
   val chatInfo: ChatInfo,
   val chatItems: List<ChatItem>,
@@ -1016,7 +1015,7 @@ class AChatItem (
   val chatItem: ChatItem
 )
 
-@Serializable @Stable
+@Serializable
 data class ChatItem (
   val chatDir: CIDirection,
   val meta: CIMeta,
@@ -1303,7 +1302,7 @@ class CIFile(
   }
 
   @Transient
-  val audioInfo = mutableStateOf(ProgressAndDuration())
+  var audioInfo: MutableState<ProgressAndDuration>? = null
 
   companion object {
     fun getSample(

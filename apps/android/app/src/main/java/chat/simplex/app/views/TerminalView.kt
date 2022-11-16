@@ -130,16 +130,12 @@ fun TerminalLayout(
     composeState.value = composeState.value.copy(message = s)
   }
 
-  fun onAudioAdded(filePath: String) {
-    // unsupported
-  }
-
   ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
     Scaffold(
       topBar = { CloseSheetBar(close) },
       bottomBar = {
         Box(Modifier.padding(horizontal = 8.dp)) {
-          SendMsgView(composeState, false, sendCommand, ::onMessageChange, ::onAudioAdded, {}, textStyle)
+          SendMsgView(composeState, false, sendCommand, ::onMessageChange, { _, _ -> }, {}, textStyle)
         }
       },
       modifier = Modifier.navigationBarsWithImePadding()
