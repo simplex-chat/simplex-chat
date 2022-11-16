@@ -68,6 +68,8 @@
 		5CA059EB279559F40002BEB4 /* SimpleXApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA059C3279559F40002BEB4 /* SimpleXApp.swift */; };
 		5CA059ED279559F40002BEB4 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA059C4279559F40002BEB4 /* ContentView.swift */; };
 		5CA059EF279559F40002BEB4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5CA059C5279559F40002BEB4 /* Assets.xcassets */; };
+		5CADE79A29211BB900072E13 /* PreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CADE79929211BB900072E13 /* PreferencesView.swift */; };
+		5CADE79C292131E900072E13 /* ContactPreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CADE79B292131E900072E13 /* ContactPreferencesView.swift */; };
 		5CB0BA882826CB3A00B3292C /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 5CB0BA862826CB3A00B3292C /* InfoPlist.strings */; };
 		5CB0BA8B2826CB3A00B3292C /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 5CB0BA892826CB3A00B3292C /* Localizable.strings */; };
 		5CB0BA8E2827126500B3292C /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB0BA8D2827126500B3292C /* OnboardingView.swift */; };
@@ -267,6 +269,8 @@
 		5CA059D7279559F40002BEB4 /* Tests iOS.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Tests iOS.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5CA059DB279559F40002BEB4 /* Tests_iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests_iOS.swift; sourceTree = "<group>"; };
 		5CA059DD279559F40002BEB4 /* Tests_iOSLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests_iOSLaunchTests.swift; sourceTree = "<group>"; };
+		5CADE79929211BB900072E13 /* PreferencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesView.swift; sourceTree = "<group>"; };
+		5CADE79B292131E900072E13 /* ContactPreferencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactPreferencesView.swift; sourceTree = "<group>"; };
 		5CB0BA872826CB3A00B3292C /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		5CB0BA8A2826CB3A00B3292C /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/Localizable.strings; sourceTree = "<group>"; };
 		5CB0BA8D2827126500B3292C /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
@@ -428,6 +432,7 @@
 				5C971E1C27AEBEF600C8A3CE /* ChatInfoView.swift */,
 				5C1A4C1D27A715B700EAD5AD /* ChatItemView.swift */,
 				5CE4407127ADB1D0007B033A /* Emoji.swift */,
+				5CADE79B292131E900072E13 /* ContactPreferencesView.swift */,
 			);
 			path = Chat;
 			sourceTree = "<group>";
@@ -571,6 +576,7 @@
 				5CB346E62868D76D001FD2EF /* NotificationsView.swift */,
 				5C9C2DA6289957AE00CC63B1 /* AdvancedNetworkSettings.swift */,
 				5C9C2DA82899DA6F00CC63B1 /* NetworkAndServers.swift */,
+				5CADE79929211BB900072E13 /* PreferencesView.swift */,
 				5C5DB70D289ABDD200730FFF /* AppearanceSettings.swift */,
 				5C05DF522840AA1D00C683F9 /* CallSettings.swift */,
 				5C3F1D57284363C400EC8A82 /* PrivacySettings.swift */,
@@ -956,6 +962,7 @@
 				5CCD403727A5F9A200368C90 /* ScanToConnectView.swift in Sources */,
 				5CFA59D12864782E00863A68 /* ChatArchiveView.swift in Sources */,
 				649BCDA22805D6EF00C3A862 /* CIImageView.swift in Sources */,
+				5CADE79C292131E900072E13 /* ContactPreferencesView.swift in Sources */,
 				5CB346E52868AA7F001FD2EF /* SuspendChat.swift in Sources */,
 				5C9C2DA52894777E00CC63B1 /* GroupProfileView.swift in Sources */,
 				5CEACCED27DEA495000BD591 /* MsgContentView.swift in Sources */,
@@ -978,6 +985,7 @@
 				5C1A4C1E27A715B700EAD5AD /* ChatItemView.swift in Sources */,
 				64AA1C6927EE10C800AC7277 /* ContextItemView.swift in Sources */,
 				5C9C2DA7289957AE00CC63B1 /* AdvancedNetworkSettings.swift in Sources */,
+				5CADE79A29211BB900072E13 /* PreferencesView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

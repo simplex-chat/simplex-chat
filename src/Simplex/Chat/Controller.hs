@@ -186,7 +186,7 @@ data ChatCommand
   | APIDeleteGroupLink GroupId
   | APIGetGroupLink GroupId
   | GetUserSMPServers
-  | SetUserSMPServers [SMPServer]
+  | SetUserSMPServers [SMPServerWithAuth]
   | APISetChatItemTTL (Maybe Int64)
   | APIGetChatItemTTL
   | APISetNetworkConfig NetworkConfig
@@ -235,7 +235,7 @@ data ChatCommand
   | DeleteGroupLink GroupName
   | ShowGroupLink GroupName
   | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: ByteString, message :: ByteString}
-  | LastMessages (Maybe ChatName) Int
+  | LastMessages (Maybe ChatName) Int (Maybe String)
   | SendFile ChatName FilePath
   | SendImage ChatName FilePath
   | ForwardFile ChatName FileTransferId
@@ -261,7 +261,7 @@ data ChatResponse
   | CRApiChat {chat :: AChat}
   | CRLastMessages {chatItems :: [AChatItem]}
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
-  | CRUserSMPServers {smpServers :: [SMPServer]}
+  | CRUserSMPServers {smpServers :: [SMPServerWithAuth]}
   | CRChatItemTTL {chatItemTTL :: Maybe Int64}
   | CRNetworkConfig {networkConfig :: NetworkConfig}
   | CRContactInfo {contact :: Contact, connectionStats :: ConnectionStats, customUserProfile :: Maybe Profile}
@@ -296,7 +296,7 @@ data ChatResponse
   | CRInvitation {connReqInvitation :: ConnReqInvitation}
   | CRSentConfirmation
   | CRSentInvitation {customUserProfile :: Maybe Profile}
-  | CRContactUpdated {fromContact :: Contact, toContact :: Contact, preferences :: ContactUserPreferences}
+  | CRContactUpdated {fromContact :: Contact, toContact :: Contact}
   | CRContactsMerged {intoContact :: Contact, mergedContact :: Contact}
   | CRContactDeleted {contact :: Contact}
   | CRChatCleared {chatInfo :: AChatInfo}
@@ -322,7 +322,7 @@ data ChatResponse
   | CRUserProfileUpdated {fromProfile :: Profile, toProfile :: Profile}
   | CRContactAliasUpdated {toContact :: Contact}
   | CRConnectionAliasUpdated {toConnection :: PendingContactConnection}
-  | CRContactPrefsUpdated {fromContact :: Contact, toContact :: Contact, preferences :: ContactUserPreferences}
+  | CRContactPrefsUpdated {fromContact :: Contact, toContact :: Contact}
   | CRContactConnecting {contact :: Contact}
   | CRContactConnected {contact :: Contact, userCustomProfile :: Maybe Profile}
   | CRContactAnotherClient {contact :: Contact}
