@@ -342,7 +342,7 @@ public enum ContactFeatureAllowed: Identifiable, Hashable {
     }
 }
 
-public struct ContactUserFeaturesAllowed: Equatable {
+public struct ContactFeaturesAllowed: Equatable {
     public var fullDelete: ContactFeatureAllowed
     public var voice: ContactFeatureAllowed
 
@@ -351,14 +351,14 @@ public struct ContactUserFeaturesAllowed: Equatable {
         self.voice = voice
     }
 
-    public static let sampleData = ContactUserFeaturesAllowed(
+    public static let sampleData = ContactFeaturesAllowed(
         fullDelete: ContactFeatureAllowed.userDefault(.no),
         voice: ContactFeatureAllowed.userDefault(.yes)
     )
 }
 
-public func contactUserPrefsToFeaturesAllowed(_ contactUserPreferences: ContactUserPreferences) -> ContactUserFeaturesAllowed {
-    ContactUserFeaturesAllowed(
+public func contactUserPrefsToFeaturesAllowed(_ contactUserPreferences: ContactUserPreferences) -> ContactFeaturesAllowed {
+    ContactFeaturesAllowed(
         fullDelete: contactUserPrefToFeatureAllowed(contactUserPreferences.fullDelete),
         voice: contactUserPrefToFeatureAllowed(contactUserPreferences.voice)
     )
@@ -367,22 +367,19 @@ public func contactUserPrefsToFeaturesAllowed(_ contactUserPreferences: ContactU
 public func contactUserPrefToFeatureAllowed(_ contactUserPreference: ContactUserPreference) -> ContactFeatureAllowed {
     switch contactUserPreference.userPreference {
     case let .user(preference): return .userDefault(preference.allow)
-    case let .contact(preference): return prefToContactFeatureAllowed(preference)
+    case let .contact(preference):
+        switch preference.allow {
+        case .always: return .always
+        case .yes: return .yes
+        case .no: return .no
+        }
     }
 }
 
-public func prefToContactFeatureAllowed(_ preference: Preference) -> ContactFeatureAllowed {
-    switch preference.allow {
-    case .always: return .always
-    case .yes: return .yes
-    case .no: return .no
-    }
-}
-
-public func contactUserFeaturesAllowedToPrefs(_ contactUserFeaturesAllowed: ContactUserFeaturesAllowed) -> Preferences {
+public func contactFeaturesAllowedToPrefs(_ contactFeaturesAllowed: ContactFeaturesAllowed) -> Preferences {
     Preferences(
-        fullDelete: contactFeatureAllowedToPref(contactUserFeaturesAllowed.fullDelete),
-        voice: contactFeatureAllowedToPref(contactUserFeaturesAllowed.voice)
+        fullDelete: contactFeatureAllowedToPref(contactFeaturesAllowed.fullDelete),
+        voice: contactFeatureAllowedToPref(contactFeaturesAllowed.voice)
     )
 }
 

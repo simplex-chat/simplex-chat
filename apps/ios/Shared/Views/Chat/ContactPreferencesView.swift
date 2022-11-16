@@ -13,8 +13,8 @@ struct ContactPreferencesView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
     @Binding var contact: Contact
-    @State var featuresAllowed: ContactUserFeaturesAllowed
-    @State var currentFeaturesAllowed: ContactUserFeaturesAllowed
+    @State var featuresAllowed: ContactFeaturesAllowed
+    @State var currentFeaturesAllowed: ContactFeaturesAllowed
 
     var body: some View {
         let user: User = chatModel.currentUser!
@@ -61,7 +61,7 @@ struct ContactPreferencesView: View {
     private func savePreferences() {
         Task {
             do {
-                let prefs = contactUserFeaturesAllowedToPrefs(featuresAllowed)
+                let prefs = contactFeaturesAllowedToPrefs(featuresAllowed)
                 if let toContact = try await apiSetContactPrefs(contactId: contact.contactId, preferences: prefs) {
                     await MainActor.run {
                         contact = toContact
@@ -81,8 +81,8 @@ struct ContactPreferencesView_Previews: PreviewProvider {
     static var previews: some View {
         ContactPreferencesView(
             contact: Binding.constant(Contact.sampleData),
-            featuresAllowed: ContactUserFeaturesAllowed.sampleData,
-            currentFeaturesAllowed: ContactUserFeaturesAllowed.sampleData
+            featuresAllowed: ContactFeaturesAllowed.sampleData,
+            currentFeaturesAllowed: ContactFeaturesAllowed.sampleData
         )
     }
 }
