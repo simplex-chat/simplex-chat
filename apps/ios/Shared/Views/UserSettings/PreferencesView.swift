@@ -10,25 +10,23 @@ import SwiftUI
 import SimpleXChat
 
 struct PreferencesView: View {
-    @State var allowFullDeletion = FeatureAllowed.yes
-    @State var allowVoice = FeatureAllowed.yes
+    @EnvironmentObject var chatModel: ChatModel
+    @Environment(\.dismiss) var dismiss: DismissAction
+    @State var profile: LocalProfile
+    @State var preferences: FullPreferences
+    @State var currentPreferences: FullPreferences
 
     var body: some View {
         VStack {
             List {
-                featureSection(.fullDelete, $allowFullDeletion)
-                featureSection(.voice, $allowVoice)
+                featureSection(.fullDelete, $preferences.fullDelete.allow)
+                featureSection(.voice, $preferences.voice.allow)
 
                 Section {
-                    HStack {
-                        Text("Reset")
-                        Spacer()
-                        Text("Save")
-                    }
-                    .foregroundColor(.accentColor)
-                    .disabled(true)
+                    Button("Reset", role: .destructive) { preferences = currentPreferences }
+                    Button("Save (and notify contacts)") { savePreferences() }
                 }
-                .listRowBackground(Color.clear)
+                .disabled(currentPreferences == preferences)
             }
         }
     }
@@ -48,10 +46,35 @@ struct PreferencesView: View {
                 .frame(height: 36, alignment: .topLeading)
         }
     }
+
+    private func savePreferences() {
+        Task {
+            do {
+                var p = fromLocalProfile(profile)
+                p.preferences = toPreferences(preferences)
+                if let newProfile = try await apiUpdateProfile(profile: p) {
+                    await MainActor.run {
+                        if let profileId = chatModel.currentUser?.profile.profileId {
+                            chatModel.currentUser?.profile = toLocalProfile(profileId, newProfile, "")
+                            chatModel.currentUser?.fullPreferences = preferences
+                        }
+                        currentPreferences = preferences
+                        dismiss()
+                    }
+                }
+            } catch {
+                logger.error("PreferencesView apiUpdateProfile error: \(responseError(error))")
+            }
+        }
+    }
 }
 
 struct PreferencesView_Previews: PreviewProvider {
     static var previews: some View {
-        PreferencesView()
+        PreferencesView(
+            profile: LocalProfile(profileId: 1, displayName: "alice", fullName: "", localAlias: ""),
+            preferences: FullPreferences.sampleData,
+            currentPreferences: FullPreferences.sampleData
+        )
     }
 }

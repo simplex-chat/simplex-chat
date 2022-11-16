@@ -121,7 +121,7 @@ struct SettingsView: View {
                 
                 Section("Settings") {
                     NavigationLink {
-                        PreferencesView()
+                        PreferencesView(profile: user.profile, preferences: user.fullPreferences, currentPreferences: user.fullPreferences)
                             .navigationTitle("Your preferences")
                     } label: {
                         settingsRow("list.bullet") { Text("Chat preferences") }
