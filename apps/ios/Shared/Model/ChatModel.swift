@@ -501,13 +501,4 @@ final class Chat: ObservableObject, Identifiable {
     var id: ChatId { get { chatInfo.id } }
 
     var viewId: String { get { "\(chatInfo.id) \(created.timeIntervalSince1970)" } }
-
-    public var contact: Contact? {
-        get {
-            switch self.chatInfo {
-            case let .direct(contact): return contact
-            default: return nil
-            }
-        }
-    }
 }

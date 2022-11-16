@@ -68,19 +68,20 @@ struct ContactPreferencesView: View {
         allowVoice = currentAllowVoice
     }
 
+    private func setPreferences() {
+        currentAllowFullDeletion = allowFullDeletion
+        currentAllowVoice = allowVoice
+    }
+
     private func savePreferences() {
         Task {
             do {
                 if let toContact = try await apiSetContactPrefs(contactId: contact.contactId, preferences: collectPreferences()) {
                     DispatchQueue.main.async {
-//                        if let profileId = chatModel.currentUser?.profile.profileId {
-//                            chatModel.currentUser?.profile = toLocalProfile(profileId, newProfile, "")
-//                            chatModel.currentUser?.fullPreferences = preferences
-//                        }
                         contact = toContact
-                        currentAllowFullDeletion = allowFullDeletion
-                        currentAllowVoice = allowVoice
+                        chatModel.updateContact(toContact)
                     }
+                    setPreferences()
                 }
             } catch {
                 logger.error("ContactPreferencesView apiSetContactPrefs error: \(responseError(error))")
