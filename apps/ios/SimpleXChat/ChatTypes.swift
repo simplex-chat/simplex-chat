@@ -342,6 +342,35 @@ public enum ContactFeatureAllowed: Identifiable, Hashable {
     }
 }
 
+public struct ContactUserFeaturesAllowed: Equatable {
+    public var fullDelete: ContactFeatureAllowed
+    public var voice: ContactFeatureAllowed
+
+    public init(fullDelete: ContactFeatureAllowed, voice: ContactFeatureAllowed) {
+        self.fullDelete = fullDelete
+        self.voice = voice
+    }
+
+    public static let sampleData = ContactUserFeaturesAllowed(
+        fullDelete: ContactFeatureAllowed.userDefault(.no),
+        voice: ContactFeatureAllowed.userDefault(.yes)
+    )
+}
+
+public func contactUserPrefsToFeaturesAllowed(_ contactUserPreferences: ContactUserPreferences) -> ContactUserFeaturesAllowed {
+    ContactUserFeaturesAllowed(
+        fullDelete: contactUserPrefToFeatureAllowed(contactUserPreferences.fullDelete),
+        voice: contactUserPrefToFeatureAllowed(contactUserPreferences.voice)
+    )
+}
+
+public func contactUserPrefToFeatureAllowed(_ contactUserPreference: ContactUserPreference) -> ContactFeatureAllowed {
+    switch contactUserPreference.userPreference {
+    case let .user(preference): return .userDefault(preference.allow)
+    case let .contact(preference): return prefToContactFeatureAllowed(preference)
+    }
+}
+
 public func prefToContactFeatureAllowed(_ preference: Preference) -> ContactFeatureAllowed {
     switch preference.allow {
     case .always: return .always
@@ -350,19 +379,19 @@ public func prefToContactFeatureAllowed(_ preference: Preference) -> ContactFeat
     }
 }
 
+public func contactUserFeaturesAllowedToPrefs(_ contactUserFeaturesAllowed: ContactUserFeaturesAllowed) -> Preferences {
+    Preferences(
+        fullDelete: contactFeatureAllowedToPref(contactUserFeaturesAllowed.fullDelete),
+        voice: contactFeatureAllowedToPref(contactUserFeaturesAllowed.voice)
+    )
+}
+
 public func contactFeatureAllowedToPref(_ contactFeatureAllowed: ContactFeatureAllowed) -> Preference? {
     switch contactFeatureAllowed {
     case .userDefault: return nil
     case .always: return Preference(allow: .always)
     case .yes: return Preference(allow: .yes)
     case .no: return Preference(allow: .no)
-    }
-}
-
-public func contactUserPrefToContactFeatureAllowed(_ contactUserPreference: ContactUserPreference) -> ContactFeatureAllowed {
-    switch contactUserPreference.userPreference {
-    case let .user(preference): return .userDefault(preference.allow)
-    case let .contact(preference): return prefToContactFeatureAllowed(preference)
     }
 }
 

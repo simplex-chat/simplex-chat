@@ -103,10 +103,8 @@ struct ChatInfoView: View {
                     NavigationLink {
                         ContactPreferencesView(
                             contact: $contact,
-                            allowFullDeletion: contactUserPrefToContactFeatureAllowed(contact.mergedPreferences.fullDelete),
-                            currentAllowFullDeletion: contactUserPrefToContactFeatureAllowed(contact.mergedPreferences.fullDelete),
-                            allowVoice: contactUserPrefToContactFeatureAllowed(contact.mergedPreferences.voice),
-                            currentAllowVoice: contactUserPrefToContactFeatureAllowed(contact.mergedPreferences.voice)
+                            featuresAllowed: contactUserPrefsToFeaturesAllowed(contact.mergedPreferences),
+                            currentFeaturesAllowed: contactUserPrefsToFeaturesAllowed(contact.mergedPreferences)
                         )
                         .navigationBarTitle("Contact preferences")
                         .navigationBarTitleDisplayMode(.large)
