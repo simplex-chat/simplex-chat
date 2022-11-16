@@ -2867,15 +2867,15 @@ testGetSetSMPServers :: IO ()
 testGetSetSMPServers =
   testChat2 aliceProfile bobProfile $
     \alice _ -> do
-      alice #$> ("/smp_servers", id, "no custom SMP servers saved")
-      alice #$> ("/smp_servers smp://1234-w==@smp1.example.im", id, "ok")
-      alice #$> ("/smp_servers", id, "smp://1234-w==@smp1.example.im")
-      alice #$> ("/smp_servers smp://1234-w==:password@smp1.example.im", id, "ok")
-      alice #$> ("/smp_servers", id, "smp://1234-w==:password@smp1.example.im")
-      alice #$> ("/smp_servers smp://2345-w==@smp2.example.im;smp://3456-w==@smp3.example.im:5224", id, "ok")
-      alice #$> ("/smp_servers", id, "smp://2345-w==@smp2.example.im, smp://3456-w==@smp3.example.im:5224")
-      alice #$> ("/smp_servers default", id, "ok")
-      alice #$> ("/smp_servers", id, "no custom SMP servers saved")
+      alice #$> ("/smp", id, "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:5001")
+      alice #$> ("/smp smp://1234-w==@smp1.example.im", id, "ok")
+      alice #$> ("/smp", id, "smp://1234-w==@smp1.example.im")
+      alice #$> ("/smp smp://1234-w==:password@smp1.example.im", id, "ok")
+      alice #$> ("/smp", id, "smp://1234-w==:password@smp1.example.im")
+      alice #$> ("/smp smp://2345-w==@smp2.example.im;smp://3456-w==@smp3.example.im:5224", id, "ok")
+      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im, smp://3456-w==@smp3.example.im:5224")
+      alice #$> ("/smp default", id, "ok")
+      alice #$> ("/smp", id, "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:5001")
 
 testTestSMPServerConnection :: IO ()
 testTestSMPServerConnection =

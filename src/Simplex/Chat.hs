@@ -133,13 +133,14 @@ createChatDatabase filePrefix key yesToMigrations = do
 
 newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> IO ChatController
 newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agentConfig = aCfg, tbqSize, defaultServers} ChatOpts {smpServers, networkConfig, logConnections, logServerHosts} sendToast = do
-  let config = cfg {subscriptionEvents = logConnections, hostEvents = logServerHosts}
+  servers <- resolveServers defaultServers
+  let servers' = servers {netCfg = networkConfig}
+      config = cfg {subscriptionEvents = logConnections, hostEvents = logServerHosts, defaultServers = servers'}
       sendNotification = fromMaybe (const $ pure ()) sendToast
       firstTime = dbNew chatStore
   activeTo <- newTVarIO ActiveNone
   currentUser <- newTVarIO user
-  servers <- resolveServers defaultServers
-  smpAgent <- getSMPAgentClient aCfg {database = AgentDB agentStore} servers {netCfg = networkConfig}
+  smpAgent <- getSMPAgentClient aCfg {database = AgentDB agentStore} servers'
   agentAsync <- newTVarIO Nothing
   idsDrg <- newTVarIO =<< drgNew
   inputQ <- newTBQueueIO tbqSize
@@ -3214,6 +3215,7 @@ chatCommandP =
       "/_remove #" *> (APIRemoveMember <$> A.decimal <* A.space <*> A.decimal),
       "/_leave #" *> (APILeaveGroup <$> A.decimal),
       "/_members #" *> (APIListMembers <$> A.decimal),
+      -- /smp_servers is deprecated, use /smp and /_smp
       "/smp_servers default" $> SetUserSMPServers (SMPServersConfig []),
       "/smp_servers " *> (SetUserSMPServers . SMPServersConfig <$> smpServersP),
       "/smp_servers" $> GetUserSMPServers,
