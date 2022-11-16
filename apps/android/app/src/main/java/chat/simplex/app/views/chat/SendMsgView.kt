@@ -29,6 +29,7 @@ import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -38,6 +39,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.graphics.drawable.DrawableCompat
 import androidx.core.view.inputmethod.EditorInfoCompat
 import androidx.core.view.inputmethod.InputConnectionCompat
+import androidx.core.widget.doBeforeTextChanged
 import androidx.core.widget.doOnTextChanged
 import chat.simplex.app.R
 import chat.simplex.app.SimplexApp
@@ -55,7 +57,7 @@ fun SendMsgView(
   allowVoiceRecord: Boolean,
   sendMessage: () -> Unit,
   onMessageChange: (String) -> Unit,
-  onAudioAdded: (String, Int) -> Unit,
+  onAudioAdded: (String, Int, Boolean) -> Unit,
   showRecordingUi: (Boolean) -> Unit,
   textStyle: MutableState<TextStyle>
 ) {
@@ -95,7 +97,7 @@ fun SendMsgView(
           if (recordingTimeRange.first == 0L)
             Modifier.matchParentSize()
           else
-            Modifier.clickable(false, onClick = {}).background(MaterialTheme.colors.background).matchParentSize(),
+            Modifier.clickable(false, onClick = {}).matchParentSize(),
           verticalAlignment = Alignment.CenterVertically
         ) {
           val permissionsState = rememberMultiplePermissionsState(
@@ -104,18 +106,21 @@ fun SendMsgView(
             )
           )
           val rec: Recorder = remember { RecorderNative(MAX_VOICE_SIZE_FOR_SENDING) }
+          val recordingInProgress = rememberSaveable { mutableStateOf(false) }
           var now by remember { mutableStateOf(System.currentTimeMillis()) }
           LaunchedEffect(Unit) {
             while (isActive) {
               now = System.currentTimeMillis()
+              if (recordingTimeRange.first != 0L && recordingInProgress.value) {
+                filePath.value?.let { onAudioAdded(it, (now - recordingTimeRange.first).toInt() / 1000, false) }
+              }
               delay(100)
             }
           }
-          val recordingInProgress = rememberSaveable { mutableStateOf(false) }
-          val stopRecordingAndAddAudio = {
+          val stopRecordingAndAddAudio: () -> Unit = {
             rec.stop(recordingInProgress)
-            filePath.value?.let { onAudioAdded(it, (recordingTimeRange.last - recordingTimeRange.first).toInt() / 1000) }
             recordingTimeRange = recordingTimeRange.first..System.currentTimeMillis()
+            filePath.value?.let { onAudioAdded(it, (recordingTimeRange.last - recordingTimeRange.first).toInt() / 1000, true) }
           }
           val startStopRecording = {
             when {
@@ -150,6 +155,12 @@ fun SendMsgView(
             recordingTimeRange = 0L..0L
             showRecordingUi(false)
           }
+          LaunchedEffect(cs.preview) {
+            if (cs.preview !is ComposePreview.AudioPreview && filePath.value != null) {
+              // Pressed on X icon in preview
+              cleanUp(true)
+            }
+          }
           val interactionSource = interactionSourceWithTapDetection(
             onPress = {
               if (filePath.value == null) startStopRecording()
@@ -169,36 +180,6 @@ fun SendMsgView(
             onCancel = startStopRecording,
             onRelease = startStopRecording
           )
-          if (recordingTimeRange.first != 0L) {
-            Icon(
-              Icons.Filled.DeleteForever,
-              stringResource(R.string.delete_verb),
-              tint = MaterialTheme.colors.primary,
-              modifier = Modifier.size(28.dp).clickable { cleanUp(true) }
-            )
-            Spacer(Modifier.width(5.dp))
-            Box {
-              val diff = if (recordingTimeRange.last == 0L) now - recordingTimeRange.first else recordingTimeRange.last - recordingTimeRange.first
-              val text = "%02d:%02d.%01d".format(diff / 1000 / 60, diff / 1000 % 60, diff % 1000 / 100)
-              var maxWidth by remember { mutableStateOf(0.dp) }
-              val density = LocalDensity.current.density
-              Text(
-                text,
-                Modifier.onGloballyPositioned { maxWidth = (it.size.width / density).dp },
-                style = TextStyle.Default.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold),
-                color = HighOrLowlight,
-              )
-              Text(
-                text,
-                Modifier.requiredWidth(((diff.toDouble() / MAX_VOICE_MILLIS_FOR_SENDING) * maxWidth.value).dp).clipToBounds(),
-                style = TextStyle.Default.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colors.primary,
-                maxLines = 1,
-                overflow = TextOverflow.Visible,
-                softWrap = false,
-              )
-            }
-          }
           Spacer(Modifier.weight(1f))
           Icon(
             if (recordingTimeRange.last != 0L) Icons.Outlined.ArrowUpward else if (stopRecOnNextClick) Icons.Default.Stop else Icons.Default.Mic,
@@ -235,6 +216,7 @@ private fun NativeKeyboard(
   val cs = composeState.value
   val textColor = MaterialTheme.colors.onBackground
   val tintColor = MaterialTheme.colors.secondary
+  val padding = PaddingValues(12.dp, 7.dp, 45.dp, 0.dp)
   val paddingStart = with(LocalDensity.current) { 12.dp.roundToPx() }
   val paddingTop = with(LocalDensity.current) { 7.dp.roundToPx() }
   val paddingEnd = with(LocalDensity.current) { 45.dp.roundToPx() }
@@ -295,6 +277,8 @@ private fun NativeKeyboard(
     it.setTextColor(textColor.toArgb())
     it.textSize = textStyle.value.fontSize.value
     DrawableCompat.setTint(it.background, tintColor.toArgb())
+    it.isFocusable = composeState.value.preview !is ComposePreview.AudioPreview
+    it.isFocusableInTouchMode = it.isFocusable
     if (cs.message != it.text.toString()) {
       it.setText(cs.message)
       // Set cursor to the end of the text
@@ -306,6 +290,14 @@ private fun NativeKeyboard(
       imm.showSoftInput(it, InputMethodManager.SHOW_IMPLICIT)
       showKeyboard = false
     }
+  }
+  if (composeState.value.preview is ComposePreview.AudioPreview) {
+    Text(
+      generalGetString(R.string.voice_message),
+      Modifier.padding(padding),
+      color = textColor,
+      style = textStyle.value.copy(fontStyle = FontStyle.Italic)
+    )
   }
 }
 
@@ -325,7 +317,7 @@ fun PreviewSendMsgView() {
       allowVoiceRecord = false,
       sendMessage = {},
       onMessageChange = { _ -> },
-      onAudioAdded = { _, _ -> },
+      onAudioAdded = { _, _, _ -> },
       showRecordingUi = {},
       textStyle = textStyle
     )
@@ -349,7 +341,7 @@ fun PreviewSendMsgViewEditing() {
       allowVoiceRecord = false,
       sendMessage = {},
       onMessageChange = { _ -> },
-      onAudioAdded = { _, _ -> },
+      onAudioAdded = { _, _, _ -> },
       showRecordingUi = {},
       textStyle = textStyle
     )
@@ -373,7 +365,7 @@ fun PreviewSendMsgViewInProgress() {
       allowVoiceRecord = false,
       sendMessage = {},
       onMessageChange = { _ -> },
-      onAudioAdded = { _, _ -> },
+      onAudioAdded = { _, _, _ -> },
       showRecordingUi = {},
       textStyle = textStyle
     )

@@ -1302,7 +1302,7 @@ class CIFile(
   }
 
   @Transient
-  var audioInfo: MutableState<ProgressAndDuration>? = null
+  var audioInfo: MutableState<ProgressAndDuration> = mutableStateOf(ProgressAndDuration())
 
   companion object {
     fun getSample(

@@ -9,8 +9,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.item.MiniAudioPlayer
@@ -18,49 +21,81 @@ import chat.simplex.app.views.chat.item.SentColorLight
 import chat.simplex.app.views.helpers.*
 
 @Composable
-fun ComposeAudioView(filePath: String, duration: Int, cancelFile: () -> Unit, cancelEnabled: Boolean) {
-  Row(
-    Modifier
-      .height(60.dp)
-      .fillMaxWidth()
-      .padding(top = 8.dp)
-      .background(SentColorLight),
-    verticalAlignment = Alignment.CenterVertically
+fun ComposeAudioView(filePath: String, durationSec: Int, finished: Boolean, cancelFile: () -> Unit, cancelEnabled: Boolean) {
+  BoxWithConstraints(Modifier
+    .fillMaxWidth()
   ) {
-
     val audioPlaying = rememberSaveable { mutableStateOf(false) }
-    val audioInfo = remember { mutableStateOf(ProgressAndDuration(duration = duration)) }
-    val play = play@ {
-      audioPlaying.value = AudioPlayer.start(filePath, audioInfo.value.progress) {
-        audioPlaying.value = false
+    val audioInfo = rememberSaveable(saver = ProgressAndDuration.Saver) {
+      mutableStateOf(ProgressAndDuration(durationMs = durationSec * 1000))
+    }
+    LaunchedEffect(durationSec) {
+      audioInfo.value = audioInfo.value.copy(durationMs = durationSec * 1000)
+    }
+    val progressBarWidth = remember(durationSec, finished) {
+      derivedStateOf {
+        val number = if (audioPlaying.value) audioInfo.value.progressMs / 1000 else if (!finished) durationSec else 0
+        if (audioPlaying.value || finished)
+          ((number.toDouble() / durationSec) * maxWidth.value).dp
+        else
+          (((number.toDouble() * 1000) / MAX_VOICE_MILLIS_FOR_SENDING) * maxWidth.value).dp
       }
     }
-    val pause = {
-      audioInfo.value = ProgressAndDuration(AudioPlayer.pause(), audioInfo.value.duration)
-      audioPlaying.value = false
-    }
-    MiniAudioPlayer(filePath, audioPlaying, audioInfo)
+    Spacer(
+      Modifier
+        .requiredWidth(progressBarWidth.value)
+        .padding(top = 58.dp)
+        .height(2.dp)
+        .background(MaterialTheme.colors.primary)
+    )
+    Row(
+      Modifier
+        .height(60.dp)
+        .fillMaxWidth()
+        .padding(top = 8.dp)
+        .background(SentColorLight),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      val play = play@{
+        audioPlaying.value = AudioPlayer.start(filePath, audioInfo.value.progressMs) {
+          audioPlaying.value = false
+        }
+      }
+      val pause = {
+        audioInfo.value = ProgressAndDuration(AudioPlayer.pause(), audioInfo.value.durationMs)
+        audioPlaying.value = false
+      }
+      MiniAudioPlayer(filePath, audioPlaying, audioInfo)
 
-    IconButton({ if (!audioPlaying.value) play() else pause() }) {
-      Icon(
-        if (audioPlaying.value) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-        stringResource(R.string.icon_descr_file),
-        Modifier
-          .padding(start = 4.dp, end = 2.dp)
-          .size(36.dp),
-        tint = if (isInDarkTheme()) FileDark else FileLight
-      )
-    }
-    Text(filePath)
-    Spacer(Modifier.weight(1f))
-    if (cancelEnabled) {
-      IconButton(onClick = cancelFile, modifier = Modifier.padding(0.dp)) {
+      IconButton({ if (!audioPlaying.value) play() else pause() }) {
         Icon(
-          Icons.Outlined.Close,
-          contentDescription = stringResource(R.string.icon_descr_cancel_file_preview),
-          tint = MaterialTheme.colors.primary,
-          modifier = Modifier.padding(10.dp)
+          if (audioPlaying.value) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+          stringResource(R.string.icon_descr_file),
+          Modifier
+            .padding(start = 4.dp, end = 2.dp)
+            .size(36.dp),
+          tint = MaterialTheme.colors.primary
         )
+      }
+      val numberInText = remember(durationSec, audioInfo.value) {
+        derivedStateOf { if (audioPlaying.value) audioInfo.value.progressMs / 1000 else durationSec }
+      }
+      val text = "%02d:%02d".format(numberInText.value / 60, numberInText.value % 60)
+      Text(
+        text,
+        style = TextStyle.Default.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold),
+        color = HighOrLowlight,
+      )
+      Spacer(Modifier.weight(1f))
+      if (cancelEnabled) {
+        IconButton(onClick = cancelFile, modifier = Modifier.padding(0.dp)) {
+          Icon(
+            Icons.Outlined.Close,
+            contentDescription = stringResource(R.string.icon_descr_cancel_file_preview),
+            tint = MaterialTheme.colors.primary,
+            modifier = Modifier.padding(10.dp)
+          )
+        }
       }
     }
   }

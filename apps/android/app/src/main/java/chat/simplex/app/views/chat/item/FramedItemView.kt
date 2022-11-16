@@ -105,7 +105,7 @@ fun FramedItemView(
     }
   }
 
-  val transparentBackground = ci.content.msgContent is MsgContent.MCImage && ci.content.text.isEmpty() && ci.quotedItem == null
+  val transparentBackground = (ci.content.msgContent is MsgContent.MCImage || ci.content.msgContent is MsgContent.MCVoice) && ci.content.text.isEmpty() && ci.quotedItem == null
   Box(Modifier
     .clip(RoundedCornerShape(18.dp))
     .background(
@@ -143,7 +143,7 @@ fun FramedItemView(
                 }
               }
               is MsgContent.MCVoice -> {
-                CIAudioView(mc.duration, ci.file, ci.meta.itemEdited, receiveFile)
+                CIAudioView(mc.duration, ci.file, ci.meta.itemEdited, mc.text != "", receiveFile)
                 if (mc.text != "") {
                   CIMarkdownText(ci, showMember, uriHandler)
                 }

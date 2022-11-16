@@ -18,13 +18,13 @@ interface Recorder {
 }
 
 data class ProgressAndDuration(
-  val progress: Int = 0,
-  val duration: Int = 0
+  val progressMs: Int = 0,
+  val durationMs: Int = 0
 ) {
   companion object {
     val Saver
       get() = Saver<MutableState<ProgressAndDuration>, Pair<Int, Int>>(
-        save = { it.value.progress to it.value.duration },
+        save = { it.value.progressMs to it.value.durationMs },
         restore = { mutableStateOf(ProgressAndDuration(it.first, it.second)) }
       )
   }
@@ -67,6 +67,7 @@ class RecorderNative(val recordedBytesLimit: Long): Recorder {
   override fun stop(recordingInProgress: MutableState<Boolean>) {
     if (!recordingInProgress.value) return
     recordingInProgress.value = false
+    recorder?.metrics?.
     runCatching {
       recorder?.stop()
     }

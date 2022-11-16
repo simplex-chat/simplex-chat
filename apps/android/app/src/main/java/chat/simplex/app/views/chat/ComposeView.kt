@@ -53,7 +53,7 @@ sealed class ComposePreview {
   @Serializable object NoPreview: ComposePreview()
   @Serializable class CLinkPreview(val linkPreview: LinkPreview?): ComposePreview()
   @Serializable class ImagePreview(val images: List<String>): ComposePreview()
-  @Serializable class AudioPreview(val audio: String, val duration: Int): ComposePreview()
+  @Serializable class AudioPreview(val audio: String, val duration: Int, val finished: Boolean): ComposePreview()
   @Serializable class FilePreview(val fileName: String): ComposePreview()
 }
 
@@ -125,7 +125,7 @@ fun chatItemPreview(chatItem: ChatItem): ComposePreview {
     is MsgContent.MCText -> ComposePreview.NoPreview
     is MsgContent.MCLink -> ComposePreview.CLinkPreview(linkPreview = mc.preview)
     is MsgContent.MCImage -> ComposePreview.ImagePreview(images = listOf(mc.image))
-    is MsgContent.MCVoice -> ComposePreview.AudioPreview(audio = chatItem.file?.fileName ?: "", mc.duration)
+    is MsgContent.MCVoice -> ComposePreview.AudioPreview(audio = chatItem.file?.fileName ?: "", mc.duration, true)
     is MsgContent.MCFile -> {
       val fileName = chatItem.file?.fileName ?: ""
       ComposePreview.FilePreview(fileName)
@@ -152,8 +152,12 @@ fun ComposeView(
   val textStyle = remember { mutableStateOf(smallFont) }
   // attachments
   val chosenContent = rememberSaveable { mutableStateOf<List<UploadContent>>(emptyList()) }
+  val audioSaver = Saver<MutableState<Pair<Uri, Int>?>, Pair<String, Int>> (
+    save = { it.value.let { if (it == null) null else it.first.toString() to it.second } },
+    restore = { mutableStateOf(Uri.parse(it.first) to it.second) }
+  )
+  val chosenAudio = rememberSaveable(saver = audioSaver) { mutableStateOf(null) }
   val chosenFile = rememberSaveable { mutableStateOf<Uri?>(null) }
-  val chosenAudio = rememberSaveable { mutableStateOf<Pair<Uri, Int>?>(null) }
   val cameraLauncher = rememberCameraLauncher { uri: Uri? ->
     if (uri != null) {
       val source = ImageDecoder.createSource(SimplexApp.context.contentResolver, uri)
@@ -445,9 +449,9 @@ fun ComposeView(
     }
   }
 
-  fun onAudioAdded(filePath: String, duration: Int) {
+  fun onAudioAdded(filePath: String, duration: Int, finished: Boolean) {
     chosenAudio.value = File(filePath).toUri() to duration
-    composeState.value = composeState.value.copy(preview = ComposePreview.AudioPreview(filePath, duration))
+    composeState.value = composeState.value.copy(preview = ComposePreview.AudioPreview(filePath, duration, finished))
   }
 
   fun cancelLinkPreview() {
@@ -487,6 +491,7 @@ fun ComposeView(
       is ComposePreview.AudioPreview -> ComposeAudioView(
         preview.audio,
         preview.duration,
+        preview.finished,
         ::cancelAudio,
         cancelEnabled = !composeState.value.editing
       )
@@ -533,24 +538,22 @@ fun ComposeView(
       verticalAlignment = Alignment.Bottom,
       horizontalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-      val attachEnabled = !composeState.value.editing
       var showRecordingUi by rememberSaveable { mutableStateOf(false) }
-      if (!showRecordingUi) {
-        Box(Modifier.padding(bottom = 12.dp)) {
-          Icon(
-            Icons.Filled.AttachFile,
-            contentDescription = stringResource(R.string.attach),
-            tint = if (attachEnabled) MaterialTheme.colors.primary else Color.Gray,
-            modifier = Modifier
-              .size(28.dp)
-              .clip(CircleShape)
-              .clickable {
-                if (attachEnabled) {
-                  showChooseAttachment()
-                }
+      val attachEnabled = !composeState.value.editing && !showRecordingUi
+      Box(Modifier.padding(bottom = 12.dp)) {
+        Icon(
+          Icons.Filled.AttachFile,
+          contentDescription = stringResource(R.string.attach),
+          tint = if (attachEnabled) MaterialTheme.colors.primary else Color.Gray,
+          modifier = Modifier
+            .size(28.dp)
+            .clip(CircleShape)
+            .clickable {
+              if (attachEnabled) {
+                showChooseAttachment()
               }
-          )
-        }
+            }
+        )
       }
       SendMsgView(
         composeState,
