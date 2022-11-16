@@ -377,9 +377,6 @@ fun saveFileFromUri(context: Context, uri: Uri): String? {
       val destFile = File(getAppFilePath(context, destFileName))
       FileUtils.copy(inputStream, FileOutputStream(destFile))
       destFileName
-    } else if (uri.toFile().exists()) {
-      // It can be a file:// scheme for audio messages that have audio already saved into app's file dir, nothing to do here
-      uri.toFile().name
     } else {
       Log.e(chat.simplex.app.TAG, "Util.kt saveFileFromUri null inputStream")
       null

@@ -70,7 +70,7 @@ fun SendMsgView(
       Box(Modifier.align(Alignment.BottomEnd)) {
         val icon = if (cs.editing) Icons.Filled.Check else Icons.Outlined.ArrowUpward
         val color = if (cs.sendEnabled()) MaterialTheme.colors.primary else HighOrLowlight
-        if (cs.inProgress && (cs.preview is ComposePreview.ImagePreview || cs.preview is ComposePreview.FilePreview)) {
+        if (cs.inProgress && (cs.preview is ComposePreview.ImagePreview || cs.preview is ComposePreview.AudioPreview || cs.preview is ComposePreview.FilePreview)) {
           CircularProgressIndicator(Modifier.size(36.dp).padding(4.dp), color = HighOrLowlight, strokeWidth = 3.dp)
         } else if (!showVoiceButton) {
           Icon(

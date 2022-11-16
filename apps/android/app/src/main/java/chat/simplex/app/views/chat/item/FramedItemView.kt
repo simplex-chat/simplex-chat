@@ -142,6 +142,12 @@ fun FramedItemView(
                   CIMarkdownText(ci, showMember, uriHandler)
                 }
               }
+              is MsgContent.MCVoice -> {
+                CIAudioView(mc.duration, ci.file, ci.meta.itemEdited, receiveFile)
+                if (mc.text != "") {
+                  CIMarkdownText(ci, showMember, uriHandler)
+                }
+              }
               is MsgContent.MCFile -> {
                 CIFileView(ci.file, ci.meta.itemEdited, receiveFile)
                 if (mc.text != "") {

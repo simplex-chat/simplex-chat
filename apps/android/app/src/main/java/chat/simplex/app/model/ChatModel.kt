@@ -1301,8 +1301,6 @@ class CIFile(
     CIFileStatus.RcvComplete -> true
   }
 
-  fun isVoiceMessage() = fileName.endsWith(".m4a") || fileName.endsWith(".amr") || fileName.endsWith(".ogg")
-
   @Transient
   val audioInfo = mutableStateOf(ProgressAndDuration())
 
