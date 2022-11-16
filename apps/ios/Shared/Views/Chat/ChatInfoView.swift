@@ -53,7 +53,7 @@ struct ChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
     @ObservedObject var chat: Chat
-    var contact: Contact
+    @State var contact: Contact
     @Binding var connectionStats: ConnectionStats?
     var customUserProfile: Profile?
     @State var localAlias: String
@@ -101,9 +101,15 @@ struct ChatInfoView: View {
 
                 Section("Preferences") {
                     NavigationLink {
-                        ContactPreferencesView()
-                            .navigationBarTitle("Contact preferences")
-                            .navigationBarTitleDisplayMode(.large)
+                        ContactPreferencesView(
+                            contact: $contact,
+                            allowFullDeletion: contactUserPrefToContactFeatureAllowed(contact.mergedPreferences.fullDelete),
+                            currentAllowFullDeletion: contactUserPrefToContactFeatureAllowed(contact.mergedPreferences.fullDelete),
+                            allowVoice: contactUserPrefToContactFeatureAllowed(contact.mergedPreferences.voice),
+                            currentAllowVoice: contactUserPrefToContactFeatureAllowed(contact.mergedPreferences.voice)
+                        )
+                        .navigationBarTitle("Contact preferences")
+                        .navigationBarTitleDisplayMode(.large)
                     } label: {
                         Text("Contact preferences")
                     }

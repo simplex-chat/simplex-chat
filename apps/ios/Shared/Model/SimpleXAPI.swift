@@ -476,6 +476,12 @@ func apiUpdateProfile(profile: Profile) async throws -> Profile? {
     }
 }
 
+func apiSetContactPrefs(contactId: Int64, preferences: Preferences) async throws -> Contact? {
+    let r = await chatSendCmd(.apiSetContactPrefs(contactId: contactId, preferences: preferences))
+    if case let .contactPrefsUpdated(_, toContact) = r { return toContact }
+    throw r
+}
+
 func apiSetContactAlias(contactId: Int64, localAlias: String) async throws -> Contact? {
     let r = await chatSendCmd(.apiSetContactAlias(contactId: contactId, localAlias: localAlias))
     if case let .contactAliasUpdated(toContact) = r { return toContact }

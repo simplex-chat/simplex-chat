@@ -312,6 +312,30 @@ public enum ContactFeatureAllowed: Identifiable, Hashable {
     }
 }
 
+public func prefToContactFeatureAllowed(_ preference: Preference) -> ContactFeatureAllowed {
+    switch preference.allow {
+    case .always: return .always
+    case .yes: return .yes
+    case .no: return .no
+    }
+}
+
+public func contactFeatureAllowedToPref(_ contactFeatureAllowed: ContactFeatureAllowed) -> Preference? {
+    switch contactFeatureAllowed {
+    case .userDefault: return nil
+    case .always: return Preference(allow: .always)
+    case .yes: return Preference(allow: .yes)
+    case .no: return Preference(allow: .no)
+    }
+}
+
+public func contactUserPrefToContactFeatureAllowed(_ contactUserPreference: ContactUserPreference) -> ContactFeatureAllowed {
+    switch contactUserPreference.userPreference {
+    case let .user(preference): return .userDefault(preference.allow)
+    case let .contact(preference): return prefToContactFeatureAllowed(preference)
+    }
+}
+
 public enum FeatureAllowed: String, Codable, Identifiable {
     case always
     case yes
