@@ -61,7 +61,6 @@ struct GroupPreferencesView: View {
             do {
                 var gp = groupInfo.groupProfile
                 gp.groupPreferences = toGroupPreferences(preferences)
-                print(gp)
                 let gInfo = try await apiUpdateGroup(groupInfo.groupId, gp)
                 await MainActor.run {
                     groupInfo = gInfo
