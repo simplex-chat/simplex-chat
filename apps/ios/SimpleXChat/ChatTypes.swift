@@ -279,6 +279,36 @@ public enum Feature {
                     : "Voice messages are prohibited in this chat."
         }
     }
+
+    public func enableGroupPrefDescription(_ enabled: GroupFeatureEnabled, _ canEdit: Bool) -> LocalizedStringKey {
+        if canEdit {
+            switch self {
+            case .fullDelete:
+                switch enabled {
+                case .on: return "Allow to irreversibly delete sent messages."
+                case .off: return "Prohibit irreversible message deletion."
+                }
+            case .voice:
+                switch enabled {
+                case .on: return "Allow to send voice messages."
+                case .off: return "Prohibit sending voice messages."
+                }
+            }
+        } else {
+            switch self {
+            case .fullDelete:
+                switch enabled {
+                case .on: return "Group members can irreversibly delete sent messages."
+                case .off: return "Irreversible message deletion is prohibited in this chat."
+                }
+            case .voice:
+                switch enabled {
+                case .on: return "Group members can send voice messages."
+                case .off: return "Voice messages are prohibited in this chat."
+                }
+            }
+        }
+    }
 }
 
 public enum ContactFeatureAllowed: Identifiable, Hashable {
@@ -354,7 +384,7 @@ public enum FeatureAllowed: String, Codable, Identifiable {
     }
 }
 
-public struct FullGroupPreferences: Decodable {
+public struct FullGroupPreferences: Decodable, Equatable {
     public var fullDelete: GroupPreference
     public var voice: GroupPreference
 
@@ -378,7 +408,11 @@ public struct GroupPreferences: Codable {
     public static let sampleData = GroupPreferences(fullDelete: GroupPreference(enable: .off), voice: GroupPreference(enable: .on))
 }
 
-public struct GroupPreference: Codable {
+public func toGroupPreferences(_ fullPreferences: FullGroupPreferences) -> GroupPreferences {
+    GroupPreferences(fullDelete: fullPreferences.fullDelete, voice: fullPreferences.voice)
+}
+
+public struct GroupPreference: Codable, Equatable {
     public var enable: GroupFeatureEnabled
 
     public init(enable: GroupFeatureEnabled) {

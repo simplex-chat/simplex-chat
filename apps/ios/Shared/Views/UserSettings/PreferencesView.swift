@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct PreferencesView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @Environment(\.dismiss) var dismiss: DismissAction
     @State var profile: LocalProfile
     @State var preferences: FullPreferences
     @State var currentPreferences: FullPreferences
@@ -52,12 +53,13 @@ struct PreferencesView: View {
                 var p = fromLocalProfile(profile)
                 p.preferences = toPreferences(preferences)
                 if let newProfile = try await apiUpdateProfile(profile: p) {
-                    DispatchQueue.main.async {
+                    await MainActor.run {
                         if let profileId = chatModel.currentUser?.profile.profileId {
                             chatModel.currentUser?.profile = toLocalProfile(profileId, newProfile, "")
                             chatModel.currentUser?.fullPreferences = preferences
                         }
                         currentPreferences = preferences
+                        dismiss()
                     }
                 }
             } catch {

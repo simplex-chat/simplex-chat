@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct ContactPreferencesView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @Environment(\.dismiss) var dismiss: DismissAction
     @Binding var contact: Contact
     @State var allowFullDeletion: ContactFeatureAllowed
     @State var currentAllowFullDeletion: ContactFeatureAllowed
@@ -77,11 +78,12 @@ struct ContactPreferencesView: View {
         Task {
             do {
                 if let toContact = try await apiSetContactPrefs(contactId: contact.contactId, preferences: collectPreferences()) {
-                    DispatchQueue.main.async {
+                    await MainActor.run {
                         contact = toContact
                         chatModel.updateContact(toContact)
+                        setPreferences()
+                        dismiss()
                     }
-                    setPreferences()
                 }
             } catch {
                 logger.error("ContactPreferencesView apiSetContactPrefs error: \(responseError(error))")

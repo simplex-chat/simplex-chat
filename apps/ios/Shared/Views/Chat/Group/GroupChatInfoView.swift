@@ -13,7 +13,7 @@ struct GroupChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
     @ObservedObject var chat: Chat
-    var groupInfo: GroupInfo
+    @State var groupInfo: GroupInfo
     @ObservedObject private var alertManager = AlertManager.shared
     @State private var alert: GroupChatInfoViewAlert? = nil
     @State private var groupLink: String?
@@ -41,6 +41,24 @@ struct GroupChatInfoView: View {
             List {
                 groupInfoHeader()
                     .listRowBackground(Color.clear)
+
+                Section {
+                    NavigationLink {
+                        GroupPreferencesView(
+                            groupInfo: $groupInfo,
+                            preferences: groupInfo.fullGroupPreferences,
+                            currentPreferences: groupInfo.fullGroupPreferences
+                        )
+                        .navigationBarTitle("Group preferences")
+                        .navigationBarTitleDisplayMode(.large)
+                    } label: {
+                        Text("Group preferences")
+                    }
+                } header: {
+                    Text("Preferences")
+                } footer: {
+                    Text("Only group owners can change group preferences.")
+                }
 
                 Section("\(members.count + 1) members") {
                     if groupInfo.canAddMembers {
