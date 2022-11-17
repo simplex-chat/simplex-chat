@@ -11,7 +11,6 @@ import SimpleXChat
 
 struct GroupPreferencesView: View {
     @EnvironmentObject var chatModel: ChatModel
-    @Environment(\.dismiss) var dismiss: DismissAction
     @Binding var groupInfo: GroupInfo
     @State var preferences: FullGroupPreferences
     @State var currentPreferences: FullGroupPreferences
@@ -24,7 +23,7 @@ struct GroupPreferencesView: View {
 
                 if groupInfo.canEdit {
                     Section {
-                        Button("Reset", role: .destructive) { preferences = currentPreferences }
+                        Button("Reset") { preferences = currentPreferences }
                         Button("Save (and notify group members)") { savePreferences() }
                     }
                     .disabled(currentPreferences == preferences)
@@ -66,7 +65,6 @@ struct GroupPreferencesView: View {
                     groupInfo = gInfo
                     chatModel.updateGroup(gInfo)
                     currentPreferences = preferences
-                    dismiss()
                 }
             } catch {
                 logger.error("GroupPreferencesView apiUpdateGroup error: \(responseError(error))")

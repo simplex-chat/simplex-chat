@@ -11,7 +11,6 @@ import SimpleXChat
 
 struct ContactPreferencesView: View {
     @EnvironmentObject var chatModel: ChatModel
-    @Environment(\.dismiss) var dismiss: DismissAction
     @Binding var contact: Contact
     @State var featuresAllowed: ContactFeaturesAllowed
     @State var currentFeaturesAllowed: ContactFeaturesAllowed
@@ -25,7 +24,7 @@ struct ContactPreferencesView: View {
                 featureSection(.voice, user.fullPreferences.voice.allow, contact.mergedPreferences.voice, $featuresAllowed.voice)
 
                 Section {
-                    Button("Reset", role: .destructive) { featuresAllowed = currentFeaturesAllowed }
+                    Button("Reset") { featuresAllowed = currentFeaturesAllowed }
                     Button("Save (and notify contact)") { savePreferences() }
                 }
                 .disabled(currentFeaturesAllowed == featuresAllowed)
@@ -67,7 +66,6 @@ struct ContactPreferencesView: View {
                         contact = toContact
                         chatModel.updateContact(toContact)
                         currentFeaturesAllowed = featuresAllowed
-                        dismiss()
                     }
                 }
             } catch {
