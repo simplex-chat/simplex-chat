@@ -311,7 +311,7 @@ func apiDeleteToken(token: DeviceToken) async throws {
 
 func getUserSMPServers() throws -> [String] {
     let r = chatSendCmdSync(.getUserSMPServers)
-    if case let .userSMPServers(smpServers) = r { return smpServers }
+    if case let .userSMPServers(smpServers, _) = r { return smpServers.map { $0.server } }
     throw r
 }
 

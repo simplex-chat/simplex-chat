@@ -47,7 +47,7 @@ struct GroupChatInfoView: View {
                     }
                     groupPreferencesButton()
                 } header: {
-                    Text("Preferences")
+                    Text("")
                 } footer: {
                     Text("Only group owners can change group preferences.")
                 }
