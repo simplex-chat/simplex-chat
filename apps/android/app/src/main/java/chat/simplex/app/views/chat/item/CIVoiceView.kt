@@ -15,14 +15,16 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.*
 import chat.simplex.app.R
 import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.*
@@ -69,7 +71,7 @@ fun CIVoiceView(
       val minWidth = with(LocalDensity.current) { if (hasText) 50.sp.toDp() else 40.sp.toDp() }
       val text = String.format("%02d:%02d", time / 1000 / 60, time / 1000 % 60)
       if (hasText) {
-        fileIndicator(file, audioPlaying.value, sent, hasText, receiveFile, play, pause)
+        fileIndicator(file, audioPlaying.value, sent, hasText, audioInfo, receiveFile, play, pause)
         Text(
           text,
           Modifier.widthIn(min = minWidth),
@@ -95,7 +97,7 @@ fun CIVoiceView(
               )
             }
             Column {
-              fileIndicator(file, audioPlaying.value, sent, hasText, receiveFile, play, pause)
+              fileIndicator(file, audioPlaying.value, sent, hasText, audioInfo, receiveFile, play, pause)
               Box(Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp)) {
                 CIMetaView(ci, metaColor)
               }
@@ -104,7 +106,7 @@ fun CIVoiceView(
         } else {
           Row {
             Column {
-              fileIndicator(file, audioPlaying.value, sent, hasText, receiveFile, play, pause)
+              fileIndicator(file, audioPlaying.value, sent, hasText, audioInfo, receiveFile, play, pause)
               Box(Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp)) {
                 CIMetaView(ci, metaColor)
               }
@@ -126,7 +128,7 @@ fun CIVoiceView(
         }
       }
     } else {
-      fileIndicator(null, false, sent, hasText, receiveFile, {}, {})
+      fileIndicator(null, false, sent, hasText, null, receiveFile, {}, {})
       val metaReserve = if (edited)
         "                     "
       else
@@ -204,14 +206,17 @@ private fun fileIndicator(
   audioPlaying: Boolean,
   sent: Boolean,
   hasText: Boolean,
+  audioInfo: State<ProgressAndDuration>?,
   receiveFile: (Long) -> Unit,
   play: () -> Unit,
   pause: () -> Unit
 ) {
-  val saveFileLauncher = rememberSaveFileLauncher(cxt = LocalContext.current, ciFile = file)
-  if (file != null && file.loaded) {
+  if (file != null && file.loaded && audioInfo != null) {
+    val strokeWidth = with(LocalDensity.current){ 2.dp.toPx() }
+    val primary = MaterialTheme.colors.primary
+    val angle = 360f * (audioInfo.value.progressMs.toDouble() / audioInfo.value.durationMs).toFloat()
     if (hasText) {
-      IconButton({ if (!audioPlaying) play() else pause() },) {
+      IconButton({ if (!audioPlaying) play() else pause() }, drawRingModifier(angle, primary, strokeWidth)) {
         Icon(
           imageVector = if (audioPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
           contentDescription = null,
@@ -220,20 +225,23 @@ private fun fileIndicator(
         )
       }
     } else {
-      FloatingActionButton(
-        onClick = { if (!audioPlaying) play() else pause() },
-        elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
-        backgroundColor = if (sent) SentColorLight else ReceivedColorLight
-      ) {
-        Icon(
-          imageVector = if (audioPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-          contentDescription = null,
-          Modifier.size(36.dp),
-          tint = MaterialTheme.colors.primary
-        )
+      Box(drawRingModifier(angle, primary, strokeWidth)) {
+        FloatingActionButton(
+          onClick = { if (!audioPlaying) play() else pause() },
+          elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
+          backgroundColor = if (sent) SentColorLight else ReceivedColorLight
+        ) {
+          Icon(
+            imageVector = if (audioPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+            contentDescription = null,
+            Modifier.size(36.dp),
+            tint = MaterialTheme.colors.primary
+          )
+        }
       }
     }
   } else {
+    val saveFileLauncher = rememberSaveFileLauncher(cxt = LocalContext.current, ciFile = file)
     Box(
       Modifier
         .size(42.dp)
@@ -264,6 +272,26 @@ private fun fileIndicator(
         fileIcon()
       }
     }
+  }
+}
+
+private fun drawRingModifier(angle: Float, color: Color, strokeWidth: Float) = Modifier.drawWithCache {
+  val brush = Brush.linearGradient(
+    0f to Color.Transparent,
+    0f to color,
+    start = Offset(0f, 0f),
+    end = Offset(strokeWidth, strokeWidth),
+    tileMode = TileMode.Repeated
+  )
+  onDrawWithContent {
+    drawContent()
+    drawArc(
+      brush = brush,
+      startAngle = -90f,
+      sweepAngle = angle,
+      useCenter = false,
+      style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+    )
   }
 }
 
