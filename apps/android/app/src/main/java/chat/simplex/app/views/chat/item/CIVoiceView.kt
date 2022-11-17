@@ -331,7 +331,7 @@ fun MiniAudioPlayer(
         audioInfo.value = ProgressAndDuration(0, audioInfo.value.durationMs)
         audioPlaying.value = false
       }
-      delay(100)
+      delay(50)
     }
   }
   LaunchedEffect(AudioPlayer.currentlyPlaying.value) {
