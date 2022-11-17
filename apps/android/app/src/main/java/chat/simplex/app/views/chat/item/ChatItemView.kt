@@ -114,7 +114,7 @@ fun ChatItemView(
               })
             }
           }
-          if (cItem.meta.editable) {
+          if (cItem.meta.editable && cItem.content.msgContent !is MsgContent.MCVoice) {
             ItemAction(stringResource(R.string.edit_verb), Icons.Filled.Edit, onClick = {
               composeState.value = ComposeState(editingItem = cItem, useLinkPreviews = useLinkPreviews)
               showMenu.value = false
