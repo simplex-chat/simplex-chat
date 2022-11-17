@@ -109,9 +109,8 @@ struct ChatInfoView: View {
                         .navigationBarTitle("Contact preferences")
                         .navigationBarTitleDisplayMode(.large)
                     } label: {
-                        settingsRow("switch.2") {
-                            Text("Contact preferences")
-                        }
+                        Label("Contact preferences", systemImage: "switch.2")
+                            .foregroundColor(.accentColor)
                     }
                 }
 

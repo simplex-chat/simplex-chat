@@ -43,6 +43,9 @@ struct GroupChatInfoView: View {
                     .listRowBackground(Color.clear)
 
                 Section {
+                    if groupInfo.canEdit {
+                        editGroupButton()
+                    }
                     NavigationLink {
                         GroupPreferencesView(
                             groupInfo: $groupInfo,
@@ -52,9 +55,8 @@ struct GroupChatInfoView: View {
                         .navigationBarTitle("Group preferences")
                         .navigationBarTitleDisplayMode(.large)
                     } label: {
-                        settingsRow("switch.2") {
-                            Text("Group preferences")
-                        }
+                        Label("Group preferences", systemImage: "switch.2")
+                            .foregroundColor(.accentColor)
                     }
                 } header: {
                     Text("Preferences")
@@ -102,9 +104,6 @@ struct GroupChatInfoView: View {
                 }
 
                 Section {
-                    if groupInfo.canEdit {
-                        editGroupButton()
-                    }
                     clearChatButton()
                     if groupInfo.canDelete {
                         deleteGroupButton()
