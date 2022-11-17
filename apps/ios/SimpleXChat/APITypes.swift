@@ -294,7 +294,7 @@ public enum ChatResponse: Decodable, Error {
     case chatSuspended
     case apiChats(chats: [ChatData])
     case apiChat(chat: ChatData)
-    case userSMPServers(smpServers: [String])
+    case userSMPServers(smpServers: [ServerCfg], presetSMPServers: [String])
     case sMPTestResult(smpTestFailure: SMPTestFailure?)
     case chatItemTTL(chatItemTTL: Int64?)
     case networkConfig(networkConfig: NetCfg)
@@ -500,7 +500,7 @@ public enum ChatResponse: Decodable, Error {
             case .chatSuspended: return noDetails
             case let .apiChats(chats): return String(describing: chats)
             case let .apiChat(chat): return String(describing: chat)
-            case let .userSMPServers(smpServers): return String(describing: smpServers)
+            case let .userSMPServers(smpServers, _): return String(describing: smpServers)
             case let .sMPTestResult(smpTestFailure): return String(describing: smpTestFailure)
             case let .chatItemTTL(chatItemTTL): return String(describing: chatItemTTL)
             case let .networkConfig(networkConfig): return String(describing: networkConfig)

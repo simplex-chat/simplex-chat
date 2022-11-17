@@ -19,7 +19,6 @@ struct GroupChatInfoView: View {
     @State private var groupLink: String?
     @State private var showAddMembersSheet: Bool = false
     @State private var selectedMember: GroupMember? = nil
-    @State private var showGroupProfile: Bool = false
     @State private var connectionStats: ConnectionStats?
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
@@ -43,21 +42,12 @@ struct GroupChatInfoView: View {
                     .listRowBackground(Color.clear)
 
                 Section {
-                    NavigationLink {
-                        GroupPreferencesView(
-                            groupInfo: $groupInfo,
-                            preferences: groupInfo.fullGroupPreferences,
-                            currentPreferences: groupInfo.fullGroupPreferences
-                        )
-                        .navigationBarTitle("Group preferences")
-                        .navigationBarTitleDisplayMode(.large)
-                    } label: {
-                        settingsRow("switch.2") {
-                            Text("Group preferences")
-                        }
+                    if groupInfo.canEdit {
+                        editGroupButton()
                     }
+                    groupPreferencesButton()
                 } header: {
-                    Text("Preferences")
+                    Text("")
                 } footer: {
                     Text("Only group owners can change group preferences.")
                 }
@@ -97,14 +87,8 @@ struct GroupChatInfoView: View {
                 }) { _ in
                     GroupMemberInfoView(groupInfo: groupInfo, member: $selectedMember, connectionStats: $connectionStats)
                 }
-                .sheet(isPresented: $showGroupProfile) {
-                    GroupProfileView(groupId: groupInfo.apiId, groupProfile: groupInfo.groupProfile)
-                }
 
                 Section {
-                    if groupInfo.canEdit {
-                        editGroupButton()
-                    }
                     clearChatButton()
                     if groupInfo.canDelete {
                         deleteGroupButton()
@@ -209,18 +193,40 @@ struct GroupChatInfoView: View {
     private func groupLinkButton() -> some View {
         NavigationLink {
             GroupLinkView(groupId: groupInfo.groupId, groupLink: $groupLink)
-                .navigationBarTitleDisplayMode(.inline)
+                .navigationBarTitle("Group link")
+                .navigationBarTitleDisplayMode(.large)
         } label: {
             Label("Group link", systemImage: "link")
                 .foregroundColor(.accentColor)
         }
     }
 
+    func groupPreferencesButton() -> some View {
+        NavigationLink {
+            GroupPreferencesView(
+                groupInfo: $groupInfo,
+                preferences: groupInfo.fullGroupPreferences,
+                currentPreferences: groupInfo.fullGroupPreferences
+            )
+            .navigationBarTitle("Group preferences")
+            .navigationBarTitleDisplayMode(.large)
+        } label: {
+            Label("Group preferences", systemImage: "switch.2")
+                .foregroundColor(.accentColor)
+        }
+    }
+
     func editGroupButton() -> some View {
-        Button {
-            showGroupProfile = true
+        NavigationLink {
+            GroupProfileView(
+                groupInfo: $groupInfo,
+                groupProfile: groupInfo.groupProfile
+            )
+            .navigationBarTitle("Group profile")
+            .navigationBarTitleDisplayMode(.large)
         } label: {
             Label("Edit group profile", systemImage: "pencil")
+                .foregroundColor(.accentColor)
         }
     }
 

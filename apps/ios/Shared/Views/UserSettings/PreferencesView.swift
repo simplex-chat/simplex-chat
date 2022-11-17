@@ -11,7 +11,6 @@ import SimpleXChat
 
 struct PreferencesView: View {
     @EnvironmentObject var chatModel: ChatModel
-    @Environment(\.dismiss) var dismiss: DismissAction
     @State var profile: LocalProfile
     @State var preferences: FullPreferences
     @State var currentPreferences: FullPreferences
@@ -23,7 +22,7 @@ struct PreferencesView: View {
                 featureSection(.voice, $preferences.voice.allow)
 
                 Section {
-                    Button("Reset", role: .destructive) { preferences = currentPreferences }
+                    Button("Reset") { preferences = currentPreferences }
                     Button("Save (and notify contacts)") { savePreferences() }
                 }
                 .disabled(currentPreferences == preferences)
@@ -59,7 +58,6 @@ struct PreferencesView: View {
                             chatModel.currentUser?.fullPreferences = preferences
                         }
                         currentPreferences = preferences
-                        dismiss()
                     }
                 }
             } catch {
