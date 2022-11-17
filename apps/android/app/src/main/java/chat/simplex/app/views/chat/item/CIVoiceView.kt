@@ -45,7 +45,7 @@ fun CIVoiceView(
   receiveFile: (Long) -> Unit
 ) {
   Row(
-    Modifier.padding(top = 4.dp, bottom = 6.dp, start = 6.dp, end = 12.dp),
+    Modifier.padding(top = 4.dp, bottom = 6.dp, start = 6.dp, end = 6.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
     if (file != null) {
@@ -214,9 +214,9 @@ private fun fileIndicator(
   if (file != null && file.loaded && audioInfo != null) {
     val strokeWidth = with(LocalDensity.current){ 2.dp.toPx() }
     val primary = MaterialTheme.colors.primary
-    val angle = 360f * (audioInfo.value.progressMs.toDouble() / audioInfo.value.durationMs).toFloat()
+    val angle = remember { derivedStateOf { 360f * (audioInfo.value.progressMs.toDouble() / audioInfo.value.durationMs).toFloat() } }
     if (hasText) {
-      IconButton({ if (!audioPlaying) play() else pause() }, drawRingModifier(angle, primary, strokeWidth)) {
+      IconButton({ if (!audioPlaying) play() else pause() }, drawRingModifier(angle.value, primary, strokeWidth)) {
         Icon(
           imageVector = if (audioPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
           contentDescription = null,
@@ -225,7 +225,7 @@ private fun fileIndicator(
         )
       }
     } else {
-      Box(drawRingModifier(angle, primary, strokeWidth)) {
+      Box(drawRingModifier(angle.value, primary, strokeWidth)) {
         FloatingActionButton(
           onClick = { if (!audioPlaying) play() else pause() },
           elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),

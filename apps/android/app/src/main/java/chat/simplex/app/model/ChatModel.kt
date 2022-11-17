@@ -1034,9 +1034,7 @@ data class ChatItem (
   val text: String get() =
     when {
       content.text == "" && file != null && content.msgContent is MsgContent.MCVoice -> {
-        val duration = (content.msgContent as MsgContent.MCVoice).duration
-        val time = String.format("%02d:%02d", duration / 60, duration % 60)
-        generalGetString(R.string.voice_message) + " ($time)"
+        (content.msgContent as MsgContent.MCVoice).toTextWithDuration(false)
       }
       content.text == "" && file != null -> file.fileName
       else -> content.text
@@ -1357,6 +1355,11 @@ sealed class MsgContent {
     is MCFile -> "json ${json.encodeToString(this)}"
     is MCUnknown -> "json $json"
   }
+}
+
+fun MsgContent.MCVoice.toTextWithDuration(short: Boolean): String {
+  val time = String.format("%02d:%02d", duration / 60, duration % 60)
+  return if (short) time else generalGetString(R.string.voice_message) + " ($time)"
 }
 
 @Serializable
