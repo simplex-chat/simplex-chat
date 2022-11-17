@@ -75,11 +75,11 @@ fun CIVoiceView(
         Text(
           text,
           Modifier
-            .widthIn(min = minWidth)
-            .padding(start = 12.dp),
+            .padding(start = 12.dp)
+            .widthIn(min = minWidth),
           color = HighOrLowlight,
           fontSize = 16.sp,
-          textAlign = TextAlign.End,
+          textAlign = TextAlign.Start,
           maxLines = 1
         )
       } else {
