@@ -34,7 +34,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.graphics.drawable.DrawableCompat
 import androidx.core.view.inputmethod.EditorInfoCompat
 import androidx.core.view.inputmethod.InputConnectionCompat
-import androidx.core.widget.doOnTextChanged
+import androidx.core.widget.*
 import chat.simplex.app.R
 import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.ChatItem
@@ -273,6 +273,7 @@ private fun NativeKeyboard(
     DrawableCompat.setTint(it.background, tintColor.toArgb())
     it.isFocusable = composeState.value.preview !is ComposePreview.VoicePreview
     it.isFocusableInTouchMode = it.isFocusable
+    it.doAfterTextChanged { text -> if (cs.preview is ComposePreview.VoicePreview && text.toString() != "") it.setText("") }
     if (cs.message != it.text.toString()) {
       it.setText(cs.message)
       // Set cursor to the end of the text
