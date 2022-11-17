@@ -44,8 +44,7 @@ fun CIVoiceView(
 ) {
   Row(
     Modifier.padding(top = 4.dp, bottom = 6.dp, start = 6.dp, end = 12.dp),
-    verticalAlignment = Alignment.CenterVertically,
-    horizontalArrangement = Arrangement.spacedBy(2.dp)
+    verticalAlignment = Alignment.CenterVertically
   ) {
     if (file != null) {
       val context = LocalContext.current
@@ -88,7 +87,7 @@ fun CIVoiceView(
                 text,
                 Modifier
                   .widthIn(min = minWidth)
-                  .padding(start = 0.dp, end = 10.dp),
+                  .padding(start = 0.dp, end = 12.dp),
                 color = HighOrLowlight,
                 fontSize = 16.sp,
                 textAlign = TextAlign.End,
@@ -97,7 +96,7 @@ fun CIVoiceView(
             }
             Column {
               fileIndicator(file, audioPlaying.value, sent, hasText, receiveFile, play, pause)
-              Box(Modifier.align(Alignment.CenterHorizontally)) {
+              Box(Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp)) {
                 CIMetaView(ci, metaColor)
               }
             }
@@ -106,7 +105,7 @@ fun CIVoiceView(
           Row {
             Column {
               fileIndicator(file, audioPlaying.value, sent, hasText, receiveFile, play, pause)
-              Box(Modifier.align(Alignment.CenterHorizontally)) {
+              Box(Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp)) {
                 CIMetaView(ci, metaColor)
               }
             }
@@ -115,7 +114,7 @@ fun CIVoiceView(
                 text,
                 Modifier
                   .widthIn(min = minWidth)
-                  .padding(start = 10.dp, end = 0.dp),
+                  .padding(start = 12.dp, end = 0.dp),
                 color = HighOrLowlight,
                 fontSize = 16.sp,
                 textAlign = TextAlign.End,
