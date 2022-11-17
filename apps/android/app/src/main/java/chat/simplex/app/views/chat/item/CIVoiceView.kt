@@ -32,7 +32,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 
 @Composable
-fun CIAudioView(
+fun CIVoiceView(
   durationSec: Int,
   file: CIFile?,
   edited: Boolean,

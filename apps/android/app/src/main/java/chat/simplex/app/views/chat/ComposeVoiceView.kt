@@ -10,8 +10,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -23,7 +21,7 @@ import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
-fun ComposeAudioView(filePath: String, durationMs: Int, finished: Boolean, cancelFile: () -> Unit, cancelEnabled: Boolean) {
+fun ComposeVoiceView(filePath: String, durationMs: Int, finished: Boolean, cancelEnabled: Boolean, cancelFile: () -> Unit) {
   BoxWithConstraints(Modifier
     .fillMaxWidth()
   ) {

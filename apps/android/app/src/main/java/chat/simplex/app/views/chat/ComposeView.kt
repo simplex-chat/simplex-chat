@@ -1,6 +1,6 @@
 package chat.simplex.app.views.chat
 
-import ComposeAudioView
+import ComposeVoiceView
 import ComposeFileView
 import android.Manifest
 import android.content.*
@@ -53,7 +53,7 @@ sealed class ComposePreview {
   @Serializable object NoPreview: ComposePreview()
   @Serializable class CLinkPreview(val linkPreview: LinkPreview?): ComposePreview()
   @Serializable class ImagePreview(val images: List<String>): ComposePreview()
-  @Serializable class AudioPreview(val audio: String, val durationMs: Int, val finished: Boolean): ComposePreview()
+  @Serializable class VoicePreview(val voice: String, val durationMs: Int, val finished: Boolean): ComposePreview()
   @Serializable class FilePreview(val fileName: String): ComposePreview()
 }
 
@@ -89,7 +89,7 @@ data class ComposeState(
     get() = {
       val hasContent = when (preview) {
         is ComposePreview.ImagePreview -> true
-        is ComposePreview.AudioPreview -> true
+        is ComposePreview.VoicePreview -> true
         is ComposePreview.FilePreview -> true
         else -> message.isNotEmpty()
       }
@@ -99,7 +99,7 @@ data class ComposeState(
     get() =
       when (preview) {
         is ComposePreview.ImagePreview -> false
-        is ComposePreview.AudioPreview -> false
+        is ComposePreview.VoicePreview -> false
         is ComposePreview.FilePreview -> false
         else -> useLinkPreviews
       }
@@ -125,7 +125,7 @@ fun chatItemPreview(chatItem: ChatItem): ComposePreview {
     is MsgContent.MCText -> ComposePreview.NoPreview
     is MsgContent.MCLink -> ComposePreview.CLinkPreview(linkPreview = mc.preview)
     is MsgContent.MCImage -> ComposePreview.ImagePreview(images = listOf(mc.image))
-    is MsgContent.MCVoice -> ComposePreview.AudioPreview(audio = chatItem.file?.fileName ?: "", mc.duration / 1000, true)
+    is MsgContent.MCVoice -> ComposePreview.VoicePreview(voice = chatItem.file?.fileName ?: "", mc.duration / 1000, true)
     is MsgContent.MCFile -> {
       val fileName = chatItem.file?.fileName ?: ""
       ComposePreview.FilePreview(fileName)
@@ -391,7 +391,7 @@ fun ComposeView(
               }
             }
           }
-          is ComposePreview.AudioPreview -> {
+          is ComposePreview.VoicePreview -> {
             val chosenAudioVal = chosenAudio.value
             if (chosenAudioVal != null) {
               val file = chosenAudioVal.first.toFile().name
@@ -451,7 +451,7 @@ fun ComposeView(
 
   fun onAudioAdded(filePath: String, durationMs: Int, finished: Boolean) {
     chosenAudio.value = File(filePath).toUri() to durationMs
-    composeState.value = composeState.value.copy(preview = ComposePreview.AudioPreview(filePath, durationMs, finished))
+    composeState.value = composeState.value.copy(preview = ComposePreview.VoicePreview(filePath, durationMs, finished))
   }
 
   fun cancelLinkPreview() {
@@ -488,12 +488,12 @@ fun ComposeView(
         ::cancelImages,
         cancelEnabled = !composeState.value.editing
       )
-      is ComposePreview.AudioPreview -> ComposeAudioView(
-        preview.audio,
+      is ComposePreview.VoicePreview -> ComposeVoiceView(
+        preview.voice,
         preview.durationMs,
         preview.finished,
-        ::cancelAudio,
-        cancelEnabled = !composeState.value.editing
+        cancelEnabled = !composeState.value.editing,
+        ::cancelAudio
       )
       is ComposePreview.FilePreview -> ComposeFileView(
         preview.fileName,
@@ -529,7 +529,7 @@ fun ComposeView(
   Column {
     contextItemView()
     when {
-      composeState.value.editing && composeState.value.preview is ComposePreview.AudioPreview -> {}
+      composeState.value.editing && composeState.value.preview is ComposePreview.VoicePreview -> {}
       composeState.value.editing && composeState.value.preview is ComposePreview.FilePreview -> {}
       else -> previewView()
     }

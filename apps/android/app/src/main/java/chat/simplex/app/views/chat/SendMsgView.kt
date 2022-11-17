@@ -22,24 +22,18 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.graphics.drawable.DrawableCompat
 import androidx.core.view.inputmethod.EditorInfoCompat
 import androidx.core.view.inputmethod.InputConnectionCompat
-import androidx.core.widget.doBeforeTextChanged
 import androidx.core.widget.doOnTextChanged
 import chat.simplex.app.R
 import chat.simplex.app.SimplexApp
@@ -72,7 +66,7 @@ fun SendMsgView(
       Box(Modifier.align(Alignment.BottomEnd)) {
         val icon = if (cs.editing) Icons.Filled.Check else Icons.Outlined.ArrowUpward
         val color = if (cs.sendEnabled()) MaterialTheme.colors.primary else HighOrLowlight
-        if (cs.inProgress && (cs.preview is ComposePreview.ImagePreview || cs.preview is ComposePreview.AudioPreview || cs.preview is ComposePreview.FilePreview)) {
+        if (cs.inProgress && (cs.preview is ComposePreview.ImagePreview || cs.preview is ComposePreview.VoicePreview || cs.preview is ComposePreview.FilePreview)) {
           CircularProgressIndicator(Modifier.size(36.dp).padding(4.dp), color = HighOrLowlight, strokeWidth = 3.dp)
         } else if (!showVoiceButton) {
           Icon(
@@ -156,7 +150,7 @@ fun SendMsgView(
             showRecordingUi(false)
           }
           LaunchedEffect(cs.preview) {
-            if (cs.preview !is ComposePreview.AudioPreview && filePath.value != null) {
+            if (cs.preview !is ComposePreview.VoicePreview && filePath.value != null) {
               // Pressed on X icon in preview
               cleanUp(true)
             }
@@ -277,7 +271,7 @@ private fun NativeKeyboard(
     it.setTextColor(textColor.toArgb())
     it.textSize = textStyle.value.fontSize.value
     DrawableCompat.setTint(it.background, tintColor.toArgb())
-    it.isFocusable = composeState.value.preview !is ComposePreview.AudioPreview
+    it.isFocusable = composeState.value.preview !is ComposePreview.VoicePreview
     it.isFocusableInTouchMode = it.isFocusable
     if (cs.message != it.text.toString()) {
       it.setText(cs.message)
@@ -291,7 +285,7 @@ private fun NativeKeyboard(
       showKeyboard = false
     }
   }
-  if (composeState.value.preview is ComposePreview.AudioPreview) {
+  if (composeState.value.preview is ComposePreview.VoicePreview) {
     Text(
       generalGetString(R.string.voice_message_send_text),
       Modifier.padding(padding),
