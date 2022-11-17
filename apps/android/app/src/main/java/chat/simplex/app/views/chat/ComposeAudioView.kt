@@ -89,7 +89,7 @@ fun ComposeAudioView(filePath: String, durationMs: Int, finished: Boolean, cance
       val text = "%02d:%02d".format(numberInText.value / 60, numberInText.value % 60)
       Text(
         text,
-        style = TextStyle.Default.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold),
+        fontSize = 18.sp,
         color = HighOrLowlight,
       )
       Spacer(Modifier.weight(1f))
