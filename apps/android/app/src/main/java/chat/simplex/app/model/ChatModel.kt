@@ -1033,6 +1033,11 @@ data class ChatItem (
 
   val text: String get() =
     when {
+      content.text == "" && file != null && content.msgContent is MsgContent.MCVoice -> {
+        val duration = (content.msgContent as MsgContent.MCVoice).duration
+        val time = String.format("%02d:%02d", duration / 60, duration % 60)
+        generalGetString(R.string.voice_message) + " ($time)"
+      }
       content.text == "" && file != null -> file.fileName
       else -> content.text
     }

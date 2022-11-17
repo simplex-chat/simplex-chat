@@ -66,11 +66,9 @@ fun CIAudioView(
       fileIndicator(file, audioPlaying.value, receiveFile, play, pause)
 
       val time = if (audioPlaying.value) audioInfo.value.progressMs else audioInfo.value.durationMs
-      val mins = time / 1000 / 60
-      val secs = time / 1000 % 60
       val minWidth = with(LocalDensity.current) { 50.sp.toDp() }
       Text(
-        String.format("%02d:%02d", mins, secs),
+        String.format("%02d:%02d", time / 1000 / 60, time / 1000 % 60),
         Modifier.widthIn(min = minWidth),
         color = HighOrLowlight,
         fontSize = 14.sp,

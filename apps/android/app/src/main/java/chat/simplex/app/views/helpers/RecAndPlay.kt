@@ -10,6 +10,8 @@ import androidx.compose.runtime.saveable.Saver
 import chat.simplex.app.SimplexApp
 import chat.simplex.app.TAG
 import java.io.*
+import java.text.SimpleDateFormat
+import java.util.*
 
 interface Recorder {
   fun start(recordingInProgress: MutableState<Boolean>, onStop: () -> Unit): String
@@ -51,7 +53,8 @@ class RecorderNative(val recordedBytesLimit: Long): Recorder {
     rec.setAudioEncodingBitRate(16000)
     rec.setMaxDuration(-1)
     rec.setMaxFileSize(recordedBytesLimit)
-    val filePath = getAppFilePath(SimplexApp.context, uniqueCombine(SimplexApp.context, getAppFilePath(SimplexApp.context, "voice.m4a")))
+    val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+    val filePath = getAppFilePath(SimplexApp.context, uniqueCombine(SimplexApp.context, getAppFilePath(SimplexApp.context, "voice_${timestamp}.m4a")))
     rec.setOutputFile(filePath)
     rec.prepare()
     rec.start()
