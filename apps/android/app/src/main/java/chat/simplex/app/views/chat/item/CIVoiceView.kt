@@ -36,7 +36,10 @@ fun CIVoiceView(
   durationSec: Int,
   file: CIFile?,
   edited: Boolean,
+  sent: Boolean,
   hasText: Boolean,
+  ci: ChatItem,
+  metaColor: Color,
   receiveFile: (Long) -> Unit
 ) {
   Row(
@@ -63,20 +66,69 @@ fun CIVoiceView(
       val filePath = remember(file.filePath, file.fileStatus) { getLoadedFilePath(context, file) }
       MiniAudioPlayer(filePath, audioPlaying, audioInfo)
 
-      fileIndicator(file, audioPlaying.value, receiveFile, play, pause)
-
       val time = if (audioPlaying.value) audioInfo.value.progressMs else audioInfo.value.durationMs
       val minWidth = with(LocalDensity.current) { if (hasText) 50.sp.toDp() else 40.sp.toDp() }
-      Text(
-        String.format("%02d:%02d", time / 1000 / 60, time / 1000 % 60),
-        Modifier.widthIn(min = minWidth),
-        color = HighOrLowlight,
-        fontSize = 14.sp,
-        textAlign = TextAlign.End,
-        maxLines = 1
-      )
+      val text = String.format("%02d:%02d", time / 1000 / 60, time / 1000 % 60)
+      if (hasText) {
+        fileIndicator(file, audioPlaying.value, sent, hasText, receiveFile, play, pause)
+        Text(
+          text,
+          Modifier.widthIn(min = minWidth),
+          color = HighOrLowlight,
+          fontSize = 16.sp,
+          textAlign = TextAlign.End,
+          maxLines = 1
+        )
+      } else {
+        if (!sent) {
+          Row {
+            Column {
+              fileIndicator(file, audioPlaying.value, sent, hasText, receiveFile, play, pause)
+              Box(Modifier.align(Alignment.CenterHorizontally)) {
+                CIMetaView(ci, metaColor)
+              }
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+              Text(
+                text,
+                Modifier
+                  .widthIn(min = minWidth)
+                  .padding(start = 10.dp, end = 0.dp),
+                color = HighOrLowlight,
+                fontSize = 16.sp,
+                textAlign = TextAlign.End,
+                maxLines = 1
+              )
+              Spacer(Modifier.height(56.dp))
+            }
+          }
+        }
+        if (sent) {
+          Row {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+              Spacer(Modifier.height(56.dp))
+              Text(
+                text,
+                Modifier
+                  .widthIn(min = minWidth)
+                  .padding(start = 0.dp, end = 10.dp),
+                color = HighOrLowlight,
+                fontSize = 16.sp,
+                textAlign = TextAlign.End,
+                maxLines = 1
+              )
+            }
+            Column {
+              fileIndicator(file, audioPlaying.value, sent, hasText, receiveFile, play, pause)
+              Box(Modifier.align(Alignment.CenterHorizontally)) {
+                CIMetaView(ci, metaColor)
+              }
+            }
+          }
+        }
+      }
     } else {
-      fileIndicator(null, false, receiveFile, {}, {})
+      fileIndicator(null, false, sent, hasText, receiveFile, {}, {})
       val metaReserve = if (edited)
         "                     "
       else
@@ -149,34 +201,51 @@ private fun fileAction(
 }
 
 @Composable
-private fun fileIndicator(file: CIFile?, audioPlaying: Boolean, receiveFile: (Long) -> Unit, play: () -> Unit, pause: () -> Unit) {
+private fun fileIndicator(
+  file: CIFile?,
+  audioPlaying: Boolean,
+  sent: Boolean,
+  hasText: Boolean,
+  receiveFile: (Long) -> Unit,
+  play: () -> Unit,
+  pause: () -> Unit
+) {
   val saveFileLauncher = rememberSaveFileLauncher(cxt = LocalContext.current, ciFile = file)
-  Box(
-    Modifier
-      .size(42.dp)
-      .clip(RoundedCornerShape(4.dp))
-      .clickable(onClick = {
-        if (file?.loaded == true) {
-          if (!audioPlaying) play() else pause()
-          return@clickable
-        }
-        fileAction(file, receiveFile, saveFileLauncher)
-      }),
-    contentAlignment = Alignment.Center
-  ) {
-    if (file != null) {
-      if (file.loaded) {
-        Box(
-          contentAlignment = Alignment.Center
-        ) {
-          Icon(
-            if (audioPlaying) Icons.Filled.PauseCircleOutline else Icons.Filled.PlayCircleOutline,
-            stringResource(R.string.icon_descr_file),
-            Modifier.size(36.dp),
-            tint = HighOrLowlight,
-          )
-        }
-      } else {
+  if (file != null && file.loaded) {
+    if (hasText) {
+      IconButton({ if (!audioPlaying) play() else pause() },) {
+        Icon(
+          imageVector = if (audioPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+          contentDescription = null,
+          Modifier.size(36.dp),
+          tint = MaterialTheme.colors.primary
+        )
+      }
+    } else {
+      FloatingActionButton(
+        onClick = { if (!audioPlaying) play() else pause() },
+        elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
+        backgroundColor = if (sent) SentColorLight else ReceivedColorLight
+      ) {
+        Icon(
+          imageVector = if (audioPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+          contentDescription = null,
+          Modifier.size(36.dp),
+          tint = MaterialTheme.colors.primary
+        )
+      }
+    }
+  } else {
+    Box(
+      Modifier
+        .size(42.dp)
+        .clip(RoundedCornerShape(4.dp))
+        .clickable(onClick = {
+          fileAction(file, receiveFile, saveFileLauncher)
+        }),
+      contentAlignment = Alignment.Center
+    ) {
+      if (file != null) {
         when (file.fileStatus) {
           CIFileStatus.SndStored -> fileIcon()
           CIFileStatus.SndTransfer -> progressIndicator()
@@ -193,9 +262,9 @@ private fun fileIndicator(file: CIFile?, audioPlaying: Boolean, receiveFile: (Lo
           CIFileStatus.RcvComplete -> fileIcon()
           CIFileStatus.RcvCancelled -> fileIcon(innerIcon = Icons.Outlined.Close)
         }
+      } else {
+        fileIcon()
       }
-    } else {
-      fileIcon()
     }
   }
 }

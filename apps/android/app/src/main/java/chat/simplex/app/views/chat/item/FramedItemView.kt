@@ -143,17 +143,9 @@ fun FramedItemView(
                 }
               }
               is MsgContent.MCVoice -> {
-                Column(
-                  Modifier,
-                  horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                  CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, mc.text != "", receiveFile)
-                  if (mc.text != "") {
-                    CIMarkdownText(ci, showMember, uriHandler)
-                  }
-                  if (mc.text.isEmpty()) {
-                    CIMetaView(ci, metaColor)
-                  }
+                CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, mc.text != "", ci, metaColor, receiveFile)
+                if (mc.text != "") {
+                  CIMarkdownText(ci, showMember, uriHandler)
                 }
               }
               is MsgContent.MCFile -> {
