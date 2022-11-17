@@ -74,7 +74,7 @@ chatTests = do
   describe "async group connections" $ do
     xit "create and join group when clients go offline" testGroupAsync
   describe "user profiles" $ do
-    it "update user profiles and notify contacts" testUpdateProfile
+    it "update user profile and notify contacts" testUpdateProfile
     it "update user profile with image" testUpdateProfileImage
   describe "sending and receiving files" $ do
     describe "send and receive file" $ fileTestMatrix2 runTestFileTransfer
