@@ -197,7 +197,6 @@ struct GroupChatInfoView: View {
                 .navigationBarTitleDisplayMode(.large)
         } label: {
             Label("Group link", systemImage: "link")
-                .foregroundColor(.accentColor)
         }
     }
 
@@ -212,7 +211,6 @@ struct GroupChatInfoView: View {
             .navigationBarTitleDisplayMode(.large)
         } label: {
             Label("Group preferences", systemImage: "switch.2")
-                .foregroundColor(.accentColor)
         }
     }
 
@@ -226,7 +224,6 @@ struct GroupChatInfoView: View {
             .navigationBarTitleDisplayMode(.large)
         } label: {
             Label("Edit group profile", systemImage: "pencil")
-                .foregroundColor(.accentColor)
         }
     }
 
