@@ -68,13 +68,15 @@ fun CIVoiceView(
       MiniAudioPlayer(filePath, audioPlaying, audioInfo)
 
       val time = if (audioPlaying.value) audioInfo.value.progressMs else audioInfo.value.durationMs
-      val minWidth = with(LocalDensity.current) { if (hasText) 50.sp.toDp() else 40.sp.toDp() }
+      val minWidth = with(LocalDensity.current) { 57.sp.toDp() }
       val text = String.format("%02d:%02d", time / 1000 / 60, time / 1000 % 60)
       if (hasText) {
         fileIndicator(file, audioPlaying.value, sent, hasText, audioInfo, receiveFile, play, pause)
         Text(
           text,
-          Modifier.widthIn(min = minWidth),
+          Modifier
+            .widthIn(min = minWidth)
+            .padding(start = 12.dp),
           color = HighOrLowlight,
           fontSize = 16.sp,
           textAlign = TextAlign.End,
@@ -89,10 +91,9 @@ fun CIVoiceView(
                 text,
                 Modifier
                   .widthIn(min = minWidth)
-                  .padding(start = 0.dp, end = 12.dp),
+                  .padding(end = 12.dp),
                 color = HighOrLowlight,
                 fontSize = 16.sp,
-                textAlign = TextAlign.End,
                 maxLines = 1
               )
             }
@@ -116,10 +117,9 @@ fun CIVoiceView(
                 text,
                 Modifier
                   .widthIn(min = minWidth)
-                  .padding(start = 12.dp, end = 0.dp),
+                  .padding(start = 12.dp),
                 color = HighOrLowlight,
                 fontSize = 16.sp,
-                textAlign = TextAlign.End,
                 maxLines = 1
               )
               Spacer(Modifier.height(56.dp))
