@@ -80,29 +80,6 @@ fun CIVoiceView(
           maxLines = 1
         )
       } else {
-        if (!sent) {
-          Row {
-            Column {
-              fileIndicator(file, audioPlaying.value, sent, hasText, receiveFile, play, pause)
-              Box(Modifier.align(Alignment.CenterHorizontally)) {
-                CIMetaView(ci, metaColor)
-              }
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-              Text(
-                text,
-                Modifier
-                  .widthIn(min = minWidth)
-                  .padding(start = 10.dp, end = 0.dp),
-                color = HighOrLowlight,
-                fontSize = 16.sp,
-                textAlign = TextAlign.End,
-                maxLines = 1
-              )
-              Spacer(Modifier.height(56.dp))
-            }
-          }
-        }
         if (sent) {
           Row {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -123,6 +100,28 @@ fun CIVoiceView(
               Box(Modifier.align(Alignment.CenterHorizontally)) {
                 CIMetaView(ci, metaColor)
               }
+            }
+          }
+        } else {
+          Row {
+            Column {
+              fileIndicator(file, audioPlaying.value, sent, hasText, receiveFile, play, pause)
+              Box(Modifier.align(Alignment.CenterHorizontally)) {
+                CIMetaView(ci, metaColor)
+              }
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+              Text(
+                text,
+                Modifier
+                  .widthIn(min = minWidth)
+                  .padding(start = 10.dp, end = 0.dp),
+                color = HighOrLowlight,
+                fontSize = 16.sp,
+                textAlign = TextAlign.End,
+                maxLines = 1
+              )
+              Spacer(Modifier.height(56.dp))
             }
           }
         }
