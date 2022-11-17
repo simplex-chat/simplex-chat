@@ -89,10 +89,8 @@ struct SettingsView: View {
                         ProfilePreview(profileOf: user)
                         .padding(.leading, -8)
                     }
-                    .disabled(chatModel.chatRunning != true)
 
                     incognitoRow()
-                        .disabled(chatModel.chatRunning != true)
 
                     NavigationLink {
                         CreateLinkView(selection: .longTerm, viaNavLink: true)
@@ -100,7 +98,6 @@ struct SettingsView: View {
                     } label: {
                         settingsRow("qrcode") { Text("Your SimpleX contact address") }
                     }
-                    .disabled(chatModel.chatRunning != true)
 
                     NavigationLink {
                         PreferencesView(profile: user.profile, preferences: user.fullPreferences, currentPreferences: user.fullPreferences)
@@ -108,8 +105,8 @@ struct SettingsView: View {
                     } label: {
                         settingsRow("switch.2") { Text("Chat preferences") }
                     }
-                    .disabled(chatModel.chatRunning != true)
                 }
+                .disabled(chatModel.chatRunning != true)
                 
                 Section("Settings") {
                     NavigationLink {
@@ -121,24 +118,32 @@ struct SettingsView: View {
                             Text("Notifications")
                         }
                     }
+                    .disabled(chatModel.chatRunning != true)
+                    
                     NavigationLink {
                         NetworkAndServers()
                             .navigationTitle("Network & servers")
                     } label: {
                         settingsRow("externaldrive.connected.to.line.below") { Text("Network & servers") }
                     }
+                    .disabled(chatModel.chatRunning != true)
+                    
                     NavigationLink {
                         CallSettings()
                             .navigationTitle("Your calls")
                     } label: {
                         settingsRow("video") { Text("Audio & video calls") }
                     }
+                    .disabled(chatModel.chatRunning != true)
+                    
                     NavigationLink {
                         PrivacySettings()
                             .navigationTitle("Your privacy")
                     } label: {
                         settingsRow("lock") { Text("Privacy & security") }
                     }
+                    .disabled(chatModel.chatRunning != true)
+                    
                     if UIApplication.shared.supportsAlternateIcons {
                         NavigationLink {
                             AppearanceSettings()
@@ -146,10 +151,11 @@ struct SettingsView: View {
                         } label: {
                             settingsRow("sun.max") { Text("Appearance") }
                         }
+                        .disabled(chatModel.chatRunning != true)
                     }
+                    
                     chatDatabaseRow()
                 }
-                .disabled(chatModel.chatRunning != true)
 
                 Section("Help") {
                     NavigationLink {
