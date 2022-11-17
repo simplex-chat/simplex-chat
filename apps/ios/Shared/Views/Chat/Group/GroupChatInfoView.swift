@@ -19,7 +19,6 @@ struct GroupChatInfoView: View {
     @State private var groupLink: String?
     @State private var showAddMembersSheet: Bool = false
     @State private var selectedMember: GroupMember? = nil
-    @State private var showGroupProfile: Bool = false
     @State private var connectionStats: ConnectionStats?
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
@@ -87,9 +86,6 @@ struct GroupChatInfoView: View {
                     connectionStats = nil
                 }) { _ in
                     GroupMemberInfoView(groupInfo: groupInfo, member: $selectedMember, connectionStats: $connectionStats)
-                }
-                .sheet(isPresented: $showGroupProfile) {
-                    GroupProfileView(groupId: groupInfo.apiId, groupProfile: groupInfo.groupProfile)
                 }
 
                 Section {
@@ -221,10 +217,16 @@ struct GroupChatInfoView: View {
     }
 
     func editGroupButton() -> some View {
-        Button {
-            showGroupProfile = true
+        NavigationLink {
+            GroupProfileView(
+                groupInfo: $groupInfo,
+                groupProfile: groupInfo.groupProfile
+            )
+            .navigationBarTitle("Group profile")
+            .navigationBarTitleDisplayMode(.large)
         } label: {
             Label("Edit group profile", systemImage: "pencil")
+                .foregroundColor(.accentColor)
         }
     }
 
