@@ -46,18 +46,7 @@ struct GroupChatInfoView: View {
                     if groupInfo.canEdit {
                         editGroupButton()
                     }
-                    NavigationLink {
-                        GroupPreferencesView(
-                            groupInfo: $groupInfo,
-                            preferences: groupInfo.fullGroupPreferences,
-                            currentPreferences: groupInfo.fullGroupPreferences
-                        )
-                        .navigationBarTitle("Group preferences")
-                        .navigationBarTitleDisplayMode(.large)
-                    } label: {
-                        Label("Group preferences", systemImage: "switch.2")
-                            .foregroundColor(.accentColor)
-                    }
+                    groupPreferencesButton()
                 } header: {
                     Text("Preferences")
                 } footer: {
@@ -208,9 +197,25 @@ struct GroupChatInfoView: View {
     private func groupLinkButton() -> some View {
         NavigationLink {
             GroupLinkView(groupId: groupInfo.groupId, groupLink: $groupLink)
-                .navigationBarTitleDisplayMode(.inline)
+                .navigationBarTitle("Group link")
+                .navigationBarTitleDisplayMode(.large)
         } label: {
             Label("Group link", systemImage: "link")
+                .foregroundColor(.accentColor)
+        }
+    }
+
+    func groupPreferencesButton() -> some View {
+        NavigationLink {
+            GroupPreferencesView(
+                groupInfo: $groupInfo,
+                preferences: groupInfo.fullGroupPreferences,
+                currentPreferences: groupInfo.fullGroupPreferences
+            )
+            .navigationBarTitle("Group preferences")
+            .navigationBarTitleDisplayMode(.large)
+        } label: {
+            Label("Group preferences", systemImage: "switch.2")
                 .foregroundColor(.accentColor)
         }
     }

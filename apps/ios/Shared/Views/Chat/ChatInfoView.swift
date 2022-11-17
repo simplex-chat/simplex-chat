@@ -100,18 +100,7 @@ struct ChatInfoView: View {
                 }
 
                 Section("Preferences") {
-                    NavigationLink {
-                        ContactPreferencesView(
-                            contact: $contact,
-                            featuresAllowed: contactUserPrefsToFeaturesAllowed(contact.mergedPreferences),
-                            currentFeaturesAllowed: contactUserPrefsToFeaturesAllowed(contact.mergedPreferences)
-                        )
-                        .navigationBarTitle("Contact preferences")
-                        .navigationBarTitleDisplayMode(.large)
-                    } label: {
-                        Label("Contact preferences", systemImage: "switch.2")
-                            .foregroundColor(.accentColor)
-                    }
+                    contactPreferencesButton()
                 }
 
                 Section("Servers") {
@@ -204,6 +193,21 @@ struct ChatInfoView: View {
             } catch {
                 logger.error("setContactAlias error: \(responseError(error))")
             }
+        }
+    }
+
+    func contactPreferencesButton() -> some View {
+        NavigationLink {
+            ContactPreferencesView(
+                contact: $contact,
+                featuresAllowed: contactUserPrefsToFeaturesAllowed(contact.mergedPreferences),
+                currentFeaturesAllowed: contactUserPrefsToFeaturesAllowed(contact.mergedPreferences)
+            )
+            .navigationBarTitle("Contact preferences")
+            .navigationBarTitleDisplayMode(.large)
+        } label: {
+            Label("Contact preferences", systemImage: "switch.2")
+                .foregroundColor(.accentColor)
         }
     }
 
