@@ -378,6 +378,8 @@ processChatCommand = \case
         | otherwise = case qmc of
           MCImage _ image -> MCImage qTextOrFile image
           MCFile _ -> MCFile qTextOrFile
+          -- consider same for voice messages
+          -- MCVoice _ voice -> MCVoice qTextOrFile voice
           _ -> qmc
         where
           -- if the message we're quoting with is one of the "large" MsgContents
