@@ -41,7 +41,7 @@ fun CIVoiceView(
 ) {
   Row(
     Modifier.padding(top = 4.dp, bottom = 6.dp, start = 6.dp, end = 12.dp),
-    verticalAlignment = if (hasText) Alignment.CenterVertically else Alignment.Top,
+    verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(2.dp)
   ) {
     if (file != null) {
@@ -66,7 +66,7 @@ fun CIVoiceView(
       fileIndicator(file, audioPlaying.value, receiveFile, play, pause)
 
       val time = if (audioPlaying.value) audioInfo.value.progressMs else audioInfo.value.durationMs
-      val minWidth = with(LocalDensity.current) { 50.sp.toDp() }
+      val minWidth = with(LocalDensity.current) { if (hasText) 50.sp.toDp() else 40.sp.toDp() }
       Text(
         String.format("%02d:%02d", time / 1000 / 60, time / 1000 % 60),
         Modifier.widthIn(min = minWidth),
@@ -170,7 +170,7 @@ private fun fileIndicator(file: CIFile?, audioPlaying: Boolean, receiveFile: (Lo
           contentAlignment = Alignment.Center
         ) {
           Icon(
-            if (audioPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+            if (audioPlaying) Icons.Filled.PauseCircleOutline else Icons.Filled.PlayCircleOutline,
             stringResource(R.string.icon_descr_file),
             Modifier.size(36.dp),
             tint = HighOrLowlight,

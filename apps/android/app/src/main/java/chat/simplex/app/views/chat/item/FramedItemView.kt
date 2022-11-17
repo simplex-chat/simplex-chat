@@ -143,9 +143,17 @@ fun FramedItemView(
                 }
               }
               is MsgContent.MCVoice -> {
-                CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, mc.text != "", receiveFile)
-                if (mc.text != "") {
-                  CIMarkdownText(ci, showMember, uriHandler)
+                Column(
+                  Modifier,
+                  horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                  CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, mc.text != "", receiveFile)
+                  if (mc.text != "") {
+                    CIMarkdownText(ci, showMember, uriHandler)
+                  }
+                  if (mc.text.isEmpty()) {
+                    CIMetaView(ci, metaColor)
+                  }
                 }
               }
               is MsgContent.MCFile -> {
@@ -163,8 +171,10 @@ fun FramedItemView(
           }
         }
       }
-      Box(Modifier.padding(bottom = 6.dp, end = 12.dp)) {
-        CIMetaView(ci, metaColor)
+      if (ci.content.msgContent !is MsgContent.MCVoice || ci.content.text.isNotEmpty()) {
+        Box(Modifier.padding(bottom = 6.dp, end = 12.dp)) {
+          CIMetaView(ci, metaColor)
+        }
       }
     }
   }
