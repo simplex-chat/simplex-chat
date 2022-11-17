@@ -1,3 +1,4 @@
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -19,31 +20,36 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.item.MiniAudioPlayer
 import chat.simplex.app.views.chat.item.SentColorLight
 import chat.simplex.app.views.helpers.*
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
-fun ComposeAudioView(filePath: String, durationSec: Int, finished: Boolean, cancelFile: () -> Unit, cancelEnabled: Boolean) {
+fun ComposeAudioView(filePath: String, durationMs: Int, finished: Boolean, cancelFile: () -> Unit, cancelEnabled: Boolean) {
   BoxWithConstraints(Modifier
     .fillMaxWidth()
   ) {
     val audioPlaying = rememberSaveable { mutableStateOf(false) }
     val audioInfo = rememberSaveable(saver = ProgressAndDuration.Saver) {
-      mutableStateOf(ProgressAndDuration(durationMs = durationSec * 1000))
+      mutableStateOf(ProgressAndDuration(durationMs = durationMs))
     }
-    LaunchedEffect(durationSec) {
-      audioInfo.value = audioInfo.value.copy(durationMs = durationSec * 1000)
+    LaunchedEffect(durationMs) {
+      audioInfo.value = audioInfo.value.copy(durationMs = durationMs)
     }
-    val progressBarWidth = remember(durationSec, finished) {
-      derivedStateOf {
-        val number = if (audioPlaying.value) audioInfo.value.progressMs / 1000 else if (!finished) durationSec else 0
-        if (audioPlaying.value || finished)
-          ((number.toDouble() / durationSec) * maxWidth.value).dp
-        else
-          (((number.toDouble() * 1000) / MAX_VOICE_MILLIS_FOR_SENDING) * maxWidth.value).dp
-      }
+    val progressBarWidth = remember { Animatable(0f) }
+    LaunchedEffect(durationMs, finished) {
+      snapshotFlow { audioInfo.value }
+        .distinctUntilChanged()
+        .collect {
+          val number = if (audioPlaying.value) audioInfo.value.progressMs else if (!finished) durationMs else 0
+          val new = if (audioPlaying.value || finished)
+            ((number.toDouble() / durationMs) * maxWidth.value).dp
+          else
+            (((number.toDouble()) / MAX_VOICE_MILLIS_FOR_SENDING) * maxWidth.value).dp
+          progressBarWidth.animateTo(new.value, audioProgressBarAnimationSpec())
+        }
     }
     Spacer(
       Modifier
-        .requiredWidth(progressBarWidth.value)
+        .requiredWidth(progressBarWidth.value.dp)
         .padding(top = 58.dp)
         .height(2.dp)
         .background(MaterialTheme.colors.primary)
@@ -77,8 +83,8 @@ fun ComposeAudioView(filePath: String, durationSec: Int, finished: Boolean, canc
           tint = MaterialTheme.colors.primary
         )
       }
-      val numberInText = remember(durationSec, audioInfo.value) {
-        derivedStateOf { if (audioPlaying.value) audioInfo.value.progressMs / 1000 else durationSec }
+      val numberInText = remember(durationMs, audioInfo.value) {
+        derivedStateOf { if (audioPlaying.value) audioInfo.value.progressMs / 1000 else durationMs / 1000 }
       }
       val text = "%02d:%02d".format(numberInText.value / 60, numberInText.value % 60)
       Text(

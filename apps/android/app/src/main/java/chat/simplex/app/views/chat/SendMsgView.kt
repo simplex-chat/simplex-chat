@@ -112,7 +112,7 @@ fun SendMsgView(
             while (isActive) {
               now = System.currentTimeMillis()
               if (recordingTimeRange.first != 0L && recordingInProgress.value) {
-                filePath.value?.let { onAudioAdded(it, (now - recordingTimeRange.first).toInt() / 1000, false) }
+                filePath.value?.let { onAudioAdded(it, (now - recordingTimeRange.first).toInt(), false) }
               }
               delay(100)
             }
@@ -120,7 +120,7 @@ fun SendMsgView(
           val stopRecordingAndAddAudio: () -> Unit = {
             rec.stop(recordingInProgress)
             recordingTimeRange = recordingTimeRange.first..System.currentTimeMillis()
-            filePath.value?.let { onAudioAdded(it, (recordingTimeRange.last - recordingTimeRange.first).toInt() / 1000, true) }
+            filePath.value?.let { onAudioAdded(it, (recordingTimeRange.last - recordingTimeRange.first).toInt(), true) }
           }
           val startStopRecording = {
             when {

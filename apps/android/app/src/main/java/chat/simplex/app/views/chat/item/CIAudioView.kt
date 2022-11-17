@@ -33,7 +33,7 @@ import kotlinx.coroutines.isActive
 
 @Composable
 fun CIAudioView(
-  duration: Int,
+  durationSec: Int,
   file: CIFile?,
   edited: Boolean,
   hasText: Boolean,
@@ -48,7 +48,7 @@ fun CIAudioView(
       val context = LocalContext.current
       val audioPlaying = rememberSaveable { mutableStateOf(false) }
       val audioInfo = remember(file.filePath) {
-        file.audioInfo.also { it.value = it.value.copy(durationMs = duration * 1000) }
+        file.audioInfo.also { it.value = it.value.copy(durationMs = durationSec * 1000) }
       }
       val play = play@{
         audioPlaying.value = AudioPlayer.start(getAppFilePath(SimplexApp.context, file.filePath ?: return@play), audioInfo.value.progressMs) {
