@@ -71,7 +71,7 @@ fun ComposeVoiceView(filePath: String, durationMs: Int, finished: Boolean, cance
       }
       MiniAudioPlayer(filePath, audioPlaying, audioInfo)
 
-      IconButton({ if (!audioPlaying.value) play() else pause() }) {
+      IconButton({ if (finished) {if (!audioPlaying.value) play() else pause() }}) {
         Icon(
           if (audioPlaying.value) Icons.Filled.Pause else Icons.Filled.PlayArrow,
           stringResource(R.string.icon_descr_file),
