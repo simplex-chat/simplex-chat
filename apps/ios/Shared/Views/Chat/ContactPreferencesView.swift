@@ -48,7 +48,7 @@ struct ContactPreferencesView: View {
         } header: {
             HStack {
                 Image(systemName: "\(feature.icon).fill")
-                    .foregroundColor(enabled.forUser ? .green : enabled.forContact ? .yellow : .secondary)
+                    .foregroundColor(enabled.forUser ? .green : enabled.forContact ? .yellow : .red)
                 Text(feature.text)
             }
         } footer: {
