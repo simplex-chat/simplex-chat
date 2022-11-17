@@ -48,7 +48,8 @@ fun CIAudioView(
       val context = LocalContext.current
       val audioPlaying = rememberSaveable { mutableStateOf(false) }
       val audioInfo = remember(file.filePath) {
-        file.audioInfo.also { it.value = it.value.copy(durationMs = durationSec * 1000) }
+        file.audioInfo.value = file.audioInfo.value.copy(durationMs = durationSec * 1000)
+        file.audioInfo
       }
       val play = play@{
         audioPlaying.value = AudioPlayer.start(getAppFilePath(SimplexApp.context, file.filePath ?: return@play), audioInfo.value.progressMs) {
@@ -222,7 +223,7 @@ fun MiniAudioPlayer(
   filePath: String?,
   playing: MutableState<Boolean>,
   info: MutableState<ProgressAndDuration>
-): Pair<MutableState<ProgressAndDuration>, MutableState<Boolean>> {
+) {
   val audioInfo = remember { info }
   val audioPlaying = rememberSaveable { playing }
   LaunchedEffect(filePath) {
@@ -247,5 +248,4 @@ fun MiniAudioPlayer(
       audioPlaying.value = false
     }
   }
-  return audioInfo to audioPlaying
 }

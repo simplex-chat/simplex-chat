@@ -21,6 +21,10 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
 
+/*
+ * Without this annotation an animation from ChatList to ChatView has 1 frame per the whole animation. Don't delete it
+ * */
+@Stable
 class ChatModel(val controller: ChatController) {
   val onboardingStage = mutableStateOf<OnboardingStage?>(null)
   val currentUser = mutableStateOf<User?>(null)
@@ -382,7 +386,7 @@ interface SomeChat {
   val updatedAt: Instant
 }
 
-@Serializable
+@Serializable @Stable
 data class Chat (
   val chatInfo: ChatInfo,
   val chatItems: List<ChatItem>,
@@ -1015,7 +1019,7 @@ class AChatItem (
   val chatItem: ChatItem
 )
 
-@Serializable
+@Serializable @Stable
 data class ChatItem (
   val chatDir: CIDirection,
   val meta: CIMeta,
@@ -1301,8 +1305,7 @@ class CIFile(
     CIFileStatus.RcvComplete -> true
   }
 
-  @Transient
-  var audioInfo: MutableState<ProgressAndDuration> = mutableStateOf(ProgressAndDuration())
+  val audioInfo: MutableState<ProgressAndDuration> by lazy { mutableStateOf(ProgressAndDuration()) }
 
   companion object {
     fun getSample(
