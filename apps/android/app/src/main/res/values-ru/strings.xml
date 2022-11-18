@@ -229,7 +229,7 @@
 
     <!-- Message Actions - SendMsgView.kt -->
     <string name="icon_descr_send_message">Отправить сообщение</string>
-    <string name="icon_descr_record_voice_message">Записать аудио сообщение</string>
+    <string name="icon_descr_record_voice_message">Записать голосовое сообщение</string>
 
     <!-- General Actions / Responses -->
     <string name="back">Назад</string>
