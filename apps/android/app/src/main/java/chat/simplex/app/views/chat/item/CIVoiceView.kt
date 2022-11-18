@@ -16,13 +16,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
-import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
@@ -70,7 +67,7 @@ fun CIVoiceView(
       val minWidth = with(LocalDensity.current) { 45.sp.toDp() }
       val text = String.format("%02d:%02d", time / 1000 / 60, time / 1000 % 60)
       if (hasText) {
-        FileIndicator(file, audioPlaying.value, sent, hasText, audioInfo, brokenAudio, play, pause)
+        VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, audioInfo, brokenAudio, play, pause)
         Text(
           text,
           Modifier
@@ -97,7 +94,7 @@ fun CIVoiceView(
               )
             }
             Column {
-              FileIndicator(file, audioPlaying.value, sent, hasText, audioInfo, brokenAudio, play, pause)
+              VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, audioInfo, brokenAudio, play, pause)
               Box(Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp)) {
                 CIMetaView(ci, metaColor)
               }
@@ -106,7 +103,7 @@ fun CIVoiceView(
         } else {
           Row {
             Column {
-              FileIndicator(file, audioPlaying.value, sent, hasText, audioInfo, brokenAudio, play, pause)
+              VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, audioInfo, brokenAudio, play, pause)
               Box(Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp)) {
                 CIMetaView(ci, metaColor)
               }
@@ -127,7 +124,7 @@ fun CIVoiceView(
         }
       }
     } else {
-      FileIndicator(null, false, sent, hasText, null, false, {}, {})
+      VoiceMsgIndicator(null, false, sent, hasText, null, false, {}, {})
       val metaReserve = if (edited)
         "                     "
       else
@@ -171,7 +168,7 @@ private fun PlayPauseButton(
 }
 
 @Composable
-private fun FileIndicator(
+private fun VoiceMsgIndicator(
   file: CIFile?,
   audioPlaying: Boolean,
   sent: Boolean,
