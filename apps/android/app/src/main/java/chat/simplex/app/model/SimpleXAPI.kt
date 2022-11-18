@@ -1014,6 +1014,8 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         val file = cItem.file
         if (cItem.content.msgContent is MsgContent.MCImage && file != null && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV && appPrefs.privacyAcceptImages.get()) {
           withApi { receiveFile(file.fileId) }
+        } else if (cItem.content.msgContent is MsgContent.MCVoice && file != null && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && appPrefs.privacyAcceptImages.get()) {
+          withApi { receiveFile(file.fileId) }
         }
         if (!cItem.chatDir.sent && !cItem.isCall && !cItem.isMutedMemberEvent && (!isAppOnForeground(appContext) || chatModel.chatId.value != cInfo.id)) {
           ntfManager.notifyMessageReceived(cInfo, cItem)
@@ -1039,6 +1041,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
           chatModel.removeChatItem(cInfo, cItem)
         } else {
           // currently only broadcast deletion of rcv message can be received, and only this case should happen
+          AudioPlayer.stop(cItem)
           chatModel.upsertChatItem(cInfo, cItem)
         }
       }

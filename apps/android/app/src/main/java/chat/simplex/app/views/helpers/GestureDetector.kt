@@ -213,6 +213,24 @@ fun interactionSourceWithDetection(onClick: () -> Unit, onLongClick: () -> Unit)
   return interactionSource
 }
 
+@Composable
+fun interactionSourceWithTapDetection(onPress: () -> Unit, onClick: () -> Unit, onCancel: () -> Unit, onRelease: ()-> Unit): MutableInteractionSource {
+  val interactionSource = remember { MutableInteractionSource() }
+  LaunchedEffect(interactionSource) {
+    var firstTapTime = 0L
+    interactionSource.interactions.collect { interaction ->
+      when (interaction) {
+        is PressInteraction.Press -> {
+          firstTapTime = System.currentTimeMillis(); onPress()
+        }
+        is PressInteraction.Release -> if (firstTapTime + 1000L < System.currentTimeMillis()) onRelease() else onClick()
+        is PressInteraction.Cancel -> onCancel()
+      }
+    }
+  }
+  return interactionSource
+}
+
 suspend fun PointerInputScope.detectTransformGestures(
   allowIntercept: () -> Boolean,
   panZoomLock: Boolean = false,
