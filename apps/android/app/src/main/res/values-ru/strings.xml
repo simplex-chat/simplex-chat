@@ -229,8 +229,7 @@
 
     <!-- Message Actions - SendMsgView.kt -->
     <string name="icon_descr_send_message">Отправить сообщение</string>
-    <string name="icon_descr_record_audio">Записать аудио сообщение</string>
-    <string name="tap_and_hold_to_record">Нажмите и удерживайте для записи, а после - отпустите</string>
+    <string name="icon_descr_record_voice_message">Записать аудио сообщение</string>
 
     <!-- General Actions / Responses -->
     <string name="back">Назад</string>

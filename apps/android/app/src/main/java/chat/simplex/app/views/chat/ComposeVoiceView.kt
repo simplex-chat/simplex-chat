@@ -15,13 +15,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.ui.theme.*
-import chat.simplex.app.views.chat.item.MiniAudioPlayer
+import chat.simplex.app.views.chat.item.AudioInfoUpdater
 import chat.simplex.app.views.chat.item.SentColorLight
 import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
-fun ComposeVoiceView(filePath: String, durationMs: Int, finished: Boolean, cancelEnabled: Boolean, cancelFile: () -> Unit) {
+fun ComposeVoiceView(filePath: String, durationMs: Int, finished: Boolean, cancelEnabled: Boolean, cancelVoice: () -> Unit) {
   BoxWithConstraints(Modifier
     .fillMaxWidth()
   ) {
@@ -69,16 +69,16 @@ fun ComposeVoiceView(filePath: String, durationMs: Int, finished: Boolean, cance
         audioInfo.value = ProgressAndDuration(AudioPlayer.pause(), audioInfo.value.durationMs)
         audioPlaying.value = false
       }
-      MiniAudioPlayer(filePath, audioPlaying, audioInfo)
+      AudioInfoUpdater(filePath, audioPlaying, audioInfo)
 
-      IconButton({ if (finished) {if (!audioPlaying.value) play() else pause() }}) {
+      IconButton({ if (!audioPlaying.value) play() else pause() }, enabled = finished) {
         Icon(
           if (audioPlaying.value) Icons.Filled.Pause else Icons.Filled.PlayArrow,
           stringResource(R.string.icon_descr_file),
           Modifier
             .padding(start = 4.dp, end = 2.dp)
             .size(36.dp),
-          tint = MaterialTheme.colors.primary
+          tint = if (finished) MaterialTheme.colors.primary else HighOrLowlight
         )
       }
       val numberInText = remember(durationMs, audioInfo.value) {
@@ -95,7 +95,7 @@ fun ComposeVoiceView(filePath: String, durationMs: Int, finished: Boolean, cance
         IconButton(
           onClick = {
             AudioPlayer.stop(filePath)
-            cancelFile()
+            cancelVoice()
           },
           modifier = Modifier.padding(0.dp)
         ) {

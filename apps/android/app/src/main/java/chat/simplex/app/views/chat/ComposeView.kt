@@ -15,11 +15,9 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
+import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Edit
@@ -30,7 +28,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -40,6 +37,7 @@ import androidx.core.net.toUri
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
+import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.views.chat.item.*
 import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.delay
@@ -471,7 +469,7 @@ fun ComposeView(
     chosenContent.value = emptyList()
   }
 
-  fun cancelAudio() {
+  fun cancelVoice() {
     composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
     chosenContent.value = emptyList()
   }
@@ -496,7 +494,7 @@ fun ComposeView(
         preview.durationMs,
         preview.finished,
         cancelEnabled = !composeState.value.editing,
-        ::cancelAudio
+        ::cancelVoice
       )
       is ComposePreview.FilePreview -> ComposeFileView(
         preview.fileName,
@@ -537,25 +535,19 @@ fun ComposeView(
       else -> previewView()
     }
     Row(
-      modifier = Modifier.padding(start = 4.dp, end = 8.dp),
+      modifier = Modifier.padding(end = 8.dp),
       verticalAlignment = Alignment.Bottom,
-      horizontalArrangement = Arrangement.spacedBy(2.dp)
     ) {
       var showRecordingUi by rememberSaveable { mutableStateOf(false) }
       val attachEnabled = !composeState.value.editing && !showRecordingUi
-      Box(Modifier.padding(bottom = 12.dp)) {
+      IconButton(showChooseAttachment, enabled = attachEnabled) {
         Icon(
           Icons.Filled.AttachFile,
           contentDescription = stringResource(R.string.attach),
-          tint = if (attachEnabled) MaterialTheme.colors.primary else Color.Gray,
+          tint = if (attachEnabled) MaterialTheme.colors.primary else HighOrLowlight,
           modifier = Modifier
             .size(28.dp)
             .clip(CircleShape)
-            .clickable {
-              if (attachEnabled) {
-                showChooseAttachment()
-              }
-            }
         )
       }
       SendMsgView(

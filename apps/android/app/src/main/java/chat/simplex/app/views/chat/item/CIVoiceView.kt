@@ -68,13 +68,13 @@ fun CIVoiceView(
         audioInfo.value = ProgressAndDuration(AudioPlayer.pause(), audioInfo.value.durationMs)
         audioPlaying.value = false
       }
-      MiniAudioPlayer(filePath, audioPlaying, audioInfo)
+      AudioInfoUpdater(filePath, audioPlaying, audioInfo)
 
       val time = if (audioPlaying.value) audioInfo.value.progressMs else audioInfo.value.durationMs
       val minWidth = with(LocalDensity.current) { 45.sp.toDp() }
       val text = String.format("%02d:%02d", time / 1000 / 60, time / 1000 % 60)
       if (hasText) {
-        fileIndicator(file, audioPlaying.value, sent, hasText, audioInfo, receiveFile, play, pause)
+        FileIndicator(file, audioPlaying.value, sent, hasText, audioInfo, receiveFile, play, pause)
         Text(
           text,
           Modifier
@@ -101,7 +101,7 @@ fun CIVoiceView(
               )
             }
             Column {
-              fileIndicator(file, audioPlaying.value, sent, hasText, audioInfo, receiveFile, play, pause)
+              FileIndicator(file, audioPlaying.value, sent, hasText, audioInfo, receiveFile, play, pause)
               Box(Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp)) {
                 CIMetaView(ci, metaColor)
               }
@@ -110,7 +110,7 @@ fun CIVoiceView(
         } else {
           Row {
             Column {
-              fileIndicator(file, audioPlaying.value, sent, hasText, audioInfo, receiveFile, play, pause)
+              FileIndicator(file, audioPlaying.value, sent, hasText, audioInfo, receiveFile, play, pause)
               Box(Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp)) {
                 CIMetaView(ci, metaColor)
               }
@@ -131,7 +131,7 @@ fun CIVoiceView(
         }
       }
     } else {
-      fileIndicator(null, false, sent, hasText, null, receiveFile, {}, {})
+      FileIndicator(null, false, sent, hasText, null, receiveFile, {}, {})
       val metaReserve = if (edited)
         "                     "
       else
@@ -142,7 +142,7 @@ fun CIVoiceView(
 }
 
 @Composable
-private fun fileIcon(
+private fun FileIcon(
   innerIcon: ImageVector? = null,
   color: Color = if (isInDarkTheme()) FileDark else FileLight
 ) {
@@ -204,7 +204,7 @@ private fun fileAction(
 }
 
 @Composable
-private fun fileIndicator(
+private fun FileIndicator(
   file: CIFile?,
   audioPlaying: Boolean,
   sent: Boolean,
@@ -219,7 +219,7 @@ private fun fileIndicator(
     val primary = MaterialTheme.colors.primary
     val angle = 360f * (audioInfo.value.progressMs.toDouble() / audioInfo.value.durationMs).toFloat()
     if (hasText) {
-      IconButton({ if (!audioPlaying) play() else pause() }, drawRingModifier(angle, primary, strokeWidth)) {
+      IconButton({ if (!audioPlaying) play() else pause() }, Modifier.drawRingModifier(angle, primary, strokeWidth)) {
         Icon(
           imageVector = if (audioPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
           contentDescription = null,
@@ -228,7 +228,7 @@ private fun fileIndicator(
         )
       }
     } else {
-      Box(drawRingModifier(angle, primary, strokeWidth)) {
+      Box(Modifier.drawRingModifier(angle, primary, strokeWidth)) {
         FloatingActionButton(
           onClick = { if (!audioPlaying) play() else pause() },
           elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
@@ -256,29 +256,29 @@ private fun fileIndicator(
     ) {
       if (file != null) {
         when (file.fileStatus) {
-          CIFileStatus.SndStored -> fileIcon()
-          CIFileStatus.SndTransfer -> progressIndicator()
-          CIFileStatus.SndComplete -> fileIcon(innerIcon = Icons.Filled.Check)
-          CIFileStatus.SndCancelled -> fileIcon(innerIcon = Icons.Outlined.Close)
+          CIFileStatus.SndStored -> FileIcon()
+          CIFileStatus.SndTransfer -> ProgressIndicator()
+          CIFileStatus.SndComplete -> FileIcon(innerIcon = Icons.Filled.Check)
+          CIFileStatus.SndCancelled -> FileIcon(innerIcon = Icons.Outlined.Close)
           CIFileStatus.RcvInvitation ->
             if (fileSizeValid(file))
-              fileIcon(innerIcon = Icons.Outlined.ArrowDownward, color = MaterialTheme.colors.primary)
+              FileIcon(innerIcon = Icons.Outlined.ArrowDownward, color = MaterialTheme.colors.primary)
             else
-              fileIcon(innerIcon = Icons.Outlined.PriorityHigh, color = WarningOrange)
+              FileIcon(innerIcon = Icons.Outlined.PriorityHigh, color = WarningOrange)
 
-          CIFileStatus.RcvAccepted -> fileIcon(innerIcon = Icons.Outlined.MoreHoriz)
-          CIFileStatus.RcvTransfer -> progressIndicator()
-          CIFileStatus.RcvComplete -> fileIcon()
-          CIFileStatus.RcvCancelled -> fileIcon(innerIcon = Icons.Outlined.Close)
+          CIFileStatus.RcvAccepted -> FileIcon(innerIcon = Icons.Outlined.MoreHoriz)
+          CIFileStatus.RcvTransfer -> ProgressIndicator()
+          CIFileStatus.RcvComplete -> FileIcon()
+          CIFileStatus.RcvCancelled -> FileIcon(innerIcon = Icons.Outlined.Close)
         }
       } else {
-        fileIcon()
+        FileIcon()
       }
     }
   }
 }
 
-private fun drawRingModifier(angle: Float, color: Color, strokeWidth: Float) = Modifier.drawWithCache {
+private fun Modifier.drawRingModifier(angle: Float, color: Color, strokeWidth: Float) = drawWithCache {
   val brush = Brush.linearGradient(
     0f to Color.Transparent,
     0f to color,
@@ -301,7 +301,7 @@ private fun drawRingModifier(angle: Float, color: Color, strokeWidth: Float) = M
 }
 
 @Composable
-private fun progressIndicator() {
+private fun ProgressIndicator() {
   CircularProgressIndicator(
     Modifier.size(32.dp),
     color = if (isInDarkTheme()) FileDark else FileLight,
@@ -317,7 +317,7 @@ private fun fileSizeValid(file: CIFile?): Boolean {
 }
 
 @Composable
-fun MiniAudioPlayer(
+fun AudioInfoUpdater(
   filePath: String?,
   audioPlaying: MutableState<Boolean>,
   audioInfo: MutableState<ProgressAndDuration>

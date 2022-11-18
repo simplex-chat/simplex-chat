@@ -62,7 +62,13 @@ fun SendMsgView(
       val filePath = rememberSaveable { mutableStateOf(null as String?) }
       var recordingTimeRange by rememberSaveable(saver = LongRange.saver) { mutableStateOf(0L..0L) } // since..to
       val showVoiceButton = ((cs.message.isEmpty() || recordingTimeRange.first > 0L) && allowVoiceRecord && attachEnabled && cs.preview is ComposePreview.NoPreview) || filePath.value != null
-      NativeKeyboard(composeState, textStyle, onMessageChange)
+      Box(if (recordingTimeRange.first == 0L)
+        Modifier
+      else
+        Modifier.clickable(false, onClick = {})
+      ) {
+        NativeKeyboard(composeState, textStyle, onMessageChange)
+      }
       Box(Modifier.align(Alignment.BottomEnd)) {
         val icon = if (cs.editing) Icons.Filled.Check else Icons.Outlined.ArrowUpward
         val color = if (cs.sendEnabled()) MaterialTheme.colors.primary else HighOrLowlight
@@ -84,16 +90,7 @@ fun SendMsgView(
                 }
               }
           )
-        }
-      }
-      if (showVoiceButton) {
-        Row(
-          if (recordingTimeRange.first == 0L)
-            Modifier.matchParentSize()
-          else
-            Modifier.clickable(false, onClick = {}).matchParentSize(),
-          verticalAlignment = Alignment.CenterVertically
-        ) {
+        } else {
           val permissionsState = rememberMultiplePermissionsState(
             permissions = listOf(
               Manifest.permission.RECORD_AUDIO,
@@ -118,6 +115,7 @@ fun SendMsgView(
           }
           val startStopRecording = {
             when {
+              cs.inProgress -> {}
               !permissionsState.allPermissionsGranted -> permissionsState.launchMultiplePermissionRequest()
               recordingInProgress.value -> stopRecordingAndAddAudio()
               filePath.value == null -> {
@@ -160,6 +158,8 @@ fun SendMsgView(
               if (filePath.value == null) startStopRecording()
             },
             onClick = {
+              if (cs.inProgress) return@interactionSourceWithTapDetection
+
               if (!recordingInProgress.value && filePath.value != null) {
                 sendMessage()
                 cleanUp(false)
@@ -174,14 +174,18 @@ fun SendMsgView(
             onCancel = startStopRecording,
             onRelease = startStopRecording
           )
-          Spacer(Modifier.weight(1f))
+          val sendButtonModifier = if (recordingTimeRange.last != 0L)
+            Modifier.clip(CircleShape).background(color)
+          else
+            Modifier
           Icon(
             if (recordingTimeRange.last != 0L) Icons.Outlined.ArrowUpward else if (stopRecOnNextClick) Icons.Default.Stop else Icons.Default.Mic,
-            stringResource(R.string.icon_descr_record_audio),
-            tint = MaterialTheme.colors.primary,
+            stringResource(R.string.icon_descr_record_voice_message),
+            tint = if (recordingTimeRange.last != 0L) Color.White else if (!cs.inProgress) MaterialTheme.colors.primary else HighOrLowlight,
             modifier = Modifier
               .size(36.dp)
               .padding(4.dp)
+              .then(sendButtonModifier)
               .clickable(
                 onClick = {},
                 role = Role.Button,

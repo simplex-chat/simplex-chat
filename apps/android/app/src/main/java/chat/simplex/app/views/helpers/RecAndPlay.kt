@@ -162,9 +162,9 @@ object AudioPlayer {
   }
 
   /**
-   * If player starts playing at 2637 ms in a track 2816 ms long, it will stop immediately after start but will not
-   *  change currentPosition, so it will not be equal to duration. However, it sets isPlaying to false.
-   *  Let's do it ourselves in order to prevent endless waiting loop
+   * If player starts playing at 2637 ms in a track 2816 ms long (these numbers are just an example),
+   * it will stop immediately after start but will not change currentPosition, so it will not be equal to duration.
+   * However, it sets isPlaying to false. Let's do it ourselves in order to prevent endless waiting loop
    * */
   fun progressAndDurationOrEnded(): ProgressAndDuration =
     ProgressAndDuration(if (player.isPlaying) player.currentPosition else player.duration, player.duration)
