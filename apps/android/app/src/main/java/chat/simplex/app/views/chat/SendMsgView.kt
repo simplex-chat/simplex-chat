@@ -96,7 +96,7 @@ fun SendMsgView(
             )
           )
           val rec: Recorder = remember { RecorderNative(MAX_VOICE_SIZE_FOR_SENDING) }
-          val recordingInProgress = rememberSaveable { mutableStateOf(false) }
+          val recordingInProgress: State<Boolean> = remember { rec.recordingInProgress }
           var now by remember { mutableStateOf(System.currentTimeMillis()) }
           LaunchedEffect(Unit) {
             while (isActive) {
@@ -108,7 +108,7 @@ fun SendMsgView(
             }
           }
           val stopRecordingAndAddAudio: () -> Unit = {
-            rec.stop(recordingInProgress)
+            rec.stop()
             recordingTimeRange = recordingTimeRange.first..System.currentTimeMillis()
             filePath.value?.let { onAudioAdded(it, (recordingTimeRange.last - recordingTimeRange.first).toInt(), true) }
           }
@@ -119,7 +119,7 @@ fun SendMsgView(
               recordingInProgress.value -> stopRecordingAndAddAudio()
               filePath.value == null -> {
                 recordingTimeRange = System.currentTimeMillis()..0L
-                filePath.value = rec.start(recordingInProgress, stopRecordingAndAddAudio)
+                filePath.value = rec.start(stopRecordingAndAddAudio)
                 filePath.value?.let { onAudioAdded(it, (now - recordingTimeRange.first).toInt(), false) }
               }
             }
@@ -139,9 +139,9 @@ fun SendMsgView(
             onDispose { activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED }
           }
           val cleanUp = { remove: Boolean ->
+            rec.stop()
             if (remove) filePath.value?.let { File(it).delete() }
             filePath.value = null
-            recordingInProgress.value = false
             stopRecOnNextClick = false
             recordingTimeRange = 0L..0L
           }
@@ -193,7 +193,7 @@ fun SendMsgView(
           )
           DisposableEffect(Unit) {
             onDispose {
-              rec.stop(recordingInProgress)
+              rec.stop()
             }
           }
         }

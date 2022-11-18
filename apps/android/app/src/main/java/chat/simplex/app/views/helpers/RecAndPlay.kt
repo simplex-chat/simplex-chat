@@ -4,19 +4,19 @@ import android.media.*
 import android.media.MediaRecorder.MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED
 import android.os.Build
 import android.util.Log
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.Saver
 import chat.simplex.app.*
+import chat.simplex.app.R
 import chat.simplex.app.model.ChatItem
-import chat.simplex.app.model.MsgContent
 import java.io.*
 import java.text.SimpleDateFormat
 import java.util.*
 
 interface Recorder {
-  fun start(recordingInProgress: MutableState<Boolean>, onStop: () -> Unit): String
-  fun stop(recordingInProgress: MutableState<Boolean>)
+  val recordingInProgress: MutableState<Boolean>
+  fun start(onStop: () -> Unit): String
+  fun stop()
   fun cancel(filePath: String, recordingInProgress: MutableState<Boolean>)
 }
 
@@ -33,7 +33,12 @@ data class ProgressAndDuration(
   }
 }
 
-class RecorderNative(val recordedBytesLimit: Long): Recorder {
+class RecorderNative(private val recordedBytesLimit: Long): Recorder {
+  companion object {
+    // Allows to stop the recorder from outside without having the recorder in a variable
+    var stopRecording: (() -> Unit)? = null
+  }
+  override val recordingInProgress = mutableStateOf(false)
   private var recorder: MediaRecorder? = null
   private fun initRecorder() =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -42,7 +47,8 @@ class RecorderNative(val recordedBytesLimit: Long): Recorder {
       MediaRecorder()
     }
 
-  override fun start(recordingInProgress: MutableState<Boolean>, onStop: () -> Unit): String {
+  override fun start(onStop: () -> Unit): String {
+    AudioPlayer.stop()
     recordingInProgress.value = true
     val rec: MediaRecorder
     recorder = initRecorder().also { rec = it }
@@ -61,15 +67,17 @@ class RecorderNative(val recordedBytesLimit: Long): Recorder {
     rec.start()
     rec.setOnInfoListener { mr, what, extra ->
       if (what == MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED) {
-        stop(recordingInProgress)
+        stop()
         onStop()
       }
     }
+    stopRecording = { stop(); onStop() }
     return filePath
   }
 
-  override fun stop(recordingInProgress: MutableState<Boolean>) {
+  override fun stop() {
     if (!recordingInProgress.value) return
+    stopRecording = null
     recordingInProgress.value = false
     recorder?.metrics?.
     runCatching {
@@ -86,7 +94,7 @@ class RecorderNative(val recordedBytesLimit: Long): Recorder {
   }
 
   override fun cancel(filePath: String, recordingInProgress: MutableState<Boolean>) {
-    stop(recordingInProgress)
+    stop()
     runCatching { File(filePath).delete() }.getOrElse { Log.d(TAG, "Unable to delete a file: ${it.stackTraceToString()}") }
   }
 }
@@ -109,14 +117,15 @@ object AudioPlayer {
         )
   }
   // Filepath: String, onStop: () -> Unit
-  val currentlyPlaying: MutableState<Pair<String, () -> Unit>?> = mutableStateOf(null)
+  private val currentlyPlaying: MutableState<Pair<String, () -> Unit>?> = mutableStateOf(null)
 
   fun start(filePath: String, seek: Int? = null, onStop: () -> Unit): Boolean {
     if (!File(filePath).exists()) {
-      Log.e(TAG, "No such file: $filePath");
+      Log.e(TAG, "No such file: $filePath")
       return false
     }
 
+    RecorderNative.stopRecording?.invoke()
     val current = currentlyPlaying.value
     if (current == null || current.first != filePath) {
       player.reset()
