@@ -538,8 +538,7 @@ fun ComposeView(
       modifier = Modifier.padding(end = 8.dp),
       verticalAlignment = Alignment.Bottom,
     ) {
-      var showRecordingUi by rememberSaveable { mutableStateOf(false) }
-      val attachEnabled = !composeState.value.editing && !showRecordingUi
+      val attachEnabled = !composeState.value.editing && composeState.value.preview !is ComposePreview.VoicePreview
       IconButton(showChooseAttachment, enabled = attachEnabled) {
         Icon(
           Icons.Filled.AttachFile,
@@ -555,16 +554,10 @@ fun ComposeView(
         allowVoiceRecord = true,
         sendMessage = {
           sendMessage()
-          showRecordingUi = false
           resetLinkPreview()
         },
         ::onMessageChange,
         ::onAudioAdded,
-        showRecordingUi = {
-          showRecordingUi = it
-          chosenAudio.value = null
-          composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
-        },
         textStyle
       )
     }

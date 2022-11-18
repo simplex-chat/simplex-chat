@@ -52,7 +52,6 @@ fun SendMsgView(
   sendMessage: () -> Unit,
   onMessageChange: (String) -> Unit,
   onAudioAdded: (String, Int, Boolean) -> Unit,
-  showRecordingUi: (Boolean) -> Unit,
   textStyle: MutableState<TextStyle>
 ) {
   Column(Modifier.padding(vertical = 8.dp)) {
@@ -102,7 +101,7 @@ fun SendMsgView(
           LaunchedEffect(Unit) {
             while (isActive) {
               now = System.currentTimeMillis()
-              if (recordingTimeRange.first != 0L && recordingInProgress.value) {
+              if (recordingTimeRange.first != 0L && recordingInProgress.value && composeState.value.preview is ComposePreview.VoicePreview) {
                 filePath.value?.let { onAudioAdded(it, (now - recordingTimeRange.first).toInt(), false) }
               }
               delay(100)
@@ -113,15 +112,15 @@ fun SendMsgView(
             recordingTimeRange = recordingTimeRange.first..System.currentTimeMillis()
             filePath.value?.let { onAudioAdded(it, (recordingTimeRange.last - recordingTimeRange.first).toInt(), true) }
           }
-          val startStopRecording = {
+          val startStopRecording: () -> Unit = {
             when {
               cs.inProgress -> {}
               !permissionsState.allPermissionsGranted -> permissionsState.launchMultiplePermissionRequest()
               recordingInProgress.value -> stopRecordingAndAddAudio()
               filePath.value == null -> {
-                showRecordingUi(true)
                 recordingTimeRange = System.currentTimeMillis()..0L
                 filePath.value = rec.start(recordingInProgress, stopRecordingAndAddAudio)
+                filePath.value?.let { onAudioAdded(it, (now - recordingTimeRange.first).toInt(), false) }
               }
             }
           }
@@ -145,7 +144,6 @@ fun SendMsgView(
             recordingInProgress.value = false
             stopRecOnNextClick = false
             recordingTimeRange = 0L..0L
-            showRecordingUi(false)
           }
           LaunchedEffect(cs.preview) {
             if (cs.preview !is ComposePreview.VoicePreview && filePath.value != null) {
@@ -316,7 +314,6 @@ fun PreviewSendMsgView() {
       sendMessage = {},
       onMessageChange = { _ -> },
       onAudioAdded = { _, _, _ -> },
-      showRecordingUi = {},
       textStyle = textStyle
     )
   }
@@ -340,7 +337,6 @@ fun PreviewSendMsgViewEditing() {
       sendMessage = {},
       onMessageChange = { _ -> },
       onAudioAdded = { _, _, _ -> },
-      showRecordingUi = {},
       textStyle = textStyle
     )
   }
@@ -364,7 +360,6 @@ fun PreviewSendMsgViewInProgress() {
       sendMessage = {},
       onMessageChange = { _ -> },
       onAudioAdded = { _, _, _ -> },
-      showRecordingUi = {},
       textStyle = textStyle
     )
   }
