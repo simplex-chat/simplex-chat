@@ -107,6 +107,13 @@ curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
 git clone git@github.com:simplex-chat/simplex-chat.git
 cd simplex-chat
 git checkout stable
+# on Linux
+apt-get update && apt-get install -y build-essential libgmp3-dev zlib1g-dev
+cp scripts/cabal.project.local.linux cabal.project.local
+# or on MacOS:
+# brew install openssl@1.1
+# cp scripts/cabal.project.local.mac cabal.project.local
+# you may need to amend cabal.project.local to point to the actual openssl location
 cabal update
 cabal install
 ```
