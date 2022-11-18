@@ -786,7 +786,6 @@ func filterMembersToAdd(_ ms: [GroupMember]) -> [Contact] {
 }
 
 func apiUpdateGroup(_ groupId: Int64, _ groupProfile: GroupProfile) async throws -> GroupInfo {
-    print("####################", groupProfile)
     let r = await chatSendCmd(.apiUpdateGroupProfile(groupId: groupId, groupProfile: groupProfile))
     if case let .groupUpdated(toGroup) = r { return toGroup }
     throw r
