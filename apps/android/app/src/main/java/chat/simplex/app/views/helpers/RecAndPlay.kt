@@ -7,8 +7,9 @@ import android.util.Log
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.Saver
-import chat.simplex.app.SimplexApp
-import chat.simplex.app.TAG
+import chat.simplex.app.*
+import chat.simplex.app.model.ChatItem
+import chat.simplex.app.model.MsgContent
 import java.io.*
 import java.text.SimpleDateFormat
 import java.util.*
@@ -124,11 +125,17 @@ object AudioPlayer {
       kotlin.runCatching {
         player.setDataSource(filePath)
       }.getOrElse { Log.e(TAG, it.stackTraceToString()); return false }
-      player.prepare()
+      runCatching { player.prepare() }.onFailure {
+        // Can happen when audio file is broken
+        AlertManager.shared.showAlertMsg(generalGetString(R.string.unknown_error), it.message)
+      }
     }
     if (seek != null) player.seekTo(seek)
     player.start()
-    currentlyPlaying.value = filePath to onStop
+    // Repeated calls to play/pause on the same track will not recompose all dependent views
+    if (currentlyPlaying.value?.first != filePath) {
+      currentlyPlaying.value = filePath to onStop
+    }
     return true
   }
 
@@ -143,6 +150,15 @@ object AudioPlayer {
     currentlyPlaying.value?.second?.invoke()
     currentlyPlaying.value = null
     player.stop()
+  }
+
+  fun stop(item: ChatItem) = stop(item.file?.fileName)
+
+  // FileName or filePath are ok
+  fun stop(fileName: String?) {
+    if (fileName != null && currentlyPlaying.value?.first?.endsWith(fileName) == true) {
+      stop()
+    }
   }
 
   /**

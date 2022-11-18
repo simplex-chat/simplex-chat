@@ -1041,6 +1041,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
           chatModel.removeChatItem(cInfo, cItem)
         } else {
           // currently only broadcast deletion of rcv message can be received, and only this case should happen
+          AudioPlayer.stop(cItem)
           chatModel.upsertChatItem(cInfo, cItem)
         }
       }

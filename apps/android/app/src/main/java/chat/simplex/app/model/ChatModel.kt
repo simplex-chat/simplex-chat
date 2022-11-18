@@ -20,6 +20,7 @@ import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
+import java.io.File
 
 /*
  * Without this annotation an animation from ChatList to ChatView has 1 frame per the whole animation. Don't delete it
@@ -73,6 +74,8 @@ class ChatModel(val controller: ChatController) {
 
   // working with external intents
   val sharedContent = mutableStateOf(null as SharedContent?)
+
+  val filesToDelete = mutableSetOf<File>()
 
   fun updateUserProfile(profile: LocalProfile) {
     val user = currentUser.value
@@ -222,6 +225,7 @@ class ChatModel(val controller: ChatController) {
     if (chatId.value == cInfo.id) {
       val itemIndex = chatItems.indexOfFirst { it.id == cItem.id }
       if (itemIndex >= 0) {
+        AudioPlayer.stop(chatItems[itemIndex])
         chatItems.removeAt(itemIndex)
       }
     }

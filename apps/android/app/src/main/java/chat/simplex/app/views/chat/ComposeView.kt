@@ -396,6 +396,7 @@ fun ComposeView(
             if (chosenAudioVal != null) {
               val file = chosenAudioVal.first.toFile().name
               files.add((file))
+              chatModel.filesToDelete.remove(chosenAudioVal.first.toFile())
               msgs.add(MsgContent.MCVoice(if (msgs.isEmpty()) cs.message else "", chosenAudioVal.second / 1000))
             }
           }
@@ -450,7 +451,9 @@ fun ComposeView(
   }
 
   fun onAudioAdded(filePath: String, durationMs: Int, finished: Boolean) {
-    chosenAudio.value = File(filePath).toUri() to durationMs
+    val file = File(filePath)
+    chosenAudio.value = file.toUri() to durationMs
+    chatModel.filesToDelete.add(file)
     composeState.value = composeState.value.copy(preview = ComposePreview.VoicePreview(filePath, durationMs, finished))
   }
 

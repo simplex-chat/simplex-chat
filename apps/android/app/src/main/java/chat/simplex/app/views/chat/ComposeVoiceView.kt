@@ -92,7 +92,13 @@ fun ComposeVoiceView(filePath: String, durationMs: Int, finished: Boolean, cance
       )
       Spacer(Modifier.weight(1f))
       if (cancelEnabled) {
-        IconButton(onClick = cancelFile, modifier = Modifier.padding(0.dp)) {
+        IconButton(
+          onClick = {
+            AudioPlayer.stop(filePath)
+            cancelFile()
+          },
+          modifier = Modifier.padding(0.dp)
+        ) {
           Icon(
             Icons.Outlined.Close,
             contentDescription = stringResource(R.string.icon_descr_cancel_file_preview),

@@ -192,7 +192,6 @@ fun SendMsgView(
           DisposableEffect(Unit) {
             onDispose {
               rec.stop(recordingInProgress)
-              //cleanUp(true)
             }
           }
         }
@@ -266,6 +265,7 @@ private fun NativeKeyboard(
     editText.setText(cs.message)
     editText.textCursorDrawable?.let { DrawableCompat.setTint(it, HighOrLowlight.toArgb()) }
     editText.doOnTextChanged { text, _, _, _ -> onMessageChange(text.toString()) }
+    editText.doAfterTextChanged { text -> if (composeState.value.preview is ComposePreview.VoicePreview && text.toString() != "") editText.setText("") }
     editText
   }) {
     it.setTextColor(textColor.toArgb())
@@ -273,7 +273,6 @@ private fun NativeKeyboard(
     DrawableCompat.setTint(it.background, tintColor.toArgb())
     it.isFocusable = composeState.value.preview !is ComposePreview.VoicePreview
     it.isFocusableInTouchMode = it.isFocusable
-    it.doAfterTextChanged { text -> if (cs.preview is ComposePreview.VoicePreview && text.toString() != "") it.setText("") }
     if (cs.message != it.text.toString()) {
       it.setText(cs.message)
       // Set cursor to the end of the text

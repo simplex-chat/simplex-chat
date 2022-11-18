@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -50,13 +51,16 @@ fun CIVoiceView(
   ) {
     if (file != null) {
       val context = LocalContext.current
-      val audioPlaying = rememberSaveable { mutableStateOf(false) }
+      val filePath = remember(file.filePath, file.fileStatus) { getLoadedFilePath(context, file) }
+      val audioPlaying = rememberSaveable(file.filePath) { mutableStateOf(false) }
       val audioInfo = remember(file.filePath) {
         file.audioInfo.value = file.audioInfo.value.copy(durationMs = durationSec * 1000)
         file.audioInfo
       }
       val play = play@{
-        audioPlaying.value = AudioPlayer.start(getAppFilePath(SimplexApp.context, file.filePath ?: return@play), audioInfo.value.progressMs) {
+        audioPlaying.value = AudioPlayer.start(filePath ?: return@play, audioInfo.value.progressMs) {
+          // If you want to preserve the position after switching a track, remove this line
+          audioInfo.value = ProgressAndDuration(0, audioInfo.value.durationMs)
           audioPlaying.value = false
         }
       }
@@ -64,18 +68,17 @@ fun CIVoiceView(
         audioInfo.value = ProgressAndDuration(AudioPlayer.pause(), audioInfo.value.durationMs)
         audioPlaying.value = false
       }
-      val filePath = remember(file.filePath, file.fileStatus) { getLoadedFilePath(context, file) }
       MiniAudioPlayer(filePath, audioPlaying, audioInfo)
 
       val time = if (audioPlaying.value) audioInfo.value.progressMs else audioInfo.value.durationMs
-      val minWidth = with(LocalDensity.current) { 57.sp.toDp() }
+      val minWidth = with(LocalDensity.current) { 45.sp.toDp() }
       val text = String.format("%02d:%02d", time / 1000 / 60, time / 1000 % 60)
       if (hasText) {
         fileIndicator(file, audioPlaying.value, sent, hasText, audioInfo, receiveFile, play, pause)
         Text(
           text,
           Modifier
-            .padding(start = 12.dp)
+            .padding(start = 12.dp, end = 5.dp)
             .widthIn(min = minWidth),
           color = HighOrLowlight,
           fontSize = 16.sp,
@@ -90,8 +93,8 @@ fun CIVoiceView(
               Text(
                 text,
                 Modifier
-                  .widthIn(min = minWidth)
-                  .padding(end = 12.dp),
+                  .padding(end = 12.dp)
+                  .widthIn(min = minWidth),
                 color = HighOrLowlight,
                 fontSize = 16.sp,
                 maxLines = 1
@@ -116,8 +119,8 @@ fun CIVoiceView(
               Text(
                 text,
                 Modifier
-                  .widthIn(min = minWidth)
-                  .padding(start = 12.dp),
+                  .padding(start = 12.dp)
+                  .widthIn(min = minWidth),
                 color = HighOrLowlight,
                 fontSize = 16.sp,
                 maxLines = 1
@@ -212,11 +215,11 @@ private fun fileIndicator(
   pause: () -> Unit
 ) {
   if (file != null && file.loaded && audioInfo != null) {
-    val strokeWidth = with(LocalDensity.current){ 2.dp.toPx() }
+    val strokeWidth = with(LocalDensity.current){ 3.dp.toPx() }
     val primary = MaterialTheme.colors.primary
-    val angle = remember { derivedStateOf { 360f * (audioInfo.value.progressMs.toDouble() / audioInfo.value.durationMs).toFloat() } }
+    val angle = 360f * (audioInfo.value.progressMs.toDouble() / audioInfo.value.durationMs).toFloat()
     if (hasText) {
-      IconButton({ if (!audioPlaying) play() else pause() }, drawRingModifier(angle.value, primary, strokeWidth)) {
+      IconButton({ if (!audioPlaying) play() else pause() }, drawRingModifier(angle, primary, strokeWidth)) {
         Icon(
           imageVector = if (audioPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
           contentDescription = null,
@@ -225,7 +228,7 @@ private fun fileIndicator(
         )
       }
     } else {
-      Box(drawRingModifier(angle.value, primary, strokeWidth)) {
+      Box(drawRingModifier(angle, primary, strokeWidth)) {
         FloatingActionButton(
           onClick = { if (!audioPlaying) play() else pause() },
           elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
@@ -281,7 +284,7 @@ private fun drawRingModifier(angle: Float, color: Color, strokeWidth: Float) = M
     0f to color,
     start = Offset(0f, 0f),
     end = Offset(strokeWidth, strokeWidth),
-    tileMode = TileMode.Repeated
+    tileMode = TileMode.Clamp
   )
   onDrawWithContent {
     drawContent()
@@ -290,7 +293,9 @@ private fun drawRingModifier(angle: Float, color: Color, strokeWidth: Float) = M
       startAngle = -90f,
       sweepAngle = angle,
       useCenter = false,
-      style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+      topLeft = Offset(strokeWidth / 2, strokeWidth / 2),
+      size = Size(size.width - strokeWidth, size.height - strokeWidth),
+      style = Stroke(width = strokeWidth, cap = StrokeCap.Square)
     )
   }
 }
@@ -314,11 +319,9 @@ private fun fileSizeValid(file: CIFile?): Boolean {
 @Composable
 fun MiniAudioPlayer(
   filePath: String?,
-  playing: MutableState<Boolean>,
-  info: MutableState<ProgressAndDuration>
+  audioPlaying: MutableState<Boolean>,
+  audioInfo: MutableState<ProgressAndDuration>
 ) {
-  val audioInfo = remember { info }
-  val audioPlaying = rememberSaveable { playing }
   LaunchedEffect(filePath) {
     if (filePath != null && audioInfo.value.durationMs == 0) {
       audioInfo.value = ProgressAndDuration(audioInfo.value.progressMs, AudioPlayer.duration(filePath))
@@ -332,13 +335,6 @@ fun MiniAudioPlayer(
         audioPlaying.value = false
       }
       delay(50)
-    }
-  }
-  LaunchedEffect(AudioPlayer.currentlyPlaying.value) {
-    val currentFileName = AudioPlayer.currentlyPlaying.value?.first ?: return@LaunchedEffect
-    filePath ?: return@LaunchedEffect
-    if (currentFileName != filePath && audioPlaying.value) {
-      audioPlaying.value = false
     }
   }
 }
