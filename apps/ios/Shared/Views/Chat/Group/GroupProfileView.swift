@@ -12,7 +12,7 @@ import SimpleXChat
 struct GroupProfileView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
-    var groupId: Int64
+    @Binding var groupInfo: GroupInfo
     @State var groupProfile: GroupProfile
     @State private var showChooseSource = false
     @State private var showImagePicker = false
@@ -120,8 +120,9 @@ struct GroupProfileView: View {
     func saveProfile() {
         Task {
             do {
-                let gInfo = try await apiUpdateGroup(groupId, groupProfile)
+                let gInfo = try await apiUpdateGroup(groupInfo.groupId, groupProfile)
                 await MainActor.run {
+                    groupInfo = gInfo
                     chatModel.updateGroup(gInfo)
                     dismiss()
                 }
@@ -137,6 +138,6 @@ struct GroupProfileView: View {
 
 struct GroupProfileView_Previews: PreviewProvider {
     static var previews: some View {
-        GroupProfileView(groupId: 1, groupProfile: GroupProfile.sampleData)
+        GroupProfileView(groupInfo: Binding.constant(GroupInfo.sampleData), groupProfile: GroupProfile.sampleData)
     }
 }

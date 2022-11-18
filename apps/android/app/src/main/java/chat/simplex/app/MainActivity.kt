@@ -9,6 +9,7 @@ import android.os.SystemClock.elapsedRealtime
 import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
@@ -19,7 +20,9 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.*
 import chat.simplex.app.model.ChatModel
@@ -36,6 +39,9 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.*
 import chat.simplex.app.views.onboarding.*
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.launch
 
 class MainActivity: FragmentActivity() {
   companion object {
@@ -317,14 +323,65 @@ fun MainPage(
           if (chatModel.showCallView.value) ActiveCallView(chatModel)
           else {
             showAdvertiseLAAlert = true
-            val stopped = chatModel.chatRunning.value == false
-            if (chatModel.chatId.value == null) {
-              if (chatModel.sharedContent.value == null)
-                ChatListView(chatModel, setPerformLA, stopped)
-              else
-                ShareListView(chatModel, stopped)
+            BoxWithConstraints {
+              var currentChatId by rememberSaveable { mutableStateOf(chatModel.chatId.value) }
+              val offset = remember { Animatable(if (chatModel.chatId.value == null) 0f else maxWidth.value) }
+              Box(
+                Modifier
+                  .graphicsLayer {
+                    translationX = -offset.value.dp.toPx()
+                  }
+              ) {
+                  val stopped = chatModel.chatRunning.value == false
+                  if (chatModel.sharedContent.value == null)
+                    ChatListView(chatModel, setPerformLA, stopped)
+                  else
+                    ShareListView(chatModel, stopped)
+              }
+              val scope = rememberCoroutineScope()
+              val onComposed: () -> Unit = {
+                scope.launch {
+                  offset.animateTo(
+                    if (chatModel.chatId.value == null) 0f else maxWidth.value,
+                    chatListAnimationSpec()
+                  )
+                  if (offset.value == 0f) {
+                    currentChatId = null
+                  }
+                }
+              }
+              LaunchedEffect(Unit) {
+                launch {
+                  snapshotFlow { chatModel.chatId.value }
+                    .distinctUntilChanged()
+                    .collect {
+                      if (it != null) currentChatId = it
+                      else onComposed()
+
+                      // Deletes files that were not sent but already stored in files directory.
+                      // Currently, it's voice records only
+                      if (it == null && chatModel.filesToDelete.isNotEmpty()) {
+                        chatModel.filesToDelete.forEach { it.delete() }
+                        chatModel.filesToDelete.clear()
+                      }
+                    }
+                }
+                launch {
+                  snapshotFlow { chatModel.sharedContent.value }
+                    .distinctUntilChanged()
+                    .filter { it != null }
+                    .collect {
+                      chatModel.chatId.value = null
+                      currentChatId = null
+                    }
+                }
+              }
+              Box (Modifier.graphicsLayer { translationX = maxWidth.toPx() - offset.value.dp.toPx() }) Box2@ {
+                currentChatId?.let {
+                  ChatView(it, chatModel, onComposed)
+                }
+              }
             }
-            else ChatView(chatModel)
           }
         }
       }
