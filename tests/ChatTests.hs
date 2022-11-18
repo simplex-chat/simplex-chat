@@ -112,10 +112,12 @@ chatTests = do
     it "join group incognito" testJoinGroupIncognito
     it "can't invite contact to whom user connected incognito to a group" testCantInviteContactIncognito
     it "can't see global preferences update" testCantSeeGlobalPrefsUpdateIncognito
-  describe "contact aliases and prefs" $ do
+  describe "contact aliases" $ do
     it "set contact alias" testSetAlias
     it "set connection alias" testSetConnectionAlias
-    it "set contact prefs" testSetContactPrefs
+  describe "preferences" $ do
+    it "set contact preferences" testSetContactPrefs
+    it "update group preferences" testUpdateGroupPrefs
   describe "SMP servers" $ do
     it "get and set SMP servers" testGetSetSMPServers
     it "test SMP server connection" testTestSMPServerConnection
@@ -1298,10 +1300,15 @@ testUpdateGroupProfile =
       bob ##> "/gp team my_team"
       bob <## "you have insufficient permissions for this group command"
       alice ##> "/gp team my_team"
-      alice <## "group #team is changed to #my_team"
-      concurrently_
-        (bob <## "group #team is changed to #my_team by alice")
-        (cath <## "group #team is changed to #my_team by alice")
+      alice <## "changed to #my_team"
+      concurrentlyN_
+        [ do
+            bob <## "alice updated group #team:"
+            bob <## "changed to #my_team",
+          do
+            cath <## "alice updated group #team:"
+            cath <## "changed to #my_team"
+        ]
       bob #> "#my_team hi"
       concurrently_
         (alice <# "#my_team bob> hi")
@@ -2862,6 +2869,38 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     alice <## "full message deletion: off (you allow: no, contact allows: yes)"
     bob <## "alice updated preferences for you:"
     bob <## "full message deletion: off (you allow: default (yes), contact allows: no)"
+
+testUpdateGroupPrefs :: IO ()
+testUpdateGroupPrefs =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"on\"}}}"
+      alice <## "updated group preferences:"
+      alice <## "full message deletion enabled: on"
+      bob <## "alice updated group #team:"
+      bob <## "updated group preferences:"
+      bob <## "full message deletion enabled: on"
+      alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"off\"}}}"
+      alice <## "updated group preferences:"
+      alice <## "full message deletion enabled: off"
+      alice <## "voice messages enabled: off"
+      bob <## "alice updated group #team:"
+      bob <## "updated group preferences:"
+      bob <## "full message deletion enabled: off"
+      bob <## "voice messages enabled: off"
+      alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"on\"}}}"
+      alice <## "updated group preferences:"
+      alice <## "voice messages enabled: on"
+      bob <## "alice updated group #team:"
+      bob <## "updated group preferences:"
+      bob <## "voice messages enabled: on"
+      alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"on\"}}}"
+      -- no update
+      alice #> "#team hey"
+      bob <# "#team alice> hey"
+      bob #> "#team hi"
+      alice <# "#team bob> hi"
 
 testGetSetSMPServers :: IO ()
 testGetSetSMPServers =
