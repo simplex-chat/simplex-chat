@@ -536,13 +536,11 @@ fun ChatListNavLinkLayout(
 ) {
   var modifier = Modifier.fillMaxWidth()
   if (!stopped) modifier = modifier.combinedClickable(onClick = click, onLongClick = { showMenu.value = true })
-  Surface(modifier) {
+  Box(modifier) {
     Row(
       modifier = Modifier
         .fillMaxWidth()
-        .padding(vertical = 8.dp)
-        .padding(start = 8.dp)
-        .padding(end = 12.dp),
+        .padding(start = 8.dp, top = 8.dp, end = 12.dp, bottom = 8.dp),
       verticalAlignment = Alignment.Top
     ) {
       chatLinkPreview()

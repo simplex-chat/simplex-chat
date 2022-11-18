@@ -10,6 +10,7 @@ module Simplex.Chat.Terminal.Output where
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
+import Data.Time.Clock (getCurrentTime)
 import Simplex.Chat.Controller
 import Simplex.Chat.Styled
 import Simplex.Chat.View
@@ -78,7 +79,8 @@ runTerminalOutput ct cc = do
   forever $ do
     (_, r) <- atomically . readTBQueue $ outputQ cc
     user <- readTVarIO $ currentUser cc
-    printToTerminal ct $ responseToView user testV r
+    ts <- getCurrentTime
+    printToTerminal ct $ responseToView user testV ts r
 
 printToTerminal :: ChatTerminal -> [StyledString] -> IO ()
 printToTerminal ct s =

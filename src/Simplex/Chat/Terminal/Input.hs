@@ -12,6 +12,7 @@ import Control.Monad.Reader
 import Data.List (dropWhileEnd)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
+import Data.Time.Clock (getCurrentTime)
 import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Styled
@@ -41,7 +42,8 @@ runInputLoop ct cc = forever $ do
     _ -> pure ()
   let testV = testView $ config cc
   user <- readTVarIO $ currentUser cc
-  printToTerminal ct $ responseToView user testV r
+  ts <- getCurrentTime
+  printToTerminal ct $ responseToView user testV ts r
   where
     echo s = printToTerminal ct [plain s]
     isMessage = \case

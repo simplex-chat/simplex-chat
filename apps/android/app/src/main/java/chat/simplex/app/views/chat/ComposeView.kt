@@ -1,5 +1,6 @@
 package chat.simplex.app.views.chat
 
+import ComposeVoiceView
 import ComposeFileView
 import android.Manifest
 import android.content.*
@@ -14,11 +15,9 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
+import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Edit
@@ -29,26 +28,30 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.core.net.toFile
+import androidx.core.net.toUri
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
+import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.views.chat.item.*
 import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
+import java.io.File
 
 @Serializable
 sealed class ComposePreview {
   @Serializable object NoPreview: ComposePreview()
   @Serializable class CLinkPreview(val linkPreview: LinkPreview?): ComposePreview()
   @Serializable class ImagePreview(val images: List<String>): ComposePreview()
+  @Serializable class VoicePreview(val voice: String, val durationMs: Int, val finished: Boolean): ComposePreview()
   @Serializable class FilePreview(val fileName: String): ComposePreview()
 }
 
@@ -84,6 +87,7 @@ data class ComposeState(
     get() = {
       val hasContent = when (preview) {
         is ComposePreview.ImagePreview -> true
+        is ComposePreview.VoicePreview -> true
         is ComposePreview.FilePreview -> true
         else -> message.isNotEmpty()
       }
@@ -93,6 +97,7 @@ data class ComposeState(
     get() =
       when (preview) {
         is ComposePreview.ImagePreview -> false
+        is ComposePreview.VoicePreview -> false
         is ComposePreview.FilePreview -> false
         else -> useLinkPreviews
       }
@@ -118,11 +123,12 @@ fun chatItemPreview(chatItem: ChatItem): ComposePreview {
     is MsgContent.MCText -> ComposePreview.NoPreview
     is MsgContent.MCLink -> ComposePreview.CLinkPreview(linkPreview = mc.preview)
     is MsgContent.MCImage -> ComposePreview.ImagePreview(images = listOf(mc.image))
+    is MsgContent.MCVoice -> ComposePreview.VoicePreview(voice = chatItem.file?.fileName ?: "", mc.duration / 1000, true)
     is MsgContent.MCFile -> {
       val fileName = chatItem.file?.fileName ?: ""
       ComposePreview.FilePreview(fileName)
     }
-    else -> ComposePreview.NoPreview
+    is MsgContent.MCUnknown, null -> ComposePreview.NoPreview
   }
 }
 
@@ -144,6 +150,11 @@ fun ComposeView(
   val textStyle = remember { mutableStateOf(smallFont) }
   // attachments
   val chosenContent = rememberSaveable { mutableStateOf<List<UploadContent>>(emptyList()) }
+  val audioSaver = Saver<MutableState<Pair<Uri, Int>?>, Pair<String, Int>> (
+    save = { it.value.let { if (it == null) null else it.first.toString() to it.second } },
+    restore = { mutableStateOf(Uri.parse(it.first) to it.second) }
+  )
+  val chosenAudio = rememberSaveable(saver = audioSaver) { mutableStateOf(null) }
   val chosenFile = rememberSaveable { mutableStateOf<Uri?>(null) }
   val cameraLauncher = rememberCameraLauncher { uri: Uri? ->
     if (uri != null) {
@@ -321,6 +332,7 @@ fun ComposeView(
       is MsgContent.MCText -> checkLinkPreview()
       is MsgContent.MCLink -> checkLinkPreview()
       is MsgContent.MCImage -> MsgContent.MCImage(cs.message, image = msgContent.image)
+      is MsgContent.MCVoice -> MsgContent.MCVoice(cs.message, duration = msgContent.duration)
       is MsgContent.MCFile -> MsgContent.MCFile(cs.message)
       is MsgContent.MCUnknown -> MsgContent.MCUnknown(type = msgContent.type, text = cs.message, json = msgContent.json)
     }
@@ -330,6 +342,7 @@ fun ComposeView(
     composeState.value = ComposeState(useLinkPreviews = useLinkPreviews)
     textStyle.value = smallFont
     chosenContent.value = emptyList()
+    chosenAudio.value = null
     chosenFile.value = null
     linkUrl.value = null
     prevLinkUrl.value = null
@@ -374,6 +387,15 @@ fun ComposeView(
                 files.add(file)
                 msgs.add(MsgContent.MCImage(if (msgs.isEmpty()) cs.message else "", preview.images[index]))
               }
+            }
+          }
+          is ComposePreview.VoicePreview -> {
+            val chosenAudioVal = chosenAudio.value
+            if (chosenAudioVal != null) {
+              val file = chosenAudioVal.first.toFile().name
+              files.add((file))
+              chatModel.filesToDelete.remove(chosenAudioVal.first.toFile())
+              msgs.add(MsgContent.MCVoice(if (msgs.isEmpty()) cs.message else "", chosenAudioVal.second / 1000))
             }
           }
           is ComposePreview.FilePreview -> {
@@ -426,6 +448,13 @@ fun ComposeView(
     }
   }
 
+  fun onAudioAdded(filePath: String, durationMs: Int, finished: Boolean) {
+    val file = File(filePath)
+    chosenAudio.value = file.toUri() to durationMs
+    chatModel.filesToDelete.add(file)
+    composeState.value = composeState.value.copy(preview = ComposePreview.VoicePreview(filePath, durationMs, finished))
+  }
+
   fun cancelLinkPreview() {
     val uri = composeState.value.linkPreview?.uri
     if (uri != null) {
@@ -436,6 +465,11 @@ fun ComposeView(
   }
 
   fun cancelImages() {
+    composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
+    chosenContent.value = emptyList()
+  }
+
+  fun cancelVoice() {
     composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
     chosenContent.value = emptyList()
   }
@@ -454,6 +488,13 @@ fun ComposeView(
         preview.images,
         ::cancelImages,
         cancelEnabled = !composeState.value.editing
+      )
+      is ComposePreview.VoicePreview -> ComposeVoiceView(
+        preview.voice,
+        preview.durationMs,
+        preview.finished,
+        cancelEnabled = !composeState.value.editing,
+        ::cancelVoice
       )
       is ComposePreview.FilePreview -> ComposeFileView(
         preview.fileName,
@@ -489,37 +530,34 @@ fun ComposeView(
   Column {
     contextItemView()
     when {
+      composeState.value.editing && composeState.value.preview is ComposePreview.VoicePreview -> {}
       composeState.value.editing && composeState.value.preview is ComposePreview.FilePreview -> {}
       else -> previewView()
     }
     Row(
-      modifier = Modifier.padding(start = 4.dp, end = 8.dp),
+      modifier = Modifier.padding(end = 8.dp),
       verticalAlignment = Alignment.Bottom,
-      horizontalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-      val attachEnabled = !composeState.value.editing
-      Box(Modifier.padding(bottom = 12.dp)) {
+      val attachEnabled = !composeState.value.editing && composeState.value.preview !is ComposePreview.VoicePreview
+      IconButton(showChooseAttachment, enabled = attachEnabled) {
         Icon(
           Icons.Filled.AttachFile,
           contentDescription = stringResource(R.string.attach),
-          tint = if (attachEnabled) MaterialTheme.colors.primary else Color.Gray,
+          tint = if (attachEnabled) MaterialTheme.colors.primary else HighOrLowlight,
           modifier = Modifier
             .size(28.dp)
             .clip(CircleShape)
-            .clickable {
-              if (attachEnabled) {
-                showChooseAttachment()
-              }
-            }
         )
       }
       SendMsgView(
         composeState,
+        allowVoiceRecord = true,
         sendMessage = {
           sendMessage()
           resetLinkPreview()
         },
         ::onMessageChange,
+        ::onAudioAdded,
         textStyle
       )
     }

@@ -40,6 +40,13 @@ struct NetworkAndServers: View {
                         Text("SMP servers")
                     }
 
+                    NavigationLink {
+                        SMPServersView()
+                            .navigationTitle("Your SMP servers")
+                    } label: {
+                        Text("SMP servers (new)")
+                    }
+
                     Picker("Use .onion hosts", selection: $onionHosts) {
                         ForEach(OnionHosts.values, id: \.self) { Text($0.text) }
                     }

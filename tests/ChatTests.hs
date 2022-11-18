@@ -74,7 +74,7 @@ chatTests = do
   describe "async group connections" $ do
     xit "create and join group when clients go offline" testGroupAsync
   describe "user profiles" $ do
-    it "update user profiles and notify contacts" testUpdateProfile
+    it "update user profile and notify contacts" testUpdateProfile
     it "update user profile with image" testUpdateProfileImage
   describe "sending and receiving files" $ do
     describe "send and receive file" $ fileTestMatrix2 runTestFileTransfer
@@ -112,12 +112,15 @@ chatTests = do
     it "join group incognito" testJoinGroupIncognito
     it "can't invite contact to whom user connected incognito to a group" testCantInviteContactIncognito
     it "can't see global preferences update" testCantSeeGlobalPrefsUpdateIncognito
-  describe "contact aliases and prefs" $ do
+  describe "contact aliases" $ do
     it "set contact alias" testSetAlias
     it "set connection alias" testSetConnectionAlias
-    it "set contact prefs" testSetContactPrefs
-  describe "SMP servers" $
+  describe "preferences" $ do
+    it "set contact preferences" testSetContactPrefs
+    it "update group preferences" testUpdateGroupPrefs
+  describe "SMP servers" $ do
     it "get and set SMP servers" testGetSetSMPServers
+    it "test SMP server connection" testTestSMPServerConnection
   describe "async connection handshake" $ do
     it "connect when initiating client goes offline" testAsyncInitiatingOffline
     it "connect when accepting client goes offline" testAsyncAcceptingOffline
@@ -1297,10 +1300,15 @@ testUpdateGroupProfile =
       bob ##> "/gp team my_team"
       bob <## "you have insufficient permissions for this group command"
       alice ##> "/gp team my_team"
-      alice <## "group #team is changed to #my_team"
-      concurrently_
-        (bob <## "group #team is changed to #my_team by alice")
-        (cath <## "group #team is changed to #my_team by alice")
+      alice <## "changed to #my_team"
+      concurrentlyN_
+        [ do
+            bob <## "alice updated group #team:"
+            bob <## "changed to #my_team",
+          do
+            cath <## "alice updated group #team:"
+            cath <## "changed to #my_team"
+        ]
       bob #> "#my_team hi"
       concurrently_
         (alice <# "#my_team bob> hi")
@@ -2862,17 +2870,63 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     bob <## "alice updated preferences for you:"
     bob <## "full message deletion: off (you allow: default (yes), contact allows: no)"
 
+testUpdateGroupPrefs :: IO ()
+testUpdateGroupPrefs =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"on\"}}}"
+      alice <## "updated group preferences:"
+      alice <## "full message deletion enabled: on"
+      bob <## "alice updated group #team:"
+      bob <## "updated group preferences:"
+      bob <## "full message deletion enabled: on"
+      alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"off\"}}}"
+      alice <## "updated group preferences:"
+      alice <## "full message deletion enabled: off"
+      alice <## "voice messages enabled: off"
+      bob <## "alice updated group #team:"
+      bob <## "updated group preferences:"
+      bob <## "full message deletion enabled: off"
+      bob <## "voice messages enabled: off"
+      alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"on\"}}}"
+      alice <## "updated group preferences:"
+      alice <## "voice messages enabled: on"
+      bob <## "alice updated group #team:"
+      bob <## "updated group preferences:"
+      bob <## "voice messages enabled: on"
+      alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"on\"}}}"
+      -- no update
+      alice #> "#team hey"
+      bob <# "#team alice> hey"
+      bob #> "#team hi"
+      alice <# "#team bob> hi"
+
 testGetSetSMPServers :: IO ()
 testGetSetSMPServers =
   testChat2 aliceProfile bobProfile $
     \alice _ -> do
-      alice #$> ("/smp_servers", id, "no custom SMP servers saved")
-      alice #$> ("/smp_servers smp://1234-w==@smp1.example.im", id, "ok")
-      alice #$> ("/smp_servers", id, "smp://1234-w==@smp1.example.im")
-      alice #$> ("/smp_servers smp://2345-w==@smp2.example.im;smp://3456-w==@smp3.example.im:5224", id, "ok")
-      alice #$> ("/smp_servers", id, "smp://2345-w==@smp2.example.im, smp://3456-w==@smp3.example.im:5224")
-      alice #$> ("/smp_servers default", id, "ok")
-      alice #$> ("/smp_servers", id, "no custom SMP servers saved")
+      alice #$> ("/smp", id, "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:5001")
+      alice #$> ("/smp smp://1234-w==@smp1.example.im", id, "ok")
+      alice #$> ("/smp", id, "smp://1234-w==@smp1.example.im")
+      alice #$> ("/smp smp://1234-w==:password@smp1.example.im", id, "ok")
+      alice #$> ("/smp", id, "smp://1234-w==:password@smp1.example.im")
+      alice #$> ("/smp smp://2345-w==@smp2.example.im;smp://3456-w==@smp3.example.im:5224", id, "ok")
+      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im, smp://3456-w==@smp3.example.im:5224")
+      alice #$> ("/smp default", id, "ok")
+      alice #$> ("/smp", id, "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:5001")
+
+testTestSMPServerConnection :: IO ()
+testTestSMPServerConnection =
+  testChat2 aliceProfile bobProfile $
+    \alice _ -> do
+      alice ##> "/smp test smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:5001"
+      alice <## "SMP server test passed"
+      alice ##> "/smp test smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:5001"
+      alice <## "SMP server test passed"
+      alice ##> "/smp test smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZwjI=@localhost:5001"
+      alice <## "SMP server test failed at Connect, error: BROKER NETWORK"
+      alice <## "Possibly, certificate fingerprint in server address is incorrect"
 
 testAsyncInitiatingOffline :: IO ()
 testAsyncInitiatingOffline = withTmpFiles $ do
