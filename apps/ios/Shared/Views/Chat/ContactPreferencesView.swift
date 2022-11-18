@@ -10,37 +10,24 @@ import SwiftUI
 import SimpleXChat
 
 struct ContactPreferencesView: View {
-    @State var allowFullDeletion = ContactFeatureAllowed.yes
-    @State var allowVoice = ContactFeatureAllowed.yes
-    @State var prefs = ContactUserPreferences(
-        fullDelete: ContactUserPreference(
-            enabled: FeatureEnabled(forUser: true, forContact: true),
-            userPreference: .user(preference: Preference(allow: .yes)),
-            contactPreference: Preference(allow: .no)
-        ),
-        voice: ContactUserPreference(
-            enabled: FeatureEnabled(forUser: true, forContact: true),
-            userPreference: .user(preference: Preference(allow: .yes)),
-            contactPreference: Preference(allow: .no)
-        )
-    )
+    @EnvironmentObject var chatModel: ChatModel
+    @Binding var contact: Contact
+    @State var featuresAllowed: ContactFeaturesAllowed
+    @State var currentFeaturesAllowed: ContactFeaturesAllowed
 
     var body: some View {
+        let user: User = chatModel.currentUser!
+
         VStack {
             List {
-                featureSection(.fullDelete, .yes, prefs.fullDelete, $allowFullDeletion)
-                featureSection(.voice, .yes, prefs.voice, $allowVoice)
+                featureSection(.fullDelete, user.fullPreferences.fullDelete.allow, contact.mergedPreferences.fullDelete, $featuresAllowed.fullDelete)
+                featureSection(.voice, user.fullPreferences.voice.allow, contact.mergedPreferences.voice, $featuresAllowed.voice)
 
                 Section {
-                    HStack {
-                        Text("Reset")
-                        Spacer()
-                        Text("Save")
-                    }
-                    .foregroundColor(.accentColor)
-                    .disabled(true)
+                    Button("Reset") { featuresAllowed = currentFeaturesAllowed }
+                    Button("Save (and notify contact)") { savePreferences() }
                 }
-                .listRowBackground(Color.clear)
+                .disabled(currentFeaturesAllowed == featuresAllowed)
             }
         }
     }
@@ -57,11 +44,7 @@ struct ContactPreferencesView: View {
                 }
             }
             .frame(height: 36)
-            HStack {
-                Text("Contact allows")
-                Spacer()
-                Text(pref.contactPreference.allow.text)
-            }
+            infoRow("Contact allows", pref.contactPreference.allow.text)
         } header: {
             HStack {
                 Image(systemName: "\(feature.icon).fill")
@@ -73,10 +56,31 @@ struct ContactPreferencesView: View {
             .frame(height: 36, alignment: .topLeading)
         }
     }
+
+    private func savePreferences() {
+        Task {
+            do {
+                let prefs = contactFeaturesAllowedToPrefs(featuresAllowed)
+                if let toContact = try await apiSetContactPrefs(contactId: contact.contactId, preferences: prefs) {
+                    await MainActor.run {
+                        contact = toContact
+                        chatModel.updateContact(toContact)
+                        currentFeaturesAllowed = featuresAllowed
+                    }
+                }
+            } catch {
+                logger.error("ContactPreferencesView apiSetContactPrefs error: \(responseError(error))")
+            }
+        }
+    }
 }
 
 struct ContactPreferencesView_Previews: PreviewProvider {
     static var previews: some View {
-        ContactPreferencesView()
+        ContactPreferencesView(
+            contact: Binding.constant(Contact.sampleData),
+            featuresAllowed: ContactFeaturesAllowed.sampleData,
+            currentFeaturesAllowed: ContactFeaturesAllowed.sampleData
+        )
     }
 }

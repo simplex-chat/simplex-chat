@@ -385,6 +385,9 @@ CREATE TABLE smp_servers(
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now')),
   basic_auth TEXT,
+  preset INTEGER DEFAULT 0 CHECK(preset NOT NULL),
+  tested INTEGER,
+  enabled INTEGER DEFAULT 1 CHECK(enabled NOT NULL),
   UNIQUE(host, port)
 );
 CREATE INDEX idx_messages_shared_msg_id ON messages(shared_msg_id);

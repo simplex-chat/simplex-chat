@@ -311,12 +311,23 @@ func apiDeleteToken(token: DeviceToken) async throws {
 
 func getUserSMPServers() throws -> [String] {
     let r = chatSendCmdSync(.getUserSMPServers)
-    if case let .userSMPServers(smpServers) = r { return smpServers }
+    if case let .userSMPServers(smpServers, _) = r { return smpServers.map { $0.server } }
     throw r
 }
 
 func setUserSMPServers(smpServers: [String]) async throws {
     try await sendCommandOkResp(.setUserSMPServers(smpServers: smpServers))
+}
+
+func testSMPServer(smpServer: String) async throws -> Result<(), SMPTestFailure> {
+    let r = await chatSendCmd(.testSMPServer(smpServer: smpServer))
+    if case let .sMPTestResult(testFailure) = r {
+        if let t = testFailure {
+            return .failure(t)
+        }
+        return .success(())
+    }
+    throw r
 }
 
 func getChatItemTTL() throws -> ChatItemTTL {
@@ -474,6 +485,12 @@ func apiUpdateProfile(profile: Profile) async throws -> Profile? {
     case let .userProfileUpdated(_, toProfile): return toProfile
     default: throw r
     }
+}
+
+func apiSetContactPrefs(contactId: Int64, preferences: Preferences) async throws -> Contact? {
+    let r = await chatSendCmd(.apiSetContactPrefs(contactId: contactId, preferences: preferences))
+    if case let .contactPrefsUpdated(_, toContact) = r { return toContact }
+    throw r
 }
 
 func apiSetContactAlias(contactId: Int64, localAlias: String) async throws -> Contact? {

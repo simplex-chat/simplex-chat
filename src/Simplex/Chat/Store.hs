@@ -297,6 +297,7 @@ import Simplex.Chat.Migrations.M20221024_contact_used
 import Simplex.Chat.Migrations.M20221025_chat_settings
 import Simplex.Chat.Migrations.M20221029_group_link_id
 import Simplex.Chat.Migrations.M20221112_server_password
+import Simplex.Chat.Migrations.M20221115_server_cfg
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..))
@@ -304,7 +305,7 @@ import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
-import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), SMPServerWithAuth, pattern SMPServer)
+import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), pattern SMPServer)
 import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8)
 import UnliftIO.STM
@@ -344,7 +345,8 @@ schemaMigrations =
     ("20221024_contact_used", m20221024_contact_used),
     ("20221025_chat_settings", m20221025_chat_settings),
     ("20221029_group_link_id", m20221029_group_link_id),
-    ("20221112_server_password", m20221112_server_password)
+    ("20221112_server_password", m20221112_server_password),
+    ("20221115_server_cfg", m20221115_server_cfg)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -3252,7 +3254,7 @@ getDirectChatPreviews_ db user@User {userId} = do
           WHERE item_status = ? AND item_deleted != 1
           GROUP BY contact_id
         ) ChatStats ON ChatStats.contact_id = ct.contact_id
-        LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
+        LEFT JOIN chat_items ri ON ri.shared_msg_id = i.quoted_shared_msg_id AND ri.contact_id = i.contact_id
         WHERE ct.user_id = ?
           AND ((c.conn_level = 0 AND c.via_group_link = 0) OR ct.contact_used = 1)
           AND c.connection_id = (
@@ -3329,7 +3331,7 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
         ) ChatStats ON ChatStats.group_id = g.group_id
         LEFT JOIN group_members m ON m.group_member_id = i.group_member_id
         LEFT JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
-        LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
+        LEFT JOIN chat_items ri ON ri.shared_msg_id = i.quoted_shared_msg_id AND ri.group_id = i.group_id
         LEFT JOIN group_members rm ON rm.group_member_id = ri.group_member_id
         LEFT JOIN contact_profiles rp ON rp.contact_profile_id = COALESCE(rm.member_profile_id, rm.contact_profile_id)
         WHERE g.user_id = ? AND mu.contact_id = ?
@@ -3462,7 +3464,7 @@ getDirectChatLast_ db user@User {userId} contactId count search = do
               ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent
             FROM chat_items i
             LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
-            LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
+            LEFT JOIN chat_items ri ON ri.shared_msg_id = i.quoted_shared_msg_id AND ri.contact_id = i.contact_id
             WHERE i.user_id = ? AND i.contact_id = ? AND i.item_deleted != 1 AND i.item_text LIKE '%' || ? || '%'
             ORDER BY i.chat_item_id DESC
             LIMIT ?
@@ -3493,7 +3495,7 @@ getDirectChatAfter_ db user@User {userId} contactId afterChatItemId count search
               ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent
             FROM chat_items i
             LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
-            LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
+            LEFT JOIN chat_items ri ON ri.shared_msg_id = i.quoted_shared_msg_id AND ri.contact_id = i.contact_id
             WHERE i.user_id = ? AND i.contact_id = ? AND i.item_deleted != 1 AND i.item_text LIKE '%' || ? || '%'
               AND i.chat_item_id > ?
             ORDER BY i.chat_item_id ASC
@@ -3525,7 +3527,7 @@ getDirectChatBefore_ db user@User {userId} contactId beforeChatItemId count sear
               ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent
             FROM chat_items i
             LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
-            LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
+            LEFT JOIN chat_items ri ON ri.shared_msg_id = i.quoted_shared_msg_id AND ri.contact_id = i.contact_id
             WHERE i.user_id = ? AND i.contact_id = ? AND i.item_deleted != 1 AND i.item_text LIKE '%' || ? || '%'
               AND i.chat_item_id < ?
             ORDER BY i.chat_item_id DESC
@@ -3668,17 +3670,18 @@ getGroupInfo db User {userId, userContactId} groupId =
       (groupId, userId, userContactId)
 
 updateGroupProfile :: DB.Connection -> User -> GroupInfo -> GroupProfile -> ExceptT StoreError IO GroupInfo
-updateGroupProfile db User {userId} g@GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, groupPreferences}} p'@GroupProfile {displayName = newName, fullName, image}
+updateGroupProfile db User {userId} g@GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName}} p'@GroupProfile {displayName = newName, fullName, image, groupPreferences}
   | displayName == newName = liftIO $ do
     currentTs <- getCurrentTime
-    updateGroupProfile_ currentTs $> (g :: GroupInfo) {groupProfile = p'}
+    updateGroupProfile_ currentTs $> (g :: GroupInfo) {groupProfile = p', fullGroupPreferences}
   | otherwise =
     ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
       currentTs <- getCurrentTime
       updateGroupProfile_ currentTs
       updateGroup_ ldn currentTs
-      pure . Right $ (g :: GroupInfo) {localDisplayName = ldn, groupProfile = p'}
+      pure . Right $ (g :: GroupInfo) {localDisplayName = ldn, groupProfile = p', fullGroupPreferences}
   where
+    fullGroupPreferences = mergeGroupPreferences groupPreferences
     updateGroupProfile_ currentTs =
       DB.execute
         db
@@ -3884,7 +3887,7 @@ getDirectChatItem db userId contactId itemId = ExceptT $ do
             ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent
           FROM chat_items i
           LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
-          LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
+          LEFT JOIN chat_items ri ON ri.shared_msg_id = i.quoted_shared_msg_id AND ri.contact_id = i.contact_id
           WHERE i.user_id = ? AND i.contact_id = ? AND i.chat_item_id = ?
         |]
         (userId, contactId, itemId)
@@ -4009,7 +4012,7 @@ getGroupChatItem db User {userId, userContactId} groupId itemId = ExceptT $ do
           LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
           LEFT JOIN group_members m ON m.group_member_id = i.group_member_id
           LEFT JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
-          LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
+          LEFT JOIN chat_items ri ON ri.shared_msg_id = i.quoted_shared_msg_id AND ri.group_id = i.group_id
           LEFT JOIN group_members rm ON rm.group_member_id = ri.group_member_id
           LEFT JOIN contact_profiles rp ON rp.contact_profile_id = COALESCE(rm.member_profile_id, rm.contact_profile_id)
           WHERE i.user_id = ? AND i.group_id = ? AND i.chat_item_id = ?
@@ -4257,35 +4260,38 @@ toGroupChatItemList tz currentTs userContactId (((Just itemId, Just itemTs, Just
   either (const []) (: []) $ toGroupChatItem tz currentTs userContactId (((itemId, itemTs, itemContent, itemText, itemStatus, sharedMsgId, itemDeleted, itemEdited, createdAt, updatedAt) :. fileRow) :. memberRow_ :. quoteRow :. quotedMemberRow_)
 toGroupChatItemList _ _ _ _ = []
 
-getSMPServers :: DB.Connection -> User -> IO [SMPServerWithAuth]
+getSMPServers :: DB.Connection -> User -> IO [ServerCfg]
 getSMPServers db User {userId} =
-  map toSmpServer
+  map toServerCfg
     <$> DB.query
       db
       [sql|
-        SELECT host, port, key_hash, basic_auth
+        SELECT host, port, key_hash, basic_auth, preset, tested, enabled
         FROM smp_servers
         WHERE user_id = ?;
       |]
       (Only userId)
   where
-    toSmpServer :: (NonEmpty TransportHost, String, C.KeyHash, Maybe Text) -> SMPServerWithAuth
-    toSmpServer (host, port, keyHash, auth_) = ProtoServerWithAuth (SMPServer host port keyHash) (BasicAuth . encodeUtf8 <$> auth_)
+    toServerCfg :: (NonEmpty TransportHost, String, C.KeyHash, Maybe Text, Bool, Maybe Bool, Bool) -> ServerCfg
+    toServerCfg (host, port, keyHash, auth_, preset, tested, enabled) =
+      let server = ProtoServerWithAuth (SMPServer host port keyHash) (BasicAuth . encodeUtf8 <$> auth_)
+       in ServerCfg {server, preset, tested, enabled}
 
-overwriteSMPServers :: DB.Connection -> User -> [SMPServerWithAuth] -> ExceptT StoreError IO ()
-overwriteSMPServers db User {userId} smpServers =
+overwriteSMPServers :: DB.Connection -> User -> [ServerCfg] -> ExceptT StoreError IO ()
+overwriteSMPServers db User {userId} servers =
   checkConstraint SEUniqueID . ExceptT $ do
     currentTs <- getCurrentTime
     DB.execute db "DELETE FROM smp_servers WHERE user_id = ?" (Only userId)
-    forM_ smpServers $ \(ProtoServerWithAuth ProtocolServer {host, port, keyHash} auth_) ->
+    forM_ servers $ \ServerCfg {server, preset, tested, enabled} -> do
+      let ProtoServerWithAuth ProtocolServer {host, port, keyHash} auth_ = server
       DB.execute
         db
         [sql|
           INSERT INTO smp_servers
-            (host, port, key_hash, basic_auth, user_id, created_at, updated_at)
-          VALUES (?,?,?,?,?,?,?)
+            (host, port, key_hash, basic_auth, preset, tested, enabled, user_id, created_at, updated_at)
+          VALUES (?,?,?,?,?,?,?,?,?,?)
         |]
-        (host, port, keyHash, safeDecodeUtf8 . unBasicAuth <$> auth_, userId, currentTs, currentTs)
+        (host, port, keyHash, safeDecodeUtf8 . unBasicAuth <$> auth_, preset, tested, enabled, userId, currentTs, currentTs)
     pure $ Right ()
 
 createCall :: DB.Connection -> User -> Call -> UTCTime -> IO ()

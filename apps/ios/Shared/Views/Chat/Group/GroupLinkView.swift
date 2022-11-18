@@ -29,10 +29,6 @@ struct GroupLinkView: View {
     var body: some View {
         ScrollView {
             VStack (alignment: .leading) {
-                Text("Group link")
-                    .font(.largeTitle)
-                    .bold()
-                    .padding(.bottom)
                 Text("You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it.")
                     .padding(.bottom)
                 if let groupLink = groupLink {
