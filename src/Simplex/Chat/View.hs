@@ -785,15 +785,36 @@ viewPrefEnabled = \case
 
 viewGroupUpdated :: GroupInfo -> GroupInfo -> Maybe GroupMember -> [StyledString]
 viewGroupUpdated
-  GroupInfo {localDisplayName = n, groupProfile = GroupProfile {fullName, image}}
-  g'@GroupInfo {localDisplayName = n', groupProfile = GroupProfile {fullName = fullName', image = image'}}
-  m
-    | n == n' && fullName == fullName' && image == image' = []
-    | n == n' && fullName == fullName' = ["group " <> ttyGroup n <> ": profile image " <> (if isNothing image' then "removed" else "updated") <> byMember]
-    | n == n' = ["group " <> ttyGroup n <> ": full name " <> if T.null fullName' || fullName' == n' then "removed" else "changed to " <> plain fullName' <> byMember]
-    | otherwise = ["group " <> ttyGroup n <> " is changed to " <> ttyFullGroup g' <> byMember]
+  GroupInfo {localDisplayName = n, groupProfile = GroupProfile {fullName, image, groupPreferences = gps}}
+  g'@GroupInfo {localDisplayName = n', groupProfile = GroupProfile {fullName = fullName', image = image', groupPreferences = gps'}}
+  m = do
+    let update = groupProfileUpdated <> groupPrefsUpdated
+    if null update
+      then []
+      else memberUpdated <> update
     where
-      byMember = maybe "" ((" by " <>) . ttyMember) m
+      memberUpdated = maybe [] (\m' -> [ttyMember m' <> " updated group " <> ttyGroup n <> ":"]) m
+      groupProfileUpdated
+        | n == n' && fullName == fullName' && image == image' = []
+        | n == n' && fullName == fullName' = ["profile image " <> (if isNothing image' then "removed" else "updated")]
+        | n == n' = ["full name " <> if T.null fullName' || fullName' == n' then "removed" else "changed to " <> plain fullName']
+        | otherwise = ["changed to " <> ttyFullGroup g']
+      groupPrefsUpdated
+        | null prefs = []
+        | otherwise = "updated group preferences:" : prefs
+        where
+          prefs = mapMaybe viewPref allChatFeatures
+          viewPref pt
+            | pref gps == pref gps' = Nothing
+            | otherwise = Just $ plain (chatPrefName pt) <> " enabled: " <> viewGroupPreference (pref gps')
+            where
+              pref pss = getGroupPreference pt $ mergeGroupPreferences pss
+
+viewGroupPreference :: GroupPreference -> StyledString
+viewGroupPreference = \case
+  GroupPreference {enable} -> case enable of
+    FEOn -> "on"
+    FEOff -> "off"
 
 viewContactAliasUpdated :: Contact -> [StyledString]
 viewContactAliasUpdated Contact {localDisplayName = n, profile = LocalProfile {localAlias}}

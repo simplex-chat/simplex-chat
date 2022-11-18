@@ -3673,14 +3673,15 @@ updateGroupProfile :: DB.Connection -> User -> GroupInfo -> GroupProfile -> Exce
 updateGroupProfile db User {userId} g@GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName}} p'@GroupProfile {displayName = newName, fullName, image, groupPreferences}
   | displayName == newName = liftIO $ do
     currentTs <- getCurrentTime
-    updateGroupProfile_ currentTs $> (g :: GroupInfo) {groupProfile = p'}
+    updateGroupProfile_ currentTs $> (g :: GroupInfo) {groupProfile = p', fullGroupPreferences} -- update full group preferences
   | otherwise =
     ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
       currentTs <- getCurrentTime
       updateGroupProfile_ currentTs
       updateGroup_ ldn currentTs
-      pure . Right $ (g :: GroupInfo) {localDisplayName = ldn, groupProfile = p'}
+      pure . Right $ (g :: GroupInfo) {localDisplayName = ldn, groupProfile = p', fullGroupPreferences} -- update full group preferences
   where
+    fullGroupPreferences = mergeGroupPreferences groupPreferences
     updateGroupProfile_ currentTs =
       DB.execute
         db
