@@ -80,6 +80,7 @@ fun SendMsgView(
               stringResource(R.string.icon_descr_send_message),
               tint = Color.White,
               modifier = Modifier
+                .size(36.dp)
                 .padding(4.dp)
                 .clip(CircleShape)
                 .background(color)
@@ -175,6 +176,7 @@ fun SendMsgView(
               stringResource(R.string.icon_descr_record_voice_message),
               tint = if (recordingTimeRange.last != 0L) Color.White else if (!cs.inProgress) MaterialTheme.colors.primary else HighOrLowlight,
               modifier = Modifier
+                .size(36.dp)
                 .padding(4.dp)
                 .then(sendButtonModifier)
             )
