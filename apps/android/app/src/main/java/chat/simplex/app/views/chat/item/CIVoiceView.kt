@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -228,11 +229,16 @@ private fun FileIndicator(
         )
       }
     } else {
-      Box(Modifier.drawRingModifier(angle, primary, strokeWidth)) {
-        FloatingActionButton(
-          onClick = { if (!audioPlaying) play() else pause() },
-          elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
-          backgroundColor = if (sent) SentColorLight else ReceivedColorLight
+      Surface(
+        onClick = { if (!audioPlaying) play() else pause() },
+        Modifier.drawRingModifier(angle, primary, strokeWidth),
+        color = if (sent) SentColorLight else ReceivedColorLight,
+        shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50))
+      ) {
+        Box(
+          Modifier
+            .defaultMinSize(minWidth = 56.dp, minHeight = 56.dp),
+          contentAlignment = Alignment.Center
         ) {
           Icon(
             imageVector = if (audioPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,

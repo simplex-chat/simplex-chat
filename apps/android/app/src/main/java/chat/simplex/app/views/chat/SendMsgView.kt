@@ -74,21 +74,17 @@ fun SendMsgView(
         if (cs.inProgress && (cs.preview is ComposePreview.ImagePreview || cs.preview is ComposePreview.VoicePreview || cs.preview is ComposePreview.FilePreview)) {
           CircularProgressIndicator(Modifier.size(36.dp).padding(4.dp), color = HighOrLowlight, strokeWidth = 3.dp)
         } else if (!showVoiceButton) {
-          Icon(
-            icon,
-            stringResource(R.string.icon_descr_send_message),
-            tint = Color.White,
-            modifier = Modifier
-              .size(36.dp)
-              .padding(4.dp)
-              .clip(CircleShape)
-              .background(color)
-              .clickable {
-                if (cs.sendEnabled()) {
-                  sendMessage()
-                }
-              }
-          )
+          IconButton(sendMessage, Modifier.size(36.dp), enabled = cs.sendEnabled()) {
+            Icon(
+              icon,
+              stringResource(R.string.icon_descr_send_message),
+              tint = Color.White,
+              modifier = Modifier
+                .padding(4.dp)
+                .clip(CircleShape)
+                .background(color)
+            )
+          }
         } else {
           val permissionsState = rememberMultiplePermissionsState(
             permissions = listOf(
@@ -114,7 +110,6 @@ fun SendMsgView(
           }
           val startStopRecording: () -> Unit = {
             when {
-              cs.inProgress -> {}
               !permissionsState.allPermissionsGranted -> permissionsState.launchMultiplePermissionRequest()
               recordingInProgress.value -> stopRecordingAndAddAudio()
               filePath.value == null -> {
@@ -156,8 +151,6 @@ fun SendMsgView(
               if (filePath.value == null) startStopRecording()
             },
             onClick = {
-              if (cs.inProgress) return@interactionSourceWithTapDetection
-
               if (!recordingInProgress.value && filePath.value != null) {
                 sendMessage()
                 cleanUp(false)
@@ -176,21 +169,16 @@ fun SendMsgView(
             Modifier.clip(CircleShape).background(color)
           else
             Modifier
-          Icon(
-            if (recordingTimeRange.last != 0L) Icons.Outlined.ArrowUpward else if (stopRecOnNextClick) Icons.Default.Stop else Icons.Default.Mic,
-            stringResource(R.string.icon_descr_record_voice_message),
-            tint = if (recordingTimeRange.last != 0L) Color.White else if (!cs.inProgress) MaterialTheme.colors.primary else HighOrLowlight,
-            modifier = Modifier
-              .size(36.dp)
-              .padding(4.dp)
-              .then(sendButtonModifier)
-              .clickable(
-                onClick = {},
-                role = Role.Button,
-                interactionSource = interactionSource,
-                indication = rememberRipple(bounded = false, radius = 24.dp)
-              )
-          )
+          IconButton({}, Modifier.size(36.dp), enabled = !cs.inProgress, interactionSource = interactionSource) {
+            Icon(
+              if (recordingTimeRange.last != 0L) Icons.Outlined.ArrowUpward else if (stopRecOnNextClick) Icons.Default.Stop else Icons.Default.Mic,
+              stringResource(R.string.icon_descr_record_voice_message),
+              tint = if (recordingTimeRange.last != 0L) Color.White else if (!cs.inProgress) MaterialTheme.colors.primary else HighOrLowlight,
+              modifier = Modifier
+                .padding(4.dp)
+                .then(sendButtonModifier)
+            )
+          }
           DisposableEffect(Unit) {
             onDispose {
               rec.stop()
