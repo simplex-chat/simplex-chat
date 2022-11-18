@@ -131,12 +131,18 @@ object AudioPlayer {
       player.reset()
       // Notify prev audio listener about stop
       current?.second?.invoke()
-      kotlin.runCatching {
+      runCatching {
         player.setDataSource(filePath)
-      }.getOrElse { Log.e(TAG, it.stackTraceToString()); return false }
+      }.onFailure {
+        Log.e(TAG, it.stackTraceToString())
+        AlertManager.shared.showAlertMsg(generalGetString(R.string.unknown_error), it.message)
+        return false
+      }
       runCatching { player.prepare() }.onFailure {
         // Can happen when audio file is broken
+        Log.e(TAG, it.stackTraceToString())
         AlertManager.shared.showAlertMsg(generalGetString(R.string.unknown_error), it.message)
+        return false
       }
     }
     if (seek != null) player.seekTo(seek)

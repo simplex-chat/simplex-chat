@@ -1,16 +1,11 @@
 package chat.simplex.app.views.chat.item
 
-import android.net.Uri
-import android.widget.Toast
-import androidx.activity.compose.ManagedActivityResultLauncher
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -28,7 +23,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import chat.simplex.app.R
-import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
@@ -43,8 +37,7 @@ fun CIVoiceView(
   sent: Boolean,
   hasText: Boolean,
   ci: ChatItem,
-  metaColor: Color,
-  receiveFile: (Long) -> Unit
+  metaColor: Color
 ) {
   Row(
     Modifier.padding(top = 4.dp, bottom = 6.dp, start = 6.dp, end = 6.dp),
@@ -53,6 +46,7 @@ fun CIVoiceView(
     if (file != null) {
       val context = LocalContext.current
       val filePath = remember(file.filePath, file.fileStatus) { getLoadedFilePath(context, file) }
+      var brokenAudio by rememberSaveable(file.filePath) { mutableStateOf(false) }
       val audioPlaying = rememberSaveable(file.filePath) { mutableStateOf(false) }
       val audioInfo = remember(file.filePath) {
         file.audioInfo.value = file.audioInfo.value.copy(durationMs = durationSec * 1000)
@@ -64,6 +58,7 @@ fun CIVoiceView(
           audioInfo.value = ProgressAndDuration(0, audioInfo.value.durationMs)
           audioPlaying.value = false
         }
+        brokenAudio = !audioPlaying.value
       }
       val pause = {
         audioInfo.value = ProgressAndDuration(AudioPlayer.pause(), audioInfo.value.durationMs)
@@ -75,7 +70,7 @@ fun CIVoiceView(
       val minWidth = with(LocalDensity.current) { 45.sp.toDp() }
       val text = String.format("%02d:%02d", time / 1000 / 60, time / 1000 % 60)
       if (hasText) {
-        FileIndicator(file, audioPlaying.value, sent, hasText, audioInfo, receiveFile, play, pause)
+        FileIndicator(file, audioPlaying.value, sent, hasText, audioInfo, brokenAudio, play, pause)
         Text(
           text,
           Modifier
@@ -102,7 +97,7 @@ fun CIVoiceView(
               )
             }
             Column {
-              FileIndicator(file, audioPlaying.value, sent, hasText, audioInfo, receiveFile, play, pause)
+              FileIndicator(file, audioPlaying.value, sent, hasText, audioInfo, brokenAudio, play, pause)
               Box(Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp)) {
                 CIMetaView(ci, metaColor)
               }
@@ -111,7 +106,7 @@ fun CIVoiceView(
         } else {
           Row {
             Column {
-              FileIndicator(file, audioPlaying.value, sent, hasText, audioInfo, receiveFile, play, pause)
+              FileIndicator(file, audioPlaying.value, sent, hasText, audioInfo, brokenAudio, play, pause)
               Box(Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp)) {
                 CIMetaView(ci, metaColor)
               }
@@ -132,7 +127,7 @@ fun CIVoiceView(
         }
       }
     } else {
-      FileIndicator(null, false, sent, hasText, null, receiveFile, {}, {})
+      FileIndicator(null, false, sent, hasText, null, false, {}, {})
       val metaReserve = if (edited)
         "                     "
       else
@@ -143,63 +138,34 @@ fun CIVoiceView(
 }
 
 @Composable
-private fun FileIcon(
-  innerIcon: ImageVector? = null,
-  color: Color = if (isInDarkTheme()) FileDark else FileLight
+private fun PlayPauseButton(
+  audioPlaying: Boolean,
+  sent: Boolean,
+  angle: Float,
+  strokeWidth: Float,
+  strokeColor: Color,
+  enabled: Boolean,
+  error: Boolean,
+  play: () -> Unit,
+  pause: () -> Unit
 ) {
-  Box(
-    contentAlignment = Alignment.Center
+  Surface(
+    onClick = { if (!audioPlaying) play() else pause() },
+    Modifier.drawRingModifier(angle, strokeColor, strokeWidth),
+    color = if (sent) SentColorLight else ReceivedColorLight,
+    shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50))
   ) {
-    Icon(
-      Icons.Filled.InsertDriveFile,
-      stringResource(R.string.icon_descr_file),
-      Modifier.fillMaxSize(),
-      tint = color
-    )
-    if (innerIcon != null) {
+    Box(
+      Modifier
+        .defaultMinSize(minWidth = 56.dp, minHeight = 56.dp),
+      contentAlignment = Alignment.Center
+    ) {
       Icon(
-        innerIcon,
-        stringResource(R.string.icon_descr_file),
-        Modifier
-          .size(32.dp)
-          .padding(top = 12.dp),
-        tint = Color.White
+        imageVector = if (audioPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+        contentDescription = null,
+        Modifier.size(36.dp),
+        tint = if (error) WarningOrange else if (!enabled) HighOrLowlight else MaterialTheme.colors.primary
       )
-    }
-  }
-}
-
-private fun fileAction(
-  file: CIFile?,
-  receiveFile: (Long) -> Unit,
-  saveFileLauncher: ManagedActivityResultLauncher<String, Uri?>
-) {
-  if (file != null) {
-    when (file.fileStatus) {
-      CIFileStatus.RcvInvitation -> {
-        if (fileSizeValid(file)) {
-          receiveFile(file.fileId)
-        } else {
-          AlertManager.shared.showAlertMsg(
-            generalGetString(R.string.large_file),
-            String.format(generalGetString(R.string.contact_sent_large_file), formatBytes(MAX_FILE_SIZE))
-          )
-        }
-      }
-      CIFileStatus.RcvAccepted ->
-        AlertManager.shared.showAlertMsg(
-          generalGetString(R.string.waiting_for_file),
-          String.format(generalGetString(R.string.file_will_be_received_when_contact_is_online), MAX_FILE_SIZE)
-        )
-      CIFileStatus.RcvComplete -> {
-        val filePath = getLoadedFilePath(SimplexApp.context, file)
-        if (filePath != null) {
-          saveFileLauncher.launch(file.fileName)
-        } else {
-          Toast.makeText(SimplexApp.context, generalGetString(R.string.file_not_found), Toast.LENGTH_SHORT).show()
-        }
-      }
-      else -> {}
     }
   }
 }
@@ -211,16 +177,16 @@ private fun FileIndicator(
   sent: Boolean,
   hasText: Boolean,
   audioInfo: State<ProgressAndDuration>?,
-  receiveFile: (Long) -> Unit,
+  error: Boolean,
   play: () -> Unit,
   pause: () -> Unit
 ) {
+  val strokeWidth = with(LocalDensity.current){ 3.dp.toPx() }
+  val strokeColor = MaterialTheme.colors.primary
   if (file != null && file.loaded && audioInfo != null) {
-    val strokeWidth = with(LocalDensity.current){ 3.dp.toPx() }
-    val primary = MaterialTheme.colors.primary
     val angle = 360f * (audioInfo.value.progressMs.toDouble() / audioInfo.value.durationMs).toFloat()
     if (hasText) {
-      IconButton({ if (!audioPlaying) play() else pause() }, Modifier.drawRingModifier(angle, primary, strokeWidth)) {
+      IconButton({ if (!audioPlaying) play() else pause() }, Modifier.drawRingModifier(angle, strokeColor, strokeWidth)) {
         Icon(
           imageVector = if (audioPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
           contentDescription = null,
@@ -229,57 +195,22 @@ private fun FileIndicator(
         )
       }
     } else {
-      Surface(
-        onClick = { if (!audioPlaying) play() else pause() },
-        Modifier.drawRingModifier(angle, primary, strokeWidth),
-        color = if (sent) SentColorLight else ReceivedColorLight,
-        shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50))
-      ) {
-        Box(
-          Modifier
-            .defaultMinSize(minWidth = 56.dp, minHeight = 56.dp),
-          contentAlignment = Alignment.Center
-        ) {
-          Icon(
-            imageVector = if (audioPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-            contentDescription = null,
-            Modifier.size(36.dp),
-            tint = MaterialTheme.colors.primary
-          )
-        }
-      }
+      PlayPauseButton(audioPlaying, sent, angle, strokeWidth, strokeColor, true, error, play, pause)
     }
   } else {
-    val saveFileLauncher = rememberSaveFileLauncher(cxt = LocalContext.current, ciFile = file)
-    Box(
-      Modifier
-        .size(42.dp)
-        .clip(RoundedCornerShape(4.dp))
-        .clickable(onClick = {
-          fileAction(file, receiveFile, saveFileLauncher)
-        }),
-      contentAlignment = Alignment.Center
-    ) {
-      if (file != null) {
-        when (file.fileStatus) {
-          CIFileStatus.SndStored -> FileIcon()
-          CIFileStatus.SndTransfer -> ProgressIndicator()
-          CIFileStatus.SndComplete -> FileIcon(innerIcon = Icons.Filled.Check)
-          CIFileStatus.SndCancelled -> FileIcon(innerIcon = Icons.Outlined.Close)
-          CIFileStatus.RcvInvitation ->
-            if (fileSizeValid(file))
-              FileIcon(innerIcon = Icons.Outlined.ArrowDownward, color = MaterialTheme.colors.primary)
-            else
-              FileIcon(innerIcon = Icons.Outlined.PriorityHigh, color = WarningOrange)
-
-          CIFileStatus.RcvAccepted -> FileIcon(innerIcon = Icons.Outlined.MoreHoriz)
-          CIFileStatus.RcvTransfer -> ProgressIndicator()
-          CIFileStatus.RcvComplete -> FileIcon()
-          CIFileStatus.RcvCancelled -> FileIcon(innerIcon = Icons.Outlined.Close)
-        }
-      } else {
-        FileIcon()
+    if (file?.fileStatus == CIFileStatus.RcvInvitation
+      || file?.fileStatus == CIFileStatus.RcvTransfer
+      || file?.fileStatus == CIFileStatus.RcvAccepted) {
+      Box(
+        Modifier
+          .size(56.dp)
+          .clip(RoundedCornerShape(4.dp)),
+        contentAlignment = Alignment.Center
+      ) {
+        ProgressIndicator()
       }
+    } else {
+      PlayPauseButton(audioPlaying, sent, 0f, strokeWidth, strokeColor, false, false, {}, {})
     }
   }
 }
@@ -313,13 +244,6 @@ private fun ProgressIndicator() {
     color = if (isInDarkTheme()) FileDark else FileLight,
     strokeWidth = 4.dp
   )
-}
-
-private fun fileSizeValid(file: CIFile?): Boolean {
-  if (file != null) {
-    return file.fileSize <= MAX_FILE_SIZE
-  }
-  return false
 }
 
 @Composable
