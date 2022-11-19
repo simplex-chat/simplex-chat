@@ -13,6 +13,8 @@ struct SMPServerView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @Binding var server: ServerCfg
     @State var serverToEdit: ServerCfg
+    @State var showTestFailure = false
+    @State var testFailure: SMPTestFailure?
 
     var body: some View {
         if server.preset {
@@ -67,7 +69,10 @@ struct SMPServerView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
-                    server = serverToEdit
+                    if serverToEdit != server {
+                        server = serverToEdit
+                        server.tested = nil
+                    }
                     dismiss()
                 } label: {
                     HStack {
@@ -77,13 +82,24 @@ struct SMPServerView: View {
                 }
             }
         }
+        .alert(isPresented: $showTestFailure) {
+            Alert(
+                title: Text("Server test failed!"),
+                message: Text(testFailure?.localizedDescription ?? "")
+            )
+        }
     }
 
     private func useServerSection(_ valid: Bool) -> some View {
         Section("Use server") {
             HStack {
                 Button("Test server") {
-                    Task { await testServerConnection(server: $serverToEdit) }
+                    Task {
+                        if let f = await testServerConnection(server: $serverToEdit) {
+                            showTestFailure = true
+                            testFailure = f
+                        }
+                    }
                 }
                 .disabled(!valid)
                 Spacer()
@@ -110,20 +126,29 @@ struct SMPServerView: View {
     }
 }
 
-func testServerConnection(server: Binding<ServerCfg>) async {
+func testServerConnection(server: Binding<ServerCfg>) async -> SMPTestFailure? {
     do {
         let r = try await testSMPServer(smpServer: server.wrappedValue.server)
-        await MainActor.run {
+
             switch r {
-            case .success: server.wrappedValue.tested = true
-            case .failure: server.wrappedValue.tested = false
+            case .success:
+                await MainActor.run { server.wrappedValue.tested = true }
+                return nil
+            case let .failure(f):
+                await MainActor.run { server.wrappedValue.tested = false }
+                return f
             }
-        }
     } catch let error {
+        logger.error("testServerConnection \(responseError(error))")
         await MainActor.run {
             server.wrappedValue.tested = false
         }
+        return nil
     }
+}
+
+func serverHostname(_ srv: ServerCfg) -> String {
+    parseServerAddress(srv.server)?.hostnames.first ?? srv.server
 }
 
 struct SMPServerView_Previews: PreviewProvider {

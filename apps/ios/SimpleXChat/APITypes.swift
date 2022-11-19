@@ -656,6 +656,10 @@ public struct ServerCfg: Identifiable, Equatable, Codable {
         self.enabled = enabled
     }
 
+    public static func == (l: ServerCfg, r: ServerCfg) -> Bool {
+        l.server == r.server && l.preset == r.preset && l.tested == r.tested && l.enabled == r.enabled
+    }
+
     public var id: String { "\(server) \(createdAt)" }
 
     public static var empty = ServerCfg(server: "", preset: false, tested: nil, enabled: true)
@@ -699,7 +703,7 @@ public struct ServerCfg: Identifiable, Equatable, Codable {
     }
 }
 
-public enum SMPTestStep: String, Decodable {
+public enum SMPTestStep: String, Decodable, Equatable {
     case connect
     case createQueue
     case secureQueue
@@ -717,17 +721,21 @@ public enum SMPTestStep: String, Decodable {
     }
 }
 
-public struct SMPTestFailure: Decodable, Error {
+public struct SMPTestFailure: Decodable, Error, Equatable {
     var testStep: SMPTestStep
     var testError: AgentErrorType
 
-    var localizedDescription: String {
-        let err = String.localizedStringWithFormat(NSLocalizedString("Test failed at step %@", comment: "server test failure"), testStep.text)
+    public static func == (l: SMPTestFailure, r: SMPTestFailure) -> Bool {
+        l.testStep == r.testStep
+    }
+
+    public var localizedDescription: String {
+        let err = String.localizedStringWithFormat(NSLocalizedString("Test failed at step %@.", comment: "server test failure"), testStep.text)
         switch testError {
         case .SMP(.AUTH):
-            return err + "," + NSLocalizedString("Server requires authentication to create queues, check password", comment: "server test error")
+            return err + NSLocalizedString(" Server requires authentication to create queues, check password", comment: "server test error")
         case .BROKER(.NETWORK):
-            return err + "," + NSLocalizedString("Possibly, certificate fingerprint in server address is incorrect", comment: "server test error")
+            return err + NSLocalizedString(" Possibly, certificate fingerprint in server address is incorrect", comment: "server test error")
         default:
             return err
         }

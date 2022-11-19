@@ -17,12 +17,25 @@ struct SMPServersView: View {
     @State private var showAddServer = false
     @State private var showScanSMPServer = false
     @State private var testing = false
+    @State private var alert: SMPServerAlert? = nil
 
     var body: some View {
         ZStack {
             smpServersView()
             if testing {
                 ProgressView().scaleEffect(2)
+            }
+        }
+    }
+
+    enum SMPServerAlert: Identifiable {
+        case testsFailed(failures: [String: SMPTestFailure])
+        case error(title: LocalizedStringKey, error: String = "")
+
+        var id: String {
+            switch self {
+            case .testsFailed: return "testsFailed"
+            case let .error(title, _): return "error \(title)"
             }
         }
     }
@@ -45,26 +58,12 @@ struct SMPServersView: View {
             }
 
             Section {
-                Button("Reset") {
-                    servers = m.userSMPServers ?? []
-                }
-                .disabled(servers == m.userSMPServers || testing)
-                Button("Test servers") {
-                    resetTestStatus()
-                    testing = true
-                    Task {
-                        _ = await testServers()
-                        await MainActor.run {
-                            testing = false
-                        }
-                        // TODO show alert if not passed
-                    }
-                }
-                .disabled(testing)
-                Button("Save servers") {
-                    saveSMPServers()
-                }
-                .disabled(servers.count == 0 || servers == m.userSMPServers || testing || !servers.allSatisfy { parseServerAddress($0.server) != nil })
+                Button("Reset") { servers = m.userSMPServers ?? [] }
+                    .disabled(servers == m.userSMPServers || testing)
+                Button("Test servers", action: testServers)
+                    .disabled(testing)
+                Button("Save servers", action: saveSMPServers)
+                    .disabled(saveDisabled)
             }
         }
         .toolbar { EditButton() }
@@ -73,21 +72,38 @@ struct SMPServersView: View {
                 servers.append(ServerCfg.empty)
                 selectedServer = servers.last?.id
             }
-            Button("Scan server QR code") {
-                showScanSMPServer = true
-            }
-            Button("Add preset servers") {
-                addAllPresets()
-            }
-            .disabled(hasAllPresets())
+            Button("Scan server QR code") { showScanSMPServer = true }
+            Button("Add preset servers", action: addAllPresets)
+                .disabled(hasAllPresets())
         }
         .sheet(isPresented: $showScanSMPServer) {
             ScanSMPServer(servers: $servers)
         }
+        .alert(item: $alert) { a in
+            switch a {
+            case let .testsFailed(fs):
+                let msg = fs.map { (srv, f) in
+                    "\(srv): \(f.localizedDescription)"
+                }.joined(separator: "\n")
+                return Alert(
+                    title: Text("Tests failed!"),
+                    message: Text("Some servers failed the test:\n" + msg)
+                )
+            case .error:
+                return Alert(
+                    title: Text("Error")
+                )
+            }
+        }
     }
 
-    private var isEditing: Bool {
-        editMode?.wrappedValue.isEditing == true
+    private var saveDisabled: Bool {
+        servers.count == 0 || servers == m.userSMPServers || testing || !servers.allSatisfy { srv in
+            if let address = parseServerAddress(srv.server) {
+                return uniqueAddress(srv, address)
+            }
+            return false
+        }
     }
 
     private func smpServerView(_ server: Binding<ServerCfg>) -> some View {
@@ -103,9 +119,8 @@ struct SMPServersView: View {
                     if let address = address {
                         if !address.valid {
                             invalidServer()
-                        } else if !uniqueAddress(address) {
-                            // TODO
-                            invalidServer()
+                        } else if !uniqueAddress(srv, address) {
+                            Image(systemName: "exclamationmark.circle").foregroundColor(.red)
                         } else if !srv.enabled {
                             Image(systemName: "slash.circle").foregroundColor(.secondary)
                         } else {
@@ -113,7 +128,6 @@ struct SMPServersView: View {
                         }
                     } else {
                         invalidServer()
-                        // TODO show duplicate servers with error
                     }
                 }
                 .frame(width: 16, alignment: .center)
@@ -130,12 +144,15 @@ struct SMPServersView: View {
     }
 
     private func invalidServer() -> some View {
-        // TODO
         Image(systemName: "exclamationmark.circle").foregroundColor(.red)
     }
 
-    private func uniqueAddress(_ address: ServerAddress) -> Bool {
-        return true
+    private func uniqueAddress(_ s: ServerCfg, _ address: ServerAddress) -> Bool {
+        servers.allSatisfy { srv in
+            address.hostnames.allSatisfy { host in
+                srv.id == s.id || !srv.server.contains(host)
+            }
+        }
     }
 
     private func hasAllPresets() -> Bool {
@@ -154,6 +171,20 @@ struct SMPServersView: View {
         servers.contains(where: { $0.server == srv })
     }
 
+    private func testServers() {
+        resetTestStatus()
+        testing = true
+        Task {
+            let fs = await runServersTest()
+            await MainActor.run {
+                testing = false
+                if !fs.isEmpty {
+                    alert = .testsFailed(failures: fs)
+                }
+            }
+        }
+    }
+
     private func resetTestStatus() {
         for i in 0..<servers.count {
             if servers[i].enabled {
@@ -162,13 +193,16 @@ struct SMPServersView: View {
         }
     }
 
-    private func testServers() async -> Bool {
+    private func runServersTest() async -> [String: SMPTestFailure] {
+        var fs: [String: SMPTestFailure] = [:]
         for i in 0..<servers.count {
             if servers[i].enabled {
-                await testServerConnection(server: $servers[i])
+                if let f = await testServerConnection(server: $servers[i]) {
+                    fs[serverHostname(servers[i])] = f
+                }
             }
         }
-        return servers.allSatisfy { $0.tested == true }
+        return fs
     }
 
     func saveSMPServers() {
@@ -178,22 +212,16 @@ struct SMPServersView: View {
                 await MainActor.run {
                     m.userSMPServers = servers
                     editMode?.wrappedValue = .inactive
-//                    if smpServers.isEmpty {
-//                        isUserSMPServers = false
-//                        editSMPServers = true
-//                    } else {
-//                        editSMPServers = false
-//                    }
                 }
-            } catch {
-                let err = error.localizedDescription
-                logger.error("SMPServers.saveServers setUserSMPServers error: \(err)")
-
-                // TODO show alert if not saved
-
-//                await MainActor.run {
-//                    showBadServersAlert = true
-//                }
+            } catch let error {
+                let err = responseError(error)
+                logger.error("saveSMPServers setUserSMPServers error: \(err)")
+                await MainActor.run {
+                    alert = .error(
+                        title: "Error saving SMP servers",
+                        error: "Make sure SMP server addresses are in correct format, line separated and are not duplicated (\(responseError(error))."
+                    )
+                }
             }
         }
     }
