@@ -57,7 +57,7 @@ class RecordVC: UIViewController, AVAudioRecorderDelegate, AVAudioPlayerDelegate
             playBtnRef.isEnabled = true
             isRecording = false
         } else if isAudioRecordingGranted {
-            audioRecorder = startAudioRecording(url: getAppFilePath(generateNewFileName("voice", "m4a")))
+//            audioRecorder = startAudioRecording(url: getAppFilePath(generateNewFileName("voice", "m4a")))
             meterTimer = Timer.scheduledTimer(timeInterval: 0.1, target: self, selector: #selector(self.updateAudioMeter(timer:)), userInfo: nil, repeats: true)
             recordBtnRef.setTitle("Stop", for: .normal)
             playBtnRef.isEnabled = false

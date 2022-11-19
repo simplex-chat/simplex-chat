@@ -20,55 +20,52 @@ enum RecordingState {
 }
 
 struct VoiceRecorder: View {
-    @State var audioRecorder: AVAudioRecorder?
+    @State var audioRecorder: AudioRecorder?
     @State var audioPlayer: AVAudioPlayer?
-    @State var recordingTimer: Timer?
     @State var recordingTime = ""
     @State var recordingState = RecordingState.new
-    @State var recordingUrl: URL?
+    @State var recordingFileName: String?
 
     var body: some View {
         switch recordingState {
         case .new:
             Button("record") {
-                let url = getAppFilePath(generateNewFileName("voice", "m4a"))
-                recordingUrl = url
-                audioRecorder = startAudioRecording(url: url)
-                if audioRecorder != nil  {
-                    recordingState = .recording
-                    recordingTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { timer in
-                        logger.debug("recording timer")
-                        guard let time = audioRecorder?.currentTime else { return }
+                let fileName = generateNewFileName("voice", "m4a")
+                recordingFileName = fileName
+                audioRecorder = AudioRecorder(
+                    onTimer: {time in
                         let min = Int(time / 60)
                         let sec = Int(time.truncatingRemainder(dividingBy: 60))
                         DispatchQueue.main.async {
                             recordingTime = String(format: "%02d:%02d", min, sec)
                         }
+                    },
+                    onFinishRecording: {
+                        recordingState = .stopped
                     }
-                } else {
-                    // TODO
-                }
+                )
+                audioRecorder?.startAudioRecording(fileName: fileName)
+                recordingState = .recording
             }
         case .recording:
             Button("stop") {
-                audioRecorder?.stop()
+                audioRecorder?.stopAudioRecording()
                 audioRecorder = nil
                 recordingState = .stopped
-                recordingTimer?.invalidate()
             }
 //            Button("delete") {}
             Text(recordingTime)
         case .stopped:
             Button("play") {
-                if let url = recordingUrl {
-                    audioPlayer = startAudioPlayback(url: url)
+                if let fileName = recordingFileName {
+                    audioPlayer = startAudioPlayback(fileName: fileName)
                     recordingState = .playing
                 }
             }
             Text(recordingTime)
             Button("delete") {
-                if let url = recordingUrl {
-                    _ = try? FileManager.default.removeItem(atPath: url.path)
+                if let fileName = recordingFileName {
+                    removeFile(fileName)
                 }
             }
         case .playing:
@@ -84,8 +81,8 @@ struct VoiceRecorder: View {
                 recordingState = .playing
             }
             Button("delete") {
-                if let url = recordingUrl {
-                    _ = try? FileManager.default.removeItem(atPath: url.path)
+                if let fileName = recordingFileName {
+                    removeFile(fileName)
                 }
             }
         }
