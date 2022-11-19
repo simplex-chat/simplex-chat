@@ -1,9 +1,6 @@
 ignore-project: False
 
-# amend to point to the actual openssl location
 package direct-sqlcipher
-    extra-include-dirs: /usr/local/opt/openssl@1.1/include
-    extra-lib-dirs: /usr/local/opt/openssl@1.1/lib
     flags: +openssl
 
 test-show-details: direct
