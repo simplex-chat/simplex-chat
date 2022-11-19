@@ -751,6 +751,10 @@ public struct ServerAddress: Decodable {
         "smp://\(keyHash)\(basicAuth == "" ? "" : ":" + basicAuth)@\(hostnames.joined(separator: ","))"
     }
 
+    public var valid: Bool {
+        hostnames.count > 0 && Set(hostnames).count == hostnames.count
+    }
+
     static public var empty = ServerAddress(
         hostnames: [],
         port: "",

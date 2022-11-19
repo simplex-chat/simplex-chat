@@ -36,7 +36,7 @@ struct SMPServerView: View {
 
     private func customServer() -> some View {
         VStack {
-            let valid = serverHostname(serverToEdit) != nil
+            let valid = parseServerAddress(serverToEdit.server)?.valid == true
             List {
                 Section {
                     TextEditor(text: $serverToEdit.server)
@@ -124,10 +124,6 @@ func testServerConnection(server: Binding<ServerCfg>) async {
             server.wrappedValue.tested = false
         }
     }
-}
-
-func serverHostname(_ srv: ServerCfg) -> String? {
-    parseServerAddress(srv.server)?.hostnames.first
 }
 
 struct SMPServerView_Previews: PreviewProvider {

@@ -64,7 +64,7 @@ struct SMPServersView: View {
                 Button("Save servers") {
                     saveSMPServers()
                 }
-                .disabled(servers.count == 0 || servers == m.userSMPServers || testing || !servers.allSatisfy { serverHostname($0) != nil })
+                .disabled(servers.count == 0 || servers == m.userSMPServers || testing || !servers.allSatisfy { parseServerAddress($0.server) != nil })
             }
         }
         .toolbar { EditButton() }
@@ -97,22 +97,29 @@ struct SMPServersView: View {
                 .navigationBarTitle(srv.preset ? "Preset server" : "Your server")
                 .navigationBarTitleDisplayMode(.large)
         } label: {
-            let hostname = serverHostname(srv)
+            let address = parseServerAddress(srv.server)
             HStack {
                 Group {
-                    if hostname == nil {
-                        Image(systemName: "exclamationmark.circle").foregroundColor(.red)
-                        // TODO show duplicate servers with error
-                    } else if !srv.enabled {
-                        Image(systemName: "slash.circle").foregroundColor(.secondary)
+                    if let address = address {
+                        if !address.valid {
+                            invalidServer()
+                        } else if !uniqueAddress(address) {
+                            // TODO
+                            invalidServer()
+                        } else if !srv.enabled {
+                            Image(systemName: "slash.circle").foregroundColor(.secondary)
+                        } else {
+                            showTestStatus(server: srv)
+                        }
                     } else {
-                        showTestStatus(server: srv)
+                        invalidServer()
+                        // TODO show duplicate servers with error
                     }
                 }
                 .frame(width: 16, alignment: .center)
                 .padding(.trailing, 4)
 
-                let v = Text(hostname ?? srv.server).lineLimit(1)
+                let v = Text(address?.hostnames.first ?? srv.server).lineLimit(1)
                 if srv.enabled {
                     v
                 } else {
@@ -120,6 +127,15 @@ struct SMPServersView: View {
                 }
             }
         }
+    }
+
+    private func invalidServer() -> some View {
+        // TODO
+        Image(systemName: "exclamationmark.circle").foregroundColor(.red)
+    }
+
+    private func uniqueAddress(_ address: ServerAddress) -> Bool {
+        return true
     }
 
     private func hasAllPresets() -> Bool {

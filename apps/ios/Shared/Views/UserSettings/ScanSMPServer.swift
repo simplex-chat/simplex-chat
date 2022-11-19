@@ -40,9 +40,8 @@ struct ScanSMPServer: View {
     func processQRCode(_ resp: Result<ScanResult, ScanError>) {
         switch resp {
         case let .success(r):
-            let srv = ServerCfg(server: r.string, preset: false, tested: nil, enabled: true)
-            if serverHostname(srv) != nil {
-                servers.append(srv)
+            if parseServerAddress(r.string) != nil {
+                servers.append(ServerCfg(server: r.string, preset: false, tested: nil, enabled: true))
                 dismiss()
             } else {
                 showAddressError = true
