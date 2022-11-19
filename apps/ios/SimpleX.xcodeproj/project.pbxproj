@@ -60,6 +60,7 @@
 		5C93293929241CDA0090FFF9 /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C93293429241CD90090FFF9 /* libgmpxx.a */; };
 		5C93293A29241CDA0090FFF9 /* libHSsimplex-chat-4.2.1-HrC8bBnv4qm8Sq6Eue57W1.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C93293529241CD90090FFF9 /* libHSsimplex-chat-4.2.1-HrC8bBnv4qm8Sq6Eue57W1.a */; };
 		5C93293B29241CDA0090FFF9 /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C93293629241CDA0090FFF9 /* libgmp.a */; };
+		5C9329412929248A0090FFF9 /* ScanSMPServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9329402929248A0090FFF9 /* ScanSMPServer.swift */; };
 		5C971E1D27AEBEF600C8A3CE /* ChatInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C971E1C27AEBEF600C8A3CE /* ChatInfoView.swift */; };
 		5C971E2127AEBF8300C8A3CE /* ChatInfoImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C971E2027AEBF8300C8A3CE /* ChatInfoImage.swift */; };
 		5C9A5BDB2871E05400A5B906 /* SetNotificationsMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9A5BDA2871E05400A5B906 /* SetNotificationsMode.swift */; };
@@ -260,6 +261,7 @@
 		5C93293429241CD90090FFF9 /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
 		5C93293529241CD90090FFF9 /* libHSsimplex-chat-4.2.1-HrC8bBnv4qm8Sq6Eue57W1.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-4.2.1-HrC8bBnv4qm8Sq6Eue57W1.a"; sourceTree = "<group>"; };
 		5C93293629241CDA0090FFF9 /* libgmp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmp.a; sourceTree = "<group>"; };
+		5C9329402929248A0090FFF9 /* ScanSMPServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanSMPServer.swift; sourceTree = "<group>"; };
 		5C971E1C27AEBEF600C8A3CE /* ChatInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatInfoView.swift; sourceTree = "<group>"; };
 		5C971E2027AEBF8300C8A3CE /* ChatInfoImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatInfoImage.swift; sourceTree = "<group>"; };
 		5C9A5BDA2871E05400A5B906 /* SetNotificationsMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetNotificationsMode.swift; sourceTree = "<group>"; };
@@ -593,6 +595,7 @@
 				640F50E227CF991C001E05C2 /* SMPServers.swift */,
 				5C93292E29239A170090FFF9 /* SMPServersView.swift */,
 				5C93293029239BED0090FFF9 /* SMPServerView.swift */,
+				5C9329402929248A0090FFF9 /* ScanSMPServer.swift */,
 				5CB2084E28DA4B4800D024EC /* RTCServers.swift */,
 				5C3F1D592844B4DE00EC8A82 /* ExperimentalFeaturesView.swift */,
 				64F1CC3A28B39D8600CD1FB1 /* IncognitoHelp.swift */,
@@ -988,6 +991,7 @@
 				6440CA00288857A10062C672 /* CIEventView.swift in Sources */,
 				5CB0BA92282713FD00B3292C /* CreateProfile.swift in Sources */,
 				5C5F2B7027EBC704006A9D5F /* ProfileImage.swift in Sources */,
+				5C9329412929248A0090FFF9 /* ScanSMPServer.swift in Sources */,
 				64AA1C6C27F3537400AC7277 /* DeletedItemView.swift in Sources */,
 				5C029EA82837DBB3004A9677 /* CICallItemView.swift in Sources */,
 				5CE4407227ADB1D0007B033A /* Emoji.swift in Sources */,

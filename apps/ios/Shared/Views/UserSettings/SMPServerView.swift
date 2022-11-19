@@ -10,6 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 struct SMPServerView: View {
+    @Environment(\.dismiss) var dismiss: DismissAction
     @Binding var server: ServerCfg
     @State var serverToEdit: ServerCfg
 
@@ -28,45 +29,67 @@ struct SMPServerView: View {
                     Text(server.server)
                         .textSelection(.enabled)
                 }
-                useServerSection()
+                useServerSection(true)
             }
         }
     }
 
     private func customServer() -> some View {
         VStack {
+            let valid = serverHostname(serverToEdit) != nil
             List {
-                Section("Your server address") {
+                Section {
                     TextEditor(text: $serverToEdit.server)
                         .multilineTextAlignment(.leading)
                         .autocorrectionDisabled(true)
                         .autocapitalization(.none)
+                        .allowsTightening(true)
                         .lineLimit(10)
-                        .frame(height: 108)
+                        .frame(height: 144)
                         .padding(-6)
-                        .onDisappear {
-                            server.server = serverToEdit.server
+                } header: {
+                    HStack {
+                        Text("Your server address")
+                        if !valid {
+                            Spacer()
+                            Image(systemName: "exclamationmark.circle").foregroundColor(.red)
                         }
+                    }
                 }
-                useServerSection()
+                useServerSection(valid)
                 Section("Add to another device") {
-                    QRCode(uri: server.server)
+                    MutableQRCode(uri: $serverToEdit.server)
                         .listRowInsets(EdgeInsets(top: 12, leading: 12, bottom: 12, trailing: 12))
+                }
+            }
+        }
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button {
+                    server = serverToEdit
+                    dismiss()
+                } label: {
+                    HStack {
+                        Image(systemName: "chevron.left")
+                        Text("Your SMP Servers")
+                    }
                 }
             }
         }
     }
 
-    private func useServerSection() -> some View {
+    private func useServerSection(_ valid: Bool) -> some View {
         Section("Use server") {
             HStack {
                 Button("Test server") {
-                    Task { await testServerConnection(server: $server) }
+                    Task { await testServerConnection(server: $serverToEdit) }
                 }
+                .disabled(!valid)
                 Spacer()
-                showTestStatus(server: server)
+                showTestStatus(server: serverToEdit)
             }
-            Toggle("Use for new connections", isOn: $server.enabled)
+            Toggle("Use for new connections", isOn: $serverToEdit.enabled)
             Button("Remove server", role: .destructive) {
 
             }
@@ -101,6 +124,10 @@ func testServerConnection(server: Binding<ServerCfg>) async {
             server.wrappedValue.tested = false
         }
     }
+}
+
+func serverHostname(_ srv: ServerCfg) -> String? {
+    parseServerAddress(srv.server)?.hostnames.first
 }
 
 struct SMPServerView_Previews: PreviewProvider {

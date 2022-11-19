@@ -9,6 +9,25 @@
 import SwiftUI
 import CoreImage.CIFilterBuiltins
 
+struct MutableQRCode: View {
+    @Binding var uri: String
+    @State private var image: UIImage?
+
+    var body: some View {
+        ZStack {
+            if let image = image {
+                qrCodeImage(image)
+            }
+        }
+        .onAppear {
+            image = generateImage(uri)
+        }
+        .onChange(of: uri) { _ in
+            image = generateImage(uri)
+        }
+    }
+}
+
 struct QRCode: View {
     let uri: String
     @State private var image: UIImage?
@@ -16,32 +35,32 @@ struct QRCode: View {
     var body: some View {
         ZStack {
             if let image = image {
-                Image(uiImage: image)
-                    .resizable()
-                    .interpolation(.none)
-                    .aspectRatio(1, contentMode: .fit)
-                    .textSelection(.enabled)
+                qrCodeImage(image)
             }
         }
         .onAppear {
-            generateImage()
+            image = image ?? generateImage(uri)
         }
     }
+}
 
-    private func generateImage() {
-        guard image == nil else { return }
+private func qrCodeImage(_ image: UIImage) -> some View {
+    Image(uiImage: image)
+        .resizable()
+        .interpolation(.none)
+        .aspectRatio(1, contentMode: .fit)
+        .textSelection(.enabled)
+}
 
-        let context = CIContext()
-        let filter = CIFilter.qrCodeGenerator()
-        filter.message = Data(uri.utf8)
-
-        guard
-            let outputImage = filter.outputImage,
-            let cgImage = context.createCGImage(outputImage, from: outputImage.extent)
-        else { return }
-
-        self.image = UIImage(cgImage: cgImage)
+private func generateImage(_ uri: String) -> UIImage? {
+    let context = CIContext()
+    let filter = CIFilter.qrCodeGenerator()
+    filter.message = Data(uri.utf8)
+    if let outputImage = filter.outputImage,
+       let cgImage = context.createCGImage(outputImage, from: outputImage.extent) {
+        return UIImage(cgImage: cgImage)
     }
+    return nil
 }
 
 struct QRCode_Previews: PreviewProvider {

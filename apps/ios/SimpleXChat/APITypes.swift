@@ -644,6 +644,7 @@ public struct ServerCfg: Identifiable, Equatable, Codable {
     public var preset: Bool
     public var tested: Bool?
     public var enabled: Bool
+    var createdAt = Date()
 //    public var sendEnabled: Bool // can we potentially want to prevent sending on the servers we use to receive?
 // Even if we don't see the use case, it's probably better to allow it in the model
 // In any case, "trusted/known" servers are out of scope of this change
@@ -655,9 +656,13 @@ public struct ServerCfg: Identifiable, Equatable, Codable {
         self.enabled = enabled
     }
 
-    public var id: String { server }
+    public var id: String { "\(server) \(createdAt)" }
 
     public static var empty = ServerCfg(server: "", preset: false, tested: nil, enabled: true)
+
+    public var isEmpty: Bool {
+        server.trimmingCharacters(in: .whitespaces) == ""
+    }
 
     public struct SampleData {
         public var preset: ServerCfg
@@ -685,6 +690,13 @@ public struct ServerCfg: Identifiable, Equatable, Codable {
             enabled: true
         )
     )
+
+    enum CodingKeys: CodingKey {
+        case server
+        case preset
+        case tested
+        case enabled
+    }
 }
 
 public enum SMPTestStep: String, Decodable {
