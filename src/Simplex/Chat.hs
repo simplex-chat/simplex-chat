@@ -133,14 +133,12 @@ createChatDatabase filePrefix key yesToMigrations = do
 
 newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> IO ChatController
 newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agentConfig = aCfg, tbqSize, defaultServers} ChatOpts {smpServers, networkConfig, logConnections, logServerHosts} sendToast = do
-  servers <- resolveServers defaultServers
-  let servers' = servers {netCfg = networkConfig}
-      config = cfg {subscriptionEvents = logConnections, hostEvents = logServerHosts, defaultServers = servers'}
+  let config = cfg {subscriptionEvents = logConnections, hostEvents = logServerHosts, defaultServers = configServers}
       sendNotification = fromMaybe (const $ pure ()) sendToast
       firstTime = dbNew chatStore
   activeTo <- newTVarIO ActiveNone
   currentUser <- newTVarIO user
-  smpAgent <- getSMPAgentClient aCfg {database = AgentDB agentStore} servers'
+  smpAgent <- getSMPAgentClient aCfg {database = AgentDB agentStore} =<< agentServers configServers
   agentAsync <- newTVarIO Nothing
   idsDrg <- newTVarIO =<< drgNew
   inputQ <- newTBQueueIO tbqSize
@@ -157,14 +155,16 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   expireCIs <- newTVarIO False
   pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, incognitoMode, filesFolder, expireCIsAsync, expireCIs}
   where
-    resolveServers :: InitialAgentServers -> IO InitialAgentServers
-    resolveServers ss = case nonEmpty smpServers of
-      Just smpServers' -> pure ss {smp = L.map (\ServerCfg {server} -> server) smpServers'}
-      _ -> case user of
-        Just user' -> do
-          userSmpServers <- withTransaction chatStore (`getSMPServers` user')
-          pure ss {smp = activeAgentServers cfg userSmpServers}
-        _ -> pure ss
+    configServers :: InitialAgentServers
+    configServers = case nonEmpty smpServers of
+      Just smpServers' -> defaultServers {smp = L.map (\ServerCfg {server} -> server) smpServers', netCfg = networkConfig}
+      _ -> defaultServers
+    agentServers :: InitialAgentServers -> IO InitialAgentServers
+    agentServers ss@InitialAgentServers {smp = current} = do
+      smp <- maybe (pure current) userServers user
+      pure ss {smp}
+    userServers :: User -> IO (NonEmpty SMPServerWithAuth)
+    userServers user' = activeAgentServers cfg <$> withTransaction chatStore (`getSMPServers` user')
 
 activeAgentServers :: ChatConfig -> [ServerCfg] -> NonEmpty SMPServerWithAuth
 activeAgentServers ChatConfig {defaultServers = InitialAgentServers {smp = defaultSMPServers}} =
