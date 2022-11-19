@@ -20,7 +20,6 @@ enum RecordingState {
 }
 
 struct VoiceRecorder: View {
-    @State var isAudioRecordingGranted: Bool = false
     @State var audioRecorder: AudioRecorder?
     @State var audioPlayer: AudioPlayer?
     @State var recordingFileName: String?
@@ -31,17 +30,8 @@ struct VoiceRecorder: View {
         switch recordingState {
         case .new:
             Button("record") {
-                if isAudioRecordingGranted {
-                    record()
-                } else {
-                    checkRecordPermission(granted: $isAudioRecordingGranted)
-                }
+                Task { await record() }
             }
-            .onChange(of: isAudioRecordingGranted, perform: { granted in
-                if granted {
-                    record()
-                }
-            })
         case .recording:
             Button("finish") {
                 audioRecorder?.stop()
@@ -73,15 +63,18 @@ struct VoiceRecorder: View {
         }
     }
 
-    private func record() {
+    private func record() async {
         let fileName = generateNewFileName("voice", "m4a")
         recordingFileName = fileName
         audioRecorder = AudioRecorder(
             onTimer: { displayTimer($0) },
             onFinishRecording: { recordingState = .finished }
         )
-        audioRecorder?.start(fileName: fileName)
-        recordingState = .recording
+        if let err = await audioRecorder?.start(fileName: fileName) {
+            // TODO show alert
+        } else {
+            recordingState = .recording
+        }
     }
 
     private func cancelRecordingButton() -> some View {

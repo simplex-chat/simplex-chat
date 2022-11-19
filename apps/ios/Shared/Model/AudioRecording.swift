@@ -23,11 +23,17 @@ class AudioRecorder: NSObject, AVAudioRecorderDelegate {
         self.onFinishRecording = onFinishRecording
     }
 
-    func start(fileName: String) {
-        let session = AVAudioSession.sharedInstance()
+    enum StartError {
+        case permissions
+        case error(String)
+    }
+
+    func start(fileName: String) async -> StartError? {
+        let av = AVAudioSession.sharedInstance()
+        if !(await checkPermission()) { return .permissions }
         do {
-            try session.setCategory(AVAudioSession.Category.playAndRecord, options: .defaultToSpeaker)
-            try session.setActive(true)
+            try av.setCategory(AVAudioSession.Category.playAndRecord, options: .defaultToSpeaker)
+            try av.setActive(true)
             let settings = [
                 AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
                 AVSampleRateKey: 44100,
@@ -43,9 +49,10 @@ class AudioRecorder: NSObject, AVAudioRecorderDelegate {
                 guard let time = self.audioRecorder?.currentTime else { return }
                 self.onTimer?(time)
             }
+            return nil
         } catch let error {
             logger.error("AudioRecorder startAudioRecording error \(error.localizedDescription)")
-            // alert
+            return .error(error.localizedDescription)
         }
     }
 
@@ -60,27 +67,24 @@ class AudioRecorder: NSObject, AVAudioRecorderDelegate {
         recordingTimer = nil
     }
 
+    private func checkPermission() async -> Bool {
+        let av = AVAudioSession.sharedInstance()
+        switch av.recordPermission {
+        case .granted: return true
+        case .denied: return false
+        case .undetermined:
+            return await withCheckedContinuation { cont in
+                av.requestRecordPermission({ allowed in
+                    cont.resume(returning: allowed)
+                })
+            }
+        @unknown default: return false
+        }
+    }
+
     func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
         stop()
         self.onFinishRecording?()
-    }
-}
-
-func checkRecordPermission(granted: Binding<Bool>) {
-    switch AVAudioSession.sharedInstance().recordPermission {
-    case AVAudioSession.RecordPermission.granted:
-        granted.wrappedValue = true
-        break
-    case AVAudioSession.RecordPermission.denied:
-        granted.wrappedValue = false
-        break
-    case AVAudioSession.RecordPermission.undetermined:
-        AVAudioSession.sharedInstance().requestRecordPermission({ allowed in
-            granted.wrappedValue = allowed
-        })
-        break
-    default:
-        break
     }
 }
 
