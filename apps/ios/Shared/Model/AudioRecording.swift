@@ -111,9 +111,11 @@ class AudioPlayer: NSObject, AVAudioPlayerDelegate {
         audioPlayer?.play()
 
         playbackTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { timer in
-            logger.debug("playback timer")
-            guard let time = self.audioPlayer?.currentTime else { return }
-            self.onTimer?(time)
+            if self.audioPlayer?.isPlaying ?? false {
+                logger.debug("playback timer")
+                guard let time = self.audioPlayer?.currentTime else { return }
+                self.onTimer?(time)
+            }
         }
     }
 
