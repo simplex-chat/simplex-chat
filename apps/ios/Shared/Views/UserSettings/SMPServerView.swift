@@ -31,7 +31,7 @@ struct SMPServerView: View {
                     } label: {
                         HStack {
                             Image(systemName: "chevron.left")
-                            Text("Your SMP Servers")
+                            Text("Your SMP servers")
                         }
                     }
                 }

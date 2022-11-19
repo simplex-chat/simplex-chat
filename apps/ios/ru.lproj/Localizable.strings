@@ -10,6 +10,12 @@
 /* No comment provided by engineer. */
 " (can be copied)" = " (можно скопировать)";
 
+/* server test error */
+" Possibly, certificate fingerprint in server address is incorrect" = " Возможно, хэш сертификата адресе не совпадает с сертификатом";
+
+/* server test error */
+" Server requires authorization to create queues, check password" = " Сервер требует авторизации для создания очередей, проверьте пароль";
+
 /* No comment provided by engineer. */
 "_italic_" = "\\_курсив_";
 
@@ -172,6 +178,15 @@
 
 /* call status */
 "accepted call" = " принятый звонок";
+
+/* No comment provided by engineer. */
+"Add preset servers" = "Добавить серверы по умолчанию";
+
+/* No comment provided by engineer. */
+"Add server…" = "Добавить сервер…";
+
+/* No comment provided by engineer. */
+"Add to another device" = "Добавить на другое устройство";
 
 /* member role */
 "admin" = "админ";
@@ -348,6 +363,9 @@
 "Chats" = "Чаты";
 
 /* No comment provided by engineer. */
+"Check server address and try again." = "Проверьте адрес сервера и попробуйте снова.";
+
+/* No comment provided by engineer. */
 "Choose file" = "Выбрать файл";
 
 /* No comment provided by engineer. */
@@ -375,15 +393,12 @@
 "Configure ICE servers" = "Настройка ICE серверов";
 
 /* No comment provided by engineer. */
-"Configure SMP servers" = "Настройка SMP серверов";
-
-/* No comment provided by engineer. */
 "Confirm" = "Подтвердить";
 
 /* No comment provided by engineer. */
 "Confirm new passphrase…" = "Подтвердите новый пароль…";
 
-/* No comment provided by engineer. */
+/* server test step */
 "Connect" = "Соединиться";
 
 /* No comment provided by engineer. */
@@ -511,6 +526,9 @@
 
 /* No comment provided by engineer. */
 "Create one-time invitation link" = "Создать ссылку-приглашение";
+
+/* server test step */
+"Create queue" = "Создание очереди";
 
 /* No comment provided by engineer. */
 "Create secret group" = "Создать скрытую группу";
@@ -665,6 +683,9 @@
 /* No comment provided by engineer. */
 "Delete pending connection?" = "Удалить ожидаемое соединение?";
 
+/* server test step */
+"Delete queue" = "Удаление очереди";
+
 /* deleted chat item */
 "deleted" = "удалено";
 
@@ -691,6 +712,9 @@
 
 /* authentication reason */
 "Disable SimpleX Lock" = "Отключить блокировку SimpleX";
+
+/* server test step */
+"Disconnect" = "Разрыв соединения";
 
 /* No comment provided by engineer. */
 "Display name" = "Имя профиля";
@@ -774,7 +798,13 @@
 "Enter passphrase…" = "Введите пароль…";
 
 /* No comment provided by engineer. */
+"Enter server manually" = "Ввести сервер вручную";
+
+/* No comment provided by engineer. */
 "error" = "ошибка";
+
+/* No comment provided by engineer. */
+"Error" = "Ошибка";
 
 /* No comment provided by engineer. */
 "Error accepting contact request" = "Ошибка при принятии запроса на соединение";
@@ -948,6 +978,9 @@
 "Group preferences" = "Предпочтения группы";
 
 /* No comment provided by engineer. */
+"Group profile" = "Профиль группы";
+
+/* No comment provided by engineer. */
 "Group profile is stored on members' devices, not on the servers." = "Профиль группы хранится на устройствах членов, а не на серверах.";
 
 /* snd group event chat item */
@@ -979,6 +1012,9 @@
 
 /* No comment provided by engineer. */
 "How to use markdown" = "Как форматировать";
+
+/* No comment provided by engineer. */
+"How to use your servers" = "Как использовать серверы";
 
 /* No comment provided by engineer. */
 "ICE servers (one per line)" = "ICE серверы (один на строке)";
@@ -1057,6 +1093,9 @@
 
 /* No comment provided by engineer. */
 "Invalid connection link" = "Ошибка в ссылке контакта";
+
+/* No comment provided by engineer. */
+"Invalid server address!" = "Ошибка в адресе сервера!";
 
 /* No comment provided by engineer. */
 "Invitation expired!" = "Приглашение истекло!";
@@ -1147,9 +1186,6 @@
 
 /* No comment provided by engineer. */
 "Make a private connection" = "Добавьте контакт";
-
-/* No comment provided by engineer. */
-"Make sure SMP server addresses are in correct format, line separated and are not duplicated." = "Пожалуйста, проверьте, что адреса SMP серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется.";
 
 /* No comment provided by engineer. */
 "Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." = "Пожалуйста, проверьте, что адреса WebRTC ICE серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется.";
@@ -1392,7 +1428,10 @@
 "Please store passphrase securely, you will NOT be able to change it if you lose it." = "Пожалуйста, надежно сохраните пароль, вы НЕ сможете его поменять, если потеряете.";
 
 /* No comment provided by engineer. */
-"Preferences" = "Предпочтения";
+"Preset server" = "Сервер по умолчанию";
+
+/* No comment provided by engineer. */
+"Preset server address" = "Адрес сервера по умолчанию";
 
 /* No comment provided by engineer. */
 "Privacy & security" = "Конфиденциальность";
@@ -1545,13 +1584,16 @@
 "Save passphrase in Keychain" = "Сохранить пароль в Keychain";
 
 /* No comment provided by engineer. */
-"Saved SMP servers will be removed" = "Сохраненные SMP серверы будут удалены";
+"Save servers" = "Сохранить серверы";
 
 /* No comment provided by engineer. */
 "Saved WebRTC ICE servers will be removed" = "Сохраненные WebRTC ICE серверы будут удалены";
 
 /* No comment provided by engineer. */
 "Scan QR code" = "Сканировать QR код";
+
+/* No comment provided by engineer. */
+"Scan server QR code" = "Сканировать QR код сервера";
 
 /* No comment provided by engineer. */
 "Search" = "Поиск";
@@ -1561,6 +1603,9 @@
 
 /* No comment provided by engineer. */
 "secret" = "секрет";
+
+/* server test step */
+"Secure queue" = "Защита очереди";
 
 /* No comment provided by engineer. */
 "Send direct message" = "Отправить сообщение";
@@ -1588,6 +1633,9 @@
 
 /* notification */
 "Sent file event" = "Отправка файла";
+
+/* No comment provided by engineer. */
+"Server test failed!" = "Ошибка теста сервера!";
 
 /* No comment provided by engineer. */
 "Servers" = "Серверы";
@@ -1639,9 +1687,6 @@
 
 /* No comment provided by engineer. */
 "SMP servers" = "SMP серверы";
-
-/* No comment provided by engineer. */
-"SMP servers (one per line)" = "SMP серверы (один на строке)";
 
 /* notification title */
 "Somebody" = "Контакт";
@@ -1708,6 +1753,18 @@
 
 /* No comment provided by engineer. */
 "TCP_KEEPINTVL" = "TCP_KEEPINTVL";
+
+/* server test failure */
+"Test failed at step %@." = "Ошибка теста на шаге %@.";
+
+/* No comment provided by engineer. */
+"Test server" = "Тест сервер";
+
+/* No comment provided by engineer. */
+"Test servers" = "Тест серверы";
+
+/* No comment provided by engineer. */
+"Tests failed!" = "Ошибка тестов!";
 
 /* No comment provided by engineer. */
 "Thank you for installing SimpleX Chat!" = "Спасибо, что установили SimpleX Chat!";
@@ -1861,6 +1918,12 @@
 
 /* No comment provided by engineer. */
 "Use chat" = "Использовать чат";
+
+/* No comment provided by engineer. */
+"Use for new connections" = "Использовать для новых соединений";
+
+/* No comment provided by engineer. */
+"Use server" = "Использовать сервер";
 
 /* No comment provided by engineer. */
 "Use SimpleX Chat servers?" = "Использовать серверы предосталенные SimpleX Chat?";
@@ -2116,6 +2179,12 @@
 
 /* No comment provided by engineer. */
 "Your random profile" = "Ваш случайный профиль";
+
+/* No comment provided by engineer. */
+"Your server" = "Ваш сервер";
+
+/* No comment provided by engineer. */
+"Your server address" = "Адрес вашего сервер";
 
 /* No comment provided by engineer. */
 "Your settings" = "Настройки";

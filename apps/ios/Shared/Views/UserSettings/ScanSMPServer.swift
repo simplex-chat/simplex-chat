@@ -17,7 +17,7 @@ struct ScanSMPServer: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            Text("Scan Server QR code")
+            Text("Scan server QR code")
                 .font(.largeTitle)
                 .bold()
                 .padding(.vertical)

@@ -733,7 +733,7 @@ public struct SMPTestFailure: Decodable, Error, Equatable {
         let err = String.localizedStringWithFormat(NSLocalizedString("Test failed at step %@.", comment: "server test failure"), testStep.text)
         switch testError {
         case .SMP(.AUTH):
-            return err + NSLocalizedString(" Server requires authentication to create queues, check password", comment: "server test error")
+            return err + NSLocalizedString(" Server requires authorization to create queues, check password", comment: "server test error")
         case .BROKER(.NETWORK):
             return err + NSLocalizedString(" Possibly, certificate fingerprint in server address is incorrect", comment: "server test error")
         default:

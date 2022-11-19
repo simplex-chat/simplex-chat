@@ -131,7 +131,9 @@ struct GroupMemberInfoView: View {
             }
             if let chat = chat {
                 dismissAllSheets(animated: true)
-                chatModel.chatId = chat.id
+                DispatchQueue.main.async {
+                    chatModel.chatId = chat.id
+                }
             }
         } label: {
             Label("Send direct message", systemImage: "message")
