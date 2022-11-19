@@ -17,6 +17,34 @@ struct SMPServerView: View {
     @State var testFailure: SMPTestFailure?
 
     var body: some View {
+        smpServerView()
+            .navigationBarBackButtonHidden(true)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        if serverToEdit.server != server.server {
+                            print("serverToEdit.tested = nil")
+                            serverToEdit.tested = nil
+                        }
+                        server = serverToEdit
+                        dismiss()
+                    } label: {
+                        HStack {
+                            Image(systemName: "chevron.left")
+                            Text("Your SMP Servers")
+                        }
+                    }
+                }
+            }
+            .alert(isPresented: $showTestFailure) {
+                Alert(
+                    title: Text("Server test failed!"),
+                    message: Text(testFailure?.localizedDescription ?? "")
+                )
+            }
+    }
+
+    @ViewBuilder private func smpServerView() -> some View {
         if server.preset {
             presetServer()
         } else {
@@ -28,7 +56,7 @@ struct SMPServerView: View {
         return VStack {
             List {
                 Section("Preset server address") {
-                    Text(server.server)
+                    Text(serverToEdit.server)
                         .textSelection(.enabled)
                 }
                 useServerSection(true)
@@ -65,29 +93,6 @@ struct SMPServerView: View {
                 }
             }
         }
-        .navigationBarBackButtonHidden(true)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    if serverToEdit != server {
-                        server = serverToEdit
-                        server.tested = nil
-                    }
-                    dismiss()
-                } label: {
-                    HStack {
-                        Image(systemName: "chevron.left")
-                        Text("Your SMP Servers")
-                    }
-                }
-            }
-        }
-        .alert(isPresented: $showTestFailure) {
-            Alert(
-                title: Text("Server test failed!"),
-                message: Text(testFailure?.localizedDescription ?? "")
-            )
-        }
     }
 
     private func useServerSection(_ valid: Bool) -> some View {
@@ -106,9 +111,6 @@ struct SMPServerView: View {
                 showTestStatus(server: serverToEdit)
             }
             Toggle("Use for new connections", isOn: $serverToEdit.enabled)
-            Button("Remove server", role: .destructive) {
-
-            }
         }
     }
 }

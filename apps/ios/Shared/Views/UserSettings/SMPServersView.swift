@@ -9,6 +9,8 @@
 import SwiftUI
 import SimpleXChat
 
+private let howToUrl = URL(string: "https://github.com/simplex-chat/simplexmq#using-smp-server-and-smp-agent")!
+
 struct SMPServersView: View {
     @EnvironmentObject private var m: ChatModel
     @Environment(\.editMode) private var editMode
@@ -64,6 +66,7 @@ struct SMPServersView: View {
                     .disabled(testing)
                 Button("Save servers", action: saveSMPServers)
                     .disabled(saveDisabled)
+                howToButton()
             }
         }
         .toolbar { EditButton() }
@@ -139,6 +142,19 @@ struct SMPServersView: View {
                 } else {
                     v.foregroundColor(.secondary)
                 }
+            }
+        }
+    }
+
+    func howToButton() -> some View {
+        Button {
+            DispatchQueue.main.async {
+                UIApplication.shared.open(howToUrl)
+            }
+        } label: {
+            HStack {
+                Text("How to use your servers")
+                Image(systemName: "arrow.up.right.circle")
             }
         }
     }
