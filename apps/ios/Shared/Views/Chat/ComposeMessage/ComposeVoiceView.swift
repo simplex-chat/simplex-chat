@@ -7,10 +7,10 @@
 //
 
 import SwiftUI
-import AVFoundation
 import SimpleXChat
+import AVFoundation
 
-class RecordVC: UIViewController , AVAudioRecorderDelegate, AVAudioPlayerDelegate {
+class RecordVC: UIViewController, AVAudioRecorderDelegate, AVAudioPlayerDelegate {
     @IBOutlet var recordingTimeLabel: UILabel!
     @IBOutlet var recordBtnRef: UIButton!
     @IBOutlet var playBtnRef: UIButton!
@@ -50,51 +50,21 @@ class RecordVC: UIViewController , AVAudioRecorderDelegate, AVAudioPlayerDelegat
         }
     }
 
-    func setupRecorder() {
-        if isAudioRecordingGranted
-        {
-            let session = AVAudioSession.sharedInstance()
-            do {
-                try session.setCategory(AVAudioSession.Category.playAndRecord, options: .defaultToSpeaker)
-                try session.setActive(true)
-                let settings = [
-                    AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
-                    AVSampleRateKey: 44100,
-                    AVNumberOfChannelsKey: 2,
-                    AVEncoderAudioQualityKey:AVAudioQuality.high.rawValue
-                ]
-                let recordingUrl = getAppFilePath(generateNewFileName("voice", "m4a"))
-                audioRecorder = try AVAudioRecorder(url: recordingUrl, settings: settings)
-                audioRecorder.delegate = self
-                audioRecorder.isMeteringEnabled = true
-                audioRecorder.prepareToRecord()
-            }
-            catch let error {
-                logger.error("RecordVC setupRecorder error \(error.localizedDescription)")
-                // display_alert(msg_title: "Error", msg_desc: error.localizedDescription, action_title: "OK")
-            }
-        }
-        else {
-            logger.error("RecordVC setupRecorder error, no access to use microphone.")
-            // display_alert(msg_title: "Error", msg_desc: "Don't have access to use your microphone.", action_title: "OK")
-        }
-    }
-
-    @IBAction func startRecording(_ sender: UIButton)
-    {
-        if(isRecording) {
+    @IBAction func startRecording(_ sender: UIButton) {
+        if (isRecording) {
             finishAudioRecording(success: true)
             recordBtnRef.setTitle("Record", for: .normal)
             playBtnRef.isEnabled = true
             isRecording = false
-        } else {
-            setupRecorder()
-
-            audioRecorder.record()
+        } else if isAudioRecordingGranted {
+            audioRecorder = startAudioRecording(url: getAppFilePath(generateNewFileName("voice", "m4a")))
             meterTimer = Timer.scheduledTimer(timeInterval: 0.1, target: self, selector: #selector(self.updateAudioMeter(timer:)), userInfo: nil, repeats: true)
             recordBtnRef.setTitle("Stop", for: .normal)
             playBtnRef.isEnabled = false
             isRecording = true
+        } else {
+            logger.error("RecordVC setupRecorder error, no access to use microphone.")
+            // display_alert(msg_title: "Error", msg_desc: "Don't have access to use your microphone.", action_title: "OK")
         }
     }
 
