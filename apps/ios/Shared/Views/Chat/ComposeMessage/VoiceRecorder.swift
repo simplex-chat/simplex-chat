@@ -95,10 +95,12 @@ struct VoiceRecorder: View {
             print(1)
             audioRecorder?.stopAudioRecording()
             print(2)
-            removeFile(fileName)
+            audioPlayer?.stopAudioPlayback()
             print(3)
-            recordingState = .new
+            removeFile(fileName)
             print(4)
+            recordingState = .new
+            print(5)
             recordingTime = "00:00"
         }
     }
