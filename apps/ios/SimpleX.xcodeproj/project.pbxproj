@@ -53,7 +53,7 @@
 		5C7505A827B6D34800BE3227 /* ChatInfoToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C7505A727B6D34800BE3227 /* ChatInfoToolbar.swift */; };
 		5C764E89279CBCB3000C6508 /* ChatModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C764E88279CBCB3000C6508 /* ChatModel.swift */; };
 		5C8F01CD27A6F0D8007D2C8D /* CodeScanner in Frameworks */ = {isa = PBXBuildFile; productRef = 5C8F01CC27A6F0D8007D2C8D /* CodeScanner */; };
-		5C93292F29239A170090FFF9 /* SMPServersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C93292E29239A170090FFF9 /* SMPServersView.swift */; };
+		5C93292F29239A170090FFF9 /* SMPServers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C93292E29239A170090FFF9 /* SMPServers.swift */; };
 		5C93293129239BED0090FFF9 /* SMPServerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C93293029239BED0090FFF9 /* SMPServerView.swift */; };
 		5C93293729241CDA0090FFF9 /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C93293229241CD90090FFF9 /* libffi.a */; };
 		5C93293829241CDA0090FFF9 /* libHSsimplex-chat-4.2.1-HrC8bBnv4qm8Sq6Eue57W1-ghc8.10.7.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C93293329241CD90090FFF9 /* libHSsimplex-chat-4.2.1-HrC8bBnv4qm8Sq6Eue57W1-ghc8.10.7.a */; };
@@ -129,7 +129,6 @@
 		5CFA59D12864782E00863A68 /* ChatArchiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CFA59CF286477B400863A68 /* ChatArchiveView.swift */; };
 		5CFE0921282EEAF60002594B /* ZoomableScrollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CFE0920282EEAF60002594B /* ZoomableScrollView.swift */; };
 		5CFE0922282EEAF60002594B /* ZoomableScrollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CFE0920282EEAF60002594B /* ZoomableScrollView.swift */; };
-		640F50E327CF991C001E05C2 /* SMPServers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 640F50E227CF991C001E05C2 /* SMPServers.swift */; };
 		6432857C2925443C00FBE5C8 /* GroupPreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6432857B2925443C00FBE5C8 /* GroupPreferencesView.swift */; };
 		6440CA00288857A10062C672 /* CIEventView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6440C9FF288857A10062C672 /* CIEventView.swift */; };
 		6440CA03288AECA70062C672 /* AddGroupMembersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6440CA02288AECA70062C672 /* AddGroupMembersView.swift */; };
@@ -254,7 +253,7 @@
 		5C7505A427B679EE00BE3227 /* NavLinkPlain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavLinkPlain.swift; sourceTree = "<group>"; };
 		5C7505A727B6D34800BE3227 /* ChatInfoToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatInfoToolbar.swift; sourceTree = "<group>"; };
 		5C764E88279CBCB3000C6508 /* ChatModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatModel.swift; sourceTree = "<group>"; };
-		5C93292E29239A170090FFF9 /* SMPServersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SMPServersView.swift; sourceTree = "<group>"; };
+		5C93292E29239A170090FFF9 /* SMPServers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SMPServers.swift; sourceTree = "<group>"; };
 		5C93293029239BED0090FFF9 /* SMPServerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SMPServerView.swift; sourceTree = "<group>"; };
 		5C93293229241CD90090FFF9 /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libffi.a; sourceTree = "<group>"; };
 		5C93293329241CD90090FFF9 /* libHSsimplex-chat-4.2.1-HrC8bBnv4qm8Sq6Eue57W1-ghc8.10.7.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-4.2.1-HrC8bBnv4qm8Sq6Eue57W1-ghc8.10.7.a"; sourceTree = "<group>"; };
@@ -334,7 +333,6 @@
 		5CFA59C32860BC6200863A68 /* MigrateToAppGroupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MigrateToAppGroupView.swift; sourceTree = "<group>"; };
 		5CFA59CF286477B400863A68 /* ChatArchiveView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatArchiveView.swift; sourceTree = "<group>"; };
 		5CFE0920282EEAF60002594B /* ZoomableScrollView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ZoomableScrollView.swift; path = Shared/Views/ZoomableScrollView.swift; sourceTree = SOURCE_ROOT; };
-		640F50E227CF991C001E05C2 /* SMPServers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SMPServers.swift; sourceTree = "<group>"; };
 		6432857B2925443C00FBE5C8 /* GroupPreferencesView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GroupPreferencesView.swift; sourceTree = "<group>"; };
 		6440C9FF288857A10062C672 /* CIEventView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIEventView.swift; sourceTree = "<group>"; };
 		6440CA02288AECA70062C672 /* AddGroupMembersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddGroupMembersView.swift; sourceTree = "<group>"; };
@@ -592,8 +590,7 @@
 				5CCA7DF22905735700C8FEBA /* AcceptRequestsView.swift */,
 				5CB924E027A867BA00ACCCDD /* UserProfile.swift */,
 				5C577F7C27C83AA10006112D /* MarkdownHelp.swift */,
-				640F50E227CF991C001E05C2 /* SMPServers.swift */,
-				5C93292E29239A170090FFF9 /* SMPServersView.swift */,
+				5C93292E29239A170090FFF9 /* SMPServers.swift */,
 				5C93293029239BED0090FFF9 /* SMPServerView.swift */,
 				5C9329402929248A0090FFF9 /* ScanSMPServer.swift */,
 				5CB2084E28DA4B4800D024EC /* RTCServers.swift */,
@@ -903,7 +900,7 @@
 				5C6AD81327A834E300348BD7 /* NewChatButton.swift in Sources */,
 				5C3F1D58284363C400EC8A82 /* PrivacySettings.swift in Sources */,
 				5C55A923283CEDE600C4E99E /* SoundPlayer.swift in Sources */,
-				5C93292F29239A170090FFF9 /* SMPServersView.swift in Sources */,
+				5C93292F29239A170090FFF9 /* SMPServers.swift in Sources */,
 				5CB924D727A8563F00ACCCDD /* SettingsView.swift in Sources */,
 				5CEACCE327DE9246000BD591 /* ComposeView.swift in Sources */,
 				5C36027327F47AD5009F19D9 /* AppDelegate.swift in Sources */,
@@ -930,7 +927,6 @@
 				5C00164428A26FBC0094D739 /* ContextMenu.swift in Sources */,
 				5C3A88D127DF57800060F1C2 /* FramedItemView.swift in Sources */,
 				5CB924E427A8683A00ACCCDD /* UserAddress.swift in Sources */,
-				640F50E327CF991C001E05C2 /* SMPServers.swift in Sources */,
 				64F1CC3B28B39D8600CD1FB1 /* IncognitoHelp.swift in Sources */,
 				5CB0BA90282713D900B3292C /* SimpleXInfo.swift in Sources */,
 				5C063D2727A4564100AEC577 /* ChatPreviewView.swift in Sources */,
