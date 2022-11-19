@@ -25,7 +25,6 @@ class RecordVC: UIViewController, AVAudioRecorderDelegate, AVAudioPlayerDelegate
     override func viewDidLoad() {
         super.viewDidLoad()
         checkRecordPermission()
-        print("#################### in viewDidLoad")
     }
 
     func checkRecordPermission() {

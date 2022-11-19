@@ -8,6 +8,7 @@
 
 import Foundation
 import AVFoundation
+import SwiftUI
 import SimpleXChat
 
 class AudioRecorder: NSObject, AVAudioRecorderDelegate {
@@ -65,12 +66,70 @@ class AudioRecorder: NSObject, AVAudioRecorderDelegate {
     }
 }
 
-func startAudioPlayback(fileName: String) -> AVAudioPlayer? {
-    if let player = try? AVAudioPlayer(contentsOf: getAppFilePath(fileName)) {
-        //    player.delegate = self
-        player.prepareToPlay()
-        player.play()
-        return player
+func checkRecordPermission(granted: Binding<Bool>) {
+    switch AVAudioSession.sharedInstance().recordPermission {
+    case AVAudioSession.RecordPermission.granted:
+        granted.wrappedValue = true
+        break
+    case AVAudioSession.RecordPermission.denied:
+        granted.wrappedValue = false
+        break
+    case AVAudioSession.RecordPermission.undetermined:
+        AVAudioSession.sharedInstance().requestRecordPermission({ allowed in
+            granted.wrappedValue = allowed
+        })
+        break
+    default:
+        break
     }
-    return nil
+}
+
+class AudioPlayer: NSObject, AVAudioPlayerDelegate {
+    var onTimer: ((TimeInterval) -> Void)?
+    var onFinishPlayback: (() -> Void)?
+
+    var audioPlayer: AVAudioPlayer?
+    var playbackTimer: Timer?
+
+    init(onTimer: @escaping ((TimeInterval) -> Void), onFinishPlayback: @escaping (() -> Void)) {
+        self.onTimer = onTimer
+        self.onFinishPlayback = onFinishPlayback
+    }
+
+    func startAudioPlayback(fileName: String) {
+        audioPlayer = try? AVAudioPlayer(contentsOf: getAppFilePath(fileName))
+        audioPlayer?.delegate = self
+        audioPlayer?.prepareToPlay()
+        audioPlayer?.play()
+
+        playbackTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { timer in
+            logger.debug("playback timer")
+            guard let time = self.audioPlayer?.currentTime else { return }
+            self.onTimer?(time)
+        }
+    }
+
+    func pauseAudioPlayback() {
+        audioPlayer?.pause()
+    }
+
+    func playAudioPlayback() {
+        audioPlayer?.play()
+    }
+
+    func stopAudioPlayback() {
+        if let player = audioPlayer {
+            player.stop()
+        }
+        audioPlayer = nil
+        if let timer = playbackTimer {
+            timer.invalidate()
+        }
+        playbackTimer = nil
+    }
+
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        stopAudioPlayback()
+        self.onFinishPlayback?()
+    }
 }
