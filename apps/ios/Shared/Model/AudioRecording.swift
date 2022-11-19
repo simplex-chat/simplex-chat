@@ -44,10 +44,12 @@ class AudioRecorder: NSObject, AVAudioRecorderDelegate {
             audioRecorder?.delegate = self
             audioRecorder?.record(forDuration: 10)
 
-            recordingTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { timer in
-                logger.debug("recording timer")
-                guard let time = self.audioRecorder?.currentTime else { return }
-                self.onTimer?(time)
+            await MainActor.run {
+                recordingTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { timer in
+                    logger.debug("recording timer")
+                    guard let time = self.audioRecorder?.currentTime else { return }
+                    self.onTimer?(time)
+                }
             }
             return nil
         } catch let error {
@@ -74,9 +76,11 @@ class AudioRecorder: NSObject, AVAudioRecorderDelegate {
         case .denied: return false
         case .undetermined:
             return await withCheckedContinuation { cont in
-                av.requestRecordPermission({ allowed in
-                    cont.resume(returning: allowed)
-                })
+                DispatchQueue.main.async {
+                    av.requestRecordPermission { allowed in
+                        cont.resume(returning: allowed)
+                    }
+                }
             }
         @unknown default: return false
         }
