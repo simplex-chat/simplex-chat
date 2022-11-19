@@ -44,7 +44,7 @@ struct VoiceRecorder: View {
             })
         case .recording:
             Button("finish") {
-                audioRecorder?.stopAudioRecording()
+                audioRecorder?.stop()
                 audioRecorder = nil
                 recordingState = .finished
             }
@@ -58,14 +58,14 @@ struct VoiceRecorder: View {
             cancelRecordingButton()
         case .playing:
             Button("pause") {
-                audioPlayer?.pauseAudioPlayback()
+                audioPlayer?.pause()
                 recordingState = .paused
             }
             Text(recordingTime)
             cancelRecordingButton()
         case .paused:
             Button("play") {
-                audioPlayer?.playAudioPlayback()
+                audioPlayer?.play()
                 recordingState = .playing
             }
             Text(recordingTime)
@@ -80,7 +80,7 @@ struct VoiceRecorder: View {
             onTimer: { displayTimer($0) },
             onFinishRecording: { recordingState = .finished }
         )
-        audioRecorder?.startAudioRecording(fileName: fileName)
+        audioRecorder?.start(fileName: fileName)
         recordingState = .recording
     }
 
@@ -93,9 +93,9 @@ struct VoiceRecorder: View {
     private func cancelRecording() {
         if let fileName = recordingFileName {
             print(1)
-            audioRecorder?.stopAudioRecording()
+            audioRecorder?.stop()
             print(2)
-            audioPlayer?.stopAudioPlayback()
+            audioPlayer?.stop()
             print(3)
             removeFile(fileName)
             print(4)
@@ -111,7 +111,7 @@ struct VoiceRecorder: View {
                 onTimer: { displayTimer($0) },
                 onFinishPlayback: { recordingState = .finished }
             )
-            audioPlayer?.startAudioPlayback(fileName: fileName)
+            audioPlayer?.start(fileName: fileName)
             recordingState = .playing
         }
     }

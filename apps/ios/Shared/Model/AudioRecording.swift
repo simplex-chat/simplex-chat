@@ -23,7 +23,7 @@ class AudioRecorder: NSObject, AVAudioRecorderDelegate {
         self.onFinishRecording = onFinishRecording
     }
 
-    func startAudioRecording(fileName: String) {
+    func start(fileName: String) {
         let session = AVAudioSession.sharedInstance()
         do {
             try session.setCategory(AVAudioSession.Category.playAndRecord, options: .defaultToSpeaker)
@@ -49,7 +49,7 @@ class AudioRecorder: NSObject, AVAudioRecorderDelegate {
         }
     }
 
-    func stopAudioRecording() {
+    func stop() {
         if let recorder = audioRecorder {
             recorder.stop()
         }
@@ -61,7 +61,7 @@ class AudioRecorder: NSObject, AVAudioRecorderDelegate {
     }
 
     func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
-        stopAudioRecording()
+        stop()
         self.onFinishRecording?()
     }
 }
@@ -96,7 +96,7 @@ class AudioPlayer: NSObject, AVAudioPlayerDelegate {
         self.onFinishPlayback = onFinishPlayback
     }
 
-    func startAudioPlayback(fileName: String) {
+    func start(fileName: String) {
         audioPlayer = try? AVAudioPlayer(contentsOf: getAppFilePath(fileName))
         audioPlayer?.delegate = self
         audioPlayer?.prepareToPlay()
@@ -109,15 +109,15 @@ class AudioPlayer: NSObject, AVAudioPlayerDelegate {
         }
     }
 
-    func pauseAudioPlayback() {
+    func pause() {
         audioPlayer?.pause()
     }
 
-    func playAudioPlayback() {
+    func play() {
         audioPlayer?.play()
     }
 
-    func stopAudioPlayback() {
+    func stop() {
         if let player = audioPlayer {
             player.stop()
         }
@@ -129,7 +129,7 @@ class AudioPlayer: NSObject, AVAudioPlayerDelegate {
     }
 
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
-        stopAudioPlayback()
+        stop()
         self.onFinishPlayback?()
     }
 }
