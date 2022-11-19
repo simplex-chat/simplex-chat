@@ -157,7 +157,7 @@ public func getAppFilesDirectory() -> URL {
     getAppDirectory().appendingPathComponent("app_files", isDirectory: true)
 }
 
-func getAppFilePath(_ fileName: String) -> URL {
+public func getAppFilePath(_ fileName: String) -> URL {
     getAppFilesDirectory().appendingPathComponent(fileName)
 }
 
@@ -198,11 +198,16 @@ public func saveFileFromURL(_ url: URL) -> String? {
 
 public func saveImage(_ uiImage: UIImage) -> String? {
     if let imageDataResized = resizeImageToDataSize(uiImage, maxDataSize: maxImageSize) {
-        let timestamp = Date().getFormattedDate("yyyyMMdd_HHmmss")
-        let fileName = uniqueCombine("IMG_\(timestamp).jpg")
+        let fileName = generateNewFileName("IMG", "jpg")
         return saveFile(imageDataResized, fileName)
     }
     return nil
+}
+
+public func generateNewFileName(_ prefix: String, _ ext: String) -> String {
+    let timestamp = Date().getFormattedDate("yyyyMMdd_HHmmss")
+    let fileName = uniqueCombine("\(prefix)_\(timestamp).\(ext)")
+    return fileName
 }
 
 extension Date {

@@ -139,6 +139,7 @@ struct ComposeView: View {
                 case (true, .filePreview): EmptyView()
                 default: previewView()
             }
+            ComposeVoiceView()
             HStack (alignment: .bottom) {
                 Button {
                     showChooseSource = true
