@@ -47,7 +47,7 @@ public enum ChatCommand {
     case apiDeleteGroupLink(groupId: Int64)
     case apiGetGroupLink(groupId: Int64)
     case getUserSMPServers
-    case setUserSMPServers(smpServers: [String])
+    case setUserSMPServers(smpServers: [ServerCfg])
     case testSMPServer(smpServer: String)
     case apiSetChatItemTTL(seconds: Int64?)
     case apiGetChatItemTTL
@@ -127,7 +127,7 @@ public enum ChatCommand {
             case let .apiDeleteGroupLink(groupId): return "/_delete link #\(groupId)"
             case let .apiGetGroupLink(groupId): return "/_get link #\(groupId)"
             case .getUserSMPServers: return "/smp"
-            case let .setUserSMPServers(smpServers): return "/smp \(smpServersStr(smpServers: smpServers))"
+            case let .setUserSMPServers(smpServers): return "/_smp \(smpServersStr(smpServers: smpServers))"
             case let .testSMPServer(smpServer): return "/smp test \(smpServer)"
             case let .apiSetChatItemTTL(seconds): return "/_ttl \(chatItemTTLStr(seconds: seconds))"
             case .apiGetChatItemTTL: return "/ttl"
@@ -252,8 +252,8 @@ public enum ChatCommand {
         "\(type.rawValue)\(id)"
     }
 
-    func smpServersStr(smpServers: [String]) -> String {
-        smpServers.isEmpty ? "default" : smpServers.joined(separator: ";")
+    func smpServersStr(smpServers: [ServerCfg]) -> String {
+        smpServers.isEmpty ? "default" : encodeJSON(SMPServersConfig(smpServers: smpServers))
     }
 
     func chatItemTTLStr(seconds: Int64?) -> String {
@@ -295,7 +295,7 @@ public enum ChatResponse: Decodable, Error {
     case apiChats(chats: [ChatData])
     case apiChat(chat: ChatData)
     case userSMPServers(smpServers: [ServerCfg], presetSMPServers: [String])
-    case sMPTestResult(smpTestFailure: SMPTestFailure?)
+    case smpTestResult(smpTestFailure: SMPTestFailure?)
     case chatItemTTL(chatItemTTL: Int64?)
     case networkConfig(networkConfig: NetCfg)
     case contactInfo(contact: Contact, connectionStats: ConnectionStats, customUserProfile: Profile?)
@@ -398,7 +398,7 @@ public enum ChatResponse: Decodable, Error {
             case .apiChats: return "apiChats"
             case .apiChat: return "apiChat"
             case .userSMPServers: return "userSMPServers"
-            case .sMPTestResult: return "smpTestResult"
+            case .smpTestResult: return "smpTestResult"
             case .chatItemTTL: return "chatItemTTL"
             case .networkConfig: return "networkConfig"
             case .contactInfo: return "contactInfo"
@@ -500,8 +500,8 @@ public enum ChatResponse: Decodable, Error {
             case .chatSuspended: return noDetails
             case let .apiChats(chats): return String(describing: chats)
             case let .apiChat(chat): return String(describing: chat)
-            case let .userSMPServers(smpServers, _): return String(describing: smpServers)
-            case let .sMPTestResult(smpTestFailure): return String(describing: smpTestFailure)
+            case let .userSMPServers(smpServers, presetServers): return "smpServers: \(String(describing: smpServers))\npresetServers: \(String(describing: presetServers))"
+            case let .smpTestResult(smpTestFailure): return String(describing: smpTestFailure)
             case let .chatItemTTL(chatItemTTL): return String(describing: chatItemTTL)
             case let .networkConfig(networkConfig): return String(describing: networkConfig)
             case let .contactInfo(contact, connectionStats, customUserProfile): return "contact: \(String(describing: contact))\nconnectionStats: \(String(describing: connectionStats))\ncustomUserProfile: \(String(describing: customUserProfile))"
@@ -635,7 +635,11 @@ public struct DBEncryptionConfig: Codable {
     public var newKey: String
 }
 
-public struct ServerCfg: Identifiable, Decodable {
+struct SMPServersConfig: Encodable {
+    var smpServers: [ServerCfg]
+}
+
+public struct ServerCfg: Identifiable, Equatable, Codable {
     public var server: String
     public var preset: Bool
     public var tested: Bool?
@@ -653,7 +657,7 @@ public struct ServerCfg: Identifiable, Decodable {
 
     public var id: String { server }
 
-    public static var empty = ServerCfg(server: "", preset: false, tested: false, enabled: true)
+    public static var empty = ServerCfg(server: "", preset: false, tested: nil, enabled: true)
 
     public struct SampleData {
         public var preset: ServerCfg
@@ -663,19 +667,19 @@ public struct ServerCfg: Identifiable, Decodable {
 
     public static var sampleData = SampleData(
         preset: ServerCfg(
-            server: "smp://0YuTwO05YJWS8rkjn9eLJDjQhFKvIYd8d4xG8X1blIU=@smp8.simplex.im,beccx4yfxxbvyhqypaavemqurytl6hozr47wfc7uuecacjqdvwpw2xid.onion",
+            server: "smp://abcd@smp8.simplex.im",
             preset: true,
             tested: true,
             enabled: true
         ),
         custom: ServerCfg(
-            server: "smp://SkIkI6EPd2D63F4xFKfHk7I1UGZVNn6k1QWZ5rcyr6w=@smp9.simplex.im,jssqzccmrcws6bhmn77vgmhfjmhwlyr3u7puw4erkyoosywgl67slqqd.onion",
+            server: "smp://abcd@smp9.simplex.im",
             preset: false,
             tested: false,
             enabled: false
         ),
         untested: ServerCfg(
-            server: "smp://6iIcWT_dF2zN_w5xzZEY7HI2Prbh3ldP07YTyDexPjE=@smp10.simplex.im,rb2pbttocvnbrngnwziclp2f4ckjq65kebafws6g4hy22cdaiv5dwjqd.onion",
+            server: "smp://abcd@smp10.simplex.im",
             preset: false,
             tested: nil,
             enabled: true
@@ -718,7 +722,7 @@ public struct SMPTestFailure: Decodable, Error {
     }
 }
 
-public struct ServerAddress {
+public struct ServerAddress: Decodable {
     public var hostnames: [String]
     public var port: String
     public var keyHash: String

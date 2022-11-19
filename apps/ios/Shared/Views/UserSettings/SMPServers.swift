@@ -121,7 +121,7 @@ struct SMPServers: View {
         isUserSMPServers = !userSMPServers.isEmpty
         isUserSMPServersToggle = isUserSMPServers
         editSMPServers = !isUserSMPServers
-        userSMPServersStr = isUserSMPServers ? userSMPServers.joined(separator: "\n") : ""
+        userSMPServersStr = isUserSMPServers ? userSMPServers.map { $0.server }.joined(separator: "\n") : ""
     }
     
     func saveUserSMPServers() {
@@ -132,9 +132,10 @@ struct SMPServers: View {
     func saveSMPServers(smpServers: [String]) {
         Task {
             do {
-                try await setUserSMPServers(smpServers: smpServers)
+                let servers = smpServers.map { ServerCfg(server: $0, preset: false, tested: nil, enabled: true) }
+                try await setUserSMPServers(smpServers: servers)
                 DispatchQueue.main.async {
-                    chatModel.userSMPServers = smpServers
+                    chatModel.userSMPServers = servers
                     if smpServers.isEmpty {
                         isUserSMPServers = false
                         editSMPServers = true

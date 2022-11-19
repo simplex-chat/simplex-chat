@@ -10,7 +10,8 @@ import SwiftUI
 import SimpleXChat
 
 struct SMPServerView: View {
-    @State var server: ServerCfg
+    @Binding var server: ServerCfg
+    @State var serverToEdit: ServerCfg
 
     var body: some View {
         if server.preset {
@@ -25,6 +26,7 @@ struct SMPServerView: View {
             List {
                 Section("Preset server address") {
                     Text(server.server)
+                        .textSelection(.enabled)
                 }
                 useServerSection()
             }
@@ -35,13 +37,16 @@ struct SMPServerView: View {
         VStack {
             List {
                 Section("Your server address") {
-                    TextEditor(text: $server.server)
+                    TextEditor(text: $serverToEdit.server)
                         .multilineTextAlignment(.leading)
                         .autocorrectionDisabled(true)
                         .autocapitalization(.none)
                         .lineLimit(10)
                         .frame(height: 108)
                         .padding(-6)
+                        .onDisappear {
+                            server.server = serverToEdit.server
+                        }
                 }
                 useServerSection()
                 Section("Add to another device") {
@@ -61,7 +66,7 @@ struct SMPServerView: View {
                 Spacer()
                 showTestStatus(server: server)
             }
-            Toggle("Enabled", isOn: $server.enabled)
+            Toggle("Use for new connections", isOn: $server.enabled)
             Button("Remove server", role: .destructive) {
 
             }
@@ -100,6 +105,6 @@ func testServerConnection(server: Binding<ServerCfg>) async {
 
 struct SMPServerView_Previews: PreviewProvider {
     static var previews: some View {
-        SMPServerView(server: ServerCfg.sampleData.custom)
+        SMPServerView(server: Binding.constant(ServerCfg.sampleData.custom), serverToEdit: ServerCfg.sampleData.custom)
     }
 }

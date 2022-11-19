@@ -309,19 +309,19 @@ func apiDeleteToken(token: DeviceToken) async throws {
     try await sendCommandOkResp(.apiDeleteToken(token: token))
 }
 
-func getUserSMPServers() throws -> [String] {
+func getUserSMPServers() throws -> ([ServerCfg], [String]) {
     let r = chatSendCmdSync(.getUserSMPServers)
-    if case let .userSMPServers(smpServers, _) = r { return smpServers.map { $0.server } }
+    if case let .userSMPServers(smpServers, presetServers) = r { return (smpServers, presetServers) }
     throw r
 }
 
-func setUserSMPServers(smpServers: [String]) async throws {
+func setUserSMPServers(smpServers: [ServerCfg]) async throws {
     try await sendCommandOkResp(.setUserSMPServers(smpServers: smpServers))
 }
 
 func testSMPServer(smpServer: String) async throws -> Result<(), SMPTestFailure> {
     let r = await chatSendCmd(.testSMPServer(smpServer: smpServer))
-    if case let .sMPTestResult(testFailure) = r {
+    if case let .smpTestResult(testFailure) = r {
         if let t = testFailure {
             return .failure(t)
         }
@@ -843,7 +843,7 @@ func startChat() throws {
     let justStarted = try apiStartChat()
     if justStarted {
         m.userAddress = try apiGetUserAddress()
-        m.userSMPServers = try getUserSMPServers()
+        (m.userSMPServers, m.presetSMPServers) = try getUserSMPServers()
         m.chatItemTTL = try getChatItemTTL()
         let chats = try apiGetChats()
         m.chats = chats.map { Chat.init($0) }
