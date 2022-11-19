@@ -34,7 +34,7 @@ struct NetworkAndServers: View {
             List {
                 Section {
                     NavigationLink {
-                        SMPServers()
+                        SMPServersView()
                             .navigationTitle("Your SMP servers")
                     } label: {
                         Text("SMP servers")

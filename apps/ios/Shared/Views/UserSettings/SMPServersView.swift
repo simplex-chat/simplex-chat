@@ -1,5 +1,5 @@
 //
-//  SMPServers.swift
+//  SMPServersView.swift
 //  SimpleX (iOS)
 //
 //  Created by Evgeny on 15/11/2022.
@@ -11,7 +11,7 @@ import SimpleXChat
 
 private let howToUrl = URL(string: "https://github.com/simplex-chat/simplexmq#using-smp-server-and-smp-agent")!
 
-struct SMPServers: View {
+struct SMPServersView: View {
     @EnvironmentObject private var m: ChatModel
     @Environment(\.editMode) private var editMode
     @State private var servers = ChatModel.shared.userSMPServers ?? []
@@ -243,8 +243,8 @@ struct SMPServers: View {
     }
 }
 
-struct SMPServers_Previews: PreviewProvider {
+struct SMPServersView_Previews: PreviewProvider {
     static var previews: some View {
-        SMPServers()
+        SMPServersView()
     }
 }
