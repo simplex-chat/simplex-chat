@@ -138,7 +138,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
       firstTime = dbNew chatStore
   activeTo <- newTVarIO ActiveNone
   currentUser <- newTVarIO user
-  smpAgent <- getSMPAgentClient aCfg {database = AgentDB agentStore} =<< agentServers configServers
+  smpAgent <- getSMPAgentClient aCfg {database = AgentDB agentStore} =<< agentServers config
   agentAsync <- newTVarIO Nothing
   idsDrg <- newTVarIO =<< drgNew
   inputQ <- newTBQueueIO tbqSize
@@ -156,19 +156,19 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, incognitoMode, filesFolder, expireCIsAsync, expireCIs}
   where
     configServers :: InitialAgentServers
-    configServers = case nonEmpty smpServers of
-      Just smpServers' -> defaultServers {smp = smpServers', netCfg = networkConfig}
-      _ -> defaultServers {netCfg = networkConfig}
-    agentServers :: InitialAgentServers -> IO InitialAgentServers
-    agentServers ss@InitialAgentServers {smp = current} = do
-      smp <- maybe (pure current) userServers user
-      pure ss {smp}
-    userServers :: User -> IO (NonEmpty SMPServerWithAuth)
-    userServers user' = activeAgentServers cfg <$> withTransaction chatStore (`getSMPServers` user')
+    configServers =
+      let smp' = fromMaybe (smp defaultServers) (nonEmpty smpServers)
+       in defaultServers {smp = smp', netCfg = networkConfig}
+    agentServers :: ChatConfig -> IO InitialAgentServers
+    agentServers config@ChatConfig {defaultServers = ss@InitialAgentServers {smp}} = do
+      smp' <- maybe (pure smp) userServers user
+      pure ss {smp = smp'}
+      where
+        userServers user' = activeAgentServers config <$> withTransaction chatStore (`getSMPServers` user')
 
 activeAgentServers :: ChatConfig -> [ServerCfg] -> NonEmpty SMPServerWithAuth
-activeAgentServers ChatConfig {defaultServers = InitialAgentServers {smp = defaultSMPServers}} =
-  fromMaybe defaultSMPServers
+activeAgentServers ChatConfig {defaultServers = InitialAgentServers {smp}} =
+  fromMaybe smp
     . nonEmpty
     . map (\ServerCfg {server} -> server)
     . filter (\ServerCfg {enabled} -> enabled)
