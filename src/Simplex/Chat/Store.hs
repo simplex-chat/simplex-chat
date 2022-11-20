@@ -3707,8 +3707,8 @@ getAllChatItems db user pagination search_ = do
   let search = fromMaybe "" search_
   case pagination of
     CPLast count -> getAllChatItemsLast_ db user count search
-    CPAfter _afterId _count -> throwError $ SEInternalError "not implemented"
-    CPBefore _beforeId _count -> throwError $ SEInternalError "not implemented"
+    CPAfter afterId count -> getAllChatItemsAfter_ db user afterId count search
+    CPBefore beforeId count -> getAllChatItemsBefore_ db user beforeId count search
 
 getAllChatItemsLast_ :: DB.Connection -> User -> Int -> String -> ExceptT StoreError IO [AChatItem]
 getAllChatItemsLast_ db user@User {userId} count search = do
@@ -3720,12 +3720,58 @@ getAllChatItemsLast_ db user@User {userId} count search = do
           [sql|
             SELECT chat_item_id, contact_id, group_id
             FROM chat_items
-            WHERE user_id = ? AND item_text LIKE '%' || ? || '%'
+            WHERE user_id = ? AND item_deleted != 1 AND item_text LIKE '%' || ? || '%'
             ORDER BY item_ts DESC, chat_item_id DESC
             LIMIT ?
           |]
           (userId, search, count)
   mapM (uncurry $ getAChatItem_ db user) itemRefs
+
+getAllChatItemsAfter_ :: DB.Connection -> User -> Int64 -> Int -> String -> ExceptT StoreError IO [AChatItem]
+getAllChatItemsAfter_ db user@User {userId} afterItemId count search = do
+  AChatItem _ _ _ afterItem <- getAChatItem db user afterItemId
+  itemRefs <- liftIO $ getChatItemRefsAfter_ (chatItemTs' afterItem)
+  mapM (uncurry $ getAChatItem_ db user) itemRefs
+  where
+    getChatItemRefsAfter_ afterItemTs =
+      rights . map toChatItemRef
+        <$> DB.query
+          db
+          [sql|
+            SELECT chat_item_id, contact_id, group_id
+            FROM chat_items
+            WHERE user_id = ? AND item_deleted != 1 AND item_text LIKE '%' || ? || '%'
+              AND (item_ts > ? OR (item_ts = ? AND chat_item_id > ?))
+            ORDER BY item_ts ASC, chat_item_id ASC
+            LIMIT ?
+          |]
+          (userId, search, afterItemTs, afterItemTs, afterItemId, count)
+
+getAllChatItemsBefore_ :: DB.Connection -> User -> Int64 -> Int -> String -> ExceptT StoreError IO [AChatItem]
+getAllChatItemsBefore_ db user@User {userId} beforeItemId count search = do
+  AChatItem _ _ _ beforeItem <- getAChatItem db user beforeItemId
+  itemRefs <- liftIO $ getChatItemRefsBefore_ (chatItemTs' beforeItem)
+  mapM (uncurry $ getAChatItem_ db user) itemRefs
+  where
+    getChatItemRefsBefore_ beforeItemTs =
+      reverse . rights . map toChatItemRef
+        <$> DB.query
+          db
+          [sql|
+            SELECT chat_item_id, contact_id, group_id
+            FROM chat_items
+            WHERE user_id = ? AND item_deleted != 1 AND item_text LIKE '%' || ? || '%'
+              AND (item_ts < ? OR (item_ts = ? AND chat_item_id < ?))
+            ORDER BY item_ts DESC, chat_item_id DESC
+            LIMIT ?
+          |]
+          (userId, search, beforeItemTs, beforeItemTs, beforeItemId, count)
+
+getAChatItem :: DB.Connection -> User -> ChatItemId -> ExceptT StoreError IO AChatItem
+getAChatItem db user@User {userId} itemId = do
+  afterItemRef <- ExceptT $ firstRow' toChatItemRef (SEChatItemNotFound itemId) $
+    DB.query db "SELECT chat_item_id, contact_id, group_id FROM chat_items WHERE user_id = ? AND chat_item_id = ?" (userId, itemId)
+  uncurry (getAChatItem_ db user) afterItemRef
 
 getGroupIdByName :: DB.Connection -> User -> GroupName -> ExceptT StoreError IO GroupId
 getGroupIdByName db User {userId} gName =

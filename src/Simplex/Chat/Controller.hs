@@ -147,7 +147,7 @@ data ChatCommand
   | ExecAgentStoreSQL Text
   | APIGetChats {pendingConnections :: Bool}
   | APIGetChat ChatRef ChatPagination (Maybe String)
-  | APIGetChatItems Int
+  | APIGetChatItems ChatPagination (Maybe String)
   | APISendMessage ChatRef ComposedMessage
   | APIUpdateChatItem ChatRef ChatItemId MsgContent
   | APIDeleteChatItem ChatRef ChatItemId CIDeleteMode
@@ -261,7 +261,7 @@ data ChatResponse
   | CRChatSuspended
   | CRApiChats {chats :: [AChat]}
   | CRApiChat {chat :: AChat}
-  | CRLastMessages {chatItems :: [AChatItem]}
+  | CRApiChatItems {chatItems :: [AChatItem]}
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
   | CRUserSMPServers {smpServers :: NonEmpty ServerCfg, presetSMPServers :: NonEmpty SMPServerWithAuth}
   | CRSmpTestResult {smpTestFailure :: Maybe SMPTestFailure}

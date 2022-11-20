@@ -75,7 +75,7 @@ responseToView user_ testView ts = \case
   CRContactSwitch ct progress -> viewContactSwitch ct progress
   CRGroupMemberSwitch g m progress -> viewGroupMemberSwitch g m progress
   CRNewChatItem (AChatItem _ _ chat item) -> unmuted chat item $ viewChatItem chat item False ts
-  CRLastMessages chatItems -> concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True ts) chatItems
+  CRApiChatItems chatItems -> concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True ts) chatItems
   CRChatItemStatusUpdated _ -> []
   CRChatItemUpdated (AChatItem _ _ chat item) -> unmuted chat item $ viewItemUpdate chat item ts
   CRChatItemDeleted (AChatItem _ _ chat deletedItem) (AChatItem _ _ _ toItem) -> unmuted chat deletedItem $ viewItemDelete chat deletedItem toItem ts
