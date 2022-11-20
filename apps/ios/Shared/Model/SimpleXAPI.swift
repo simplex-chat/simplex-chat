@@ -1025,9 +1025,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
         case let .sndFileComplete(aChatItem, _):
             chatItemSimpleUpdate(aChatItem)
             let cItem = aChatItem.chatItem
+            let mc = cItem.content.msgContent
             if aChatItem.chatInfo.chatType == .direct,
-               let mc = cItem.content.msgContent,
-               mc.isFile(),
+               case .file = mc,
                let fileName = cItem.file?.filePath {
                 removeFile(fileName)
             }
