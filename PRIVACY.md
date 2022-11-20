@@ -8,7 +8,7 @@ If you believe that some of the clauses in this document are not aligned with ou
 
 SimpleX Chat Ltd. ("SimpleX Chat") uses the best industry practices for security and end-to-end encryption to provide secure end-to-end encrypted messaging via private connections. SimpleX Chat is built on top of SimpleX messaging and application platform that uses a new message routing protocol that allows establishing private connection without having any kind of addresses that identify its users - we don't use emails, phone numbers, usernames, identity keys or any other user identifiers to pass messages between the users.
 
-SimpleX Chat security audit was performed in October 2022 by [Trail of Bits](https://www.trailofbits.com/about), and most fixes were released in v4.2.0 – see [the announcement](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.html).
+SimpleX Chat security audit was performed in October 2022 by [Trail of Bits](https://www.trailofbits.com/about), and most fixes were released in v4.2.0 – see [the announcement](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
 
 ### Information you provide
 
