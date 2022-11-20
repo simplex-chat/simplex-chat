@@ -157,8 +157,8 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   where
     configServers :: InitialAgentServers
     configServers = case nonEmpty smpServers of
-      Just smpServers' -> defaultServers {smp = L.map (\ServerCfg {server} -> server) smpServers', netCfg = networkConfig}
-      _ -> defaultServers
+      Just smpServers' -> defaultServers {smp = smpServers', netCfg = networkConfig}
+      _ -> defaultServers {netCfg = networkConfig}
     agentServers :: InitialAgentServers -> IO InitialAgentServers
     agentServers ss@InitialAgentServers {smp = current} = do
       smp <- maybe (pure current) userServers user
@@ -3219,12 +3219,12 @@ chatCommandP =
       "/_members #" *> (APIListMembers <$> A.decimal),
       -- /smp_servers is deprecated, use /smp and /_smp
       "/smp_servers default" $> SetUserSMPServers (SMPServersConfig []),
-      "/smp_servers " *> (SetUserSMPServers . SMPServersConfig <$> smpServersP),
+      "/smp_servers " *> (SetUserSMPServers . SMPServersConfig . map toServerCfg <$> smpServersP),
       "/smp_servers" $> GetUserSMPServers,
       "/smp default" $> SetUserSMPServers (SMPServersConfig []),
       "/smp test " *> (TestSMPServer <$> strP),
       "/_smp " *> (SetUserSMPServers <$> jsonP),
-      "/smp " *> (SetUserSMPServers . SMPServersConfig <$> smpServersP),
+      "/smp " *> (SetUserSMPServers . SMPServersConfig . map toServerCfg <$> smpServersP),
       "/smp" $> GetUserSMPServers,
       "/_ttl " *> (APISetChatItemTTL <$> ciTTLDecimal),
       "/ttl " *> (APISetChatItemTTL <$> ciTTL),
@@ -3373,6 +3373,7 @@ chatCommandP =
         onOffP
         (Just <$> (AutoAccept <$> (" incognito=" *> onOffP <|> pure False) <*> optional (A.space *> msgContentP)))
         (pure Nothing)
+    toServerCfg server = ServerCfg {server, preset = False, tested = Nothing, enabled = True}
 
 adminContactReq :: ConnReqContact
 adminContactReq =
