@@ -13,9 +13,9 @@ nix_install() {
   [ ! -d /nix ] && sudo sh -c "mkdir -p /nix && chown -R $u /nix"
 
   # Install nix
-  nix_ver="nix-2.10.3"
+  nix_ver="nix-2.11.1"
   nix_url="https://releases.nixos.org/nix/$nix_ver/install"
-  nix_hash="2e96a9c4abb5648a805480e8679de3d9fecff30453603f11c26bb4e7176c7ebe"
+  nix_hash="4569a01dc5f62056f29f3195673bc3242fc70bf2474927fb5d8549c4d997402d"
 
   curl -sSf "$nix_url" -o "$tmp/nix-install"
   printf "%s %s" "$nix_hash" "$tmp/nix-install" | sha256sum -c
