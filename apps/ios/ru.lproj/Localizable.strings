@@ -10,12 +10,6 @@
 /* No comment provided by engineer. */
 " (can be copied)" = " (можно скопировать)";
 
-/* server test error */
-"Possibly, certificate fingerprint in server address is incorrect" = " Возможно, хэш сертификата адресе не совпадает с сертификатом";
-
-/* server test error */
-"Server requires authorization to create queues, check password" = " Сервер требует авторизации для создания очередей, проверьте пароль";
-
 /* No comment provided by engineer. */
 "_italic_" = "\\_курсив_";
 
@@ -1427,6 +1421,9 @@
 /* No comment provided by engineer. */
 "Please store passphrase securely, you will NOT be able to change it if you lose it." = "Пожалуйста, надежно сохраните пароль, вы НЕ сможете его поменять, если потеряете.";
 
+/* server test error */
+"Possibly, certificate fingerprint in server address is incorrect" = "Возможно, хэш сертификата в адресе сервера неверный";
+
 /* No comment provided by engineer. */
 "Preset server" = "Сервер по умолчанию";
 
@@ -1633,6 +1630,9 @@
 
 /* notification */
 "Sent file event" = "Отправка файла";
+
+/* server test error */
+"Server requires authorization to create queues, check password" = "Сервер требует авторизации для создания очередей, проверьте пароль";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "Ошибка теста сервера!";

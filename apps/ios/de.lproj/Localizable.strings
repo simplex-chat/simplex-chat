@@ -10,12 +10,6 @@
 /* No comment provided by engineer. */
 " (can be copied)" = " (kann kopiert werden)";
 
-/* server test error */
-"Possibly, certificate fingerprint in server address is incorrect" = "***Possibly, certificate fingerprint in server address is incorrect";
-
-/* server test error */
-"Server requires authorization to create queues, check password" = "***Server requires authorization to create queues, check password";
-
 /* No comment provided by engineer. */
 "_italic_" = "\\_kursiv_";
 
@@ -1427,6 +1421,9 @@
 /* No comment provided by engineer. */
 "Please store passphrase securely, you will NOT be able to change it if you lose it." = "Bitte bewahren Sie das Passwort sicher auf, Sie können es NICHT mehr ändern, wenn Sie es vergessen haben oder verlieren.";
 
+/* server test error */
+"Possibly, certificate fingerprint in server address is incorrect" = "***Possibly, certificate fingerprint in server address is incorrect";
+
 /* No comment provided by engineer. */
 "Preset server" = "***Preset server";
 
@@ -1633,6 +1630,9 @@
 
 /* notification */
 "Sent file event" = "Datei-Ereignis wurde gesendet";
+
+/* server test error */
+"Server requires authorization to create queues, check password" = "***Server requires authorization to create queues, check password";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "***Server test failed!";

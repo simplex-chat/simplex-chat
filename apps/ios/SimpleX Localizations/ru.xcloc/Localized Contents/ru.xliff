@@ -34,7 +34,7 @@
       </trans-unit>
       <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve">
         <source>Server requires authorization to create queues, check password</source>
-        <target> Сервер требует авторизации для создания очередей, проверьте пароль</target>
+        <target>Сервер требует авторизации для создания очередей, проверьте пароль</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="!1 colored!" xml:space="preserve">
