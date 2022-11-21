@@ -1758,10 +1758,10 @@
 "Test failed at step %@." = "Ошибка теста на шаге %@.";
 
 /* No comment provided by engineer. */
-"Test server" = "Тест сервер";
+"Test server" = "Тестировать сервер";
 
 /* No comment provided by engineer. */
-"Test servers" = "Тест серверы";
+"Test servers" = "Тестировать серверы";
 
 /* No comment provided by engineer. */
 "Tests failed!" = "Ошибка тестов!";

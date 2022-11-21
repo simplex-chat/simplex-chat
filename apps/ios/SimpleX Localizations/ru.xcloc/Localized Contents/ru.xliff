@@ -2530,12 +2530,12 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="Test server" xml:space="preserve">
         <source>Test server</source>
-        <target>Тест сервер</target>
+        <target>Тестировать сервер</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Test servers" xml:space="preserve">
         <source>Test servers</source>
-        <target>Тест серверы</target>
+        <target>Тестировать серверы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tests failed!" xml:space="preserve">
