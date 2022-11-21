@@ -208,6 +208,10 @@
   <string name="file_not_found">File not found</string>
   <string name="error_saving_file">Error saving file</string>
 
+  <!-- Voice messages -->
+  <string name="voice_message">Voice message</string>
+  <string name="voice_message_send_text">Voice message…</string>
+
   <!-- Chat Info Settings - ChatInfoView.kt -->
   <string name="notifications">Notifications</string>
 
@@ -225,6 +229,7 @@
 
   <!-- Message Actions - SendMsgView.kt -->
   <string name="icon_descr_send_message">Send Message</string>
+  <string name="icon_descr_record_voice_message">Record voice message</string>
 
   <!-- General Actions / Responses -->
   <string name="back">Back</string>

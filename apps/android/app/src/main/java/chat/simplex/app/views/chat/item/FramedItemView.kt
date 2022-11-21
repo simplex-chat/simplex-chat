@@ -6,6 +6,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.InsertDriveFile
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,8 +57,12 @@ fun FramedItemView(
       Modifier.padding(vertical = 6.dp, horizontal = 12.dp),
       contentAlignment = Alignment.TopStart
     ) {
+      val text = if (qi.content is MsgContent.MCVoice && qi.text.isEmpty())
+        qi.content.toTextWithDuration(true)
+      else
+        qi.text
       MarkdownText(
-        qi.text, qi.formattedText, sender = qi.sender(membership()), senderBold = true, maxLines = 3,
+        text, qi.formattedText, sender = qi.sender(membership()), senderBold = true, maxLines = 3,
         style = TextStyle(fontSize = 15.sp, color = MaterialTheme.colors.onSurface)
       )
     }
@@ -87,13 +92,13 @@ fun FramedItemView(
             modifier = Modifier.size(68.dp).clipToBounds()
           )
         }
-        is MsgContent.MCFile -> {
+        is MsgContent.MCFile, is MsgContent.MCVoice -> {
           Box(Modifier.fillMaxWidth().weight(1f)) {
             ciQuotedMsgView(qi)
           }
           Icon(
-            Icons.Filled.InsertDriveFile,
-            stringResource(R.string.icon_descr_file),
+            if (qi.content is MsgContent.MCFile) Icons.Filled.InsertDriveFile else Icons.Filled.PlayArrow,
+            if (qi.content is MsgContent.MCFile) stringResource(R.string.icon_descr_file) else stringResource(R.string.voice_message),
             Modifier
               .padding(top = 6.dp, end = 4.dp)
               .size(22.dp),
@@ -105,7 +110,7 @@ fun FramedItemView(
     }
   }
 
-  val transparentBackground = ci.content.msgContent is MsgContent.MCImage && ci.content.text.isEmpty() && ci.quotedItem == null
+  val transparentBackground = (ci.content.msgContent is MsgContent.MCImage || ci.content.msgContent is MsgContent.MCVoice) && ci.content.text.isEmpty() && ci.quotedItem == null
   Box(Modifier
     .clip(RoundedCornerShape(18.dp))
     .background(
@@ -142,6 +147,12 @@ fun FramedItemView(
                   CIMarkdownText(ci, showMember, uriHandler)
                 }
               }
+              is MsgContent.MCVoice -> {
+                CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, mc.text != "" || ci.quotedItem != null, ci, metaColor)
+                if (mc.text != "") {
+                  CIMarkdownText(ci, showMember, uriHandler)
+                }
+              }
               is MsgContent.MCFile -> {
                 CIFileView(ci.file, ci.meta.itemEdited, receiveFile)
                 if (mc.text != "") {
@@ -157,8 +168,10 @@ fun FramedItemView(
           }
         }
       }
-      Box(Modifier.padding(bottom = 6.dp, end = 12.dp)) {
-        CIMetaView(ci, metaColor)
+      if (ci.content.msgContent !is MsgContent.MCVoice || ci.content.text.isNotEmpty()) {
+        Box(Modifier.padding(bottom = 6.dp, end = 12.dp)) {
+          CIMetaView(ci, metaColor)
+        }
       }
     }
   }

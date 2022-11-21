@@ -212,7 +212,7 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
       if (cItem.content.text != "") {
         cItem.content.text
       } else {
-        cItem.file?.fileName ?: ""
+        if (cItem.content.msgContent is MsgContent.MCVoice) generalGetString(R.string.voice_message) else cItem.file?.fileName ?: ""
       }
     } else {
       var res = ""
