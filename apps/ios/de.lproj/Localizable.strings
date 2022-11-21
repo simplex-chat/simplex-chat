@@ -11,10 +11,10 @@
 " (can be copied)" = " (kann kopiert werden)";
 
 /* server test error */
-" Possibly, certificate fingerprint in server address is incorrect" = "*** Possibly, certificate fingerprint in server address is incorrect";
+"Possibly, certificate fingerprint in server address is incorrect" = "***Possibly, certificate fingerprint in server address is incorrect";
 
 /* server test error */
-" Server requires authorization to create queues, check password" = "*** Server requires authorization to create queues, check password";
+"Server requires authorization to create queues, check password" = "***Server requires authorization to create queues, check password";
 
 /* No comment provided by engineer. */
 "_italic_" = "\\_kursiv_";

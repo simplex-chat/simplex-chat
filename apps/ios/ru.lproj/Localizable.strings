@@ -11,10 +11,10 @@
 " (can be copied)" = " (можно скопировать)";
 
 /* server test error */
-" Possibly, certificate fingerprint in server address is incorrect" = " Возможно, хэш сертификата адресе не совпадает с сертификатом";
+"Possibly, certificate fingerprint in server address is incorrect" = " Возможно, хэш сертификата адресе не совпадает с сертификатом";
 
 /* server test error */
-" Server requires authorization to create queues, check password" = " Сервер требует авторизации для создания очередей, проверьте пароль";
+"Server requires authorization to create queues, check password" = " Сервер требует авторизации для создания очередей, проверьте пароль";
 
 /* No comment provided by engineer. */
 "_italic_" = "\\_курсив_";
