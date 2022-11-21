@@ -32,10 +32,6 @@ struct SMPServerView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
-                    if serverToEdit.server != server.server {
-                        print("serverToEdit.tested = nil")
-                        serverToEdit.tested = nil
-                    }
                     server = serverToEdit
                     dismiss()
                 } label: {
@@ -51,6 +47,9 @@ struct SMPServerView: View {
                 title: Text("Server test failed!"),
                 message: Text(testFailure?.localizedDescription ?? "")
             )
+        }
+        .onChange(of: serverToEdit.server) { _ in
+            serverToEdit.tested = serverToEdit.server == server.server ? server.tested : nil
         }
     }
 
