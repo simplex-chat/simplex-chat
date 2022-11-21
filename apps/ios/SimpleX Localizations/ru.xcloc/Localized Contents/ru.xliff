@@ -27,6 +27,16 @@
         <target> (можно скопировать)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve">
+        <source>Possibly, certificate fingerprint in server address is incorrect</source>
+        <target>Возможно, хэш сертификата в адресе сервера неверный</target>
+        <note>server test error</note>
+      </trans-unit>
+      <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve">
+        <source>Server requires authorization to create queues, check password</source>
+        <target>Сервер требует авторизации для создания очередей, проверьте пароль</target>
+        <note>server test error</note>
+      </trans-unit>
       <trans-unit id="!1 colored!" xml:space="preserve">
         <source>!1 colored!</source>
         <target>!1 цвет!</target>
@@ -258,6 +268,21 @@
         <target>Принимать запросы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Add preset servers" xml:space="preserve">
+        <source>Add preset servers</source>
+        <target>Добавить серверы по умолчанию</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Add server…" xml:space="preserve">
+        <source>Add server…</source>
+        <target>Добавить сервер…</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Add to another device" xml:space="preserve">
+        <source>Add to another device</source>
+        <target>Добавить на другое устройство</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Advanced network settings" xml:space="preserve">
         <source>Advanced network settings</source>
         <target>Настройки сети</target>
@@ -478,6 +503,11 @@
         <target>Чаты</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Check server address and try again." xml:space="preserve">
+        <source>Check server address and try again.</source>
+        <target>Проверьте адрес сервера и попробуйте снова.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Choose file" xml:space="preserve">
         <source>Choose file</source>
         <target>Выбрать файл</target>
@@ -513,11 +543,6 @@
         <target>Настройка ICE серверов</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Configure SMP servers" xml:space="preserve">
-        <source>Configure SMP servers</source>
-        <target>Настройка SMP серверов</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Confirm" xml:space="preserve">
         <source>Confirm</source>
         <target>Подтвердить</target>
@@ -531,7 +556,7 @@
       <trans-unit id="Connect" xml:space="preserve">
         <source>Connect</source>
         <target>Соединиться</target>
-        <note>No comment provided by engineer.</note>
+        <note>server test step</note>
       </trans-unit>
       <trans-unit id="Connect via contact link?" xml:space="preserve">
         <source>Connect via contact link?</source>
@@ -677,6 +702,11 @@
         <source>Create one-time invitation link</source>
         <target>Создать ссылку-приглашение</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Create queue" xml:space="preserve">
+        <source>Create queue</source>
+        <target>Создание очереди</target>
+        <note>server test step</note>
       </trans-unit>
       <trans-unit id="Create secret group" xml:space="preserve">
         <source>Create secret group</source>
@@ -931,6 +961,11 @@
         <target>Удалить ожидаемое соединение?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Delete queue" xml:space="preserve">
+        <source>Delete queue</source>
+        <target>Удаление очереди</target>
+        <note>server test step</note>
+      </trans-unit>
       <trans-unit id="Develop" xml:space="preserve">
         <source>Develop</source>
         <target>Для разработчиков</target>
@@ -960,6 +995,11 @@
         <source>Disable SimpleX Lock</source>
         <target>Отключить блокировку SimpleX</target>
         <note>authentication reason</note>
+      </trans-unit>
+      <trans-unit id="Disconnect" xml:space="preserve">
+        <source>Disconnect</source>
+        <target>Разрыв соединения</target>
+        <note>server test step</note>
       </trans-unit>
       <trans-unit id="Display name" xml:space="preserve">
         <source>Display name</source>
@@ -1074,6 +1114,16 @@
       <trans-unit id="Enter passphrase…" xml:space="preserve">
         <source>Enter passphrase…</source>
         <target>Введите пароль…</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Enter server manually" xml:space="preserve">
+        <source>Enter server manually</source>
+        <target>Ввести сервер вручную</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error" xml:space="preserve">
+        <source>Error</source>
+        <target>Ошибка</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error accepting contact request" xml:space="preserve">
@@ -1356,6 +1406,11 @@
         <target>Предпочтения группы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Group profile" xml:space="preserve">
+        <source>Group profile</source>
+        <target>Профиль группы</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Group profile is stored on members' devices, not on the servers." xml:space="preserve">
         <source>Group profile is stored on members' devices, not on the servers.</source>
         <target>Профиль группы хранится на устройствах членов, а не на серверах.</target>
@@ -1404,6 +1459,11 @@
       <trans-unit id="How to use markdown" xml:space="preserve">
         <source>How to use markdown</source>
         <target>Как форматировать</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="How to use your servers" xml:space="preserve">
+        <source>How to use your servers</source>
+        <target>Как использовать серверы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="ICE servers (one per line)" xml:space="preserve">
@@ -1518,6 +1578,11 @@
         <target>Ошибка в ссылке контакта</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Invalid server address!" xml:space="preserve">
+        <source>Invalid server address!</source>
+        <target>Ошибка в адресе сервера!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Invitation expired!" xml:space="preserve">
         <source>Invitation expired!</source>
         <target>Приглашение истекло!</target>
@@ -1626,11 +1691,6 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="Make a private connection" xml:space="preserve">
         <source>Make a private connection</source>
         <target>Добавьте контакт</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Make sure SMP server addresses are in correct format, line separated and are not duplicated." xml:space="preserve">
-        <source>Make sure SMP server addresses are in correct format, line separated and are not duplicated.</source>
-        <target>Пожалуйста, проверьте, что адреса SMP серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." xml:space="preserve">
@@ -1968,9 +2028,14 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Пожалуйста, надежно сохраните пароль, вы НЕ сможете его поменять, если потеряете.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Preferences" xml:space="preserve">
-        <source>Preferences</source>
-        <target>Предпочтения</target>
+      <trans-unit id="Preset server" xml:space="preserve">
+        <source>Preset server</source>
+        <target>Сервер по умолчанию</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Preset server address" xml:space="preserve">
+        <source>Preset server address</source>
+        <target>Адрес сервера по умолчанию</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Privacy &amp; security" xml:space="preserve">
@@ -2158,11 +2223,6 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>SMP серверы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SMP servers (one per line)" xml:space="preserve">
-        <source>SMP servers (one per line)</source>
-        <target>SMP серверы (один на строке)</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Save" xml:space="preserve">
         <source>Save</source>
         <target>Сохранить</target>
@@ -2203,9 +2263,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Сохранить пароль в Keychain</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Saved SMP servers will be removed" xml:space="preserve">
-        <source>Saved SMP servers will be removed</source>
-        <target>Сохраненные SMP серверы будут удалены</target>
+      <trans-unit id="Save servers" xml:space="preserve">
+        <source>Save servers</source>
+        <target>Сохранить серверы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Saved WebRTC ICE servers will be removed" xml:space="preserve">
@@ -2218,10 +2278,20 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Сканировать QR код</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Scan server QR code" xml:space="preserve">
+        <source>Scan server QR code</source>
+        <target>Сканировать QR код сервера</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Search" xml:space="preserve">
         <source>Search</source>
         <target>Поиск</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Secure queue" xml:space="preserve">
+        <source>Secure queue</source>
+        <target>Защита очереди</target>
+        <note>server test step</note>
       </trans-unit>
       <trans-unit id="Send direct message" xml:space="preserve">
         <source>Send direct message</source>
@@ -2267,6 +2337,11 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Sent file event</source>
         <target>Отправка файла</target>
         <note>notification</note>
+      </trans-unit>
+      <trans-unit id="Server test failed!" xml:space="preserve">
+        <source>Server test failed!</source>
+        <target>Ошибка теста сервера!</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Servers" xml:space="preserve">
         <source>Servers</source>
@@ -2446,6 +2521,26 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="Tap to start a new chat" xml:space="preserve">
         <source>Tap to start a new chat</source>
         <target>Нажмите, чтобы начать чат</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Test failed at step %@." xml:space="preserve">
+        <source>Test failed at step %@.</source>
+        <target>Ошибка теста на шаге %@.</target>
+        <note>server test failure</note>
+      </trans-unit>
+      <trans-unit id="Test server" xml:space="preserve">
+        <source>Test server</source>
+        <target>Тестировать сервер</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Test servers" xml:space="preserve">
+        <source>Test servers</source>
+        <target>Тестировать серверы</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Tests failed!" xml:space="preserve">
+        <source>Tests failed!</source>
+        <target>Ошибка тестов!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Thank you for installing SimpleX Chat!" xml:space="preserve">
@@ -2697,6 +2792,16 @@ To connect, please ask your contact to create another connection link and check 
         <target>Использовать чат</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Use for new connections" xml:space="preserve">
+        <source>Use for new connections</source>
+        <target>Использовать для новых соединений</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Use server" xml:space="preserve">
+        <source>Use server</source>
+        <target>Использовать сервер</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Using .onion hosts requires compatible VPN provider." xml:space="preserve">
         <source>Using .onion hosts requires compatible VPN provider.</source>
         <target>Для использования .onion хостов требуется совместимый VPN провайдер.</target>
@@ -2932,6 +3037,11 @@ To connect, please ask your contact to create another connection link and check 
         <target>Ваши SMP серверы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Your SMP servers" xml:space="preserve">
+        <source>Your SMP servers</source>
+        <target>Ваши SMP серверы</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Your SimpleX contact address" xml:space="preserve">
         <source>Your SimpleX contact address</source>
         <target>Ваш SimpleX адрес</target>
@@ -3029,6 +3139,16 @@ SimpleX серверы не могут получить доступ к ваше
       <trans-unit id="Your random profile" xml:space="preserve">
         <source>Your random profile</source>
         <target>Ваш случайный профиль</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your server" xml:space="preserve">
+        <source>Your server</source>
+        <target>Ваш сервер</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your server address" xml:space="preserve">
+        <source>Your server address</source>
+        <target>Адрес вашего сервер</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your settings" xml:space="preserve">

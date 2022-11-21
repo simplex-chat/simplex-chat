@@ -34,17 +34,10 @@ struct NetworkAndServers: View {
             List {
                 Section {
                     NavigationLink {
-                        SMPServers()
-                            .navigationTitle("Your SMP servers")
-                    } label: {
-                        Text("SMP servers")
-                    }
-
-                    NavigationLink {
                         SMPServersView()
                             .navigationTitle("Your SMP servers")
                     } label: {
-                        Text("SMP servers (new)")
+                        Text("SMP servers")
                     }
 
                     Picker("Use .onion hosts", selection: $onionHosts) {
