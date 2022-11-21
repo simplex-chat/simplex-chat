@@ -133,14 +133,12 @@ createChatDatabase filePrefix key yesToMigrations = do
 
 newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> IO ChatController
 newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agentConfig = aCfg, tbqSize, defaultServers} ChatOpts {smpServers, networkConfig, logConnections, logServerHosts} sendToast = do
-  servers <- resolveServers defaultServers
-  let servers' = servers {netCfg = networkConfig}
-      config = cfg {subscriptionEvents = logConnections, hostEvents = logServerHosts, defaultServers = servers'}
+  let config = cfg {subscriptionEvents = logConnections, hostEvents = logServerHosts, defaultServers = configServers}
       sendNotification = fromMaybe (const $ pure ()) sendToast
       firstTime = dbNew chatStore
   activeTo <- newTVarIO ActiveNone
   currentUser <- newTVarIO user
-  smpAgent <- getSMPAgentClient aCfg {database = AgentDB agentStore} servers'
+  smpAgent <- getSMPAgentClient aCfg {database = AgentDB agentStore} =<< agentServers config
   agentAsync <- newTVarIO Nothing
   idsDrg <- newTVarIO =<< drgNew
   inputQ <- newTBQueueIO tbqSize
@@ -157,18 +155,20 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   expireCIs <- newTVarIO False
   pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, incognitoMode, filesFolder, expireCIsAsync, expireCIs}
   where
-    resolveServers :: InitialAgentServers -> IO InitialAgentServers
-    resolveServers ss = case nonEmpty smpServers of
-      Just smpServers' -> pure ss {smp = L.map (\ServerCfg {server} -> server) smpServers'}
-      _ -> case user of
-        Just user' -> do
-          userSmpServers <- withTransaction chatStore (`getSMPServers` user')
-          pure ss {smp = activeAgentServers cfg userSmpServers}
-        _ -> pure ss
+    configServers :: InitialAgentServers
+    configServers =
+      let smp' = fromMaybe (smp defaultServers) (nonEmpty smpServers)
+       in defaultServers {smp = smp', netCfg = networkConfig}
+    agentServers :: ChatConfig -> IO InitialAgentServers
+    agentServers config@ChatConfig {defaultServers = ss@InitialAgentServers {smp}} = do
+      smp' <- maybe (pure smp) userServers user
+      pure ss {smp = smp'}
+      where
+        userServers user' = activeAgentServers config <$> withTransaction chatStore (`getSMPServers` user')
 
 activeAgentServers :: ChatConfig -> [ServerCfg] -> NonEmpty SMPServerWithAuth
-activeAgentServers ChatConfig {defaultServers = InitialAgentServers {smp = defaultSMPServers}} =
-  fromMaybe defaultSMPServers
+activeAgentServers ChatConfig {defaultServers = InitialAgentServers {smp}} =
+  fromMaybe smp
     . nonEmpty
     . map (\ServerCfg {server} -> server)
     . filter (\ServerCfg {enabled} -> enabled)
@@ -3219,12 +3219,12 @@ chatCommandP =
       "/_members #" *> (APIListMembers <$> A.decimal),
       -- /smp_servers is deprecated, use /smp and /_smp
       "/smp_servers default" $> SetUserSMPServers (SMPServersConfig []),
-      "/smp_servers " *> (SetUserSMPServers . SMPServersConfig <$> smpServersP),
+      "/smp_servers " *> (SetUserSMPServers . SMPServersConfig . map toServerCfg <$> smpServersP),
       "/smp_servers" $> GetUserSMPServers,
       "/smp default" $> SetUserSMPServers (SMPServersConfig []),
       "/smp test " *> (TestSMPServer <$> strP),
       "/_smp " *> (SetUserSMPServers <$> jsonP),
-      "/smp " *> (SetUserSMPServers . SMPServersConfig <$> smpServersP),
+      "/smp " *> (SetUserSMPServers . SMPServersConfig . map toServerCfg <$> smpServersP),
       "/smp" $> GetUserSMPServers,
       "/_ttl " *> (APISetChatItemTTL <$> ciTTLDecimal),
       "/ttl " *> (APISetChatItemTTL <$> ciTTL),
@@ -3373,6 +3373,7 @@ chatCommandP =
         onOffP
         (Just <$> (AutoAccept <$> (" incognito=" *> onOffP <|> pure False) <*> optional (A.space *> msgContentP)))
         (pure Nothing)
+    toServerCfg server = ServerCfg {server, preset = False, tested = Nothing, enabled = True}
 
 adminContactReq :: ConnReqContact
 adminContactReq =
