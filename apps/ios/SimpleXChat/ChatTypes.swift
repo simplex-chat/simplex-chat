@@ -1572,6 +1572,7 @@ public enum MsgContent {
     case text(String)
     case link(text: String, preview: LinkPreview)
     case image(text: String, image: String)
+    case voice(text: String, duration: Int)
     case file(String)
     // TODO include original JSON, possibly using https://github.com/zoul/generic-json-swift
     case unknown(type: String, text: String)
@@ -1582,6 +1583,7 @@ public enum MsgContent {
             case let .text(text): return text
             case let .link(text, _): return text
             case let .image(text, _): return text
+            case let .voice(text, _): return text
             case let .file(text): return text
             case let .unknown(_, text): return text
             }
@@ -1609,6 +1611,7 @@ public enum MsgContent {
         case text
         case preview
         case image
+        case duration
     }
 }
 
@@ -1629,6 +1632,10 @@ extension MsgContent: Decodable {
                 let text = try container.decode(String.self, forKey: CodingKeys.text)
                 let image = try container.decode(String.self, forKey: CodingKeys.image)
                 self = .image(text: text, image: image)
+            case "voice":
+                let text = try container.decode(String.self, forKey: CodingKeys.text)
+                let duration = try container.decode(Int.self, forKey: CodingKeys.duration)
+                self = .voice(text: text, duration: duration)
             case "file":
                 let text = try container.decode(String.self, forKey: CodingKeys.text)
                 self = .file(text)
@@ -1657,6 +1664,10 @@ extension MsgContent: Encodable {
             try container.encode("image", forKey: .type)
             try container.encode(text, forKey: .text)
             try container.encode(image, forKey: .image)
+        case let .voice(text, duration):
+            try container.encode("voice", forKey: .type)
+            try container.encode(text, forKey: .text)
+            try container.encode(duration, forKey: .duration)
         case let .file(text):
             try container.encode("file", forKey: .type)
             try container.encode(text, forKey: .text)

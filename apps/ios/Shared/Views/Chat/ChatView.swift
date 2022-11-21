@@ -421,7 +421,7 @@ struct ChatView: View {
                     image: UIImage(systemName: "arrowshape.turn.up.left")
                 ) { _ in
                     withAnimation {
-                        if composeState.editing() {
+                        if composeState.editing {
                             composeState = ComposeState(contextItem: .quotedItem(chatItem: ci))
                         } else {
                             composeState = composeState.copy(contextItem: .quotedItem(chatItem: ci))
