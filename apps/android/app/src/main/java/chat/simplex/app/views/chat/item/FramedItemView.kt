@@ -105,6 +105,14 @@ fun FramedItemView(
     }
   }
 
+  @Composable
+  fun ciFileView(ci: ChatItem, text: String) {
+    CIFileView(ci.file, ci.meta.itemEdited, receiveFile)
+    if (text != "") {
+      CIMarkdownText(ci, showMember, uriHandler)
+    }
+  }
+
   val transparentBackground = ci.content.msgContent is MsgContent.MCImage && ci.content.text.isEmpty() && ci.quotedItem == null
   Box(Modifier
     .clip(RoundedCornerShape(18.dp))
@@ -142,12 +150,13 @@ fun FramedItemView(
                   CIMarkdownText(ci, showMember, uriHandler)
                 }
               }
-              is MsgContent.MCFile -> {
-                CIFileView(ci.file, ci.meta.itemEdited, receiveFile)
-                if (mc.text != "") {
-                  CIMarkdownText(ci, showMember, uriHandler)
+              is MsgContent.MCFile -> ciFileView(ci, mc.text)
+              is MsgContent.MCUnknown ->
+                if (ci.file == null) {
+                  CIMarkdownText(ci, showMember, uriHandler, onLinkLongClick)
+                } else {
+                  ciFileView(ci, mc.text)
                 }
-              }
               is MsgContent.MCLink -> {
                 ChatItemLinkView(mc.preview)
                 CIMarkdownText(ci, showMember, uriHandler, onLinkLongClick)
