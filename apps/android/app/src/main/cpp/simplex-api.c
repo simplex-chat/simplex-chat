@@ -29,6 +29,7 @@ extern char *chat_send_cmd(chat_ctrl ctrl, const char *cmd);
 extern char *chat_recv_msg(chat_ctrl ctrl); // deprecated
 extern char *chat_recv_msg_wait(chat_ctrl ctrl, const int wait);
 extern char *chat_parse_markdown(const char *str);
+extern char *chat_parse_server(const char *str);
 
 JNIEXPORT jobjectArray JNICALL
 Java_chat_simplex_app_SimplexAppKt_chatMigrateInit(JNIEnv *env, __unused jclass clazz, jstring dbPath, jstring dbKey) {
@@ -73,6 +74,14 @@ JNIEXPORT jstring JNICALL
 Java_chat_simplex_app_SimplexAppKt_chatParseMarkdown(JNIEnv *env, __unused jclass clazz, jstring str) {
     const char *_str = (*env)->GetStringUTFChars(env, str, JNI_FALSE);
     jstring res = (*env)->NewStringUTF(env, chat_parse_markdown(_str));
+    (*env)->ReleaseStringUTFChars(env, str, _str);
+    return res;
+}
+
+JNIEXPORT jstring JNICALL
+Java_chat_simplex_app_SimplexAppKt_chatParseServer(JNIEnv *env, __unused jclass clazz, jstring str) {
+    const char *_str = (*env)->GetStringUTFChars(env, str, JNI_FALSE);
+    jstring res = (*env)->NewStringUTF(env, chat_parse_server(_str));
     (*env)->ReleaseStringUTFChars(env, str, _str);
     return res;
 }
