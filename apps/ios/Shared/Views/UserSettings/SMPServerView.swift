@@ -10,13 +10,46 @@ import SwiftUI
 import SimpleXChat
 
 struct SMPServerView: View {
-    @State var server: ServerCfg
+    @Environment(\.dismiss) var dismiss: DismissAction
+    @Binding var server: ServerCfg
+    @State var serverToEdit: ServerCfg
+    @State private var showTestFailure = false
+    @State private var testing = false
+    @State private var testFailure: SMPTestFailure?
 
     var body: some View {
-        if server.preset {
-            presetServer()
-        } else {
-            customServer()
+        ZStack {
+            if server.preset {
+                presetServer()
+            } else {
+                customServer()
+            }
+            if testing {
+                ProgressView().scaleEffect(2)
+            }
+        }
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button {
+                    server = serverToEdit
+                    dismiss()
+                } label: {
+                    HStack {
+                        Image(systemName: "chevron.left")
+                        Text("Your SMP servers")
+                    }
+                }
+            }
+        }
+        .alert(isPresented: $showTestFailure) {
+            Alert(
+                title: Text("Server test failed!"),
+                message: Text(testFailure?.localizedDescription ?? "")
+            )
+        }
+        .onChange(of: serverToEdit.server) { _ in
+            serverToEdit.tested = serverToEdit.server == server.server ? server.tested : nil
         }
     }
 
@@ -24,47 +57,66 @@ struct SMPServerView: View {
         return VStack {
             List {
                 Section("Preset server address") {
-                    Text(server.server)
+                    Text(serverToEdit.server)
+                        .textSelection(.enabled)
                 }
-                useServerSection()
+                useServerSection(true)
             }
         }
     }
 
     private func customServer() -> some View {
         VStack {
+            let valid = parseServerAddress(serverToEdit.server)?.valid == true
             List {
-                Section("Your server address") {
-                    TextEditor(text: $server.server)
+                Section {
+                    TextEditor(text: $serverToEdit.server)
                         .multilineTextAlignment(.leading)
                         .autocorrectionDisabled(true)
                         .autocapitalization(.none)
+                        .allowsTightening(true)
                         .lineLimit(10)
-                        .frame(height: 108)
+                        .frame(height: 144)
                         .padding(-6)
+                } header: {
+                    HStack {
+                        Text("Your server address")
+                        if !valid {
+                            Spacer()
+                            Image(systemName: "exclamationmark.circle").foregroundColor(.red)
+                        }
+                    }
                 }
-                useServerSection()
-                Section("Add to another device") {
-                    QRCode(uri: server.server)
-                        .listRowInsets(EdgeInsets(top: 12, leading: 12, bottom: 12, trailing: 12))
+                useServerSection(valid)
+                if valid {
+                    Section("Add to another device") {
+                        MutableQRCode(uri: $serverToEdit.server)
+                            .listRowInsets(EdgeInsets(top: 12, leading: 12, bottom: 12, trailing: 12))
+                    }
                 }
             }
         }
     }
 
-    private func useServerSection() -> some View {
+    private func useServerSection(_ valid: Bool) -> some View {
         Section("Use server") {
             HStack {
                 Button("Test server") {
-                    Task { await testServerConnection(server: $server) }
+                    testing = true
+                    serverToEdit.tested = nil
+                    Task {
+                        if let f = await testServerConnection(server: $serverToEdit) {
+                            showTestFailure = true
+                            testFailure = f
+                        }
+                        await MainActor.run { testing = false }
+                    }
                 }
+                .disabled(!valid || testing)
                 Spacer()
-                showTestStatus(server: server)
+                showTestStatus(server: serverToEdit)
             }
-            Toggle("Enabled", isOn: $server.enabled)
-            Button("Remove server", role: .destructive) {
-
-            }
+            Toggle("Use for new connections", isOn: $serverToEdit.enabled)
         }
     }
 }
@@ -82,24 +134,33 @@ struct SMPServerView: View {
     }
 }
 
-func testServerConnection(server: Binding<ServerCfg>) async {
+func testServerConnection(server: Binding<ServerCfg>) async -> SMPTestFailure? {
     do {
         let r = try await testSMPServer(smpServer: server.wrappedValue.server)
-        await MainActor.run {
+
             switch r {
-            case .success: server.wrappedValue.tested = true
-            case .failure: server.wrappedValue.tested = false
+            case .success:
+                await MainActor.run { server.wrappedValue.tested = true }
+                return nil
+            case let .failure(f):
+                await MainActor.run { server.wrappedValue.tested = false }
+                return f
             }
-        }
     } catch let error {
+        logger.error("testServerConnection \(responseError(error))")
         await MainActor.run {
             server.wrappedValue.tested = false
         }
+        return nil
     }
+}
+
+func serverHostname(_ srv: ServerCfg) -> String {
+    parseServerAddress(srv.server)?.hostnames.first ?? srv.server
 }
 
 struct SMPServerView_Previews: PreviewProvider {
     static var previews: some View {
-        SMPServerView(server: ServerCfg.sampleData.custom)
+        SMPServerView(server: Binding.constant(ServerCfg.sampleData.custom), serverToEdit: ServerCfg.sampleData.custom)
     }
 }

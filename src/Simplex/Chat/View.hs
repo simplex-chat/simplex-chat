@@ -645,7 +645,7 @@ viewSMPTestResult :: Maybe SMPTestFailure -> [StyledString]
 viewSMPTestResult = \case
   Just SMPTestFailure {testStep, testError} ->
     result
-      <> ["Server requires authentication to create queues, check password" | testStep == TSCreateQueue && testError == SMP SMP.AUTH]
+      <> ["Server requires authorization to create queues, check password" | testStep == TSCreateQueue && testError == SMP SMP.AUTH]
       <> ["Possibly, certificate fingerprint in server address is incorrect" | testStep == TSConnect && testError == BROKER NETWORK]
     where
       result = ["SMP server test failed at " <> plain (drop 2 $ show testStep) <> ", error: " <> plain (strEncode testError)]
