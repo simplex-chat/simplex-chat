@@ -13,42 +13,44 @@ struct SMPServerView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @Binding var server: ServerCfg
     @State var serverToEdit: ServerCfg
-    @State var showTestFailure = false
-    @State var testFailure: SMPTestFailure?
+    @State private var showTestFailure = false
+    @State private var testing = false
+    @State private var testFailure: SMPTestFailure?
 
     var body: some View {
-        smpServerView()
-            .navigationBarBackButtonHidden(true)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button {
-                        if serverToEdit.server != server.server {
-                            print("serverToEdit.tested = nil")
-                            serverToEdit.tested = nil
-                        }
-                        server = serverToEdit
-                        dismiss()
-                    } label: {
-                        HStack {
-                            Image(systemName: "chevron.left")
-                            Text("Your SMP servers")
-                        }
+        ZStack {
+            if server.preset {
+                presetServer()
+            } else {
+                customServer()
+            }
+            if testing {
+                ProgressView().scaleEffect(2)
+            }
+        }
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button {
+                    if serverToEdit.server != server.server {
+                        print("serverToEdit.tested = nil")
+                        serverToEdit.tested = nil
+                    }
+                    server = serverToEdit
+                    dismiss()
+                } label: {
+                    HStack {
+                        Image(systemName: "chevron.left")
+                        Text("Your SMP servers")
                     }
                 }
             }
-            .alert(isPresented: $showTestFailure) {
-                Alert(
-                    title: Text("Server test failed!"),
-                    message: Text(testFailure?.localizedDescription ?? "")
-                )
-            }
-    }
-
-    @ViewBuilder private func smpServerView() -> some View {
-        if server.preset {
-            presetServer()
-        } else {
-            customServer()
+        }
+        .alert(isPresented: $showTestFailure) {
+            Alert(
+                title: Text("Server test failed!"),
+                message: Text(testFailure?.localizedDescription ?? "")
+            )
         }
     }
 
@@ -87,9 +89,11 @@ struct SMPServerView: View {
                     }
                 }
                 useServerSection(valid)
-                Section("Add to another device") {
-                    MutableQRCode(uri: $serverToEdit.server)
-                        .listRowInsets(EdgeInsets(top: 12, leading: 12, bottom: 12, trailing: 12))
+                if valid {
+                    Section("Add to another device") {
+                        MutableQRCode(uri: $serverToEdit.server)
+                            .listRowInsets(EdgeInsets(top: 12, leading: 12, bottom: 12, trailing: 12))
+                    }
                 }
             }
         }
@@ -99,14 +103,17 @@ struct SMPServerView: View {
         Section("Use server") {
             HStack {
                 Button("Test server") {
+                    testing = true
+                    serverToEdit.tested = nil
                     Task {
                         if let f = await testServerConnection(server: $serverToEdit) {
                             showTestFailure = true
                             testFailure = f
                         }
+                        await MainActor.run { testing = false }
                     }
                 }
-                .disabled(!valid)
+                .disabled(!valid || testing)
                 Spacer()
                 showTestStatus(server: serverToEdit)
             }
