@@ -434,7 +434,6 @@ struct ComposeView: View {
                 quotedItemId: quoted,
                 msg: mc
             ) {
-                print(chatItem)
                 await MainActor.run {
                     chatModel.addChatItem(chat.chatInfo, chatItem)
                 }

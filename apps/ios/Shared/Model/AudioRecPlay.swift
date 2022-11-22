@@ -34,8 +34,8 @@ class AudioRecorder {
         do {
             try av.setCategory(AVAudioSession.Category.playAndRecord, options: .defaultToSpeaker)
             try av.setActive(true)
-            let settings = [
-                AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
+            let settings: [String : Any] = [
+                AVFormatIDKey: kAudioFormatMPEG4AAC,
                 AVSampleRateKey: 12000,
                 AVEncoderBitRateKey: 12000,
                 AVNumberOfChannelsKey: 1
