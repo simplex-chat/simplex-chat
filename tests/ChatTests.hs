@@ -2844,11 +2844,15 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     alice ##> "/_set prefs @2 {}"
     alice <## "your preferences for bob did not change"
     (bob </)
+    alice #$> ("/_get chat @2 count=100", chat, chatFeatures)
+    bob #$> ("/_get chat @2 count=100", chat, chatFeatures)
     alice ##> "/_set prefs @2 {\"fullDelete\": {\"allow\": \"always\"}}"
     alice <## "you updated preferences for bob:"
     alice <## "full message deletion: enabled for contact (you allow: always, contact allows: no)"
+    alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Full deletion: enabled for contact")])
     bob <## "alice updated preferences for you:"
     bob <## "full message deletion: enabled for you (you allow: default (no), contact allows: always)"
+    bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Full deletion: enabled for you")])
     (bob </)
     alice ##> "/_profile {\"displayName\": \"alice\", \"fullName\": \"\", \"preferences\": {\"fullDelete\": {\"allow\": \"no\"}}}"
     alice <## "user full name removed (your contacts are notified)"
@@ -2856,57 +2860,79 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     alice ##> "/_set prefs @2 {\"fullDelete\": {\"allow\": \"yes\"}}"
     alice <## "you updated preferences for bob:"
     alice <## "full message deletion: off (you allow: yes, contact allows: no)"
+    alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Full deletion: enabled for contact"), (1, "Full deletion: off")])
     bob <## "alice updated preferences for you:"
     bob <## "full message deletion: off (you allow: default (no), contact allows: yes)"
+    bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Full deletion: enabled for you"), (0, "Full deletion: off")])
     (bob </)
     bob ##> "/_profile {\"displayName\": \"bob\", \"fullName\": \"\", \"preferences\": {\"fullDelete\": {\"allow\": \"yes\"}}}"
     bob <## "user full name removed (your contacts are notified)"
     bob <## "updated preferences:"
     bob <## "full message deletion allowed: yes"
+    bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Full deletion: enabled for you"), (0, "Full deletion: off"), (1, "Full deletion: enabled")])
     alice <## "contact bob removed full name"
     alice <## "bob updated preferences for you:"
     alice <## "full message deletion: enabled (you allow: yes, contact allows: yes)"
+    alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Full deletion: enabled for contact"), (1, "Full deletion: off"), (0, "Full deletion: enabled")])
     (alice </)
     bob ##> "/_set prefs @2 {}"
     bob <## "your preferences for alice did not change"
+    -- no change
+    bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Full deletion: enabled for you"), (0, "Full deletion: off"), (1, "Full deletion: enabled")])
     (alice </)
     alice ##> "/_set prefs @2 {\"fullDelete\": {\"allow\": \"no\"}}"
     alice <## "you updated preferences for bob:"
     alice <## "full message deletion: off (you allow: no, contact allows: yes)"
+    alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Full deletion: enabled for contact"), (1, "Full deletion: off"), (0, "Full deletion: enabled"), (1, "Full deletion: off")])
     bob <## "alice updated preferences for you:"
     bob <## "full message deletion: off (you allow: default (yes), contact allows: no)"
+    bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Full deletion: enabled for you"), (0, "Full deletion: off"), (1, "Full deletion: enabled"), (0, "Full deletion: off")])
 
 testUpdateGroupPrefs :: IO ()
 testUpdateGroupPrefs =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       createGroup2 "team" alice bob
+      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected")])
+      bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected")])
+      threadDelay 1000000
       alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"on\"}}}"
       alice <## "updated group preferences:"
       alice <## "full message deletion enabled: on"
+      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Full deletion: on")])
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
       bob <## "full message deletion enabled: on"
+      bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Full deletion: on")])
       alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"off\"}}}"
       alice <## "updated group preferences:"
       alice <## "full message deletion enabled: off"
       alice <## "voice messages enabled: off"
+      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off")])
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
       bob <## "full message deletion enabled: off"
       bob <## "voice messages enabled: off"
+      bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Full deletion: on"), (0, "Full deletion: off"), (0, "Voice messages: off")])
       alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"on\"}}}"
       alice <## "updated group preferences:"
       alice <## "voice messages enabled: on"
+      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on")])
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
       bob <## "voice messages enabled: on"
+      bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Full deletion: on"), (0, "Full deletion: off"), (0, "Voice messages: off"), (0, "Voice messages: on")])
       alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"on\"}}}"
       -- no update
+      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on")])
+      threadDelay 1000000
       alice #> "#team hey"
       bob <# "#team alice> hey"
+      threadDelay 1000000
       bob #> "#team hi"
       alice <# "#team bob> hi"
+      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on"), (1, "hey"), (0, "hi")])
+      bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Full deletion: on"), (0, "Full deletion: off"), (0, "Voice messages: off"), (0, "Voice messages: on"), (0, "hey"), (1, "hi")])
 
 testGetSetSMPServers :: IO ()
 testGetSetSMPServers =
