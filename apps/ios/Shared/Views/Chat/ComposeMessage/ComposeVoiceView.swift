@@ -141,7 +141,10 @@ struct ComposeVoiceView: View {
     private func startPlayback() {
         audioPlayer = AudioPlayer(
             onTimer: { playbackTime = $0 },
-            onFinishPlayback: { playbackState = .noPlayback }
+            onFinishPlayback: {
+                playbackState = .noPlayback
+                playbackTime = recordingTime // animate progress bar to the end
+            }
         )
         audioPlayer?.start(fileName: recordingFileName)
         playbackTime = TimeInterval(0)
