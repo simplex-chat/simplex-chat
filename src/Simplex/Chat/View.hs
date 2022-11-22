@@ -745,7 +745,7 @@ viewContactPreferences user ct ct' cups =
 viewContactPref :: FullPreferences -> FullPreferences -> Maybe Preferences -> ContactUserPreferences -> ChatFeature -> Maybe StyledString
 viewContactPref userPrefs userPrefs' ctPrefs cups pt
   | userPref == userPref' && ctPref == contactPreference = Nothing
-  | otherwise = Just $ plain (chatPrefName pt) <> ": " <> viewPrefEnabled enabled <> " (you allow: " <> viewCountactUserPref userPreference <> ", contact allows: " <> viewPreference contactPreference <> ")"
+  | otherwise = Just $ plain (chatPrefName pt) <> ": " <> plain (prefEnabledToText enabled) <> " (you allow: " <> viewCountactUserPref userPreference <> ", contact allows: " <> viewPreference contactPreference <> ")"
   where
     userPref = getPreference pt userPrefs
     userPref' = getPreference pt userPrefs'
@@ -775,13 +775,6 @@ viewCountactUserPref :: ContactUserPref -> StyledString
 viewCountactUserPref = \case
   CUPUser p -> "default (" <> viewPreference p <> ")"
   CUPContact p -> viewPreference p
-
-viewPrefEnabled :: PrefEnabled -> StyledString
-viewPrefEnabled = \case
-  PrefEnabled True True -> "enabled"
-  PrefEnabled False False -> "off"
-  PrefEnabled {forUser = True, forContact = False} -> "enabled for you"
-  PrefEnabled {forUser = False, forContact = True} -> "enabled for contact"
 
 viewGroupUpdated :: GroupInfo -> GroupInfo -> Maybe GroupMember -> [StyledString]
 viewGroupUpdated
