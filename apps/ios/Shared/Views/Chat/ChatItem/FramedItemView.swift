@@ -67,6 +67,12 @@ struct FramedItemView: View {
                         } else {
                             ciMsgContentView (chatItem, showMember)
                         }
+                    case let .voice(text, duration):
+                        FramedCIVoiceView(file: chatItem.file, edited: chatItem.meta.itemEdited)
+                            .overlay(DetermineWidth())
+                        if text != "" {
+                            ciMsgContentView (chatItem, showMember)
+                        }
                     case let .file(text):
                         ciFileView(chatItem, text)
                     case let .link(_, preview):

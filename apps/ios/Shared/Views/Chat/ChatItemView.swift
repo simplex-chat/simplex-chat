@@ -40,6 +40,8 @@ struct ChatItemView: View {
     @ViewBuilder private func contentItemView() -> some View {
         if (chatItem.quotedItem == nil && chatItem.file == nil && isShortEmoji(chatItem.content.text)) {
             EmojiItemView(chatItem: chatItem)
+        } else if (chatItem.quotedItem == nil && chatItem.content.text == "" && (chatItem.content.msgContent?.isVoice ?? false)) {
+            CIVoiceView(file: chatItem.file, edited: chatItem.meta.itemEdited)
         } else {
             FramedItemView(chatInfo: chatInfo, chatItem: chatItem, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy)
         }

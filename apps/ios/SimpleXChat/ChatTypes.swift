@@ -1602,24 +1602,27 @@ public enum MsgContent {
     case unknown(type: String, text: String)
 
     public var text: String {
-        get {
-            switch self {
-            case let .text(text): return text
-            case let .link(text, _): return text
-            case let .image(text, _): return text
-            case let .voice(text, _): return text
-            case let .file(text): return text
-            case let .unknown(_, text): return text
-            }
+        switch self {
+        case let .text(text): return text
+        case let .link(text, _): return text
+        case let .image(text, _): return text
+        case let .voice(text, _): return text
+        case let .file(text): return text
+        case let .unknown(_, text): return text
+        }
+    }
+
+    public var isVoice: Bool {
+        switch self {
+        case .voice: return true
+        default: return false
         }
     }
 
     var cmdString: String {
-        get {
-            switch self {
-            case let .text(text): return "text \(text)"
-            default: return "json \(encodeJSON(self))"
-            }
+        switch self {
+        case let .text(text): return "text \(text)"
+        default: return "json \(encodeJSON(self))"
         }
     }
 
