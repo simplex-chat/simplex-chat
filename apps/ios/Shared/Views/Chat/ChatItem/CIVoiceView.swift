@@ -11,124 +11,125 @@ import SimpleXChat
 
 struct CIVoiceView: View {
     @Environment(\.colorScheme) var colorScheme
-    let file: CIFile?
-    let edited: Bool
+    var chatItem: ChatItem
+    let recordingFile: CIFile?
+    let duration: Int
+    @State var playbackState: VoiceMessagePlaybackState = .noPlayback
+    @State var playbackTime: TimeInterval?
 
     var body: some View {
-        let metaReserve = edited
-          ? "                         "
-          : "                     "
-        Button(action: fileAction) {
-            HStack(alignment: .bottom, spacing: 6) {
-                fileIndicator()
-                    .padding(.top, 5)
-                    .padding(.bottom, 3)
-                if let file = file {
-                    let prettyFileSize = ByteCountFormatter().string(fromByteCount: file.fileSize)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(file.fileName)
-                            .lineLimit(1)
-                            .multilineTextAlignment(.leading)
-                            .foregroundColor(.primary)
-                        Text(prettyFileSize + metaReserve)
-                            .font(.caption)
-                            .lineLimit(1)
-                            .multilineTextAlignment(.leading)
-                            .foregroundColor(.secondary)
-                    }
-                } else {
-                    Text(metaReserve)
-                }
-            }
-            .padding(.top, 4)
-            .padding(.bottom, 6)
-            .padding(.leading, 10)
-            .padding(.trailing, 12)
-        }
-        .disabled(file == nil || (file?.fileStatus != .rcvInvitation && file?.fileStatus != .rcvAccepted && file?.fileStatus != .rcvComplete))
-    }
-
-    func fileSizeValid() -> Bool {
-        if let file = file {
-            return file.fileSize <= maxFileSize
-        }
-        return false
-    }
-
-    func fileAction() {
-        logger.debug("CIFileView fileAction")
-        if let file = file {
-            switch (file.fileStatus) {
-            case .rcvInvitation:
-                if fileSizeValid() {
-                    Task {
-                        logger.debug("CIFileView fileAction - in .rcvInvitation, in Task")
-                        await receiveFile(fileId: file.fileId)
-                    }
-                } else {
-                    let prettyMaxFileSize = ByteCountFormatter().string(fromByteCount: maxFileSize)
-                    AlertManager.shared.showAlertMsg(
-                        title: "Large file!",
-                        message: "Your contact sent a file that is larger than currently supported maximum size (\(prettyMaxFileSize))."
-                    )
-                }
-            case .rcvAccepted:
-                AlertManager.shared.showAlertMsg(
-                    title: "Waiting for file",
-                    message: "File will be received when your contact is online, please wait or check later!"
+        let recordingTime = TimeInterval(duration)
+        VStack{
+            HStack {
+                VoiceMessagePlayer(
+                    recordingFile: recordingFile,
+                    recordingTime: recordingTime,
+                    showBackground: true,
+                    playbackState: $playbackState,
+                    playbackTime: $playbackTime
                 )
-            case .rcvComplete:
-                logger.debug("CIFileView fileAction - in .rcvComplete")
-                if let filePath = getLoadedFilePath(file){
-                    let url = URL(fileURLWithPath: filePath)
-                    showShareSheet(items: [url])
-                }
-            default: break
+                VoiceMessagePlayerTime(
+                    recordingTime: recordingTime,
+                    playbackState: $playbackState,
+                    playbackTime: $playbackTime
+                )
             }
+            CIMetaView(chatItem: chatItem)
         }
     }
+}
 
-    @ViewBuilder func fileIndicator() -> some View {
-        if let file = file {
-            switch file.fileStatus {
-            case .sndStored: fileIcon("doc.fill")
-            case .sndTransfer: ProgressView().frame(width: 30, height: 30)
-            case .sndComplete: fileIcon("doc.fill", innerIcon: "checkmark", innerIconSize: 10)
-            case .sndCancelled: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
-            case .rcvInvitation:
-                if fileSizeValid() {
-                    fileIcon("arrow.down.doc.fill", color: .accentColor)
-                } else {
-                    fileIcon("doc.fill", color: .orange, innerIcon: "exclamationmark", innerIconSize: 12)
-                }
-            case .rcvAccepted: fileIcon("doc.fill", innerIcon: "ellipsis", innerIconSize: 12)
+struct VoiceMessagePlayerTime: View {
+    var recordingTime: TimeInterval
+    @Binding var playbackState: VoiceMessagePlaybackState
+    @Binding var playbackTime: TimeInterval?
+
+    var body: some View {
+        switch playbackState {
+        case .noPlayback:
+            Text(voiceMessageTime(recordingTime))
+        case .playing:
+            Text(voiceMessageTime_(playbackTime))
+        case .paused:
+            Text(voiceMessageTime_(playbackTime))
+        }
+    }
+}
+
+struct VoiceMessagePlayer: View {
+    var recordingFile: CIFile?
+    var recordingTime: TimeInterval
+    var showBackground: Bool
+
+    @State var audioPlayer: AudioPlayer?
+    @Binding var playbackState: VoiceMessagePlaybackState
+    @Binding var playbackTime: TimeInterval?
+
+    var body: some View {
+        if let recordingFile = recordingFile {
+            switch recordingFile.fileStatus {
+            case .sndStored: playbackButton()
+            case .sndTransfer: playbackButton()
+            case .sndComplete: playbackButton()
+            case .sndCancelled: playbackButton()
+            case .rcvInvitation: ProgressView().frame(width: 30, height: 30)
+            case .rcvAccepted: ProgressView().frame(width: 30, height: 30)
             case .rcvTransfer: ProgressView().frame(width: 30, height: 30)
-            case .rcvComplete: fileIcon("doc.fill")
-            case .rcvCancelled: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
+            case .rcvComplete: playbackButton()
+            case .rcvCancelled: playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
             }
         } else {
-            fileIcon("doc.fill")
+            playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
         }
     }
 
-    func fileIcon(_ icon: String, color: Color = Color(uiColor: .tertiaryLabel), innerIcon: String? = nil, innerIconSize: CGFloat? = nil) -> some View {
-        ZStack(alignment: .center) {
-            Image(systemName: icon)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 30, height: 30)
-                .foregroundColor(color)
-            if let innerIcon = innerIcon,
-               let innerIconSize = innerIconSize {
-                Image(systemName: innerIcon)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(maxHeight: 16)
-                    .frame(width: innerIconSize, height: innerIconSize)
-                    .foregroundColor(.white)
-                    .padding(.top, 12)
+    @ViewBuilder private func playbackButton() -> some View {
+        switch playbackState {
+        case .noPlayback:
+            Button {
+                if let recordingFileName = getLoadedFileName(recordingFile) {
+                    startPlayback(recordingFileName)
+                }
+            } label: {
+                playPauseIcon("play.fill")
+            }
+        case .playing:
+            Button {
+                audioPlayer?.pause()
+                playbackState = .paused
+            } label: {
+                playPauseIcon("pause.fill")
+            }
+        case .paused:
+            Button {
+                audioPlayer?.play()
+                playbackState = .playing
+            } label: {
+                playPauseIcon("play.fill")
             }
         }
+    }
+
+    private func playPauseIcon(_ image: String, _ color: Color = .accentColor) -> some View {
+        Image(systemName: image)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: 20, height: 20)
+            .foregroundColor(color)
+            .padding(.leading, 12)
+    }
+
+    private func startPlayback(_ recordingFileName: String) {
+        audioPlayer = AudioPlayer(
+            onTimer: { playbackTime = $0 },
+            onFinishPlayback: {
+                playbackState = .noPlayback
+                playbackTime = recordingTime // animate progress bar to the end
+            }
+        )
+        audioPlayer?.start(fileName: recordingFileName)
+        playbackTime = TimeInterval(0)
+        playbackState = .playing
     }
 }
 

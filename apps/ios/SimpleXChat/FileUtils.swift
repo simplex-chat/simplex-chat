@@ -163,11 +163,18 @@ public func getAppFilePath(_ fileName: String) -> URL {
     getAppFilesDirectory().appendingPathComponent(fileName)
 }
 
-public func getLoadedFilePath(_ file: CIFile?) -> String? {
+public func getLoadedFileName(_ file: CIFile?) -> String? {
     if let file = file,
-       file.loaded,
-       let savedFile = file.filePath {
-        return getAppFilePath(savedFile).path
+       // file.loaded, // TODO backend
+       let fileName = file.filePath {
+        return fileName
+    }
+    return nil
+}
+
+public func getLoadedFilePath(_ file: CIFile?) -> String? {
+    if let fileName = getLoadedFileName(file) {
+        return getAppFilePath(fileName).path
     }
     return nil
 }

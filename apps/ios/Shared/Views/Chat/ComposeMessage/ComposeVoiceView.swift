@@ -15,6 +15,16 @@ enum VoiceMessagePlaybackState {
     case paused
 }
 
+func voiceMessageTime(_ time: TimeInterval) -> String {
+    let min = Int(time / 60)
+    let sec = Int(time.truncatingRemainder(dividingBy: 60))
+    return String(format: "%02d:%02d", min, sec)
+}
+
+func voiceMessageTime_(_ time: TimeInterval?) -> String {
+    return voiceMessageTime(time ?? TimeInterval(0))
+}
+
 struct ComposeVoiceView: View {
     @Environment(\.colorScheme) var colorScheme
     var recordingFileName: String
@@ -46,7 +56,7 @@ struct ComposeVoiceView: View {
         ZStack {
             HStack(alignment: .center, spacing: 4) {
                 playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
-                Text(formattedTime(recordingTime))
+                Text(voiceMessageTime_(recordingTime))
                 Spacer()
                 if cancelEnabled {
                     cancelButton()
@@ -68,7 +78,7 @@ struct ComposeVoiceView: View {
                     } label: {
                         playPauseIcon("play.fill")
                     }
-                    Text(formattedTime(recordingTime))
+                    Text(voiceMessageTime_(recordingTime))
                 case .playing:
                     Button {
                         audioPlayer?.pause()
@@ -76,7 +86,7 @@ struct ComposeVoiceView: View {
                     } label: {
                         playPauseIcon("pause.fill")
                     }
-                    Text(formattedTime(playbackTime))
+                    Text(voiceMessageTime_(playbackTime))
                 case .paused:
                     Button {
                         audioPlayer?.play()
@@ -84,7 +94,7 @@ struct ComposeVoiceView: View {
                     } label: {
                         playPauseIcon("play.fill")
                     }
-                    Text(formattedTime(playbackTime))
+                    Text(voiceMessageTime_(playbackTime))
                 }
                 Spacer()
                 if cancelEnabled {
@@ -106,13 +116,6 @@ struct ComposeVoiceView: View {
             .frame(width: 20, height: 20)
             .foregroundColor(color)
             .padding(.leading, 12)
-    }
-
-    private func formattedTime(_ time: TimeInterval?) -> String {
-        let t = time ?? TimeInterval(0)
-        let min = Int(t / 60)
-        let sec = Int(t.truncatingRemainder(dividingBy: 60))
-        return String(format: "%02d:%02d", min, sec)
     }
 
     private func cancelButton() -> some View {
