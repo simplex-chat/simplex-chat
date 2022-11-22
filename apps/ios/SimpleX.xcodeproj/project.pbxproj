@@ -42,6 +42,7 @@
 		5C55A923283CEDE600C4E99E /* SoundPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C55A922283CEDE600C4E99E /* SoundPlayer.swift */; };
 		5C55A92E283D0FDE00C4E99E /* sounds in Resources */ = {isa = PBXBuildFile; fileRef = 5C55A92D283D0FDE00C4E99E /* sounds */; };
 		5C577F7D27C83AA10006112D /* MarkdownHelp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C577F7C27C83AA10006112D /* MarkdownHelp.swift */; };
+		5C58BCD6292BEBE600AF9E4F /* CIChatFeatureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C58BCD5292BEBE600AF9E4F /* CIChatFeatureView.swift */; };
 		5C5DB70E289ABDD200730FFF /* AppearanceSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C5DB70D289ABDD200730FFF /* AppearanceSettings.swift */; };
 		5C5E5D3B2824468B00B0488A /* ActiveCallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C5E5D3A2824468B00B0488A /* ActiveCallView.swift */; };
 		5C5F2B6D27EBC3FE006A9D5F /* ImagePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C5F2B6C27EBC3FE006A9D5F /* ImagePicker.swift */; };
@@ -242,6 +243,7 @@
 		5C55A922283CEDE600C4E99E /* SoundPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundPlayer.swift; sourceTree = "<group>"; };
 		5C55A92D283D0FDE00C4E99E /* sounds */ = {isa = PBXFileReference; lastKnownFileType = folder; path = sounds; sourceTree = "<group>"; };
 		5C577F7C27C83AA10006112D /* MarkdownHelp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownHelp.swift; sourceTree = "<group>"; };
+		5C58BCD5292BEBE600AF9E4F /* CIChatFeatureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIChatFeatureView.swift; sourceTree = "<group>"; };
 		5C5DB70D289ABDD200730FFF /* AppearanceSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppearanceSettings.swift; sourceTree = "<group>"; };
 		5C5E5D3A2824468B00B0488A /* ActiveCallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveCallView.swift; sourceTree = "<group>"; };
 		5C5E5D3C282447AB00B0488A /* CallTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallTypes.swift; sourceTree = "<group>"; };
@@ -662,6 +664,7 @@
 				5C3F1D552842B68D00EC8A82 /* IntegrityErrorItemView.swift */,
 				64E972062881BB22008DBC02 /* CIGroupInvitationView.swift */,
 				6440C9FF288857A10062C672 /* CIEventView.swift */,
+				5C58BCD5292BEBE600AF9E4F /* CIChatFeatureView.swift */,
 			);
 			path = ChatItem;
 			sourceTree = "<group>";
@@ -950,6 +953,7 @@
 				5CFE0921282EEAF60002594B /* ZoomableScrollView.swift in Sources */,
 				5C3A88CE27DF50170060F1C2 /* DetermineWidth.swift in Sources */,
 				5C7505A527B679EE00BE3227 /* NavLinkPlain.swift in Sources */,
+				5C58BCD6292BEBE600AF9E4F /* CIChatFeatureView.swift in Sources */,
 				5CB346E72868D76D001FD2EF /* NotificationsView.swift in Sources */,
 				647F090E288EA27B00644C40 /* GroupMemberInfoView.swift in Sources */,
 				646BB38E283FDB6D001CE359 /* LocalAuthenticationUtils.swift in Sources */,

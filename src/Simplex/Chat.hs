@@ -1750,6 +1750,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
               -- [incognito] print incognito profile used for this contact
               incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
               toView $ CRContactConnected ct (fmap fromLocalProfile incognitoProfile)
+              createFeatureEnabledItems ct
               setActive $ ActiveC c
               showToast (c <> "> ") "connected"
               forM_ groupLinkId $ \_ -> probeMatchingContacts ct $ contactConnIncognito ct
@@ -2483,6 +2484,23 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
     xInfo c@Contact {profile = p} p' = unless (fromLocalProfile p == p') $ do
       c' <- withStore $ \db -> updateContactProfile db user c p'
       toView $ CRContactUpdated c c'
+      createFeatureChangedItems c'
+      where
+        createFeatureChangedItems c' = unless (preferences' c == preferences' c') $ do
+          let cups = contactUserPreferences' user c
+              cups' = contactUserPreferences' user c'
+          forM_ allChatFeatures $ \f -> do
+            let ContactUserPreference {enabled} = getContactUserPreference f cups
+                ContactUserPreference {enabled = enabled'} = getContactUserPreference f cups'
+            unless (enabled == enabled') $
+              createInternalChatItem (CDDirectRcv c') (CIRcvChatFeature f enabled') Nothing
+
+    createFeatureEnabledItems :: Contact -> m ()
+    createFeatureEnabledItems ct = do
+      let cups = contactUserPreferences' user ct
+      forM_ allChatFeatures $ \f -> do
+        let ContactUserPreference {enabled} = getContactUserPreference f cups
+        createInternalChatItem (CDDirectRcv ct) (CIRcvChatFeature f enabled) Nothing
 
     xInfoProbe :: Contact -> Probe -> m ()
     xInfoProbe c2 probe =
