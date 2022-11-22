@@ -70,6 +70,14 @@
     <string name="error_deleting_contact_request">Ошибка удаления запроса</string>
     <string name="error_deleting_pending_contact_connection">Ошибка удаления ожидаемого соединения</string>
     <string name="error_changing_address">Ошибка при изменении адреса</string>
+    <string name="error_smp_test_failed_at_step">Ошибка теста на шаге %s.</string>
+    <string name="error_smp_test_server_auth">Сервер требует авторизации для создания очередей, проверьте пароль</string>
+    <string name="error_smp_test_certificate">Возможно, хэш сертификата в адресе сервера неверный</string>
+    <string name="smp_server_test_connect">Соединение</string>
+    <string name="smp_server_test_create_queue">Создание очереди</string>
+    <string name="smp_server_test_secure_queue">Защита очереди</string>
+    <string name="smp_server_test_delete_queue">Удаление очереди</string>
+    <string name="smp_server_test_disconnect">Разрыв соединения</string>
 
     <!-- background service notice - SimpleXAPI.kt -->
     <string name="icon_descr_instant_notifications">Мгновенные уведомления</string>
@@ -235,6 +243,7 @@
     <string name="back">Назад</string>
     <string name="cancel_verb">Отменить</string>
     <string name="confirm_verb">Подтвердить</string>
+    <string name="reset_verb">Сбросить</string>
     <string name="ok">OK</string>
     <string name="no_details">нет описания</string>
     <string name="add_contact">Одноразовая ссылка</string>
@@ -365,17 +374,32 @@
     <string name="chat_lock">Блокировка SimpleX</string>
     <string name="chat_console">Консоль</string>
     <string name="smp_servers">SMP серверы</string>
+    <string name="smp_servers_preset_address">Адрес сервера по умолчанию</string>
+    <string name="smp_servers_preset_add">Добавить серверы по умолчанию</string>
+    <string name="smp_servers_add">Добавить сервер…</string>
+    <string name="smp_servers_test_server">Тестировать сервер</string>
+    <string name="smp_servers_test_servers">Тестировать серверы</string>
+    <string name="smp_servers_save">Сохранить серверы</string>
+    <string name="smp_servers_test_failed">Ошибка теста сервера!</string>
+    <string name="smp_servers_test_some_failed">Серверы не прошли тест:</string>
+    <string name="smp_servers_scan_qr">Сканировать QR код сервера</string>
+    <string name="smp_servers_enter_manually">Ввести сервер вручную</string>
+    <string name="smp_servers_your_server">Ваш сервер</string>
+    <string name="smp_servers_your_server_address">Адрес вашего сервера</string>
+    <string name="smp_servers_use_server">Использовать сервер</string>
+    <string name="smp_servers_use_server_for_new_conn">Использовать для новых соединений</string>
+    <string name="smp_servers_add_to_another_device">Добавить на другое устройство</string>
+    <string name="smp_servers_invalid_address">Ошибка в адресе сервера!</string>
+    <string name="smp_servers_check_address">Проверьте адрес сервера и попробуйте снова.</string>
     <string name="install_simplex_chat_for_terminal"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> для терминала</string>
     <string name="star_on_github">Поставить звездочку в GitHub</string>
     <string name="contribute">Внести свой вклад</string>
     <string name="rate_the_app">Оценить приложение</string>
     <string name="use_simplex_chat_servers__question">Использовать серверы предосталенные <xliff:g id="appNameFull">SimpleX Chat</xliff:g>?</string>
-    <string name="saved_SMP_servers_will_be_removed">Сохраненные SMP серверы будут удалены.</string>
     <string name="your_SMP_servers">Ваши SMP серверы</string>
-    <string name="configure_SMP_servers">Настройка SMP серверов</string>
     <string name="using_simplex_chat_servers">Используются серверы предоставленные <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.</string>
-    <string name="enter_one_SMP_server_per_line">Введите SMP серверы, каждый сервер в отдельной строке:</string>
     <string name="how_to">Инфо</string>
+    <string name="how_to_use_your_servers">Как использовать серверы</string>
     <string name="saved_ICE_servers_will_be_removed">Сохраненные WebRTC ICE серверы будут удалены.</string>
     <string name="your_ICE_servers">Ваши ICE серверы</string>
     <string name="configure_ICE_servers">Настройка ICE серверов</string>

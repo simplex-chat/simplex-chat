@@ -34,7 +34,7 @@ import kotlinx.datetime.Instant
 import kotlinx.serialization.*
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
-import kotlin.concurrent.thread
+import java.util.Date
 
 typealias ChatCtrl = Long
 
@@ -235,7 +235,9 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         apiSetFilesFolder(getAppFilesDirectory(appContext))
         apiSetIncognito(chatModel.incognito.value)
         chatModel.userAddress.value = apiGetUserAddress()
-        chatModel.userSMPServers.value = getUserSMPServers()
+        val smpServers = getUserSMPServers()
+        chatModel.userSMPServers.value = smpServers?.first
+        chatModel.presetSMPServers.value = smpServers?.second
         chatModel.chatItemTTL.value = getChatItemTTL()
         val chats = apiGetChats()
         chatModel.updateChats(chats)
@@ -425,14 +427,14 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return null
   }
 
-  private suspend fun getUserSMPServers(): List<String>? {
+  private suspend fun getUserSMPServers(): Pair<List<ServerCfg>, List<String>>? {
     val r = sendCmd(CC.GetUserSMPServers())
-    if (r is CR.UserSMPServers) return r.smpServers
+    if (r is CR.UserSMPServers) return r.smpServers to r.presetSMPServers
     Log.e(TAG, "getUserSMPServers bad response: ${r.responseType} ${r.details}")
     return null
   }
 
-  suspend fun setUserSMPServers(smpServers: List<String>): Boolean {
+  suspend fun setUserSMPServers(smpServers: List<ServerCfg>): Boolean {
     val r = sendCmd(CC.SetUserSMPServers(smpServers))
     return when (r) {
       is CR.CmdOk -> true
@@ -443,6 +445,17 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
           generalGetString(R.string.ensure_smp_server_address_are_correct_format_and_unique)
         )
         false
+      }
+    }
+  }
+
+  suspend fun testSMPServer(smpServer: String): SMPTestFailure? {
+    val r = sendCmd(CC.TestSMPServer(smpServer))
+    return when (r) {
+      is CR.SmpTestResult -> r.smpTestFailure
+      else -> {
+        Log.e(TAG, "testSMPServer bad response: ${r.responseType} ${r.details}")
+        throw Exception("testSMPServer bad response: ${r.responseType} ${r.details}")
       }
     }
   }
@@ -1465,7 +1478,8 @@ sealed class CC {
   class APIDeleteGroupLink(val groupId: Long): CC()
   class APIGetGroupLink(val groupId: Long): CC()
   class GetUserSMPServers: CC()
-  class SetUserSMPServers(val smpServers: List<String>): CC()
+  class SetUserSMPServers(val smpServers: List<ServerCfg>): CC()
+  class TestSMPServer(val smpServer: String): CC()
   class APISetChatItemTTL(val seconds: Long?): CC()
   class APIGetChatItemTTL: CC()
   class APISetNetworkConfig(val networkConfig: NetCfg): CC()
@@ -1530,8 +1544,9 @@ sealed class CC {
     is APICreateGroupLink -> "/_create link #$groupId"
     is APIDeleteGroupLink -> "/_delete link #$groupId"
     is APIGetGroupLink -> "/_get link #$groupId"
-    is GetUserSMPServers -> "/smp_servers"
-    is SetUserSMPServers -> "/smp_servers ${smpServersStr(smpServers)}"
+    is GetUserSMPServers -> "/smp"
+    is SetUserSMPServers -> "/_smp ${smpServersStr(smpServers)}"
+    is TestSMPServer -> "/smp test $smpServer"
     is APISetChatItemTTL -> "/_ttl ${chatItemTTLStr(seconds)}"
     is APIGetChatItemTTL -> "/ttl"
     is APISetNetworkConfig -> "/_network ${json.encodeToString(networkConfig)}"
@@ -1599,6 +1614,7 @@ sealed class CC {
     is APIGetGroupLink -> "apiGetGroupLink"
     is GetUserSMPServers -> "getUserSMPServers"
     is SetUserSMPServers -> "setUserSMPServers"
+    is TestSMPServer -> "testSMPServer"
     is APISetChatItemTTL -> "apiSetChatItemTTL"
     is APIGetChatItemTTL -> "apiGetChatItemTTL"
     is APISetNetworkConfig -> "/apiSetNetworkConfig"
@@ -1656,7 +1672,7 @@ sealed class CC {
   companion object {
     fun chatRef(chatType: ChatType, id: Long) = "${chatType.type}${id}"
 
-    fun smpServersStr(smpServers: List<String>) = if (smpServers.isEmpty()) "default" else smpServers.joinToString(separator = ";")
+    fun smpServersStr(smpServers: List<ServerCfg>) = if (smpServers.isEmpty()) "default" else json.encodeToString(SMPServersConfig(smpServers))
   }
 }
 
@@ -1686,6 +1702,147 @@ class ArchiveConfig(val archivePath: String, val disableCompression: Boolean? = 
 
 @Serializable
 class DBEncryptionConfig(val currentKey: String, val newKey: String)
+
+@Serializable
+data class SMPServersConfig(
+  val smpServers: List<ServerCfg>
+)
+
+@Serializable
+data class ServerCfg(
+  val server: String,
+  val preset: Boolean,
+  val tested: Boolean? = null,
+  val enabled: Boolean
+) {
+  @Transient
+  private val createdAt: Date = Date()
+  // val sendEnabled: Boolean // can we potentially want to prevent sending on the servers we use to receive?
+  // Even if we don't see the use case, it's probably better to allow it in the model
+  // In any case, "trusted/known" servers are out of scope of this change
+  val id: String
+    get() = "$server $createdAt"
+
+  val isBlank: Boolean
+    get() = server.isBlank()
+
+  companion object {
+    val empty = ServerCfg(server = "", preset = false, tested = null, enabled = true)
+
+    class SampleData(
+      val preset: ServerCfg,
+      val custom: ServerCfg,
+      val untested: ServerCfg
+    )
+
+    val sampleData = SampleData(
+      preset = ServerCfg(
+        server = "smp://abcd@smp8.simplex.im",
+        preset = true,
+        tested = true,
+        enabled = true
+      ),
+      custom = ServerCfg(
+        server = "smp://abcd@smp9.simplex.im",
+        preset = false,
+        tested = false,
+        enabled = false
+      ),
+      untested = ServerCfg(
+        server = "smp://abcd@smp10.simplex.im",
+        preset = false,
+        tested = null,
+        enabled = true
+      )
+    )
+  }
+}
+
+@Serializable
+enum class SMPTestStep {
+  @SerialName("connect") Connect,
+  @SerialName("createQueue") CreateQueue,
+  @SerialName("secureQueue") SecureQueue,
+  @SerialName("deleteQueue") DeleteQueue,
+  @SerialName("disconnect") Disconnect;
+
+  val text: String get() = when (this) {
+    Connect -> generalGetString(R.string.smp_server_test_connect)
+    CreateQueue -> generalGetString(R.string.smp_server_test_create_queue)
+    SecureQueue -> generalGetString(R.string.smp_server_test_secure_queue)
+    DeleteQueue -> generalGetString(R.string.smp_server_test_delete_queue)
+    Disconnect -> generalGetString(R.string.smp_server_test_disconnect)
+  }
+}
+
+@Serializable
+data class SMPTestFailure(
+  val testStep: SMPTestStep,
+  val testError: AgentErrorType
+) {
+  override fun equals(other: Any?): Boolean {
+    if (other !is SMPTestFailure) return false
+    return other.testStep == this.testStep
+  }
+
+  override fun hashCode(): Int {
+    return testStep.hashCode()
+  }
+
+  val localizedDescription: String get() {
+    val err = String.format(generalGetString(R.string.error_smp_test_failed_at_step), testStep.text)
+    return when  {
+      testError is AgentErrorType.SMP && testError.smpErr is SMPErrorType.AUTH ->
+        err + " " + generalGetString(R.string.error_smp_test_server_auth)
+      testError is AgentErrorType.BROKER && testError.brokerErr is BrokerErrorType.NETWORK ->
+        err + " " + generalGetString(R.string.error_smp_test_certificate)
+      else -> err
+    }
+  }
+}
+
+@Serializable
+data class ServerAddress(
+  val hostnames: List<String>,
+  val port: String,
+  val keyHash: String,
+  val basicAuth: String = ""
+) {
+  val uri: String
+    get() =
+      "smp://${keyHash}${if (basicAuth.isEmpty()) "" else ":$basicAuth"}@${hostnames.joinToString(",")}"
+
+  val valid: Boolean
+    get() = hostnames.isNotEmpty() && hostnames.toSet().size == hostnames.size
+
+  companion object {
+    val empty = ServerAddress(
+      hostnames = emptyList(),
+      port = "",
+      keyHash = "",
+      basicAuth = ""
+    )
+    val sampleData = ServerAddress(
+      hostnames = listOf("smp.simplex.im", "1234.onion"),
+      port = "",
+      keyHash = "LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=",
+      basicAuth = "server_password"
+    )
+
+    fun parseServerAddress(s: String): ServerAddress? {
+      val parsed = chatParseServer(s)
+      return runCatching { json.decodeFromString(ParsedServerAddress.serializer(), parsed) }
+        .onFailure { Log.d(TAG, "parseServerAddress decode error: $it") }
+        .getOrNull()?.serverAddress
+    }
+  }
+}
+
+@Serializable
+data class ParsedServerAddress (
+  var serverAddress: ServerAddress?,
+  var parseError: String
+)
 
 @Serializable
 data class NetCfg(
@@ -1828,7 +1985,8 @@ sealed class CR {
   @Serializable @SerialName("chatStopped") class ChatStopped: CR()
   @Serializable @SerialName("apiChats") class ApiChats(val chats: List<Chat>): CR()
   @Serializable @SerialName("apiChat") class ApiChat(val chat: Chat): CR()
-  @Serializable @SerialName("userSMPServers") class UserSMPServers(val smpServers: List<String>): CR()
+  @Serializable @SerialName("userSMPServers") class UserSMPServers(val smpServers: List<ServerCfg>, val presetSMPServers: List<String>): CR()
+  @Serializable @SerialName("smpTestResult") class SmpTestResult(val smpTestFailure: SMPTestFailure? = null): CR()
   @Serializable @SerialName("chatItemTTL") class ChatItemTTL(val chatItemTTL: Long? = null): CR()
   @Serializable @SerialName("networkConfig") class NetworkConfig(val networkConfig: NetCfg): CR()
   @Serializable @SerialName("contactInfo") class ContactInfo(val contact: Contact, val connectionStats: ConnectionStats, val customUserProfile: Profile? = null): CR()
@@ -1926,6 +2084,7 @@ sealed class CR {
     is ApiChats -> "apiChats"
     is ApiChat -> "apiChat"
     is UserSMPServers -> "userSMPServers"
+    is SmpTestResult -> "smpTestResult"
     is ChatItemTTL -> "chatItemTTL"
     is NetworkConfig -> "networkConfig"
     is ContactInfo -> "contactInfo"
@@ -2020,7 +2179,8 @@ sealed class CR {
     is ChatStopped -> noDetails()
     is ApiChats -> json.encodeToString(chats)
     is ApiChat -> json.encodeToString(chat)
-    is UserSMPServers -> json.encodeToString(smpServers)
+    is UserSMPServers -> "$smpServers: ${json.encodeToString(smpServers)}\n$presetSMPServers: ${json.encodeToString(presetSMPServers)}"
+    is SmpTestResult -> json.encodeToString(smpTestFailure)
     is ChatItemTTL -> json.encodeToString(chatItemTTL)
     is NetworkConfig -> json.encodeToString(networkConfig)
     is ContactInfo -> "contact: ${json.encodeToString(contact)}\nconnectionStats: ${json.encodeToString(connectionStats)}"
