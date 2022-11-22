@@ -116,7 +116,7 @@ chatTests = do
     it "set contact alias" testSetAlias
     it "set connection alias" testSetConnectionAlias
   describe "preferences" $ do
-    it "set contact preferences" testSetContactPrefs
+    fit "set contact preferences" testSetContactPrefs
     it "update group preferences" testUpdateGroupPrefs
   describe "SMP servers" $ do
     it "get and set SMP servers" testGetSetSMPServers
@@ -2840,53 +2840,80 @@ testSetConnectionAlias = testChat2 aliceProfile bobProfile $
 testSetContactPrefs :: IO ()
 testSetContactPrefs = testChat2 aliceProfile bobProfile $
   \alice bob -> do
+    bob ##> "/_profile {\"displayName\": \"bob\", \"fullName\": \"Bob\", \"preferences\": {\"voice\": {\"allow\": \"no\"}}}"
+    bob <## "profile image removed"
+    bob <## "updated preferences:"
+    bob <## "voice messages allowed: no"
+    (bob </)
     connectUsers alice bob
     alice ##> "/_set prefs @2 {}"
     alice <## "your preferences for bob did not change"
     (bob </)
-    alice #$> ("/_get chat @2 count=100", chat, chatFeatures)
-    bob #$> ("/_get chat @2 count=100", chat, chatFeatures)
-    alice ##> "/_set prefs @2 {\"fullDelete\": {\"allow\": \"always\"}}"
+    let startFeatures = [(0, "Full deletion: off"), (0, "Voice messages: off")]
+    alice #$> ("/_get chat @2 count=100", chat, startFeatures)
+    bob #$> ("/_get chat @2 count=100", chat, startFeatures)
+    let sendVoice = "/_send @2 json {\"filePath\": \"./tests/fixtures/test.txt\", \"msgContent\": {\"type\": \"voice\", \"text\": \"\", \"duration\": 10}}"
+        voiceNotAllowed = "bad chat command: feature not allowed Voice messages"
+    alice ##> sendVoice
+    alice <## voiceNotAllowed
+    bob ##> sendVoice
+    bob <## voiceNotAllowed
+    alice ##> "/_set prefs @2 {\"voice\": {\"allow\": \"always\"}}"
     alice <## "you updated preferences for bob:"
-    alice <## "full message deletion: enabled for contact (you allow: always, contact allows: no)"
-    alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Full deletion: enabled for contact")])
+    alice <## "voice messages: enabled for contact (you allow: always, contact allows: no)"
+    alice #$> ("/_get chat @2 count=100", chat, startFeatures <> [(1, "Voice messages: enabled for contact")])
     bob <## "alice updated preferences for you:"
-    bob <## "full message deletion: enabled for you (you allow: default (no), contact allows: always)"
-    bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Full deletion: enabled for you")])
+    bob <## "voice messages: enabled for you (you allow: default (no), contact allows: always)"
+    bob #$> ("/_get chat @2 count=100", chat, startFeatures <> [(0, "Voice messages: enabled for you")])
+    alice ##> sendVoice
+    alice <## voiceNotAllowed
+    bob ##> sendVoice
+    bob <# "@alice voice message (00:10)"
+    bob <# "/f @alice ./tests/fixtures/test.txt"
+    bob <## "use /fc 1 to cancel sending"
+    alice <# "bob> voice message (00:10)"
+    alice <# "bob> sends file test.txt (11 bytes / 11 bytes)"
+    alice <## "use /fr 1 [<dir>/ | <path>] to receive it"
     (bob </)
-    alice ##> "/_profile {\"displayName\": \"alice\", \"fullName\": \"\", \"preferences\": {\"fullDelete\": {\"allow\": \"no\"}}}"
+    alice ##> "/_profile {\"displayName\": \"alice\", \"fullName\": \"\", \"preferences\": {\"voice\": {\"allow\": \"no\"}}}"
     alice <## "user full name removed (your contacts are notified)"
+    alice <## "updated preferences:"
+    alice <## "voice messages allowed: no"
+    (alice </)
     bob <## "contact alice removed full name"
-    alice ##> "/_set prefs @2 {\"fullDelete\": {\"allow\": \"yes\"}}"
-    alice <## "you updated preferences for bob:"
-    alice <## "full message deletion: off (you allow: yes, contact allows: no)"
-    alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Full deletion: enabled for contact"), (1, "Full deletion: off")])
-    bob <## "alice updated preferences for you:"
-    bob <## "full message deletion: off (you allow: default (no), contact allows: yes)"
-    bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Full deletion: enabled for you"), (0, "Full deletion: off")])
     (bob </)
-    bob ##> "/_profile {\"displayName\": \"bob\", \"fullName\": \"\", \"preferences\": {\"fullDelete\": {\"allow\": \"yes\"}}}"
+    alice ##> "/_set prefs @2 {\"voice\": {\"allow\": \"yes\"}}"
+    alice <## "you updated preferences for bob:"
+    alice <## "voice messages: off (you allow: yes, contact allows: no)"
+    alice #$> ("/_get chat @2 count=100", chat, startFeatures <> [(1, "Voice messages: enabled for contact"), (0, "voice message (00:10)"), (1, "Voice messages: off")])
+    bob <## "alice updated preferences for you:"
+    bob <## "voice messages: off (you allow: default (no), contact allows: yes)"
+    bob #$> ("/_get chat @2 count=100", chat, startFeatures <> [(0, "Voice messages: enabled for you"), (1, "voice message (00:10)"), (0, "Voice messages: off")])
+    (bob </)
+    bob ##> "/_profile {\"displayName\": \"bob\", \"fullName\": \"\", \"preferences\": {\"voice\": {\"allow\": \"yes\"}}}"
     bob <## "user full name removed (your contacts are notified)"
     bob <## "updated preferences:"
-    bob <## "full message deletion allowed: yes"
-    bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Full deletion: enabled for you"), (0, "Full deletion: off"), (1, "Full deletion: enabled")])
+    bob <## "voice messages allowed: yes"
+    bob #$> ("/_get chat @2 count=100", chat, startFeatures <> [(0, "Voice messages: enabled for you"), (1, "voice message (00:10)"), (0, "Voice messages: off"), (1, "Voice messages: enabled")])
+    (bob </)
     alice <## "contact bob removed full name"
     alice <## "bob updated preferences for you:"
-    alice <## "full message deletion: enabled (you allow: yes, contact allows: yes)"
-    alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Full deletion: enabled for contact"), (1, "Full deletion: off"), (0, "Full deletion: enabled")])
+    alice <## "voice messages: enabled (you allow: yes, contact allows: yes)"
+    alice #$> ("/_get chat @2 count=100", chat, startFeatures <> [(1, "Voice messages: enabled for contact"), (0, "voice message (00:10)"), (1, "Voice messages: off"), (0, "Voice messages: enabled")])
     (alice </)
     bob ##> "/_set prefs @2 {}"
     bob <## "your preferences for alice did not change"
     -- no change
-    bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Full deletion: enabled for you"), (0, "Full deletion: off"), (1, "Full deletion: enabled")])
+    bob #$> ("/_get chat @2 count=100", chat, startFeatures <> [(0, "Voice messages: enabled for you"), (1, "voice message (00:10)"), (0, "Voice messages: off"), (1, "Voice messages: enabled")])
+    (bob </)
     (alice </)
-    alice ##> "/_set prefs @2 {\"fullDelete\": {\"allow\": \"no\"}}"
+    alice ##> "/_set prefs @2 {\"voice\": {\"allow\": \"no\"}}"
     alice <## "you updated preferences for bob:"
-    alice <## "full message deletion: off (you allow: no, contact allows: yes)"
-    alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Full deletion: enabled for contact"), (1, "Full deletion: off"), (0, "Full deletion: enabled"), (1, "Full deletion: off")])
+    alice <## "voice messages: off (you allow: no, contact allows: yes)"
+    alice #$> ("/_get chat @2 count=100", chat, startFeatures <> [(1, "Voice messages: enabled for contact"), (0, "voice message (00:10)"), (1, "Voice messages: off"), (0, "Voice messages: enabled"), (1, "Voice messages: off")])
     bob <## "alice updated preferences for you:"
-    bob <## "full message deletion: off (you allow: default (yes), contact allows: no)"
-    bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Full deletion: enabled for you"), (0, "Full deletion: off"), (1, "Full deletion: enabled"), (0, "Full deletion: off")])
+    bob <## "voice messages: off (you allow: default (yes), contact allows: no)"
+    bob #$> ("/_get chat @2 count=100", chat, startFeatures <> [(0, "Voice messages: enabled for you"), (1, "voice message (00:10)"), (0, "Voice messages: off"), (1, "Voice messages: enabled"), (0, "Voice messages: off")])
 
 testUpdateGroupPrefs :: IO ()
 testUpdateGroupPrefs =

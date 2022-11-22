@@ -289,16 +289,19 @@ processChatCommand = \case
     CTDirect -> do
       ct@Contact {localDisplayName = c, contactUsed} <- withStore $ \db -> getContact db user chatId
       unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
-      (fileInvitation_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer ct
-      (msgContainer, quotedItem_) <- prepareMsg fileInvitation_
-      (msg@SndMessage {sharedMsgId}, _) <- sendDirectContactMessage ct (XMsgNew msgContainer)
-      case ft_ of
-        Just ft@FileTransferMeta {fileInline = Just IFMSent} ->
-          sendDirectFileInline ct ft sharedMsgId
-        _ -> pure ()
-      ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc) ciFile_ quotedItem_
-      setActive $ ActiveC c
-      pure . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
+      case featureProhibited forUser user ct mc of
+        Just f -> pure $ chatCmdError $ "feature not allowed " <> T.unpack (chatFeatureToText f)
+        _ -> do
+          (fileInvitation_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer ct
+          (msgContainer, quotedItem_) <- prepareMsg fileInvitation_
+          (msg@SndMessage {sharedMsgId}, _) <- sendDirectContactMessage ct (XMsgNew msgContainer)
+          case ft_ of
+            Just ft@FileTransferMeta {fileInline = Just IFMSent} ->
+              sendDirectFileInline ct ft sharedMsgId
+            _ -> pure ()
+          ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc) ciFile_ quotedItem_
+          setActive $ ActiveC c
+          pure . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
       where
         setupSndFileTransfer :: Contact -> m (Maybe (FileInvitation, CIFile 'MDSnd, FileTransferMeta))
         setupSndFileTransfer ct = forM file_ $ \file -> do
@@ -335,13 +338,16 @@ processChatCommand = \case
     CTGroup -> do
       Group gInfo@GroupInfo {membership, localDisplayName = gName} ms <- withStore $ \db -> getGroup db user chatId
       unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
-      (fileInvitation_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer gInfo (length ms)
-      (msgContainer, quotedItem_) <- prepareMsg fileInvitation_ membership
-      msg@SndMessage {sharedMsgId} <- sendGroupMessage gInfo ms (XMsgNew msgContainer)
-      mapM_ (sendGroupFileInline ms sharedMsgId) ft_
-      ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndMsgContent mc) ciFile_ quotedItem_
-      setActive $ ActiveG gName
-      pure . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
+      case groupFeatureProhibited gInfo mc of
+        Just f -> pure $ chatCmdError $ "feature not allowed " <> T.unpack (chatFeatureToText f)
+        _ -> do
+          (fileInvitation_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer gInfo (length ms)
+          (msgContainer, quotedItem_) <- prepareMsg fileInvitation_ membership
+          msg@SndMessage {sharedMsgId} <- sendGroupMessage gInfo ms (XMsgNew msgContainer)
+          mapM_ (sendGroupFileInline ms sharedMsgId) ft_
+          ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndMsgContent mc) ciFile_ quotedItem_
+          setActive $ ActiveG gName
+          pure . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
       where
         setupSndFileTransfer :: GroupInfo -> Int -> m (Maybe (FileInvitation, CIFile 'MDSnd, FileTransferMeta))
         setupSndFileTransfer gInfo n = forM file_ $ \file -> do
@@ -2192,12 +2198,19 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
     newContentMessage ct@Contact {localDisplayName = c, contactUsed, chatSettings} mc msg msgMeta = do
       unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
-      let (ExtMsgContent content fileInvitation_) = mcExtMsgContent mc
-      ciFile_ <- processFileInvitation fileInvitation_ $ \db -> createRcvFileTransfer db userId ct
-      ci@ChatItem {formattedText} <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta (CIRcvMsgContent content) ciFile_
-      toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
-      when (enableNtfs chatSettings) $ showMsgToast (c <> "> ") content formattedText
+      let ExtMsgContent content fileInvitation_ = mcExtMsgContent mc
+      case featureProhibited forContact user ct content of
+        Just f -> void $ newChatItem (CIRcvChatFeatureRejected f) Nothing
+        _ -> do
+          ciFile_ <- processFileInvitation fileInvitation_ $ \db -> createRcvFileTransfer db userId ct
+          ChatItem {formattedText} <- newChatItem (CIRcvMsgContent content) ciFile_
+          when (enableNtfs chatSettings) $ showMsgToast (c <> "> ") content formattedText
       setActive $ ActiveC c
+      where
+        newChatItem ciContent ciFile_ = do
+          ci <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta ciContent ciFile_
+          toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
+          pure ci
 
     processFileInvitation :: Maybe FileInvitation -> (DB.Connection -> FileInvitation -> Maybe InlineFileMode -> Integer -> IO RcvFileTransfer) -> m (Maybe (CIFile 'MDRcv))
     processFileInvitation fInv_ createRcvFT = forM fInv_ $ \fInv@FileInvitation {fileName, fileSize} -> do
@@ -2251,12 +2264,19 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
     newGroupContentMessage :: GroupInfo -> GroupMember -> MsgContainer -> RcvMessage -> MsgMeta -> m ()
     newGroupContentMessage gInfo@GroupInfo {chatSettings} m@GroupMember {localDisplayName = c} mc msg msgMeta = do
       let (ExtMsgContent content fInv_) = mcExtMsgContent mc
-      ciFile_ <- processFileInvitation fInv_ $ \db -> createRcvGroupFileTransfer db userId m
-      ci@ChatItem {formattedText} <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvMsgContent content) ciFile_
-      groupMsgToView gInfo m ci msgMeta
-      let g = groupName' gInfo
-      when (enableNtfs chatSettings) $ showMsgToast ("#" <> g <> " " <> c <> "> ") content formattedText
-      setActive $ ActiveG g
+      case groupFeatureProhibited gInfo content of
+        Just f -> void $ newChatItem (CIRcvChatFeatureRejected f) Nothing
+        _ -> do
+          ciFile_ <- processFileInvitation fInv_ $ \db -> createRcvGroupFileTransfer db userId m
+          ci <- newChatItem (CIRcvMsgContent content) ciFile_
+          let g = groupName' gInfo
+          when (enableNtfs chatSettings) $ showMsgToast ("#" <> g <> " " <> c <> "> ") content $ formattedText ci
+          setActive $ ActiveG g
+      where
+        newChatItem ciContent ciFile_ = do
+          ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta ciContent ciFile_
+          groupMsgToView gInfo m ci msgMeta
+          pure ci
 
     groupMessageUpdate :: GroupInfo -> GroupMember -> SharedMsgId -> MsgContent -> RcvMessage -> MsgMeta -> m ()
     groupMessageUpdate gInfo@GroupInfo {groupId, localDisplayName = g} m@GroupMember {groupMemberId, memberId} sharedMsgId mc msg@RcvMessage {msgId} msgMeta =
@@ -3088,6 +3108,21 @@ createGroupFeatureChangedItems user cd ciContent p p' =
 
 sameGroupProfileInfo :: GroupProfile -> GroupProfile -> Bool
 sameGroupProfileInfo p p' = p {groupPreferences = Nothing} == p' {groupPreferences = Nothing}
+
+featureProhibited :: (PrefEnabled -> Bool) -> User -> Contact -> MsgContent -> Maybe ChatFeature
+featureProhibited forWhom user ct = \case
+  MCVoice {} ->
+    let ContactUserPreference {enabled} =
+          getContactUserPreference CFVoice $ contactUserPreferences' user ct
+     in if forWhom enabled then Nothing else Just CFVoice
+  _ -> Nothing
+
+groupFeatureProhibited :: GroupInfo -> MsgContent -> Maybe ChatFeature
+groupFeatureProhibited GroupInfo {groupProfile} = \case
+  MCVoice {} ->
+    let GroupPreference {enable} = getGroupPreference CFVoice $ groupPreferences groupProfile
+     in case enable of FEOn -> Nothing; FEOff -> Just CFVoice
+  _ -> Nothing
 
 createInternalChatItem :: forall c d m. (ChatTypeI c, MsgDirectionI d, ChatMonad m) => User -> ChatDirection c d -> CIContent d -> Maybe UTCTime -> m ()
 createInternalChatItem user cd content itemTs_ = do
