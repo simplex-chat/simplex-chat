@@ -1,5 +1,5 @@
 //
-//  AudioRecording.swift
+//  AudioRecPlay.swift
 //  SimpleX (iOS)
 //
 //  Created by Evgeny on 19/11/2022.
@@ -11,7 +11,7 @@ import AVFoundation
 import SwiftUI
 import SimpleXChat
 
-class AudioRecorder: NSObject, AVAudioRecorderDelegate {
+class AudioRecorder {
     var onTimer: ((TimeInterval) -> Void)?
     var onFinishRecording: (() -> Void)?
 
@@ -41,12 +41,10 @@ class AudioRecorder: NSObject, AVAudioRecorderDelegate {
                 AVNumberOfChannelsKey: 1
             ]
             audioRecorder = try AVAudioRecorder(url: getAppFilePath(fileName), settings: settings)
-            audioRecorder?.delegate = self
             audioRecorder?.record(forDuration: maxVoiceMessageLength)
 
             await MainActor.run {
                 recordingTimer = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { timer in
-                    // logger.debug("recording timer")
                     guard let time = self.audioRecorder?.currentTime else { return }
                     self.onTimer?(time)
                     if time >= maxVoiceMessageLength {
@@ -89,11 +87,6 @@ class AudioRecorder: NSObject, AVAudioRecorderDelegate {
         @unknown default: return false
         }
     }
-
-    func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
-        stop()
-        self.onFinishRecording?()
-    }
 }
 
 class AudioPlayer: NSObject, AVAudioPlayerDelegate {
@@ -116,7 +109,6 @@ class AudioPlayer: NSObject, AVAudioPlayerDelegate {
 
         playbackTimer = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { timer in
             if self.audioPlayer?.isPlaying ?? false {
-                // logger.debug("playback timer")
                 guard let time = self.audioPlayer?.currentTime else { return }
                 self.onTimer?(time)
             }
