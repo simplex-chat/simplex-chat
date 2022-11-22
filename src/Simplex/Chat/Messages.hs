@@ -558,6 +558,9 @@ data CIContent (d :: MsgDirection) where
   CISndGroupEvent :: SndGroupEvent -> CIContent 'MDSnd
   CIRcvConnEvent :: RcvConnEvent -> CIContent 'MDRcv
   CISndConnEvent :: SndConnEvent -> CIContent 'MDSnd
+  CIRcvChatFeature :: ChatFeature -> PrefEnabled -> CIContent 'MDRcv
+  CISndChatFeature :: ChatFeature -> PrefEnabled -> CIContent 'MDSnd
+  CIRcvChatFeatureRejected :: ChatFeature -> CIContent 'MDRcv
 -- ^ This type is used both in API and in DB, so we use different JSON encodings for the database and for the API
 -- ! ^ Nested sum types also have to use different encodings for database and API
 -- ! ^ to avoid breaking cross-platform compatibility, see RcvGroupEvent and SndGroupEvent
@@ -709,6 +712,9 @@ ciContentToText = \case
   CISndGroupEvent event -> sndGroupEventToText event
   CIRcvConnEvent event -> rcvConnEventToText event
   CISndConnEvent event -> sndConnEventToText event
+  CIRcvChatFeature feature enabled -> chatFeatureToText feature <> ": " <> prefEnabledToText enabled
+  CISndChatFeature feature enabled -> chatFeatureToText feature <> ": " <> prefEnabledToText enabled
+  CIRcvChatFeatureRejected feature -> chatFeatureToText feature <> ": received, prohibited"
 
 msgIntegrityError :: MsgErrorType -> Text
 msgIntegrityError = \case
@@ -759,6 +765,9 @@ data JSONCIContent
   | JCISndGroupEvent {sndGroupEvent :: SndGroupEvent}
   | JCIRcvConnEvent {rcvConnEvent :: RcvConnEvent}
   | JCISndConnEvent {sndConnEvent :: SndConnEvent}
+  | JCIRcvChatFeature {feature :: ChatFeature, enabled :: PrefEnabled}
+  | JCISndChatFeature {feature :: ChatFeature, enabled :: PrefEnabled}
+  | JCIRcvChatFeatureRejected {feature :: ChatFeature}
   deriving (Generic)
 
 instance FromJSON JSONCIContent where
@@ -783,6 +792,9 @@ jsonCIContent = \case
   CISndGroupEvent sndGroupEvent -> JCISndGroupEvent {sndGroupEvent}
   CIRcvConnEvent rcvConnEvent -> JCIRcvConnEvent {rcvConnEvent}
   CISndConnEvent sndConnEvent -> JCISndConnEvent {sndConnEvent}
+  CIRcvChatFeature feature enabled -> JCIRcvChatFeature {feature, enabled}
+  CISndChatFeature feature enabled -> JCISndChatFeature {feature, enabled}
+  CIRcvChatFeatureRejected feature -> JCIRcvChatFeatureRejected {feature}
 
 aciContentJSON :: JSONCIContent -> ACIContent
 aciContentJSON = \case
@@ -799,6 +811,9 @@ aciContentJSON = \case
   JCISndGroupEvent {sndGroupEvent} -> ACIContent SMDSnd $ CISndGroupEvent sndGroupEvent
   JCIRcvConnEvent {rcvConnEvent} -> ACIContent SMDRcv $ CIRcvConnEvent rcvConnEvent
   JCISndConnEvent {sndConnEvent} -> ACIContent SMDSnd $ CISndConnEvent sndConnEvent
+  JCIRcvChatFeature {feature, enabled} -> ACIContent SMDRcv $ CIRcvChatFeature feature enabled
+  JCISndChatFeature {feature, enabled} -> ACIContent SMDSnd $ CISndChatFeature feature enabled
+  JCIRcvChatFeatureRejected {feature} -> ACIContent SMDRcv $ CIRcvChatFeatureRejected feature
 
 -- platform independent
 data DBJSONCIContent
@@ -815,6 +830,9 @@ data DBJSONCIContent
   | DBJCISndGroupEvent {sndGroupEvent :: DBSndGroupEvent}
   | DBJCIRcvConnEvent {rcvConnEvent :: DBRcvConnEvent}
   | DBJCISndConnEvent {sndConnEvent :: DBSndConnEvent}
+  | DBJCIRcvChatFeature {feature :: ChatFeature, enabled :: PrefEnabled}
+  | DBJCISndChatFeature {feature :: ChatFeature, enabled :: PrefEnabled}
+  | DBJCIRcvChatFeatureRejected {feature :: ChatFeature}
   deriving (Generic)
 
 instance FromJSON DBJSONCIContent where
@@ -839,6 +857,9 @@ dbJsonCIContent = \case
   CISndGroupEvent sge -> DBJCISndGroupEvent $ SGE sge
   CIRcvConnEvent rce -> DBJCIRcvConnEvent $ RCE rce
   CISndConnEvent sce -> DBJCISndConnEvent $ SCE sce
+  CIRcvChatFeature feature enabled -> DBJCIRcvChatFeature {feature, enabled}
+  CISndChatFeature feature enabled -> DBJCISndChatFeature {feature, enabled}
+  CIRcvChatFeatureRejected feature -> DBJCIRcvChatFeatureRejected {feature}
 
 aciContentDBJSON :: DBJSONCIContent -> ACIContent
 aciContentDBJSON = \case
@@ -855,6 +876,9 @@ aciContentDBJSON = \case
   DBJCISndGroupEvent (SGE sge) -> ACIContent SMDSnd $ CISndGroupEvent sge
   DBJCIRcvConnEvent (RCE rce) -> ACIContent SMDRcv $ CIRcvConnEvent rce
   DBJCISndConnEvent (SCE sce) -> ACIContent SMDSnd $ CISndConnEvent sce
+  DBJCIRcvChatFeature {feature, enabled} -> ACIContent SMDRcv $ CIRcvChatFeature feature enabled
+  DBJCISndChatFeature {feature, enabled} -> ACIContent SMDSnd $ CISndChatFeature feature enabled
+  DBJCIRcvChatFeatureRejected {feature} -> ACIContent SMDRcv $ CIRcvChatFeatureRejected feature
 
 data CICallStatus
   = CISCallPending

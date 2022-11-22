@@ -260,23 +260,23 @@ testAddContact = versionTestMatrix2 runTestAddContact
       bob #$> ("/clear alice", id, "alice: all messages are removed locally ONLY")
       bob #$> ("/_get chat @2 count=100", chat, [])
     chatsEmpty alice bob = do
-      alice @@@ [("@bob", "")]
-      alice #$> ("/_get chat @2 count=100", chat, [])
-      bob @@@ [("@alice", "")]
-      bob #$> ("/_get chat @2 count=100", chat, [])
+      alice @@@ [("@bob", "Voice messages: enabled")]
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures)
+      bob @@@ [("@alice", "Voice messages: enabled")]
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures)
     chatsOneMessage alice bob = do
       alice @@@ [("@bob", "hello there 🙂")]
-      alice #$> ("/_get chat @2 count=100", chat, [(1, "hello there 🙂")])
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "hello there 🙂")])
       bob @@@ [("@alice", "hello there 🙂")]
-      bob #$> ("/_get chat @2 count=100", chat, [(0, "hello there 🙂")])
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hello there 🙂")])
     chatsManyMessages alice bob = do
       alice @@@ [("@bob", "how are you?")]
-      alice #$> ("/_get chat @2 count=100", chat, [(1, "hello there 🙂"), (0, "hello there"), (0, "how are you?")])
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "hello there 🙂"), (0, "hello there"), (0, "how are you?")])
       bob @@@ [("@alice", "how are you?")]
-      bob #$> ("/_get chat @2 count=100", chat, [(0, "hello there 🙂"), (1, "hello there"), (1, "how are you?")])
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hello there 🙂"), (1, "hello there"), (1, "how are you?")])
       -- pagination
-      alice #$> ("/_get chat @2 after=1 count=100", chat, [(0, "hello there"), (0, "how are you?")])
-      alice #$> ("/_get chat @2 before=2 count=100", chat, [(1, "hello there 🙂")])
+      alice #$> ("/_get chat @2 after=" <> itemId 1 <> " count=100", chat, [(0, "hello there"), (0, "how are you?")])
+      alice #$> ("/_get chat @2 before=" <> itemId 2 <> " count=100", chat, chatFeatures <> [(1, "hello there 🙂")])
       -- search
       alice #$> ("/_get chat @2 count=100 search=ello ther", chat, [(1, "hello there 🙂"), (0, "hello there")])
       -- read messages
@@ -327,14 +327,14 @@ testDirectMessageUpdate =
       alice <# "bob> > hello 🙂"
       alice <## "      hi alice"
 
-      alice #$> ("/_get chat @2 count=100", chat', [((1, "hello 🙂"), Nothing), ((0, "hi alice"), Just (1, "hello 🙂"))])
-      bob #$> ("/_get chat @2 count=100", chat', [((0, "hello 🙂"), Nothing), ((1, "hi alice"), Just (0, "hello 🙂"))])
+      alice #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((1, "hello 🙂"), Nothing), ((0, "hi alice"), Just (1, "hello 🙂"))])
+      bob #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((0, "hello 🙂"), Nothing), ((1, "hi alice"), Just (0, "hello 🙂"))])
 
-      alice #$> ("/_update item @2 1 text hey 👋", id, "message updated")
+      alice #$> ("/_update item @2 " <> itemId 1 <> " text hey 👋", id, "message updated")
       bob <# "alice> [edited] hey 👋"
 
-      alice #$> ("/_get chat @2 count=100", chat', [((1, "hey 👋"), Nothing), ((0, "hi alice"), Just (1, "hello 🙂"))])
-      bob #$> ("/_get chat @2 count=100", chat', [((0, "hey 👋"), Nothing), ((1, "hi alice"), Just (0, "hello 🙂"))])
+      alice #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((1, "hey 👋"), Nothing), ((0, "hi alice"), Just (1, "hello 🙂"))])
+      bob #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((0, "hey 👋"), Nothing), ((1, "hi alice"), Just (0, "hello 🙂"))])
 
       -- msg id 3
       bob `send` "> @alice (hey) hey alice"
@@ -343,27 +343,27 @@ testDirectMessageUpdate =
       alice <# "bob> > hey 👋"
       alice <## "      hey alice"
 
-      alice #$> ("/_get chat @2 count=100", chat', [((1, "hey 👋"), Nothing), ((0, "hi alice"), Just (1, "hello 🙂")), ((0, "hey alice"), Just (1, "hey 👋"))])
-      bob #$> ("/_get chat @2 count=100", chat', [((0, "hey 👋"), Nothing), ((1, "hi alice"), Just (0, "hello 🙂")), ((1, "hey alice"), Just (0, "hey 👋"))])
+      alice #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((1, "hey 👋"), Nothing), ((0, "hi alice"), Just (1, "hello 🙂")), ((0, "hey alice"), Just (1, "hey 👋"))])
+      bob #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((0, "hey 👋"), Nothing), ((1, "hi alice"), Just (0, "hello 🙂")), ((1, "hey alice"), Just (0, "hey 👋"))])
 
-      alice #$> ("/_update item @2 1 text greetings 🤝", id, "message updated")
+      alice #$> ("/_update item @2 " <> itemId 1 <> " text greetings 🤝", id, "message updated")
       bob <# "alice> [edited] greetings 🤝"
 
-      alice #$> ("/_update item @2 2 text updating bob's message", id, "cannot update this item")
+      alice #$> ("/_update item @2 " <> itemId 2 <> " text updating bob's message", id, "cannot update this item")
 
-      alice #$> ("/_get chat @2 count=100", chat', [((1, "greetings 🤝"), Nothing), ((0, "hi alice"), Just (1, "hello 🙂")), ((0, "hey alice"), Just (1, "hey 👋"))])
-      bob #$> ("/_get chat @2 count=100", chat', [((0, "greetings 🤝"), Nothing), ((1, "hi alice"), Just (0, "hello 🙂")), ((1, "hey alice"), Just (0, "hey 👋"))])
+      alice #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((1, "greetings 🤝"), Nothing), ((0, "hi alice"), Just (1, "hello 🙂")), ((0, "hey alice"), Just (1, "hey 👋"))])
+      bob #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((0, "greetings 🤝"), Nothing), ((1, "hi alice"), Just (0, "hello 🙂")), ((1, "hey alice"), Just (0, "hey 👋"))])
 
-      bob #$> ("/_update item @2 2 text hey Alice", id, "message updated")
+      bob #$> ("/_update item @2 " <> itemId 2 <> " text hey Alice", id, "message updated")
       alice <# "bob> [edited] > hello 🙂"
       alice <## "      hey Alice"
 
-      bob #$> ("/_update item @2 3 text greetings Alice", id, "message updated")
+      bob #$> ("/_update item @2 " <> itemId 3 <> " text greetings Alice", id, "message updated")
       alice <# "bob> [edited] > hey 👋"
       alice <## "      greetings Alice"
 
-      alice #$> ("/_get chat @2 count=100", chat', [((1, "greetings 🤝"), Nothing), ((0, "hey Alice"), Just (1, "hello 🙂")), ((0, "greetings Alice"), Just (1, "hey 👋"))])
-      bob #$> ("/_get chat @2 count=100", chat', [((0, "greetings 🤝"), Nothing), ((1, "hey Alice"), Just (0, "hello 🙂")), ((1, "greetings Alice"), Just (0, "hey 👋"))])
+      alice #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((1, "greetings 🤝"), Nothing), ((0, "hey Alice"), Just (1, "hello 🙂")), ((0, "greetings Alice"), Just (1, "hey 👋"))])
+      bob #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((0, "greetings 🤝"), Nothing), ((1, "hey Alice"), Just (0, "hello 🙂")), ((1, "greetings Alice"), Just (0, "hey 👋"))])
 
 testDirectMessageDelete :: IO ()
 testDirectMessageDelete =
@@ -383,28 +383,28 @@ testDirectMessageDelete =
       alice <## "      hey alic"
 
       -- alice: deletes msg ids 1,2
-      alice #$> ("/_delete item @2 1 internal", id, "message deleted")
-      alice #$> ("/_delete item @2 2 internal", id, "message deleted")
+      alice #$> ("/_delete item @2 " <> itemId 1 <> " internal", id, "message deleted")
+      alice #$> ("/_delete item @2 " <> itemId 2 <> " internal", id, "message deleted")
 
-      alice @@@ [("@bob", "")]
-      alice #$> ("/_get chat @2 count=100", chat, [])
+      alice @@@ [("@bob", "Voice messages: enabled")]
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures)
 
       -- alice: msg id 1
-      bob #$> ("/_update item @2 2 text hey alice", id, "message updated")
+      bob #$> ("/_update item @2 " <> itemId 2 <> " text hey alice", id, "message updated")
       alice <# "bob> [edited] hey alice"
       alice @@@ [("@bob", "hey alice")]
-      alice #$> ("/_get chat @2 count=100", chat, [(0, "hey alice")])
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hey alice")])
 
       -- bob: deletes msg id 2
-      bob #$> ("/_delete item @2 2 broadcast", id, "message deleted")
+      bob #$> ("/_delete item @2 " <> itemId 2 <> " broadcast", id, "message deleted")
       alice <# "bob> [deleted] hey alice"
       alice @@@ [("@bob", "this item is deleted (broadcast)")]
-      alice #$> ("/_get chat @2 count=100", chat, [(0, "this item is deleted (broadcast)")])
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "this item is deleted (broadcast)")])
 
       -- alice: deletes msg id 1 that was broadcast deleted by bob
-      alice #$> ("/_delete item @2 1 internal", id, "message deleted")
-      alice @@@ [("@bob", "")]
-      alice #$> ("/_get chat @2 count=100", chat, [])
+      alice #$> ("/_delete item @2 " <> itemId 1 <> " internal", id, "message deleted")
+      alice @@@ [("@bob", "Voice messages: enabled")]
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures)
 
       -- alice: msg id 1, bob: msg id 2 (quoting message alice deleted locally)
       bob `send` "> @alice (hello 🙂) do you receive my messages?"
@@ -413,24 +413,24 @@ testDirectMessageDelete =
       alice <# "bob> > hello 🙂"
       alice <## "      do you receive my messages?"
       alice @@@ [("@bob", "do you receive my messages?")]
-      alice #$> ("/_get chat @2 count=100", chat', [((0, "do you receive my messages?"), Just (1, "hello 🙂"))])
-      alice #$> ("/_delete item @2 1 broadcast", id, "cannot delete this item")
+      alice #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((0, "do you receive my messages?"), Just (1, "hello 🙂"))])
+      alice #$> ("/_delete item @2 " <> itemId 1 <> " broadcast", id, "cannot delete this item")
 
       -- alice: msg id 2, bob: msg id 3
       bob #> "@alice how are you?"
       alice <# "bob> how are you?"
 
       -- alice: deletes msg id 2
-      alice #$> ("/_delete item @2 2 internal", id, "message deleted")
+      alice #$> ("/_delete item @2 " <> itemId 2 <> " internal", id, "message deleted")
 
       -- bob: deletes msg id 3 (that alice deleted locally)
-      bob #$> ("/_delete item @2 3 broadcast", id, "message deleted")
+      bob #$> ("/_delete item @2 " <> itemId 3 <> " broadcast", id, "message deleted")
       alice <## "bob> [deleted - original message not found]"
 
       alice @@@ [("@bob", "do you receive my messages?")]
-      alice #$> ("/_get chat @2 count=100", chat', [((0, "do you receive my messages?"), Just (1, "hello 🙂"))])
+      alice #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((0, "do you receive my messages?"), Just (1, "hello 🙂"))])
       bob @@@ [("@alice", "do you receive my messages?")]
-      bob #$> ("/_get chat @2 count=100", chat', [((0, "hello 🙂"), Nothing), ((1, "do you receive my messages?"), Just (0, "hello 🙂"))])
+      bob #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((0, "hello 🙂"), Nothing), ((1, "do you receive my messages?"), Just (0, "hello 🙂"))])
 
 testGroup :: Spec
 testGroup = versionTestMatrix3 runTestGroup
@@ -557,8 +557,8 @@ testGroupShared alice bob cath checkMessages = do
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (0, "connected"), (1, "hello"), (0, "hi there"), (0, "hey team")])
       -- "before" and "after" define a chat item id across all chats,
       -- so we take into account group event items as well as sent group invitations in direct chats
-      alice #$> ("/_get chat #1 after=5 count=100", chat, [(0, "hi there"), (0, "hey team")])
-      alice #$> ("/_get chat #1 before=7 count=100", chat, [(0, "connected"), (0, "connected"), (1, "hello"), (0, "hi there")])
+      alice #$> ("/_get chat #1 after=" <> groupItemId 2 5 <> " count=100", chat, [(0, "hi there"), (0, "hey team")])
+      alice #$> ("/_get chat #1 before=" <> groupItemId 2 7 <> " count=100", chat, [(0, "connected"), (0, "connected"), (1, "hello"), (0, "hi there")])
       alice #$> ("/_get chat #1 count=100 search=team", chat, [(0, "hey team")])
       bob @@@ [("@cath", "hey"), ("#team", "hey team"), ("@alice", "received invitation to join group team as admin")]
       bob #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (0, "added cath (Catherine)"), (0, "connected"), (0, "hello"), (1, "hi there"), (0, "hey team")])
@@ -683,7 +683,7 @@ testGroup2 =
         <##? [ "dan> hi",
                "@dan hey"
              ]
-      alice ##> "/t 12"
+      alice ##> "/t 18"
       alice
         <##? [ "@bob sent invitation to join group club as admin",
                "@cath sent invitation to join group club as admin",
@@ -696,7 +696,13 @@ testGroup2 =
                "#club cath> hey",
                "#club dan> how is it going?",
                "dan> hi",
-               "@dan hey"
+               "@dan hey",
+               "dan> Full deletion: off",
+               "dan> Voice messages: enabled",
+               "bob> Full deletion: off",
+               "bob> Voice messages: enabled",
+               "cath> Full deletion: off",
+               "cath> Voice messages: enabled"
              ]
       -- remove member
       cath ##> "/rm club dan"
@@ -1157,7 +1163,7 @@ testGroupMessageUpdate =
         (bob <# "#team alice> hello!")
         (cath <# "#team alice> hello!")
 
-      alice #$> ("/_update item #1 5 text hey 👋", id, "message updated")
+      alice #$> ("/_update item #1 " <> groupItemId 2 5 <> " text hey 👋", id, "message updated")
       concurrently_
         (bob <# "#team alice> [edited] hey 👋")
         (cath <# "#team alice> [edited] hey 👋")
@@ -1185,12 +1191,12 @@ testGroupMessageUpdate =
       bob #$> ("/_get chat #1 count=2", chat', [((0, "hey 👋"), Nothing), ((1, "hi alice"), Just (0, "hey 👋"))])
       cath #$> ("/_get chat #1 count=2", chat', [((0, "hey 👋"), Nothing), ((0, "hi alice"), Just (0, "hey 👋"))])
 
-      alice #$> ("/_update item #1 5 text greetings 🤝", id, "message updated")
+      alice #$> ("/_update item #1 " <> groupItemId 2 5 <> " text greetings 🤝", id, "message updated")
       concurrently_
         (bob <# "#team alice> [edited] greetings 🤝")
         (cath <# "#team alice> [edited] greetings 🤝")
 
-      alice #$> ("/_update item #1 6 text updating bob's message", id, "cannot update this item")
+      alice #$> ("/_update item #1 " <> groupItemId 2 6 <> " text updating bob's message", id, "cannot update this item")
 
       threadDelay 1000000
       cath `send` "> #team @alice (greetings) greetings!"
@@ -1223,7 +1229,7 @@ testGroupMessageDelete =
         (cath <# "#team alice> hello!")
 
       -- alice: deletes msg id 5
-      alice #$> ("/_delete item #1 5 internal", id, "message deleted")
+      alice #$> ("/_delete item #1 " <> groupItemId 2 5 <> " internal", id, "message deleted")
 
       alice #$> ("/_get chat #1 count=1", chat, [(0, "connected")])
       bob #$> ("/_get chat #1 count=1", chat, [(0, "hello!")])
@@ -1249,14 +1255,14 @@ testGroupMessageDelete =
       cath #$> ("/_get chat #1 count=2", chat', [((0, "hello!"), Nothing), ((0, "hi alic"), Just (0, "hello!"))])
 
       -- alice: deletes msg id 5
-      alice #$> ("/_delete item #1 5 internal", id, "message deleted")
+      alice #$> ("/_delete item #1 " <> groupItemId 2 5 <> " internal", id, "message deleted")
 
       alice #$> ("/_get chat #1 count=1", chat', [((0, "connected"), Nothing)])
       bob #$> ("/_get chat #1 count=2", chat', [((0, "hello!"), Nothing), ((1, "hi alic"), Just (0, "hello!"))])
       cath #$> ("/_get chat #1 count=2", chat', [((0, "hello!"), Nothing), ((0, "hi alic"), Just (0, "hello!"))])
 
       -- alice: msg id 5
-      bob #$> ("/_update item #1 6 text hi alice", id, "message updated")
+      bob #$> ("/_update item #1 " <> groupItemId 1 6 <> " text hi alice", id, "message updated")
       concurrently_
         (alice <# "#team bob> [edited] hi alice")
         ( do
@@ -1275,13 +1281,13 @@ testGroupMessageDelete =
         (alice <# "#team cath> how are you?")
         (bob <# "#team cath> how are you?")
 
-      cath #$> ("/_delete item #1 6 broadcast", id, "message deleted")
+      cath #$> ("/_delete item #1 " <> groupItemId 1 6 <> " broadcast", id, "message deleted")
       concurrently_
         (alice <# "#team cath> [deleted] how are you?")
         (bob <# "#team cath> [deleted] how are you?")
 
-      alice #$> ("/_delete item #1 5 broadcast", id, "cannot delete this item")
-      alice #$> ("/_delete item #1 5 internal", id, "message deleted")
+      alice #$> ("/_delete item #1 " <> groupItemId 2 5 <> " broadcast", id, "cannot delete this item")
+      alice #$> ("/_delete item #1 " <> groupItemId 2 5 <> " internal", id, "message deleted")
 
       alice #$> ("/_get chat #1 count=1", chat', [((0, "this item is deleted (broadcast)"), Nothing)])
       bob #$> ("/_get chat #1 count=3", chat', [((0, "hello!"), Nothing), ((1, "hi alice"), Just (0, "hello!")), ((0, "this item is deleted (broadcast)"), Nothing)])
@@ -1839,8 +1845,8 @@ runTestMessageWithFile alice bob = do
   src <- B.readFile "./tests/fixtures/test.jpg"
   dest <- B.readFile "./tests/tmp/test.jpg"
   dest `shouldBe` src
-  alice #$> ("/_get chat @2 count=100", chatF, [((1, "hi, sending a file"), Just "./tests/fixtures/test.jpg")])
-  bob #$> ("/_get chat @2 count=100", chatF, [((0, "hi, sending a file"), Just "./tests/tmp/test.jpg")])
+  alice #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((1, "hi, sending a file"), Just "./tests/fixtures/test.jpg")])
+  bob #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((0, "hi, sending a file"), Just "./tests/tmp/test.jpg")])
 
 testSendImage :: IO ()
 testSendImage =
@@ -1863,8 +1869,8 @@ testSendImage =
       src <- B.readFile "./tests/fixtures/test.jpg"
       dest <- B.readFile "./tests/tmp/test.jpg"
       dest `shouldBe` src
-      alice #$> ("/_get chat @2 count=100", chatF, [((1, ""), Just "./tests/fixtures/test.jpg")])
-      bob #$> ("/_get chat @2 count=100", chatF, [((0, ""), Just "./tests/tmp/test.jpg")])
+      alice #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((1, ""), Just "./tests/fixtures/test.jpg")])
+      bob #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((0, ""), Just "./tests/tmp/test.jpg")])
       -- deleting contact without files folder set should not remove file
       bob ##> "/d alice"
       bob <## "alice: contact is deleted"
@@ -1894,8 +1900,8 @@ testFilesFoldersSendImage =
       src <- B.readFile "./tests/fixtures/test.jpg"
       dest <- B.readFile "./tests/tmp/app_files/test.jpg"
       dest `shouldBe` src
-      alice #$> ("/_get chat @2 count=100", chatF, [((1, ""), Just "test.jpg")])
-      bob #$> ("/_get chat @2 count=100", chatF, [((0, ""), Just "test.jpg")])
+      alice #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((1, ""), Just "test.jpg")])
+      bob #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((0, ""), Just "test.jpg")])
       -- deleting contact with files folder set should remove file
       checkActionDeletesFile "./tests/tmp/app_files/test.jpg" $ do
         bob ##> "/d alice"
@@ -1964,7 +1970,7 @@ testSendImageWithTextAndQuote =
       connectUsers alice bob
       bob #> "@alice hi alice"
       alice <# "bob> hi alice"
-      alice ##> "/_send @2 json {\"filePath\": \"./tests/fixtures/test.jpg\", \"quotedItemId\": 1, \"msgContent\": {\"text\":\"hey bob\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}"
+      alice ##> ("/_send @2 json {\"filePath\": \"./tests/fixtures/test.jpg\", \"quotedItemId\": " <> itemId 1 <> ", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}")
       alice <# "@bob > hi alice"
       alice <## "      hey bob"
       alice <# "/f @bob ./tests/fixtures/test.jpg"
@@ -1983,12 +1989,12 @@ testSendImageWithTextAndQuote =
         (alice <## "completed sending file 1 (test.jpg) to bob")
       src <- B.readFile "./tests/fixtures/test.jpg"
       B.readFile "./tests/tmp/test.jpg" `shouldReturn` src
-      alice #$> ("/_get chat @2 count=100", chat'', [((0, "hi alice"), Nothing, Nothing), ((1, "hey bob"), Just (0, "hi alice"), Just "./tests/fixtures/test.jpg")])
+      alice #$> ("/_get chat @2 count=100", chat'', chatFeatures'' <> [((0, "hi alice"), Nothing, Nothing), ((1, "hey bob"), Just (0, "hi alice"), Just "./tests/fixtures/test.jpg")])
       alice @@@ [("@bob", "hey bob")]
-      bob #$> ("/_get chat @2 count=100", chat'', [((1, "hi alice"), Nothing, Nothing), ((0, "hey bob"), Just (1, "hi alice"), Just "./tests/tmp/test.jpg")])
+      bob #$> ("/_get chat @2 count=100", chat'', chatFeatures'' <> [((1, "hi alice"), Nothing, Nothing), ((0, "hey bob"), Just (1, "hi alice"), Just "./tests/tmp/test.jpg")])
       bob @@@ [("@alice", "hey bob")]
       -- quoting (file + text) with file uses quoted text
-      bob ##> "/_send @2 json {\"filePath\": \"./tests/fixtures/test.txt\", \"quotedItemId\": 2, \"msgContent\": {\"text\":\"\",\"type\":\"file\"}}"
+      bob ##> ("/_send @2 json {\"filePath\": \"./tests/fixtures/test.txt\", \"quotedItemId\": " <> itemId 2 <> ", \"msgContent\": {\"text\":\"\",\"type\":\"file\"}}")
       bob <# "@alice > hey bob"
       bob <## "      test.txt"
       bob <# "/f @alice ./tests/fixtures/test.txt"
@@ -2008,7 +2014,7 @@ testSendImageWithTextAndQuote =
       txtSrc <- B.readFile "./tests/fixtures/test.txt"
       B.readFile "./tests/tmp/test.txt" `shouldReturn` txtSrc
       -- quoting (file without text) with file uses file name
-      alice ##> "/_send @2 json {\"filePath\": \"./tests/fixtures/test.jpg\", \"quotedItemId\": 3, \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}"
+      alice ##> ("/_send @2 json {\"filePath\": \"./tests/fixtures/test.jpg\", \"quotedItemId\": " <> itemId 3 <> ", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}")
       alice <# "@bob > test.txt"
       alice <## "      test.jpg"
       alice <# "/f @bob ./tests/fixtures/test.jpg"
@@ -2084,7 +2090,7 @@ testGroupSendImageWithTextAndQuote =
         (alice <# "#team bob> hi team")
         (cath <# "#team bob> hi team")
       threadDelay 1000000
-      alice ##> "/_send #1 json {\"filePath\": \"./tests/fixtures/test.jpg\", \"quotedItemId\": 5, \"msgContent\": {\"text\":\"hey bob\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}"
+      alice ##> ("/_send #1 json {\"filePath\": \"./tests/fixtures/test.jpg\", \"quotedItemId\": " <> groupItemId 2 5 <> ", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}")
       alice <# "#team > bob hi team"
       alice <## "      hey bob"
       alice <# "/f #team ./tests/fixtures/test.jpg"
@@ -2145,7 +2151,7 @@ testUserContactLink = versionTestMatrix3 $ \alice bob cath -> do
   concurrently_
     (bob <## "alice (Alice): contact is connected")
     (alice <## "bob (Bob): contact is connected")
-  alice @@@ [("@bob", "")]
+  alice @@@ [("@bob", "Voice messages: enabled")]
   alice <##> bob
 
   cath ##> ("/c " <> cLink)
@@ -2156,7 +2162,7 @@ testUserContactLink = versionTestMatrix3 $ \alice bob cath -> do
   concurrently_
     (cath <## "alice (Alice): contact is connected")
     (alice <## "cath (Catherine): contact is connected")
-  alice @@@ [("@cath", ""), ("@bob", "hey")]
+  alice @@@ [("@cath", "Voice messages: enabled"), ("@bob", "hey")]
   alice <##> cath
 
 testUserContactLinkAutoAccept :: IO ()
@@ -2174,7 +2180,7 @@ testUserContactLinkAutoAccept =
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
-      alice @@@ [("@bob", "")]
+      alice @@@ [("@bob", "Voice messages: enabled")]
       alice <##> bob
 
       alice ##> "/auto_accept on"
@@ -2186,7 +2192,7 @@ testUserContactLinkAutoAccept =
       concurrently_
         (cath <## "alice (Alice): contact is connected")
         (alice <## "cath (Catherine): contact is connected")
-      alice @@@ [("@cath", ""), ("@bob", "hey")]
+      alice @@@ [("@cath", "Voice messages: enabled"), ("@bob", "hey")]
       alice <##> cath
 
       alice ##> "/auto_accept off"
@@ -2200,7 +2206,7 @@ testUserContactLinkAutoAccept =
       concurrently_
         (dan <## "alice (Alice): contact is connected")
         (alice <## "dan (Daniel): contact is connected")
-      alice @@@ [("@dan", ""), ("@cath", "hey"), ("@bob", "hey")]
+      alice @@@ [("@dan", "Voice messages: enabled"), ("@cath", "hey"), ("@bob", "hey")]
       alice <##> dan
 
 testDeduplicateContactRequests :: IO ()
@@ -2229,8 +2235,8 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
 
     bob ##> ("/c " <> cLink)
     bob <## "alice (Alice): contact already exists"
-    alice @@@ [("@bob", "")]
-    bob @@@ [("@alice", ""), (":2", ""), (":1", "")]
+    alice @@@ [("@bob", "Voice messages: enabled")]
+    bob @@@ [("@alice", "Voice messages: enabled"), (":2", ""), (":1", "")]
     bob ##> "/_delete :1"
     bob <## "connection :1 deleted"
     bob ##> "/_delete :2"
@@ -2244,8 +2250,8 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
     bob <## "alice (Alice): contact already exists"
 
     alice <##> bob
-    alice #$> ("/_get chat @2 count=100", chat, [(1, "hi"), (0, "hey"), (1, "hi"), (0, "hey")])
-    bob #$> ("/_get chat @2 count=100", chat, [(0, "hi"), (1, "hey"), (0, "hi"), (1, "hey")])
+    alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "hi"), (0, "hey"), (1, "hi"), (0, "hey")])
+    bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hi"), (1, "hey"), (0, "hi"), (1, "hey")])
 
     cath ##> ("/c " <> cLink)
     alice <#? cath
@@ -2255,7 +2261,7 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
     concurrently_
       (cath <## "alice (Alice): contact is connected")
       (alice <## "cath (Catherine): contact is connected")
-    alice @@@ [("@cath", ""), ("@bob", "hey")]
+    alice @@@ [("@cath", "Voice messages: enabled"), ("@bob", "hey")]
     alice <##> cath
 
 testDeduplicateContactRequestsProfileChange :: IO ()
@@ -2299,8 +2305,8 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
 
     bob ##> ("/c " <> cLink)
     bob <## "alice (Alice): contact already exists"
-    alice @@@ [("@robert", "")]
-    bob @@@ [("@alice", ""), (":3", ""), (":2", ""), (":1", "")]
+    alice @@@ [("@robert", "Voice messages: enabled")]
+    bob @@@ [("@alice", "Voice messages: enabled"), (":3", ""), (":2", ""), (":1", "")]
     bob ##> "/_delete :1"
     bob <## "connection :1 deleted"
     bob ##> "/_delete :2"
@@ -2316,8 +2322,8 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
     bob <## "alice (Alice): contact already exists"
 
     alice <##> bob
-    alice #$> ("/_get chat @2 count=100", chat, [(1, "hi"), (0, "hey"), (1, "hi"), (0, "hey")])
-    bob #$> ("/_get chat @2 count=100", chat, [(0, "hi"), (1, "hey"), (0, "hi"), (1, "hey")])
+    alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "hi"), (0, "hey"), (1, "hi"), (0, "hey")])
+    bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hi"), (1, "hey"), (0, "hi"), (1, "hey")])
 
     cath ##> ("/c " <> cLink)
     alice <#? cath
@@ -2327,7 +2333,7 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
     concurrently_
       (cath <## "alice (Alice): contact is connected")
       (alice <## "cath (Catherine): contact is connected")
-    alice @@@ [("@cath", ""), ("@robert", "hey")]
+    alice @@@ [("@cath", "Voice messages: enabled"), ("@robert", "hey")]
     alice <##> cath
 
 testRejectContactAndDeleteUserContact :: IO ()
@@ -2827,7 +2833,7 @@ testSetConnectionAlias = testChat2 aliceProfile bobProfile $
     concurrently_
       (alice <## "bob (Bob): contact is connected")
       (bob <## "alice (Alice): contact is connected")
-    alice @@@ [("@bob", "")]
+    alice @@@ [("@bob", "Voice messages: enabled")]
     alice ##> "/cs"
     alice <## "bob (Bob) (alias: friend)"
 
@@ -3272,45 +3278,45 @@ testNegotiateCall =
     -- alice invite bob to call
     alice ##> ("/_call invite @2 " <> serialize testCallType)
     alice <## "ok"
-    alice #$> ("/_get chat @2 count=100", chat, [(1, "outgoing call: calling...")])
+    alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "outgoing call: calling...")])
     bob <## "alice wants to connect with you via WebRTC video call (e2e encrypted)"
     repeatM_ 3 $ getTermLine bob
-    bob #$> ("/_get chat @2 count=100", chat, [(0, "incoming call: calling...")])
+    bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: calling...")])
     -- bob accepts call by sending WebRTC offer
     bob ##> ("/_call offer @2 " <> serialize testWebRTCCallOffer)
     bob <## "ok"
-    bob #$> ("/_get chat @2 count=100", chat, [(0, "incoming call: accepted")])
+    bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: accepted")])
     alice <## "bob accepted your WebRTC video call (e2e encrypted)"
     repeatM_ 3 $ getTermLine alice
     alice <## "message updated" -- call chat item updated
-    alice #$> ("/_get chat @2 count=100", chat, [(1, "outgoing call: accepted")])
+    alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "outgoing call: accepted")])
     -- alice confirms call by sending WebRTC answer
     alice ##> ("/_call answer @2 " <> serialize testWebRTCSession)
     alice
       <### [ "ok",
              "message updated"
            ]
-    alice #$> ("/_get chat @2 count=100", chat, [(1, "outgoing call: connecting...")])
+    alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "outgoing call: connecting...")])
     bob <## "alice continued the WebRTC call"
     repeatM_ 3 $ getTermLine bob
-    bob #$> ("/_get chat @2 count=100", chat, [(0, "incoming call: connecting...")])
+    bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: connecting...")])
     -- participants can update calls as connected
     alice ##> "/_call status @2 connected"
     alice
       <### [ "ok",
              "message updated"
            ]
-    alice #$> ("/_get chat @2 count=100", chat, [(1, "outgoing call: in progress (00:00)")])
+    alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "outgoing call: in progress (00:00)")])
     bob ##> "/_call status @2 connected"
     bob <## "ok"
-    bob #$> ("/_get chat @2 count=100", chat, [(0, "incoming call: in progress (00:00)")])
+    bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: in progress (00:00)")])
     -- either party can end the call
     bob ##> "/_call end @2"
     bob <## "ok"
-    bob #$> ("/_get chat @2 count=100", chat, [(0, "incoming call: ended (00:00)")])
+    bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: ended (00:00)")])
     alice <## "call with bob ended"
     alice <## "message updated"
-    alice #$> ("/_get chat @2 count=100", chat, [(1, "outgoing call: ended (00:00)")])
+    alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "outgoing call: ended (00:00)")])
 
 testMaintenanceMode :: IO ()
 testMaintenanceMode = withTmpFiles $ do
@@ -3501,11 +3507,11 @@ testSetChatItemTTL =
       bob <# "alice> 3"
       bob #> "@alice 4"
       alice <# "bob> 4"
-      alice #$> ("/_get chat @2 count=100", chatF, [((1, "1"), Nothing), ((0, "2"), Nothing), ((1, ""), Just "test.jpg"), ((1, "3"), Nothing), ((0, "4"), Nothing)])
+      alice #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((1, "1"), Nothing), ((0, "2"), Nothing), ((1, ""), Just "test.jpg"), ((1, "3"), Nothing), ((0, "4"), Nothing)])
       checkActionDeletesFile "./tests/tmp/app_files/test.jpg" $
         alice #$> ("/_ttl 2", id, "ok")
       alice #$> ("/_get chat @2 count=100", chat, [(1, "3"), (0, "4")]) -- when expiration is turned on, first cycle is synchronous
-      bob #$> ("/_get chat @2 count=100", chat, [(0, "1"), (1, "2"), (0, ""), (0, "3"), (1, "4")])
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "1"), (1, "2"), (0, ""), (0, "3"), (1, "4")])
       alice #$> ("/ttl", id, "old messages are set to be deleted after: 2 second(s)")
       alice #$> ("/ttl week", id, "ok")
       alice #$> ("/ttl", id, "old messages are set to be deleted after: one week")
@@ -3549,8 +3555,8 @@ testGroupLink =
       alice @@@ [("#team", "connected")]
       bob @@@ [("#team", "connected")]
       -- calling /_get chat api marks it as used and adds it to chat previews
-      alice #$> ("/_get chat @2 count=100", chat, [])
-      alice @@@ [("@bob", ""), ("#team", "connected")]
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures)
+      alice @@@ [("@bob", "Voice messages: enabled"), ("#team", "connected")]
       alice <##> bob
       alice @@@ [("@bob", "hey"), ("#team", "connected")]
 
@@ -3830,8 +3836,8 @@ testSwitchContact =
       alice <## "bob: you started changing address"
       bob <## "alice changed address for you"
       alice <## "bob: you changed address"
-      alice #$> ("/_get chat @2 count=100", chat, [(1, "started changing address..."), (1, "you changed address")])
-      bob #$> ("/_get chat @2 count=100", chat, [(0, "started changing address for you..."), (0, "changed address for you")])
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "started changing address..."), (1, "you changed address")])
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "started changing address for you..."), (0, "changed address for you")])
       alice <##> bob
 
 testSwitchGroupMember :: IO ()
@@ -4020,6 +4026,24 @@ chatF = map (\(a, _, c) -> (a, c)) . chat''
 
 chat'' :: String -> [((Int, String), Maybe (Int, String), Maybe String)]
 chat'' = read
+
+chatFeatures :: [(Int, String)]
+chatFeatures = map (\(a, _, _) -> a) chatFeatures''
+
+chatFeatures' :: [((Int, String), Maybe (Int, String))]
+chatFeatures' = map (\(a, b, _) -> (a, b)) chatFeatures''
+
+chatFeaturesF :: [((Int, String), Maybe String)]
+chatFeaturesF = map (\(a, _, c) -> (a, c)) chatFeatures''
+
+chatFeatures'' :: [((Int, String), Maybe (Int, String), Maybe String)]
+chatFeatures'' = [((0, "Full deletion: off"), Nothing, Nothing), ((0, "Voice messages: enabled"), Nothing, Nothing)]
+
+itemId :: Int -> String
+itemId i = show $ length chatFeatures + i
+
+groupItemId :: Int -> Int -> String
+groupItemId n i = show $ (length chatFeatures) * n + i
 
 (@@@) :: TestCC -> [(String, String)] -> Expectation
 (@@@) = getChats . map $ \(ldn, msg, _) -> (ldn, msg)

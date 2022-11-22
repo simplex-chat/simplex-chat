@@ -173,6 +173,15 @@
 /* call status */
 "accepted call" = "Anruf angenommen";
 
+/* No comment provided by engineer. */
+"Add preset servers" = "***Add preset servers";
+
+/* No comment provided by engineer. */
+"Add server…" = "***Add server…";
+
+/* No comment provided by engineer. */
+"Add to another device" = "***Add to another device";
+
 /* member role */
 "admin" = "Admin";
 
@@ -348,6 +357,9 @@
 "Chats" = "Chats";
 
 /* No comment provided by engineer. */
+"Check server address and try again." = "***Check server address and try again.";
+
+/* No comment provided by engineer. */
 "Choose file" = "Datei auswählen";
 
 /* No comment provided by engineer. */
@@ -375,15 +387,12 @@
 "Configure ICE servers" = "ICE-Server konfigurieren";
 
 /* No comment provided by engineer. */
-"Configure SMP servers" = "SMP-Server konfigurieren";
-
-/* No comment provided by engineer. */
 "Confirm" = "Bestätigen";
 
 /* No comment provided by engineer. */
 "Confirm new passphrase…" = "Neues Passwort bestätigen…";
 
-/* No comment provided by engineer. */
+/* server test step */
 "Connect" = "Verbinden";
 
 /* No comment provided by engineer. */
@@ -511,6 +520,9 @@
 
 /* No comment provided by engineer. */
 "Create one-time invitation link" = "Erstellen Sie einen einmaligen Einladungslink";
+
+/* server test step */
+"Create queue" = "***Create queue";
 
 /* No comment provided by engineer. */
 "Create secret group" = "Geheime Gruppe erstellen";
@@ -665,6 +677,9 @@
 /* No comment provided by engineer. */
 "Delete pending connection?" = "Die ausstehende Verbindung löschen?";
 
+/* server test step */
+"Delete queue" = "***Delete queue";
+
 /* deleted chat item */
 "deleted" = "Gelöscht";
 
@@ -691,6 +706,9 @@
 
 /* authentication reason */
 "Disable SimpleX Lock" = "SimpleX Sperre deaktivieren";
+
+/* server test step */
+"Disconnect" = "***Disconnect";
 
 /* No comment provided by engineer. */
 "Display name" = "Angezeigter Name";
@@ -774,7 +792,13 @@
 "Enter passphrase…" = "Passwort eingeben…";
 
 /* No comment provided by engineer. */
+"Enter server manually" = "***Enter server manually";
+
+/* No comment provided by engineer. */
 "error" = "Fehler";
+
+/* No comment provided by engineer. */
+"Error" = "***Error";
 
 /* No comment provided by engineer. */
 "Error accepting contact request" = "Fehler beim Annehmen der Kontaktanfrage";
@@ -948,6 +972,9 @@
 "Group preferences" = "***Group preferences";
 
 /* No comment provided by engineer. */
+"Group profile" = "***Group profile";
+
+/* No comment provided by engineer. */
 "Group profile is stored on members' devices, not on the servers." = "Das Gruppenprofil wird nur auf den Mitglieds-Systemen gespeichtert und nicht auf den Servern.";
 
 /* snd group event chat item */
@@ -979,6 +1006,9 @@
 
 /* No comment provided by engineer. */
 "How to use markdown" = "Markdowns verwenden";
+
+/* No comment provided by engineer. */
+"How to use your servers" = "***How to use your servers";
 
 /* No comment provided by engineer. */
 "ICE servers (one per line)" = "ICE-Server (einer pro Zeile)";
@@ -1057,6 +1087,9 @@
 
 /* No comment provided by engineer. */
 "Invalid connection link" = "Ungültiger Verbindungslink";
+
+/* No comment provided by engineer. */
+"Invalid server address!" = "***Invalid server address!";
 
 /* No comment provided by engineer. */
 "Invitation expired!" = "Einladung abgelaufen!";
@@ -1147,9 +1180,6 @@
 
 /* No comment provided by engineer. */
 "Make a private connection" = "Stellen Sie eine private Verbindung her";
-
-/* No comment provided by engineer. */
-"Make sure SMP server addresses are in correct format, line separated and are not duplicated." = "Stellen Sie sicher, dass die SMP-Server Adressen das richtige Format haben, zeilenweise angeordnet und nicht kopiert sind.";
 
 /* No comment provided by engineer. */
 "Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." = "Stellen Sie sicher, dass die WebRTC ICE-Server Adressen das richtige Format haben, zeilenweise angeordnet und nicht kopiert sind.";
@@ -1391,8 +1421,14 @@
 /* No comment provided by engineer. */
 "Please store passphrase securely, you will NOT be able to change it if you lose it." = "Bitte bewahren Sie das Passwort sicher auf, Sie können es NICHT mehr ändern, wenn Sie es vergessen haben oder verlieren.";
 
+/* server test error */
+"Possibly, certificate fingerprint in server address is incorrect" = "***Possibly, certificate fingerprint in server address is incorrect";
+
 /* No comment provided by engineer. */
-"Preferences" = "***Preferences";
+"Preset server" = "***Preset server";
+
+/* No comment provided by engineer. */
+"Preset server address" = "***Preset server address";
 
 /* No comment provided by engineer. */
 "Privacy & security" = "Datenschutz & Sicherheit";
@@ -1545,13 +1581,16 @@
 "Save passphrase in Keychain" = "Passwort im Schlüsselbund speichern";
 
 /* No comment provided by engineer. */
-"Saved SMP servers will be removed" = "Gespeicherte SMP-Server werden entfernt";
+"Save servers" = "***Save servers";
 
 /* No comment provided by engineer. */
 "Saved WebRTC ICE servers will be removed" = "Gespeicherte WebRTC ICE-Server werden entfernt";
 
 /* No comment provided by engineer. */
 "Scan QR code" = "QR-Code scannen";
+
+/* No comment provided by engineer. */
+"Scan server QR code" = "***Scan server QR code";
 
 /* No comment provided by engineer. */
 "Search" = "Suche";
@@ -1561,6 +1600,9 @@
 
 /* No comment provided by engineer. */
 "secret" = "geheim";
+
+/* server test step */
+"Secure queue" = "***Secure queue";
 
 /* No comment provided by engineer. */
 "Send direct message" = "Direktnachricht senden";
@@ -1588,6 +1630,12 @@
 
 /* notification */
 "Sent file event" = "Datei-Ereignis wurde gesendet";
+
+/* server test error */
+"Server requires authorization to create queues, check password" = "***Server requires authorization to create queues, check password";
+
+/* No comment provided by engineer. */
+"Server test failed!" = "***Server test failed!";
 
 /* No comment provided by engineer. */
 "Servers" = "Server";
@@ -1639,9 +1687,6 @@
 
 /* No comment provided by engineer. */
 "SMP servers" = "SMP-Server";
-
-/* No comment provided by engineer. */
-"SMP servers (one per line)" = "SMP-Server (einer pro Zeile)";
 
 /* notification title */
 "Somebody" = "Jemand";
@@ -1708,6 +1753,18 @@
 
 /* No comment provided by engineer. */
 "TCP_KEEPINTVL" = "TCP_KEEPINTVL";
+
+/* server test failure */
+"Test failed at step %@." = "***Test failed at step %@.";
+
+/* No comment provided by engineer. */
+"Test server" = "***Test server";
+
+/* No comment provided by engineer. */
+"Test servers" = "***Test servers";
+
+/* No comment provided by engineer. */
+"Tests failed!" = "***Tests failed!";
 
 /* No comment provided by engineer. */
 "Thank you for installing SimpleX Chat!" = "Vielen Dank, dass Sie SimpleX Chat installiert haben!";
@@ -1861,6 +1918,12 @@
 
 /* No comment provided by engineer. */
 "Use chat" = "Verwenden Sie Chat";
+
+/* No comment provided by engineer. */
+"Use for new connections" = "***Use for new connections";
+
+/* No comment provided by engineer. */
+"Use server" = "***Use server";
 
 /* No comment provided by engineer. */
 "Use SimpleX Chat servers?" = "Verwenden Sie SimpleX Chat Server?";
@@ -2116,6 +2179,12 @@
 
 /* No comment provided by engineer. */
 "Your random profile" = "Ihr Zufallsprofil";
+
+/* No comment provided by engineer. */
+"Your server" = "***Your server";
+
+/* No comment provided by engineer. */
+"Your server address" = "***Your server address";
 
 /* No comment provided by engineer. */
 "Your settings" = "Meine Einstellungen";

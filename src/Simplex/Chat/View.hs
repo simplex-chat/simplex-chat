@@ -645,7 +645,7 @@ viewSMPTestResult :: Maybe SMPTestFailure -> [StyledString]
 viewSMPTestResult = \case
   Just SMPTestFailure {testStep, testError} ->
     result
-      <> ["Server requires authentication to create queues, check password" | testStep == TSCreateQueue && testError == SMP SMP.AUTH]
+      <> ["Server requires authorization to create queues, check password" | testStep == TSCreateQueue && testError == SMP SMP.AUTH]
       <> ["Possibly, certificate fingerprint in server address is incorrect" | testStep == TSConnect && testError == BROKER NETWORK]
     where
       result = ["SMP server test failed at " <> plain (drop 2 $ show testStep) <> ", error: " <> plain (strEncode testError)]
@@ -745,7 +745,7 @@ viewContactPreferences user ct ct' cups =
 viewContactPref :: FullPreferences -> FullPreferences -> Maybe Preferences -> ContactUserPreferences -> ChatFeature -> Maybe StyledString
 viewContactPref userPrefs userPrefs' ctPrefs cups pt
   | userPref == userPref' && ctPref == contactPreference = Nothing
-  | otherwise = Just $ plain (chatPrefName pt) <> ": " <> viewPrefEnabled enabled <> " (you allow: " <> viewCountactUserPref userPreference <> ", contact allows: " <> viewPreference contactPreference <> ")"
+  | otherwise = Just $ plain (chatPrefName pt) <> ": " <> plain (prefEnabledToText enabled) <> " (you allow: " <> viewCountactUserPref userPreference <> ", contact allows: " <> viewPreference contactPreference <> ")"
   where
     userPref = getPreference pt userPrefs
     userPref' = getPreference pt userPrefs'
@@ -775,13 +775,6 @@ viewCountactUserPref :: ContactUserPref -> StyledString
 viewCountactUserPref = \case
   CUPUser p -> "default (" <> viewPreference p <> ")"
   CUPContact p -> viewPreference p
-
-viewPrefEnabled :: PrefEnabled -> StyledString
-viewPrefEnabled = \case
-  PrefEnabled True True -> "enabled"
-  PrefEnabled False False -> "off"
-  PrefEnabled {forUser = True, forContact = False} -> "enabled for you"
-  PrefEnabled {forUser = False, forContact = True} -> "enabled for contact"
 
 viewGroupUpdated :: GroupInfo -> GroupInfo -> Maybe GroupMember -> [StyledString]
 viewGroupUpdated
