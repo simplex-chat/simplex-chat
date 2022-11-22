@@ -116,7 +116,7 @@ chatTests = do
     it "set contact alias" testSetAlias
     it "set connection alias" testSetConnectionAlias
   describe "preferences" $ do
-    fit "set contact preferences" testSetContactPrefs
+    it "set contact preferences" testSetContactPrefs
     it "update group preferences" testUpdateGroupPrefs
   describe "SMP servers" $ do
     it "get and set SMP servers" testGetSetSMPServers
