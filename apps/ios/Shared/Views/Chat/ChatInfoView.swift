@@ -9,7 +9,7 @@
 import SwiftUI
 import SimpleXChat
 
-func infoRow(_ title: LocalizedStringKey, _ value: String) -> some View {
+func infoRow<S>(_ title: S, _ value: String) -> some View where S: StringProtocol {
     HStack {
         Text(title)
         Spacer()
