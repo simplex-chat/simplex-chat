@@ -1,0 +1,68 @@
+name: Bug
+description: File a bug report/issue
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+- type: checkboxes
+  attributes:
+    label: Is there an existing issue for this?
+    description: Please search to see if an issue already exists for the bug you encountered.
+    options:
+    - label: I have searched the existing issues
+      required: true
+- type: dropdown
+  attributes:
+    label: Platform
+    description: Multiple selections are possible.
+    multiple: true
+    options:
+      - Linux
+      - Mac
+      - Windows
+      - Android
+      - iOS
+  validations:
+    required: true
+- type: input
+  attributes:
+    label: OS version
+    description: Specify the OS version
+    placeholder: ex. Android 12, Ubuntu 20.04
+  validations:
+    required: true
+- type: input
+  attributes:
+    label: App version
+    description: Specify the SimpleX version
+    placeholder: ex. 4.3.2
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Current Behavior
+    description: A concise description of what you're experiencing.
+    placeholder: Bug happened!
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Expected Behavior
+    description: A concise description of what you expected to happen.
+    placeholder: No bug should happen!
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Steps To Reproduce
+    description: Steps to reproduce the behavior.
+    placeholder: |
+      1. Go to ...
+      3. Click on ...
+      4. See error...
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Relevant log output
+    description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
+    render: shell

@@ -1,0 +1,16 @@
+name: Question
+description: Ask your question
+title: "[Q]: "
+labels: ["question", "triage"]
+body:
+- type: markdown
+  attributes:
+    value: |
+      Generally, we encourage you to ask questions in our [official group](https://simplex.chat/invitation/#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3Dsimplex:/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D), but you can do it anyway :)
+- type: textarea
+  attributes:
+    label: Question
+    description: Please ask your question in plain english.
+    placeholder: Is SimpleX - chat?
+  validations:
+    required: true
