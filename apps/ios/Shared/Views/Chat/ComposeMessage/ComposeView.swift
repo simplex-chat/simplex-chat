@@ -468,7 +468,7 @@ struct ComposeView: View {
         composeState = composeState.copy(voiceMessageRecordingState: .finished)
         if let fileName = composeState.voiceMessageRecordingFileName,
            let fileSize = fileSize(getAppFilePath(fileName)) {
-            print("finishVoiceMessageRecording recording file size = \(fileSize)")
+            logger.debug("finishVoiceMessageRecording recording file size = \(fileSize)")
         }
     }
 
