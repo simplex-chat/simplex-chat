@@ -1874,8 +1874,9 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
         withAgent $ \a -> toggleConnectionNtfs a (aConnId conn) $ enableNtfs chatSettings
         case memberCategory m of
           GCHostMember -> do
-            memberConnectedChatItem gInfo m
             toView $ CRUserJoinedGroup gInfo {membership = membership {memberStatus = GSMemConnected}} m {memberStatus = GSMemConnected}
+            createGroupFeatureItems gInfo m
+            memberConnectedChatItem gInfo m
             setActive $ ActiveG gName
             showToast ("#" <> gName) "you are connected to group"
           GCInviteeMember -> do
@@ -2501,6 +2502,13 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
       forM_ allChatFeatures $ \f -> do
         let ContactUserPreference {enabled} = getContactUserPreference f cups
         createInternalChatItem (CDDirectRcv ct) (CIRcvChatFeature f enabled) Nothing
+
+    createGroupFeatureItems :: GroupInfo -> GroupMember -> m ()
+    createGroupFeatureItems g@GroupInfo {groupProfile} m = do
+      let prefs = mergeGroupPreferences $ groupPreferences groupProfile
+      forM_ allChatFeatures $ \f -> do
+        let p = getGroupPreference f prefs
+        createInternalChatItem (CDGroupRcv g m) (CIRcvGroupFeature f p) Nothing
 
     xInfoProbe :: Contact -> Probe -> m ()
     xInfoProbe c2 probe =

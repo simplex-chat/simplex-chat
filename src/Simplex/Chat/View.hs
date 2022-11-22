@@ -799,15 +799,9 @@ viewGroupUpdated
           prefs = mapMaybe viewPref allChatFeatures
           viewPref pt
             | pref gps == pref gps' = Nothing
-            | otherwise = Just $ plain (chatPrefName pt) <> " enabled: " <> viewGroupPreference (pref gps')
+            | otherwise = Just $ plain (chatPrefName pt) <> " enabled: " <> plain (groupPrefToText $ pref gps')
             where
               pref pss = getGroupPreference pt $ mergeGroupPreferences pss
-
-viewGroupPreference :: GroupPreference -> StyledString
-viewGroupPreference = \case
-  GroupPreference {enable} -> case enable of
-    FEOn -> "on"
-    FEOff -> "off"
 
 viewContactAliasUpdated :: Contact -> [StyledString]
 viewContactAliasUpdated Contact {localDisplayName = n, profile = LocalProfile {localAlias}}

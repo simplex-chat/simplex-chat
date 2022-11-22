@@ -220,6 +220,10 @@ public struct FeatureEnabled: Decodable {
         : forContact ? NSLocalizedString("enabled for contact", comment: "enabled status")
         : NSLocalizedString("off", comment: "enabled status")
     }
+
+    public var iconColor: Color {
+        forUser ? .green : forContact ? .yellow : .secondary
+    }
 }
 
 public enum ContactUserPref: Decodable {
@@ -465,6 +469,13 @@ public enum GroupFeatureEnabled: String, Codable, Identifiable {
         switch self {
         case .on: return NSLocalizedString("on", comment: "group pref value")
         case .off: return NSLocalizedString("off", comment: "group pref value")
+        }
+    }
+
+    public var iconColor: Color {
+        switch self {
+        case .on: return .green
+        case .off: return .secondary
         }
     }
 }
@@ -1485,6 +1496,8 @@ public enum CIContent: Decodable, ItemContent {
     case sndConnEvent(sndConnEvent: SndConnEvent)
     case rcvChatFeature(feature: Feature, enabled: FeatureEnabled)
     case sndChatFeature(feature: Feature, enabled: FeatureEnabled)
+    case rcvGroupFeature(feature: Feature, preference: GroupPreference)
+    case sndGroupFeature(feature: Feature, preference: GroupPreference)
     case rcvChatFeatureRejected(feature: Feature)
 
     public var text: String {
@@ -1505,6 +1518,8 @@ public enum CIContent: Decodable, ItemContent {
             case let .sndConnEvent(sndConnEvent): return sndConnEvent.text
             case let .rcvChatFeature(feature, enabled): return "\(feature.text): \(enabled.text)"
             case let .sndChatFeature(feature, enabled): return "\(feature.text): \(enabled.text)"
+            case let .rcvGroupFeature(feature, preference): return "\(feature.text): \(preference.enable.text)"
+            case let .sndGroupFeature(feature, preference): return "\(feature.text): \(preference.enable.text)"
             case let .rcvChatFeatureRejected(feature): return String.localizedStringWithFormat("%@: received, prohibited", feature.text)
             }
         }

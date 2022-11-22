@@ -561,9 +561,9 @@ testGroupShared alice bob cath checkMessages = do
       alice #$> ("/_get chat #1 before=" <> groupItemId 2 7 <> " count=100", chat, [(0, "connected"), (0, "connected"), (1, "hello"), (0, "hi there")])
       alice #$> ("/_get chat #1 count=100 search=team", chat, [(0, "hey team")])
       bob @@@ [("@cath", "hey"), ("#team", "hey team"), ("@alice", "received invitation to join group team as admin")]
-      bob #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (0, "added cath (Catherine)"), (0, "connected"), (0, "hello"), (1, "hi there"), (0, "hey team")])
+      bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "added cath (Catherine)"), (0, "connected"), (0, "hello"), (1, "hi there"), (0, "hey team")])
       cath @@@ [("@bob", "hey"), ("#team", "hey team"), ("@alice", "received invitation to join group team as admin")]
-      cath #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (0, "connected"), (0, "hello"), (0, "hi there"), (1, "hey team")])
+      cath #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "connected"), (0, "hello"), (0, "hi there"), (1, "hey team")])
       alice #$> ("/_read chat #1 from=1 to=100", id, "ok")
       bob #$> ("/_read chat #1 from=1 to=100", id, "ok")
       cath #$> ("/_read chat #1 from=1 to=100", id, "ok")
@@ -1262,7 +1262,7 @@ testGroupMessageDelete =
       cath #$> ("/_get chat #1 count=2", chat', [((0, "hello!"), Nothing), ((0, "hi alic"), Just (0, "hello!"))])
 
       -- alice: msg id 5
-      bob #$> ("/_update item #1 " <> groupItemId 1 6 <> " text hi alice", id, "message updated")
+      bob #$> ("/_update item #1 " <> groupItemId 2 6 <> " text hi alice", id, "message updated")
       concurrently_
         (alice <# "#team bob> [edited] hi alice")
         ( do
@@ -1281,7 +1281,7 @@ testGroupMessageDelete =
         (alice <# "#team cath> how are you?")
         (bob <# "#team cath> how are you?")
 
-      cath #$> ("/_delete item #1 " <> groupItemId 1 6 <> " broadcast", id, "message deleted")
+      cath #$> ("/_delete item #1 " <> groupItemId 2 6 <> " broadcast", id, "message deleted")
       concurrently_
         (alice <# "#team cath> [deleted] how are you?")
         (bob <# "#team cath> [deleted] how are you?")
@@ -3851,7 +3851,7 @@ testSwitchGroupMember =
       bob <## "#team: alice changed address for you"
       alice <## "#team: you changed address for bob"
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "started changing address for bob..."), (1, "you changed address for bob")])
-      bob #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (0, "started changing address for you..."), (0, "changed address for you")])
+      bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "started changing address for you..."), (0, "changed address for you")])
       alice #> "#team hey"
       bob <# "#team alice> hey"
       bob #> "#team hi"
@@ -4038,6 +4038,12 @@ chatFeaturesF = map (\(a, _, c) -> (a, c)) chatFeatures''
 
 chatFeatures'' :: [((Int, String), Maybe (Int, String), Maybe String)]
 chatFeatures'' = [((0, "Full deletion: off"), Nothing, Nothing), ((0, "Voice messages: enabled"), Nothing, Nothing)]
+
+groupFeatures :: [(Int, String)]
+groupFeatures = map (\(a, _, _) -> a) groupFeatures''
+
+groupFeatures'' :: [((Int, String), Maybe (Int, String), Maybe String)]
+groupFeatures'' = [((0, "Full deletion: off"), Nothing, Nothing), ((0, "Voice messages: on"), Nothing, Nothing)]
 
 itemId :: Int -> String
 itemId i = show $ length chatFeatures + i
