@@ -68,14 +68,16 @@ struct FramedItemView: View {
                             ciMsgContentView (chatItem, showMember)
                         }
                     case let .file(text):
-                        CIFileView(file: chatItem.file, edited: chatItem.meta.itemEdited)
-                            .overlay(DetermineWidth())
-                        if text != "" {
-                            ciMsgContentView (chatItem, showMember)
-                        }
+                        ciFileView(chatItem, text)
                     case let .link(_, preview):
                         CILinkView(linkPreview: preview)
                         ciMsgContentView (chatItem, showMember)
+                    case let .unknown(_, text: text):
+                        if chatItem.file == nil {
+                            ciMsgContentView (chatItem, showMember)
+                        } else {
+                            ciFileView(chatItem, text)
+                        }
                     default:
                         ciMsgContentView (chatItem, showMember)
                     }
@@ -189,6 +191,14 @@ struct FramedItemView: View {
             v.frame(maxWidth: imgWidth, alignment: .leading)
         } else {
             v
+        }
+    }
+
+    @ViewBuilder private func ciFileView(_ ci: ChatItem, _ text: String) -> some View {
+        CIFileView(file: chatItem.file, edited: chatItem.meta.itemEdited)
+            .overlay(DetermineWidth())
+        if text != "" {
+            ciMsgContentView (chatItem, showMember)
         }
     }
 }
