@@ -1621,13 +1621,6 @@ public enum MsgContent {
         }
     }
 
-    public func isFile() -> Bool {
-        switch self {
-        case .file: return true
-        default: return false
-        }
-    }
-
     enum CodingKeys: String, CodingKey {
         case type
         case text
