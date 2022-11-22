@@ -17,7 +17,7 @@ public let maxImageSize: Int64 = 236700
 
 public let maxFileSize: Int64 = 8000000
 
-public let maxVoiceMessageLength = TimeInterval(30) // seconds
+public let maxVoiceMessageLength = TimeInterval(10) // seconds
 
 private let CHAT_DB: String = "_chat.db"
 

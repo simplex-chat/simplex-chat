@@ -130,7 +130,8 @@ struct ComposeVoiceView: View {
 
         var body: some View {
             GeometryReader { geometry in
-                Rectangle().frame(width: min(CGFloat((value ?? TimeInterval(0)) / length) * geometry.size.width, geometry.size.width), height: 2)
+                Rectangle()
+                    .frame(width: min(CGFloat((value ?? TimeInterval(0)) / length) * geometry.size.width, geometry.size.width), height: 2)
                     .foregroundColor(.accentColor)
                     .animation(.linear, value: value)
             }
