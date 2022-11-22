@@ -119,6 +119,15 @@ struct ComposeState {
             return nil
         }
     }
+
+    var voiceMessageRecordingFileName: String? {
+        switch preview {
+        case let .voicePreview(recordingFileName: recordingFileName, _):
+            return recordingFileName
+        default:
+            return nil
+        }
+    }
 }
 
 func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
@@ -159,7 +168,6 @@ struct ComposeView: View {
     @State var chosenFile: URL? = nil
 
     @State var audioRecorder: AudioRecorder?
-    @State var voiceMessageRecordingFileName: String?
     @State var voiceMessageRecordingTime: TimeInterval?
     
     var body: some View {
@@ -176,7 +184,7 @@ struct ComposeView: View {
                     Image(systemName: "paperclip")
                         .resizable()
                 }
-                .disabled(composeState.editing)
+                .disabled(composeState.editing || composeState.voiceMessageRecordingState != .noRecording)
                 .frame(width: 25, height: 25)
                 .padding(.bottom, 12)
                 .padding(.leading, 12)
@@ -308,7 +316,7 @@ struct ComposeView: View {
                 recordingFileName: recordingFileName,
                 recordingTime: $voiceMessageRecordingTime,
                 recordingState: $composeState.voiceMessageRecordingState,
-                cancelVoiceMessage: { cancelVoiceMessageRecording() },
+                cancelVoiceMessage: { cancelVoiceMessageRecording($0) },
                 cancelEnabled: !composeState.editing
             )
         case let .filePreview(fileName: fileName):
@@ -434,11 +442,17 @@ struct ComposeView: View {
     }
 
     private func startVoiceMessageRecording() async {
-        print(composeState)
+        print(composeState) // TODO remove
         let fileName = generateNewFileName("voice", "m4a")
         audioRecorder = AudioRecorder(
             onTimer: { voiceMessageRecordingTime = $0 },
-            onFinishRecording: { composeState = composeState.copy(voiceMessageRecordingState: .finished) }
+            onFinishRecording: {
+                composeState = composeState.copy(voiceMessageRecordingState: .finished)
+                // TODO remove
+                if let fileSize = fileSize(getAppFilePath(fileName)) {
+                    print("file size \(fileSize)")
+                }
+            }
         )
         if let err = await audioRecorder?.start(fileName: fileName) {
             print(err) // TODO show alert
@@ -447,7 +461,6 @@ struct ComposeView: View {
                 preview: .voicePreview(recordingFileName: fileName, duration: 0),
                 voiceMessageRecordingState: .recording
             )
-            voiceMessageRecordingFileName = fileName
         }
     }
 
@@ -455,20 +468,22 @@ struct ComposeView: View {
         audioRecorder?.stop()
         audioRecorder = nil
         composeState = composeState.copy(voiceMessageRecordingState: .finished)
+        // TODO remove
+        if let fileName = composeState.voiceMessageRecordingFileName,
+           let fileSize = fileSize(getAppFilePath(fileName)) {
+            print("file size \(fileSize)")
+        }
     }
 
-    private func cancelVoiceMessageRecording() {
-        if let fileName = voiceMessageRecordingFileName {
-            print(0)
-            audioRecorder?.stop()
-            print(1)
-            // audioPlayer?.stop()
-            removeFile(fileName)
-            print(2)
-            clearState()
-            print(3)
-            print(composeState)
-        }
+    private func cancelVoiceMessageRecording(_ fileName: String) {
+        print(0) // TODO view doesn't update when cancelling during recording
+        audioRecorder?.stop()
+        print(1)
+        removeFile(fileName)
+        print(2)
+        clearState()
+        print(3)
+        print(composeState)
     }
 
     private func clearState() {
@@ -480,7 +495,6 @@ struct ComposeView: View {
         chosenImages = []
         chosenFile = nil
         audioRecorder = nil
-        voiceMessageRecordingFileName = nil
         voiceMessageRecordingTime = nil
     }
 

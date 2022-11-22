@@ -17,6 +17,8 @@ public let maxImageSize: Int64 = 236700
 
 public let maxFileSize: Int64 = 8000000
 
+public let maxVoiceMessageLength = TimeInterval(30) // seconds
+
 private let CHAT_DB: String = "_chat.db"
 
 private let AGENT_DB: String = "_agent.db"
@@ -73,7 +75,7 @@ public func deleteAppFiles() {
     }
 }
 
-func fileSize(_ url: URL) -> Int? { // in bytes
+public func fileSize(_ url: URL) -> Int? { // in bytes
     do {
         let val = try url.resourceValues(forKeys: [.totalFileAllocatedSizeKey, .fileAllocatedSizeKey])
         return val.totalFileAllocatedSize ?? val.fileAllocatedSize

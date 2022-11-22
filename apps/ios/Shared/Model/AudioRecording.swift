@@ -36,16 +36,16 @@ class AudioRecorder: NSObject, AVAudioRecorderDelegate {
             try av.setActive(true)
             let settings = [
                 AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
-                AVSampleRateKey: 44100,
-                AVNumberOfChannelsKey: 2,
-                AVEncoderAudioQualityKey:AVAudioQuality.high.rawValue
+                AVSampleRateKey: 12000,
+                AVEncoderBitRateKey: 12000,
+                AVNumberOfChannelsKey: 1
             ]
             audioRecorder = try AVAudioRecorder(url: getAppFilePath(fileName), settings: settings)
             audioRecorder?.delegate = self
-            audioRecorder?.record(forDuration: 10)
+            audioRecorder?.record(forDuration: maxVoiceMessageLength)
 
             await MainActor.run {
-                recordingTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { timer in
+                recordingTimer = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { timer in
                     logger.debug("recording timer")
                     guard let time = self.audioRecorder?.currentTime else { return }
                     self.onTimer?(time)
@@ -110,7 +110,7 @@ class AudioPlayer: NSObject, AVAudioPlayerDelegate {
         audioPlayer?.prepareToPlay()
         audioPlayer?.play()
 
-        playbackTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { timer in
+        playbackTimer = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { timer in
             if self.audioPlayer?.isPlaying ?? false {
                 logger.debug("playback timer")
                 guard let time = self.audioPlayer?.currentTime else { return }

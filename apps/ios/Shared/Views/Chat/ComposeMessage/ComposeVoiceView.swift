@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 enum VoiceMessagePlaybackState {
     case noPlayback
@@ -19,32 +20,22 @@ struct ComposeVoiceView: View {
     var recordingFileName: String
     @Binding var recordingTime: TimeInterval?
     @Binding var recordingState: VoiceMessageRecordingState
-    let cancelVoiceMessage: (() -> Void)
+    let cancelVoiceMessage: ((String) -> Void)
     let cancelEnabled: Bool
 
     @State var audioPlayer: AudioPlayer?
     @State var playbackState: VoiceMessagePlaybackState = .noPlayback
-    @State var playbackTime: TimeInterval = TimeInterval(0)
+    @State var playbackTime: TimeInterval?
 
     var body: some View {
-        HStack(alignment: .center, spacing: 4) {
+        ZStack {
             if recordingState != .finished {
                 recordingMode()
             } else {
                 playbackMode()
             }
-            Spacer()
-            if cancelEnabled {
-                Button {
-                    audioPlayer?.stop()
-                    cancelVoiceMessage()
-                } label: {
-                    Image(systemName: "multiply")
-                }
-            }
         }
         .padding(.vertical, 1)
-        .padding(.trailing, 12)
         .frame(height: 50)
         .background(colorScheme == .light ? sentColorLight : sentColorDark)
         .frame(maxWidth: .infinity)
@@ -52,61 +43,98 @@ struct ComposeVoiceView: View {
     }
 
     private func recordingMode() -> some View {
-        HStack {
-            Image(systemName: "play.fill")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 20, height: 20)
-                .foregroundColor(Color(uiColor: .tertiaryLabel))
-                .padding(.leading, 12)
-            if let time = recordingTime {
-                Text(formattedTime(time))
+        ZStack {
+            HStack(alignment: .center, spacing: 4) {
+                playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
+                Text(formattedTime(recordingTime))
+                Spacer()
+                if cancelEnabled {
+                    cancelButton()
+                }
             }
+            .padding(.trailing, 12)
+
+            ProgressBar(length: maxVoiceMessageLength, value: $recordingTime)
         }
     }
 
     private func playbackMode() -> some View {
-        HStack {
-            switch playbackState {
-            case .noPlayback:
-                Button { startPlayback() } label: {
-                    Image(systemName: "play.fill")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 20, height: 20)
-                        .padding(.leading, 12)
+        ZStack {
+            HStack(alignment: .center, spacing: 4) {
+                switch playbackState {
+                case .noPlayback:
+                    Button {
+                        startPlayback()
+                    } label: {
+                        playPauseIcon("play.fill")
+                    }
+                    Text(formattedTime(recordingTime))
+                case .playing:
+                    Button {
+                        audioPlayer?.pause()
+                        playbackState = .paused
+                    } label: {
+                        playPauseIcon("pause.fill")
+                    }
+                    Text(formattedTime(playbackTime))
+                case .paused:
+                    Button {
+                        audioPlayer?.play()
+                        playbackState = .playing
+                    } label: {
+                        playPauseIcon("play.fill")
+                    }
+                    Text(formattedTime(playbackTime))
                 }
-            case .playing:
-                Button {
-                    audioPlayer?.pause()
-                    playbackState = .paused
-                } label: {
-                    Image(systemName: "pause.fill")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 20, height: 20)
-                        .padding(.leading, 12)
-                }
-            case .paused:
-                Button {
-                    audioPlayer?.play()
-                    playbackState = .playing
-                } label: {
-                    Image(systemName: "play.fill")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 20, height: 20)
-                        .padding(.leading, 12)
+                Spacer()
+                if cancelEnabled {
+                    cancelButton()
                 }
             }
-            Text(formattedTime(playbackTime))
+            .padding(.trailing, 12)
+
+            if let recordingLength = recordingTime {
+                ProgressBar(length: recordingLength, value: $playbackTime)
+            }
         }
     }
 
-    private func formattedTime(_ time: TimeInterval) -> String {
-        let min = Int(time / 60)
-        let sec = Int(time.truncatingRemainder(dividingBy: 60))
+    private func playPauseIcon(_ image: String, _ color: Color = .accentColor) -> some View {
+        Image(systemName: image)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: 20, height: 20)
+            .foregroundColor(color)
+            .padding(.leading, 12)
+    }
+
+    private func formattedTime(_ time: TimeInterval?) -> String {
+        let t = time ?? TimeInterval(0)
+        let min = Int(t / 60)
+        let sec = Int(t.truncatingRemainder(dividingBy: 60))
         return String(format: "%02d:%02d", min, sec)
+    }
+
+    private func cancelButton() -> some View {
+        Button {
+            audioPlayer?.stop()
+            cancelVoiceMessage(recordingFileName)
+        } label: {
+            Image(systemName: "multiply")
+        }
+    }
+
+    struct ProgressBar: View {
+        var length: TimeInterval
+        @Binding var value: TimeInterval?
+
+        var body: some View {
+            GeometryReader { geometry in
+                Rectangle().frame(width: min(CGFloat((value ?? TimeInterval(0)) / length) * geometry.size.width, geometry.size.width), height: 2)
+                    .foregroundColor(.accentColor)
+                    .animation(.linear, value: value)
+            }
+        }
     }
 
     private func startPlayback() {
@@ -115,6 +143,7 @@ struct ComposeVoiceView: View {
             onFinishPlayback: { playbackState = .noPlayback }
         )
         audioPlayer?.start(fileName: recordingFileName)
+        playbackTime = TimeInterval(0)
         playbackState = .playing
     }
 }
