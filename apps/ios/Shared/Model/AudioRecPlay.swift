@@ -24,13 +24,13 @@ class AudioRecorder {
     }
 
     enum StartError {
-        case permissions
+        case permission
         case error(String)
     }
 
     func start(fileName: String) async -> StartError? {
         let av = AVAudioSession.sharedInstance()
-        if !(await checkPermission()) { return .permissions }
+        if !(await checkPermission()) { return .permission }
         do {
             try av.setCategory(AVAudioSession.Category.playAndRecord, options: .defaultToSpeaker)
             try av.setActive(true)
