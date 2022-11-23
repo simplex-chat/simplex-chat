@@ -65,9 +65,7 @@ fun ChatInfoView(
       openPreferences = {
         withApi {
           ModalManager.shared.showModal(true){
-            PreferencesPerChatView(chatModel, chatModel.currentUser.value ?: return@showModal, contact) {
-              onChatUpdated(chat.copy(chatInfo = ChatInfo.Direct(it)))
-            }
+            PreferencesPerChatView(chatModel, chatModel.currentUser.value ?: return@showModal, contact)
           }
         }
       },

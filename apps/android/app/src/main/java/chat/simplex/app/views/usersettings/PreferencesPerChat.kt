@@ -21,7 +21,7 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 
 @Composable
-fun PreferencesPerChatView(m: ChatModel, user: User, contact: Contact, onContactUpdated: (Contact) -> Unit) {
+fun PreferencesPerChatView(m: ChatModel, user: User, contact: Contact) {
   val userPrefs = remember { user.profile.preferences ?: ChatPreferences.default }
   val contactPrefs = remember { contact.profile.preferences ?: ChatPreferences.default }
   var currentPrefs by remember { mutableStateOf(contact.userPreferences) }
@@ -45,7 +45,6 @@ fun PreferencesPerChatView(m: ChatModel, user: User, contact: Contact, onContact
             savedPrefs = currentPrefs
             val newContact = contact.copy(userPreferences = currentPrefs)
             m.updateContact(newContact)
-            onContactUpdated(newContact)
           }
         }
       }

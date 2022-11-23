@@ -1834,15 +1834,15 @@ data class GroupPreference(
 
 @Serializable
 enum class FeatureAllowed {
-  @SerialName("on") YES,
-  @SerialName("off") NO,
+  @SerialName("yes") YES,
+  @SerialName("no") NO,
   @SerialName("always") ALWAYS,
 }
 
 @Serializable
 enum class GroupFeatureEnabled {
-  @SerialName("on") YES,
-  @SerialName("off") NO,
+  @SerialName("yes") YES,
+  @SerialName("no") NO,
 }
 
 enum class ChatPreferenceLocal {
