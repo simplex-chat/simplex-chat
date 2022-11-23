@@ -311,7 +311,6 @@ struct ComposeView: View {
                     chosenImages = []
                 },
                 cancelEnabled: !composeState.editing)
-        // case let .voicePreview(recordingFileName, duration): // TODO use duration for quotes/editing
         case let .voicePreview(recordingFileName, _):
             ComposeVoiceView(
                 recordingFileName: recordingFileName,
