@@ -446,7 +446,7 @@ struct ComposeView: View {
         audioRecorder = AudioRecorder(
             onTimer: { voiceMessageRecordingTime = $0 },
             onFinishRecording: {
-                composeState = composeState.copy(voiceMessageRecordingState: .finished)
+                updateComposeVMRFinished()
                 if let fileSize = fileSize(getAppFilePath(fileName)) {
                     logger.debug("onFinishRecording recording file size = \(fileSize)")
                 }
@@ -465,11 +465,24 @@ struct ComposeView: View {
     private func finishVoiceMessageRecording() {
         audioRecorder?.stop()
         audioRecorder = nil
-        composeState = composeState.copy(voiceMessageRecordingState: .finished)
+        updateComposeVMRFinished()
         if let fileName = composeState.voiceMessageRecordingFileName,
            let fileSize = fileSize(getAppFilePath(fileName)) {
             logger.debug("finishVoiceMessageRecording recording file size = \(fileSize)")
         }
+    }
+
+    // ? maybe we shouldn't have duration in ComposePreview.voicePreview
+    private func updateComposeVMRFinished() {
+        var preview = composeState.preview
+        if let recordingFileName = composeState.voiceMessageRecordingFileName,
+           let recordingTime = voiceMessageRecordingTime {
+            preview = .voicePreview(recordingFileName: recordingFileName, duration: Int(recordingTime.rounded()))
+        }
+        composeState = composeState.copy(
+            preview: preview,
+            voiceMessageRecordingState: .finished
+        )
     }
 
     private func cancelVoiceMessageRecording(_ fileName: String) {
