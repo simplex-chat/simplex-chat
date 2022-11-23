@@ -387,6 +387,7 @@
   <string name="smp_servers_test_some_failed">Some servers failed the test:</string>
   <string name="smp_servers_scan_qr">Scan server QR code</string>
   <string name="smp_servers_enter_manually">Enter server manually</string>
+  <string name="smp_servers_preset_server">Preset server</string>
   <string name="smp_servers_your_server">Your server</string>
   <string name="smp_servers_your_server_address">Your server address</string>
   <string name="smp_servers_use_server">Use server</string>
@@ -394,6 +395,7 @@
   <string name="smp_servers_add_to_another_device">Add to another device</string>
   <string name="smp_servers_invalid_address">Invalid server address!</string>
   <string name="smp_servers_check_address">Check server address and try again.</string>
+  <string name="smp_servers_delete_server">Delete server</string>
   <string name="install_simplex_chat_for_terminal">Install <xliff:g id="appNameFull">SimpleX Chat</xliff:g> for terminal</string>
   <string name="star_on_github">Star on GitHub</string>
   <string name="contribute">Contribute</string>

@@ -12,23 +12,28 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.*
 import chat.simplex.app.ui.theme.DEFAULT_PADDING
 import chat.simplex.app.ui.theme.HighOrLowlight
 
 @Composable
-fun TextEditor(modifier: Modifier, text: MutableState<String>, border: Boolean = true, onChange: ((String) -> Unit)? = null) {
+fun TextEditor(
+  modifier: Modifier,
+  text: MutableState<String>,
+  border: Boolean = true,
+  fontSize: TextUnit = 14.sp,
+  background: Color = MaterialTheme.colors.background,
+  onChange: ((String) -> Unit)? = null
+) {
   BasicTextField(
     value = text.value,
     onValueChange = { text.value = it; onChange?.invoke(it) },
     textStyle = TextStyle(
-      fontFamily = FontFamily.Monospace, fontSize = 14.sp,
+      fontFamily = FontFamily.Monospace, fontSize = fontSize,
       color = MaterialTheme.colors.onBackground
     ),
     keyboardOptions = KeyboardOptions.Default.copy(
@@ -43,7 +48,7 @@ fun TextEditor(modifier: Modifier, text: MutableState<String>, border: Boolean =
         border = if (border) BorderStroke(1.dp, MaterialTheme.colors.secondary) else null
       ) {
         Row(
-          Modifier.background(MaterialTheme.colors.background),
+          Modifier.background(background),
           verticalAlignment = Alignment.Top
         ) {
           Box(

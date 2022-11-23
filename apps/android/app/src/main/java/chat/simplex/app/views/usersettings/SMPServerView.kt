@@ -81,7 +81,7 @@ private fun SMPServerLayout(
       .verticalScroll(rememberScrollState())
       .padding(bottom = DEFAULT_PADDING)
   ) {
-    AppBarTitle(stringResource(R.string.your_SMP_servers))
+    AppBarTitle(stringResource(if (server.preset) R.string.smp_servers_preset_server else R.string.smp_servers_your_server))
 
     if (server.preset) {
       PresetServer(testing, server, testServer, onUpdate, onDelete)
@@ -99,14 +99,14 @@ private fun PresetServer(
   onUpdate: (ServerCfg) -> Unit,
   onDelete: () -> Unit,
 ) {
-  SectionView(stringResource(R.string.smp_servers_preset_address)) {
+  SectionView(stringResource(R.string.smp_servers_preset_address).uppercase()) {
     SelectionContainer {
       Text(
         server.server,
-        Modifier.padding(horizontal = DEFAULT_PADDING, vertical = 5.dp),
+        Modifier.padding(start = DEFAULT_PADDING, top = 5.dp, end = DEFAULT_PADDING, bottom = 10.dp),
         style = TextStyle(
-          fontFamily = FontFamily.Monospace, fontSize = 14.sp,
-          color = MaterialTheme.colors.onBackground
+          fontFamily = FontFamily.Monospace, fontSize = 16.sp,
+          color = HighOrLowlight
         )
       )
     }
@@ -126,12 +126,18 @@ private fun CustomServer(
   val serverAddress = remember { mutableStateOf(server.server) }
   val valid = remember { derivedStateOf { parseServerAddress(serverAddress.value)?.valid == true } }
   SectionView(
-    stringResource(R.string.smp_servers_your_server_address),
+    stringResource(R.string.smp_servers_your_server_address).uppercase(),
     icon = Icons.Outlined.Block,
     iconTint = if (!valid.value) MaterialTheme.colors.error else Color.Transparent,
   ) {
     val testedPreviously = remember { mutableMapOf<String, Boolean?>() }
-    TextEditor(Modifier.height(144.dp), text = serverAddress, border = false) {
+    TextEditor(
+      Modifier.height(144.dp),
+      text = serverAddress,
+      border = false,
+      fontSize = 16.sp,
+      background = if (isInDarkTheme()) GroupDark else MaterialTheme.colors.background
+    ) {
       testedPreviously[server.server] = server.tested
       onUpdate(server.copy(server = it, tested = testedPreviously[serverAddress.value]))
     }
@@ -141,7 +147,7 @@ private fun CustomServer(
   SectionSpacer()
 
   if (valid.value) {
-    SectionView(stringResource(R.string.smp_servers_add_to_another_device)) {
+    SectionView(stringResource(R.string.smp_servers_add_to_another_device).uppercase()) {
       QRCode(serverAddress.value, Modifier.aspectRatio(1f))
     }
   }
@@ -156,7 +162,7 @@ private fun UseServerSection(
   onUpdate: (ServerCfg) -> Unit,
   onDelete: () -> Unit,
 ) {
-  SectionView(stringResource(R.string.smp_servers_use_server)) {
+  SectionView(stringResource(R.string.smp_servers_use_server).uppercase()) {
     SectionItemViewSpaceBetween(testServer, disabled = !valid || testing) {
       Text(stringResource(R.string.smp_servers_test_server), color = if (valid && !testing) MaterialTheme.colors.onBackground else HighOrLowlight)
       ShowTestStatus(server)
@@ -168,7 +174,7 @@ private fun UseServerSection(
     }
     SectionDivider()
     SectionItemView(onDelete, disabled = testing) {
-      Text(stringResource(R.string.delete_verb), color = if (testing) HighOrLowlight else MaterialTheme.colors.error)
+      Text(stringResource(R.string.smp_servers_delete_server), color = if (testing) HighOrLowlight else MaterialTheme.colors.error)
     }
   }
 }
@@ -177,7 +183,7 @@ private fun UseServerSection(
 fun ShowTestStatus(server: ServerCfg, modifier: Modifier = Modifier) =
   when (server.tested) {
     true -> Icon(Icons.Outlined.Check, null, modifier, tint = Color.Green)
-    false -> Icon(Icons.Outlined.MultipleStop, null, modifier, tint = MaterialTheme.colors.error)
+    false -> Icon(Icons.Outlined.Clear, null, modifier, tint = MaterialTheme.colors.error)
     else -> Icon(Icons.Outlined.Check, null, modifier, tint = Color.Transparent)
   }
 

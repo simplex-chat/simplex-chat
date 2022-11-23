@@ -90,7 +90,6 @@ fun SMPServersView(m: ChatModel) {
                   close()
                   servers = servers + it
                   m.userSMPServersUnsaved.value = servers
-                  showServer(servers.last())
                 }
               }
             }
@@ -98,11 +97,13 @@ fun SMPServersView(m: ChatModel) {
               Text(stringResource(R.string.smp_servers_scan_qr))
             }
             val hasAllPresets = hasAllPresets(servers, m)
-            SectionItemView({
-              AlertManager.shared.hideAlert()
-              servers = (servers + addAllPresets(servers, m)).sortedByDescending { it.preset }
-            }, disabled = hasAllPresets) {
-              Text(stringResource(R.string.smp_servers_preset_add), color = if (!hasAllPresets) MaterialTheme.colors.onBackground else HighOrLowlight)
+            if (!hasAllPresets) {
+              SectionItemView({
+                AlertManager.shared.hideAlert()
+                servers = (servers + addAllPresets(servers, m)).sortedByDescending { it.preset }
+              }) {
+                Text(stringResource(R.string.smp_servers_preset_add), color = MaterialTheme.colors.onBackground)
+              }
             }
           }
         }
@@ -160,9 +161,9 @@ private fun SMPServersLayout(
       .verticalScroll(rememberScrollState())
       .padding(bottom = DEFAULT_PADDING),
   ) {
-    AppBarTitle(stringResource(R.string.smp_servers))
+    AppBarTitle(stringResource(R.string.your_SMP_servers))
 
-    SectionView(stringResource(R.string.smp_servers)) {
+    SectionView(stringResource(R.string.smp_servers).uppercase()) {
       for (srv in servers) {
         SectionItemView({ showServer(srv) }, disabled = testing) {
           SmpServerView(srv, servers, testing)
@@ -204,7 +205,7 @@ private fun SmpServerView(srv: ServerCfg, servers: List<ServerCfg>, disabled: Bo
   val address = parseServerAddress(srv.server)
   when {
     address == null || !address.valid || !uniqueAddress(srv, address, servers) -> InvalidServer()
-    !srv.enabled -> Icon(Icons.Outlined.Warning, null)
+    !srv.enabled -> Icon(Icons.Outlined.DoNotDisturb, null, tint = HighOrLowlight)
     else -> ShowTestStatus(srv)
   }
   Spacer(Modifier.padding(horizontal = 4.dp))
@@ -256,10 +257,10 @@ private fun hasPreset(srv: String, servers: List<ServerCfg>): Boolean =
   servers.any { it.server == srv }
 
 private suspend fun testServers(testing: MutableState<Boolean>, servers: List<ServerCfg>, m: ChatModel, onUpdated: (List<ServerCfg>) -> Unit) {
-  onUpdated(resetTestStatus(servers))
+  val resetStatus = resetTestStatus(servers)
+  onUpdated(resetStatus)
   testing.value = true
-  val (updated, fs) = runServersTest(servers, m)
-  onUpdated(updated)
+  val fs = runServersTest(resetStatus, m) { onUpdated(it) }
   testing.value = false
   if (fs.isNotEmpty()) {
     val msg = fs.map { it.key + ": " + it.value.localizedDescription }.joinToString("\n")
@@ -281,21 +282,21 @@ private fun resetTestStatus(servers: List<ServerCfg>): List<ServerCfg> {
   return copy
 }
 
-private suspend fun runServersTest(servers: List<ServerCfg>, m: ChatModel): Pair<List<ServerCfg>, Map<String, SMPTestFailure>> {
+private suspend fun runServersTest(servers: List<ServerCfg>, m: ChatModel, onUpdated: (List<ServerCfg>) -> Unit): Map<String, SMPTestFailure> {
   val fs: MutableMap<String, SMPTestFailure> = mutableMapOf()
-  val updatedServers = ArrayList<ServerCfg>()
-  for (server in servers) {
+  val updatedServers = ArrayList<ServerCfg>(servers)
+  for ((index, server) in servers.withIndex()) {
     if (server.enabled) {
       val (updatedServer, f) = testServerConnection(server, m)
-      updatedServers.add(updatedServer)
+      updatedServers.removeAt(index)
+      updatedServers.add(index, updatedServer)
+      onUpdated(updatedServers)
       if (f != null) {
         fs[serverHostname(updatedServer)] = f
       }
-    } else {
-      updatedServers.add(server)
     }
   }
-  return updatedServers to fs
+  return fs
 }
 
 private fun saveSMPServers(servers: List<ServerCfg>, m: ChatModel) {
