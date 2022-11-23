@@ -165,7 +165,7 @@ public func getAppFilePath(_ fileName: String) -> URL {
 
 public func getLoadedFileName(_ file: CIFile?) -> String? {
     if let file = file,
-       // file.loaded, // TODO backend
+       file.loaded,
        let fileName = file.filePath {
         return fileName
     }
