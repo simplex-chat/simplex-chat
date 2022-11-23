@@ -159,7 +159,8 @@ html {
 #network::before {
   display: block;
   content: " ";
-  margin-top: -26px;
+  position: absolute;
+  top: -26px;
   height: 66px;
   visibility: hidden;
   pointer-events: none;
