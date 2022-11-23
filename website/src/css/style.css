@@ -446,16 +446,29 @@ header nav {
 
 
 /* comparison */
-#comparison table td,
-#comparison table th {
-  font-size: 15px;
-  font-weight: normal;
-  font-stretch: normal;
-  font-style: normal;
-  line-height: 1.4;
-  letter-spacing: 0.47px;
+#comparison table thead th{
+  font-size: 16px;
+  line-height: 36px;
+  font-weight: 500;
+  text-align: center;
 }
-
+#comparison table tbody td{
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+}
+#comparison table tbody tr > td:first-child{
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+  text-align: left;
+}
+@media (min-width: 1024px) {
+  #comparison table tbody tr > td:first-child{
+    font-size: 18px;
+    line-height: 36px;
+  }  
+}
 
 /* hero */
 header{
