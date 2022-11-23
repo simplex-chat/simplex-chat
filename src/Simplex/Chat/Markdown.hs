@@ -1,5 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
@@ -16,13 +18,20 @@ import Data.Char (isDigit)
 import Data.Either (fromRight)
 import Data.Functor (($>))
 import Data.List (intercalate)
+import Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe, isNothing)
+import Data.Semigroup (sconcat)
 import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import GHC.Generics
+import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ConnReqScheme (..), ConnReqUriData (..), ConnectionMode (..), ConnectionRequestUri (..), SMPQueue (..))
+import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (fstToLower, sumTypeJSON)
+import Simplex.Messaging.Protocol (ProtocolServer (..))
+import Simplex.Messaging.Util (safeDecodeUtf8)
 import System.Console.ANSI.Types
 import qualified Text.Email.Validate as Email
 
@@ -37,6 +46,7 @@ data Format
   | Secret
   | Colored {color :: FormatColor}
   | Uri
+  | SimplexUri {mode :: ConnectionMode, originalUri :: Text, smpHosts :: NonEmpty Text}
   | Email
   | Phone
   deriving (Eq, Show, Generic)
@@ -190,9 +200,23 @@ markdownP = mconcat <$> A.many' fragmentP
     wordMD :: Text -> Markdown
     wordMD s
       | T.null s = unmarked s
-      | isUri s = markdown Uri s
+      | isUri s = case strDecode $ encodeUtf8 s of
+        Right cReq -> uncurry markdown $ simplexUri s cReq
+        _ -> markdown Uri s
       | isEmail s = markdown Email s
       | otherwise = unmarked s
     isUri s = T.length s >= 10 && any (`T.isPrefixOf` s) ["http://", "https://", "simplex:/"]
     isEmail s = T.any (== '@') s && Email.isValid (encodeUtf8 s)
     noFormat = pure . unmarked
+    simplexUri :: Text -> AConnectionRequestUri -> (Format, Text)
+    simplexUri originalUri = \case
+      ACR _ (CRContactUri crData) ->
+        ( SimplexUri CMContact originalUri $ uriHosts crData,
+          safeDecodeUtf8 . strEncode $ CRContactUri crData {crScheme = CRSSimplex}
+        )
+      ACR _ (CRInvitationUri crData e2e) ->
+        ( SimplexUri CMInvitation originalUri $ uriHosts crData,
+          safeDecodeUtf8 . strEncode $ CRInvitationUri crData {crScheme = CRSSimplex} e2e
+        )
+      where
+        uriHosts ConnReqUriData {crSmpQueues} = L.map (safeDecodeUtf8 . strEncode) $ sconcat $ L.map (host . qServer) crSmpQueues
