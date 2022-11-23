@@ -206,8 +206,15 @@ struct CIVoiceView_Previews: PreviewProvider {
             content: .rcvMsgContent(msgContent: .voice(text: "", duration: 30)),
             quotedItem: nil,
             file: nil
-       )
-        Group{
+        )
+        Group {
+            CIVoiceView(
+                chatItem: ChatItem.getVoiceMsgContentSample(),
+                recordingFile: CIFile.getSample(fileName: "voice.m4a", fileSize: 65536, fileStatus: .rcvComplete),
+                duration: 30,
+                playbackState: .playing,
+                playbackTime: TimeInterval(20)
+            )
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: sentVoiceMessage)
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample())
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample(fileStatus: .rcvTransfer))

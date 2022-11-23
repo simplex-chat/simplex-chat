@@ -36,6 +36,9 @@ struct FramedCIVoiceView: View {
             .foregroundColor(.secondary)
             .frame(width: 50, alignment: .leading)
         }
+        .padding(.top, 6)
+        .padding(.leading, 6)
+        .padding(.trailing, 12)
     }
 }
 
@@ -48,7 +51,7 @@ struct FramedCIVoiceView_Previews: PreviewProvider {
             quotedItem: nil,
             file: CIFile.getSample(fileStatus: .sndComplete)
         )
-        Group{
+        Group {
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: sentVoiceMessage)
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample(text: "Hello there"))
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample(text: "Hello there", fileStatus: .rcvTransfer))
