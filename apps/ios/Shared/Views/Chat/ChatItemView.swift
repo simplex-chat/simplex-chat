@@ -40,7 +40,7 @@ struct ChatItemView: View {
     @ViewBuilder private func contentItemView() -> some View {
         if (chatItem.quotedItem == nil && chatItem.file == nil && isShortEmoji(chatItem.content.text)) {
             EmojiItemView(chatItem: chatItem)
-        } else if chatItem.quotedItem == nil && chatItem.content.text == "",
+        } else if chatItem.quotedItem == nil && chatItem.content.text.isEmpty,
                   case let .voice(_, duration) = chatItem.content.msgContent {
             CIVoiceView(chatItem: chatItem, recordingFile: chatItem.file, duration: duration)
         } else {
