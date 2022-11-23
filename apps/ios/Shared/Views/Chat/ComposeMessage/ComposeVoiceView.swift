@@ -64,7 +64,7 @@ struct ComposeVoiceView: View {
             }
             .padding(.trailing, 12)
 
-            ProgressBar(length: maxVoiceMessageLength, value: $recordingTime)
+            ProgressBar(length: maxVoiceMessageLength, progress: $recordingTime)
         }
     }
 
@@ -104,7 +104,7 @@ struct ComposeVoiceView: View {
             .padding(.trailing, 12)
 
             if let recordingLength = recordingTime {
-                ProgressBar(length: recordingLength, value: $playbackTime)
+                ProgressBar(length: recordingLength, progress: $playbackTime)
             }
         }
     }
@@ -129,14 +129,14 @@ struct ComposeVoiceView: View {
 
     struct ProgressBar: View {
         var length: TimeInterval
-        @Binding var value: TimeInterval?
+        @Binding var progress: TimeInterval?
 
         var body: some View {
             GeometryReader { geometry in
                 Rectangle()
-                    .frame(width: min(CGFloat((value ?? TimeInterval(0)) / length) * geometry.size.width, geometry.size.width), height: 2)
+                    .frame(width: min(CGFloat((progress ?? TimeInterval(0)) / length) * geometry.size.width, geometry.size.width), height: 2)
                     .foregroundColor(.accentColor)
-                    .animation(.linear, value: value)
+                    .animation(.linear, value: progress)
             }
         }
     }
@@ -146,7 +146,7 @@ struct ComposeVoiceView: View {
             onTimer: { playbackTime = $0 },
             onFinishPlayback: {
                 playbackState = .noPlayback
-                playbackTime = recordingTime // animate progress bar to the end
+                playbackTime = TimeInterval(0)
             }
         )
         audioPlayer?.start(fileName: recordingFileName)

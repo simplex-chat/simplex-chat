@@ -134,15 +134,39 @@ struct VoiceMessagePlayer: View {
     }
 
     private func playPauseIcon(_ image: String, _ color: Color = .accentColor) -> some View {
-        Image(systemName: image)
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .frame(width: 20, height: 20)
-            .foregroundColor(color)
-            .padding(.leading, image == "play.fill" ? 4 : 0)
-            .frame(width: 56, height: 56)
-            .background(showBackground ? chatItemFrameColor(chatItem, colorScheme) : .clear)
-            .clipShape(Circle())
+        ZStack {
+            Image(systemName: image)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 20, height: 20)
+                .foregroundColor(color)
+                .padding(.leading, image == "play.fill" ? 4 : 0)
+                .frame(width: 56, height: 56)
+                .background(showBackground ? chatItemFrameColor(chatItem, colorScheme) : .clear)
+                .clipShape(Circle())
+            if recordingTime > 0 {
+                ProgressCircle(length: recordingTime, progress: $playbackTime)
+                    .frame(width: 54, height: 54) // this + ProgressCircle lineWidth = background circle diameter
+            }
+        }
+    }
+
+    struct ProgressCircle: View {
+        var length: TimeInterval
+        @Binding var progress: TimeInterval?
+
+        var body: some View {
+            Circle()
+                .trim(from: 0, to: ((progress ?? TimeInterval(0)) / length))
+                .stroke(
+                    Color.accentColor,
+                    style: StrokeStyle(
+                        lineWidth: 2,
+                        lineCap: .round
+                    )
+                )
+                .animation(.linear, value: progress)
+        }
     }
 
     private func loadingIcon() -> some View {
@@ -158,7 +182,7 @@ struct VoiceMessagePlayer: View {
             onTimer: { playbackTime = $0 },
             onFinishPlayback: {
                 playbackState = .noPlayback
-                playbackTime = recordingTime // animate progress bar to the end
+                playbackTime = TimeInterval(0)
             }
         )
         audioPlayer?.start(fileName: recordingFileName)
