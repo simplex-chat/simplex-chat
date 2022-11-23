@@ -442,6 +442,9 @@ data GroupPreference = GroupPreference
   {enable :: GroupFeatureEnabled}
   deriving (Eq, Show, Generic, FromJSON)
 
+groupPrefToText :: GroupPreference -> Text
+groupPrefToText GroupPreference {enable} = safeDecodeUtf8 $ strEncode enable
+
 instance ToJSON GroupPreference where toEncoding = J.genericToEncoding J.defaultOptions
 
 data FeatureAllowed

@@ -12,7 +12,7 @@ import SimpleXChat
 struct CIChatFeatureView: View {
     var chatItem: ChatItem
     var feature: Feature
-    var enabled: FeatureEnabled?
+    var iconColor: Color
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 0) {
@@ -24,18 +24,11 @@ struct CIChatFeatureView: View {
         .padding(.bottom, 6)
         .textSelection(.disabled)
     }
-
-    private var iconColor: Color {
-        if let enabled = enabled {
-            return enabled.forUser ? .green : enabled.forContact ? .yellow : .secondary
-        }
-        return .red
-    }
 }
 
 struct CIChatFeatureView_Previews: PreviewProvider {
     static var previews: some View {
         let enabled = FeatureEnabled(forUser: false, forContact: false)
-        CIChatFeatureView(chatItem: ChatItem.getChatFeatureSample(.fullDelete, enabled), feature: .fullDelete, enabled: enabled)
+        CIChatFeatureView(chatItem: ChatItem.getChatFeatureSample(.fullDelete, enabled), feature: .fullDelete, iconColor: enabled.iconColor)
     }
 }
