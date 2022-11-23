@@ -395,6 +395,26 @@ fun SettingsPreferenceItemWithInfo(
 }
 
 @Composable
+fun PreferenceToggle(
+  text: String,
+  checked: Boolean,
+  onChange: (Boolean) -> Unit = {},
+) {
+  Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+    Text(text)
+    Spacer(Modifier.fillMaxWidth().weight(1f))
+    Switch(
+      checked = checked,
+      onCheckedChange = onChange,
+      colors = SwitchDefaults.colors(
+        checkedThumbColor = MaterialTheme.colors.primary,
+        uncheckedThumbColor = HighOrLowlight
+      )
+    )
+  }
+}
+
+@Composable
 fun PreferenceToggleWithIcon(
   text: String,
   icon: ImageVector,
