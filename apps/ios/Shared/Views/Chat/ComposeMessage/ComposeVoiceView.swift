@@ -54,7 +54,7 @@ struct ComposeVoiceView: View {
 
     private func recordingMode() -> some View {
         ZStack {
-            HStack(alignment: .center, spacing: 4) {
+            HStack(alignment: .center, spacing: 8) {
                 playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
                 Text(voiceMessageTime_(recordingTime))
                 Spacer()
@@ -70,7 +70,7 @@ struct ComposeVoiceView: View {
 
     private func playbackMode() -> some View {
         ZStack {
-            HStack(alignment: .center, spacing: 4) {
+            HStack(alignment: .center, spacing: 8) {
                 switch playbackState {
                 case .noPlayback:
                     Button {

@@ -62,12 +62,14 @@ struct SendMessageView: View {
                         .padding([.bottom, .trailing], 3)
                 } else {
                     let vmrs = composeState.voiceMessageRecordingState
-                    if (composeState.voiceMessageAllowed && composeState.message == "" && vmrs != .finished) {
-                        if vmrs == .noRecording {
-                            startVoiceMessageRecordingButton()
-                        } else if vmrs == .recording {
-                            finishVoiceMessageRecordingButton()
-                        }
+                    if composeState.voiceMessageAllowed,
+                       composeState.message.isEmpty,
+                       !composeState.editing,
+                       case .noPreview = composeState.preview,
+                       vmrs == .noRecording {
+                        startVoiceMessageRecordingButton()
+                    } else if vmrs == .recording {
+                        finishVoiceMessageRecordingButton()
                     } else {
                         sendMessageButton()
                     }
@@ -94,8 +96,8 @@ struct SendMessageView: View {
 
     func startVoiceMessageRecordingButton() -> some View {
         Button(action: { startVoiceMessageRecording?() }) {
-            Image(systemName: "mic.fill")
-                .foregroundColor(.accentColor)
+            Image(systemName: "mic")
+                .foregroundColor(.secondary)
         }
         .disabled(composeState.disabled)
         .frame(width: 29, height: 29)
