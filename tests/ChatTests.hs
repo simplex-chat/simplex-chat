@@ -2051,32 +2051,32 @@ testSendImageWithTextAndQuote =
       bob #$> ("/_get chat @2 count=100", chat'', chatFeatures'' <> [((1, "hi alice"), Nothing, Nothing), ((0, "hey bob"), Just (1, "hi alice"), Just "./tests/tmp/test.jpg")])
       bob @@@ [("@alice", "hey bob")]
       -- quoting (file + text) with file uses quoted text
-      bob ##> ("/_send @2 json {\"filePath\": \"./tests/fixtures/test.txt\", \"quotedItemId\": " <> itemId 2 <> ", \"msgContent\": {\"text\":\"\",\"type\":\"file\"}}")
+      bob ##> ("/_send @2 json {\"filePath\": \"./tests/fixtures/test.pdf\", \"quotedItemId\": " <> itemId 2 <> ", \"msgContent\": {\"text\":\"\",\"type\":\"file\"}}")
       bob <# "@alice > hey bob"
-      bob <## "      test.txt"
-      bob <# "/f @alice ./tests/fixtures/test.txt"
+      bob <## "      test.pdf"
+      bob <# "/f @alice ./tests/fixtures/test.pdf"
       bob <## "use /fc 2 to cancel sending"
       alice <# "bob> > hey bob"
-      alice <## "      test.txt"
-      alice <# "bob> sends file test.txt (11 bytes / 11 bytes)"
+      alice <## "      test.pdf"
+      alice <# "bob> sends file test.pdf (266.0 KiB / 272376 bytes)"
       alice <## "use /fr 2 [<dir>/ | <path>] to receive it"
       alice ##> "/fr 2 ./tests/tmp"
-      alice <## "saving file 2 from bob to ./tests/tmp/test.txt"
+      alice <## "saving file 2 from bob to ./tests/tmp/test.pdf"
       concurrently_
-        (alice <## "started receiving file 2 (test.txt) from bob")
-        (bob <## "started sending file 2 (test.txt) to alice")
+        (alice <## "started receiving file 2 (test.pdf) from bob")
+        (bob <## "started sending file 2 (test.pdf) to alice")
       concurrently_
-        (alice <## "completed receiving file 2 (test.txt) from bob")
-        (bob <## "completed sending file 2 (test.txt) to alice")
-      txtSrc <- B.readFile "./tests/fixtures/test.txt"
-      B.readFile "./tests/tmp/test.txt" `shouldReturn` txtSrc
+        (alice <## "completed receiving file 2 (test.pdf) from bob")
+        (bob <## "completed sending file 2 (test.pdf) to alice")
+      txtSrc <- B.readFile "./tests/fixtures/test.pdf"
+      B.readFile "./tests/tmp/test.pdf" `shouldReturn` txtSrc
       -- quoting (file without text) with file uses file name
       alice ##> ("/_send @2 json {\"filePath\": \"./tests/fixtures/test.jpg\", \"quotedItemId\": " <> itemId 3 <> ", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}")
-      alice <# "@bob > test.txt"
+      alice <# "@bob > test.pdf"
       alice <## "      test.jpg"
       alice <# "/f @bob ./tests/fixtures/test.jpg"
       alice <## "use /fc 3 to cancel sending"
-      bob <# "alice> > test.txt"
+      bob <# "alice> > test.pdf"
       bob <## "      test.jpg"
       bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
       bob <## "use /fr 3 [<dir>/ | <path>] to receive it"
