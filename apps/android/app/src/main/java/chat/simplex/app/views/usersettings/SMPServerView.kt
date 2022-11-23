@@ -17,7 +17,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.TAG
 import chat.simplex.app.model.*
@@ -98,7 +101,14 @@ private fun PresetServer(
 ) {
   SectionView(stringResource(R.string.smp_servers_preset_address)) {
     SelectionContainer {
-      Text(server.server, Modifier.padding(horizontal = DEFAULT_PADDING))
+      Text(
+        server.server,
+        Modifier.padding(horizontal = DEFAULT_PADDING, vertical = 5.dp),
+        style = TextStyle(
+          fontFamily = FontFamily.Monospace, fontSize = 14.sp,
+          color = MaterialTheme.colors.onBackground
+        )
+      )
     }
   }
   SectionSpacer()
@@ -120,8 +130,10 @@ private fun CustomServer(
     icon = Icons.Outlined.Block,
     iconTint = if (!valid.value) MaterialTheme.colors.error else Color.Transparent,
   ) {
+    val testedPreviously = remember { mutableMapOf<String, Boolean?>() }
     TextEditor(Modifier.height(144.dp), text = serverAddress, border = false) {
-      onUpdate(server.copy(server = serverAddress.value))
+      testedPreviously[server.server] = server.tested
+      onUpdate(server.copy(server = it, tested = testedPreviously[serverAddress.value]))
     }
   }
   SectionSpacer()

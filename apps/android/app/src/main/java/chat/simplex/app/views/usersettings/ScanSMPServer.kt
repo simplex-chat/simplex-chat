@@ -1,7 +1,9 @@
 package chat.simplex.app.views.usersettings
 
+import android.Manifest
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import chat.simplex.app.R
@@ -9,9 +11,14 @@ import chat.simplex.app.model.ServerAddress.Companion.parseServerAddress
 import chat.simplex.app.model.ServerCfg
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.QRCodeScanner
+import com.google.accompanist.permissions.rememberPermissionState
 
 @Composable
 fun ScanSMPServer(onNext: (ServerCfg) -> Unit) {
+  val cameraPermissionState = rememberPermissionState(permission = Manifest.permission.CAMERA)
+  LaunchedEffect(Unit) {
+    cameraPermissionState.launchPermissionRequest()
+  }
   ScanSMPServerLayout(onNext)
 }
 
