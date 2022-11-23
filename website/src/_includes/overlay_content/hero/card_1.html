@@ -1,0 +1,23 @@
+<p>
+    Many users asked: <em>if SimpleX has no user identifiers, how can it know where to deliver messages?</em>
+</p>
+<p>
+    To deliver mesages, instead of user IDs used by all other platforms,
+    SimpleX uses temporary anonymous pairwise identifiers of message queues,
+    separate for each of your connections &mdash; there are no long term identifiers.
+</p>
+<p>
+    You define which server(s) to use to receive the messages,
+    your contacts &mdash; the servers you use to send the messages to them.
+    Every conversation is likely to use two different servers.
+</p>
+<p>
+    This design prevents leaking any users&apos; metadata on the application level.
+    To further improve privacy and protect your IP address you can connect to messaging servers via Tor.
+</p>
+<p>    
+    Only client devices store user profiles, contacts and groups; the messages are sent with 2-layer end-to-end encryption.
+</p>
+<p>
+    Read more in <a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md" target="_blank">SimpleX whitepaper</a>.
+</p>

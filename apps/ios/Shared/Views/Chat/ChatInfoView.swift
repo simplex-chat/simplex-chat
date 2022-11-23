@@ -53,7 +53,7 @@ struct ChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
     @ObservedObject var chat: Chat
-    var contact: Contact
+    @State var contact: Contact
     @Binding var connectionStats: ConnectionStats?
     var customUserProfile: Profile?
     @State var localAlias: String
@@ -97,6 +97,10 @@ struct ChatInfoView: View {
                     Section("Incognito") {
                         infoRow("Your random profile", customUserProfile.chatViewName)
                     }
+                }
+
+                Section {
+                    contactPreferencesButton()
                 }
 
                 Section("Servers") {
@@ -189,6 +193,20 @@ struct ChatInfoView: View {
             } catch {
                 logger.error("setContactAlias error: \(responseError(error))")
             }
+        }
+    }
+
+    func contactPreferencesButton() -> some View {
+        NavigationLink {
+            ContactPreferencesView(
+                contact: $contact,
+                featuresAllowed: contactUserPrefsToFeaturesAllowed(contact.mergedPreferences),
+                currentFeaturesAllowed: contactUserPrefsToFeaturesAllowed(contact.mergedPreferences)
+            )
+            .navigationBarTitle("Contact preferences")
+            .navigationBarTitleDisplayMode(.large)
+        } label: {
+            Label("Contact preferences", systemImage: "switch.2")
         }
     }
 

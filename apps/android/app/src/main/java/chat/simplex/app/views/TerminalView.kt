@@ -25,8 +25,7 @@ import androidx.compose.ui.unit.sp
 import androidx.fragment.app.FragmentActivity
 import chat.simplex.app.R
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.SimpleButton
-import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.*
 import chat.simplex.app.views.helpers.*
 import com.google.accompanist.insets.ProvideWindowInsets
@@ -136,7 +135,7 @@ fun TerminalLayout(
       topBar = { CloseSheetBar(close) },
       bottomBar = {
         Box(Modifier.padding(horizontal = 8.dp)) {
-          SendMsgView(composeState, sendCommand, ::onMessageChange, textStyle)
+          SendMsgView(composeState, false, sendCommand, ::onMessageChange, { _, _, _ -> }, textStyle)
         }
       },
       modifier = Modifier.navigationBarsWithImePadding()
@@ -164,7 +163,8 @@ fun TerminalLog(terminalItems: List<TerminalItem>) {
   val reversedTerminalItems by remember { derivedStateOf { terminalItems.reversed() } }
   LazyColumn(state = listState, reverseLayout = true) {
     items(reversedTerminalItems) { item ->
-      Text("${item.date.toString().subSequence(11, 19)} ${item.label}",
+      Text(
+        "${item.date.toString().subSequence(11, 19)} ${item.label}",
         style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 18.sp, color = MaterialTheme.colors.primary),
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
@@ -173,7 +173,7 @@ fun TerminalLog(terminalItems: List<TerminalItem>) {
           .clickable {
             ModalManager.shared.showModal {
               SelectionContainer(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                Text(item.details)
+                Text(item.details, modifier = Modifier.padding(horizontal = DEFAULT_PADDING).padding(bottom = DEFAULT_PADDING))
               }
             }
           }.padding(horizontal = 8.dp, vertical = 4.dp)

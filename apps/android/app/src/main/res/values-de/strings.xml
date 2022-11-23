@@ -6,7 +6,9 @@
   <!-- Connect via Link - MainActivity.kt -->
   <string name="connect_via_contact_link">Über den Kontakt-Link verbinden?</string>
   <string name="connect_via_invitation_link">Über den Einladungs-Link verbinden?</string>
+  <string name="connect_via_group_link">Über den Gruppen-Link verbinden?</string>
   <string name="profile_will_be_sent_to_contact_sending_link">Ihr Profil wird an den Kontakt gesendet von dem Sie diesen Link erhalten haben.</string>
+  <string name="you_will_join_group">Sie werden der Gruppe beitreten, auf die sich dieser Link bezieht und sich mit deren Gruppenmitgliedern verbinden.</string>
   <string name="connect_via_link_verb">Verbinden</string>
 
   <!-- Server info - ChatModel.kt -->
@@ -26,15 +28,17 @@
   <string name="invalid_message_format">Unzulässiges Nachrichtenformat</string>
 
   <!-- PendingContactConnection - ChatModel.kt -->
-  <string name="connection_local_display_name">Verbindung <xliff:g id="connection ID" example="1">%1$d</xliff:g></string>
-  <string name="display_name_connection_established">Verbindung hergestellt</string>
-  <string name="display_name_invited_to_connect">Für eine Verbindung eingeladen</string>
-  <string name="display_name_connecting">verbinde …</string>
-  <string name="description_you_shared_one_time_link">Sie haben einen Einmal-Link geteilt</string>
-  <string name="description_you_shared_one_time_link_incognito">Sie haben Inkognito einen Einmal-Link geteilt</string>
-  <string name="description_via_contact_address_link">Über einen Kontaktadressen Link</string>
-  <string name="description_via_contact_address_link_incognito">Inkognito über einen Kontaktadressen Link</string>
-  <string name="description_via_one_time_link">Über einen Einmal-Link</string>
+  <string name="connection_local_display_name">verbindung <xliff:g id="connection ID" example="1">%1$d</xliff:g></string>
+  <string name="display_name_connection_established">verbindung hergestellt</string>
+  <string name="display_name_invited_to_connect">für eine Verbindung eingeladen</string>
+  <string name="display_name_connecting">verbinde…</string>
+  <string name="description_you_shared_one_time_link">sie haben einen Einmal-Link geteilt</string>
+  <string name="description_you_shared_one_time_link_incognito">sie haben Inkognito einen Einmal-Link geteilt</string>
+  <string name="description_via_group_link">über einen Gruppen-Link</string>
+  <string name="description_via_group_link_incognito">Inkognito über einen Gruppen-Link</string>
+  <string name="description_via_contact_address_link">über einen Kontaktadressen-Link</string>
+  <string name="description_via_contact_address_link_incognito">Inkognito über einen Kontaktadressen-Link</string>
+  <string name="description_via_one_time_link">über einen Einmal-Link</string>
   <string name="description_via_one_time_link_incognito">Inkognito über einen Einmal-Link</string>
 
   <!-- SimpleXAPI.kt -->
@@ -54,7 +58,7 @@
   <string name="error_receiving_file">Fehler beim Empfangen der Datei</string>
   <string name="error_creating_address">Fehler beim Erstellen der Adresse</string>
   <string name="contact_already_exists">Kontakt ist bereits vorhanden</string>
-  <string name="you_are_already_connected_to_vName_via_this_link">Sie sind bereits über diesen Link mit <xliff:g id="contactName" example="Alice">%1$s!</xliff:g> verbunden.</string>
+  <string name="you_are_already_connected_to_vName_via_this_link">Sie sind bereits mit <xliff:g id="contactName" example="Alice">%1$s!</xliff:g> verbunden.</string>
   <string name="invalid_connection_link">Ungültiger Verbindungslink</string>
   <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Überprüfen Sie bitte, ob Sie den richtigen Link genutzt haben oder bitten Sie Ihren Kontakt darum, Ihnen nochmal einen Link zuzusenden.</string>
   <string name="connection_error_auth">Verbindungsfehler (AUTH)</string>
@@ -65,7 +69,7 @@
   <string name="error_deleting_group">Fehler beim Löschen der Gruppe</string>
   <string name="error_deleting_contact_request">Fehler beim Löschen der Kontaktanfrage</string>
   <string name="error_deleting_pending_contact_connection">Fehler beim Löschen der anstehenden Kontaktaufnahme</string>
-  <string name="error_changing_address">*** Error changing address</string>
+  <string name="error_changing_address">Fehler beim Wechseln der Adresse</string>
 
   <!-- background service notice - SimpleXAPI.kt -->
   <string name="icon_descr_instant_notifications">Sofortige Benachrichtigungen</string>
@@ -127,15 +131,15 @@
   <string name="auth_enable_simplex_lock">SimpleX Sperre aktivieren</string>
   <string name="auth_disable_simplex_lock">SimpleX Sperre deaktivieren</string>
   <string name="auth_confirm_credential">Bestätigen Sie Ihre Zugangsdaten</string>
-  <string name="auth_error">Authentifizierungsfehler</string>
-  <string name="auth_error_w_desc">Authentifizierungsfehler: <xliff:g id="desc">%1$s</xliff:g></string>
-  <string name="auth_failed">Authentifizierung fehlgeschlagen</string>
   <string name="auth_unavailable">Authentifizierung nicht verfügbar</string>
   <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Geräteauthentifizierung ist nicht aktiviert. Sie können die SimpleX Sperre über die Einstellungen aktivieren, sobald Sie die Geräteauthentifizierung aktiviert haben.</string>
   <string name="auth_device_authentication_is_disabled_turning_off">Geräteauthentifizierung ist deaktiviert. SimpleX Sperre ist abgeschaltet.</string>
-  <string name="auth_retry">Wiederholen</string>
   <string name="auth_stop_chat">Chat beenden</string>
   <string name="auth_open_chat_console">Chat-Konsole öffnen</string>
+
+  <!-- Chat Alerts - ChatItemView.kt -->
+  <string name="message_delivery_error_title">Fehler bei der Nachrichtenzustellung</string>
+  <string name="message_delivery_error_desc">Dieser Kontakt hat sehr wahrscheinlich die Verbindung mit Ihnen gelöscht.</string>
 
   <!-- Chat Actions - ChatItemView.kt (and general) -->
   <string name="reply_verb">Antwort</string>
@@ -145,7 +149,7 @@
   <string name="edit_verb">Bearbeiten</string>
   <string name="delete_verb">Löschen</string>
   <string name="delete_message__question">Die Nachricht löschen?</string>
-  <string name="delete_message_cannot_be_undone_warning">Nachricht wird gelöscht - Dies kann nicht rückgängig gemacht werden!</string>
+  <string name="delete_message_cannot_be_undone_warning">Nachricht wird gelöscht - dies kann nicht rückgängig gemacht werden!</string>
   <string name="for_me_only">Nur für mich</string>
   <string name="for_everybody">Für alle</string>
 
@@ -181,6 +185,8 @@
   <string name="icon_descr_cancel_file_preview">Dateivorschau abbrechen</string>
   <string name="images_limit_title">Zu viele Bilder!</string>
   <string name="images_limit_desc">Es können nur 10 Bilder auf einmal gesendet werden</string>
+  <string name="image_decoding_exception_title">Dekodierungsfehler</string>
+  <string name="image_decoding_exception_desc">Das Bild kann nicht dekodiert werden. Bitte versuchen Sie es mit einem anderen Bild oder wenden Sie sich an die Entwickler.</string>
 
   <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
   <string name="image_descr">Bild</string>
@@ -188,7 +194,7 @@
   <string name="icon_descr_asked_to_receive">Es wird um den Empfang eines Bildes gebeten</string>
   <string name="icon_descr_image_snd_complete">Bild gesendet</string>
   <string name="waiting_for_image">Warten auf ein Bild</string>
-  <string name="image_will_be_received_when_contact_is_online">Das Bild wird empfangen, wenn Ihr Kontakt online ist, bitte warten oder schauen Sie später nochmal nach!</string>
+  <string name="image_will_be_received_when_contact_is_online">Das Bild wird empfangen, sobald Ihr Kontakt online ist. Bitte warten oder schauen Sie später nochmal nach!</string>
   <string name="image_saved">Bild wurde im Fotoalbum gespeichert</string>
 
   <!-- Files - CIFileView.kt -->
@@ -197,10 +203,14 @@
   <string name="contact_sent_large_file">Ihr Kontakt hat eine Datei gesendet, die größer ist als die derzeit unterstützte maximale Größe (<xliff:g id="maxFileSize">%1$s</xliff:g>).</string>
   <string name="maximum_supported_file_size">Die derzeit maximal unterstützte Dateigröße beträgt <xliff:g id="maxFileSize">%1$s</xliff:g>.</string>
   <string name="waiting_for_file">Warte auf Datei</string>
-  <string name="file_will_be_received_when_contact_is_online">Die Datei wird empfangen, wenn Ihr Kontakt online ist, bitte warten oder schauen Sie später nochmal nach!</string>
+  <string name="file_will_be_received_when_contact_is_online">Die Datei wird empfangen, sobald Ihr Kontakt online ist. Bitte warten oder schauen Sie später nochmal nach!</string>
   <string name="file_saved">Datei gespeichert</string>
   <string name="file_not_found">Datei nicht gefunden</string>
   <string name="error_saving_file">Fehler beim Speichern der Datei</string>
+
+  <!-- Voice messages -->
+  <string name="voice_message">***Voice message</string>
+  <string name="voice_message_send_text">***Voice message…</string>
 
   <!-- Chat Info Settings - ChatInfoView.kt -->
   <string name="notifications">Benachrichtigungen</string>
@@ -214,11 +224,12 @@
   <string name="icon_descr_server_status_disconnected">Getrennt</string>
   <string name="icon_descr_server_status_error">Fehler</string>
   <string name="icon_descr_server_status_pending">Ausstehend</string>
-  <string name="switch_receiving_address_question">*** Switch receiving address?</string>
-  <string name="switch_receiving_address_desc">*** This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member).</string>
+  <string name="switch_receiving_address_question">Empfängeradresse wechseln?</string>
+  <string name="switch_receiving_address_desc">Diese Funktion ist experimentell! Sie wird nur funktionieren, wenn der Kontakt ebenfalls eine SimpleX-Version ab v4.2 installiert hat. Sobald der Adress-Wechsel abgeschlossen ist, sollten Sie die Nachricht im Chat-Verlauf sehen. Bitte prüfen Sie, ob Sie weiterhin Nachrichten von diesem Kontakt (oder Gruppenmitglied) empfangen können.</string>
 
   <!-- Message Actions - SendMsgView.kt -->
   <string name="icon_descr_send_message">Nachricht senden</string>
+  <string name="icon_descr_record_voice_message">***Record voice message</string>
 
   <!-- General Actions / Responses -->
   <string name="back">Zurück</string>
@@ -321,8 +332,9 @@
   <string name="invalid_contact_link">Ungültiger Link!</string>
   <string name="this_link_is_not_a_valid_connection_link">Dieser Link ist kein gültiger Verbindungslink!</string>
   <string name="connection_request_sent">Verbindungsanfrage gesendet!</string>
-  <string name="you_will_be_connected_when_your_connection_request_is_accepted">Sie werden verbunden, sobald Ihre Verbindungsanfrage akzeptiert wird, bitte warten oder schauen Sie später nochmal nach!</string>
-  <string name="you_will_be_connected_when_your_contacts_device_is_online">Sie werden verbunden, wenn das Gerät Ihres Kontakts online ist, bitte warten oder schauen Sie später nochmal nach!</string>
+  <string name="you_will_be_connected_when_group_host_device_is_online">Sie werden mit der Gruppe verbunden, sobald das Endgerät des Gruppen-Hosts online ist. Bitte warten oder schauen Sie später nochmal nach!</string>
+  <string name="you_will_be_connected_when_your_connection_request_is_accepted">Sie werden verbunden, sobald Ihre Verbindungsanfrage akzeptiert wird. Bitte warten oder schauen Sie später nochmal nach!</string>
+  <string name="you_will_be_connected_when_your_contacts_device_is_online">Sie werden verbunden, sobald das Endgerät Ihres Kontakts online ist. Bitte warten oder schauen Sie später nochmal nach!</string>
   <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Zeigen Sie Ihrem Kontakt den QR-Code aus der App zum Scannen.</string>
   <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Wenn Sie sich nicht persönlich treffen können, können Sie <b>den QR-Code während eines Videoanrufs anzeigen</b> oder einen Einladungslink über einen anderen Kanal mit Ihrem Kontakt teilen.</string >
   <string name="your_chat_profile_will_be_sent_to_your_contact">Ihr Chat-Profil wird\nan Ihren Kontakt gesendet.</string>
@@ -351,12 +363,15 @@
   <string name="how_to_use_simplex_chat">Wie man SimpleX nutzt</string>
   <string name="markdown_help">Markdown Hilfe</string>
   <string name="markdown_in_messages">Markdown in Nachrichten</string>
-  <string name="chat_with_the_founder">Verbinden Sie sich mit den Entwicklern</string>
+  <string name="chat_with_the_founder">Senden Sie Fragen und Ideen</string>
   <string name="send_us_an_email">Senden Sie uns eine E-Mail</string>
   <string name="chat_lock">SimpleX Sperre</string>
   <string name="chat_console">Chat Konsole</string>
   <string name="smp_servers">SMP-Server</string>
   <string name="install_simplex_chat_for_terminal">Installieren Sie <xliff:g id="appNameFull">SimpleX Chat</xliff:g> als Terminalanwendung</string>
+  <string name="star_on_github">Stern auf GitHub vergeben</string>
+  <string name="contribute">Unterstützen Sie uns</string>
+  <string name="rate_the_app">Bewerten Sie die App</string>
   <string name="use_simplex_chat_servers__question">Verwenden Sie <xliff:g id="appNameFull">SimpleX Chat</xliff:g> Server?</string>
   <string name="saved_SMP_servers_will_be_removed">Gespeicherte SMP-Server werden entfernt.</string>
   <string name="your_SMP_servers">Ihre SMP-Server</string>
@@ -396,9 +411,7 @@
   <string name="create_address">Adresse erstellen</string>
   <string name="delete_address__question">Adresse löschen?</string>
   <string name="all_your_contacts_will_remain_connected">Alle Ihre Kontakte bleiben verbunden.</string>
-  <string name="you_can_share_your_address_anybody_will_be_able_to_connect">Sie können Ihre Adresse als Link oder als QR-Code teilen – Jeder kann sich mit Ihnen verbinden.</string>
-  <string name="if_you_delete_address_you_wont_lose_contacts">Wenn Sie diese Adresse löschen, werden Sie Ihre Kontakte nicht verlieren.</string>
-  <string name="if_you_later_delete_address_you_wont_lose_contacts">Wenn Sie diese Adresse später löschen, werden Sie Ihre mit dieser Adresse verbundenen Kontakte nicht verlieren.</string>
+  <string name="you_can_share_your_address_anybody_will_be_able_to_connect">Sie können Ihre Adresse als Link oder als QR-Code teilen – Jede Person kann sich darüber mit Ihnen verbinden. Sie werden Ihre mit dieser Adresse verbundenen Kontakte nicht verlieren, wenn Sie diese Adresse später löschen.</string>
   <string name="share_link">Link teilen</string>
   <string name="delete_address">Adresse löschen</string>
 
@@ -467,7 +480,7 @@
   <string name="immune_to_spam_and_abuse">Immun gegen Spam und Missbrauch</string>
   <string name="people_can_connect_only_via_links_you_share">Verbindungen mit Kontakten sind nur über Links möglich, die Sie oder Ihre Kontakte untereinander teilen.</string>
   <string name="decentralized">Dezentral</string>
-  <string name="opensource_protocol_and_code_anybody_can_run_servers">Open-Source-Protokoll und -Code – Jeder kann seine eigenen Server nutzen.</string>
+  <string name="opensource_protocol_and_code_anybody_can_run_servers">Open-Source-Protokoll und -Code – Jede Person kann ihre eigenen Server aufsetzen und nutzen.</string>
   <string name="create_your_profile">Erstellen Sie Ihr Profil</string>
   <string name="make_private_connection">Stellen Sie eine private Verbindung her</string>
   <string name="how_it_works">Wie es funktioniert</string>
@@ -552,7 +565,7 @@
   <string name="privacy_and_security">Datenschutz &amp; Sicherheit</string>
   <string name="your_privacy">Meine Privatsphäre</string>
   <string name="auto_accept_images">Bilder automatisch akzeptieren</string>
-  <string name="transfer_images_faster">*** Transfer images faster (BETA)</string>
+  <string name="transfer_images_faster">Bilder schneller übertragen (BETA)</string>
   <string name="send_link_previews">Link-Vorschau senden</string>
   <string name="chat_preferences">***Chat preferences</string>
   <string name="chat_preferences_for">***Preferences for %s</string>
@@ -561,6 +574,7 @@
   <string name="settings_section_title_you">MEINE DATEN</string>
   <string name="settings_section_title_settings">EINSTELLUNGEN</string>
   <string name="settings_section_title_help">HILFE</string>
+  <string name="settings_section_title_support">UNTERSTÜTZUNG VON SIMPLEX CHAT</string>
   <string name="settings_section_title_develop">ENTWICKLUNG</string>
   <string name="settings_section_title_device">GERÄT</string>
   <string name="settings_section_title_chats">CHATS</string>
@@ -619,7 +633,7 @@
   <string name="chat_item_ttl_seconds">%s Sekunde(n)</string>
   <string name="delete_messages_after">Löschen der Nachrichten</string>
   <string name="enable_automatic_deletion_question">Automatisches Löschen von Nachrichten aktivieren?</string>
-  <string name="enable_automatic_deletion_message">Diese Aktion kann nicht rückgängig gemacht werden - Alle empfangenen und gesendeten Nachrichten, die über den ausgewählten Zeitraum hinaus gehen, werden gelöscht. Dies kann mehrere Minuten dauern.</string>
+  <string name="enable_automatic_deletion_message">Diese Aktion kann nicht rückgängig gemacht werden - Alle empfangenen und gesendeten Nachrichten, die über den ausgewählten Zeitraum hinaus gehen, werden gelöscht. Dieser Vorgang kann mehrere Minuten dauern.</string>
   <string name="delete_messages">Nachrichten löschen</string>
   <string name="error_changing_message_deletion">Fehler beim Ändern der Einstellung</string>
 
@@ -675,6 +689,7 @@
   <string name="restore_database_alert_desc">Bitte geben Sie das vorherige Passwort ein, nachdem Sie die Datenbanksicherung wiederhergestellt haben. Diese Aktion kann nicht rückgängig gemacht werden.</string>
   <string name="restore_database_alert_confirm">Wiederherstellen</string>
   <string name="database_restore_error">Fehler bei der Wiederherstellung der Datenbank</string>
+  <string name="restore_passphrase_not_found_desc">***Passphrase not found in Keystore, please enter it manually. This may have happened if you restored the app\'s data using a backup tool. If it\'s not the case, please, contact developers.</string>
 
   <!-- ChatModel.chatRunning interactions -->
   <string name="chat_is_stopped_indication">Chat wurde beendet</string>
@@ -720,7 +735,7 @@
   <!-- Group event chat items -->
   <string name="rcv_group_event_member_added">hat <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g> eingeladen.</string>
   <string name="rcv_group_event_member_connected">beigetreten</string>
-  <string name="rcv_group_event_member_left">verlassen</string>
+  <string name="rcv_group_event_member_left">hat die Gruppe verlassen</string>
   <string name="rcv_group_event_changed_member_role">änderte die Rolle von %s auf %s</string>
   <string name="rcv_group_event_changed_your_role">änderte Ihre Rolle auf %s</string>
   <string name="rcv_group_event_member_deleted">entfernte <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g> aus der Gruppe.</string>
@@ -735,12 +750,12 @@
   <string name="snd_group_event_group_profile_updated">Gruppenprofil aktualisiert</string>
 
   <!-- Conn event chat items -->
-  <string name="rcv_conn_event_switch_queue_phase_completed">*** changed address for you</string>
-  <string name="rcv_conn_event_switch_queue_phase_changing">*** changing address…</string>
-  <string name="snd_conn_event_switch_queue_phase_completed_for_member">*** you changed address for %s</string>
-  <string name="snd_conn_event_switch_queue_phase_changing_for_member">*** changing address for %s…</string>
-  <string name="snd_conn_event_switch_queue_phase_completed">*** you changed address</string>
-  <string name="snd_conn_event_switch_queue_phase_changing">*** changing address…</string>
+  <string name="rcv_conn_event_switch_queue_phase_completed">wechselte die Adresse für Sie</string>
+  <string name="rcv_conn_event_switch_queue_phase_changing">Wechsel der Adresse ...</string>
+  <string name="snd_conn_event_switch_queue_phase_completed_for_member">Sie haben die Adresse für %s gewechselt</string>
+  <string name="snd_conn_event_switch_queue_phase_changing_for_member">Wechsel der Adresse für %s ...</string>
+  <string name="snd_conn_event_switch_queue_phase_completed">Sie haben die Adresse gewechselt</string>
+  <string name="snd_conn_event_switch_queue_phase_changing">Wechsel der Adresse ...</string>
 
   <!-- GroupMemberRole -->
   <string name="group_member_role_member">Mitglied</string>
@@ -788,9 +803,7 @@
   <string name="button_create_group_link">Link erzeugen</string>
   <string name="delete_link_question">Link löschen?</string>
   <string name="delete_link">Link löschen</string>
-  <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Sie können diesen Link oder QR-Code teilen - Damit kann jede Person der Gruppe beitreten.</string>
-  <string name="if_you_later_delete_link_you_wont_lose_members">Wenn Sie den Link später löschen, werden Sie keine Gruppenmitglieder verlieren, die der Gruppe darüber beigetreten sind.</string>
-  <string name="if_you_delete_group_link_you_wont_lose_members">Wenn Sie den Link löschen, werden Sie keine Gruppenmitglieder verlieren, die der Gruppe darüber beigetreten sind.</string>
+  <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Sie können diesen Link oder QR-Code teilen - Damit kann jede Person der Gruppe beitreten. Wenn Sie den Link später löschen, werden Sie keine Gruppenmitglieder verlieren, die der Gruppe darüber beigetreten sind.</string>
   <string name="all_group_members_will_remain_connected">Alle Gruppenmitglieder bleiben verbunden.</string>
   <string name="error_creating_link_for_group">Fehler beim Erzeugen des Gruppen-Links</string>
   <string name="error_deleting_link_for_group">Fehler beim Löschen des Gruppen-Links</string>
@@ -809,7 +822,7 @@
   <string name="role_in_group">Rolle</string>
   <string name="change_role">Rolle ändern</string>
   <string name="change_verb">Ändern</string>
-  <string name="switch_verb">***Switch</string>
+  <string name="switch_verb">Wechseln</string>
   <string name="change_member_role_question">Die Mitgliederrolle ändern?</string>
   <string name="member_role_will_be_changed_with_notification">Die Mitgliederrolle wird auf \"%s\" geändert. Alle Mitglieder der Gruppe werden benachrichtigt.</string>
   <string name="member_role_will_be_changed_with_invitation">Die Mitgliederrolle wird auf \"%s\" geändert. Das Mitglied wird eine neue Einladung erhalten.</string>
@@ -825,7 +838,7 @@
   <string name="receiving_via">Empfangen über</string>
   <string name="sending_via">Senden über</string>
   <string name="network_status">Netzwerkstatus</string>
-  <string name="switch_receiving_address">***Switch receiving address (BETA)</string>
+  <string name="switch_receiving_address">Wechseln der Empfängeradresse (BETA)</string>
 
   <!-- AddGroupView.kt -->
   <string name="create_secret_group_title">Geheime Gruppe erstellen</string>

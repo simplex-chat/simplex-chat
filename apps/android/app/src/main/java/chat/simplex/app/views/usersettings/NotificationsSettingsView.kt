@@ -57,7 +57,7 @@ fun NotificationsSettingsView(
       if (mode == NotificationsMode.SERVICE)
         SimplexService.start(SimplexApp.context)
       else
-        SimplexService.stop(SimplexApp.context)
+        SimplexService.safeStopService(SimplexApp.context)
     }
 
     if (mode != NotificationsMode.PERIODIC) {

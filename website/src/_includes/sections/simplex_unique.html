@@ -1,0 +1,87 @@
+<section id="why-simplex" class="bg-primary-bg-light dark:bg-primary-bg-dark py-[90px] overflow-hidden px-0 sm:px-1">
+    <div class="container scale-100">
+        <p class="text-grey-black dark:text-white text-[35px] lg:text-[45px] text-center font-bold mb-[44px] px-5 sm:px-4">Why SimpleX is <span class="gradient-text">unique</span></p>
+
+        <div class="swiper unique-swiper px-5 sm:px-4 py-2">
+            <div class="swiper-wrapper mb-16">
+
+                {% for section in why_simplex_is_unique.sections %}
+                    <div class="swiper-slide overflow-hidden flex items-center md:items-start flex-col xl:flex-row-reverse xl:items-center min-h-[620px] md:min-h-fit px-4 md:px-10 lg:px-[50px] py-8 lg:py-[50px] rounded-[12px] shadow-[0px_3px_12px_rgba(0,0,0,0.2)] dark:shadow-none border-gradient relative simplex-unique-card">
+                        
+                        <div class="md:flex-1 flex items-center justify-center h-[55%] md:h-fit w-full card-image">
+                            <img class="w-full max-w-[400px] dark:hidden" src="{{ section.imgLight }}" alt="">
+                            <img class="w-full max-w-[400px] hidden dark:block" src="{{ section.imgDark }}" alt="">
+                        </div>
+
+                        <div class="card-content absolute md:static px-4 md:px-0 bottom-[80px] right-1 left-1 h-[180px] md:h-fit pt-5 lg:pt-0 bg-primary-bg-light dark:bg-primary-bg-dark">
+                            <div class="content-head">
+                                <p class="text-[35px] lg:text-[65px] font-bold tracking-[0.06em] text-active-blue text-center md:text-left">#{{ section.id }}</p>
+                                <p class="w-full max-w-[617px] text-[25px] leading-[33px] lg:text-[35px] lg:leading-[45px] text-center md:text-left font-bold text-grey-black dark:text-white">{{ section.title | safe }}</p>
+                            </div>
+
+                            <div class="content-body py-5 md:py-7">
+                                {% if section.descBody %}
+                                    <div class="w-full max-w-[541px] text-[16px] leading-[24px] tracking-[0.02em] mb-[36px] text-grey-black dark:text-white text-center md:text-left">
+                                        {% include section.descBody %}
+                                    </div>
+                                {% else %}
+                                    <p class="w-full max-w-[541px] text-[16px] leading-[24px] tracking-[0.02em] mb-[36px] text-grey-black dark:text-white text-center md:text-left">{{ section.desc | safe }}</p>
+                                {% endif %}
+                                {% if section.overlayContent %}
+                                    <a href="javascript:void(0)" data-show-overlay="{{ section.overlayContent.overlayId }}" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] underline-offset-4 tracking-[0.02em] text-center md:text-left">{{ section.overlayContent.linkText }}</a>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="hide-show-btn fixed bottom-0 pb-8 pt-2 h-[80px] left-1 right-1 md:hidden flex items-center justify-center bg-primary-bg-light dark:bg-primary-bg-dark scale-100 z-10">
+                            <a href="javascript:void(0);" class="flex items-center gap-2 open-card-btn">
+                                <span class="underline text-[16px] tracking-[0.02em] underline-offset-4 text-primary-light dark:text-primary-dark">More info</span>
+                                <span class="flex items-center justify-center mt-1">
+                                    <svg class="fill-primary-light dark:fill-primary-dark" width="10" height="6" viewBox="0 0 10 6" xmlns="http://www.w3.org/2000/svg">
+                                        <path fill-rule="evenodd" clip-rule="evenodd" d="M1.50447 0.902966C1.21571 0.627397 0.747525 0.627397 0.458761 0.902966C0.169996 1.17853 0.169996 1.62532 0.458761 1.90089L4.21933 5.48961C4.25543 5.52406 4.29433 5.5542 4.33533 5.58003C4.62234 5.76088 5.01237 5.73074 5.26504 5.48961L9.02561 1.90089C9.31438 1.62532 9.31438 1.17853 9.02561 0.902966C8.73685 0.627397 8.26867 0.627397 7.97991 0.902966L4.74219 3.99273L1.50447 0.902966Z"/>
+                                    </svg>
+                                </span>
+                            </a>
+                            <a href="javascript:void(0);" class="items-center gap-2 close-card-btn hidden">
+                                <span class="underline text-[16px] tracking-[0.02em] underline-offset-4 text-primary-light dark:text-primary-dark">Hide info</span>
+                                <span class="flex items-center justify-center mt-1">
+                                    <svg class="fill-primary-light dark:fill-primary-dark" width="10" height="5" viewBox="0 0 10 5" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path fill-rule="evenodd" clip-rule="evenodd" d="M8.40813 4.79332C8.69689 5.06889 9.16507 5.06889 9.45384 4.79332C9.7426 4.51775 9.7426 4.07097 9.45384 3.7954L5.69327 0.206676C5.65717 0.17223 5.61827 0.142089 5.57727 0.116255C5.29026 -0.064587 4.90023 -0.0344467 4.64756 0.206676L0.886983 3.7954C0.598219 4.07097 0.598219 4.51775 0.886983 4.79332C1.17575 5.06889 1.64393 5.06889 1.93269 4.79332L5.17041 1.70356L8.40813 4.79332Z"/>
+                                    </svg>
+                                </span>
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+
+            </div>
+
+            <img class="fixed left-[-3px] top-[52%] swiper-button-prev unique-swiper-button-prev hidden md:inline-block dark:hidden" src="/img/new/arrow-left.svg" alt="">
+            <img class="fixed right-[-6px] top-[52%] swiper-button-next unique-swiper-button-next hidden md:inline-block dark:hidden" src="/img/new/arrow-right.svg" alt="">
+            <img class="fixed left-[-3px] top-[52%] swiper-button-prev unique-swiper-button-prev hidden dark:md:inline-block" src="/img/new/arrow-left-dark.svg" alt="">
+            <img class="fixed right-[-6px] top-[52%] swiper-button-next unique-swiper-button-next hidden dark:md:inline-block" src="/img/new/arrow-right-dark.svg" alt="">
+
+            <div class="swiper-pagination simplex-unique-swiper-pagination mt-100"></div>
+        </div>
+    </div>
+</section>
+
+{% for section in why_simplex_is_unique.sections %}
+    {% if section.overlayContent %}
+        {{ overlay(section) }}
+    {% endif %}
+{% endfor %}
+
+<script>
+    window.addEventListener('load', function() {
+        window.addEventListener('click',e=>{
+            if(e.target.closest('.open-card-btn') || e.target.closest('.close-card-btn')){
+                e.target.closest('.simplex-unique-card').classList.toggle('active-card');
+                e.target.closest('.hide-show-btn').querySelector('.open-card-btn').classList.toggle('hidden');
+                e.target.closest('.hide-show-btn').querySelector('.open-card-btn').classList.toggle('flex');
+                e.target.closest('.hide-show-btn').querySelector('.close-card-btn').classList.toggle('hidden');
+                e.target.closest('.hide-show-btn').querySelector('.close-card-btn').classList.toggle('flex');
+            }
+        })
+    });
+</script>

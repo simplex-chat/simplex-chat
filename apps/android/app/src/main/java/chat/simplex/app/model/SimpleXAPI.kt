@@ -244,6 +244,10 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         chatModel.onboardingStage.value = OnboardingStage.OnboardingComplete
         chatModel.controller.appPrefs.chatLastStart.set(Clock.System.now())
         chatModel.chatRunning.value = true
+        chatModel.appOpenUrl.value?.let {
+          chatModel.appOpenUrl.value = null
+          connectIfOpenedViaUri(it, chatModel)
+        }
         startReceiver()
         Log.d(TAG, "startChat: started")
       } else {
@@ -260,8 +264,20 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   private fun startReceiver() {
     Log.d(TAG, "ChatController startReceiver")
     if (receiverStarted) return
-    thread(name="receiver") {
-      GlobalScope.launch { withContext(Dispatchers.IO) { recvMspLoop() } }
+    receiverStarted = true
+    CoroutineScope(Dispatchers.IO).launch {
+      while (true) {
+        /** Global [ctrl] can be null. It's needed for having the same [ChatModel] that already made in [ChatController] without the need
+         * to change it everywhere in code after changing a database.
+         * Since it can be changed in background thread, making this check to prevent NullPointerException */
+        val ctrl = ctrl
+        if (ctrl == null) {
+          receiverStarted = false
+          break
+        }
+        val msg = recvMsg(ctrl)
+        if (msg != null) processReceivedMsg(msg)
+      }
     }
   }
 
@@ -287,24 +303,16 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     }
   }
 
-  private suspend fun recvMsg(ctrl: ChatCtrl): CR? {
-    return withContext(Dispatchers.IO) {
-      val json = chatRecvMsgWait(ctrl, MESSAGE_TIMEOUT)
-      if (json == "") {
-        null
-      } else {
-        val r = APIResponse.decodeStr(json).resp
-        Log.d(TAG, "chatRecvMsg: ${r.responseType}")
-        if (r is CR.Response || r is CR.Invalid) Log.d(TAG, "chatRecvMsg json: $json")
-        r
-      }
+  private fun recvMsg(ctrl: ChatCtrl): CR? {
+    val json = chatRecvMsgWait(ctrl, MESSAGE_TIMEOUT)
+    return if (json == "") {
+      null
+    } else {
+      val r = APIResponse.decodeStr(json).resp
+      Log.d(TAG, "chatRecvMsg: ${r.responseType}")
+      if (r is CR.Response || r is CR.Invalid) Log.d(TAG, "chatRecvMsg json: $json")
+      r
     }
-  }
-
-  private suspend fun recvMspLoop() {
-    val msg = recvMsg(ctrl ?: return)
-    if (msg != null) processReceivedMsg(msg)
-    recvMspLoop()
   }
 
   suspend fun apiGetActiveUser(): User? {
@@ -1006,6 +1014,8 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         val file = cItem.file
         if (cItem.content.msgContent is MsgContent.MCImage && file != null && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV && appPrefs.privacyAcceptImages.get()) {
           withApi { receiveFile(file.fileId) }
+        } else if (cItem.content.msgContent is MsgContent.MCVoice && file != null && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && appPrefs.privacyAcceptImages.get()) {
+          withApi { receiveFile(file.fileId) }
         }
         if (!cItem.chatDir.sent && !cItem.isCall && !cItem.isMutedMemberEvent && (!isAppOnForeground(appContext) || chatModel.chatId.value != cInfo.id)) {
           ntfManager.notifyMessageReceived(cInfo, cItem)
@@ -1031,12 +1041,20 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
           chatModel.removeChatItem(cInfo, cItem)
         } else {
           // currently only broadcast deletion of rcv message can be received, and only this case should happen
+          AudioPlayer.stop(cItem)
           chatModel.upsertChatItem(cInfo, cItem)
         }
       }
       is CR.ReceivedGroupInvitation -> {
-        chatModel.addChat(Chat(chatInfo = ChatInfo.Group(r.groupInfo), chatItems = listOf()))
+        chatModel.updateGroup(r.groupInfo) // update so that repeat group invitations are not duplicated
         // TODO NtfManager.shared.notifyGroupInvitation
+      }
+      is CR.UserAcceptedGroupSent -> {
+        chatModel.updateGroup(r.groupInfo)
+        if (r.hostContact != null) {
+          chatModel.dismissConnReqView(r.hostContact.activeConn.id)
+          chatModel.removeChat(r.hostContact.activeConn.id)
+        }
       }
       is CR.JoinedGroupMemberConnecting ->
         chatModel.upsertGroupMember(r.groupInfo, r.member)
@@ -1205,7 +1223,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         chatModel.notificationsMode.value = NotificationsMode.OFF
         SimplexService.StartReceiver.toggleReceiver(false)
         MessagesFetcherWorker.cancelAll()
-        SimplexService.stop(SimplexApp.context)
+        SimplexService.safeStopService(SimplexApp.context)
       } else {
         // show battery optimization notice
         showBGServiceNoticeIgnoreOptimization(mode)
@@ -1336,15 +1354,9 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
                   appPrefs.performLA.set(true)
                   laTurnedOnAlert()
                 }
-                is LAResult.Error -> {
+                is LAResult.Error, LAResult.Failed -> {
                   chatModel.performLA.value = false
                   appPrefs.performLA.set(false)
-                  laErrorToast(appContext, laResult.errString)
-                }
-                LAResult.Failed -> {
-                  chatModel.performLA.value = false
-                  appPrefs.performLA.set(false)
-                  laFailedToast(appContext)
                 }
                 LAResult.Unavailable -> {
                   chatModel.performLA.value = false
@@ -1692,8 +1704,8 @@ data class NetCfg(
     val defaults: NetCfg =
       NetCfg(
         socksProxy = null,
-        tcpConnectTimeout = 7_500_000,
-        tcpTimeout = 5_000_000,
+        tcpConnectTimeout = 10_000_000,
+        tcpTimeout = 7_000_000,
         tcpKeepAlive = KeepAliveOpts.defaults,
         smpPingInterval = 600_000_000
       )
@@ -1701,8 +1713,8 @@ data class NetCfg(
     val proxyDefaults: NetCfg =
       NetCfg(
         socksProxy = ":9050",
-        tcpConnectTimeout = 15_000_000,
-        tcpTimeout = 10_000_000,
+        tcpConnectTimeout = 20_000_000,
+        tcpTimeout = 15_000_000,
         tcpKeepAlive = KeepAliveOpts.defaults,
         smpPingInterval = 600_000_000
       )
@@ -1925,7 +1937,7 @@ sealed class CR {
   // group events
   @Serializable @SerialName("groupCreated") class GroupCreated(val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("sentGroupInvitation") class SentGroupInvitation(val groupInfo: GroupInfo, val contact: Contact, val member: GroupMember): CR()
-  @Serializable @SerialName("userAcceptedGroupSent") class UserAcceptedGroupSent (val groupInfo: GroupInfo): CR()
+  @Serializable @SerialName("userAcceptedGroupSent") class UserAcceptedGroupSent (val groupInfo: GroupInfo, val hostContact: Contact? = null): CR()
   @Serializable @SerialName("userDeletedMember") class UserDeletedMember(val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("leftMemberUser") class LeftMemberUser(val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("groupMembers") class GroupMembers(val group: Group): CR()

@@ -1,0 +1,193 @@
+<header class="">
+    <div class="flex items-center justify-end m-auto px-4 lg:px-7 h-[66px]">
+        <a href="/" class="h-full hidden dark:hidden lg:flex items-center mr-auto"><img class="w-auto h-[50px]" src="/img/new/logo-light.png" alt="logo" /></a>
+        <a href="/" class="h-full hidden dark:lg:flex items-center mr-auto"><img class="w-auto h-[50px]" src="/img/new/logo-dark.png" alt="logo" /></a>
+        <a href="/" class="dark:hidden lg:hidden mr-auto"><img class="h-[32px]" src="/img/new/logo-symbol-light.svg" alt="" srcset=""></a>
+        <a href="/" class="hidden dark:inline-block dark:lg:hidden lg:hidden mr-auto"><img class="h-[32px]" src="/img/new/logo-symbol-dark.svg" alt="" srcset=""></a>
+        
+        <nav class="bg-[#F0F1F2] dark:bg-gradient-radial-mobile dark:lg:bg-none lg:bg-transparent fixed top-[66px] left-0 right-0 bottom-0 lg:top-0 lg:relative" id="menu">
+            <div class="flex flex-col lg:flex-row justify-between lg:items-center gap-10 px-4 lg:px-7 h-full">
+                <ul class="flex flex-col lg:flex-row lg:items-center gap-3 py-4 lg:py-0 lg:gap-10">
+                    
+                    <li class="nav-link relative {% if active_home %}active{% endif %}">
+                        <a href="/" class="flex items-center justify-between gap-2 lg:py-5 ">
+                            <span class="text-[16px] leading-[26px] tracking-[0.01em] nav-link-text text-black dark:text-white before:bg-black dark:before:bg-white">Home</span>
+                        </a>                        
+                    </li>
+
+                    <hr class="dark:opacity-[0.1]" >
+
+                    <li class="nav-link relative">
+                        <a href="javascript:void(0);" class="flex items-center justify-between gap-2 lg:py-5">
+                            <span class="text-[16px] leading-[26px] tracking-[0.01em] text-black dark:text-white before:bg-black dark:before:bg-white">Developers</span>
+                            <span href="" id="btn-mobile" class="flex items-center justify-center h-[36px] w-[36px] lg:h-auto lg:w-auto mt-1">
+                                <svg class="fill-black dark:fill-white" width="10" height="6" viewBox="0 0 10 6" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M1.50447 0.902966C1.21571 0.627397 0.747525 0.627397 0.458761 0.902966C0.169996 1.17853 0.169996 1.62532 0.458761 1.90089L4.21933 5.48961C4.25543 5.52406 4.29433 5.5542 4.33533 5.58003C4.62234 5.76088 5.01237 5.73074 5.26504 5.48961L9.02561 1.90089C9.31438 1.62532 9.31438 1.17853 9.02561 0.902966C8.73685 0.627397 8.26867 0.627397 7.97991 0.902966L4.74219 3.99273L1.50447 0.902966Z"/>
+                                </svg>
+                            </span>
+                        </a>
+                        
+                        <ul class="flex flex-col items-start gap-2 lg:h-fit lg:absolute lg:bg-white dark:lg:bg-black top-full lg:mt-[10px] lg:py-4 min-w-[180px] rounded-md lg:shadow-[0_0_3px_rgb(60_72_88_/_15%)] sub-menu">
+                            <li><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/apps/simplex-bot-advanced/Main.hs"
+                                target="_blank" class="py-[10px] lg:px-[20px]"
+                                >Chat bot example</a></li>
+                            <li><a href="https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript"
+                                target="_blank" class="py-[10px] lg:px-[20px]"
+                                >TypeScript SDK</a></li>
+                            <li><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/CLI.md"
+                                target="_blank" class="py-[10px] lg:px-[20px]"
+                                >Terminal CLI</a></li>
+                            <li><a href="https://github.com/simplex-chat/simplexmq"
+                                target="_blank" class="py-[10px] lg:px-[20px]"
+                                >SimpleXMQ</a></li>
+                            </ul>
+                    </li>
+
+                    <hr class="dark:opacity-[0.1]" >
+
+                    <li class="nav-link relative">
+                        <a href="javascript:void(0);" class="flex items-center justify-between gap-2 lg:py-5">
+                            <span class="text-[16px] leading-[26px] tracking-[0.01em] text-black dark:text-white before:bg-black dark:before:bg-white">Reference</span>
+                            <span href="" id="btn-mobile" class="flex items-center justify-center h-[36px] w-[36px] lg:h-auto lg:w-auto mt-1">
+                                <svg class="fill-black dark:fill-white" width="10" height="6" viewBox="0 0 10 6" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M1.50447 0.902966C1.21571 0.627397 0.747525 0.627397 0.458761 0.902966C0.169996 1.17853 0.169996 1.62532 0.458761 1.90089L4.21933 5.48961C4.25543 5.52406 4.29433 5.5542 4.33533 5.58003C4.62234 5.76088 5.01237 5.73074 5.26504 5.48961L9.02561 1.90089C9.31438 1.62532 9.31438 1.17853 9.02561 0.902966C8.73685 0.627397 8.26867 0.627397 7.97991 0.902966L4.74219 3.99273L1.50447 0.902966Z"/>
+                                </svg>
+                            </span>
+                        </a>
+                        
+                        <ul class="flex flex-col items-start gap-2 lg:h-fit lg:absolute lg:bg-white dark:lg:bg-black top-full lg:mt-[10px] lg:py-4 min-w-[180px] rounded-md lg:shadow-[0_0_3px_rgb(60_72_88_/_15%)] sub-menu">
+                            <li><a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md"
+                                target="_blank" class="py-[10px] lg:px-[20px]"
+                                >Whitepaper</a></li>
+                            <li><a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/simplex-messaging.md"
+                                target="_blank" class="py-[10px] lg:px-[20px]"
+                                >SMP protocol</a></li>
+                            <li><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/simplex-chat.md"
+                                target="_blank" class="py-[10px] lg:px-[20px]"
+                                >Chat protocol</a></li>
+                        </ul>
+                    </li>
+
+                    <hr class="dark:opacity-[0.1]" >
+
+                    <li class="nav-link relative {% if active_blog %}active{% endif %}">
+                        <a href="/blog" class="flex items-center justify-between gap-2 lg:py-5">
+                            <span class="text-[16px] leading-[26px] tracking-[0.01em] nav-link-text text-black dark:text-white before:bg-black dark:before:bg-white">Blog</span>
+                        </a>
+                    </li>
+                </ul>
+
+                <a href="https://github.com/simplex-chat/simplex-chat#help-us-with-donations"
+                    target="_blank" class="inline-block self-center text-white dark:text-black text-[16px] font-medium tracking-[0.02em] rounded-[34px] bg-primary-light dark:bg-primary-dark py-3 lg:py-2 px-20 lg:px-5 mb-16 lg:mb-0"
+                    >Donate</a>
+
+                <div class=" inline-block self-center dark:hidden mr-[-36px] mt-[8px]">
+                    <a class="github-button" href="https://github.com/simplex-chat/simplex-chat" data-size="large"
+                        data-show-count="true" aria-label="Star simplex-chat on GitHub">Star</a>
+                </div>
+
+                <div class="inline-block self-center hidden dark:block mr-[-36px] mt-[8px]">
+                    <a class="github-button" href="https://github.com/simplex-chat/simplex-chat" data-size="large"
+                        data-color-scheme="no-preference: dark; light: dark; dark: dark;"
+                        data-show-count="true" aria-label="Star simplex-chat on GitHub">Star</a>
+                </div>
+            </div>
+        </nav>
+
+        <button href="#" class="flex items-center justify-center h-[36px] w-[36px] ml-10 theme-switch-btn">
+            <img src="/img/new/sun.svg"  alt="" srcset="" class="sun">
+            <img src="/img/new/moon.svg" alt="" srcset="" class="moon">
+        </button>
+
+        <button href="" id="btn-mobile" class="flex lg:hidden items-center justify-center h-[36px] w-[36px] ml-10 nav-toggle-btn">
+            <img src="/img/new/hamburger.svg" id="hamburger" alt="" srcset="">
+            <svg class="fill-black dark:fill-white hidden" id="cross" width="13" height="13" viewBox="0 0 13 13" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12.7973 11.5525L7.59762 6.49833L12.7947 1.44675C13.055 1.19371 13.0658 0.771991 12.8188 0.505331C12.5718 0.238674 12.1602 0.227644 11.8999 0.480681L6.65343 5.58028L1.09979 0.182228C0.839522 -0.070157 0.427909 -0.059127 0.18094 0.207531C-0.0660305 0.474191 -0.0552645 0.895911 0.205003 1.14894L5.70862 6.49833L0.20247 11.851C-0.0577975 12.104 -0.0685635 12.5257 0.178407 12.7924C0.306324 12.9306 0.477936 13 0.650181 13C0.811033 13 0.971873 12.9397 1.09726 12.817L6.65343 7.41639L11.9025 12.5186C12.0285 12.6406 12.1893 12.7015 12.3495 12.7015C12.5218 12.7015 12.6934 12.6321 12.8213 12.4939C13.0689 12.2273 13.0582 11.8062 12.7973 11.5525Z" />
+            </svg>
+        </button>
+    </div>
+</header>
+
+
+<SCript>
+// switch theme
+const sunIcon = document.querySelector('.sun');
+const moonIcon = document.querySelector('.moon');
+
+const userTheme = localStorage.getItem('theme');
+const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+const iconToggle = () => {
+    sunIcon.classList.toggle('hidden');
+    moonIcon.classList.toggle('hidden');
+}
+
+const themeCheck = () => {
+    if(userTheme === 'dark' || (!userTheme && systemTheme)){
+        document.documentElement.classList.add('dark');
+        moonIcon.classList.add('hidden');
+    }
+    else{
+        sunIcon.classList.add('hidden');
+    }
+}
+
+const themeSwitch = () => {
+    if(document.documentElement.classList.contains('dark')){
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme','light');
+        iconToggle();
+    }
+    else{
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme','dark');
+        iconToggle();
+    }
+}
+
+const nav = document.querySelector('header nav');
+window.addEventListener('click',(e)=>{
+    if(e.target.closest('.nav-link')){
+        if(e.target.closest('.nav-link').classList.contains('active')){
+            e.target.closest('.nav-link').classList.remove('active');
+        }
+        else{
+            document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'))
+            e.target.closest('.nav-link').classList.add('active');
+        }
+    }
+    else if(e.target.closest('.nav-toggle-btn')){
+        document.body.classList.toggle('lock-scroll');
+        if(nav.classList.contains('open')){
+            nav.classList.remove('open');
+            document.getElementById('hamburger').classList.remove('hidden');
+            document.getElementById('cross').classList.add('hidden');
+        }
+        else{
+            nav.classList.add('open');
+            document.getElementById('hamburger').classList.add('hidden');
+            document.getElementById('cross').classList.remove('hidden');
+        }
+    }
+    else if(e.target.closest('.theme-switch-btn')){
+        themeSwitch();
+    }
+})
+
+themeCheck();
+
+const changeHeaderBg = ()=>{
+    const header = document.querySelector('header')
+    const scrollValue = window.scrollY
+    if(scrollValue > 5){
+        header.classList.add('bg-primary-bg-light');
+        header.classList.add('dark:bg-primary-bg-dark');
+    }
+    else{
+        header.classList.remove('bg-primary-bg-light');
+        header.classList.remove('dark:bg-primary-bg-dark');
+    }
+}
+
+window.addEventListener('scroll',changeHeaderBg);
+</SCript>

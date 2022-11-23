@@ -726,7 +726,7 @@ msgDirToDeletedContent_ msgDir mode = case msgDir of
 
 -- platform independent
 instance ToField (CIContent d) where
-  toField = toField . safeDecodeUtf8 . LB.toStrict . J.encode . dbJsonCIContent
+  toField = toField . encodeJSON . dbJsonCIContent
 
 -- platform specific
 instance ToJSON (CIContent d) where
@@ -742,7 +742,7 @@ instance FromJSON ACIContent where
   parseJSON = fmap aciContentJSON . J.parseJSON
 
 -- platform independent
-instance FromField ACIContent where fromField = fromTextField_ $ fmap aciContentDBJSON . J.decode . LB.fromStrict . encodeUtf8
+instance FromField ACIContent where fromField = fromTextField_ $ fmap aciContentDBJSON . decodeJSON
 
 -- platform specific
 data JSONCIContent
@@ -881,14 +881,9 @@ ciCallInfoText status duration = case status of
   CISCallRejected -> "rejected"
   CISCallAccepted -> "accepted"
   CISCallNegotiated -> "connecting..."
-  CISCallProgress -> "in progress " <> d
-  CISCallEnded -> "ended " <> d
+  CISCallProgress -> "in progress " <> durationText duration
+  CISCallEnded -> "ended " <> durationText duration
   CISCallError -> "error"
-  where
-    d = let (mins, secs) = duration `divMod` 60 in T.pack $ "(" <> with0 mins <> ":" <> with0 secs <> ")"
-    with0 n
-      | n < 9 = '0' : show n
-      | otherwise = show n
 
 data SChatType (c :: ChatType) where
   SCTDirect :: SChatType 'CTDirect

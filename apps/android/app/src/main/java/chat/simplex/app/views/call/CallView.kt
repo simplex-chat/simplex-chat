@@ -42,8 +42,7 @@ import chat.simplex.app.views.helpers.ProfileImage
 import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.usersettings.NotificationsMode
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 
@@ -63,7 +62,7 @@ fun ActiveCallView(chatModel: ChatModel) {
   DisposableEffect(Unit) {
     onDispose {
       // Stop it when call ended
-      if (!ntfModeService) SimplexService.stop(SimplexApp.context)
+      if (!ntfModeService) SimplexService.safeStopService(SimplexApp.context)
       // Clear selected communication device to default value after we changed it in call
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         val am = SimplexApp.context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
@@ -357,6 +356,7 @@ fun CallInfoView(call: Call, alignment: Alignment.Horizontal) {
 
 @Composable
 fun WebRTCView(callCommand: MutableState<WCallCommand?>, onResponse: (WVAPIMessage) -> Unit) {
+  val scope = rememberCoroutineScope()
   val webView = remember { mutableStateOf<WebView?>(null) }
   val permissionsState = rememberMultiplePermissionsState(
     permissions = listOf(
@@ -435,7 +435,7 @@ fun WebRTCView(callCommand: MutableState<WCallCommand?>, onResponse: (WVAPIMessa
         Log.d(TAG, "WebRTCView: webview ready")
         // for debugging
         // wv.evaluateJavascript("sendMessageToNative = ({resp}) => WebRTCInterface.postMessage(JSON.stringify({command: resp}))", null)
-        withApi {
+        scope.launch {
           delay(2000L)
           wv.evaluateJavascript("sendMessageToNative = (msg) => WebRTCInterface.postMessage(JSON.stringify(msg))", null)
           webView.value = wv

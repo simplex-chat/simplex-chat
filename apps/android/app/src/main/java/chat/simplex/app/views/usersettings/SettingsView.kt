@@ -146,13 +146,25 @@ fun SettingsLayout(
       }
       SectionSpacer()
 
+      SectionView(stringResource(R.string.settings_section_title_support)) {
+        ContributeItem(uriHandler)
+        SectionDivider()
+        RateAppItem(uriHandler)
+        SectionDivider()
+        StarOnGithubItem(uriHandler)
+      }
+      SectionSpacer()
+
       SectionView(stringResource(R.string.settings_section_title_develop)) {
-        ChatConsoleItem(showTerminal)
+        val devTools = remember { mutableStateOf(developerTools.get()) }
+        SettingsPreferenceItem(Icons.Outlined.Construction, stringResource(R.string.settings_developer_tools), developerTools, devTools)
         SectionDivider()
-        SettingsPreferenceItem(Icons.Outlined.Construction, stringResource(R.string.settings_developer_tools), developerTools)
-        SectionDivider()
-        InstallTerminalAppItem(uriHandler)
-        SectionDivider()
+        if (devTools.value) {
+          ChatConsoleItem(showTerminal)
+          SectionDivider()
+          InstallTerminalAppItem(uriHandler)
+          SectionDivider()
+        }
 //        SettingsActionItem(Icons.Outlined.Science, stringResource(R.string.settings_experimental_features), showSettingsModal { ExperimentalFeaturesView(it, enableCalls) })
 //        SectionDivider()
         AppVersionItem()
@@ -249,6 +261,46 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
         )
       )
     }
+  }
+}
+
+@Composable private fun ContributeItem(uriHandler: UriHandler) {
+  SectionItemView({ uriHandler.openUri("https://github.com/simplex-chat/simplex-chat#contribute") }) {
+    Icon(
+      Icons.Outlined.Keyboard,
+      contentDescription = "GitHub",
+      tint = HighOrLowlight,
+    )
+    Spacer(Modifier.padding(horizontal = 4.dp))
+    Text(generalGetString(R.string.contribute), color = MaterialTheme.colors.primary)
+  }
+}
+
+@Composable private fun RateAppItem(uriHandler: UriHandler) {
+  SectionItemView({
+    runCatching { uriHandler.openUri("market://details?id=chat.simplex.app") }
+      .onFailure { uriHandler.openUri("https://play.google.com/store/apps/details?id=chat.simplex.app") }
+  }
+  ) {
+    Icon(
+      Icons.Outlined.StarOutline,
+      contentDescription = "Google Play",
+      tint = HighOrLowlight,
+    )
+    Spacer(Modifier.padding(horizontal = 4.dp))
+    Text(generalGetString(R.string.rate_the_app), color = MaterialTheme.colors.primary)
+  }
+}
+
+@Composable private fun StarOnGithubItem(uriHandler: UriHandler) {
+  SectionItemView({ uriHandler.openUri("https://github.com/simplex-chat/simplex-chat") }) {
+    Icon(
+      painter = painterResource(id = R.drawable.ic_github),
+      contentDescription = "GitHub",
+      tint = HighOrLowlight,
+    )
+    Spacer(Modifier.padding(horizontal = 4.dp))
+    Text(generalGetString(R.string.star_on_github), color = MaterialTheme.colors.primary)
   }
 }
 

@@ -409,7 +409,7 @@ private fun stopChat(m: ChatModel, runChat: MutableState<Boolean>, context: Cont
       m.controller.apiStopChat()
       runChat.value = false
       m.chatRunning.value = false
-      SimplexService.stop(context)
+      SimplexService.safeStopService(context)
       MessagesFetcherWorker.cancelAll()
     } catch (e: Error) {
       runChat.value = true

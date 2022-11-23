@@ -1,21 +1,71 @@
-<footer>
+<section class="bg-[#D9E7ED] dark:bg-[#0E2B57] py-[50px]">
     <div class="container">
-        <img alt="simplex logo" class="logo d-none-992" src="/img/simplex.svg" />
-        <p class="copyright">
-            &#169; 2020-22 SimpleX | Open-Source Project <span class="d-none-576">|</span>
-            <a class="d-none-576" href="https://github.com/simplex-chat" target="_blank"><img
-                    src="/img/icons/github.svg" /></a>
-            <a class="d-none-576" href="https://www.reddit.com/r/SimpleXChat/" target="_blank"><img
-                    src="/img/icons/reddit.svg" /></a>
-            <a class="d-none-576" href="https://twitter.com/simplexchat" target="_blank"><img
-                    src="/img/icons/twitter.svg" /></a>
-            <a class="d-none-576" href="https://www.linkedin.com/company/simplex-chat/" target="_blank"><img
-                    src="/img/icons/linkedin.svg" /></a>
-            <a class="d-none-576" href="mailto:chat@simplex.chat" target="_blank"><img src="/img/icons/email.svg" /></a>
-        </p>
-        <div class="github d-none-992">
-            <a class="github-button" href="https://github.com/simplex-chat/protocol" data-size="large"
-                data-show-count="true" aria-label="Star simplex-chat on GitHub">Star</a>
+        <div class="flex flex-col lg:flex-row justify-between">
+            <div class="flex flex-col items-center lg:items-start">
+                <a href="/" class="h-full mb-14 dark:hidden"><img class="w-auto h-[32px]" src="/img/new/logo-light.png" alt="logo" /></a>
+                <a href="/" class="h-full mb-14 hidden dark:inline-block"><img class="w-auto h-[32px]" src="/img/new/logo-dark.png" alt="logo" /></a>
+
+                <div class="flex flex-col items-center lg:items-start lg:flex-row gap-[150px] lg:gap-[350px]">
+                    <div class="flex flex-col items-center lg:items-start">
+                        <a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md"
+                            target="_blank"
+                            class="text-grey-black dark:text-white text-[14px] font-medium leading-[28px] tracking-[0.01em] mb-3">
+                            SimpleX Whitepaper</a>
+                        <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/simplex-chat.md"
+                            target="_blank"
+                            class="text-grey-black dark:text-white text-[14px] font-medium leading-[28px] tracking-[0.01em] mb-3">
+                            SimpleX Chat protocol</a>
+                        <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/PRIVACY.md"
+                            target="_blank"
+                            class="text-grey-black dark:text-white text-[14px] font-medium leading-[28px] tracking-[0.01em] mb-3">
+                            Terms & Privacy Policy</a>
+                        <a href="https://github.com/simplex-chat/simplex-chat#help-us-with-donations"
+                            target="_blank"
+                            class="text-grey-black dark:text-white text-[14px] font-medium leading-[28px] tracking-[0.01em] mb-3">
+                            Donate</a>
+                    </div>
+                    <div class="flex flex-col items-center lg:items-start">
+                        <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/CLI.md"
+                            target="_blank"
+                            class="text-grey-black dark:text-white text-[14px] font-medium leading-[28px] tracking-[0.01em] mb-3">
+                            Terminal CLI</a>
+                        <a href="https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript"
+                            target="_blank"
+                            class="text-grey-black dark:text-white text-[14px] font-medium leading-[28px] tracking-[0.01em] mb-3">
+                            TypeScript SDK</a>
+                    </div>
+                </div>
+            </div>
+
+            <article class="mt-10 lg:mt-0">
+                <div class="h-[40px] flex gap-4 justify-center">
+                    <a href="https://github.com/simplex-chat" target="_blank">
+                        <svg class="fill-primary-light dark:fill-primary-dark" width="40" height="40" viewBox="0 0 41 41" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M20.2907 0.926758C9.24635 0.926758 0.290527 10.1075 0.290527 21.4331C0.290527 30.4933 6.02118 38.18 13.9679 40.8915C14.9674 41.0813 15.3344 40.4467 15.3344 39.905C15.3344 39.4161 15.3158 37.8007 15.3072 36.0872C9.74314 37.3277 8.56906 33.6677 8.56906 33.6677C7.65927 31.2975 6.3484 30.6672 6.3484 30.6672C4.53379 29.3945 6.48519 29.4206 6.48519 29.4206C8.49355 29.5653 9.55105 31.5338 9.55105 31.5338C11.3349 34.6688 14.2298 33.7624 15.3711 33.2385C15.5506 31.9131 16.069 31.0085 16.6409 30.4964C12.1986 29.9779 7.52878 28.2195 7.52878 20.3621C7.52878 18.1232 8.31007 16.294 9.58947 14.8579C9.38181 14.3414 8.69723 12.2557 9.78322 9.43111C9.78322 9.43111 11.4627 8.87998 15.2847 11.5331C16.8801 11.0787 18.591 10.8509 20.2907 10.8431C21.9904 10.8509 23.7027 11.0787 25.301 11.5331C29.1183 8.87998 30.7955 9.43111 30.7955 9.43111C31.8842 12.2557 31.1992 14.3414 30.9916 14.8579C32.274 16.294 33.05 18.1232 33.05 20.3621C33.05 28.2382 28.3712 29.9724 23.9176
+                                30.4801C24.635 31.1165 25.2742 32.3644 25.2742 34.2776C25.2742 37.0214 25.251 39.2296 25.251 39.905C25.251 40.4507 25.611 41.0902 26.6248 40.8888C34.5672 38.1742 40.2905 30.4903 40.2905 21.4331C40.2905 10.1075 31.336 0.926758 20.2907 0.926758Z" />
+                        </svg>
+                    </a>
+                    <a href="https://www.reddit.com/r/SimpleXChat/" target="_blank">
+                        <svg class="fill-primary-light dark:fill-primary-dark" width="40" height="40" viewBox="0 0 41 41" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" clip-rule="evenodd" d="M20.874 40.9268C31.9197 40.9268 40.874 31.9724 40.874 20.9268C40.874 9.88108 31.9197 0.926758 20.874 0.926758C9.82834 0.926758 0.874023 9.88108 0.874023 20.9268C0.874023 31.9724 9.82834 40.9268 20.874 40.9268ZM30.4091 16.615C31.9031 16.615 33.1157 17.8276 33.1157 19.3216C33.1157 20.426 32.4445 21.3787 31.5567 21.8118C31.6 22.0716 31.6217 22.3315 31.6217 22.613C31.6217 26.7705 26.7929 30.1268 20.8165 30.1268C14.8402 30.1268 10.0114 26.7705 10.0114 22.613C10.0114 22.3315 10.0331 22.05 10.0764 21.7902C9.12362 21.3571 8.47402 20.426 8.47402 19.3216C8.47402 17.8276 9.68662 16.615 11.1807 16.615C11.8953 16.615 12.5665 16.9181 13.0429 17.3728C14.9051 16.0086 17.4819 15.1642 20.3618 15.0776L21.726 8.6248C21.7693 8.49488 21.8343 8.3866 21.9425 8.32164C22.0508 8.25668 22.1807 8.23504 22.3106 8.25668L26.7929 9.20944C27.0961 8.55984 27.7457 8.12676 28.5035 8.12676C29.5646 8.12676 30.4307 8.99292 30.4307
+                                10.0539C30.4307 11.115 29.5646 11.9811 28.5035 11.9811C27.4642 11.9811 26.6197 11.1582 26.5764 10.1406L22.5705 9.29604L21.3362 15.0776C24.1512 15.1858 26.7063 16.052 28.5469 17.3728C29.0232 16.8964 29.6728 16.615 30.4091 16.615ZM16.5291 19.3216C15.4681 19.3216 14.602 20.1878 14.602 21.2488C14.602 22.3098 15.4681 23.176 16.5291 23.176C17.5902 23.176 18.4563 22.3098 18.4563 21.2488C18.4563 20.1878 17.5902 19.3216 16.5291 19.3216ZM20.7949 27.7449C21.5311 27.7449 24.0429 27.6582 25.3638 26.3374C25.5587 26.1425 25.5587 25.8394 25.4071 25.6228C25.2122 25.428 24.8874 25.428 24.6925 25.6228C23.848 26.4456 22.0941 26.7488 20.8165 26.7488C19.539 26.7488 17.7634 26.4456 16.9405 25.6228C16.7457 25.428 16.4209 25.428 16.226 25.6228C16.0311 25.8177 16.0311 26.1425 16.226 26.3374C17.5252 27.6366 20.0587 27.7449 20.7949 27.7449ZM23.0902 21.2488C23.0902 22.3098 23.9563 23.176 25.0173 23.176C26.0783 23.176 26.9445 22.3098 26.9445 21.2488C26.9445 20.1878 26.0783
+                                19.3216 25.0173 19.3216C23.9563 19.3216 23.0902 20.1878 23.0902 21.2488Z" />
+                        </svg>
+                    </a>
+                    <a href="https://twitter.com/simplexchat" target="_blank">
+                        <svg class="fill-primary-light dark:fill-primary-dark" width="40" height="40" viewBox="0 0 41 41" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" clip-rule="evenodd" d="M20.4575 40.9268C31.5032 40.9268 40.4575 31.9725 40.4575 20.9268C40.4575 9.88106 31.5032 0.926758 20.4575 0.926758C9.41182 0.926758 0.45752 9.88106 0.45752 20.9268C0.45752 31.9725 9.41182 40.9268 20.4575 40.9268ZM29.916 16.7766C29.916 23.1157 25.014 30.4265 16.0519 30.4265V30.423C13.4038 30.4265 10.8115 29.6795 8.58252 28.2719C8.96846 28.3174 9.35558 28.3397 9.74271 28.3409C11.9372 28.3432 14.0688 27.6182 15.7942 26.283C13.7101 26.2444 11.8802 24.9055 11.2425 22.9507C11.9716 23.0898 12.7245 23.0619 13.4418 22.869C11.1689 22.4165 9.53371 20.4504 9.53252 18.1671V18.1062C10.2106 18.478 10.9694 18.6835 11.7448 18.7057C9.60377 17.2981 8.94233 14.4948 10.2355 12.3026C12.7103 15.2992 16.3606 17.1207 20.2782 17.3147C19.8851 15.6487 20.4231 13.902 21.6878 12.7306C23.6507 10.9137 26.737 11.0073 28.5824 12.9387C29.6737 12.7271 30.7199 12.3327 31.677 11.7738C31.3125 12.8857 30.5513 13.828 29.5348 14.4277C30.5002
+                                14.3155 31.4443 14.0609 32.3325 13.6728C31.6782 14.6362 30.8553 15.4781 29.9017 16.1562C29.916 16.362 29.916 16.5685 29.916 16.7766Z" />
+                        </svg>
+                    </a>
+                    <a href="https://www.linkedin.com/company/simplex-chat/" target="_blank">
+                        <svg class="fill-primary-light dark:fill-primary-dark" width="40" height="40" viewBox="0 0 41 41" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" clip-rule="evenodd" d="M20.0408 0.926758C8.9951 0.926758 0.0407715 9.88109 0.0407715 20.9268C0.0407715 31.9724 8.9951 40.9268 20.0408 40.9268C31.0864 40.9268 40.0408 31.9724 40.0408 20.9268C40.0408 9.88109 31.0864 0.926758 20.0408 0.926758ZM9.6421 17.4916H14.1745V31.1098H9.6421V17.4916ZM14.4731 13.279C14.4437 11.9438 13.4889 10.9268 11.9383 10.9268C10.3878 10.9268 9.3741 11.9438 9.3741 13.279C9.3741 14.5866 10.3579 15.6328 11.8794 15.6328H11.9084C13.4889 15.6328 14.4731 14.5866 14.4731 13.279ZM25.3017 17.1718C28.2843 17.1718 30.5203 19.1187 30.5203 23.3015L30.5201 31.1098H25.9879V23.824C25.9879 21.994 25.3319 20.7453 23.6912 20.7453C22.439 20.7453 21.6932 21.5871 21.3656 22.4003C21.2458 22.6916 21.2164 23.0976 21.2164 23.5046V31.1101H16.6834C16.6834 31.1101 16.7431 18.7698 16.6834 17.492H21.2164V19.4208C21.8179 18.4936 22.8953 17.1718 25.3017 17.1718Z" />
+                        </svg>
+                    </a>
+                </div>
+            </article>
         </div>
+        <a href="#" class="text-grey-black dark:text-white text-[16px] text-center lg:text-left font-medium leading-[28px] tracking-[0.01em] block mt-[60px]">© 2020-2022 SimpleX | Open-Source Project</a>
     </div>
-</footer>
+</section>

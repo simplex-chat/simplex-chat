@@ -1,6 +1,5 @@
 package chat.simplex.app.views.chat.item
 
-import android.content.*
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,15 +28,11 @@ import kotlinx.datetime.Clock
 
 @Composable
 fun ChatItemView(
-  user: User,
   cInfo: ChatInfo,
   cItem: ChatItem,
   composeState: MutableState<ComposeState>,
-  cxt: Context,
-  uriHandler: UriHandler? = null,
   imageProvider: (() -> ImageGalleryProvider)? = null,
   showMember: Boolean = false,
-  chatModelIncognito: Boolean,
   useLinkPreviews: Boolean,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   receiveFile: (Long) -> Unit,
@@ -46,6 +41,7 @@ fun ChatItemView(
   scrollToItem: (Long) -> Unit,
 ) {
   val context = LocalContext.current
+  val uriHandler = LocalUriHandler.current
   val sent = cItem.chatDir.sent
   val alignment = if (sent) Alignment.CenterEnd else Alignment.CenterStart
   val showMenu = remember { mutableStateOf(false) }
@@ -56,10 +52,21 @@ fun ChatItemView(
       .fillMaxWidth(),
     contentAlignment = alignment,
   ) {
+    val onClick = {
+      when (cItem.meta.itemStatus) {
+        is CIStatus.SndErrorAuth -> {
+          showMsgDeliveryErrorAlert(generalGetString(R.string.message_delivery_error_desc))
+        }
+        is CIStatus.SndError -> {
+          showMsgDeliveryErrorAlert(generalGetString(R.string.unknown_error) + ": ${cItem.meta.itemStatus.agentError.string}")
+        }
+        else -> {}
+      }
+    }
     Column(
       Modifier
         .clip(RoundedCornerShape(18.dp))
-        .combinedClickable(onLongClick = { showMenu.value = true }, onClick = {})
+        .combinedClickable(onLongClick = { showMenu.value = true }, onClick = onClick),
     ) {
       @Composable fun ContentItem() {
         if (cItem.file == null && cItem.quotedItem == null && isShortEmoji(cItem.content.text)) {
@@ -84,29 +91,30 @@ fun ChatItemView(
           ItemAction(stringResource(R.string.share_verb), Icons.Outlined.Share, onClick = {
             val filePath = getLoadedFilePath(SimplexApp.context, cItem.file)
             when {
-              filePath != null -> shareFile(cxt, cItem.text, filePath)
-              else -> shareText(cxt, cItem.content.text)
+              filePath != null -> shareFile(context, cItem.text, filePath)
+              else -> shareText(context, cItem.content.text)
             }
             showMenu.value = false
           })
           ItemAction(stringResource(R.string.copy_verb), Icons.Outlined.ContentCopy, onClick = {
-            copyText(cxt, cItem.content.text)
+            copyText(context, cItem.content.text)
             showMenu.value = false
           })
-          if (cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCFile) {
+          if (cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCFile || cItem.content.msgContent is MsgContent.MCVoice) {
             val filePath = getLoadedFilePath(context, cItem.file)
             if (filePath != null) {
               ItemAction(stringResource(R.string.save_verb), Icons.Outlined.SaveAlt, onClick = {
                 when (cItem.content.msgContent) {
                   is MsgContent.MCImage -> saveImage(context, cItem.file)
                   is MsgContent.MCFile -> saveFileLauncher.launch(cItem.file?.fileName)
+                  is MsgContent.MCVoice -> saveFileLauncher.launch(cItem.file?.fileName)
                   else -> {}
                 }
                 showMenu.value = false
               })
             }
           }
-          if (cItem.meta.editable) {
+          if (cItem.meta.editable && cItem.content.msgContent !is MsgContent.MCVoice) {
             ItemAction(stringResource(R.string.edit_verb), Icons.Filled.Edit, onClick = {
               composeState.value = ComposeState(editingItem = cItem, useLinkPreviews = useLinkPreviews)
               showMenu.value = false
@@ -210,20 +218,24 @@ fun deleteMessageAlertDialog(chatItem: ChatItem, deleteMessage: (Long, CIDeleteM
   )
 }
 
+private fun showMsgDeliveryErrorAlert(description: String) {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(R.string.message_delivery_error_title),
+    text = description,
+  )
+}
+
 @Preview
 @Composable
 fun PreviewChatItemView() {
   SimpleXTheme {
     ChatItemView(
-      User.sampleData,
       ChatInfo.Direct.sampleData,
       ChatItem.getSampleData(
         1, CIDirection.DirectSnd(), Clock.System.now(), "hello"
       ),
       useLinkPreviews = true,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
-      cxt = LocalContext.current,
-      chatModelIncognito = false,
       deleteMessage = { _, _ -> },
       receiveFile = {},
       joinGroup = {},
@@ -238,13 +250,10 @@ fun PreviewChatItemView() {
 fun PreviewChatItemViewDeletedContent() {
   SimpleXTheme {
     ChatItemView(
-      User.sampleData,
       ChatInfo.Direct.sampleData,
       ChatItem.getDeletedContentSampleData(),
       useLinkPreviews = true,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
-      cxt = LocalContext.current,
-      chatModelIncognito = false,
       deleteMessage = { _, _ -> },
       receiveFile = {},
       joinGroup = {},

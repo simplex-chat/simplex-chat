@@ -20,7 +20,12 @@ import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
+import java.io.File
 
+/*
+ * Without this annotation an animation from ChatList to ChatView has 1 frame per the whole animation. Don't delete it
+ * */
+@Stable
 class ChatModel(val controller: ChatController) {
   val onboardingStage = mutableStateOf<OnboardingStage?>(null)
   val currentUser = mutableStateOf<User?>(null)
@@ -69,6 +74,8 @@ class ChatModel(val controller: ChatController) {
 
   // working with external intents
   val sharedContent = mutableStateOf(null as SharedContent?)
+
+  val filesToDelete = mutableSetOf<File>()
 
   fun updateUserProfile(profile: LocalProfile) {
     val user = currentUser.value
@@ -218,6 +225,7 @@ class ChatModel(val controller: ChatController) {
     if (chatId.value == cInfo.id) {
       val itemIndex = chatItems.indexOfFirst { it.id == cItem.id }
       if (itemIndex >= 0) {
+        AudioPlayer.stop(chatItems[itemIndex])
         chatItems.removeAt(itemIndex)
       }
     }
@@ -307,6 +315,11 @@ class ChatModel(val controller: ChatController) {
   }
 
   fun upsertGroupMember(groupInfo: GroupInfo, member: GroupMember): Boolean {
+    // user member was updated
+    if (groupInfo.membership.groupMemberId == member.groupMemberId) {
+      updateGroup(groupInfo)
+      return false
+    }
     // update current chat
     return if (chatId.value == groupInfo.id) {
       val memberIndex = groupMembers.indexOfFirst { it.id == member.id }
@@ -377,7 +390,7 @@ interface SomeChat {
   val updatedAt: Instant
 }
 
-@Serializable
+@Serializable @Stable
 data class Chat (
   val chatInfo: ChatInfo,
   val chatItems: List<ChatItem>,
@@ -426,7 +439,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
   abstract val incognito: Boolean
 
   @Serializable @SerialName("direct")
-  class Direct(val contact: Contact): ChatInfo() {
+  data class Direct(val contact: Contact): ChatInfo() {
     override val chatType get() = ChatType.Direct
     override val localDisplayName get() = contact.localDisplayName
     override val id get() = contact.id
@@ -448,7 +461,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
   }
 
   @Serializable @SerialName("group")
-  class Group(val groupInfo: GroupInfo): ChatInfo() {
+  data class Group(val groupInfo: GroupInfo): ChatInfo() {
     override val chatType get() = ChatType.Group
     override val localDisplayName get() = groupInfo.localDisplayName
     override val id get() = groupInfo.id
@@ -646,7 +659,7 @@ data class GroupInfo (
   val membership: GroupMember,
   val hostConnCustomUserProfileId: Long? = null,
   val chatSettings: ChatSettings,
-  val preferences: ChatPreferences? = null,
+//  val groupPreferences: GroupPreferences? = null,
   override val createdAt: Instant,
   override val updatedAt: Instant
 ): SomeChat, NamedChat {
@@ -701,7 +714,7 @@ class GroupProfile (
 }
 
 @Serializable
-class GroupMember (
+data class GroupMember (
   val groupMemberId: Long,
   val groupId: Long,
   val memberId: String,
@@ -920,6 +933,7 @@ class PendingContactConnection(
   val pccAgentConnId: String,
   val pccConnStatus: ConnStatus,
   val viaContactUri: Boolean,
+  val groupLinkId: String? = null,
   val customUserProfileId: Long? = null,
   val connReqInv: String? = null,
   override val localAlias: String,
@@ -958,8 +972,11 @@ class PendingContactConnection(
     return if (initiated == null) "" else generalGetString(
       if (initiated && !viaContactUri)
         if (incognito) R.string.description_you_shared_one_time_link_incognito else R.string.description_you_shared_one_time_link
-      else if (viaContactUri )
-        if (incognito) R.string.description_via_contact_address_link_incognito else R.string.description_via_contact_address_link
+      else if (viaContactUri)
+        if (groupLinkId != null)
+          if (incognito) R.string.description_via_group_link_incognito else R.string.description_via_group_link
+        else
+          if (incognito) R.string.description_via_contact_address_link_incognito else R.string.description_via_contact_address_link
       else
         if (incognito) R.string.description_via_one_time_link_incognito else R.string.description_via_one_time_link
     )
@@ -1007,7 +1024,7 @@ class AChatItem (
   val chatItem: ChatItem
 )
 
-@Serializable
+@Serializable @Stable
 data class ChatItem (
   val chatDir: CIDirection,
   val meta: CIMeta,
@@ -1021,6 +1038,9 @@ data class ChatItem (
 
   val text: String get() =
     when {
+      content.text == "" && file != null && content.msgContent is MsgContent.MCVoice -> {
+        (content.msgContent as MsgContent.MCVoice).toTextWithDuration(false)
+      }
       content.text == "" && file != null -> file.fileName
       else -> content.text
     }
@@ -1293,6 +1313,8 @@ class CIFile(
     CIFileStatus.RcvComplete -> true
   }
 
+  val audioInfo: MutableState<ProgressAndDuration> by lazy { mutableStateOf(ProgressAndDuration()) }
+
   companion object {
     fun getSample(
       fileId: Long = 1,
@@ -1326,6 +1348,7 @@ sealed class MsgContent {
   @Serializable(with = MsgContentSerializer::class) class MCText(override val text: String): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCLink(override val text: String, val preview: LinkPreview): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCImage(override val text: String, val image: String): MsgContent()
+  @Serializable(with = MsgContentSerializer::class) class MCVoice(override val text: String, val duration: Int): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCFile(override val text: String): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCUnknown(val type: String? = null, override val text: String, val json: JsonElement): MsgContent()
 
@@ -1333,9 +1356,15 @@ sealed class MsgContent {
     is MCText -> "text $text"
     is MCLink -> "json ${json.encodeToString(this)}"
     is MCImage -> "json ${json.encodeToString(this)}"
+    is MCVoice-> "json ${json.encodeToString(this)}"
     is MCFile -> "json ${json.encodeToString(this)}"
     is MCUnknown -> "json $json"
   }
+}
+
+fun MsgContent.MCVoice.toTextWithDuration(short: Boolean): String {
+  val time = String.format("%02d:%02d", duration / 60, duration % 60)
+  return if (short) time else generalGetString(R.string.voice_message) + " ($time)"
 }
 
 @Serializable
@@ -1406,6 +1435,10 @@ object MsgContentSerializer : KSerializer<MsgContent> {
             val image = json["image"]?.jsonPrimitive?.content ?: "unknown message format"
             MsgContent.MCImage(text, image)
           }
+          "voice" -> {
+            val duration = json["duration"]?.jsonPrimitive?.intOrNull ?: 0
+            MsgContent.MCVoice(text, duration)
+          }
           "file" -> MsgContent.MCFile(text)
           else -> MsgContent.MCUnknown(t, text, json)
         }
@@ -1436,6 +1469,12 @@ object MsgContentSerializer : KSerializer<MsgContent> {
           put("type", "image")
           put("text", value.text)
           put("image", value.image)
+        }
+      is MsgContent.MCVoice ->
+        buildJsonObject {
+          put("type", "voice")
+          put("text", value.text)
+          put("duration", value.duration)
         }
       is MsgContent.MCFile ->
         buildJsonObject {

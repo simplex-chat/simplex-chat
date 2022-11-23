@@ -18,10 +18,11 @@ import Data.Char (toUpper)
 import Data.Function (on)
 import Data.Int (Int64)
 import Data.List (groupBy, intercalate, intersperse, partition, sortOn)
-import Data.Maybe (isJust, isNothing)
+import qualified Data.List.NonEmpty as L
+import Data.Maybe (isJust, isNothing, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (DiffTime)
+import Data.Time.Clock (DiffTime, UTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import Data.Time.LocalTime (ZonedTime (..), localDay, localTimeOfDay, timeOfDayToTime, utcToZonedTime)
 import GHC.Generics (Generic)
@@ -37,6 +38,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Store (AutoAccept (..), StoreError (..), UserContactLink (..))
 import Simplex.Chat.Styled
 import Simplex.Chat.Types
+import Simplex.Messaging.Agent.Client (SMPTestFailure (..), SMPTestStep (..))
 import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..))
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Crypto as C
@@ -49,11 +51,13 @@ import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (bshow)
 import System.Console.ANSI.Types
 
-serializeChatResponse :: ChatResponse -> String
-serializeChatResponse = unlines . map unStyle . responseToView False
+type CurrentTime = UTCTime
 
-responseToView :: Bool -> ChatResponse -> [StyledString]
-responseToView testView = \case
+serializeChatResponse :: Maybe User -> CurrentTime -> ChatResponse -> String
+serializeChatResponse user_ ts = unlines . map unStyle . responseToView user_ False ts
+
+responseToView :: Maybe User -> Bool -> CurrentTime -> ChatResponse -> [StyledString]
+responseToView user_ testView ts = \case
   CRActiveUser User {profile} -> viewUserProfile $ fromLocalProfile profile
   CRChatStarted -> ["chat started"]
   CRChatRunning -> ["chat is running"]
@@ -62,20 +66,21 @@ responseToView testView = \case
   CRApiChats chats -> if testView then testViewChats chats else [plain . bshow $ J.encode chats]
   CRApiChat chat -> if testView then testViewChat chat else [plain . bshow $ J.encode chat]
   CRApiParsedMarkdown ft -> [plain . bshow $ J.encode ft]
-  CRUserSMPServers smpServers -> viewSMPServers smpServers testView
+  CRUserSMPServers smpServers _ -> viewSMPServers (L.toList smpServers) testView
+  CRSmpTestResult testFailure -> viewSMPTestResult testFailure
   CRChatItemTTL ttl -> viewChatItemTTL ttl
   CRNetworkConfig cfg -> viewNetworkConfig cfg
   CRContactInfo ct cStats customUserProfile -> viewContactInfo ct cStats customUserProfile
   CRGroupMemberInfo g m cStats -> viewGroupMemberInfo g m cStats
   CRContactSwitch ct progress -> viewContactSwitch ct progress
   CRGroupMemberSwitch g m progress -> viewGroupMemberSwitch g m progress
-  CRNewChatItem (AChatItem _ _ chat item) -> unmuted chat item $ viewChatItem chat item False
-  CRLastMessages chatItems -> concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True) chatItems
+  CRNewChatItem (AChatItem _ _ chat item) -> unmuted chat item $ viewChatItem chat item False ts
+  CRLastMessages chatItems -> concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True ts) chatItems
   CRChatItemStatusUpdated _ -> []
-  CRChatItemUpdated (AChatItem _ _ chat item) -> unmuted chat item $ viewItemUpdate chat item
-  CRChatItemDeleted (AChatItem _ _ chat deletedItem) (AChatItem _ _ _ toItem) -> unmuted chat deletedItem $ viewItemDelete chat deletedItem toItem
+  CRChatItemUpdated (AChatItem _ _ chat item) -> unmuted chat item $ viewItemUpdate chat item ts
+  CRChatItemDeleted (AChatItem _ _ chat deletedItem) (AChatItem _ _ _ toItem) -> unmuted chat deletedItem $ viewItemDelete chat deletedItem toItem ts
   CRChatItemDeletedNotFound Contact {localDisplayName = c} _ -> [ttyFrom $ c <> "> [deleted - original message not found]"]
-  CRBroadcastSent mc n ts -> viewSentBroadcast mc n ts
+  CRBroadcastSent mc n t -> viewSentBroadcast mc n ts t
   CRMsgIntegrityError mErr -> viewMsgIntegrityError mErr
   CRCmdAccepted _ -> []
   CRCmdOk -> ["ok"]
@@ -114,7 +119,7 @@ responseToView testView = \case
   CRContactRequestAlreadyAccepted c -> [ttyFullContact c <> ": sent you a duplicate contact request, but you are already connected, no action needed"]
   CRUserContactLinkCreated cReq -> connReqContact_ "Your new chat address is created!" cReq
   CRUserContactLinkDeleted -> viewUserContactLinkDeleted
-  CRUserAcceptedGroupSent _g -> [] -- [ttyGroup' g <> ": joining the group..."]
+  CRUserAcceptedGroupSent _g _ -> [] -- [ttyGroup' g <> ": joining the group..."]
   CRUserDeletedMember g m -> [ttyGroup' g <> ": you removed " <> ttyMember m <> " from the group"]
   CRLeftMemberUser g -> [ttyGroup' g <> ": you left the group"] <> groupPreserved g
   CRGroupDeletedUser g -> [ttyGroup' g <> ": you deleted the group"]
@@ -123,10 +128,14 @@ responseToView testView = \case
   CRSndGroupFileCancelled _ ftm fts -> viewSndGroupFileCancelled ftm fts
   CRRcvFileCancelled ft -> receivingFile_ "cancelled" ft
   CRUserProfileUpdated p p' -> viewUserProfileUpdated p p'
-  CRContactPrefsUpdated ct -> viewContactPrefsUpdated ct
+  CRContactPrefsUpdated {fromContact, toContact} -> case user_ of
+    Just user -> viewUserContactPrefsUpdated user fromContact toContact
+    _ -> ["unexpected chat event CRContactPrefsUpdated without current user"]
   CRContactAliasUpdated c -> viewContactAliasUpdated c
   CRConnectionAliasUpdated c -> viewConnectionAliasUpdated c
-  CRContactUpdated c c' -> viewContactUpdated c c'
+  CRContactUpdated {fromContact = c, toContact = c'} -> case user_ of
+    Just user -> viewContactUpdated c c' <> viewContactPrefsUpdated user c c'
+    _ -> ["unexpected chat event CRContactUpdated without current user"]
   CRContactsMerged intoCt mergedCt -> viewContactsMerged intoCt mergedCt
   CRReceivedContactRequest UserContactRequest {localDisplayName = c, profile} -> viewReceivedContactRequest c profile
   CRRcvFileStart ci -> receivingFile_' "started" ci
@@ -252,8 +261,8 @@ showSMPServer = B.unpack . strEncode . host
 viewHostEvent :: AProtocolType -> TransportHost -> String
 viewHostEvent p h = map toUpper (B.unpack $ strEncode p) <> " host " <> B.unpack (strEncode h)
 
-viewChatItem :: forall c d. MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> [StyledString]
-viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} doShow = case chat of
+viewChatItem :: forall c d. MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> CurrentTime -> [StyledString]
+viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} doShow ts = case chat of
   DirectChat c -> case chatDir of
     CIDirectSnd -> case content of
       CISndMsgContent mc -> withSndFile to $ sndMsg to quote mc
@@ -263,7 +272,7 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} doShow = c
         to = ttyToContact' c
     CIDirectRcv -> case content of
       CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
-      CIRcvIntegrityError err -> viewRcvIntegrityError from err meta
+      CIRcvIntegrityError err -> viewRcvIntegrityError from err ts meta
       CIRcvGroupEvent {} -> showRcvItemProhibited from
       _ -> showRcvItem from
       where
@@ -279,7 +288,7 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} doShow = c
         to = ttyToGroup g
     CIGroupRcv m -> case content of
       CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
-      CIRcvIntegrityError err -> viewRcvIntegrityError from err meta
+      CIRcvIntegrityError err -> viewRcvIntegrityError from err ts meta
       CIRcvGroupInvitation {} -> showRcvItemProhibited from
       _ -> showRcvItem from
       where
@@ -290,26 +299,26 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} doShow = c
   where
     withSndFile = withFile viewSentFileInvitation
     withRcvFile = withFile viewReceivedFileInvitation
-    withFile view dir l = maybe l (\f -> l <> view dir f meta) file
+    withFile view dir l = maybe l (\f -> l <> view dir f ts meta) file
     sndMsg = msg viewSentMessage
     rcvMsg = msg viewReceivedMessage
     msg view dir quote mc = case (msgContentText mc, file, quote) of
       ("", Just _, []) -> []
-      ("", Just CIFile {fileName}, _) -> view dir quote (MCText $ T.pack fileName) meta
-      _ -> view dir quote mc meta
-    showSndItem to = showItem $ sentWithTime_ [to <> plainContent content] meta
-    showRcvItem from = showItem $ receivedWithTime_ from [] meta [plainContent content]
-    showSndItemProhibited to = showItem $ sentWithTime_ [to <> plainContent content <> " " <> prohibited] meta
-    showRcvItemProhibited from = showItem $ receivedWithTime_ from [] meta [plainContent content <> " " <> prohibited]
+      ("", Just CIFile {fileName}, _) -> view dir quote (MCText $ T.pack fileName) ts meta
+      _ -> view dir quote mc ts meta
+    showSndItem to = showItem $ sentWithTime_ ts [to <> plainContent content] meta
+    showRcvItem from = showItem $ receivedWithTime_ ts from [] meta [plainContent content]
+    showSndItemProhibited to = showItem $ sentWithTime_ ts [to <> plainContent content <> " " <> prohibited] meta
+    showRcvItemProhibited from = showItem $ receivedWithTime_ ts from [] meta [plainContent content <> " " <> prohibited]
     showItem ss = if doShow then ss else []
     plainContent = plain . ciContentToText
     prohibited = styled (colored Red) ("[prohibited - it's a bug if this chat item was created in this context, please report it to dev team]" :: String)
 
-viewItemUpdate :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> [StyledString]
-viewItemUpdate chat ChatItem {chatDir, meta, content, quotedItem} = case chat of
+viewItemUpdate :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> CurrentTime -> [StyledString]
+viewItemUpdate chat ChatItem {chatDir, meta, content, quotedItem} ts = case chat of
   DirectChat Contact {localDisplayName = c} -> case chatDir of
     CIDirectRcv -> case content of
-      CIRcvMsgContent mc -> viewReceivedMessage from quote mc meta
+      CIRcvMsgContent mc -> viewReceivedMessage from quote mc ts meta
       _ -> []
       where
         from = ttyFromContactEdited c
@@ -317,7 +326,7 @@ viewItemUpdate chat ChatItem {chatDir, meta, content, quotedItem} = case chat of
     CIDirectSnd -> ["message updated"]
   GroupChat g -> case chatDir of
     CIGroupRcv GroupMember {localDisplayName = m} -> case content of
-      CIRcvMsgContent mc -> viewReceivedMessage from quote mc meta
+      CIRcvMsgContent mc -> viewReceivedMessage from quote mc ts meta
       _ -> []
       where
         from = ttyFromGroupEdited g m
@@ -325,16 +334,16 @@ viewItemUpdate chat ChatItem {chatDir, meta, content, quotedItem} = case chat of
     CIGroupSnd -> ["message updated"]
   _ -> []
 
-viewItemDelete :: ChatInfo c -> ChatItem c d -> ChatItem c' d' -> [StyledString]
-viewItemDelete chat ChatItem {chatDir, meta, content = deletedContent} ChatItem {content = toContent} = case chat of
+viewItemDelete :: ChatInfo c -> ChatItem c d -> ChatItem c' d' -> CurrentTime -> [StyledString]
+viewItemDelete chat ChatItem {chatDir, meta, content = deletedContent} ChatItem {content = toContent} ts = case chat of
   DirectChat Contact {localDisplayName = c} -> case (chatDir, deletedContent, toContent) of
     (CIDirectRcv, CIRcvMsgContent mc, CIRcvDeleted mode) -> case mode of
-      CIDMBroadcast -> viewReceivedMessage (ttyFromContactDeleted c) [] mc meta
+      CIDMBroadcast -> viewReceivedMessage (ttyFromContactDeleted c) [] mc ts meta
       CIDMInternal -> ["message deleted"]
     _ -> ["message deleted"]
   GroupChat g -> case (chatDir, deletedContent, toContent) of
     (CIGroupRcv GroupMember {localDisplayName = m}, CIRcvMsgContent mc, CIRcvDeleted mode) -> case mode of
-      CIDMBroadcast -> viewReceivedMessage (ttyFromGroupDeleted g m) [] mc meta
+      CIDMBroadcast -> viewReceivedMessage (ttyFromGroupDeleted g m) [] mc ts meta
       CIDMInternal -> ["message deleted"]
     _ -> ["message deleted"]
   _ -> []
@@ -361,8 +370,8 @@ msgPreview = msgPlain . preview . msgContentText
       | T.length t <= 120 = t
       | otherwise = T.take 120 t <> "..."
 
-viewRcvIntegrityError :: StyledString -> MsgErrorType -> CIMeta 'MDRcv -> [StyledString]
-viewRcvIntegrityError from msgErr meta = receivedWithTime_ from [] meta $ viewMsgIntegrityError msgErr
+viewRcvIntegrityError :: StyledString -> MsgErrorType -> CurrentTime -> CIMeta 'MDRcv -> [StyledString]
+viewRcvIntegrityError from msgErr ts meta = receivedWithTime_ ts from [] meta $ viewMsgIntegrityError msgErr
 
 viewMsgIntegrityError :: MsgErrorType -> [StyledString]
 viewMsgIntegrityError err = msgError $ case err of
@@ -614,15 +623,16 @@ viewUserProfile Profile {displayName, fullName} =
     "(the updated profile will be sent to all your contacts)"
   ]
 
-viewSMPServers :: [SMPServer] -> Bool -> [StyledString]
+viewSMPServers :: [ServerCfg] -> Bool -> [StyledString]
 viewSMPServers smpServers testView =
   if testView
     then [customSMPServers]
     else
       [ customSMPServers,
         "",
-        "use " <> highlight' "/smp_servers <srv1[,srv2,...]>" <> " to switch to custom SMP servers",
-        "use " <> highlight' "/smp_servers default" <> " to remove custom SMP servers and use default",
+        "use " <> highlight' "/smp test <srv>" <> " to test SMP server connection",
+        "use " <> highlight' "/smp set <srv1[,srv2,...]>" <> " to switch to custom SMP servers",
+        "use " <> highlight' "/smp default" <> " to remove custom SMP servers and use default",
         "(chat option " <> highlight' "-s" <> " (" <> highlight' "--server" <> ") has precedence over saved SMP servers for chat session)"
       ]
   where
@@ -630,6 +640,16 @@ viewSMPServers smpServers testView =
       if null smpServers
         then "no custom SMP servers saved"
         else viewServers smpServers
+
+viewSMPTestResult :: Maybe SMPTestFailure -> [StyledString]
+viewSMPTestResult = \case
+  Just SMPTestFailure {testStep, testError} ->
+    result
+      <> ["Server requires authentication to create queues, check password" | testStep == TSCreateQueue && testError == SMP SMP.AUTH]
+      <> ["Possibly, certificate fingerprint in server address is incorrect" | testStep == TSConnect && testError == BROKER NETWORK]
+    where
+      result = ["SMP server test failed at " <> plain (drop 2 $ show testStep) <> ", error: " <> plain (strEncode testError)]
+  _ -> ["SMP server test passed"]
 
 viewChatItemTTL :: Maybe Int64 -> [StyledString]
 viewChatItemTTL = \case
@@ -646,7 +666,7 @@ viewNetworkConfig :: NetworkConfig -> [StyledString]
 viewNetworkConfig NetworkConfig {socksProxy, tcpTimeout} =
   [ plain $ maybe "direct network connection" (("using SOCKS5 proxy " <>) . show) socksProxy,
     "TCP timeout: " <> sShow tcpTimeout,
-    "use `/network socks=<on/off/[ipv4]:port>[ timeout=<seconds>]` to change settings"
+    "use " <> highlight' "/network socks=<on/off/[ipv4]:port>[ timeout=<seconds>]" <> " to change settings"
   ]
 
 viewContactInfo :: Contact -> ConnectionStats -> Maybe Profile -> [StyledString]
@@ -671,8 +691,8 @@ viewConnectionStats ConnectionStats {rcvServers, sndServers} =
   ["receiving messages via: " <> viewServerHosts rcvServers | not $ null rcvServers]
     <> ["sending messages via: " <> viewServerHosts sndServers | not $ null sndServers]
 
-viewServers :: [SMPServer] -> StyledString
-viewServers = plain . intercalate ", " . map (B.unpack . strEncode)
+viewServers :: [ServerCfg] -> StyledString
+viewServers = plain . intercalate ", " . map (B.unpack . strEncode . (\ServerCfg {server} -> server))
 
 viewServerHosts :: [SMPServer] -> StyledString
 viewServerHosts = plain . intercalate ", " . map showSMPServer
@@ -694,37 +714,107 @@ viewSwitchPhase SPCompleted = "changed address"
 viewSwitchPhase phase = plain (strEncode phase) <> " changing address"
 
 viewUserProfileUpdated :: Profile -> Profile -> [StyledString]
-viewUserProfileUpdated Profile {displayName = n, fullName, image} Profile {displayName = n', fullName = fullName', image = image'}
-  | n == n' && fullName == fullName' && image == image' = []
-  | n == n' && fullName == fullName' = [if isNothing image' then "profile image removed" else "profile image updated"]
-  | n == n' = ["user full name " <> (if T.null fullName' || fullName' == n' then "removed" else "changed to " <> plain fullName') <> notified]
-  | otherwise = ["user profile is changed to " <> ttyFullName n' fullName' <> notified]
+viewUserProfileUpdated Profile {displayName = n, fullName, image, preferences} Profile {displayName = n', fullName = fullName', image = image', preferences = prefs'} =
+  profileUpdated <> viewPrefsUpdated preferences prefs'
   where
+    profileUpdated
+      | n == n' && fullName == fullName' && image == image' = []
+      | n == n' && fullName == fullName' = [if isNothing image' then "profile image removed" else "profile image updated"]
+      | n == n' = ["user full name " <> (if T.null fullName' || fullName' == n' then "removed" else "changed to " <> plain fullName') <> notified]
+      | otherwise = ["user profile is changed to " <> ttyFullName n' fullName' <> notified]
     notified = " (your contacts are notified)"
 
-viewContactPrefsUpdated :: Contact -> [StyledString]
-viewContactPrefsUpdated Contact {profile = LocalProfile {preferences}, userPreferences = ChatPreferences {voice = userVoice}} =
-  let contactVoice = preferences >>= voice
-   in ["preferences were updated: " <> "contact's voice messages are " <> viewPreference contactVoice <> ", user's voice messages are " <> viewPreference userVoice]
+viewUserContactPrefsUpdated :: User -> Contact -> Contact -> [StyledString]
+viewUserContactPrefsUpdated user ct ct'@Contact {mergedPreferences = cups}
+  | null prefs = ["your preferences for " <> ttyContact' ct' <> " did not change"]
+  | otherwise = ("you updated preferences for " <> ttyContact' ct' <> ":") : prefs
+  where
+    prefs = viewContactPreferences user ct ct' cups
 
-viewPreference :: Maybe Preference -> StyledString
+viewContactPrefsUpdated :: User -> Contact -> Contact -> [StyledString]
+viewContactPrefsUpdated user ct ct'@Contact {mergedPreferences = cups}
+  | null prefs = []
+  | otherwise = (ttyContact' ct' <> " updated preferences for you:") : prefs
+  where
+    prefs = viewContactPreferences user ct ct' cups
+
+viewContactPreferences :: User -> Contact -> Contact -> ContactUserPreferences -> [StyledString]
+viewContactPreferences user ct ct' cups =
+  mapMaybe (viewContactPref (mergeUserChatPrefs user ct) (mergeUserChatPrefs user ct') (preferences' ct) cups) allChatFeatures
+
+viewContactPref :: FullPreferences -> FullPreferences -> Maybe Preferences -> ContactUserPreferences -> ChatFeature -> Maybe StyledString
+viewContactPref userPrefs userPrefs' ctPrefs cups pt
+  | userPref == userPref' && ctPref == contactPreference = Nothing
+  | otherwise = Just $ plain (chatPrefName pt) <> ": " <> viewPrefEnabled enabled <> " (you allow: " <> viewCountactUserPref userPreference <> ", contact allows: " <> viewPreference contactPreference <> ")"
+  where
+    userPref = getPreference pt userPrefs
+    userPref' = getPreference pt userPrefs'
+    ctPref = getPreference pt ctPrefs
+    ContactUserPreference {enabled, userPreference, contactPreference} = getContactUserPreference pt cups
+
+viewPrefsUpdated :: Maybe Preferences -> Maybe Preferences -> [StyledString]
+viewPrefsUpdated ps ps'
+  | null prefs = []
+  | otherwise = "updated preferences:" : prefs
+  where
+    prefs = mapMaybe viewPref allChatFeatures
+    viewPref pt
+      | pref ps == pref ps' = Nothing
+      | otherwise = Just $ plain (chatPrefName pt) <> " allowed: " <> viewPreference (pref ps')
+      where
+        pref pss = getPreference pt $ mergePreferences pss Nothing
+
+viewPreference :: Preference -> StyledString
 viewPreference = \case
-  Just Preference {enable} -> case enable of
-    PSOn -> "on"
-    PSOff -> "off"
-  _ -> "unset"
+  Preference {allow} -> case allow of
+    FAAlways -> "always"
+    FAYes -> "yes"
+    FANo -> "no"
+
+viewCountactUserPref :: ContactUserPref -> StyledString
+viewCountactUserPref = \case
+  CUPUser p -> "default (" <> viewPreference p <> ")"
+  CUPContact p -> viewPreference p
+
+viewPrefEnabled :: PrefEnabled -> StyledString
+viewPrefEnabled = \case
+  PrefEnabled True True -> "enabled"
+  PrefEnabled False False -> "off"
+  PrefEnabled {forUser = True, forContact = False} -> "enabled for you"
+  PrefEnabled {forUser = False, forContact = True} -> "enabled for contact"
 
 viewGroupUpdated :: GroupInfo -> GroupInfo -> Maybe GroupMember -> [StyledString]
 viewGroupUpdated
-  GroupInfo {localDisplayName = n, groupProfile = GroupProfile {fullName, image}}
-  g'@GroupInfo {localDisplayName = n', groupProfile = GroupProfile {fullName = fullName', image = image'}}
-  m
-    | n == n' && fullName == fullName' && image == image' = []
-    | n == n' && fullName == fullName' = ["group " <> ttyGroup n <> ": profile image " <> (if isNothing image' then "removed" else "updated") <> byMember]
-    | n == n' = ["group " <> ttyGroup n <> ": full name " <> if T.null fullName' || fullName' == n' then "removed" else "changed to " <> plain fullName' <> byMember]
-    | otherwise = ["group " <> ttyGroup n <> " is changed to " <> ttyFullGroup g' <> byMember]
+  GroupInfo {localDisplayName = n, groupProfile = GroupProfile {fullName, image, groupPreferences = gps}}
+  g'@GroupInfo {localDisplayName = n', groupProfile = GroupProfile {fullName = fullName', image = image', groupPreferences = gps'}}
+  m = do
+    let update = groupProfileUpdated <> groupPrefsUpdated
+    if null update
+      then []
+      else memberUpdated <> update
     where
-      byMember = maybe "" ((" by " <>) . ttyMember) m
+      memberUpdated = maybe [] (\m' -> [ttyMember m' <> " updated group " <> ttyGroup n <> ":"]) m
+      groupProfileUpdated
+        | n == n' && fullName == fullName' && image == image' = []
+        | n == n' && fullName == fullName' = ["profile image " <> (if isNothing image' then "removed" else "updated")]
+        | n == n' = ["full name " <> if T.null fullName' || fullName' == n' then "removed" else "changed to " <> plain fullName']
+        | otherwise = ["changed to " <> ttyFullGroup g']
+      groupPrefsUpdated
+        | null prefs = []
+        | otherwise = "updated group preferences:" : prefs
+        where
+          prefs = mapMaybe viewPref allChatFeatures
+          viewPref pt
+            | pref gps == pref gps' = Nothing
+            | otherwise = Just $ plain (chatPrefName pt) <> " enabled: " <> viewGroupPreference (pref gps')
+            where
+              pref pss = getGroupPreference pt $ mergeGroupPreferences pss
+
+viewGroupPreference :: GroupPreference -> StyledString
+viewGroupPreference = \case
+  GroupPreference {enable} -> case enable of
+    FEOn -> "on"
+    FEOff -> "off"
 
 viewContactAliasUpdated :: Contact -> [StyledString]
 viewContactAliasUpdated Contact {localDisplayName = n, profile = LocalProfile {localAlias}}
@@ -749,36 +839,37 @@ viewContactUpdated
     where
       fullNameUpdate = if T.null fullName' || fullName' == n' then " removed full name" else " updated full name: " <> plain fullName'
 
-viewReceivedMessage :: StyledString -> [StyledString] -> MsgContent -> CIMeta d -> [StyledString]
-viewReceivedMessage from quote mc meta = receivedWithTime_ from quote meta (ttyMsgContent mc)
+viewReceivedMessage :: StyledString -> [StyledString] -> MsgContent -> CurrentTime -> CIMeta d -> [StyledString]
+viewReceivedMessage from quote mc ts meta = receivedWithTime_ ts from quote meta (ttyMsgContent mc)
 
-receivedWithTime_ :: StyledString -> [StyledString] -> CIMeta d -> [StyledString] -> [StyledString]
-receivedWithTime_ from quote CIMeta {localItemTs, createdAt} styledMsg = do
-  prependFirst (formattedTime <> " " <> from) (quote <> prependFirst indent styledMsg)
-  where
-    indent = if null quote then "" else "      "
-    formattedTime :: StyledString
-    formattedTime =
-      let localTime = zonedTimeToLocalTime localItemTs
-          tz = zonedTimeZone localItemTs
-          format =
-            if (localDay localTime < localDay (zonedTimeToLocalTime $ utcToZonedTime tz createdAt))
-              && (timeOfDayToTime (localTimeOfDay localTime) > (6 * 60 * 60 :: DiffTime))
-              then "%m-%d" -- if message is from yesterday or before and 6 hours has passed since midnight
-              else "%H:%M"
-       in styleTime $ formatTime defaultTimeLocale format localTime
-
-viewSentMessage :: StyledString -> [StyledString] -> MsgContent -> CIMeta d -> [StyledString]
-viewSentMessage to quote mc = sentWithTime_ (prependFirst to $ quote <> prependFirst indent (ttyMsgContent mc))
+receivedWithTime_ :: CurrentTime -> StyledString -> [StyledString] -> CIMeta d -> [StyledString] -> [StyledString]
+receivedWithTime_ ts from quote CIMeta {localItemTs} styledMsg = do
+  prependFirst (ttyMsgTime ts localItemTs <> " " <> from) (quote <> prependFirst indent styledMsg)
   where
     indent = if null quote then "" else "      "
 
-viewSentBroadcast :: MsgContent -> Int -> ZonedTime -> [StyledString]
-viewSentBroadcast mc n ts = prependFirst (highlight' "/feed" <> " (" <> sShow n <> ") " <> ttyMsgTime ts <> " ") (ttyMsgContent mc)
+ttyMsgTime :: CurrentTime -> ZonedTime -> StyledString
+ttyMsgTime ts t =
+  let localTime = zonedTimeToLocalTime t
+      tz = zonedTimeZone t
+      fmt =
+        if (localDay localTime < localDay (zonedTimeToLocalTime $ utcToZonedTime tz ts))
+          && (timeOfDayToTime (localTimeOfDay localTime) > (6 * 60 * 60 :: DiffTime))
+          then "%m-%d" -- if message is from yesterday or before and 6 hours has passed since midnight
+          else "%H:%M"
+   in styleTime $ formatTime defaultTimeLocale fmt localTime
 
-viewSentFileInvitation :: StyledString -> CIFile d -> CIMeta d -> [StyledString]
-viewSentFileInvitation to CIFile {fileId, filePath, fileStatus} = case filePath of
-  Just fPath -> sentWithTime_ $ ttySentFile fPath
+viewSentMessage :: StyledString -> [StyledString] -> MsgContent -> CurrentTime -> CIMeta d -> [StyledString]
+viewSentMessage to quote mc ts = sentWithTime_ ts (prependFirst to $ quote <> prependFirst indent (ttyMsgContent mc))
+  where
+    indent = if null quote then "" else "      "
+
+viewSentBroadcast :: MsgContent -> Int -> CurrentTime -> ZonedTime -> [StyledString]
+viewSentBroadcast mc n ts t = prependFirst (highlight' "/feed" <> " (" <> sShow n <> ") " <> ttyMsgTime ts t <> " ") (ttyMsgContent mc)
+
+viewSentFileInvitation :: StyledString -> CIFile d -> CurrentTime -> CIMeta d -> [StyledString]
+viewSentFileInvitation to CIFile {fileId, filePath, fileStatus} ts = case filePath of
+  Just fPath -> sentWithTime_ ts $ ttySentFile fPath
   _ -> const []
   where
     ttySentFile fPath = ["/f " <> to <> ttyFilePath fPath] <> cancelSending
@@ -786,12 +877,9 @@ viewSentFileInvitation to CIFile {fileId, filePath, fileStatus} = case filePath 
       CIFSSndTransfer -> []
       _ -> ["use " <> highlight ("/fc " <> show fileId) <> " to cancel sending"]
 
-sentWithTime_ :: [StyledString] -> CIMeta d -> [StyledString]
-sentWithTime_ styledMsg CIMeta {localItemTs} =
-  prependFirst (ttyMsgTime localItemTs <> " ") styledMsg
-
-ttyMsgTime :: ZonedTime -> StyledString
-ttyMsgTime = styleTime . formatTime defaultTimeLocale "%H:%M"
+sentWithTime_ :: CurrentTime -> [StyledString] -> CIMeta d -> [StyledString]
+sentWithTime_ ts styledMsg CIMeta {localItemTs} =
+  prependFirst (ttyMsgTime ts localItemTs <> " ") styledMsg
 
 ttyMsgContent :: MsgContent -> [StyledString]
 ttyMsgContent = msgPlain . msgContentText
@@ -820,8 +908,8 @@ sendingFile_ status ft@SndFileTransfer {recipientDisplayName = c} =
 sndFile :: SndFileTransfer -> StyledString
 sndFile SndFileTransfer {fileId, fileName} = fileTransferStr fileId fileName
 
-viewReceivedFileInvitation :: StyledString -> CIFile d -> CIMeta d -> [StyledString]
-viewReceivedFileInvitation from file meta = receivedWithTime_ from [] meta (receivedFileInvitation_ file)
+viewReceivedFileInvitation :: StyledString -> CIFile d -> CurrentTime -> CIMeta d -> [StyledString]
+viewReceivedFileInvitation from file ts meta = receivedWithTime_ ts from [] meta (receivedFileInvitation_ file)
 
 receivedFileInvitation_ :: CIFile d -> [StyledString]
 receivedFileInvitation_ CIFile {fileId, fileName, fileSize, fileStatus} =

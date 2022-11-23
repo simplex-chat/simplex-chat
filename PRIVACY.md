@@ -1,22 +1,26 @@
 # SimpleX Chat Terms & Privacy Policy
 
-SimpleX Chat is the first chat platform that is 100% private by design - not only it has no access to your messages (thanks to open-source double-ratchet end-to-end encryption protocol and additional encryption layers), it also has no access to your profile and contacts - we do not have access to your connections graph.
+SimpleX Chat is the first communication platform that has no user profile IDs of any kind, not even random numbers. Not only it has no access to your messages (thanks to open-source double-ratchet end-to-end encryption protocol and additional encryption layers), it also has no access to your profile and contacts - we cannot observe your connections graph.
+
+If you believe that some of the clauses in this document are not aligned with our mission or principles, please raise it with us via [email](chat@simplex.chat) or [chat](https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23%2F%3Fv%3D1%26dh%3DMCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion).
 
 ## Privacy Policy
 
 SimpleX Chat Ltd. ("SimpleX Chat") uses the best industry practices for security and end-to-end encryption to provide secure end-to-end encrypted messaging via private connections. SimpleX Chat is built on top of SimpleX messaging and application platform that uses a new message routing protocol that allows establishing private connection without having any kind of addresses that identify its users - we don't use emails, phone numbers, usernames, identity keys or any other user identifiers to pass messages between the users.
 
+SimpleX Chat security audit was performed in October 2022 by [Trail of Bits](https://www.trailofbits.com/about), and most fixes were released in v4.2.0 – see [the announcement](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
+
 ### Information you provide
 
 We do not store user profiles. The profile you create in the app is local to your device. When you create a user profile, no records are created on our servers, and we have no access to any part of your profile information, and even to the fact that you created a profile - it is a local record stored only on your device. That means that if you delete the app, and have no backup, you will permanently lose all the data and the private connections you create with other users.
 
-Messages. SimpleX Chat cannot decrypt or otherwise access the content or size of your messages (each message is padded to a fixed size of 16kb). SimpleX Chat temporarily stores end-to-end encrypted messages on its servers for delivery to the devices that are temporarily offline. Your message history is stored only on your own devices.
+Messages. SimpleX Chat cannot decrypt or otherwise access the content or even size of your messages (each message is padded to a fixed size of 16kb). SimpleX Chat temporarily stores end-to-end encrypted messages on its servers for delivery to the devices that are offline, these messages are permanently removed as soon as they are delivered. Your message history is stored only on your own devices.
 
-Connections with other users. When you create a connection with another user, two messaging queues are created on our servers (we use separate queues for direct and response messages, that can be on two different servers), or on the servers that you configured in the app, in case it allows such configuration. At the time of updating this document only our terminal app allows configuring the servers, our mobile apps will allow such configuration in the near future. Our servers do not store information about which queues are linked to your profile on the device, and they do not have any information in common that allow us to establish that these queues are related to your device or your profile - the access to each queue is authorized by a set of unique encryption keys, different for each queue, and separate for sender and recipient of the messages that are transmitted through the queue.
+Connections with other users. When you create a connection with another user, two messaging queues (you can think about them as about mailboxes) are created on our servers, or on the servers that you configured in the app, in case it allows such configuration (SimpleX uses separate queues for direct and response messages, that the client applications prefer to create on two different servers, in case you have more than one server configured in the app, which is the default). At the time of updating this document all our client applications allow configuring the servers. Our servers do not store information about which queues are linked to your profile on the device, and they do not collect any information that would allow us to establish that these queues are related to your device or your profile - the access to each queue is authorized by a set of anonymous unique cryptographic keys, different for each queue, and separate for sender and recipient of the messages. The exception to that is when you choose to use instant push notifications in our iOS app, because the design of push notifications requires storing the device token on notification server, and the server can observe how many messaging queues your device uses, and approximate how many messages are sent to each queue. It does not allow though to determine the actual addresses of these queues, as a separate address is used to subscibe to the notifications (unless notification and messaging servers exchange information), and who, or even how many contacts, send messages to you, as notifications are delivered to your device end-to-end encrypted by the messaging servers. It also does not allow to see message content or sizes, as the actual messages are not sent via the notification service, only the fact that the message is available and where it can be received from (the latter information is encrypted, so that the notification server cannot see it). You can read more about the design of iOS push notifications [here](https://simplex.chat/blog/20220404-simplex-chat-instant-notifications.html#our-ios-approach-has-one-trade-off).
 
 Additional technical information can be stored on our servers, including randomly generated authentication tokens, keys, push tokens, and other material that is necessary to transmit messages. SimpleX Chat limits this additional technical information to the minimum required to operate the Services.
 
-User Support. If you contact SimpleX Chat any personal data you may share with us is kept only for the purposes of researching the issue and contacting you about your case. We recommend contacting support via chat, when it is possible.
+User Support. If you contact SimpleX Chat any personal data you may share with us is kept only for the purposes of researching the issue and contacting you about your case. We recommend contacting support [via chat](https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23%2F%3Fv%3D1%26dh%3DMCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion), when it is possible.
 
 ### Information we may share
 
@@ -30,6 +34,8 @@ The cases when SimpleX Chat may need to share the data we temporarily store on t
 - To enforce applicable Terms, including investigation of potential violations.
 - To detect, prevent, or otherwise address fraud, security, or technical issues.
 - To protect against harm to the rights, property, or safety of SimpleX Chat, our users, or the public as required or permitted by law.
+
+At the time of updating this document, we have never provided or have been requested the access to our servers or any information from our servers by any third parties. If we are ever requested to provide such access or information, we will follow the due legal process.
 
 ### Updates
 
@@ -47,7 +53,7 @@ You accept to our Terms of Service ("Terms") by installing or using any of our a
 
 **Accessing the servers**. For the efficiency of the network access, the apps access all queues you create on any server via the same network (TCP/IP) connection. Our servers do not collect information about which queues were accessed via the same connection, so we do cannot establish which queues belong to the same users. Whoever might observe your network traffic would know which servers you use, and how much data you send, but not to whom it is sent - the data that leaves the servers is always different from the data they receive - there are no identifiers or cyphertext in common. Please refer to our [technical design document](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) for more information about our privacy model and known security and privacy risks.
 
-**Privacy of user data**. We do not retain any data we transmit for any longer than necessary to provide the Services. We only collect aggregate statistics across all users, not per users - we do not have information about how many people use SimpleX Chat (we only know an approximate number of app installations and the aggregate traffic through our servers). In any case, we do not and will not sell or in any way monetize user data.
+**Privacy of user data**. We do not retain any data we transmit for any longer than necessary to provide the Services. We only collect aggregate statistics across all users, not per user - we do not have information about how many people use SimpleX Chat (we only know an approximate number of app installations and the aggregate traffic through our servers). In any case, we do not and will not sell or in any way monetize user data.
 
 **Operating our services**. For the purpose of operating our Services, you agree that your end-to-end encrypted messages are transferred via our servers in the United Kingdom, the United States and other countries where we have or use facilities and service providers or partners.
 
@@ -87,4 +93,4 @@ You accept to our Terms of Service ("Terms") by installing or using any of our a
 
 **Ending these Terms**. You may end these Terms with SimpleX Chat at any time by deleting SimpleX Chat app(s) from your device and discontinuing use of our Services. The provisions related to Licenses, Disclaimers, Limitation of Liability, Resolving dispute, Availability, Changes to the terms, Enforcing the terms, and Ending these Terms will survive termination of your relationship with SimpleX Chat.
 
-Updated March 1, 2022
+Updated November 8, 2022

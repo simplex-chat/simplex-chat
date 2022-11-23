@@ -14,9 +14,12 @@ import android.text.SpannedString
 import android.text.style.*
 import android.util.Base64
 import android.util.Log
+import android.view.View
 import android.view.ViewTreeObserver
+import android.view.inputmethod.InputMethodManager
 import androidx.annotation.StringRes
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.Saver
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.*
@@ -25,6 +28,7 @@ import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.*
 import androidx.core.content.FileProvider
+import androidx.core.net.toFile
 import androidx.core.text.HtmlCompat
 import chat.simplex.app.*
 import chat.simplex.app.model.CIFile
@@ -68,6 +72,9 @@ fun getKeyboardState(): State<KeyboardState> {
 
   return keyboardState
 }
+
+fun hideKeyboard(view: View) =
+  (SimplexApp.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(view.windowToken, 0)
 
 // Resource to annotated string from
 // https://stackoverflow.com/questions/68549248/android-jetpack-compose-how-to-show-styled-text-from-string-resources
@@ -215,6 +222,11 @@ private fun spannableStringToAnnotatedString(
 // maximum image file size to be auto-accepted
 const val MAX_IMAGE_SIZE: Long = 236700
 const val MAX_IMAGE_SIZE_AUTO_RCV: Long = MAX_IMAGE_SIZE * 2
+const val MAX_VOICE_SIZE_AUTO_RCV: Long = MAX_IMAGE_SIZE
+
+const val MAX_VOICE_SIZE_FOR_SENDING: Long = 94680 // 6 chunks * 15780 bytes per chunk
+const val MAX_VOICE_MILLIS_FOR_SENDING: Long = 43_000 // approximately is ok
+
 const val MAX_FILE_SIZE: Long = 8000000
 
 fun getFilesDirectory(context: Context): String {
@@ -304,6 +316,12 @@ fun getFileSize(context: Context, uri: Uri): Long? {
     cursor.moveToFirst()
     cursor.getLong(sizeIndex)
   }
+}
+
+fun saveImage(context: Context, uri: Uri): String? {
+  val source = ImageDecoder.createSource(SimplexApp.context.contentResolver, uri)
+  val bitmap = ImageDecoder.decodeBitmap(source)
+  return saveImage(context, bitmap)
 }
 
 fun saveImage(context: Context, image: Bitmap): String? {
@@ -438,3 +456,9 @@ fun Color.darker(factor: Float = 0.1f): Color =
 fun ByteArray.toBase64String() = Base64.encodeToString(this, Base64.DEFAULT)
 
 fun String.toByteArrayFromBase64() = Base64.decode(this, Base64.DEFAULT)
+
+val LongRange.Companion.saver
+  get() = Saver<MutableState<LongRange>, Pair<Long, Long>>(
+    save = { it.value.first to it.value.last },
+    restore = { mutableStateOf(it.first..it.second) }
+    )

@@ -311,12 +311,23 @@ func apiDeleteToken(token: DeviceToken) async throws {
 
 func getUserSMPServers() throws -> [String] {
     let r = chatSendCmdSync(.getUserSMPServers)
-    if case let .userSMPServers(smpServers) = r { return smpServers }
+    if case let .userSMPServers(smpServers, _) = r { return smpServers.map { $0.server } }
     throw r
 }
 
 func setUserSMPServers(smpServers: [String]) async throws {
     try await sendCommandOkResp(.setUserSMPServers(smpServers: smpServers))
+}
+
+func testSMPServer(smpServer: String) async throws -> Result<(), SMPTestFailure> {
+    let r = await chatSendCmd(.testSMPServer(smpServer: smpServer))
+    if case let .sMPTestResult(testFailure) = r {
+        if let t = testFailure {
+            return .failure(t)
+        }
+        return .success(())
+    }
+    throw r
 }
 
 func getChatItemTTL() throws -> ChatItemTTL {
@@ -379,9 +390,13 @@ func apiConnect(connReq: String) async -> ConnReqType? {
     case .sentConfirmation: return .invitation
     case .sentInvitation: return .contact
     case let .contactAlreadyExists(contact):
+        let m = ChatModel.shared
+        if let c = m.getContactChat(contact.contactId) {
+            await MainActor.run { m.chatId = c.id }
+        }
         am.showAlertMsg(
             title: "Contact already exists",
-            message: "You are already connected to \(contact.displayName) via this link."
+            message: "You are already connected to \(contact.displayName)."
         )
         return nil
     case .chatCmdError(.error(.invalidConnReq)):
@@ -470,6 +485,12 @@ func apiUpdateProfile(profile: Profile) async throws -> Profile? {
     case let .userProfileUpdated(_, toProfile): return toProfile
     default: throw r
     }
+}
+
+func apiSetContactPrefs(contactId: Int64, preferences: Preferences) async throws -> Contact? {
+    let r = await chatSendCmd(.apiSetContactPrefs(contactId: contactId, preferences: preferences))
+    if case let .contactPrefsUpdated(_, toContact) = r { return toContact }
+    throw r
 }
 
 func apiSetContactAlias(contactId: Int64, localAlias: String) async throws -> Contact? {
@@ -716,7 +737,7 @@ enum JoinGroupResult {
 func apiJoinGroup(_ groupId: Int64) async throws -> JoinGroupResult {
     let r = await chatSendCmd(.apiJoinGroup(groupId: groupId))
     switch r {
-    case let .userAcceptedGroupSent(groupInfo): return .joined(groupInfo: groupInfo)
+    case let .userAcceptedGroupSent(groupInfo, _): return .joined(groupInfo: groupInfo)
     case .chatCmdError(.errorAgent(.SMP(.AUTH))): return .invitationRemoved
     case .chatCmdError(.errorStore(.groupNotFound)): return .groupNotFound
     default: throw r
@@ -986,11 +1007,14 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 _ = m.upsertChatItem(cInfo, cItem)
             }
         case let .receivedGroupInvitation(groupInfo, _, _):
-            m.addChat(Chat(
-                chatInfo: .group(groupInfo: groupInfo),
-                chatItems: []
-            ))
+            m.updateGroup(groupInfo) // update so that repeat group invitations are not duplicated
             // NtfManager.shared.notifyContactRequest(contactRequest) // TODO notifyGroupInvitation?
+        case let .userAcceptedGroupSent(groupInfo, hostContact):
+            m.updateGroup(groupInfo)
+            if let hostContact = hostContact {
+                m.dismissConnReqView(hostContact.activeConn.id)
+                m.removeChat(hostContact.activeConn.id)
+            }
         case let .joinedGroupMemberConnecting(groupInfo, _, member):
             _ = m.upsertGroupMember(groupInfo, member)
         case let .deletedMemberUser(groupInfo, _): // TODO update user member

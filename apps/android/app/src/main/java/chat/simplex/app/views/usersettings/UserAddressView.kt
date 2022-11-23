@@ -84,18 +84,8 @@ fun UserAddressLayout(
       verticalArrangement = Arrangement.SpaceEvenly
     ) {
       if (userAddress == null) {
-        Text(
-          stringResource(R.string.if_you_later_delete_address_you_wont_lose_contacts),
-          Modifier.align(Alignment.Start).padding(bottom = 24.dp),
-          lineHeight = 22.sp
-        )
         SimpleButton(stringResource(R.string.create_address), icon = Icons.Outlined.QrCode, click = createAddress)
       } else {
-        Text(
-          stringResource(R.string.if_you_delete_address_you_wont_lose_contacts),
-          Modifier.align(Alignment.Start).padding(bottom = 24.dp),
-          lineHeight = 22.sp
-        )
         QRCode(userAddress.connReqContact, Modifier.aspectRatio(1f))
         Row(
           horizontalArrangement = Arrangement.spacedBy(10.dp),

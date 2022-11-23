@@ -16,6 +16,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Functor (($>))
 import Data.List (find)
+import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe)
 import Database.SQLite.Simple (SQLError (..))
 import qualified Database.SQLite.Simple as DB
@@ -34,8 +35,10 @@ import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (yesToMigrations), createAgentStore)
 import Simplex.Messaging.Agent.Store.SQLite (closeSQLiteStore)
 import Simplex.Messaging.Client (defaultNetworkConfig)
+import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
-import Simplex.Messaging.Protocol (CorrId (..))
+import Simplex.Messaging.Protocol (BasicAuth (..), CorrId (..), ProtoServerWithAuth (..), ProtocolServer (..), SMPServerWithAuth)
 import Simplex.Messaging.Util (catchAll, safeDecodeUtf8)
 import System.Timeout (timeout)
 
@@ -57,6 +60,8 @@ foreign export ccall "chat_recv_msg" cChatRecvMsg :: StablePtr ChatController ->
 foreign export ccall "chat_recv_msg_wait" cChatRecvMsgWait :: StablePtr ChatController -> CInt -> IO CJSONString
 
 foreign export ccall "chat_parse_markdown" cChatParseMarkdown :: CString -> IO CJSONString
+
+foreign export ccall "chat_parse_server" cChatParseServer :: CString -> IO CJSONString
 
 -- | check / migrate database and initialize chat controller on success
 cChatMigrateInit :: CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
@@ -106,6 +111,10 @@ cChatRecvMsgWait cc t = deRefStablePtr cc >>= (`chatRecvMsgWait` fromIntegral t)
 -- | parse markdown - returns ParsedMarkdown type JSON
 cChatParseMarkdown :: CString -> IO CJSONString
 cChatParseMarkdown s = newCAString . chatParseMarkdown =<< peekCAString s
+
+-- | parse server address - returns ParsedServerAddress JSON
+cChatParseServer :: CString -> IO CJSONString
+cChatParseServer s = newCAString . chatParseServer =<< peekCAString s
 
 mobileChatOpts :: ChatOpts
 mobileChatOpts =
@@ -205,6 +214,18 @@ chatRecvMsgWait cc time = fromMaybe "" <$> timeout time (chatRecvMsg cc)
 
 chatParseMarkdown :: String -> JSONString
 chatParseMarkdown = LB.unpack . J.encode . ParsedMarkdown . parseMaybeMarkdownList . safeDecodeUtf8 . B.pack
+
+chatParseServer :: String -> JSONString
+chatParseServer = LB.unpack . J.encode . toServerAddress . strDecode . B.pack
+  where
+    toServerAddress :: Either String SMPServerWithAuth -> ParsedServerAddress
+    toServerAddress = \case
+      Right (ProtoServerWithAuth ProtocolServer {host, port, keyHash = C.KeyHash kh} auth) ->
+        let basicAuth = maybe "" (\(BasicAuth a) -> enc a) auth
+         in ParsedServerAddress (Just ServerAddress {hostnames = L.map enc host, port, keyHash = enc kh, basicAuth}) ""
+      Left e -> ParsedServerAddress Nothing e
+    enc :: StrEncoding a => a -> String
+    enc = B.unpack . strEncode
 
 data APIResponse = APIResponse {corr :: Maybe CorrId, resp :: ChatResponse}
   deriving (Generic)

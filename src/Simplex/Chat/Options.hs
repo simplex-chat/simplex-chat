@@ -16,7 +16,7 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import Options.Applicative
 import Simplex.Chat.Controller (updateStr, versionStr)
-import Simplex.Messaging.Agent.Protocol (SMPServer)
+import Simplex.Chat.Types (ServerCfg (..))
 import Simplex.Messaging.Client (NetworkConfig (..), defaultNetworkConfig)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
@@ -26,7 +26,7 @@ import System.FilePath (combine)
 data ChatOpts = ChatOpts
   { dbFilePrefix :: String,
     dbKey :: String,
-    smpServers :: [SMPServer],
+    smpServers :: [ServerCfg],
     networkConfig :: NetworkConfig,
     logConnections :: Bool,
     logServerHosts :: Bool,
@@ -155,7 +155,7 @@ fullNetworkConfig socksProxy tcpTimeout =
   let tcpConnectTimeout = (tcpTimeout * 3) `div` 2
    in defaultNetworkConfig {socksProxy, tcpTimeout, tcpConnectTimeout}
 
-parseSMPServers :: ReadM [SMPServer]
+parseSMPServers :: ReadM [ServerCfg]
 parseSMPServers = eitherReader $ parseAll smpServersP . B.pack
 
 parseSocksProxy :: ReadM (Maybe SocksProxy)
@@ -167,8 +167,10 @@ parseServerPort = eitherReader $ parseAll serverPortP . B.pack
 serverPortP :: A.Parser (Maybe String)
 serverPortP = Just . B.unpack <$> A.takeWhile A.isDigit
 
-smpServersP :: A.Parser [SMPServer]
-smpServersP = strP `A.sepBy1` A.char ';'
+smpServersP :: A.Parser [ServerCfg]
+smpServersP = (toServerCfg <$> strP) `A.sepBy1` A.char ';'
+  where
+    toServerCfg server = ServerCfg {server, preset = False, tested = Nothing, enabled = True}
 
 getChatOpts :: FilePath -> FilePath -> IO ChatOpts
 getChatOpts appDir defaultDbFileName =

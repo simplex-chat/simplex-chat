@@ -13,13 +13,12 @@ struct GroupChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
     @ObservedObject var chat: Chat
-    var groupInfo: GroupInfo
+    @State var groupInfo: GroupInfo
     @ObservedObject private var alertManager = AlertManager.shared
     @State private var alert: GroupChatInfoViewAlert? = nil
     @State private var groupLink: String?
     @State private var showAddMembersSheet: Bool = false
     @State private var selectedMember: GroupMember? = nil
-    @State private var showGroupProfile: Bool = false
     @State private var connectionStats: ConnectionStats?
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
@@ -41,6 +40,17 @@ struct GroupChatInfoView: View {
             List {
                 groupInfoHeader()
                     .listRowBackground(Color.clear)
+
+                Section {
+                    if groupInfo.canEdit {
+                        editGroupButton()
+                    }
+                    groupPreferencesButton()
+                } header: {
+                    Text("")
+                } footer: {
+                    Text("Only group owners can change group preferences.")
+                }
 
                 Section("\(members.count + 1) members") {
                     if groupInfo.canAddMembers {
@@ -71,17 +81,14 @@ struct GroupChatInfoView: View {
                 .sheet(isPresented: $showAddMembersSheet) {
                     AddGroupMembersView(chat: chat, groupInfo: groupInfo)
                 }
-                .sheet(item: $selectedMember, onDismiss: { connectionStats = nil }) { member in
-                    GroupMemberInfoView(groupInfo: groupInfo, member: member, connectionStats: $connectionStats)
-                }
-                .sheet(isPresented: $showGroupProfile) {
-                    GroupProfileView(groupId: groupInfo.apiId, groupProfile: groupInfo.groupProfile)
+                .sheet(item: $selectedMember, onDismiss: {
+                    selectedMember = nil
+                    connectionStats = nil
+                }) { _ in
+                    GroupMemberInfoView(groupInfo: groupInfo, member: $selectedMember, connectionStats: $connectionStats)
                 }
 
                 Section {
-                    if groupInfo.canEdit {
-                        editGroupButton()
-                    }
                     clearChatButton()
                     if groupInfo.canDelete {
                         deleteGroupButton()
@@ -186,16 +193,35 @@ struct GroupChatInfoView: View {
     private func groupLinkButton() -> some View {
         NavigationLink {
             GroupLinkView(groupId: groupInfo.groupId, groupLink: $groupLink)
-                .navigationBarTitleDisplayMode(.inline)
+                .navigationBarTitle("Group link")
+                .navigationBarTitleDisplayMode(.large)
         } label: {
             Label("Group link", systemImage: "link")
-                .foregroundColor(.accentColor)
+        }
+    }
+
+    func groupPreferencesButton() -> some View {
+        NavigationLink {
+            GroupPreferencesView(
+                groupInfo: $groupInfo,
+                preferences: groupInfo.fullGroupPreferences,
+                currentPreferences: groupInfo.fullGroupPreferences
+            )
+            .navigationBarTitle("Group preferences")
+            .navigationBarTitleDisplayMode(.large)
+        } label: {
+            Label("Group preferences", systemImage: "switch.2")
         }
     }
 
     func editGroupButton() -> some View {
-        Button {
-            showGroupProfile = true
+        NavigationLink {
+            GroupProfileView(
+                groupInfo: $groupInfo,
+                groupProfile: groupInfo.groupProfile
+            )
+            .navigationBarTitle("Group profile")
+            .navigationBarTitleDisplayMode(.large)
         } label: {
             Label("Edit group profile", systemImage: "pencil")
         }

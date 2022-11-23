@@ -1,11 +1,14 @@
 ---
 layout: layouts/article.html
-title: "SimpleX Chat v3.1 is released"
+title: "SimpleX Chat v3.1 is released &mdash; with secret groups and server access via Tor"
 date: 2022-08-08
+image: images/20220808-tor1.png
+imageBottom: true
+previewBody: blog_previews/20220808.html
 permalink: "/blog/20220808-simplex-chat-v3.1-chat-groups.html"
 ---
 
-# SimpleX Chat v3.1 is released
+# SimpleX Chat v3.1 is released - with secret groups and server access via Tor
 
 **Published:** Aug 8, 2022
 

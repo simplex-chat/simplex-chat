@@ -10,6 +10,7 @@ module Simplex.Chat.Terminal.Output where
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
+import Data.Time.Clock (getCurrentTime)
 import Simplex.Chat.Controller
 import Simplex.Chat.Styled
 import Simplex.Chat.View
@@ -75,8 +76,11 @@ withTermLock ChatTerminal {termLock} action = do
 runTerminalOutput :: ChatTerminal -> ChatController -> IO ()
 runTerminalOutput ct cc = do
   let testV = testView $ config cc
-  forever $
-    atomically (readTBQueue $ outputQ cc) >>= printToTerminal ct . responseToView testV . snd
+  forever $ do
+    (_, r) <- atomically . readTBQueue $ outputQ cc
+    user <- readTVarIO $ currentUser cc
+    ts <- getCurrentTime
+    printToTerminal ct $ responseToView user testV ts r
 
 printToTerminal :: ChatTerminal -> [StyledString] -> IO ()
 printToTerminal ct s =

@@ -3,6 +3,7 @@
 module Main where
 
 import Control.Concurrent (threadDelay)
+import Data.Time.Clock (getCurrentTime)
 import Server
 import Simplex.Chat.Controller (versionNumber)
 import Simplex.Chat.Core
@@ -25,9 +26,10 @@ main = do
         welcome opts
         t <- withTerminal pure
         simplexChatTerminal terminalChatConfig opts t
-    else simplexChatCore terminalChatConfig opts Nothing $ \_ cc -> do
+    else simplexChatCore terminalChatConfig opts Nothing $ \user cc -> do
       r <- sendChatCmd cc chatCmd
-      putStrLn $ serializeChatResponse r
+      ts <- getCurrentTime
+      putStrLn $ serializeChatResponse (Just user) ts r
       threadDelay $ chatCmdDelay opts * 1000000
 
 welcome :: ChatOpts -> IO ()
