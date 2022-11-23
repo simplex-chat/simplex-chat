@@ -10,7 +10,6 @@ import SwiftUI
 import SimpleXChat
 
 struct CIVoiceView: View {
-    @Environment(\.colorScheme) var colorScheme
     var chatItem: ChatItem
     let recordingFile: CIFile?
     let duration: Int
@@ -18,24 +17,46 @@ struct CIVoiceView: View {
     @State var playbackTime: TimeInterval?
 
     var body: some View {
-        let recordingTime = TimeInterval(duration)
-        VStack{
+        VStack (
+            alignment: chatItem.chatDir.sent ? .trailing : .leading,
+            spacing: 6
+        ) {
             HStack {
-                VoiceMessagePlayer(
-                    recordingFile: recordingFile,
-                    recordingTime: recordingTime,
-                    showBackground: true,
-                    playbackState: $playbackState,
-                    playbackTime: $playbackTime
-                )
-                VoiceMessagePlayerTime(
-                    recordingTime: recordingTime,
-                    playbackState: $playbackState,
-                    playbackTime: $playbackTime
-                )
+                if chatItem.chatDir.sent {
+                    playerTime()
+                        .frame(width: 50, alignment: .leading)
+                    player()
+                } else {
+                    player()
+                    playerTime()
+                        .frame(width: 50, alignment: .leading)
+                }
             }
             CIMetaView(chatItem: chatItem)
+                .padding(.leading, chatItem.chatDir.sent ? 0 : 12)
+                .padding(.trailing, chatItem.chatDir.sent ? 12 : 0)
         }
+        .padding(.bottom, 8)
+    }
+
+    private func player() -> some View {
+        VoiceMessagePlayer(
+            chatItem: chatItem,
+            recordingFile: recordingFile,
+            recordingTime: TimeInterval(duration),
+            showBackground: true,
+            playbackState: $playbackState,
+            playbackTime: $playbackTime
+        )
+    }
+
+    private func playerTime() -> some View {
+        VoiceMessagePlayerTime(
+            recordingTime: TimeInterval(duration),
+            playbackState: $playbackState,
+            playbackTime: $playbackTime
+        )
+        .foregroundColor(.secondary)
     }
 }
 
@@ -57,6 +78,8 @@ struct VoiceMessagePlayerTime: View {
 }
 
 struct VoiceMessagePlayer: View {
+    @Environment(\.colorScheme) var colorScheme
+    var chatItem: ChatItem
     var recordingFile: CIFile?
     var recordingTime: TimeInterval
     var showBackground: Bool
@@ -72,9 +95,9 @@ struct VoiceMessagePlayer: View {
             case .sndTransfer: playbackButton()
             case .sndComplete: playbackButton()
             case .sndCancelled: playbackButton()
-            case .rcvInvitation: ProgressView().frame(width: 30, height: 30)
-            case .rcvAccepted: ProgressView().frame(width: 30, height: 30)
-            case .rcvTransfer: ProgressView().frame(width: 30, height: 30)
+            case .rcvInvitation: loadingIcon()
+            case .rcvAccepted: loadingIcon()
+            case .rcvTransfer: loadingIcon()
             case .rcvComplete: playbackButton()
             case .rcvCancelled: playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
             }
@@ -116,7 +139,18 @@ struct VoiceMessagePlayer: View {
             .aspectRatio(contentMode: .fit)
             .frame(width: 20, height: 20)
             .foregroundColor(color)
-            .padding(.leading, 12)
+            .padding(.leading, image == "play.fill" ? 5 : 0)
+            .frame(width: 56, height: 56)
+            .background(showBackground ? chatItemFrameColor(chatItem, colorScheme) : .clear)
+            .clipShape(Circle())
+    }
+
+    private func loadingIcon() -> some View {
+        ProgressView()
+            .frame(width: 30, height: 30)
+            .frame(width: 56, height: 56)
+            .background(showBackground ? chatItemFrameColor(chatItem, colorScheme) : .clear)
+            .clipShape(Circle())
     }
 
     private func startPlayback(_ recordingFileName: String) {

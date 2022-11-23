@@ -974,6 +974,13 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 Task {
                     await receiveFile(fileId: file.fileId)
                 }
+            } else if case .voice = cItem.content.msgContent, // TODO check inlineFileMode != IFMSent
+               let file = cItem.file,
+               file.fileSize <= maxImageSize,
+               UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_ACCEPT_IMAGES) {
+                Task {
+                    await receiveFile(fileId: file.fileId)
+                }
             }
             if !cItem.chatDir.sent && !cItem.isCall() && !cItem.isMutedMemberEvent {
                 NtfManager.shared.notifyMessageReceived(cInfo, cItem)
