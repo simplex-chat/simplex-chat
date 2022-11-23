@@ -79,6 +79,7 @@ chatTests = do
   describe "sending and receiving files" $ do
     describe "send and receive file" $ fileTestMatrix2 runTestFileTransfer
     it "send and receive file inline (without accepting)" testInlineFileTransfer
+    it "send and receive small file inline (default config)" testSmallInlineFileTransfer
     it "receive file inline with inline=on option" testReceiveInline
     describe "send and receive a small file" $ fileTestMatrix2 runTestSmallFileTransfer
     describe "sender cancelled file transfer before transfer" $ fileTestMatrix2 runTestFileSndCancelBeforeTransfer
@@ -86,6 +87,7 @@ chatTests = do
     it "recipient cancelled file transfer" testFileRcvCancel
     describe "send and receive file to group" $ fileTestMatrix3 runTestGroupFileTransfer
     it "send and receive file inline to group (without accepting)" testInlineGroupFileTransfer
+    it "send and receive small file inline to group (default config)" testSmallInlineGroupFileTransfer
     describe "sender cancelled group file transfer before transfer" $ fileTestMatrix3 runTestGroupFileSndCancelBeforeTransfer
   describe "messages with files" $ do
     describe "send and receive message with file" $ fileTestMatrix2 runTestMessageWithFile
@@ -172,7 +174,7 @@ versionTestMatrix3 runTest = do
 -- it "v2+v1 to v1" $ runTestCfg3 testCfgV1 testCfg testCfgV1 runTest
 
 inlineCfg :: Integer -> ChatConfig
-inlineCfg n = testCfg {inlineFiles = defaultInlineFilesConfig {offerChunks = n, receiveChunks = n}}
+inlineCfg n = testCfg {inlineFiles = defaultInlineFilesConfig {sendChunks = 0, offerChunks = n, receiveChunks = n}}
 
 fileTestMatrix2 :: (TestCC -> TestCC -> IO ()) -> Spec
 fileTestMatrix2 runTest = do
@@ -1609,6 +1611,26 @@ testInlineFileTransfer =
   where
     cfg = testCfg {inlineFiles = defaultInlineFilesConfig {offerChunks = 100, sendChunks = 100, receiveChunks = 100}}
 
+testSmallInlineFileTransfer :: IO ()
+testSmallInlineFileTransfer =
+  testChatCfg2 testCfg aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    bob ##> "/_files_folder ./tests/tmp/"
+    bob <## "ok"
+    alice #> "/f @bob ./tests/fixtures/test.txt"
+    -- below is not shown in "sent" mode
+    -- alice <## "use /fc 1 to cancel sending"
+    bob <# "alice> sends file test.txt (11 bytes / 11 bytes)"
+    -- below is not shown in "sent" mode
+    -- bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+    bob <## "started receiving file 1 (test.txt) from alice"
+    concurrently_
+      (alice <## "completed sending file 1 (test.txt) to bob")
+      (bob <## "completed receiving file 1 (test.txt) from alice")
+    src <- B.readFile "./tests/fixtures/test.txt"
+    dest <- B.readFile "./tests/tmp/test.txt"
+    dest `shouldBe` src
+
 testReceiveInline :: IO ()
 testReceiveInline =
   testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
@@ -1796,6 +1818,41 @@ testInlineGroupFileTransfer =
       dest2 `shouldBe` src
   where
     cfg = testCfg {inlineFiles = defaultInlineFilesConfig {offerChunks = 100, sendChunks = 100, totalSendChunks = 100, receiveChunks = 100}}
+
+testSmallInlineGroupFileTransfer :: IO ()
+testSmallInlineGroupFileTransfer =
+  testChatCfg3 testCfg aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      bob ##> "/_files_folder ./tests/tmp/bob/"
+      bob <## "ok"
+      cath ##> "/_files_folder ./tests/tmp/cath/"
+      cath <## "ok"
+      alice #> "/f #team ./tests/fixtures/test.txt"
+      -- below is not shown in "sent" mode
+      -- alice <## "use /fc 1 to cancel sending"
+      concurrentlyN_
+        [ do
+            alice
+              <### [ "completed sending file 1 (test.txt) to bob",
+                     "completed sending file 1 (test.txt) to cath"
+                   ]
+            alice ##> "/fs 1"
+            alice <##. "sending file 1 (test.txt) complete",
+          do
+            bob <# "#team alice> sends file test.txt (11 bytes / 11 bytes)"
+            bob <## "started receiving file 1 (test.txt) from alice"
+            bob <## "completed receiving file 1 (test.txt) from alice",
+          do
+            cath <# "#team alice> sends file test.txt (11 bytes / 11 bytes)"
+            cath <## "started receiving file 1 (test.txt) from alice"
+            cath <## "completed receiving file 1 (test.txt) from alice"
+        ]
+      src <- B.readFile "./tests/fixtures/test.txt"
+      dest1 <- B.readFile "./tests/tmp/bob/test.txt"
+      dest2 <- B.readFile "./tests/tmp/cath/test.txt"
+      dest1 `shouldBe` src
+      dest2 `shouldBe` src
 
 runTestGroupFileSndCancelBeforeTransfer :: TestCC -> TestCC -> TestCC -> IO ()
 runTestGroupFileSndCancelBeforeTransfer alice bob cath = do
@@ -1994,32 +2051,32 @@ testSendImageWithTextAndQuote =
       bob #$> ("/_get chat @2 count=100", chat'', chatFeatures'' <> [((1, "hi alice"), Nothing, Nothing), ((0, "hey bob"), Just (1, "hi alice"), Just "./tests/tmp/test.jpg")])
       bob @@@ [("@alice", "hey bob")]
       -- quoting (file + text) with file uses quoted text
-      bob ##> ("/_send @2 json {\"filePath\": \"./tests/fixtures/test.txt\", \"quotedItemId\": " <> itemId 2 <> ", \"msgContent\": {\"text\":\"\",\"type\":\"file\"}}")
+      bob ##> ("/_send @2 json {\"filePath\": \"./tests/fixtures/test.pdf\", \"quotedItemId\": " <> itemId 2 <> ", \"msgContent\": {\"text\":\"\",\"type\":\"file\"}}")
       bob <# "@alice > hey bob"
-      bob <## "      test.txt"
-      bob <# "/f @alice ./tests/fixtures/test.txt"
+      bob <## "      test.pdf"
+      bob <# "/f @alice ./tests/fixtures/test.pdf"
       bob <## "use /fc 2 to cancel sending"
       alice <# "bob> > hey bob"
-      alice <## "      test.txt"
-      alice <# "bob> sends file test.txt (11 bytes / 11 bytes)"
+      alice <## "      test.pdf"
+      alice <# "bob> sends file test.pdf (266.0 KiB / 272376 bytes)"
       alice <## "use /fr 2 [<dir>/ | <path>] to receive it"
       alice ##> "/fr 2 ./tests/tmp"
-      alice <## "saving file 2 from bob to ./tests/tmp/test.txt"
+      alice <## "saving file 2 from bob to ./tests/tmp/test.pdf"
       concurrently_
-        (alice <## "started receiving file 2 (test.txt) from bob")
-        (bob <## "started sending file 2 (test.txt) to alice")
+        (alice <## "started receiving file 2 (test.pdf) from bob")
+        (bob <## "started sending file 2 (test.pdf) to alice")
       concurrently_
-        (alice <## "completed receiving file 2 (test.txt) from bob")
-        (bob <## "completed sending file 2 (test.txt) to alice")
-      txtSrc <- B.readFile "./tests/fixtures/test.txt"
-      B.readFile "./tests/tmp/test.txt" `shouldReturn` txtSrc
+        (alice <## "completed receiving file 2 (test.pdf) from bob")
+        (bob <## "completed sending file 2 (test.pdf) to alice")
+      txtSrc <- B.readFile "./tests/fixtures/test.pdf"
+      B.readFile "./tests/tmp/test.pdf" `shouldReturn` txtSrc
       -- quoting (file without text) with file uses file name
       alice ##> ("/_send @2 json {\"filePath\": \"./tests/fixtures/test.jpg\", \"quotedItemId\": " <> itemId 3 <> ", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}")
-      alice <# "@bob > test.txt"
+      alice <# "@bob > test.pdf"
       alice <## "      test.jpg"
       alice <# "/f @bob ./tests/fixtures/test.jpg"
       alice <## "use /fc 3 to cancel sending"
-      bob <# "alice> > test.txt"
+      bob <# "alice> > test.pdf"
       bob <## "      test.jpg"
       bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
       bob <## "use /fr 3 [<dir>/ | <path>] to receive it"
@@ -2870,10 +2927,11 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     bob ##> sendVoice
     bob <# "@alice voice message (00:10)"
     bob <# "/f @alice ./tests/fixtures/test.txt"
-    bob <## "use /fc 1 to cancel sending"
+    bob <## "completed sending file 1 (test.txt) to alice"
     alice <# "bob> voice message (00:10)"
     alice <# "bob> sends file test.txt (11 bytes / 11 bytes)"
-    alice <## "use /fr 1 [<dir>/ | <path>] to receive it"
+    alice <## "started receiving file 1 (test.txt) from bob"
+    alice <## "completed receiving file 1 (test.txt) from bob"
     (bob </)
     alice ##> "/_profile {\"displayName\": \"alice\", \"fullName\": \"\", \"preferences\": {\"voice\": {\"allow\": \"no\"}}}"
     alice <## "user full name removed (your contacts are notified)"
