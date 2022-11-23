@@ -1322,6 +1322,16 @@ public struct ChatItem: Identifiable, Decodable {
        )
     }
 
+    public static func getVoiceMsgContentSample (id: Int64 = 1, text: String = "", fileName: String = "voice.m4a", fileSize: Int64 = 65536, fileStatus: CIFileStatus = .rcvComplete) -> ChatItem {
+        ChatItem(
+            chatDir: .directRcv,
+            meta: CIMeta.getSample(id, .now, text, .rcvRead, false, false, false),
+            content: .rcvMsgContent(msgContent: .voice(text: text, duration: 30)),
+            quotedItem: nil,
+            file: CIFile.getSample(fileName: fileName, fileSize: fileSize, fileStatus: fileStatus)
+       )
+    }
+
     public static func getFileMsgContentSample (id: Int64 = 1, text: String = "", fileName: String = "test.txt", fileSize: Int64 = 100, fileStatus: CIFileStatus = .rcvComplete) -> ChatItem {
         ChatItem(
             chatDir: .directRcv,

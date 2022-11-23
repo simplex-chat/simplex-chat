@@ -139,7 +139,7 @@ struct VoiceMessagePlayer: View {
             .aspectRatio(contentMode: .fit)
             .frame(width: 20, height: 20)
             .foregroundColor(color)
-            .padding(.leading, image == "play.fill" ? 5 : 0)
+            .padding(.leading, image == "play.fill" ? 4 : 0)
             .frame(width: 56, height: 56)
             .background(showBackground ? chatItemFrameColor(chatItem, colorScheme) : .clear)
             .clipShape(Circle())
@@ -169,31 +169,25 @@ struct VoiceMessagePlayer: View {
 
 struct CIVoiceView_Previews: PreviewProvider {
     static var previews: some View {
-        let sentFile: ChatItem = ChatItem(
+        let sentVoiceMessage: ChatItem = ChatItem(
             chatDir: .directSnd,
             meta: CIMeta.getSample(1, .now, "", .sndSent, false, true, false),
-            content: .sndMsgContent(msgContent: .file("")),
+            content: .sndMsgContent(msgContent: .voice(text: "", duration: 30)),
             quotedItem: nil,
             file: CIFile.getSample(fileStatus: .sndComplete)
         )
-        let fileChatItemWtFile = ChatItem(
+        let voiceMessageWtFile = ChatItem(
             chatDir: .directRcv,
             meta: CIMeta.getSample(1, .now, "", .rcvRead, false, false, false),
-            content: .rcvMsgContent(msgContent: .file("")),
+            content: .rcvMsgContent(msgContent: .voice(text: "", duration: 30)),
             quotedItem: nil,
             file: nil
-        )
+       )
         Group{
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: sentFile)
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample())
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample(fileName: "some_long_file_name_here", fileStatus: .rcvInvitation))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvAccepted))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvTransfer))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvCancelled))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample(fileSize: 1_000_000_000, fileStatus: .rcvInvitation))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample(text: "Hello there", fileStatus: .rcvInvitation))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample(text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", fileStatus: .rcvInvitation))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: fileChatItemWtFile)
+            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: sentVoiceMessage)
+            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample())
+            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample(fileStatus: .rcvTransfer))
+            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: voiceMessageWtFile)
         }
         .previewLayout(.fixed(width: 360, height: 360))
     }
