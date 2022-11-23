@@ -290,7 +290,8 @@ private suspend fun runServersTest(servers: List<ServerCfg>, m: ChatModel, onUpd
       val (updatedServer, f) = testServerConnection(server, m)
       updatedServers.removeAt(index)
       updatedServers.add(index, updatedServer)
-      onUpdated(updatedServers)
+      // toList() is important. Otherwise, Compose will not redraw the screen
+      onUpdated(updatedServers.toList())
       if (f != null) {
         fs[serverHostname(updatedServer)] = f
       }
