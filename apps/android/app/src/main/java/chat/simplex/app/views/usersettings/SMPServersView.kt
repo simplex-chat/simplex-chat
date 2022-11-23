@@ -231,7 +231,7 @@ private fun HowToButton() {
 
 @Composable
 fun InvalidServer() {
-  Icon(Icons.Outlined.Block, null, tint = MaterialTheme.colors.error)
+  Icon(Icons.Outlined.ErrorOutline, null, tint = MaterialTheme.colors.error)
 }
 
 private fun uniqueAddress(s: ServerCfg, address: ServerAddress, servers: List<ServerCfg>): Boolean = servers.all { srv ->
