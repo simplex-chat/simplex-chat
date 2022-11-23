@@ -2268,9 +2268,9 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
         Just f -> void $ newChatItem (CIRcvChatFeatureRejected f) Nothing
         _ -> do
           ciFile_ <- processFileInvitation fInv_ $ \db -> createRcvGroupFileTransfer db userId m
-          ci <- newChatItem (CIRcvMsgContent content) ciFile_
+          ChatItem {formattedText} <- newChatItem (CIRcvMsgContent content) ciFile_
           let g = groupName' gInfo
-          when (enableNtfs chatSettings) $ showMsgToast ("#" <> g <> " " <> c <> "> ") content $ formattedText ci
+          when (enableNtfs chatSettings) $ showMsgToast ("#" <> g <> " " <> c <> "> ") content formattedText
           setActive $ ActiveG g
       where
         newChatItem ciContent ciFile_ = do
