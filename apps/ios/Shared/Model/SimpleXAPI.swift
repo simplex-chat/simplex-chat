@@ -982,14 +982,14 @@ func processReceivedMsg(_ res: ChatResponse) async {
                     await receiveFile(fileId: file.fileId)
                 }
             }
-            if !cItem.chatDir.sent && !cItem.isCall() && !cItem.isMutedMemberEvent {
+            if !cItem.chatDir.sent && !cItem.isCall && !cItem.isMutedMemberEvent {
                 NtfManager.shared.notifyMessageReceived(cInfo, cItem)
             }
         case let .chatItemStatusUpdated(aChatItem):
             let cInfo = aChatItem.chatInfo
             let cItem = aChatItem.chatItem
             var res = false
-            if !cItem.isDeletedContent() {
+            if !cItem.isDeletedContent {
                 res = m.upsertChatItem(cInfo, cItem)
             }
             if res {

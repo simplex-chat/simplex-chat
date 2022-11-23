@@ -1257,15 +1257,7 @@ public struct ChatItem: Identifiable, Decodable {
         return false
     }
 
-    public func isMsgContent() -> Bool {
-        switch content {
-        case .sndMsgContent: return true
-        case .rcvMsgContent: return true
-        default: return false
-        }
-    }
-
-    public func isDeletedContent() -> Bool {
+    public var isDeletedContent: Bool {
         switch content {
         case .sndDeleted: return true
         case .rcvDeleted: return true
@@ -1273,7 +1265,7 @@ public struct ChatItem: Identifiable, Decodable {
         }
     }
 
-    public func isCall() -> Bool {
+    public var isCall: Bool {
         switch content {
         case .sndCall: return true
         case .rcvCall: return true
@@ -1624,6 +1616,13 @@ public enum MsgContent {
         case let .voice(text, _): return text
         case let .file(text): return text
         case let .unknown(_, text): return text
+        }
+    }
+
+    public var isVoice: Bool {
+        switch self {
+        case .voice: return true
+        default: return false
         }
     }
 
