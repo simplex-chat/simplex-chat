@@ -1245,11 +1245,10 @@ public struct ChatItem: Identifiable, Decodable {
     public var timestampText: Text { meta.timestampText }
 
     public var text: String {
-        get {
-            switch (content.text, file) {
-            case let ("", .some(file)): return file.fileName
-            default: return content.text
-            }
+        switch (content.text, content.msgContent, file) {
+        case let ("", .some(.voice(_, duration)), _): return "Voice message (\(durationText(duration)))"
+        case let ("", _, .some(file)): return file.fileName
+        default: return content.text
         }
     }
 
@@ -1539,7 +1538,13 @@ public struct CIQuote: Decodable, ItemContent {
     public var content: MsgContent
     public var formattedText: [FormattedText]?
 
-    public var text: String { get { content.text } }
+    public var text: String {
+        switch (content.text, content) {
+//        case let ("", .voice(_, duration)): return "🎤 (\(durationText(duration)))"
+        case let ("", .voice(_, duration)): return durationText(duration)
+        default: return content.text
+        }
+    }
 
     public func getSender(_ membership: GroupMember?) -> String? {
         switch (chatDir) {
@@ -1800,14 +1805,14 @@ public enum CICallStatus: String, Decodable {
         case .accepted: return NSLocalizedString("accepted call", comment: "call status")
         case .negotiated: return NSLocalizedString("connecting call", comment: "call status")
         case .progress: return NSLocalizedString("call in progress", comment: "call status")
-        case .ended: return String.localizedStringWithFormat(NSLocalizedString("ended call %@", comment: "call status"), CICallStatus.durationText(sec))
+        case .ended: return String.localizedStringWithFormat(NSLocalizedString("ended call %@", comment: "call status"), durationText(sec))
         case .error: return NSLocalizedString("call error", comment: "call status")
         }
     }
+}
 
-    public static func durationText(_ sec: Int) -> String {
-        String(format: "%02d:%02d", sec / 60, sec % 60)
-    }
+public func durationText(_ sec: Int) -> String {
+    String(format: "%02d:%02d", sec / 60, sec % 60)
 }
 
 public enum MsgErrorType: Decodable {

@@ -175,6 +175,7 @@ struct ComposeView: View {
             contextItemView()
             switch (composeState.editing, composeState.preview) {
                 case (true, .filePreview): EmptyView()
+                case (true, .voicePreview): EmptyView() // ? we may allow playback when editing is allowed
                 default: previewView()
             }
             HStack (alignment: .bottom) {

@@ -54,7 +54,7 @@ struct SendMessageView: View {
                             .frame(height: teHeight)
                     }
                 }
-
+                
                 if (composeState.inProgress) {
                     ProgressView()
                         .scaleEffect(1.4)
@@ -75,7 +75,7 @@ struct SendMessageView: View {
                     }
                 }
             }
-
+            
             RoundedRectangle(cornerSize: CGSize(width: 20, height: 20))
                 .strokeBorder(.secondary, lineWidth: 0.3, antialiased: true)
                 .frame(height: teHeight)
