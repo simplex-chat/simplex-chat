@@ -127,7 +127,7 @@ private fun CustomServer(
   val valid = remember { derivedStateOf { parseServerAddress(serverAddress.value)?.valid == true } }
   SectionView(
     stringResource(R.string.smp_servers_your_server_address).uppercase(),
-    icon = Icons.Outlined.Block,
+    icon = Icons.Outlined.ErrorOutline,
     iconTint = if (!valid.value) MaterialTheme.colors.error else Color.Transparent,
   ) {
     val testedPreviously = remember { mutableMapOf<String, Boolean?>() }
