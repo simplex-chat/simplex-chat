@@ -1532,7 +1532,6 @@ public struct CIQuote: Decodable, ItemContent {
 
     public var text: String {
         switch (content.text, content) {
-//        case let ("", .voice(_, duration)): return "🎤 (\(durationText(duration)))"
         case let ("", .voice(_, duration)): return durationText(duration)
         default: return content.text
         }
