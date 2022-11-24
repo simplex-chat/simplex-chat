@@ -63,10 +63,8 @@ fun ChatInfoView(
         setContactAlias(chat.chatInfo.apiId, it, chatModel)
       },
       openPreferences = {
-        withApi {
-          ModalManager.shared.showModal(true){
-            PreferencesPerChatView(chatModel, chatModel.currentUser.value ?: return@showModal, contact)
-          }
+        ModalManager.shared.showModal(true) {
+          ContactPreferencesView(chatModel, chatModel.currentUser.value ?: return@showModal, contact)
         }
       },
       deleteContact = { deleteContactDialog(chat.chatInfo, chatModel, close) },
@@ -179,8 +177,8 @@ fun ChatInfoLayout(
       }
     }
     SectionSpacer()
-    SectionView(stringResource(R.string.chat_preferences).uppercase()) {
-      ChatPreferencesButton(openPreferences)
+    SectionView {
+      ContactPreferencesButton(openPreferences)
     }
     SectionSpacer()
     SectionView {
@@ -340,10 +338,10 @@ fun SwitchAddressButton(onClick: () -> Unit) {
 }
 
 @Composable
-private fun ChatPreferencesButton(onClick: () -> Unit) {
+private fun ContactPreferencesButton(onClick: () -> Unit) {
   SettingsActionItem(
     Icons.Outlined.PrivacyTip,
-    stringResource(R.string.chat_preferences),
+    stringResource(R.string.contact_preferences),
     click = onClick
   )
 }

@@ -451,7 +451,9 @@
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Ваш профиль хранится на вашем устройстве и отправляется только вашим контактам.\n\n<xliff:g id="appName">SimpleX</xliff:g> серверы не могут получить доступ к вашему профилю.</string>
     <string name="edit_image">Поменять аватар</string>
     <string name="delete_image">Удалить аватар</string>
+    <string name="save_and_notify_contact">Сохранить (и уведомить контакт)</string>
     <string name="save_and_notify_contacts">Сохранить (и послать обновление контактам)</string>
+    <string name="save_and_notify_group_members">Сохранить (и уведомить членов группы)</string>
 
     <!-- Welcome Prompts - WelcomeView.kt -->
     <string name="you_control_your_chat">Вы котролируете ваш чат!</string>
@@ -593,8 +595,36 @@
     <string name="auto_accept_images">Автоприем изображений</string>
     <string name="transfer_images_faster">Передавать изображения быстрее (BETA)</string>
     <string name="send_link_previews">Отправлять картинки ссылок</string>
+
+    <!-- Preferences -->
     <string name="chat_preferences">Предпочтения</string>
-    <string name="chat_preferences_for">Предпочтения для %s</string>
+    <string name="contact_preferences">Предпочтения контакта</string>
+    <string name="group_preferences">Предпочтения группы</string>
+    <string name="your_preferences">Ваши предпочтения</string>
+    <string name="full_deletion">Полное удаление</string>
+    <string name="voice_messages">Голосовые сообщения</string>
+    <string name="allow_your_contacts_irreversibly_delete">Разрешить вашим контактам необратимо удалять отправленные сообщения.</string>
+    <string name="allow_irreversible_message_deletion_only_if">Разрешить необратимое удаление сообщений, только если ваш контакт разрешает это вам.</string>
+    <string name="contacts_can_mark_messages_for_deletion">Контакты могут помечать сообщения для удаления; вы сможете просмотреть их.</string>
+    <string name="allow_your_contacts_to_send_voice_messages">Разрешить вашим контактам отправлять голосовые сообщения.</string>
+    <string name="allow_voice_messages_only_if">Разрешить голосовые сообщения, только если их разрешает ваш контакт.</string>
+    <string name="prohibit_sending_voice_messages">Запретить отправлять голосовые сообщений.</string>
+    <string name="both_you_and_your_contacts_can_delete">Вы и ваш контакт можете необратимо удалять отправленные сообщения.</string>
+    <string name="only_you_can_delete_messages">Только вы можете необратимо удалять сообщения (ваш контакт может помечать их на удаление).</string>
+    <string name="only_your_contact_can_delete">Только ваш контакт может необратимо удалять сообщения (вы можете помечать их на удаление).</string>
+    <string name="message_deletion_prohibited">Необратимое удаление сообщений запрещено в этом чате.</string>
+    <string name="both_you_and_your_contact_can_send_voice">Вы и ваш контакт можете отправлять голосовые сообщения.</string>
+    <string name="only_you_can_send_voice">Только вы можете отправлять голосовые сообщения.</string>
+    <string name="only_your_contact_can_send_voice">Только ваш контакт может отправлять голосовые сообщения.</string>
+    <string name="voice_prohibited_in_this_chat">Голосовые сообщения запрещены в этом чате.</string>
+    <string name="allow_to_delete_messages">Разрешить необратимо удалять отправленные сообщения.</string>
+    <string name="prohibit_message_deletion">Запретить необратимое удаление сообщений.</string>
+    <string name="allow_to_send_voice">Разрешить отправлять голосовые сообщения.</string>
+    <string name="prohibit_sending_voice">Запретить отправлять голосовые сообщений.</string>
+    <string name="group_members_can_delete">Члены группы могут необратимо удалять отправленные сообщения.</string>
+    <string name="message_deletion_prohibited_in_chat">Необратимое удаление сообщений запрещено в этом чате.</string>
+    <string name="group_members_can_send_voice">Члены группы могут отправлять голосовые сообщения.</string>
+    <string name="voice_messages_are_prohibited">Голосовые сообщения запрещены в этом чате.</string>
 
     <!-- Settings sections -->
     <string name="settings_section_title_you">ВЫ</string>
@@ -833,6 +863,7 @@
     <string name="all_group_members_will_remain_connected">Все члены группы, которые соединились через эту ссылку, останутся в группе.</string>
     <string name="error_creating_link_for_group">Ошибка при создании ссылки группы</string>
     <string name="error_deleting_link_for_group">Ошибка при удалении ссылки группы</string>
+    <string name="only_group_owners_can_change_prefs">Только владельцы группы могут изменять предпочтения группы.</string>
 
     <!-- For Console chat info section -->
     <string name="section_title_for_console">ДЛЯ КОНСОЛИ</string>
@@ -917,10 +948,12 @@
     <!-- Preferences.kt -->
     <string name="chat_preferences_you_allow">Вы разрешаете</string>
     <string name="chat_preferences_contact_allows">Контакт разрешает</string>
-    <string name="chat_preferences_default">По умолчанию (%s)</string>
-    <string name="chat_preferences_yes">Да</string>
-    <string name="chat_preferences_no">Нет</string>
-    <string name="chat_preferences_always">Всегда</string>
+    <string name="chat_preferences_default">по умолчанию (%s)</string>
+    <string name="chat_preferences_yes">да</string>
+    <string name="chat_preferences_no">нет</string>
+    <string name="chat_preferences_always">всегда</string>
+    <string name="chat_preferences_on">да</string>
+    <string name="chat_preferences_off">нет</string>
     <string name="chat_preferences_voice">Голосовые сообщения</string>
     <string name="chat_preferences_voice_yes_desc">Если ваш контакт разрешает присылать ему голосовые сообщения, тогда вы оба можете присылать друг другу голосовые сообщения. Иначе никому это не позволено</string>
     <string name="chat_preferences_voice_no_desc">Запретить присылать вам голосовые сообщения</string>
@@ -933,9 +966,6 @@
     <string name="chat_preferences_delivery_receipts_yes_desc">Если ваш контакт разрешил уведомлять вас о доставке сообщений, тогда и он будет уведомлен о доставке его сообщений. Иначе отчетов не будет</string>
     <string name="chat_preferences_delivery_receipts_no_desc">Запретить отправку отчетов о доставке</string>
     <string name="chat_preferences_delivery_receipts_always_desc">Разрешить отправлять отчеты о доставке</string>
-    <string name="confirm_saving_prefs_question">Сохранить предпочтения?</string>
-    <string name="confirm_saving_prefs_info">После сохранения, все ваши контакты будут уведомлены (кроме тех, с кем вы общаетесь с использованием Инкогнито профиля)</string>
-    <string name="confirm_saving_prefs_per_contact_info">После сохранения, этот контакт будет уведомлен</string>
 
     <string name="chat_preferences_voice_yes_and_yes_desc">Вы и ваш контакт можете отправлять голосовые сообщения</string>
     <string name="chat_preferences_voice_yes_and_no_desc">Ни вы, ни ваш контакт не сможете отправить голосовое сообщение до тех пор, пока ваш контакт тоже не разрешит</string>

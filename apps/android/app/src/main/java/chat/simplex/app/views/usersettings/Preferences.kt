@@ -20,27 +20,28 @@ import chat.simplex.app.views.helpers.*
 
 @Composable
 fun PreferencesView(m: ChatModel, user: User) {
-  var currentPrefs by remember { mutableStateOf(user.profile.preferences ?: ChatPreferences.default) }
-  var savedPrefs by remember { mutableStateOf(currentPrefs) }
+  var preferences by remember { mutableStateOf(user.fullPreferences) }
+  var currentPreferences by remember { mutableStateOf(preferences) }
   PreferencesLayout(
-    currentPrefs,
-    savedPrefs,
+    preferences,
+    currentPreferences,
     applyPrefs = { prefs ->
-      currentPrefs = prefs
+      preferences = prefs
     },
-    revert = {
-      currentPrefs = savedPrefs
+    reset = {
+      preferences = currentPreferences
     },
     savePrefs = {
-      showConfirmSavingAlert {
-        withApi {
-          val newProfile = user.profile.toProfile().copy(preferences = currentPrefs)
-          val updatedProfile = m.controller.apiUpdateProfile(newProfile)
-          if (updatedProfile != null) {
-            val updatedUser = user.copy(profile = updatedProfile.toLocalProfile(user.profile.profileId))
-            savedPrefs = currentPrefs
-            m.currentUser.value = updatedUser
-          }
+      withApi {
+        val newProfile = user.profile.toProfile().copy(preferences = preferences.toPreferences())
+        val updatedProfile = m.controller.apiUpdateProfile(newProfile)
+        if (updatedProfile != null) {
+          val updatedUser = user.copy(
+            profile = updatedProfile.toLocalProfile(user.profile.profileId),
+            fullPreferences = preferences
+          )
+          currentPreferences = preferences
+          m.currentUser.value = updatedUser
         }
       }
     },
@@ -49,10 +50,10 @@ fun PreferencesView(m: ChatModel, user: User) {
 
 @Composable
 private fun PreferencesLayout(
-  prefs: ChatPreferences,
-  savedPrefs: ChatPreferences,
-  applyPrefs: (ChatPreferences) -> Unit,
-  revert: () -> Unit,
+  preferences: FullChatPreferences,
+  currentPreferences: FullChatPreferences,
+  applyPrefs: (FullChatPreferences) -> Unit,
+  reset: () -> Unit,
   savePrefs: () -> Unit,
 ) {
   Column {
@@ -60,139 +61,52 @@ private fun PreferencesLayout(
       Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
       horizontalAlignment = Alignment.Start,
     ) {
-      AppBarTitle(stringResource(R.string.chat_preferences))
-      val voice = remember(prefs) {
-        val pref = prefs.voice ?: ChatPreference.voiceDefault
-        mutableStateOf(pref.toLocal())
-      }
-      VoiceSection(voice) {
-        applyPrefs(prefs.copy(voice = it.toPref(ChatPreference.voiceDefault)))
+      AppBarTitle(stringResource(R.string.your_preferences))
+      val allowFullDeletion = remember(preferences) { mutableStateOf(preferences.fullDelete.allow) }
+      FeatureSection(Feature.FullDelete, allowFullDeletion) {
+        applyPrefs(preferences.copy(fullDelete = ChatPreference(allow = it)))
       }
 
       SectionSpacer()
-      val fullDelete = remember(prefs) {
-        val pref = prefs.fullDelete ?: ChatPreference.fullDeleteDefault
-        mutableStateOf(pref.toLocal())
-      }
-      FullDeleteSection(fullDelete) {
-        applyPrefs(prefs.copy(fullDelete = it.toPref(ChatPreference.fullDeleteDefault)))
-      }
-
-      SectionSpacer()
-      val receipts = remember(prefs) {
-        val pref = prefs.receipts ?: ChatPreference.receiptsDefault
-        mutableStateOf(pref.toLocal())
-      }
-      ReceiptsSection(receipts) {
-        applyPrefs(prefs.copy(receipts = it.toPref(ChatPreference.receiptsDefault)))
+      val allowVoice = remember(preferences) { mutableStateOf(preferences.voice.allow) }
+      FeatureSection(Feature.Voice, allowVoice) {
+        applyPrefs(preferences.copy(voice = ChatPreference(allow = it)))
       }
     }
     SectionCustomFooter(PaddingValues(DEFAULT_PADDING)) {
       ButtonsFooter(
-        cancel = revert,
+        reset = reset,
         save = savePrefs,
-        disabled = prefs == savedPrefs
+        disabled = preferences == currentPreferences
       )
     }
   }
 }
 
 @Composable
-private fun VoiceSection(current: State<ChatPreferenceLocal>, advanced: Boolean = false, onSelected: (ChatPreferenceLocal) -> Unit) {
-  val values = remember {
-    listOf(
-      ValueTitleDesc(ChatPreferenceLocal.YES, generalGetString(R.string.chat_preferences_yes), generalGetString(R.string.chat_preferences_voice_yes_desc)),
-      ValueTitleDesc(ChatPreferenceLocal.NO, generalGetString(R.string.chat_preferences_no), generalGetString(R.string.chat_preferences_voice_no_desc)),
-      ValueTitleDesc(ChatPreferenceLocal.ALWAYS, generalGetString(R.string.chat_preferences_always), generalGetString(R.string.chat_preferences_voice_always_desc))
-    )
-  }
-  SectionView(generalGetString(R.string.chat_preferences_voice).uppercase()) {
+private fun FeatureSection(feature: Feature, allowFeature: State<FeatureAllowed>, onSelected: (FeatureAllowed) -> Unit) {
+  SectionView {
     SectionItemView {
-      SelectableChatPreferenceRow(current, values, advanced, onSelected)
+      ExposedDropDownSettingRow(
+        feature.text(), //generalGetString(R.string.chat_preferences_you_allow),
+        FeatureAllowed.values().map { it to it.text },
+        allowFeature,
+        icon = feature.icon(),
+        onSelected = onSelected
+      )
     }
   }
-  SectionTextFooter(values.firstOrNull { it.value == current.value }!!.description)
+  SectionTextFooter(feature.allowDescription(allowFeature.value))
 }
 
 @Composable
-private fun FullDeleteSection(current: State<ChatPreferenceLocal>, advanced: Boolean = false, onSelected: (ChatPreferenceLocal) -> Unit) {
-  val values = remember {
-    listOf(
-      ValueTitleDesc(ChatPreferenceLocal.YES, generalGetString(R.string.chat_preferences_yes), generalGetString(R.string.chat_preferences_deletion_yes_desc)),
-      ValueTitleDesc(ChatPreferenceLocal.NO, generalGetString(R.string.chat_preferences_no), generalGetString(R.string.chat_preferences_deletion_no_desc)),
-      ValueTitleDesc(ChatPreferenceLocal.ALWAYS, generalGetString(R.string.chat_preferences_always), generalGetString(R.string.chat_preferences_deletion_always_desc))
-    )
-  }
-  SectionView(generalGetString(R.string.chat_preferences_deletion).uppercase()) {
-    SectionItemView {
-      SelectableChatPreferenceRow(current, values, advanced, onSelected)
-    }
-  }
-  SectionTextFooter(values.firstOrNull { it.value == current.value }!!.description)
-}
-
-@Composable
-private fun ReceiptsSection(current: State<ChatPreferenceLocal>, advanced: Boolean = false, onSelected: (ChatPreferenceLocal) -> Unit) {
-  val values = remember {
-    listOf(
-      ValueTitleDesc(ChatPreferenceLocal.YES, generalGetString(R.string.chat_preferences_yes), generalGetString(R.string.chat_preferences_delivery_receipts_yes_desc)),
-      ValueTitleDesc(ChatPreferenceLocal.NO, generalGetString(R.string.chat_preferences_no), generalGetString(R.string.chat_preferences_delivery_receipts_no_desc)),
-      ValueTitleDesc(ChatPreferenceLocal.ALWAYS, generalGetString(R.string.chat_preferences_always), generalGetString(R.string.chat_preferences_delivery_receipts_always_desc))
-    )
-  }
-  SectionView(generalGetString(R.string.chat_preferences_delivery_receipts).uppercase()) {
-    SectionItemView {
-      SelectableChatPreferenceRow(current, values, advanced, onSelected)
-    }
-  }
-  SectionTextFooter(values.firstOrNull { it.value == current.value }!!.description)
-}
-
-@Composable
-fun SelectableChatPreferenceRow(
-  current: State<ChatPreferenceLocal>,
-  values: List<ValueTitleDesc<ChatPreferenceLocal>>,
-  advanced: Boolean = false,
-  onSelected: (ChatPreferenceLocal) -> Unit
-) {
-  if (advanced) {
-    val mappedValues = remember { values.map { it.value to it.title } }
-    ExposedDropDownSettingRow(
-      generalGetString(R.string.chat_preferences_you_allow),
-      mappedValues,
-      current,
-      icon = null,
-      onSelected = onSelected
-    )
-  } else {
-    PreferenceToggleWithIcon(
-      generalGetString(R.string.chat_preferences_you_allow),
-      null,
-      null,
-      current.value == ChatPreferenceLocal.ALWAYS || current.value == ChatPreferenceLocal.YES
-    ) {
-      onSelected(if (it) ChatPreferenceLocal.YES else ChatPreferenceLocal.NO)
-    }
-  }
-}
-
-private fun showConfirmSavingAlert(onConfirm: () -> Unit) {
-  AlertManager.shared.showAlertMsg(
-    title = generalGetString(R.string.confirm_saving_prefs_question),
-    text = generalGetString(R.string.confirm_saving_prefs_info),
-    confirmText = generalGetString(R.string.save_verb),
-    onConfirm = onConfirm
-  )
-}
-
-@Composable
-private fun ButtonsFooter(cancel: () -> Unit, save: () -> Unit, disabled: Boolean) {
+private fun ButtonsFooter(reset: () -> Unit, save: () -> Unit, disabled: Boolean) {
   Row(
     Modifier.fillMaxWidth(),
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
   ) {
-    FooterButton(Icons.Outlined.Replay, stringResource(R.string.cancel_verb), cancel, disabled)
-    FooterButton(Icons.Outlined.Check, stringResource(R.string.save_verb), save, disabled)
+    FooterButton(Icons.Outlined.Replay, stringResource(R.string.reset_verb), reset, disabled)
+    FooterButton(Icons.Outlined.Check, stringResource(R.string.save_and_notify_contacts), save, disabled)
   }
 }

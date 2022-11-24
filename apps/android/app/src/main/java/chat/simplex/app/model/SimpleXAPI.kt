@@ -12,7 +12,7 @@ import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Bolt
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
@@ -635,6 +635,13 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return null
   }
 
+  suspend fun apiSetContactPrefs(contactId: Long, prefs: ChatPreferences): Contact? {
+    val r = sendCmd(CC.ApiSetContactPrefs(contactId, prefs))
+    if (r is CR.ContactPrefsUpdated) return r.toContact
+    Log.e(TAG, "apiSetContactPrefs bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
   suspend fun apiSetContactAlias(contactId: Long, localAlias: String): Contact? {
     val r = sendCmd(CC.ApiSetContactAlias(contactId, localAlias))
     if (r is CR.ContactAliasUpdated) return r.toContact
@@ -646,13 +653,6 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     val r = sendCmd(CC.ApiSetConnectionAlias(connId, localAlias))
     if (r is CR.ConnectionAliasUpdated) return r.toConnection
     Log.e(TAG, "apiSetConnectionAlias bad response: ${r.responseType} ${r.details}")
-    return null
-  }
-
-  suspend fun apiSetContactPrefs(contactId: Long, prefs: ChatPreferences): Contact? {
-    val r = sendCmd(CC.ApiSetContactPrefs(contactId, prefs))
-    if (r is CR.ContactPrefsUpdated) return r.toContact
-    Log.e(TAG, "apiSetContactPrefs bad response: ${r.responseType} ${r.details}")
     return null
   }
 
@@ -1495,10 +1495,10 @@ sealed class CC {
   class ApiClearChat(val type: ChatType, val id: Long): CC()
   class ListContacts: CC()
   class ApiUpdateProfile(val profile: Profile): CC()
+  class ApiSetContactPrefs(val contactId: Long, val prefs: ChatPreferences): CC()
   class ApiParseMarkdown(val text: String): CC()
   class ApiSetContactAlias(val contactId: Long, val localAlias: String): CC()
   class ApiSetConnectionAlias(val connId: Long, val localAlias: String): CC()
-  class ApiSetContactPrefs(val contactId: Long, val prefs: ChatPreferences): CC()
   class CreateMyAddress: CC()
   class DeleteMyAddress: CC()
   class ShowMyAddress: CC()
@@ -1562,10 +1562,10 @@ sealed class CC {
     is ApiClearChat -> "/_clear chat ${chatRef(type, id)}"
     is ListContacts -> "/contacts"
     is ApiUpdateProfile -> "/_profile ${json.encodeToString(profile)}"
+    is ApiSetContactPrefs -> "/_set prefs @$contactId ${json.encodeToString(prefs)}"
     is ApiParseMarkdown -> "/_parse $text"
     is ApiSetContactAlias -> "/_set alias @$contactId ${localAlias.trim()}"
     is ApiSetConnectionAlias -> "/_set alias :$connId ${localAlias.trim()}"
-    is ApiSetContactPrefs -> "/_set prefs @$contactId ${json.encodeToString(prefs)}"
     is CreateMyAddress -> "/address"
     is DeleteMyAddress -> "/delete_address"
     is ShowMyAddress -> "/show_address"
@@ -1630,10 +1630,10 @@ sealed class CC {
     is ApiClearChat -> "apiClearChat"
     is ListContacts -> "listContacts"
     is ApiUpdateProfile -> "updateProfile"
+    is ApiSetContactPrefs -> "apiSetContactPrefs"
     is ApiParseMarkdown -> "apiParseMarkdown"
     is ApiSetContactAlias -> "apiSetContactAlias"
     is ApiSetConnectionAlias -> "apiSetConnectionAlias"
-    is ApiSetContactPrefs -> "apiSetContactPrefs"
     is CreateMyAddress -> "createMyAddress"
     is DeleteMyAddress -> "deleteMyAddress"
     is ShowMyAddress -> "showMyAddress"
@@ -1923,95 +1923,280 @@ data class ChatSettings(
 )
 
 @Serializable
-data class ChatPreferences(
-  val fullDelete: ChatPreference? = null,
-  val receipts: ChatPreference? = null,
-  val voice: ChatPreference? = null,
+data class FullChatPreferences(
+  val fullDelete: ChatPreference,
+  val voice: ChatPreference,
 ) {
+
+  fun toPreferences(): ChatPreferences = ChatPreferences(fullDelete = fullDelete, voice = voice)
+
   companion object {
-    val default = ChatPreferences(
-      fullDelete = ChatPreference.fullDeleteDefault,
-      receipts = ChatPreference.receiptsDefault,
-      voice = ChatPreference.voiceDefault,
-    )
+    val sampleData = FullChatPreferences(fullDelete = ChatPreference(allow = FeatureAllowed.NO), voice = ChatPreference(allow = FeatureAllowed.YES))
   }
 }
 
 @Serializable
-data class GroupPreferences(
-  val fullDelete: GroupPreference? = null,
-  val receipts: GroupPreference? = null,
-  val voice: GroupPreference? = null,
+data class ChatPreferences(
+  val fullDelete: ChatPreference? = null,
+  val voice: ChatPreference? = null,
 ) {
+
   companion object {
-    val default = GroupPreferences(
-      fullDelete = GroupPreference.fullDeleteDefault,
-      receipts = GroupPreference.receiptsDefault,
-      voice = GroupPreference.voiceDefault,
-    )
+    val sampleData = ChatPreferences(fullDelete = ChatPreference(allow = FeatureAllowed.NO), voice = ChatPreference(allow = FeatureAllowed.YES))
   }
 }
 
 @Serializable
 data class ChatPreference(
   val allow: FeatureAllowed
-) {
-  companion object {
-    val fullDeleteDefault = ChatPreference(allow = FeatureAllowed.NO)
-    val receiptsDefault = ChatPreference(allow = FeatureAllowed.NO)
-    val voiceDefault = ChatPreference(allow = FeatureAllowed.NO)
-  }
-
-  fun toLocal() =
-    when (allow) {
-      FeatureAllowed.YES -> ChatPreferenceLocal.YES
-      FeatureAllowed.NO -> ChatPreferenceLocal.NO
-      FeatureAllowed.ALWAYS -> ChatPreferenceLocal.ALWAYS
-    }
-}
-
-fun ChatPreference?.toLocal() = this?.toLocal() ?: ChatPreferenceLocal.DEFAULT
+)
 
 @Serializable
-data class GroupPreference(
-  val enable: GroupFeatureEnabled
+data class ContactUserPreferences(
+  val fullDelete: ContactUserPreference,
+  val voice: ContactUserPreference,
 ) {
   companion object {
-    val fullDeleteDefault = GroupPreference(enable = GroupFeatureEnabled.NO)
-    val receiptsDefault = GroupPreference(enable = GroupFeatureEnabled.NO)
-    val voiceDefault = GroupPreference(enable = GroupFeatureEnabled.NO)
+    val sampleData = ContactUserPreferences(
+      fullDelete = ContactUserPreference(
+        enabled = FeatureEnabled(forUser = false, forContact = false),
+        userPreference = ContactUserPref.User(preference = ChatPreference(allow = FeatureAllowed.NO)),
+        contactPreference = ChatPreference(allow = FeatureAllowed.NO)
+      ),
+      voice = ContactUserPreference(
+        enabled = FeatureEnabled(forUser = true, forContact = true),
+        userPreference = ContactUserPref.User(preference = ChatPreference(allow = FeatureAllowed.YES)),
+        contactPreference = ChatPreference(allow = FeatureAllowed.YES)
+      )
+    )
+  }
+}
+
+@Serializable
+data class ContactUserPreference(
+  val enabled: FeatureEnabled,
+  val userPreference: ContactUserPref,
+  val contactPreference: ChatPreference,
+)
+
+@Serializable
+data class FeatureEnabled(
+  val forUser: Boolean,
+  val forContact: Boolean
+) {
+  companion object {
+    fun enabled(user: ChatPreference, contact: ChatPreference): FeatureEnabled =
+      when {
+        user.allow == FeatureAllowed.ALWAYS && contact.allow == FeatureAllowed.NO -> FeatureEnabled(forUser = false, forContact = true)
+        user.allow == FeatureAllowed.NO && contact.allow == FeatureAllowed.ALWAYS -> FeatureEnabled(forUser = true, forContact = false)
+        contact.allow == FeatureAllowed.NO -> FeatureEnabled(forUser = false, forContact = false)
+        user.allow == FeatureAllowed.NO -> FeatureEnabled(forUser = false, forContact = false)
+        else -> FeatureEnabled(forUser = true, forContact = true)
+      }
+  }
+}
+
+@Serializable
+sealed class ContactUserPref {
+  @Serializable @SerialName("contact") data class Contact(val preference: ChatPreference): ContactUserPref() // contact override is set
+  @Serializable @SerialName("user") data class User(val preference: ChatPreference): ContactUserPref() // global user default is used
+}
+
+@Serializable
+enum class Feature {
+  @SerialName("fullDelete") FullDelete,
+  @SerialName("voice") Voice;
+
+  fun text() =
+    when(this) {
+      FullDelete -> generalGetString(R.string.full_deletion)
+      Voice -> generalGetString(R.string.voice_messages)
+    }
+
+  fun icon() =
+    when(this) {
+      FullDelete -> Icons.Outlined.Delete
+      Voice -> Icons.Outlined.KeyboardVoice
+    }
+
+  fun allowDescription(allowed: FeatureAllowed): String =
+    when (this) {
+      FullDelete -> when (allowed) {
+        FeatureAllowed.ALWAYS -> generalGetString(R.string.allow_your_contacts_irreversibly_delete)
+        FeatureAllowed.YES -> generalGetString(R.string.allow_irreversible_message_deletion_only_if)
+        FeatureAllowed.NO -> generalGetString(R.string.contacts_can_mark_messages_for_deletion)
+      }
+      Voice -> when (allowed) {
+        FeatureAllowed.ALWAYS -> generalGetString(R.string.allow_your_contacts_to_send_voice_messages)
+        FeatureAllowed.YES -> generalGetString(R.string.allow_voice_messages_only_if)
+        FeatureAllowed.NO -> generalGetString(R.string.prohibit_sending_voice_messages)
+      }
+    }
+
+  fun enabledDescription(enabled: FeatureEnabled): String =
+    when (this) {
+      FullDelete -> when {
+        enabled.forUser && enabled.forContact -> generalGetString(R.string.both_you_and_your_contacts_can_delete)
+        enabled.forUser -> generalGetString(R.string.only_you_can_delete_messages)
+        enabled.forContact -> generalGetString(R.string.only_your_contact_can_delete)
+        else -> generalGetString(R.string.message_deletion_prohibited)
+      }
+      Voice -> when {
+        enabled.forUser && enabled.forContact -> generalGetString(R.string.both_you_and_your_contact_can_send_voice)
+        enabled.forUser -> generalGetString(R.string.only_you_can_send_voice)
+        enabled.forContact -> generalGetString(R.string.only_your_contact_can_send_voice)
+        else -> generalGetString(R.string.voice_prohibited_in_this_chat)
+      }
   }
 
-  fun toLocal() =
-    when (enable) {
-      GroupFeatureEnabled.YES -> ChatPreferenceLocal.YES
-      GroupFeatureEnabled.NO -> ChatPreferenceLocal.NO
+fun enableGroupPrefDescription(enabled: GroupFeatureEnabled, canEdit: Boolean): String =
+  if (canEdit) {
+    when(this) {
+      FullDelete -> when(enabled) {
+        GroupFeatureEnabled.ON -> generalGetString(R.string.allow_to_delete_messages)
+        GroupFeatureEnabled.OFF -> generalGetString(R.string.prohibit_message_deletion)
+      }
+      Voice -> when(enabled) {
+        GroupFeatureEnabled.ON -> generalGetString(R.string.allow_to_send_voice)
+        GroupFeatureEnabled.OFF -> generalGetString(R.string.prohibit_sending_voice)
+      }
+    }
+  } else {
+    when(this) {
+      FullDelete -> when(enabled) {
+        GroupFeatureEnabled.ON -> generalGetString(R.string.group_members_can_delete)
+        GroupFeatureEnabled.OFF -> generalGetString(R.string.message_deletion_prohibited_in_chat)
+      }
+      Voice -> when(enabled) {
+        GroupFeatureEnabled.ON -> generalGetString(R.string.group_members_can_send_voice)
+        GroupFeatureEnabled.OFF -> generalGetString(R.string.voice_messages_are_prohibited)
+      }
+    }
+  }
+}
+
+@Serializable
+sealed class ContactFeatureAllowed {
+  @Serializable @SerialName("userDefault") data class UserDefault(val default: FeatureAllowed): ContactFeatureAllowed()
+  @Serializable @SerialName("always") object Always: ContactFeatureAllowed()
+  @Serializable @SerialName("yes") object Yes: ContactFeatureAllowed()
+  @Serializable @SerialName("no") object No: ContactFeatureAllowed()
+
+  companion object {
+    fun values(def: FeatureAllowed): List<ContactFeatureAllowed> = listOf(UserDefault(def), Always, Yes, No)
+  }
+
+  val allowed: FeatureAllowed
+    get() = when (this) {
+      is UserDefault -> this.default
+      is Always -> FeatureAllowed.ALWAYS
+      is Yes -> FeatureAllowed.YES
+      is No -> FeatureAllowed.NO
+    }
+  val text: String
+    get() = when (this) {
+      is UserDefault -> String.format(generalGetString(R.string.chat_preferences_default), default.text)
+      is Always -> generalGetString(R.string.chat_preferences_always)
+      is Yes -> generalGetString(R.string.chat_preferences_yes)
+      is No -> generalGetString(R.string.chat_preferences_no)
     }
 }
+
+data class ContactFeaturesAllowed(
+  val fullDelete: ContactFeatureAllowed,
+  val voice: ContactFeatureAllowed
+) {
+  companion object {
+    val sampleData = ContactFeaturesAllowed(
+      fullDelete = ContactFeatureAllowed.UserDefault(FeatureAllowed.NO),
+      voice = ContactFeatureAllowed.UserDefault(FeatureAllowed.YES)
+    )
+  }
+}
+
+fun contactUserPrefsToFeaturesAllowed(contactUserPreferences: ContactUserPreferences): ContactFeaturesAllowed =
+  ContactFeaturesAllowed(
+    fullDelete = contactUserPrefToFeatureAllowed(contactUserPreferences.fullDelete),
+    voice = contactUserPrefToFeatureAllowed(contactUserPreferences.voice)
+  )
+
+fun contactUserPrefToFeatureAllowed(contactUserPreference: ContactUserPreference): ContactFeatureAllowed =
+  when (val pref = contactUserPreference.userPreference) {
+    is ContactUserPref.User -> ContactFeatureAllowed.UserDefault(pref.preference.allow)
+    is ContactUserPref.Contact -> when (pref.preference.allow) {
+      FeatureAllowed.ALWAYS -> ContactFeatureAllowed.Always
+      FeatureAllowed.YES -> ContactFeatureAllowed.Yes
+      FeatureAllowed.NO -> ContactFeatureAllowed.No
+    }
+  }
+
+fun contactFeaturesAllowedToPrefs(contactFeaturesAllowed: ContactFeaturesAllowed): ChatPreferences =
+  ChatPreferences(
+    fullDelete = contactFeatureAllowedToPref(contactFeaturesAllowed.fullDelete),
+    voice = contactFeatureAllowedToPref(contactFeaturesAllowed.voice)
+  )
+
+fun contactFeatureAllowedToPref(contactFeatureAllowed: ContactFeatureAllowed): ChatPreference? =
+  when(contactFeatureAllowed) {
+    is ContactFeatureAllowed.UserDefault -> null
+    is ContactFeatureAllowed.Always -> ChatPreference(allow = FeatureAllowed.ALWAYS)
+    is ContactFeatureAllowed.Yes -> ChatPreference(allow = FeatureAllowed.YES)
+    is ContactFeatureAllowed.No -> ChatPreference(allow = FeatureAllowed.NO)
+  }
 
 @Serializable
 enum class FeatureAllowed {
   @SerialName("yes") YES,
   @SerialName("no") NO,
-  @SerialName("always") ALWAYS,
+  @SerialName("always") ALWAYS;
+
+  val text: String
+    get() = when(this) {
+      ALWAYS -> generalGetString(R.string.chat_preferences_always)
+      YES -> generalGetString(R.string.chat_preferences_yes)
+      NO -> generalGetString(R.string.chat_preferences_no)
+    }
 }
 
 @Serializable
-enum class GroupFeatureEnabled {
-  @SerialName("yes") YES,
-  @SerialName("no") NO,
+data class FullGroupPreferences(
+  val fullDelete: GroupPreference,
+  val voice: GroupPreference
+) {
+  fun toGroupPreferences(): GroupPreferences =
+    GroupPreferences(fullDelete = fullDelete, voice = voice)
+
+  companion object {
+    val sampleData = FullGroupPreferences(fullDelete = GroupPreference(enable = GroupFeatureEnabled.OFF), voice = GroupPreference(enable = GroupFeatureEnabled.ON))
+  }
 }
 
-enum class ChatPreferenceLocal {
-  DEFAULT, YES, NO, ALWAYS;
+@Serializable
+data class GroupPreferences(
+  val fullDelete: GroupPreference?,
+  val voice: GroupPreference?
+) {
+  companion object {
+    val sampleData = GroupPreferences(fullDelete = GroupPreference(enable = GroupFeatureEnabled.OFF), voice = GroupPreference(enable = GroupFeatureEnabled.ON))
+  }
+}
 
-  fun toPref(default: ChatPreference): ChatPreference =
-    when (this) {
-      DEFAULT -> default
-      YES -> ChatPreference(allow = FeatureAllowed.YES)
-      NO -> ChatPreference(allow = FeatureAllowed.NO)
-      ALWAYS -> ChatPreference(allow = FeatureAllowed.ALWAYS)
+@Serializable
+data class GroupPreference(
+  val enable: GroupFeatureEnabled
+)
+
+@Serializable
+enum class GroupFeatureEnabled {
+  @SerialName("on") ON,
+  @SerialName("off") OFF;
+
+  val text: String
+    get() = when (this) {
+      ON -> generalGetString(R.string.chat_preferences_on)
+      OFF -> generalGetString(R.string.chat_preferences_off)
     }
+
 }
 
 val json = Json {
@@ -2067,7 +2252,7 @@ sealed class CR {
   @Serializable @SerialName("userProfileUpdated") class UserProfileUpdated(val fromProfile: Profile, val toProfile: Profile): CR()
   @Serializable @SerialName("contactAliasUpdated") class ContactAliasUpdated(val toContact: Contact): CR()
   @Serializable @SerialName("connectionAliasUpdated") class ConnectionAliasUpdated(val toConnection: PendingContactConnection): CR()
-  @Serializable @SerialName("contactPrefsUpdated") class ContactPrefsUpdated(val toContact: Contact): CR()
+  @Serializable @SerialName("contactPrefsUpdated") class ContactPrefsUpdated(val fromContact: Contact, val toContact: Contact): CR()
   @Serializable @SerialName("apiParsedMarkdown") class ParsedMarkdown(val formattedText: List<FormattedText>? = null): CR()
   @Serializable @SerialName("userContactLink") class UserContactLink(val contactLink: UserContactLinkRec): CR()
   @Serializable @SerialName("userContactLinkUpdated") class UserContactLinkUpdated(val contactLink: UserContactLinkRec): CR()
@@ -2261,7 +2446,7 @@ sealed class CR {
     is UserProfileUpdated -> json.encodeToString(toProfile)
     is ContactAliasUpdated -> json.encodeToString(toContact)
     is ConnectionAliasUpdated -> json.encodeToString(toConnection)
-    is ContactPrefsUpdated -> json.encodeToString(toContact)
+    is ContactPrefsUpdated -> "fromContact: $fromContact\ntoContact: \n${json.encodeToString(toContact)}"
     is ParsedMarkdown -> json.encodeToString(formattedText)
     is UserContactLink -> contactLink.responseDetails
     is UserContactLinkUpdated -> contactLink.responseDetails

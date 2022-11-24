@@ -4,7 +4,6 @@ import SectionDivider
 import SectionSpacer
 import SectionView
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.Composable
@@ -14,12 +13,10 @@ import androidx.compose.ui.res.stringResource
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.views.helpers.AppBarTitle
-import chat.simplex.app.views.helpers.withApi
 
 @Composable
 fun PrivacySettingsView(
   chatModel: ChatModel,
-  showSettingsModal: (@Composable (ChatModel) -> Unit) -> () -> Unit,
   setPerformLA: (Boolean) -> Unit
 ) {
   Column(
@@ -41,21 +38,6 @@ fun PrivacySettingsView(
       }
       SettingsPreferenceItem(Icons.Outlined.TravelExplore, stringResource(R.string.send_link_previews), chatModel.controller.appPrefs.privacyLinkPreviews)
       SectionDivider()
-    }
-    SectionSpacer()
-
-    SectionView(stringResource(R.string.chat_preferences).uppercase()) {
-      SettingsActionItem(
-        Icons.Outlined.PrivacyTip,
-        stringResource(R.string.chat_preferences),
-        click = {
-          withApi {
-            showSettingsModal {
-              PreferencesView(it, chatModel.currentUser.value ?: return@showSettingsModal)
-            }()
-          }
-        }
-      )
     }
   }
 }

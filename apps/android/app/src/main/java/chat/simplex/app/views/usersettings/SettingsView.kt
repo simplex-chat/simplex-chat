@@ -116,20 +116,22 @@ fun SettingsLayout(
         SectionDivider()
         SettingsActionItem(Icons.Outlined.QrCode, stringResource(R.string.your_simplex_contact_address), showModal { CreateLinkView(it, CreateLinkTab.LONG_TERM) }, disabled = stopped)
         SectionDivider()
-        DatabaseItem(encrypted, showSettingsModal { DatabaseView(it, showSettingsModal) }, stopped)
+        ChatPreferencesItem(showSettingsModal)
       }
       SectionSpacer()
 
       SectionView(stringResource(R.string.settings_section_title_settings)) {
         SettingsActionItem(Icons.Outlined.Bolt, stringResource(R.string.notifications), showSettingsModal { NotificationsSettingsView(it) }, disabled = stopped)
         SectionDivider()
+        SettingsActionItem(Icons.Outlined.WifiTethering, stringResource(R.string.network_and_servers), showSettingsModal { NetworkAndServersView(it, showModal, showSettingsModal) }, disabled = stopped)
+        SectionDivider()
         SettingsActionItem(Icons.Outlined.Videocam, stringResource(R.string.settings_audio_video_calls), showSettingsModal { CallSettingsView(it, showModal) }, disabled = stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.Lock, stringResource(R.string.privacy_and_security), showSettingsModal { PrivacySettingsView(it, showSettingsModal, setPerformLA) }, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.Lock, stringResource(R.string.privacy_and_security), showSettingsModal { PrivacySettingsView(it, setPerformLA) }, disabled = stopped)
         SectionDivider()
         SettingsActionItem(Icons.Outlined.LightMode, stringResource(R.string.appearance_settings), showSettingsModal { AppearanceView() }, disabled = stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.WifiTethering, stringResource(R.string.network_and_servers), showSettingsModal { NetworkAndServersView(it, showModal, showSettingsModal) }, disabled = stopped)
+        DatabaseItem(encrypted, showSettingsModal { DatabaseView(it, showSettingsModal) }, stopped)
       }
       SectionSpacer()
 
@@ -235,6 +237,20 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
       }
     }
   }
+}
+
+@Composable fun ChatPreferencesItem(showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)) {
+  SettingsActionItem(
+    Icons.Outlined.PrivacyTip,
+    stringResource(R.string.chat_preferences),
+    click = {
+      withApi {
+        showSettingsModal {
+          PreferencesView(it, it.currentUser.value ?: return@showSettingsModal)
+        }()
+      }
+    }
+  )
 }
 
 @Composable fun ChatLockItem(performLA: MutableState<Boolean>, setPerformLA: (Boolean) -> Unit) {
