@@ -241,7 +241,7 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
 
 @Composable fun ChatPreferencesItem(showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)) {
   SettingsActionItem(
-    Icons.Outlined.PrivacyTip,
+    Icons.Outlined.ToggleOn,
     stringResource(R.string.chat_preferences),
     click = {
       withApi {
@@ -382,7 +382,7 @@ fun SettingsActionItem(icon: ImageVector, text: String, click: (() -> Unit)? = n
 
 @Composable
 fun SettingsPreferenceItem(icon: ImageVector, text: String, pref: SharedPreference<Boolean>, prefState: MutableState<Boolean>? = null) {
-  SectionItemView() {
+  SectionItemView {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Icon(icon, text, tint = HighOrLowlight)
       Spacer(Modifier.padding(horizontal = 4.dp))

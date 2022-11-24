@@ -150,6 +150,11 @@ fun ChatInfoLayout(
     }
 
     SectionSpacer()
+    SectionView {
+      ContactPreferencesButton(openPreferences)
+    }
+
+    SectionSpacer()
 
     SectionView(title = stringResource(R.string.conn_stats_section_title_servers)) {
       if (developerTools) {
@@ -175,10 +180,6 @@ fun ChatInfoLayout(
           SimplexServers(stringResource(R.string.sending_via), sndServers)
         }
       }
-    }
-    SectionSpacer()
-    SectionView {
-      ContactPreferencesButton(openPreferences)
     }
     SectionSpacer()
     SectionView {
@@ -340,7 +341,7 @@ fun SwitchAddressButton(onClick: () -> Unit) {
 @Composable
 private fun ContactPreferencesButton(onClick: () -> Unit) {
   SettingsActionItem(
-    Icons.Outlined.PrivacyTip,
+    Icons.Outlined.ToggleOn,
     stringResource(R.string.contact_preferences),
     click = onClick
   )

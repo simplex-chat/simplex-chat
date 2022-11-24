@@ -231,7 +231,7 @@ fun GroupChatInfoHeader(cInfo: ChatInfo) {
 @Composable
 private fun GroupPreferencesButton(onClick: () -> Unit) {
   SettingsActionItem(
-    Icons.Outlined.PrivacyTip,
+    Icons.Outlined.ToggleOn,
     stringResource(R.string.group_preferences),
     click = onClick
   )
@@ -312,10 +312,10 @@ fun GroupLinkButton() {
     Icon(
       Icons.Outlined.Link,
       stringResource(R.string.group_link),
-      tint = MaterialTheme.colors.primary
+      tint = HighOrLowlight
     )
     Spacer(Modifier.size(8.dp))
-    Text(stringResource(R.string.group_link), color = MaterialTheme.colors.primary)
+    Text(stringResource(R.string.group_link))
   }
 }
 
@@ -329,10 +329,10 @@ fun EditGroupProfileButton() {
     Icon(
       Icons.Outlined.Edit,
       stringResource(R.string.button_edit_group_profile),
-      tint = MaterialTheme.colors.primary
+      tint = HighOrLowlight
     )
     Spacer(Modifier.size(8.dp))
-    Text(stringResource(R.string.button_edit_group_profile), color = MaterialTheme.colors.primary)
+    Text(stringResource(R.string.button_edit_group_profile))
   }
 }
 

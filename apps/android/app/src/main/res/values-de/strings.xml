@@ -953,5 +953,5 @@
   <string name="message_deletion_prohibited_in_chat">***Irreversible message deletion is prohibited in this chat.</string>
   <string name="group_members_can_send_voice">***Group members can send voice messages.</string>
   <string name="voice_messages_are_prohibited">***Voice messages are prohibited in this chat.</string>
-  
+
 </resources>

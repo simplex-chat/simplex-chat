@@ -1,6 +1,5 @@
 package chat.simplex.app.views.usersettings
 
-import SectionCustomFooter
 import SectionDivider
 import SectionItemView
 import SectionItemWithValue
@@ -9,8 +8,8 @@ import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,35 +62,31 @@ private fun ContactPreferencesLayout(
   reset: () -> Unit,
   savePrefs: () -> Unit,
 ) {
-  Column {
-    Column(
-      Modifier
-        .weight(1f)
-        .fillMaxWidth()
-        .verticalScroll(rememberScrollState())
-        .padding(bottom = DEFAULT_PADDING),
-      horizontalAlignment = Alignment.Start,
-    ) {
-      AppBarTitle(stringResource(R.string.contact_preferences))
-      val allowFullDeletion: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.fullDelete) }
-      FeatureSection(Feature.FullDelete, user.fullPreferences.fullDelete.allow, contact.mergedPreferences.fullDelete, allowFullDeletion) {
-        applyPrefs(featuresAllowed.copy(fullDelete = it))
-      }
-
-      SectionSpacer()
-      val allowVoice: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.voice) }
-      FeatureSection(Feature.Voice, user.fullPreferences.voice.allow, contact.mergedPreferences.voice, allowVoice) {
-        applyPrefs(featuresAllowed.copy(voice = it))
-      }
+  Column(
+    Modifier
+      .fillMaxWidth()
+      .verticalScroll(rememberScrollState())
+      .padding(bottom = DEFAULT_PADDING),
+    horizontalAlignment = Alignment.Start,
+  ) {
+    AppBarTitle(stringResource(R.string.contact_preferences))
+    val allowFullDeletion: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.fullDelete) }
+    FeatureSection(Feature.FullDelete, user.fullPreferences.fullDelete.allow, contact.mergedPreferences.fullDelete, allowFullDeletion) {
+      applyPrefs(featuresAllowed.copy(fullDelete = it))
     }
 
-    SectionCustomFooter(PaddingValues(DEFAULT_PADDING)) {
-      ButtonsFooter(
-        reset = reset,
-        save = savePrefs,
-        disabled = featuresAllowed == currentFeaturesAllowed
-      )
+    SectionSpacer()
+    val allowVoice: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.voice) }
+    FeatureSection(Feature.Voice, user.fullPreferences.voice.allow, contact.mergedPreferences.voice, allowVoice) {
+      applyPrefs(featuresAllowed.copy(voice = it))
     }
+
+    SectionSpacer()
+    ResetSaveButtons(
+      reset = reset,
+      save = savePrefs,
+      disabled = featuresAllowed == currentFeaturesAllowed
+    )
   }
 }
 
@@ -137,13 +132,13 @@ private fun FeatureSection(
 }
 
 @Composable
-private fun ButtonsFooter(reset: () -> Unit, save: () -> Unit, disabled: Boolean) {
-  Row(
-    Modifier.fillMaxWidth(),
-    horizontalArrangement = Arrangement.SpaceBetween,
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    FooterButton(Icons.Outlined.Replay, stringResource(R.string.reset_verb), reset, disabled)
-    FooterButton(Icons.Outlined.Check, stringResource(R.string.save_and_notify_contact), save, disabled)
+private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Boolean) {
+  SectionView {
+    SectionItemView(reset) {
+      Text(stringResource(R.string.reset_verb), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
+    }
+    SectionItemView(save) {
+      Text(stringResource(R.string.save_and_notify_contact), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
+    }
   }
 }

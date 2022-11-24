@@ -2015,7 +2015,7 @@ enum class Feature {
 
   fun icon() =
     when(this) {
-      FullDelete -> Icons.Outlined.Delete
+      FullDelete -> Icons.Filled.DeleteForever
       Voice -> Icons.Outlined.KeyboardVoice
     }
 

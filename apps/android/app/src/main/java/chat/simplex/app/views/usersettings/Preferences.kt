@@ -1,14 +1,13 @@
 package chat.simplex.app.views.usersettings
 
-import SectionCustomFooter
 import SectionItemView
 import SectionSpacer
 import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,30 +55,28 @@ private fun PreferencesLayout(
   reset: () -> Unit,
   savePrefs: () -> Unit,
 ) {
-  Column {
-    Column(
-      Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
-      horizontalAlignment = Alignment.Start,
-    ) {
-      AppBarTitle(stringResource(R.string.your_preferences))
-      val allowFullDeletion = remember(preferences) { mutableStateOf(preferences.fullDelete.allow) }
-      FeatureSection(Feature.FullDelete, allowFullDeletion) {
-        applyPrefs(preferences.copy(fullDelete = ChatPreference(allow = it)))
-      }
+  Column(
+    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+    horizontalAlignment = Alignment.Start,
+  ) {
+    AppBarTitle(stringResource(R.string.your_preferences))
+    val allowFullDeletion = remember(preferences) { mutableStateOf(preferences.fullDelete.allow) }
+    FeatureSection(Feature.FullDelete, allowFullDeletion) {
+      applyPrefs(preferences.copy(fullDelete = ChatPreference(allow = it)))
+    }
 
-      SectionSpacer()
-      val allowVoice = remember(preferences) { mutableStateOf(preferences.voice.allow) }
-      FeatureSection(Feature.Voice, allowVoice) {
-        applyPrefs(preferences.copy(voice = ChatPreference(allow = it)))
-      }
+    SectionSpacer()
+    val allowVoice = remember(preferences) { mutableStateOf(preferences.voice.allow) }
+    FeatureSection(Feature.Voice, allowVoice) {
+      applyPrefs(preferences.copy(voice = ChatPreference(allow = it)))
     }
-    SectionCustomFooter(PaddingValues(DEFAULT_PADDING)) {
-      ButtonsFooter(
-        reset = reset,
-        save = savePrefs,
-        disabled = preferences == currentPreferences
-      )
-    }
+
+    SectionSpacer()
+    ResetSaveButtons(
+      reset = reset,
+      save = savePrefs,
+      disabled = preferences == currentPreferences
+    )
   }
 }
 
@@ -88,7 +85,7 @@ private fun FeatureSection(feature: Feature, allowFeature: State<FeatureAllowed>
   SectionView {
     SectionItemView {
       ExposedDropDownSettingRow(
-        feature.text(), //generalGetString(R.string.chat_preferences_you_allow),
+        feature.text(),
         FeatureAllowed.values().map { it to it.text },
         allowFeature,
         icon = feature.icon(),
@@ -100,13 +97,13 @@ private fun FeatureSection(feature: Feature, allowFeature: State<FeatureAllowed>
 }
 
 @Composable
-private fun ButtonsFooter(reset: () -> Unit, save: () -> Unit, disabled: Boolean) {
-  Row(
-    Modifier.fillMaxWidth(),
-    horizontalArrangement = Arrangement.SpaceBetween,
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    FooterButton(Icons.Outlined.Replay, stringResource(R.string.reset_verb), reset, disabled)
-    FooterButton(Icons.Outlined.Check, stringResource(R.string.save_and_notify_contacts), save, disabled)
+private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Boolean) {
+  SectionView {
+    SectionItemView(reset) {
+      Text(stringResource(R.string.reset_verb), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
+    }
+    SectionItemView(save) {
+      Text(stringResource(R.string.save_and_notify_contacts), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
+    }
   }
 }
