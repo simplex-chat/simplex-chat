@@ -131,7 +131,10 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
           if (chat.chatInfo is ChatInfo.Direct) {
             val contactInfo = chatModel.controller.apiContactInfo(chat.chatInfo.apiId)
             ModalManager.shared.showModalCloseable(true) { close ->
-              ChatInfoView(chatModel, chat.chatInfo.contact, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, close)
+              val contact = remember { derivedStateOf { (chatModel.getContactChat(chat.chatInfo.contact.contactId)?.chatInfo as? ChatInfo.Direct)?.contact } }
+              contact.value?.let { ct ->
+                ChatInfoView(chatModel, ct, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, close)
+              }
             }
           } else if (chat.chatInfo is ChatInfo.Group) {
             setGroupMembers(chat.chatInfo.groupInfo, chatModel)
