@@ -15,7 +15,10 @@ import chat.simplex.app.model.ChatModel
 import chat.simplex.app.views.helpers.AppBarTitle
 
 @Composable
-fun PrivacySettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
+fun PrivacySettingsView(
+  chatModel: ChatModel,
+  setPerformLA: (Boolean) -> Unit
+) {
   Column(
     Modifier.fillMaxWidth(),
     horizontalAlignment = Alignment.Start
@@ -34,6 +37,7 @@ fun PrivacySettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
         SectionDivider()
       }
       SettingsPreferenceItem(Icons.Outlined.TravelExplore, stringResource(R.string.send_link_previews), chatModel.controller.appPrefs.privacyLinkPreviews)
+      SectionDivider()
     }
   }
 }

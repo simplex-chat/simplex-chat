@@ -128,14 +128,16 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
       info = {
         hideKeyboard(view)
         withApi {
-          val cInfo = chat.chatInfo
-          if (cInfo is ChatInfo.Direct) {
-            val contactInfo = chatModel.controller.apiContactInfo(cInfo.apiId)
+          if (chat.chatInfo is ChatInfo.Direct) {
+            val contactInfo = chatModel.controller.apiContactInfo(chat.chatInfo.apiId)
             ModalManager.shared.showModalCloseable(true) { close ->
-              ChatInfoView(chatModel, cInfo.contact, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, close)
+              val contact = remember { derivedStateOf { (chatModel.getContactChat(chat.chatInfo.contact.contactId)?.chatInfo as? ChatInfo.Direct)?.contact } }
+              contact.value?.let { ct ->
+                ChatInfoView(chatModel, ct, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, close)
+              }
             }
-          } else if (cInfo is ChatInfo.Group) {
-            setGroupMembers(cInfo.groupInfo, chatModel)
+          } else if (chat.chatInfo is ChatInfo.Group) {
+            setGroupMembers(chat.chatInfo.groupInfo, chatModel)
             ModalManager.shared.showModalCloseable(true) { close ->
               GroupChatInfoView(chatModel, close)
             }

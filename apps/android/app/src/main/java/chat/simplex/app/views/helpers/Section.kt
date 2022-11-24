@@ -42,7 +42,7 @@ fun SectionView(
   content: (@Composable ColumnScope.() -> Unit)
 ) {
   Column {
-    val iconSize = with(LocalDensity.current) { 15.sp.toDp() }
+    val iconSize = with(LocalDensity.current) { 21.sp.toDp() }
     Row(Modifier.padding(start = DEFAULT_PADDING, bottom = 5.dp), verticalAlignment = Alignment.CenterVertically) {
       if (leadingIcon) Icon(icon, null, Modifier.padding(end = 4.dp).size(iconSize), tint = iconTint)
       Text(title, color = HighOrLowlight, style = MaterialTheme.typography.body2, fontSize = 12.sp)

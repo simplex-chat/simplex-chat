@@ -352,6 +352,7 @@ data class User(
   val userContactId: Long,
   val localDisplayName: String,
   val profile: LocalProfile,
+  val fullPreferences: FullChatPreferences,
   val activeUser: Boolean
 ): NamedChat {
   override val displayName: String get() = profile.displayName
@@ -365,6 +366,7 @@ data class User(
       userContactId = 1,
       localDisplayName = "alice",
       profile = LocalProfile.sampleData,
+      fullPreferences = FullChatPreferences.sampleData,
       activeUser = true
     )
   }
@@ -539,8 +541,8 @@ data class Contact(
   val activeConn: Connection,
   val viaGroup: Long? = null,
   val chatSettings: ChatSettings,
-  // User applies his preferences for the contact here. Named user_preferences on the contact in DB
   val userPreferences: ChatPreferences,
+  val mergedPreferences: ContactUserPreferences,
   override val createdAt: Instant,
   override val updatedAt: Instant
 ): SomeChat, NamedChat {
@@ -571,7 +573,8 @@ data class Contact(
       profile = LocalProfile.sampleData,
       activeConn = Connection.sampleData,
       chatSettings = ChatSettings(true),
-      userPreferences = ChatPreferences(),
+      userPreferences = ChatPreferences.sampleData,
+      mergedPreferences = ContactUserPreferences.sampleData,
       createdAt = Clock.System.now(),
       updatedAt = Clock.System.now()
     )
@@ -601,12 +604,11 @@ class Connection(val connId: Long, val connStatus: ConnStatus, val connLevel: In
 }
 
 @Serializable
-class Profile(
+data class Profile(
   override val displayName: String,
   override val fullName: String,
   override val image: String? = null,
   override val localAlias : String = "",
-  // Contact applies his preferences here
   val preferences: ChatPreferences? = null
 ): NamedChat {
   val profileViewName: String
@@ -614,7 +616,7 @@ class Profile(
       return if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)"
     }
 
-  fun toLocalProfile(profileId: Long): LocalProfile = LocalProfile(profileId, displayName, fullName, image, localAlias)
+  fun toLocalProfile(profileId: Long): LocalProfile = LocalProfile(profileId, displayName, fullName, image, localAlias, preferences)
 
   companion object {
     val sampleData = Profile(
@@ -631,18 +633,18 @@ class LocalProfile(
   override val fullName: String,
   override val image: String? = null,
   override val localAlias: String,
-  // Contact applies his preferences here
   val preferences: ChatPreferences? = null
 ): NamedChat {
   val profileViewName: String = localAlias.ifEmpty { if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)" }
 
-  fun toProfile(): Profile = Profile(displayName, fullName, image, localAlias)
+  fun toProfile(): Profile = Profile(displayName, fullName, image, localAlias, preferences)
 
   companion object {
     val sampleData = LocalProfile(
       profileId = 1L,
       displayName = "alice",
       fullName = "Alice",
+      preferences = ChatPreferences.sampleData,
       localAlias = ""
     )
   }
@@ -659,10 +661,10 @@ data class GroupInfo (
   val groupId: Long,
   override val localDisplayName: String,
   val groupProfile: GroupProfile,
+  val fullGroupPreferences: FullGroupPreferences,
   val membership: GroupMember,
   val hostConnCustomUserProfileId: Long? = null,
   val chatSettings: ChatSettings,
-//  val groupPreferences: GroupPreferences? = null,
   override val createdAt: Instant,
   override val updatedAt: Instant
 ): SomeChat, NamedChat {
@@ -691,6 +693,7 @@ data class GroupInfo (
       groupId = 1,
       localDisplayName = "team",
       groupProfile = GroupProfile.sampleData,
+      fullGroupPreferences = FullGroupPreferences.sampleData,
       membership = GroupMember.sampleData,
       hostConnCustomUserProfileId = null,
       chatSettings = ChatSettings(true),
@@ -701,11 +704,12 @@ data class GroupInfo (
 }
 
 @Serializable
-class GroupProfile (
+data class GroupProfile (
   override val displayName: String,
   override val fullName: String,
   override val image: String? = null,
   override val localAlias: String = "",
+  val groupPreferences: GroupPreferences? = null
 ): NamedChat {
   companion object {
     val sampleData = GroupProfile(
@@ -1568,7 +1572,7 @@ enum class FormatColor(val color: String) {
     red -> Color.Red
     green -> SimplexGreen
     blue -> SimplexBlue
-    yellow -> Color.Yellow
+    yellow -> WarningYellow
     cyan -> Color.Cyan
     magenta -> Color.Magenta
     black -> MaterialTheme.colors.onBackground
