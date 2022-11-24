@@ -79,6 +79,7 @@ class ChatModel(val controller: ChatController) {
   val sharedContent = mutableStateOf(null as SharedContent?)
 
   val filesToDelete = mutableSetOf<File>()
+  val simplexLinkMode = mutableStateOf(controller.appPrefs.simplexLinkMode.get())
 
   fun updateUserProfile(profile: LocalProfile) {
     val user = currentUser.value
@@ -1496,17 +1497,17 @@ object MsgContentSerializer : KSerializer<MsgContent> {
 @Serializable
 class FormattedText(val text: String, val format: Format? = null) {
   // TODO make it dependent on simplexLinkMode preference
-  val link: String? = when (format) {
+  fun link(mode: SimplexLinkMode): String? = when (format) {
     is Format.Uri -> text
-    is Format.SimplexLink -> format.simplexUri
+    is Format.SimplexLink -> if (mode == SimplexLinkMode.BROWSER) text else format.simplexUri
     is Format.Email -> "mailto:$text"
     is Format.Phone -> "tel:$text"
     else -> null
   }
 
   // TODO make it dependent on simplexLinkMode preference
-  val viewText: String =
-    if (format is Format.SimplexLink) simplexLinkText(format.linkType, format.smpHosts) else text
+  fun viewText(mode: SimplexLinkMode): String =
+    if (format is Format.SimplexLink && mode == SimplexLinkMode.DESCRIPTION) simplexLinkText(format.linkType, format.smpHosts) else text
 
   fun simplexLinkText(linkType: SimplexLinkType, smpHosts: List<String>): String =
     "${linkType.description} (${String.format(generalGetString(R.string.simplex_link_connection), smpHosts.firstOrNull() ?: "?")})"
@@ -1521,8 +1522,7 @@ sealed class Format {
   @Serializable @SerialName("secret") class Secret: Format()
   @Serializable @SerialName("colored") class Colored(val color: FormatColor): Format()
   @Serializable @SerialName("uri") class Uri: Format()
-  // TODO trustedUri: Boolean
-  @Serializable @SerialName("simplexLink") class SimplexLink(val linkType: SimplexLinkType, val simplexUri: String, val smpHosts: List<String>): Format()
+  @Serializable @SerialName("simplexLink") class SimplexLink(val linkType: SimplexLinkType, val simplexUri: String, val trustedUri: Boolean, val smpHosts: List<String>): Format()
   @Serializable @SerialName("email") class Email: Format()
   @Serializable @SerialName("phone") class Phone: Format()
 

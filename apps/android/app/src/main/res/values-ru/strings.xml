@@ -46,6 +46,11 @@
     <string name="simplex_link_invitation">SimpleX одноразовая ссылка</string>
     <string name="simplex_link_group">SimpleX ссылка группы</string>
     <string name="simplex_link_connection">через <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g></string>
+    <string name="simplex_link_mode">SimpleX ссылки</string>
+    <string name="simplex_link_mode_description">Описание</string>
+    <string name="simplex_link_mode_full">Полная ссылка</string>
+    <string name="simplex_link_mode_browser">В браузере</string>
+    <string name="simplex_link_mode_browser_warning">Использование ссылки в браузере может уменьшить конфиденциальность и безопасность соединения. Ссылки на неизвестных сайтах будут красными.</string>
 
     <!-- SimpleXAPI.kt -->
     <string name="error_saving_smp_servers">Ошибка при сохранении SMP серверов</string>

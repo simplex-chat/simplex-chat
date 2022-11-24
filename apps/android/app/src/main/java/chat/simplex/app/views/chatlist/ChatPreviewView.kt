@@ -26,7 +26,7 @@ import chat.simplex.app.views.chat.item.MarkdownText
 import chat.simplex.app.views.helpers.*
 
 @Composable
-fun ChatPreviewView(chat: Chat, chatModelIncognito: Boolean, currentUserProfileDisplayName: String?, stopped: Boolean) {
+fun ChatPreviewView(chat: Chat, chatModelIncognito: Boolean, currentUserProfileDisplayName: String?, stopped: Boolean, linkMode: SimplexLinkMode) {
   val cInfo = chat.chatInfo
 
   @Composable
@@ -86,6 +86,7 @@ fun ChatPreviewView(chat: Chat, chatModelIncognito: Boolean, currentUserProfileD
         ci.text,
         ci.formattedText,
         sender = if (cInfo is ChatInfo.Group && !ci.chatDir.sent) ci.memberDisplayName else null,
+        linkMode = linkMode,
         senderBold = true,
         metaText = null,
         maxLines = 2,
@@ -232,6 +233,6 @@ fun ChatStatusImage(chat: Chat) {
 @Composable
 fun PreviewChatPreviewView() {
   SimpleXTheme {
-    ChatPreviewView(Chat.sampleData, false, "", stopped = false)
+    ChatPreviewView(Chat.sampleData, false, "", stopped = false, linkMode = SimplexLinkMode.DESCRIPTION)
   }
 }
