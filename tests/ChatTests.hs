@@ -2263,6 +2263,7 @@ testUserContactLinkAutoAccept =
       concurrently_
         (dan <## "alice (Alice): contact is connected")
         (alice <## "dan (Daniel): contact is connected")
+      threadDelay 100000
       alice @@@ [("@dan", "Voice messages: enabled"), ("@cath", "hey"), ("@bob", "hey")]
       alice <##> dan
 
@@ -2989,6 +2990,7 @@ testUpdateGroupPrefs =
       bob <## "updated group preferences:"
       bob <## "full message deletion enabled: on"
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Full deletion: on")])
+      threadDelay 1000000
       alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"off\"}}}"
       alice <## "updated group preferences:"
       alice <## "full message deletion enabled: off"
@@ -2999,6 +3001,7 @@ testUpdateGroupPrefs =
       bob <## "full message deletion enabled: off"
       bob <## "voice messages enabled: off"
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Full deletion: on"), (0, "Full deletion: off"), (0, "Voice messages: off")])
+      threadDelay 1000000
       alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"on\"}}}"
       alice <## "updated group preferences:"
       alice <## "voice messages enabled: on"
@@ -3007,6 +3010,7 @@ testUpdateGroupPrefs =
       bob <## "updated group preferences:"
       bob <## "voice messages enabled: on"
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Full deletion: on"), (0, "Full deletion: off"), (0, "Voice messages: off"), (0, "Voice messages: on")])
+      threadDelay 1000000
       alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"on\"}}}"
       -- no update
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on")])

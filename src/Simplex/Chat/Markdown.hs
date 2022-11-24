@@ -47,7 +47,7 @@ data Format
   | Secret
   | Colored {color :: FormatColor}
   | Uri
-  | SimplexUri {mode :: SimplexUriType, originalUri :: Text, smpHosts :: NonEmpty Text}
+  | SimplexUri {mode :: SimplexUriType, simplexUri :: Text, smpHosts :: NonEmpty Text}
   | Email
   | Phone
   deriving (Eq, Show, Generic)
@@ -211,23 +211,21 @@ markdownP = mconcat <$> A.many' fragmentP
     wordMD s
       | T.null s = unmarked s
       | isUri s = case strDecode $ encodeUtf8 s of
-        Right cReq -> uncurry markdown $ simplexUri s cReq
+        Right cReq -> markdown (simplexUriFormat cReq) s
         _ -> markdown Uri s
       | isEmail s = markdown Email s
       | otherwise = unmarked s
     isUri s = T.length s >= 10 && any (`T.isPrefixOf` s) ["http://", "https://", "simplex:/"]
     isEmail s = T.any (== '@') s && Email.isValid (encodeUtf8 s)
     noFormat = pure . unmarked
-    simplexUri :: Text -> AConnectionRequestUri -> (Format, Text)
-    simplexUri originalUri = \case
+    simplexUriFormat :: AConnectionRequestUri -> Format
+    simplexUriFormat = \case
       ACR _ (CRContactUri crData) ->
-        ( SimplexUri (uriType crData) originalUri $ uriHosts crData,
-          safeDecodeUtf8 . strEncode $ CRContactUri crData {crScheme = CRSSimplex}
-        )
+        let uri = safeDecodeUtf8 . strEncode $ CRContactUri crData {crScheme = CRSSimplex}
+         in SimplexUri (uriType crData) uri $ uriHosts crData
       ACR _ (CRInvitationUri crData e2e) ->
-        ( SimplexUri XUriInvitation originalUri $ uriHosts crData,
-          safeDecodeUtf8 . strEncode $ CRInvitationUri crData {crScheme = CRSSimplex} e2e
-        )
+        let uri = safeDecodeUtf8 . strEncode $ CRInvitationUri crData {crScheme = CRSSimplex} e2e
+         in SimplexUri XUriInvitation uri $ uriHosts crData
       where
         uriHosts ConnReqUriData {crSmpQueues} = L.map (safeDecodeUtf8 . strEncode) $ sconcat $ L.map (host . qServer) crSmpQueues
         uriType ConnReqUriData {crClientData} = case crClientData >>= decodeJSON of
