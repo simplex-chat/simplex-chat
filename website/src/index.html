@@ -9,21 +9,21 @@ active_home: true
 
 {% include "hero.html" %}
 
-<section class="bg-secondary-bg-light dark:bg-secondary-bg-dark py-[85px] px-5">
+<section class="bg-secondary-bg-light dark:bg-secondary-bg-dark py-[90px] px-5">
     <div class="container">
-        <p class="text-grey-black dark:text-white text-[45px] text-center font-bold mb-[32px]">Why privacy <span class="gradient-text">matters</span></p>
-        <p class="text-center text-[20px] font-medium mb-[86px] text-black dark:text-white">Preserving the privacy of your metadata &mdash; <span class="text-active-blue">who you talk with</span> &mdash; protects you from:</p>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[20px] mb-[90px]">
+        <p class="text-grey-black dark:text-white text-[35px] leading-[45px] md:leading-[55px] lg:text-[45px] text-center font-bold mb-4 md:mb-8">Why privacy <span class="gradient-text">matters</span></p>
+        <p class="text-center text-[18px] md:text-[20px] font-medium mb-7 md:mb-16 lg:mb-20 text-black dark:text-white">Preserving the privacy of your metadata &mdash; <span class="text-active-blue">who you talk with</span> &mdash; protects you from:</p>
+        <div class="flex flex-col lg:flex-row gap-[20px] mb-[62px] lg:mb-[90px]">
 
             {% for section in why_privacy_matters.sections %}
-            <div class="bg-white dark:bg-transparent px-[34px] flex flex-col rounded-[12px] dark:rounded-[6px] shadow-[0px_50px_61px_rgba(0,0,0,0.12)] dark:shadow-none flex-[1] border-gradient">
-                <div class="flex items-center justify-center h-[215px]">
+            <div class="bg-white dark:bg-transparent px-[34px] flex flex-col md:flex-row lg:flex-col items-center rounded-[12px] dark:rounded-[6px] shadow-[0px_50px_61px_rgba(0,0,0,0.12)] dark:shadow-none flex-[1] border-gradient">
+                <div class="md:w-[30%] lg:w-full flex items-center justify-center h-[215px]">
                     <img src="{{ section.imgLight }}" alt="">
                 </div>
-                <div class="h-[152px] flex flex-col items-center justify-between">
-                    <p class="text-center font-medium leading-[28px] text-grey-black dark:text-white">{{ section.title }}</p>
+                <div class="md:w-[70%] lg:w-full flex flex-col items-center md:items-start lg:items-center gap-5 mb-[54px] md:mb-0 lg:mb-[54px]">
+                    <p class="font-medium text-xl text-center text-grey-black dark:text-white">{{ section.title }}</p>
                     {% if section.overlayContent %}
-                    <a href="javascript:void(0);" data-show-overlay="{{ section.overlayContent.overlayId }}" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] underline-offset-2 mb-[53px]">{{ section.overlayContent.linkText }}</a>
+                    <a href="javascript:void(0);" data-show-overlay="{{ section.overlayContent.overlayId }}" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] underline-offset-2">{{ section.overlayContent.linkText }}</a>
                     {{ overlay(section) }}
                     {% endif %}
                 </div>
