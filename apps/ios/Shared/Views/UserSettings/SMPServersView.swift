@@ -32,7 +32,7 @@ struct SMPServersView: View {
 
     enum SMPServerAlert: Identifiable {
         case testsFailed(failures: [String: SMPTestFailure])
-        case error(title: LocalizedStringKey, error: String = "")
+        case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
 
         var id: String {
             switch self {
@@ -235,7 +235,7 @@ struct SMPServersView: View {
                 await MainActor.run {
                     alert = .error(
                         title: "Error saving SMP servers",
-                        error: "Make sure SMP server addresses are in correct format, line separated and are not duplicated (\(responseError(error))."
+                        error: "Make sure SMP server addresses are in correct format, line separated and are not duplicated (\(responseError(error)))."
                     )
                 }
             }

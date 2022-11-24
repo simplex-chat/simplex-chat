@@ -16,7 +16,7 @@ struct UserAddress: View {
 
     private enum UserAddressAlert: Identifiable {
         case deleteAddress
-        case error(title: LocalizedStringKey, error: String = "")
+        case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
 
         var id: String {
             switch self {
@@ -73,7 +73,7 @@ struct UserAddress: View {
                             } catch let error {
                                 logger.error("UserAddress apiCreateUserAddress: \(responseError(error))")
                                 let a = getErrorAlert(error, "Error creating address")
-                                alert = .error(title: a.title, error: "\(a.message)")
+                                alert = .error(title: a.title, error: a.message)
                             }
                         }
                     } label: { Label("Create address", systemImage: "qrcode") }
@@ -107,7 +107,7 @@ struct UserAddress: View {
                         }, secondaryButton: .cancel()
                     )
                 case let .error(title, error):
-                    return Alert(title: Text(title), message: Text("\(error)"))
+                    return Alert(title: Text(title), message: Text(error))
                 }
             }
         }
