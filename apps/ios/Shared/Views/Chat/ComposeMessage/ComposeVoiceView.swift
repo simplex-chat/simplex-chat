@@ -50,6 +50,9 @@ struct ComposeVoiceView: View {
         .background(colorScheme == .light ? sentColorLight : sentColorDark)
         .frame(maxWidth: .infinity)
         .padding(.top, 8)
+        .onDisappear {
+            audioPlayer?.stop()
+        }
     }
 
     private func recordingMode() -> some View {
