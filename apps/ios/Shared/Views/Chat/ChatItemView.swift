@@ -31,6 +31,11 @@ struct ChatItemView: View {
         case .sndGroupEvent: eventItemView()
         case .rcvConnEvent: eventItemView()
         case .sndConnEvent: eventItemView()
+        case let .rcvChatFeature(feature, enabled): chatFeatureView(feature, enabled.iconColor)
+        case let .sndChatFeature(feature, enabled): chatFeatureView(feature, enabled.iconColor)
+        case let .rcvGroupFeature(feature, preference): chatFeatureView(feature, preference.enable.iconColor)
+        case let .sndGroupFeature(feature, preference): chatFeatureView(feature, preference.enable.iconColor)
+        case let .rcvChatFeatureRejected(feature): chatFeatureView(feature, .red)
         }
     }
 
@@ -56,6 +61,10 @@ struct ChatItemView: View {
 
     private func eventItemView() -> some View {
         CIEventView(chatItem: chatItem)
+    }
+
+    private func chatFeatureView(_ feature: Feature, _ iconColor: Color) -> some View {
+        CIChatFeatureView(chatItem: chatItem, feature: feature, iconColor: iconColor)
     }
 }
 

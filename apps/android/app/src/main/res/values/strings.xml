@@ -70,6 +70,14 @@
   <string name="error_deleting_contact_request">Error deleting contact request</string>
   <string name="error_deleting_pending_contact_connection">Error deleting pending contact connection</string>
   <string name="error_changing_address">Error changing address</string>
+  <string name="error_smp_test_failed_at_step">Test failed at step %s.</string>
+  <string name="error_smp_test_server_auth">Server requires authorization to create queues, check password</string>
+  <string name="error_smp_test_certificate">Possibly, certificate fingerprint in server address is incorrect</string>
+  <string name="smp_server_test_connect">Connect</string>
+  <string name="smp_server_test_create_queue">Create queue</string>
+  <string name="smp_server_test_secure_queue">Secure queue</string>
+  <string name="smp_server_test_delete_queue">Delete queue</string>
+  <string name="smp_server_test_disconnect">Disconnect</string>
 
   <!-- background service notice - SimpleXAPI.kt -->
   <string name="icon_descr_instant_notifications">Instant notifications</string>
@@ -235,6 +243,7 @@
   <string name="back">Back</string>
   <string name="cancel_verb">Cancel</string>
   <string name="confirm_verb">Confirm</string>
+  <string name="reset_verb">Reset</string>
   <string name="ok">OK</string>
   <string name="no_details">no details</string>
   <string name="add_contact">One-time invitation link</string>
@@ -368,17 +377,34 @@
   <string name="chat_lock">SimpleX Lock</string>
   <string name="chat_console">Chat console</string>
   <string name="smp_servers">SMP servers</string>
+  <string name="smp_servers_preset_address">Preset server address</string>
+  <string name="smp_servers_preset_add">Add preset servers</string>
+  <string name="smp_servers_add">Add server…</string>
+  <string name="smp_servers_test_server">Test server</string>
+  <string name="smp_servers_test_servers">Test servers</string>
+  <string name="smp_servers_save">Save servers</string>
+  <string name="smp_servers_test_failed">Server test failed!</string>
+  <string name="smp_servers_test_some_failed">Some servers failed the test:</string>
+  <string name="smp_servers_scan_qr">Scan server QR code</string>
+  <string name="smp_servers_enter_manually">Enter server manually</string>
+  <string name="smp_servers_preset_server">Preset server</string>
+  <string name="smp_servers_your_server">Your server</string>
+  <string name="smp_servers_your_server_address">Your server address</string>
+  <string name="smp_servers_use_server">Use server</string>
+  <string name="smp_servers_use_server_for_new_conn">Use for new connections</string>
+  <string name="smp_servers_add_to_another_device">Add to another device</string>
+  <string name="smp_servers_invalid_address">Invalid server address!</string>
+  <string name="smp_servers_check_address">Check server address and try again.</string>
+  <string name="smp_servers_delete_server">Delete server</string>
   <string name="install_simplex_chat_for_terminal">Install <xliff:g id="appNameFull">SimpleX Chat</xliff:g> for terminal</string>
   <string name="star_on_github">Star on GitHub</string>
   <string name="contribute">Contribute</string>
   <string name="rate_the_app">Rate the app</string>
   <string name="use_simplex_chat_servers__question">Use <xliff:g id="appNameFull">SimpleX Chat</xliff:g> servers?</string>
-  <string name="saved_SMP_servers_will_be_removed">Saved SMP servers will be removed.</string>
   <string name="your_SMP_servers">Your SMP servers</string>
-  <string name="configure_SMP_servers">Configure SMP servers</string>
   <string name="using_simplex_chat_servers">Using <xliff:g id="appNameFull">SimpleX Chat</xliff:g> servers.</string>
-  <string name="enter_one_SMP_server_per_line">SMP servers (one per line)</string>
   <string name="how_to">How to</string>
+  <string name="how_to_use_your_servers">How to use your servers</string>
   <string name="saved_ICE_servers_will_be_removed">Saved WebRTC ICE servers will be removed.</string>
   <string name="your_ICE_servers">Your ICE servers</string>
   <string name="configure_ICE_servers">Configure ICE servers</string>
