@@ -1547,7 +1547,7 @@ enum class FormatColor(val color: String) {
     red -> Color.Red
     green -> SimplexGreen
     blue -> SimplexBlue
-    yellow -> Color.Yellow
+    yellow -> WarningYellow
     cyan -> Color.Cyan
     magenta -> Color.Magenta
     black -> MaterialTheme.colors.onBackground

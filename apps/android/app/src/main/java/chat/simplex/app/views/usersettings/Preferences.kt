@@ -88,7 +88,7 @@ private fun FeatureSection(feature: Feature, allowFeature: State<FeatureAllowed>
         feature.text(),
         FeatureAllowed.values().map { it to it.text },
         allowFeature,
-        icon = feature.icon(),
+        icon = feature.icon(false),
         onSelected = onSelected
       )
     }

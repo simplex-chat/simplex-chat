@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.KeyboardVoice
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
@@ -2014,10 +2015,10 @@ enum class Feature {
       Voice -> generalGetString(R.string.voice_messages)
     }
 
-  fun icon() =
+  fun icon(filled: Boolean) =
     when(this) {
-      FullDelete -> Icons.Filled.DeleteForever
-      Voice -> Icons.Outlined.KeyboardVoice
+      FullDelete -> if (filled) Icons.Filled.DeleteForever else Icons.Outlined.DeleteForever
+      Voice -> if (filled) Icons.Filled.KeyboardVoice else Icons.Outlined.KeyboardVoice
     }
 
   fun allowDescription(allowed: FeatureAllowed): String =
