@@ -47,17 +47,17 @@ data Format
   | Secret
   | Colored {color :: FormatColor}
   | Uri
-  | SimplexUri {mode :: SimplexUriType, simplexUri :: Text, smpHosts :: NonEmpty Text}
+  | SimplexLink {linkType :: SimplexLinkType, simplexUri :: Text, smpHosts :: NonEmpty Text}
   | Email
   | Phone
   deriving (Eq, Show, Generic)
 
-data SimplexUriType = XUriContact | XUriInvitation | XUriGroup
+data SimplexLinkType = XLContact | XLInvitation | XLGroup
   deriving (Eq, Show, Generic)
 
-instance ToJSON SimplexUriType where
-  toJSON = J.genericToJSON . enumJSON $ dropPrefix "X"
-  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "X"
+instance ToJSON SimplexLinkType where
+  toJSON = J.genericToJSON . enumJSON $ dropPrefix "XL"
+  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "XL"
 
 colored :: Color -> Format
 colored = Colored . FormatColor
@@ -222,12 +222,12 @@ markdownP = mconcat <$> A.many' fragmentP
     simplexUriFormat = \case
       ACR _ (CRContactUri crData) ->
         let uri = safeDecodeUtf8 . strEncode $ CRContactUri crData {crScheme = CRSSimplex}
-         in SimplexUri (uriType crData) uri $ uriHosts crData
+         in SimplexLink (linkType' crData) uri $ uriHosts crData
       ACR _ (CRInvitationUri crData e2e) ->
         let uri = safeDecodeUtf8 . strEncode $ CRInvitationUri crData {crScheme = CRSSimplex} e2e
-         in SimplexUri XUriInvitation uri $ uriHosts crData
+         in SimplexLink XLInvitation uri $ uriHosts crData
       where
         uriHosts ConnReqUriData {crSmpQueues} = L.map (safeDecodeUtf8 . strEncode) $ sconcat $ L.map (host . qServer) crSmpQueues
-        uriType ConnReqUriData {crClientData} = case crClientData >>= decodeJSON of
-          Just (CRDataGroup _) -> XUriGroup
-          Nothing -> XUriContact
+        linkType' ConnReqUriData {crClientData} = case crClientData >>= decodeJSON of
+          Just (CRDataGroup _) -> XLGroup
+          Nothing -> XLContact
