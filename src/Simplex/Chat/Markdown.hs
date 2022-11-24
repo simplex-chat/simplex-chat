@@ -27,9 +27,10 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import GHC.Generics
-import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ConnReqScheme (..), ConnReqUriData (..), ConnectionMode (..), ConnectionRequestUri (..), SMPQueue (..))
+import Simplex.Chat.Types
+import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ConnReqScheme (..), ConnReqUriData (..), ConnectionRequestUri (..), SMPQueue (..))
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (fstToLower, sumTypeJSON)
+import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fstToLower, sumTypeJSON)
 import Simplex.Messaging.Protocol (ProtocolServer (..))
 import Simplex.Messaging.Util (safeDecodeUtf8)
 import System.Console.ANSI.Types
@@ -46,10 +47,17 @@ data Format
   | Secret
   | Colored {color :: FormatColor}
   | Uri
-  | SimplexUri {mode :: ConnectionMode, originalUri :: Text, smpHosts :: NonEmpty Text}
+  | SimplexUri {mode :: SimplexUriType, originalUri :: Text, smpHosts :: NonEmpty Text}
   | Email
   | Phone
   deriving (Eq, Show, Generic)
+
+data SimplexUriType = XUriContact | XUriInvitation | XUriGroup
+  deriving (Eq, Show, Generic)
+
+instance ToJSON SimplexUriType where
+  toJSON = J.genericToJSON . enumJSON $ dropPrefix "X"
+  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "X"
 
 colored :: Color -> Format
 colored = Colored . FormatColor
@@ -57,7 +65,9 @@ colored = Colored . FormatColor
 markdown :: Format -> Text -> Markdown
 markdown = Markdown . Just
 
-instance ToJSON Format where toEncoding = J.genericToEncoding $ sumTypeJSON fstToLower
+instance ToJSON Format where
+  toJSON = J.genericToJSON $ sumTypeJSON fstToLower
+  toEncoding = J.genericToEncoding $ sumTypeJSON fstToLower
 
 instance Semigroup Markdown where
   m <> (Markdown _ "") = m
@@ -211,12 +221,15 @@ markdownP = mconcat <$> A.many' fragmentP
     simplexUri :: Text -> AConnectionRequestUri -> (Format, Text)
     simplexUri originalUri = \case
       ACR _ (CRContactUri crData) ->
-        ( SimplexUri CMContact originalUri $ uriHosts crData,
+        ( SimplexUri (uriType crData) originalUri $ uriHosts crData,
           safeDecodeUtf8 . strEncode $ CRContactUri crData {crScheme = CRSSimplex}
         )
       ACR _ (CRInvitationUri crData e2e) ->
-        ( SimplexUri CMInvitation originalUri $ uriHosts crData,
+        ( SimplexUri XUriInvitation originalUri $ uriHosts crData,
           safeDecodeUtf8 . strEncode $ CRInvitationUri crData {crScheme = CRSSimplex} e2e
         )
       where
         uriHosts ConnReqUriData {crSmpQueues} = L.map (safeDecodeUtf8 . strEncode) $ sconcat $ L.map (host . qServer) crSmpQueues
+        uriType ConnReqUriData {crClientData} = case crClientData >>= decodeJSON of
+          Just (CRDataGroup _) -> XUriGroup
+          Nothing -> XUriContact
