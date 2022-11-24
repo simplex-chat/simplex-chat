@@ -24,7 +24,7 @@ fun CIChatFeatureView(
       if (enabled.forUser) SimplexGreen else if (enabled.forContact) WarningYellow else HighOrLowlight
     } else Color.Red
 
-    Icon(feature.icon(), feature.text(), Modifier.size(15.dp), tint = iconColor)
+    Icon(feature.icon(true), feature.text(), Modifier.size(15.dp), tint = iconColor)
     Text(
       chatEventText(chatItem),
       Modifier,
