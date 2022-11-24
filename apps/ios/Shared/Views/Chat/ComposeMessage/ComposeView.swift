@@ -13,6 +13,7 @@ enum ComposePreview {
     case noPreview
     case linkPreview(linkPreview: LinkPreview?)
     case imagePreviews(imagePreviews: [String])
+    case voicePreview(recordingFileName: String, duration: Int)
     case filePreview(fileName: String)
 }
 
@@ -22,10 +23,18 @@ enum ComposeContextItem {
     case editingItem(chatItem: ChatItem)
 }
 
+enum VoiceMessageRecordingState {
+    case noRecording
+    case recording
+    case finished
+}
+
 struct ComposeState {
     var message: String
     var preview: ComposePreview
     var contextItem: ComposeContextItem
+    var voiceMessageRecordingState: VoiceMessageRecordingState
+    var voiceMessageAllowed: Bool
     var inProgress = false
     var disabled = false
     var useLinkPreviews: Bool = UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
@@ -33,66 +42,87 @@ struct ComposeState {
     init(
         message: String = "",
         preview: ComposePreview = .noPreview,
-        contextItem: ComposeContextItem = .noContextItem
+        contextItem: ComposeContextItem = .noContextItem,
+        voiceMessageRecordingState: VoiceMessageRecordingState = .noRecording,
+        voiceMessageAllowed: Bool = true // TODO based on preference
     ) {
         self.message = message
         self.preview = preview
         self.contextItem = contextItem
+        self.voiceMessageRecordingState = voiceMessageRecordingState
+        self.voiceMessageAllowed = voiceMessageAllowed
     }
 
     init(editingItem: ChatItem) {
         self.message = editingItem.content.text
         self.preview = chatItemPreview(chatItem: editingItem)
         self.contextItem = .editingItem(chatItem: editingItem)
+        if let emc = editingItem.content.msgContent,
+           case .voice = emc {
+            self.voiceMessageRecordingState = .finished
+        } else {
+            self.voiceMessageRecordingState = .noRecording
+        }
+        self.voiceMessageAllowed = false
     }
 
     func copy(
         message: String? = nil,
         preview: ComposePreview? = nil,
-        contextItem: ComposeContextItem? = nil
+        contextItem: ComposeContextItem? = nil,
+        voiceMessageRecordingState: VoiceMessageRecordingState? = nil
     ) -> ComposeState {
         ComposeState(
             message: message ?? self.message,
             preview: preview ?? self.preview,
-            contextItem: contextItem ?? self.contextItem
+            contextItem: contextItem ?? self.contextItem,
+            voiceMessageRecordingState: voiceMessageRecordingState ?? self.voiceMessageRecordingState
         )
     }
 
-    func editing() -> Bool {
+    var editing: Bool {
         switch contextItem {
         case .editingItem: return true
         default: return false
         }
     }
 
-    func sendEnabled() -> Bool {
+    var sendEnabled: Bool {
         switch preview {
-        case .imagePreviews:
-            return true
-        case .filePreview:
-            return true
-        default:
-            return !message.isEmpty
+        case .imagePreviews: return true
+        case .voicePreview: return voiceMessageRecordingState == .finished
+        case .filePreview: return true
+        default: return !message.isEmpty
         }
     }
 
-    func linkPreviewAllowed() -> Bool {
+    var linkPreviewAllowed: Bool {
         switch preview {
-        case .imagePreviews:
-            return false
-        case .filePreview:
-            return false
-        default:
-            return useLinkPreviews
+        case .imagePreviews: return false
+        case .voicePreview: return false
+        case .filePreview: return false
+        default: return useLinkPreviews
         }
     }
 
-    func linkPreview() -> LinkPreview? {
+    var linkPreview: LinkPreview? {
         switch preview {
-        case let .linkPreview(linkPreview):
-            return linkPreview
-        default:
-            return nil
+        case let .linkPreview(linkPreview): return linkPreview
+        default: return nil
+        }
+    }
+
+    var voiceMessageRecordingFileName: String? {
+        switch preview {
+        case let .voicePreview(recordingFileName: recordingFileName, _): return recordingFileName
+        default: return nil
+        }
+    }
+
+    var noPreview: Bool {
+        switch preview {
+        case .noPreview: return true
+        default: return false
         }
     }
 }
@@ -104,8 +134,10 @@ func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
         chatItemPreview = .noPreview
     case let .link(_, preview: preview):
         chatItemPreview = .linkPreview(linkPreview: preview)
-    case let .image(_, image: image):
+    case let .image(_, image):
         chatItemPreview = .imagePreviews(imagePreviews: [image])
+    case let .voice(_, duration):
+        chatItemPreview = .voicePreview(recordingFileName: chatItem.file?.fileName ?? "", duration: duration)
     case .file:
         chatItemPreview = .filePreview(fileName: chatItem.file?.fileName ?? "")
     default:
@@ -131,12 +163,17 @@ struct ComposeView: View {
     @State var chosenImages: [UIImage] = []
     @State private var showFileImporter = false
     @State var chosenFile: URL? = nil
+
+    @State private var audioRecorder: AudioRecorder?
+    @State private var voiceMessageRecordingTime: TimeInterval?
+    @State private var startingRecording: Bool = false
     
     var body: some View {
         VStack(spacing: 0) {
             contextItemView()
-            switch (composeState.editing(), composeState.preview) {
+            switch (composeState.editing, composeState.preview) {
                 case (true, .filePreview): EmptyView()
+                case (true, .voicePreview): EmptyView() // ? we may allow playback when editing is allowed
                 default: previewView()
             }
             HStack (alignment: .bottom) {
@@ -146,7 +183,7 @@ struct ComposeView: View {
                     Image(systemName: "paperclip")
                         .resizable()
                 }
-                .disabled(composeState.editing())
+                .disabled(composeState.editing || composeState.voiceMessageRecordingState != .noRecording)
                 .frame(width: 25, height: 25)
                 .padding(.bottom, 12)
                 .padding(.leading, 12)
@@ -156,6 +193,12 @@ struct ComposeView: View {
                         sendMessage()
                         resetLinkPreview()
                     },
+                    startVoiceMessageRecording: {
+                        Task {
+                            await startVoiceMessageRecording()
+                        }
+                    },
+                    finishVoiceMessageRecording: { finishVoiceMessageRecording() },
                     keyboardVisible: $keyboardVisible
                 )
                 .padding(.trailing, 12)
@@ -163,7 +206,7 @@ struct ComposeView: View {
             }
         }
         .onChange(of: composeState.message) { _ in
-            if composeState.linkPreviewAllowed() {
+            if composeState.linkPreviewAllowed {
                 if composeState.message.count > 0 {
                     showLinkPreview(composeState.message)
                 } else {
@@ -250,6 +293,21 @@ struct ComposeView: View {
                 }
             }
         }
+        .onDisappear {
+            audioRecorder?.stop()
+            if let fileName = composeState.voiceMessageRecordingFileName {
+                cancelVoiceMessageRecording(fileName)
+            }
+        }
+        .onChange(of: chatModel.stopPreviousRecPlay) { _ in
+            if !startingRecording {
+                if composeState.voiceMessageRecordingState == .recording {
+                    finishVoiceMessageRecording()
+                }
+            } else {
+                startingRecording = false
+            }
+        }
     }
 
     @ViewBuilder func previewView() -> some View {
@@ -265,7 +323,15 @@ struct ComposeView: View {
                     composeState = composeState.copy(preview: .noPreview)
                     chosenImages = []
                 },
-                cancelEnabled: !composeState.editing())
+                cancelEnabled: !composeState.editing)
+        case let .voicePreview(recordingFileName, _):
+            ComposeVoiceView(
+                recordingFileName: recordingFileName,
+                recordingTime: $voiceMessageRecordingTime,
+                recordingState: $composeState.voiceMessageRecordingState,
+                cancelVoiceMessage: { cancelVoiceMessageRecording($0) },
+                cancelEnabled: !composeState.editing
+            )
         case let .filePreview(fileName: fileName):
             ComposeFileView(
                 fileName: fileName,
@@ -273,7 +339,7 @@ struct ComposeView: View {
                     composeState = composeState.copy(preview: .noPreview)
                     chosenFile = nil
                 },
-                cancelEnabled: !composeState.editing())
+                cancelEnabled: !composeState.editing)
         }
     }
 
@@ -354,6 +420,8 @@ struct ComposeView: View {
                     if !sent {
                         await send(.text(composeState.message), quoted: quoted)
                     }
+                case let .voicePreview(recordingFileName, duration):
+                    await send(.voice(text: composeState.message, duration: duration), quoted: quoted, file: recordingFileName)
                 case .filePreview:
                     if let fileURL = chosenFile,
                        let savedFile = saveFileFromURL(fileURL) {
@@ -386,6 +454,57 @@ struct ComposeView: View {
         }
     }
 
+    private func startVoiceMessageRecording() async {
+        startingRecording = true
+        chatModel.stopPreviousRecPlay.toggle()
+        let fileName = generateNewFileName("voice", "m4a")
+        audioRecorder = AudioRecorder(
+            onTimer: { voiceMessageRecordingTime = $0 },
+            onFinishRecording: {
+                updateComposeVMRFinished()
+                if let fileSize = fileSize(getAppFilePath(fileName)) {
+                    logger.debug("onFinishRecording recording file size = \(fileSize)")
+                }
+            }
+        )
+        if let err = await audioRecorder?.start(fileName: fileName) {
+            print(err) // TODO show alert
+        } else {
+            composeState = composeState.copy(
+                preview: .voicePreview(recordingFileName: fileName, duration: 0),
+                voiceMessageRecordingState: .recording
+            )
+        }
+    }
+
+    private func finishVoiceMessageRecording() {
+        audioRecorder?.stop()
+        audioRecorder = nil
+        updateComposeVMRFinished()
+        if let fileName = composeState.voiceMessageRecordingFileName,
+           let fileSize = fileSize(getAppFilePath(fileName)) {
+            logger.debug("finishVoiceMessageRecording recording file size = \(fileSize)")
+        }
+    }
+
+    // ? maybe we shouldn't have duration in ComposePreview.voicePreview
+    private func updateComposeVMRFinished() {
+        var preview = composeState.preview
+        if let recordingFileName = composeState.voiceMessageRecordingFileName,
+           let recordingTime = voiceMessageRecordingTime {
+            preview = .voicePreview(recordingFileName: recordingFileName, duration: Int(recordingTime.rounded()))
+        }
+        composeState = composeState.copy(
+            preview: preview,
+            voiceMessageRecordingState: .finished
+        )
+    }
+
+    private func cancelVoiceMessageRecording(_ fileName: String) {
+        removeFile(fileName)
+        clearState()
+    }
+
     private func clearState() {
         composeState = ComposeState()
         linkUrl = nil
@@ -394,6 +513,9 @@ struct ComposeView: View {
         cancelledLinks = []
         chosenImages = []
         chosenFile = nil
+        audioRecorder?.stop()
+        audioRecorder = nil
+        voiceMessageRecordingTime = nil
     }
 
     private func updateMsgContent(_ msgContent: MsgContent) -> MsgContent {
@@ -404,6 +526,8 @@ struct ComposeView: View {
             return checkLinkPreview()
         case .image(_, let image):
             return .image(text: composeState.message, image: image)
+        case .voice(_, let duration):
+            return .voice(text: composeState.message, duration: duration)
         case .file:
             return .file(composeState.message)
         case .unknown(let type, _):
@@ -415,7 +539,7 @@ struct ComposeView: View {
         prevLinkUrl = linkUrl
         linkUrl = parseMessage(s)
         if let url = linkUrl {
-            if url != composeState.linkPreview()?.uri && url != pendingLinkUrl {
+            if url != composeState.linkPreview?.uri && url != pendingLinkUrl {
                 pendingLinkUrl = url
                 if prevLinkUrl == url {
                     loadLinkPreview(url)
@@ -444,7 +568,7 @@ struct ComposeView: View {
     }
 
     private func cancelLinkPreview() {
-        if let uri = composeState.linkPreview()?.uri.absoluteString {
+        if let uri = composeState.linkPreview?.uri.absoluteString {
             cancelledLinks.insert(uri)
         }
         pendingLinkUrl = nil
@@ -499,11 +623,13 @@ struct ComposeView_Previews: PreviewProvider {
                 composeState: $composeState,
                 keyboardVisible: $keyboardVisible
             )
+            .environmentObject(ChatModel())
             ComposeView(
                 chat: chat,
                 composeState: $composeState,
                 keyboardVisible: $keyboardVisible
             )
+            .environmentObject(ChatModel())
         }
     }
 }

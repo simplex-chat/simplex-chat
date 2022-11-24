@@ -12,6 +12,9 @@ import SimpleXChat
 struct SendMessageView: View {
     @Binding var composeState: ComposeState
     var sendMessage: () -> Void
+    var startVoiceMessageRecording: (() -> Void)? = nil
+    var finishVoiceMessageRecording: (() -> Void)? = nil
+    @State private var longPressingVMR = false
     @Namespace var namespace
     @FocusState.Binding var keyboardVisible: Bool
     @State private var teHeight: CGFloat = 42
@@ -23,24 +26,34 @@ struct SendMessageView: View {
         ZStack {
             HStack(alignment: .bottom) {
                 ZStack(alignment: .leading) {
-                    let alignment: TextAlignment = isRightToLeft(composeState.message) ? .trailing : .leading
-                    Text(composeState.message)
-                        .lineLimit(10)
-                        .font(teFont)
-                        .multilineTextAlignment(alignment)
-                        .foregroundColor(.clear)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 8)
-                        .matchedGeometryEffect(id: "te", in: namespace)
-                        .background(GeometryReader(content: updateHeight))
-                    TextEditor(text: $composeState.message)
-                        .focused($keyboardVisible)
-                        .font(teFont)
-                        .textInputAutocapitalization(.sentences)
-                        .multilineTextAlignment(alignment)
-                        .padding(.horizontal, 5)
-                        .allowsTightening(false)
-                        .frame(height: teHeight)
+                    if case .voicePreview = composeState.preview {
+                        Text("Voice message…")
+                            .font(teFont.italic())
+                            .multilineTextAlignment(.leading)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 8)
+                            .frame(maxWidth: .infinity)
+                    } else {
+                        let alignment: TextAlignment = isRightToLeft(composeState.message) ? .trailing : .leading
+                        Text(composeState.message)
+                            .lineLimit(10)
+                            .font(teFont)
+                            .multilineTextAlignment(alignment)
+                            .foregroundColor(.clear)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 8)
+                            .matchedGeometryEffect(id: "te", in: namespace)
+                            .background(GeometryReader(content: updateHeight))
+                        TextEditor(text: $composeState.message)
+                            .focused($keyboardVisible)
+                            .font(teFont)
+                            .textInputAutocapitalization(.sentences)
+                            .multilineTextAlignment(alignment)
+                            .padding(.horizontal, 5)
+                            .allowsTightening(false)
+                            .frame(height: teHeight)
+                    }
                 }
 
                 if (composeState.inProgress) {
@@ -49,14 +62,18 @@ struct SendMessageView: View {
                         .frame(width: 31, height: 31, alignment: .center)
                         .padding([.bottom, .trailing], 3)
                 } else {
-                    Button(action: { sendMessage() }) {
-                        Image(systemName: composeState.editing() ? "checkmark.circle.fill" : "arrow.up.circle.fill")
-                            .resizable()
-                            .foregroundColor(.accentColor)
+                    let vmrs = composeState.voiceMessageRecordingState
+                    if composeState.voiceMessageAllowed,
+                       composeState.message.isEmpty,
+                       !composeState.editing,
+                       (composeState.noPreview && vmrs == .noRecording)
+                        || (vmrs == .recording && longPressingVMR) {
+                        recordVoiceMessageButton()
+                    } else if vmrs == .recording && !longPressingVMR {
+                        finishVoiceMessageRecordingButton()
+                    } else {
+                        sendMessageButton()
                     }
-                    .disabled(!composeState.sendEnabled() || composeState.disabled)
-                    .frame(width: 29, height: 29)
-                    .padding([.bottom, .trailing], 4)
                 }
             }
 
@@ -67,14 +84,60 @@ struct SendMessageView: View {
         .padding(.vertical, 8)
     }
 
-    func updateHeight(_ g: GeometryProxy) -> Color {
+    private func sendMessageButton() -> some View {
+        Button(action: { sendMessage() }) {
+            Image(systemName: composeState.editing ? "checkmark.circle.fill" : "arrow.up.circle.fill")
+                .resizable()
+                .foregroundColor(.accentColor)
+        }
+        .disabled(!composeState.sendEnabled || composeState.disabled)
+        .frame(width: 29, height: 29)
+        .padding([.bottom, .trailing], 4)
+    }
+
+    private func recordVoiceMessageButton() -> some View {
+        Button(action: {
+            if !longPressingVMR {
+                startVoiceMessageRecording?()
+            } else {
+                finishVoiceMessageRecording?()
+            }
+            longPressingVMR = false
+        }) {
+            Image(systemName: "mic")
+                .foregroundColor(.secondary)
+        }
+        .simultaneousGesture(
+            LongPressGesture()
+                .onEnded { _ in
+                    longPressingVMR = true
+                    startVoiceMessageRecording?()
+                }
+        )
+        .disabled(composeState.disabled)
+        .frame(width: 29, height: 29)
+        .padding([.bottom, .trailing], 4)
+
+    }
+
+    private func finishVoiceMessageRecordingButton() -> some View {
+        Button(action: { finishVoiceMessageRecording?() }) {
+            Image(systemName: "stop.fill")
+                .foregroundColor(.accentColor)
+        }
+        .disabled(composeState.disabled)
+        .frame(width: 29, height: 29)
+        .padding([.bottom, .trailing], 4)
+    }
+
+    private func updateHeight(_ g: GeometryProxy) -> Color {
         DispatchQueue.main.async {
             teHeight = min(max(g.frame(in: .local).size.height, minHeight), maxHeight)
             teFont = isShortEmoji(composeState.message)
             ? composeState.message.count < 4
-                    ? largeEmojiFont
-                    : mediumEmojiFont
-                : .body
+            ? largeEmojiFont
+            : mediumEmojiFont
+            : .body
         }
         return Color.clear
     }

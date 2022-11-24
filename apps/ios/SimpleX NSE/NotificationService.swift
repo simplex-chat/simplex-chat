@@ -223,8 +223,15 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, UNMutableNotification
                let inline = privacyTransferImagesInlineGroupDefault.get()
                cItem = apiReceiveFile(fileId: file.fileId, inline: inline)?.chatItem ?? cItem
            }
-        }
-        return cItem.isCall() ? nil : (aChatItem.chatId, createMessageReceivedNtf(cInfo, cItem))
+        } else if case .voice = cItem.content.msgContent { // TODO check inlineFileMode != IFMSent
+            if let file = cItem.file,
+               file.fileSize <= maxImageSize,
+               privacyAcceptImagesGroupDefault.get() {
+                let inline = privacyTransferImagesInlineGroupDefault.get()
+                cItem = apiReceiveFile(fileId: file.fileId, inline: inline)?.chatItem ?? cItem
+            }
+         }
+        return cItem.isCall ? nil : (aChatItem.chatId, createMessageReceivedNtf(cInfo, cItem))
     case let .callInvitation(invitation):
         return (invitation.contact.id, createCallInvitationNtf(invitation))
     default:
