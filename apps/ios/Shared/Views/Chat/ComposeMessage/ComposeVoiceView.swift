@@ -37,6 +37,8 @@ struct ComposeVoiceView: View {
     @State var playbackState: VoiceMessagePlaybackState = .noPlayback
     @State var playbackTime: TimeInterval?
 
+    private static let previewHeight: CGFloat = 50
+
     var body: some View {
         ZStack {
             if recordingState != .finished {
@@ -46,7 +48,7 @@ struct ComposeVoiceView: View {
             }
         }
         .padding(.vertical, 1)
-        .frame(height: 50)
+        .frame(height: ComposeVoiceView.previewHeight)
         .background(colorScheme == .light ? sentColorLight : sentColorDark)
         .frame(maxWidth: .infinity)
         .padding(.top, 8)
@@ -136,10 +138,13 @@ struct ComposeVoiceView: View {
 
         var body: some View {
             GeometryReader { geometry in
-                Rectangle()
-                    .frame(width: min(CGFloat((progress ?? TimeInterval(0)) / length) * geometry.size.width, geometry.size.width), height: 2)
-                    .foregroundColor(.accentColor)
-                    .animation(.linear, value: progress)
+                ZStack {
+                    Rectangle()
+                        .fill(Color.accentColor)
+                        .frame(width: min(CGFloat((progress ?? TimeInterval(0)) / length) * geometry.size.width, geometry.size.width), height: 4)
+                        .animation(.linear, value: progress)
+                }
+                .frame(height: ComposeVoiceView.previewHeight - 1, alignment: .bottom) // minus 1 is for bottom padding
             }
         }
     }
@@ -149,11 +154,25 @@ struct ComposeVoiceView: View {
             onTimer: { playbackTime = $0 },
             onFinishPlayback: {
                 playbackState = .noPlayback
-                playbackTime = TimeInterval(0)
+                playbackTime = recordingTime // animate progress bar to the end
             }
         )
         audioPlayer?.start(fileName: recordingFileName)
         playbackTime = TimeInterval(0)
         playbackState = .playing
+    }
+}
+
+struct ComposeVoiceView_Previews: PreviewProvider {
+    static var previews: some View {
+        ComposeVoiceView(
+            recordingFileName: "voice.m4a",
+            recordingTime: Binding.constant(TimeInterval(30)),
+            recordingState: Binding.constant(VoiceMessageRecordingState.finished),
+            cancelVoiceMessage: { _ in },
+            cancelEnabled: true,
+            playbackState: VoiceMessagePlaybackState.playing,
+            playbackTime: TimeInterval(20)
+        )
     }
 }
