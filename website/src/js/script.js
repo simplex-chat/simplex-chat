@@ -23,33 +23,33 @@ const isMobile = {
 
 const privateSwiper = new Swiper('.private-swiper', {
     slidesPerView: 1,
+    slidesPerGroup: 1,
     spaceBetween: 20,
-    // autoplay: {
-    //     delay: 3000,
-    // },
-
-    direction: 'horizontal',
     scrollbar: {
-        el: ".swiper-scrollbar",
+        el: '.swiper-scrollbar',
+        draggable: true,
+        snapOnRelease: true,
         dragSize: 100,
     },
-
+    direction: 'horizontal',
     navigation: {
         nextEl: '.private-swiper-button-next',
         prevEl: '.private-swiper-button-prev',
     },
-
     breakpoints: {
         1280: {
             slidesPerView: 4,
+            slidesPerGroup: 4,
             spaceBetween: 20,
         },
         1024: {
             slidesPerView: 3,
+            slidesPerGroup: 3,
             spaceBetween: 20,
         },
         768: {
             slidesPerView: 2,
+            slidesPerGroup: 2,
             spaceBetween: 20,
         }
     },

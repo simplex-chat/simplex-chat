@@ -358,7 +358,7 @@ header nav {
 }
 
 .swiper-scrollbar-drag {
-  width: 112px !important;
+  /* width: 112px !important; */
   height: 8px !important;
   background-color: #0197FF;
 }
@@ -388,24 +388,24 @@ header nav {
   transform: translateY(40px);
 }
 
-.card:hover > div:nth-child(1) {
+.card:not(.no-hover):hover > div:nth-child(1) {
   height: 200px;
   padding: 12px 10px;
 }
-.card:hover > div:nth-child(2) {
+.card:not(.no-hover):hover > div:nth-child(2) {
   height: 270px;
   padding: 8px 24px;
 }
 .card.card-active > div:nth-child(2) {
-  height: 470px;
+  height: 480px;
 }
 
-.card:hover > div:nth-child(2) > *:nth-child(2),
-.card:hover > div:nth-child(2) > *:nth-child(3),
+.card:not(.no-hover):hover > div:nth-child(2) > *:nth-child(2),
+.card:not(.no-hover):hover > div:nth-child(2) > *:nth-child(3),
 .card.card-active > div:nth-child(2) > *:nth-child(2),
 .card.card-active > div:nth-child(2) > *:nth-child(3) {
   opacity: 1;
-  max-height: 470px;
+  max-height: 480px;
   transform: translateY(0px);
 }
 

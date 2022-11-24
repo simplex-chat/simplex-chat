@@ -58,15 +58,15 @@ active_home: true
 </section>
 
 {# what makes simplex private #}
-<section id="privacy" class="bg-primary-bg-light dark:bg-primary-bg-dark py-[85px] overflow-hidden px-5">
+<section id="privacy" class="bg-primary-bg-light dark:bg-primary-bg-dark py-[90px] overflow-hidden px-5">
     <div class="container scale-100">
-        <p class="text-grey-black dark:text-white text-[45px] text-center font-bold mb-[60px]">What makes SimpleX <span class="gradient-text">private</span></p>
+        <p class="text-grey-black dark:text-white text-[35px] leading-[45px] md:leading-[55px] lg:text-[45px] text-center font-bold mb-20">What makes SimpleX <span class="gradient-text">private</span></p>
 
         <div class="swiper private-swiper overflow-hidden px-4 py-2">
-            <div class="swiper-wrapper mb-14">
+            <div class="swiper-wrapper mb-16">
 
                 {% for section in what_makes_simplex_private.sections %}
-                <div class="card swiper-slide relative h-[470px] rounded-[20px] bg-card-bg-light dark:bg-card-bg-dark border-[#859096] border-solid border-[1px] dark:border-none shadow-[2px_2px_0px_#859096] dark:shadow-none overflow-hidden">
+                <div class="card swiper-slide relative h-[480px] rounded-[20px] bg-card-bg-light dark:bg-card-bg-dark border-[#859096] border-solid border-[1px] dark:border-none shadow-[2px_2px_0px_#859096] dark:shadow-none overflow-hidden">
                     <div class="flex items-center justify-center py-12 px-6 h-[322px]">
                         <img class="w-full max-w-[223px] h-full max-h-[226px] dark:hidden" src="{{ section.imgLight }}" alt=""/>
                         <img class="w-full max-w-[223px] h-full max-h-[226px] hidden dark:block" src="{{ section.imgDark }}" alt=""/>
