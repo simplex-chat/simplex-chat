@@ -127,7 +127,7 @@ struct ComposeVoiceView: View {
         }
     }
 
-    struct ProgressBar: View {
+    private struct ProgressBar: View {
         var length: TimeInterval
         @Binding var progress: TimeInterval?
 

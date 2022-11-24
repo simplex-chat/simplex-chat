@@ -14,6 +14,7 @@ struct SendMessageView: View {
     var sendMessage: () -> Void
     var startVoiceMessageRecording: (() -> Void)? = nil
     var finishVoiceMessageRecording: (() -> Void)? = nil
+    @State private var longPressingVMR = false
     @Namespace var namespace
     @FocusState.Binding var keyboardVisible: Bool
     @State private var teHeight: CGFloat = 42
@@ -54,7 +55,7 @@ struct SendMessageView: View {
                             .frame(height: teHeight)
                     }
                 }
-                
+
                 if (composeState.inProgress) {
                     ProgressView()
                         .scaleEffect(1.4)
@@ -65,17 +66,17 @@ struct SendMessageView: View {
                     if composeState.voiceMessageAllowed,
                        composeState.message.isEmpty,
                        !composeState.editing,
-                       case .noPreview = composeState.preview,
-                       vmrs == .noRecording {
-                        startVoiceMessageRecordingButton()
-                    } else if vmrs == .recording {
+                       (composeState.noPreview && vmrs == .noRecording)
+                        || (vmrs == .recording && longPressingVMR) {
+                        recordVoiceMessageButton()
+                    } else if vmrs == .recording && !longPressingVMR {
                         finishVoiceMessageRecordingButton()
                     } else {
                         sendMessageButton()
                     }
                 }
             }
-            
+
             RoundedRectangle(cornerSize: CGSize(width: 20, height: 20))
                 .strokeBorder(.secondary, lineWidth: 0.3, antialiased: true)
                 .frame(height: teHeight)
@@ -83,7 +84,7 @@ struct SendMessageView: View {
         .padding(.vertical, 8)
     }
 
-    func sendMessageButton() -> some View {
+    private func sendMessageButton() -> some View {
         Button(action: { sendMessage() }) {
             Image(systemName: composeState.editing ? "checkmark.circle.fill" : "arrow.up.circle.fill")
                 .resizable()
@@ -94,17 +95,32 @@ struct SendMessageView: View {
         .padding([.bottom, .trailing], 4)
     }
 
-    func startVoiceMessageRecordingButton() -> some View {
-        Button(action: { startVoiceMessageRecording?() }) {
+    private func recordVoiceMessageButton() -> some View {
+        Button(action: {
+            if !longPressingVMR {
+                startVoiceMessageRecording?()
+            } else {
+                finishVoiceMessageRecording?()
+            }
+            longPressingVMR = false
+        }) {
             Image(systemName: "mic")
                 .foregroundColor(.secondary)
         }
+        .simultaneousGesture(
+            LongPressGesture()
+                .onEnded { _ in
+                    longPressingVMR = true
+                    startVoiceMessageRecording?()
+                }
+        )
         .disabled(composeState.disabled)
         .frame(width: 29, height: 29)
         .padding([.bottom, .trailing], 4)
+
     }
 
-    func finishVoiceMessageRecordingButton() -> some View {
+    private func finishVoiceMessageRecordingButton() -> some View {
         Button(action: { finishVoiceMessageRecording?() }) {
             Image(systemName: "stop.fill")
                 .foregroundColor(.accentColor)
@@ -114,14 +130,14 @@ struct SendMessageView: View {
         .padding([.bottom, .trailing], 4)
     }
 
-    func updateHeight(_ g: GeometryProxy) -> Color {
+    private func updateHeight(_ g: GeometryProxy) -> Color {
         DispatchQueue.main.async {
             teHeight = min(max(g.frame(in: .local).size.height, minHeight), maxHeight)
             teFont = isShortEmoji(composeState.message)
             ? composeState.message.count < 4
-                    ? largeEmojiFont
-                    : mediumEmojiFont
-                : .body
+            ? largeEmojiFont
+            : mediumEmojiFont
+            : .body
         }
         return Color.clear
     }

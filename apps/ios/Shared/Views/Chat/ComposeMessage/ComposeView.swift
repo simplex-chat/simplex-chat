@@ -91,10 +91,10 @@ struct ComposeState {
         switch preview {
         case .imagePreviews:
             return true
-        case .filePreview:
-            return true
         case .voicePreview:
             return voiceMessageRecordingState == .finished
+        case .filePreview:
+            return true
         default:
             return !message.isEmpty
         }
@@ -103,6 +103,8 @@ struct ComposeState {
     var linkPreviewAllowed: Bool {
         switch preview {
         case .imagePreviews:
+            return false
+        case .voicePreview:
             return false
         case .filePreview:
             return false
@@ -126,6 +128,15 @@ struct ComposeState {
             return recordingFileName
         default:
             return nil
+        }
+    }
+
+    var noPreview: Bool {
+        switch preview {
+        case .noPreview:
+            return true
+        default:
+            return false
         }
     }
 }

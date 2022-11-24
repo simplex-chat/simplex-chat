@@ -146,12 +146,12 @@ struct VoiceMessagePlayer: View {
                 .clipShape(Circle())
             if recordingTime > 0 {
                 ProgressCircle(length: recordingTime, progress: $playbackTime)
-                    .frame(width: 54, height: 54) // this + ProgressCircle lineWidth = background circle diameter
+                    .frame(width: 52, height: 52) // this + ProgressCircle lineWidth = background circle diameter
             }
         }
     }
 
-    struct ProgressCircle: View {
+    private struct ProgressCircle: View {
         var length: TimeInterval
         @Binding var progress: TimeInterval?
 
@@ -161,7 +161,7 @@ struct VoiceMessagePlayer: View {
                 .stroke(
                     Color.accentColor,
                     style: StrokeStyle(
-                        lineWidth: 2,
+                        lineWidth: 4,
                         lineCap: .round
                     )
                 )
