@@ -89,20 +89,25 @@ struct VoiceMessagePlayer: View {
     @Binding var playbackTime: TimeInterval?
 
     var body: some View {
-        if let recordingFile = recordingFile {
-            switch recordingFile.fileStatus {
-            case .sndStored: playbackButton()
-            case .sndTransfer: playbackButton()
-            case .sndComplete: playbackButton()
-            case .sndCancelled: playbackButton()
-            case .rcvInvitation: loadingIcon()
-            case .rcvAccepted: loadingIcon()
-            case .rcvTransfer: loadingIcon()
-            case .rcvComplete: playbackButton()
-            case .rcvCancelled: playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
+        ZStack {
+            if let recordingFile = recordingFile {
+                switch recordingFile.fileStatus {
+                case .sndStored: playbackButton()
+                case .sndTransfer: playbackButton()
+                case .sndComplete: playbackButton()
+                case .sndCancelled: playbackButton()
+                case .rcvInvitation: loadingIcon()
+                case .rcvAccepted: loadingIcon()
+                case .rcvTransfer: loadingIcon()
+                case .rcvComplete: playbackButton()
+                case .rcvCancelled: playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
+                }
+            } else {
+                playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
             }
-        } else {
-            playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
+        }
+        .onDisappear {
+            audioPlayer?.stop()
         }
     }
 
@@ -160,11 +165,9 @@ struct VoiceMessagePlayer: View {
                 .trim(from: 0, to: ((progress ?? TimeInterval(0)) / length))
                 .stroke(
                     Color.accentColor,
-                    style: StrokeStyle(
-                        lineWidth: 4,
-                        lineCap: .round
-                    )
+                    style: StrokeStyle(lineWidth: 4)
                 )
+                .rotationEffect(.degrees(-90))
                 .animation(.linear, value: progress)
         }
     }

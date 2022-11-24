@@ -497,7 +497,7 @@ struct ChatView: View {
                     deletingItem = ci
                 }
             )
-        } else {
+        } else if ci.isDeletedContent {
             menu.append(
                 UIAction(
                     title: NSLocalizedString("Delete", comment: "chat item action"),
