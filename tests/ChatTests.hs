@@ -27,7 +27,7 @@ import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.Chat.Types
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Util (unlessM)
-import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
+import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist, doesFileExist)
 import System.FilePath ((</>))
 import Test.Hspec
 
@@ -2900,6 +2900,12 @@ testSetConnectionAlias = testChat2 aliceProfile bobProfile $
 testSetContactPrefs :: IO ()
 testSetContactPrefs = testChat2 aliceProfile bobProfile $
   \alice bob -> do
+    alice #$> ("/_files_folder ./tests/tmp/alice", id, "ok")
+    bob #$> ("/_files_folder ./tests/tmp/bob", id, "ok")
+    createDirectoryIfMissing True "./tests/tmp/alice"
+    createDirectoryIfMissing True "./tests/tmp/bob"
+    copyFile "./tests/fixtures/test.txt" "./tests/tmp/alice/test.txt"
+    copyFile "./tests/fixtures/test.txt" "./tests/tmp/bob/test.txt"
     bob ##> "/_profile {\"displayName\": \"bob\", \"fullName\": \"Bob\", \"preferences\": {\"voice\": {\"allow\": \"no\"}}}"
     bob <## "profile image removed"
     bob <## "updated preferences:"
@@ -2912,7 +2918,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     let startFeatures = [(0, "Full deletion: off"), (0, "Voice messages: off")]
     alice #$> ("/_get chat @2 count=100", chat, startFeatures)
     bob #$> ("/_get chat @2 count=100", chat, startFeatures)
-    let sendVoice = "/_send @2 json {\"filePath\": \"./tests/fixtures/test.txt\", \"msgContent\": {\"type\": \"voice\", \"text\": \"\", \"duration\": 10}}"
+    let sendVoice = "/_send @2 json {\"filePath\": \"test.txt\", \"msgContent\": {\"type\": \"voice\", \"text\": \"\", \"duration\": 10}}"
         voiceNotAllowed = "bad chat command: feature not allowed Voice messages"
     alice ##> sendVoice
     alice <## voiceNotAllowed
@@ -2929,7 +2935,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     alice <## voiceNotAllowed
     bob ##> sendVoice
     bob <# "@alice voice message (00:10)"
-    bob <# "/f @alice ./tests/fixtures/test.txt"
+    bob <# "/f @alice test.txt"
     bob <## "completed sending file 1 (test.txt) to alice"
     alice <# "bob> voice message (00:10)"
     alice <# "bob> sends file test.txt (11 bytes / 11 bytes)"

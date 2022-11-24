@@ -41,6 +41,12 @@
     <string name="description_via_one_time_link">через одноразовую ссылку</string>
     <string name="description_via_one_time_link_incognito">инкогнито через одноразовую ссылку</string>
 
+    <!-- FormattedText, SimpleX links - ChatModel.kt -->
+    <string name="simplex_link_contact">SimpleX ссылка-контакт</string>
+    <string name="simplex_link_invitation">SimpleX одноразовая ссылка</string>
+    <string name="simplex_link_group">SimpleX ссылка группы</string>
+    <string name="simplex_link_connection">через <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g></string>
+
     <!-- SimpleXAPI.kt -->
     <string name="error_saving_smp_servers">Ошибка при сохранении SMP серверов</string>
     <string name="ensure_smp_server_address_are_correct_format_and_unique">Пожалуйста, проверьте, что адреса SMP серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется.</string>
