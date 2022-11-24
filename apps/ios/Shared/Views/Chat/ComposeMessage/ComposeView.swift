@@ -295,6 +295,9 @@ struct ComposeView: View {
         }
         .onDisappear {
             audioRecorder?.stop()
+            if let fileName = composeState.voiceMessageRecordingFileName {
+                cancelVoiceMessageRecording(fileName)
+            }
         }
         .onChange(of: chatModel.stopPreviousRecPlay) { _ in
             if !startingRecording {
