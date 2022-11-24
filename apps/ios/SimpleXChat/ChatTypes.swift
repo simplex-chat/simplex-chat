@@ -1713,8 +1713,24 @@ public enum Format: Decodable, Equatable {
     case secret
     case colored(color: FormatColor)
     case uri
+    // TODO trustedUri: Bool
+    case simplexLink(linkType: SimplexLinkType, simplexUri: String, smpHosts: [String])
     case email
     case phone
+}
+
+public enum SimplexLinkType: String, Decodable {
+    case contact
+    case invitation
+    case group
+
+    public var description: String {
+        switch self {
+        case .contact: return NSLocalizedString("SimpleX contact address", comment: "simplex link type")
+        case .invitation: return NSLocalizedString("SimpleX 1-time invitation", comment: "simplex link type")
+        case .group: return NSLocalizedString("SimpleX group link", comment: "simplex link type")
+        }
+    }
 }
 
 public enum FormatColor: String, Decodable {

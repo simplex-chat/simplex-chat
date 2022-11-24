@@ -84,7 +84,7 @@ fun MarkdownText (
               hasLinks = true
               val ftStyle = ft.format.style
               withAnnotation(tag = "URL", annotation = link) {
-                withStyle(ftStyle) { append(ft.text) }
+                withStyle(ftStyle) { append(ft.viewText) }
               }
             } else {
               withStyle(ft.format.style) { append(ft.text) }
