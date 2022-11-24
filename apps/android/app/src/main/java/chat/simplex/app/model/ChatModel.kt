@@ -1491,12 +1491,21 @@ object MsgContentSerializer : KSerializer<MsgContent> {
 
 @Serializable
 class FormattedText(val text: String, val format: Format? = null) {
+  // TODO make it dependent on simplexLinkMode preference
   val link: String? = when (format) {
     is Format.Uri -> text
+    is Format.SimplexLink -> format.simplexUri
     is Format.Email -> "mailto:$text"
     is Format.Phone -> "tel:$text"
     else -> null
   }
+
+  // TODO make it dependent on simplexLinkMode preference
+  val viewText: String =
+    if (format is Format.SimplexLink) simplexLinkText(format.linkType, format.smpHosts) else text
+
+  fun simplexLinkText(linkType: SimplexLinkType, smpHosts: List<String>): String =
+    "${linkType.description} (${String.format(generalGetString(R.string.simplex_link_connection), smpHosts.firstOrNull() ?: "?")})"
 }
 
 @Serializable
@@ -1508,6 +1517,8 @@ sealed class Format {
   @Serializable @SerialName("secret") class Secret: Format()
   @Serializable @SerialName("colored") class Colored(val color: FormatColor): Format()
   @Serializable @SerialName("uri") class Uri: Format()
+  // TODO trustedUri: Boolean
+  @Serializable @SerialName("simplexLink") class SimplexLink(val linkType: SimplexLinkType, val simplexUri: String, val smpHosts: List<String>): Format()
   @Serializable @SerialName("email") class Email: Format()
   @Serializable @SerialName("phone") class Phone: Format()
 
@@ -1519,6 +1530,7 @@ sealed class Format {
     is Secret -> SpanStyle(color = Color.Transparent, background = SecretColor)
     is Colored -> SpanStyle(color = this.color.uiColor)
     is Uri -> linkStyle
+    is SimplexLink -> linkStyle
     is Email -> linkStyle
     is Phone -> linkStyle
   }
@@ -1526,6 +1538,19 @@ sealed class Format {
   companion object {
     val linkStyle @Composable get() = SpanStyle(color = MaterialTheme.colors.primary, textDecoration = TextDecoration.Underline)
   }
+}
+
+@Serializable
+enum class SimplexLinkType(val linkType: String) {
+  contact("contact"),
+  invitation("invitation"),
+  group("group");
+
+  val description: String get() = generalGetString(when (this) {
+      contact -> R.string.simplex_link_contact
+      invitation -> R.string.simplex_link_invitation
+      group -> R.string.simplex_link_group
+  })
 }
 
 @Serializable

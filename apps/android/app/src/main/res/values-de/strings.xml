@@ -41,6 +41,12 @@
   <string name="description_via_one_time_link">über einen Einmal-Link</string>
   <string name="description_via_one_time_link_incognito">Inkognito über einen Einmal-Link</string>
 
+  <!-- FormattedText, SimpleX links - ChatModel.kt -->
+  <string name="simplex_link_contact">SimpleX Kontaktadressen-Link</string>
+  <string name="simplex_link_invitation">SimpleX Einmal-Link</string>
+  <string name="simplex_link_group">SimpleX Gruppen-Link</string>
+  <string name="simplex_link_connection">über <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g></string>
+
   <!-- SimpleXAPI.kt -->
   <string name="error_saving_smp_servers">Fehler beim Speichern der SMP-Server</string>
   <string name="ensure_smp_server_address_are_correct_format_and_unique">Stellen Sie sicher, dass die SMP-Server Adressen das richtige Format haben, zeilenweise angeordnet und nicht kopiert sind.</string>

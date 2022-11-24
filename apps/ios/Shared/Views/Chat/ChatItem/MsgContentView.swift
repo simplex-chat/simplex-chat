@@ -70,6 +70,12 @@ private func formatText(_ ft: FormattedText, _ preview: Bool) -> Text {
         case .secret: return Text(t).foregroundColor(.clear).underline(color: .primary)
         case let .colored(color): return Text(t).foregroundColor(color.uiColor)
         case .uri: return linkText(t, t, preview, prefix: "")
+        case let .simplexLink(linkType, simplexUri, smpHosts):
+            switch privacySimplexLinkModeDefault.get() {
+            case .description: return linkText(simplexLinkText(linkType, smpHosts), simplexUri, preview, prefix: "")
+            case .full: return linkText(t, simplexUri, preview, prefix: "")
+            case .browser: return linkText(t, t, preview, prefix: "")
+            }
         case .email: return linkText(t, t, preview, prefix: "mailto:")
         case .phone: return linkText(t, t.replacingOccurrences(of: " ", with: ""), preview, prefix: "tel:")
         }
@@ -86,6 +92,10 @@ private func linkText(_ s: String, _ link: String,
         .link: NSURL(string: prefix + link) as Any,
         .foregroundColor: uiLinkColor as Any
     ]))).underline()
+}
+
+private func simplexLinkText(_ linkType: SimplexLinkType, _ smpHosts: [String]) -> String {
+    linkType.description + " " + "(via \(smpHosts.first ?? "?"))"
 }
 
 struct MsgContentView_Previews: PreviewProvider {

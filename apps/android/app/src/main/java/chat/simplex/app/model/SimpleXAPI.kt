@@ -60,6 +60,16 @@ enum class CallOnLockScreen {
   }
 }
 
+enum class SimplexLinkMode {
+  DESCRIPTION,
+  FULL,
+  BROWSER;
+
+  companion object {
+    val default = SimplexLinkMode.DESCRIPTION
+  }
+}
+
 class AppPreferences(val context: Context) {
   private val sharedPreferences: SharedPreferences = context.getSharedPreferences(SHARED_PREFS_ID, Context.MODE_PRIVATE)
 
@@ -91,6 +101,18 @@ class AppPreferences(val context: Context) {
   val privacyAcceptImages = mkBoolPreference(SHARED_PREFS_PRIVACY_ACCEPT_IMAGES, true)
   val privacyTransferImagesInline = mkBoolPreference(SHARED_PREFS_PRIVACY_TRANSFER_IMAGES_INLINE, false)
   val privacyLinkPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_LINK_PREVIEWS, true)
+  private val _simplexLinkMode = mkStrPreference(SHARED_PREFS_PRIVACY_SIMPLEX_LINK_MODE, SimplexLinkMode.default.name)
+  val simplexLinkMode: Preference<SimplexLinkMode> = Preference(
+    get = fun(): SimplexLinkMode {
+      val value = _simplexLinkMode.get() ?: return SimplexLinkMode.default
+      return try {
+        SimplexLinkMode.valueOf(value)
+      } catch (e: Error) {
+        SimplexLinkMode.default
+      }
+    },
+    set = fun(mode: SimplexLinkMode) { _simplexLinkMode.set(mode.name) }
+  )
   val experimentalCalls = mkBoolPreference(SHARED_PREFS_EXPERIMENTAL_CALLS, false)
   val chatArchiveName = mkStrPreference(SHARED_PREFS_CHAT_ARCHIVE_NAME, null)
   val chatArchiveTime = mkDatePreference(SHARED_PREFS_CHAT_ARCHIVE_TIME, null)
@@ -181,6 +203,7 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_PRIVACY_ACCEPT_IMAGES = "PrivacyAcceptImages"
     private const val SHARED_PREFS_PRIVACY_TRANSFER_IMAGES_INLINE = "PrivacyTransferImagesInline"
     private const val SHARED_PREFS_PRIVACY_LINK_PREVIEWS = "PrivacyLinkPreviews"
+    private const val SHARED_PREFS_PRIVACY_SIMPLEX_LINK_MODE = "PrivacySimplexLinkMode"
     private const val SHARED_PREFS_EXPERIMENTAL_CALLS = "ExperimentalCalls"
     private const val SHARED_PREFS_CHAT_ARCHIVE_NAME = "ChatArchiveName"
     private const val SHARED_PREFS_CHAT_ARCHIVE_TIME = "ChatArchiveTime"
