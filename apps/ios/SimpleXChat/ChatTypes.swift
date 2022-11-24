@@ -1256,11 +1256,10 @@ public struct ChatItem: Identifiable, Decodable {
     public var timestampText: Text { meta.timestampText }
 
     public var text: String {
-        get {
-            switch (content.text, file) {
-            case let ("", .some(file)): return file.fileName
-            default: return content.text
-            }
+        switch (content.text, content.msgContent, file) {
+        case let ("", .some(.voice(_, duration)), _): return "Voice message (\(durationText(duration)))"
+        case let ("", _, .some(file)): return file.fileName
+        default: return content.text
         }
     }
 
@@ -1269,15 +1268,7 @@ public struct ChatItem: Identifiable, Decodable {
         return false
     }
 
-    public func isMsgContent() -> Bool {
-        switch content {
-        case .sndMsgContent: return true
-        case .rcvMsgContent: return true
-        default: return false
-        }
-    }
-
-    public func isDeletedContent() -> Bool {
+    public var isDeletedContent: Bool {
         switch content {
         case .sndDeleted: return true
         case .rcvDeleted: return true
@@ -1285,7 +1276,7 @@ public struct ChatItem: Identifiable, Decodable {
         }
     }
 
-    public func isCall() -> Bool {
+    public var isCall: Bool {
         switch content {
         case .sndCall: return true
         case .rcvCall: return true
@@ -1330,6 +1321,16 @@ public struct ChatItem: Identifiable, Decodable {
             content: .sndMsgContent(msgContent: .text(text)),
             quotedItem: quotedItem,
             file: file
+       )
+    }
+
+    public static func getVoiceMsgContentSample (id: Int64 = 1, text: String = "", fileName: String = "voice.m4a", fileSize: Int64 = 65536, fileStatus: CIFileStatus = .rcvComplete) -> ChatItem {
+        ChatItem(
+            chatDir: .directRcv,
+            meta: CIMeta.getSample(id, .now, text, .rcvRead, false, false, false),
+            content: .rcvMsgContent(msgContent: .voice(text: text, duration: 30)),
+            quotedItem: nil,
+            file: CIFile.getSample(fileName: fileName, fileSize: fileSize, fileStatus: fileStatus)
        )
     }
 
@@ -1544,7 +1545,12 @@ public struct CIQuote: Decodable, ItemContent {
     public var content: MsgContent
     public var formattedText: [FormattedText]?
 
-    public var text: String { get { content.text } }
+    public var text: String {
+        switch (content.text, content) {
+        case let ("", .voice(_, duration)): return durationText(duration)
+        default: return content.text
+        }
+    }
 
     public func getSender(_ membership: GroupMember?) -> String? {
         switch (chatDir) {
@@ -1611,28 +1617,33 @@ public enum MsgContent {
     case text(String)
     case link(text: String, preview: LinkPreview)
     case image(text: String, image: String)
+    case voice(text: String, duration: Int)
     case file(String)
     // TODO include original JSON, possibly using https://github.com/zoul/generic-json-swift
     case unknown(type: String, text: String)
 
     public var text: String {
-        get {
-            switch self {
-            case let .text(text): return text
-            case let .link(text, _): return text
-            case let .image(text, _): return text
-            case let .file(text): return text
-            case let .unknown(_, text): return text
-            }
+        switch self {
+        case let .text(text): return text
+        case let .link(text, _): return text
+        case let .image(text, _): return text
+        case let .voice(text, _): return text
+        case let .file(text): return text
+        case let .unknown(_, text): return text
+        }
+    }
+
+    public var isVoice: Bool {
+        switch self {
+        case .voice: return true
+        default: return false
         }
     }
 
     var cmdString: String {
-        get {
-            switch self {
-            case let .text(text): return "text \(text)"
-            default: return "json \(encodeJSON(self))"
-            }
+        switch self {
+        case let .text(text): return "text \(text)"
+        default: return "json \(encodeJSON(self))"
         }
     }
 
@@ -1641,6 +1652,7 @@ public enum MsgContent {
         case text
         case preview
         case image
+        case duration
     }
 }
 
@@ -1661,6 +1673,10 @@ extension MsgContent: Decodable {
                 let text = try container.decode(String.self, forKey: CodingKeys.text)
                 let image = try container.decode(String.self, forKey: CodingKeys.image)
                 self = .image(text: text, image: image)
+            case "voice":
+                let text = try container.decode(String.self, forKey: CodingKeys.text)
+                let duration = try container.decode(Int.self, forKey: CodingKeys.duration)
+                self = .voice(text: text, duration: duration)
             case "file":
                 let text = try container.decode(String.self, forKey: CodingKeys.text)
                 self = .file(text)
@@ -1689,6 +1705,10 @@ extension MsgContent: Encodable {
             try container.encode("image", forKey: .type)
             try container.encode(text, forKey: .text)
             try container.encode(image, forKey: .image)
+        case let .voice(text, duration):
+            try container.encode("voice", forKey: .type)
+            try container.encode(text, forKey: .text)
+            try container.encode(duration, forKey: .duration)
         case let .file(text):
             try container.encode("file", forKey: .type)
             try container.encode(text, forKey: .text)
@@ -1713,8 +1733,24 @@ public enum Format: Decodable, Equatable {
     case secret
     case colored(color: FormatColor)
     case uri
+    // TODO trustedUri: Bool
+    case simplexLink(linkType: SimplexLinkType, simplexUri: String, smpHosts: [String])
     case email
     case phone
+}
+
+public enum SimplexLinkType: String, Decodable {
+    case contact
+    case invitation
+    case group
+
+    public var description: String {
+        switch self {
+        case .contact: return NSLocalizedString("SimpleX contact address", comment: "simplex link type")
+        case .invitation: return NSLocalizedString("SimpleX 1-time invitation", comment: "simplex link type")
+        case .group: return NSLocalizedString("SimpleX group link", comment: "simplex link type")
+        }
+    }
 }
 
 public enum FormatColor: String, Decodable {
@@ -1744,7 +1780,7 @@ public enum FormatColor: String, Decodable {
 }
 
 // Struct to use with simplex API
-public struct LinkPreview: Codable {
+public struct LinkPreview: Codable, Equatable {
     public init(uri: URL, title: String, description: String = "", image: String) {
         self.uri = uri
         self.title = title
@@ -1798,14 +1834,14 @@ public enum CICallStatus: String, Decodable {
         case .accepted: return NSLocalizedString("accepted call", comment: "call status")
         case .negotiated: return NSLocalizedString("connecting call", comment: "call status")
         case .progress: return NSLocalizedString("call in progress", comment: "call status")
-        case .ended: return String.localizedStringWithFormat(NSLocalizedString("ended call %@", comment: "call status"), CICallStatus.durationText(sec))
+        case .ended: return String.localizedStringWithFormat(NSLocalizedString("ended call %@", comment: "call status"), durationText(sec))
         case .error: return NSLocalizedString("call error", comment: "call status")
         }
     }
+}
 
-    public static func durationText(_ sec: Int) -> String {
-        String(format: "%02d:%02d", sec / 60, sec % 60)
-    }
+public func durationText(_ sec: Int) -> String {
+    String(format: "%02d:%02d", sec / 60, sec % 60)
 }
 
 public enum MsgErrorType: Decodable {
