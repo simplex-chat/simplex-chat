@@ -213,6 +213,17 @@ public struct FeatureEnabled: Decodable {
         default: return FeatureEnabled(forUser: true, forContact: true)
         }
     }
+
+    public var text: String {
+        (forUser && forContact) ? NSLocalizedString("enabled", comment: "enabled status")
+        : forUser ? NSLocalizedString("enabled for you", comment: "enabled status")
+        : forContact ? NSLocalizedString("enabled for contact", comment: "enabled status")
+        : NSLocalizedString("off", comment: "enabled status")
+    }
+
+    public var iconColor: Color {
+        forUser ? .green : forContact ? .yellow : .secondary
+    }
 }
 
 public enum ContactUserPref: Decodable {
@@ -220,7 +231,7 @@ public enum ContactUserPref: Decodable {
     case user(preference: Preference) // global user default is used
 }
 
-public enum Feature {
+public enum Feature: String, Decodable {
     case fullDelete
     case voice
 
@@ -228,10 +239,10 @@ public enum Feature {
 
     public var id: Self { self }
 
-    public var text: LocalizedStringKey {
+    public var text: String {
         switch self {
-        case .fullDelete: return "Full deletion"
-        case .voice: return "Voice messages"
+        case .fullDelete: return NSLocalizedString("Full deletion", comment: "chat feature")
+        case .voice: return NSLocalizedString("Voice messages", comment: "chat feature")
         }
     }
 
@@ -458,6 +469,13 @@ public enum GroupFeatureEnabled: String, Codable, Identifiable {
         switch self {
         case .on: return NSLocalizedString("on", comment: "group pref value")
         case .off: return NSLocalizedString("off", comment: "group pref value")
+        }
+    }
+
+    public var iconColor: Color {
+        switch self {
+        case .on: return .green
+        case .off: return .secondary
         }
     }
 }
@@ -1364,6 +1382,17 @@ public struct ChatItem: Identifiable, Decodable {
             file: nil
        )
     }
+
+    public static func getChatFeatureSample(_ feature: Feature, _ enabled: FeatureEnabled) -> ChatItem {
+        let content = CIContent.rcvChatFeature(feature: feature, enabled: enabled)
+        return ChatItem(
+            chatDir: .directRcv,
+            meta: CIMeta.getSample(1, .now, content.text, .rcvRead, false, false, false),
+            content: content,
+            quotedItem: nil,
+            file: nil
+       )
+    }
 }
 
 public enum CIDirection: Decodable {
@@ -1465,6 +1494,11 @@ public enum CIContent: Decodable, ItemContent {
     case sndGroupEvent(sndGroupEvent: SndGroupEvent)
     case rcvConnEvent(rcvConnEvent: RcvConnEvent)
     case sndConnEvent(sndConnEvent: SndConnEvent)
+    case rcvChatFeature(feature: Feature, enabled: FeatureEnabled)
+    case sndChatFeature(feature: Feature, enabled: FeatureEnabled)
+    case rcvGroupFeature(feature: Feature, preference: GroupPreference)
+    case sndGroupFeature(feature: Feature, preference: GroupPreference)
+    case rcvChatFeatureRejected(feature: Feature)
 
     public var text: String {
         get {
@@ -1482,6 +1516,11 @@ public enum CIContent: Decodable, ItemContent {
             case let .sndGroupEvent(sndGroupEvent): return sndGroupEvent.text
             case let .rcvConnEvent(rcvConnEvent): return rcvConnEvent.text
             case let .sndConnEvent(sndConnEvent): return sndConnEvent.text
+            case let .rcvChatFeature(feature, enabled): return "\(feature.text): \(enabled.text)"
+            case let .sndChatFeature(feature, enabled): return "\(feature.text): \(enabled.text)"
+            case let .rcvGroupFeature(feature, preference): return "\(feature.text): \(preference.enable.text)"
+            case let .sndGroupFeature(feature, preference): return "\(feature.text): \(preference.enable.text)"
+            case let .rcvChatFeatureRejected(feature): return String.localizedStringWithFormat("%@: received, prohibited", feature.text)
             }
         }
     }
@@ -1594,13 +1633,6 @@ public enum MsgContent {
             case let .text(text): return "text \(text)"
             default: return "json \(encodeJSON(self))"
             }
-        }
-    }
-
-    public func isFile() -> Bool {
-        switch self {
-        case .file: return true
-        default: return false
         }
     }
 

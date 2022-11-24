@@ -89,6 +89,26 @@ struct ParsedMarkdown: Decodable {
     var formattedText: [FormattedText]?
 }
 
+public func parseServerAddress(_ s: String) -> ServerAddress? {
+    var c = s.cString(using: .utf8)!
+    if let cjson = chat_parse_server(&c) {
+         if let d = fromCString(cjson).data(using: .utf8) {
+            do {
+                let r = try jsonDecoder.decode(ParsedServerAddress.self, from: d)
+                return r.serverAddress
+            } catch {
+                logger.error("parseServerAddress jsonDecoder.decode error: \(error.localizedDescription)")
+            }
+        }
+    }
+    return nil
+}
+
+struct ParsedServerAddress: Decodable {
+    var serverAddress: ServerAddress?
+    var parseError: String
+}
+
 private func fromCString(_ c: UnsafeMutablePointer<CChar>) -> String {
     let s = String.init(cString: c)
     free(c)

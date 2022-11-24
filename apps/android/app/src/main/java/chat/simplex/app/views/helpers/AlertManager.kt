@@ -1,11 +1,17 @@
 package chat.simplex.app.views.helpers
 
 import android.util.Log
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import chat.simplex.app.R
 import chat.simplex.app.TAG
+import chat.simplex.app.ui.theme.DEFAULT_PADDING
 
 class AlertManager {
   var alertViews = mutableStateListOf<(@Composable () -> Unit)>()
@@ -32,6 +38,26 @@ class AlertManager {
         text = alertText,
         buttons = buttons
       )
+    }
+  }
+
+  fun showAlertDialogButtonsColumn(
+    title: String,
+    text: String? = null,
+    buttons: @Composable () -> Unit,
+  ) {
+    showAlert {
+      Dialog(onDismissRequest = this::hideAlert) {
+        Column(Modifier.background(MaterialTheme.colors.background)) {
+          Text(title, Modifier.padding(DEFAULT_PADDING), fontSize = 18.sp)
+          if (text != null) {
+            Text(text)
+          }
+          CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.high) {
+            buttons()
+          }
+        }
+      }
     }
   }
 
