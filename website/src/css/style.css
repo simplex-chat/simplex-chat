@@ -418,7 +418,7 @@ header nav {
 .simplex-unique-card .card-content{
   transition: all .5s ease-out;
 }
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .simplex-unique-card .card-content .content-body{
     height: 0;
     opacity: 0;
