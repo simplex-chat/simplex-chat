@@ -301,7 +301,9 @@ struct ComposeView: View {
         }
         .onChange(of: chatModel.stopPreviousRecPlay) { _ in
             if !startingRecording {
-                finishVoiceMessageRecording()
+                if composeState.voiceMessageRecordingState == .recording {
+                    finishVoiceMessageRecording()
+                }
             } else {
                 startingRecording = false
             }
