@@ -1160,6 +1160,17 @@ data class ChatItem (
         quotedItem = null,
         file = null
       )
+
+    fun getChatFeatureSample(feature: Feature, enabled: FeatureEnabled): ChatItem {
+      val content = CIContent.RcvChatFeature(feature = feature, enabled = enabled)
+      return ChatItem(
+        chatDir = CIDirection.DirectRcv(),
+        meta = CIMeta.getSample(1, Clock.System.now(), content.text, CIStatus.RcvRead(), itemDeleted = false, itemEdited = false, editable = false),
+        content = content,
+        quotedItem = null,
+        file = null
+      )
+    }
   }
 }
 
@@ -1256,22 +1267,28 @@ sealed class CIContent: ItemContent {
   @Serializable @SerialName("sndGroupEvent") class SndGroupEventContent(val sndGroupEvent: SndGroupEvent): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvConnEvent") class RcvConnEventContent(val rcvConnEvent: RcvConnEvent): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("sndConnEvent") class SndConnEventContent(val sndConnEvent: SndConnEvent): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvChatFeature") class RcvChatFeature(val feature: Feature, val enabled: FeatureEnabled): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("sndChatFeature") class SndChatFeature(val feature: Feature, val enabled: FeatureEnabled): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvChatFeatureRejected") class RcvChatFeatureRejected(val feature: Feature): CIContent() { override val msgContent: MsgContent? get() = null }
 
-  override val text: String get() = when(this) {
-    is SndMsgContent -> msgContent.text
-    is RcvMsgContent -> msgContent.text
-    is SndDeleted -> generalGetString(R.string.deleted_description)
-    is RcvDeleted -> generalGetString(R.string.deleted_description)
-    is SndCall -> status.text(duration)
-    is RcvCall -> status.text(duration)
-    is RcvIntegrityError -> msgError.text
-    is RcvGroupInvitation -> groupInvitation.text
-    is SndGroupInvitation -> groupInvitation.text
-    is RcvGroupEventContent -> rcvGroupEvent.text
-    is SndGroupEventContent -> sndGroupEvent.text
-    is RcvConnEventContent -> rcvConnEvent.text
-    is SndConnEventContent -> sndConnEvent.text
-  }
+  override val text: String get() = when (this) {
+      is SndMsgContent -> msgContent.text
+      is RcvMsgContent -> msgContent.text
+      is SndDeleted -> generalGetString(R.string.deleted_description)
+      is RcvDeleted -> generalGetString(R.string.deleted_description)
+      is SndCall -> status.text(duration)
+      is RcvCall -> status.text(duration)
+      is RcvIntegrityError -> msgError.text
+      is RcvGroupInvitation -> groupInvitation.text
+      is SndGroupInvitation -> groupInvitation.text
+      is RcvGroupEventContent -> rcvGroupEvent.text
+      is SndGroupEventContent -> sndGroupEvent.text
+      is RcvConnEventContent -> rcvConnEvent.text
+      is SndConnEventContent -> sndConnEvent.text
+      is RcvChatFeature -> "${feature.text()}: ${enabled.text}"
+      is SndChatFeature -> "${feature.text()}: ${enabled.text}"
+      is RcvChatFeatureRejected -> "${feature.text()}: ${generalGetString(R.string.feature_received_prohibited)}"
+    }
 }
 
 @Serializable
