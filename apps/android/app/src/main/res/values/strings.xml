@@ -596,38 +596,6 @@
   <string name="transfer_images_faster">Transfer images faster (BETA)</string>
   <string name="send_link_previews">Send link previews</string>
 
-  <!-- Preferences -->
-  <string name="chat_preferences">Chat preferences</string>
-  <string name="contact_preferences">Contact preferences</string>
-  <string name="group_preferences">Group preferences</string>
-  <string name="your_preferences">Your preferences</string>
-  <string name="full_deletion">Full deletion</string>
-  <string name="voice_messages">Voice messages</string>
-  <string name="allow_your_contacts_irreversibly_delete">Allow your contacts to irreversibly delete sent messages.</string>
-  <string name="allow_irreversible_message_deletion_only_if">Allow irreversible message deletion only if your contact allows it to you.</string>
-  <string name="contacts_can_mark_messages_for_deletion">Contacts can mark messages for deletion; you will be able to view them.</string>
-  <string name="allow_your_contacts_to_send_voice_messages">Allow your contacts to send voice messages.</string>
-  <string name="allow_voice_messages_only_if">Allow voice messages only if your contact allows them.</string>
-  <string name="prohibit_sending_voice_messages">Prohibit sending voice messages.</string>
-  <string name="both_you_and_your_contacts_can_delete">Both you and your contact can irreversibly delete sent messages.</string>
-  <string name="only_you_can_delete_messages">Only you can irreversibly delete messages (your contact can mark them for deletion).</string>
-  <string name="only_your_contact_can_delete">Only your contact can irreversibly delete messages (you can mark them for deletion).</string>
-  <string name="message_deletion_prohibited">Irreversible message deletion is prohibited in this chat.</string>
-  <string name="both_you_and_your_contact_can_send_voice">Both you and your contact can send voice messages.</string>
-  <string name="only_you_can_send_voice">Only you can send voice messages.</string>
-  <string name="only_your_contact_can_send_voice">Only your contact can send voice messages.</string>
-  <string name="voice_prohibited_in_this_chat">Voice messages are prohibited in this chat.</string>
-  <string name="allow_to_delete_messages">Allow to irreversibly delete sent messages.</string>
-  <string name="prohibit_message_deletion">Prohibit irreversible message deletion.</string>
-  <string name="allow_to_send_voice">Allow to send voice messages.</string>
-  <string name="prohibit_sending_voice">Prohibit sending voice messages.</string>
-  <string name="group_members_can_delete">Group members can irreversibly delete sent messages.</string>
-  <string name="message_deletion_prohibited_in_chat">Irreversible message deletion is prohibited in this chat.</string>
-  <string name="group_members_can_send_voice">Group members can send voice messages.</string>
-  <string name="voice_messages_are_prohibited">Voice messages are prohibited in this chat.</string>
-
-
-
   <!-- Settings sections -->
   <string name="settings_section_title_you">YOU</string>
   <string name="settings_section_title_settings">SETTINGS</string>
@@ -957,33 +925,33 @@
   <string name="chat_preferences_always">always</string>
   <string name="chat_preferences_on">on</string>
   <string name="chat_preferences_off">off</string>
-  <string name="chat_preferences_voice">Voice messages</string>
-  <string name="chat_preferences_voice_yes_desc">If your contact allows to receive voice messages from you, you both will be able to send voice messages to each other. Otherwise, no one will be able to do so</string>
-  <string name="chat_preferences_voice_no_desc">Disallow to send voice messages to you from your contacts</string>
-  <string name="chat_preferences_voice_always_desc">Allow to send voice messages to you from your contacts</string>
-  <string name="chat_preferences_deletion">Full messages deletion</string>
-  <string name="chat_preferences_deletion_yes_desc">If your contact allows to delete messages from you, you both will be able to delete messages sent to the other side. Otherwise, no one will be able to do so</string>
-  <string name="chat_preferences_deletion_no_desc">Disallow the other side to delete messages sent to you</string>
-  <string name="chat_preferences_deletion_always_desc">Allow the other side to delete messages sent to you</string>
-  <string name="chat_preferences_delivery_receipts">Delivery receipts</string>
-  <string name="chat_preferences_delivery_receipts_yes_desc">If your contact allows to notify you about delivered messages, you will send delivery receipts too. Otherwise, no one will send such receipts</string>
-  <string name="chat_preferences_delivery_receipts_no_desc">Disallow the other side to receive delivery receipts</string>
-  <string name="chat_preferences_delivery_receipts_always_desc">Allow the other side to receive delivery receipts</string>
-
-  <string name="chat_preferences_voice_yes_and_yes_desc">You both will be able to send voice messages to each other</string>
-  <string name="chat_preferences_voice_yes_and_no_desc">None of you will be able to send voice messages until your contact chooses to do so as well</string>
-  <string name="chat_preferences_voice_no_and_yes_desc">None of you will be able to send voice messages until you choose to do so as well</string>
-  <string name="chat_preferences_voice_always_and_no_desc">Your contact will be able to send voice messages to you, but you are not able to do so</string>
-  <string name="chat_preferences_voice_no_and_always_desc">You will be able to send voice messages to the other side, but not vice versa</string>
-  <string name="chat_preferences_deletion_yes_and_yes_desc">You both will be able to delete messages on the other side</string>
-  <string name="chat_preferences_deletion_yes_and_no_desc">None of you will be able to delete messages until your contact chooses to do so as well</string>
-  <string name="chat_preferences_deletion_no_and_yes_desc">None of you will be able to delete messages until you choose to do so as well</string>
-  <string name="chat_preferences_deletion_always_and_no_desc">Your contact will be able to delete messages on your side, but you are not able to do so</string>
-  <string name="chat_preferences_deletion_no_and_always_desc">You will be able to delete messages on the other side, but not vice versa</string>
-  <string name="chat_preferences_delivery_receipts_yes_and_yes_desc">You both will send delivery receipts to each other</string>
-  <string name="chat_preferences_delivery_receipts_yes_and_no_desc">None of you will be able to receive delivery receipts until your contact chooses to do so as well</string>
-  <string name="chat_preferences_delivery_receipts_no_and_yes_desc">None of you will be able to receive delivery receipts until you choose to do so as well</string>
-  <string name="chat_preferences_delivery_receipts_always_and_no_desc">Your contact will be able to receive delivery receipts from you, but you are not able to do so</string>
-  <string name="chat_preferences_delivery_receipts_no_and_always_desc">You will be able to receive delivery receipts from the other side, but not vice versa</string>
+  <string name="chat_preferences">Chat preferences</string>
+  <string name="contact_preferences">Contact preferences</string>
+  <string name="group_preferences">Group preferences</string>
+  <string name="your_preferences">Your preferences</string>
+  <string name="full_deletion">Full deletion</string>
+  <string name="voice_messages">Voice messages</string>
+  <string name="allow_your_contacts_irreversibly_delete">Allow your contacts to irreversibly delete sent messages.</string>
+  <string name="allow_irreversible_message_deletion_only_if">Allow irreversible message deletion only if your contact allows it to you.</string>
+  <string name="contacts_can_mark_messages_for_deletion">Contacts can mark messages for deletion; you will be able to view them.</string>
+  <string name="allow_your_contacts_to_send_voice_messages">Allow your contacts to send voice messages.</string>
+  <string name="allow_voice_messages_only_if">Allow voice messages only if your contact allows them.</string>
+  <string name="prohibit_sending_voice_messages">Prohibit sending voice messages.</string>
+  <string name="both_you_and_your_contacts_can_delete">Both you and your contact can irreversibly delete sent messages.</string>
+  <string name="only_you_can_delete_messages">Only you can irreversibly delete messages (your contact can mark them for deletion).</string>
+  <string name="only_your_contact_can_delete">Only your contact can irreversibly delete messages (you can mark them for deletion).</string>
+  <string name="message_deletion_prohibited">Irreversible message deletion is prohibited in this chat.</string>
+  <string name="both_you_and_your_contact_can_send_voice">Both you and your contact can send voice messages.</string>
+  <string name="only_you_can_send_voice">Only you can send voice messages.</string>
+  <string name="only_your_contact_can_send_voice">Only your contact can send voice messages.</string>
+  <string name="voice_prohibited_in_this_chat">Voice messages are prohibited in this chat.</string>
+  <string name="allow_to_delete_messages">Allow to irreversibly delete sent messages.</string>
+  <string name="prohibit_message_deletion">Prohibit irreversible message deletion.</string>
+  <string name="allow_to_send_voice">Allow to send voice messages.</string>
+  <string name="prohibit_sending_voice">Prohibit sending voice messages.</string>
+  <string name="group_members_can_delete">Group members can irreversibly delete sent messages.</string>
+  <string name="message_deletion_prohibited_in_chat">Irreversible message deletion is prohibited in this chat.</string>
+  <string name="group_members_can_send_voice">Group members can send voice messages.</string>
+  <string name="voice_messages_are_prohibited">Voice messages are prohibited in this chat.</string>
 
 </resources>
