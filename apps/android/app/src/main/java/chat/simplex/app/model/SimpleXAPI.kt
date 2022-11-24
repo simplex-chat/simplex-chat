@@ -104,7 +104,7 @@ class AppPreferences(val context: Context) {
   val privacyTransferImagesInline = mkBoolPreference(SHARED_PREFS_PRIVACY_TRANSFER_IMAGES_INLINE, false)
   val privacyLinkPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_LINK_PREVIEWS, true)
   private val _simplexLinkMode = mkStrPreference(SHARED_PREFS_PRIVACY_SIMPLEX_LINK_MODE, SimplexLinkMode.default.name)
-  val simplexLinkMode: Preference<SimplexLinkMode> = Preference(
+  val simplexLinkMode: SharedPreference<SimplexLinkMode> = SharedPreference(
     get = fun(): SimplexLinkMode {
       val value = _simplexLinkMode.get() ?: return SimplexLinkMode.default
       return try {
