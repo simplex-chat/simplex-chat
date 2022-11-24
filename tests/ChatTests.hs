@@ -2237,6 +2237,7 @@ testUserContactLinkAutoAccept =
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
+      threadDelay 100000
       alice @@@ [("@bob", "Voice messages: enabled")]
       alice <##> bob
 
@@ -2249,6 +2250,7 @@ testUserContactLinkAutoAccept =
       concurrently_
         (cath <## "alice (Alice): contact is connected")
         (alice <## "cath (Catherine): contact is connected")
+      threadDelay 100000
       alice @@@ [("@cath", "Voice messages: enabled"), ("@bob", "hey")]
       alice <##> cath
 
