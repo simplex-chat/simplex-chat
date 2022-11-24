@@ -89,54 +89,40 @@ struct ComposeState {
 
     var sendEnabled: Bool {
         switch preview {
-        case .imagePreviews:
-            return true
-        case .voicePreview:
-            return voiceMessageRecordingState == .finished
-        case .filePreview:
-            return true
-        default:
-            return !message.isEmpty
+        case .imagePreviews: return true
+        case .voicePreview: return voiceMessageRecordingState == .finished
+        case .filePreview: return true
+        default: return !message.isEmpty
         }
     }
 
     var linkPreviewAllowed: Bool {
         switch preview {
-        case .imagePreviews:
-            return false
-        case .voicePreview:
-            return false
-        case .filePreview:
-            return false
-        default:
-            return useLinkPreviews
+        case .imagePreviews: return false
+        case .voicePreview: return false
+        case .filePreview: return false
+        default: return useLinkPreviews
         }
     }
 
     var linkPreview: LinkPreview? {
         switch preview {
-        case let .linkPreview(linkPreview):
-            return linkPreview
-        default:
-            return nil
+        case let .linkPreview(linkPreview): return linkPreview
+        default: return nil
         }
     }
 
     var voiceMessageRecordingFileName: String? {
         switch preview {
-        case let .voicePreview(recordingFileName: recordingFileName, _):
-            return recordingFileName
-        default:
-            return nil
+        case let .voicePreview(recordingFileName: recordingFileName, _): return recordingFileName
+        default: return nil
         }
     }
 
     var noPreview: Bool {
         switch preview {
-        case .noPreview:
-            return true
-        default:
-            return false
+        case .noPreview: return true
+        default: return false
         }
     }
 }
@@ -178,8 +164,9 @@ struct ComposeView: View {
     @State private var showFileImporter = false
     @State var chosenFile: URL? = nil
 
-    @State var audioRecorder: AudioRecorder?
-    @State var voiceMessageRecordingTime: TimeInterval?
+    @State private var audioRecorder: AudioRecorder?
+    @State private var voiceMessageRecordingTime: TimeInterval?
+    @State private var startingRecording: Bool = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -304,6 +291,16 @@ struct ComposeView: View {
                 } catch {
                     logger.error("ComposeView fileImporter error \(error.localizedDescription)")
                 }
+            }
+        }
+        .onDisappear {
+            audioRecorder?.stop()
+        }
+        .onChange(of: chatModel.stopPreviousRecPlay) { _ in
+            if !startingRecording {
+                finishVoiceMessageRecording()
+            } else {
+                startingRecording = false
             }
         }
     }
@@ -453,6 +450,8 @@ struct ComposeView: View {
     }
 
     private func startVoiceMessageRecording() async {
+        startingRecording = true
+        chatModel.stopPreviousRecPlay.toggle()
         let fileName = generateNewFileName("voice", "m4a")
         audioRecorder = AudioRecorder(
             onTimer: { voiceMessageRecordingTime = $0 },
@@ -619,11 +618,13 @@ struct ComposeView_Previews: PreviewProvider {
                 composeState: $composeState,
                 keyboardVisible: $keyboardVisible
             )
+            .environmentObject(ChatModel())
             ComposeView(
                 chat: chat,
                 composeState: $composeState,
                 keyboardVisible: $keyboardVisible
             )
+            .environmentObject(ChatModel())
         }
     }
 }

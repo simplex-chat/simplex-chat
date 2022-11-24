@@ -26,6 +26,7 @@ func voiceMessageTime_(_ time: TimeInterval?) -> String {
 }
 
 struct ComposeVoiceView: View {
+    @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
     var recordingFileName: String
     @Binding var recordingTime: TimeInterval?
@@ -33,9 +34,10 @@ struct ComposeVoiceView: View {
     let cancelVoiceMessage: ((String) -> Void)
     let cancelEnabled: Bool
 
-    @State var audioPlayer: AudioPlayer?
-    @State var playbackState: VoiceMessagePlaybackState = .noPlayback
-    @State var playbackTime: TimeInterval?
+    @State private var audioPlayer: AudioPlayer?
+    @State private var playbackState: VoiceMessagePlaybackState = .noPlayback
+    @State private var playbackTime: TimeInterval?
+    @State private var startingPlayback: Bool = false
 
     private static let previewHeight: CGFloat = 50
 
@@ -54,6 +56,15 @@ struct ComposeVoiceView: View {
         .padding(.top, 8)
         .onDisappear {
             audioPlayer?.stop()
+        }
+        .onChange(of: chatModel.stopPreviousRecPlay) { _ in
+            if !startingPlayback {
+                audioPlayer?.stop()
+                playbackState = .noPlayback
+                playbackTime = TimeInterval(0)
+            } else {
+                startingPlayback = false
+            }
         }
     }
 
@@ -150,6 +161,8 @@ struct ComposeVoiceView: View {
     }
 
     private func startPlayback() {
+        startingPlayback = true
+        chatModel.stopPreviousRecPlay.toggle()
         audioPlayer = AudioPlayer(
             onTimer: { playbackTime = $0 },
             onFinishPlayback: {
@@ -167,12 +180,11 @@ struct ComposeVoiceView_Previews: PreviewProvider {
     static var previews: some View {
         ComposeVoiceView(
             recordingFileName: "voice.m4a",
-            recordingTime: Binding.constant(TimeInterval(30)),
-            recordingState: Binding.constant(VoiceMessageRecordingState.finished),
+            recordingTime: Binding.constant(TimeInterval(20)),
+            recordingState: Binding.constant(VoiceMessageRecordingState.recording),
             cancelVoiceMessage: { _ in },
-            cancelEnabled: true,
-            playbackState: VoiceMessagePlaybackState.playing,
-            playbackTime: TimeInterval(20)
+            cancelEnabled: true
         )
+        .environmentObject(ChatModel())
     }
 }

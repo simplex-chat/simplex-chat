@@ -78,15 +78,17 @@ struct VoiceMessagePlayerTime: View {
 }
 
 struct VoiceMessagePlayer: View {
+    @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
     var chatItem: ChatItem
     var recordingFile: CIFile?
     var recordingTime: TimeInterval
     var showBackground: Bool
 
-    @State var audioPlayer: AudioPlayer?
+    @State private var audioPlayer: AudioPlayer?
     @Binding var playbackState: VoiceMessagePlaybackState
     @Binding var playbackTime: TimeInterval?
+    @State private var startingPlayback: Bool = false
 
     var body: some View {
         ZStack {
@@ -108,6 +110,15 @@ struct VoiceMessagePlayer: View {
         }
         .onDisappear {
             audioPlayer?.stop()
+        }
+        .onChange(of: chatModel.stopPreviousRecPlay) { _ in
+            if !startingPlayback {
+                audioPlayer?.stop()
+                playbackState = .noPlayback
+                playbackTime = TimeInterval(0)
+            } else {
+                startingPlayback = false
+            }
         }
     }
 
@@ -181,6 +192,8 @@ struct VoiceMessagePlayer: View {
     }
 
     private func startPlayback(_ recordingFileName: String) {
+        startingPlayback = true
+        chatModel.stopPreviousRecPlay.toggle()
         audioPlayer = AudioPlayer(
             onTimer: { playbackTime = $0 },
             onFinishPlayback: {
@@ -218,10 +231,15 @@ struct CIVoiceView_Previews: PreviewProvider {
                 playbackState: .playing,
                 playbackTime: TimeInterval(20)
             )
+            .environmentObject(ChatModel())
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: sentVoiceMessage)
+                .environmentObject(ChatModel())
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample())
+                .environmentObject(ChatModel())
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample(fileStatus: .rcvTransfer))
+                .environmentObject(ChatModel())
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: voiceMessageWtFile)
+                .environmentObject(ChatModel())
         }
         .previewLayout(.fixed(width: 360, height: 360))
     }
