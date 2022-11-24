@@ -144,7 +144,7 @@ struct ComposeVoiceView: View {
                         .frame(width: min(CGFloat((progress ?? TimeInterval(0)) / length) * geometry.size.width, geometry.size.width), height: 4)
                         .animation(.linear, value: progress)
                 }
-                .frame(height: ComposeVoiceView.previewHeight - 1, alignment: .bottom) // minus 1 is for bottom padding
+                .frame(height: ComposeVoiceView.previewHeight - 1, alignment: .bottom) // minus 1 is for the bottom padding
             }
         }
     }
