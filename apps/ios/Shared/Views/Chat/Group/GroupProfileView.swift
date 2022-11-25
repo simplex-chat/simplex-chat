@@ -82,7 +82,7 @@ struct GroupProfileView: View {
                 CameraImagePicker(image: $chosenImage)
             }
         }
-        .sheet(isPresented: $showImagePicker) {
+        .appSheet(isPresented: $showImagePicker) {
             LibraryImagePicker(image: $chosenImage) {
                 didSelectItem in showImagePicker = false
             }

@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.KeyboardVoice
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -1052,7 +1053,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         val file = cItem.file
         if (cItem.content.msgContent is MsgContent.MCImage && file != null && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV && appPrefs.privacyAcceptImages.get()) {
           withApi { receiveFile(file.fileId) }
-        } else if (cItem.content.msgContent is MsgContent.MCVoice && file != null && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && appPrefs.privacyAcceptImages.get()) {
+        } else if (cItem.content.msgContent is MsgContent.MCVoice && file != null && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileSize > MAX_VOICE_SIZE_FOR_SENDING && appPrefs.privacyAcceptImages.get()) {
           withApi { receiveFile(file.fileId) } // TODO check inlineFileMode != IFMSent
         }
         if (!cItem.chatDir.sent && !cItem.isCall && !cItem.isMutedMemberEvent && (!isAppOnForeground(appContext) || chatModel.chatId.value != cInfo.id)) {
@@ -2017,6 +2018,9 @@ data class FeatureEnabled(
       else -> generalGetString(R.string.feature_off)
     }
 
+  val iconColor: Color
+    get() = if (forUser) SimplexGreen else if (forContact) WarningYellow else HighOrLowlight
+
   companion object {
     fun enabled(user: ChatPreference, contact: ChatPreference): FeatureEnabled =
       when {
@@ -2229,6 +2233,9 @@ enum class GroupFeatureEnabled {
       ON -> generalGetString(R.string.chat_preferences_on)
       OFF -> generalGetString(R.string.chat_preferences_off)
     }
+
+  val iconColor: Color
+    get() = if (this == ON) SimplexGreen else HighOrLowlight
 
 }
 

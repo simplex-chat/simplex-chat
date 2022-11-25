@@ -8,7 +8,7 @@
 "NSFaceIDUsageDescription" = "SimpleX использует Face ID для аутентификации";
 
 /* Privacy - Microphone Usage Description */
-"NSMicrophoneUsageDescription" = "SimpleX использует микрофон для аудио и видео звонков.";
+"NSMicrophoneUsageDescription" = "SimpleX использует микрофон для аудио и видео звонков, и для записи голосовых сообщений.";
 
 /* Privacy - Photo Library Additions Usage Description */
 "NSPhotoLibraryAddUsageDescription" = "SimpleX использует доступ к Photo Library для сохранения сделанных и полученных фотографий";

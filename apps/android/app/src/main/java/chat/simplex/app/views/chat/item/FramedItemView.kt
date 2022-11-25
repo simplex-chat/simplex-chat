@@ -5,8 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.InsertDriveFile
-import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -95,7 +94,7 @@ fun FramedItemView(
             ciQuotedMsgView(qi)
           }
           Icon(
-            if (qi.content is MsgContent.MCFile) Icons.Filled.InsertDriveFile else Icons.Filled.PlayArrow,
+            if (qi.content is MsgContent.MCFile) Icons.Filled.InsertDriveFile else Icons.Filled.Mic,
             if (qi.content is MsgContent.MCFile) stringResource(R.string.icon_descr_file) else stringResource(R.string.voice_message),
             Modifier
               .padding(top = 6.dp, end = 4.dp)

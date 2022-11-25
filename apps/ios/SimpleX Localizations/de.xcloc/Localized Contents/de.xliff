@@ -27,16 +27,6 @@
         <target> (kann kopiert werden)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve">
-        <source>Possibly, certificate fingerprint in server address is incorrect</source>
-        <target>***Possibly, certificate fingerprint in server address is incorrect</target>
-        <note>server test error</note>
-      </trans-unit>
-      <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve">
-        <source>Server requires authorization to create queues, check password</source>
-        <target>***Server requires authorization to create queues, check password</target>
-        <note>server test error</note>
-      </trans-unit>
       <trans-unit id="!1 colored!" xml:space="preserve">
         <source>!1 colored!</source>
         <target>!1 farbig!</target>
@@ -598,11 +588,6 @@
         <target>Mit dem Server verbinden… (Fehler: %@)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connection" xml:space="preserve">
-        <source>Connection</source>
-        <target>Verbindung steht</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Connection error" xml:space="preserve">
         <source>Connection error</source>
         <target>Verbindungsfehler</target>
@@ -626,11 +611,6 @@
       <trans-unit id="Connection timeout" xml:space="preserve">
         <source>Connection timeout</source>
         <target>Verbindungszeitüberschreitung</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Contact allows" xml:space="preserve">
-        <source>Contact allows</source>
-        <target>***Contact allows</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact already exists" xml:space="preserve">
@@ -741,11 +721,6 @@
       <trans-unit id="Data" xml:space="preserve">
         <source>Data</source>
         <target>Daten</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Database ID" xml:space="preserve">
-        <source>Database ID</source>
-        <target>Datenbank-ID</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database encrypted!" xml:space="preserve">
@@ -965,6 +940,11 @@
         <source>Delete queue</source>
         <target>***Delete queue</target>
         <note>server test step</note>
+      </trans-unit>
+      <trans-unit id="Description" xml:space="preserve">
+        <source>Description</source>
+        <target>***Description</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Develop" xml:space="preserve">
         <source>Develop</source>
@@ -1256,6 +1236,11 @@
         <target>Fehler beim Speichern des Gruppenprofils</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error saving passphrase to keychain" xml:space="preserve">
+        <source>Error saving passphrase to keychain</source>
+        <target>***Error saving passphrase to keychain</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error sending message" xml:space="preserve">
         <source>Error sending message</source>
         <target>Fehler beim Senden der Nachricht</target>
@@ -1316,6 +1301,11 @@
         <target>Export des Datenbankarchivs...</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Failed to remove passphrase" xml:space="preserve">
+        <source>Failed to remove passphrase</source>
+        <target>***Failed to remove passphrase</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="File will be received when your contact is online, please wait or check later!" xml:space="preserve">
         <source>File will be received when your contact is online, please wait or check later!</source>
         <target>Die Datei wird empfangen, sobald Ihr Kontakt online ist. Bitte warten oder schauen Sie später nochmal nach!</target>
@@ -1334,6 +1324,11 @@
       <trans-unit id="Full deletion" xml:space="preserve">
         <source>Full deletion</source>
         <target>***Full deletion</target>
+        <note>chat feature</note>
+      </trans-unit>
+      <trans-unit id="Full link" xml:space="preserve">
+        <source>Full link</source>
+        <target>***Full link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Full name (optional)" xml:space="preserve">
@@ -1344,11 +1339,6 @@
       <trans-unit id="Full name:" xml:space="preserve">
         <source>Full name:</source>
         <target>Vollständiger Name:</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Group" xml:space="preserve">
-        <source>Group</source>
-        <target>Gruppe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group display name" xml:space="preserve">
@@ -1683,14 +1673,14 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>Einschränkungen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Local name" xml:space="preserve">
-        <source>Local name</source>
-        <target>Lokaler Name</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Make a private connection" xml:space="preserve">
         <source>Make a private connection</source>
         <target>Stellen Sie eine private Verbindung her</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." xml:space="preserve">
+        <source>Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@).</source>
+        <target>***Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." xml:space="preserve">
@@ -1853,6 +1843,11 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>Die Gruppe wurde nicht gefunden!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="No permission to record voice message" xml:space="preserve">
+        <source>No permission to record voice message</source>
+        <target>***No permission to record voice message</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="No received or sent files" xml:space="preserve">
         <source>No received or sent files</source>
         <target>Keine empfangenen oder gesendeten Dateien</target>
@@ -1958,6 +1953,11 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>Open-Source-Protokoll und -Code – Jede Person kann ihre eigenen Server aufsetzen und nutzen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." xml:space="preserve">
+        <source>Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red.</source>
+        <target>***Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="PING interval" xml:space="preserve">
         <source>PING interval</source>
         <target>PING-Intervall</target>
@@ -2028,6 +2028,11 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>Bitte bewahren Sie das Passwort sicher auf, Sie können es NICHT mehr ändern, wenn Sie es vergessen haben oder verlieren.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve">
+        <source>Possibly, certificate fingerprint in server address is incorrect</source>
+        <target>***Possibly, certificate fingerprint in server address is incorrect</target>
+        <note>server test error</note>
+      </trans-unit>
       <trans-unit id="Preset server" xml:space="preserve">
         <source>Preset server</source>
         <target>***Preset server</target>
@@ -2061,6 +2066,11 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       <trans-unit id="Prohibit sending voice messages." xml:space="preserve">
         <source>Prohibit sending voice messages.</source>
         <target>***Prohibit sending voice messages.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Protect app screen" xml:space="preserve">
+        <source>Protect app screen</source>
+        <target>***Protect app screen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protocol timeout" xml:space="preserve">
@@ -2208,11 +2218,6 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>Zurückkehren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Role" xml:space="preserve">
-        <source>Role</source>
-        <target>Rolle</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Run chat" xml:space="preserve">
         <source>Run chat</source>
         <target>Chat starten</target>
@@ -2338,6 +2343,11 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>Datei-Ereignis wurde gesendet</target>
         <note>notification</note>
       </trans-unit>
+      <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve">
+        <source>Server requires authorization to create queues, check password</source>
+        <target>***Server requires authorization to create queues, check password</target>
+        <note>server test error</note>
+      </trans-unit>
       <trans-unit id="Server test failed!" xml:space="preserve">
         <source>Server test failed!</source>
         <target>***Server test failed!</target>
@@ -2408,10 +2418,30 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>SimpleX Sperre aktiviert</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="SimpleX contact address" xml:space="preserve">
+        <source>SimpleX contact address</source>
+        <target>SimpleX Kontaktadressen-Link</target>
+        <note>simplex link type</note>
+      </trans-unit>
       <trans-unit id="SimpleX encrypted message or connection event" xml:space="preserve">
         <source>SimpleX encrypted message or connection event</source>
         <target>SimpleX verschlüsselte Nachricht oder Verbindungs-Ereignis</target>
         <note>notification</note>
+      </trans-unit>
+      <trans-unit id="SimpleX group link" xml:space="preserve">
+        <source>SimpleX group link</source>
+        <target>SimpleX Gruppen-Link</target>
+        <note>simplex link type</note>
+      </trans-unit>
+      <trans-unit id="SimpleX links" xml:space="preserve">
+        <source>SimpleX links</source>
+        <target>***SimpleX links</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX one-time invitation" xml:space="preserve">
+        <source>SimpleX one-time invitation</source>
+        <target>SimpleX Einmal-Link</target>
+        <note>simplex link type</note>
       </trans-unit>
       <trans-unit id="Skip" xml:space="preserve">
         <source>Skip</source>
@@ -2670,6 +2700,11 @@ You will be prompted to complete authentication before this feature is enabled.<
 Sie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funktion aktiviert wird.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="To record voice message please grant permission to use Microphone." xml:space="preserve">
+        <source>To record voice message please grant permission to use Microphone.</source>
+        <target>***To record voice message please grant permission to use Microphone.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="To support instant push notifications the chat database has to be migrated." xml:space="preserve">
         <source>To support instant push notifications the chat database has to be migrated.</source>
         <target>Um sofortige Push-Benachrichtigungen zu unterstützen, muss die Chat-Datenbank migriert werden.</target>
@@ -2703,6 +2738,11 @@ Sie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funkt
       <trans-unit id="Turn on" xml:space="preserve">
         <source>Turn on</source>
         <target>Einschalten</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Unable to record voice message" xml:space="preserve">
+        <source>Unable to record voice message</source>
+        <target>***Unable to record voice message</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unexpected error: %@" xml:space="preserve">
@@ -2812,6 +2852,11 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>Verwende SimpleX Chat Server.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Via browser" xml:space="preserve">
+        <source>Via browser</source>
+        <target>***Via browser</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Video call" xml:space="preserve">
         <source>Video call</source>
         <target>Videoanruf</target>
@@ -2820,11 +2865,16 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
       <trans-unit id="Voice messages" xml:space="preserve">
         <source>Voice messages</source>
         <target>***Voice messages</target>
-        <note>No comment provided by engineer.</note>
+        <note>chat feature</note>
       </trans-unit>
       <trans-unit id="Voice messages are prohibited in this chat." xml:space="preserve">
         <source>Voice messages are prohibited in this chat.</source>
         <target>***Voice messages are prohibited in this chat.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Voice message…" xml:space="preserve">
+        <source>Voice message…</source>
+        <target>***Voice message…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Waiting for file" xml:space="preserve">
@@ -3131,11 +3181,6 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>Ihr Profil, Ihre Kontakte und zugestellten Nachrichten werden auf Ihrem Gerät gespeichert.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your random profile" xml:space="preserve">
-        <source>Your random profile</source>
-        <target>Ihr Zufallsprofil</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Your server" xml:space="preserve">
         <source>Your server</source>
         <target>***Your server</target>
@@ -3366,6 +3411,21 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>E2E-verschlüsselt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="enabled" xml:space="preserve">
+        <source>enabled</source>
+        <target>***enabled</target>
+        <note>enabled status</note>
+      </trans-unit>
+      <trans-unit id="enabled for contact" xml:space="preserve">
+        <source>enabled for contact</source>
+        <target>***enabled for contact</target>
+        <note>enabled status</note>
+      </trans-unit>
+      <trans-unit id="enabled for you" xml:space="preserve">
+        <source>enabled for you</source>
+        <target>***enabled for you</target>
+        <note>enabled status</note>
+      </trans-unit>
       <trans-unit id="ended" xml:space="preserve">
         <source>ended</source>
         <target>beendet</target>
@@ -3504,7 +3564,8 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
       <trans-unit id="off" xml:space="preserve">
         <source>off</source>
         <target>***off</target>
-        <note>group pref value</note>
+        <note>enabled status
+   group pref value</note>
       </trans-unit>
       <trans-unit id="on" xml:space="preserve">
         <source>on</source>
@@ -3719,8 +3780,8 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <note>Privacy - Face ID Usage Description</note>
       </trans-unit>
       <trans-unit id="NSMicrophoneUsageDescription" xml:space="preserve">
-        <source>SimpleX needs microphone access for audio and video calls.</source>
-        <target>SimpleX benötigt Zugriff auf das Mikrofon, um Audio- und Videoanrufe zu ermöglichen.</target>
+        <source>SimpleX needs microphone access for audio and video calls, and to record voice messages.</source>
+        <target>***SimpleX benötigt Zugriff auf das Mikrofon, um Audio- und Videoanrufe zu ermöglichen.</target>
         <note>Privacy - Microphone Usage Description</note>
       </trans-unit>
       <trans-unit id="NSPhotoLibraryAddUsageDescription" xml:space="preserve">

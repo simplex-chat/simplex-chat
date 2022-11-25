@@ -831,7 +831,7 @@ processChatCommand = \case
     contacts <- withStore' (`getUserContacts` user)
     withChatLock "sendMessageBroadcast" . procCmd $ do
       let mc = MCText $ safeDecodeUtf8 msg
-          cts = filter (\ct -> isReady ct && isDirect ct) contacts
+          cts = filter (\ct -> isReady ct && directContact ct) contacts
       forM_ cts $ \ct ->
         void
           ( do
@@ -840,9 +840,6 @@ processChatCommand = \case
           )
           `catchError` (toView . CRChatError)
       CRBroadcastSent mc (length cts) <$> liftIO getZonedTime
-    where
-      isDirect Contact {contactUsed, activeConn = Connection {connLevel, viaGroupLink}} =
-        (connLevel == 0 && not viaGroupLink) || contactUsed
   SendMessageQuote cName (AMsgDirection msgDir) quotedMsg msg -> withUser $ \user@User {userId} -> do
     contactId <- withStore $ \db -> getContactIdByName db user cName
     quotedItemId <- withStore $ \db -> getDirectChatItemIdByText db userId contactId msgDir (safeDecodeUtf8 quotedMsg)
@@ -1191,7 +1188,7 @@ processChatCommand = \case
             let mergedProfile = userProfileToSend user' Nothing $ Just ct
                 ct' = updateMergedPreferences user' ct
             void (sendDirectContactMessage ct $ XInfo mergedProfile) `catchError` (toView . CRChatError)
-            createFeatureChangedItems user' ct ct' CDDirectSnd CISndChatFeature
+            when (directContact ct) $ createFeatureChangedItems user' ct ct' CDDirectSnd CISndChatFeature
           pure $ CRUserProfileUpdated (fromLocalProfile p) p'
     updateContactPrefs :: User -> Contact -> Preferences -> m ChatResponse
     updateContactPrefs user@User {userId} ct@Contact {activeConn = Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
@@ -1202,7 +1199,7 @@ processChatCommand = \case
         let p' = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct')
         withChatLock "updateProfile" . procCmd $ do
           void (sendDirectContactMessage ct' $ XInfo p') `catchError` (toView . CRChatError)
-          createFeatureChangedItems user ct ct' CDDirectSnd CISndChatFeature
+          when (directContact ct) $ createFeatureChangedItems user ct ct' CDDirectSnd CISndChatFeature
           pure $ CRContactPrefsUpdated ct ct'
     isReady :: Contact -> Bool
     isReady ct =
@@ -1762,7 +1759,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
               -- [incognito] print incognito profile used for this contact
               incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
               toView $ CRContactConnected ct (fmap fromLocalProfile incognitoProfile)
-              createFeatureEnabledItems ct
+              when (directContact ct) $ createFeatureEnabledItems ct
               setActive $ ActiveC c
               showToast (c <> "> ") "connected"
               forM_ groupLinkId $ \_ -> probeMatchingContacts ct $ contactConnIncognito ct
@@ -2503,7 +2500,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
     xInfo c@Contact {profile = p} p' = unless (fromLocalProfile p == p') $ do
       c' <- withStore $ \db -> updateContactProfile db user c p'
       toView $ CRContactUpdated c c'
-      createFeatureChangedItems user c c' CDDirectRcv CIRcvChatFeature
+      when (directContact c) $ createFeatureChangedItems user c c' CDDirectRcv CIRcvChatFeature
 
     createFeatureEnabledItems :: Contact -> m ()
     createFeatureEnabledItems ct@Contact {mergedPreferences} =

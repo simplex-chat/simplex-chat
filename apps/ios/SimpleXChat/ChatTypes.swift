@@ -1798,7 +1798,7 @@ public enum SimplexLinkType: String, Decodable {
     public var description: String {
         switch self {
         case .contact: return NSLocalizedString("SimpleX contact address", comment: "simplex link type")
-        case .invitation: return NSLocalizedString("SimpleX 1-time invitation", comment: "simplex link type")
+        case .invitation: return NSLocalizedString("SimpleX one-time invitation", comment: "simplex link type")
         case .group: return NSLocalizedString("SimpleX group link", comment: "simplex link type")
         }
     }
