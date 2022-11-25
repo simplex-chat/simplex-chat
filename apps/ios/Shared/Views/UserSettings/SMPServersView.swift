@@ -79,7 +79,7 @@ struct SMPServersView: View {
             Button("Add preset servers", action: addAllPresets)
                 .disabled(hasAllPresets())
         }
-        .sheet(isPresented: $showScanSMPServer) {
+        .appSheet(isPresented: $showScanSMPServer) {
             ScanSMPServer(servers: $servers)
         }
         .alert(item: $alert) { a in

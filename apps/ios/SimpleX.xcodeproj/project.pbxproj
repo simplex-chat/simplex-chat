@@ -78,6 +78,7 @@
 		5CA059EB279559F40002BEB4 /* SimpleXApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA059C3279559F40002BEB4 /* SimpleXApp.swift */; };
 		5CA059ED279559F40002BEB4 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA059C4279559F40002BEB4 /* ContentView.swift */; };
 		5CA059EF279559F40002BEB4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5CA059C5279559F40002BEB4 /* Assets.xcassets */; };
+		5CA7DFC329302AF000F7FDDE /* AppSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA7DFC229302AF000F7FDDE /* AppSheet.swift */; };
 		5CADE79A29211BB900072E13 /* PreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CADE79929211BB900072E13 /* PreferencesView.swift */; };
 		5CADE79C292131E900072E13 /* ContactPreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CADE79B292131E900072E13 /* ContactPreferencesView.swift */; };
 		5CB0BA882826CB3A00B3292C /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 5CB0BA862826CB3A00B3292C /* InfoPlist.strings */; };
@@ -287,6 +288,7 @@
 		5CA059D7279559F40002BEB4 /* Tests iOS.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Tests iOS.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5CA059DB279559F40002BEB4 /* Tests_iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests_iOS.swift; sourceTree = "<group>"; };
 		5CA059DD279559F40002BEB4 /* Tests_iOSLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests_iOSLaunchTests.swift; sourceTree = "<group>"; };
+		5CA7DFC229302AF000F7FDDE /* AppSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSheet.swift; sourceTree = "<group>"; };
 		5CADE79929211BB900072E13 /* PreferencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesView.swift; sourceTree = "<group>"; };
 		5CADE79B292131E900072E13 /* ContactPreferencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactPreferencesView.swift; sourceTree = "<group>"; };
 		5CB0BA872826CB3A00B3292C /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/InfoPlist.strings; sourceTree = "<group>"; };
@@ -502,6 +504,7 @@
 				646BB38D283FDB6D001CE359 /* LocalAuthenticationUtils.swift */,
 				5C6BA666289BD954009B8ECC /* DismissSheets.swift */,
 				5C00164328A26FBC0094D739 /* ContextMenu.swift */,
+				5CA7DFC229302AF000F7FDDE /* AppSheet.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -956,6 +959,7 @@
 				5C2E261227A30FEA00F70299 /* TerminalView.swift in Sources */,
 				5CB2085128DB64CA00D024EC /* CreateLinkView.swift in Sources */,
 				5C9FD96E27A5D6ED0075386C /* SendMessageView.swift in Sources */,
+				5CA7DFC329302AF000F7FDDE /* AppSheet.swift in Sources */,
 				64E972072881BB22008DBC02 /* CIGroupInvitationView.swift in Sources */,
 				5CC1C99227A6C7F5000D9FF6 /* QRCode.swift in Sources */,
 				5C116CDC27AABE0400E66D01 /* ContactRequestView.swift in Sources */,

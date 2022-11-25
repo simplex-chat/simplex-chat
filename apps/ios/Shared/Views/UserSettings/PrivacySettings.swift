@@ -15,12 +15,16 @@ struct PrivacySettings: View {
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @AppStorage(GROUP_DEFAULT_PRIVACY_TRANSFER_IMAGES_INLINE, store: groupDefaults) private var transferImagesInline = false
     @State private var simplexLinkMode = privacySimplexLinkModeDefault.get()
+    @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = true
 
     var body: some View {
         VStack {
             List {
                 Section("Device") {
                     SimplexLockSetting()
+                    settingsRow("eye.slash") {
+                        Toggle("Protect screen", isOn: $protectScreen)
+                    }
                 }
 
                 Section {

@@ -53,7 +53,7 @@ struct SimpleXInfo: View {
                 .padding(.bottom, 8)
                 .frame(maxWidth: .infinity)
             }
-            .sheet(isPresented: $showHowItWorks) {
+            .appSheet(isPresented: $showHowItWorks) {
                 HowItWorks(onboarding: onboarding)
             }
         }
