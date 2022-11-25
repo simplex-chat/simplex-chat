@@ -1843,6 +1843,11 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>Die Gruppe wurde nicht gefunden!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="No permission to record voice message" xml:space="preserve">
+        <source>No permission to record voice message</source>
+        <target>***No permission to record voice message</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="No received or sent files" xml:space="preserve">
         <source>No received or sent files</source>
         <target>Keine empfangenen oder gesendeten Dateien</target>
@@ -1948,9 +1953,9 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>Open-Source-Protokoll und -Code – Jede Person kann ihre eigenen Server aufsetzen und nutzen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Opening the link in the browser may reduce connection privacy and security." xml:space="preserve">
-        <source>Opening the link in the browser may reduce connection privacy and security.</source>
-        <target>***Opening the link in the browser may reduce connection privacy and security.</target>
+      <trans-unit id="Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." xml:space="preserve">
+        <source>Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red.</source>
+        <target>***Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="PING interval" xml:space="preserve">
@@ -2061,6 +2066,11 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       <trans-unit id="Prohibit sending voice messages." xml:space="preserve">
         <source>Prohibit sending voice messages.</source>
         <target>***Prohibit sending voice messages.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Protect app screen" xml:space="preserve">
+        <source>Protect app screen</source>
+        <target>***Protect app screen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protocol timeout" xml:space="preserve">
@@ -2398,11 +2408,6 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>Vorschau anzeigen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX one-time invitation" xml:space="preserve">
-        <source>SimpleX one-time invitation</source>
-        <target>SimpleX Einmal-Link</target>
-        <note>simplex link type</note>
-      </trans-unit>
       <trans-unit id="SimpleX Lock" xml:space="preserve">
         <source>SimpleX Lock</source>
         <target>SimpleX Sperre</target>
@@ -2432,6 +2437,11 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <source>SimpleX links</source>
         <target>***SimpleX links</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX one-time invitation" xml:space="preserve">
+        <source>SimpleX one-time invitation</source>
+        <target>SimpleX Einmal-Link</target>
+        <note>simplex link type</note>
       </trans-unit>
       <trans-unit id="Skip" xml:space="preserve">
         <source>Skip</source>
@@ -2690,6 +2700,11 @@ You will be prompted to complete authentication before this feature is enabled.<
 Sie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funktion aktiviert wird.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="To record voice message please grant permission to use Microphone." xml:space="preserve">
+        <source>To record voice message please grant permission to use Microphone.</source>
+        <target>***To record voice message please grant permission to use Microphone.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="To support instant push notifications the chat database has to be migrated." xml:space="preserve">
         <source>To support instant push notifications the chat database has to be migrated.</source>
         <target>Um sofortige Push-Benachrichtigungen zu unterstützen, muss die Chat-Datenbank migriert werden.</target>
@@ -2723,6 +2738,11 @@ Sie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funkt
       <trans-unit id="Turn on" xml:space="preserve">
         <source>Turn on</source>
         <target>Einschalten</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Unable to record voice message" xml:space="preserve">
+        <source>Unable to record voice message</source>
+        <target>***Unable to record voice message</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unexpected error: %@" xml:space="preserve">

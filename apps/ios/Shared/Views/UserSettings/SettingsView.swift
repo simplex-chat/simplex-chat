@@ -24,6 +24,7 @@ let DEFAULT_WEBRTC_ICE_SERVERS = "webrtcICEServers"
 let DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
 let DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews"
 let DEFAULT_PRIVACY_SIMPLEX_LINK_MODE = "privacySimplexLinkMode"
+let DEFAULT_PRIVACY_PROTECT_SCREEN = "privacyProtectScreen"
 let DEFAULT_EXPERIMENTAL_CALLS = "experimentalCalls"
 let DEFAULT_CHAT_ARCHIVE_NAME = "chatArchiveName"
 let DEFAULT_CHAT_ARCHIVE_TIME = "chatArchiveTime"
@@ -45,6 +46,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_PRIVACY_ACCEPT_IMAGES: true,
     DEFAULT_PRIVACY_LINK_PREVIEWS: true,
     DEFAULT_PRIVACY_SIMPLEX_LINK_MODE: "description",
+    DEFAULT_PRIVACY_PROTECT_SCREEN: true,
     DEFAULT_EXPERIMENTAL_CALLS: false,
     DEFAULT_CHAT_V3_DB_MIGRATION: "offer",
     DEFAULT_DEVELOPER_TOOLS: false,
