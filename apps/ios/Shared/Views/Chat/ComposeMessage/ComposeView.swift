@@ -121,6 +121,13 @@ struct ComposeState {
         default: return false
         }
     }
+
+    var voicePreview: Bool {
+        switch preview {
+        case .voicePreview: return true
+        default: return false
+        }
+    }
 }
 
 func chatItemPreview(chatItem: ChatItem) -> ComposePreview {

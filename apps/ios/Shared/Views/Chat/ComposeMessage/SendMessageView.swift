@@ -91,7 +91,11 @@ struct SendMessageView: View {
                 .resizable()
                 .foregroundColor(.accentColor)
         }
-        .disabled(!composeState.sendEnabled || composeState.disabled)
+        .disabled(
+            !composeState.sendEnabled ||
+            composeState.disabled ||
+            (!voiceMessageAllowed && composeState.voicePreview)
+        )
         .frame(width: 29, height: 29)
         .padding([.bottom, .trailing], 4)
     }
