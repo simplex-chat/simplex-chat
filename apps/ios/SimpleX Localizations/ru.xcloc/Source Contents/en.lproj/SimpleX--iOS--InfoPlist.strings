@@ -5,6 +5,6 @@
 /* Privacy - Face ID Usage Description */
 "NSFaceIDUsageDescription" = "SimpleX uses Face ID for local authentication";
 /* Privacy - Microphone Usage Description */
-"NSMicrophoneUsageDescription" = "SimpleX needs microphone access for audio and video calls.";
+"NSMicrophoneUsageDescription" = "SimpleX needs microphone access for audio and video calls, and to record voice messages.";
 /* Privacy - Photo Library Additions Usage Description */
 "NSPhotoLibraryAddUsageDescription" = "SimpleX needs access to Photo Library for saving captured and received media";
