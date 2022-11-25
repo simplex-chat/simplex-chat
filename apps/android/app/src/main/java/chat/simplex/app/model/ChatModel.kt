@@ -1279,7 +1279,13 @@ class CIQuote (
   val content: MsgContent,
   val formattedText: List<FormattedText>? = null
 ): ItemContent {
-  override val text: String get() = content.text
+  override val text: String by lazy {
+    if (content is MsgContent.MCVoice && content.text.isEmpty())
+      content.toTextWithDuration(true)
+    else
+      content.text
+  }
+
 
   fun sender(membership: GroupMember?): String? = when (chatDir) {
     is CIDirection.DirectSnd -> generalGetString(R.string.sender_you_pronoun)
@@ -1365,7 +1371,7 @@ sealed class MsgContent {
 }
 
 fun MsgContent.MCVoice.toTextWithDuration(short: Boolean): String {
-  val time = String.format("%02d:%02d", duration / 60, duration % 60)
+  val time = durationToString(duration)
   return if (short) time else generalGetString(R.string.voice_message) + " ($time)"
 }
 
@@ -1578,11 +1584,9 @@ enum class CICallStatus {
     Accepted -> generalGetString(R.string.callstatus_accepted)
     Negotiated -> generalGetString(R.string.callstatus_connecting)
     Progress -> generalGetString(R.string.callstatus_in_progress)
-    Ended -> String.format(generalGetString(R.string.callstatus_ended), duration(sec))
+    Ended -> String.format(generalGetString(R.string.callstatus_ended), durationToString(sec))
     Error -> generalGetString(R.string.callstatus_error)
   }
-
-  fun duration(sec: Int): String = "%02d:%02d".format(sec / 60, sec % 60)
 }
 
 @Serializable

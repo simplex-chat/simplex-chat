@@ -65,7 +65,7 @@ fun CIVoiceView(
 
       val time = if (audioPlaying.value) audioInfo.value.progressMs else audioInfo.value.durationMs
       val minWidth = with(LocalDensity.current) { 45.sp.toDp() }
-      val text = String.format("%02d:%02d", time / 1000 / 60, time / 1000 % 60)
+      val text = durationToString(time / 1000)
       if (hasText) {
         VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, audioInfo, brokenAudio, play, pause)
         Text(

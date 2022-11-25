@@ -57,12 +57,8 @@ fun FramedItemView(
       Modifier.padding(vertical = 6.dp, horizontal = 12.dp),
       contentAlignment = Alignment.TopStart
     ) {
-      val text = if (qi.content is MsgContent.MCVoice && qi.text.isEmpty())
-        qi.content.toTextWithDuration(true)
-      else
-        qi.text
       MarkdownText(
-        text, qi.formattedText, sender = qi.sender(membership()), senderBold = true, maxLines = 3,
+        qi.text, qi.formattedText, sender = qi.sender(membership()), senderBold = true, maxLines = 3,
         style = TextStyle(fontSize = 15.sp, color = MaterialTheme.colors.onSurface)
       )
     }
