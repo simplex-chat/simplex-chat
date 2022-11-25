@@ -1,7 +1,8 @@
-package chat.simplex.app.views.usersettings
+package chat.simplex.app.views.chat.group
 
+import InfoRow
+import SectionDivider
 import SectionItemView
-import SectionItemWithValue
 import SectionSpacer
 import SectionTextFooter
 import SectionView
@@ -63,19 +64,19 @@ private fun GroupPreferencesLayout(
     FeatureSection(Feature.FullDelete, allowFullDeletion, groupInfo) {
       applyPrefs(preferences.copy(fullDelete = GroupPreference(enable = it)))
     }
-
     SectionSpacer()
     val allowVoice = remember(preferences) { mutableStateOf(preferences.voice.enable) }
     FeatureSection(Feature.Voice, allowVoice, groupInfo) {
       applyPrefs(preferences.copy(voice = GroupPreference(enable = it)))
     }
-
-    SectionSpacer()
-    ResetSaveButtons(
-      reset = reset,
-      save = savePrefs,
-      disabled = preferences == currentPreferences
-    )
+    if (groupInfo.canEdit) {
+      SectionSpacer()
+      ResetSaveButtons(
+        reset = reset,
+        save = savePrefs,
+        disabled = preferences == currentPreferences
+      )
+    }
   }
 }
 
@@ -93,13 +94,9 @@ private fun FeatureSection(feature: Feature, enableFeature: State<GroupFeatureEn
         )
       }
     } else {
-      SectionItemWithValue(
+      InfoRow(
         feature.text(),
-        remember { mutableStateOf(enableFeature.value) },
-        listOf(ValueTitleDesc(enableFeature.value, enableFeature.value.text, "")),
-        icon = null,
-        enabled = remember { mutableStateOf(true) },
-        onSelected = {}
+        enableFeature.value.text
       )
     }
   }
@@ -109,10 +106,11 @@ private fun FeatureSection(feature: Feature, enableFeature: State<GroupFeatureEn
 @Composable
 private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Boolean) {
   SectionView {
-    SectionItemView(reset) {
+    SectionItemView(reset, disabled = disabled) {
       Text(stringResource(R.string.reset_verb), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
     }
-    SectionItemView(save) {
+    SectionDivider()
+    SectionItemView(save, disabled = disabled) {
       Text(stringResource(R.string.save_and_notify_group_members), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
     }
   }
