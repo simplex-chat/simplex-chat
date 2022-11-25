@@ -2009,6 +2009,14 @@ data class FeatureEnabled(
   val forUser: Boolean,
   val forContact: Boolean
 ) {
+  val text: String
+    get() = when {
+      forUser && forContact -> generalGetString(R.string.feature_enabled)
+      forUser -> generalGetString(R.string.feature_enabled_for_you)
+      forContact -> generalGetString(R.string.feature_enabled_for_contact)
+      else -> generalGetString(R.string.feature_off)
+    }
+
   companion object {
     fun enabled(user: ChatPreference, contact: ChatPreference): FeatureEnabled =
       when {
