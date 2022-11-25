@@ -941,6 +941,11 @@
     <string name="your_preferences">Ваши предпочтения</string>
     <string name="full_deletion">Полное удаление</string>
     <string name="voice_messages">Голосовые сообщения</string>
+    <string name="feature_enabled">включено</string>
+    <string name="feature_enabled_for_you">включено для вас</string>
+    <string name="feature_enabled_for_contact">включено для контакта</string>
+    <string name="feature_off">выключено</string>
+    <string name="feature_received_prohibited">получено, не разрешено</string>
     <string name="allow_your_contacts_irreversibly_delete">Разрешить вашим контактам необратимо удалять отправленные сообщения.</string>
     <string name="allow_irreversible_message_deletion_only_if">Разрешить необратимое удаление сообщений, только если ваш контакт разрешает это вам.</string>
     <string name="contacts_can_mark_messages_for_deletion">Контакты могут помечать сообщения для удаления; вы сможете просмотреть их.</string>
