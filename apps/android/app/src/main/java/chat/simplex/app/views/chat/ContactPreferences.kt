@@ -1,8 +1,8 @@
 package chat.simplex.app.views.chat
 
+import InfoRow
 import SectionDivider
 import SectionItemView
-import SectionItemWithValue
 import SectionSpacer
 import SectionTextFooter
 import SectionView
@@ -74,13 +74,11 @@ private fun ContactPreferencesLayout(
     FeatureSection(Feature.FullDelete, user.fullPreferences.fullDelete.allow, contact.mergedPreferences.fullDelete, allowFullDeletion) {
       applyPrefs(featuresAllowed.copy(fullDelete = it))
     }
-
     SectionSpacer()
     val allowVoice: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.voice) }
     FeatureSection(Feature.Voice, user.fullPreferences.voice.allow, contact.mergedPreferences.voice, allowVoice) {
       applyPrefs(featuresAllowed.copy(voice = it))
     }
-
     SectionSpacer()
     ResetSaveButtons(
       reset = reset,
@@ -119,13 +117,9 @@ private fun FeatureSection(
       )
     }
     SectionDivider()
-    SectionItemWithValue(
+    InfoRow(
       generalGetString(R.string.chat_preferences_contact_allows),
-      remember { mutableStateOf(pref.contactPreference.allow) },
-      listOf(ValueTitleDesc(pref.contactPreference.allow, pref.contactPreference.allow.text, "")),
-      icon = null,
-      enabled = remember { mutableStateOf(true) },
-      onSelected = {}
+      pref.contactPreference.allow.text
     )
   }
   SectionTextFooter(feature.enabledDescription(enabled))
@@ -134,11 +128,11 @@ private fun FeatureSection(
 @Composable
 private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Boolean) {
   SectionView {
-    SectionItemView(reset) {
+    SectionItemView(reset, disabled = disabled) {
       Text(stringResource(R.string.reset_verb), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
     }
     SectionDivider()
-    SectionItemView(save) {
+    SectionItemView(save, disabled = disabled) {
       Text(stringResource(R.string.save_and_notify_contact), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
     }
   }
