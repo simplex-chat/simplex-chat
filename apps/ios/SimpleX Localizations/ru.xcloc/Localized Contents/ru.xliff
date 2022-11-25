@@ -1843,6 +1843,11 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Группа не найдена!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="No permission to record voice message" xml:space="preserve">
+        <source>No permission to record voice message</source>
+        <target>Нет разрешения на запись голоса</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="No received or sent files" xml:space="preserve">
         <source>No received or sent files</source>
         <target>Нет полученных или отправленных файлов</target>
@@ -1948,9 +1953,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Открытый протокол и код - кто угодно может запустить сервер.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Opening the link in the browser may reduce connection privacy and security." xml:space="preserve">
-        <source>Opening the link in the browser may reduce connection privacy and security.</source>
-        <target>Использование ссылки в браузере может уменьшить конфиденциальность и безопасность соединения.</target>
+      <trans-unit id="Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." xml:space="preserve">
+        <source>Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red.</source>
+        <target>Использование ссылки в браузере может уменьшить конфиденциальность и безопасность соединения. Ссылки на неизвестные сайты будут красными.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="PING interval" xml:space="preserve">
@@ -2061,6 +2066,11 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="Prohibit sending voice messages." xml:space="preserve">
         <source>Prohibit sending voice messages.</source>
         <target>Запретить отправлять голосовые сообщений.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Protect app screen" xml:space="preserve">
+        <source>Protect app screen</source>
+        <target>Защитить экран приложения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protocol timeout" xml:space="preserve">
@@ -2398,11 +2408,6 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Показывать уведомления</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX one-time invitation" xml:space="preserve">
-        <source>SimpleX one-time invitation</source>
-        <target>SimpleX одноразовая ссылка</target>
-        <note>simplex link type</note>
-      </trans-unit>
       <trans-unit id="SimpleX Lock" xml:space="preserve">
         <source>SimpleX Lock</source>
         <target>Блокировка SimpleX</target>
@@ -2432,6 +2437,11 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>SimpleX links</source>
         <target>SimpleX ссылки</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX one-time invitation" xml:space="preserve">
+        <source>SimpleX one-time invitation</source>
+        <target>SimpleX одноразовая ссылка</target>
+        <note>simplex link type</note>
       </trans-unit>
       <trans-unit id="Skip" xml:space="preserve">
         <source>Skip</source>
@@ -2690,6 +2700,11 @@ You will be prompted to complete authentication before this feature is enabled.<
 Вам будет нужно пройти аутентификацию для включения блокировки.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="To record voice message please grant permission to use Microphone." xml:space="preserve">
+        <source>To record voice message please grant permission to use Microphone.</source>
+        <target>Для записи голосового сообщения, пожалуйста разрешите доступ к микрофону.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="To support instant push notifications the chat database has to be migrated." xml:space="preserve">
         <source>To support instant push notifications the chat database has to be migrated.</source>
         <target>Для поддержки мгновенный доставки уведомлений данные чата должны быть перемещены.</target>
@@ -2723,6 +2738,11 @@ You will be prompted to complete authentication before this feature is enabled.<
       <trans-unit id="Turn on" xml:space="preserve">
         <source>Turn on</source>
         <target>Включить</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Unable to record voice message" xml:space="preserve">
+        <source>Unable to record voice message</source>
+        <target>Невозможно записать голосовое сообщение</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unexpected error: %@" xml:space="preserve">

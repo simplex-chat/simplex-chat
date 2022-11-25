@@ -23,7 +23,7 @@ struct PrivacySettings: View {
                 Section("Device") {
                     SimplexLockSetting()
                     settingsRow("eye.slash") {
-                        Toggle("Protect screen", isOn: $protectScreen)
+                        Toggle("Protect app screen", isOn: $protectScreen)
                     }
                 }
 
