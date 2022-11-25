@@ -54,8 +54,7 @@ struct ChatView: View {
             ComposeView(
                 chat: chat,
                 composeState: $composeState,
-                keyboardVisible: $keyboardVisible,
-                voiceMessageAllowed: chat.chatInfo.voiceMessageAllowed
+                keyboardVisible: $keyboardVisible
             )
             .disabled(!cInfo.sendMsgEnabled)
         }

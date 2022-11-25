@@ -144,7 +144,7 @@ func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
 
 struct ComposeView: View {
     @EnvironmentObject var chatModel: ChatModel
-    let chat: Chat
+    @ObservedObject var chat: Chat
     @Binding var composeState: ComposeState
     @FocusState.Binding var keyboardVisible: Bool
 
@@ -160,7 +160,6 @@ struct ComposeView: View {
     @State private var showFileImporter = false
     @State var chosenFile: URL? = nil
 
-    @State var voiceMessageAllowed: Bool = true
     @State private var audioRecorder: AudioRecorder?
     @State private var voiceMessageRecordingTime: TimeInterval?
     @State private var startingRecording: Bool = false
@@ -190,7 +189,7 @@ struct ComposeView: View {
                         sendMessage()
                         resetLinkPreview()
                     },
-                    voiceMessageAllowed: $voiceMessageAllowed,
+                    voiceMessageAllowed: chat.chatInfo.voiceMessageAllowed,
                     startVoiceMessageRecording: {
                         Task {
                             await startVoiceMessageRecording()

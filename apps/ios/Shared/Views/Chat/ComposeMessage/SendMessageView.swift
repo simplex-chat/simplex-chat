@@ -12,7 +12,7 @@ import SimpleXChat
 struct SendMessageView: View {
     @Binding var composeState: ComposeState
     var sendMessage: () -> Void
-    @Binding var voiceMessageAllowed: Bool
+    var voiceMessageAllowed: Bool = true
     var startVoiceMessageRecording: (() -> Void)? = nil
     var finishVoiceMessageRecording: (() -> Void)? = nil
     @State private var longPressingVMR = false
@@ -159,7 +159,6 @@ struct SendMessageView_Previews: PreviewProvider {
                 SendMessageView(
                     composeState: $composeStateNew,
                     sendMessage: {},
-                    voiceMessageAllowed: Binding.constant(true),
                     keyboardVisible: $keyboardVisible
                 )
             }
@@ -169,7 +168,6 @@ struct SendMessageView_Previews: PreviewProvider {
                 SendMessageView(
                     composeState: $composeStateEditing,
                     sendMessage: {},
-                    voiceMessageAllowed: Binding.constant(true),
                     keyboardVisible: $keyboardVisible
                 )
             }
