@@ -447,9 +447,6 @@
 "connecting…" = "Verbinde…";
 
 /* No comment provided by engineer. */
-"Connection" = "Verbindung steht";
-
-/* No comment provided by engineer. */
 "Connection error" = "Verbindungsfehler";
 
 /* No comment provided by engineer. */
@@ -469,9 +466,6 @@
 
 /* connection information */
 "connection:%@" = "Verbindung:%@";
-
-/* No comment provided by engineer. */
-"Contact allows" = "***Contact allows";
 
 /* No comment provided by engineer. */
 "Contact already exists" = "Der Kontakt ist bereits vorhanden";
@@ -559,9 +553,6 @@
 
 /* No comment provided by engineer. */
 "Database error" = "Datenbankfehler";
-
-/* No comment provided by engineer. */
-"Database ID" = "Datenbank-ID";
 
 /* No comment provided by engineer. */
 "Database is encrypted using a random passphrase, you can change it." = "Die Datenbank wird mit einem zufälligen Passwort verschlüsselt, Sie können es ändern.";
@@ -687,6 +678,9 @@
 "deleted group" = "Gruppe gelöscht";
 
 /* No comment provided by engineer. */
+"Description" = "***Description";
+
+/* No comment provided by engineer. */
 "Develop" = "Entwicklung";
 
 /* No comment provided by engineer. */
@@ -754,6 +748,15 @@
 
 /* No comment provided by engineer. */
 "Enable TCP keep-alive" = "TCP-Keep-alive aktivieren";
+
+/* enabled status */
+"enabled" = "***enabled";
+
+/* enabled status */
+"enabled for contact" = "***enabled for contact";
+
+/* enabled status */
+"enabled for you" = "***enabled for you";
 
 /* No comment provided by engineer. */
 "Encrypt" = "Verschlüsseln";
@@ -876,6 +879,9 @@
 "Error saving ICE servers" = "Fehler beim Speichern der ICE-Server";
 
 /* No comment provided by engineer. */
+"Error saving passphrase to keychain" = "***Error saving passphrase to keychain";
+
+/* No comment provided by engineer. */
 "Error saving SMP servers" = "Fehler beim Speichern der SMP Server";
 
 /* No comment provided by engineer. */
@@ -915,6 +921,9 @@
 "Exporting database archive..." = "Export des Datenbankarchivs...";
 
 /* No comment provided by engineer. */
+"Failed to remove passphrase" = "***Failed to remove passphrase";
+
+/* No comment provided by engineer. */
 "File will be received when your contact is online, please wait or check later!" = "Die Datei wird empfangen, sobald Ihr Kontakt online ist. Bitte warten oder schauen Sie später nochmal nach!";
 
 /* No comment provided by engineer. */
@@ -923,17 +932,17 @@
 /* No comment provided by engineer. */
 "For console" = "Für Konsole";
 
-/* No comment provided by engineer. */
+/* chat feature */
 "Full deletion" = "***Full deletion";
+
+/* No comment provided by engineer. */
+"Full link" = "***Full link";
 
 /* No comment provided by engineer. */
 "Full name (optional)" = "Vollständiger Name (optional)";
 
 /* No comment provided by engineer. */
 "Full name:" = "Vollständiger Name:";
-
-/* No comment provided by engineer. */
-"Group" = "Gruppe";
 
 /* No comment provided by engineer. */
 "group deleted" = "Gruppe gelöscht";
@@ -1176,10 +1185,10 @@
 "Limitations" = "Einschränkungen";
 
 /* No comment provided by engineer. */
-"Local name" = "Lokaler Name";
+"Make a private connection" = "Stellen Sie eine private Verbindung her";
 
 /* No comment provided by engineer. */
-"Make a private connection" = "Stellen Sie eine private Verbindung her";
+"Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." = "***Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@).";
 
 /* No comment provided by engineer. */
 "Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." = "Stellen Sie sicher, dass die WebRTC ICE-Server Adressen das richtige Format haben, zeilenweise angeordnet und nicht kopiert sind.";
@@ -1310,7 +1319,8 @@
 /* No comment provided by engineer. */
 "Notifications are disabled!" = "Benachrichtigungen sind deaktiviert!";
 
-/* group pref value */
+/* enabled status
+   group pref value */
 "off" = "***off";
 
 /* No comment provided by engineer. */
@@ -1369,6 +1379,9 @@
 
 /* No comment provided by engineer. */
 "Open-source protocol and code – anybody can run the servers." = "Open-Source-Protokoll und -Code – Jede Person kann ihre eigenen Server aufsetzen und nutzen.";
+
+/* No comment provided by engineer. */
+"Opening the link in the browser may reduce connection privacy and security." = "***Opening the link in the browser may reduce connection privacy and security.";
 
 /* No comment provided by engineer. */
 "or chat with the developers" = "oder chatten Sie mit den Entwicklern";
@@ -1551,9 +1564,6 @@
 "Revert" = "Zurückkehren";
 
 /* No comment provided by engineer. */
-"Role" = "Rolle";
-
-/* No comment provided by engineer. */
 "Run chat" = "Chat starten";
 
 /* chat item action */
@@ -1670,14 +1680,26 @@
 /* No comment provided by engineer. */
 "Show QR code" = "QR-Code anzeigen";
 
+/* simplex link type */
+"SimpleX contact address" = "SimpleX Kontaktadressen-Link";
+
 /* notification */
 "SimpleX encrypted message or connection event" = "SimpleX verschlüsselte Nachricht oder Verbindungs-Ereignis";
+
+/* simplex link type */
+"SimpleX group link" = "SimpleX Gruppen-Link";
+
+/* No comment provided by engineer. */
+"SimpleX links" = "***SimpleX links";
 
 /* No comment provided by engineer. */
 "SimpleX Lock" = "SimpleX Sperre";
 
 /* No comment provided by engineer. */
 "SimpleX Lock turned on" = "SimpleX Sperre aktiviert";
+
+/* simplex link type */
+"SimpleX one-time invitation" = "SimpleX Einmal-Link";
 
 /* No comment provided by engineer. */
 "Skip" = "Überspringen";
@@ -1937,6 +1959,9 @@
 /* No comment provided by engineer. */
 "v%@ (%@)" = "v%@ (%@)";
 
+/* No comment provided by engineer. */
+"Via browser" = "***Via browser";
+
 /* chat list item description */
 "via contact address link" = "über einen Kontaktadressen-Link";
 
@@ -1956,6 +1981,9 @@
 "video call (not e2e encrypted)" = "Videoanruf (nicht E2E verschlüsselt)";
 
 /* No comment provided by engineer. */
+"Voice message…" = "***Voice message…";
+
+/* chat feature */
 "Voice messages" = "***Voice messages";
 
 /* No comment provided by engineer. */
@@ -2176,9 +2204,6 @@
 
 /* No comment provided by engineer. */
 "Your profile, contacts and delivered messages are stored on your device." = "Ihr Profil, Ihre Kontakte und zugestellten Nachrichten werden auf Ihrem Gerät gespeichert.";
-
-/* No comment provided by engineer. */
-"Your random profile" = "Ihr Zufallsprofil";
 
 /* No comment provided by engineer. */
 "Your server" = "***Your server";

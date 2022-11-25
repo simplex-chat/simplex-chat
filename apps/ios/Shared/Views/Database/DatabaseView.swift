@@ -289,7 +289,7 @@ struct DatabaseView: View {
                 }
             )
         case let .error(title, error):
-            return Alert(title: Text(title), message: Text("\(error)"))
+            return Alert(title: Text(title), message: Text(error))
         }
     }
 
