@@ -198,6 +198,9 @@
 "All your contacts will remain connected" = "Alle Ihre Kontakte bleiben verbunden.";
 
 /* No comment provided by engineer. */
+"Allow" = "***Allow";
+
+/* No comment provided by engineer. */
 "Allow irreversible message deletion only if your contact allows it to you." = "***Allow irreversible message deletion only if your contact allows it to you.";
 
 /* No comment provided by engineer. */
@@ -208,6 +211,9 @@
 
 /* No comment provided by engineer. */
 "Allow voice messages only if your contact allows them." = "***Allow voice messages only if your contact allows them.";
+
+/* No comment provided by engineer. */
+"Allow voice messages?" = "***Allow voice messages?";
 
 /* No comment provided by engineer. */
 "Allow your contacts to irreversibly delete sent messages." = "***Allow your contacts to irreversibly delete sent messages.";
@@ -1360,6 +1366,9 @@
 "Only group owners can change group preferences." = "***Only group owners can change group preferences.";
 
 /* No comment provided by engineer. */
+"Only group owners can enable voice messages." = "***Only group owners can enable voice messages.";
+
+/* No comment provided by engineer. */
 "Only you can irreversibly delete messages (your contact can mark them for deletion)." = "***Only you can irreversibly delete messages (your contact can mark them for deletion).";
 
 /* No comment provided by engineer. */
@@ -1417,10 +1426,16 @@
 "PING interval" = "PING-Intervall";
 
 /* No comment provided by engineer. */
+"Please ask your contact to enable sending voice messages." = "***Please ask your contact to enable sending voice messages.";
+
+/* No comment provided by engineer. */
 "Please check that you used the correct link or ask your contact to send you another one." = "Überprüfen Sie bitte, ob Sie den richtigen Link genutzt haben oder bitten Sie Ihren Kontakt nochmal darum, Ihnen einen Link zuzusenden.";
 
 /* No comment provided by engineer. */
 "Please check your network connection and try again." = "Bitte überprüfen Sie Ihre Netzwerkverbindung und versuchen Sie es erneut.";
+
+/* No comment provided by engineer. */
+"Please check yours and your contact preferences." = "***Please check yours and your contact preferences.";
 
 /* No comment provided by engineer. */
 "Please enter correct current passphrase." = "Bitte geben Sie das korrekte, aktuelle Passwort ein.";
@@ -2002,6 +2017,9 @@
 "Voice messages are prohibited in this chat." = "***Voice messages are prohibited in this chat.";
 
 /* No comment provided by engineer. */
+"Voice messages prohibited!" = "***Voice messages prohibited!";
+
+/* No comment provided by engineer. */
 "waiting for answer…" = "Warten auf Antwort…";
 
 /* No comment provided by engineer. */
@@ -2120,6 +2138,9 @@
 
 /* No comment provided by engineer. */
 "You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." = "Sie dürfen die neueste Version Ihrer Chat-Datenbank NUR auf einem Gerät verwenden, andernfalls erhalten Sie möglicherweise keine Nachrichten mehr von einigen Ihrer Kontakte.";
+
+/* No comment provided by engineer. */
+"You need to allow your contact to send voice messages to be able to send them." = "***You need to allow your contact to send voice messages to be able to send them.";
 
 /* No comment provided by engineer. */
 "You rejected group invitation" = "Sie haben die Gruppeneinladung abgelehnt";

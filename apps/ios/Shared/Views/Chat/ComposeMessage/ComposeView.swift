@@ -197,12 +197,14 @@ struct ComposeView: View {
                         resetLinkPreview()
                     },
                     voiceMessageAllowed: chat.chatInfo.voiceMessageAllowed,
+                    showEnableVoiceMessagesAlert: chat.chatInfo.showEnableVoiceMessagesAlert,
                     startVoiceMessageRecording: {
                         Task {
                             await startVoiceMessageRecording()
                         }
                     },
                     finishVoiceMessageRecording: { finishVoiceMessageRecording() },
+                    allowVoiceMessagesToContact: { allowVoiceMessagesToContact() },
                     keyboardVisible: $keyboardVisible
                 )
                 .padding(.trailing, 12)
@@ -499,6 +501,24 @@ struct ComposeView: View {
         if let fileName = composeState.voiceMessageRecordingFileName,
            let fileSize = fileSize(getAppFilePath(fileName)) {
             logger.debug("finishVoiceMessageRecording recording file size = \(fileSize)")
+        }
+    }
+
+    private func allowVoiceMessagesToContact() {
+        if case let .direct(contact) = chat.chatInfo {
+            Task {
+                do {
+                    var prefs = contactUserPreferencesToPreferences(contact.mergedPreferences)
+                    prefs.voice = Preference(allow: .yes)
+                    if let toContact = try await apiSetContactPrefs(contactId: contact.contactId, preferences: prefs) {
+                        await MainActor.run {
+                            chatModel.updateContact(toContact)
+                        }
+                    }
+                } catch {
+                    logger.error("ComposeView allowVoiceMessagesToContact, apiSetContactPrefs error: \(responseError(error))")
+                }
+            }
         }
     }
 
