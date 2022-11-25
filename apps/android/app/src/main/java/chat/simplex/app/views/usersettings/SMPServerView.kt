@@ -182,7 +182,7 @@ private fun UseServerSection(
 @Composable
 fun ShowTestStatus(server: ServerCfg, modifier: Modifier = Modifier) =
   when (server.tested) {
-    true -> Icon(Icons.Outlined.Check, null, modifier, tint = Color.Green)
+    true -> Icon(Icons.Outlined.Check, null, modifier, tint = SimplexGreen)
     false -> Icon(Icons.Outlined.Clear, null, modifier, tint = MaterialTheme.colors.error)
     else -> Icon(Icons.Outlined.Check, null, modifier, tint = Color.Transparent)
   }

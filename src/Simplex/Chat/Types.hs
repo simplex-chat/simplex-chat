@@ -552,9 +552,10 @@ prefEnabledToText = \case
   PrefEnabled {forUser = True, forContact = False} -> "enabled for you"
   PrefEnabled {forUser = False, forContact = True} -> "enabled for contact"
 
-contactUserPreferences' :: User -> Contact -> ContactUserPreferences
-contactUserPreferences' user ct =
-  contactUserPreferences user (userPreferences ct) (preferences' ct) (contactConnIncognito ct)
+updateMergedPreferences :: User -> Contact -> Contact
+updateMergedPreferences user ct =
+  let mergedPreferences = contactUserPreferences user (userPreferences ct) (preferences' ct) (contactConnIncognito ct)
+   in ct {mergedPreferences}
 
 contactUserPreferences :: User -> Preferences -> Maybe Preferences -> Bool -> ContactUserPreferences
 contactUserPreferences user userPreferences contactPreferences connectedIncognito =

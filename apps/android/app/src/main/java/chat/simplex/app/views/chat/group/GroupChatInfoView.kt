@@ -4,6 +4,7 @@ import InfoRow
 import SectionDivider
 import SectionItemView
 import SectionSpacer
+import SectionTextFooter
 import SectionView
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
@@ -28,6 +29,7 @@ import chat.simplex.app.views.chat.*
 import chat.simplex.app.views.chatlist.cantInviteIncognitoAlert
 import chat.simplex.app.views.chatlist.setGroupMembers
 import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.usersettings.*
 
 @Composable
 fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
@@ -61,6 +63,14 @@ fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
       },
       editGroupProfile = {
         ModalManager.shared.showCustomModal { close -> GroupProfileView(groupInfo, chatModel, close) }
+      },
+      openPreferences = {
+        ModalManager.shared.showModal(true) {
+          GroupPreferencesView(
+            chatModel,
+            groupInfo
+          )
+        }
       },
       deleteGroup = { deleteGroupDialog(chat.chatInfo, groupInfo, chatModel, close) },
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) },
@@ -120,6 +130,7 @@ fun GroupChatInfoLayout(
   addMembers: () -> Unit,
   showMemberInfo: (GroupMember) -> Unit,
   editGroupProfile: () -> Unit,
+  openPreferences: () -> Unit,
   deleteGroup: () -> Unit,
   clearChat: () -> Unit,
   leaveGroup: () -> Unit,
@@ -137,6 +148,16 @@ fun GroupChatInfoLayout(
     ) {
       GroupChatInfoHeader(chat.chatInfo)
     }
+    SectionSpacer()
+
+    SectionView {
+      if (groupInfo.canEdit) {
+        SectionItemView(editGroupProfile) { EditGroupProfileButton() }
+        SectionDivider()
+      }
+      GroupPreferencesButton(openPreferences)
+    }
+    SectionTextFooter(stringResource(R.string.only_group_owners_can_change_prefs))
     SectionSpacer()
 
     SectionView(title = String.format(generalGetString(R.string.group_info_section_title_num_members), members.count() + 1)) {
@@ -160,10 +181,6 @@ fun GroupChatInfoLayout(
     }
     SectionSpacer()
     SectionView {
-      if (groupInfo.canEdit) {
-        SectionItemView(editGroupProfile) { EditGroupProfileButton() }
-        SectionDivider()
-      }
       ClearChatButton(clearChat)
       if (groupInfo.canDelete) {
         SectionDivider()
@@ -209,6 +226,15 @@ fun GroupChatInfoHeader(cInfo: ChatInfo) {
       )
     }
   }
+}
+
+@Composable
+private fun GroupPreferencesButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    Icons.Outlined.ToggleOn,
+    stringResource(R.string.group_preferences),
+    click = onClick
+  )
 }
 
 @Composable
@@ -286,10 +312,10 @@ fun GroupLinkButton() {
     Icon(
       Icons.Outlined.Link,
       stringResource(R.string.group_link),
-      tint = MaterialTheme.colors.primary
+      tint = HighOrLowlight
     )
     Spacer(Modifier.size(8.dp))
-    Text(stringResource(R.string.group_link), color = MaterialTheme.colors.primary)
+    Text(stringResource(R.string.group_link))
   }
 }
 
@@ -303,10 +329,10 @@ fun EditGroupProfileButton() {
     Icon(
       Icons.Outlined.Edit,
       stringResource(R.string.button_edit_group_profile),
-      tint = MaterialTheme.colors.primary
+      tint = HighOrLowlight
     )
     Spacer(Modifier.size(8.dp))
-    Text(stringResource(R.string.button_edit_group_profile), color = MaterialTheme.colors.primary)
+    Text(stringResource(R.string.button_edit_group_profile))
   }
 }
 
@@ -355,7 +381,7 @@ fun PreviewGroupChatInfoLayout() {
       groupInfo = GroupInfo.sampleData,
       members = listOf(GroupMember.sampleData, GroupMember.sampleData, GroupMember.sampleData),
       developerTools = false,
-      addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}, manageGroupLink = {},
+      addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, openPreferences = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}, manageGroupLink = {},
     )
   }
 }

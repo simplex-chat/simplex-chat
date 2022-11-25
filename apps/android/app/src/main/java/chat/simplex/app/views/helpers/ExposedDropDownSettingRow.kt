@@ -10,9 +10,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
+import chat.simplex.app.ui.theme.DEFAULT_PADDING
 import chat.simplex.app.ui.theme.HighOrLowlight
 
 @Composable
@@ -27,7 +30,7 @@ fun <T> ExposedDropDownSettingRow(
   onSelected: (T) -> Unit
 ) {
   Row(
-    Modifier.fillMaxWidth(),
+    Modifier.fillMaxWidth().padding(vertical = 10.dp),
     verticalAlignment = Alignment.CenterVertically,
   ) {
     var expanded by remember { mutableStateOf(false) }
@@ -40,9 +43,7 @@ fun <T> ExposedDropDownSettingRow(
         tint = iconTint
       )
     }
-    Text(title, color = if (enabled.value) Color.Unspecified else HighOrLowlight)
-
-    Spacer(Modifier.fillMaxWidth().weight(1f))
+    Text(title, Modifier.weight(1f), color = if (enabled.value) Color.Unspecified else HighOrLowlight)
 
     ExposedDropdownMenuBox(
       expanded = expanded,
@@ -55,8 +56,10 @@ fun <T> ExposedDropDownSettingRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.End
       ) {
+        val maxWidth = with(LocalDensity.current){ 180.sp.toDp() }
         Text(
           values.first { it.first == selection.value }.second + (if (label != null) " $label" else ""),
+          Modifier.widthIn(max = maxWidth),
           maxLines = 1,
           overflow = TextOverflow.Ellipsis,
           color = HighOrLowlight

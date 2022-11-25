@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
+import chat.simplex.app.views.helpers.durationToString
 
 @Composable
 fun CICallItemView(cInfo: ChatInfo, cItem: ChatItem, status: CICallStatus, duration: Int, acceptCall: (Contact) -> Unit) {
@@ -24,7 +25,7 @@ fun CICallItemView(cInfo: ChatInfo, cItem: ChatItem, status: CICallStatus, durat
     Modifier
       .padding(horizontal = 4.dp)
       .padding(bottom = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-    @Composable fun ConnectingCallIcon() = Icon(Icons.Outlined.SettingsPhone, stringResource(R.string.icon_descr_call_connecting), tint = Color.Green)
+    @Composable fun ConnectingCallIcon() = Icon(Icons.Outlined.SettingsPhone, stringResource(R.string.icon_descr_call_connecting), tint = SimplexGreen)
     when (status) {
       CICallStatus.Pending -> if (sent) {
         Icon(Icons.Outlined.Call, stringResource(R.string.icon_descr_call_pending_sent))
@@ -38,7 +39,7 @@ fun CICallItemView(cInfo: ChatInfo, cItem: ChatItem, status: CICallStatus, durat
       CICallStatus.Progress -> Icon(Icons.Filled.PhoneInTalk, stringResource(R.string.icon_descr_call_progress), tint = SimplexGreen)
       CICallStatus.Ended -> Row {
         Icon(Icons.Outlined.CallEnd, stringResource(R.string.icon_descr_call_ended), tint = HighOrLowlight, modifier = Modifier.padding(end = 4.dp))
-        Text(status.duration(duration), color = HighOrLowlight)
+        Text(durationToString(duration), color = HighOrLowlight)
       }
       CICallStatus.Error -> {}
     }

@@ -89,9 +89,8 @@ fun ComposeVoiceView(
       val numberInText = remember(recordedDurationMs, progress.value) {
         derivedStateOf { if (audioPlaying.value) progress.value / 1000 else recordedDurationMs / 1000 }
       }
-      val text = "%02d:%02d".format(numberInText.value / 60, numberInText.value % 60)
       Text(
-        text,
+        durationToString(numberInText.value),
         fontSize = 18.sp,
         color = HighOrLowlight,
       )

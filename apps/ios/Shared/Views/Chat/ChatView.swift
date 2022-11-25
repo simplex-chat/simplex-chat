@@ -414,14 +414,14 @@ struct ChatView: View {
     private func chatItemWithMenu(_ ci: ChatItem, _ maxWidth: CGFloat, showMember: Bool = false) -> some View {
         let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
         var menu: [UIAction] = []
-        if ci.isMsgContent() {
+        if let mc = ci.content.msgContent {
             menu.append(contentsOf: [
                 UIAction(
                     title: NSLocalizedString("Reply", comment: "chat item action"),
                     image: UIImage(systemName: "arrowshape.turn.up.left")
                 ) { _ in
                     withAnimation {
-                        if composeState.editing() {
+                        if composeState.editing {
                             composeState = ComposeState(contextItem: .quotedItem(chatItem: ci))
                         } else {
                             composeState = composeState.copy(contextItem: .quotedItem(chatItem: ci))
@@ -451,18 +451,31 @@ struct ChatView: View {
                     }
                 }
             ])
-            if case .image = ci.content.msgContent,
-               let image = getLoadedImage(ci.file) {
-                menu.append(
-                    UIAction(
-                        title: NSLocalizedString("Save", comment: "chat item action"),
-                        image: UIImage(systemName: "square.and.arrow.down")
-                    ) { _ in
-                        UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
-                    }
-                )
+            if let filePath = getLoadedFilePath(ci.file) {
+                if case .image = ci.content.msgContent,
+                   let image = UIImage(contentsOfFile: filePath) {
+                    menu.append(
+                        UIAction(
+                            title: NSLocalizedString("Save", comment: "chat item action"),
+                            image: UIImage(systemName: "square.and.arrow.down")
+                        ) { _ in
+                            UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+                        }
+                    )
+                } else {
+                    menu.append(
+                        UIAction(
+                            title: NSLocalizedString("Save", comment: "chat item action"),
+                            image: UIImage(systemName: "square.and.arrow.down")
+                        ) { _ in
+                            let fileURL = URL(fileURLWithPath: filePath)
+                            showShareSheet(items: [fileURL])
+                        }
+                    )
+                }
             }
-            if ci.meta.editable {
+            if ci.meta.editable,
+               !mc.isVoice {
                 menu.append(
                     UIAction(
                         title: NSLocalizedString("Edit", comment: "chat item action"),
@@ -484,7 +497,7 @@ struct ChatView: View {
                     deletingItem = ci
                 }
             )
-        } else if ci.isDeletedContent() {
+        } else if ci.isDeletedContent {
             menu.append(
                 UIAction(
                     title: NSLocalizedString("Delete", comment: "chat item action"),
