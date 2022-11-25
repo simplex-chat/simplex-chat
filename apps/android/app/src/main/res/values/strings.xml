@@ -43,9 +43,14 @@
 
   <!-- FormattedText, SimpleX links - ChatModel.kt -->
   <string name="simplex_link_contact">SimpleX contact address</string>
-  <string name="simplex_link_invitation">SimpleX 1-time invitation</string>
+  <string name="simplex_link_invitation">SimpleX one-time invitation</string>
   <string name="simplex_link_group">SimpleX group link</string>
   <string name="simplex_link_connection">via <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g></string>
+  <string name="simplex_link_mode">SimpleX links</string>
+  <string name="simplex_link_mode_description">Description</string>
+  <string name="simplex_link_mode_full">Full link</string>
+  <string name="simplex_link_mode_browser">Via browser</string>
+  <string name="simplex_link_mode_browser_warning">Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red.</string>
 
   <!-- SimpleXAPI.kt -->
   <string name="error_saving_smp_servers">Error saving SMP servers</string>
