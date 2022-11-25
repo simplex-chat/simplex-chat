@@ -90,7 +90,7 @@ struct ComposeState {
     var sendEnabled: Bool {
         switch preview {
         case .imagePreviews: return true
-        case .voicePreview: return voiceMessageRecordingState == .finished
+        case .voicePreview: return voiceMessageRecordingState == .finished &&
         case .filePreview: return true
         default: return !message.isEmpty
         }
