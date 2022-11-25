@@ -20,7 +20,7 @@ struct SimpleXApp: App {
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @State private var userAuthorized: Bool?
     @State private var doAuthenticate = false
-    @State private var enteredBackground: Double? = nil
+    @State private var enteredBackground: TimeInterval? = nil
 
     init() {
         hs_init(0, nil)

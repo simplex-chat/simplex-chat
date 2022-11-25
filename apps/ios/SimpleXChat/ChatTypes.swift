@@ -148,8 +148,15 @@ public struct Preferences: Codable {
     public static let sampleData = Preferences(fullDelete: Preference(allow: .no), voice: Preference(allow: .yes))
 }
 
-public func toPreferences(_ fullPreferences: FullPreferences) -> Preferences {
+public func fullPreferencesToPreferences(_ fullPreferences: FullPreferences) -> Preferences {
     Preferences(fullDelete: fullPreferences.fullDelete, voice: fullPreferences.voice)
+}
+
+public func contactUserPreferencesToPreferences(_ contactUserPreferences: ContactUserPreferences) -> Preferences {
+    Preferences(
+        fullDelete: contactUserPreferences.fullDelete.userPreference.preference,
+        voice: contactUserPreferences.voice.userPreference.preference
+    )
 }
 
 public struct Preference: Codable, Equatable {
@@ -229,6 +236,13 @@ public struct FeatureEnabled: Decodable {
 public enum ContactUserPref: Decodable {
     case contact(preference: Preference) // contact override is set
     case user(preference: Preference) // global user default is used
+
+    public var preference: Preference {
+        switch self {
+        case let .contact(preference): return preference
+        case let .user(preference): return preference
+        }
+    }
 }
 
 public enum Feature: String, Decodable {
@@ -623,6 +637,34 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
         case let .direct(contact): return contact.mergedPreferences.voice.enabled.forUser
         case let .group(groupInfo): return groupInfo.fullGroupPreferences.voice.on
         default: return true
+        }
+    }
+
+    public enum ShowEnableVoiceMessagesAlert {
+        case userEnable
+        case askContact
+        case groupOwnerCan
+        case other
+    }
+
+    public var showEnableVoiceMessagesAlert: ShowEnableVoiceMessagesAlert {
+        switch self {
+        case let .direct(contact):
+            if contact.mergedPreferences.voice.userPreference.preference.allow == .no {
+                return .userEnable
+            } else if contact.mergedPreferences.voice.contactPreference.allow == .no {
+                return .askContact
+            } else {
+                return .other
+            }
+        case let .group(groupInfo):
+            if !groupInfo.fullGroupPreferences.voice.on {
+                return .groupOwnerCan
+            } else {
+                return .other
+            }
+        default:
+            return .other
         }
     }
 

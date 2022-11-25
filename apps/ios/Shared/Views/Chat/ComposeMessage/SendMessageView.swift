@@ -13,9 +13,11 @@ struct SendMessageView: View {
     @Binding var composeState: ComposeState
     var sendMessage: () -> Void
     var voiceMessageAllowed: Bool = true
+    var showEnableVoiceMessagesAlert: ChatInfo.ShowEnableVoiceMessagesAlert = .other
     var startVoiceMessageRecording: (() -> Void)? = nil
     var finishVoiceMessageRecording: (() -> Void)? = nil
-    @State private var longPressingVMR = false
+    var allowVoiceMessagesToContact: (() -> Void)? = nil
+    @State private var holdingVMR = false
     @Namespace var namespace
     @FocusState.Binding var keyboardVisible: Bool
     @State private var teHeight: CGFloat = 42
@@ -64,13 +66,21 @@ struct SendMessageView: View {
                         .padding([.bottom, .trailing], 3)
                 } else {
                     let vmrs = composeState.voiceMessageRecordingState
-                    if voiceMessageAllowed,
-                       composeState.message.isEmpty,
+                    if composeState.message.isEmpty,
                        !composeState.editing,
                        (composeState.noPreview && vmrs == .noRecording)
-                        || (vmrs == .recording && longPressingVMR) {
-                        recordVoiceMessageButton()
-                    } else if vmrs == .recording && !longPressingVMR {
+                        || (vmrs == .recording && holdingVMR) {
+                        if voiceMessageAllowed {
+                            RecordVoiceMessageButton(
+                                startVoiceMessageRecording: startVoiceMessageRecording,
+                                finishVoiceMessageRecording: finishVoiceMessageRecording,
+                                holdingVMR: $holdingVMR,
+                                disabled: composeState.disabled
+                            )
+                        } else {
+                            voiceMessageNotAllowedButton()
+                        }
+                    } else if vmrs == .recording && !holdingVMR {
                         finishVoiceMessageRecordingButton()
                     } else {
                         sendMessageButton()
@@ -100,29 +110,74 @@ struct SendMessageView: View {
         .padding([.bottom, .trailing], 4)
     }
 
-    private func recordVoiceMessageButton() -> some View {
-        Button(action: {
-            if !longPressingVMR {
-                startVoiceMessageRecording?()
-            } else {
-                finishVoiceMessageRecording?()
+    private struct RecordVoiceMessageButton: View {
+        var startVoiceMessageRecording: (() -> Void)?
+        var finishVoiceMessageRecording: (() -> Void)?
+        @Binding var holdingVMR: Bool
+        var disabled: Bool
+        @State private var pressed: TimeInterval? = nil
+
+        var body: some View {
+            Button(action: {}) {
+                Image(systemName: "mic.fill")
+                    .foregroundColor(.accentColor)
             }
-            longPressingVMR = false
+            .disabled(disabled)
+            .frame(width: 29, height: 29)
+            .padding([.bottom, .trailing], 4)
+            ._onButtonGesture { down in
+                if down {
+                    holdingVMR = true
+                    pressed = ProcessInfo.processInfo.systemUptime
+                    startVoiceMessageRecording?()
+                } else {
+                    let now = ProcessInfo.processInfo.systemUptime
+                    if let pressed = pressed,
+                       now - pressed >= 1 {
+                        finishVoiceMessageRecording?()
+                    }
+                    holdingVMR = false
+                    pressed = nil
+                }
+            } perform: {}
+        }
+    }
+
+    private func voiceMessageNotAllowedButton() -> some View {
+        Button(action: {
+            switch showEnableVoiceMessagesAlert {
+            case .userEnable:
+                AlertManager.shared.showAlert(Alert(
+                    title: Text("Allow voice messages?"),
+                    message: Text("You need to allow your contact to send voice messages to be able to send them."),
+                    primaryButton: .default(Text("Allow")) {
+                        allowVoiceMessagesToContact?()
+                    },
+                    secondaryButton: .cancel()
+                ))
+            case .askContact:
+                AlertManager.shared.showAlertMsg(
+                    title: "Voice messages prohibited!",
+                    message: "Please ask your contact to enable sending voice messages."
+                )
+            case .groupOwnerCan:
+                AlertManager.shared.showAlertMsg(
+                    title: "Voice messages prohibited!",
+                    message: "Only group owners can enable voice messages."
+                )
+            case .other:
+                AlertManager.shared.showAlertMsg(
+                    title: "Voice messages prohibited!",
+                    message: "Please check yours and your contact preferences."
+                )
+            }
         }) {
             Image(systemName: "mic")
                 .foregroundColor(.secondary)
         }
-        .simultaneousGesture(
-            LongPressGesture()
-                .onEnded { _ in
-                    longPressingVMR = true
-                    startVoiceMessageRecording?()
-                }
-        )
         .disabled(composeState.disabled)
         .frame(width: 29, height: 29)
         .padding([.bottom, .trailing], 4)
-
     }
 
     private func finishVoiceMessageRecordingButton() -> some View {
