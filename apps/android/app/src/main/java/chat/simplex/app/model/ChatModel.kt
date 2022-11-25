@@ -1343,8 +1343,6 @@ class CIFile(
     CIFileStatus.RcvComplete -> true
   }
 
-  val audioInfo: MutableState<ProgressAndDuration> by lazy { mutableStateOf(ProgressAndDuration()) }
-
   companion object {
     fun getSample(
       fileId: Long = 1,
