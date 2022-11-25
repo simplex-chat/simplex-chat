@@ -136,6 +136,7 @@ fun SendMsgView(
           }
           val cleanUp = { remove: Boolean ->
             rec.stop()
+            AudioPlayer.stop(filePath.value)
             if (remove) filePath.value?.let { File(it).delete() }
             filePath.value = null
             stopRecOnNextClick = false

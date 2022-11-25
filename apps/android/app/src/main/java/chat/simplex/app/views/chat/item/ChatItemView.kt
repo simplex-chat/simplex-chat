@@ -34,6 +34,7 @@ fun ChatItemView(
   imageProvider: (() -> ImageGalleryProvider)? = null,
   showMember: Boolean = false,
   useLinkPreviews: Boolean,
+  linkMode: SimplexLinkMode,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   receiveFile: (Long) -> Unit,
   joinGroup: (Long) -> Unit,
@@ -73,7 +74,7 @@ fun ChatItemView(
           EmojiItemView(cItem)
         } else {
           val onLinkLongClick = { _: String -> showMenu.value = true }
-          FramedItemView(cInfo, cItem, uriHandler, imageProvider, showMember = showMember, showMenu, receiveFile, onLinkLongClick, scrollToItem)
+          FramedItemView(cInfo, cItem, uriHandler, imageProvider, showMember = showMember, linkMode = linkMode, showMenu, receiveFile, onLinkLongClick, scrollToItem)
         }
         DropdownMenu(
           expanded = showMenu.value,
@@ -169,6 +170,9 @@ fun ChatItemView(
         is CIContent.SndGroupEventContent -> CIEventView(cItem)
         is CIContent.RcvConnEventContent -> CIEventView(cItem)
         is CIContent.SndConnEventContent -> CIEventView(cItem)
+        is CIContent.RcvChatFeature -> CIChatFeatureView(cItem, c.feature, c.enabled)
+        is CIContent.SndChatFeature -> CIChatFeatureView(cItem, c.feature, c.enabled)
+        is CIContent.RcvChatFeatureRejected -> CIChatFeatureView(cItem, c.feature, null)
       }
     }
   }
@@ -235,6 +239,7 @@ fun PreviewChatItemView() {
         1, CIDirection.DirectSnd(), Clock.System.now(), "hello"
       ),
       useLinkPreviews = true,
+      linkMode = SimplexLinkMode.DESCRIPTION,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       deleteMessage = { _, _ -> },
       receiveFile = {},
@@ -253,6 +258,7 @@ fun PreviewChatItemViewDeletedContent() {
       ChatInfo.Direct.sampleData,
       ChatItem.getDeletedContentSampleData(),
       useLinkPreviews = true,
+      linkMode = SimplexLinkMode.DESCRIPTION,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       deleteMessage = { _, _ -> },
       receiveFile = {},

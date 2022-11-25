@@ -17,7 +17,7 @@ struct TerminalView: View {
     @EnvironmentObject var chatModel: ChatModel
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
-    @State var composeState: ComposeState = ComposeState(voiceMessageAllowed: false)
+    @State var composeState: ComposeState = ComposeState()
     @FocusState private var keyboardVisible: Bool
     @State var authorized = !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
 
@@ -86,6 +86,7 @@ struct TerminalView: View {
                 SendMessageView(
                     composeState: $composeState,
                     sendMessage: sendMessage,
+                    voiceMessageAllowed: false,
                     keyboardVisible: $keyboardVisible
                 )
                 .padding(.horizontal, 12)
@@ -120,7 +121,7 @@ struct TerminalView: View {
                 }
             }
         }
-        composeState = ComposeState(voiceMessageAllowed: false)
+        composeState = ComposeState()
     }
 }
 

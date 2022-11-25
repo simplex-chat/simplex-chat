@@ -57,7 +57,7 @@ struct PrivacySettings: View {
                     Text("Chats")
                 } footer: {
                     if case .browser = simplexLinkMode {
-                        Text("Opening the link in the browser may reduce connection privacy and security.")
+                        Text("Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red.")
                     }
                 }
             }

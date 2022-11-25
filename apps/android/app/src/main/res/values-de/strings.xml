@@ -46,6 +46,11 @@
   <string name="simplex_link_invitation">SimpleX Einmal-Link</string>
   <string name="simplex_link_group">SimpleX Gruppen-Link</string>
   <string name="simplex_link_connection">über <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g></string>
+  <string name="simplex_link_mode">***SimpleX links</string>
+  <string name="simplex_link_mode_description">***Description</string>
+  <string name="simplex_link_mode_full">***Full link</string>
+  <string name="simplex_link_mode_browser">***Via browser</string>
+  <string name="simplex_link_mode_browser_warning">***Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red.</string>
 
   <!-- SimpleXAPI.kt -->
   <string name="error_saving_smp_servers">Fehler beim Speichern der SMP-Server</string>
@@ -937,6 +942,11 @@
   <string name="your_preferences">***Your preferences</string>
   <string name="full_deletion">***Full deletion</string>
   <string name="voice_messages">***Voice messages</string>
+  <string name="feature_enabled">***enabled</string>
+  <string name="feature_enabled_for_you">***enabled for you</string>
+  <string name="feature_enabled_for_contact">***enabled for contact</string>
+  <string name="feature_off">***off</string>
+  <string name="feature_received_prohibited">***received, prohibited</string>
   <string name="allow_your_contacts_irreversibly_delete">***Allow your contacts to irreversibly delete sent messages.</string>
   <string name="allow_irreversible_message_deletion_only_if">***Allow irreversible message deletion only if your contact allows it to you.</string>
   <string name="contacts_can_mark_messages_for_deletion">***Contacts can mark messages for deletion; you will be able to view them.</string>

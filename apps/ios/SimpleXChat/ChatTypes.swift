@@ -452,6 +452,10 @@ public func toGroupPreferences(_ fullPreferences: FullGroupPreferences) -> Group
 public struct GroupPreference: Codable, Equatable {
     public var enable: GroupFeatureEnabled
 
+    public var on: Bool {
+        enable == .on
+    }
+
     public init(enable: GroupFeatureEnabled) {
         self.enable = enable
     }
@@ -608,11 +612,17 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
     }
 
     public var contact: Contact? {
-        get {
-            switch self {
-            case let .direct(contact): return contact
-            default: return nil
-            }
+        switch self {
+        case let .direct(contact): return contact
+        default: return nil
+        }
+    }
+
+    public var voiceMessageAllowed: Bool {
+        switch self {
+        case let .direct(contact): return contact.mergedPreferences.voice.enabled.forUser
+        case let .group(groupInfo): return groupInfo.fullGroupPreferences.voice.on
+        default: return true
         }
     }
 
@@ -1733,8 +1743,7 @@ public enum Format: Decodable, Equatable {
     case secret
     case colored(color: FormatColor)
     case uri
-    // TODO trustedUri: Bool
-    case simplexLink(linkType: SimplexLinkType, simplexUri: String, smpHosts: [String])
+    case simplexLink(linkType: SimplexLinkType, simplexUri: String, trustedUri: Bool, smpHosts: [String])
     case email
     case phone
 }

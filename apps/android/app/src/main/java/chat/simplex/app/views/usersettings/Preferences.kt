@@ -1,5 +1,6 @@
 package chat.simplex.app.views.usersettings
 
+import SectionDivider
 import SectionItemView
 import SectionSpacer
 import SectionTextFooter
@@ -64,13 +65,11 @@ private fun PreferencesLayout(
     FeatureSection(Feature.FullDelete, allowFullDeletion) {
       applyPrefs(preferences.copy(fullDelete = ChatPreference(allow = it)))
     }
-
     SectionSpacer()
     val allowVoice = remember(preferences) { mutableStateOf(preferences.voice.allow) }
     FeatureSection(Feature.Voice, allowVoice) {
       applyPrefs(preferences.copy(voice = ChatPreference(allow = it)))
     }
-
     SectionSpacer()
     ResetSaveButtons(
       reset = reset,
@@ -99,10 +98,11 @@ private fun FeatureSection(feature: Feature, allowFeature: State<FeatureAllowed>
 @Composable
 private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Boolean) {
   SectionView {
-    SectionItemView(reset) {
+    SectionItemView(reset, disabled = disabled) {
       Text(stringResource(R.string.reset_verb), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
     }
-    SectionItemView(save) {
+    SectionDivider()
+    SectionItemView(save, disabled = disabled) {
       Text(stringResource(R.string.save_and_notify_contacts), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
     }
   }

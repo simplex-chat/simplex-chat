@@ -14,8 +14,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
-import chat.simplex.app.model.CIDirection
-import chat.simplex.app.model.ChatItem
+import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.item.*
@@ -53,6 +52,7 @@ fun ContextItemView(
       MarkdownText(
         contextItem.text, contextItem.formattedText,
         sender = contextItem.memberDisplayName, senderBold = true, maxLines = 3,
+        linkMode = SimplexLinkMode.DESCRIPTION,
         modifier = Modifier.fillMaxWidth(),
       )
     }

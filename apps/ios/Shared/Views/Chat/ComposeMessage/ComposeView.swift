@@ -34,7 +34,6 @@ struct ComposeState {
     var preview: ComposePreview
     var contextItem: ComposeContextItem
     var voiceMessageRecordingState: VoiceMessageRecordingState
-    var voiceMessageAllowed: Bool
     var inProgress = false
     var disabled = false
     var useLinkPreviews: Bool = UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
@@ -43,14 +42,12 @@ struct ComposeState {
         message: String = "",
         preview: ComposePreview = .noPreview,
         contextItem: ComposeContextItem = .noContextItem,
-        voiceMessageRecordingState: VoiceMessageRecordingState = .noRecording,
-        voiceMessageAllowed: Bool = true // TODO based on preference
+        voiceMessageRecordingState: VoiceMessageRecordingState = .noRecording
     ) {
         self.message = message
         self.preview = preview
         self.contextItem = contextItem
         self.voiceMessageRecordingState = voiceMessageRecordingState
-        self.voiceMessageAllowed = voiceMessageAllowed
     }
 
     init(editingItem: ChatItem) {
@@ -63,7 +60,6 @@ struct ComposeState {
         } else {
             self.voiceMessageRecordingState = .noRecording
         }
-        self.voiceMessageAllowed = false
     }
 
     func copy(
@@ -125,6 +121,13 @@ struct ComposeState {
         default: return false
         }
     }
+
+    var voicePreview: Bool {
+        switch preview {
+        case .voicePreview: return true
+        default: return false
+        }
+    }
 }
 
 func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
@@ -148,7 +151,7 @@ func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
 
 struct ComposeView: View {
     @EnvironmentObject var chatModel: ChatModel
-    let chat: Chat
+    @ObservedObject var chat: Chat
     @Binding var composeState: ComposeState
     @FocusState.Binding var keyboardVisible: Bool
 
@@ -193,6 +196,7 @@ struct ComposeView: View {
                         sendMessage()
                         resetLinkPreview()
                     },
+                    voiceMessageAllowed: chat.chatInfo.voiceMessageAllowed,
                     startVoiceMessageRecording: {
                         Task {
                             await startVoiceMessageRecording()
@@ -467,8 +471,19 @@ struct ComposeView: View {
                 }
             }
         )
-        if let err = await audioRecorder?.start(fileName: fileName) {
-            print(err) // TODO show alert
+        if let recStartError = await audioRecorder?.start(fileName: fileName) {
+            switch recStartError {
+            case .permission:
+                AlertManager.shared.showAlertMsg(
+                    title: "No permission to record voice message",
+                    message: "To record voice message please grant permission to use Microphone."
+                )
+            case let .error(error):
+                AlertManager.shared.showAlertMsg(
+                    title: "Unable to record voice message",
+                    message: "Error: \(error)"
+                )
+            }
         } else {
             composeState = composeState.copy(
                 preview: .voicePreview(recordingFileName: fileName, duration: 0),
