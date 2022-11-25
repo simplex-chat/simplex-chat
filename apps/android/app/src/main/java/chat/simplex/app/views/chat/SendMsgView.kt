@@ -53,6 +53,7 @@ fun SendMsgView(
   onMessageChange: (String) -> Unit,
   onAudioAdded: (String, Int, Boolean) -> Unit,
   allowVoiceToContact: () -> Unit,
+  showDisabledVoiceAlert: () -> Unit,
   textStyle: MutableState<TextStyle>
 ) {
   Column(Modifier.padding(vertical = 8.dp)) {
@@ -122,12 +123,7 @@ fun SendMsgView(
                   onConfirm = allowVoiceToContact,
                 )
               }
-              !allowedVoiceByPrefs -> {
-                AlertManager.shared.showAlertMsg(
-                  title = generalGetString(R.string.voice_messages_prohibited),
-                  text = generalGetString(R.string.ask_your_contact_to_enable_voice)
-                )
-              }
+              !allowedVoiceByPrefs -> showDisabledVoiceAlert()
               recordingInProgress.value -> stopRecordingAndAddAudio()
               filePath.value == null -> {
                 recordingTimeRange = System.currentTimeMillis()..0L
@@ -339,6 +335,7 @@ fun PreviewSendMsgView() {
       onMessageChange = { _ -> },
       onAudioAdded = { _, _, _ -> },
       allowVoiceToContact = {},
+      showDisabledVoiceAlert = {},
       textStyle = textStyle
     )
   }
@@ -365,6 +362,7 @@ fun PreviewSendMsgViewEditing() {
       onMessageChange = { _ -> },
       onAudioAdded = { _, _, _ -> },
       allowVoiceToContact = {},
+      showDisabledVoiceAlert = {},
       textStyle = textStyle
     )
   }
@@ -391,6 +389,7 @@ fun PreviewSendMsgViewInProgress() {
       onMessageChange = { _ -> },
       onAudioAdded = { _, _, _ -> },
       allowVoiceToContact = {},
+      showDisabledVoiceAlert = {},
       textStyle = textStyle
     )
   }

@@ -254,6 +254,7 @@
     <string name="you_need_to_allow_to_send_voice">Чтобы включить отправку голосовых сообщений, разрешите их вашему контакту.</string>
     <string name="voice_messages_prohibited">Голосовые сообщения запрещены!</string>
     <string name="ask_your_contact_to_enable_voice">Попросите вашего контакта разрешить отправку голосовых сообщений.</string>
+    <string name="only_group_owners_can_enable_voice">Только владельцы группы могут разрешить голосовые сообщения.</string>
 
     <!-- General Actions / Responses -->
     <string name="back">Назад</string>

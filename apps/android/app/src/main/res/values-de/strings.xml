@@ -254,6 +254,7 @@
   <string name="you_need_to_allow_to_send_voice">***You need to allow your contact to send voice messages to be able to send them.</string>
   <string name="voice_messages_prohibited">***Voice messages prohibited!</string>
   <string name="ask_your_contact_to_enable_voice">***Please ask your contact to enable sending voice messages.</string>
+  <string name="only_group_owners_can_enable_voice">***Only group owners can enable voice messages.</string>
 
   <!-- General Actions / Responses -->
   <string name="back">Zurück</string>

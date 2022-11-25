@@ -466,6 +466,17 @@ fun ComposeView(
       }
     }
   }
+  fun showDisabledVoiceAlert() {
+    AlertManager.shared.showAlertMsg(
+      title = generalGetString(R.string.voice_messages_prohibited),
+      text = generalGetString(
+        if (chat.chatInfo is ChatInfo.Direct)
+          R.string.ask_your_contact_to_enable_voice
+        else
+          R.string.only_group_owners_can_enable_voice
+      )
+    )
+  }
 
   fun cancelLinkPreview() {
     val uri = composeState.value.linkPreview?.uri
@@ -589,6 +600,7 @@ fun ComposeView(
         ::onMessageChange,
         ::onAudioAdded,
         ::allowVoiceToContact,
+        ::showDisabledVoiceAlert,
         textStyle
       )
     }
