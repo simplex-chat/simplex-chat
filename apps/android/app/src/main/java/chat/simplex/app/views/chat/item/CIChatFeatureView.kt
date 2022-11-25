@@ -15,15 +15,11 @@ import chat.simplex.app.ui.theme.*
 fun CIChatFeatureView(
   chatItem: ChatItem,
   feature: Feature,
-  enabled: FeatureEnabled?
+  iconColor: Color
 ) {
   Row(
     verticalAlignment = Alignment.CenterVertically
   ) {
-    val iconColor = if (enabled != null) {
-      if (enabled.forUser) SimplexGreen else if (enabled.forContact) WarningYellow else HighOrLowlight
-    } else Color.Red
-
     Icon(feature.icon(true), feature.text(), Modifier.size(15.dp), tint = iconColor)
     Text(
       chatEventText(chatItem),
