@@ -17,7 +17,6 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
@@ -25,7 +24,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.tooling.preview.Preview
@@ -48,10 +46,14 @@ import java.io.*
 @Composable
 fun SendMsgView(
   composeState: MutableState<ComposeState>,
-  allowVoiceRecord: Boolean,
+  showVoiceRecordIcon: Boolean,
+  allowedVoiceByPrefs: Boolean,
+  needToAllowVoiceToContact: Boolean,
   sendMessage: () -> Unit,
   onMessageChange: (String) -> Unit,
   onAudioAdded: (String, Int, Boolean) -> Unit,
+  allowVoiceToContact: () -> Unit,
+  showDisabledVoiceAlert: () -> Unit,
   textStyle: MutableState<TextStyle>
 ) {
   Column(Modifier.padding(vertical = 8.dp)) {
@@ -60,7 +62,7 @@ fun SendMsgView(
       val attachEnabled = !composeState.value.editing
       val filePath = rememberSaveable { mutableStateOf(null as String?) }
       var recordingTimeRange by rememberSaveable(saver = LongRange.saver) { mutableStateOf(0L..0L) } // since..to
-      val showVoiceButton = ((cs.message.isEmpty() || recordingTimeRange.first > 0L) && allowVoiceRecord && attachEnabled && cs.preview is ComposePreview.NoPreview) || filePath.value != null
+      val showVoiceButton = ((cs.message.isEmpty() || recordingTimeRange.first > 0L) && showVoiceRecordIcon && attachEnabled && cs.preview is ComposePreview.NoPreview) || filePath.value != null
       Box(if (recordingTimeRange.first == 0L)
         Modifier
       else
@@ -112,6 +114,16 @@ fun SendMsgView(
           val startStopRecording: () -> Unit = {
             when {
               !permissionsState.allPermissionsGranted -> permissionsState.launchMultiplePermissionRequest()
+              needToAllowVoiceToContact -> {
+                AlertManager.shared.showAlertDialog(
+                  title = generalGetString(R.string.allow_voice_messages_question),
+                  text = generalGetString(R.string.you_need_to_allow_to_send_voice),
+                  confirmText = generalGetString(R.string.allow_verb),
+                  dismissText = generalGetString(R.string.cancel_verb),
+                  onConfirm = allowVoiceToContact,
+                )
+              }
+              !allowedVoiceByPrefs -> showDisabledVoiceAlert()
               recordingInProgress.value -> stopRecordingAndAddAudio()
               filePath.value == null -> {
                 recordingTimeRange = System.currentTimeMillis()..0L
@@ -149,10 +161,15 @@ fun SendMsgView(
             }
           }
           val interactionSource = interactionSourceWithTapDetection(
+            // It's just a key for triggering dropping a state in the compose function. Without it
+            // nothing will react on changed params like needToAllowVoiceToContact or allowedVoiceByPrefs
+            needToAllowVoiceToContact.toString() + allowedVoiceByPrefs.toString(),
             onPress = {
               if (filePath.value == null) startStopRecording()
             },
             onClick = {
+              // Voice not allowed or not granted voice record permission for the app
+              if (!allowedVoiceByPrefs || !permissionsState.allPermissionsGranted) return@interactionSourceWithTapDetection
               if (!recordingInProgress.value && filePath.value != null) {
                 sendMessage()
                 cleanUp(false)
@@ -173,9 +190,19 @@ fun SendMsgView(
             Modifier
           IconButton({}, Modifier.size(36.dp), enabled = !cs.inProgress, interactionSource = interactionSource) {
             Icon(
-              if (recordingTimeRange.last != 0L) Icons.Outlined.ArrowUpward else if (stopRecOnNextClick) Icons.Default.Stop else Icons.Default.Mic,
+              when {
+                recordingTimeRange.last != 0L -> Icons.Outlined.ArrowUpward
+                stopRecOnNextClick -> Icons.Filled.Stop
+                allowedVoiceByPrefs -> Icons.Filled.KeyboardVoice
+                else -> Icons.Outlined.KeyboardVoice
+              },
               stringResource(R.string.icon_descr_record_voice_message),
-              tint = if (recordingTimeRange.last != 0L) Color.White else if (!cs.inProgress) MaterialTheme.colors.primary else HighOrLowlight,
+              tint = when {
+                recordingTimeRange.last != 0L -> Color.White
+                stopRecOnNextClick -> MaterialTheme.colors.primary
+                allowedVoiceByPrefs -> MaterialTheme.colors.primary
+                else -> HighOrLowlight
+              },
               modifier = Modifier
                 .size(36.dp)
                 .padding(4.dp)
@@ -301,10 +328,14 @@ fun PreviewSendMsgView() {
   SimpleXTheme {
     SendMsgView(
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
-      allowVoiceRecord = false,
+      showVoiceRecordIcon = false,
+      allowedVoiceByPrefs = false,
+      needToAllowVoiceToContact = false,
       sendMessage = {},
       onMessageChange = { _ -> },
       onAudioAdded = { _, _, _ -> },
+      allowVoiceToContact = {},
+      showDisabledVoiceAlert = {},
       textStyle = textStyle
     )
   }
@@ -324,10 +355,14 @@ fun PreviewSendMsgViewEditing() {
   SimpleXTheme {
     SendMsgView(
       composeState = remember { mutableStateOf(composeStateEditing) },
-      allowVoiceRecord = false,
+      showVoiceRecordIcon = false,
+      allowedVoiceByPrefs = false,
+      needToAllowVoiceToContact = false,
       sendMessage = {},
       onMessageChange = { _ -> },
       onAudioAdded = { _, _, _ -> },
+      allowVoiceToContact = {},
+      showDisabledVoiceAlert = {},
       textStyle = textStyle
     )
   }
@@ -347,10 +382,14 @@ fun PreviewSendMsgViewInProgress() {
   SimpleXTheme {
     SendMsgView(
       composeState = remember { mutableStateOf(composeStateInProgress) },
-      allowVoiceRecord = false,
+      showVoiceRecordIcon = false,
+      allowedVoiceByPrefs = false,
+      needToAllowVoiceToContact = false,
       sendMessage = {},
       onMessageChange = { _ -> },
       onAudioAdded = { _, _, _ -> },
+      allowVoiceToContact = {},
+      showDisabledVoiceAlert = {},
       textStyle = textStyle
     )
   }

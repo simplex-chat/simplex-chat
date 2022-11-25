@@ -167,6 +167,7 @@
     <string name="save_verb">Сохранить</string>
     <string name="edit_verb">Редактировать</string>
     <string name="delete_verb">Удалить</string>
+    <string name="allow_verb">Разрешить</string>
     <string name="delete_message__question">Удалить сообщение?</string>
     <string name="delete_message_cannot_be_undone_warning">Сообщение будет удалено – это действие нельзя отменить!</string>
     <string name="for_me_only">Только для меня</string>
@@ -249,6 +250,11 @@
     <!-- Message Actions - SendMsgView.kt -->
     <string name="icon_descr_send_message">Отправить сообщение</string>
     <string name="icon_descr_record_voice_message">Записать голосовое сообщение</string>
+    <string name="allow_voice_messages_question">Разрешить голосовые сообщения?</string>
+    <string name="you_need_to_allow_to_send_voice">Чтобы включить отправку голосовых сообщений, разрешите их вашему контакту.</string>
+    <string name="voice_messages_prohibited">Голосовые сообщения запрещены!</string>
+    <string name="ask_your_contact_to_enable_voice">Попросите вашего контакта разрешить отправку голосовых сообщений.</string>
+    <string name="only_group_owners_can_enable_voice">Только владельцы группы могут разрешить голосовые сообщения.</string>
 
     <!-- General Actions / Responses -->
     <string name="back">Назад</string>

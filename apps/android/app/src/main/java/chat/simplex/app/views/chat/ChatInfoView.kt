@@ -64,7 +64,7 @@ fun ChatInfoView(
       },
       openPreferences = {
         ModalManager.shared.showModal(true) {
-          ContactPreferencesView(chatModel, chatModel.currentUser.value ?: return@showModal, contact)
+          ContactPreferencesView(chatModel, chatModel.currentUser.value ?: return@showModal, contact.contactId)
         }
       },
       deleteContact = { deleteContactDialog(chat.chatInfo, chatModel, close) },

@@ -57,7 +57,7 @@ fun ComposeVoiceView(
       Modifier
         .requiredWidth(progressBarWidth.value.dp)
         .padding(top = 58.dp)
-        .height(2.dp)
+        .height(3.dp)
         .background(MaterialTheme.colors.primary)
     )
     Row(
