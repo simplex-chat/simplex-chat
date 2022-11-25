@@ -467,8 +467,19 @@ struct ComposeView: View {
                 }
             }
         )
-        if let err = await audioRecorder?.start(fileName: fileName) {
-            print(err) // TODO show alert
+        if let recStartError = await audioRecorder?.start(fileName: fileName) {
+            switch recStartError {
+            case .permission:
+                AlertManager.shared.showAlertMsg(
+                    title: "No permission to record voice message",
+                    message: "To record voice message please grant permission to use Microphone."
+                )
+            case let .error(error):
+                AlertManager.shared.showAlertMsg(
+                    title: "Unable to record voice message",
+                    message: "Error: \(error)"
+                )
+            }
         } else {
             composeState = composeState.copy(
                 preview: .voicePreview(recordingFileName: fileName, duration: 0),
