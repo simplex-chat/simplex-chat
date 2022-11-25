@@ -135,7 +135,7 @@ fun TerminalLayout(
       topBar = { CloseSheetBar(close) },
       bottomBar = {
         Box(Modifier.padding(horizontal = 8.dp)) {
-          SendMsgView(composeState, false, sendCommand, ::onMessageChange, { _, _, _ -> }, textStyle)
+          SendMsgView(composeState, false, false, false, sendCommand, ::onMessageChange, { _, _, _ -> }, {}, {}, textStyle)
         }
       },
       modifier = Modifier.navigationBarsWithImePadding()

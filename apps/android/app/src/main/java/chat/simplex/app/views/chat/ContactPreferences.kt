@@ -24,15 +24,17 @@ import chat.simplex.app.views.helpers.*
 fun ContactPreferencesView(
   m: ChatModel,
   user: User,
-  contact: Contact,
+  contactId: Long,
 ) {
-  var featuresAllowed by remember { mutableStateOf(contactUserPrefsToFeaturesAllowed(contact.mergedPreferences)) }
-  var currentFeaturesAllowed by remember { mutableStateOf(featuresAllowed) }
+  val contact = remember { derivedStateOf { (m.getContactChat(contactId)?.chatInfo as? ChatInfo.Direct)?.contact } }
+  val ct = contact.value ?: return
+  var featuresAllowed by remember(ct) { mutableStateOf(contactUserPrefsToFeaturesAllowed(ct.mergedPreferences)) }
+  var currentFeaturesAllowed by remember(ct) { mutableStateOf(featuresAllowed) }
   ContactPreferencesLayout(
     featuresAllowed,
     currentFeaturesAllowed,
     user,
-    contact,
+    ct,
     applyPrefs = { prefs ->
       featuresAllowed = prefs
     },
@@ -42,7 +44,7 @@ fun ContactPreferencesView(
     savePrefs = {
       withApi {
         val prefs = contactFeaturesAllowedToPrefs(featuresAllowed)
-        val toContact = m.controller.apiSetContactPrefs(contact.contactId, prefs)
+        val toContact = m.controller.apiSetContactPrefs(ct.contactId, prefs)
         if (toContact != null) {
           m.updateContact(toContact)
           currentFeaturesAllowed = featuresAllowed

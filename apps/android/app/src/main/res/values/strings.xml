@@ -167,6 +167,7 @@
   <string name="save_verb">Save</string>
   <string name="edit_verb">Edit</string>
   <string name="delete_verb">Delete</string>
+  <string name="allow_verb">Allow</string>
   <string name="delete_message__question">Delete message?</string>
   <string name="delete_message_cannot_be_undone_warning">Message will be deleted - this cannot be undone!</string>
   <string name="for_me_only">For me only</string>
@@ -249,6 +250,11 @@
   <!-- Message Actions - SendMsgView.kt -->
   <string name="icon_descr_send_message">Send Message</string>
   <string name="icon_descr_record_voice_message">Record voice message</string>
+  <string name="allow_voice_messages_question">Allow voice messages?</string>
+  <string name="you_need_to_allow_to_send_voice">You need to allow your contact to send voice messages to be able to send them.</string>
+  <string name="voice_messages_prohibited">Voice messages prohibited!</string>
+  <string name="ask_your_contact_to_enable_voice">Please ask your contact to enable sending voice messages.</string>
+  <string name="only_group_owners_can_enable_voice">Only group owners can enable voice messages.</string>
 
   <!-- General Actions / Responses -->
   <string name="back">Back</string>
