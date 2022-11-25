@@ -18,6 +18,7 @@ struct ContentView: View {
     @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = true
+    @AppStorage(DEFAULT_NOTIFICATION_ALERT_SHOWN) private var notificationAlertShown = false
 
     var body: some View {
         ZStack {
@@ -47,9 +48,15 @@ struct ContentView: View {
         ZStack(alignment: .top) {
             ChatListView()
             .onAppear {
-                NtfManager.shared.requestAuthorization(onDeny: {
-                    alertManager.showAlert(notificationAlert())
-                })
+                NtfManager.shared.requestAuthorization(
+                    onDeny: {
+                        if (!notificationAlertShown) {
+                            notificationAlertShown = true
+                            alertManager.showAlert(notificationAlert())
+                        }
+                    },
+                    onAuthorized: { notificationAlertShown = false }
+                )
                 // Local Authentication notice is to be shown on next start after onboarding is complete
                 if (!prefLANoticeShown && prefShowLANotice) {
                     prefLANoticeShown = true
