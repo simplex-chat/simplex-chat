@@ -1,5 +1,7 @@
 package chat.simplex.app.views.chat.item
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,7 +34,8 @@ fun CIVoiceView(
   sent: Boolean,
   hasText: Boolean,
   ci: ChatItem,
-  metaColor: Color
+  metaColor: Color,
+  longClick: () -> Unit,
 ) {
   Row(
     Modifier.padding(top = 4.dp, bottom = 6.dp, start = 6.dp, end = 6.dp),
@@ -57,7 +60,7 @@ fun CIVoiceView(
       val minWidth = with(LocalDensity.current) { 45.sp.toDp() }
       val text = durationToString(time / 1000)
       if (hasText) {
-        VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause)
+        VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick)
         Text(
           text,
           Modifier
@@ -84,7 +87,7 @@ fun CIVoiceView(
               )
             }
             Column {
-              VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause)
+              VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick)
               Box(Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp)) {
                 CIMetaView(ci, metaColor)
               }
@@ -93,7 +96,7 @@ fun CIVoiceView(
         } else {
           Row {
             Column {
-              VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause)
+              VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick)
               Box(Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp)) {
                 CIMetaView(ci, metaColor)
               }
@@ -114,7 +117,7 @@ fun CIVoiceView(
         }
       }
     } else {
-      VoiceMsgIndicator(null, false, sent, hasText, null, null, false, {}, {})
+      VoiceMsgIndicator(null, false, sent, hasText, null, null, false, {}, {}, longClick)
       val metaReserve = if (edited)
         "                     "
       else
@@ -134,17 +137,21 @@ private fun PlayPauseButton(
   enabled: Boolean,
   error: Boolean,
   play: () -> Unit,
-  pause: () -> Unit
+  pause: () -> Unit,
+  longClick: () -> Unit
 ) {
   Surface(
-    onClick = { if (!audioPlaying) play() else pause() },
     Modifier.drawRingModifier(angle, strokeColor, strokeWidth),
     color = if (sent) SentColorLight else ReceivedColorLight,
     shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50))
   ) {
     Box(
       Modifier
-        .defaultMinSize(minWidth = 56.dp, minHeight = 56.dp),
+        .defaultMinSize(minWidth = 56.dp, minHeight = 56.dp)
+        .combinedClickable(
+          onClick = { if (!audioPlaying) play() else pause() },
+          onLongClick = longClick
+        ),
       contentAlignment = Alignment.Center
     ) {
       Icon(
@@ -167,7 +174,8 @@ private fun VoiceMsgIndicator(
   duration: State<Int>?,
   error: Boolean,
   play: () -> Unit,
-  pause: () -> Unit
+  pause: () -> Unit,
+  longClick: () -> Unit
 ) {
   val strokeWidth = with(LocalDensity.current){ 3.dp.toPx() }
   val strokeColor = MaterialTheme.colors.primary
@@ -183,7 +191,7 @@ private fun VoiceMsgIndicator(
         )
       }
     } else {
-      PlayPauseButton(audioPlaying, sent, angle, strokeWidth, strokeColor, true, error, play, pause)
+      PlayPauseButton(audioPlaying, sent, angle, strokeWidth, strokeColor, true, error, play, pause, longClick = longClick)
     }
   } else {
     if (file?.fileStatus == CIFileStatus.RcvInvitation
@@ -198,7 +206,7 @@ private fun VoiceMsgIndicator(
         ProgressIndicator()
       }
     } else {
-      PlayPauseButton(audioPlaying, sent, 0f, strokeWidth, strokeColor, false, false, {}, {})
+      PlayPauseButton(audioPlaying, sent, 0f, strokeWidth, strokeColor, false, false, {}, {}, longClick)
     }
   }
 }
