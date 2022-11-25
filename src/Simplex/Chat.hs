@@ -1191,7 +1191,7 @@ processChatCommand = \case
             let mergedProfile = userProfileToSend user' Nothing $ Just ct
                 ct' = updateMergedPreferences user' ct
             void (sendDirectContactMessage ct $ XInfo mergedProfile) `catchError` (toView . CRChatError)
-            createFeatureChangedItems user' ct ct' CDDirectSnd CISndChatFeature
+            when (contactUsed ct) $ createFeatureChangedItems user' ct ct' CDDirectSnd CISndChatFeature
           pure $ CRUserProfileUpdated (fromLocalProfile p) p'
     updateContactPrefs :: User -> Contact -> Preferences -> m ChatResponse
     updateContactPrefs user@User {userId} ct@Contact {activeConn = Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
@@ -1202,7 +1202,7 @@ processChatCommand = \case
         let p' = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct')
         withChatLock "updateProfile" . procCmd $ do
           void (sendDirectContactMessage ct' $ XInfo p') `catchError` (toView . CRChatError)
-          createFeatureChangedItems user ct ct' CDDirectSnd CISndChatFeature
+          when (contactUsed ct) $ createFeatureChangedItems user ct ct' CDDirectSnd CISndChatFeature
           pure $ CRContactPrefsUpdated ct ct'
     isReady :: Contact -> Bool
     isReady ct =
@@ -1762,7 +1762,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
               -- [incognito] print incognito profile used for this contact
               incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
               toView $ CRContactConnected ct (fmap fromLocalProfile incognitoProfile)
-              createFeatureEnabledItems ct
+              when (contactUsed ct) $ createFeatureEnabledItems ct
               setActive $ ActiveC c
               showToast (c <> "> ") "connected"
               forM_ groupLinkId $ \_ -> probeMatchingContacts ct $ contactConnIncognito ct
@@ -2500,10 +2500,10 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
         _ -> toView $ CRMsgIntegrityError e
 
     xInfo :: Contact -> Profile -> m ()
-    xInfo c@Contact {profile = p} p' = unless (fromLocalProfile p == p') $ do
+    xInfo c@Contact {profile = p, contactUsed} p' = unless (fromLocalProfile p == p') $ do
       c' <- withStore $ \db -> updateContactProfile db user c p'
       toView $ CRContactUpdated c c'
-      createFeatureChangedItems user c c' CDDirectRcv CIRcvChatFeature
+      when contactUsed $ createFeatureChangedItems user c c' CDDirectRcv CIRcvChatFeature
 
     createFeatureEnabledItems :: Contact -> m ()
     createFeatureEnabledItems ct@Contact {mergedPreferences} =
