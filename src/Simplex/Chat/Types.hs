@@ -119,6 +119,10 @@ contactConnId = aConnId . contactConn
 contactConnIncognito :: Contact -> Bool
 contactConnIncognito = connIncognito . contactConn
 
+directContact :: Contact -> Bool
+directContact Contact {contactUsed, activeConn = Connection {connLevel, viaGroupLink}} =
+  (connLevel == 0 && not viaGroupLink) || contactUsed
+
 data ContactRef = ContactRef
   { contactId :: ContactId,
     localDisplayName :: ContactName
