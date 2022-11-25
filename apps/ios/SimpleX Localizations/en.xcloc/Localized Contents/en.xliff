@@ -293,6 +293,11 @@
         <target>All your contacts will remain connected</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Allow" xml:space="preserve">
+        <source>Allow</source>
+        <target>Allow</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Allow irreversible message deletion only if your contact allows it to you." xml:space="preserve">
         <source>Allow irreversible message deletion only if your contact allows it to you.</source>
         <target>Allow irreversible message deletion only if your contact allows it to you.</target>
@@ -311,6 +316,11 @@
       <trans-unit id="Allow voice messages only if your contact allows them." xml:space="preserve">
         <source>Allow voice messages only if your contact allows them.</source>
         <target>Allow voice messages only if your contact allows them.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Allow voice messages?" xml:space="preserve">
+        <source>Allow voice messages?</source>
+        <target>Allow voice messages?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow your contacts to irreversibly delete sent messages." xml:space="preserve">
@@ -1913,6 +1923,11 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>Only group owners can change group preferences.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Only group owners can enable voice messages." xml:space="preserve">
+        <source>Only group owners can enable voice messages.</source>
+        <target>Only group owners can enable voice messages.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Only you can irreversibly delete messages (your contact can mark them for deletion)." xml:space="preserve">
         <source>Only you can irreversibly delete messages (your contact can mark them for deletion).</source>
         <target>Only you can irreversibly delete messages (your contact can mark them for deletion).</target>
@@ -1993,6 +2008,11 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>Periodically</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Please ask your contact to enable sending voice messages." xml:space="preserve">
+        <source>Please ask your contact to enable sending voice messages.</source>
+        <target>Please ask your contact to enable sending voice messages.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Please check that you used the correct link or ask your contact to send you another one." xml:space="preserve">
         <source>Please check that you used the correct link or ask your contact to send you another one.</source>
         <target>Please check that you used the correct link or ask your contact to send you another one.</target>
@@ -2001,6 +2021,11 @@ We will be adding server redundancy to prevent lost messages.</target>
       <trans-unit id="Please check your network connection and try again." xml:space="preserve">
         <source>Please check your network connection and try again.</source>
         <target>Please check your network connection and try again.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Please check yours and your contact preferences." xml:space="preserve">
+        <source>Please check yours and your contact preferences.</source>
+        <target>Please check yours and your contact preferences.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please enter correct current passphrase." xml:space="preserve">
@@ -2872,6 +2897,11 @@ To connect, please ask your contact to create another connection link and check 
         <target>Voice messages are prohibited in this chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Voice messages prohibited!" xml:space="preserve">
+        <source>Voice messages prohibited!</source>
+        <target>Voice messages prohibited!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Voice message…" xml:space="preserve">
         <source>Voice message…</source>
         <target>Voice message…</target>
@@ -3025,6 +3055,11 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." xml:space="preserve">
         <source>You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts.</source>
         <target>You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You need to allow your contact to send voice messages to be able to send them." xml:space="preserve">
+        <source>You need to allow your contact to send voice messages to be able to send them.</source>
+        <target>You need to allow your contact to send voice messages to be able to send them.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You rejected group invitation" xml:space="preserve">

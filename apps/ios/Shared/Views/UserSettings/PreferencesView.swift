@@ -50,7 +50,7 @@ struct PreferencesView: View {
         Task {
             do {
                 var p = fromLocalProfile(profile)
-                p.preferences = toPreferences(preferences)
+                p.preferences = fullPreferencesToPreferences(preferences)
                 if let newProfile = try await apiUpdateProfile(profile: p) {
                     await MainActor.run {
                         if let profileId = chatModel.currentUser?.profile.profileId {
