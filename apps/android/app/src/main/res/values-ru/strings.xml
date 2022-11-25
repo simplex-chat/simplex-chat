@@ -609,6 +609,7 @@
     <!-- Privacy settings -->
     <string name="privacy_and_security">Конфиденциальность</string>
     <string name="your_privacy">Конфиденциальность</string>
+    <string name="protect_app_screen">Защитить экран приложения</string>
     <string name="auto_accept_images">Автоприем изображений</string>
     <string name="transfer_images_faster">Передавать изображения быстрее</string>
     <string name="send_link_previews">Отправлять картинки ссылок</string>
