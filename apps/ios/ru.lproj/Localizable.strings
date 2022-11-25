@@ -198,6 +198,9 @@
 "All your contacts will remain connected" = "Все контакты, которые соединились через этот адрес, сохранятся.";
 
 /* No comment provided by engineer. */
+"Allow" = "Разрешить";
+
+/* No comment provided by engineer. */
 "Allow irreversible message deletion only if your contact allows it to you." = "Разрешить необратимое удаление сообщений, только если ваш контакт разрешает это вам.";
 
 /* No comment provided by engineer. */
@@ -208,6 +211,9 @@
 
 /* No comment provided by engineer. */
 "Allow voice messages only if your contact allows them." = "Разрешить голосовые сообщения, только если их разрешает ваш контакт.";
+
+/* No comment provided by engineer. */
+"Allow voice messages?" = "Разрешить голосовые сообщения?";
 
 /* No comment provided by engineer. */
 "Allow your contacts to irreversibly delete sent messages." = "Разрешить вашим контактам необратимо удалять отправленные сообщения.";
@@ -1311,7 +1317,7 @@
 "No group!" = "Группа не найдена!";
 
 /* No comment provided by engineer. */
-"No permission to record voice message" = "Нет разрешения на запись голоса";
+"No permission to record voice message" = "Нет разрешения для записи голосового сообщения";
 
 /* No comment provided by engineer. */
 "No received or sent files" = "Нет полученных или отправленных файлов";
@@ -1358,6 +1364,9 @@
 
 /* No comment provided by engineer. */
 "Only group owners can change group preferences." = "Только владельцы группы могут изменять предпочтения группы.";
+
+/* No comment provided by engineer. */
+"Only group owners can enable voice messages." = "Только владельцы группы могут разрешить голосовые сообщения.";
 
 /* No comment provided by engineer. */
 "Only you can irreversibly delete messages (your contact can mark them for deletion)." = "Только вы можете необратимо удалять сообщения (ваш контакт может помечать их на удаление).";
@@ -1417,10 +1426,16 @@
 "PING interval" = "Интервал PING";
 
 /* No comment provided by engineer. */
+"Please ask your contact to enable sending voice messages." = "Попросите у вашего контакта разрешить отправку голосовых сообщений.";
+
+/* No comment provided by engineer. */
 "Please check that you used the correct link or ask your contact to send you another one." = "Пожалуйста, проверьте, что вы использовали правильную ссылку или попросите, чтобы ваш контакт отправил вам другую ссылку.";
 
 /* No comment provided by engineer. */
 "Please check your network connection and try again." = "Пожалуйста, проверьте ваше соединение с сетью и попробуйте еще раз.";
+
+/* No comment provided by engineer. */
+"Please check yours and your contact preferences." = "Проверьте предпочтения вашего контакта.";
 
 /* No comment provided by engineer. */
 "Please enter correct current passphrase." = "Пожалуйста, введите правильный пароль.";
@@ -2002,6 +2017,9 @@
 "Voice messages are prohibited in this chat." = "Голосовые сообщения запрещены в этом чате.";
 
 /* No comment provided by engineer. */
+"Voice messages prohibited!" = "Голосовые сообщения запрещены!";
+
+/* No comment provided by engineer. */
 "waiting for answer…" = "ожидается ответ…";
 
 /* No comment provided by engineer. */
@@ -2120,6 +2138,9 @@
 
 /* No comment provided by engineer. */
 "You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." = "Вы должны всегда использовать самую новую версию данных чата, ТОЛЬКО на одном устройстве, инача вы можете перестать получать сообщения от каких то контактов.";
+
+/* No comment provided by engineer. */
+"You need to allow your contact to send voice messages to be able to send them." = "Чтобы включить отправку голосовых сообщений, разрешите их вашему контакту.";
 
 /* No comment provided by engineer. */
 "You rejected group invitation" = "Вы отклонили приглашение в группу";
