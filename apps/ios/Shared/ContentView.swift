@@ -17,6 +17,7 @@ struct ContentView: View {
     @AppStorage(DEFAULT_SHOW_LA_NOTICE) private var prefShowLANotice = false
     @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
+    @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = true
 
     var body: some View {
         ZStack {
@@ -29,7 +30,7 @@ struct ContentView: View {
             } else if let step = chatModel.onboardingStage  {
                 if case .onboardingComplete = step,
                    chatModel.currentUser != nil {
-                    mainView()
+                    mainView().privacySensitive(protectScreen)
                 } else {
                     OnboardingView(onboarding: step)
                 }

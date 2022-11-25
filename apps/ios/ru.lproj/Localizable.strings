@@ -447,9 +447,6 @@
 "connecting…" = "соединяется…";
 
 /* No comment provided by engineer. */
-"Connection" = "Соединение";
-
-/* No comment provided by engineer. */
 "Connection error" = "Ошибка соединения";
 
 /* No comment provided by engineer. */
@@ -469,9 +466,6 @@
 
 /* connection information */
 "connection:%@" = "connection:%@";
-
-/* No comment provided by engineer. */
-"Contact allows" = "Контакт разрешает";
 
 /* No comment provided by engineer. */
 "Contact already exists" = "Существующий контакт";
@@ -559,9 +553,6 @@
 
 /* No comment provided by engineer. */
 "Database error" = "Ошибка базы данных";
-
-/* No comment provided by engineer. */
-"Database ID" = "ID базы данных";
 
 /* No comment provided by engineer. */
 "Database is encrypted using a random passphrase, you can change it." = "База данных зашифрована случайным паролем, вы можете его поменять.";
@@ -687,6 +678,9 @@
 "deleted group" = "удалил(а) группу";
 
 /* No comment provided by engineer. */
+"Description" = "Описание";
+
+/* No comment provided by engineer. */
 "Develop" = "Для разработчиков";
 
 /* No comment provided by engineer. */
@@ -754,6 +748,15 @@
 
 /* No comment provided by engineer. */
 "Enable TCP keep-alive" = "Включить TCP keep-alive";
+
+/* enabled status */
+"enabled" = "включено";
+
+/* enabled status */
+"enabled for contact" = "включено для контакта";
+
+/* enabled status */
+"enabled for you" = "включено для вас";
 
 /* No comment provided by engineer. */
 "Encrypt" = "Зашифровать";
@@ -876,6 +879,9 @@
 "Error saving ICE servers" = "Ошибка при сохранении ICE серверов";
 
 /* No comment provided by engineer. */
+"Error saving passphrase to keychain" = "Ошибка сохранения пароля в Keychain";
+
+/* No comment provided by engineer. */
 "Error saving SMP servers" = "Ошибка при сохранении SMP серверов";
 
 /* No comment provided by engineer. */
@@ -915,6 +921,9 @@
 "Exporting database archive..." = "Архив чата экспортируется...";
 
 /* No comment provided by engineer. */
+"Failed to remove passphrase" = "Ошибка удаления пароля";
+
+/* No comment provided by engineer. */
 "File will be received when your contact is online, please wait or check later!" = "Файл будет принят, когда ваш контакт будет в сети, подождите или проверьте позже!";
 
 /* No comment provided by engineer. */
@@ -923,17 +932,17 @@
 /* No comment provided by engineer. */
 "For console" = "Для консоли";
 
-/* No comment provided by engineer. */
+/* chat feature */
 "Full deletion" = "Полное удаление";
+
+/* No comment provided by engineer. */
+"Full link" = "Полная ссылка";
 
 /* No comment provided by engineer. */
 "Full name (optional)" = "Полное имя (не обязательно)";
 
 /* No comment provided by engineer. */
 "Full name:" = "Полное имя:";
-
-/* No comment provided by engineer. */
-"Group" = "Группа";
 
 /* No comment provided by engineer. */
 "group deleted" = "группа удалена";
@@ -1176,10 +1185,10 @@
 "Limitations" = "Ограничения";
 
 /* No comment provided by engineer. */
-"Local name" = "Локальное имя";
+"Make a private connection" = "Добавьте контакт";
 
 /* No comment provided by engineer. */
-"Make a private connection" = "Добавьте контакт";
+"Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." = "Пожалуйста, проверьте, что адреса SMP серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется (%@).";
 
 /* No comment provided by engineer. */
 "Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." = "Пожалуйста, проверьте, что адреса WebRTC ICE серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется.";
@@ -1302,6 +1311,9 @@
 "No group!" = "Группа не найдена!";
 
 /* No comment provided by engineer. */
+"No permission to record voice message" = "Нет разрешения на запись голоса";
+
+/* No comment provided by engineer. */
 "No received or sent files" = "Нет полученных или отправленных файлов";
 
 /* No comment provided by engineer. */
@@ -1310,7 +1322,8 @@
 /* No comment provided by engineer. */
 "Notifications are disabled!" = "Уведомления выключены";
 
-/* group pref value */
+/* enabled status
+   group pref value */
 "off" = "нет";
 
 /* No comment provided by engineer. */
@@ -1369,6 +1382,9 @@
 
 /* No comment provided by engineer. */
 "Open-source protocol and code – anybody can run the servers." = "Открытый протокол и код - кто угодно может запустить сервер.";
+
+/* No comment provided by engineer. */
+"Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." = "Использование ссылки в браузере может уменьшить конфиденциальность и безопасность соединения. Ссылки на неизвестные сайты будут красными.";
 
 /* No comment provided by engineer. */
 "or chat with the developers" = "или соединитесь с разработчиками";
@@ -1444,6 +1460,9 @@
 
 /* No comment provided by engineer. */
 "Prohibit sending voice messages." = "Запретить отправлять голосовые сообщений.";
+
+/* No comment provided by engineer. */
+"Protect app screen" = "Защитить экран приложения";
 
 /* No comment provided by engineer. */
 "Protocol timeout" = "Таймаут протокола";
@@ -1549,9 +1568,6 @@
 
 /* No comment provided by engineer. */
 "Revert" = "Отменить изменения";
-
-/* No comment provided by engineer. */
-"Role" = "Роль";
 
 /* No comment provided by engineer. */
 "Run chat" = "Запустить chat";
@@ -1670,14 +1686,26 @@
 /* No comment provided by engineer. */
 "Show QR code" = "Показать QR код";
 
+/* simplex link type */
+"SimpleX contact address" = "SimpleX ссылка-контакт";
+
 /* notification */
 "SimpleX encrypted message or connection event" = "SimpleX: зашифрованное сообщение или соединение контакта";
+
+/* simplex link type */
+"SimpleX group link" = "SimpleX ссылка группы";
+
+/* No comment provided by engineer. */
+"SimpleX links" = "SimpleX ссылки";
 
 /* No comment provided by engineer. */
 "SimpleX Lock" = "Блокировка SimpleX";
 
 /* No comment provided by engineer. */
 "SimpleX Lock turned on" = "Блокировка SimpleX включена";
+
+/* simplex link type */
+"SimpleX one-time invitation" = "SimpleX одноразовая ссылка";
 
 /* No comment provided by engineer. */
 "Skip" = "Пропустить";
@@ -1845,6 +1873,9 @@
 "To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled." = "Чтобы защитить вашу информацию, включите блокировку SimpleX Chat.\nВам будет нужно пройти аутентификацию для включения блокировки.";
 
 /* No comment provided by engineer. */
+"To record voice message please grant permission to use Microphone." = "Для записи голосового сообщения, пожалуйста разрешите доступ к микрофону.";
+
+/* No comment provided by engineer. */
 "To support instant push notifications the chat database has to be migrated." = "Для поддержки мгновенный доставки уведомлений данные чата должны быть перемещены.";
 
 /* No comment provided by engineer. */
@@ -1864,6 +1895,9 @@
 
 /* No comment provided by engineer. */
 "Turn on" = "Включить";
+
+/* No comment provided by engineer. */
+"Unable to record voice message" = "Невозможно записать голосовое сообщение";
 
 /* No comment provided by engineer. */
 "Unexpected error: %@" = "Неожиданная ошибка: %@";
@@ -1937,6 +1971,9 @@
 /* No comment provided by engineer. */
 "v%@ (%@)" = "v%@ (%@)";
 
+/* No comment provided by engineer. */
+"Via browser" = "В браузере";
+
 /* chat list item description */
 "via contact address link" = "через ссылку-контакт";
 
@@ -1956,6 +1993,9 @@
 "video call (not e2e encrypted)" = "видеозвонок (не e2e зашифрованный)";
 
 /* No comment provided by engineer. */
+"Voice message…" = "Голосовое сообщение…";
+
+/* chat feature */
 "Voice messages" = "Голосовые сообщения";
 
 /* No comment provided by engineer. */
@@ -2176,9 +2216,6 @@
 
 /* No comment provided by engineer. */
 "Your profile, contacts and delivered messages are stored on your device." = "Ваш профиль, контакты и доставленные сообщения хранятся на вашем устройстве.";
-
-/* No comment provided by engineer. */
-"Your random profile" = "Ваш случайный профиль";
 
 /* No comment provided by engineer. */
 "Your server" = "Ваш сервер";

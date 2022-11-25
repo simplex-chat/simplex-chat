@@ -3678,8 +3678,8 @@ testGroupLink =
       alice @@@ [("#team", "connected")]
       bob @@@ [("#team", "connected")]
       -- calling /_get chat api marks it as used and adds it to chat previews
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures)
-      alice @@@ [("@bob", "Voice messages: enabled"), ("#team", "connected")]
+      alice #$> ("/_get chat @2 count=100", chat, [])
+      alice @@@ [("@bob", ""), ("#team", "connected")]
       alice <##> bob
       alice @@@ [("@bob", "hey"), ("#team", "connected")]
 

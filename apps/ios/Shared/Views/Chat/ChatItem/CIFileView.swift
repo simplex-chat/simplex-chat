@@ -79,7 +79,7 @@ struct CIFileView: View {
                 )
             case .rcvComplete:
                 logger.debug("CIFileView fileAction - in .rcvComplete")
-                if let filePath = getLoadedFilePath(file){
+                if let filePath = getLoadedFilePath(file) {
                     let url = URL(fileURLWithPath: filePath)
                     showShareSheet(items: [url])
                 }
@@ -148,7 +148,7 @@ struct CIFileView_Previews: PreviewProvider {
             quotedItem: nil,
             file: nil
         )
-        Group{
+        Group {
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: sentFile)
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample())
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample(fileName: "some_long_file_name_here", fileStatus: .rcvInvitation))

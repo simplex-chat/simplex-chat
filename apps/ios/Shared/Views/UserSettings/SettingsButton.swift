@@ -16,7 +16,7 @@ struct SettingsButton: View {
         Button { showSettings = true } label: {
             Image(systemName: "gearshape")
         }
-        .sheet(isPresented: $showSettings, content: {
+        .appSheet(isPresented: $showSettings, content: {
             SettingsView(showSettings: $showSettings)
         })
     }
