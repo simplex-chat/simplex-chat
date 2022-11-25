@@ -1,4 +1,4 @@
-package chat.simplex.app.views.usersettings
+package chat.simplex.app.views.chat
 
 import SectionDivider
 import SectionItemView
@@ -137,6 +137,7 @@ private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Bool
     SectionItemView(reset) {
       Text(stringResource(R.string.reset_verb), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
     }
+    SectionDivider()
     SectionItemView(save) {
       Text(stringResource(R.string.save_and_notify_contact), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
     }
