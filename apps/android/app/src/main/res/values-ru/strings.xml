@@ -50,7 +50,7 @@
     <string name="simplex_link_mode_description">Описание</string>
     <string name="simplex_link_mode_full">Полная ссылка</string>
     <string name="simplex_link_mode_browser">В браузере</string>
-    <string name="simplex_link_mode_browser_warning">Использование ссылки в браузере может уменьшить конфиденциальность и безопасность соединения. Ссылки на неизвестных сайтах будут красными.</string>
+    <string name="simplex_link_mode_browser_warning">Использование ссылки в браузере может уменьшить конфиденциальность и безопасность соединения. Ссылки на неизвестные сайты будут красными.</string>
 
     <!-- SimpleXAPI.kt -->
     <string name="error_saving_smp_servers">Ошибка при сохранении SMP серверов</string>
