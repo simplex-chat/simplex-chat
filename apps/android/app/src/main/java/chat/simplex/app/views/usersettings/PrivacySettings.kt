@@ -29,6 +29,8 @@ fun PrivacySettingsView(
     AppBarTitle(stringResource(R.string.your_privacy))
     SectionView(stringResource(R.string.settings_section_title_device)) {
       ChatLockItem(chatModel.performLA, setPerformLA)
+      SectionDivider()
+      SettingsPreferenceItem(Icons.Outlined.VisibilityOff, stringResource(R.string.protect_app_screen), chatModel.controller.appPrefs.privacyProtectScreen)
     }
     SectionSpacer()
 
