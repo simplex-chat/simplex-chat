@@ -23,12 +23,10 @@ import androidx.compose.ui.unit.*
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 
 @Composable
 fun CIVoiceView(
-  durationSec: Int,
+  providedDurationSec: Int,
   file: CIFile?,
   edited: Boolean,
   sent: Boolean,
@@ -45,29 +43,21 @@ fun CIVoiceView(
       val filePath = remember(file.filePath, file.fileStatus) { getLoadedFilePath(context, file) }
       var brokenAudio by rememberSaveable(file.filePath) { mutableStateOf(false) }
       val audioPlaying = rememberSaveable(file.filePath) { mutableStateOf(false) }
-      val audioInfo = remember(file.filePath) {
-        file.audioInfo.value = file.audioInfo.value.copy(durationMs = durationSec * 1000)
-        file.audioInfo
-      }
-      val play = play@{
-        audioPlaying.value = AudioPlayer.start(filePath ?: return@play, audioInfo.value.progressMs) {
-          // If you want to preserve the position after switching a track, remove this line
-          audioInfo.value = ProgressAndDuration(0, audioInfo.value.durationMs)
-          audioPlaying.value = false
-        }
+      val progress = rememberSaveable(file.filePath) { mutableStateOf(0) }
+      val duration = rememberSaveable(file.filePath) { mutableStateOf(providedDurationSec * 1000) }
+      val play = {
+        AudioPlayer.play(filePath, audioPlaying, progress, duration, true)
         brokenAudio = !audioPlaying.value
       }
       val pause = {
-        audioInfo.value = ProgressAndDuration(AudioPlayer.pause(), audioInfo.value.durationMs)
-        audioPlaying.value = false
+        AudioPlayer.pause(audioPlaying, progress)
       }
-      AudioInfoUpdater(filePath, audioPlaying, audioInfo)
 
-      val time = if (audioPlaying.value) audioInfo.value.progressMs else audioInfo.value.durationMs
+      val time = if (audioPlaying.value) progress.value else duration.value
       val minWidth = with(LocalDensity.current) { 45.sp.toDp() }
       val text = String.format("%02d:%02d", time / 1000 / 60, time / 1000 % 60)
       if (hasText) {
-        VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, audioInfo, brokenAudio, play, pause)
+        VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause)
         Text(
           text,
           Modifier
@@ -94,7 +84,7 @@ fun CIVoiceView(
               )
             }
             Column {
-              VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, audioInfo, brokenAudio, play, pause)
+              VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause)
               Box(Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp)) {
                 CIMetaView(ci, metaColor)
               }
@@ -103,7 +93,7 @@ fun CIVoiceView(
         } else {
           Row {
             Column {
-              VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, audioInfo, brokenAudio, play, pause)
+              VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause)
               Box(Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp)) {
                 CIMetaView(ci, metaColor)
               }
@@ -124,7 +114,7 @@ fun CIVoiceView(
         }
       }
     } else {
-      VoiceMsgIndicator(null, false, sent, hasText, null, false, {}, {})
+      VoiceMsgIndicator(null, false, sent, hasText, null, null, false, {}, {})
       val metaReserve = if (edited)
         "                     "
       else
@@ -173,15 +163,16 @@ private fun VoiceMsgIndicator(
   audioPlaying: Boolean,
   sent: Boolean,
   hasText: Boolean,
-  audioInfo: State<ProgressAndDuration>?,
+  progress: State<Int>?,
+  duration: State<Int>?,
   error: Boolean,
   play: () -> Unit,
   pause: () -> Unit
 ) {
   val strokeWidth = with(LocalDensity.current){ 3.dp.toPx() }
   val strokeColor = MaterialTheme.colors.primary
-  if (file != null && file.loaded && audioInfo != null) {
-    val angle = 360f * (audioInfo.value.progressMs.toDouble() / audioInfo.value.durationMs).toFloat()
+  if (file != null && file.loaded && progress != null && duration != null) {
+    val angle = 360f * (progress.value.toDouble() / duration.value).toFloat()
     if (hasText) {
       IconButton({ if (!audioPlaying) play() else pause() }, Modifier.drawRingModifier(angle, strokeColor, strokeWidth)) {
         Icon(
@@ -241,27 +232,4 @@ private fun ProgressIndicator() {
     color = if (isInDarkTheme()) FileDark else FileLight,
     strokeWidth = 4.dp
   )
-}
-
-@Composable
-fun AudioInfoUpdater(
-  filePath: String?,
-  audioPlaying: MutableState<Boolean>,
-  audioInfo: MutableState<ProgressAndDuration>
-) {
-  LaunchedEffect(filePath) {
-    if (filePath != null && audioInfo.value.durationMs == 0) {
-      audioInfo.value = ProgressAndDuration(audioInfo.value.progressMs, AudioPlayer.duration(filePath))
-    }
-  }
-  LaunchedEffect(audioPlaying.value) {
-    while (isActive && audioPlaying.value) {
-      audioInfo.value = AudioPlayer.progressAndDurationOrEnded()
-      if (audioInfo.value.progressMs == audioInfo.value.durationMs) {
-        audioInfo.value = ProgressAndDuration(0, audioInfo.value.durationMs)
-        audioPlaying.value = false
-      }
-      delay(50)
-    }
-  }
 }
