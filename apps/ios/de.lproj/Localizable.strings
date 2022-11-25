@@ -312,7 +312,7 @@
 "Change member role?" = "Die Mitgliederrolle ändern?";
 
 /* No comment provided by engineer. */
-"Change receiving address (BETA)" = "Wechseln der Empfängeradresse (BETA)";
+"Change receiving address" = "Wechseln der Empfängeradresse";
 
 /* No comment provided by engineer. */
 "Change receiving address?" = "Empfängeradresse wechseln?";
@@ -1894,7 +1894,7 @@
 "To support instant push notifications the chat database has to be migrated." = "Um sofortige Push-Benachrichtigungen zu unterstützen, muss die Chat-Datenbank migriert werden.";
 
 /* No comment provided by engineer. */
-"Transfer images faster (BETA)" = "Bilder schneller übertragen (BETA)";
+"Transfer images faster" = "Bilder schneller übertragen";
 
 /* No comment provided by engineer. */
 "Trying to connect to the server used to receive messages from this contact (error: %@)." = "Beim Versuch die Verbindung mit dem Server aufzunehmen, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird, ist ein Fehler aufgetreten (Fehler: %@).";

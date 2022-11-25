@@ -71,7 +71,7 @@ struct GroupMemberInfoView: View {
                     Section("Servers") {
                         // TODO network connection status
                         if developerTools {
-                            Button("Change receiving address (BETA)") {
+                            Button("Change receiving address") {
                                 alert = .switchAddressAlert
                             }
                         }

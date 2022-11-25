@@ -36,7 +36,7 @@ struct PrivacySettings: View {
                     }
                     if developerTools {
                         settingsRow("photo.on.rectangle") {
-                            Toggle("Transfer images faster (BETA)", isOn: $transferImagesInline)
+                            Toggle("Transfer images faster", isOn: $transferImagesInline)
                         }
                     }
                     settingsRow("network") {

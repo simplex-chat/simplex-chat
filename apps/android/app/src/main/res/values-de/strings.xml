@@ -610,7 +610,7 @@
   <string name="privacy_and_security">Datenschutz &amp; Sicherheit</string>
   <string name="your_privacy">Meine Privatsphäre</string>
   <string name="auto_accept_images">Bilder automatisch akzeptieren</string>
-  <string name="transfer_images_faster">Bilder schneller übertragen (BETA)</string>
+  <string name="transfer_images_faster">Bilder schneller übertragen</string>
   <string name="send_link_previews">Link-Vorschau senden</string>
 
   <!-- Settings sections -->
@@ -882,7 +882,7 @@
   <string name="receiving_via">Empfangen über</string>
   <string name="sending_via">Senden über</string>
   <string name="network_status">Netzwerkstatus</string>
-  <string name="switch_receiving_address">Wechseln der Empfängeradresse (BETA)</string>
+  <string name="switch_receiving_address">Wechseln der Empfängeradresse</string>
 
   <!-- AddGroupView.kt -->
   <string name="create_secret_group_title">Geheime Gruppe erstellen</string>

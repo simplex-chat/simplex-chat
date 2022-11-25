@@ -12,7 +12,7 @@
     - [Using Haskell stack](#using-haskell-stack)
 - [Usage](#usage)
   - [Running the chat client](#running-the-chat-client)
-  - [Access messaging servers via Tor (BETA)](#access-messaging-servers-via-tor-beta)
+  - [Access messaging servers via Tor](#access-messaging-servers-via-tor-beta)
   - [How to use SimpleX chat](#how-to-use-simplex-chat)
   - [Groups](#groups)
   - [Sending files](#sending-files)
