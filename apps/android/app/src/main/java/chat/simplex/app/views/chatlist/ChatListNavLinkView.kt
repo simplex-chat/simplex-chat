@@ -33,6 +33,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
     chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat
   }
   val stopped = chatModel.chatRunning.value == false
+  val linkMode = chatModel.controller.appPrefs.simplexLinkMode.get()
   LaunchedEffect(chat.id) {
     showMenu.value = false
     delay(500L)
@@ -40,7 +41,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
   when (chat.chatInfo) {
     is ChatInfo.Direct ->
       ChatListNavLinkLayout(
-        chatLinkPreview = { ChatPreviewView(chat, chatModel.incognito.value, chatModel.currentUser.value?.profile?.displayName, stopped) },
+        chatLinkPreview = { ChatPreviewView(chat, chatModel.incognito.value, chatModel.currentUser.value?.profile?.displayName, stopped, linkMode) },
         click = { directChatAction(chat.chatInfo, chatModel) },
         dropdownMenuItems = { ContactMenuItems(chat, chatModel, showMenu, showMarkRead) },
         showMenu,
@@ -48,7 +49,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
       )
     is ChatInfo.Group ->
       ChatListNavLinkLayout(
-        chatLinkPreview = { ChatPreviewView(chat, chatModel.incognito.value, chatModel.currentUser.value?.profile?.displayName, stopped) },
+        chatLinkPreview = { ChatPreviewView(chat, chatModel.incognito.value, chatModel.currentUser.value?.profile?.displayName, stopped, linkMode) },
         click = { groupChatAction(chat.chatInfo.groupInfo, chatModel) },
         dropdownMenuItems = { GroupMenuItems(chat, chat.chatInfo.groupInfo, chatModel, showMenu, showMarkRead) },
         showMenu,
@@ -586,7 +587,8 @@ fun PreviewChatListNavLinkDirect() {
           ),
           false,
           null,
-          stopped = false
+          stopped = false,
+          linkMode = SimplexLinkMode.DESCRIPTION
         )
       },
       click = {},
@@ -623,7 +625,8 @@ fun PreviewChatListNavLinkGroup() {
           ),
           false,
           null,
-          stopped = false
+          stopped = false,
+          linkMode = SimplexLinkMode.DESCRIPTION
         )
       },
       click = {},

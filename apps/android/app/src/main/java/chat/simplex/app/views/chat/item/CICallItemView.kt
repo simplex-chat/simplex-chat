@@ -25,7 +25,7 @@ fun CICallItemView(cInfo: ChatInfo, cItem: ChatItem, status: CICallStatus, durat
     Modifier
       .padding(horizontal = 4.dp)
       .padding(bottom = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-    @Composable fun ConnectingCallIcon() = Icon(Icons.Outlined.SettingsPhone, stringResource(R.string.icon_descr_call_connecting), tint = Color.Green)
+    @Composable fun ConnectingCallIcon() = Icon(Icons.Outlined.SettingsPhone, stringResource(R.string.icon_descr_call_connecting), tint = SimplexGreen)
     when (status) {
       CICallStatus.Pending -> if (sent) {
         Icon(Icons.Outlined.Call, stringResource(R.string.icon_descr_call_pending_sent))

@@ -79,6 +79,7 @@ class ChatModel(val controller: ChatController) {
   val sharedContent = mutableStateOf(null as SharedContent?)
 
   val filesToDelete = mutableSetOf<File>()
+  val simplexLinkMode = mutableStateOf(controller.appPrefs.simplexLinkMode.get())
 
   fun updateUserProfile(profile: LocalProfile) {
     val user = currentUser.value
@@ -352,6 +353,7 @@ data class User(
   val userContactId: Long,
   val localDisplayName: String,
   val profile: LocalProfile,
+  val fullPreferences: FullChatPreferences,
   val activeUser: Boolean
 ): NamedChat {
   override val displayName: String get() = profile.displayName
@@ -365,6 +367,7 @@ data class User(
       userContactId = 1,
       localDisplayName = "alice",
       profile = LocalProfile.sampleData,
+      fullPreferences = FullChatPreferences.sampleData,
       activeUser = true
     )
   }
@@ -539,8 +542,8 @@ data class Contact(
   val activeConn: Connection,
   val viaGroup: Long? = null,
   val chatSettings: ChatSettings,
-  // User applies his preferences for the contact here. Named user_preferences on the contact in DB
   val userPreferences: ChatPreferences,
+  val mergedPreferences: ContactUserPreferences,
   override val createdAt: Instant,
   override val updatedAt: Instant
 ): SomeChat, NamedChat {
@@ -571,7 +574,8 @@ data class Contact(
       profile = LocalProfile.sampleData,
       activeConn = Connection.sampleData,
       chatSettings = ChatSettings(true),
-      userPreferences = ChatPreferences(),
+      userPreferences = ChatPreferences.sampleData,
+      mergedPreferences = ContactUserPreferences.sampleData,
       createdAt = Clock.System.now(),
       updatedAt = Clock.System.now()
     )
@@ -601,12 +605,11 @@ class Connection(val connId: Long, val connStatus: ConnStatus, val connLevel: In
 }
 
 @Serializable
-class Profile(
+data class Profile(
   override val displayName: String,
   override val fullName: String,
   override val image: String? = null,
   override val localAlias : String = "",
-  // Contact applies his preferences here
   val preferences: ChatPreferences? = null
 ): NamedChat {
   val profileViewName: String
@@ -614,7 +617,7 @@ class Profile(
       return if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)"
     }
 
-  fun toLocalProfile(profileId: Long): LocalProfile = LocalProfile(profileId, displayName, fullName, image, localAlias)
+  fun toLocalProfile(profileId: Long): LocalProfile = LocalProfile(profileId, displayName, fullName, image, localAlias, preferences)
 
   companion object {
     val sampleData = Profile(
@@ -631,18 +634,18 @@ class LocalProfile(
   override val fullName: String,
   override val image: String? = null,
   override val localAlias: String,
-  // Contact applies his preferences here
   val preferences: ChatPreferences? = null
 ): NamedChat {
   val profileViewName: String = localAlias.ifEmpty { if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)" }
 
-  fun toProfile(): Profile = Profile(displayName, fullName, image, localAlias)
+  fun toProfile(): Profile = Profile(displayName, fullName, image, localAlias, preferences)
 
   companion object {
     val sampleData = LocalProfile(
       profileId = 1L,
       displayName = "alice",
       fullName = "Alice",
+      preferences = ChatPreferences.sampleData,
       localAlias = ""
     )
   }
@@ -659,10 +662,10 @@ data class GroupInfo (
   val groupId: Long,
   override val localDisplayName: String,
   val groupProfile: GroupProfile,
+  val fullGroupPreferences: FullGroupPreferences,
   val membership: GroupMember,
   val hostConnCustomUserProfileId: Long? = null,
   val chatSettings: ChatSettings,
-//  val groupPreferences: GroupPreferences? = null,
   override val createdAt: Instant,
   override val updatedAt: Instant
 ): SomeChat, NamedChat {
@@ -691,6 +694,7 @@ data class GroupInfo (
       groupId = 1,
       localDisplayName = "team",
       groupProfile = GroupProfile.sampleData,
+      fullGroupPreferences = FullGroupPreferences.sampleData,
       membership = GroupMember.sampleData,
       hostConnCustomUserProfileId = null,
       chatSettings = ChatSettings(true),
@@ -701,11 +705,12 @@ data class GroupInfo (
 }
 
 @Serializable
-class GroupProfile (
+data class GroupProfile (
   override val displayName: String,
   override val fullName: String,
   override val image: String? = null,
   override val localAlias: String = "",
+  val groupPreferences: GroupPreferences? = null
 ): NamedChat {
   companion object {
     val sampleData = GroupProfile(
@@ -1497,12 +1502,21 @@ object MsgContentSerializer : KSerializer<MsgContent> {
 
 @Serializable
 class FormattedText(val text: String, val format: Format? = null) {
-  val link: String? = when (format) {
+  // TODO make it dependent on simplexLinkMode preference
+  fun link(mode: SimplexLinkMode): String? = when (format) {
     is Format.Uri -> text
+    is Format.SimplexLink -> if (mode == SimplexLinkMode.BROWSER) text else format.simplexUri
     is Format.Email -> "mailto:$text"
     is Format.Phone -> "tel:$text"
     else -> null
   }
+
+  // TODO make it dependent on simplexLinkMode preference
+  fun viewText(mode: SimplexLinkMode): String =
+    if (format is Format.SimplexLink && mode == SimplexLinkMode.DESCRIPTION) simplexLinkText(format.linkType, format.smpHosts) else text
+
+  fun simplexLinkText(linkType: SimplexLinkType, smpHosts: List<String>): String =
+    "${linkType.description} (${String.format(generalGetString(R.string.simplex_link_connection), smpHosts.firstOrNull() ?: "?")})"
 }
 
 @Serializable
@@ -1514,6 +1528,7 @@ sealed class Format {
   @Serializable @SerialName("secret") class Secret: Format()
   @Serializable @SerialName("colored") class Colored(val color: FormatColor): Format()
   @Serializable @SerialName("uri") class Uri: Format()
+  @Serializable @SerialName("simplexLink") class SimplexLink(val linkType: SimplexLinkType, val simplexUri: String, val trustedUri: Boolean, val smpHosts: List<String>): Format()
   @Serializable @SerialName("email") class Email: Format()
   @Serializable @SerialName("phone") class Phone: Format()
 
@@ -1525,6 +1540,7 @@ sealed class Format {
     is Secret -> SpanStyle(color = Color.Transparent, background = SecretColor)
     is Colored -> SpanStyle(color = this.color.uiColor)
     is Uri -> linkStyle
+    is SimplexLink -> linkStyle
     is Email -> linkStyle
     is Phone -> linkStyle
   }
@@ -1532,6 +1548,19 @@ sealed class Format {
   companion object {
     val linkStyle @Composable get() = SpanStyle(color = MaterialTheme.colors.primary, textDecoration = TextDecoration.Underline)
   }
+}
+
+@Serializable
+enum class SimplexLinkType(val linkType: String) {
+  contact("contact"),
+  invitation("invitation"),
+  group("group");
+
+  val description: String get() = generalGetString(when (this) {
+      contact -> R.string.simplex_link_contact
+      invitation -> R.string.simplex_link_invitation
+      group -> R.string.simplex_link_group
+  })
 }
 
 @Serializable
@@ -1549,7 +1578,7 @@ enum class FormatColor(val color: String) {
     red -> Color.Red
     green -> SimplexGreen
     blue -> SimplexBlue
-    yellow -> Color.Yellow
+    yellow -> WarningYellow
     cyan -> Color.Cyan
     magenta -> Color.Magenta
     black -> MaterialTheme.colors.onBackground

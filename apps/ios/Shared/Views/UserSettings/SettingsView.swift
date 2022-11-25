@@ -23,6 +23,7 @@ let DEFAULT_WEBRTC_POLICY_RELAY = "webrtcPolicyRelay"
 let DEFAULT_WEBRTC_ICE_SERVERS = "webrtcICEServers"
 let DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
 let DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews"
+let DEFAULT_PRIVACY_SIMPLEX_LINK_MODE = "privacySimplexLinkMode"
 let DEFAULT_EXPERIMENTAL_CALLS = "experimentalCalls"
 let DEFAULT_CHAT_ARCHIVE_NAME = "chatArchiveName"
 let DEFAULT_CHAT_ARCHIVE_TIME = "chatArchiveTime"
@@ -43,6 +44,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_WEBRTC_POLICY_RELAY: true,
     DEFAULT_PRIVACY_ACCEPT_IMAGES: true,
     DEFAULT_PRIVACY_LINK_PREVIEWS: true,
+    DEFAULT_PRIVACY_SIMPLEX_LINK_MODE: "description",
     DEFAULT_EXPERIMENTAL_CALLS: false,
     DEFAULT_CHAT_V3_DB_MIGRATION: "offer",
     DEFAULT_DEVELOPER_TOOLS: false,
@@ -54,6 +56,24 @@ let appDefaults: [String: Any] = [
     DEFAULT_CONNECT_VIA_LINK_TAB: "scan"
 ]
 
+enum SimpleXLinkMode: String, Identifiable {
+    case description
+    case full
+    case browser
+
+    static var values: [SimpleXLinkMode] = [.description, .full, .browser]
+
+    public var id: Self { self }
+
+    var text: LocalizedStringKey {
+        switch self {
+        case .description: return "Description"
+        case .full: return "Full link"
+        case .browser: return "Via browser"
+        }
+    }
+}
+
 private var indent: CGFloat = 36
 
 let chatArchiveTimeDefault = DateDefault(defaults: UserDefaults.standard, forKey: DEFAULT_CHAT_ARCHIVE_TIME)
@@ -63,6 +83,8 @@ let encryptionStartedDefault = BoolDefault(defaults: UserDefaults.standard, forK
 let encryptionStartedAtDefault = DateDefault(defaults: UserDefaults.standard, forKey: DEFAULT_ENCRYPTION_STARTED_AT)
 
 let connectViaLinkTabDefault = EnumDefault<ConnectViaLinkTab>(defaults: UserDefaults.standard, forKey: DEFAULT_CONNECT_VIA_LINK_TAB, withDefault: .scan)
+
+let privacySimplexLinkModeDefault = EnumDefault<SimpleXLinkMode>(defaults: UserDefaults.standard, forKey: DEFAULT_PRIVACY_SIMPLEX_LINK_MODE, withDefault: .description)
 
 func setGroupDefaults() {
     privacyAcceptImagesGroupDefault.set(UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_ACCEPT_IMAGES))

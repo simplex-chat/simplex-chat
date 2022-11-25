@@ -289,7 +289,7 @@ processChatCommand = \case
     CTDirect -> do
       ct@Contact {localDisplayName = c, contactUsed} <- withStore $ \db -> getContact db user chatId
       unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
-      case featureProhibited forUser user ct mc of
+      case featureProhibited forUser ct mc of
         Just f -> pure $ chatCmdError $ "feature not allowed " <> T.unpack (chatFeatureToText f)
         _ -> do
           (fileInvitation_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer ct
@@ -1189,8 +1189,9 @@ processChatCommand = \case
         withChatLock "updateProfile" . procCmd $ do
           forM_ contacts $ \ct -> do
             let mergedProfile = userProfileToSend user' Nothing $ Just ct
+                ct' = updateMergedPreferences user' ct
             void (sendDirectContactMessage ct $ XInfo mergedProfile) `catchError` (toView . CRChatError)
-            createFeatureChangedItems user user' ct ct CDDirectSnd CISndChatFeature
+            createFeatureChangedItems user' ct ct' CDDirectSnd CISndChatFeature
           pure $ CRUserProfileUpdated (fromLocalProfile p) p'
     updateContactPrefs :: User -> Contact -> Preferences -> m ChatResponse
     updateContactPrefs user@User {userId} ct@Contact {activeConn = Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
@@ -1201,7 +1202,7 @@ processChatCommand = \case
         let p' = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct')
         withChatLock "updateProfile" . procCmd $ do
           void (sendDirectContactMessage ct' $ XInfo p') `catchError` (toView . CRChatError)
-          createFeatureChangedItems user user ct ct' CDDirectSnd CISndChatFeature
+          createFeatureChangedItems user ct ct' CDDirectSnd CISndChatFeature
           pure $ CRContactPrefsUpdated ct ct'
     isReady :: Contact -> Bool
     isReady ct =
@@ -2199,7 +2200,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
       unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       let ExtMsgContent content fileInvitation_ = mcExtMsgContent mc
-      case featureProhibited forContact user ct content of
+      case featureProhibited forContact ct content of
         Just f -> void $ newChatItem (CIRcvChatFeatureRejected f) Nothing
         _ -> do
           ciFile_ <- processFileInvitation fileInvitation_ $ \db -> createRcvFileTransfer db userId ct
@@ -2502,13 +2503,12 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
     xInfo c@Contact {profile = p} p' = unless (fromLocalProfile p == p') $ do
       c' <- withStore $ \db -> updateContactProfile db user c p'
       toView $ CRContactUpdated c c'
-      createFeatureChangedItems user user c c' CDDirectRcv CIRcvChatFeature
+      createFeatureChangedItems user c c' CDDirectRcv CIRcvChatFeature
 
     createFeatureEnabledItems :: Contact -> m ()
-    createFeatureEnabledItems ct = do
-      let cups = contactUserPreferences' user ct
+    createFeatureEnabledItems ct@Contact {mergedPreferences} =
       forM_ allChatFeatures $ \f -> do
-        let ContactUserPreference {enabled} = getContactUserPreference f cups
+        let ContactUserPreference {enabled} = getContactUserPreference f mergedPreferences
         createInternalChatItem user (CDDirectRcv ct) (CIRcvChatFeature f enabled) Nothing
 
     createGroupFeatureItems :: GroupInfo -> GroupMember -> m ()
@@ -3087,16 +3087,13 @@ userProfileToSend user@User {profile = p} incognitoProfile ct =
       userPrefs = maybe (preferences' user) (const Nothing) incognitoProfile
    in (p' :: Profile) {preferences = Just . toChatPrefs $ mergePreferences (userPreferences <$> ct) userPrefs}
 
-createFeatureChangedItems :: (MsgDirectionI d, ChatMonad m) => User -> User -> Contact -> Contact -> (Contact -> ChatDirection 'CTDirect d) -> (ChatFeature -> PrefEnabled -> CIContent d) -> m ()
-createFeatureChangedItems user user' ct ct' chatDir ciContent =
+createFeatureChangedItems :: (MsgDirectionI d, ChatMonad m) => User -> Contact -> Contact -> (Contact -> ChatDirection 'CTDirect d) -> (ChatFeature -> PrefEnabled -> CIContent d) -> m ()
+createFeatureChangedItems user Contact {mergedPreferences = cups} ct'@Contact {mergedPreferences = cups'} chatDir ciContent =
   forM_ allChatFeatures $ \f -> do
     let ContactUserPreference {enabled} = getContactUserPreference f cups
         ContactUserPreference {enabled = enabled'} = getContactUserPreference f cups'
     unless (enabled == enabled') $
       createInternalChatItem user (chatDir ct') (ciContent f enabled') Nothing
-  where
-    cups = contactUserPreferences' user ct
-    cups' = contactUserPreferences' user' ct'
 
 createGroupFeatureChangedItems :: (MsgDirectionI d, ChatMonad m) => User -> ChatDirection 'CTGroup d -> (ChatFeature -> GroupPreference -> CIContent d) -> GroupProfile -> GroupProfile -> m ()
 createGroupFeatureChangedItems user cd ciContent p p' =
@@ -3109,18 +3106,18 @@ createGroupFeatureChangedItems user cd ciContent p p' =
 sameGroupProfileInfo :: GroupProfile -> GroupProfile -> Bool
 sameGroupProfileInfo p p' = p {groupPreferences = Nothing} == p' {groupPreferences = Nothing}
 
-featureProhibited :: (PrefEnabled -> Bool) -> User -> Contact -> MsgContent -> Maybe ChatFeature
-featureProhibited forWhom user ct = \case
+featureProhibited :: (PrefEnabled -> Bool) -> Contact -> MsgContent -> Maybe ChatFeature
+featureProhibited forWhom Contact {mergedPreferences} = \case
   MCVoice {} ->
     let ContactUserPreference {enabled} =
-          getContactUserPreference CFVoice $ contactUserPreferences' user ct
+          getContactUserPreference CFVoice mergedPreferences
      in if forWhom enabled then Nothing else Just CFVoice
   _ -> Nothing
 
 groupFeatureProhibited :: GroupInfo -> MsgContent -> Maybe ChatFeature
-groupFeatureProhibited GroupInfo {groupProfile} = \case
+groupFeatureProhibited GroupInfo {fullGroupPreferences} = \case
   MCVoice {} ->
-    let GroupPreference {enable} = getGroupPreference CFVoice $ groupPreferences groupProfile
+    let GroupPreference {enable} = getGroupPreference CFVoice fullGroupPreferences
      in case enable of FEOn -> Nothing; FEOff -> Just CFVoice
   _ -> Nothing
 

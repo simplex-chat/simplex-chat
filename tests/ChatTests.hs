@@ -27,7 +27,7 @@ import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.Chat.Types
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Util (unlessM)
-import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
+import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist, doesFileExist)
 import System.FilePath ((</>))
 import Test.Hspec
 
@@ -2237,6 +2237,7 @@ testUserContactLinkAutoAccept =
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
+      threadDelay 100000
       alice @@@ [("@bob", "Voice messages: enabled")]
       alice <##> bob
 
@@ -2249,6 +2250,7 @@ testUserContactLinkAutoAccept =
       concurrently_
         (cath <## "alice (Alice): contact is connected")
         (alice <## "cath (Catherine): contact is connected")
+      threadDelay 100000
       alice @@@ [("@cath", "Voice messages: enabled"), ("@bob", "hey")]
       alice <##> cath
 
@@ -2263,6 +2265,7 @@ testUserContactLinkAutoAccept =
       concurrently_
         (dan <## "alice (Alice): contact is connected")
         (alice <## "dan (Daniel): contact is connected")
+      threadDelay 100000
       alice @@@ [("@dan", "Voice messages: enabled"), ("@cath", "hey"), ("@bob", "hey")]
       alice <##> dan
 
@@ -2897,6 +2900,12 @@ testSetConnectionAlias = testChat2 aliceProfile bobProfile $
 testSetContactPrefs :: IO ()
 testSetContactPrefs = testChat2 aliceProfile bobProfile $
   \alice bob -> do
+    alice #$> ("/_files_folder ./tests/tmp/alice", id, "ok")
+    bob #$> ("/_files_folder ./tests/tmp/bob", id, "ok")
+    createDirectoryIfMissing True "./tests/tmp/alice"
+    createDirectoryIfMissing True "./tests/tmp/bob"
+    copyFile "./tests/fixtures/test.txt" "./tests/tmp/alice/test.txt"
+    copyFile "./tests/fixtures/test.txt" "./tests/tmp/bob/test.txt"
     bob ##> "/_profile {\"displayName\": \"bob\", \"fullName\": \"Bob\", \"preferences\": {\"voice\": {\"allow\": \"no\"}}}"
     bob <## "profile image removed"
     bob <## "updated preferences:"
@@ -2909,7 +2918,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     let startFeatures = [(0, "Full deletion: off"), (0, "Voice messages: off")]
     alice #$> ("/_get chat @2 count=100", chat, startFeatures)
     bob #$> ("/_get chat @2 count=100", chat, startFeatures)
-    let sendVoice = "/_send @2 json {\"filePath\": \"./tests/fixtures/test.txt\", \"msgContent\": {\"type\": \"voice\", \"text\": \"\", \"duration\": 10}}"
+    let sendVoice = "/_send @2 json {\"filePath\": \"test.txt\", \"msgContent\": {\"type\": \"voice\", \"text\": \"\", \"duration\": 10}}"
         voiceNotAllowed = "bad chat command: feature not allowed Voice messages"
     alice ##> sendVoice
     alice <## voiceNotAllowed
@@ -2926,7 +2935,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     alice <## voiceNotAllowed
     bob ##> sendVoice
     bob <# "@alice voice message (00:10)"
-    bob <# "/f @alice ./tests/fixtures/test.txt"
+    bob <# "/f @alice test.txt"
     bob <## "completed sending file 1 (test.txt) to alice"
     alice <# "bob> voice message (00:10)"
     alice <# "bob> sends file test.txt (11 bytes / 11 bytes)"
@@ -2989,6 +2998,7 @@ testUpdateGroupPrefs =
       bob <## "updated group preferences:"
       bob <## "full message deletion enabled: on"
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Full deletion: on")])
+      threadDelay 1000000
       alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"off\"}}}"
       alice <## "updated group preferences:"
       alice <## "full message deletion enabled: off"
@@ -2999,6 +3009,7 @@ testUpdateGroupPrefs =
       bob <## "full message deletion enabled: off"
       bob <## "voice messages enabled: off"
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Full deletion: on"), (0, "Full deletion: off"), (0, "Voice messages: off")])
+      threadDelay 1000000
       alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"on\"}}}"
       alice <## "updated group preferences:"
       alice <## "voice messages enabled: on"
@@ -3007,6 +3018,7 @@ testUpdateGroupPrefs =
       bob <## "updated group preferences:"
       bob <## "voice messages enabled: on"
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Full deletion: on"), (0, "Full deletion: off"), (0, "Voice messages: off"), (0, "Voice messages: on")])
+      threadDelay 1000000
       alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"on\"}}}"
       -- no update
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on")])
