@@ -103,7 +103,7 @@ struct ChatView: View {
                     } label: {
                         ChatInfoToolbar(chat: chat)
                     }
-                    .sheet(isPresented: $showChatInfoSheet, onDismiss: {
+                    .appSheet(isPresented: $showChatInfoSheet, onDismiss: {
                         connectionStats = nil
                         customUserProfile = nil
                     }) {
@@ -121,7 +121,7 @@ struct ChatView: View {
                     } label: {
                         ChatInfoToolbar(chat: chat)
                     }
-                    .sheet(isPresented: $showChatInfoSheet) {
+                    .appSheet(isPresented: $showChatInfoSheet) {
                         GroupChatInfoView(chat: chat, groupInfo: groupInfo)
                     }
                 }
@@ -152,7 +152,7 @@ struct ChatView: View {
                                     .onTapGesture { AlertManager.shared.showAlert(cantInviteIncognitoAlert()) }
                             } else {
                                 addMembersButton()
-                                    .sheet(isPresented: $showAddMembersSheet) {
+                                    .appSheet(isPresented: $showAddMembersSheet) {
                                         AddGroupMembersView(chat: chat, groupInfo: groupInfo)
                                     }
                             }
@@ -392,7 +392,7 @@ struct ChatView: View {
                                 await MainActor.run { selectedMember = member }
                             }
                         }
-                        .sheet(item: $selectedMember, onDismiss: {
+                        .appSheet(item: $selectedMember, onDismiss: {
                             selectedMember = nil
                             memberConnectionStats = nil
                         }) { _ in

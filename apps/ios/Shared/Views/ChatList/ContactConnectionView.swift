@@ -66,7 +66,7 @@ struct ContactConnectionView: View {
                 Spacer()
             }
             .frame(maxHeight: .infinity)
-            .sheet(isPresented: $showContactConnectionInfo) {
+            .appSheet(isPresented: $showContactConnectionInfo) {
                 ContactConnectionInfo(contactConnection: contactConnection)
             }
         }

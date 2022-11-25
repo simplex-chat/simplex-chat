@@ -1311,6 +1311,9 @@
 "No group!" = "Die Gruppe wurde nicht gefunden!";
 
 /* No comment provided by engineer. */
+"No permission to record voice message" = "***No permission to record voice message";
+
+/* No comment provided by engineer. */
 "No received or sent files" = "Keine empfangenen oder gesendeten Dateien";
 
 /* No comment provided by engineer. */
@@ -1381,7 +1384,7 @@
 "Open-source protocol and code – anybody can run the servers." = "Open-Source-Protokoll und -Code – Jede Person kann ihre eigenen Server aufsetzen und nutzen.";
 
 /* No comment provided by engineer. */
-"Opening the link in the browser may reduce connection privacy and security." = "***Opening the link in the browser may reduce connection privacy and security.";
+"Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." = "***Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red.";
 
 /* No comment provided by engineer. */
 "or chat with the developers" = "oder chatten Sie mit den Entwicklern";
@@ -1457,6 +1460,9 @@
 
 /* No comment provided by engineer. */
 "Prohibit sending voice messages." = "***Prohibit sending voice messages.";
+
+/* No comment provided by engineer. */
+"Protect app screen" = "***Protect app screen";
 
 /* No comment provided by engineer. */
 "Protocol timeout" = "Protokollzeitüberschreitung";
@@ -1867,6 +1873,9 @@
 "To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled." = "Um Ihre Informationen zu schützen, schalten Sie die SimpleX Sperre ein.\nSie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funktion aktiviert wird.";
 
 /* No comment provided by engineer. */
+"To record voice message please grant permission to use Microphone." = "***To record voice message please grant permission to use Microphone.";
+
+/* No comment provided by engineer. */
 "To support instant push notifications the chat database has to be migrated." = "Um sofortige Push-Benachrichtigungen zu unterstützen, muss die Chat-Datenbank migriert werden.";
 
 /* No comment provided by engineer. */
@@ -1886,6 +1895,9 @@
 
 /* No comment provided by engineer. */
 "Turn on" = "Einschalten";
+
+/* No comment provided by engineer. */
+"Unable to record voice message" = "***Unable to record voice message";
 
 /* No comment provided by engineer. */
 "Unexpected error: %@" = "Unerwarteter Fehler: %@";

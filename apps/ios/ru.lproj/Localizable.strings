@@ -1311,6 +1311,9 @@
 "No group!" = "Группа не найдена!";
 
 /* No comment provided by engineer. */
+"No permission to record voice message" = "Нет разрешения на запись голоса";
+
+/* No comment provided by engineer. */
 "No received or sent files" = "Нет полученных или отправленных файлов";
 
 /* No comment provided by engineer. */
@@ -1381,7 +1384,7 @@
 "Open-source protocol and code – anybody can run the servers." = "Открытый протокол и код - кто угодно может запустить сервер.";
 
 /* No comment provided by engineer. */
-"Opening the link in the browser may reduce connection privacy and security." = "Использование ссылки в браузере может уменьшить конфиденциальность и безопасность соединения.";
+"Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." = "Использование ссылки в браузере может уменьшить конфиденциальность и безопасность соединения. Ссылки на неизвестные сайты будут красными.";
 
 /* No comment provided by engineer. */
 "or chat with the developers" = "или соединитесь с разработчиками";
@@ -1457,6 +1460,9 @@
 
 /* No comment provided by engineer. */
 "Prohibit sending voice messages." = "Запретить отправлять голосовые сообщений.";
+
+/* No comment provided by engineer. */
+"Protect app screen" = "Защитить экран приложения";
 
 /* No comment provided by engineer. */
 "Protocol timeout" = "Таймаут протокола";
@@ -1867,6 +1873,9 @@
 "To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled." = "Чтобы защитить вашу информацию, включите блокировку SimpleX Chat.\nВам будет нужно пройти аутентификацию для включения блокировки.";
 
 /* No comment provided by engineer. */
+"To record voice message please grant permission to use Microphone." = "Для записи голосового сообщения, пожалуйста разрешите доступ к микрофону.";
+
+/* No comment provided by engineer. */
 "To support instant push notifications the chat database has to be migrated." = "Для поддержки мгновенный доставки уведомлений данные чата должны быть перемещены.";
 
 /* No comment provided by engineer. */
@@ -1886,6 +1895,9 @@
 
 /* No comment provided by engineer. */
 "Turn on" = "Включить";
+
+/* No comment provided by engineer. */
+"Unable to record voice message" = "Невозможно записать голосовое сообщение";
 
 /* No comment provided by engineer. */
 "Unexpected error: %@" = "Неожиданная ошибка: %@";
