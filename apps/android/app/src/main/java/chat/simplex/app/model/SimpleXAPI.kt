@@ -1052,7 +1052,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         val file = cItem.file
         if (cItem.content.msgContent is MsgContent.MCImage && file != null && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV && appPrefs.privacyAcceptImages.get()) {
           withApi { receiveFile(file.fileId) }
-        } else if (cItem.content.msgContent is MsgContent.MCVoice && file != null && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && appPrefs.privacyAcceptImages.get()) {
+        } else if (cItem.content.msgContent is MsgContent.MCVoice && file != null && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileSize > MAX_VOICE_SIZE_FOR_SENDING && appPrefs.privacyAcceptImages.get()) {
           withApi { receiveFile(file.fileId) } // TODO check inlineFileMode != IFMSent
         }
         if (!cItem.chatDir.sent && !cItem.isCall && !cItem.isMutedMemberEvent && (!isAppOnForeground(appContext) || chatModel.chatId.value != cInfo.id)) {
