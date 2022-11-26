@@ -2341,16 +2341,13 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
       setActive $ ActiveG g
 
     receiveInlineMode :: FileInvitation -> Maybe MsgContent -> Integer -> m (Maybe InlineFileMode)
-    receiveInlineMode FileInvitation {fileSize, fileInline} mc_ chSize = do
-      InlineFilesConfig {receiveChunks, receiveInstant} <- asks $ inlineFiles . config
-      let largeFile = fileSize > receiveChunks * chSize
-      pure $
-        if largeFile
-          then Nothing
-          else case fileInline of
-            Just IFMOffer -> fileInline
-            Just IFMSent -> if receiveInstant && maybe False isVoice mc_ then fileInline else Nothing
-            _ -> Nothing
+    receiveInlineMode FileInvitation {fileSize, fileInline} mc_ chSize = case fileInline of
+      Just mode -> do
+        InlineFilesConfig {receiveChunks, receiveInstant} <- asks $ inlineFiles . config
+        pure $ if fileSize <= receiveChunks * chSize then inline' receiveInstant else Nothing
+        where
+          inline' receiveInstant = if mode == IFMOffer || (receiveInstant && maybe False isVoice mc_) then fileInline else Nothing
+      _ -> pure Nothing
 
     xFileCancel :: Contact -> SharedMsgId -> MsgMeta -> m ()
     xFileCancel ct@Contact {contactId} sharedMsgId msgMeta = do
