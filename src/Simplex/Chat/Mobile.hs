@@ -129,6 +129,7 @@ mobileChatOpts =
       chatCmd = "",
       chatCmdDelay = 3,
       chatServerPort = Nothing,
+      allowInstantFiles = True,
       maintenance = True
     }
 
