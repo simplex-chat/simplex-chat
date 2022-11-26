@@ -101,6 +101,7 @@ class AppPreferences(val context: Context) {
   val performLA = mkBoolPreference(SHARED_PREFS_PERFORM_LA, false)
   val laNoticeShown = mkBoolPreference(SHARED_PREFS_LA_NOTICE_SHOWN, false)
   val webrtcIceServers = mkStrPreference(SHARED_PREFS_WEBRTC_ICE_SERVERS, null)
+  val privacyProtectScreen = mkBoolPreference(SHARED_PREFS_PRIVACY_PROTECT_SCREEN, true)
   val privacyAcceptImages = mkBoolPreference(SHARED_PREFS_PRIVACY_ACCEPT_IMAGES, true)
   val privacyTransferImagesInline = mkBoolPreference(SHARED_PREFS_PRIVACY_TRANSFER_IMAGES_INLINE, false)
   val privacyLinkPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_LINK_PREVIEWS, true)
@@ -203,6 +204,7 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_PERFORM_LA = "PerformLA"
     private const val SHARED_PREFS_LA_NOTICE_SHOWN = "LANoticeShown"
     private const val SHARED_PREFS_WEBRTC_ICE_SERVERS = "WebrtcICEServers"
+    private const val SHARED_PREFS_PRIVACY_PROTECT_SCREEN = "PrivacyProtectScreen"
     private const val SHARED_PREFS_PRIVACY_ACCEPT_IMAGES = "PrivacyAcceptImages"
     private const val SHARED_PREFS_PRIVACY_TRANSFER_IMAGES_INLINE = "PrivacyTransferImagesInline"
     private const val SHARED_PREFS_PRIVACY_LINK_PREVIEWS = "PrivacyLinkPreviews"
@@ -819,7 +821,13 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       }
       else -> {
         if (!(networkErrorAlert(r))) {
-          apiErrorAlert("apiReceiveFile", generalGetString(R.string.error_receiving_file), r)
+          if (r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorChat
+            && r.chatError.errorType is ChatErrorType.FileAlreadyReceiving
+          ) {
+            Log.d(TAG, "apiReceiveFile ignoring FileAlreadyReceiving error")
+          } else {
+            apiErrorAlert("apiReceiveFile", generalGetString(R.string.error_receiving_file), r)
+          }
         }
         null
       }
@@ -2629,10 +2637,12 @@ sealed class ChatErrorType {
   val string: String get() = when (this) {
     is NoActiveUser -> "noActiveUser"
     is InvalidConnReq -> "invalidConnReq"
+    is FileAlreadyReceiving -> "fileAlreadyReceiving"
     is СommandError -> "commandError $message"
   }
   @Serializable @SerialName("noActiveUser") class NoActiveUser: ChatErrorType()
   @Serializable @SerialName("invalidConnReq") class InvalidConnReq: ChatErrorType()
+  @Serializable @SerialName("fileAlreadyReceiving") class FileAlreadyReceiving: ChatErrorType()
   @Serializable @SerialName("commandError") class СommandError(val message: String): ChatErrorType()
 }
 

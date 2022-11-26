@@ -154,7 +154,7 @@ fun FramedItemView(
                 }
               }
               is MsgContent.MCVoice -> {
-                CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, mc.text != "" || ci.quotedItem != null, ci, metaColor)
+                CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, mc.text != "" || ci.quotedItem != null, ci, metaColor, longClick = { onLinkLongClick("") })
                 if (mc.text != "") {
                   CIMarkdownText(ci, showMember, linkMode, uriHandler)
                 }

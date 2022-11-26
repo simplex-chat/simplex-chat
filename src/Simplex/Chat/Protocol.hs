@@ -265,6 +265,7 @@ cmToQuotedMsg = \case
   _ -> Nothing
 
 data MsgContentTag = MCText_ | MCLink_ | MCImage_ | MCVoice_ | MCFile_ | MCUnknown_ Text
+  deriving (Eq)
 
 instance StrEncoding MsgContentTag where
   strEncode = \case
@@ -340,6 +341,11 @@ durationText duration =
     with0 n
       | n <= 9 = '0' : show n
       | otherwise = show n
+
+isVoice :: MsgContent -> Bool
+isVoice = \case
+  MCVoice {} -> True
+  _ -> False
 
 msgContentTag :: MsgContent -> MsgContentTag
 msgContentTag = \case

@@ -9,7 +9,7 @@
 import SwiftUI
 import SimpleXChat
 
-private let howToUrl = URL(string: "https://github.com/simplex-chat/simplexmq#using-smp-server-and-smp-agent")!
+private let howToUrl = URL(string: "https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SERVER.md")!
 
 struct SMPServersView: View {
     @EnvironmentObject private var m: ChatModel

@@ -108,10 +108,8 @@ struct ChatInfoView: View {
                         .onTapGesture {
                             alert = .networkStatusAlert
                         }
-                    if developerTools {
-                        Button("Change receiving address (BETA)") {
-                            alert = .switchAddressAlert
-                        }
+                    Button("Change receiving address") {
+                        alert = .switchAddressAlert
                     }
                     if let connStats = connectionStats {
                         smpServers("Receiving via", connStats.rcvServers)

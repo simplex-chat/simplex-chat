@@ -157,10 +157,8 @@ fun ChatInfoLayout(
     SectionSpacer()
 
     SectionView(title = stringResource(R.string.conn_stats_section_title_servers)) {
-      if (developerTools) {
-        SwitchAddressButton(switchContactAddress)
-        SectionDivider()
-      }
+      SwitchAddressButton(switchContactAddress)
+      SectionDivider()
       if (connStats != null) {
         SectionItemView({
           AlertManager.shared.showAlertMsg(

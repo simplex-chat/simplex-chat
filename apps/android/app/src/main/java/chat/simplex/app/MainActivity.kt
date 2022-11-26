@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.os.Parcelable
 import android.os.SystemClock.elapsedRealtime
 import android.util.Log
+import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.animation.core.*
@@ -72,6 +73,13 @@ class MainActivity: FragmentActivity() {
       processNotificationIntent(intent, m)
       processIntent(intent, m)
       processExternalIntent(intent, m)
+    }
+    if (m.controller.appPrefs.privacyProtectScreen.get()) {
+      Log.d(TAG, "onCreate: set FLAG_SECURE")
+      window.setFlags(
+        WindowManager.LayoutParams.FLAG_SECURE,
+        WindowManager.LayoutParams.FLAG_SECURE
+      )
     }
     setContent {
       SimpleXTheme {

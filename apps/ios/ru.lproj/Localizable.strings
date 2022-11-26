@@ -312,7 +312,7 @@
 "Change member role?" = "Поменять роль члена группы?";
 
 /* No comment provided by engineer. */
-"Change receiving address (BETA)" = "Поменять адрес получения (БЕТА)";
+"Change receiving address" = "Поменять адрес получения";
 
 /* No comment provided by engineer. */
 "Change receiving address?" = "Поменять адрес получения?";
@@ -1894,7 +1894,7 @@
 "To support instant push notifications the chat database has to be migrated." = "Для поддержки мгновенный доставки уведомлений данные чата должны быть перемещены.";
 
 /* No comment provided by engineer. */
-"Transfer images faster (BETA)" = "Передавать изображения быстрее (БЕТА)";
+"Transfer images faster" = "Передавать изображения быстрее";
 
 /* No comment provided by engineer. */
 "Trying to connect to the server used to receive messages from this contact (error: %@)." = "Устанавливается соединение с сервером, через который вы получаете сообщения от этого контакта (ошибка: %@).";

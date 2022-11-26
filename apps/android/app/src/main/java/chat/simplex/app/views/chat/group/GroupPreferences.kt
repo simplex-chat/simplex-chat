@@ -60,11 +60,11 @@ private fun GroupPreferencesLayout(
     horizontalAlignment = Alignment.Start,
   ) {
     AppBarTitle(stringResource(R.string.group_preferences))
-    val allowFullDeletion = remember(preferences) { mutableStateOf(preferences.fullDelete.enable) }
-    FeatureSection(Feature.FullDelete, allowFullDeletion, groupInfo) {
-      applyPrefs(preferences.copy(fullDelete = GroupPreference(enable = it)))
-    }
-    SectionSpacer()
+//    val allowFullDeletion = remember(preferences) { mutableStateOf(preferences.fullDelete.enable) }
+//    FeatureSection(Feature.FullDelete, allowFullDeletion, groupInfo) {
+//      applyPrefs(preferences.copy(fullDelete = GroupPreference(enable = it)))
+//    }
+//    SectionSpacer()
     val allowVoice = remember(preferences) { mutableStateOf(preferences.voice.enable) }
     FeatureSection(Feature.Voice, allowVoice, groupInfo) {
       applyPrefs(preferences.copy(voice = GroupPreference(enable = it)))

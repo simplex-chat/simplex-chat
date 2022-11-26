@@ -19,6 +19,7 @@ let appBuild = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion")  as? 
 let DEFAULT_SHOW_LA_NOTICE = "showLocalAuthenticationNotice"
 let DEFAULT_LA_NOTICE_SHOWN = "localAuthenticationNoticeShown"
 let DEFAULT_PERFORM_LA = "performLocalAuthentication"
+let DEFAULT_NOTIFICATION_ALERT_SHOWN = "notificationAlertShown"
 let DEFAULT_WEBRTC_POLICY_RELAY = "webrtcPolicyRelay"
 let DEFAULT_WEBRTC_ICE_SERVERS = "webrtcICEServers"
 let DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
@@ -42,6 +43,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_SHOW_LA_NOTICE: false,
     DEFAULT_LA_NOTICE_SHOWN: false,
     DEFAULT_PERFORM_LA: false,
+    DEFAULT_NOTIFICATION_ALERT_SHOWN: false,
     DEFAULT_WEBRTC_POLICY_RELAY: true,
     DEFAULT_PRIVACY_ACCEPT_IMAGES: true,
     DEFAULT_PRIVACY_LINK_PREVIEWS: true,

@@ -50,7 +50,7 @@ struct CIFileView: View {
 
     func fileSizeValid() -> Bool {
         if let file = file {
-            return file.fileSize <= maxFileSize
+            return file.fileSize <= MAX_FILE_SIZE
         }
         return false
     }
@@ -66,7 +66,7 @@ struct CIFileView: View {
                         await receiveFile(fileId: file.fileId)
                     }
                 } else {
-                    let prettyMaxFileSize = ByteCountFormatter().string(fromByteCount: maxFileSize)
+                    let prettyMaxFileSize = ByteCountFormatter().string(fromByteCount: MAX_FILE_SIZE)
                     AlertManager.shared.showAlertMsg(
                         title: "Large file!",
                         message: "Your contact sent a file that is larger than currently supported maximum size (\(prettyMaxFileSize))."
