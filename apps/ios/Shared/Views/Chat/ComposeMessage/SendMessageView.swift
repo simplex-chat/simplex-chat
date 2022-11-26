@@ -12,6 +12,7 @@ import SimpleXChat
 struct SendMessageView: View {
     @Binding var composeState: ComposeState
     var sendMessage: () -> Void
+    var showVoiceMessageButton: Bool = true
     var voiceMessageAllowed: Bool = true
     var showEnableVoiceMessagesAlert: ChatInfo.ShowEnableVoiceMessagesAlert = .other
     var startVoiceMessageRecording: (() -> Void)? = nil
@@ -66,7 +67,8 @@ struct SendMessageView: View {
                         .padding([.bottom, .trailing], 3)
                 } else {
                     let vmrs = composeState.voiceMessageRecordingState
-                    if composeState.message.isEmpty,
+                    if showVoiceMessageButton,
+                       composeState.message.isEmpty,
                        !composeState.editing,
                        (composeState.noPreview && vmrs == .noRecording)
                         || (vmrs == .recording && holdingVMR) {
