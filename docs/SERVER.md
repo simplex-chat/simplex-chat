@@ -38,7 +38,7 @@ After installing your `smp-server` you should make some preparations.
    ufw allow 5233
    ```
 
-4. **Optional** - If you're using distribution with `systemd`, create `/etc/systemd/system/smp-server.service` file with following content:
+4. **Optional** — If you're using distribution with `systemd`, create `/etc/systemd/system/smp-server.service` file with the following content:
 
    ```sh
    [Unit]
@@ -77,7 +77,7 @@ Available commands:
 
 You can get further help by executing `sudo su - smp -c "smp-server <command> -h"`
 
-After that, we need to configure the server:
+After that, we need to configure `smp-server`:
 
 ### Interactively
 
@@ -91,15 +91,15 @@ There will be several options to consider:
 
 - `Enable store log to restore queues and messages on server restart (Yn):`
 
-  Enter `y` to enable this option to save and restore messages upon restarting the server.
+  Enter `y` to enable saving and restoring messages upon restarting the server.
   
 - `Enable logging daily statistics (yN):`
 
-  Enter `y` to enable this option to log statics for `Prometheus/Grafana`.
+  Enter `y` to enable logging statics for `Prometheus/Grafana`.
   
 - `Require a password to create new messaging queues?`
 
-  Enter `r`, `n` or your arbitrary password to to password-protect or disable password protection for `smp-server`.
+  Enter `r` or your arbitrary password to password-protect `smp-server`, or `n` to disable password protection.
   
 - `Enter server FQDN or IP address for certificate (127.0.0.1):`
 
@@ -130,7 +130,7 @@ Available options:
   -h,--help                Show this help text
 ```
 
-You should determine which flags are valid for your use-case and then execute the following with `-y` flag for non-interactive initialization:
+You should determine which flags are valid for your use-case and then execute `smp-server init` with `-y` flag for non-interactive initialization:
 
 ```sh
 sudo su - smp -c "smp-server init -y -<your flag> <your option>"
@@ -163,6 +163,10 @@ Server address: smp://d5fcsc7hhtPpexYUbI2XPxDbyU2d3WsVmROimcL90ss=:V8ONoJ6ICwnrZ
 ```
 
 ## Documentation
+
+All necessary files for `smp-server` are located in `/etc/opt/simplex/` folder.
+
+Stored messages and message queues are located in `/var/opt/simplex/` folder.
 
 ### smp link
 
@@ -220,7 +224,6 @@ Nov 23 19:23:21 5588ab759e80 smp-server[30878]: Store log: /var/opt/simplex/smp-
 Nov 23 19:23:21 5588ab759e80 smp-server[30878]: Listening on port 5223 (TLS)...
 Nov 23 19:23:21 5588ab759e80 smp-server[30878]: not expiring inactive clients
 Nov 23 19:23:21 5588ab759e80 smp-server[30878]: creating new queues requires password
-Nov 23 19:23:39 5588ab759e80 systemd[1]: /etc/systemd/system/smp-server.service:14: Unknown key name 'LimitNOFILESoft' in section 'Service', ignoring.
 ```
 
 To stop `smp-server`, run:
