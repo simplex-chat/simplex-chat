@@ -18,7 +18,7 @@ struct PreferencesView: View {
     var body: some View {
         VStack {
             List {
-                featureSection(.fullDelete, $preferences.fullDelete.allow)
+                // featureSection(.fullDelete, $preferences.fullDelete.allow)
                 featureSection(.voice, $preferences.voice.allow)
 
                 Section {
