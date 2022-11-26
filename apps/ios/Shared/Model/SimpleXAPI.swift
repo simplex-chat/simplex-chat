@@ -587,10 +587,15 @@ func apiReceiveFile(fileId: Int64, inline: Bool) async -> AChatItem? {
         )
     } else if !networkErrorAlert(r) {
         logger.error("apiReceiveFile error: \(String(describing: r))")
-        am.showAlertMsg(
-            title: "Error receiving file",
-            message: "Error: \(String(describing: r))"
-        )
+        switch r {
+        case .chatCmdError(.error(.fileAlreadyReceiving)):
+            logger.debug("apiReceiveFile ignoring fileAlreadyReceiving error")
+        default:
+            am.showAlertMsg(
+                title: "Error receiving file",
+                message: "Error: \(String(describing: r))"
+            )
+        }
     }
     return nil
 }

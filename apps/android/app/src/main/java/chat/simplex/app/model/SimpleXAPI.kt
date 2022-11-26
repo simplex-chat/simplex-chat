@@ -821,7 +821,13 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       }
       else -> {
         if (!(networkErrorAlert(r))) {
-          apiErrorAlert("apiReceiveFile", generalGetString(R.string.error_receiving_file), r)
+          if (r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorChat
+            && r.chatError.errorType is ChatErrorType.FileAlreadyReceiving
+          ) {
+            Log.d(TAG, "apiReceiveFile ignoring FileAlreadyReceiving error")
+          } else {
+            apiErrorAlert("apiReceiveFile", generalGetString(R.string.error_receiving_file), r)
+          }
         }
         null
       }
@@ -2631,10 +2637,12 @@ sealed class ChatErrorType {
   val string: String get() = when (this) {
     is NoActiveUser -> "noActiveUser"
     is InvalidConnReq -> "invalidConnReq"
+    is FileAlreadyReceiving -> "fileAlreadyReceiving"
     is СommandError -> "commandError $message"
   }
   @Serializable @SerialName("noActiveUser") class NoActiveUser: ChatErrorType()
   @Serializable @SerialName("invalidConnReq") class InvalidConnReq: ChatErrorType()
+  @Serializable @SerialName("fileAlreadyReceiving") class FileAlreadyReceiving: ChatErrorType()
   @Serializable @SerialName("commandError") class СommandError(val message: String): ChatErrorType()
 }
 
