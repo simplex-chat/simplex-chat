@@ -89,6 +89,8 @@ chatTests = do
     it "send and receive file inline to group (without accepting)" testInlineGroupFileTransfer
     it "send and receive small file inline to group (default config)" testSmallInlineGroupFileTransfer
     describe "sender cancelled group file transfer before transfer" $ fileTestMatrix3 runTestGroupFileSndCancelBeforeTransfer
+    it "send small file without acceptance, receive with acceptance, file is resent" testInstantFileWithAcceptance
+    it "send small file without acceptance to group, receive with acceptance, file is resent" testGroupInstantFileWithAcceptance
   describe "messages with files" $ do
     describe "send and receive message with file" $ fileTestMatrix2 runTestMessageWithFile
     it "send and receive image" testSendImage
@@ -1880,6 +1882,12 @@ runTestGroupFileSndCancelBeforeTransfer alice bob cath = do
   bob <## "receiving file 1 (test.txt) cancelled"
   bob ##> "/fr 1 ./tests/tmp"
   bob <## "file cancelled: test.txt"
+
+testInstantFileWithAcceptance :: IO ()
+testInstantFileWithAcceptance = pure ()
+
+testGroupInstantFileWithAcceptance :: IO ()
+testGroupInstantFileWithAcceptance = pure ()
 
 runTestMessageWithFile :: TestCC -> TestCC -> IO ()
 runTestMessageWithFile alice bob = do

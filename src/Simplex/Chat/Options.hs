@@ -34,6 +34,7 @@ data ChatOpts = ChatOpts
     chatCmd :: String,
     chatCmdDelay :: Int,
     chatServerPort :: Maybe String,
+    allowInstantFiles :: Bool,
     maintenance :: Bool
   }
 
@@ -126,6 +127,12 @@ chatOpts appDir defaultDbFileName = do
           <> help "Run chat server on specified port"
           <> value Nothing
       )
+  allowInstantFiles <-
+    switch
+      ( long "--allow-instant-files"
+          <> short 'f'
+          <> help "Send and receive instant files without acceptance"
+      )
   maintenance <-
     switch
       ( long "maintenance"
@@ -144,6 +151,7 @@ chatOpts appDir defaultDbFileName = do
         chatCmd,
         chatCmdDelay,
         chatServerPort,
+        allowInstantFiles,
         maintenance
       }
   where

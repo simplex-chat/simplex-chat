@@ -159,6 +159,8 @@ module Simplex.Chat.Store
     getFileTransferProgress,
     getFileTransferMeta,
     getSndFileTransfer,
+    getContactSndFileTransfer,
+    getMemberSndFileTransfer,
     getContactFileInfo,
     getContactMaxItemTs,
     deleteContactCIs,
@@ -2809,36 +2811,47 @@ getFileTransfer db user@User {userId} fileId =
         |]
         (userId, fileId)
 
-getSndFileTransfer :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO (FileTransferMeta, [SndFileTransfer])
+getSndFileTransfer :: DB.Connection -> User -> FileTransferId -> ExceptT StoreError IO (FileTransferMeta, [SndFileTransfer])
 getSndFileTransfer db user@User {userId} fileId = do
   fileTransferMeta <- getFileTransferMeta db user fileId
   sndFileTransfers <- ExceptT $ getSndFileTransfers_ db userId fileId
   pure (fileTransferMeta, sndFileTransfers)
 
-getSndFileTransfers_ :: DB.Connection -> UserId -> Int64 -> IO (Either StoreError [SndFileTransfer])
-getSndFileTransfers_ db userId fileId =
-  mapM sndFileTransfer
-    <$> DB.query
-      db
-      [sql|
-        SELECT s.file_status, f.file_name, f.file_size, f.chunk_size, f.file_path, s.file_inline, s.connection_id, c.agent_conn_id,
-          cs.local_display_name, m.local_display_name
-        FROM snd_files s
-        JOIN files f USING (file_id)
-        JOIN connections c USING (connection_id)
-        LEFT JOIN contacts cs USING (contact_id)
-        LEFT JOIN group_members m USING (group_member_id)
-        WHERE f.user_id = ? AND f.file_id = ?
-      |]
-      (userId, fileId)
-  where
-    sndFileTransfer :: (FileStatus, String, Integer, Integer, FilePath, Maybe InlineFileMode, Int64, AgentConnId, Maybe ContactName, Maybe ContactName) -> Either StoreError SndFileTransfer
-    sndFileTransfer (fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, connId, agentConnId, contactName_, memberName_) =
-      case contactName_ <|> memberName_ of
-        Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, recipientDisplayName, connId, agentConnId}
-        Nothing -> Left $ SESndFileInvalid fileId
+sndFileTransferQuery :: Query
+sndFileTransferQuery =
+  [sql|
+    SELECT s.file_status, f.file_name, f.file_size, f.chunk_size, f.file_path, s.file_inline, s.connection_id, c.agent_conn_id,
+      cs.local_display_name, m.local_display_name
+    FROM snd_files s
+    JOIN files f USING (file_id)
+    JOIN connections c USING (connection_id)
+    LEFT JOIN contacts cs USING (contact_id)
+    LEFT JOIN group_members m USING (group_member_id)
+    WHERE f.user_id = ? AND f.file_id = ?
+  |]
 
-getFileTransferMeta :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO FileTransferMeta
+getSndFileTransfers_ :: DB.Connection -> UserId -> FileTransferId -> IO (Either StoreError [SndFileTransfer])
+getSndFileTransfers_ db userId fileId =
+  mapM (toSndFileTransfer fileId)
+    <$> DB.query db sndFileTransferQuery (userId, fileId)
+
+toSndFileTransfer :: FileTransferId -> (FileStatus, String, Integer, Integer, FilePath, Maybe InlineFileMode, Int64, AgentConnId, Maybe ContactName, Maybe ContactName) -> Either StoreError SndFileTransfer
+toSndFileTransfer fileId (fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, connId, agentConnId, contactName_, memberName_) =
+  case contactName_ <|> memberName_ of
+    Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, recipientDisplayName, connId, agentConnId}
+    Nothing -> Left $ SESndFileInvalid fileId
+
+getContactSndFileTransfer :: DB.Connection -> User -> Contact -> FileTransferId -> ExceptT StoreError IO SndFileTransfer
+getContactSndFileTransfer db User {userId} Contact {contactId} fileId =
+  ExceptT . firstRow' (toSndFileTransfer fileId) (SESndFileNotFound fileId) $
+    DB.query db (sndFileTransferQuery <> " AND cs.contact_id = ?") (userId, fileId, contactId)
+
+getMemberSndFileTransfer :: DB.Connection -> User -> GroupMember -> FileTransferId -> ExceptT StoreError IO SndFileTransfer
+getMemberSndFileTransfer db User {userId} GroupMember {groupMemberId} fileId =
+  ExceptT . firstRow' (toSndFileTransfer fileId) (SESndFileNotFound fileId) $
+    DB.query db (sndFileTransferQuery <> " AND m.group_member_id = ?") (userId, fileId, groupMemberId)
+
+getFileTransferMeta :: DB.Connection -> User -> FileTransferId -> ExceptT StoreError IO FileTransferMeta
 getFileTransferMeta db User {userId} fileId =
   ExceptT . firstRow fileTransferMeta (SEFileNotFound fileId) $
     DB.query

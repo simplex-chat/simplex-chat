@@ -132,8 +132,9 @@ createChatDatabase filePrefix key yesToMigrations = do
   pure ChatDatabase {chatStore, agentStore}
 
 newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> IO ChatController
-newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agentConfig = aCfg, tbqSize, defaultServers} ChatOpts {smpServers, networkConfig, logConnections, logServerHosts} sendToast = do
-  let config = cfg {subscriptionEvents = logConnections, hostEvents = logServerHosts, defaultServers = configServers}
+newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agentConfig = aCfg, tbqSize, defaultServers, inlineFiles} ChatOpts {smpServers, networkConfig, logConnections, logServerHosts, allowInstantFiles} sendToast = do
+  let inlineFiles' = if allowInstantFiles then inlineFiles else inlineFiles {sendChunks = 0, receiveInstant = False}
+      config = cfg {subscriptionEvents = logConnections, hostEvents = logServerHosts, defaultServers = configServers, inlineFiles = inlineFiles'}
       sendNotification = fromMaybe (const $ pure ()) sendToast
       firstTime = dbNew chatStore
   activeTo <- newTVarIO ActiveNone
@@ -1369,13 +1370,12 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
             pure (XFileAcptInv sharedMsgId (Just fileInvConnReq) fName, ci)
     receiveInline :: m Bool
     receiveInline = do
-      ChatConfig {fileChunkSize, inlineFiles = InlineFilesConfig {receiveChunks, offerChunks}} <- asks config
+      ChatConfig {fileChunkSize, inlineFiles} <- asks config
+      let smallFile chunks = fileSize <= fileChunkSize * chunks inlineFiles
       pure $
         rcvInline_ /= Just False
-          && fileInline == Just IFMOffer
-          && ( fileSize <= fileChunkSize * receiveChunks
-                 || (rcvInline_ == Just True && fileSize <= fileChunkSize * offerChunks)
-             )
+          && (smallFile receiveChunks || (rcvInline_ == Just True && smallFile offerChunks))
+          && (fileInline == Just IFMOffer || (fileInline == Just IFMSent && fileStatus == RFSNew))
 
 getRcvFilePath :: forall m. ChatMonad m => FileTransferId -> Maybe FilePath -> String -> m FilePath
 getRcvFilePath fileId fPath_ fn = case fPath_ of
@@ -2340,11 +2340,16 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
       setActive $ ActiveG g
 
     receiveInlineMode :: FileInvitation -> Integer -> m (Maybe InlineFileMode)
-    receiveInlineMode FileInvitation {fileSize, fileInline} chSize = case fileInline of
-      inline@(Just _) -> do
-        rcvChunks <- asks $ receiveChunks . inlineFiles . config
-        pure $ if fileSize <= rcvChunks * chSize then inline else Nothing
-      _ -> pure Nothing
+    receiveInlineMode FileInvitation {fileSize, fileInline} chSize = do
+      InlineFilesConfig {receiveChunks, receiveInstant} <- asks $ inlineFiles . config
+      let largeFile = fileSize > receiveChunks * chSize
+      pure $
+        if largeFile
+          then Nothing
+          else case fileInline of
+            Just IFMOffer -> fileInline
+            Just IFMSent -> if receiveInstant then fileInline else Just IFMOffer
+            _ -> Nothing
 
     xFileCancel :: Contact -> SharedMsgId -> MsgMeta -> m ()
     xFileCancel ct@Contact {contactId} sharedMsgId msgMeta = do
@@ -2371,7 +2376,9 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
           _ -> do
             event <- withStore $ \db -> do
               ci <- updateDirectCIFileStatus db user fileId CIFSSndTransfer
-              sft <- liftIO $ createSndDirectInlineFT db ct ft
+              sft <- case fileInline of
+                Just IFMSent -> getContactSndFileTransfer db user ct fileId
+                _ -> liftIO $ createSndDirectInlineFT db ct ft
               pure $ CRSndFileStart ci sft
             toView event
             ifM
@@ -2391,11 +2398,13 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
         toView $ CRSndFileComplete ci ft
 
     allowSendInline :: Integer -> Maybe InlineFileMode -> m Bool
-    allowSendInline fileSize = \case
-      Just IFMOffer -> do
-        ChatConfig {fileChunkSize, inlineFiles} <- asks config
-        pure $ fileSize <= fileChunkSize * offerChunks inlineFiles
-      _ -> pure False
+    allowSendInline fileSize inline_ = do
+      ChatConfig {fileChunkSize, inlineFiles} <- asks config
+      let smallFile chunks = fileSize <= fileChunkSize * chunks inlineFiles
+      pure $ case inline_ of
+        Just IFMOffer -> smallFile offerChunks
+        Just IFMSent -> smallFile sendChunks
+        _ -> False
 
     bFileChunk :: Contact -> SharedMsgId -> FileChunk -> MsgMeta -> m ()
     bFileChunk ct sharedMsgId chunk meta = do
@@ -2408,11 +2417,15 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
       receiveInlineChunk ft chunk meta
 
     receiveInlineChunk :: RcvFileTransfer -> FileChunk -> MsgMeta -> m ()
-    receiveInlineChunk ft chunk meta = do
+    receiveInlineChunk RcvFileTransfer {fileId, fileStatus = RFSNew} FileChunk {chunkNo} _
+      | chunkNo == 1 = throwChatError $ CEFileLargeSentInline fileId
+      | otherwise = pure ()
+    receiveInlineChunk ft@RcvFileTransfer {fileId} chunk meta = do
       case chunk of
         FileChunk {chunkNo} -> when (chunkNo == 1) $ startReceivingFile ft
         _ -> pure ()
-      receiveFileChunk ft Nothing meta chunk
+      ft' <- withStore $ \db -> getRcvFileTransfer db user fileId
+      receiveFileChunk ft' Nothing meta chunk
 
     xFileCancelGroup :: GroupInfo -> GroupMember -> SharedMsgId -> MsgMeta -> m ()
     xFileCancelGroup g@GroupInfo {groupId} mem@GroupMember {groupMemberId, memberId} sharedMsgId msgMeta = do
@@ -2447,7 +2460,9 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
             -- receiving inline
             event <- withStore $ \db -> do
               ci <- updateDirectCIFileStatus db user fileId CIFSSndTransfer
-              sft <- liftIO $ createSndGroupInlineFT db m conn ft
+              sft <- case fileInline of
+                Just IFMSent -> getMemberSndFileTransfer db user m fileId
+                _ -> liftIO $ createSndGroupInlineFT db m conn ft
               pure $ CRSndFileStart ci sft
             toView event
             ifM
