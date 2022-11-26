@@ -132,8 +132,9 @@ createChatDatabase filePrefix key yesToMigrations = do
   pure ChatDatabase {chatStore, agentStore}
 
 newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> IO ChatController
-newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agentConfig = aCfg, tbqSize, defaultServers} ChatOpts {smpServers, networkConfig, logConnections, logServerHosts} sendToast = do
-  let config = cfg {subscriptionEvents = logConnections, hostEvents = logServerHosts, defaultServers = configServers}
+newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agentConfig = aCfg, tbqSize, defaultServers, inlineFiles} ChatOpts {smpServers, networkConfig, logConnections, logServerHosts, allowInstantFiles} sendToast = do
+  let inlineFiles' = if allowInstantFiles then inlineFiles else inlineFiles {sendChunks = 0, receiveInstant = False}
+      config = cfg {subscriptionEvents = logConnections, hostEvents = logServerHosts, defaultServers = configServers, inlineFiles = inlineFiles'}
       sendNotification = fromMaybe (const $ pure ()) sendToast
       firstTime = dbNew chatStore
   activeTo <- newTVarIO ActiveNone
@@ -305,7 +306,7 @@ processChatCommand = \case
       where
         setupSndFileTransfer :: Contact -> m (Maybe (FileInvitation, CIFile 'MDSnd, FileTransferMeta))
         setupSndFileTransfer ct = forM file_ $ \file -> do
-          (fileSize, chSize, fileInline) <- checkSndFile file 1
+          (fileSize, chSize, fileInline) <- checkSndFile mc file 1
           (agentConnId_, fileConnReq) <-
             if isJust fileInline
               then pure (Nothing, Nothing)
@@ -351,7 +352,7 @@ processChatCommand = \case
       where
         setupSndFileTransfer :: GroupInfo -> Int -> m (Maybe (FileInvitation, CIFile 'MDSnd, FileTransferMeta))
         setupSndFileTransfer gInfo n = forM file_ $ \file -> do
-          (fileSize, chSize, fileInline) <- checkSndFile file $ fromIntegral n
+          (fileSize, chSize, fileInline) <- checkSndFile mc file $ fromIntegral n
           let fileName = takeFileName file
               fileInvitation = FileInvitation {fileName, fileSize, fileConnReq = Nothing, fileInline}
               fileStatus = if fileInline == Just IFMSent then CIFSSndTransfer else CIFSSndStored
@@ -1160,17 +1161,17 @@ processChatCommand = \case
     contactMember Contact {contactId} =
       find $ \GroupMember {memberContactId = cId, memberStatus = s} ->
         cId == Just contactId && s /= GSMemRemoved && s /= GSMemLeft
-    checkSndFile :: FilePath -> Integer -> m (Integer, Integer, Maybe InlineFileMode)
-    checkSndFile f n = do
+    checkSndFile :: MsgContent -> FilePath -> Integer -> m (Integer, Integer, Maybe InlineFileMode)
+    checkSndFile mc f n = do
       fsFilePath <- toFSFilePath f
       unlessM (doesFileExist fsFilePath) . throwChatError $ CEFileNotFound f
       ChatConfig {fileChunkSize, inlineFiles} <- asks config
       fileSize <- getFileSize fsFilePath
       let chunks = - ((- fileSize) `div` fileChunkSize)
-      pure (fileSize, fileChunkSize, inlineFileMode inlineFiles chunks n)
-    inlineFileMode InlineFilesConfig {offerChunks, sendChunks, totalSendChunks} chunks n
+      pure (fileSize, fileChunkSize, inlineFileMode mc inlineFiles chunks n)
+    inlineFileMode mc InlineFilesConfig {offerChunks, sendChunks, totalSendChunks} chunks n
       | chunks > offerChunks = Nothing
-      | chunks > sendChunks || chunks * n > totalSendChunks = Just IFMOffer
+      | chunks > sendChunks || chunks * n > totalSendChunks || msgContentTag mc /= MCVoice_ = Just IFMOffer
       | otherwise = Just IFMSent
     updateProfile :: User -> Profile -> m ChatResponse
     updateProfile user@User {profile = p@LocalProfile {profileId, localAlias}} p'@Profile {displayName}
@@ -1369,13 +1370,12 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
             pure (XFileAcptInv sharedMsgId (Just fileInvConnReq) fName, ci)
     receiveInline :: m Bool
     receiveInline = do
-      ChatConfig {fileChunkSize, inlineFiles = InlineFilesConfig {receiveChunks, offerChunks}} <- asks config
+      ChatConfig {fileChunkSize, inlineFiles} <- asks config
+      let smallFile chunks = fileSize <= fileChunkSize * chunks inlineFiles
       pure $
         rcvInline_ /= Just False
-          && fileInline == Just IFMOffer
-          && ( fileSize <= fileChunkSize * receiveChunks
-                 || (rcvInline_ == Just True && fileSize <= fileChunkSize * offerChunks)
-             )
+          && (smallFile receiveChunks || (rcvInline_ == Just True && smallFile offerChunks))
+          && (fileInline == Just IFMOffer || (fileInline == Just IFMSent && fileStatus == RFSNew))
 
 getRcvFilePath :: forall m. ChatMonad m => FileTransferId -> Maybe FilePath -> String -> m FilePath
 getRcvFilePath fileId fPath_ fn = case fPath_ of
@@ -2340,11 +2340,16 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
       setActive $ ActiveG g
 
     receiveInlineMode :: FileInvitation -> Integer -> m (Maybe InlineFileMode)
-    receiveInlineMode FileInvitation {fileSize, fileInline} chSize = case fileInline of
-      inline@(Just _) -> do
-        rcvChunks <- asks $ receiveChunks . inlineFiles . config
-        pure $ if fileSize <= rcvChunks * chSize then inline else Nothing
-      _ -> pure Nothing
+    receiveInlineMode FileInvitation {fileSize, fileInline} chSize = do
+      InlineFilesConfig {receiveChunks, receiveInstant} <- asks $ inlineFiles . config
+      let largeFile = fileSize > receiveChunks * chSize
+      pure $
+        if largeFile
+          then Nothing
+          else case fileInline of
+            Just IFMOffer -> fileInline
+            Just IFMSent -> if receiveInstant then fileInline else Just IFMOffer
+            _ -> Nothing
 
     xFileCancel :: Contact -> SharedMsgId -> MsgMeta -> m ()
     xFileCancel ct@Contact {contactId} sharedMsgId msgMeta = do
@@ -2391,11 +2396,13 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
         toView $ CRSndFileComplete ci ft
 
     allowSendInline :: Integer -> Maybe InlineFileMode -> m Bool
-    allowSendInline fileSize = \case
-      Just IFMOffer -> do
-        ChatConfig {fileChunkSize, inlineFiles} <- asks config
-        pure $ fileSize <= fileChunkSize * offerChunks inlineFiles
-      _ -> pure False
+    allowSendInline fileSize inline_ = do
+      ChatConfig {fileChunkSize, inlineFiles} <- asks config
+      let smallFile chunks = fileSize <= fileChunkSize * chunks inlineFiles
+      pure $ case inline_ of
+        Just IFMOffer -> smallFile offerChunks
+        Just IFMSent -> smallFile sendChunks
+        _ -> False
 
     bFileChunk :: Contact -> SharedMsgId -> FileChunk -> MsgMeta -> m ()
     bFileChunk ct sharedMsgId chunk meta = do
@@ -2408,6 +2415,9 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
       receiveInlineChunk ft chunk meta
 
     receiveInlineChunk :: RcvFileTransfer -> FileChunk -> MsgMeta -> m ()
+    receiveInlineChunk RcvFileTransfer {fileId, fileStatus = RFSNew} FileChunk {chunkNo} _
+      | chunkNo == 1 = throwChatError $ CEFileLargeSentInline fileId
+      | otherwise = pure ()
     receiveInlineChunk ft chunk meta = do
       case chunk of
         FileChunk {chunkNo} -> when (chunkNo == 1) $ startReceivingFile ft

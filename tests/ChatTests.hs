@@ -1595,9 +1595,12 @@ testInlineFileTransfer =
     connectUsers alice bob
     bob ##> "/_files_folder ./tests/tmp/"
     bob <## "ok"
-    alice #> "/f @bob ./tests/fixtures/test.jpg"
+    alice ##> "/_send @2 json {\"msgContent\":{\"type\":\"voice\", \"duration\":10, \"text\":\"\"}, \"filePath\":\"./tests/fixtures/test.jpg\"}"
+    alice <# "@bob voice message (00:10)"
+    alice <# "/f @bob ./tests/fixtures/test.jpg"
     -- below is not shown in "sent" mode
     -- alice <## "use /fc 1 to cancel sending"
+    bob <# "alice> voice message (00:10)"
     bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
     -- below is not shown in "sent" mode
     -- bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
@@ -1617,18 +1620,21 @@ testSmallInlineFileTransfer =
     connectUsers alice bob
     bob ##> "/_files_folder ./tests/tmp/"
     bob <## "ok"
-    alice #> "/f @bob ./tests/fixtures/test.txt"
+    alice ##> "/_send @2 json {\"msgContent\":{\"type\":\"voice\", \"duration\":10, \"text\":\"\"}, \"filePath\":\"./tests/fixtures/logo.jpg\"}"
+    alice <# "@bob voice message (00:10)"
+    alice <# "/f @bob ./tests/fixtures/logo.jpg"
     -- below is not shown in "sent" mode
     -- alice <## "use /fc 1 to cancel sending"
-    bob <# "alice> sends file test.txt (11 bytes / 11 bytes)"
+    bob <# "alice> voice message (00:10)"
+    bob <# "alice> sends file logo.jpg (31.3 KiB / 32080 bytes)"
     -- below is not shown in "sent" mode
     -- bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
-    bob <## "started receiving file 1 (test.txt) from alice"
+    bob <## "started receiving file 1 (logo.jpg) from alice"
     concurrently_
-      (alice <## "completed sending file 1 (test.txt) to bob")
-      (bob <## "completed receiving file 1 (test.txt) from alice")
-    src <- B.readFile "./tests/fixtures/test.txt"
-    dest <- B.readFile "./tests/tmp/test.txt"
+      (alice <## "completed sending file 1 (logo.jpg) to bob")
+      (bob <## "completed receiving file 1 (logo.jpg) from alice")
+    src <- B.readFile "./tests/fixtures/logo.jpg"
+    dest <- B.readFile "./tests/tmp/logo.jpg"
     dest `shouldBe` src
 
 testReceiveInline :: IO ()
@@ -1791,29 +1797,33 @@ testInlineGroupFileTransfer =
       bob <## "ok"
       cath ##> "/_files_folder ./tests/tmp/cath/"
       cath <## "ok"
-      alice #> "/f #team ./tests/fixtures/test.jpg"
+      alice ##> "/_send #1 json {\"msgContent\":{\"type\":\"voice\", \"duration\":10, \"text\":\"\"}, \"filePath\":\"./tests/fixtures/logo.jpg\"}"
+      alice <# "#team voice message (00:10)"
+      alice <# "/f #team ./tests/fixtures/logo.jpg"
       -- below is not shown in "sent" mode
       -- alice <## "use /fc 1 to cancel sending"
       concurrentlyN_
         [ do
             alice
-              <### [ "completed sending file 1 (test.jpg) to bob",
-                     "completed sending file 1 (test.jpg) to cath"
+              <### [ "completed sending file 1 (logo.jpg) to bob",
+                     "completed sending file 1 (logo.jpg) to cath"
                    ]
             alice ##> "/fs 1"
-            alice <##. "sending file 1 (test.jpg) complete",
+            alice <##. "sending file 1 (logo.jpg) complete",
           do
-            bob <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
-            bob <## "started receiving file 1 (test.jpg) from alice"
-            bob <## "completed receiving file 1 (test.jpg) from alice",
+            bob <# "#team alice> voice message (00:10)"
+            bob <# "#team alice> sends file logo.jpg (31.3 KiB / 32080 bytes)"
+            bob <## "started receiving file 1 (logo.jpg) from alice"
+            bob <## "completed receiving file 1 (logo.jpg) from alice",
           do
-            cath <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
-            cath <## "started receiving file 1 (test.jpg) from alice"
-            cath <## "completed receiving file 1 (test.jpg) from alice"
+            cath <# "#team alice> voice message (00:10)"
+            cath <# "#team alice> sends file logo.jpg (31.3 KiB / 32080 bytes)"
+            cath <## "started receiving file 1 (logo.jpg) from alice"
+            cath <## "completed receiving file 1 (logo.jpg) from alice"
         ]
-      src <- B.readFile "./tests/fixtures/test.jpg"
-      dest1 <- B.readFile "./tests/tmp/bob/test.jpg"
-      dest2 <- B.readFile "./tests/tmp/cath/test.jpg"
+      src <- B.readFile "./tests/fixtures/logo.jpg"
+      dest1 <- B.readFile "./tests/tmp/bob/logo.jpg"
+      dest2 <- B.readFile "./tests/tmp/cath/logo.jpg"
       dest1 `shouldBe` src
       dest2 `shouldBe` src
   where
@@ -1828,29 +1838,33 @@ testSmallInlineGroupFileTransfer =
       bob <## "ok"
       cath ##> "/_files_folder ./tests/tmp/cath/"
       cath <## "ok"
-      alice #> "/f #team ./tests/fixtures/test.txt"
+      alice ##> "/_send #1 json {\"msgContent\":{\"type\":\"voice\", \"duration\":10, \"text\":\"\"}, \"filePath\":\"./tests/fixtures/logo.jpg\"}"
+      alice <# "#team voice message (00:10)"
+      alice <# "/f #team ./tests/fixtures/logo.jpg"
       -- below is not shown in "sent" mode
       -- alice <## "use /fc 1 to cancel sending"
       concurrentlyN_
         [ do
             alice
-              <### [ "completed sending file 1 (test.txt) to bob",
-                     "completed sending file 1 (test.txt) to cath"
+              <### [ "completed sending file 1 (logo.jpg) to bob",
+                     "completed sending file 1 (logo.jpg) to cath"
                    ]
             alice ##> "/fs 1"
-            alice <##. "sending file 1 (test.txt) complete",
+            alice <##. "sending file 1 (logo.jpg) complete",
           do
-            bob <# "#team alice> sends file test.txt (11 bytes / 11 bytes)"
-            bob <## "started receiving file 1 (test.txt) from alice"
-            bob <## "completed receiving file 1 (test.txt) from alice",
+            bob <# "#team alice> voice message (00:10)"
+            bob <# "#team alice> sends file logo.jpg (31.3 KiB / 32080 bytes)"
+            bob <## "started receiving file 1 (logo.jpg) from alice"
+            bob <## "completed receiving file 1 (logo.jpg) from alice",
           do
-            cath <# "#team alice> sends file test.txt (11 bytes / 11 bytes)"
-            cath <## "started receiving file 1 (test.txt) from alice"
-            cath <## "completed receiving file 1 (test.txt) from alice"
+            cath <# "#team alice> voice message (00:10)"
+            cath <# "#team alice> sends file logo.jpg (31.3 KiB / 32080 bytes)"
+            cath <## "started receiving file 1 (logo.jpg) from alice"
+            cath <## "completed receiving file 1 (logo.jpg) from alice"
         ]
-      src <- B.readFile "./tests/fixtures/test.txt"
-      dest1 <- B.readFile "./tests/tmp/bob/test.txt"
-      dest2 <- B.readFile "./tests/tmp/cath/test.txt"
+      src <- B.readFile "./tests/fixtures/logo.jpg"
+      dest1 <- B.readFile "./tests/tmp/bob/logo.jpg"
+      dest2 <- B.readFile "./tests/tmp/cath/logo.jpg"
       dest1 `shouldBe` src
       dest2 `shouldBe` src
 

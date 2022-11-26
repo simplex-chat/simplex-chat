@@ -265,6 +265,7 @@ cmToQuotedMsg = \case
   _ -> Nothing
 
 data MsgContentTag = MCText_ | MCLink_ | MCImage_ | MCVoice_ | MCFile_ | MCUnknown_ Text
+  deriving (Eq)
 
 instance StrEncoding MsgContentTag where
   strEncode = \case
