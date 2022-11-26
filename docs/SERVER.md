@@ -12,12 +12,15 @@ _Please note_: when you change the servers in the app configuration, it only aff
 
 0. Firtsly, install `smp-server`:
 
-   - [Compiling from source](https://github.com/simplex-chat/simplexmq#using-your-distribution)
-   - [Using pre-compiled binaries](https://github.com/simplex-chat/simplexmq#install-binaries)
-   - [Compile in docker container](https://github.com/simplex-chat/simplexmq#using-docker-1)
-   - [Installing via Linode StackScript](https://github.com/simplex-chat/simplexmq#deploy-smp-server-on-linode)
+   - Manual deployment:
+     - [Compiling from source](https://github.com/simplex-chat/simplexmq#using-your-distribution)
+     - [Using pre-compiled binaries](https://github.com/simplex-chat/simplexmq#install-binaries)
 
-After installing your `smp-server` you should make some preparations. 
+   - Alternatively, you can deploy `smp-server` using:
+     - [Docker container](https://github.com/simplex-chat/simplexmq#using-docker-1)
+     - [Linode StackScript](https://github.com/simplex-chat/simplexmq#deploy-smp-server-on-linode)
+
+Manual installation require some preparations:
 
 1. Create user and group for `smp-server`:
 
@@ -31,9 +34,10 @@ After installing your `smp-server` you should make some preparations.
    sudo mkdir -p /var/opt/simplex /etc/opt/simplex
    sudo chown smp:smp /var/opt/simplex /etc/opt/simplex
    ```
+
 3. Allow `smp-server` port in firewall:
 
-   ```
+   ```sh
    # For Ubuntu
    ufw allow 5233
    ```
@@ -57,7 +61,8 @@ After installing your `smp-server` you should make some preparations.
    [Install]
    WantedBy=multi-user.target
    ```
-  After that, execute `sudo systemctl daemon-reload`.
+
+   And execute `sudo systemctl daemon-reload`.
 
 ## Configuration
 
@@ -184,7 +189,7 @@ smp://<fingerprint>[:<password>]@hostname1,hostname2
 - `<password>`
 
   Your configured password of `smp-server`. You can check your configured pasword in `/etc/opt/simplex/smp-server.ini`, under `[AUTH]` section in `create_password:` field.
-  
+
 - `@hostname1,hostname2`
 
   Your configured hostname(s) of `smp-server`. You can check your configured hosts in `/etc/opt/simplex/smp-server.ini`, under `[TRANSPORT]` section in `host:` field.
@@ -258,7 +263,7 @@ Logs will be stored as `csv` file. To import `csv` to `Grafana` one should:
 
 2. Allow local mode by appending following:
 
-   ```
+   ```sh
    [plugin.marcusolsson-csv-datasource]
    allow_local_mode = true
    ```
