@@ -249,7 +249,7 @@ Nov 23 19:23:21 5588ab759e80 smp-server[30878]: creating new queues requires pas
 
 ### Monitoring
 
-You can enable `smp-server` statistics for `Grafana` dashboard by setting calue `on` in `/etc/opt/simplex/smp-server.ini`, under `[STORE_LOG]` section in `log_stats:` field.
+You can enable `smp-server` statistics for `Grafana` dashboard by setting value `on` in `/etc/opt/simplex/smp-server.ini`, under `[STORE_LOG]` section in `log_stats:` field.
 
 Logs will be stored as `csv` file. To import `csv` to `Grafana` one should:
 
