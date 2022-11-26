@@ -80,7 +80,7 @@ struct ComposeVoiceView: View {
             }
             .padding(.trailing, 12)
 
-            ProgressBar(length: maxVoiceMessageLength, progress: $recordingTime)
+            ProgressBar(length: MAX_VOICE_MESSAGE_LENGTH, progress: $recordingTime)
         }
     }
 

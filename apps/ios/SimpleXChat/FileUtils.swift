@@ -13,11 +13,13 @@ import OSLog
 let logger = Logger()
 
 // maximum image file size to be auto-accepted
-public let maxImageSize: Int64 = 236700
+public let MAX_IMAGE_SIZE: Int64 = 236700
 
-public let maxFileSize: Int64 = 8000000
+public let MAX_FILE_SIZE: Int64 = 8000000
 
-public let maxVoiceMessageLength = TimeInterval(30)
+public let MAX_VOICE_MESSAGE_LENGTH = TimeInterval(30)
+
+public let MAX_VOICE_MESSAGE_SIZE_INLINE_SEND: Int64 = 94680
 
 private let CHAT_DB: String = "_chat.db"
 
@@ -206,7 +208,7 @@ public func saveFileFromURL(_ url: URL) -> String? {
 }
 
 public func saveImage(_ uiImage: UIImage) -> String? {
-    if let imageDataResized = resizeImageToDataSize(uiImage, maxDataSize: maxImageSize) {
+    if let imageDataResized = resizeImageToDataSize(uiImage, maxDataSize: MAX_IMAGE_SIZE) {
         let fileName = generateNewFileName("IMG", "jpg")
         return saveFile(imageDataResized, fileName)
     }

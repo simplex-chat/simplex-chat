@@ -218,14 +218,15 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, UNMutableNotification
         var cItem = aChatItem.chatItem
         if case .image = cItem.content.msgContent {
            if let file = cItem.file,
-              file.fileSize <= maxImageSize,
+              file.fileSize <= MAX_IMAGE_SIZE,
               privacyAcceptImagesGroupDefault.get() {
                let inline = privacyTransferImagesInlineGroupDefault.get()
                cItem = apiReceiveFile(fileId: file.fileId, inline: inline)?.chatItem ?? cItem
            }
         } else if case .voice = cItem.content.msgContent { // TODO check inlineFileMode != IFMSent
             if let file = cItem.file,
-               file.fileSize <= maxImageSize,
+               file.fileSize <= MAX_IMAGE_SIZE,
+               file.fileSize > MAX_VOICE_MESSAGE_SIZE_INLINE_SEND,
                privacyAcceptImagesGroupDefault.get() {
                 let inline = privacyTransferImagesInlineGroupDefault.get()
                 cItem = apiReceiveFile(fileId: file.fileId, inline: inline)?.chatItem ?? cItem
