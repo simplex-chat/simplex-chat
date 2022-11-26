@@ -266,7 +266,7 @@ Logs will be stored as `csv` file. To import `csv` to `Grafana` one should:
    - Click Add data source in the top-right corner of the Data Sources tab
    - Enter "CSV" in the search box to find the CSV data source
    - Click the search result that says "CSV"
-   - In URL, enter a URL that points to CSV content
+   - In URL, enter a file that points to CSV content
   
 4. You're done! You should be able to create your own dashboard with statistics.
 
