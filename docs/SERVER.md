@@ -255,7 +255,7 @@ Logs will be stored as `csv` file. To import `csv` to `Grafana` one should:
 
 1. Install Grafana plugin: [Grafana - CSV datasource](https://grafana.com/grafana/plugins/marcusolsson-csv-datasource/)
 
-2. Allow local modei by appending following:
+2. Allow local mode by appending following:
 
    ```
    [plugin.marcusolsson-csv-datasource]
