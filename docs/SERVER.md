@@ -22,7 +22,7 @@ After installing your `smp-server` you should make some preparations.
 1. Create user and group for `smp-server`:
 
    ```sh
-   sudo useradd -ms /bin/bash smp
+   sudo useradd -ms /bin/false smp
    ```
 
 2. Create necessary directories and assign permissions:
@@ -203,6 +203,8 @@ sudo systemctl start smp-server.service
 To check status of `smp-server`, run:
 
 ```sh
+sudo systemctl status smp-server.service
+
 ● smp-server.service - SMP server
      Loaded: loaded (/etc/systemd/system/smp-server.service; enabled; vendor preset: enabled)
      Active: active (running) since Sat 2022-11-23 19:23:21 UTC; 1min 48s ago
@@ -260,11 +262,11 @@ Logs will be stored as `csv` file. To import `csv` to `Grafana` one should:
 
 3. Add a CSV data source:
 
-   1. In the side menu, click the Configuration tab (cog icon)
-   2. Click Add data source in the top-right corner of the Data Sources tab
-   3. Enter "CSV" in the search box to find the CSV data source
-   4. Click the search result that says "CSV"
-   5. In URL, enter a URL that points to CSV content
+   - In the side menu, click the Configuration tab (cog icon)
+   - Click Add data source in the top-right corner of the Data Sources tab
+   - Enter "CSV" in the search box to find the CSV data source
+   - Click the search result that says "CSV"
+   - In URL, enter a URL that points to CSV content
   
 4. You're done! You should be able to create your own dashboard with statistics.
 
