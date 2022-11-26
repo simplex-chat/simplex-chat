@@ -8,35 +8,163 @@ SimpleX clients only determine which server is used to receive the messages, sep
 
 _Please note_: when you change the servers in the app configuration, it only affects which server will be used for the new contacts, the existing contacts will not automatically move to the new servers, but you can move them manually using BETA feature ["Change receiving address"](../blog/20221108-simplex-chat-v4.2-security-audit-new-website.md#change-your-delivery-address-beta) – it will be automated soon.
 
-## SMP Server
+## Installation
 
-### Installation
+0. Firtsly, install `smp-server`:
 
-Can link to the existing documents
+   - [Compiling from source](https://github.com/simplex-chat/simplexmq#using-your-distribution)
+   - [Using pre-compiled binaries](https://github.com/simplex-chat/simplexmq#install-binaries)
+   - [Compile in docker container](https://github.com/simplex-chat/simplexmq#using-docker-1)
+   - [Installing via Linode StackScript](https://github.com/simplex-chat/simplexmq#deploy-smp-server-on-linode)
 
-- Compiling from source
-- Using pre-compiled binaries
-- Compile in docker container
-- Installing via Linode StackScript
+After installing your `smp-server` you should make some preparations. 
 
-### Running the server
+1. Create user and group for `smp-server`:
 
-systemd commands, how to configure systemd
+   ```sh
+   sudo useradd -ms /bin/bash smp
+   ```
 
-### Monitoring the server
+2. Create necessary directories and assign permissions:
 
-### Server settings
+   ```sh
+   sudo mkdir -p /var/opt/simplex /etc/opt/simplex
+   sudo chown smp:smp /var/opt/simplex /etc/opt/simplex
+   ```
+3. Allow `smp-server` port in firewall:
 
-- password (on by default)
-- store log
+   ```
+   # For Ubuntu
+   ufw allow 5233
+   ```
 
-Include step-by-step description of the new interactive mode
+4. **Optional** - If you're using distribution with `systemd`, create `/etc/systemd/system/smp-server.service` file with following content:
 
-Include supported command line parameters and scripted execution
+   ```sh
+   [Unit]
+   Description=SMP server
+   [Service]
+   User=smp
+   Group=smp
+   Type=simple
+   ExecStart=smp-server start
+   ExecStopPost=cp "/var/opt/simplex/smp-server-store.log" "/var/opt/simplex/smp-server-store.log.bak"
+   KillSignal=SIGINT
+   TimeoutStopSec=infinity
+   Restart=always
+   RestartSec=10
+   LimitNOFILE=65535
+   [Install]
+   WantedBy=multi-user.target
+   ```
+  After that, execute `sudo systemctl daemon-reload`.
 
-## Using the server
+## Configuration
 
-### Server address
+To invistigate which options are available, execute `smp-server` without flags:
+
+```sh
+sudo su - smp -c smp-server
+
+...
+Available commands:
+  init                     Initialize server - creates /etc/opt/simplex and
+                           /var/opt/simplex directories and configuration files
+  start                    Start server (configuration:
+                           /etc/opt/simplex/smp-server.ini)
+  delete                   Delete configuration and log files
+```
+
+You can get further help by executing `sudo su - smp -c "smp-server <command> -h"`
+
+After that, we need to configure the server:
+
+### Interactively
+
+Execute the following command:
+
+```sh
+sudo su - smp -c "smp-server init"
+```
+
+There will be several options to consider:
+
+- `Enable store log to restore queues and messages on server restart (Yn):`
+
+  Enter `y` to enable this option to save and restore messages upon restarting the server.
+  
+- `Enable logging daily statistics (yN):`
+
+  Enter `y` to enable this option to log statics for `Prometheus/Grafana`.
+  
+- `Require a password to create new messaging queues?`
+
+  Enter `r`, `n` or your arbitrary password to to password-protect or disable password protection for `smp-server`.
+  
+- `Enter server FQDN or IP address for certificate (127.0.0.1):`
+
+  Enter your domain or ip address to serve `smp-server` from.
+
+### Manually
+
+Execute the following command:
+
+```sh
+sudo su - smp -c "smp-server init -h"
+
+...
+Available options:
+  -l,--store-log           Enable store log for persistence
+  -s,--daily-stats         Enable logging daily server statistics
+  -a,--sign-algorithm ALG  Signature algorithm used for TLS certificates:
+                           ED25519, ED448 (default: ED448)
+  --ip IP                  Server IP address, used as Common Name for TLS online
+                           certificate if FQDN is not supplied
+                           (default: "127.0.0.1")
+  -n,--fqdn FQDN           Server FQDN used as Common Name for TLS online
+                           certificate
+  --no-password            Allow creating new queues without password
+  --password PASSWORD      Set password to create new messaging queues
+  -y,--yes                 Non-interactive initialization using command-line
+                           options
+  -h,--help                Show this help text
+```
+
+You should determine which flags are valid for your use-case and then execute the following with `-y` flag for non-interactive initialization:
+
+```sh
+sudo su - smp -c "smp-server init -y -<your flag> <your option>"
+```
+
+For example:
+
+```sh
+sudo su - smp -c "smp-server init -y -l --ip 192.168.1.5 --password test"
+```
+
+... to initilize your `smp-server` configuration with `-l` flag to enable storing messages, `--ip` flag with `192.168.1.5` value to configure using ip and with `--password` flag with `test` value to password-protect `smp-server`.
+
+
+After that, your installation is complete and you should see in your teminal output something like this:
+
+```sh
+Certificate request self-signature ok
+subject=CN = 127.0.0.1
+Server initialized, you can modify configuration in /etc/opt/simplex/smp-server.ini.
+Run `smp-server start` to start server.
+----------
+You should store CA private key securely and delete it from the server.
+If server TLS credential is compromised this key can be used to sign a new one, keeping the same server identity and established connections.
+CA private key location: /etc/opt/simplex/ca.key
+----------
+SMP server v3.4.0
+Fingerprint: d5fcsc7hhtPpexYUbI2XPxDbyU2d3WsVmROimcL90ss=
+Server address: smp://d5fcsc7hhtPpexYUbI2XPxDbyU2d3WsVmROimcL90ss=:V8ONoJ6ICwnrZnTC_QuSHfCEYq53uLaJKQ_oIC6-ve8=@<hostnames>
+```
+
+## Documentation
+
+### smp link
 
 SMP server address has the following format:
 
@@ -44,8 +172,104 @@ SMP server address has the following format:
 smp://<fingerprint>[:<password>]@hostname1,hostname2
 ```
 
-Explain each component of the address and what it does.
+- <fingerprint>
 
-### Configuring the app to use the server
+  Your `smp-server` fingerprint of certificate. You can check your certificate fingerprint in `/etc/opt/simplex/fingerprint`.
+
+- <password>
+
+  Your configured password of `smp-server`. You can check your configured pasword in `/etc/opt/simplex/smp-server.ini`, under `[AUTH]` section in `create_password:` field.
+  
+- @hostname1,hostname2
+
+  Your configured hostname(s) of `smp-server`. You can check your configured hosts in `/etc/opt/simplex/smp-server.ini`, under `[TRANSPORT]` section in `host:` field.
+
+### Systemd commands
+
+To enable `smp-server` on server boot, run:
+
+```sh
+sudo systemctl enable smp-server.service
+
+Created symlink /etc/systemd/system/multi-user.target.wants/smp-server.service → /etc/systemd/system/smp-server.service.
+```
+
+To start `smp-server`, run:
+
+```sh
+sudo systemctl start smp-server.service
+```
+
+To check status of `smp-server`, run:
+
+```sh
+● smp-server.service - SMP server
+     Loaded: loaded (/etc/systemd/system/smp-server.service; enabled; vendor preset: enabled)
+     Active: active (running) since Sat 2022-11-23 19:23:21 UTC; 1min 48s ago
+   Main PID: 30878 (smp-server)
+     CGroup: /docker/5588ab759e80546b4296a7c50ffebbb1fb7b55b8401300e9201313b720989aa8/system.slice/smp-server.service
+             └─30878 smp-server start
+
+Nov 23 19:23:21 5588ab759e80 systemd[1]: Started SMP server.
+Nov 23 19:23:21 5588ab759e80 smp-server[30878]: SMP server v3.4.0
+Nov 23 19:23:21 5588ab759e80 smp-server[30878]: Fingerprint: d5fcsc7hhtPpexYUbI2XPxDbyU2d3WsVmROimcL90ss=
+Nov 23 19:23:21 5588ab759e80 smp-server[30878]: Server address: smp://d5fcsc7hhtPpexYUbI2XPxDbyU2d3WsVmROimcL90ss=:V8ONoJ6ICwnrZnTC_QuSHfCEYq53uLaJKQ_oIC6-ve8=@<hostnames>
+Nov 23 19:23:21 5588ab759e80 smp-server[30878]: Store log: /var/opt/simplex/smp-server-store.log
+Nov 23 19:23:21 5588ab759e80 smp-server[30878]: Listening on port 5223 (TLS)...
+Nov 23 19:23:21 5588ab759e80 smp-server[30878]: not expiring inactive clients
+Nov 23 19:23:21 5588ab759e80 smp-server[30878]: creating new queues requires password
+Nov 23 19:23:39 5588ab759e80 systemd[1]: /etc/systemd/system/smp-server.service:14: Unknown key name 'LimitNOFILESoft' in section 'Service', ignoring.
+```
+
+To stop `smp-server`, run:
+
+```sh
+sudo systemctl stop smp-server.service
+```
+
+To check tail of `smp-server` log, run:
+
+```sh
+sudo journalctl -fu smp-server.service
+
+Nov 23 19:23:21 5588ab759e80 systemd[1]: Started SMP server.
+Nov 23 19:23:21 5588ab759e80 smp-server[30878]: SMP server v3.4.0
+Nov 23 19:23:21 5588ab759e80 smp-server[30878]: Fingerprint: d5fcsc7hhtPpexYUbI2XPxDbyU2d3WsVmROimcL90ss=
+Nov 23 19:23:21 5588ab759e80 smp-server[30878]: Server address: smp://d5fcsc7hhtPpexYUbI2XPxDbyU2d3WsVmROimcL90ss=:V8ONoJ6ICwnrZnTC_QuSHfCEYq53uLaJKQ_oIC6-ve8=@<hostnames>
+Nov 23 19:23:21 5588ab759e80 smp-server[30878]: Store log: /var/opt/simplex/smp-server-store.log
+Nov 23 19:23:21 5588ab759e80 smp-server[30878]: Listening on port 5223 (TLS)...
+Nov 23 19:23:21 5588ab759e80 smp-server[30878]: not expiring inactive clients
+Nov 23 19:23:21 5588ab759e80 smp-server[30878]: creating new queues requires password
+```
+
+### Monitoring
+
+You can enable `smp-server` statistics for `Grafana` dashboard by setting calue `on` in `/etc/opt/simplex/smp-server.ini`, under `[STORE_LOG]` section in `log_stats:` field.
+
+Logs will be stored as `csv` file. To import `csv` to `Grafana` one should:
+
+1. Install Grafana plugin: [Grafana - CSV datasource](https://grafana.com/grafana/plugins/marcusolsson-csv-datasource/)
+
+2. Allow local modei by appending following:
+
+   ```
+   [plugin.marcusolsson-csv-datasource]
+   allow_local_mode = true
+   ```
+   ... to `/etc/grafana/grafana.ini`
+
+3. Add a CSV data source:
+
+   1. In the side menu, click the Configuration tab (cog icon)
+   2. Click Add data source in the top-right corner of the Data Sources tab
+   3. Enter "CSV" in the search box to find the CSV data source
+   4. Click the search result that says "CSV"
+   5. In URL, enter a URL that points to CSV content
+  
+4. You're done! You should be able to create your own dashboard with statistics.
+
+For further documentation, see: [CSV Data Source for Grafana - Documentation](https://grafana.github.io/grafana-csv-datasource/)
+
+## Configuring the app to use the server
 
 TODO Inlcude screenshot of the new UI
