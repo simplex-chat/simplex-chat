@@ -257,7 +257,32 @@ Nov 23 19:23:21 5588ab759e80 smp-server[30878]: creating new queues requires pas
 
 You can enable `smp-server` statistics for `Grafana` dashboard by setting value `on` in `/etc/opt/simplex/smp-server.ini`, under `[STORE_LOG]` section in `log_stats:` field.
 
-Logs will be stored as `csv` file. To import `csv` to `Grafana` one should:
+Logs will be stored as `csv` file in `/var/opt/simplex/smp-server-stats.daily.log`. Fields for the `csv` file are:
+
+```sh
+fromTime,qCreated,qSecured,qDeleted,msgSent,msgRecv,dayMsgQueues,weekMsgQueues,monthMsgQueues
+```
+
+- `fromTime` - timestamp; date and time of event
+
+- `qCreated` - int; created queues
+
+- `qSecured` - int; established queues
+
+- `qDeleted` - int; deleted queues
+
+- `msgSent` - int; sent messages
+
+- `msgRecv` - int; received messages
+
+- `dayMsgQueues` - int; created queues in a day
+
+- `weekMsgQueues` - int; created queues in a week
+
+- `monthMsgQueues` - int; created queues in a month
+  
+
+To import `csv` to `Grafana` one should:
 
 1. Install Grafana plugin: [Grafana - CSV datasource](https://grafana.com/grafana/plugins/marcusolsson-csv-datasource/)
 
