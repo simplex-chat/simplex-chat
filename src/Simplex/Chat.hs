@@ -2349,7 +2349,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
           then Nothing
           else case fileInline of
             Just IFMOffer -> fileInline
-            Just IFMSent -> if receiveInstant && maybe False isVoice mc_ then fileInline else Just IFMOffer
+            Just IFMSent -> if receiveInstant && maybe False isVoice mc_ then fileInline else Nothing
             _ -> Nothing
 
     xFileCancel :: Contact -> SharedMsgId -> MsgMeta -> m ()
