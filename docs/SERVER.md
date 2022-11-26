@@ -48,7 +48,7 @@ After installing your `smp-server` you should make some preparations.
    Group=smp
    Type=simple
    ExecStart=smp-server start
-   ExecStopPost=cp "/var/opt/simplex/smp-server-store.log" "/var/opt/simplex/smp-server-store.log.bak"
+   ExecStopPost=[ -e "/var/opt/simplex/smp-server-store.log" ] && cp "/var/opt/simplex/smp-server-store.log" "/var/opt/simplex/smp-server-store.log.bak"
    KillSignal=SIGINT
    TimeoutStopSec=infinity
    Restart=always
