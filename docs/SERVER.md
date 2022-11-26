@@ -172,15 +172,15 @@ SMP server address has the following format:
 smp://<fingerprint>[:<password>]@hostname1,hostname2
 ```
 
-- <fingerprint>
+- `<fingerprint>`
 
   Your `smp-server` fingerprint of certificate. You can check your certificate fingerprint in `/etc/opt/simplex/fingerprint`.
 
-- <password>
+- `<password>`
 
   Your configured password of `smp-server`. You can check your configured pasword in `/etc/opt/simplex/smp-server.ini`, under `[AUTH]` section in `create_password:` field.
   
-- @hostname1,hostname2
+- `@hostname1,hostname2`
 
   Your configured hostname(s) of `smp-server`. You can check your configured hosts in `/etc/opt/simplex/smp-server.ini`, under `[TRANSPORT]` section in `host:` field.
 
