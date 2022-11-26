@@ -46,11 +46,11 @@
   <string name="simplex_link_invitation">SimpleX Einmal-Link</string>
   <string name="simplex_link_group">SimpleX Gruppen-Link</string>
   <string name="simplex_link_connection">über <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g></string>
-  <string name="simplex_link_mode">***SimpleX links</string>
-  <string name="simplex_link_mode_description">***Description</string>
-  <string name="simplex_link_mode_full">***Full link</string>
-  <string name="simplex_link_mode_browser">***Via browser</string>
-  <string name="simplex_link_mode_browser_warning">***Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red.</string>
+  <string name="simplex_link_mode">SimpleX-Links</string>
+  <string name="simplex_link_mode_description">Beschreibung</string>
+  <string name="simplex_link_mode_full">Vollständiger Link</string>
+  <string name="simplex_link_mode_browser">Über den Browser</string>
+  <string name="simplex_link_mode_browser_warning">Das Öffnen des Links über den Browser kann die Privatsphäre und Sicherheit der Verbindung reduzieren. SimpleX-Links, denen nicht vertraut wird, werden Rot sein.</string>
 
   <!-- SimpleXAPI.kt -->
   <string name="error_saving_smp_servers">Fehler beim Speichern der SMP-Server</string>
@@ -81,14 +81,14 @@
   <string name="error_deleting_contact_request">Fehler beim Löschen der Kontaktanfrage</string>
   <string name="error_deleting_pending_contact_connection">Fehler beim Löschen der anstehenden Kontaktaufnahme</string>
   <string name="error_changing_address">Fehler beim Wechseln der Adresse</string>
-  <string name="error_smp_test_failed_at_step">***Test failed at step %s.</string>
-  <string name="error_smp_test_server_auth">***Server requires authorization to create queues, check password</string>
-  <string name="error_smp_test_certificate">***Possibly, certificate fingerprint in server address is incorrect</string>
-  <string name="smp_server_test_connect">***Connect</string>
-  <string name="smp_server_test_create_queue">***Create queue</string>
-  <string name="smp_server_test_secure_queue">***Secure queue</string>
-  <string name="smp_server_test_delete_queue">***Delete queue</string>
-  <string name="smp_server_test_disconnect">***Disconnect</string>
+  <string name="error_smp_test_failed_at_step">Der Test ist beim Schritt %s fehlgeschlagen.</string>
+  <string name="error_smp_test_server_auth">Um Warteschlangen zu erzeugen benötigt der Server eine Authentifizierung. Bitte überprüfen Sie das Passwort.</string>
+  <string name="error_smp_test_certificate">Der Fingerabdruck des Zertifikats in der Serveradresse ist wahrscheinlich ungültig.</string>
+  <string name="smp_server_test_connect">Verbinde</string>
+  <string name="smp_server_test_create_queue">Erzeuge Warteschlange</string>
+  <string name="smp_server_test_secure_queue">Sichere Warteschlange</string>
+  <string name="smp_server_test_delete_queue">Lösche Warteschlange</string>
+  <string name="smp_server_test_disconnect">Trenne Verbindung</string>
 
   <!-- background service notice - SimpleXAPI.kt -->
   <string name="icon_descr_instant_notifications">Sofortige Benachrichtigungen</string>
@@ -167,7 +167,7 @@
   <string name="save_verb">Speichern</string>
   <string name="edit_verb">Bearbeiten</string>
   <string name="delete_verb">Löschen</string>
-  <string name="allow_verb">***Allow</string>
+  <string name="allow_verb">Erlauben</string>
   <string name="delete_message__question">Die Nachricht löschen?</string>
   <string name="delete_message_cannot_be_undone_warning">Nachricht wird gelöscht - dies kann nicht rückgängig gemacht werden!</string>
   <string name="for_me_only">Nur für mich</string>
@@ -229,8 +229,8 @@
   <string name="error_saving_file">Fehler beim Speichern der Datei</string>
 
   <!-- Voice messages -->
-  <string name="voice_message">***Voice message</string>
-  <string name="voice_message_send_text">***Voice message…</string>
+  <string name="voice_message">Sprachnachricht</string>
+  <string name="voice_message_send_text">Sprachnachricht…</string>
 
   <!-- Chat Info Settings - ChatInfoView.kt -->
   <string name="notifications">Benachrichtigungen</string>
@@ -249,18 +249,18 @@
 
   <!-- Message Actions - SendMsgView.kt -->
   <string name="icon_descr_send_message">Nachricht senden</string>
-  <string name="icon_descr_record_voice_message">***Record voice message</string>
-  <string name="allow_voice_messages_question">***Allow voice messages?</string>
-  <string name="you_need_to_allow_to_send_voice">***You need to allow your contact to send voice messages to be able to send them.</string>
-  <string name="voice_messages_prohibited">***Voice messages prohibited!</string>
-  <string name="ask_your_contact_to_enable_voice">***Please ask your contact to enable sending voice messages.</string>
-  <string name="only_group_owners_can_enable_voice">***Only group owners can enable voice messages.</string>
+  <string name="icon_descr_record_voice_message">Nehme Sprachnachricht auf</string>
+  <string name="allow_voice_messages_question">Sprachnachrichten erlauben?</string>
+  <string name="you_need_to_allow_to_send_voice">Sie müssen Ihrem Kontakt das Senden von Sprachnachrichten erlauben, damit Sie sie senden können.</string>
+  <string name="voice_messages_prohibited">Sprachnachrichten unzulässig!</string>
+  <string name="ask_your_contact_to_enable_voice">Bitten Sie Ihren Kontakt darum, das Senden von Sprachnachrichten zu aktivieren.</string>
+  <string name="only_group_owners_can_enable_voice">Sprachnachrichten können nur von Gruppen-Eigentümern aktiviert werden.</string>
 
   <!-- General Actions / Responses -->
   <string name="back">Zurück</string>
   <string name="cancel_verb">Abbrechen</string>
   <string name="confirm_verb">Bestätigen</string>
-  <string name="reset_verb">***Reset</string>
+  <string name="reset_verb">Zurücksetzen</string>
   <string name="ok">OK</string>
   <string name="no_details">Keine Details</string>
   <string name="add_contact">Kontakt hinzufügen</string>
@@ -394,25 +394,25 @@
   <string name="chat_lock">SimpleX Sperre</string>
   <string name="chat_console">Chat Konsole</string>
   <string name="smp_servers">SMP-Server</string>
-  <string name="smp_servers_preset_address">***Preset server address</string>
-  <string name="smp_servers_preset_add">***Add preset servers</string>
-  <string name="smp_servers_add">***Add server…</string>
-  <string name="smp_servers_test_server">***Test server</string>
-  <string name="smp_servers_test_servers">***Test servers</string>
-  <string name="smp_servers_save">***Save servers</string>
-  <string name="smp_servers_test_failed">***Server test failed!</string>
-  <string name="smp_servers_test_some_failed">***Some servers failed the test:</string>
-  <string name="smp_servers_scan_qr">***Scan server QR code</string>
-  <string name="smp_servers_enter_manually">***Enter server manually</string>
-  <string name="smp_servers_preset_server">***Preset server</string>
-  <string name="smp_servers_your_server">***Your server</string>
-  <string name="smp_servers_your_server_address">***Your server address</string>
-  <string name="smp_servers_use_server">***Use server</string>
-  <string name="smp_servers_use_server_for_new_conn">***Use for new connections</string>
-  <string name="smp_servers_add_to_another_device">***Add to another device</string>
-  <string name="smp_servers_invalid_address">***Invalid server address!</string>
-  <string name="smp_servers_check_address">***Check server address and try again.</string>
-  <string name="smp_servers_delete_server">***Delete server</string>
+  <string name="smp_servers_preset_address">Voreingestellte Serveradresse</string>
+  <string name="smp_servers_preset_add">Füge voreingestellte Server hinzu</string>
+  <string name="smp_servers_add">Füge Server hinzu…</string>
+  <string name="smp_servers_test_server">Teste Server</string>
+  <string name="smp_servers_test_servers">Teste alle Server</string>
+  <string name="smp_servers_save">Sichere alle Server</string>
+  <string name="smp_servers_test_failed">Server Test ist fehlgeschlagen!</string>
+  <string name="smp_servers_test_some_failed">Einige Server haben den Test nicht bestanden:</string>
+  <string name="smp_servers_scan_qr">Scannen Sie den QR-Code des Servers</string>
+  <string name="smp_servers_enter_manually">Geben Sie den Server manuell ein</string>
+  <string name="smp_servers_preset_server">Voreingestellter Server</string>
+  <string name="smp_servers_your_server">Ihr Server</string>
+  <string name="smp_servers_your_server_address">Ihre Serveradresse</string>
+  <string name="smp_servers_use_server">Server nutzen</string>
+  <string name="smp_servers_use_server_for_new_conn">Für neue Verbindungen nutzen</string>
+  <string name="smp_servers_add_to_another_device">Einem anderen Gerät hinzufügen</string>
+  <string name="smp_servers_invalid_address">Ungültige Serveradresse!</string>
+  <string name="smp_servers_check_address">Überprüfen Sie die Serveradresse und versuchen Sie es nochmal.</string>
+  <string name="smp_servers_delete_server">Server löschen</string>
   <string name="install_simplex_chat_for_terminal">Installieren Sie <xliff:g id="appNameFull">SimpleX Chat</xliff:g> als Terminalanwendung</string>
   <string name="star_on_github">Stern auf GitHub vergeben</string>
   <string name="contribute">Unterstützen Sie uns</string>
@@ -421,7 +421,7 @@
   <string name="your_SMP_servers">Ihre SMP-Server</string>
   <string name="using_simplex_chat_servers">Verwendung von <xliff:g id="appNameFull">SimpleX Chat</xliff:g> Servern.</string>
   <string name="how_to">Anleitung</string>
-  <string name="how_to_use_your_servers">***How to use your servers</string>
+  <string name="how_to_use_your_servers">Wie Sie Ihre Server nutzen</string>
   <string name="saved_ICE_servers_will_be_removed">Gespeicherte WebRTC ICE-Server werden entfernt.</string>
   <string name="your_ICE_servers">Ihre ICE-Server</string>
   <string name="configure_ICE_servers">Konfigurieren Sie ICE-Server</string>
@@ -471,9 +471,9 @@
   <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Ihr Profil wird auf Ihrem Gerät gespeichert und nur mit Ihren Kontakten geteilt.\n\n<xliff:g id="appName">SimpleX</xliff:g>-Server können Ihr Profil nicht sehen.</string>
   <string name="edit_image">Bild bearbeiten</string>
   <string name="delete_image">Bild löschen</string>
-  <string name="save_and_notify_contact">***Save (and notify contacts)</string>
+  <string name="save_and_notify_contact">Speichern (und Kontakt benachrichtigen)</string>
   <string name="save_and_notify_contacts">Speichern (und Kontakte benachrichtigen)</string>
-  <string name="save_and_notify_group_members">***Save (and notify group members)</string>
+  <string name="save_and_notify_group_members">Speichern (und Gruppenmitglieder benachrichtigen)</string>
 
   <!-- Welcome Prompts - WelcomeView.kt -->
   <string name="you_control_your_chat">Sie haben volle Kontrolle über Ihren Chat!</string>
@@ -532,12 +532,12 @@
 
   <!-- How SimpleX Works -->
   <string name="how_simplex_works">Wie <xliff:g id="appName">SimpleX</xliff:g> funktioniert</string>
-  <string name="many_people_asked_how_can_it_deliver">Viele Menschen haben gefragt: <i>Wenn <xliff:g id="appName">SimpleX</xliff:g> keine Benutzerkennungen hat, wie kann es dann Nachrichten zustellen?</i></string>
-  <string name="to_protect_privacy_simplex_has_ids_for_queues">Zum Schutz Ihrer Privatsphäre verwendet <xliff:g id="appName">SimpleX</xliff:g> an Stelle von Benutzer-IDs, die von allen anderen Plattformen verwendet werden, Kennungen für Nachrichtenwarteschlangen, die für jeden Ihrer Kontakte individuell sind.</string>
-  <string name="you_control_servers_to_receive_your_contacts_to_send">Sie legen fest, über welche Server Sie Ihre Nachrichten <b>empfangen</b> und an Ihre Kontakte <b>senden</b>.</string>
-  <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Nur die Endgeräte speichern Benutzerprofile, Kontakte, Gruppen und Nachrichten, die über eine <b>2-Schichten Ende-zu-Ende-Verschlüsselung</b> gesendet werden.</string>
-  <string name="read_more_in_github">Erfahren Sie mehr dazu in unserem GitHub-Repository.</string>
-  <string name="read_more_in_github_with_link">Erfahren Sie mehr dazu in unserem <font color="#0088ff">GitHub-Repository</font>.</string>
+  <string name="many_people_asked_how_can_it_deliver">Viele Menschen haben gefragt: <i>Wie kann <xliff:g id="appName">SimpleX</xliff:g> Nachrichten zustellen, wenn es keine Benutzerkennungen gibt?</i></string>
+  <string name="to_protect_privacy_simplex_has_ids_for_queues">Zum Schutz Ihrer Privatsphäre verwendet <xliff:g id="appName">SimpleX</xliff:g> an Stelle von Benutzerkennungen, die von allen anderen Plattformen verwendet werden, Kennungen für Nachrichtenwarteschlangen, die für jeden Ihrer Kontakte individuell sind.</string>
+  <string name="you_control_servers_to_receive_your_contacts_to_send">Sie können selbst festlegen, über welche Server Sie Ihre Nachrichten <b>empfangen</b> und an Ihre Kontakte <b>senden</b> wollen.</string>
+  <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Nur die Endgeräte speichern die Benutzerprofile, Kontakte, Gruppen und Nachrichten, welche über eine <b>2-Schichten Ende-zu-Ende-Verschlüsselung</b> gesendet werden.</string>
+  <string name="read_more_in_github">Erfahren Sie in unserem GitHub-Repository mehr dazu.</string>
+  <string name="read_more_in_github_with_link">Erfahren Sie in unserem <font color="#0088ff">GitHub-Repository</font> mehr dazu.</string>
 
   <!-- MakeConnection -->
   <string name="paste_the_link_you_received">Fügen Sie den erhaltenen Link ein</string>
@@ -733,7 +733,7 @@
   <string name="restore_database_alert_desc">Bitte geben Sie das vorherige Passwort ein, nachdem Sie die Datenbanksicherung wiederhergestellt haben. Diese Aktion kann nicht rückgängig gemacht werden.</string>
   <string name="restore_database_alert_confirm">Wiederherstellen</string>
   <string name="database_restore_error">Fehler bei der Wiederherstellung der Datenbank</string>
-  <string name="restore_passphrase_not_found_desc">***Passphrase not found in Keystore, please enter it manually. This may have happened if you restored the app\'s data using a backup tool. If it\'s not the case, please, contact developers.</string>
+  <string name="restore_passphrase_not_found_desc">Das Passwort wurde nicht im Schlüsselbund gefunden. Bitte geben Sie es manuell ein. Das kann passieren, wenn Sie die App-Daten mit einem Backup-Programm wieder hergestellt haben. Bitte nehmen Sie Kontakt mit den Entwicklern auf, wenn das nicht der Fall ist.</string>
 
   <!-- ChatModel.chatRunning interactions -->
   <string name="chat_is_stopped_indication">Chat wurde beendet</string>
@@ -851,7 +851,7 @@
   <string name="all_group_members_will_remain_connected">Alle Gruppenmitglieder bleiben verbunden.</string>
   <string name="error_creating_link_for_group">Fehler beim Erzeugen des Gruppen-Links</string>
   <string name="error_deleting_link_for_group">Fehler beim Löschen des Gruppen-Links</string>
-  <string name="only_group_owners_can_change_prefs">***Only group owners can change group preferences.</string>
+  <string name="only_group_owners_can_change_prefs">Gruppenpräferenzen können nur von Gruppen-Eigentümern geändert werden.</string>
 
   <!-- For Console chat info section -->
   <string name="section_title_for_console">FÜR KONSOLE</string>
@@ -935,46 +935,46 @@
   <string name="color_primary">Akzent</string>
 
   <!-- Preferences.kt -->
-  <string name="chat_preferences_you_allow">***You allow</string>
-  <string name="chat_preferences_contact_allows">***Contact allows</string>
-  <string name="chat_preferences_default">***default (%s)</string>
-  <string name="chat_preferences_yes">***yes</string>
-  <string name="chat_preferences_no">***no</string>
-  <string name="chat_preferences_always">***always</string>
-  <string name="chat_preferences_on">***on</string>
-  <string name="chat_preferences_off">***off</string>
-  <string name="chat_preferences">***Chat preferences</string>
-  <string name="contact_preferences">***Contact preferences</string>
-  <string name="group_preferences">***Group preferences</string>
-  <string name="your_preferences">***Your preferences</string>
-  <string name="full_deletion">***Full deletion</string>
-  <string name="voice_messages">***Voice messages</string>
-  <string name="feature_enabled">***enabled</string>
-  <string name="feature_enabled_for_you">***enabled for you</string>
-  <string name="feature_enabled_for_contact">***enabled for contact</string>
-  <string name="feature_off">***off</string>
-  <string name="feature_received_prohibited">***received, prohibited</string>
-  <string name="allow_your_contacts_irreversibly_delete">***Allow your contacts to irreversibly delete sent messages.</string>
-  <string name="allow_irreversible_message_deletion_only_if">***Allow irreversible message deletion only if your contact allows it to you.</string>
-  <string name="contacts_can_mark_messages_for_deletion">***Contacts can mark messages for deletion; you will be able to view them.</string>
-  <string name="allow_your_contacts_to_send_voice_messages">***Allow your contacts to send voice messages.</string>
-  <string name="allow_voice_messages_only_if">***Allow voice messages only if your contact allows them.</string>
-  <string name="prohibit_sending_voice_messages">***Prohibit sending voice messages.</string>
-  <string name="both_you_and_your_contacts_can_delete">***Both you and your contact can irreversibly delete sent messages.</string>
-  <string name="only_you_can_delete_messages">***Only you can irreversibly delete messages (your contact can mark them for deletion).</string>
-  <string name="only_your_contact_can_delete">***Only your contact can irreversibly delete messages (you can mark them for deletion).</string>
-  <string name="message_deletion_prohibited">***Irreversible message deletion is prohibited in this chat.</string>
-  <string name="both_you_and_your_contact_can_send_voice">***Both you and your contact can send voice messages.</string>
-  <string name="only_you_can_send_voice">***Only you can send voice messages.</string>
-  <string name="only_your_contact_can_send_voice">***Only your contact can send voice messages.</string>
-  <string name="voice_prohibited_in_this_chat">***Voice messages are prohibited in this chat.</string>
-  <string name="allow_to_delete_messages">***Allow to irreversibly delete sent messages.</string>
-  <string name="prohibit_message_deletion">***Prohibit irreversible message deletion.</string>
-  <string name="allow_to_send_voice">***Allow to send voice messages.</string>
-  <string name="prohibit_sending_voice">***Prohibit sending voice messages.</string>
-  <string name="group_members_can_delete">***Group members can irreversibly delete sent messages.</string>
-  <string name="message_deletion_prohibited_in_chat">***Irreversible message deletion is prohibited in this chat.</string>
-  <string name="group_members_can_send_voice">***Group members can send voice messages.</string>
-  <string name="voice_messages_are_prohibited">***Voice messages are prohibited in this chat.</string>
+  <string name="chat_preferences_you_allow">Sie erlauben</string>
+  <string name="chat_preferences_contact_allows">Der Kontakt erlaubt</string>
+  <string name="chat_preferences_default">Voreinstellung (%s)</string>
+  <string name="chat_preferences_yes">Ja</string>
+  <string name="chat_preferences_no">Nein</string>
+  <string name="chat_preferences_always">Immer</string>
+  <string name="chat_preferences_on">Ein</string>
+  <string name="chat_preferences_off">Aus</string>
+  <string name="chat_preferences">Chat Präferenzen</string>
+  <string name="contact_preferences">Kontakt Präferenzen</string>
+  <string name="group_preferences">Gruppen Präferenzen</string>
+  <string name="your_preferences">Ihre Präferenzen</string>
+  <string name="full_deletion">Vollständige Löschung</string>
+  <string name="voice_messages">Sprachnachrichten</string>
+  <string name="feature_enabled">aktiviert</string>
+  <string name="feature_enabled_for_you">Für Sie aktiviert</string>
+  <string name="feature_enabled_for_contact">FÜr Kontakt aktiviert</string>
+  <string name="feature_off">Aus</string>
+  <string name="feature_received_prohibited">empfangen, nicht erlaubt</string>
+  <string name="allow_your_contacts_irreversibly_delete">Erlauben Sie Ihren Kontakten gesendete Nachrichten unwiederbringlich zu löschen.</string>
+  <string name="allow_irreversible_message_deletion_only_if">Erlauben Sie das unwiederbringliche Löschen von Nachrichten nur dann, wenn es Ihnen Ihr Kontakt ebenfalls erlaubt.</string>
+  <string name="contacts_can_mark_messages_for_deletion">Ihre Kontakte können Nachrichten zum Löschen markieren. Sie können diese Nachrichten trotzdem anschauen.</string>
+  <string name="allow_your_contacts_to_send_voice_messages">Erlauben Sie Ihre Kontakten Sprachnachrichten zu senden.</string>
+  <string name="allow_voice_messages_only_if">Erlauben Sie Sprachnachrichten nur dann, wenn Ihr Kontakt diese ebenfalls erlaubt.</string>
+  <string name="prohibit_sending_voice_messages">Das Senden von Sprachnachrichten verbieten.</string>
+  <string name="both_you_and_your_contacts_can_delete">Sowohl Ihr Kontakt, als auch Sie können Nachrichten unwiederbringlich löschen.</string>
+  <string name="only_you_can_delete_messages">Nur Sie können Nachrichten unwiederbringlich löschen (Ihr Kontakt kann sie zum Löschen markieren).</string>
+  <string name="only_your_contact_can_delete">Nur Ihr Kontakt kann Nachrichten unwiederbringlich löschen (Sie können sie zum Löschen markieren).</string>
+  <string name="message_deletion_prohibited">In diesem Chat ist das unwiederbringliche Löschen von Nachrichten untersagt.</string>
+  <string name="both_you_and_your_contact_can_send_voice">Sowohl Ihr Kontakt, als auch Sie können Sprachnachrichten senden.</string>
+  <string name="only_you_can_send_voice">Nur Sie können Sprachnachrichten senden.</string>
+  <string name="only_your_contact_can_send_voice">Nur Ihr Kontakt kann Sprachnachrichten senden.</string>
+  <string name="voice_prohibited_in_this_chat">In diesem Chat sind Sprachnachrichten untersagt.</string>
+  <string name="allow_to_delete_messages">Unwiederbringliches Löschen von gesendeten Nachrichten erlauben.</string>
+  <string name="prohibit_message_deletion">Unwiederbringliches Löschen von Nachrichten verbieten.</string>
+  <string name="allow_to_send_voice">Senden von Sprachnachrichten erlauben.</string>
+  <string name="prohibit_sending_voice">Senden von Sprachnachrichten untersagen.</string>
+  <string name="group_members_can_delete">Gruppenmitglieder können gesendete Nachrichten unwiederbringlich löschen.</string>
+  <string name="message_deletion_prohibited_in_chat">In diesem Chat ist das unwiederbringliche Löschen von Nachrichten verboten.</string>
+  <string name="group_members_can_send_voice">Gruppenmitglieder können Sprachnachrichten senden.</string>
+  <string name="voice_messages_are_prohibited">In diesem Chat sind Sprachnachrichten untersagt.</string>
 
 </resources>
