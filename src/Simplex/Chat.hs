@@ -1171,8 +1171,8 @@ processChatCommand = \case
       pure (fileSize, fileChunkSize, inlineFileMode mc inlineFiles chunks n)
     inlineFileMode mc InlineFilesConfig {offerChunks, sendChunks, totalSendChunks} chunks n
       | chunks > offerChunks = Nothing
-      | chunks > sendChunks || chunks * n > totalSendChunks || msgContentTag mc /= MCVoice_ = Just IFMOffer
-      | otherwise = Just IFMSent
+      | chunks <= sendChunks && chunks * n <= totalSendChunks && isVoice mc = Just IFMSent
+      | otherwise = Just IFMOffer
     updateProfile :: User -> Profile -> m ChatResponse
     updateProfile user@User {profile = p@LocalProfile {profileId, localAlias}} p'@Profile {displayName}
       | p' == fromLocalProfile p = pure CRUserProfileNoChange
@@ -1370,12 +1370,13 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
             pure (XFileAcptInv sharedMsgId (Just fileInvConnReq) fName, ci)
     receiveInline :: m Bool
     receiveInline = do
-      ChatConfig {fileChunkSize, inlineFiles} <- asks config
-      let smallFile chunks = fileSize <= fileChunkSize * chunks inlineFiles
+      ChatConfig {fileChunkSize, inlineFiles = InlineFilesConfig {receiveChunks, offerChunks}} <- asks config
       pure $
         rcvInline_ /= Just False
-          && (smallFile receiveChunks || (rcvInline_ == Just True && smallFile offerChunks))
-          && (fileInline == Just IFMOffer || (fileInline == Just IFMSent && fileStatus == RFSNew))
+          && fileInline == Just IFMOffer
+          && ( fileSize <= fileChunkSize * receiveChunks
+                 || (rcvInline_ == Just True && fileSize <= fileChunkSize * offerChunks)
+             )
 
 getRcvFilePath :: forall m. ChatMonad m => FileTransferId -> Maybe FilePath -> String -> m FilePath
 getRcvFilePath fileId fPath_ fn = case fPath_ of
@@ -2200,7 +2201,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
       case featureProhibited forContact ct content of
         Just f -> void $ newChatItem (CIRcvChatFeatureRejected f) Nothing
         _ -> do
-          ciFile_ <- processFileInvitation fileInvitation_ $ \db -> createRcvFileTransfer db userId ct
+          ciFile_ <- processFileInvitation fileInvitation_ content $ \db -> createRcvFileTransfer db userId ct
           ChatItem {formattedText} <- newChatItem (CIRcvMsgContent content) ciFile_
           when (enableNtfs chatSettings) $ showMsgToast (c <> "> ") content formattedText
       setActive $ ActiveC c
@@ -2210,10 +2211,10 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
           toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
           pure ci
 
-    processFileInvitation :: Maybe FileInvitation -> (DB.Connection -> FileInvitation -> Maybe InlineFileMode -> Integer -> IO RcvFileTransfer) -> m (Maybe (CIFile 'MDRcv))
-    processFileInvitation fInv_ createRcvFT = forM fInv_ $ \fInv@FileInvitation {fileName, fileSize} -> do
+    processFileInvitation :: Maybe FileInvitation -> MsgContent -> (DB.Connection -> FileInvitation -> Maybe InlineFileMode -> Integer -> IO RcvFileTransfer) -> m (Maybe (CIFile 'MDRcv))
+    processFileInvitation fInv_ mc createRcvFT = forM fInv_ $ \fInv@FileInvitation {fileName, fileSize} -> do
       chSize <- asks $ fileChunkSize . config
-      inline <- receiveInlineMode fInv chSize
+      inline <- receiveInlineMode fInv (Just mc) chSize
       ft@RcvFileTransfer {fileId} <- withStore' $ \db -> createRcvFT db fInv inline chSize
       (filePath, fileStatus) <- case inline of
         Just IFMSent -> do
@@ -2265,7 +2266,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
       case groupFeatureProhibited gInfo content of
         Just f -> void $ newChatItem (CIRcvChatFeatureRejected f) Nothing
         _ -> do
-          ciFile_ <- processFileInvitation fInv_ $ \db -> createRcvGroupFileTransfer db userId m
+          ciFile_ <- processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId m
           ChatItem {formattedText} <- newChatItem (CIRcvMsgContent content) ciFile_
           let g = groupName' gInfo
           when (enableNtfs chatSettings) $ showMsgToast ("#" <> g <> " " <> c <> "> ") content formattedText
@@ -2318,7 +2319,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
     processFileInvitation' ct@Contact {localDisplayName = c} fInv@FileInvitation {fileName, fileSize} msg msgMeta = do
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       chSize <- asks $ fileChunkSize . config
-      inline <- receiveInlineMode fInv chSize
+      inline <- receiveInlineMode fInv Nothing chSize
       RcvFileTransfer {fileId} <- withStore' $ \db -> createRcvFileTransfer db userId ct fInv inline chSize
       let ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Nothing, fileStatus = CIFSRcvInvitation}
       ci <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta (CIRcvMsgContent $ MCFile "") ciFile
@@ -2330,7 +2331,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
     processGroupFileInvitation' :: GroupInfo -> GroupMember -> FileInvitation -> RcvMessage -> MsgMeta -> m ()
     processGroupFileInvitation' gInfo m@GroupMember {localDisplayName = c} fInv@FileInvitation {fileName, fileSize} msg msgMeta = do
       chSize <- asks $ fileChunkSize . config
-      inline <- receiveInlineMode fInv chSize
+      inline <- receiveInlineMode fInv Nothing chSize
       RcvFileTransfer {fileId} <- withStore' $ \db -> createRcvGroupFileTransfer db userId m fInv inline chSize
       let ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Nothing, fileStatus = CIFSRcvInvitation}
       ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvMsgContent $ MCFile "") ciFile
@@ -2339,8 +2340,8 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
       showToast ("#" <> g <> " " <> c <> "> ") "wants to send a file"
       setActive $ ActiveG g
 
-    receiveInlineMode :: FileInvitation -> Integer -> m (Maybe InlineFileMode)
-    receiveInlineMode FileInvitation {fileSize, fileInline} chSize = do
+    receiveInlineMode :: FileInvitation -> Maybe MsgContent -> Integer -> m (Maybe InlineFileMode)
+    receiveInlineMode FileInvitation {fileSize, fileInline} mc_ chSize = do
       InlineFilesConfig {receiveChunks, receiveInstant} <- asks $ inlineFiles . config
       let largeFile = fileSize > receiveChunks * chSize
       pure $
@@ -2348,7 +2349,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
           then Nothing
           else case fileInline of
             Just IFMOffer -> fileInline
-            Just IFMSent -> if receiveInstant then fileInline else Just IFMOffer
+            Just IFMSent -> if receiveInstant && maybe False isVoice mc_ then fileInline else Just IFMOffer
             _ -> Nothing
 
     xFileCancel :: Contact -> SharedMsgId -> MsgMeta -> m ()
@@ -2396,13 +2397,11 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
         toView $ CRSndFileComplete ci ft
 
     allowSendInline :: Integer -> Maybe InlineFileMode -> m Bool
-    allowSendInline fileSize inline_ = do
-      ChatConfig {fileChunkSize, inlineFiles} <- asks config
-      let smallFile chunks = fileSize <= fileChunkSize * chunks inlineFiles
-      pure $ case inline_ of
-        Just IFMOffer -> smallFile offerChunks
-        Just IFMSent -> smallFile sendChunks
-        _ -> False
+    allowSendInline fileSize = \case
+      Just IFMOffer -> do
+        ChatConfig {fileChunkSize, inlineFiles} <- asks config
+        pure $ fileSize <= fileChunkSize * offerChunks inlineFiles
+      _ -> pure False
 
     bFileChunk :: Contact -> SharedMsgId -> FileChunk -> MsgMeta -> m ()
     bFileChunk ct sharedMsgId chunk meta = do

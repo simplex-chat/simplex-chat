@@ -342,6 +342,11 @@ durationText duration =
       | n <= 9 = '0' : show n
       | otherwise = show n
 
+isVoice :: MsgContent -> Bool
+isVoice = \case
+  MCVoice {} -> True
+  _ -> False
+
 msgContentTag :: MsgContent -> MsgContentTag
 msgContentTag = \case
   MCText _ -> MCText_
