@@ -22,7 +22,7 @@ After installing your `smp-server` you should make some preparations.
 1. Create user and group for `smp-server`:
 
    ```sh
-   sudo useradd -ms /bin/false smp
+   sudo useradd -m smp
    ```
 
 2. Create necessary directories and assign permissions:
@@ -64,7 +64,7 @@ After installing your `smp-server` you should make some preparations.
 To investigate which options are available, execute `smp-server` without flags:
 
 ```sh
-sudo su - smp -c smp-server
+sudo su smp -c smp-server
 
 ...
 Available commands:
@@ -75,7 +75,7 @@ Available commands:
   delete                   Delete configuration and log files
 ```
 
-You can get further help by executing `sudo su - smp -c "smp-server <command> -h"`
+You can get further help by executing `sudo su smp -c "smp-server <command> -h"`
 
 After that, we need to configure `smp-server`:
 
@@ -84,7 +84,7 @@ After that, we need to configure `smp-server`:
 Execute the following command:
 
 ```sh
-sudo su - smp -c "smp-server init"
+sudo su smp -c "smp-server init"
 ```
 
 There will be several options to consider:
@@ -110,7 +110,7 @@ There will be several options to consider:
 Execute the following command:
 
 ```sh
-sudo su - smp -c "smp-server init -h"
+sudo su smp -c "smp-server init -h"
 
 ...
 Available options:
@@ -133,13 +133,13 @@ Available options:
 You should determine which flags are valid for your use-case and then execute `smp-server init` with `-y` flag for non-interactive initialization:
 
 ```sh
-sudo su - smp -c "smp-server init -y -<your flag> <your option>"
+sudo su smp -c "smp-server init -y -<your flag> <your option>"
 ```
 
 For example:
 
 ```sh
-sudo su - smp -c "smp-server init -y -l --ip 192.168.1.5 --password test"
+sudo su smp -c "smp-server init -y -l --ip 192.168.1.5 --password test"
 ```
 
 ... to initilize your `smp-server` configuration with `-l` flag to enable storing messages, `--ip` flag with `192.168.1.5` value to configure using ip and with `--password` flag with `test` value to password-protect `smp-server`.
