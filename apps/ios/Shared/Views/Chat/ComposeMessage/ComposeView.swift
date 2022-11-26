@@ -284,11 +284,11 @@ struct ComposeView: View {
                     }
                     fileURL.stopAccessingSecurityScopedResource()
                     if let fileSize = fileSize,
-                       fileSize <= maxFileSize {
+                       fileSize <= MAX_FILE_SIZE {
                         chosenFile = fileURL
                         composeState = composeState.copy(preview: .filePreview(fileName: fileURL.lastPathComponent))
                     } else {
-                        let prettyMaxFileSize = ByteCountFormatter().string(fromByteCount: maxFileSize)
+                        let prettyMaxFileSize = ByteCountFormatter().string(fromByteCount: MAX_FILE_SIZE)
                         AlertManager.shared.showAlertMsg(
                             title: "Large file!",
                             message: "Currently maximum supported file size is \(prettyMaxFileSize)."

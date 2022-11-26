@@ -41,13 +41,13 @@ class AudioRecorder {
                 AVNumberOfChannelsKey: 1
             ]
             audioRecorder = try AVAudioRecorder(url: getAppFilePath(fileName), settings: settings)
-            audioRecorder?.record(forDuration: maxVoiceMessageLength)
+            audioRecorder?.record(forDuration: MAX_VOICE_MESSAGE_LENGTH)
 
             await MainActor.run {
                 recordingTimer = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { timer in
                     guard let time = self.audioRecorder?.currentTime else { return }
                     self.onTimer?(time)
-                    if time >= maxVoiceMessageLength {
+                    if time >= MAX_VOICE_MESSAGE_LENGTH {
                         self.stop()
                         self.onFinishRecording?()
                     }
