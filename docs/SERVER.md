@@ -61,7 +61,7 @@ After installing your `smp-server` you should make some preparations.
 
 ## Configuration
 
-To invistigate which options are available, execute `smp-server` without flags:
+To investigate which options are available, execute `smp-server` without flags:
 
 ```sh
 sudo su - smp -c smp-server
