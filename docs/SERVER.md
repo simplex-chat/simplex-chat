@@ -95,7 +95,7 @@ There will be several options to consider:
   
 - `Enable logging daily statistics (yN):`
 
-  Enter `y` to enable logging statics for `Prometheus/Grafana`.
+  Enter `y` to enable logging statistics for `Prometheus/Grafana`.
   
 - `Require a password to create new messaging queues?`
 
@@ -144,6 +144,7 @@ sudo su smp -c "smp-server init -y -l --ip 192.168.1.5 --password test"
 
 ... to initilize your `smp-server` configuration with `-l` flag to enable storing messages, `--ip` flag with `192.168.1.5` value to configure using ip and with `--password` flag with `test` value to password-protect `smp-server`.
 
+---
 
 After that, your installation is complete and you should see in your teminal output something like this:
 
@@ -275,6 +276,6 @@ Logs will be stored as `csv` file. To import `csv` to `Grafana` one should:
 
 For further documentation, see: [CSV Data Source for Grafana - Documentation](https://grafana.github.io/grafana-csv-datasource/)
 
-## Configuring the app to use the server
+### Configuring the app to use the server
 
 TODO Inlcude screenshot of the new UI
