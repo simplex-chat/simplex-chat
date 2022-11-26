@@ -34,10 +34,8 @@ struct PrivacySettings: View {
                                 privacyAcceptImagesGroupDefault.set($0)
                             }
                     }
-                    if developerTools {
-                        settingsRow("photo.on.rectangle") {
-                            Toggle("Transfer images faster", isOn: $transferImagesInline)
-                        }
+                    settingsRow("photo.on.rectangle") {
+                        Toggle("Transfer images faster", isOn: $transferImagesInline)
                     }
                     settingsRow("network") {
                         Toggle("Send link previews", isOn: $useLinkPreviews)

@@ -37,10 +37,8 @@ fun PrivacySettingsView(
     SectionView(stringResource(R.string.settings_section_title_chats)) {
       SettingsPreferenceItem(Icons.Outlined.Image, stringResource(R.string.auto_accept_images), chatModel.controller.appPrefs.privacyAcceptImages)
       SectionDivider()
-      if (chatModel.controller.appPrefs.developerTools.get()) {
-        SettingsPreferenceItem(Icons.Outlined.ImageAspectRatio, stringResource(R.string.transfer_images_faster), chatModel.controller.appPrefs.privacyTransferImagesInline)
-        SectionDivider()
-      }
+      SettingsPreferenceItem(Icons.Outlined.ImageAspectRatio, stringResource(R.string.transfer_images_faster), chatModel.controller.appPrefs.privacyTransferImagesInline)
+      SectionDivider()
       SettingsPreferenceItem(Icons.Outlined.TravelExplore, stringResource(R.string.send_link_previews), chatModel.controller.appPrefs.privacyLinkPreviews)
       SectionDivider()
       SectionItemView { SimpleXLinkOptions(chatModel.simplexLinkMode, onSelected = {

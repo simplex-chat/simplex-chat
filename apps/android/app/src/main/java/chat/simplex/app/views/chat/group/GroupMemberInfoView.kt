@@ -160,10 +160,8 @@ fun GroupMemberInfoLayout(
     }
     SectionSpacer()
     SectionView(title = stringResource(R.string.conn_stats_section_title_servers)) {
-      if (developerTools) {
-        SwitchAddressButton(switchMemberAddress)
-        SectionDivider()
-      }
+      SwitchAddressButton(switchMemberAddress)
+      SectionDivider()
       if (connStats != null) {
         val rcvServers = connStats.rcvServers
         val sndServers = connStats.sndServers
