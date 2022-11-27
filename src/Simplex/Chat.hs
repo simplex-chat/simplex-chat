@@ -992,20 +992,8 @@ processChatCommand = \case
     processChatCommand $ APIListMembers groupId
   ListGroups -> CRGroupsList <$> withUser (\user -> withStore' (`getUserGroupDetails` user))
   APIUpdateGroupProfile groupId p' -> withUser $ \user -> do
-    Group g@GroupInfo {groupProfile = p} ms <- withStore $ \db -> getGroup db user groupId
-    let s = memberStatus $ membership g
-        canUpdate =
-          memberRole (membership g :: GroupMember) == GROwner
-            || (s == GSMemRemoved || s == GSMemLeft || s == GSMemGroupDeleted || s == GSMemInvited)
-    unless canUpdate $ throwChatError CEGroupUserRole
-    g' <- withStore $ \db -> updateGroupProfile db user g p'
-    msg <- sendGroupMessage g' ms (XGrpInfo p')
-    let cd = CDGroupSnd g'
-    unless (sameGroupProfileInfo p p') $ do
-      ci <- saveSndChatItem user cd msg (CISndGroupEvent $ SGEGroupUpdated p') Nothing Nothing
-      toView . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat g') ci
-    createGroupFeatureChangedItems user cd CISndGroupFeature p p'
-    pure $ CRGroupUpdated g g' Nothing
+    g <- withStore $ \db -> getGroup db user groupId
+    runUpdateGroupProfile user g p'
   UpdateGroupProfile gName profile -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIUpdateGroupProfile groupId profile
@@ -1096,6 +1084,17 @@ processChatCommand = \case
   UpdateProfileImage image -> withUser $ \user@User {profile} -> do
     let p = (fromLocalProfile profile :: Profile) {image}
     updateProfile user p
+  SetUserFeature f allowed -> withUser $ \user@User {profile} -> do
+    let p = (fromLocalProfile profile :: Profile) {preferences = Just . setPreference f (Just allowed) $ preferences' user}
+    updateProfile user p
+  SetContactFeature f cName allowed_ -> withUser $ \user -> do
+    ct@Contact {userPreferences} <- withStore $ \db -> getContactByName db user cName
+    let prefs' = setPreference f allowed_ $ Just userPreferences
+    updateContactPrefs user ct prefs'
+  SetGroupFeature f gName enabled -> withUser $ \user -> do
+    g@(Group GroupInfo {groupProfile = p} _) <- withStore $ \db -> getGroup db user =<< getGroupIdByName db user gName
+    let p' = p {groupPreferences = Just . setGroupPreference f enabled $ groupPreferences p}
+    runUpdateGroupProfile user g p'
   QuitChat -> liftIO exitSuccess
   ShowVersion -> pure $ CRVersionInfo versionNumber
   DebugLocks -> do
@@ -1202,6 +1201,21 @@ processChatCommand = \case
           void (sendDirectContactMessage ct' $ XInfo p') `catchError` (toView . CRChatError)
           when (directContact ct) $ createFeatureChangedItems user ct ct' CDDirectSnd CISndChatFeature
           pure $ CRContactPrefsUpdated ct ct'
+    runUpdateGroupProfile :: User -> Group -> GroupProfile -> m ChatResponse
+    runUpdateGroupProfile user (Group g@GroupInfo {groupProfile = p} ms) p' = do
+      let s = memberStatus $ membership g
+          canUpdate =
+            memberRole (membership g :: GroupMember) == GROwner
+              || (s == GSMemRemoved || s == GSMemLeft || s == GSMemGroupDeleted || s == GSMemInvited)
+      unless canUpdate $ throwChatError CEGroupUserRole
+      g' <- withStore $ \db -> updateGroupProfile db user g p'
+      msg <- sendGroupMessage g' ms (XGrpInfo p')
+      let cd = CDGroupSnd g'
+      unless (sameGroupProfileInfo p p') $ do
+        ci <- saveSndChatItem user cd msg (CISndGroupEvent $ SGEGroupUpdated p') Nothing Nothing
+        toView . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat g') ci
+      createGroupFeatureChangedItems user cd CISndGroupFeature p p'
+      pure $ CRGroupUpdated g g' Nothing
     isReady :: Contact -> Bool
     isReady ct =
       let s = connStatus $ activeConn (ct :: Contact)
@@ -2412,7 +2426,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
 
     receiveInlineChunk :: RcvFileTransfer -> FileChunk -> MsgMeta -> m ()
     receiveInlineChunk RcvFileTransfer {fileId, fileStatus = RFSNew} FileChunk {chunkNo} _
-      | chunkNo == 1 = throwChatError $ CEFileLargeSentInline fileId
+      | chunkNo == 1 = throwChatError $ CEInlineFileProhibited fileId
       | otherwise = pure ()
     receiveInlineChunk ft chunk meta = do
       case chunk of
@@ -3384,6 +3398,9 @@ chatCommandP =
       "/profile_image" $> UpdateProfileImage Nothing,
       ("/profile " <|> "/p ") *> (uncurry UpdateProfile <$> userNames),
       ("/profile" <|> "/p") $> ShowProfile,
+      "/voice #" *> (SetGroupFeature CFVoice <$> displayName <*> (A.space *> strP)),
+      "/voice @" *> (SetContactFeature CFVoice <$> displayName <*> optional (A.space *> strP)),
+      "/voice " *> (SetUserFeature CFVoice <$> strP),
       "/incognito " *> (SetIncognito <$> onOffP),
       ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
       ("/version" <|> "/v") $> ShowVersion,

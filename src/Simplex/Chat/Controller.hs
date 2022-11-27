@@ -250,6 +250,9 @@ data ChatCommand
   | ShowProfile
   | UpdateProfile ContactName Text
   | UpdateProfileImage (Maybe ImageData)
+  | SetUserFeature ChatFeature FeatureAllowed
+  | SetContactFeature ChatFeature ContactName (Maybe FeatureAllowed)
+  | SetGroupFeature ChatFeature GroupName GroupFeatureEnabled
   | QuitChat
   | ShowVersion
   | DebugLocks
@@ -536,7 +539,7 @@ data ChatErrorType
   | CEFileImageType {filePath :: FilePath}
   | CEFileImageSize {filePath :: FilePath}
   | CEFileNotReceived {fileId :: FileTransferId}
-  | CEFileLargeSentInline {fileId :: FileTransferId}
+  | CEInlineFileProhibited {fileId :: FileTransferId}
   | CEInvalidQuote
   | CEInvalidChatItemUpdate
   | CEInvalidChatItemDelete

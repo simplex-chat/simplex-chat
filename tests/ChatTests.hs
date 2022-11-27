@@ -80,6 +80,7 @@ chatTests = do
     describe "send and receive file" $ fileTestMatrix2 runTestFileTransfer
     it "send and receive file inline (without accepting)" testInlineFileTransfer
     it "send and receive small file inline (default config)" testSmallInlineFileTransfer
+    it "small file sent without acceptance is ignored in terminal by default" testSmallInlineFileIgnored
     it "receive file inline with inline=on option" testReceiveInline
     describe "send and receive a small file" $ fileTestMatrix2 runTestSmallFileTransfer
     describe "sender cancelled file transfer before transfer" $ fileTestMatrix2 runTestFileSndCancelBeforeTransfer
@@ -88,6 +89,7 @@ chatTests = do
     describe "send and receive file to group" $ fileTestMatrix3 runTestGroupFileTransfer
     it "send and receive file inline to group (without accepting)" testInlineGroupFileTransfer
     it "send and receive small file inline to group (default config)" testSmallInlineGroupFileTransfer
+    it "small file sent without acceptance is ignored in terminal by default" testSmallInlineGroupFileIgnored
     describe "sender cancelled group file transfer before transfer" $ fileTestMatrix3 runTestGroupFileSndCancelBeforeTransfer
   describe "messages with files" $ do
     describe "send and receive message with file" $ fileTestMatrix2 runTestMessageWithFile
@@ -118,8 +120,8 @@ chatTests = do
     it "set contact alias" testSetAlias
     it "set connection alias" testSetConnectionAlias
   describe "preferences" $ do
-    it "set contact preferences" testSetContactPrefs
-    it "update group preferences" testUpdateGroupPrefs
+    fit "set contact preferences" testSetContactPrefs
+    fit "update group preferences" testUpdateGroupPrefs
   describe "SMP servers" $ do
     it "get and set SMP servers" testGetSetSMPServers
     it "test SMP server connection" testTestSMPServerConnection
@@ -1616,7 +1618,7 @@ testInlineFileTransfer =
 
 testSmallInlineFileTransfer :: IO ()
 testSmallInlineFileTransfer =
-  testChatCfg2 testCfg aliceProfile bobProfile $ \alice bob -> do
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
     connectUsers alice bob
     bob ##> "/_files_folder ./tests/tmp/"
     bob <## "ok"
@@ -1636,6 +1638,28 @@ testSmallInlineFileTransfer =
     src <- B.readFile "./tests/fixtures/logo.jpg"
     dest <- B.readFile "./tests/tmp/logo.jpg"
     dest `shouldBe` src
+
+testSmallInlineFileIgnored :: IO ()
+testSmallInlineFileIgnored = withTmpFiles $ do
+  withNewTestChat "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts testOpts {allowInstantFiles = False} "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+      bob ##> "/_files_folder ./tests/tmp/"
+      bob <## "ok"
+      alice ##> "/_send @2 json {\"msgContent\":{\"type\":\"voice\", \"duration\":10, \"text\":\"\"}, \"filePath\":\"./tests/fixtures/logo.jpg\"}"
+      alice <# "@bob voice message (00:10)"
+      alice <# "/f @bob ./tests/fixtures/logo.jpg"
+      -- below is not shown in "sent" mode
+      -- alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> voice message (00:10)"
+      bob <# "alice> sends file logo.jpg (31.3 KiB / 32080 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob <## "A small file sent without acceptance - you can enable receiving such files with -f option."
+      -- below is not shown in "sent" mode
+      -- bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      alice <## "completed sending file 1 (logo.jpg) to bob"
+      bob ##> "/fr 1"
+      bob <## "file is already being received: logo.jpg"
 
 testReceiveInline :: IO ()
 testReceiveInline =
@@ -1867,6 +1891,45 @@ testSmallInlineGroupFileTransfer =
       dest2 <- B.readFile "./tests/tmp/cath/logo.jpg"
       dest1 `shouldBe` src
       dest2 `shouldBe` src
+
+testSmallInlineGroupFileIgnored :: IO ()
+testSmallInlineGroupFileIgnored = withTmpFiles $ do
+  withNewTestChat "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts testOpts {allowInstantFiles = False} "bob" bobProfile $ \bob -> do
+      withNewTestChatOpts testOpts {allowInstantFiles = False} "cath" cathProfile $ \cath -> do
+        createGroup3 "team" alice bob cath
+        bob ##> "/_files_folder ./tests/tmp/bob/"
+        bob <## "ok"
+        cath ##> "/_files_folder ./tests/tmp/cath/"
+        cath <## "ok"
+        alice ##> "/_send #1 json {\"msgContent\":{\"type\":\"voice\", \"duration\":10, \"text\":\"\"}, \"filePath\":\"./tests/fixtures/logo.jpg\"}"
+        alice <# "#team voice message (00:10)"
+        alice <# "/f #team ./tests/fixtures/logo.jpg"
+        -- below is not shown in "sent" mode
+        -- alice <## "use /fc 1 to cancel sending"
+        concurrentlyN_
+          [ do
+              alice
+                <### [ "completed sending file 1 (logo.jpg) to bob",
+                       "completed sending file 1 (logo.jpg) to cath"
+                     ]
+              alice ##> "/fs 1"
+              alice <##. "sending file 1 (logo.jpg) complete",
+            do
+              bob <# "#team alice> voice message (00:10)"
+              bob <# "#team alice> sends file logo.jpg (31.3 KiB / 32080 bytes)"
+              bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+              bob <## "A small file sent without acceptance - you can enable receiving such files with -f option."
+              bob ##> "/fr 1"
+              bob <## "file is already being received: logo.jpg",
+            do
+              cath <# "#team alice> voice message (00:10)"
+              cath <# "#team alice> sends file logo.jpg (31.3 KiB / 32080 bytes)"
+              cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
+              cath <## "A small file sent without acceptance - you can enable receiving such files with -f option."
+              cath ##> "/fr 1"
+              cath <## "file is already being received: logo.jpg"
+          ]
 
 runTestGroupFileSndCancelBeforeTransfer :: TestCC -> TestCC -> TestCC -> IO ()
 runTestGroupFileSndCancelBeforeTransfer alice bob cath = do
@@ -2938,7 +3001,8 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     alice <## voiceNotAllowed
     bob ##> sendVoice
     bob <## voiceNotAllowed
-    alice ##> "/_set prefs @2 {\"voice\": {\"allow\": \"always\"}}"
+    -- alice ##> "/_set prefs @2 {\"voice\": {\"allow\": \"always\"}}"
+    alice ##> "/voice @bob always"
     alice <## "you updated preferences for bob:"
     alice <## "voice messages: enabled for contact (you allow: always, contact allows: no)"
     alice #$> ("/_get chat @2 count=100", chat, startFeatures <> [(1, "Voice messages: enabled for contact")])
@@ -2956,13 +3020,11 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     alice <## "started receiving file 1 (test.txt) from bob"
     alice <## "completed receiving file 1 (test.txt) from bob"
     (bob </)
-    alice ##> "/_profile {\"displayName\": \"alice\", \"fullName\": \"\", \"preferences\": {\"voice\": {\"allow\": \"no\"}}}"
-    alice <## "user full name removed (your contacts are notified)"
+    -- alice ##> "/_profile {\"displayName\": \"alice\", \"fullName\": \"Alice\", \"preferences\": {\"voice\": {\"allow\": \"no\"}}}"
+    alice ##> "/voice no"
     alice <## "updated preferences:"
     alice <## "voice messages allowed: no"
     (alice </)
-    bob <## "contact alice removed full name"
-    (bob </)
     alice ##> "/_set prefs @2 {\"voice\": {\"allow\": \"yes\"}}"
     alice <## "you updated preferences for bob:"
     alice <## "voice messages: off (you allow: yes, contact allows: no)"
@@ -3024,7 +3086,8 @@ testUpdateGroupPrefs =
       bob <## "voice messages enabled: off"
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Full deletion: on"), (0, "Full deletion: off"), (0, "Voice messages: off")])
       threadDelay 1000000
-      alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"on\"}}}"
+      -- alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"on\"}}}"
+      alice ##> "/voice #team on"
       alice <## "updated group preferences:"
       alice <## "voice messages enabled: on"
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on")])
