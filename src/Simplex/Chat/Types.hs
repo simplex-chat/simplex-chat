@@ -303,6 +303,14 @@ instance PreferenceI FullPreferences where
     CFVoice -> voice
   {-# INLINE getPreference #-}
 
+setPreference :: ChatFeature -> Maybe FeatureAllowed -> Maybe Preferences -> Preferences
+setPreference f allow_ prefs_ =
+  let prefs = toChatPrefs $ mergePreferences Nothing prefs_
+      pref = (\allow -> (getPreference f prefs :: Preference) {allow}) <$> allow_
+   in case f of
+        CFVoice -> prefs {voice = pref}
+        CFFullDelete -> prefs {fullDelete = pref}
+
 -- collection of optional chat preferences for the user and the contact
 data Preferences = Preferences
   { fullDelete :: Maybe Preference,
@@ -360,6 +368,14 @@ instance ToField GroupPreferences where
 
 instance FromField GroupPreferences where
   fromField = fromTextField_ decodeJSON
+
+setGroupPreference :: ChatFeature -> GroupFeatureEnabled -> Maybe GroupPreferences -> GroupPreferences
+setGroupPreference f enable prefs_ =
+  let prefs = mergeGroupPreferences prefs_
+      pref = (getGroupPreference f prefs :: GroupPreference) {enable}
+   in toGroupPreferences $ case f of
+        CFVoice -> prefs {voice = pref}
+        CFFullDelete -> prefs {fullDelete = pref}
 
 -- full collection of chat preferences defined in the app - it is used to ensure we include all preferences and to simplify processing
 -- if some of the preferences are not defined in Preferences, defaults from defaultChatPrefs are used here.
@@ -533,6 +549,16 @@ mergeGroupPreferences groupPreferences =
     }
   where
     pref pt = fromMaybe (getGroupPreference pt defaultGroupPrefs) (groupPreferences >>= groupPrefSel pt)
+
+toGroupPreferences :: FullGroupPreferences -> GroupPreferences
+toGroupPreferences groupPreferences =
+  GroupPreferences
+    { fullDelete = pref CFFullDelete,
+      -- receipts = pref CFReceipts,
+      voice = pref CFVoice
+    }
+  where
+    pref f = Just $ getGroupPreference f groupPreferences
 
 data PrefEnabled = PrefEnabled {forUser :: Bool, forContact :: Bool}
   deriving (Eq, Show, Generic, FromJSON)
