@@ -6,11 +6,11 @@ SMP server is the relay server used to pass messages in SimpleX network. SimpleX
 
 SimpleX clients only determine which server is used to receive the messages, separately for each contact (or group connection with a group member), and these servers are only temporary, as the delivery address can change.
 
-_Please note_: when you change the servers in the app configuration, it only affects which server will be used for the new contacts, the existing contacts will not automatically move to the new servers, but you can move them manually using BETA feature ["Change receiving address"](../blog/20221108-simplex-chat-v4.2-security-audit-new-website.md#change-your-delivery-address-beta) – it will be automated soon.
+_Please note_: when you change the servers in the app configuration, it only affects which server will be used for the new contacts, the existing contacts will not automatically move to the new servers, but you can move them manually using ["Change receiving address"](../blog/20221108-simplex-chat-v4.2-security-audit-new-website.md#change-your-delivery-address-beta) button in contact/member information pages – it will be automated soon.
 
 ## Installation
 
-0. Firtsly, install `smp-server`:
+0. First, install `smp-server`:
 
    - Manual deployment:
      - [Compiling from source](https://github.com/simplex-chat/simplexmq#using-your-distribution)
@@ -20,7 +20,7 @@ _Please note_: when you change the servers in the app configuration, it only aff
      - [Docker container](https://github.com/simplex-chat/simplexmq#using-docker-1)
      - [Linode StackScript](https://github.com/simplex-chat/simplexmq#deploy-smp-server-on-linode)
 
-Manual installation require some preparations:
+Manual installation requires some preliminary actions:
 
 1. Create user and group for `smp-server`:
 
@@ -66,7 +66,7 @@ Manual installation require some preparations:
 
 ## Configuration
 
-To investigate which options are available, execute `smp-server` without flags:
+To see which options are available, execute `smp-server` without flags:
 
 ```sh
 sudo su smp -c smp-server
@@ -92,15 +92,19 @@ Execute the following command:
 sudo su smp -c "smp-server init"
 ```
 
-There will be several options to consider:
+There are several options to consider:
 
 - `Enable store log to restore queues and messages on server restart (Yn):`
 
-  Enter `y` to enable saving and restoring messages upon restarting the server.
+  Enter `y` to enable saving and restoring connections and messages when the server is restarted.
+  
+  _Please note_: it is important to use SIGINT to restart the server, as otherwise the undelivered messages will not be restored. The connections will be restored irrespective of how the server is restarted, as unlike messages they are added to append-only log on every change.
   
 - `Enable logging daily statistics (yN):`
 
-  Enter `y` to enable logging statistics for `Prometheus/Grafana`.
+  Enter `y` to enable logging statistics in CSV format, e.g. they can be used to show aggregate usage charts in `Grafana`.
+  
+These statistics include daily counts of created, secured and deleted queues, sent and received messages, and also daily, weekly, and monthly counts of active queues (that is, the queues that were used for any messages). We believe that this information does not include anything that would allow correlating different queues as belonging to the same users, but please let us know, confidentially, if you believe that this can be exploited in any way. 
   
 - `Require a password to create new messaging queues?`
 
@@ -108,9 +112,9 @@ There will be several options to consider:
   
 - `Enter server FQDN or IP address for certificate (127.0.0.1):`
 
-  Enter your domain or ip address to serve `smp-server` from.
+  Enter your domain or ip address that your smp-server is running on - it will be included in server certificates and also printed as part of server address.
 
-### Manually
+### Via command line options
 
 Execute the following command:
 
@@ -135,19 +139,22 @@ Available options:
   -h,--help                Show this help text
 ```
 
-You should determine which flags are valid for your use-case and then execute `smp-server init` with `-y` flag for non-interactive initialization:
+You should determine which flags are needed for your use-case and then execute `smp-server init` with `-y` flag for non-interactive initialization:
 
 ```sh
 sudo su smp -c "smp-server init -y -<your flag> <your option>"
 ```
 
-For example:
+For example, run:
 
 ```sh
 sudo su smp -c "smp-server init -y -l --ip 192.168.1.5 --password test"
 ```
 
-... to initilize your `smp-server` configuration with `-l` flag to enable storing messages, `--ip` flag with `192.168.1.5` value to configure using ip and with `--password` flag with `test` value to password-protect `smp-server`.
+to initilize your `smp-server` configuration with:
+- restoring connections and messages when the server is restarted (`-l` flag),
+- IP address `192.168.1.5`,
+- protect `smp-server` with a password `test`.
 
 ---
 
@@ -168,13 +175,15 @@ Fingerprint: d5fcsc7hhtPpexYUbI2XPxDbyU2d3WsVmROimcL90ss=
 Server address: smp://d5fcsc7hhtPpexYUbI2XPxDbyU2d3WsVmROimcL90ss=:V8ONoJ6ICwnrZnTC_QuSHfCEYq53uLaJKQ_oIC6-ve8=@<hostnames>
 ```
 
+The server address above should be used in your client configuration and if you added server password it should only be shared with the other people when you want to allow them to use your server to receive the messages (all your contacts will be able to send messages, as it does not require a password). If you passed IP address or hostnames during the initialisation, they will be printed as part of server address, otherwise replace `<hostnames>` with the actual server addresses.
+
 ## Documentation
 
 All necessary files for `smp-server` are located in `/etc/opt/simplex/` folder.
 
-Stored messages and message queues are located in `/var/opt/simplex/` folder.
+Stored messages, connections, statistics and server log are located in `/var/opt/simplex/` folder.
 
-### smp link
+### SMP server address
 
 SMP server address has the following format:
 
