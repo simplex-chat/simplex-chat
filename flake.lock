@@ -343,11 +343,11 @@
         "tullia": "tullia"
       },
       "locked": {
-        "lastModified": 1669566239,
-        "narHash": "sha256-TSXzgP1BQx6aaq/MZAwsxn68ep2WUBmO5/3VpUWi8E0=",
+        "lastModified": 1669568747,
+        "narHash": "sha256-hQd1P9WNVe0PXC9O2ap3f5iqmtQB/GADmpVhrBk3FqQ=",
         "owner": "simplex-chat",
         "repo": "haskell.nix",
-        "rev": "9cce37c1dc2c5ff733e3f80b58144be117e7934b",
+        "rev": "08584e1e5123b7c570607484862157556785ea04",
         "type": "github"
       },
       "original": {
@@ -720,11 +720,11 @@
     },
     "nixpkgs_5": {
       "locked": {
-        "lastModified": 1669564173,
-        "narHash": "sha256-pZ/C2p9KYVYoB9hhvmVyfCKPBoev8L/JK4zUN0wTFw0=",
+        "lastModified": 1669568537,
+        "narHash": "sha256-OI+XMgKFgZjx6bjl+0hAvFO1Jn3RPQ+QZtib90hKGp0=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "413bf055c8d3937bef4c4dcf5d23cb5ab4a3a964",
+        "rev": "f56d74c14806d7cdfae292d9d48de81c68f4c6a2",
         "type": "github"
       },
       "original": {
