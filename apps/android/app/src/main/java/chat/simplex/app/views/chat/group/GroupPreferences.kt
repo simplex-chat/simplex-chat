@@ -86,16 +86,16 @@ private fun FeatureSection(feature: Feature, enableFeature: State<GroupFeatureEn
     if (groupInfo.canEdit) {
       SectionItemView {
         ExposedDropDownSettingRow(
-          feature.text(),
+          feature.text,
           GroupFeatureEnabled.values().map { it to it.text },
           enableFeature,
-          icon = feature.icon(false),
+          icon = feature.icon,
           onSelected = onSelected
         )
       }
     } else {
       InfoRow(
-        feature.text(),
+        feature.text,
         enableFeature.value.text
       )
     }

@@ -15,8 +15,8 @@ struct CIChatFeatureView: View {
     var iconColor: Color
 
     var body: some View {
-        HStack(alignment: .bottom, spacing: 0) {
-            Image(systemName: feature.icon + ".fill")
+        HStack(alignment: .bottom, spacing: 4) {
+            Image(systemName: feature.iconFilled)
                 .foregroundColor(iconColor)
             chatEventText(chatItem)
         }

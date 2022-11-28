@@ -104,8 +104,8 @@ private fun FeatureSection(
   )
 
   SectionView(
-    feature.text().uppercase(),
-    icon = feature.icon(true),
+    feature.text.uppercase(),
+    icon = feature.iconFilled,
     iconTint = if (enabled.forUser) SimplexGreen else if (enabled.forContact) WarningYellow else Color.Red,
     leadingIcon = true,
   ) {

@@ -1297,11 +1297,11 @@ sealed class CIContent: ItemContent {
       is SndGroupEventContent -> sndGroupEvent.text
       is RcvConnEventContent -> rcvConnEvent.text
       is SndConnEventContent -> sndConnEvent.text
-      is RcvChatFeature -> "${feature.text()}: ${enabled.text}"
-      is SndChatFeature -> "${feature.text()}: ${enabled.text}"
-      is RcvGroupFeature -> "${feature.text()}: ${preference.enable.text}"
-      is SndGroupFeature -> "${feature.text()}: ${preference.enable.text}"
-      is RcvChatFeatureRejected -> "${feature.text()}: ${generalGetString(R.string.feature_received_prohibited)}"
+      is RcvChatFeature -> "${feature.text}: ${enabled.text}"
+      is SndChatFeature -> "${feature.text}: ${enabled.text}"
+      is RcvGroupFeature -> "${feature.text}: ${preference.enable.text}"
+      is SndGroupFeature -> "${feature.text}: ${preference.enable.text}"
+      is RcvChatFeatureRejected -> "${feature.text}: ${generalGetString(R.string.feature_received_prohibited)}"
     }
 }
 

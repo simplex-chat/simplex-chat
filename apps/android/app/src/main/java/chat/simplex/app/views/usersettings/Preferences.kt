@@ -84,10 +84,10 @@ private fun FeatureSection(feature: Feature, allowFeature: State<FeatureAllowed>
   SectionView {
     SectionItemView {
       ExposedDropDownSettingRow(
-        feature.text(),
+        feature.text,
         FeatureAllowed.values().map { it to it.text },
         allowFeature,
-        icon = feature.icon(false),
+        icon = feature.icon,
         onSelected = onSelected
       )
     }
