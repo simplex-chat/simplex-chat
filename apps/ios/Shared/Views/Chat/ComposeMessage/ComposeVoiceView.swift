@@ -152,7 +152,7 @@ struct ComposeVoiceView: View {
                 ZStack {
                     Rectangle()
                         .fill(Color.accentColor)
-                        .frame(width: min(CGFloat((progress ?? TimeInterval(0)) / length) * geometry.size.width, geometry.size.width), height: 4)
+                        .frame(width: min(CGFloat((progress ?? TimeInterval(0)) / length) * geometry.size.width, geometry.size.width), height: 3)
                         .animation(.linear, value: progress)
                 }
                 .frame(height: ComposeVoiceView.previewHeight - 1, alignment: .bottom) // minus 1 is for the bottom padding

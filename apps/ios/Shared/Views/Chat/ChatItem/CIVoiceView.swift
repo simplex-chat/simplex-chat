@@ -162,7 +162,7 @@ struct VoiceMessagePlayer: View {
                 .clipShape(Circle())
             if recordingTime > 0 {
                 ProgressCircle(length: recordingTime, progress: $playbackTime)
-                    .frame(width: 52, height: 52) // this + ProgressCircle lineWidth = background circle diameter
+                    .frame(width: 53, height: 53) // this + ProgressCircle lineWidth = background circle diameter
             }
         }
     }
@@ -176,7 +176,7 @@ struct VoiceMessagePlayer: View {
                 .trim(from: 0, to: ((progress ?? TimeInterval(0)) / length))
                 .stroke(
                     Color.accentColor,
-                    style: StrokeStyle(lineWidth: 4)
+                    style: StrokeStyle(lineWidth: 3)
                 )
                 .rotationEffect(.degrees(-90))
                 .animation(.linear, value: progress)
