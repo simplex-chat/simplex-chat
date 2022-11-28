@@ -173,7 +173,7 @@ object AudioPlayer {
   }
 
   fun stop() {
-    if (!player.isPlaying) return
+    if (currentlyPlaying.value == null) return
     player.stop()
     stopListener()
   }
@@ -188,11 +188,21 @@ object AudioPlayer {
   }
 
   private fun stopListener() {
+    val afterCoroutineCancel: CompletionHandler = {
+      // Notify prev audio listener about stop
+      currentlyPlaying.value?.second?.invoke(null, TrackState.REPLACED)
+      currentlyPlaying.value = null
+    }
+    /** Preventing race by calling a code AFTER coroutine ends, so [TrackState] will be:
+     * [TrackState.PLAYING] -> [TrackState.PAUSED] -> [TrackState.REPLACED] (in this order)
+     * */
+    if (progressJob != null) {
+      progressJob?.invokeOnCompletion(afterCoroutineCancel)
+    } else {
+      afterCoroutineCancel(null)
+    }
     progressJob?.cancel()
     progressJob = null
-    // Notify prev audio listener about stop
-    currentlyPlaying.value?.second?.invoke(null, TrackState.REPLACED)
-    currentlyPlaying.value = null
   }
 
   fun play(
