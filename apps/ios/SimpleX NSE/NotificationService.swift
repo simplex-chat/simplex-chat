@@ -232,7 +232,7 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, UNMutableNotification
                 cItem = apiReceiveFile(fileId: file.fileId, inline: inline)?.chatItem ?? cItem
             }
          }
-        return cItem.isCall ? nil : (aChatItem.chatId, createMessageReceivedNtf(cInfo, cItem))
+        return cItem.showMutableNotification ? (aChatItem.chatId, createMessageReceivedNtf(cInfo, cItem)) : nil
     case let .callInvitation(invitation):
         return (invitation.contact.id, createCallInvitationNtf(invitation))
     default:
