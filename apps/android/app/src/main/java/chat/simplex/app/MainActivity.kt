@@ -374,15 +374,6 @@ fun MainPage(
                       }
                     }
                 }
-                launch {
-                  snapshotFlow { chatModel.sharedContent.value }
-                    .distinctUntilChanged()
-                    .filter { it != null }
-                    .collect {
-                      chatModel.chatId.value = null
-                      currentChatId = null
-                    }
-                }
               }
               Box (Modifier.graphicsLayer { translationX = maxWidth.toPx() - offset.value.dp.toPx() }) Box2@ {
                 currentChatId?.let {
