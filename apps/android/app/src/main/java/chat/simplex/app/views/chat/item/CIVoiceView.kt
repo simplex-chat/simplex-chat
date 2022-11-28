@@ -1,6 +1,5 @@
 package chat.simplex.app.views.chat.item
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
@@ -38,7 +37,7 @@ fun CIVoiceView(
   longClick: () -> Unit,
 ) {
   Row(
-    Modifier.padding(top = 4.dp, bottom = 6.dp, start = 6.dp, end = 6.dp),
+    Modifier.padding(top = if (hasText) 14.dp else 4.dp, bottom = if (hasText) 14.dp else 6.dp, start = 6.dp, end = 6.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
     if (file != null) {
@@ -60,6 +59,7 @@ fun CIVoiceView(
       val minWidth = with(LocalDensity.current) { 45.sp.toDp() }
       val text = durationToString(time / 1000)
       if (hasText) {
+        Spacer(Modifier.width(6.dp))
         VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick)
         Text(
           text,
@@ -182,7 +182,7 @@ private fun VoiceMsgIndicator(
   if (file != null && file.loaded && progress != null && duration != null) {
     val angle = 360f * (progress.value.toDouble() / duration.value).toFloat()
     if (hasText) {
-      IconButton({ if (!audioPlaying) play() else pause() }, Modifier.drawRingModifier(angle, strokeColor, strokeWidth)) {
+      IconButton({ if (!audioPlaying) play() else pause() }, Modifier.size(56.dp).drawRingModifier(angle, strokeColor, strokeWidth)) {
         Icon(
           imageVector = if (audioPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
           contentDescription = null,
