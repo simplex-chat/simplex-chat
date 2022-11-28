@@ -39,9 +39,7 @@ fun ComposeVoiceView(
         .distinctUntilChanged()
         .collect {
           val startTime = when {
-            audioPlaying.value -> progress.value
-            finishedRecording && progress.value == duration.value -> progress.value
-            finishedRecording -> 0
+            finishedRecording -> progress.value
             else -> recordedDurationMs
           }
           val endTime = when {
@@ -71,7 +69,7 @@ fun ComposeVoiceView(
       IconButton(
         onClick = {
           if (!audioPlaying.value) {
-            AudioPlayer.play(filePath, audioPlaying, progress, duration, true)
+            AudioPlayer.play(filePath, audioPlaying, progress, duration, false)
           } else {
             AudioPlayer.pause(audioPlaying, progress)
           }
@@ -87,7 +85,13 @@ fun ComposeVoiceView(
         )
       }
       val numberInText = remember(recordedDurationMs, progress.value) {
-        derivedStateOf { if (audioPlaying.value) progress.value / 1000 else recordedDurationMs / 1000 }
+        derivedStateOf {
+          when {
+            finishedRecording && progress.value == 0 && !audioPlaying.value -> duration.value / 1000
+            finishedRecording -> progress.value / 1000
+            else -> recordedDurationMs / 1000
+          }
+        }
       }
       Text(
         durationToString(numberInText.value),
