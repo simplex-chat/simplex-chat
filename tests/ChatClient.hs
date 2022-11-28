@@ -25,7 +25,7 @@ import Simplex.Chat.Options
 import Simplex.Chat.Store
 import Simplex.Chat.Terminal
 import Simplex.Chat.Terminal.Output (newChatTerminal)
-import Simplex.Chat.Types (Profile, ServerCfg (..), User (..))
+import Simplex.Chat.Types (Profile, User (..))
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import Simplex.Messaging.Client (ProtocolClientConfig (..), defaultNetworkConfig)
@@ -51,7 +51,7 @@ testOpts =
     { dbFilePrefix = undefined,
       dbKey = "",
       -- dbKey = "this is a pass-phrase to encrypt the database",
-      smpServers = [ServerCfg "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:5001" False Nothing True],
+      smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:5001"],
       networkConfig = defaultNetworkConfig,
       logConnections = False,
       logServerHosts = False,
@@ -59,6 +59,7 @@ testOpts =
       chatCmd = "",
       chatCmdDelay = 3,
       chatServerPort = Nothing,
+      allowInstantFiles = True,
       maintenance = False
     }
 

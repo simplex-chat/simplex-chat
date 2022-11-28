@@ -31,12 +31,20 @@ struct ChatItemView: View {
         case .sndGroupEvent: eventItemView()
         case .rcvConnEvent: eventItemView()
         case .sndConnEvent: eventItemView()
+        case let .rcvChatFeature(feature, enabled): chatFeatureView(feature, enabled.iconColor)
+        case let .sndChatFeature(feature, enabled): chatFeatureView(feature, enabled.iconColor)
+        case let .rcvGroupFeature(feature, preference): chatFeatureView(feature, preference.enable.iconColor)
+        case let .sndGroupFeature(feature, preference): chatFeatureView(feature, preference.enable.iconColor)
+        case let .rcvChatFeatureRejected(feature): chatFeatureView(feature, .red)
         }
     }
 
     @ViewBuilder private func contentItemView() -> some View {
         if (chatItem.quotedItem == nil && chatItem.file == nil && isShortEmoji(chatItem.content.text)) {
             EmojiItemView(chatItem: chatItem)
+        } else if chatItem.quotedItem == nil && chatItem.content.text.isEmpty,
+                  case let .voice(_, duration) = chatItem.content.msgContent {
+            CIVoiceView(chatItem: chatItem, recordingFile: chatItem.file, duration: duration)
         } else {
             FramedItemView(chatInfo: chatInfo, chatItem: chatItem, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy)
         }
@@ -56,6 +64,10 @@ struct ChatItemView: View {
 
     private func eventItemView() -> some View {
         CIEventView(chatItem: chatItem)
+    }
+
+    private func chatFeatureView(_ feature: Feature, _ iconColor: Color) -> some View {
+        CIChatFeatureView(chatItem: chatItem, feature: feature, iconColor: iconColor)
     }
 }
 

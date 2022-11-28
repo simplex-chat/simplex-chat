@@ -13,9 +13,13 @@ import OSLog
 let logger = Logger()
 
 // maximum image file size to be auto-accepted
-public let maxImageSize: Int64 = 236700
+public let MAX_IMAGE_SIZE: Int64 = 236700
 
-public let maxFileSize: Int64 = 8000000
+public let MAX_FILE_SIZE: Int64 = 8000000
+
+public let MAX_VOICE_MESSAGE_LENGTH = TimeInterval(30)
+
+public let MAX_VOICE_MESSAGE_SIZE_INLINE_SEND: Int64 = 94680
 
 private let CHAT_DB: String = "_chat.db"
 
@@ -73,7 +77,7 @@ public func deleteAppFiles() {
     }
 }
 
-func fileSize(_ url: URL) -> Int? { // in bytes
+public func fileSize(_ url: URL) -> Int? { // in bytes
     do {
         let val = try url.resourceValues(forKeys: [.totalFileAllocatedSizeKey, .fileAllocatedSizeKey])
         return val.totalFileAllocatedSize ?? val.fileAllocatedSize
@@ -157,15 +161,22 @@ public func getAppFilesDirectory() -> URL {
     getAppDirectory().appendingPathComponent("app_files", isDirectory: true)
 }
 
-func getAppFilePath(_ fileName: String) -> URL {
+public func getAppFilePath(_ fileName: String) -> URL {
     getAppFilesDirectory().appendingPathComponent(fileName)
 }
 
-public func getLoadedFilePath(_ file: CIFile?) -> String? {
+public func getLoadedFileName(_ file: CIFile?) -> String? {
     if let file = file,
        file.loaded,
-       let savedFile = file.filePath {
-        return getAppFilePath(savedFile).path
+       let fileName = file.filePath {
+        return fileName
+    }
+    return nil
+}
+
+public func getLoadedFilePath(_ file: CIFile?) -> String? {
+    if let fileName = getLoadedFileName(file) {
+        return getAppFilePath(fileName).path
     }
     return nil
 }
@@ -197,12 +208,17 @@ public func saveFileFromURL(_ url: URL) -> String? {
 }
 
 public func saveImage(_ uiImage: UIImage) -> String? {
-    if let imageDataResized = resizeImageToDataSize(uiImage, maxDataSize: maxImageSize) {
-        let timestamp = Date().getFormattedDate("yyyyMMdd_HHmmss")
-        let fileName = uniqueCombine("IMG_\(timestamp).jpg")
+    if let imageDataResized = resizeImageToDataSize(uiImage, maxDataSize: MAX_IMAGE_SIZE) {
+        let fileName = generateNewFileName("IMG", "jpg")
         return saveFile(imageDataResized, fileName)
     }
     return nil
+}
+
+public func generateNewFileName(_ prefix: String, _ ext: String) -> String {
+    let timestamp = Date().getFormattedDate("yyyyMMdd_HHmmss")
+    let fileName = uniqueCombine("\(prefix)_\(timestamp).\(ext)")
+    return fileName
 }
 
 extension Date {

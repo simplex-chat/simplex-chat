@@ -77,12 +77,14 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
       val image = provider.getImage(index)
       if (image == null) {
         // No such image. Let's shrink total pages size or scroll to start of the list of pages to remove blank page automatically
-        scope.launch {
-          when (settledCurrentPage) {
-            index - 1 -> provider.totalImagesSize.value = settledCurrentPage + 1
-            index + 1 -> {
-              provider.scrollToStart()
-              pagerState.scrollToPage(0)
+        SideEffect {
+          scope.launch {
+            when (settledCurrentPage) {
+              index - 1 -> provider.totalImagesSize.value = settledCurrentPage + 1
+              index + 1 -> {
+                provider.scrollToStart()
+                pagerState.scrollToPage(0)
+              }
             }
           }
         }

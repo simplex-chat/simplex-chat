@@ -35,7 +35,7 @@ import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
-import chat.simplex.app.views.usersettings.SettingsActionItem
+import chat.simplex.app.views.usersettings.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 
@@ -61,6 +61,11 @@ fun ChatInfoView(
       developerTools,
       onLocalAliasChanged = {
         setContactAlias(chat.chatInfo.apiId, it, chatModel)
+      },
+      openPreferences = {
+        ModalManager.shared.showModal(true) {
+          ContactPreferencesView(chatModel, chatModel.currentUser.value ?: return@showModal, contact.contactId)
+        }
       },
       deleteContact = { deleteContactDialog(chat.chatInfo, chatModel, close) },
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) },
@@ -117,6 +122,7 @@ fun ChatInfoLayout(
   localAlias: String,
   developerTools: Boolean,
   onLocalAliasChanged: (String) -> Unit,
+  openPreferences: () -> Unit,
   deleteContact: () -> Unit,
   clearChat: () -> Unit,
   switchContactAddress: () -> Unit,
@@ -144,12 +150,15 @@ fun ChatInfoLayout(
     }
 
     SectionSpacer()
+    SectionView {
+      ContactPreferencesButton(openPreferences)
+    }
+
+    SectionSpacer()
 
     SectionView(title = stringResource(R.string.conn_stats_section_title_servers)) {
-      if (developerTools) {
-        SwitchAddressButton(switchContactAddress)
-        SectionDivider()
-      }
+      SwitchAddressButton(switchContactAddress)
+      SectionDivider()
       if (connStats != null) {
         SectionItemView({
           AlertManager.shared.showAlertMsg(
@@ -328,6 +337,15 @@ fun SwitchAddressButton(onClick: () -> Unit) {
 }
 
 @Composable
+private fun ContactPreferencesButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    Icons.Outlined.ToggleOn,
+    stringResource(R.string.contact_preferences),
+    click = onClick
+  )
+}
+
+@Composable
 fun ClearChatButton(onClick: () -> Unit) {
   SettingsActionItem(
     Icons.Outlined.Restore,
@@ -386,6 +404,7 @@ fun PreviewChatInfoLayout() {
       connStats = null,
       onLocalAliasChanged = {},
       customUserProfile = null,
+      openPreferences = {},
       deleteContact = {},
       clearChat = {},
       switchContactAddress = {},

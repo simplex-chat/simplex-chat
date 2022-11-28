@@ -455,6 +455,29 @@ fun ComposeView(
     composeState.value = composeState.value.copy(preview = ComposePreview.VoicePreview(filePath, durationMs, finished))
   }
 
+  fun allowVoiceToContact() {
+    val contact = (chat.chatInfo as ChatInfo.Direct?)?.contact ?: return
+    val featuresAllowed = contactUserPrefsToFeaturesAllowed(contact.mergedPreferences)
+    withApi {
+      val prefs = contactFeaturesAllowedToPrefs(featuresAllowed).copy(voice = ChatPreference(FeatureAllowed.YES))
+      val toContact = chatModel.controller.apiSetContactPrefs(contact.contactId, prefs)
+      if (toContact != null) {
+        chatModel.updateContact(toContact)
+      }
+    }
+  }
+  fun showDisabledVoiceAlert() {
+    AlertManager.shared.showAlertMsg(
+      title = generalGetString(R.string.voice_messages_prohibited),
+      text = generalGetString(
+        if (chat.chatInfo is ChatInfo.Direct)
+          R.string.ask_your_contact_to_enable_voice
+        else
+          R.string.only_group_owners_can_enable_voice
+      )
+    )
+  }
+
   fun cancelLinkPreview() {
     val uri = composeState.value.linkPreview?.uri
     if (uri != null) {
@@ -518,6 +541,9 @@ fun ComposeView(
   }
 
   LaunchedEffect(chatModel.sharedContent.value) {
+    // Important. If it's null, don't do anything, chat is not closed yet but will be after a moment
+    if (chatModel.chatId.value == null) return@LaunchedEffect
+
     when (val shared = chatModel.sharedContent.value) {
       is SharedContent.Text -> onMessageChange(shared.text)
       is SharedContent.Images -> processPickedImage(shared.uris, shared.text)
@@ -549,15 +575,35 @@ fun ComposeView(
             .clip(CircleShape)
         )
       }
+      val allowedVoiceByPrefs = remember(chat.chatInfo) {
+        when (chat.chatInfo) {
+          is ChatInfo.Direct -> chat.chatInfo.contact.mergedPreferences.voice.enabled.forUser
+          is ChatInfo.Group -> chat.chatInfo.groupInfo.fullGroupPreferences.voice.enable == GroupFeatureEnabled.ON
+          else -> false
+        }
+      }
+      val needToAllowVoiceToContact = remember(chat.chatInfo) {
+        when (chat.chatInfo) {
+          is ChatInfo.Direct -> with(chat.chatInfo.contact.mergedPreferences.voice) {
+            ((userPreference as? ContactUserPref.User)?.preference?.allow == FeatureAllowed.NO || (userPreference as? ContactUserPref.Contact)?.preference?.allow == FeatureAllowed.NO) &&
+                contactPreference.allow == FeatureAllowed.YES
+          }
+          else -> false
+        }
+      }
       SendMsgView(
         composeState,
-        allowVoiceRecord = true,
+        showVoiceRecordIcon = true,
+        allowedVoiceByPrefs = allowedVoiceByPrefs,
+        needToAllowVoiceToContact = needToAllowVoiceToContact,
         sendMessage = {
           sendMessage()
           resetLinkPreview()
         },
         ::onMessageChange,
         ::onAudioAdded,
+        ::allowVoiceToContact,
+        ::showDisabledVoiceAlert,
         textStyle
       )
     }

@@ -32,6 +32,10 @@ fun NetworkAndServersView(
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   val onionHosts = remember { mutableStateOf(netCfg.onionHosts) }
 
+  LaunchedEffect(Unit) {
+    chatModel.userSMPServersUnsaved.value = null
+  }
+
   NetworkAndServersLayout(
     developerTools = developerTools,
     networkUseSocksProxy = networkUseSocksProxy,
@@ -112,7 +116,7 @@ fun NetworkAndServersView(
   ) {
     AppBarTitle(stringResource(R.string.network_and_servers))
     SectionView(generalGetString(R.string.settings_section_title_messages)) {
-      SettingsActionItem(Icons.Outlined.Dns, stringResource(R.string.smp_servers), showModal { SMPServersView(it) })
+      SettingsActionItem(Icons.Outlined.Dns, stringResource(R.string.smp_servers), showSettingsModal { SMPServersView(it) })
       SectionDivider()
       SectionItemView {
         UseSocksProxySwitch(networkUseSocksProxy, toggleSocksProxy)

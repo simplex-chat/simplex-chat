@@ -70,10 +70,8 @@ struct GroupMemberInfoView: View {
 
                     Section("Servers") {
                         // TODO network connection status
-                        if developerTools {
-                            Button("Change receiving address (BETA)") {
-                                alert = .switchAddressAlert
-                            }
+                        Button("Change receiving address") {
+                            alert = .switchAddressAlert
                         }
                         if let connStats = connectionStats {
                             smpServers("Receiving via", connStats.rcvServers)
@@ -131,7 +129,9 @@ struct GroupMemberInfoView: View {
             }
             if let chat = chat {
                 dismissAllSheets(animated: true)
-                chatModel.chatId = chat.id
+                DispatchQueue.main.async {
+                    chatModel.chatId = chat.id
+                }
             }
         } label: {
             Label("Send direct message", systemImage: "message")

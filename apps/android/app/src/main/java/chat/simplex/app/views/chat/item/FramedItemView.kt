@@ -5,8 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.InsertDriveFile
-import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +39,7 @@ fun FramedItemView(
   uriHandler: UriHandler? = null,
   imageProvider: (() -> ImageGalleryProvider)? = null,
   showMember: Boolean = false,
+  linkMode: SimplexLinkMode,
   showMenu: MutableState<Boolean>,
   receiveFile: (Long) -> Unit,
   onLinkLongClick: (link: String) -> Unit = {},
@@ -57,13 +57,10 @@ fun FramedItemView(
       Modifier.padding(vertical = 6.dp, horizontal = 12.dp),
       contentAlignment = Alignment.TopStart
     ) {
-      val text = if (qi.content is MsgContent.MCVoice && qi.text.isEmpty())
-        qi.content.toTextWithDuration(true)
-      else
-        qi.text
       MarkdownText(
-        text, qi.formattedText, sender = qi.sender(membership()), senderBold = true, maxLines = 3,
-        style = TextStyle(fontSize = 15.sp, color = MaterialTheme.colors.onSurface)
+        qi.text, qi.formattedText, sender = qi.sender(membership()), senderBold = true, maxLines = 3,
+        style = TextStyle(fontSize = 15.sp, color = MaterialTheme.colors.onSurface),
+        linkMode = linkMode
       )
     }
   }
@@ -97,7 +94,7 @@ fun FramedItemView(
             ciQuotedMsgView(qi)
           }
           Icon(
-            if (qi.content is MsgContent.MCFile) Icons.Filled.InsertDriveFile else Icons.Filled.PlayArrow,
+            if (qi.content is MsgContent.MCFile) Icons.Filled.InsertDriveFile else Icons.Filled.Mic,
             if (qi.content is MsgContent.MCFile) stringResource(R.string.icon_descr_file) else stringResource(R.string.voice_message),
             Modifier
               .padding(top = 6.dp, end = 4.dp)
@@ -110,7 +107,16 @@ fun FramedItemView(
     }
   }
 
+  @Composable
+  fun ciFileView(ci: ChatItem, text: String) {
+    CIFileView(ci.file, ci.meta.itemEdited, receiveFile)
+    if (text != "") {
+      CIMarkdownText(ci, showMember, linkMode = linkMode, uriHandler)
+    }
+  }
+
   val transparentBackground = (ci.content.msgContent is MsgContent.MCImage || ci.content.msgContent is MsgContent.MCVoice) && ci.content.text.isEmpty() && ci.quotedItem == null
+
   Box(Modifier
     .clip(RoundedCornerShape(18.dp))
     .background(
@@ -144,26 +150,27 @@ fun FramedItemView(
                 if (mc.text == "") {
                   metaColor = Color.White
                 } else {
-                  CIMarkdownText(ci, showMember, uriHandler)
+                  CIMarkdownText(ci, showMember, linkMode, uriHandler)
                 }
               }
               is MsgContent.MCVoice -> {
-                CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, mc.text != "" || ci.quotedItem != null, ci, metaColor)
+                CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, mc.text != "" || ci.quotedItem != null, ci, metaColor, longClick = { onLinkLongClick("") })
                 if (mc.text != "") {
-                  CIMarkdownText(ci, showMember, uriHandler)
+                  CIMarkdownText(ci, showMember, linkMode, uriHandler)
                 }
               }
-              is MsgContent.MCFile -> {
-                CIFileView(ci.file, ci.meta.itemEdited, receiveFile)
-                if (mc.text != "") {
-                  CIMarkdownText(ci, showMember, uriHandler)
+              is MsgContent.MCFile -> ciFileView(ci, mc.text)
+              is MsgContent.MCUnknown ->
+                if (ci.file == null) {
+                  CIMarkdownText(ci, showMember, linkMode, uriHandler, onLinkLongClick)
+                } else {
+                  ciFileView(ci, mc.text)
                 }
-              }
               is MsgContent.MCLink -> {
                 ChatItemLinkView(mc.preview)
-                CIMarkdownText(ci, showMember, uriHandler, onLinkLongClick)
+                CIMarkdownText(ci, showMember, linkMode, uriHandler, onLinkLongClick)
               }
-              else -> CIMarkdownText(ci, showMember, uriHandler, onLinkLongClick)
+              else -> CIMarkdownText(ci, showMember, linkMode, uriHandler, onLinkLongClick)
             }
           }
         }
@@ -181,13 +188,14 @@ fun FramedItemView(
 fun CIMarkdownText(
   ci: ChatItem,
   showMember: Boolean,
+  linkMode: SimplexLinkMode,
   uriHandler: UriHandler?,
   onLinkLongClick: (link: String) -> Unit = {}
 ) {
   Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
     MarkdownText(
       ci.content.text, ci.formattedText, if (showMember) ci.memberDisplayName else null,
-      metaText = ci.timestampText, edited = ci.meta.itemEdited,
+      metaText = ci.timestampText, edited = ci.meta.itemEdited, linkMode = linkMode,
       uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick
     )
   }
@@ -238,6 +246,7 @@ fun PreviewTextItemViewSnd(@PreviewParameter(EditedProvider::class) edited: Bool
       ChatItem.getSampleData(
         1, CIDirection.DirectSnd(), Clock.System.now(), "hello", itemEdited = edited,
       ),
+      linkMode = SimplexLinkMode.DESCRIPTION,
       showMenu = showMenu,
       receiveFile = {}
     )
@@ -254,6 +263,7 @@ fun PreviewTextItemViewRcv(@PreviewParameter(EditedProvider::class) edited: Bool
       ChatItem.getSampleData(
         1, CIDirection.DirectRcv(), Clock.System.now(), "hello", itemEdited = edited
       ),
+      linkMode = SimplexLinkMode.DESCRIPTION,
       showMenu = showMenu,
       receiveFile = {}
     )
@@ -274,6 +284,7 @@ fun PreviewTextItemViewLong(@PreviewParameter(EditedProvider::class) edited: Boo
         "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
         itemEdited = edited
       ),
+      linkMode = SimplexLinkMode.DESCRIPTION,
       showMenu = showMenu,
       receiveFile = {}
     )
@@ -295,6 +306,7 @@ fun PreviewTextItemViewQuote(@PreviewParameter(EditedProvider::class) edited: Bo
         quotedItem = CIQuote.getSample(1, Clock.System.now(), "hi", chatDir = CIDirection.DirectRcv()),
         itemEdited = edited
       ),
+      linkMode = SimplexLinkMode.DESCRIPTION,
       showMenu = showMenu,
       receiveFile = {}
     )
@@ -316,6 +328,7 @@ fun PreviewTextItemViewEmoji(@PreviewParameter(EditedProvider::class) edited: Bo
         quotedItem = CIQuote.getSample(1, Clock.System.now(), "Lorem ipsum dolor sit amet", chatDir = CIDirection.DirectRcv()),
         itemEdited = edited
       ),
+      linkMode = SimplexLinkMode.DESCRIPTION,
       showMenu = showMenu,
       receiveFile = {}
     )
@@ -344,6 +357,7 @@ fun PreviewQuoteWithTextAndImage(@PreviewParameter(EditedProvider::class) edited
         quotedItem = ciQuote,
         itemEdited = edited
       ),
+      linkMode = SimplexLinkMode.DESCRIPTION,
       showMenu = showMenu,
       receiveFile = {}
     )
@@ -372,6 +386,7 @@ fun PreviewQuoteWithLongTextAndImage(@PreviewParameter(EditedProvider::class) ed
         quotedItem = ciQuote,
         itemEdited = edited
       ),
+      linkMode = SimplexLinkMode.DESCRIPTION,
       showMenu = showMenu,
       receiveFile = {}
     )
@@ -399,6 +414,7 @@ fun PreviewQuoteWithLongTextAndFile(@PreviewParameter(EditedProvider::class) edi
         quotedItem = ciQuote,
         itemEdited = edited
       ),
+      linkMode = SimplexLinkMode.DESCRIPTION,
       showMenu = showMenu,
       receiveFile = {}
     )

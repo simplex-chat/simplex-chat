@@ -12,9 +12,13 @@ import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Bolt
+import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.KeyboardVoice
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -34,7 +38,7 @@ import kotlinx.datetime.Instant
 import kotlinx.serialization.*
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
-import kotlin.concurrent.thread
+import java.util.Date
 
 typealias ChatCtrl = Long
 
@@ -60,6 +64,16 @@ enum class CallOnLockScreen {
   }
 }
 
+enum class SimplexLinkMode {
+  DESCRIPTION,
+  FULL,
+  BROWSER;
+
+  companion object {
+    val default = SimplexLinkMode.DESCRIPTION
+  }
+}
+
 class AppPreferences(val context: Context) {
   private val sharedPreferences: SharedPreferences = context.getSharedPreferences(SHARED_PREFS_ID, Context.MODE_PRIVATE)
 
@@ -74,7 +88,7 @@ class AppPreferences(val context: Context) {
   val autoRestartWorkerVersion = mkIntPreference(SHARED_PREFS_AUTO_RESTART_WORKER_VERSION, 0)
   val webrtcPolicyRelay = mkBoolPreference(SHARED_PREFS_WEBRTC_POLICY_RELAY, true)
   private val _callOnLockScreen = mkStrPreference(SHARED_PREFS_WEBRTC_CALLS_ON_LOCK_SCREEN, CallOnLockScreen.default.name)
-  val callOnLockScreen: Preference<CallOnLockScreen> = Preference(
+  val callOnLockScreen: SharedPreference<CallOnLockScreen> = SharedPreference(
     get = fun(): CallOnLockScreen {
       val value = _callOnLockScreen.get() ?: return CallOnLockScreen.default
       return try {
@@ -88,9 +102,22 @@ class AppPreferences(val context: Context) {
   val performLA = mkBoolPreference(SHARED_PREFS_PERFORM_LA, false)
   val laNoticeShown = mkBoolPreference(SHARED_PREFS_LA_NOTICE_SHOWN, false)
   val webrtcIceServers = mkStrPreference(SHARED_PREFS_WEBRTC_ICE_SERVERS, null)
+  val privacyProtectScreen = mkBoolPreference(SHARED_PREFS_PRIVACY_PROTECT_SCREEN, true)
   val privacyAcceptImages = mkBoolPreference(SHARED_PREFS_PRIVACY_ACCEPT_IMAGES, true)
   val privacyTransferImagesInline = mkBoolPreference(SHARED_PREFS_PRIVACY_TRANSFER_IMAGES_INLINE, false)
   val privacyLinkPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_LINK_PREVIEWS, true)
+  private val _simplexLinkMode = mkStrPreference(SHARED_PREFS_PRIVACY_SIMPLEX_LINK_MODE, SimplexLinkMode.default.name)
+  val simplexLinkMode: SharedPreference<SimplexLinkMode> = SharedPreference(
+    get = fun(): SimplexLinkMode {
+      val value = _simplexLinkMode.get() ?: return SimplexLinkMode.default
+      return try {
+        SimplexLinkMode.valueOf(value)
+      } catch (e: Error) {
+        SimplexLinkMode.default
+      }
+    },
+    set = fun(mode: SimplexLinkMode) { _simplexLinkMode.set(mode.name) }
+  )
   val experimentalCalls = mkBoolPreference(SHARED_PREFS_EXPERIMENTAL_CALLS, false)
   val chatArchiveName = mkStrPreference(SHARED_PREFS_CHAT_ARCHIVE_NAME, null)
   val chatArchiveTime = mkDatePreference(SHARED_PREFS_CHAT_ARCHIVE_TIME, null)
@@ -119,33 +146,33 @@ class AppPreferences(val context: Context) {
   val primaryColor = mkIntPreference(SHARED_PREFS_PRIMARY_COLOR, LightColorPalette.primary.toArgb())
 
   private fun mkIntPreference(prefName: String, default: Int) =
-    Preference(
+    SharedPreference(
       get = fun() = sharedPreferences.getInt(prefName, default),
       set = fun(value) = sharedPreferences.edit().putInt(prefName, value).apply()
     )
 
   private fun mkLongPreference(prefName: String, default: Long) =
-    Preference(
+    SharedPreference(
       get = fun() = sharedPreferences.getLong(prefName, default),
       set = fun(value) = sharedPreferences.edit().putLong(prefName, value).apply()
     )
 
-  private fun mkTimeoutPreference(prefName: String, default: Long, proxyDefault: Long): Preference<Long> {
+  private fun mkTimeoutPreference(prefName: String, default: Long, proxyDefault: Long): SharedPreference<Long> {
     val d = if (networkUseSocksProxy.get()) proxyDefault else default
-    return Preference(
+    return SharedPreference(
       get = fun() = sharedPreferences.getLong(prefName, d),
       set = fun(value) = sharedPreferences.edit().putLong(prefName, value).apply()
     )
   }
 
   private fun mkBoolPreference(prefName: String, default: Boolean) =
-    Preference(
+    SharedPreference(
       get = fun() = sharedPreferences.getBoolean(prefName, default),
       set = fun(value) = sharedPreferences.edit().putBoolean(prefName, value).apply()
     )
 
-  private fun mkStrPreference(prefName: String, default: String?): Preference<String?> =
-    Preference(
+  private fun mkStrPreference(prefName: String, default: String?): SharedPreference<String?> =
+    SharedPreference(
       get = fun() = sharedPreferences.getString(prefName, default),
       set = fun(value) = sharedPreferences.edit().putString(prefName, value).apply()
     )
@@ -154,8 +181,8 @@ class AppPreferences(val context: Context) {
   * Provide `[commit] = true` to save preferences right now, not after some unknown period of time.
   * So in case of a crash this value will be saved 100%
   * */
-  private fun mkDatePreference(prefName: String, default: Instant?, commit: Boolean = false): Preference<Instant?> =
-    Preference(
+  private fun mkDatePreference(prefName: String, default: Instant?, commit: Boolean = false): SharedPreference<Instant?> =
+    SharedPreference(
       get = {
         val pref = sharedPreferences.getString(prefName, default?.toEpochMilliseconds()?.toString())
         pref?.let { Instant.fromEpochMilliseconds(pref.toLong()) }
@@ -178,9 +205,11 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_PERFORM_LA = "PerformLA"
     private const val SHARED_PREFS_LA_NOTICE_SHOWN = "LANoticeShown"
     private const val SHARED_PREFS_WEBRTC_ICE_SERVERS = "WebrtcICEServers"
+    private const val SHARED_PREFS_PRIVACY_PROTECT_SCREEN = "PrivacyProtectScreen"
     private const val SHARED_PREFS_PRIVACY_ACCEPT_IMAGES = "PrivacyAcceptImages"
     private const val SHARED_PREFS_PRIVACY_TRANSFER_IMAGES_INLINE = "PrivacyTransferImagesInline"
     private const val SHARED_PREFS_PRIVACY_LINK_PREVIEWS = "PrivacyLinkPreviews"
+    private const val SHARED_PREFS_PRIVACY_SIMPLEX_LINK_MODE = "PrivacySimplexLinkMode"
     private const val SHARED_PREFS_EXPERIMENTAL_CALLS = "ExperimentalCalls"
     private const val SHARED_PREFS_CHAT_ARCHIVE_NAME = "ChatArchiveName"
     private const val SHARED_PREFS_CHAT_ARCHIVE_TIME = "ChatArchiveTime"
@@ -235,7 +264,9 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         apiSetFilesFolder(getAppFilesDirectory(appContext))
         apiSetIncognito(chatModel.incognito.value)
         chatModel.userAddress.value = apiGetUserAddress()
-        chatModel.userSMPServers.value = getUserSMPServers()
+        val smpServers = getUserSMPServers()
+        chatModel.userSMPServers.value = smpServers?.first
+        chatModel.presetSMPServers.value = smpServers?.second
         chatModel.chatItemTTL.value = getChatItemTTL()
         val chats = apiGetChats()
         chatModel.updateChats(chats)
@@ -425,14 +456,14 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return null
   }
 
-  private suspend fun getUserSMPServers(): List<String>? {
+  private suspend fun getUserSMPServers(): Pair<List<ServerCfg>, List<String>>? {
     val r = sendCmd(CC.GetUserSMPServers())
-    if (r is CR.UserSMPServers) return r.smpServers
+    if (r is CR.UserSMPServers) return r.smpServers to r.presetSMPServers
     Log.e(TAG, "getUserSMPServers bad response: ${r.responseType} ${r.details}")
     return null
   }
 
-  suspend fun setUserSMPServers(smpServers: List<String>): Boolean {
+  suspend fun setUserSMPServers(smpServers: List<ServerCfg>): Boolean {
     val r = sendCmd(CC.SetUserSMPServers(smpServers))
     return when (r) {
       is CR.CmdOk -> true
@@ -443,6 +474,17 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
           generalGetString(R.string.ensure_smp_server_address_are_correct_format_and_unique)
         )
         false
+      }
+    }
+  }
+
+  suspend fun testSMPServer(smpServer: String): SMPTestFailure? {
+    val r = sendCmd(CC.TestSMPServer(smpServer))
+    return when (r) {
+      is CR.SmpTestResult -> r.smpTestFailure
+      else -> {
+        Log.e(TAG, "testSMPServer bad response: ${r.responseType} ${r.details}")
+        throw Exception("testSMPServer bad response: ${r.responseType} ${r.details}")
       }
     }
   }
@@ -622,6 +664,13 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return null
   }
 
+  suspend fun apiSetContactPrefs(contactId: Long, prefs: ChatPreferences): Contact? {
+    val r = sendCmd(CC.ApiSetContactPrefs(contactId, prefs))
+    if (r is CR.ContactPrefsUpdated) return r.toContact
+    Log.e(TAG, "apiSetContactPrefs bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
   suspend fun apiSetContactAlias(contactId: Long, localAlias: String): Contact? {
     val r = sendCmd(CC.ApiSetContactAlias(contactId, localAlias))
     if (r is CR.ContactAliasUpdated) return r.toContact
@@ -633,13 +682,6 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     val r = sendCmd(CC.ApiSetConnectionAlias(connId, localAlias))
     if (r is CR.ConnectionAliasUpdated) return r.toConnection
     Log.e(TAG, "apiSetConnectionAlias bad response: ${r.responseType} ${r.details}")
-    return null
-  }
-
-  suspend fun apiSetContactPrefs(contactId: Long, prefs: ChatPreferences): Contact? {
-    val r = sendCmd(CC.ApiSetContactPrefs(contactId, prefs))
-    if (r is CR.ContactPrefsUpdated) return r.toContact
-    Log.e(TAG, "apiSetContactPrefs bad response: ${r.responseType} ${r.details}")
     return null
   }
 
@@ -780,7 +822,13 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       }
       else -> {
         if (!(networkErrorAlert(r))) {
-          apiErrorAlert("apiReceiveFile", generalGetString(R.string.error_receiving_file), r)
+          if (r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorChat
+            && r.chatError.errorType is ChatErrorType.FileAlreadyReceiving
+          ) {
+            Log.d(TAG, "apiReceiveFile ignoring FileAlreadyReceiving error")
+          } else {
+            apiErrorAlert("apiReceiveFile", generalGetString(R.string.error_receiving_file), r)
+          }
         }
         null
       }
@@ -1014,10 +1062,10 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         val file = cItem.file
         if (cItem.content.msgContent is MsgContent.MCImage && file != null && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV && appPrefs.privacyAcceptImages.get()) {
           withApi { receiveFile(file.fileId) }
-        } else if (cItem.content.msgContent is MsgContent.MCVoice && file != null && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && appPrefs.privacyAcceptImages.get()) {
-          withApi { receiveFile(file.fileId) }
+        } else if (cItem.content.msgContent is MsgContent.MCVoice && file != null && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileSize > MAX_VOICE_SIZE_FOR_SENDING && appPrefs.privacyAcceptImages.get()) {
+          withApi { receiveFile(file.fileId) } // TODO check inlineFileMode != IFMSent
         }
-        if (!cItem.chatDir.sent && !cItem.isCall && !cItem.isMutedMemberEvent && (!isAppOnForeground(appContext) || chatModel.chatId.value != cInfo.id)) {
+        if (cItem.showNotification && (!isAppOnForeground(appContext) || chatModel.chatId.value != cInfo.id)) {
           ntfManager.notifyMessageReceived(cInfo, cItem)
         }
       }
@@ -1433,7 +1481,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   }
 }
 
-class Preference<T>(val get: () -> T, val set: (T) -> Unit)
+class SharedPreference<T>(val get: () -> T, val set: (T) -> Unit)
 
 // ChatCommand
 sealed class CC {
@@ -1465,7 +1513,8 @@ sealed class CC {
   class APIDeleteGroupLink(val groupId: Long): CC()
   class APIGetGroupLink(val groupId: Long): CC()
   class GetUserSMPServers: CC()
-  class SetUserSMPServers(val smpServers: List<String>): CC()
+  class SetUserSMPServers(val smpServers: List<ServerCfg>): CC()
+  class TestSMPServer(val smpServer: String): CC()
   class APISetChatItemTTL(val seconds: Long?): CC()
   class APIGetChatItemTTL: CC()
   class APISetNetworkConfig(val networkConfig: NetCfg): CC()
@@ -1481,10 +1530,10 @@ sealed class CC {
   class ApiClearChat(val type: ChatType, val id: Long): CC()
   class ListContacts: CC()
   class ApiUpdateProfile(val profile: Profile): CC()
+  class ApiSetContactPrefs(val contactId: Long, val prefs: ChatPreferences): CC()
   class ApiParseMarkdown(val text: String): CC()
   class ApiSetContactAlias(val contactId: Long, val localAlias: String): CC()
   class ApiSetConnectionAlias(val connId: Long, val localAlias: String): CC()
-  class ApiSetContactPrefs(val contactId: Long, val prefs: ChatPreferences): CC()
   class CreateMyAddress: CC()
   class DeleteMyAddress: CC()
   class ShowMyAddress: CC()
@@ -1530,8 +1579,9 @@ sealed class CC {
     is APICreateGroupLink -> "/_create link #$groupId"
     is APIDeleteGroupLink -> "/_delete link #$groupId"
     is APIGetGroupLink -> "/_get link #$groupId"
-    is GetUserSMPServers -> "/smp_servers"
-    is SetUserSMPServers -> "/smp_servers ${smpServersStr(smpServers)}"
+    is GetUserSMPServers -> "/smp"
+    is SetUserSMPServers -> "/_smp ${smpServersStr(smpServers)}"
+    is TestSMPServer -> "/smp test $smpServer"
     is APISetChatItemTTL -> "/_ttl ${chatItemTTLStr(seconds)}"
     is APIGetChatItemTTL -> "/ttl"
     is APISetNetworkConfig -> "/_network ${json.encodeToString(networkConfig)}"
@@ -1547,10 +1597,10 @@ sealed class CC {
     is ApiClearChat -> "/_clear chat ${chatRef(type, id)}"
     is ListContacts -> "/contacts"
     is ApiUpdateProfile -> "/_profile ${json.encodeToString(profile)}"
+    is ApiSetContactPrefs -> "/_set prefs @$contactId ${json.encodeToString(prefs)}"
     is ApiParseMarkdown -> "/_parse $text"
     is ApiSetContactAlias -> "/_set alias @$contactId ${localAlias.trim()}"
     is ApiSetConnectionAlias -> "/_set alias :$connId ${localAlias.trim()}"
-    is ApiSetContactPrefs -> "/_set prefs @$contactId ${json.encodeToString(prefs)}"
     is CreateMyAddress -> "/address"
     is DeleteMyAddress -> "/delete_address"
     is ShowMyAddress -> "/show_address"
@@ -1599,6 +1649,7 @@ sealed class CC {
     is APIGetGroupLink -> "apiGetGroupLink"
     is GetUserSMPServers -> "getUserSMPServers"
     is SetUserSMPServers -> "setUserSMPServers"
+    is TestSMPServer -> "testSMPServer"
     is APISetChatItemTTL -> "apiSetChatItemTTL"
     is APIGetChatItemTTL -> "apiGetChatItemTTL"
     is APISetNetworkConfig -> "/apiSetNetworkConfig"
@@ -1614,10 +1665,10 @@ sealed class CC {
     is ApiClearChat -> "apiClearChat"
     is ListContacts -> "listContacts"
     is ApiUpdateProfile -> "updateProfile"
+    is ApiSetContactPrefs -> "apiSetContactPrefs"
     is ApiParseMarkdown -> "apiParseMarkdown"
     is ApiSetContactAlias -> "apiSetContactAlias"
     is ApiSetConnectionAlias -> "apiSetConnectionAlias"
-    is ApiSetContactPrefs -> "apiSetContactPrefs"
     is CreateMyAddress -> "createMyAddress"
     is DeleteMyAddress -> "deleteMyAddress"
     is ShowMyAddress -> "showMyAddress"
@@ -1656,7 +1707,7 @@ sealed class CC {
   companion object {
     fun chatRef(chatType: ChatType, id: Long) = "${chatType.type}${id}"
 
-    fun smpServersStr(smpServers: List<String>) = if (smpServers.isEmpty()) "default" else smpServers.joinToString(separator = ";")
+    fun smpServersStr(smpServers: List<ServerCfg>) = if (smpServers.isEmpty()) "default" else json.encodeToString(SMPServersConfig(smpServers))
   }
 }
 
@@ -1686,6 +1737,147 @@ class ArchiveConfig(val archivePath: String, val disableCompression: Boolean? = 
 
 @Serializable
 class DBEncryptionConfig(val currentKey: String, val newKey: String)
+
+@Serializable
+data class SMPServersConfig(
+  val smpServers: List<ServerCfg>
+)
+
+@Serializable
+data class ServerCfg(
+  val server: String,
+  val preset: Boolean,
+  val tested: Boolean? = null,
+  val enabled: Boolean
+) {
+  @Transient
+  private val createdAt: Date = Date()
+  // val sendEnabled: Boolean // can we potentially want to prevent sending on the servers we use to receive?
+  // Even if we don't see the use case, it's probably better to allow it in the model
+  // In any case, "trusted/known" servers are out of scope of this change
+  val id: String
+    get() = "$server $createdAt"
+
+  val isBlank: Boolean
+    get() = server.isBlank()
+
+  companion object {
+    val empty = ServerCfg(server = "", preset = false, tested = null, enabled = true)
+
+    class SampleData(
+      val preset: ServerCfg,
+      val custom: ServerCfg,
+      val untested: ServerCfg
+    )
+
+    val sampleData = SampleData(
+      preset = ServerCfg(
+        server = "smp://abcd@smp8.simplex.im",
+        preset = true,
+        tested = true,
+        enabled = true
+      ),
+      custom = ServerCfg(
+        server = "smp://abcd@smp9.simplex.im",
+        preset = false,
+        tested = false,
+        enabled = false
+      ),
+      untested = ServerCfg(
+        server = "smp://abcd@smp10.simplex.im",
+        preset = false,
+        tested = null,
+        enabled = true
+      )
+    )
+  }
+}
+
+@Serializable
+enum class SMPTestStep {
+  @SerialName("connect") Connect,
+  @SerialName("createQueue") CreateQueue,
+  @SerialName("secureQueue") SecureQueue,
+  @SerialName("deleteQueue") DeleteQueue,
+  @SerialName("disconnect") Disconnect;
+
+  val text: String get() = when (this) {
+    Connect -> generalGetString(R.string.smp_server_test_connect)
+    CreateQueue -> generalGetString(R.string.smp_server_test_create_queue)
+    SecureQueue -> generalGetString(R.string.smp_server_test_secure_queue)
+    DeleteQueue -> generalGetString(R.string.smp_server_test_delete_queue)
+    Disconnect -> generalGetString(R.string.smp_server_test_disconnect)
+  }
+}
+
+@Serializable
+data class SMPTestFailure(
+  val testStep: SMPTestStep,
+  val testError: AgentErrorType
+) {
+  override fun equals(other: Any?): Boolean {
+    if (other !is SMPTestFailure) return false
+    return other.testStep == this.testStep
+  }
+
+  override fun hashCode(): Int {
+    return testStep.hashCode()
+  }
+
+  val localizedDescription: String get() {
+    val err = String.format(generalGetString(R.string.error_smp_test_failed_at_step), testStep.text)
+    return when  {
+      testError is AgentErrorType.SMP && testError.smpErr is SMPErrorType.AUTH ->
+        err + " " + generalGetString(R.string.error_smp_test_server_auth)
+      testError is AgentErrorType.BROKER && testError.brokerErr is BrokerErrorType.NETWORK ->
+        err + " " + generalGetString(R.string.error_smp_test_certificate)
+      else -> err
+    }
+  }
+}
+
+@Serializable
+data class ServerAddress(
+  val hostnames: List<String>,
+  val port: String,
+  val keyHash: String,
+  val basicAuth: String = ""
+) {
+  val uri: String
+    get() =
+      "smp://${keyHash}${if (basicAuth.isEmpty()) "" else ":$basicAuth"}@${hostnames.joinToString(",")}"
+
+  val valid: Boolean
+    get() = hostnames.isNotEmpty() && hostnames.toSet().size == hostnames.size
+
+  companion object {
+    val empty = ServerAddress(
+      hostnames = emptyList(),
+      port = "",
+      keyHash = "",
+      basicAuth = ""
+    )
+    val sampleData = ServerAddress(
+      hostnames = listOf("smp.simplex.im", "1234.onion"),
+      port = "",
+      keyHash = "LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=",
+      basicAuth = "server_password"
+    )
+
+    fun parseServerAddress(s: String): ServerAddress? {
+      val parsed = chatParseServer(s)
+      return runCatching { json.decodeFromString(ParsedServerAddress.serializer(), parsed) }
+        .onFailure { Log.d(TAG, "parseServerAddress decode error: $it") }
+        .getOrNull()?.serverAddress
+    }
+  }
+}
+
+@Serializable
+data class ParsedServerAddress (
+  var serverAddress: ServerAddress?,
+  var parseError: String
+)
 
 @Serializable
 data class NetCfg(
@@ -1766,29 +1958,300 @@ data class ChatSettings(
 )
 
 @Serializable
-data class ChatPreferences(
-  val voice: ChatPreference? = null
+data class FullChatPreferences(
+  val fullDelete: ChatPreference,
+  val voice: ChatPreference,
 ) {
+
+  fun toPreferences(): ChatPreferences = ChatPreferences(fullDelete = fullDelete, voice = voice)
+
   companion object {
-    val default = ChatPreferences(
-      voice = ChatPreference(allow = PrefAllowed.NO)
-    )
-    val empty = ChatPreferences(
-      voice = null
-    )
+    val sampleData = FullChatPreferences(fullDelete = ChatPreference(allow = FeatureAllowed.NO), voice = ChatPreference(allow = FeatureAllowed.YES))
+  }
+}
+
+@Serializable
+data class ChatPreferences(
+  val fullDelete: ChatPreference? = null,
+  val voice: ChatPreference? = null,
+) {
+
+  companion object {
+    val sampleData = ChatPreferences(fullDelete = ChatPreference(allow = FeatureAllowed.NO), voice = ChatPreference(allow = FeatureAllowed.YES))
   }
 }
 
 @Serializable
 data class ChatPreference(
-  val allow: PrefAllowed
+  val allow: FeatureAllowed
 )
 
 @Serializable
-enum class PrefAllowed {
-  @SerialName("always") ALWAYS,
+data class ContactUserPreferences(
+  val fullDelete: ContactUserPreference,
+  val voice: ContactUserPreference,
+) {
+  companion object {
+    val sampleData = ContactUserPreferences(
+      fullDelete = ContactUserPreference(
+        enabled = FeatureEnabled(forUser = false, forContact = false),
+        userPreference = ContactUserPref.User(preference = ChatPreference(allow = FeatureAllowed.NO)),
+        contactPreference = ChatPreference(allow = FeatureAllowed.NO)
+      ),
+      voice = ContactUserPreference(
+        enabled = FeatureEnabled(forUser = true, forContact = true),
+        userPreference = ContactUserPref.User(preference = ChatPreference(allow = FeatureAllowed.YES)),
+        contactPreference = ChatPreference(allow = FeatureAllowed.YES)
+      )
+    )
+  }
+}
+
+@Serializable
+data class ContactUserPreference(
+  val enabled: FeatureEnabled,
+  val userPreference: ContactUserPref,
+  val contactPreference: ChatPreference,
+)
+
+@Serializable
+data class FeatureEnabled(
+  val forUser: Boolean,
+  val forContact: Boolean
+) {
+  val text: String
+    get() = when {
+      forUser && forContact -> generalGetString(R.string.feature_enabled)
+      forUser -> generalGetString(R.string.feature_enabled_for_you)
+      forContact -> generalGetString(R.string.feature_enabled_for_contact)
+      else -> generalGetString(R.string.feature_off)
+    }
+
+  val iconColor: Color
+    get() = if (forUser) SimplexGreen else if (forContact) WarningYellow else HighOrLowlight
+
+  companion object {
+    fun enabled(user: ChatPreference, contact: ChatPreference): FeatureEnabled =
+      when {
+        user.allow == FeatureAllowed.ALWAYS && contact.allow == FeatureAllowed.NO -> FeatureEnabled(forUser = false, forContact = true)
+        user.allow == FeatureAllowed.NO && contact.allow == FeatureAllowed.ALWAYS -> FeatureEnabled(forUser = true, forContact = false)
+        contact.allow == FeatureAllowed.NO -> FeatureEnabled(forUser = false, forContact = false)
+        user.allow == FeatureAllowed.NO -> FeatureEnabled(forUser = false, forContact = false)
+        else -> FeatureEnabled(forUser = true, forContact = true)
+      }
+  }
+}
+
+@Serializable
+sealed class ContactUserPref {
+  @Serializable @SerialName("contact") data class Contact(val preference: ChatPreference): ContactUserPref() // contact override is set
+  @Serializable @SerialName("user") data class User(val preference: ChatPreference): ContactUserPref() // global user default is used
+}
+
+@Serializable
+enum class Feature {
+  @SerialName("fullDelete") FullDelete,
+  @SerialName("voice") Voice;
+
+  val text: String
+    get() = when(this) {
+      FullDelete -> generalGetString(R.string.full_deletion)
+      Voice -> generalGetString(R.string.voice_messages)
+    }
+
+  val icon: ImageVector
+    get() = when(this) {
+      FullDelete -> Icons.Outlined.DeleteForever
+      Voice -> Icons.Outlined.KeyboardVoice
+    }
+
+  val iconFilled: ImageVector
+    get() = when(this) {
+      FullDelete -> Icons.Filled.DeleteForever
+      Voice -> Icons.Filled.KeyboardVoice
+    }
+
+  fun allowDescription(allowed: FeatureAllowed): String =
+    when (this) {
+      FullDelete -> when (allowed) {
+        FeatureAllowed.ALWAYS -> generalGetString(R.string.allow_your_contacts_irreversibly_delete)
+        FeatureAllowed.YES -> generalGetString(R.string.allow_irreversible_message_deletion_only_if)
+        FeatureAllowed.NO -> generalGetString(R.string.contacts_can_mark_messages_for_deletion)
+      }
+      Voice -> when (allowed) {
+        FeatureAllowed.ALWAYS -> generalGetString(R.string.allow_your_contacts_to_send_voice_messages)
+        FeatureAllowed.YES -> generalGetString(R.string.allow_voice_messages_only_if)
+        FeatureAllowed.NO -> generalGetString(R.string.prohibit_sending_voice_messages)
+      }
+    }
+
+  fun enabledDescription(enabled: FeatureEnabled): String =
+    when (this) {
+      FullDelete -> when {
+        enabled.forUser && enabled.forContact -> generalGetString(R.string.both_you_and_your_contacts_can_delete)
+        enabled.forUser -> generalGetString(R.string.only_you_can_delete_messages)
+        enabled.forContact -> generalGetString(R.string.only_your_contact_can_delete)
+        else -> generalGetString(R.string.message_deletion_prohibited)
+      }
+      Voice -> when {
+        enabled.forUser && enabled.forContact -> generalGetString(R.string.both_you_and_your_contact_can_send_voice)
+        enabled.forUser -> generalGetString(R.string.only_you_can_send_voice)
+        enabled.forContact -> generalGetString(R.string.only_your_contact_can_send_voice)
+        else -> generalGetString(R.string.voice_prohibited_in_this_chat)
+      }
+  }
+
+fun enableGroupPrefDescription(enabled: GroupFeatureEnabled, canEdit: Boolean): String =
+  if (canEdit) {
+    when(this) {
+      FullDelete -> when(enabled) {
+        GroupFeatureEnabled.ON -> generalGetString(R.string.allow_to_delete_messages)
+        GroupFeatureEnabled.OFF -> generalGetString(R.string.prohibit_message_deletion)
+      }
+      Voice -> when(enabled) {
+        GroupFeatureEnabled.ON -> generalGetString(R.string.allow_to_send_voice)
+        GroupFeatureEnabled.OFF -> generalGetString(R.string.prohibit_sending_voice)
+      }
+    }
+  } else {
+    when(this) {
+      FullDelete -> when(enabled) {
+        GroupFeatureEnabled.ON -> generalGetString(R.string.group_members_can_delete)
+        GroupFeatureEnabled.OFF -> generalGetString(R.string.message_deletion_prohibited_in_chat)
+      }
+      Voice -> when(enabled) {
+        GroupFeatureEnabled.ON -> generalGetString(R.string.group_members_can_send_voice)
+        GroupFeatureEnabled.OFF -> generalGetString(R.string.voice_messages_are_prohibited)
+      }
+    }
+  }
+}
+
+@Serializable
+sealed class ContactFeatureAllowed {
+  @Serializable @SerialName("userDefault") data class UserDefault(val default: FeatureAllowed): ContactFeatureAllowed()
+  @Serializable @SerialName("always") object Always: ContactFeatureAllowed()
+  @Serializable @SerialName("yes") object Yes: ContactFeatureAllowed()
+  @Serializable @SerialName("no") object No: ContactFeatureAllowed()
+
+  companion object {
+    fun values(def: FeatureAllowed): List<ContactFeatureAllowed> = listOf(UserDefault(def), Always, Yes, No)
+  }
+
+  val allowed: FeatureAllowed
+    get() = when (this) {
+      is UserDefault -> this.default
+      is Always -> FeatureAllowed.ALWAYS
+      is Yes -> FeatureAllowed.YES
+      is No -> FeatureAllowed.NO
+    }
+  val text: String
+    get() = when (this) {
+      is UserDefault -> String.format(generalGetString(R.string.chat_preferences_default), default.text)
+      is Always -> generalGetString(R.string.chat_preferences_always)
+      is Yes -> generalGetString(R.string.chat_preferences_yes)
+      is No -> generalGetString(R.string.chat_preferences_no)
+    }
+}
+
+data class ContactFeaturesAllowed(
+  val fullDelete: ContactFeatureAllowed,
+  val voice: ContactFeatureAllowed
+) {
+  companion object {
+    val sampleData = ContactFeaturesAllowed(
+      fullDelete = ContactFeatureAllowed.UserDefault(FeatureAllowed.NO),
+      voice = ContactFeatureAllowed.UserDefault(FeatureAllowed.YES)
+    )
+  }
+}
+
+fun contactUserPrefsToFeaturesAllowed(contactUserPreferences: ContactUserPreferences): ContactFeaturesAllowed =
+  ContactFeaturesAllowed(
+    fullDelete = contactUserPrefToFeatureAllowed(contactUserPreferences.fullDelete),
+    voice = contactUserPrefToFeatureAllowed(contactUserPreferences.voice)
+  )
+
+fun contactUserPrefToFeatureAllowed(contactUserPreference: ContactUserPreference): ContactFeatureAllowed =
+  when (val pref = contactUserPreference.userPreference) {
+    is ContactUserPref.User -> ContactFeatureAllowed.UserDefault(pref.preference.allow)
+    is ContactUserPref.Contact -> when (pref.preference.allow) {
+      FeatureAllowed.ALWAYS -> ContactFeatureAllowed.Always
+      FeatureAllowed.YES -> ContactFeatureAllowed.Yes
+      FeatureAllowed.NO -> ContactFeatureAllowed.No
+    }
+  }
+
+fun contactFeaturesAllowedToPrefs(contactFeaturesAllowed: ContactFeaturesAllowed): ChatPreferences =
+  ChatPreferences(
+    fullDelete = contactFeatureAllowedToPref(contactFeaturesAllowed.fullDelete),
+    voice = contactFeatureAllowedToPref(contactFeaturesAllowed.voice)
+  )
+
+fun contactFeatureAllowedToPref(contactFeatureAllowed: ContactFeatureAllowed): ChatPreference? =
+  when(contactFeatureAllowed) {
+    is ContactFeatureAllowed.UserDefault -> null
+    is ContactFeatureAllowed.Always -> ChatPreference(allow = FeatureAllowed.ALWAYS)
+    is ContactFeatureAllowed.Yes -> ChatPreference(allow = FeatureAllowed.YES)
+    is ContactFeatureAllowed.No -> ChatPreference(allow = FeatureAllowed.NO)
+  }
+
+@Serializable
+enum class FeatureAllowed {
   @SerialName("yes") YES,
-  @SerialName("no") NO
+  @SerialName("no") NO,
+  @SerialName("always") ALWAYS;
+
+  val text: String
+    get() = when(this) {
+      ALWAYS -> generalGetString(R.string.chat_preferences_always)
+      YES -> generalGetString(R.string.chat_preferences_yes)
+      NO -> generalGetString(R.string.chat_preferences_no)
+    }
+}
+
+@Serializable
+data class FullGroupPreferences(
+  val fullDelete: GroupPreference,
+  val voice: GroupPreference
+) {
+  fun toGroupPreferences(): GroupPreferences =
+    GroupPreferences(fullDelete = fullDelete, voice = voice)
+
+  companion object {
+    val sampleData = FullGroupPreferences(fullDelete = GroupPreference(enable = GroupFeatureEnabled.OFF), voice = GroupPreference(enable = GroupFeatureEnabled.ON))
+  }
+}
+
+@Serializable
+data class GroupPreferences(
+  val fullDelete: GroupPreference?,
+  val voice: GroupPreference?
+) {
+  companion object {
+    val sampleData = GroupPreferences(fullDelete = GroupPreference(enable = GroupFeatureEnabled.OFF), voice = GroupPreference(enable = GroupFeatureEnabled.ON))
+  }
+}
+
+@Serializable
+data class GroupPreference(
+  val enable: GroupFeatureEnabled
+)
+
+@Serializable
+enum class GroupFeatureEnabled {
+  @SerialName("on") ON,
+  @SerialName("off") OFF;
+
+  val text: String
+    get() = when (this) {
+      ON -> generalGetString(R.string.chat_preferences_on)
+      OFF -> generalGetString(R.string.chat_preferences_off)
+    }
+
+  val iconColor: Color
+    get() = if (this == ON) SimplexGreen else HighOrLowlight
+
 }
 
 val json = Json {
@@ -1828,7 +2291,8 @@ sealed class CR {
   @Serializable @SerialName("chatStopped") class ChatStopped: CR()
   @Serializable @SerialName("apiChats") class ApiChats(val chats: List<Chat>): CR()
   @Serializable @SerialName("apiChat") class ApiChat(val chat: Chat): CR()
-  @Serializable @SerialName("userSMPServers") class UserSMPServers(val smpServers: List<String>): CR()
+  @Serializable @SerialName("userSMPServers") class UserSMPServers(val smpServers: List<ServerCfg>, val presetSMPServers: List<String>): CR()
+  @Serializable @SerialName("smpTestResult") class SmpTestResult(val smpTestFailure: SMPTestFailure? = null): CR()
   @Serializable @SerialName("chatItemTTL") class ChatItemTTL(val chatItemTTL: Long? = null): CR()
   @Serializable @SerialName("networkConfig") class NetworkConfig(val networkConfig: NetCfg): CR()
   @Serializable @SerialName("contactInfo") class ContactInfo(val contact: Contact, val connectionStats: ConnectionStats, val customUserProfile: Profile? = null): CR()
@@ -1843,7 +2307,7 @@ sealed class CR {
   @Serializable @SerialName("userProfileUpdated") class UserProfileUpdated(val fromProfile: Profile, val toProfile: Profile): CR()
   @Serializable @SerialName("contactAliasUpdated") class ContactAliasUpdated(val toContact: Contact): CR()
   @Serializable @SerialName("connectionAliasUpdated") class ConnectionAliasUpdated(val toConnection: PendingContactConnection): CR()
-  @Serializable @SerialName("contactPrefsUpdated") class ContactPrefsUpdated(val toContact: Contact): CR()
+  @Serializable @SerialName("contactPrefsUpdated") class ContactPrefsUpdated(val fromContact: Contact, val toContact: Contact): CR()
   @Serializable @SerialName("apiParsedMarkdown") class ParsedMarkdown(val formattedText: List<FormattedText>? = null): CR()
   @Serializable @SerialName("userContactLink") class UserContactLink(val contactLink: UserContactLinkRec): CR()
   @Serializable @SerialName("userContactLinkUpdated") class UserContactLinkUpdated(val contactLink: UserContactLinkRec): CR()
@@ -1926,6 +2390,7 @@ sealed class CR {
     is ApiChats -> "apiChats"
     is ApiChat -> "apiChat"
     is UserSMPServers -> "userSMPServers"
+    is SmpTestResult -> "smpTestResult"
     is ChatItemTTL -> "chatItemTTL"
     is NetworkConfig -> "networkConfig"
     is ContactInfo -> "contactInfo"
@@ -2020,7 +2485,8 @@ sealed class CR {
     is ChatStopped -> noDetails()
     is ApiChats -> json.encodeToString(chats)
     is ApiChat -> json.encodeToString(chat)
-    is UserSMPServers -> json.encodeToString(smpServers)
+    is UserSMPServers -> "$smpServers: ${json.encodeToString(smpServers)}\n$presetSMPServers: ${json.encodeToString(presetSMPServers)}"
+    is SmpTestResult -> json.encodeToString(smpTestFailure)
     is ChatItemTTL -> json.encodeToString(chatItemTTL)
     is NetworkConfig -> json.encodeToString(networkConfig)
     is ContactInfo -> "contact: ${json.encodeToString(contact)}\nconnectionStats: ${json.encodeToString(connectionStats)}"
@@ -2035,7 +2501,7 @@ sealed class CR {
     is UserProfileUpdated -> json.encodeToString(toProfile)
     is ContactAliasUpdated -> json.encodeToString(toContact)
     is ConnectionAliasUpdated -> json.encodeToString(toConnection)
-    is ContactPrefsUpdated -> json.encodeToString(toContact)
+    is ContactPrefsUpdated -> "fromContact: $fromContact\ntoContact: \n${json.encodeToString(toContact)}"
     is ParsedMarkdown -> json.encodeToString(formattedText)
     is UserContactLink -> contactLink.responseDetails
     is UserContactLinkUpdated -> contactLink.responseDetails
@@ -2178,10 +2644,12 @@ sealed class ChatErrorType {
   val string: String get() = when (this) {
     is NoActiveUser -> "noActiveUser"
     is InvalidConnReq -> "invalidConnReq"
+    is FileAlreadyReceiving -> "fileAlreadyReceiving"
     is СommandError -> "commandError $message"
   }
   @Serializable @SerialName("noActiveUser") class NoActiveUser: ChatErrorType()
   @Serializable @SerialName("invalidConnReq") class InvalidConnReq: ChatErrorType()
+  @Serializable @SerialName("fileAlreadyReceiving") class FileAlreadyReceiving: ChatErrorType()
   @Serializable @SerialName("commandError") class СommandError(val message: String): ChatErrorType()
 }
 

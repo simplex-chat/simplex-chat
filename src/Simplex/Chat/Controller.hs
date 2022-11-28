@@ -81,16 +81,18 @@ data InlineFilesConfig = InlineFilesConfig
   { offerChunks :: Integer,
     sendChunks :: Integer,
     totalSendChunks :: Integer,
-    receiveChunks :: Integer
+    receiveChunks :: Integer,
+    receiveInstant :: Bool
   }
 
 defaultInlineFilesConfig :: InlineFilesConfig
 defaultInlineFilesConfig =
   InlineFilesConfig
     { offerChunks = 15, -- max when chunks are offered / received with the option - limited to 255 on the encoding level
-      sendChunks = 0, -- max per file when chunks will be sent inline without acceptance
+      sendChunks = 6, -- max per file when chunks will be sent inline without acceptance
       totalSendChunks = 30, -- max per conversation when chunks will be sent inline without acceptance
-      receiveChunks = 6 -- max when chunks are accepted
+      receiveChunks = 8, -- max when chunks are accepted
+      receiveInstant = True -- allow receiving instant files, within receiveChunks limit
     }
 
 data ActiveTo = ActiveNone | ActiveC ContactName | ActiveG GroupName
@@ -248,6 +250,9 @@ data ChatCommand
   | ShowProfile
   | UpdateProfile ContactName Text
   | UpdateProfileImage (Maybe ImageData)
+  | SetUserFeature ChatFeature FeatureAllowed
+  | SetContactFeature ChatFeature ContactName (Maybe FeatureAllowed)
+  | SetGroupFeature ChatFeature GroupName GroupFeatureEnabled
   | QuitChat
   | ShowVersion
   | DebugLocks
@@ -534,6 +539,7 @@ data ChatErrorType
   | CEFileImageType {filePath :: FilePath}
   | CEFileImageSize {filePath :: FilePath}
   | CEFileNotReceived {fileId :: FileTransferId}
+  | CEInlineFileProhibited {fileId :: FileTransferId}
   | CEInvalidQuote
   | CEInvalidChatItemUpdate
   | CEInvalidChatItemDelete

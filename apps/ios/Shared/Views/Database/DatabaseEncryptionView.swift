@@ -17,7 +17,7 @@ enum DatabaseEncryptionAlert: Identifiable {
     case changeDatabaseKey
     case databaseEncrypted
     case currentPassphraseError
-    case error(title: LocalizedStringKey, error: String = "")
+    case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
 
     var id: String {
         switch self {
@@ -155,7 +155,7 @@ struct DatabaseEncryptionView: View {
                 if case .chatCmdError(.errorDatabase(.errorExport(.errorNotADatabase))) = error as? ChatResponse {
                     await operationEnded(.currentPassphraseError)
                 } else {
-                    await operationEnded(.error(title: "Error encrypting database", error: responseError(error)))
+                    await operationEnded(.error(title: "Error encrypting database", error: "\(responseError(error))"))
                 }
             }
         }
@@ -232,7 +232,7 @@ struct DatabaseEncryptionView: View {
                 message: Text("Please enter correct current passphrase.")
             )
         case let .error(title, error):
-            return Alert(title: Text(title), message: Text("\(error)"))
+            return Alert(title: Text(title), message: Text(error))
         }
     }
 

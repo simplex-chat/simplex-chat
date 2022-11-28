@@ -148,8 +148,15 @@ public struct Preferences: Codable {
     public static let sampleData = Preferences(fullDelete: Preference(allow: .no), voice: Preference(allow: .yes))
 }
 
-public func toPreferences(_ fullPreferences: FullPreferences) -> Preferences {
+public func fullPreferencesToPreferences(_ fullPreferences: FullPreferences) -> Preferences {
     Preferences(fullDelete: fullPreferences.fullDelete, voice: fullPreferences.voice)
+}
+
+public func contactUserPreferencesToPreferences(_ contactUserPreferences: ContactUserPreferences) -> Preferences {
+    Preferences(
+        fullDelete: contactUserPreferences.fullDelete.userPreference.preference,
+        voice: contactUserPreferences.voice.userPreference.preference
+    )
 }
 
 public struct Preference: Codable, Equatable {
@@ -213,14 +220,32 @@ public struct FeatureEnabled: Decodable {
         default: return FeatureEnabled(forUser: true, forContact: true)
         }
     }
+
+    public var text: String {
+        (forUser && forContact) ? NSLocalizedString("enabled", comment: "enabled status")
+        : forUser ? NSLocalizedString("enabled for you", comment: "enabled status")
+        : forContact ? NSLocalizedString("enabled for contact", comment: "enabled status")
+        : NSLocalizedString("off", comment: "enabled status")
+    }
+
+    public var iconColor: Color {
+        forUser ? .green : forContact ? .yellow : .secondary
+    }
 }
 
 public enum ContactUserPref: Decodable {
     case contact(preference: Preference) // contact override is set
     case user(preference: Preference) // global user default is used
+
+    public var preference: Preference {
+        switch self {
+        case let .contact(preference): return preference
+        case let .user(preference): return preference
+        }
+    }
 }
 
-public enum Feature {
+public enum Feature: String, Decodable {
     case fullDelete
     case voice
 
@@ -228,17 +253,24 @@ public enum Feature {
 
     public var id: Self { self }
 
-    public var text: LocalizedStringKey {
+    public var text: String {
         switch self {
-        case .fullDelete: return "Full deletion"
-        case .voice: return "Voice messages"
+        case .fullDelete: return NSLocalizedString("Full deletion", comment: "chat feature")
+        case .voice: return NSLocalizedString("Voice messages", comment: "chat feature")
         }
     }
 
     public var icon: String {
         switch self {
         case .fullDelete: return "trash.slash"
-        case .voice: return "speaker.wave.2"
+        case .voice: return "mic"
+        }
+    }
+
+    public var iconFilled: String {
+        switch self {
+        case .fullDelete: return "trash.slash.fill"
+        case .voice: return "mic.fill"
         }
     }
 
@@ -441,6 +473,10 @@ public func toGroupPreferences(_ fullPreferences: FullGroupPreferences) -> Group
 public struct GroupPreference: Codable, Equatable {
     public var enable: GroupFeatureEnabled
 
+    public var on: Bool {
+        enable == .on
+    }
+
     public init(enable: GroupFeatureEnabled) {
         self.enable = enable
     }
@@ -458,6 +494,13 @@ public enum GroupFeatureEnabled: String, Codable, Identifiable {
         switch self {
         case .on: return NSLocalizedString("on", comment: "group pref value")
         case .off: return NSLocalizedString("off", comment: "group pref value")
+        }
+    }
+
+    public var iconColor: Color {
+        switch self {
+        case .on: return .green
+        case .off: return .secondary
         }
     }
 }
@@ -590,11 +633,45 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
     }
 
     public var contact: Contact? {
-        get {
-            switch self {
-            case let .direct(contact): return contact
-            default: return nil
+        switch self {
+        case let .direct(contact): return contact
+        default: return nil
+        }
+    }
+
+    public var voiceMessageAllowed: Bool {
+        switch self {
+        case let .direct(contact): return contact.mergedPreferences.voice.enabled.forUser
+        case let .group(groupInfo): return groupInfo.fullGroupPreferences.voice.on
+        default: return true
+        }
+    }
+
+    public enum ShowEnableVoiceMessagesAlert {
+        case userEnable
+        case askContact
+        case groupOwnerCan
+        case other
+    }
+
+    public var showEnableVoiceMessagesAlert: ShowEnableVoiceMessagesAlert {
+        switch self {
+        case let .direct(contact):
+            if contact.mergedPreferences.voice.userPreference.preference.allow == .no {
+                return .userEnable
+            } else if contact.mergedPreferences.voice.contactPreference.allow == .no {
+                return .askContact
+            } else {
+                return .other
             }
+        case let .group(groupInfo):
+            if !groupInfo.fullGroupPreferences.voice.on {
+                return .groupOwnerCan
+            } else {
+                return .other
+            }
+        default:
+            return .other
         }
     }
 
@@ -1238,11 +1315,10 @@ public struct ChatItem: Identifiable, Decodable {
     public var timestampText: Text { meta.timestampText }
 
     public var text: String {
-        get {
-            switch (content.text, file) {
-            case let ("", .some(file)): return file.fileName
-            default: return content.text
-            }
+        switch (content.text, content.msgContent, file) {
+        case let ("", .some(.voice(_, duration)), _): return "Voice message (\(durationText(duration)))"
+        case let ("", _, .some(file)): return file.fileName
+        default: return content.text
         }
     }
 
@@ -1251,15 +1327,7 @@ public struct ChatItem: Identifiable, Decodable {
         return false
     }
 
-    public func isMsgContent() -> Bool {
-        switch content {
-        case .sndMsgContent: return true
-        case .rcvMsgContent: return true
-        default: return false
-        }
-    }
-
-    public func isDeletedContent() -> Bool {
+    public var isDeletedContent: Bool {
         switch content {
         case .sndDeleted: return true
         case .rcvDeleted: return true
@@ -1267,31 +1335,50 @@ public struct ChatItem: Identifiable, Decodable {
         }
     }
 
-    public func isCall() -> Bool {
-        switch content {
-        case .sndCall: return true
-        case .rcvCall: return true
-        default: return false
-        }
+    private var showNtfDir: Bool {
+        return !chatDir.sent
     }
 
-    public var isMutedMemberEvent: Bool {
+    public var showNotification: Bool {
         switch content {
-        case let .rcvGroupEvent(event):
-            switch event {
-            case .groupUpdated: return true
-            case .memberConnected: return true
-            case .memberRole: return true
-            case .userRole: return false
-            case .userDeleted: return false
-            case .groupDeleted: return false
+        case .sndMsgContent: return showNtfDir
+        case .rcvMsgContent: return showNtfDir
+        case .sndDeleted: return showNtfDir
+        case .rcvDeleted: return showNtfDir
+        case .sndCall: return showNtfDir
+        case .rcvCall: return false // notification is shown on .callInvitation instead
+        case .rcvIntegrityError: return showNtfDir
+        case .rcvGroupInvitation: return showNtfDir
+        case .sndGroupInvitation: return showNtfDir
+        case .rcvGroupEvent(rcvGroupEvent: let rcvGroupEvent):
+            switch rcvGroupEvent {
+            case .groupUpdated: return false
+            case .memberConnected: return false
+            case .memberRole: return false
+            case .userRole: return showNtfDir
+            case .userDeleted: return showNtfDir
+            case .groupDeleted: return showNtfDir
             case .memberAdded: return false
             case .memberLeft: return false
             case .memberDeleted: return false
             case .invitedViaGroupLink: return false
             }
-        case .sndGroupEvent: return true
-        default: return false
+        case .sndGroupEvent: return showNtfDir
+        case .rcvConnEvent: return false
+        case .sndConnEvent: return showNtfDir
+        case .rcvChatFeature: return false
+        case .sndChatFeature: return showNtfDir
+        case .rcvGroupFeature: return false
+        case .sndGroupFeature: return showNtfDir
+        case .rcvChatFeatureRejected: return showNtfDir
+        }
+    }
+
+    public var showMutableNotification: Bool {
+        switch content {
+        case .rcvCall: return false
+        case .rcvChatFeature: return false
+        default: return showNtfDir
         }
     }
 
@@ -1312,6 +1399,16 @@ public struct ChatItem: Identifiable, Decodable {
             content: .sndMsgContent(msgContent: .text(text)),
             quotedItem: quotedItem,
             file: file
+       )
+    }
+
+    public static func getVoiceMsgContentSample (id: Int64 = 1, text: String = "", fileName: String = "voice.m4a", fileSize: Int64 = 65536, fileStatus: CIFileStatus = .rcvComplete) -> ChatItem {
+        ChatItem(
+            chatDir: .directRcv,
+            meta: CIMeta.getSample(id, .now, text, .rcvRead, false, false, false),
+            content: .rcvMsgContent(msgContent: .voice(text: text, duration: 30)),
+            quotedItem: nil,
+            file: CIFile.getSample(fileName: fileName, fileSize: fileSize, fileStatus: fileStatus)
        )
     }
 
@@ -1360,6 +1457,17 @@ public struct ChatItem: Identifiable, Decodable {
             chatDir: .directRcv,
             meta: CIMeta.getSample(1, .now, "group event text", .rcvRead, false, false, false),
             content: .rcvGroupEvent(rcvGroupEvent: .memberAdded(groupMemberId: 1, profile: Profile.sampleData)),
+            quotedItem: nil,
+            file: nil
+       )
+    }
+
+    public static func getChatFeatureSample(_ feature: Feature, _ enabled: FeatureEnabled) -> ChatItem {
+        let content = CIContent.rcvChatFeature(feature: feature, enabled: enabled)
+        return ChatItem(
+            chatDir: .directRcv,
+            meta: CIMeta.getSample(1, .now, content.text, .rcvRead, false, false, false),
+            content: content,
             quotedItem: nil,
             file: nil
        )
@@ -1465,6 +1573,11 @@ public enum CIContent: Decodable, ItemContent {
     case sndGroupEvent(sndGroupEvent: SndGroupEvent)
     case rcvConnEvent(rcvConnEvent: RcvConnEvent)
     case sndConnEvent(sndConnEvent: SndConnEvent)
+    case rcvChatFeature(feature: Feature, enabled: FeatureEnabled)
+    case sndChatFeature(feature: Feature, enabled: FeatureEnabled)
+    case rcvGroupFeature(feature: Feature, preference: GroupPreference)
+    case sndGroupFeature(feature: Feature, preference: GroupPreference)
+    case rcvChatFeatureRejected(feature: Feature)
 
     public var text: String {
         get {
@@ -1482,6 +1595,11 @@ public enum CIContent: Decodable, ItemContent {
             case let .sndGroupEvent(sndGroupEvent): return sndGroupEvent.text
             case let .rcvConnEvent(rcvConnEvent): return rcvConnEvent.text
             case let .sndConnEvent(sndConnEvent): return sndConnEvent.text
+            case let .rcvChatFeature(feature, enabled): return "\(feature.text): \(enabled.text)"
+            case let .sndChatFeature(feature, enabled): return "\(feature.text): \(enabled.text)"
+            case let .rcvGroupFeature(feature, preference): return "\(feature.text): \(preference.enable.text)"
+            case let .sndGroupFeature(feature, preference): return "\(feature.text): \(preference.enable.text)"
+            case let .rcvChatFeatureRejected(feature): return String.localizedStringWithFormat("%@: received, prohibited", feature.text)
             }
         }
     }
@@ -1505,7 +1623,12 @@ public struct CIQuote: Decodable, ItemContent {
     public var content: MsgContent
     public var formattedText: [FormattedText]?
 
-    public var text: String { get { content.text } }
+    public var text: String {
+        switch (content.text, content) {
+        case let ("", .voice(_, duration)): return durationText(duration)
+        default: return content.text
+        }
+    }
 
     public func getSender(_ membership: GroupMember?) -> String? {
         switch (chatDir) {
@@ -1572,35 +1695,33 @@ public enum MsgContent {
     case text(String)
     case link(text: String, preview: LinkPreview)
     case image(text: String, image: String)
+    case voice(text: String, duration: Int)
     case file(String)
     // TODO include original JSON, possibly using https://github.com/zoul/generic-json-swift
     case unknown(type: String, text: String)
 
     public var text: String {
-        get {
-            switch self {
-            case let .text(text): return text
-            case let .link(text, _): return text
-            case let .image(text, _): return text
-            case let .file(text): return text
-            case let .unknown(_, text): return text
-            }
+        switch self {
+        case let .text(text): return text
+        case let .link(text, _): return text
+        case let .image(text, _): return text
+        case let .voice(text, _): return text
+        case let .file(text): return text
+        case let .unknown(_, text): return text
+        }
+    }
+
+    public var isVoice: Bool {
+        switch self {
+        case .voice: return true
+        default: return false
         }
     }
 
     var cmdString: String {
-        get {
-            switch self {
-            case let .text(text): return "text \(text)"
-            default: return "json \(encodeJSON(self))"
-            }
-        }
-    }
-
-    public func isFile() -> Bool {
         switch self {
-        case .file: return true
-        default: return false
+        case let .text(text): return "text \(text)"
+        default: return "json \(encodeJSON(self))"
         }
     }
 
@@ -1609,6 +1730,7 @@ public enum MsgContent {
         case text
         case preview
         case image
+        case duration
     }
 }
 
@@ -1629,6 +1751,10 @@ extension MsgContent: Decodable {
                 let text = try container.decode(String.self, forKey: CodingKeys.text)
                 let image = try container.decode(String.self, forKey: CodingKeys.image)
                 self = .image(text: text, image: image)
+            case "voice":
+                let text = try container.decode(String.self, forKey: CodingKeys.text)
+                let duration = try container.decode(Int.self, forKey: CodingKeys.duration)
+                self = .voice(text: text, duration: duration)
             case "file":
                 let text = try container.decode(String.self, forKey: CodingKeys.text)
                 self = .file(text)
@@ -1657,6 +1783,10 @@ extension MsgContent: Encodable {
             try container.encode("image", forKey: .type)
             try container.encode(text, forKey: .text)
             try container.encode(image, forKey: .image)
+        case let .voice(text, duration):
+            try container.encode("voice", forKey: .type)
+            try container.encode(text, forKey: .text)
+            try container.encode(duration, forKey: .duration)
         case let .file(text):
             try container.encode("file", forKey: .type)
             try container.encode(text, forKey: .text)
@@ -1681,8 +1811,23 @@ public enum Format: Decodable, Equatable {
     case secret
     case colored(color: FormatColor)
     case uri
+    case simplexLink(linkType: SimplexLinkType, simplexUri: String, trustedUri: Bool, smpHosts: [String])
     case email
     case phone
+}
+
+public enum SimplexLinkType: String, Decodable {
+    case contact
+    case invitation
+    case group
+
+    public var description: String {
+        switch self {
+        case .contact: return NSLocalizedString("SimpleX contact address", comment: "simplex link type")
+        case .invitation: return NSLocalizedString("SimpleX one-time invitation", comment: "simplex link type")
+        case .group: return NSLocalizedString("SimpleX group link", comment: "simplex link type")
+        }
+    }
 }
 
 public enum FormatColor: String, Decodable {
@@ -1712,7 +1857,7 @@ public enum FormatColor: String, Decodable {
 }
 
 // Struct to use with simplex API
-public struct LinkPreview: Codable {
+public struct LinkPreview: Codable, Equatable {
     public init(uri: URL, title: String, description: String = "", image: String) {
         self.uri = uri
         self.title = title
@@ -1766,14 +1911,14 @@ public enum CICallStatus: String, Decodable {
         case .accepted: return NSLocalizedString("accepted call", comment: "call status")
         case .negotiated: return NSLocalizedString("connecting call", comment: "call status")
         case .progress: return NSLocalizedString("call in progress", comment: "call status")
-        case .ended: return String.localizedStringWithFormat(NSLocalizedString("ended call %@", comment: "call status"), CICallStatus.durationText(sec))
+        case .ended: return String.localizedStringWithFormat(NSLocalizedString("ended call %@", comment: "call status"), durationText(sec))
         case .error: return NSLocalizedString("call error", comment: "call status")
         }
     }
+}
 
-    public static func durationText(_ sec: Int) -> String {
-        String(format: "%02d:%02d", sec / 60, sec % 60)
-    }
+public func durationText(_ sec: Int) -> String {
+    String(format: "%02d:%02d", sec / 60, sec % 60)
 }
 
 public enum MsgErrorType: Decodable {

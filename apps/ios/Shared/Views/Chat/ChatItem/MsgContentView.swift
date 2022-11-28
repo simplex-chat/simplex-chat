@@ -10,7 +10,6 @@ import SwiftUI
 import SimpleXChat
 
 private let uiLinkColor = UIColor(red: 0, green: 0.533, blue: 1, alpha: 1)
-private let linkColor = Color(uiColor: uiLinkColor)
 
 struct MsgContentView: View {
     var text: String
@@ -70,6 +69,14 @@ private func formatText(_ ft: FormattedText, _ preview: Bool) -> Text {
         case .secret: return Text(t).foregroundColor(.clear).underline(color: .primary)
         case let .colored(color): return Text(t).foregroundColor(color.uiColor)
         case .uri: return linkText(t, t, preview, prefix: "")
+        case let .simplexLink(linkType, simplexUri, trustedUri, smpHosts):
+            switch privacySimplexLinkModeDefault.get() {
+            case .description: return linkText(simplexLinkText(linkType, smpHosts), simplexUri, preview, prefix: "")
+            case .full: return linkText(t, simplexUri, preview, prefix: "")
+            case .browser: return trustedUri
+                                    ? linkText(t, t, preview, prefix: "")
+                                    : linkText(t, t, preview, prefix: "", color: .red, uiColor: .red)
+            }
         case .email: return linkText(t, t, preview, prefix: "mailto:")
         case .phone: return linkText(t, t.replacingOccurrences(of: " ", with: ""), preview, prefix: "tel:")
         }
@@ -78,14 +85,17 @@ private func formatText(_ ft: FormattedText, _ preview: Bool) -> Text {
     }
 }
 
-private func linkText(_ s: String, _ link: String,
-                      _ preview: Bool, prefix: String) -> Text {
+private func linkText(_ s: String, _ link: String, _ preview: Bool, prefix: String, color: Color = Color(uiColor: uiLinkColor), uiColor: UIColor = uiLinkColor) -> Text {
     preview
-    ? Text(s).foregroundColor(linkColor).underline(color: linkColor)
+    ? Text(s).foregroundColor(color).underline(color: color)
     : Text(AttributedString(s, attributes: AttributeContainer([
         .link: NSURL(string: prefix + link) as Any,
-        .foregroundColor: uiLinkColor as Any
+        .foregroundColor: uiColor as Any
     ]))).underline()
+}
+
+private func simplexLinkText(_ linkType: SimplexLinkType, _ smpHosts: [String]) -> String {
+    linkType.description + " " + "(via \(smpHosts.first ?? "?"))"
 }
 
 struct MsgContentView_Previews: PreviewProvider {

@@ -67,15 +67,23 @@ struct FramedItemView: View {
                         } else {
                             ciMsgContentView (chatItem, showMember)
                         }
-                    case let .file(text):
-                        CIFileView(file: chatItem.file, edited: chatItem.meta.itemEdited)
+                    case let .voice(text, duration):
+                        FramedCIVoiceView(chatItem: chatItem, recordingFile: chatItem.file, duration: duration)
                             .overlay(DetermineWidth())
                         if text != "" {
                             ciMsgContentView (chatItem, showMember)
                         }
+                    case let .file(text):
+                        ciFileView(chatItem, text)
                     case let .link(_, preview):
                         CILinkView(linkPreview: preview)
                         ciMsgContentView (chatItem, showMember)
+                    case let .unknown(_, text: text):
+                        if chatItem.file == nil {
+                            ciMsgContentView (chatItem, showMember)
+                        } else {
+                            ciFileView(chatItem, text)
+                        }
                     default:
                         ciMsgContentView (chatItem, showMember)
                     }
@@ -110,27 +118,29 @@ struct FramedItemView: View {
 
     @ViewBuilder private func ciQuoteView(_ qi: CIQuote) -> some View {
         let v = ZStack(alignment: .topTrailing) {
-            if case let .image(_, image) = qi.content,
-               let data = Data(base64Encoded: dropImagePrefix(image)),
-               let uiImage = UIImage(data: data) {
-                ciQuotedMsgView(qi)
-                    .padding(.trailing, 70).frame(minWidth: msgWidth, alignment: .leading)
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 68, height: 68)
-                    .clipped()
-            } else if case .file = qi.content {
+            switch (qi.content) {
+            case let .image(_, image):
+                if let data = Data(base64Encoded: dropImagePrefix(image)),
+                   let uiImage = UIImage(data: data) {
+                    ciQuotedMsgView(qi)
+                        .padding(.trailing, 70).frame(minWidth: msgWidth, alignment: .leading)
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 68, height: 68)
+                        .clipped()
+                } else {
+                    ciQuotedMsgView(qi)
+                }
+            case .file:
                 ciQuotedMsgView(qi)
                     .padding(.trailing, 20).frame(minWidth: msgWidth, alignment: .leading)
-                Image(systemName: "doc.fill")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 18, height: 18)
-                    .foregroundColor(Color(uiColor: .tertiaryLabel))
-                    .padding(.top, 6)
-                    .padding(.trailing, 4)
-            } else {
+                ciQuoteIconView("doc.fill")
+            case .voice:
+                ciQuotedMsgView(qi)
+                    .padding(.trailing, 20).frame(minWidth: msgWidth, alignment: .leading)
+                ciQuoteIconView("mic.fill")
+            default:
                 ciQuotedMsgView(qi)
             }
         }
@@ -161,6 +171,16 @@ struct FramedItemView: View {
         .padding(.horizontal, 12)
     }
 
+    private func ciQuoteIconView(_ image: String) -> some View {
+        Image(systemName: image)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .foregroundColor(Color(uiColor: .tertiaryLabel))
+            .frame(width: 18, height: 18)
+            .padding(.top, 6)
+            .padding(.trailing, 6)
+    }
+
     private func membership() -> GroupMember? {
         switch chatInfo {
         case let .group(groupInfo: groupInfo): return groupInfo.membership
@@ -189,6 +209,14 @@ struct FramedItemView: View {
             v.frame(maxWidth: imgWidth, alignment: .leading)
         } else {
             v
+        }
+    }
+
+    @ViewBuilder private func ciFileView(_ ci: ChatItem, _ text: String) -> some View {
+        CIFileView(file: chatItem.file, edited: chatItem.meta.itemEdited)
+            .overlay(DetermineWidth())
+        if text != "" {
+            ciMsgContentView (chatItem, showMember)
         }
     }
 }

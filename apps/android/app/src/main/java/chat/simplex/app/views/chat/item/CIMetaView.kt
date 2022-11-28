@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
+import chat.simplex.app.ui.theme.WarningYellow
 import kotlinx.datetime.Clock
 
 @Composable
@@ -51,7 +52,7 @@ fun CIStatusView(status: CIStatus, metaColor: Color = HighOrLowlight) {
       Icon(Icons.Filled.Close,  stringResource(R.string.icon_descr_sent_msg_status_unauthorized_send), Modifier.height(12.dp), tint = Color.Red)
     }
     is CIStatus.SndError -> {
-      Icon(Icons.Filled.WarningAmber, stringResource(R.string.icon_descr_sent_msg_status_send_failed), Modifier.height(12.dp), tint = Color.Yellow)
+      Icon(Icons.Filled.WarningAmber, stringResource(R.string.icon_descr_sent_msg_status_send_failed), Modifier.height(12.dp), tint = WarningYellow)
     }
     is CIStatus.RcvNew -> {
       Icon(Icons.Filled.Circle, stringResource(R.string.icon_descr_received_msg_status_unread), Modifier.height(12.dp), tint = MaterialTheme.colors.primary)

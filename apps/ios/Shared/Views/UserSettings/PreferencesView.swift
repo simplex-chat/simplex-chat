@@ -18,7 +18,7 @@ struct PreferencesView: View {
     var body: some View {
         VStack {
             List {
-                featureSection(.fullDelete, $preferences.fullDelete.allow)
+                // featureSection(.fullDelete, $preferences.fullDelete.allow)
                 featureSection(.voice, $preferences.voice.allow)
 
                 Section {
@@ -50,7 +50,7 @@ struct PreferencesView: View {
         Task {
             do {
                 var p = fromLocalProfile(profile)
-                p.preferences = toPreferences(preferences)
+                p.preferences = fullPreferencesToPreferences(preferences)
                 if let newProfile = try await apiUpdateProfile(profile: p) {
                     await MainActor.run {
                         if let profileId = chatModel.currentUser?.profile.profileId {

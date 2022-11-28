@@ -309,19 +309,19 @@ func apiDeleteToken(token: DeviceToken) async throws {
     try await sendCommandOkResp(.apiDeleteToken(token: token))
 }
 
-func getUserSMPServers() throws -> [String] {
+func getUserSMPServers() throws -> ([ServerCfg], [String]) {
     let r = chatSendCmdSync(.getUserSMPServers)
-    if case let .userSMPServers(smpServers, _) = r { return smpServers.map { $0.server } }
+    if case let .userSMPServers(smpServers, presetServers) = r { return (smpServers, presetServers) }
     throw r
 }
 
-func setUserSMPServers(smpServers: [String]) async throws {
+func setUserSMPServers(smpServers: [ServerCfg]) async throws {
     try await sendCommandOkResp(.setUserSMPServers(smpServers: smpServers))
 }
 
 func testSMPServer(smpServer: String) async throws -> Result<(), SMPTestFailure> {
     let r = await chatSendCmd(.testSMPServer(smpServer: smpServer))
-    if case let .sMPTestResult(testFailure) = r {
+    if case let .smpTestResult(testFailure) = r {
         if let t = testFailure {
             return .failure(t)
         }
@@ -587,10 +587,15 @@ func apiReceiveFile(fileId: Int64, inline: Bool) async -> AChatItem? {
         )
     } else if !networkErrorAlert(r) {
         logger.error("apiReceiveFile error: \(String(describing: r))")
-        am.showAlertMsg(
-            title: "Error receiving file",
-            message: "Error: \(String(describing: r))"
-        )
+        switch r {
+        case .chatCmdError(.error(.fileAlreadyReceiving)):
+            logger.debug("apiReceiveFile ignoring fileAlreadyReceiving error")
+        default:
+            am.showAlertMsg(
+                title: "Error receiving file",
+                message: "Error: \(String(describing: r))"
+            )
+        }
     }
     return nil
 }
@@ -843,7 +848,7 @@ func startChat() throws {
     let justStarted = try apiStartChat()
     if justStarted {
         m.userAddress = try apiGetUserAddress()
-        m.userSMPServers = try getUserSMPServers()
+        (m.userSMPServers, m.presetSMPServers) = try getUserSMPServers()
         m.chatItemTTL = try getChatItemTTL()
         let chats = try apiGetChats()
         m.chats = chats.map { Chat.init($0) }
@@ -969,20 +974,28 @@ func processReceivedMsg(_ res: ChatResponse) async {
             m.addChatItem(cInfo, cItem)
             if case .image = cItem.content.msgContent,
                let file = cItem.file,
-               file.fileSize <= maxImageSize,
+               file.fileSize <= MAX_IMAGE_SIZE,
+               UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_ACCEPT_IMAGES) {
+                Task {
+                    await receiveFile(fileId: file.fileId)
+                }
+            } else if case .voice = cItem.content.msgContent, // TODO check inlineFileMode != IFMSent
+               let file = cItem.file,
+               file.fileSize <= MAX_IMAGE_SIZE,
+               file.fileSize > MAX_VOICE_MESSAGE_SIZE_INLINE_SEND,
                UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_ACCEPT_IMAGES) {
                 Task {
                     await receiveFile(fileId: file.fileId)
                 }
             }
-            if !cItem.chatDir.sent && !cItem.isCall() && !cItem.isMutedMemberEvent {
+            if cItem.showNotification {
                 NtfManager.shared.notifyMessageReceived(cInfo, cItem)
             }
         case let .chatItemStatusUpdated(aChatItem):
             let cInfo = aChatItem.chatInfo
             let cItem = aChatItem.chatItem
             var res = false
-            if !cItem.isDeletedContent() {
+            if !cItem.isDeletedContent {
                 res = m.upsertChatItem(cInfo, cItem)
             }
             if res {
@@ -1042,9 +1055,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
         case let .sndFileComplete(aChatItem, _):
             chatItemSimpleUpdate(aChatItem)
             let cItem = aChatItem.chatItem
+            let mc = cItem.content.msgContent
             if aChatItem.chatInfo.chatType == .direct,
-               let mc = cItem.content.msgContent,
-               mc.isFile(),
+               case .file = mc,
                let fileName = cItem.file?.filePath {
                 removeFile(fileName)
             }

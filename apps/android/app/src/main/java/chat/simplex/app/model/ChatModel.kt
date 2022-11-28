@@ -44,7 +44,10 @@ class ChatModel(val controller: ChatController) {
 
   val terminalItems = mutableStateListOf<TerminalItem>()
   val userAddress = mutableStateOf<UserContactLinkRec?>(null)
-  val userSMPServers = mutableStateOf<(List<String>)?>(null)
+  val userSMPServers = mutableStateOf<(List<ServerCfg>)?>(null)
+  // Allows to temporary save servers that are being edited on multiple screens
+  val userSMPServersUnsaved = mutableStateOf<(List<ServerCfg>)?>(null)
+  val presetSMPServers = mutableStateOf<(List<String>)?>(null)
   val chatItemTTL = mutableStateOf<ChatItemTTL>(ChatItemTTL.None)
 
   // set when app opened from external intent
@@ -76,6 +79,7 @@ class ChatModel(val controller: ChatController) {
   val sharedContent = mutableStateOf(null as SharedContent?)
 
   val filesToDelete = mutableSetOf<File>()
+  val simplexLinkMode = mutableStateOf(controller.appPrefs.simplexLinkMode.get())
 
   fun updateUserProfile(profile: LocalProfile) {
     val user = currentUser.value
@@ -349,6 +353,7 @@ data class User(
   val userContactId: Long,
   val localDisplayName: String,
   val profile: LocalProfile,
+  val fullPreferences: FullChatPreferences,
   val activeUser: Boolean
 ): NamedChat {
   override val displayName: String get() = profile.displayName
@@ -362,6 +367,7 @@ data class User(
       userContactId = 1,
       localDisplayName = "alice",
       profile = LocalProfile.sampleData,
+      fullPreferences = FullChatPreferences.sampleData,
       activeUser = true
     )
   }
@@ -536,8 +542,8 @@ data class Contact(
   val activeConn: Connection,
   val viaGroup: Long? = null,
   val chatSettings: ChatSettings,
-  // User applies his preferences for the contact here. Named user_preferences on the contact in DB
   val userPreferences: ChatPreferences,
+  val mergedPreferences: ContactUserPreferences,
   override val createdAt: Instant,
   override val updatedAt: Instant
 ): SomeChat, NamedChat {
@@ -568,7 +574,8 @@ data class Contact(
       profile = LocalProfile.sampleData,
       activeConn = Connection.sampleData,
       chatSettings = ChatSettings(true),
-      userPreferences = ChatPreferences(),
+      userPreferences = ChatPreferences.sampleData,
+      mergedPreferences = ContactUserPreferences.sampleData,
       createdAt = Clock.System.now(),
       updatedAt = Clock.System.now()
     )
@@ -598,12 +605,11 @@ class Connection(val connId: Long, val connStatus: ConnStatus, val connLevel: In
 }
 
 @Serializable
-class Profile(
+data class Profile(
   override val displayName: String,
   override val fullName: String,
   override val image: String? = null,
   override val localAlias : String = "",
-  // Contact applies his preferences here
   val preferences: ChatPreferences? = null
 ): NamedChat {
   val profileViewName: String
@@ -611,7 +617,7 @@ class Profile(
       return if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)"
     }
 
-  fun toLocalProfile(profileId: Long): LocalProfile = LocalProfile(profileId, displayName, fullName, image, localAlias)
+  fun toLocalProfile(profileId: Long): LocalProfile = LocalProfile(profileId, displayName, fullName, image, localAlias, preferences)
 
   companion object {
     val sampleData = Profile(
@@ -628,18 +634,18 @@ class LocalProfile(
   override val fullName: String,
   override val image: String? = null,
   override val localAlias: String,
-  // Contact applies his preferences here
   val preferences: ChatPreferences? = null
 ): NamedChat {
   val profileViewName: String = localAlias.ifEmpty { if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)" }
 
-  fun toProfile(): Profile = Profile(displayName, fullName, image, localAlias)
+  fun toProfile(): Profile = Profile(displayName, fullName, image, localAlias, preferences)
 
   companion object {
     val sampleData = LocalProfile(
       profileId = 1L,
       displayName = "alice",
       fullName = "Alice",
+      preferences = ChatPreferences.sampleData,
       localAlias = ""
     )
   }
@@ -656,10 +662,10 @@ data class GroupInfo (
   val groupId: Long,
   override val localDisplayName: String,
   val groupProfile: GroupProfile,
+  val fullGroupPreferences: FullGroupPreferences,
   val membership: GroupMember,
   val hostConnCustomUserProfileId: Long? = null,
   val chatSettings: ChatSettings,
-//  val groupPreferences: GroupPreferences? = null,
   override val createdAt: Instant,
   override val updatedAt: Instant
 ): SomeChat, NamedChat {
@@ -688,6 +694,7 @@ data class GroupInfo (
       groupId = 1,
       localDisplayName = "team",
       groupProfile = GroupProfile.sampleData,
+      fullGroupPreferences = FullGroupPreferences.sampleData,
       membership = GroupMember.sampleData,
       hostConnCustomUserProfileId = null,
       chatSettings = ChatSettings(true),
@@ -698,11 +705,12 @@ data class GroupInfo (
 }
 
 @Serializable
-class GroupProfile (
+data class GroupProfile (
   override val displayName: String,
   override val fullName: String,
   override val image: String? = null,
   override val localAlias: String = "",
+  val groupPreferences: GroupPreferences? = null
 ): NamedChat {
   companion object {
     val sampleData = GroupProfile(
@@ -1057,30 +1065,39 @@ data class ChatItem (
       else -> false
     }
 
-  val isCall: Boolean get() =
-    when (content) {
-      is CIContent.SndCall -> true
-      is CIContent.RcvCall -> true
-      else -> false
-    }
+  private val showNtfDir: Boolean get() = !chatDir.sent
 
-  val isMutedMemberEvent: Boolean get() =
+  val showNotification: Boolean get() =
     when (content) {
-      is CIContent.RcvGroupEventContent ->
-        when (content.rcvGroupEvent) {
-          is RcvGroupEvent.GroupUpdated -> true
-          is RcvGroupEvent.MemberConnected -> true
-          is RcvGroupEvent.UserDeleted -> false
-          is RcvGroupEvent.GroupDeleted -> false
-          is RcvGroupEvent.MemberAdded -> false
-          is RcvGroupEvent.MemberLeft -> false
-          is RcvGroupEvent.MemberRole -> true
-          is RcvGroupEvent.UserRole -> false
-          is RcvGroupEvent.MemberDeleted -> false
-          is RcvGroupEvent.InvitedViaGroupLink -> false
-        }
-      is CIContent.SndGroupEventContent -> true
-      else -> false
+      is CIContent.SndMsgContent -> showNtfDir
+      is CIContent.RcvMsgContent -> showNtfDir
+      is CIContent.SndDeleted -> showNtfDir
+      is CIContent.RcvDeleted -> showNtfDir
+      is CIContent.SndCall -> showNtfDir
+      is CIContent.RcvCall -> false // notification is shown on CallInvitation instead
+      is CIContent.RcvIntegrityError -> showNtfDir
+      is CIContent.RcvGroupInvitation -> showNtfDir
+      is CIContent.SndGroupInvitation -> showNtfDir
+      is CIContent.RcvGroupEventContent -> when (content.rcvGroupEvent) {
+        is RcvGroupEvent.MemberAdded -> false
+        is RcvGroupEvent.MemberConnected -> false
+        is RcvGroupEvent.MemberLeft -> false
+        is RcvGroupEvent.MemberRole -> false
+        is RcvGroupEvent.UserRole -> showNtfDir
+        is RcvGroupEvent.MemberDeleted -> false
+        is RcvGroupEvent.UserDeleted -> showNtfDir
+        is RcvGroupEvent.GroupDeleted -> showNtfDir
+        is RcvGroupEvent.GroupUpdated -> false
+        is RcvGroupEvent.InvitedViaGroupLink -> false
+      }
+      is CIContent.SndGroupEventContent -> showNtfDir
+      is CIContent.RcvConnEventContent -> false
+      is CIContent.SndConnEventContent -> showNtfDir
+      is CIContent.RcvChatFeature -> false
+      is CIContent.SndChatFeature -> showNtfDir
+      is CIContent.RcvGroupFeature -> false
+      is CIContent.SndGroupFeature -> showNtfDir
+      is CIContent.RcvChatFeatureRejected -> showNtfDir
     }
 
   fun withStatus(status: CIStatus): ChatItem = this.copy(meta = meta.copy(itemStatus = status))
@@ -1153,6 +1170,17 @@ data class ChatItem (
         quotedItem = null,
         file = null
       )
+
+    fun getChatFeatureSample(feature: Feature, enabled: FeatureEnabled): ChatItem {
+      val content = CIContent.RcvChatFeature(feature = feature, enabled = enabled)
+      return ChatItem(
+        chatDir = CIDirection.DirectRcv(),
+        meta = CIMeta.getSample(1, Clock.System.now(), content.text, CIStatus.RcvRead(), itemDeleted = false, itemEdited = false, editable = false),
+        content = content,
+        quotedItem = null,
+        file = null
+      )
+    }
   }
 }
 
@@ -1249,22 +1277,32 @@ sealed class CIContent: ItemContent {
   @Serializable @SerialName("sndGroupEvent") class SndGroupEventContent(val sndGroupEvent: SndGroupEvent): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvConnEvent") class RcvConnEventContent(val rcvConnEvent: RcvConnEvent): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("sndConnEvent") class SndConnEventContent(val sndConnEvent: SndConnEvent): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvChatFeature") class RcvChatFeature(val feature: Feature, val enabled: FeatureEnabled): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("sndChatFeature") class SndChatFeature(val feature: Feature, val enabled: FeatureEnabled): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvGroupFeature") class RcvGroupFeature(val feature: Feature, val preference: GroupPreference): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("sndGroupFeature") class SndGroupFeature(val feature: Feature, val preference: GroupPreference): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvChatFeatureRejected") class RcvChatFeatureRejected(val feature: Feature): CIContent() { override val msgContent: MsgContent? get() = null }
 
-  override val text: String get() = when(this) {
-    is SndMsgContent -> msgContent.text
-    is RcvMsgContent -> msgContent.text
-    is SndDeleted -> generalGetString(R.string.deleted_description)
-    is RcvDeleted -> generalGetString(R.string.deleted_description)
-    is SndCall -> status.text(duration)
-    is RcvCall -> status.text(duration)
-    is RcvIntegrityError -> msgError.text
-    is RcvGroupInvitation -> groupInvitation.text
-    is SndGroupInvitation -> groupInvitation.text
-    is RcvGroupEventContent -> rcvGroupEvent.text
-    is SndGroupEventContent -> sndGroupEvent.text
-    is RcvConnEventContent -> rcvConnEvent.text
-    is SndConnEventContent -> sndConnEvent.text
-  }
+  override val text: String get() = when (this) {
+      is SndMsgContent -> msgContent.text
+      is RcvMsgContent -> msgContent.text
+      is SndDeleted -> generalGetString(R.string.deleted_description)
+      is RcvDeleted -> generalGetString(R.string.deleted_description)
+      is SndCall -> status.text(duration)
+      is RcvCall -> status.text(duration)
+      is RcvIntegrityError -> msgError.text
+      is RcvGroupInvitation -> groupInvitation.text
+      is SndGroupInvitation -> groupInvitation.text
+      is RcvGroupEventContent -> rcvGroupEvent.text
+      is SndGroupEventContent -> sndGroupEvent.text
+      is RcvConnEventContent -> rcvConnEvent.text
+      is SndConnEventContent -> sndConnEvent.text
+      is RcvChatFeature -> "${feature.text}: ${enabled.text}"
+      is SndChatFeature -> "${feature.text}: ${enabled.text}"
+      is RcvGroupFeature -> "${feature.text}: ${preference.enable.text}"
+      is SndGroupFeature -> "${feature.text}: ${preference.enable.text}"
+      is RcvChatFeatureRejected -> "${feature.text}: ${generalGetString(R.string.feature_received_prohibited)}"
+    }
 }
 
 @Serializable
@@ -1276,7 +1314,13 @@ class CIQuote (
   val content: MsgContent,
   val formattedText: List<FormattedText>? = null
 ): ItemContent {
-  override val text: String get() = content.text
+  override val text: String by lazy {
+    if (content is MsgContent.MCVoice && content.text.isEmpty())
+      content.toTextWithDuration(true)
+    else
+      content.text
+  }
+
 
   fun sender(membership: GroupMember?): String? = when (chatDir) {
     is CIDirection.DirectSnd -> generalGetString(R.string.sender_you_pronoun)
@@ -1311,8 +1355,6 @@ class CIFile(
     CIFileStatus.RcvCancelled -> false
     CIFileStatus.RcvComplete -> true
   }
-
-  val audioInfo: MutableState<ProgressAndDuration> by lazy { mutableStateOf(ProgressAndDuration()) }
 
   companion object {
     fun getSample(
@@ -1362,7 +1404,7 @@ sealed class MsgContent {
 }
 
 fun MsgContent.MCVoice.toTextWithDuration(short: Boolean): String {
-  val time = String.format("%02d:%02d", duration / 60, duration % 60)
+  val time = durationToString(duration)
   return if (short) time else generalGetString(R.string.voice_message) + " ($time)"
 }
 
@@ -1488,12 +1530,21 @@ object MsgContentSerializer : KSerializer<MsgContent> {
 
 @Serializable
 class FormattedText(val text: String, val format: Format? = null) {
-  val link: String? = when (format) {
+  // TODO make it dependent on simplexLinkMode preference
+  fun link(mode: SimplexLinkMode): String? = when (format) {
     is Format.Uri -> text
+    is Format.SimplexLink -> if (mode == SimplexLinkMode.BROWSER) text else format.simplexUri
     is Format.Email -> "mailto:$text"
     is Format.Phone -> "tel:$text"
     else -> null
   }
+
+  // TODO make it dependent on simplexLinkMode preference
+  fun viewText(mode: SimplexLinkMode): String =
+    if (format is Format.SimplexLink && mode == SimplexLinkMode.DESCRIPTION) simplexLinkText(format.linkType, format.smpHosts) else text
+
+  fun simplexLinkText(linkType: SimplexLinkType, smpHosts: List<String>): String =
+    "${linkType.description} (${String.format(generalGetString(R.string.simplex_link_connection), smpHosts.firstOrNull() ?: "?")})"
 }
 
 @Serializable
@@ -1505,6 +1556,7 @@ sealed class Format {
   @Serializable @SerialName("secret") class Secret: Format()
   @Serializable @SerialName("colored") class Colored(val color: FormatColor): Format()
   @Serializable @SerialName("uri") class Uri: Format()
+  @Serializable @SerialName("simplexLink") class SimplexLink(val linkType: SimplexLinkType, val simplexUri: String, val trustedUri: Boolean, val smpHosts: List<String>): Format()
   @Serializable @SerialName("email") class Email: Format()
   @Serializable @SerialName("phone") class Phone: Format()
 
@@ -1516,6 +1568,7 @@ sealed class Format {
     is Secret -> SpanStyle(color = Color.Transparent, background = SecretColor)
     is Colored -> SpanStyle(color = this.color.uiColor)
     is Uri -> linkStyle
+    is SimplexLink -> linkStyle
     is Email -> linkStyle
     is Phone -> linkStyle
   }
@@ -1523,6 +1576,19 @@ sealed class Format {
   companion object {
     val linkStyle @Composable get() = SpanStyle(color = MaterialTheme.colors.primary, textDecoration = TextDecoration.Underline)
   }
+}
+
+@Serializable
+enum class SimplexLinkType(val linkType: String) {
+  contact("contact"),
+  invitation("invitation"),
+  group("group");
+
+  val description: String get() = generalGetString(when (this) {
+      contact -> R.string.simplex_link_contact
+      invitation -> R.string.simplex_link_invitation
+      group -> R.string.simplex_link_group
+  })
 }
 
 @Serializable
@@ -1540,7 +1606,7 @@ enum class FormatColor(val color: String) {
     red -> Color.Red
     green -> SimplexGreen
     blue -> SimplexBlue
-    yellow -> Color.Yellow
+    yellow -> WarningYellow
     cyan -> Color.Cyan
     magenta -> Color.Magenta
     black -> MaterialTheme.colors.onBackground
@@ -1575,11 +1641,9 @@ enum class CICallStatus {
     Accepted -> generalGetString(R.string.callstatus_accepted)
     Negotiated -> generalGetString(R.string.callstatus_connecting)
     Progress -> generalGetString(R.string.callstatus_in_progress)
-    Ended -> String.format(generalGetString(R.string.callstatus_ended), duration(sec))
+    Ended -> String.format(generalGetString(R.string.callstatus_ended), durationToString(sec))
     Error -> generalGetString(R.string.callstatus_error)
   }
-
-  fun duration(sec: Int): String = "%02d:%02d".format(sec / 60, sec % 60)
 }
 
 @Serializable

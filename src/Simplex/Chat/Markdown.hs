@@ -1,5 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
@@ -16,13 +18,21 @@ import Data.Char (isDigit)
 import Data.Either (fromRight)
 import Data.Functor (($>))
 import Data.List (intercalate)
+import Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe, isNothing)
+import Data.Semigroup (sconcat)
 import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import GHC.Generics
-import Simplex.Messaging.Parsers (fstToLower, sumTypeJSON)
+import Simplex.Chat.Types
+import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ConnReqScheme (..), ConnReqUriData (..), ConnectionRequestUri (..), SMPQueue (..))
+import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fstToLower, sumTypeJSON)
+import Simplex.Messaging.Protocol (ProtocolServer (..), SrvLoc (..))
+import Simplex.Messaging.Util (safeDecodeUtf8)
 import System.Console.ANSI.Types
 import qualified Text.Email.Validate as Email
 
@@ -37,9 +47,17 @@ data Format
   | Secret
   | Colored {color :: FormatColor}
   | Uri
+  | SimplexLink {linkType :: SimplexLinkType, simplexUri :: Text, trustedUri :: Bool, smpHosts :: NonEmpty Text}
   | Email
   | Phone
   deriving (Eq, Show, Generic)
+
+data SimplexLinkType = XLContact | XLInvitation | XLGroup
+  deriving (Eq, Show, Generic)
+
+instance ToJSON SimplexLinkType where
+  toJSON = J.genericToJSON . enumJSON $ dropPrefix "XL"
+  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "XL"
 
 colored :: Color -> Format
 colored = Colored . FormatColor
@@ -47,7 +65,9 @@ colored = Colored . FormatColor
 markdown :: Format -> Text -> Markdown
 markdown = Markdown . Just
 
-instance ToJSON Format where toEncoding = J.genericToEncoding $ sumTypeJSON fstToLower
+instance ToJSON Format where
+  toJSON = J.genericToJSON $ sumTypeJSON fstToLower
+  toEncoding = J.genericToEncoding $ sumTypeJSON fstToLower
 
 instance Semigroup Markdown where
   m <> (Markdown _ "") = m
@@ -190,9 +210,27 @@ markdownP = mconcat <$> A.many' fragmentP
     wordMD :: Text -> Markdown
     wordMD s
       | T.null s = unmarked s
-      | isUri s = markdown Uri s
+      | isUri s = case strDecode $ encodeUtf8 s of
+        Right cReq -> markdown (simplexUriFormat cReq) s
+        _ -> markdown Uri s
       | isEmail s = markdown Email s
       | otherwise = unmarked s
     isUri s = T.length s >= 10 && any (`T.isPrefixOf` s) ["http://", "https://", "simplex:/"]
     isEmail s = T.any (== '@') s && Email.isValid (encodeUtf8 s)
     noFormat = pure . unmarked
+    simplexUriFormat :: AConnectionRequestUri -> Format
+    simplexUriFormat = \case
+      ACR _ (CRContactUri crData) ->
+        let uri = safeDecodeUtf8 . strEncode $ CRContactUri crData {crScheme = CRSSimplex}
+         in SimplexLink (linkType' crData) uri (trustedUri' crData) $ uriHosts crData
+      ACR _ (CRInvitationUri crData e2e) ->
+        let uri = safeDecodeUtf8 . strEncode $ CRInvitationUri crData {crScheme = CRSSimplex} e2e
+         in SimplexLink XLInvitation uri (trustedUri' crData) $ uriHosts crData
+      where
+        uriHosts ConnReqUriData {crSmpQueues} = L.map (safeDecodeUtf8 . strEncode) $ sconcat $ L.map (host . qServer) crSmpQueues
+        trustedUri' ConnReqUriData {crScheme} = case crScheme of
+          CRSSimplex -> True
+          CRSAppServer (SrvLoc host _) -> host == "simplex.chat"
+        linkType' ConnReqUriData {crClientData} = case crClientData >>= decodeJSON of
+          Just (CRDataGroup _) -> XLGroup
+          Nothing -> XLContact

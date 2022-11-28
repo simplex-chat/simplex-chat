@@ -41,6 +41,17 @@
     <string name="description_via_one_time_link">через одноразовую ссылку</string>
     <string name="description_via_one_time_link_incognito">инкогнито через одноразовую ссылку</string>
 
+    <!-- FormattedText, SimpleX links - ChatModel.kt -->
+    <string name="simplex_link_contact">SimpleX ссылка-контакт</string>
+    <string name="simplex_link_invitation">SimpleX одноразовая ссылка</string>
+    <string name="simplex_link_group">SimpleX ссылка группы</string>
+    <string name="simplex_link_connection">через <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g></string>
+    <string name="simplex_link_mode">SimpleX ссылки</string>
+    <string name="simplex_link_mode_description">Описание</string>
+    <string name="simplex_link_mode_full">Полная ссылка</string>
+    <string name="simplex_link_mode_browser">В браузере</string>
+    <string name="simplex_link_mode_browser_warning">Использование ссылки в браузере может уменьшить конфиденциальность и безопасность соединения. Ссылки на неизвестные сайты будут красными.</string>
+
     <!-- SimpleXAPI.kt -->
     <string name="error_saving_smp_servers">Ошибка при сохранении SMP серверов</string>
     <string name="ensure_smp_server_address_are_correct_format_and_unique">Пожалуйста, проверьте, что адреса SMP серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется.</string>
@@ -70,6 +81,14 @@
     <string name="error_deleting_contact_request">Ошибка удаления запроса</string>
     <string name="error_deleting_pending_contact_connection">Ошибка удаления ожидаемого соединения</string>
     <string name="error_changing_address">Ошибка при изменении адреса</string>
+    <string name="error_smp_test_failed_at_step">Ошибка теста на шаге %s.</string>
+    <string name="error_smp_test_server_auth">Сервер требует авторизации для создания очередей, проверьте пароль</string>
+    <string name="error_smp_test_certificate">Возможно, хэш сертификата в адресе сервера неверный</string>
+    <string name="smp_server_test_connect">Соединение</string>
+    <string name="smp_server_test_create_queue">Создание очереди</string>
+    <string name="smp_server_test_secure_queue">Защита очереди</string>
+    <string name="smp_server_test_delete_queue">Удаление очереди</string>
+    <string name="smp_server_test_disconnect">Разрыв соединения</string>
 
     <!-- background service notice - SimpleXAPI.kt -->
     <string name="icon_descr_instant_notifications">Мгновенные уведомления</string>
@@ -148,6 +167,7 @@
     <string name="save_verb">Сохранить</string>
     <string name="edit_verb">Редактировать</string>
     <string name="delete_verb">Удалить</string>
+    <string name="allow_verb">Разрешить</string>
     <string name="delete_message__question">Удалить сообщение?</string>
     <string name="delete_message_cannot_be_undone_warning">Сообщение будет удалено – это действие нельзя отменить!</string>
     <string name="for_me_only">Только для меня</string>
@@ -230,11 +250,17 @@
     <!-- Message Actions - SendMsgView.kt -->
     <string name="icon_descr_send_message">Отправить сообщение</string>
     <string name="icon_descr_record_voice_message">Записать голосовое сообщение</string>
+    <string name="allow_voice_messages_question">Разрешить голосовые сообщения?</string>
+    <string name="you_need_to_allow_to_send_voice">Чтобы включить отправку голосовых сообщений, разрешите их вашему контакту.</string>
+    <string name="voice_messages_prohibited">Голосовые сообщения запрещены!</string>
+    <string name="ask_your_contact_to_enable_voice">Попросите вашего контакта разрешить отправку голосовых сообщений.</string>
+    <string name="only_group_owners_can_enable_voice">Только владельцы группы могут разрешить голосовые сообщения.</string>
 
     <!-- General Actions / Responses -->
     <string name="back">Назад</string>
     <string name="cancel_verb">Отменить</string>
     <string name="confirm_verb">Подтвердить</string>
+    <string name="reset_verb">Сбросить</string>
     <string name="ok">OK</string>
     <string name="no_details">нет описания</string>
     <string name="add_contact">Одноразовая ссылка</string>
@@ -365,17 +391,34 @@
     <string name="chat_lock">Блокировка SimpleX</string>
     <string name="chat_console">Консоль</string>
     <string name="smp_servers">SMP серверы</string>
+    <string name="smp_servers_preset_address">Адрес сервера по умолчанию</string>
+    <string name="smp_servers_preset_add">Добавить серверы по умолчанию</string>
+    <string name="smp_servers_add">Добавить сервер…</string>
+    <string name="smp_servers_test_server">Тестировать сервер</string>
+    <string name="smp_servers_test_servers">Тестировать серверы</string>
+    <string name="smp_servers_save">Сохранить серверы</string>
+    <string name="smp_servers_test_failed">Ошибка теста сервера!</string>
+    <string name="smp_servers_test_some_failed">Серверы не прошли тест:</string>
+    <string name="smp_servers_scan_qr">Сканировать QR код сервера</string>
+    <string name="smp_servers_enter_manually">Ввести сервер вручную</string>
+    <string name="smp_servers_preset_server">Сервер по умолчанию</string>
+    <string name="smp_servers_your_server">Ваш сервер</string>
+    <string name="smp_servers_your_server_address">Адрес вашего сервера</string>
+    <string name="smp_servers_use_server">Использовать сервер</string>
+    <string name="smp_servers_use_server_for_new_conn">Использовать для новых соединений</string>
+    <string name="smp_servers_add_to_another_device">Добавить на другое устройство</string>
+    <string name="smp_servers_invalid_address">Ошибка в адресе сервера!</string>
+    <string name="smp_servers_check_address">Проверьте адрес сервера и попробуйте снова.</string>
+    <string name="smp_servers_delete_server">Удалить сервер</string>
     <string name="install_simplex_chat_for_terminal"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> для терминала</string>
     <string name="star_on_github">Поставить звездочку в GitHub</string>
     <string name="contribute">Внести свой вклад</string>
     <string name="rate_the_app">Оценить приложение</string>
     <string name="use_simplex_chat_servers__question">Использовать серверы предосталенные <xliff:g id="appNameFull">SimpleX Chat</xliff:g>?</string>
-    <string name="saved_SMP_servers_will_be_removed">Сохраненные SMP серверы будут удалены.</string>
     <string name="your_SMP_servers">Ваши SMP серверы</string>
-    <string name="configure_SMP_servers">Настройка SMP серверов</string>
     <string name="using_simplex_chat_servers">Используются серверы предоставленные <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.</string>
-    <string name="enter_one_SMP_server_per_line">Введите SMP серверы, каждый сервер в отдельной строке:</string>
     <string name="how_to">Инфо</string>
+    <string name="how_to_use_your_servers">Как использовать серверы</string>
     <string name="saved_ICE_servers_will_be_removed">Сохраненные WebRTC ICE серверы будут удалены.</string>
     <string name="your_ICE_servers">Ваши ICE серверы</string>
     <string name="configure_ICE_servers">Настройка ICE серверов</string>
@@ -425,7 +468,9 @@
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Ваш профиль хранится на вашем устройстве и отправляется только вашим контактам.\n\n<xliff:g id="appName">SimpleX</xliff:g> серверы не могут получить доступ к вашему профилю.</string>
     <string name="edit_image">Поменять аватар</string>
     <string name="delete_image">Удалить аватар</string>
+    <string name="save_and_notify_contact">Сохранить (и уведомить контакт)</string>
     <string name="save_and_notify_contacts">Сохранить (и послать обновление контактам)</string>
+    <string name="save_and_notify_group_members">Сохранить (и уведомить членов группы)</string>
 
     <!-- Welcome Prompts - WelcomeView.kt -->
     <string name="you_control_your_chat">Вы котролируете ваш чат!</string>
@@ -564,8 +609,9 @@
     <!-- Privacy settings -->
     <string name="privacy_and_security">Конфиденциальность</string>
     <string name="your_privacy">Конфиденциальность</string>
+    <string name="protect_app_screen">Защитить экран приложения</string>
     <string name="auto_accept_images">Автоприем изображений</string>
-    <string name="transfer_images_faster">Передавать изображения быстрее (BETA)</string>
+    <string name="transfer_images_faster">Передавать изображения быстрее</string>
     <string name="send_link_previews">Отправлять картинки ссылок</string>
 
     <!-- Settings sections -->
@@ -805,6 +851,7 @@
     <string name="all_group_members_will_remain_connected">Все члены группы, которые соединились через эту ссылку, останутся в группе.</string>
     <string name="error_creating_link_for_group">Ошибка при создании ссылки группы</string>
     <string name="error_deleting_link_for_group">Ошибка при удалении ссылки группы</string>
+    <string name="only_group_owners_can_change_prefs">Только владельцы группы могут изменять предпочтения группы.</string>
 
     <!-- For Console chat info section -->
     <string name="section_title_for_console">ДЛЯ КОНСОЛИ</string>
@@ -836,7 +883,7 @@
     <string name="receiving_via">Получение через</string>
     <string name="sending_via">Отправка через</string>
     <string name="network_status">Состояние сети</string>
-    <string name="switch_receiving_address">Переключить адрес получения (BETA)</string>
+    <string name="switch_receiving_address">Переключить адрес получения</string>
 
     <!-- AddGroupView.kt -->
     <string name="create_secret_group_title">Создать скрытую группу</string>
@@ -885,4 +932,48 @@
     <string name="save_color">Сохранить цвет</string>
     <string name="reset_color">Сбросить цвета</string>
     <string name="color_primary">Акцент</string>
+
+    <!-- Preferences.kt -->
+    <string name="chat_preferences_you_allow">Вы разрешаете</string>
+    <string name="chat_preferences_contact_allows">Контакт разрешает</string>
+    <string name="chat_preferences_default">по умолчанию (%s)</string>
+    <string name="chat_preferences_yes">да</string>
+    <string name="chat_preferences_no">нет</string>
+    <string name="chat_preferences_always">всегда</string>
+    <string name="chat_preferences_on">да</string>
+    <string name="chat_preferences_off">нет</string>
+    <string name="chat_preferences">Предпочтения</string>
+    <string name="contact_preferences">Предпочтения контакта</string>
+    <string name="group_preferences">Предпочтения группы</string>
+    <string name="your_preferences">Ваши предпочтения</string>
+    <string name="full_deletion">Полное удаление</string>
+    <string name="voice_messages">Голосовые сообщения</string>
+    <string name="feature_enabled">включено</string>
+    <string name="feature_enabled_for_you">включено для вас</string>
+    <string name="feature_enabled_for_contact">включено для контакта</string>
+    <string name="feature_off">выключено</string>
+    <string name="feature_received_prohibited">получено, не разрешено</string>
+    <string name="allow_your_contacts_irreversibly_delete">Разрешить вашим контактам необратимо удалять отправленные сообщения.</string>
+    <string name="allow_irreversible_message_deletion_only_if">Разрешить необратимое удаление сообщений, только если ваш контакт разрешает это вам.</string>
+    <string name="contacts_can_mark_messages_for_deletion">Контакты могут помечать сообщения для удаления; вы сможете просмотреть их.</string>
+    <string name="allow_your_contacts_to_send_voice_messages">Разрешить вашим контактам отправлять голосовые сообщения.</string>
+    <string name="allow_voice_messages_only_if">Разрешить голосовые сообщения, только если их разрешает ваш контакт.</string>
+    <string name="prohibit_sending_voice_messages">Запретить отправлять голосовые сообщений.</string>
+    <string name="both_you_and_your_contacts_can_delete">Вы и ваш контакт можете необратимо удалять отправленные сообщения.</string>
+    <string name="only_you_can_delete_messages">Только вы можете необратимо удалять сообщения (ваш контакт может помечать их на удаление).</string>
+    <string name="only_your_contact_can_delete">Только ваш контакт может необратимо удалять сообщения (вы можете помечать их на удаление).</string>
+    <string name="message_deletion_prohibited">Необратимое удаление сообщений запрещено в этом чате.</string>
+    <string name="both_you_and_your_contact_can_send_voice">Вы и ваш контакт можете отправлять голосовые сообщения.</string>
+    <string name="only_you_can_send_voice">Только вы можете отправлять голосовые сообщения.</string>
+    <string name="only_your_contact_can_send_voice">Только ваш контакт может отправлять голосовые сообщения.</string>
+    <string name="voice_prohibited_in_this_chat">Голосовые сообщения запрещены в этом чате.</string>
+    <string name="allow_to_delete_messages">Разрешить необратимо удалять отправленные сообщения.</string>
+    <string name="prohibit_message_deletion">Запретить необратимое удаление сообщений.</string>
+    <string name="allow_to_send_voice">Разрешить отправлять голосовые сообщения.</string>
+    <string name="prohibit_sending_voice">Запретить отправлять голосовые сообщений.</string>
+    <string name="group_members_can_delete">Члены группы могут необратимо удалять отправленные сообщения.</string>
+    <string name="message_deletion_prohibited_in_chat">Необратимое удаление сообщений запрещено в этом чате.</string>
+    <string name="group_members_can_send_voice">Члены группы могут отправлять голосовые сообщения.</string>
+    <string name="voice_messages_are_prohibited">Голосовые сообщения запрещены в этом чате.</string>
+
 </resources>

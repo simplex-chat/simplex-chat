@@ -50,7 +50,7 @@ struct CIFileView: View {
 
     func fileSizeValid() -> Bool {
         if let file = file {
-            return file.fileSize <= maxFileSize
+            return file.fileSize <= MAX_FILE_SIZE
         }
         return false
     }
@@ -66,7 +66,7 @@ struct CIFileView: View {
                         await receiveFile(fileId: file.fileId)
                     }
                 } else {
-                    let prettyMaxFileSize = ByteCountFormatter().string(fromByteCount: maxFileSize)
+                    let prettyMaxFileSize = ByteCountFormatter().string(fromByteCount: MAX_FILE_SIZE)
                     AlertManager.shared.showAlertMsg(
                         title: "Large file!",
                         message: "Your contact sent a file that is larger than currently supported maximum size (\(prettyMaxFileSize))."
@@ -79,7 +79,7 @@ struct CIFileView: View {
                 )
             case .rcvComplete:
                 logger.debug("CIFileView fileAction - in .rcvComplete")
-                if let filePath = getLoadedFilePath(file){
+                if let filePath = getLoadedFilePath(file) {
                     let url = URL(fileURLWithPath: filePath)
                     showShareSheet(items: [url])
                 }
@@ -148,7 +148,7 @@ struct CIFileView_Previews: PreviewProvider {
             quotedItem: nil,
             file: nil
         )
-        Group{
+        Group {
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: sentFile)
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample())
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample(fileName: "some_long_file_name_here", fileStatus: .rcvInvitation))

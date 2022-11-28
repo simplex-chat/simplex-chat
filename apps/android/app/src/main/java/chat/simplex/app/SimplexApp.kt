@@ -32,6 +32,7 @@ external fun chatSendCmd(ctrl: ChatCtrl, msg: String): String
 external fun chatRecvMsg(ctrl: ChatCtrl): String
 external fun chatRecvMsgWait(ctrl: ChatCtrl, timeout: Int): String
 external fun chatParseMarkdown(str: String): String
+external fun chatParseServer(str: String): String
 
 class SimplexApp: Application(), LifecycleEventObserver {
   lateinit var chatController: ChatController

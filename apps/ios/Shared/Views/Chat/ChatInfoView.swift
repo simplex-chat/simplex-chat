@@ -9,7 +9,7 @@
 import SwiftUI
 import SimpleXChat
 
-func infoRow(_ title: LocalizedStringKey, _ value: String) -> some View {
+func infoRow<S>(_ title: S, _ value: String) -> some View where S: StringProtocol {
     HStack {
         Text(title)
         Spacer()
@@ -108,10 +108,8 @@ struct ChatInfoView: View {
                         .onTapGesture {
                             alert = .networkStatusAlert
                         }
-                    if developerTools {
-                        Button("Change receiving address (BETA)") {
-                            alert = .switchAddressAlert
-                        }
+                    Button("Change receiving address") {
+                        alert = .switchAddressAlert
                     }
                     if let connStats = connectionStats {
                         smpServers("Receiving via", connStats.rcvServers)

@@ -119,6 +119,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
       chatModel.chatItems,
       searchText,
       useLinkPreviews = useLinkPreviews,
+      linkMode = chatModel.simplexLinkMode.value,
       chatModelIncognito = chatModel.incognito.value,
       back = {
         hideKeyboard(view)
@@ -128,14 +129,16 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
       info = {
         hideKeyboard(view)
         withApi {
-          val cInfo = chat.chatInfo
-          if (cInfo is ChatInfo.Direct) {
-            val contactInfo = chatModel.controller.apiContactInfo(cInfo.apiId)
+          if (chat.chatInfo is ChatInfo.Direct) {
+            val contactInfo = chatModel.controller.apiContactInfo(chat.chatInfo.apiId)
             ModalManager.shared.showModalCloseable(true) { close ->
-              ChatInfoView(chatModel, cInfo.contact, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, close)
+              val contact = remember { derivedStateOf { (chatModel.getContactChat(chat.chatInfo.contact.contactId)?.chatInfo as? ChatInfo.Direct)?.contact } }
+              contact.value?.let { ct ->
+                ChatInfoView(chatModel, ct, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, close)
+              }
             }
-          } else if (cInfo is ChatInfo.Group) {
-            setGroupMembers(cInfo.groupInfo, chatModel)
+          } else if (chat.chatInfo is ChatInfo.Group) {
+            setGroupMembers(chat.chatInfo.groupInfo, chatModel)
             ModalManager.shared.showModalCloseable(true) { close ->
               GroupChatInfoView(chatModel, close)
             }
@@ -240,6 +243,7 @@ fun ChatLayout(
   chatItems: List<ChatItem>,
   searchValue: State<String>,
   useLinkPreviews: Boolean,
+  linkMode: SimplexLinkMode,
   chatModelIncognito: Boolean,
   back: () -> Unit,
   info: () -> Unit,
@@ -289,7 +293,7 @@ fun ChatLayout(
           BoxWithConstraints(Modifier.fillMaxHeight().padding(contentPadding)) {
             ChatItemsList(
               chat, unreadCount, composeState, chatItems, searchValue,
-              useLinkPreviews, chatModelIncognito, showMemberInfo, loadPrevMessages, deleteMessage,
+              useLinkPreviews, linkMode, chatModelIncognito, showMemberInfo, loadPrevMessages, deleteMessage,
               receiveFile, joinGroup, acceptCall, markRead, setFloatingButton, onComposed,
             )
           }
@@ -447,6 +451,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   chatItems: List<ChatItem>,
   searchValue: State<String>,
   useLinkPreviews: Boolean,
+  linkMode: SimplexLinkMode,
   chatModelIncognito: Boolean,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
   loadPrevMessages: (ChatInfo) -> Unit,
@@ -559,11 +564,11 @@ fun BoxWithConstraintsScope.ChatItemsList(
               } else {
                 Spacer(Modifier.size(42.dp))
               }
-              ChatItemView(chat.chatInfo, cItem, composeState, provider, showMember = showMember, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall, scrollToItem = scrollToItem)
+              ChatItemView(chat.chatInfo, cItem, composeState, provider, showMember = showMember, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall, scrollToItem = scrollToItem)
             }
           } else {
             Box(Modifier.padding(start = 104.dp, end = 12.dp).then(swipeableModifier)) {
-              ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall, scrollToItem = scrollToItem)
+              ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall, scrollToItem = scrollToItem)
             }
           }
         } else { // direct message
@@ -574,7 +579,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
               end = if (sent) 12.dp else 76.dp,
             ).then(swipeableModifier)
           ) {
-            ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = joinGroup, acceptCall = acceptCall, scrollToItem = scrollToItem)
+            ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = joinGroup, acceptCall = acceptCall, scrollToItem = scrollToItem)
           }
         }
 
@@ -948,6 +953,7 @@ fun PreviewChatLayout() {
       chatItems = chatItems,
       searchValue,
       useLinkPreviews = true,
+      linkMode = SimplexLinkMode.DESCRIPTION,
       chatModelIncognito = false,
       back = {},
       info = {},
@@ -1005,6 +1011,7 @@ fun PreviewGroupChatLayout() {
       chatItems = chatItems,
       searchValue,
       useLinkPreviews = true,
+      linkMode = SimplexLinkMode.DESCRIPTION,
       chatModelIncognito = false,
       back = {},
       info = {},

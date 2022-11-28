@@ -10,6 +10,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import androidx.core.text.BidiFormatter
@@ -49,6 +50,7 @@ fun MarkdownText (
   uriHandler: UriHandler? = null,
   senderBold: Boolean = false,
   modifier: Modifier = Modifier,
+  linkMode: SimplexLinkMode,
   onLinkLongClick: (link: String) -> Unit = {}
 ) {
   val textLayoutDirection = remember (text) {
@@ -79,12 +81,16 @@ fun MarkdownText (
         for (ft in formattedText) {
           if (ft.format == null) append(ft.text)
           else {
-            val link = ft.link
+            val link = ft.link(linkMode)
             if (link != null) {
               hasLinks = true
-              val ftStyle = ft.format.style
+              val ftStyle = if (ft.format is Format.SimplexLink && !ft.format.trustedUri && linkMode == SimplexLinkMode.BROWSER) {
+                SpanStyle(color = Color.Red, textDecoration = TextDecoration.Underline)
+              } else {
+                ft.format.style
+              }
               withAnnotation(tag = "URL", annotation = link) {
-                withStyle(ftStyle) { append(ft.text) }
+                withStyle(ftStyle) { append(ft.viewText(linkMode)) }
               }
             } else {
               withStyle(ft.format.style) { append(ft.text) }

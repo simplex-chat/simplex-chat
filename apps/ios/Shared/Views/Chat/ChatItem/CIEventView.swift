@@ -20,27 +20,27 @@ struct CIEventView: View {
                     .foregroundColor(.secondary)
                     .fontWeight(.light)
                 + Text(" ")
-                + eventText()
+                + chatEventText(chatItem)
             } else {
-                eventText()
+                chatEventText(chatItem)
             }
         }
         .padding(.leading, 6)
         .padding(.bottom, 6)
         .textSelection(.disabled)
     }
+}
 
-    func eventText() -> Text {
-        Text(chatItem.content.text)
-            .font(.caption)
-            .foregroundColor(.secondary)
-            .fontWeight(.light)
-        + Text(" ")
-        + chatItem.timestampText
-            .font(.caption)
-            .foregroundColor(Color.secondary)
-            .fontWeight(.light)
-    }
+func chatEventText(_ ci: ChatItem) -> Text {
+    Text(ci.content.text)
+        .font(.caption)
+        .foregroundColor(.secondary)
+        .fontWeight(.light)
+    + Text(" ")
+    + ci.timestampText
+        .font(.caption)
+        .foregroundColor(Color.secondary)
+        .fontWeight(.light)
 }
 
 struct CIEventView_Previews: PreviewProvider {
