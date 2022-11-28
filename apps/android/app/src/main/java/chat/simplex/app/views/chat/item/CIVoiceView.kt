@@ -55,7 +55,10 @@ fun CIVoiceView(
         AudioPlayer.pause(audioPlaying, progress)
       }
 
-      val time = if (audioPlaying.value) progress.value else duration.value
+      val time = when {
+        audioPlaying.value || progress.value != 0 -> progress.value
+        else -> duration.value
+      }
       val minWidth = with(LocalDensity.current) { 45.sp.toDp() }
       val text = durationToString(time / 1000)
       if (hasText) {
