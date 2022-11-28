@@ -263,7 +263,14 @@ public enum Feature: String, Decodable {
     public var icon: String {
         switch self {
         case .fullDelete: return "trash.slash"
-        case .voice: return "speaker.wave.2"
+        case .voice: return "mic"
+        }
+    }
+
+    public var iconFilled: String {
+        switch self {
+        case .fullDelete: return "trash.slash.fill"
+        case .voice: return "mic.fill"
         }
     }
 
