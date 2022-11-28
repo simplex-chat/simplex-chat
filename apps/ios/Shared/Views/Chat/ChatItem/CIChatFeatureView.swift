@@ -16,22 +16,13 @@ struct CIChatFeatureView: View {
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 4) {
-            if chatItem.chatDir.sent {
-                chatEventText(chatItem)
-                featureIcon()
-            } else {
-                featureIcon()
-                chatEventText(chatItem)
-            }
+            Image(systemName: feature.iconFilled)
+                .foregroundColor(iconColor)
+            chatEventText(chatItem)
         }
         .padding(.leading, 6)
         .padding(.bottom, 6)
         .textSelection(.disabled)
-    }
-
-    private func featureIcon() -> some View {
-        Image(systemName: feature.iconFilled)
-            .foregroundColor(iconColor)
     }
 }
 

@@ -16,32 +16,17 @@ fun CIChatFeatureView(
   feature: Feature,
   iconColor: Color
 ) {
-  @Composable
-  fun featureIcon() {
+  Row(
+    Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.spacedBy(4.dp)
+  ) {
     Icon(feature.iconFilled, feature.text, Modifier.size(15.dp), tint = iconColor)
-  }
-
-  @Composable
-  fun featureText() {
     Text(
       chatEventText(chatItem),
       Modifier,
       // this is important. Otherwise, aligning will be bad because annotated string has a Span with size 12.sp
       fontSize = 12.sp
     )
-  }
-
-  Row(
-    Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
-    verticalAlignment = Alignment.CenterVertically,
-    horizontalArrangement = Arrangement.spacedBy(4.dp)
-  ) {
-    if (chatItem.chatDir.sent) {
-      featureText()
-      featureIcon()
-    } else {
-      featureIcon()
-      featureText()
-    }
   }
 }
