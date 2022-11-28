@@ -13,6 +13,7 @@ _Please note_: when you change the servers in the app configuration, it only aff
 0. First, install `smp-server`:
 
    - Manual deployment:
+
      - [Compiling from source](https://github.com/simplex-chat/simplexmq#using-your-distribution)
      - [Using pre-compiled binaries](https://github.com/simplex-chat/simplexmq#install-binaries)
 
@@ -97,19 +98,19 @@ There are several options to consider:
 - `Enable store log to restore queues and messages on server restart (Yn):`
 
   Enter `y` to enable saving and restoring connections and messages when the server is restarted.
-  
+
   _Please note_: it is important to use SIGINT to restart the server, as otherwise the undelivered messages will not be restored. The connections will be restored irrespective of how the server is restarted, as unlike messages they are added to append-only log on every change.
-  
+
 - `Enable logging daily statistics (yN):`
 
   Enter `y` to enable logging statistics in CSV format, e.g. they can be used to show aggregate usage charts in `Grafana`.
-  
-These statistics include daily counts of created, secured and deleted queues, sent and received messages, and also daily, weekly, and monthly counts of active queues (that is, the queues that were used for any messages). We believe that this information does not include anything that would allow correlating different queues as belonging to the same users, but please let us know, confidentially, if you believe that this can be exploited in any way. 
-  
+
+These statistics include daily counts of created, secured and deleted queues, sent and received messages, and also daily, weekly, and monthly counts of active queues (that is, the queues that were used for any messages). We believe that this information does not include anything that would allow correlating different queues as belonging to the same users, but please let us know, confidentially, if you believe that this can be exploited in any way.
+
 - `Require a password to create new messaging queues?`
 
   Enter `r` or your arbitrary password to password-protect `smp-server`, or `n` to disable password protection.
-  
+
 - `Enter server FQDN or IP address for certificate (127.0.0.1):`
 
   Enter your domain or ip address that your smp-server is running on - it will be included in server certificates and also printed as part of server address.
@@ -152,6 +153,7 @@ sudo su smp -c "smp-server init -y -l --ip 192.168.1.5 --password test"
 ```
 
 to initilize your `smp-server` configuration with:
+
 - restoring connections and messages when the server is restarted (`-l` flag),
 - IP address `192.168.1.5`,
 - protect `smp-server` with a password `test`.
@@ -289,7 +291,6 @@ fromTime,qCreated,qSecured,qDeleted,msgSent,msgRecv,dayMsgQueues,weekMsgQueues,m
 - `weekMsgQueues` - int; created queues in a week
 
 - `monthMsgQueues` - int; created queues in a month
-  
 
 To import `csv` to `Grafana` one should:
 
@@ -301,6 +302,7 @@ To import `csv` to `Grafana` one should:
    [plugin.marcusolsson-csv-datasource]
    allow_local_mode = true
    ```
+
    ... to `/etc/grafana/grafana.ini`
 
 3. Add a CSV data source:
@@ -310,11 +312,17 @@ To import `csv` to `Grafana` one should:
    - Enter "CSV" in the search box to find the CSV data source
    - Click the search result that says "CSV"
    - In URL, enter a file that points to CSV content
-  
+
 4. You're done! You should be able to create your own dashboard with statistics.
 
 For further documentation, see: [CSV Data Source for Grafana - Documentation](https://grafana.github.io/grafana-csv-datasource/)
 
 ### Configuring the app to use the server
 
-TODO Inlcude screenshot of the new UI
+To configure the app to use your messaging server copy it's full address, including password, and add it to the app. You have an option to use your server together with preset servers or without them - you can remove or disable them.
+
+It is also possible to share the address of your server with your friends by letting them scan QR code from server settings - it will include server password, so they will be able to receive messages via your server as well.
+
+_Please note_: you need SMP server version 4.0 to have password support. If you already have a deployed server, you can add password by adding it to server INI file.
+
+<img src="./server_config_1.png" width="288"> &nbsp;&nbsp; <img src="./server_config_2.png" width="288"> &nbsp;&nbsp; <img src="./server_config_3.png" width="288">
