@@ -30,7 +30,7 @@ fun SMPServersView(m: ChatModel) {
   }
   val testing = rememberSaveable { mutableStateOf(false) }
   val serversUnchanged = remember { derivedStateOf { servers == m.userSMPServers.value || testing.value } }
-  val allServersDisabled = remember { derivedStateOf { servers.all { srv -> !srv.enabled } } }
+  val allServersDisabled = remember { derivedStateOf { servers.all { !it.enabled } } }
   val saveDisabled = remember {
     derivedStateOf {
       servers.isEmpty() ||
