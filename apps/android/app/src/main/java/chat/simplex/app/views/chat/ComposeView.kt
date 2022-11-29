@@ -239,7 +239,22 @@ fun ComposeView(
       AttachmentOption.TakePhoto -> {
         when (PackageManager.PERMISSION_GRANTED) {
           ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) -> {
-            cameraLauncher.launch(null)
+            try {
+              cameraLauncher.launch(null)
+            } catch (e: ActivityNotFoundException) {
+              // No Activity found to handle Intent android.media.action.IMAGE_CAPTURE
+              // Means, no system camera app (Android 11+ requirement)
+              // https://developer.android.com/about/versions/11/behavior-changes-11#media-capture
+              Log.e(TAG, "Camera launcher: " + e.stackTraceToString())
+
+             try {
+               // Try to open any camera just to capture an image, will not be returned like with previous intent
+               context.startActivity(Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA))
+             } catch (e: ActivityNotFoundException) {
+               // No camera apps available at all
+               Log.e(TAG, "Camera launcher2: " + e.stackTraceToString())
+             }
+            }
           }
           else -> {
             cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
