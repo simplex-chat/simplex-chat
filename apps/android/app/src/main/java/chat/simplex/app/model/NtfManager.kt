@@ -174,7 +174,6 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
         NotificationCompat.Builder(context, LockScreenCallChannel)
           .setFullScreenIntent(fullScreenPendingIntent, true)
           .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-          .setCategory(NotificationCompat.CATEGORY_CALL)
           .setSilent(false)
       } else {
         val soundUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + context.packageName + "/" + R.raw.ring_once)
