@@ -8,9 +8,7 @@ import android.os.Vibrator
 import androidx.core.content.ContextCompat
 import chat.simplex.app.R
 import chat.simplex.app.SimplexApp
-import chat.simplex.app.views.helpers.withScope
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 
 class SoundPlayer {
   private var player: MediaPlayer? = null
@@ -31,8 +29,8 @@ class SoundPlayer {
     val vibrator = ContextCompat.getSystemService(cxt, Vibrator::class.java)
     val effect = VibrationEffect.createOneShot(250, VibrationEffect.DEFAULT_AMPLITUDE)
     playing = true
-    withScope(scope) {
-      while (playing) {
+    scope.launch {
+      while (isActive && playing) {
         if (sound) player?.start()
         vibrator?.vibrate(effect)
         delay(3500)
