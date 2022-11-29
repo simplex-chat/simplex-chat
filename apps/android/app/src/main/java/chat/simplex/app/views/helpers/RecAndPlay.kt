@@ -1,6 +1,8 @@
 package chat.simplex.app.views.helpers
 
+import android.content.Context
 import android.media.*
+import android.media.AudioManager.AudioPlaybackCallback
 import android.media.MediaRecorder.MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED
 import android.os.Build
 import android.util.Log
@@ -94,6 +96,17 @@ object AudioPlayer {
         .setUsage(AudioAttributes.USAGE_MEDIA)
         .build()
     )
+    (SimplexApp.context.getSystemService(Context.AUDIO_SERVICE) as AudioManager)
+      .registerAudioPlaybackCallback(object: AudioPlaybackCallback() {
+        override fun onPlaybackConfigChanged(configs: MutableList<AudioPlaybackConfiguration>?) {
+          if (configs?.any { it.audioAttributes.usage == AudioAttributes.USAGE_VOICE_COMMUNICATION } == true) {
+            // In a process of making a call
+            RecorderNative.stopRecording?.invoke()
+            stop()
+          }
+          super.onPlaybackConfigChanged(configs)
+        }
+      }, null)
   }
   private val helperPlayer: MediaPlayer =  MediaPlayer().apply {
         setAudioAttributes(
