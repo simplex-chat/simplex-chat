@@ -1,6 +1,5 @@
 package chat.simplex.app.views.chat.item
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
@@ -20,7 +19,6 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
@@ -38,7 +36,7 @@ fun CIVoiceView(
   longClick: () -> Unit,
 ) {
   Row(
-    Modifier.padding(top = 4.dp, bottom = 6.dp, start = 6.dp, end = 6.dp),
+    Modifier.padding(top = if (hasText) 14.dp else 4.dp, bottom = if (hasText) 14.dp else 6.dp, start = 6.dp, end = 6.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
     if (file != null) {
@@ -55,67 +53,16 @@ fun CIVoiceView(
       val pause = {
         AudioPlayer.pause(audioPlaying, progress)
       }
-
-      val time = if (audioPlaying.value) progress.value else duration.value
-      val minWidth = with(LocalDensity.current) { 45.sp.toDp() }
-      val text = durationToString(time / 1000)
-      if (hasText) {
-        VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick)
-        Text(
-          text,
-          Modifier
-            .padding(start = 12.dp, end = 5.dp)
-            .widthIn(min = minWidth),
-          color = HighOrLowlight,
-          fontSize = 16.sp,
-          textAlign = TextAlign.Start,
-          maxLines = 1
-        )
-      } else {
-        if (sent) {
-          Row {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-              Spacer(Modifier.height(56.dp))
-              Text(
-                text,
-                Modifier
-                  .padding(end = 12.dp)
-                  .widthIn(min = minWidth),
-                color = HighOrLowlight,
-                fontSize = 16.sp,
-                maxLines = 1
-              )
-            }
-            Column {
-              VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick)
-              Box(Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp)) {
-                CIMetaView(ci, metaColor)
-              }
-            }
+      val text = remember {
+        derivedStateOf {
+          val time = when {
+            audioPlaying.value || progress.value != 0 -> progress.value
+            else -> duration.value
           }
-        } else {
-          Row {
-            Column {
-              VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick)
-              Box(Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp)) {
-                CIMetaView(ci, metaColor)
-              }
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-              Text(
-                text,
-                Modifier
-                  .padding(start = 12.dp)
-                  .widthIn(min = minWidth),
-                color = HighOrLowlight,
-                fontSize = 16.sp,
-                maxLines = 1
-              )
-              Spacer(Modifier.height(56.dp))
-            }
-          }
+          durationToString(time / 1000)
         }
       }
+      VoiceLayout(file, ci, metaColor, text, audioPlaying, progress, duration, brokenAudio, sent, hasText, play, pause, longClick)
     } else {
       VoiceMsgIndicator(null, false, sent, hasText, null, null, false, {}, {}, longClick)
       val metaReserve = if (edited)
@@ -125,6 +72,73 @@ fun CIVoiceView(
       Text(metaReserve)
     }
   }
+}
+
+@Composable
+private fun VoiceLayout(
+  file: CIFile,
+  ci: ChatItem,
+  metaColor: Color,
+  text: State<String>,
+  audioPlaying: State<Boolean>,
+  progress: State<Int>,
+  duration: State<Int>,
+  brokenAudio: Boolean,
+  sent: Boolean,
+  hasText: Boolean,
+  play: () -> Unit,
+  pause: () -> Unit,
+  longClick: () -> Unit
+) {
+  when {
+    hasText -> {
+      Spacer(Modifier.width(6.dp))
+      VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick)
+      DurationText(text, PaddingValues(start = 12.dp))
+    }
+    sent -> {
+      Row {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          Spacer(Modifier.height(56.dp))
+          DurationText(text, PaddingValues(end = 12.dp))
+        }
+        Column {
+          VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick)
+          Box(Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp)) {
+            CIMetaView(ci, metaColor)
+          }
+        }
+      }
+    }
+    else -> {
+      Row {
+        Column {
+          VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick)
+          Box(Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp)) {
+            CIMetaView(ci, metaColor)
+          }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          DurationText(text, PaddingValues(start = 12.dp))
+          Spacer(Modifier.height(56.dp))
+        }
+      }
+    }
+  }
+}
+
+@Composable
+private fun DurationText(text: State<String>, padding: PaddingValues) {
+  val minWidth = with(LocalDensity.current) { 45.sp.toDp() }
+  Text(
+    text.value,
+    Modifier
+      .padding(padding)
+      .widthIn(min = minWidth),
+    color = HighOrLowlight,
+    fontSize = 16.sp,
+    maxLines = 1
+  )
 }
 
 @Composable
@@ -177,12 +191,12 @@ private fun VoiceMsgIndicator(
   pause: () -> Unit,
   longClick: () -> Unit
 ) {
-  val strokeWidth = with(LocalDensity.current){ 3.dp.toPx() }
+  val strokeWidth = with(LocalDensity.current) { 3.dp.toPx() }
   val strokeColor = MaterialTheme.colors.primary
   if (file != null && file.loaded && progress != null && duration != null) {
     val angle = 360f * (progress.value.toDouble() / duration.value).toFloat()
     if (hasText) {
-      IconButton({ if (!audioPlaying) play() else pause() }, Modifier.drawRingModifier(angle, strokeColor, strokeWidth)) {
+      IconButton({ if (!audioPlaying) play() else pause() }, Modifier.size(56.dp).drawRingModifier(angle, strokeColor, strokeWidth)) {
         Icon(
           imageVector = if (audioPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
           contentDescription = null,
@@ -196,7 +210,8 @@ private fun VoiceMsgIndicator(
   } else {
     if (file?.fileStatus == CIFileStatus.RcvInvitation
       || file?.fileStatus == CIFileStatus.RcvTransfer
-      || file?.fileStatus == CIFileStatus.RcvAccepted) {
+      || file?.fileStatus == CIFileStatus.RcvAccepted
+    ) {
       Box(
         Modifier
           .size(56.dp)

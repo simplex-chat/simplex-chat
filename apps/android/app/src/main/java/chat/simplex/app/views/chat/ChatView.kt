@@ -465,7 +465,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
 ) {
   val listState = rememberLazyListState()
   val scope = rememberCoroutineScope()
-  ScrollToBottom(chat.id, listState)
+  ScrollToBottom(chat.id, listState, chatItems)
   var prevSearchEmptiness by rememberSaveable { mutableStateOf(searchValue.value.isEmpty()) }
   // Scroll to bottom when search value changes from something to nothing and back
   LaunchedEffect(searchValue.value.isEmpty()) {
@@ -503,7 +503,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
       }
   }
   LazyColumn(Modifier.align(Alignment.BottomCenter), state = listState, reverseLayout = true) {
-    itemsIndexed(reversedChatItems) { i, cItem ->
+    itemsIndexed(reversedChatItems, key = { _, item -> item.id}) { i, cItem ->
       CompositionLocalProvider(
         // Makes horizontal and vertical scrolling to coexist nicely.
         // With default touchSlop when you scroll LazyColumn, you can unintentionally open reply view
@@ -598,7 +598,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
 }
 
 @Composable
-private fun ScrollToBottom(chatId: ChatId, listState: LazyListState) {
+private fun ScrollToBottom(chatId: ChatId, listState: LazyListState, chatItems: List<ChatItem>) {
   val scope = rememberCoroutineScope()
   // Helps to scroll to bottom after moving from Group to Direct chat
   // and prevents scrolling to bottom on orientation change
@@ -609,6 +609,19 @@ private fun ScrollToBottom(chatId: ChatId, listState: LazyListState) {
     }
     // Don't autoscroll next time until it will be needed
     shouldAutoScroll = false to chatId
+  }
+  /*
+  * Since we use key with each item in LazyColumn, LazyColumn will not autoscroll to bottom item. We need to do it ourselves.
+  * When the first visible item (from bottom) is fully visible we can autoscroll to 0 item
+  * */
+  LaunchedEffect(Unit) {
+    snapshotFlow { chatItems.lastOrNull()?.id }
+      .distinctUntilChanged()
+      .filter { listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0 }
+      .filter { listState.layoutInfo.visibleItemsInfo.firstOrNull()?.key != it }
+      .collect {
+        listState.animateScrollToItem(0)
+      }
   }
 }
 

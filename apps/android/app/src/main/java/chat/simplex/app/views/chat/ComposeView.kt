@@ -494,7 +494,7 @@ fun ComposeView(
 
   fun cancelVoice() {
     composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
-    chosenContent.value = emptyList()
+    chosenAudio.value = null
   }
 
   fun cancelFile() {
@@ -589,6 +589,12 @@ fun ComposeView(
                 contactPreference.allow == FeatureAllowed.YES
           }
           else -> false
+        }
+      }
+      LaunchedEffect(allowedVoiceByPrefs) {
+        if (!allowedVoiceByPrefs && chosenAudio.value != null) {
+          // Voice was disabled right when this user records it, just cancel it
+          cancelVoice()
         }
       }
       SendMsgView(

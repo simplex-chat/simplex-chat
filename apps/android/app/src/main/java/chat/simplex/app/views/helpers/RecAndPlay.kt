@@ -1,6 +1,8 @@
 package chat.simplex.app.views.helpers
 
+import android.content.Context
 import android.media.*
+import android.media.AudioManager.AudioPlaybackCallback
 import android.media.MediaRecorder.MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED
 import android.os.Build
 import android.util.Log
@@ -94,6 +96,17 @@ object AudioPlayer {
         .setUsage(AudioAttributes.USAGE_MEDIA)
         .build()
     )
+    (SimplexApp.context.getSystemService(Context.AUDIO_SERVICE) as AudioManager)
+      .registerAudioPlaybackCallback(object: AudioPlaybackCallback() {
+        override fun onPlaybackConfigChanged(configs: MutableList<AudioPlaybackConfiguration>?) {
+          if (configs?.any { it.audioAttributes.usage == AudioAttributes.USAGE_VOICE_COMMUNICATION } == true) {
+            // In a process of making a call
+            RecorderNative.stopRecording?.invoke()
+            stop()
+          }
+          super.onPlaybackConfigChanged(configs)
+        }
+      }, null)
   }
   private val helperPlayer: MediaPlayer =  MediaPlayer().apply {
         setAudioAttributes(
@@ -104,12 +117,15 @@ object AudioPlayer {
         )
   }
   // Filepath: String, onProgressUpdate
-  // onProgressUpdate(null) means stop
-  private val currentlyPlaying: MutableState<Pair<String, (position: Int?) -> Unit>?> = mutableStateOf(null)
+  private val currentlyPlaying: MutableState<Pair<String, (position: Int?, state: TrackState) -> Unit>?> = mutableStateOf(null)
   private var progressJob: Job? = null
 
+  enum class TrackState {
+    PLAYING, PAUSED, REPLACED
+  }
+
   // Returns real duration of the track
-  private fun start(filePath: String, seek: Int? = null, onProgressUpdate: (position: Int?) -> Unit): Int? {
+  private fun start(filePath: String, seek: Int? = null, onProgressUpdate: (position: Int?, state: TrackState) -> Unit): Int? {
     if (!File(filePath).exists()) {
       Log.e(TAG, "No such file: $filePath")
       return null
@@ -138,16 +154,16 @@ object AudioPlayer {
     player.start()
     currentlyPlaying.value = filePath to onProgressUpdate
     progressJob = CoroutineScope(Dispatchers.Default).launch {
-      onProgressUpdate(player.currentPosition)
+      onProgressUpdate(player.currentPosition, TrackState.PLAYING)
       while(isActive && player.isPlaying) {
         // Even when current position is equal to duration, the player has isPlaying == true for some time,
         // so help to make the playback stopped in UI immediately
         if (player.currentPosition == player.duration) {
-          onProgressUpdate(player.currentPosition)
+          onProgressUpdate(player.currentPosition, TrackState.PLAYING)
           break
         }
         delay(50)
-        onProgressUpdate(player.currentPosition)
+        onProgressUpdate(player.currentPosition, TrackState.PLAYING)
       }
       /*
       * Since coroutine is still NOT canceled, means player ended (no stop/no pause). But in some cases
@@ -155,9 +171,9 @@ object AudioPlayer {
       * Let's say to a listener that the position == duration in case of coroutine finished without cancel
       * */
       if (isActive) {
-        onProgressUpdate(player.duration)
+        onProgressUpdate(player.duration, TrackState.PAUSED)
       }
-      onProgressUpdate(null)
+      onProgressUpdate(null, TrackState.PAUSED)
     }
     return player.duration
   }
@@ -170,7 +186,7 @@ object AudioPlayer {
   }
 
   fun stop() {
-    if (!player.isPlaying) return
+    if (currentlyPlaying.value == null) return
     player.stop()
     stopListener()
   }
@@ -185,11 +201,21 @@ object AudioPlayer {
   }
 
   private fun stopListener() {
+    val afterCoroutineCancel: CompletionHandler = {
+      // Notify prev audio listener about stop
+      currentlyPlaying.value?.second?.invoke(null, TrackState.REPLACED)
+      currentlyPlaying.value = null
+    }
+    /** Preventing race by calling a code AFTER coroutine ends, so [TrackState] will be:
+     * [TrackState.PLAYING] -> [TrackState.PAUSED] -> [TrackState.REPLACED] (in this order)
+     * */
+    if (progressJob != null) {
+      progressJob?.invokeOnCompletion(afterCoroutineCancel)
+    } else {
+      afterCoroutineCancel(null)
+    }
     progressJob?.cancel()
     progressJob = null
-    // Notify prev audio listener about stop
-    currentlyPlaying.value?.second?.invoke(null)
-    currentlyPlaying.value = null
   }
 
   fun play(
@@ -197,21 +223,21 @@ object AudioPlayer {
     audioPlaying: MutableState<Boolean>,
     progress: MutableState<Int>,
     duration: MutableState<Int>,
-    resetOnStop: Boolean = false
+    resetOnEnd: Boolean,
   ) {
     if (progress.value == duration.value) {
       progress.value = 0
     }
-    val realDuration = start(filePath ?: return, progress.value) { pro ->
+    val realDuration = start(filePath ?: return, progress.value) { pro, state ->
       if (pro != null) {
         progress.value = pro
       }
       if (pro == null || pro == duration.value) {
         audioPlaying.value = false
-        if (resetOnStop) {
+        if (pro == duration.value) {
+          progress.value = if (resetOnEnd) 0 else duration.value
+        } else if (state == TrackState.REPLACED) {
           progress.value = 0
-        } else if (pro == duration.value) {
-          progress.value = duration.value
         }
       }
     }
