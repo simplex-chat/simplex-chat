@@ -320,13 +320,15 @@ public enum ChatFeature: String, Decodable, Feature {
 public enum GroupFeature: String, Decodable, Feature {
     case fullDelete
     case voice
+    case directMessages
 
-    public var values: [GroupFeature] { [.fullDelete, .voice] }
+    public var values: [GroupFeature] { [.directMessages, .fullDelete, .voice] }
 
     public var id: Self { self }
 
     public var text: String {
         switch self {
+        case .directMessages: return NSLocalizedString("Direct messages", comment: "chat feature")
         case .fullDelete: return NSLocalizedString("Full deletion", comment: "chat feature")
         case .voice: return NSLocalizedString("Voice messages", comment: "chat feature")
         }
@@ -334,6 +336,7 @@ public enum GroupFeature: String, Decodable, Feature {
 
     public var icon: String {
         switch self {
+        case .directMessages: return "arrow.left.and.right.circle"
         case .fullDelete: return "trash.slash"
         case .voice: return "mic"
         }
@@ -341,6 +344,7 @@ public enum GroupFeature: String, Decodable, Feature {
 
     public var iconFilled: String {
         switch self {
+        case .directMessages: return "arrow.left.and.right.circle.fill"
         case .fullDelete: return "trash.slash.fill"
         case .voice: return "mic.fill"
         }
@@ -349,6 +353,11 @@ public enum GroupFeature: String, Decodable, Feature {
     public func enableDescription(_ enabled: GroupFeatureEnabled, _ canEdit: Bool) -> LocalizedStringKey {
         if canEdit {
             switch self {
+            case .directMessages:
+                switch enabled {
+                case .on: return "Allow sending direct messages to members."
+                case .off: return "Prohibit sending direct messages to members."
+                }
             case .fullDelete:
                 switch enabled {
                 case .on: return "Allow to irreversibly delete sent messages."
@@ -362,15 +371,20 @@ public enum GroupFeature: String, Decodable, Feature {
             }
         } else {
             switch self {
+            case .directMessages:
+                switch enabled {
+                case .on: return "Group members can send direct messages."
+                case .off: return "Direct messages between members are prohibited in this group."
+                }
             case .fullDelete:
                 switch enabled {
                 case .on: return "Group members can irreversibly delete sent messages."
-                case .off: return "Irreversible message deletion is prohibited in this chat."
+                case .off: return "Irreversible message deletion is prohibited in this group."
                 }
             case .voice:
                 switch enabled {
                 case .on: return "Group members can send voice messages."
-                case .off: return "Voice messages are prohibited in this chat."
+                case .off: return "Voice messages are prohibited in this group."
                 }
             }
         }
@@ -477,31 +491,35 @@ public enum FeatureAllowed: String, Codable, Identifiable {
 }
 
 public struct FullGroupPreferences: Decodable, Equatable {
+    public var directMessages: GroupPreference
     public var fullDelete: GroupPreference
     public var voice: GroupPreference
 
-    public init(fullDelete: GroupPreference, voice: GroupPreference) {
+    public init(directMessages: GroupPreference, fullDelete: GroupPreference, voice: GroupPreference) {
+        self.directMessages = directMessages
         self.fullDelete = fullDelete
         self.voice = voice
     }
 
-    public static let sampleData = FullGroupPreferences(fullDelete: GroupPreference(enable: .off), voice: GroupPreference(enable: .on))
+    public static let sampleData = FullGroupPreferences(directMessages: GroupPreference(enable: .off), fullDelete: GroupPreference(enable: .off), voice: GroupPreference(enable: .on))
 }
 
 public struct GroupPreferences: Codable {
+    public var directMessages: GroupPreference?
     public var fullDelete: GroupPreference?
     public var voice: GroupPreference?
 
-    public init(fullDelete: GroupPreference?, voice: GroupPreference?) {
+    public init(directMessages: GroupPreference?, fullDelete: GroupPreference?, voice: GroupPreference?) {
+        self.directMessages = directMessages
         self.fullDelete = fullDelete
         self.voice = voice
     }
 
-    public static let sampleData = GroupPreferences(fullDelete: GroupPreference(enable: .off), voice: GroupPreference(enable: .on))
+    public static let sampleData = GroupPreferences(directMessages: GroupPreference(enable: .off), fullDelete: GroupPreference(enable: .off), voice: GroupPreference(enable: .on))
 }
 
 public func toGroupPreferences(_ fullPreferences: FullGroupPreferences) -> GroupPreferences {
-    GroupPreferences(fullDelete: fullPreferences.fullDelete, voice: fullPreferences.voice)
+    GroupPreferences(directMessages: fullPreferences.directMessages, fullDelete: fullPreferences.fullDelete, voice: fullPreferences.voice)
 }
 
 public struct GroupPreference: Codable, Equatable {

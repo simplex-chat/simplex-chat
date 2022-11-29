@@ -133,10 +133,12 @@ fun GroupMemberInfoLayout(
     }
     SectionSpacer()
 
-    SectionView {
-      OpenChatButton(openDirectChat)
+    if (member.memberContactId != null && groupInfo.fullGroupPreferences.directMessages.enable == GroupFeatureEnabled.ON) {
+      SectionView {
+        OpenChatButton(openDirectChat)
+      }
+      SectionSpacer()
     }
-    SectionSpacer()
 
     SectionView(title = stringResource(R.string.member_info_section_title_member)) {
       InfoRow(stringResource(R.string.info_row_group), groupInfo.displayName)

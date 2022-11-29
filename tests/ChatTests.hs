@@ -1266,7 +1266,7 @@ testGroupMessageDelete =
       cath #$> ("/_get chat #1 count=2", chat', [((0, "hello!"), Nothing), ((0, "hi alic"), Just (0, "hello!"))])
 
       -- alice: msg id 5
-      bob #$> ("/_update item #1 " <> groupItemId 2 6 <> " text hi alice", id, "message updated")
+      bob #$> ("/_update item #1 " <> groupItemId 2 7 <> " text hi alice", id, "message updated")
       concurrently_
         (alice <# "#team bob> [edited] hi alice")
         ( do
@@ -1285,7 +1285,7 @@ testGroupMessageDelete =
         (alice <# "#team cath> how are you?")
         (bob <# "#team cath> how are you?")
 
-      cath #$> ("/_delete item #1 " <> groupItemId 2 6 <> " broadcast", id, "message deleted")
+      cath #$> ("/_delete item #1 " <> groupItemId 2 7 <> " broadcast", id, "message deleted")
       concurrently_
         (alice <# "#team cath> [deleted] how are you?")
         (bob <# "#team cath> [deleted] how are you?")
@@ -2610,17 +2610,17 @@ testConnectIncognitoInvitationLink = testChat3 aliceProfile bobProfile cathProfi
     (bob </)
     alice ##> "/_set prefs @2 {\"fullDelete\": {\"allow\": \"always\"}}"
     alice <## ("you updated preferences for " <> bobIncognito <> ":")
-    alice <## "full message deletion: enabled for contact (you allow: always, contact allows: no)"
+    alice <## "Full deletion: enabled for contact (you allow: always, contact allows: no)"
     bob <## (aliceIncognito <> " updated preferences for you:")
-    bob <## "full message deletion: enabled for you (you allow: no, contact allows: always)"
+    bob <## "Full deletion: enabled for you (you allow: no, contact allows: always)"
     bob ##> "/_set prefs @2 {}"
     bob <## ("your preferences for " <> aliceIncognito <> " did not change")
     (alice </)
     alice ##> "/_set prefs @2 {\"fullDelete\": {\"allow\": \"no\"}}"
     alice <## ("you updated preferences for " <> bobIncognito <> ":")
-    alice <## "full message deletion: off (you allow: no, contact allows: no)"
+    alice <## "Full deletion: off (you allow: no, contact allows: no)"
     bob <## (aliceIncognito <> " updated preferences for you:")
-    bob <## "full message deletion: off (you allow: no, contact allows: no)"
+    bob <## "Full deletion: off (you allow: no, contact allows: no)"
 
 testConnectIncognitoContactAddress :: IO ()
 testConnectIncognitoContactAddress = testChat2 aliceProfile bobProfile $
@@ -2919,32 +2919,32 @@ testCantSeeGlobalPrefsUpdateIncognito = testChat3 aliceProfile bobProfile cathPr
     alice ##> "/_profile {\"displayName\": \"alice\", \"fullName\": \"\", \"preferences\": {\"fullDelete\": {\"allow\": \"always\"}}}"
     alice <## "user full name removed (your contacts are notified)"
     alice <## "updated preferences:"
-    alice <## "full message deletion allowed: always"
+    alice <## "Full deletion allowed: always"
     (alice </)
     -- bob doesn't receive profile update
     (bob </)
     cath <## "contact alice removed full name"
     cath <## "alice updated preferences for you:"
-    cath <## "full message deletion: enabled for you (you allow: default (no), contact allows: always)"
+    cath <## "Full deletion: enabled for you (you allow: default (no), contact allows: always)"
     (cath </)
     bob ##> "/_set prefs @2 {\"fullDelete\": {\"allow\": \"always\"}}"
     bob <## ("you updated preferences for " <> aliceIncognito <> ":")
-    bob <## "full message deletion: enabled for contact (you allow: always, contact allows: no)"
+    bob <## "Full deletion: enabled for contact (you allow: always, contact allows: no)"
     alice <## "bob updated preferences for you:"
-    alice <## "full message deletion: enabled for you (you allow: no, contact allows: always)"
+    alice <## "Full deletion: enabled for you (you allow: no, contact allows: always)"
     alice ##> "/_set prefs @2 {\"fullDelete\": {\"allow\": \"yes\"}}"
     alice <## "you updated preferences for bob:"
-    alice <## "full message deletion: enabled (you allow: yes, contact allows: always)"
+    alice <## "Full deletion: enabled (you allow: yes, contact allows: always)"
     bob <## (aliceIncognito <> " updated preferences for you:")
-    bob <## "full message deletion: enabled (you allow: always, contact allows: yes)"
+    bob <## "Full deletion: enabled (you allow: always, contact allows: yes)"
     (cath </)
     alice ##> "/_set prefs @3 {\"fullDelete\": {\"allow\": \"always\"}}"
     alice <## "your preferences for cath did not change"
     alice ##> "/_set prefs @3 {\"fullDelete\": {\"allow\": \"yes\"}}"
     alice <## "you updated preferences for cath:"
-    alice <## "full message deletion: off (you allow: yes, contact allows: no)"
+    alice <## "Full deletion: off (you allow: yes, contact allows: no)"
     cath <## "alice updated preferences for you:"
-    cath <## "full message deletion: off (you allow: default (no), contact allows: yes)"
+    cath <## "Full deletion: off (you allow: default (no), contact allows: yes)"
 
 testSetAlias :: IO ()
 testSetAlias = testChat2 aliceProfile bobProfile $
@@ -2986,7 +2986,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     bob ##> "/_profile {\"displayName\": \"bob\", \"fullName\": \"Bob\", \"preferences\": {\"voice\": {\"allow\": \"no\"}}}"
     bob <## "profile image removed"
     bob <## "updated preferences:"
-    bob <## "voice messages allowed: no"
+    bob <## "Voice messages allowed: no"
     (bob </)
     connectUsers alice bob
     alice ##> "/_set prefs @2 {}"
@@ -3004,10 +3004,10 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     -- alice ##> "/_set prefs @2 {\"voice\": {\"allow\": \"always\"}}"
     alice ##> "/voice @bob always"
     alice <## "you updated preferences for bob:"
-    alice <## "voice messages: enabled for contact (you allow: always, contact allows: no)"
+    alice <## "Voice messages: enabled for contact (you allow: always, contact allows: no)"
     alice #$> ("/_get chat @2 count=100", chat, startFeatures <> [(1, "Voice messages: enabled for contact")])
     bob <## "alice updated preferences for you:"
-    bob <## "voice messages: enabled for you (you allow: default (no), contact allows: always)"
+    bob <## "Voice messages: enabled for you (you allow: default (no), contact allows: always)"
     bob #$> ("/_get chat @2 count=100", chat, startFeatures <> [(0, "Voice messages: enabled for you")])
     alice ##> sendVoice
     alice <## voiceNotAllowed
@@ -3023,25 +3023,25 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     -- alice ##> "/_profile {\"displayName\": \"alice\", \"fullName\": \"Alice\", \"preferences\": {\"voice\": {\"allow\": \"no\"}}}"
     alice ##> "/voice no"
     alice <## "updated preferences:"
-    alice <## "voice messages allowed: no"
+    alice <## "Voice messages allowed: no"
     (alice </)
     alice ##> "/_set prefs @2 {\"voice\": {\"allow\": \"yes\"}}"
     alice <## "you updated preferences for bob:"
-    alice <## "voice messages: off (you allow: yes, contact allows: no)"
+    alice <## "Voice messages: off (you allow: yes, contact allows: no)"
     alice #$> ("/_get chat @2 count=100", chat, startFeatures <> [(1, "Voice messages: enabled for contact"), (0, "voice message (00:10)"), (1, "Voice messages: off")])
     bob <## "alice updated preferences for you:"
-    bob <## "voice messages: off (you allow: default (no), contact allows: yes)"
+    bob <## "Voice messages: off (you allow: default (no), contact allows: yes)"
     bob #$> ("/_get chat @2 count=100", chat, startFeatures <> [(0, "Voice messages: enabled for you"), (1, "voice message (00:10)"), (0, "Voice messages: off")])
     (bob </)
     bob ##> "/_profile {\"displayName\": \"bob\", \"fullName\": \"\", \"preferences\": {\"voice\": {\"allow\": \"yes\"}}}"
     bob <## "user full name removed (your contacts are notified)"
     bob <## "updated preferences:"
-    bob <## "voice messages allowed: yes"
+    bob <## "Voice messages allowed: yes"
     bob #$> ("/_get chat @2 count=100", chat, startFeatures <> [(0, "Voice messages: enabled for you"), (1, "voice message (00:10)"), (0, "Voice messages: off"), (1, "Voice messages: enabled")])
     (bob </)
     alice <## "contact bob removed full name"
     alice <## "bob updated preferences for you:"
-    alice <## "voice messages: enabled (you allow: yes, contact allows: yes)"
+    alice <## "Voice messages: enabled (you allow: yes, contact allows: yes)"
     alice #$> ("/_get chat @2 count=100", chat, startFeatures <> [(1, "Voice messages: enabled for contact"), (0, "voice message (00:10)"), (1, "Voice messages: off"), (0, "Voice messages: enabled")])
     (alice </)
     bob ##> "/_set prefs @2 {}"
@@ -3052,10 +3052,10 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     (alice </)
     alice ##> "/_set prefs @2 {\"voice\": {\"allow\": \"no\"}}"
     alice <## "you updated preferences for bob:"
-    alice <## "voice messages: off (you allow: no, contact allows: yes)"
+    alice <## "Voice messages: off (you allow: no, contact allows: yes)"
     alice #$> ("/_get chat @2 count=100", chat, startFeatures <> [(1, "Voice messages: enabled for contact"), (0, "voice message (00:10)"), (1, "Voice messages: off"), (0, "Voice messages: enabled"), (1, "Voice messages: off")])
     bob <## "alice updated preferences for you:"
-    bob <## "voice messages: off (you allow: default (yes), contact allows: no)"
+    bob <## "Voice messages: off (you allow: default (yes), contact allows: no)"
     bob #$> ("/_get chat @2 count=100", chat, startFeatures <> [(0, "Voice messages: enabled for you"), (1, "voice message (00:10)"), (0, "Voice messages: off"), (1, "Voice messages: enabled"), (0, "Voice messages: off")])
 
 testUpdateGroupPrefs :: IO ()
@@ -3068,32 +3068,32 @@ testUpdateGroupPrefs =
       threadDelay 1000000
       alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"on\"}}}"
       alice <## "updated group preferences:"
-      alice <## "full message deletion enabled: on"
+      alice <## "Full deletion enabled: on"
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Full deletion: on")])
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
-      bob <## "full message deletion enabled: on"
+      bob <## "Full deletion enabled: on"
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Full deletion: on")])
       threadDelay 1000000
       alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"off\"}}}"
       alice <## "updated group preferences:"
-      alice <## "full message deletion enabled: off"
-      alice <## "voice messages enabled: off"
+      alice <## "Full deletion enabled: off"
+      alice <## "Voice messages enabled: off"
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off")])
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
-      bob <## "full message deletion enabled: off"
-      bob <## "voice messages enabled: off"
+      bob <## "Full deletion enabled: off"
+      bob <## "Voice messages enabled: off"
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Full deletion: on"), (0, "Full deletion: off"), (0, "Voice messages: off")])
       threadDelay 1000000
       -- alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"on\"}}}"
       alice ##> "/voice #team on"
       alice <## "updated group preferences:"
-      alice <## "voice messages enabled: on"
+      alice <## "Voice messages enabled: on"
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on")])
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
-      bob <## "voice messages enabled: on"
+      bob <## "Voice messages enabled: on"
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Full deletion: on"), (0, "Full deletion: off"), (0, "Voice messages: off"), (0, "Voice messages: on")])
       threadDelay 1000000
       alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"on\"}}}"
@@ -4243,7 +4243,7 @@ groupFeatures :: [(Int, String)]
 groupFeatures = map (\(a, _, _) -> a) groupFeatures''
 
 groupFeatures'' :: [((Int, String), Maybe (Int, String), Maybe String)]
-groupFeatures'' = [((0, "Full deletion: off"), Nothing, Nothing), ((0, "Voice messages: on"), Nothing, Nothing)]
+groupFeatures'' = [((0, "Direct messages: off"), Nothing, Nothing), ((0, "Full deletion: off"), Nothing, Nothing), ((0, "Voice messages: on"), Nothing, Nothing)]
 
 itemId :: Int -> String
 itemId i = show $ length chatFeatures + i

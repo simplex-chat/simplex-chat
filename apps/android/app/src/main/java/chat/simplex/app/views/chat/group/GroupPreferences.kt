@@ -60,6 +60,10 @@ private fun GroupPreferencesLayout(
     horizontalAlignment = Alignment.Start,
   ) {
     AppBarTitle(stringResource(R.string.group_preferences))
+    val allowDirectMessages = remember(preferences) { mutableStateOf(preferences.directMessages.enable) }
+    FeatureSection(GroupFeature.DirectMessages, allowDirectMessages, groupInfo) {
+      applyPrefs(preferences.copy(directMessages = GroupPreference(enable = it)))
+    }
 //    val allowFullDeletion = remember(preferences) { mutableStateOf(preferences.fullDelete.enable) }
 //    FeatureSection(Feature.FullDelete, allowFullDeletion, groupInfo) {
 //      applyPrefs(preferences.copy(fullDelete = GroupPreference(enable = it)))

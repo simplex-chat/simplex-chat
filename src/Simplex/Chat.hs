@@ -3402,6 +3402,7 @@ chatCommandP =
       "/voice #" *> (SetGroupFeature GFVoice <$> displayName <*> (A.space *> strP)),
       "/voice @" *> (SetContactFeature CFVoice <$> displayName <*> optional (A.space *> strP)),
       "/voice " *> (SetUserFeature CFVoice <$> strP),
+      "/dms #" *> (SetGroupFeature GFDirectMessages <$> displayName <*> (A.space *> strP)),
       "/incognito " *> (SetIncognito <$> onOffP),
       ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
       ("/version" <|> "/v") $> ShowVersion,

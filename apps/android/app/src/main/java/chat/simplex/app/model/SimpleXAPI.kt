@@ -12,8 +12,7 @@ import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DeleteForever
-import androidx.compose.material.icons.filled.KeyboardVoice
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -2110,23 +2109,27 @@ enum class ChatFeature: Feature {
 
 @Serializable
 enum class GroupFeature: Feature {
+  @SerialName("directMessages") DirectMessages,
   @SerialName("fullDelete") FullDelete,
   @SerialName("voice") Voice;
 
   override val text: String
     get() = when(this) {
+      DirectMessages -> generalGetString(R.string.direct_messages)
       FullDelete -> generalGetString(R.string.full_deletion)
       Voice -> generalGetString(R.string.voice_messages)
     }
 
   val icon: ImageVector
     get() = when(this) {
+      DirectMessages -> Icons.Outlined.SwapHorizontalCircle
       FullDelete -> Icons.Outlined.DeleteForever
       Voice -> Icons.Outlined.KeyboardVoice
     }
 
   override val iconFilled: ImageVector
     get() = when(this) {
+      DirectMessages -> Icons.Filled.SwapHorizontalCircle
       FullDelete -> Icons.Filled.DeleteForever
       Voice -> Icons.Filled.KeyboardVoice
     }
@@ -2134,6 +2137,10 @@ enum class GroupFeature: Feature {
   fun enableDescription(enabled: GroupFeatureEnabled, canEdit: Boolean): String =
     if (canEdit) {
       when(this) {
+        DirectMessages -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(R.string.allow_direct_messages)
+          GroupFeatureEnabled.OFF -> generalGetString(R.string.prohibit_direct_messages)
+        }
         FullDelete -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(R.string.allow_to_delete_messages)
           GroupFeatureEnabled.OFF -> generalGetString(R.string.prohibit_message_deletion)
@@ -2145,6 +2152,10 @@ enum class GroupFeature: Feature {
       }
     } else {
       when(this) {
+        DirectMessages -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(R.string.group_members_can_send_dms)
+          GroupFeatureEnabled.OFF -> generalGetString(R.string.direct_messages_are_prohibited_in_chat)
+        }
         FullDelete -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(R.string.group_members_can_delete)
           GroupFeatureEnabled.OFF -> generalGetString(R.string.message_deletion_prohibited_in_chat)
@@ -2242,24 +2253,26 @@ enum class FeatureAllowed {
 
 @Serializable
 data class FullGroupPreferences(
+  val directMessages: GroupPreference,
   val fullDelete: GroupPreference,
   val voice: GroupPreference
 ) {
   fun toGroupPreferences(): GroupPreferences =
-    GroupPreferences(fullDelete = fullDelete, voice = voice)
+    GroupPreferences(directMessages = directMessages, fullDelete = fullDelete, voice = voice)
 
   companion object {
-    val sampleData = FullGroupPreferences(fullDelete = GroupPreference(enable = GroupFeatureEnabled.OFF), voice = GroupPreference(enable = GroupFeatureEnabled.ON))
+    val sampleData = FullGroupPreferences(directMessages = GroupPreference(GroupFeatureEnabled.OFF), fullDelete = GroupPreference(GroupFeatureEnabled.OFF), voice = GroupPreference(GroupFeatureEnabled.ON))
   }
 }
 
 @Serializable
 data class GroupPreferences(
+  val directMessages: GroupPreference?,
   val fullDelete: GroupPreference?,
   val voice: GroupPreference?
 ) {
   companion object {
-    val sampleData = GroupPreferences(fullDelete = GroupPreference(enable = GroupFeatureEnabled.OFF), voice = GroupPreference(enable = GroupFeatureEnabled.ON))
+    val sampleData = GroupPreferences(directMessages = GroupPreference(GroupFeatureEnabled.OFF), fullDelete = GroupPreference(GroupFeatureEnabled.OFF), voice = GroupPreference(GroupFeatureEnabled.ON))
   }
 }
 
