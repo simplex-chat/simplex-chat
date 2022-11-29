@@ -319,7 +319,6 @@ struct ComposeView: View {
         }
         .onChange(of: chat.chatInfo.voiceMessageAllowed) { vmAllowed in
             if !vmAllowed && composeState.voicePreview {
-                stopPlayback.toggle()
                 if let fileName = composeState.voiceMessageRecordingFileName {
                     cancelVoiceMessageRecording(fileName)
                 }
@@ -555,6 +554,7 @@ struct ComposeView: View {
     }
 
     private func cancelVoiceMessageRecording(_ fileName: String) {
+        stopPlayback.toggle()
         audioRecorder?.stop()
         removeFile(fileName)
         clearState()
