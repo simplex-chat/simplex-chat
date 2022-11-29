@@ -18,6 +18,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -1064,7 +1065,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         } else if (cItem.content.msgContent is MsgContent.MCVoice && file != null && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileSize > MAX_VOICE_SIZE_FOR_SENDING && appPrefs.privacyAcceptImages.get()) {
           withApi { receiveFile(file.fileId) } // TODO check inlineFileMode != IFMSent
         }
-        if (!cItem.chatDir.sent && !cItem.isCall && !cItem.isMutedMemberEvent && (!isAppOnForeground(appContext) || chatModel.chatId.value != cInfo.id)) {
+        if (cItem.showNotification && (!isAppOnForeground(appContext) || chatModel.chatId.value != cInfo.id)) {
           ntfManager.notifyMessageReceived(cInfo, cItem)
         }
       }
@@ -2052,16 +2053,22 @@ enum class Feature {
   @SerialName("fullDelete") FullDelete,
   @SerialName("voice") Voice;
 
-  fun text() =
-    when(this) {
+  val text: String
+    get() = when(this) {
       FullDelete -> generalGetString(R.string.full_deletion)
       Voice -> generalGetString(R.string.voice_messages)
     }
 
-  fun icon(filled: Boolean) =
-    when(this) {
-      FullDelete -> if (filled) Icons.Filled.DeleteForever else Icons.Outlined.DeleteForever
-      Voice -> if (filled) Icons.Filled.KeyboardVoice else Icons.Outlined.KeyboardVoice
+  val icon: ImageVector
+    get() = when(this) {
+      FullDelete -> Icons.Outlined.DeleteForever
+      Voice -> Icons.Outlined.KeyboardVoice
+    }
+
+  val iconFilled: ImageVector
+    get() = when(this) {
+      FullDelete -> Icons.Filled.DeleteForever
+      Voice -> Icons.Filled.KeyboardVoice
     }
 
   fun allowDescription(allowed: FeatureAllowed): String =

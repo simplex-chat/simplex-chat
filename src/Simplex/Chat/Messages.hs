@@ -569,6 +569,27 @@ data CIContent (d :: MsgDirection) where
 
 deriving instance Show (CIContent d)
 
+ciCreateStatus :: CIContent d -> CIStatus d
+ciCreateStatus = \case
+  CISndMsgContent _ -> ciStatusNew
+  CIRcvMsgContent _ -> ciStatusNew
+  CISndDeleted _ -> ciStatusNew
+  CIRcvDeleted _ -> ciStatusNew
+  CISndCall {} -> ciStatusNew
+  CIRcvCall {} -> ciStatusNew
+  CIRcvIntegrityError _ -> ciStatusNew
+  CIRcvGroupInvitation {} -> ciStatusNew
+  CISndGroupInvitation {} -> ciStatusNew
+  CIRcvGroupEvent rge -> rgeCreateStatus rge
+  CISndGroupEvent _ -> ciStatusNew
+  CIRcvConnEvent _ -> ciStatusNew
+  CISndConnEvent _ -> ciStatusNew
+  CIRcvChatFeature {} -> CISRcvRead
+  CISndChatFeature {} -> ciStatusNew
+  CIRcvGroupFeature {} -> CISRcvRead
+  CISndGroupFeature {} -> ciStatusNew
+  CIRcvChatFeatureRejected _ -> ciStatusNew
+
 data RcvGroupEvent
   = RGEMemberAdded {groupMemberId :: GroupMemberId, profile :: Profile} -- CRJoinedGroupMemberConnecting
   | RGEMemberConnected -- CRUserJoinedGroup, CRJoinedGroupMember, CRConnectedToGroupMember
@@ -600,6 +621,19 @@ instance FromJSON DBRcvGroupEvent where
 instance ToJSON DBRcvGroupEvent where
   toJSON (RGE v) = J.genericToJSON (singleFieldJSON $ dropPrefix "RGE") v
   toEncoding (RGE v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "RGE") v
+
+rgeCreateStatus :: RcvGroupEvent -> CIStatus 'MDRcv
+rgeCreateStatus = \case
+  RGEMemberAdded {} -> CISRcvRead
+  RGEMemberConnected -> CISRcvRead
+  RGEMemberLeft -> CISRcvRead
+  RGEMemberRole {} -> CISRcvRead
+  RGEUserRole _ -> ciStatusNew
+  RGEMemberDeleted {} -> CISRcvRead
+  RGEUserDeleted -> ciStatusNew
+  RGEGroupDeleted -> ciStatusNew
+  RGEGroupUpdated _ -> CISRcvRead
+  RGEInvitedViaGroupLink -> CISRcvRead
 
 data SndGroupEvent
   = SGEMemberRole {groupMemberId :: GroupMemberId, profile :: Profile, role :: GroupMemberRole}

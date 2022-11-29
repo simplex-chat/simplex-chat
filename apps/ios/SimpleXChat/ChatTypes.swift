@@ -263,7 +263,14 @@ public enum Feature: String, Decodable {
     public var icon: String {
         switch self {
         case .fullDelete: return "trash.slash"
-        case .voice: return "speaker.wave.2"
+        case .voice: return "mic"
+        }
+    }
+
+    public var iconFilled: String {
+        switch self {
+        case .fullDelete: return "trash.slash.fill"
+        case .voice: return "mic.fill"
         }
     }
 
@@ -1328,31 +1335,50 @@ public struct ChatItem: Identifiable, Decodable {
         }
     }
 
-    public var isCall: Bool {
-        switch content {
-        case .sndCall: return true
-        case .rcvCall: return true
-        default: return false
-        }
+    private var showNtfDir: Bool {
+        return !chatDir.sent
     }
 
-    public var isMutedMemberEvent: Bool {
+    public var showNotification: Bool {
         switch content {
-        case let .rcvGroupEvent(event):
-            switch event {
-            case .groupUpdated: return true
-            case .memberConnected: return true
-            case .memberRole: return true
-            case .userRole: return false
-            case .userDeleted: return false
-            case .groupDeleted: return false
+        case .sndMsgContent: return showNtfDir
+        case .rcvMsgContent: return showNtfDir
+        case .sndDeleted: return showNtfDir
+        case .rcvDeleted: return showNtfDir
+        case .sndCall: return showNtfDir
+        case .rcvCall: return false // notification is shown on .callInvitation instead
+        case .rcvIntegrityError: return showNtfDir
+        case .rcvGroupInvitation: return showNtfDir
+        case .sndGroupInvitation: return showNtfDir
+        case .rcvGroupEvent(rcvGroupEvent: let rcvGroupEvent):
+            switch rcvGroupEvent {
+            case .groupUpdated: return false
+            case .memberConnected: return false
+            case .memberRole: return false
+            case .userRole: return showNtfDir
+            case .userDeleted: return showNtfDir
+            case .groupDeleted: return showNtfDir
             case .memberAdded: return false
             case .memberLeft: return false
             case .memberDeleted: return false
             case .invitedViaGroupLink: return false
             }
-        case .sndGroupEvent: return true
-        default: return false
+        case .sndGroupEvent: return showNtfDir
+        case .rcvConnEvent: return false
+        case .sndConnEvent: return showNtfDir
+        case .rcvChatFeature: return false
+        case .sndChatFeature: return showNtfDir
+        case .rcvGroupFeature: return false
+        case .sndGroupFeature: return showNtfDir
+        case .rcvChatFeatureRejected: return showNtfDir
+        }
+    }
+
+    public var showMutableNotification: Bool {
+        switch content {
+        case .rcvCall: return false
+        case .rcvChatFeature: return false
+        default: return showNtfDir
         }
     }
 

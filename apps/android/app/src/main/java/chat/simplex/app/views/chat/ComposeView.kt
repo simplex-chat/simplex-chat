@@ -541,6 +541,9 @@ fun ComposeView(
   }
 
   LaunchedEffect(chatModel.sharedContent.value) {
+    // Important. If it's null, don't do anything, chat is not closed yet but will be after a moment
+    if (chatModel.chatId.value == null) return@LaunchedEffect
+
     when (val shared = chatModel.sharedContent.value) {
       is SharedContent.Text -> onMessageChange(shared.text)
       is SharedContent.Images -> processPickedImage(shared.uris, shared.text)
