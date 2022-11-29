@@ -190,24 +190,24 @@ Stored messages, connections, statistics and server log are located in `/var/opt
 SMP server address has the following format:
 
 ```
-smp://<fingerprint>[:<password>]@hostname1,hostname2
+smp://<fingerprint>[:<password>]@<public_hostname>[,<onion_hostname>]
 ```
 
 - `<fingerprint>`
 
   Your `smp-server` fingerprint of certificate. You can check your certificate fingerprint in `/etc/opt/simplex/fingerprint`.
 
-- `<password>`
+- **optional** `<password>`
 
   Your configured password of `smp-server`. You can check your configured pasword in `/etc/opt/simplex/smp-server.ini`, under `[AUTH]` section in `create_password:` field.
 
-- `@hostname1,hostname2`
+- `<public_hostname>`, **optional** `<onion_hostname>`
 
   Your configured hostname(s) of `smp-server`. You can check your configured hosts in `/etc/opt/simplex/smp-server.ini`, under `[TRANSPORT]` section in `host:` field.
 
 ### Systemd commands
 
-To enable `smp-server` on server boot, run:
+To start `smp-server` on host boot, run:
 
 ```sh
 sudo systemctl enable smp-server.service
@@ -286,11 +286,11 @@ fromTime,qCreated,qSecured,qDeleted,msgSent,msgRecv,dayMsgQueues,weekMsgQueues,m
 
 - `msgRecv` - int; received messages
 
-- `dayMsgQueues` - int; created queues in a day
+- `dayMsgQueues` - int; active queues in a day
 
-- `weekMsgQueues` - int; created queues in a week
+- `weekMsgQueues` - int; active queues in a week
 
-- `monthMsgQueues` - int; created queues in a month
+- `monthMsgQueues` - int; active queues in a month
 
 To import `csv` to `Grafana` one should:
 
