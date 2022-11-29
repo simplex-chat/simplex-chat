@@ -476,10 +476,16 @@ struct ComposeView: View {
         if let recStartError = await audioRecorder?.start(fileName: fileName) {
             switch recStartError {
             case .permission:
-                AlertManager.shared.showAlertMsg(
-                    title: "No permission to record voice message",
-                    message: "To record voice message please grant permission to use Microphone."
-                )
+                AlertManager.shared.showAlert(Alert(
+                    title: Text("No permission to record voice message"),
+                    message: Text("To record voice message please grant permission to use Microphone."),
+                    primaryButton: .default(Text("Open Settings")) {
+                        DispatchQueue.main.async {
+                            UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!, options: [:], completionHandler: nil)
+                        }
+                    },
+                    secondaryButton: .cancel()
+                ))
             case let .error(error):
                 AlertManager.shared.showAlertMsg(
                     title: "Unable to record voice message",

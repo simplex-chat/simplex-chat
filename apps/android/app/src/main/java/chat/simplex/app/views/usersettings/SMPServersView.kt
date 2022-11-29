@@ -30,12 +30,17 @@ fun SMPServersView(m: ChatModel) {
   }
   val testing = rememberSaveable { mutableStateOf(false) }
   val serversUnchanged = remember { derivedStateOf { servers == m.userSMPServers.value || testing.value } }
+  val allServersDisabled = remember { derivedStateOf { servers.all { !it.enabled } } }
   val saveDisabled = remember {
     derivedStateOf {
-      servers.isEmpty() || servers == m.userSMPServers.value || testing.value || !servers.all { srv ->
+      servers.isEmpty() ||
+      servers == m.userSMPServers.value ||
+      testing.value ||
+      !servers.all { srv ->
         val address = parseServerAddress(srv.server)
         address != null && uniqueAddress(srv, address, servers)
-      }
+      } ||
+      allServersDisabled.value
     }
   }
 
@@ -66,10 +71,11 @@ fun SMPServersView(m: ChatModel) {
   val scope = rememberCoroutineScope()
 
   SMPServersLayout(
-    testing.value,
-    servers,
-    serversUnchanged.value,
-    saveDisabled.value,
+    testing = testing.value,
+    servers = servers,
+    serversUnchanged = serversUnchanged.value,
+    saveDisabled = saveDisabled.value,
+    allServersDisabled = allServersDisabled.value,
     addServer = {
       AlertManager.shared.showAlertDialogButtonsColumn(
         title = generalGetString(R.string.smp_servers_add),
@@ -149,6 +155,7 @@ private fun SMPServersLayout(
   servers: List<ServerCfg>,
   serversUnchanged: Boolean,
   saveDisabled: Boolean,
+  allServersDisabled: Boolean,
   addServer: () -> Unit,
   testServers: () -> Unit,
   resetServers: () -> Unit,
@@ -185,8 +192,9 @@ private fun SMPServersLayout(
         Text(stringResource(R.string.reset_verb), color = if (!serversUnchanged) MaterialTheme.colors.onBackground else HighOrLowlight)
       }
       SectionDivider()
-      SectionItemView(testServers, disabled = testing) {
-        Text(stringResource(R.string.smp_servers_test_servers), color = if (!testing) MaterialTheme.colors.onBackground else HighOrLowlight)
+      val testServersDisabled = testing || allServersDisabled
+      SectionItemView(testServers, disabled = testServersDisabled) {
+        Text(stringResource(R.string.smp_servers_test_servers), color = if (!testServersDisabled) MaterialTheme.colors.onBackground else HighOrLowlight)
       }
       SectionDivider()
       SectionItemView(saveSMPServers, disabled = saveDisabled) {
