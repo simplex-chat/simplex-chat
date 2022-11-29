@@ -796,10 +796,10 @@ viewGroupUpdated
         | null prefs = []
         | otherwise = "updated group preferences:" : prefs
         where
-          prefs = mapMaybe viewPref allChatFeatures
+          prefs = mapMaybe viewPref allGroupFeatures
           viewPref pt
             | pref gps == pref gps' = Nothing
-            | otherwise = Just $ plain (chatPrefName pt) <> " enabled: " <> plain (groupPrefToText $ pref gps')
+            | otherwise = Just $ plain (groupPrefName pt) <> " enabled: " <> plain (groupPrefToText $ pref gps')
             where
               pref pss = getGroupPreference pt $ mergeGroupPreferences pss
 

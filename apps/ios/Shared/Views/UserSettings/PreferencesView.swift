@@ -30,7 +30,7 @@ struct PreferencesView: View {
         }
     }
 
-    private func featureSection(_ feature: Feature, _ allowFeature: Binding<FeatureAllowed>) -> some View {
+    private func featureSection(_ feature: ChatFeature, _ allowFeature: Binding<FeatureAllowed>) -> some View {
         Section {
             settingsRow(feature.icon) {
                 Picker(feature.text, selection: allowFeature) {

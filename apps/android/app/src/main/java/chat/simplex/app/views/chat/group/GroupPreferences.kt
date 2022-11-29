@@ -66,7 +66,7 @@ private fun GroupPreferencesLayout(
 //    }
 //    SectionSpacer()
     val allowVoice = remember(preferences) { mutableStateOf(preferences.voice.enable) }
-    FeatureSection(Feature.Voice, allowVoice, groupInfo) {
+    FeatureSection(GroupFeature.Voice, allowVoice, groupInfo) {
       applyPrefs(preferences.copy(voice = GroupPreference(enable = it)))
     }
     if (groupInfo.canEdit) {
@@ -81,7 +81,7 @@ private fun GroupPreferencesLayout(
 }
 
 @Composable
-private fun FeatureSection(feature: Feature, enableFeature: State<GroupFeatureEnabled>, groupInfo: GroupInfo, onSelected: (GroupFeatureEnabled) -> Unit) {
+private fun FeatureSection(feature: GroupFeature, enableFeature: State<GroupFeatureEnabled>, groupInfo: GroupInfo, onSelected: (GroupFeatureEnabled) -> Unit) {
   SectionView {
     if (groupInfo.canEdit) {
       SectionItemView {
@@ -100,7 +100,7 @@ private fun FeatureSection(feature: Feature, enableFeature: State<GroupFeatureEn
       )
     }
   }
-  SectionTextFooter(feature.enableGroupPrefDescription(enableFeature.value, groupInfo.canEdit))
+  SectionTextFooter(feature.enableDescription(enableFeature.value, groupInfo.canEdit))
 }
 
 @Composable

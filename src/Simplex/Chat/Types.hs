@@ -329,14 +329,45 @@ instance ToField Preferences where
 instance FromField Preferences where
   fromField = fromTextField_ decodeJSON
 
-groupPrefSel :: ChatFeature -> GroupPreferences -> Maybe GroupPreference
+data GroupFeature
+  = GFFullDelete
+  | -- | GFReceipts
+    GFVoice
+  deriving (Show, Generic)
+
+groupFeatureToText :: GroupFeature -> Text
+groupFeatureToText = \case
+  GFFullDelete -> "Full deletion"
+  GFVoice -> "Voice messages"
+
+instance ToJSON GroupFeature where
+  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "GF"
+  toJSON = J.genericToJSON . enumJSON $ dropPrefix "GF"
+
+instance FromJSON GroupFeature where
+  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "GF"
+
+allGroupFeatures :: [GroupFeature]
+allGroupFeatures =
+  [ GFFullDelete,
+    -- GFReceipts,
+    GFVoice
+  ]
+
+groupPrefSel :: GroupFeature -> GroupPreferences -> Maybe GroupPreference
 groupPrefSel = \case
-  CFFullDelete -> fullDelete
-  -- CFReceipts -> receipts
-  CFVoice -> voice
+  GFFullDelete -> fullDelete
+  -- GFReceipts -> receipts
+  GFVoice -> voice
+
+groupPrefName :: GroupFeature -> Text
+groupPrefName = \case
+  GFFullDelete -> "full message deletion"
+  -- GFReceipts -> "delivery receipts"
+  GFVoice -> "voice messages"
 
 class GroupPreferenceI p where
-  getGroupPreference :: ChatFeature -> p -> GroupPreference
+  getGroupPreference :: GroupFeature -> p -> GroupPreference
 
 instance GroupPreferenceI GroupPreferences where
   getGroupPreference pt prefs = fromMaybe (getGroupPreference pt defaultGroupPrefs) (groupPrefSel pt prefs)
@@ -346,9 +377,9 @@ instance GroupPreferenceI (Maybe GroupPreferences) where
 
 instance GroupPreferenceI FullGroupPreferences where
   getGroupPreference = \case
-    CFFullDelete -> fullDelete
-    -- CFReceipts -> receipts
-    CFVoice -> voice
+    GFFullDelete -> fullDelete
+    -- GFReceipts -> receipts
+    GFVoice -> voice
   {-# INLINE getGroupPreference #-}
 
 -- collection of optional group preferences
@@ -369,13 +400,13 @@ instance ToField GroupPreferences where
 instance FromField GroupPreferences where
   fromField = fromTextField_ decodeJSON
 
-setGroupPreference :: ChatFeature -> GroupFeatureEnabled -> Maybe GroupPreferences -> GroupPreferences
+setGroupPreference :: GroupFeature -> GroupFeatureEnabled -> Maybe GroupPreferences -> GroupPreferences
 setGroupPreference f enable prefs_ =
   let prefs = mergeGroupPreferences prefs_
       pref = (getGroupPreference f prefs :: GroupPreference) {enable}
    in toGroupPreferences $ case f of
-        CFVoice -> prefs {voice = pref}
-        CFFullDelete -> prefs {fullDelete = pref}
+        GFVoice -> prefs {voice = pref}
+        GFFullDelete -> prefs {fullDelete = pref}
 
 -- full collection of chat preferences defined in the app - it is used to ensure we include all preferences and to simplify processing
 -- if some of the preferences are not defined in Preferences, defaults from defaultChatPrefs are used here.
@@ -543,9 +574,9 @@ mergeUserChatPrefs' user connectedIncognito userPreferences =
 mergeGroupPreferences :: Maybe GroupPreferences -> FullGroupPreferences
 mergeGroupPreferences groupPreferences =
   FullGroupPreferences
-    { fullDelete = pref CFFullDelete,
-      -- receipts = pref CFReceipts,
-      voice = pref CFVoice
+    { fullDelete = pref GFFullDelete,
+      -- receipts = pref GFReceipts,
+      voice = pref GFVoice
     }
   where
     pref pt = fromMaybe (getGroupPreference pt defaultGroupPrefs) (groupPreferences >>= groupPrefSel pt)
@@ -553,9 +584,9 @@ mergeGroupPreferences groupPreferences =
 toGroupPreferences :: FullGroupPreferences -> GroupPreferences
 toGroupPreferences groupPreferences =
   GroupPreferences
-    { fullDelete = pref CFFullDelete,
-      -- receipts = pref CFReceipts,
-      voice = pref CFVoice
+    { fullDelete = pref GFFullDelete,
+      -- receipts = pref GFReceipts,
+      voice = pref GFVoice
     }
   where
     pref f = Just $ getGroupPreference f groupPreferences

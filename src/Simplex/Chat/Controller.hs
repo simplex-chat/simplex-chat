@@ -252,7 +252,7 @@ data ChatCommand
   | UpdateProfileImage (Maybe ImageData)
   | SetUserFeature ChatFeature FeatureAllowed
   | SetContactFeature ChatFeature ContactName (Maybe FeatureAllowed)
-  | SetGroupFeature ChatFeature GroupName GroupFeatureEnabled
+  | SetGroupFeature GroupFeature GroupName GroupFeatureEnabled
   | QuitChat
   | ShowVersion
   | DebugLocks

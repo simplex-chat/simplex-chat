@@ -245,11 +245,15 @@ public enum ContactUserPref: Decodable {
     }
 }
 
-public enum Feature: String, Decodable {
+public protocol Feature {
+    var iconFilled: String { get }
+}
+
+public enum ChatFeature: String, Decodable, Feature {
     case fullDelete
     case voice
 
-    public var values: [Feature] { [.fullDelete, .voice] }
+    public var values: [ChatFeature] { [.fullDelete, .voice] }
 
     public var id: Self { self }
 
@@ -311,8 +315,38 @@ public enum Feature: String, Decodable {
                     : "Voice messages are prohibited in this chat."
         }
     }
+}
 
-    public func enableGroupPrefDescription(_ enabled: GroupFeatureEnabled, _ canEdit: Bool) -> LocalizedStringKey {
+public enum GroupFeature: String, Decodable, Feature {
+    case fullDelete
+    case voice
+
+    public var values: [GroupFeature] { [.fullDelete, .voice] }
+
+    public var id: Self { self }
+
+    public var text: String {
+        switch self {
+        case .fullDelete: return NSLocalizedString("Full deletion", comment: "chat feature")
+        case .voice: return NSLocalizedString("Voice messages", comment: "chat feature")
+        }
+    }
+
+    public var icon: String {
+        switch self {
+        case .fullDelete: return "trash.slash"
+        case .voice: return "mic"
+        }
+    }
+
+    public var iconFilled: String {
+        switch self {
+        case .fullDelete: return "trash.slash.fill"
+        case .voice: return "mic.fill"
+        }
+    }
+
+    public func enableDescription(_ enabled: GroupFeatureEnabled, _ canEdit: Bool) -> LocalizedStringKey {
         if canEdit {
             switch self {
             case .fullDelete:
@@ -1371,6 +1405,7 @@ public struct ChatItem: Identifiable, Decodable {
         case .rcvGroupFeature: return false
         case .sndGroupFeature: return showNtfDir
         case .rcvChatFeatureRejected: return showNtfDir
+        case .rcvGroupFeatureRejected: return showNtfDir
         }
     }
 
@@ -1462,7 +1497,7 @@ public struct ChatItem: Identifiable, Decodable {
        )
     }
 
-    public static func getChatFeatureSample(_ feature: Feature, _ enabled: FeatureEnabled) -> ChatItem {
+    public static func getChatFeatureSample(_ feature: ChatFeature, _ enabled: FeatureEnabled) -> ChatItem {
         let content = CIContent.rcvChatFeature(feature: feature, enabled: enabled)
         return ChatItem(
             chatDir: .directRcv,
@@ -1573,11 +1608,12 @@ public enum CIContent: Decodable, ItemContent {
     case sndGroupEvent(sndGroupEvent: SndGroupEvent)
     case rcvConnEvent(rcvConnEvent: RcvConnEvent)
     case sndConnEvent(sndConnEvent: SndConnEvent)
-    case rcvChatFeature(feature: Feature, enabled: FeatureEnabled)
-    case sndChatFeature(feature: Feature, enabled: FeatureEnabled)
-    case rcvGroupFeature(feature: Feature, preference: GroupPreference)
-    case sndGroupFeature(feature: Feature, preference: GroupPreference)
-    case rcvChatFeatureRejected(feature: Feature)
+    case rcvChatFeature(feature: ChatFeature, enabled: FeatureEnabled)
+    case sndChatFeature(feature: ChatFeature, enabled: FeatureEnabled)
+    case rcvGroupFeature(groupFeature: GroupFeature, preference: GroupPreference)
+    case sndGroupFeature(groupFeature: GroupFeature, preference: GroupPreference)
+    case rcvChatFeatureRejected(feature: ChatFeature)
+    case rcvGroupFeatureRejected(groupFeature: GroupFeature)
 
     public var text: String {
         get {
@@ -1600,6 +1636,7 @@ public enum CIContent: Decodable, ItemContent {
             case let .rcvGroupFeature(feature, preference): return "\(feature.text): \(preference.enable.text)"
             case let .sndGroupFeature(feature, preference): return "\(feature.text): \(preference.enable.text)"
             case let .rcvChatFeatureRejected(feature): return String.localizedStringWithFormat("%@: received, prohibited", feature.text)
+            case let .rcvGroupFeatureRejected(groupFeature): return String.localizedStringWithFormat("%@: received, prohibited", groupFeature.text)
             }
         }
     }
