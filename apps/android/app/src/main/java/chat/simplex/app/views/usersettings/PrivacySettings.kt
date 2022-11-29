@@ -5,13 +5,17 @@ import SectionItemView
 import SectionSpacer
 import SectionTextFooter
 import SectionView
+import android.view.WindowManager
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
+import androidx.fragment.app.FragmentActivity
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.views.helpers.*
@@ -30,7 +34,17 @@ fun PrivacySettingsView(
     SectionView(stringResource(R.string.settings_section_title_device)) {
       ChatLockItem(chatModel.performLA, setPerformLA)
       SectionDivider()
-      SettingsPreferenceItem(Icons.Outlined.VisibilityOff, stringResource(R.string.protect_app_screen), chatModel.controller.appPrefs.privacyProtectScreen)
+      val context = LocalContext.current
+      SettingsPreferenceItem(Icons.Outlined.VisibilityOff, stringResource(R.string.protect_app_screen), chatModel.controller.appPrefs.privacyProtectScreen) { on ->
+        if (on) {
+          (context as? FragmentActivity)?.window?.setFlags(
+            WindowManager.LayoutParams.FLAG_SECURE,
+            WindowManager.LayoutParams.FLAG_SECURE
+          )
+        } else {
+          (context as? FragmentActivity)?.window?.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        }
+      }
     }
     SectionSpacer()
 

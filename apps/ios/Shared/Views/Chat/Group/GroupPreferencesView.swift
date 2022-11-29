@@ -19,6 +19,7 @@ struct GroupPreferencesView: View {
         VStack {
             List {
                 // featureSection(.fullDelete, $preferences.fullDelete.enable)
+                featureSection(.directMessages, $preferences.directMessages.enable)
                 featureSection(.voice, $preferences.voice.enable)
 
                 if groupInfo.canEdit {
@@ -32,7 +33,7 @@ struct GroupPreferencesView: View {
         }
     }
 
-    private func featureSection(_ feature: Feature, _ enableFeature: Binding<GroupFeatureEnabled>) -> some View {
+    private func featureSection(_ feature: GroupFeature, _ enableFeature: Binding<GroupFeatureEnabled>) -> some View {
         Section {
             if (groupInfo.canEdit) {
                 settingsRow(feature.icon) {
@@ -50,7 +51,7 @@ struct GroupPreferencesView: View {
                 }
             }
         } footer: {
-            Text(feature.enableGroupPrefDescription(enableFeature.wrappedValue, groupInfo.canEdit))
+            Text(feature.enableDescription(enableFeature.wrappedValue, groupInfo.canEdit))
                 .frame(height: 36, alignment: .topLeading)
         }
     }

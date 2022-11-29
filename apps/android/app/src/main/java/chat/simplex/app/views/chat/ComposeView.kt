@@ -167,7 +167,7 @@ fun ComposeView(
   }
   val cameraPermissionLauncher = rememberPermissionLauncher { isGranted: Boolean ->
     if (isGranted) {
-      cameraLauncher.launch(null)
+      cameraLauncher.launchWithFallback()
     } else {
       Toast.makeText(context, generalGetString(R.string.toast_permission_denied), Toast.LENGTH_SHORT).show()
     }
@@ -239,7 +239,7 @@ fun ComposeView(
       AttachmentOption.TakePhoto -> {
         when (PackageManager.PERMISSION_GRANTED) {
           ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) -> {
-            cameraLauncher.launch(null)
+            cameraLauncher.launchWithFallback()
           }
           else -> {
             cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
@@ -494,7 +494,7 @@ fun ComposeView(
 
   fun cancelVoice() {
     composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
-    chosenContent.value = emptyList()
+    chosenAudio.value = null
   }
 
   fun cancelFile() {
@@ -589,6 +589,12 @@ fun ComposeView(
                 contactPreference.allow == FeatureAllowed.YES
           }
           else -> false
+        }
+      }
+      LaunchedEffect(allowedVoiceByPrefs) {
+        if (!allowedVoiceByPrefs && chosenAudio.value != null) {
+          // Voice was disabled right when this user records it, just cancel it
+          cancelVoice()
         }
       }
       SendMsgView(

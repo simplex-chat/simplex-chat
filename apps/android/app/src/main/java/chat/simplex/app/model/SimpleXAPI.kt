@@ -12,12 +12,12 @@ import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DeleteForever
-import androidx.compose.material.icons.filled.KeyboardVoice
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -1064,7 +1064,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         } else if (cItem.content.msgContent is MsgContent.MCVoice && file != null && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileSize > MAX_VOICE_SIZE_FOR_SENDING && appPrefs.privacyAcceptImages.get()) {
           withApi { receiveFile(file.fileId) } // TODO check inlineFileMode != IFMSent
         }
-        if (!cItem.chatDir.sent && !cItem.isCall && !cItem.isMutedMemberEvent && (!isAppOnForeground(appContext) || chatModel.chatId.value != cInfo.id)) {
+        if (cItem.showNotification && (!isAppOnForeground(appContext) || chatModel.chatId.value != cInfo.id)) {
           ntfManager.notifyMessageReceived(cInfo, cItem)
         }
       }
@@ -2047,21 +2047,33 @@ sealed class ContactUserPref {
   @Serializable @SerialName("user") data class User(val preference: ChatPreference): ContactUserPref() // global user default is used
 }
 
+interface Feature {
+//  val icon: ImageVector
+  val text: String
+  val iconFilled: ImageVector
+}
+
 @Serializable
-enum class Feature {
+enum class ChatFeature: Feature {
   @SerialName("fullDelete") FullDelete,
   @SerialName("voice") Voice;
 
-  fun text() =
-    when(this) {
+  override val text: String
+    get() = when(this) {
       FullDelete -> generalGetString(R.string.full_deletion)
       Voice -> generalGetString(R.string.voice_messages)
     }
 
-  fun icon(filled: Boolean) =
-    when(this) {
-      FullDelete -> if (filled) Icons.Filled.DeleteForever else Icons.Outlined.DeleteForever
-      Voice -> if (filled) Icons.Filled.KeyboardVoice else Icons.Outlined.KeyboardVoice
+  val icon: ImageVector
+    get() = when(this) {
+      FullDelete -> Icons.Outlined.DeleteForever
+      Voice -> Icons.Outlined.KeyboardVoice
+    }
+
+  override val iconFilled: ImageVector
+    get() = when(this) {
+      FullDelete -> Icons.Filled.DeleteForever
+      Voice -> Icons.Filled.KeyboardVoice
     }
 
   fun allowDescription(allowed: FeatureAllowed): String =
@@ -2093,31 +2105,67 @@ enum class Feature {
         else -> generalGetString(R.string.voice_prohibited_in_this_chat)
       }
   }
+}
 
-fun enableGroupPrefDescription(enabled: GroupFeatureEnabled, canEdit: Boolean): String =
-  if (canEdit) {
-    when(this) {
-      FullDelete -> when(enabled) {
-        GroupFeatureEnabled.ON -> generalGetString(R.string.allow_to_delete_messages)
-        GroupFeatureEnabled.OFF -> generalGetString(R.string.prohibit_message_deletion)
+@Serializable
+enum class GroupFeature: Feature {
+  @SerialName("directMessages") DirectMessages,
+  @SerialName("fullDelete") FullDelete,
+  @SerialName("voice") Voice;
+
+  override val text: String
+    get() = when(this) {
+      DirectMessages -> generalGetString(R.string.direct_messages)
+      FullDelete -> generalGetString(R.string.full_deletion)
+      Voice -> generalGetString(R.string.voice_messages)
+    }
+
+  val icon: ImageVector
+    get() = when(this) {
+      DirectMessages -> Icons.Outlined.SwapHorizontalCircle
+      FullDelete -> Icons.Outlined.DeleteForever
+      Voice -> Icons.Outlined.KeyboardVoice
+    }
+
+  override val iconFilled: ImageVector
+    get() = when(this) {
+      DirectMessages -> Icons.Filled.SwapHorizontalCircle
+      FullDelete -> Icons.Filled.DeleteForever
+      Voice -> Icons.Filled.KeyboardVoice
+    }
+
+  fun enableDescription(enabled: GroupFeatureEnabled, canEdit: Boolean): String =
+    if (canEdit) {
+      when(this) {
+        DirectMessages -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(R.string.allow_direct_messages)
+          GroupFeatureEnabled.OFF -> generalGetString(R.string.prohibit_direct_messages)
+        }
+        FullDelete -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(R.string.allow_to_delete_messages)
+          GroupFeatureEnabled.OFF -> generalGetString(R.string.prohibit_message_deletion)
+        }
+        Voice -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(R.string.allow_to_send_voice)
+          GroupFeatureEnabled.OFF -> generalGetString(R.string.prohibit_sending_voice)
+        }
       }
-      Voice -> when(enabled) {
-        GroupFeatureEnabled.ON -> generalGetString(R.string.allow_to_send_voice)
-        GroupFeatureEnabled.OFF -> generalGetString(R.string.prohibit_sending_voice)
+    } else {
+      when(this) {
+        DirectMessages -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(R.string.group_members_can_send_dms)
+          GroupFeatureEnabled.OFF -> generalGetString(R.string.direct_messages_are_prohibited_in_chat)
+        }
+        FullDelete -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(R.string.group_members_can_delete)
+          GroupFeatureEnabled.OFF -> generalGetString(R.string.message_deletion_prohibited_in_chat)
+        }
+        Voice -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(R.string.group_members_can_send_voice)
+          GroupFeatureEnabled.OFF -> generalGetString(R.string.voice_messages_are_prohibited)
+        }
       }
     }
-  } else {
-    when(this) {
-      FullDelete -> when(enabled) {
-        GroupFeatureEnabled.ON -> generalGetString(R.string.group_members_can_delete)
-        GroupFeatureEnabled.OFF -> generalGetString(R.string.message_deletion_prohibited_in_chat)
-      }
-      Voice -> when(enabled) {
-        GroupFeatureEnabled.ON -> generalGetString(R.string.group_members_can_send_voice)
-        GroupFeatureEnabled.OFF -> generalGetString(R.string.voice_messages_are_prohibited)
-      }
-    }
-  }
 }
 
 @Serializable
@@ -2205,24 +2253,26 @@ enum class FeatureAllowed {
 
 @Serializable
 data class FullGroupPreferences(
+  val directMessages: GroupPreference,
   val fullDelete: GroupPreference,
   val voice: GroupPreference
 ) {
   fun toGroupPreferences(): GroupPreferences =
-    GroupPreferences(fullDelete = fullDelete, voice = voice)
+    GroupPreferences(directMessages = directMessages, fullDelete = fullDelete, voice = voice)
 
   companion object {
-    val sampleData = FullGroupPreferences(fullDelete = GroupPreference(enable = GroupFeatureEnabled.OFF), voice = GroupPreference(enable = GroupFeatureEnabled.ON))
+    val sampleData = FullGroupPreferences(directMessages = GroupPreference(GroupFeatureEnabled.OFF), fullDelete = GroupPreference(GroupFeatureEnabled.OFF), voice = GroupPreference(GroupFeatureEnabled.ON))
   }
 }
 
 @Serializable
 data class GroupPreferences(
+  val directMessages: GroupPreference?,
   val fullDelete: GroupPreference?,
   val voice: GroupPreference?
 ) {
   companion object {
-    val sampleData = GroupPreferences(fullDelete = GroupPreference(enable = GroupFeatureEnabled.OFF), voice = GroupPreference(enable = GroupFeatureEnabled.ON))
+    val sampleData = GroupPreferences(directMessages = GroupPreference(GroupFeatureEnabled.OFF), fullDelete = GroupPreference(GroupFeatureEnabled.OFF), voice = GroupPreference(GroupFeatureEnabled.ON))
   }
 }
 

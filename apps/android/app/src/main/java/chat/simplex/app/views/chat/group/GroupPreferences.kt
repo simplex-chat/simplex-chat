@@ -20,13 +20,15 @@ import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.views.helpers.*
 
 @Composable
-fun GroupPreferencesView(m: ChatModel, groupInfo: GroupInfo) {
-  var preferences by remember { mutableStateOf(groupInfo.fullGroupPreferences) }
-  var currentPreferences by remember { mutableStateOf(preferences) }
+fun GroupPreferencesView(m: ChatModel, chatId: String) {
+  val groupInfo = remember { derivedStateOf { (m.getChat(chatId)?.chatInfo as? ChatInfo.Group)?.groupInfo } }
+  val gInfo = groupInfo.value ?: return
+  var preferences by remember(gInfo) { mutableStateOf(gInfo.fullGroupPreferences) }
+  var currentPreferences by remember(gInfo) { mutableStateOf(preferences) }
   GroupPreferencesLayout(
     preferences,
     currentPreferences,
-    groupInfo,
+    gInfo,
     applyPrefs = { prefs ->
       preferences = prefs
     },
@@ -35,8 +37,8 @@ fun GroupPreferencesView(m: ChatModel, groupInfo: GroupInfo) {
     },
     savePrefs = {
       withApi {
-        val gp = groupInfo.groupProfile.copy(groupPreferences = preferences.toGroupPreferences())
-        val gInfo = m.controller.apiUpdateGroup(groupInfo.groupId, gp)
+        val gp = gInfo.groupProfile.copy(groupPreferences = preferences.toGroupPreferences())
+        val gInfo = m.controller.apiUpdateGroup(gInfo.groupId, gp)
         if (gInfo != null) {
           m.updateGroup(gInfo)
           currentPreferences = preferences
@@ -60,13 +62,17 @@ private fun GroupPreferencesLayout(
     horizontalAlignment = Alignment.Start,
   ) {
     AppBarTitle(stringResource(R.string.group_preferences))
+    val allowDirectMessages = remember(preferences) { mutableStateOf(preferences.directMessages.enable) }
+    FeatureSection(GroupFeature.DirectMessages, allowDirectMessages, groupInfo) {
+      applyPrefs(preferences.copy(directMessages = GroupPreference(enable = it)))
+    }
 //    val allowFullDeletion = remember(preferences) { mutableStateOf(preferences.fullDelete.enable) }
 //    FeatureSection(Feature.FullDelete, allowFullDeletion, groupInfo) {
 //      applyPrefs(preferences.copy(fullDelete = GroupPreference(enable = it)))
 //    }
 //    SectionSpacer()
     val allowVoice = remember(preferences) { mutableStateOf(preferences.voice.enable) }
-    FeatureSection(Feature.Voice, allowVoice, groupInfo) {
+    FeatureSection(GroupFeature.Voice, allowVoice, groupInfo) {
       applyPrefs(preferences.copy(voice = GroupPreference(enable = it)))
     }
     if (groupInfo.canEdit) {
@@ -81,26 +87,26 @@ private fun GroupPreferencesLayout(
 }
 
 @Composable
-private fun FeatureSection(feature: Feature, enableFeature: State<GroupFeatureEnabled>, groupInfo: GroupInfo, onSelected: (GroupFeatureEnabled) -> Unit) {
+private fun FeatureSection(feature: GroupFeature, enableFeature: State<GroupFeatureEnabled>, groupInfo: GroupInfo, onSelected: (GroupFeatureEnabled) -> Unit) {
   SectionView {
     if (groupInfo.canEdit) {
       SectionItemView {
         ExposedDropDownSettingRow(
-          feature.text(),
+          feature.text,
           GroupFeatureEnabled.values().map { it to it.text },
           enableFeature,
-          icon = feature.icon(false),
+          icon = feature.icon,
           onSelected = onSelected
         )
       }
     } else {
       InfoRow(
-        feature.text(),
+        feature.text,
         enableFeature.value.text
       )
     }
   }
-  SectionTextFooter(feature.enableGroupPrefDescription(enableFeature.value, groupInfo.canEdit))
+  SectionTextFooter(feature.enableDescription(enableFeature.value, groupInfo.canEdit))
 }
 
 @Composable

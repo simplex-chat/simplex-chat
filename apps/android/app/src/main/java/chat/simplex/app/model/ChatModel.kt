@@ -1065,30 +1065,40 @@ data class ChatItem (
       else -> false
     }
 
-  val isCall: Boolean get() =
-    when (content) {
-      is CIContent.SndCall -> true
-      is CIContent.RcvCall -> true
-      else -> false
-    }
+  private val showNtfDir: Boolean get() = !chatDir.sent
 
-  val isMutedMemberEvent: Boolean get() =
+  val showNotification: Boolean get() =
     when (content) {
-      is CIContent.RcvGroupEventContent ->
-        when (content.rcvGroupEvent) {
-          is RcvGroupEvent.GroupUpdated -> true
-          is RcvGroupEvent.MemberConnected -> true
-          is RcvGroupEvent.UserDeleted -> false
-          is RcvGroupEvent.GroupDeleted -> false
-          is RcvGroupEvent.MemberAdded -> false
-          is RcvGroupEvent.MemberLeft -> false
-          is RcvGroupEvent.MemberRole -> true
-          is RcvGroupEvent.UserRole -> false
-          is RcvGroupEvent.MemberDeleted -> false
-          is RcvGroupEvent.InvitedViaGroupLink -> false
-        }
-      is CIContent.SndGroupEventContent -> true
-      else -> false
+      is CIContent.SndMsgContent -> showNtfDir
+      is CIContent.RcvMsgContent -> showNtfDir
+      is CIContent.SndDeleted -> showNtfDir
+      is CIContent.RcvDeleted -> showNtfDir
+      is CIContent.SndCall -> showNtfDir
+      is CIContent.RcvCall -> false // notification is shown on CallInvitation instead
+      is CIContent.RcvIntegrityError -> showNtfDir
+      is CIContent.RcvGroupInvitation -> showNtfDir
+      is CIContent.SndGroupInvitation -> showNtfDir
+      is CIContent.RcvGroupEventContent -> when (content.rcvGroupEvent) {
+        is RcvGroupEvent.MemberAdded -> false
+        is RcvGroupEvent.MemberConnected -> false
+        is RcvGroupEvent.MemberLeft -> false
+        is RcvGroupEvent.MemberRole -> false
+        is RcvGroupEvent.UserRole -> showNtfDir
+        is RcvGroupEvent.MemberDeleted -> false
+        is RcvGroupEvent.UserDeleted -> showNtfDir
+        is RcvGroupEvent.GroupDeleted -> showNtfDir
+        is RcvGroupEvent.GroupUpdated -> false
+        is RcvGroupEvent.InvitedViaGroupLink -> false
+      }
+      is CIContent.SndGroupEventContent -> showNtfDir
+      is CIContent.RcvConnEventContent -> false
+      is CIContent.SndConnEventContent -> showNtfDir
+      is CIContent.RcvChatFeature -> false
+      is CIContent.SndChatFeature -> showNtfDir
+      is CIContent.RcvGroupFeature -> false
+      is CIContent.SndGroupFeature -> showNtfDir
+      is CIContent.RcvChatFeatureRejected -> showNtfDir
+      is CIContent.RcvGroupFeatureRejected -> showNtfDir
     }
 
   fun withStatus(status: CIStatus): ChatItem = this.copy(meta = meta.copy(itemStatus = status))
@@ -1162,7 +1172,7 @@ data class ChatItem (
         file = null
       )
 
-    fun getChatFeatureSample(feature: Feature, enabled: FeatureEnabled): ChatItem {
+    fun getChatFeatureSample(feature: ChatFeature, enabled: FeatureEnabled): ChatItem {
       val content = CIContent.RcvChatFeature(feature = feature, enabled = enabled)
       return ChatItem(
         chatDir = CIDirection.DirectRcv(),
@@ -1268,11 +1278,12 @@ sealed class CIContent: ItemContent {
   @Serializable @SerialName("sndGroupEvent") class SndGroupEventContent(val sndGroupEvent: SndGroupEvent): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvConnEvent") class RcvConnEventContent(val rcvConnEvent: RcvConnEvent): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("sndConnEvent") class SndConnEventContent(val sndConnEvent: SndConnEvent): CIContent() { override val msgContent: MsgContent? get() = null }
-  @Serializable @SerialName("rcvChatFeature") class RcvChatFeature(val feature: Feature, val enabled: FeatureEnabled): CIContent() { override val msgContent: MsgContent? get() = null }
-  @Serializable @SerialName("sndChatFeature") class SndChatFeature(val feature: Feature, val enabled: FeatureEnabled): CIContent() { override val msgContent: MsgContent? get() = null }
-  @Serializable @SerialName("rcvGroupFeature") class RcvGroupFeature(val feature: Feature, val preference: GroupPreference): CIContent() { override val msgContent: MsgContent? get() = null }
-  @Serializable @SerialName("sndGroupFeature") class SndGroupFeature(val feature: Feature, val preference: GroupPreference): CIContent() { override val msgContent: MsgContent? get() = null }
-  @Serializable @SerialName("rcvChatFeatureRejected") class RcvChatFeatureRejected(val feature: Feature): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvChatFeature") class RcvChatFeature(val feature: ChatFeature, val enabled: FeatureEnabled): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("sndChatFeature") class SndChatFeature(val feature: ChatFeature, val enabled: FeatureEnabled): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvGroupFeature") class RcvGroupFeature(val groupFeature: GroupFeature, val preference: GroupPreference): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("sndGroupFeature") class SndGroupFeature(val groupFeature: GroupFeature, val preference: GroupPreference): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvChatFeatureRejected") class RcvChatFeatureRejected(val feature: ChatFeature): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvGroupFeatureRejected") class RcvGroupFeatureRejected(val groupFeature: GroupFeature): CIContent() { override val msgContent: MsgContent? get() = null }
 
   override val text: String get() = when (this) {
       is SndMsgContent -> msgContent.text
@@ -1288,11 +1299,12 @@ sealed class CIContent: ItemContent {
       is SndGroupEventContent -> sndGroupEvent.text
       is RcvConnEventContent -> rcvConnEvent.text
       is SndConnEventContent -> sndConnEvent.text
-      is RcvChatFeature -> "${feature.text()}: ${enabled.text}"
-      is SndChatFeature -> "${feature.text()}: ${enabled.text}"
-      is RcvGroupFeature -> "${feature.text()}: ${preference.enable.text}"
-      is SndGroupFeature -> "${feature.text()}: ${preference.enable.text}"
-      is RcvChatFeatureRejected -> "${feature.text()}: ${generalGetString(R.string.feature_received_prohibited)}"
+      is RcvChatFeature -> "${feature.text}: ${enabled.text}"
+      is SndChatFeature -> "${feature.text}: ${enabled.text}"
+      is RcvGroupFeature -> "${groupFeature.text}: ${preference.enable.text}"
+      is SndGroupFeature -> "${groupFeature.text}: ${preference.enable.text}"
+      is RcvChatFeatureRejected -> "${feature.text}: ${generalGetString(R.string.feature_received_prohibited)}"
+      is RcvGroupFeatureRejected -> "${groupFeature.text}: ${generalGetString(R.string.feature_received_prohibited)}"
     }
 }
 

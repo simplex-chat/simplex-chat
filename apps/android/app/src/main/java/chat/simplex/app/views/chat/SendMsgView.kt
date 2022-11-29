@@ -113,7 +113,6 @@ fun SendMsgView(
           }
           val startStopRecording: () -> Unit = {
             when {
-              !permissionsState.allPermissionsGranted -> permissionsState.launchMultiplePermissionRequest()
               needToAllowVoiceToContact -> {
                 AlertManager.shared.showAlertDialog(
                   title = generalGetString(R.string.allow_voice_messages_question),
@@ -124,6 +123,7 @@ fun SendMsgView(
                 )
               }
               !allowedVoiceByPrefs -> showDisabledVoiceAlert()
+              !permissionsState.allPermissionsGranted -> permissionsState.launchMultiplePermissionRequest()
               recordingInProgress.value -> stopRecordingAndAddAudio()
               filePath.value == null -> {
                 recordingTimeRange = System.currentTimeMillis()..0L

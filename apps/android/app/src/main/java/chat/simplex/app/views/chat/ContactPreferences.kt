@@ -78,7 +78,7 @@ private fun ContactPreferencesLayout(
 //    }
 //    SectionSpacer()
     val allowVoice: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.voice) }
-    FeatureSection(Feature.Voice, user.fullPreferences.voice.allow, contact.mergedPreferences.voice, allowVoice) {
+    FeatureSection(ChatFeature.Voice, user.fullPreferences.voice.allow, contact.mergedPreferences.voice, allowVoice) {
       applyPrefs(featuresAllowed.copy(voice = it))
     }
     SectionSpacer()
@@ -92,7 +92,7 @@ private fun ContactPreferencesLayout(
 
 @Composable
 private fun FeatureSection(
-  feature: Feature,
+  feature: ChatFeature,
   userDefault: FeatureAllowed,
   pref: ContactUserPreference,
   allowFeature: State<ContactFeatureAllowed>,
@@ -104,8 +104,8 @@ private fun FeatureSection(
   )
 
   SectionView(
-    feature.text().uppercase(),
-    icon = feature.icon(true),
+    feature.text.uppercase(),
+    icon = feature.iconFilled,
     iconTint = if (enabled.forUser) SimplexGreen else if (enabled.forContact) WarningYellow else Color.Red,
     leadingIcon = true,
   ) {

@@ -67,7 +67,7 @@ private fun PreferencesLayout(
 //    }
 //    SectionSpacer()
     val allowVoice = remember(preferences) { mutableStateOf(preferences.voice.allow) }
-    FeatureSection(Feature.Voice, allowVoice) {
+    FeatureSection(ChatFeature.Voice, allowVoice) {
       applyPrefs(preferences.copy(voice = ChatPreference(allow = it)))
     }
     SectionSpacer()
@@ -80,14 +80,14 @@ private fun PreferencesLayout(
 }
 
 @Composable
-private fun FeatureSection(feature: Feature, allowFeature: State<FeatureAllowed>, onSelected: (FeatureAllowed) -> Unit) {
+private fun FeatureSection(feature: ChatFeature, allowFeature: State<FeatureAllowed>, onSelected: (FeatureAllowed) -> Unit) {
   SectionView {
     SectionItemView {
       ExposedDropDownSettingRow(
-        feature.text(),
+        feature.text,
         FeatureAllowed.values().map { it to it.text },
         allowFeature,
-        icon = feature.icon(false),
+        icon = feature.icon,
         onSelected = onSelected
       )
     }

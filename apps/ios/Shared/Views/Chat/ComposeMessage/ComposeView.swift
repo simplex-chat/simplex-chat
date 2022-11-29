@@ -170,6 +170,10 @@ struct ComposeView: View {
     @State private var audioRecorder: AudioRecorder?
     @State private var voiceMessageRecordingTime: TimeInterval?
     @State private var startingRecording: Bool = false
+    // for some reason voice message preview playback occasionally
+    // fails to stop on ComposeVoiceView.playbackMode().onDisappear,
+    // this is a workaround to fire an explicit event in certain cases
+    @State private var stopPlayback: Bool = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -300,7 +304,6 @@ struct ComposeView: View {
             }
         }
         .onDisappear {
-            audioRecorder?.stop()
             if let fileName = composeState.voiceMessageRecordingFileName {
                 cancelVoiceMessageRecording(fileName)
             }
@@ -312,6 +315,12 @@ struct ComposeView: View {
                 }
             } else {
                 startingRecording = false
+            }
+        }
+        .onChange(of: chat.chatInfo.voiceMessageAllowed) { vmAllowed in
+            if !vmAllowed && composeState.voicePreview,
+               let fileName = composeState.voiceMessageRecordingFileName {
+                cancelVoiceMessageRecording(fileName)
             }
         }
     }
@@ -336,7 +345,8 @@ struct ComposeView: View {
                 recordingTime: $voiceMessageRecordingTime,
                 recordingState: $composeState.voiceMessageRecordingState,
                 cancelVoiceMessage: { cancelVoiceMessageRecording($0) },
-                cancelEnabled: !composeState.editing
+                cancelEnabled: !composeState.editing,
+                stopPlayback: $stopPlayback
             )
         case let .filePreview(fileName: fileName):
             ComposeFileView(
@@ -427,6 +437,7 @@ struct ComposeView: View {
                         await send(.text(composeState.message), quoted: quoted)
                     }
                 case let .voicePreview(recordingFileName, duration):
+                    stopPlayback.toggle()
                     await send(.voice(text: composeState.message, duration: duration), quoted: quoted, file: recordingFileName)
                 case .filePreview:
                     if let fileURL = chosenFile,
@@ -476,10 +487,16 @@ struct ComposeView: View {
         if let recStartError = await audioRecorder?.start(fileName: fileName) {
             switch recStartError {
             case .permission:
-                AlertManager.shared.showAlertMsg(
-                    title: "No permission to record voice message",
-                    message: "To record voice message please grant permission to use Microphone."
-                )
+                AlertManager.shared.showAlert(Alert(
+                    title: Text("No permission to record voice message"),
+                    message: Text("To record voice message please grant permission to use Microphone."),
+                    primaryButton: .default(Text("Open Settings")) {
+                        DispatchQueue.main.async {
+                            UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!, options: [:], completionHandler: nil)
+                        }
+                    },
+                    secondaryButton: .cancel()
+                ))
             case let .error(error):
                 AlertManager.shared.showAlertMsg(
                     title: "Unable to record voice message",
@@ -536,6 +553,8 @@ struct ComposeView: View {
     }
 
     private func cancelVoiceMessageRecording(_ fileName: String) {
+        stopPlayback.toggle()
+        audioRecorder?.stop()
         removeFile(fileName)
         clearState()
     }
@@ -548,9 +567,9 @@ struct ComposeView: View {
         cancelledLinks = []
         chosenImages = []
         chosenFile = nil
-        audioRecorder?.stop()
         audioRecorder = nil
         voiceMessageRecordingTime = nil
+        startingRecording = false
     }
 
     private func updateMsgContent(_ msgContent: MsgContent) -> MsgContent {
