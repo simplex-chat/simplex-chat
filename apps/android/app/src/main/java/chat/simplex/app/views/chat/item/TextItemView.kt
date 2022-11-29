@@ -1,5 +1,7 @@
 package chat.simplex.app.views.chat.item
 
+import android.content.ActivityNotFoundException
+import android.util.Log
 import androidx.compose.foundation.text.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -14,6 +16,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import androidx.core.text.BidiFormatter
+import chat.simplex.app.TAG
 import chat.simplex.app.model.*
 import chat.simplex.app.views.helpers.detectGesture
 
@@ -110,7 +113,15 @@ fun MarkdownText (
           },
           onClick = { offset ->
             annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
-              .firstOrNull()?.let { annotation -> uriHandler.openUri(annotation.item) }
+              .firstOrNull()?.let { annotation ->
+                try {
+                  uriHandler.openUri(annotation.item)
+                } catch (e: ActivityNotFoundException) {
+                  // It can happen, for example, when you click on a text 0.00001 but don't have any app that can catch
+                  // `tel:` scheme in url installed on a device (no phone app or contacts, maybe)
+                  Log.e(TAG, "Open url: ${e.stackTraceToString()}")
+                }
+              }
           },
           shouldConsumeEvent = { offset ->
             annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset).any()
