@@ -71,11 +71,11 @@ fun SMPServersView(m: ChatModel) {
   val scope = rememberCoroutineScope()
 
   SMPServersLayout(
-    testing.value,
-    servers,
-    serversUnchanged.value,
-    allServersDisabled.value,
-    saveDisabled.value,
+    testing = testing.value,
+    servers = servers,
+    serversUnchanged = serversUnchanged.value,
+    saveDisabled = saveDisabled.value,
+    allServersDisabled = allServersDisabled.value,
     addServer = {
       AlertManager.shared.showAlertDialogButtonsColumn(
         title = generalGetString(R.string.smp_servers_add),

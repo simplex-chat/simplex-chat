@@ -101,7 +101,7 @@ struct SMPServersView: View {
     }
 
     private var saveDisabled: Bool {
-        servers.count == 0 ||
+        servers.isEmpty ||
         servers == m.userSMPServers ||
         testing ||
         !servers.allSatisfy { srv in
