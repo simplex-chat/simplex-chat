@@ -318,10 +318,9 @@ struct ComposeView: View {
             }
         }
         .onChange(of: chat.chatInfo.voiceMessageAllowed) { vmAllowed in
-            if !vmAllowed && composeState.voicePreview {
-                if let fileName = composeState.voiceMessageRecordingFileName {
-                    cancelVoiceMessageRecording(fileName)
-                }
+            if !vmAllowed && composeState.voicePreview,
+               let fileName = composeState.voiceMessageRecordingFileName {
+                cancelVoiceMessageRecording(fileName)
             }
         }
     }
