@@ -190,7 +190,7 @@ Stored messages, connections, statistics and server log are located in `/var/opt
 SMP server address has the following format:
 
 ```
-smp://<fingerprint>[:<password>]@hostname1[,hostname2]
+smp://<fingerprint>[:<password>]@<public_hostname>[,<onion_hostname>]
 ```
 
 - `<fingerprint>`
@@ -201,7 +201,7 @@ smp://<fingerprint>[:<password>]@hostname1[,hostname2]
 
   Your configured password of `smp-server`. You can check your configured pasword in `/etc/opt/simplex/smp-server.ini`, under `[AUTH]` section in `create_password:` field.
 
-- `@hostname1`, **optional** `hostname2`
+- `<public_hostname>`, **optional** `<onion_hostname>`
 
   Your configured hostname(s) of `smp-server`. You can check your configured hosts in `/etc/opt/simplex/smp-server.ini`, under `[TRANSPORT]` section in `host:` field.
 
