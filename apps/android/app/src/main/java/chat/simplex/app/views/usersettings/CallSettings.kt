@@ -80,8 +80,9 @@ private fun LockscreenOpts(lockscreenOpts: State<CallOnLockScreen>, enabled: Sta
 fun SharedPreferenceToggle(
   text: String,
   preference: SharedPreference<Boolean>,
-  preferenceState: MutableState<Boolean>? = null
-) {
+  preferenceState: MutableState<Boolean>? = null,
+  onChange: ((Boolean) -> Unit)? = null,
+  ) {
   val prefState = preferenceState ?: remember { mutableStateOf(preference.get()) }
   Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
     Text(text, Modifier.padding(end = 24.dp))
@@ -91,6 +92,7 @@ fun SharedPreferenceToggle(
       onCheckedChange = {
         preference.set(it)
         prefState.value = it
+        onChange?.invoke(it)
       },
       colors = SwitchDefaults.colors(
         checkedThumbColor = MaterialTheme.colors.primary,

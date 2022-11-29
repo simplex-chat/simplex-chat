@@ -68,7 +68,7 @@ fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
         ModalManager.shared.showModal(true) {
           GroupPreferencesView(
             chatModel,
-            groupInfo
+            chat.id
           )
         }
       },

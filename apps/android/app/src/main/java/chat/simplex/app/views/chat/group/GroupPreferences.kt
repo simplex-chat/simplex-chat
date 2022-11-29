@@ -20,13 +20,15 @@ import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.views.helpers.*
 
 @Composable
-fun GroupPreferencesView(m: ChatModel, groupInfo: GroupInfo) {
-  var preferences by remember { mutableStateOf(groupInfo.fullGroupPreferences) }
-  var currentPreferences by remember { mutableStateOf(preferences) }
+fun GroupPreferencesView(m: ChatModel, chatId: String) {
+  val groupInfo = remember { derivedStateOf { (m.getChat(chatId)?.chatInfo as? ChatInfo.Group)?.groupInfo } }
+  val gInfo = groupInfo.value ?: return
+  var preferences by remember(gInfo) { mutableStateOf(gInfo.fullGroupPreferences) }
+  var currentPreferences by remember(gInfo) { mutableStateOf(preferences) }
   GroupPreferencesLayout(
     preferences,
     currentPreferences,
-    groupInfo,
+    gInfo,
     applyPrefs = { prefs ->
       preferences = prefs
     },
@@ -35,8 +37,8 @@ fun GroupPreferencesView(m: ChatModel, groupInfo: GroupInfo) {
     },
     savePrefs = {
       withApi {
-        val gp = groupInfo.groupProfile.copy(groupPreferences = preferences.toGroupPreferences())
-        val gInfo = m.controller.apiUpdateGroup(groupInfo.groupId, gp)
+        val gp = gInfo.groupProfile.copy(groupPreferences = preferences.toGroupPreferences())
+        val gInfo = m.controller.apiUpdateGroup(gInfo.groupId, gp)
         if (gInfo != null) {
           m.updateGroup(gInfo)
           currentPreferences = preferences

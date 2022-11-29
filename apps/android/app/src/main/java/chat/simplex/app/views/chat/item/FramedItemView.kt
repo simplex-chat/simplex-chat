@@ -175,7 +175,7 @@ fun FramedItemView(
           }
         }
       }
-      if (ci.content.msgContent !is MsgContent.MCVoice || ci.content.text.isNotEmpty()) {
+      if (ci.content.msgContent !is MsgContent.MCVoice || ci.content.text.isNotEmpty() || ci.quotedItem != null) {
         Box(Modifier.padding(bottom = 6.dp, end = 12.dp)) {
           CIMetaView(ci, metaColor)
         }
