@@ -34,6 +34,7 @@ struct ComposeVoiceView: View {
     let cancelVoiceMessage: ((String) -> Void)
     let cancelEnabled: Bool
 
+    @Binding var stopPlayback: Bool // value is not taken into account, only the fact it switches
     @State private var audioPlayer: AudioPlayer?
     @State private var playbackState: VoiceMessagePlaybackState = .noPlayback
     @State private var playbackTime: TimeInterval?
@@ -111,6 +112,9 @@ struct ComposeVoiceView: View {
                 ProgressBar(length: recordingLength, progress: $playbackTime)
             }
         }
+        .onChange(of: stopPlayback) { _ in
+            audioPlayer?.stop()
+        }
         .onDisappear {
             audioPlayer?.stop()
         }
@@ -183,7 +187,8 @@ struct ComposeVoiceView_Previews: PreviewProvider {
             recordingTime: Binding.constant(TimeInterval(20)),
             recordingState: Binding.constant(VoiceMessageRecordingState.recording),
             cancelVoiceMessage: { _ in },
-            cancelEnabled: true
+            cancelEnabled: true,
+            stopPlayback: Binding.constant(false)
         )
         .environmentObject(ChatModel())
     }
