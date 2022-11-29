@@ -947,6 +947,7 @@
   <string name="contact_preferences">Contact preferences</string>
   <string name="group_preferences">Group preferences</string>
   <string name="your_preferences">Your preferences</string>
+  <string name="direct_messages">Direct messages</string>
   <string name="full_deletion">Full deletion</string>
   <string name="voice_messages">Voice messages</string>
   <string name="feature_enabled">enabled</string>
@@ -968,13 +969,17 @@
   <string name="only_you_can_send_voice">Only you can send voice messages.</string>
   <string name="only_your_contact_can_send_voice">Only your contact can send voice messages.</string>
   <string name="voice_prohibited_in_this_chat">Voice messages are prohibited in this chat.</string>
+  <string name="allow_direct_messages">Allow sending direct messages to members.</string>
+  <string name="prohibit_direct_messages">Prohibit sending direct messages to members.</string>
   <string name="allow_to_delete_messages">Allow to irreversibly delete sent messages.</string>
   <string name="prohibit_message_deletion">Prohibit irreversible message deletion.</string>
   <string name="allow_to_send_voice">Allow to send voice messages.</string>
   <string name="prohibit_sending_voice">Prohibit sending voice messages.</string>
+  <string name="group_members_can_send_dms">Group members can send direct messages.</string>
+  <string name="direct_messages_are_prohibited_in_chat">Direct messages between members are prohibited in this group.</string>
   <string name="group_members_can_delete">Group members can irreversibly delete sent messages.</string>
-  <string name="message_deletion_prohibited_in_chat">Irreversible message deletion is prohibited in this chat.</string>
+  <string name="message_deletion_prohibited_in_chat">Irreversible message deletion is prohibited in this group.</string>
   <string name="group_members_can_send_voice">Group members can send voice messages.</string>
-  <string name="voice_messages_are_prohibited">Voice messages are prohibited in this chat.</string>
+  <string name="voice_messages_are_prohibited">Voice messages are prohibited in this group.</string>
 
 </resources>

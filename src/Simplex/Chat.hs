@@ -340,7 +340,7 @@ processChatCommand = \case
       Group gInfo@GroupInfo {membership, localDisplayName = gName} ms <- withStore $ \db -> getGroup db user chatId
       unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
       case groupFeatureProhibited gInfo mc of
-        Just f -> pure $ chatCmdError $ "feature not allowed " <> T.unpack (chatFeatureToText f)
+        Just f -> pure $ chatCmdError $ "feature not allowed " <> T.unpack (groupFeatureToText f)
         _ -> do
           (fileInvitation_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer gInfo (length ms)
           (msgContainer, quotedItem_) <- prepareMsg fileInvitation_ membership
@@ -2278,7 +2278,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
     newGroupContentMessage gInfo@GroupInfo {chatSettings} m@GroupMember {localDisplayName = c} mc msg msgMeta = do
       let (ExtMsgContent content fInv_) = mcExtMsgContent mc
       case groupFeatureProhibited gInfo content of
-        Just f -> void $ newChatItem (CIRcvChatFeatureRejected f) Nothing
+        Just f -> void $ newChatItem (CIRcvGroupFeatureRejected f) Nothing
         _ -> do
           ciFile_ <- processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId m
           ChatItem {formattedText} <- newChatItem (CIRcvMsgContent content) ciFile_
@@ -2531,7 +2531,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
     createGroupFeatureItems :: GroupInfo -> GroupMember -> m ()
     createGroupFeatureItems g@GroupInfo {groupProfile} m = do
       let prefs = mergeGroupPreferences $ groupPreferences groupProfile
-      forM_ allChatFeatures $ \f -> do
+      forM_ allGroupFeatures $ \f -> do
         let p = getGroupPreference f prefs
         createInternalChatItem user (CDGroupRcv g m) (CIRcvGroupFeature f p) Nothing
 
@@ -3113,9 +3113,9 @@ createFeatureChangedItems user Contact {mergedPreferences = cups} ct'@Contact {m
     unless (enabled == enabled') $
       createInternalChatItem user (chatDir ct') (ciContent f enabled') Nothing
 
-createGroupFeatureChangedItems :: (MsgDirectionI d, ChatMonad m) => User -> ChatDirection 'CTGroup d -> (ChatFeature -> GroupPreference -> CIContent d) -> GroupProfile -> GroupProfile -> m ()
+createGroupFeatureChangedItems :: (MsgDirectionI d, ChatMonad m) => User -> ChatDirection 'CTGroup d -> (GroupFeature -> GroupPreference -> CIContent d) -> GroupProfile -> GroupProfile -> m ()
 createGroupFeatureChangedItems user cd ciContent p p' =
-  forM_ allChatFeatures $ \f -> do
+  forM_ allGroupFeatures $ \f -> do
     let pref = getGroupPreference f $ groupPreferences p
         pref' = getGroupPreference f $ groupPreferences p'
     unless (pref == pref') $
@@ -3132,11 +3132,11 @@ featureProhibited forWhom Contact {mergedPreferences} = \case
      in if forWhom enabled then Nothing else Just CFVoice
   _ -> Nothing
 
-groupFeatureProhibited :: GroupInfo -> MsgContent -> Maybe ChatFeature
+groupFeatureProhibited :: GroupInfo -> MsgContent -> Maybe GroupFeature
 groupFeatureProhibited GroupInfo {fullGroupPreferences} = \case
   MCVoice {} ->
-    let GroupPreference {enable} = getGroupPreference CFVoice fullGroupPreferences
-     in case enable of FEOn -> Nothing; FEOff -> Just CFVoice
+    let GroupPreference {enable} = getGroupPreference GFVoice fullGroupPreferences
+     in case enable of FEOn -> Nothing; FEOff -> Just GFVoice
   _ -> Nothing
 
 createInternalChatItem :: forall c d m. (ChatTypeI c, MsgDirectionI d, ChatMonad m) => User -> ChatDirection c d -> CIContent d -> Maybe UTCTime -> m ()
@@ -3399,9 +3399,10 @@ chatCommandP =
       "/profile_image" $> UpdateProfileImage Nothing,
       ("/profile " <|> "/p ") *> (uncurry UpdateProfile <$> userNames),
       ("/profile" <|> "/p") $> ShowProfile,
-      "/voice #" *> (SetGroupFeature CFVoice <$> displayName <*> (A.space *> strP)),
+      "/voice #" *> (SetGroupFeature GFVoice <$> displayName <*> (A.space *> strP)),
       "/voice @" *> (SetContactFeature CFVoice <$> displayName <*> optional (A.space *> strP)),
       "/voice " *> (SetUserFeature CFVoice <$> strP),
+      "/dms #" *> (SetGroupFeature GFDirectMessages <$> displayName <*> (A.space *> strP)),
       "/incognito " *> (SetIncognito <$> onOffP),
       ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
       ("/version" <|> "/v") $> ShowVersion,

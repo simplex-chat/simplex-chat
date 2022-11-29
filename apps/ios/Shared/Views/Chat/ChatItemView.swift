@@ -36,6 +36,7 @@ struct ChatItemView: View {
         case let .rcvGroupFeature(feature, preference): chatFeatureView(feature, preference.enable.iconColor)
         case let .sndGroupFeature(feature, preference): chatFeatureView(feature, preference.enable.iconColor)
         case let .rcvChatFeatureRejected(feature): chatFeatureView(feature, .red)
+        case let .rcvGroupFeatureRejected(feature): chatFeatureView(feature, .red)
         }
     }
 
