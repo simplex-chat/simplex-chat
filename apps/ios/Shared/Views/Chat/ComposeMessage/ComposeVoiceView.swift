@@ -54,18 +54,6 @@ struct ComposeVoiceView: View {
         .background(colorScheme == .light ? sentColorLight : sentColorDark)
         .frame(maxWidth: .infinity)
         .padding(.top, 8)
-        .onDisappear {
-            audioPlayer?.stop()
-        }
-        .onChange(of: chatModel.stopPreviousRecPlay) { _ in
-            if !startingPlayback {
-                audioPlayer?.stop()
-                playbackState = .noPlayback
-                playbackTime = TimeInterval(0)
-            } else {
-                startingPlayback = false
-            }
-        }
     }
 
     private func recordingMode() -> some View {
@@ -121,6 +109,18 @@ struct ComposeVoiceView: View {
 
             if let recordingLength = recordingTime {
                 ProgressBar(length: recordingLength, progress: $playbackTime)
+            }
+        }
+        .onDisappear {
+            audioPlayer?.stop()
+        }
+        .onChange(of: chatModel.stopPreviousRecPlay) { _ in
+            if !startingPlayback {
+                audioPlayer?.stop()
+                playbackState = .noPlayback
+                playbackTime = TimeInterval(0)
+            } else {
+                startingPlayback = false
             }
         }
     }
