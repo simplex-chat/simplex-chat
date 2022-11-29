@@ -101,16 +101,16 @@ struct SMPServersView: View {
     }
 
     private var saveDisabled: Bool {
-        servers.count == 0
-        || servers == m.userSMPServers
-        || testing
-        || !servers.allSatisfy { srv in
+        servers.count == 0 ||
+        servers == m.userSMPServers ||
+        testing ||
+        !servers.allSatisfy { srv in
             if let address = parseServerAddress(srv.server) {
                 return uniqueAddress(srv, address)
             }
             return false
-        }
-        || allServersDisabled
+        } ||
+        allServersDisabled
     }
 
     private var allServersDisabled: Bool {
