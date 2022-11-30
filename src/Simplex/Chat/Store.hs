@@ -195,11 +195,13 @@ module Simplex.Chat.Store
     updateDirectChatItemStatus,
     updateDirectCIFileStatus,
     updateDirectChatItem,
-    deleteDirectChatItemLocal,
-    deleteDirectChatItemRcvBroadcast,
+    deleteDirectChatItem,
+    markDirectChatItemDeletedSnd,
+    markDirectChatItemDeletedRcv,
     updateGroupChatItem,
-    deleteGroupChatItemLocal,
-    deleteGroupChatItemRcvBroadcast,
+    deleteGroupChatItem,
+    markGroupChatItemDeletedSnd,
+    markGroupChatItemDeletedRcv,
     updateDirectChatItemsRead,
     updateGroupChatItemsRead,
     getSMPServers,
@@ -299,6 +301,7 @@ import Simplex.Chat.Migrations.M20221029_group_link_id
 import Simplex.Chat.Migrations.M20221112_server_password
 import Simplex.Chat.Migrations.M20221115_server_cfg
 import Simplex.Chat.Migrations.M20221129_delete_group_feature_items
+import Simplex.Chat.Migrations.M20221130_delete_item_deleted
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..))
@@ -348,7 +351,8 @@ schemaMigrations =
     ("20221029_group_link_id", m20221029_group_link_id),
     ("20221112_server_password", m20221112_server_password),
     ("20221115_server_cfg", m20221115_server_cfg),
-    ("20221129_delete_group_feature_items", m20221129_delete_group_feature_items)
+    ("20221129_delete_group_feature_items", m20221129_delete_group_feature_items),
+    ("20221130_delete_item_deleted", m20221130_delete_item_deleted)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -3791,16 +3795,11 @@ updateDirectChatItem_ db userId contactId itemId newContent currentTs = do
     correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
     correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
 
-deleteDirectChatItemLocal :: DB.Connection -> UserId -> Contact -> ChatItemId -> CIDeleteMode -> ExceptT StoreError IO AChatItem
-deleteDirectChatItemLocal db userId ct itemId mode = do
-  liftIO $ deleteChatItemMessages_ db itemId
-  deleteDirectChatItem_ db userId ct itemId mode
-
-deleteDirectChatItem_ :: DB.Connection -> UserId -> Contact -> ChatItemId -> CIDeleteMode -> ExceptT StoreError IO AChatItem
-deleteDirectChatItem_ db userId ct@Contact {contactId} itemId mode = do
-  (CChatItem msgDir ci) <- getDirectChatItem db userId contactId itemId
-  let toContent = msgDirToDeletedContent_ msgDir mode
+deleteDirectChatItem :: DB.Connection -> User -> Contact -> CChatItem 'CTDirect -> IO ()
+deleteDirectChatItem db User {userId} Contact {contactId} (CChatItem _ ci) = do
+  let itemId = chatItemId' ci
   liftIO $ do
+    deleteChatItemMessages_ db itemId
     DB.execute
       db
       [sql|
@@ -3808,7 +3807,6 @@ deleteDirectChatItem_ db userId ct@Contact {contactId} itemId mode = do
         WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
       |]
       (userId, contactId, itemId)
-  pure $ AChatItem SCTDirect msgDir (DirectChat ct) (ci {content = toContent, meta = (meta ci) {itemText = ciDeleteModeToText mode, itemDeleted = True}, formattedText = Nothing})
 
 deleteChatItemMessages_ :: DB.Connection -> ChatItemId -> IO ()
 deleteChatItemMessages_ db itemId =
@@ -3824,27 +3822,29 @@ deleteChatItemMessages_ db itemId =
     |]
     (Only itemId)
 
-deleteDirectChatItemRcvBroadcast :: DB.Connection -> UserId -> Contact -> ChatItemId -> MessageId -> ExceptT StoreError IO AChatItem
-deleteDirectChatItemRcvBroadcast db userId ct itemId msgId = do
+markDirectChatItemDeletedSnd :: DB.Connection -> User -> Contact -> CChatItem 'CTDirect -> IO AChatItem
+markDirectChatItemDeletedSnd db user ct cci = do
   currentTs <- liftIO getCurrentTime
-  liftIO $ insertChatItemMessage_ db itemId msgId currentTs
-  updateDirectChatItemRcvDeleted_ db userId ct itemId currentTs
+  liftIO $ markDirectChatItemDeleted_ db user ct cci currentTs
 
-updateDirectChatItemRcvDeleted_ :: DB.Connection -> UserId -> Contact -> ChatItemId -> UTCTime -> ExceptT StoreError IO AChatItem
-updateDirectChatItemRcvDeleted_ db userId ct@Contact {contactId} itemId currentTs = do
-  (CChatItem msgDir ci) <- getDirectChatItem db userId contactId itemId
-  let toContent = msgDirToDeletedContent_ msgDir CIDMBroadcast
-      toText = ciDeleteModeToText CIDMBroadcast
+markDirectChatItemDeletedRcv :: DB.Connection -> User -> Contact -> CChatItem 'CTDirect -> MessageId -> IO AChatItem
+markDirectChatItemDeletedRcv db user ct cci@(CChatItem _ ci) msgId = do
+  currentTs <- liftIO getCurrentTime
   liftIO $ do
-    DB.execute
-      db
-      [sql|
-        UPDATE chat_items
-        SET item_content = ?, item_text = ?, updated_at = ?
-        WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
-      |]
-      (toContent, toText, currentTs, userId, contactId, itemId)
-  pure $ AChatItem SCTDirect msgDir (DirectChat ct) (ci {content = toContent, meta = (meta ci) {itemText = toText}, formattedText = Nothing})
+    insertChatItemMessage_ db (chatItemId' ci) msgId currentTs
+    markDirectChatItemDeleted_ db user ct cci currentTs
+
+markDirectChatItemDeleted_ :: DB.Connection -> User -> Contact -> CChatItem 'CTDirect -> UTCTime -> IO AChatItem
+markDirectChatItemDeleted_ db User {userId} ct@Contact {contactId} (CChatItem msgDir ci) currentTs = do
+  DB.execute
+    db
+    [sql|
+      UPDATE chat_items
+      SET item_deleted = 1, updated_at = ?
+      WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
+    |]
+    (currentTs, userId, contactId, chatItemId' ci)
+  pure $ AChatItem SCTDirect msgDir (DirectChat ct) (ci {meta = (meta ci) {itemDeleted = True}})
 
 getDirectChatItemBySharedMsgId :: DB.Connection -> UserId -> ContactId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTDirect)
 getDirectChatItemBySharedMsgId db userId contactId sharedMsgId = do
@@ -3928,16 +3928,11 @@ updateGroupChatItem db user@User {userId} groupId itemId newContent msgId = do
     correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
     correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
 
-deleteGroupChatItemLocal :: DB.Connection -> User -> GroupInfo -> ChatItemId -> CIDeleteMode -> ExceptT StoreError IO AChatItem
-deleteGroupChatItemLocal db user gInfo itemId mode = do
-  liftIO $ deleteChatItemMessages_ db itemId
-  deleteGroupChatItem_ db user gInfo itemId mode
-
-deleteGroupChatItem_ :: DB.Connection -> User -> GroupInfo -> ChatItemId -> CIDeleteMode -> ExceptT StoreError IO AChatItem
-deleteGroupChatItem_ db user@User {userId} gInfo@GroupInfo {groupId} itemId mode = do
-  (CChatItem msgDir ci) <- getGroupChatItem db user groupId itemId
-  let toContent = msgDirToDeletedContent_ msgDir mode
+deleteGroupChatItem :: DB.Connection -> User -> GroupInfo -> CChatItem 'CTGroup -> IO ()
+deleteGroupChatItem db User {userId} GroupInfo {groupId} (CChatItem _ ci) = do
+  let itemId = chatItemId' ci
   liftIO $ do
+    deleteChatItemMessages_ db itemId
     DB.execute
       db
       [sql|
@@ -3945,29 +3940,30 @@ deleteGroupChatItem_ db user@User {userId} gInfo@GroupInfo {groupId} itemId mode
         WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
       |]
       (userId, groupId, itemId)
-  pure $ AChatItem SCTGroup msgDir (GroupChat gInfo) (ci {content = toContent, meta = (meta ci) {itemText = ciDeleteModeToText mode, itemDeleted = True}, formattedText = Nothing})
 
-deleteGroupChatItemRcvBroadcast :: DB.Connection -> User -> GroupInfo -> ChatItemId -> MessageId -> ExceptT StoreError IO AChatItem
-deleteGroupChatItemRcvBroadcast db user gInfo itemId msgId = do
+markGroupChatItemDeletedSnd :: DB.Connection -> User -> GroupInfo -> CChatItem 'CTGroup -> IO AChatItem
+markGroupChatItemDeletedSnd db user ct cci = do
   currentTs <- liftIO getCurrentTime
-  liftIO $ insertChatItemMessage_ db itemId msgId currentTs
-  updateGroupChatItemRcvDeleted_ db user gInfo itemId currentTs
+  liftIO $ markGroupChatItemDeleted_ db user ct cci currentTs
 
-updateGroupChatItemRcvDeleted_ :: DB.Connection -> User -> GroupInfo -> ChatItemId -> UTCTime -> ExceptT StoreError IO AChatItem
-updateGroupChatItemRcvDeleted_ db user@User {userId} gInfo@GroupInfo {groupId} itemId currentTs = do
-  (CChatItem msgDir ci) <- getGroupChatItem db user groupId itemId
-  let toContent = msgDirToDeletedContent_ msgDir CIDMBroadcast
-      toText = ciDeleteModeToText CIDMBroadcast
+markGroupChatItemDeletedRcv :: DB.Connection -> User -> GroupInfo -> CChatItem 'CTGroup -> MessageId -> IO AChatItem
+markGroupChatItemDeletedRcv db user ct cci@(CChatItem _ ci) msgId = do
+  currentTs <- liftIO getCurrentTime
   liftIO $ do
-    DB.execute
-      db
-      [sql|
-        UPDATE chat_items
-        SET item_content = ?, item_text = ?, updated_at = ?
-        WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
-      |]
-      (toContent, toText, currentTs, userId, groupId, itemId)
-  pure $ AChatItem SCTGroup msgDir (GroupChat gInfo) (ci {content = toContent, meta = (meta ci) {itemText = toText}, formattedText = Nothing})
+    insertChatItemMessage_ db (chatItemId' ci) msgId currentTs
+    markGroupChatItemDeleted_ db user ct cci currentTs
+
+markGroupChatItemDeleted_ :: DB.Connection -> User -> GroupInfo -> CChatItem 'CTGroup -> UTCTime -> IO AChatItem
+markGroupChatItemDeleted_ db User {userId} gInfo@GroupInfo {groupId} (CChatItem msgDir ci) currentTs = do
+  DB.execute
+    db
+    [sql|
+      UPDATE chat_items
+      SET item_deleted = 1, updated_at = ?
+      WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
+    |]
+    (currentTs, userId, groupId, chatItemId' ci)
+  pure $ AChatItem SCTGroup msgDir (GroupChat gInfo) (ci {meta = (meta ci) {itemDeleted = True}})
 
 getGroupChatItemBySharedMsgId :: DB.Connection -> User -> GroupId -> GroupMemberId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTGroup)
 getGroupChatItemBySharedMsgId db user@User {userId} groupId groupMemberId sharedMsgId = do

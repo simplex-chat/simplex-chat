@@ -78,7 +78,7 @@ responseToView user_ testView ts = \case
   CRLastMessages chatItems -> concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True ts) chatItems
   CRChatItemStatusUpdated _ -> []
   CRChatItemUpdated (AChatItem _ _ chat item) -> unmuted chat item $ viewItemUpdate chat item ts
-  CRChatItemDeleted (AChatItem _ _ chat deletedItem) (AChatItem _ _ _ toItem) -> unmuted chat deletedItem $ viewItemDelete chat deletedItem toItem ts
+  CRChatItemDeleted (AChatItem _ _ chat deletedItem) _ -> unmuted chat deletedItem $ viewItemDelete chat deletedItem ts
   CRChatItemDeletedNotFound Contact {localDisplayName = c} _ -> [ttyFrom $ c <> "> [deleted - original message not found]"]
   CRBroadcastSent mc n t -> viewSentBroadcast mc n ts t
   CRMsgIntegrityError mErr -> viewMsgIntegrityError mErr
@@ -334,17 +334,13 @@ viewItemUpdate chat ChatItem {chatDir, meta, content, quotedItem} ts = case chat
     CIGroupSnd -> ["message updated"]
   _ -> []
 
-viewItemDelete :: ChatInfo c -> ChatItem c d -> ChatItem c' d' -> CurrentTime -> [StyledString]
-viewItemDelete chat ChatItem {chatDir, meta, content = deletedContent} ChatItem {content = toContent} ts = case chat of
-  DirectChat Contact {localDisplayName = c} -> case (chatDir, deletedContent, toContent) of
-    (CIDirectRcv, CIRcvMsgContent mc, CIRcvDeleted mode) -> case mode of
-      CIDMBroadcast -> viewReceivedMessage (ttyFromContactDeleted c) [] mc ts meta
-      CIDMInternal -> ["message deleted"]
+viewItemDelete :: ChatInfo c -> ChatItem c d -> CurrentTime -> [StyledString]
+viewItemDelete chat ChatItem {chatDir, meta, content = deletedContent} ts = case chat of
+  DirectChat Contact {localDisplayName = c} -> case (chatDir, deletedContent) of
+    (CIDirectRcv, CIRcvMsgContent mc) -> viewReceivedMessage (ttyFromContactDeleted c) [] mc ts meta
     _ -> ["message deleted"]
-  GroupChat g -> case (chatDir, deletedContent, toContent) of
-    (CIGroupRcv GroupMember {localDisplayName = m}, CIRcvMsgContent mc, CIRcvDeleted mode) -> case mode of
-      CIDMBroadcast -> viewReceivedMessage (ttyFromGroupDeleted g m) [] mc ts meta
-      CIDMInternal -> ["message deleted"]
+  GroupChat g -> case (chatDir, deletedContent) of
+    (CIGroupRcv GroupMember {localDisplayName = m}, CIRcvMsgContent mc) -> viewReceivedMessage (ttyFromGroupDeleted g m) [] mc ts meta
     _ -> ["message deleted"]
   _ -> []
 
