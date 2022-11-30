@@ -1,5 +1,6 @@
 package chat.simplex.app.views.call
 
+import android.app.Activity
 import android.app.KeyguardManager
 import android.content.Context
 import android.content.Intent
@@ -43,8 +44,7 @@ class IncomingCallActivity: ComponentActivity() {
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    val activity = this
-    setContent { IncomingCallActivityView(vm.chatModel, activity) }
+    setContent { IncomingCallActivityView(vm.chatModel) }
     unlockForIncomingCall()
   }
 
@@ -83,11 +83,12 @@ fun getKeyguardManager(context: Context): KeyguardManager =
   context.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
 
 @Composable
-fun IncomingCallActivityView(m: ChatModel, activity: IncomingCallActivity) {
+fun IncomingCallActivityView(m: ChatModel) {
   val switchingCall = m.switchingCall.value
   val invitation = m.activeCallInvitation.value
   val call = m.activeCall.value
   val showCallView = m.showCallView.value
+  val activity = LocalContext.current as Activity
   LaunchedEffect(invitation, call, switchingCall, showCallView) {
     if (!switchingCall && invitation == null && (!showCallView || call == null)) {
       Log.d(TAG, "IncomingCallActivityView: finishing activity")
@@ -105,20 +106,23 @@ fun IncomingCallActivityView(m: ChatModel, activity: IncomingCallActivity) {
           if (invitation != null) IncomingCallAlertView(invitation, m)
         }
       } else if (invitation != null) {
-        IncomingCallLockScreenAlert(invitation, m, activity)
+        IncomingCallLockScreenAlert(invitation, m)
       }
     }
   }
 }
 
 @Composable
-fun IncomingCallLockScreenAlert(invitation: RcvCallInvitation, chatModel: ChatModel, activity: IncomingCallActivity) {
+fun IncomingCallLockScreenAlert(invitation: RcvCallInvitation, chatModel: ChatModel) {
   val cm = chatModel.callManager
-  val cxt = LocalContext.current
-  val scope = rememberCoroutineScope()
-  var callOnLockScreen by remember { mutableStateOf(chatModel.controller.appPrefs.callOnLockScreen.get()) }
-  LaunchedEffect(true) { SoundPlayer.shared.start(cxt, scope, sound = true) }
-  DisposableEffect(true) { onDispose { SoundPlayer.shared.stop() } }
+  val callOnLockScreen by remember { mutableStateOf(chatModel.controller.appPrefs.callOnLockScreen.get()) }
+  val context = LocalContext.current
+  DisposableEffect(Unit) {
+    onDispose {
+      // Cancel notification whatever happens next since otherwise sound from notification and from inside the app can co-exist
+      chatModel.controller.ntfManager.cancelCallNotification()
+    }
+  }
   IncomingCallLockScreenAlertLayout(
     invitation,
     callOnLockScreen,
@@ -129,15 +133,14 @@ fun IncomingCallLockScreenAlert(invitation: RcvCallInvitation, chatModel: ChatMo
     },
     acceptCall = { cm.acceptIncomingCall(invitation = invitation) },
     openApp = {
-      SoundPlayer.shared.stop()
-      var intent = Intent(activity, MainActivity::class.java)
+      val intent = Intent(context, MainActivity::class.java)
         .setAction(OpenChatAction)
         .putExtra("chatId", invitation.contact.id)
-      activity.startActivity(intent)
-      activity.finish()
+      context.startActivity(intent)
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        getKeyguardManager(activity).requestDismissKeyguard(activity, null)
+        getKeyguardManager(context).requestDismissKeyguard((context as Activity), null)
       }
+      (context as Activity).finish()
     }
   )
 }

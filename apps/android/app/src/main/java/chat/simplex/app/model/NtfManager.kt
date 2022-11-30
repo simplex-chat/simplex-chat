@@ -26,7 +26,7 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
 
     // DO NOT change notification channel settings / names
     const val CallChannel: String = "chat.simplex.app.CALL_NOTIFICATION"
-    const val LockScreenCallChannel: String = "chat.simplex.app.LOCK_SCREEN_CALL_NOTIFICATION"
+    const val LockScreenCallChannel: String = "chat.simplex.app.LOCK_SCREEN_CALL_NOTIFICATION2"
     const val AcceptCallAction: String = "chat.simplex.app.ACCEPT_CALL"
     const val CallNotificationId: Int = -1
 
@@ -39,16 +39,18 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
 
   init {
     manager.createNotificationChannel(NotificationChannel(MessageChannel, generalGetString(R.string.ntf_channel_messages), NotificationManager.IMPORTANCE_HIGH))
-    manager.createNotificationChannel(NotificationChannel(LockScreenCallChannel, generalGetString(R.string.ntf_channel_calls_lockscreen), NotificationManager.IMPORTANCE_HIGH))
-    manager.createNotificationChannel(callNotificationChannel())
+    manager.createNotificationChannel(callNotificationChannel(LockScreenCallChannel, generalGetString(R.string.ntf_channel_calls_lockscreen)))
+    manager.createNotificationChannel(callNotificationChannel(CallChannel, generalGetString(R.string.ntf_channel_calls)))
+    // Remove old channels since they can't be edited
+    manager.deleteNotificationChannel("chat.simplex.app.LOCK_SCREEN_CALL_NOTIFICATION")
   }
 
   enum class NotificationAction {
     ACCEPT_CONTACT_REQUEST
   }
 
-  private fun callNotificationChannel(): NotificationChannel {
-    val callChannel = NotificationChannel(CallChannel, generalGetString(R.string.ntf_channel_calls), NotificationManager.IMPORTANCE_HIGH)
+  private fun callNotificationChannel(channelId: String, channelName: String): NotificationChannel {
+    val callChannel = NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_HIGH)
     val attrs = AudioAttributes.Builder()
       .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
       .setUsage(AudioAttributes.USAGE_NOTIFICATION)
@@ -174,7 +176,6 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
         NotificationCompat.Builder(context, LockScreenCallChannel)
           .setFullScreenIntent(fullScreenPendingIntent, true)
           .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-          .setSilent(false)
       } else {
         val soundUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + context.packageName + "/" + R.raw.ring_once)
         NotificationCompat.Builder(context, CallChannel)
@@ -208,8 +209,11 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
       .setLargeIcon(largeIcon)
       .setColor(0x88FFFF)
       .setAutoCancel(true)
+    val notification = ntfBuilder.build()
+    // This makes notification sound and vibration repeat endlessly
+    notification.flags = notification.flags or NotificationCompat.FLAG_INSISTENT
     with(NotificationManagerCompat.from(context)) {
-      notify(CallNotificationId, ntfBuilder.build())
+      notify(CallNotificationId, notification)
     }
   }
 
