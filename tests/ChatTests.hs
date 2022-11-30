@@ -122,6 +122,8 @@ chatTests = do
   describe "preferences" $ do
     it "set contact preferences" testSetContactPrefs
     it "update group preferences" testUpdateGroupPrefs
+    it "allow full deletion to contact" testAllowFullDeletionContact
+    it "allow full deletion to group" testAllowFullDeletionGroup
   describe "SMP servers" $ do
     it "get and set SMP servers" testGetSetSMPServers
     it "test SMP server connection" testTestSMPServerConnection
@@ -3114,6 +3116,48 @@ testUpdateGroupPrefs =
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on"), (1, "hey"), (0, "hi")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Full deletion: on"), (0, "Full deletion: off"), (0, "Voice messages: off"), (0, "Voice messages: on"), (0, "hey"), (1, "hi")])
 
+testAllowFullDeletionContact :: IO ()
+testAllowFullDeletionContact =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice <##> bob
+      alice ##> "/full_delete @bob always"
+      alice <## "you updated preferences for bob:"
+      alice <## "Full deletion: enabled for contact (you allow: always, contact allows: no)"
+      bob <## "alice updated preferences for you:"
+      bob <## "Full deletion: enabled for you (you allow: default (no), contact allows: always)"
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "hi"), (0, "hey"), (1, "Full deletion: enabled for contact")])
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hi"), (1, "hey"), (0, "Full deletion: enabled for you")])
+      bob #$> ("/_delete item @2 " <> itemId 2 <> " broadcast", id, "message deleted")
+      alice <# "bob> [deleted] hey"
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "hi"), (1, "Full deletion: enabled for contact")])
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hi"), (0, "Full deletion: enabled for you")])
+
+testAllowFullDeletionGroup :: IO ()
+testAllowFullDeletionGroup =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      threadDelay 1000000
+      alice #> "#team hi"
+      bob <# "#team alice> hi"
+      threadDelay 1000000
+      bob #> "#team hey"
+      alice <# "#team bob> hey"
+      alice ##> "/full_delete #team on"
+      alice <## "updated group preferences:"
+      alice <## "Full deletion enabled: on"
+      bob <## "alice updated group #team:"
+      bob <## "updated group preferences:"
+      bob <## "Full deletion enabled: on"
+      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "hi"), (0, "hey"), (1, "Full deletion: on")])
+      bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "hi"), (1, "hey"), (0, "Full deletion: on")])
+      bob #$> ("/_delete item #1 " <> groupItemId 2 5 <> " broadcast", id, "message deleted")
+      alice <# "#team bob> [deleted] hey"
+      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "hi"), (1, "Full deletion: on")])
+      bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "hi"), (0, "Full deletion: on")])
+
 testGetSetSMPServers :: IO ()
 testGetSetSMPServers =
   testChat2 aliceProfile bobProfile $
@@ -4255,7 +4299,7 @@ itemId :: Int -> String
 itemId i = show $ length chatFeatures + i
 
 groupItemId :: Int -> Int -> String
-groupItemId n i = show $ (length chatFeatures) * n + i
+groupItemId n i = show $ length chatFeatures * n + i
 
 (@@@) :: TestCC -> [(String, String)] -> Expectation
 (@@@) = getChats . map $ \(ldn, msg, _) -> (ldn, msg)
