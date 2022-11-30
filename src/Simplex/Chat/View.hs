@@ -78,7 +78,7 @@ responseToView user_ testView ts = \case
   CRLastMessages chatItems -> concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True ts) chatItems
   CRChatItemStatusUpdated _ -> []
   CRChatItemUpdated (AChatItem _ _ chat item) -> unmuted chat item $ viewItemUpdate chat item ts
-  CRChatItemDeleted (AChatItem _ _ chat deletedItem) _ -> unmuted chat deletedItem $ viewItemDelete chat deletedItem ts
+  CRChatItemDeleted (AChatItem _ _ chat deletedItem) _ byUser -> unmuted chat deletedItem $ viewItemDelete chat deletedItem byUser ts
   CRChatItemDeletedNotFound Contact {localDisplayName = c} _ -> [ttyFrom $ c <> "> [deleted - original message not found]"]
   CRBroadcastSent mc n t -> viewSentBroadcast mc n ts t
   CRMsgIntegrityError mErr -> viewMsgIntegrityError mErr
@@ -262,41 +262,43 @@ viewHostEvent :: AProtocolType -> TransportHost -> String
 viewHostEvent p h = map toUpper (B.unpack $ strEncode p) <> " host " <> B.unpack (strEncode h)
 
 viewChatItem :: forall c d. MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> CurrentTime -> [StyledString]
-viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} doShow ts = case chat of
-  DirectChat c -> case chatDir of
-    CIDirectSnd -> case content of
-      CISndMsgContent mc -> withSndFile to $ sndMsg to quote mc
-      CISndGroupEvent {} -> showSndItemProhibited to
-      _ -> showSndItem to
+viewChatItem chat ChatItem {chatDir, meta = meta@CIMeta {itemDeleted}, content, quotedItem, file} doShow ts =
+  withItemDeleted <$> case chat of
+    DirectChat c -> case chatDir of
+      CIDirectSnd -> case content of
+        CISndMsgContent mc -> withSndFile to $ sndMsg to quote mc
+        CISndGroupEvent {} -> showSndItemProhibited to
+        _ -> showSndItem to
+        where
+          to = ttyToContact' c
+      CIDirectRcv -> case content of
+        CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
+        CIRcvIntegrityError err -> viewRcvIntegrityError from err ts meta
+        CIRcvGroupEvent {} -> showRcvItemProhibited from
+        _ -> showRcvItem from
+        where
+          from = ttyFromContact' c
       where
-        to = ttyToContact' c
-    CIDirectRcv -> case content of
-      CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
-      CIRcvIntegrityError err -> viewRcvIntegrityError from err ts meta
-      CIRcvGroupEvent {} -> showRcvItemProhibited from
-      _ -> showRcvItem from
+        quote = maybe [] (directQuote chatDir) quotedItem
+    GroupChat g -> case chatDir of
+      CIGroupSnd -> case content of
+        CISndMsgContent mc -> withSndFile to $ sndMsg to quote mc
+        CISndGroupInvitation {} -> showSndItemProhibited to
+        _ -> showSndItem to
+        where
+          to = ttyToGroup g
+      CIGroupRcv m -> case content of
+        CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
+        CIRcvIntegrityError err -> viewRcvIntegrityError from err ts meta
+        CIRcvGroupInvitation {} -> showRcvItemProhibited from
+        _ -> showRcvItem from
+        where
+          from = ttyFromGroup' g m
       where
-        from = ttyFromContact' c
-    where
-      quote = maybe [] (directQuote chatDir) quotedItem
-  GroupChat g -> case chatDir of
-    CIGroupSnd -> case content of
-      CISndMsgContent mc -> withSndFile to $ sndMsg to quote mc
-      CISndGroupInvitation {} -> showSndItemProhibited to
-      _ -> showSndItem to
-      where
-        to = ttyToGroup g
-    CIGroupRcv m -> case content of
-      CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
-      CIRcvIntegrityError err -> viewRcvIntegrityError from err ts meta
-      CIRcvGroupInvitation {} -> showRcvItemProhibited from
-      _ -> showRcvItem from
-      where
-        from = ttyFromGroup' g m
-    where
-      quote = maybe [] (groupQuote g) quotedItem
-  _ -> []
+        quote = maybe [] (groupQuote g) quotedItem
+    _ -> []
   where
+    withItemDeleted item = if itemDeleted then item <> styled (colored Red) (" [deleted]" :: String) else item
     withSndFile = withFile viewSentFileInvitation
     withRcvFile = withFile viewReceivedFileInvitation
     withFile view dir l = maybe l (\f -> l <> view dir f ts meta) file
@@ -312,7 +314,7 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} doShow ts 
     showRcvItemProhibited from = showItem $ receivedWithTime_ ts from [] meta [plainContent content <> " " <> prohibited]
     showItem ss = if doShow then ss else []
     plainContent = plain . ciContentToText
-    prohibited = styled (colored Red) ("[prohibited - it's a bug if this chat item was created in this context, please report it to dev team]" :: String)
+    prohibited = styled (colored Red) ("[prohibited - it's a bug if this chat item was created in this context, please report it to developers]" :: String)
 
 viewItemUpdate :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> CurrentTime -> [StyledString]
 viewItemUpdate chat ChatItem {chatDir, meta, content, quotedItem} ts = case chat of
@@ -334,15 +336,20 @@ viewItemUpdate chat ChatItem {chatDir, meta, content, quotedItem} ts = case chat
     CIGroupSnd -> ["message updated"]
   _ -> []
 
-viewItemDelete :: ChatInfo c -> ChatItem c d -> CurrentTime -> [StyledString]
-viewItemDelete chat ChatItem {chatDir, meta, content = deletedContent} ts = case chat of
-  DirectChat Contact {localDisplayName = c} -> case (chatDir, deletedContent) of
-    (CIDirectRcv, CIRcvMsgContent mc) -> viewReceivedMessage (ttyFromContactDeleted c) [] mc ts meta
-    _ -> ["message deleted"]
-  GroupChat g -> case (chatDir, deletedContent) of
-    (CIGroupRcv GroupMember {localDisplayName = m}, CIRcvMsgContent mc) -> viewReceivedMessage (ttyFromGroupDeleted g m) [] mc ts meta
-    _ -> ["message deleted"]
-  _ -> []
+viewItemDelete :: ChatInfo c -> ChatItem c d -> Bool -> CurrentTime -> [StyledString]
+viewItemDelete chat ChatItem {chatDir, meta, content = deletedContent} byUser ts =
+  if byUser
+    then ["message deleted"]
+    else case chat of
+      DirectChat Contact {localDisplayName = c} -> case (chatDir, deletedContent) of
+        (CIDirectRcv, CIRcvMsgContent mc) -> viewReceivedMessage (ttyFromContactDeleted c) [] mc ts meta
+        _ -> prohibited
+      GroupChat g -> case (chatDir, deletedContent) of
+        (CIGroupRcv GroupMember {localDisplayName = m}, CIRcvMsgContent mc) -> viewReceivedMessage (ttyFromGroupDeleted g m) [] mc ts meta
+        _ -> prohibited
+      _ -> prohibited
+  where
+    prohibited = [styled (colored Red) ("[prohibited message deletion happened, please report it to developers]" :: String)]
 
 directQuote :: forall d'. MsgDirectionI d' => CIDirection 'CTDirect d' -> CIQuote 'CTDirect -> [StyledString]
 directQuote _ CIQuote {content = qmc, chatDir = quoteDir} =

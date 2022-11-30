@@ -1,4 +1,4 @@
-import {ChatItemId, MsgContent, DeleteMode, Profile, GroupMemberRole} from "./command"
+import { ChatItemId, MsgContent, DeleteMode, Profile, GroupMemberRole } from "./command"
 
 export type ChatResponse =
   | CRActiveUser
@@ -267,6 +267,7 @@ export interface CRChatItemDeleted extends CR {
   type: "chatItemDeleted"
   deletedChatItem: AChatItem
   toChatItem?: AChatItem
+  byUser: boolean
 }
 
 export interface CRMsgIntegrityError extends CR {
@@ -967,9 +968,9 @@ interface CIRcvRead extends ICIStatus {
   type: "rcvRead"
 }
 
-interface FormattedText {}
+interface FormattedText { }
 
-interface MsgErrorType {}
+interface MsgErrorType { }
 
 export type ChatError = ChatErrorChat | ChatErrorAgent | ChatErrorStore
 
@@ -998,16 +999,16 @@ interface CEActiveUserExists {
   type: "activeUserExists"
 }
 
-interface ContactSubStatus {}
+interface ContactSubStatus { }
 
-interface PendingSubStatus {}
+interface PendingSubStatus { }
 
 export interface ConnectionStats {
   rcvServers?: string[]
   sndServers?: string[]
 }
 
-interface PendingContactConnection {}
+interface PendingContactConnection { }
 
 interface MemberSubStatus {
   member: GroupMember
