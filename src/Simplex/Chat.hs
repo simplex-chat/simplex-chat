@@ -447,17 +447,12 @@ processChatCommand = \case
       case (mode, msgDir, itemSharedMsgId) of
         (CIDMInternal, _, _) -> deleteDirectCI user ct ci
         (CIDMBroadcast, SMDSnd, Just itemSharedMId) -> do
-          void $ sendDirectContactMessage ct (XMsgDel itemSharedMId)
+          (SndMessage {msgId}, _) <- sendDirectContactMessage ct (XMsgDel itemSharedMId)
           setActive $ ActiveC c
           if featureAllowed forUser ct CFFullDelete
             then deleteDirectCI user ct ci
-            else markDeleted ct ci
+            else markDirectCIDeleted user ct ci msgId
         (CIDMBroadcast, _, _) -> throwChatError CEInvalidChatItemDelete
-      where
-        markDeleted :: Contact -> CChatItem 'CTDirect -> m ChatResponse
-        markDeleted ct ci@(CChatItem msgDir deletedItem) = do
-          toCi <- withStore' $ \db -> markDirectChatItemDeletedSnd db user ct ci
-          pure $ CRChatItemDeleted (AChatItem SCTDirect msgDir (DirectChat ct) deletedItem) (Just toCi)
     CTGroup -> do
       Group gInfo@GroupInfo {localDisplayName = gName, membership} ms <- withStore $ \db -> getGroup db user chatId
       unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
@@ -465,17 +460,12 @@ processChatCommand = \case
       case (mode, msgDir, itemSharedMsgId) of
         (CIDMInternal, _, _) -> deleteGroupCI user gInfo ci
         (CIDMBroadcast, SMDSnd, Just itemSharedMId) -> do
-          void $ sendGroupMessage gInfo ms (XMsgDel itemSharedMId)
+          SndMessage {msgId} <- sendGroupMessage gInfo ms (XMsgDel itemSharedMId)
           setActive $ ActiveG gName
           if groupFeatureAllowed gInfo GFFullDelete
             then deleteGroupCI user gInfo ci
-            else markDeleted gInfo ci
+            else markGroupCIDeleted user gInfo ci msgId
         (CIDMBroadcast, _, _) -> throwChatError CEInvalidChatItemDelete
-      where
-        markDeleted :: GroupInfo -> CChatItem 'CTGroup -> m ChatResponse
-        markDeleted gInfo ci@(CChatItem msgDir deletedItem) = do
-          toCi <- withStore' $ \db -> markGroupChatItemDeletedSnd db user gInfo ci
-          pure $ CRChatItemDeleted (AChatItem SCTGroup msgDir (GroupChat gInfo) deletedItem) (Just toCi)
     CTContactRequest -> pure $ chatCmdError "not supported"
     CTContactConnection -> pure $ chatCmdError "not supported"
   APIChatRead (ChatRef cType chatId) fromToIds -> case cType of
@@ -2269,12 +2259,8 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
             SMDRcv ->
               if featureAllowed forContact ct CFFullDelete
                 then deleteDirectCI user ct ci >>= toView
-                else markDeleted ci
+                else markDirectCIDeleted user ct ci msgId >>= toView
             SMDSnd -> messageError "x.msg.del: contact attempted invalid message delete"
-        markDeleted :: CChatItem 'CTDirect -> m ()
-        markDeleted ci@(CChatItem msgDir deletedItem) = do
-          toCi <- withStore' $ \db -> markDirectChatItemDeletedRcv db user ct ci msgId
-          toView $ CRChatItemDeleted (AChatItem SCTDirect msgDir (DirectChat ct) deletedItem) (Just toCi)
 
     newGroupContentMessage :: GroupInfo -> GroupMember -> MsgContainer -> RcvMessage -> MsgMeta -> m ()
     newGroupContentMessage gInfo@GroupInfo {chatSettings} m@GroupMember {localDisplayName = c} mc msg msgMeta = do
@@ -2327,14 +2313,9 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
             then
               if groupFeatureAllowed gInfo GFFullDelete
                 then deleteGroupCI user gInfo ci >>= toView
-                else markDeleted ci
+                else markGroupCIDeleted user gInfo ci msgId >>= toView
             else messageError "x.msg.del: group member attempted to delete a message of another member" -- shouldn't happen now that query includes group member id
         (SMDSnd, _) -> messageError "x.msg.del: group member attempted invalid message delete"
-      where
-        markDeleted :: CChatItem 'CTGroup -> m ()
-        markDeleted ci@(CChatItem msgDir deletedItem) = do
-          toCi <- withStore' $ \db -> markGroupChatItemDeletedRcv db user gInfo ci msgId
-          toView $ CRChatItemDeleted (AChatItem SCTGroup msgDir (GroupChat gInfo) deletedItem) (Just toCi)
 
     -- TODO remove once XFile is discontinued
     processFileInvitation' :: Contact -> FileInvitation -> RcvMessage -> MsgMeta -> m ()
@@ -3091,6 +3072,16 @@ deleteCIFile user file =
   forM_ file $ \CIFile {fileId, filePath, fileStatus} -> do
     let fileInfo = CIFileInfo {fileId, fileStatus = Just $ AFS msgDirection fileStatus, filePath}
     deleteFile user fileInfo
+
+markDirectCIDeleted :: ChatMonad m => User -> Contact -> CChatItem 'CTDirect -> MessageId -> m ChatResponse
+markDirectCIDeleted user ct ci@(CChatItem msgDir deletedItem) msgId = do
+  toCi <- withStore' $ \db -> markDirectChatItemDeleted db user ct ci msgId
+  pure $ CRChatItemDeleted (AChatItem SCTDirect msgDir (DirectChat ct) deletedItem) (Just toCi)
+
+markGroupCIDeleted :: ChatMonad m => User -> GroupInfo -> CChatItem 'CTGroup -> MessageId -> m ChatResponse
+markGroupCIDeleted user gInfo ci@(CChatItem msgDir deletedItem) msgId = do
+  toCi <- withStore' $ \db -> markGroupChatItemDeleted db user gInfo ci msgId
+  pure $ CRChatItemDeleted (AChatItem SCTGroup msgDir (GroupChat gInfo) deletedItem) (Just toCi)
 
 createAgentConnectionAsync :: forall m c. (ChatMonad m, ConnectionModeI c) => User -> CommandFunction -> Bool -> SConnectionMode c -> m (CommandId, ConnId)
 createAgentConnectionAsync user cmdFunction enableNtfs cMode = do
