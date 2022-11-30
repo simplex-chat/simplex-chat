@@ -60,7 +60,7 @@
     <!-- API Error Responses - SimpleXAPI.kt -->
     <string name="connection_timeout">Превышено время соединения</string>
     <string name="connection_error">Ошибка соединения</string>
-    <string name="network_error_desc">Пожалуйста, проверьте ваше соединение с сетью и попробуйте еще раз.</string>
+    <string name="network_error_desc">Пожалуйста, проверьте ваше соединение с сервером <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g> и попробуйте еще раз.</string>
     <string name="error_sending_message">Ошибка при отправке сообщения</string>
     <string name="error_adding_members">Ошибка при добавлении членов группы</string>
     <string name="error_joining_group">Ошибка при вступлении в группу</string>

@@ -60,7 +60,7 @@
   <!-- API Error Responses - SimpleXAPI.kt -->
   <string name="connection_timeout">Verbindungszeitüberschreitung</string>
   <string name="connection_error">Verbindungsfehler</string>
-  <string name="network_error_desc">Bitte überprüfen Sie Ihre Netzwerkverbindung und versuchen Sie es erneut.</string>
+  <string name="network_error_desc">*** Bitte überprüfen Sie Ihre Netzwerkverbindung mit <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g> und versuchen Sie es erneut.</string>
   <string name="error_sending_message">Fehler beim Senden der Nachricht</string>
   <string name="error_adding_members">Fehler beim Hinzufügen von Mitgliedern</string>
   <string name="error_joining_group">Fehler beim Beitritt zur Gruppe</string>
