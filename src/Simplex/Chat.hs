@@ -449,7 +449,7 @@ processChatCommand = \case
         (CIDMBroadcast, SMDSnd, Just itemSharedMId) -> do
           (SndMessage {msgId}, _) <- sendDirectContactMessage ct (XMsgDel itemSharedMId)
           setActive $ ActiveC c
-          if featureAllowed forUser ct CFFullDelete
+          if featureAllowed CFFullDelete forUser ct
             then deleteDirectCI user ct ci True
             else markDirectCIDeleted user ct ci msgId True
         (CIDMBroadcast, _, _) -> throwChatError CEInvalidChatItemDelete
@@ -462,7 +462,7 @@ processChatCommand = \case
         (CIDMBroadcast, SMDSnd, Just itemSharedMId) -> do
           SndMessage {msgId} <- sendGroupMessage gInfo ms (XMsgDel itemSharedMId)
           setActive $ ActiveG gName
-          if groupFeatureAllowed gInfo GFFullDelete
+          if groupFeatureAllowed GFFullDelete gInfo
             then deleteGroupCI user gInfo ci True
             else markGroupCIDeleted user gInfo ci msgId True
         (CIDMBroadcast, _, _) -> throwChatError CEInvalidChatItemDelete
@@ -2257,7 +2257,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
           ci@(CChatItem msgDir _) <- withStore $ \db -> getDirectChatItemBySharedMsgId db userId contactId sharedMsgId
           case msgDir of
             SMDRcv ->
-              if featureAllowed forContact ct CFFullDelete
+              if featureAllowed CFFullDelete forContact ct
                 then deleteDirectCI user ct ci False >>= toView
                 else markDirectCIDeleted user ct ci msgId False >>= toView
             SMDSnd -> messageError "x.msg.del: contact attempted invalid message delete"
@@ -2311,7 +2311,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
         (SMDRcv, CIGroupRcv m) ->
           if sameMemberId memberId m
             then
-              if groupFeatureAllowed gInfo GFFullDelete
+              if groupFeatureAllowed GFFullDelete gInfo
                 then deleteGroupCI user gInfo ci False >>= toView
                 else markGroupCIDeleted user gInfo ci msgId False >>= toView
             else messageError "x.msg.del: group member attempted to delete a message of another member" -- shouldn't happen now that query includes group member id
@@ -3143,12 +3143,12 @@ sameGroupProfileInfo p p' = p {groupPreferences = Nothing} == p' {groupPreferenc
 
 featureProhibited :: (PrefEnabled -> Bool) -> Contact -> MsgContent -> Maybe ChatFeature
 featureProhibited forWhom ct = \case
-  MCVoice {} -> if featureAllowed forWhom ct CFVoice then Nothing else Just CFVoice
+  MCVoice {} -> if featureAllowed CFVoice forWhom ct then Nothing else Just CFVoice
   _ -> Nothing
 
 groupFeatureProhibited :: GroupInfo -> MsgContent -> Maybe GroupFeature
 groupFeatureProhibited gInfo = \case
-  MCVoice {} -> if groupFeatureAllowed gInfo GFVoice then Nothing else Just GFVoice
+  MCVoice {} -> if groupFeatureAllowed GFVoice gInfo then Nothing else Just GFVoice
   _ -> Nothing
 
 createInternalChatItem :: forall c d m. (ChatTypeI c, MsgDirectionI d, ChatMonad m) => User -> ChatDirection c d -> CIContent d -> Maybe UTCTime -> m ()

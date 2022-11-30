@@ -261,8 +261,8 @@ chatFeatureToText = \case
   CFFullDelete -> "Full deletion"
   CFVoice -> "Voice messages"
 
-featureAllowed :: (PrefEnabled -> Bool) -> Contact -> ChatFeature -> Bool
-featureAllowed forWhom Contact {mergedPreferences} feature =
+featureAllowed :: ChatFeature -> (PrefEnabled -> Bool) -> Contact -> Bool
+featureAllowed feature forWhom Contact {mergedPreferences} =
   let ContactUserPreference {enabled} = getContactUserPreference feature mergedPreferences
    in forWhom enabled
 
@@ -341,8 +341,8 @@ groupFeatureToText = \case
   GFFullDelete -> "Full deletion"
   GFVoice -> "Voice messages"
 
-groupFeatureAllowed :: GroupInfo -> GroupFeature -> Bool
-groupFeatureAllowed GroupInfo {fullGroupPreferences} feature =
+groupFeatureAllowed :: GroupFeature -> GroupInfo -> Bool
+groupFeatureAllowed feature GroupInfo {fullGroupPreferences} =
   let GroupPreference {enable} = getGroupPreference feature fullGroupPreferences
    in enable == FEOn
 
