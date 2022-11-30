@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.KeyboardVoice
 import androidx.compose.material.icons.outlined.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -1481,7 +1482,18 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   }
 }
 
-class SharedPreference<T>(val get: () -> T, val set: (T) -> Unit)
+class SharedPreference<T>(val get: () -> T, set: (T) -> Unit) {
+  val set: (T) -> Unit
+  private val _state: MutableState<T> by lazy { mutableStateOf(get()) }
+  val state: State<T> by lazy { _state }
+
+  init {
+    this.set = { value ->
+      set(value)
+      _state.value = value
+    }
+  }
+}
 
 // ChatCommand
 sealed class CC {
