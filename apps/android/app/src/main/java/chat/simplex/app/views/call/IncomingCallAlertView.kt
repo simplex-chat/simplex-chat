@@ -33,7 +33,10 @@ fun IncomingCallAlertView(invitation: RcvCallInvitation, chatModel: ChatModel) {
   IncomingCallAlertLayout(
     invitation,
     rejectCall = { cm.endCall(invitation = invitation) },
-    ignoreCall = { chatModel.activeCallInvitation.value = null },
+    ignoreCall = {
+      chatModel.activeCallInvitation.value = null
+      chatModel.controller.ntfManager.cancelCallNotification()
+    },
     acceptCall = { cm.acceptIncomingCall(invitation = invitation) }
   )
 }
