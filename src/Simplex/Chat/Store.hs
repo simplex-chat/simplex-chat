@@ -3830,7 +3830,7 @@ markDirectChatItemDeleted db User {userId} ct@Contact {contactId} (CChatItem msg
       WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
     |]
     (currentTs, userId, contactId, itemId)
-  pure $ AChatItem SCTDirect msgDir (DirectChat ct) (ci {meta = (meta ci) {itemDeleted = True}})
+  pure $ AChatItem SCTDirect msgDir (DirectChat ct) (ci {meta = (meta ci) {itemDeleted = True, editable = False}})
 
 getDirectChatItemBySharedMsgId :: DB.Connection -> UserId -> ContactId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTDirect)
 getDirectChatItemBySharedMsgId db userId contactId sharedMsgId = do
@@ -3939,7 +3939,7 @@ markGroupChatItemDeleted db User {userId} gInfo@GroupInfo {groupId} (CChatItem m
       WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
     |]
     (currentTs, userId, groupId, itemId)
-  pure $ AChatItem SCTGroup msgDir (GroupChat gInfo) (ci {meta = (meta ci) {itemDeleted = True}})
+  pure $ AChatItem SCTGroup msgDir (GroupChat gInfo) (ci {meta = (meta ci) {itemDeleted = True, editable = False}})
 
 getGroupChatItemBySharedMsgId :: DB.Connection -> User -> GroupId -> GroupMemberId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTGroup)
 getGroupChatItemBySharedMsgId db user@User {userId} groupId groupMemberId sharedMsgId = do

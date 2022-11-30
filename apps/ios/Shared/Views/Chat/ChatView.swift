@@ -517,13 +517,17 @@ struct ChatView: View {
                     deleteMessage(.cidmInternal)
                 }
                 if let di = deletingItem, di.meta.editable {
-                    Button("Delete for everyone",role: .destructive) {
+                    Button(broadcastDeleteButtonText, role: .destructive) {
                         deleteMessage(.cidmBroadcast)
                     }
                 }
             }
             .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
             .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
+    }
+
+    private var broadcastDeleteButtonText: LocalizedStringKey {
+        return chat.chatInfo.fullDeletionAllowed ? "Delete for everyone" : "Mark deleted for everyone"
     }
 
     private func showMemberImage(_ member: GroupMember, _ prevItem: ChatItem?) -> Bool {
@@ -552,7 +556,7 @@ struct ChatView: View {
             logger.debug("ChatView deleteMessage: in Task")
             do {
                 if let di = deletingItem {
-                    let toItem = try await apiDeleteChatItem(
+                    let (deletedItem, toItem) = try await apiDeleteChatItem(
                         type: chat.chatInfo.chatType,
                         id: chat.chatInfo.apiId,
                         itemId: di.id,
@@ -560,7 +564,11 @@ struct ChatView: View {
                     )
                     DispatchQueue.main.async {
                         deletingItem = nil
-                        let _ = chatModel.removeChatItem(chat.chatInfo, toItem)
+                        if let toItem = toItem {
+                            _ = chatModel.upsertChatItem(chat.chatInfo, toItem)
+                        } else {
+                            chatModel.removeChatItem(chat.chatInfo, deletedItem)
+                        }
                     }
                 }
             } catch {

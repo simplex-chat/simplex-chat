@@ -18,7 +18,7 @@ struct GroupPreferencesView: View {
     var body: some View {
         VStack {
             List {
-                // featureSection(.fullDelete, $preferences.fullDelete.enable)
+                featureSection(.fullDelete, $preferences.fullDelete.enable)
                 featureSection(.directMessages, $preferences.directMessages.enable)
                 featureSection(.voice, $preferences.voice.enable)
 

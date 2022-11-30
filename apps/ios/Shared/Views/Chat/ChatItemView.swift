@@ -15,29 +15,41 @@ struct ChatItemView: View {
     var showMember = false
     var maxWidth: CGFloat = .infinity
     @State var scrollProxy: ScrollViewProxy? = nil
+    @State private var tapped: Bool = false
 
     var body: some View {
-        switch chatItem.content {
-        case .sndMsgContent: contentItemView()
-        case .rcvMsgContent: contentItemView()
-        case .sndDeleted: deletedItemView()
-        case .rcvDeleted: deletedItemView()
-        case let .sndCall(status, duration): callItemView(status, duration)
-        case let .rcvCall(status, duration): callItemView(status, duration)
-        case .rcvIntegrityError: IntegrityErrorItemView(chatItem: chatItem, showMember: showMember)
-        case let .rcvGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
-        case let .sndGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
-        case .rcvGroupEvent: eventItemView()
-        case .sndGroupEvent: eventItemView()
-        case .rcvConnEvent: eventItemView()
-        case .sndConnEvent: eventItemView()
-        case let .rcvChatFeature(feature, enabled): chatFeatureView(feature, enabled.iconColor)
-        case let .sndChatFeature(feature, enabled): chatFeatureView(feature, enabled.iconColor)
-        case let .rcvGroupFeature(feature, preference): chatFeatureView(feature, preference.enable.iconColor)
-        case let .sndGroupFeature(feature, preference): chatFeatureView(feature, preference.enable.iconColor)
-        case let .rcvChatFeatureRejected(feature): chatFeatureView(feature, .red)
-        case let .rcvGroupFeatureRejected(feature): chatFeatureView(feature, .red)
+        if chatItem.meta.itemDeleted && !tapped {
+            markedDeletedItemView()
+                .onTapGesture {
+                    tapped = true
+                }
+        } else {
+            switch chatItem.content {
+            case .sndMsgContent: contentItemView()
+            case .rcvMsgContent: contentItemView()
+            case .sndDeleted: deletedItemView()
+            case .rcvDeleted: deletedItemView()
+            case let .sndCall(status, duration): callItemView(status, duration)
+            case let .rcvCall(status, duration): callItemView(status, duration)
+            case .rcvIntegrityError: IntegrityErrorItemView(chatItem: chatItem, showMember: showMember)
+            case let .rcvGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
+            case let .sndGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
+            case .rcvGroupEvent: eventItemView()
+            case .sndGroupEvent: eventItemView()
+            case .rcvConnEvent: eventItemView()
+            case .sndConnEvent: eventItemView()
+            case let .rcvChatFeature(feature, enabled): chatFeatureView(feature, enabled.iconColor)
+            case let .sndChatFeature(feature, enabled): chatFeatureView(feature, enabled.iconColor)
+            case let .rcvGroupFeature(feature, preference): chatFeatureView(feature, preference.enable.iconColor)
+            case let .sndGroupFeature(feature, preference): chatFeatureView(feature, preference.enable.iconColor)
+            case let .rcvChatFeatureRejected(feature): chatFeatureView(feature, .red)
+            case let .rcvGroupFeatureRejected(feature): chatFeatureView(feature, .red)
+            }
         }
+    }
+
+    private func markedDeletedItemView() -> some View {
+        MarkedDeletedItemView(chatItem: chatItem, showMember: showMember)
     }
 
     @ViewBuilder private func contentItemView() -> some View {

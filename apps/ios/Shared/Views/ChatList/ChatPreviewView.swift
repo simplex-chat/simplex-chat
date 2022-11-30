@@ -206,6 +206,10 @@ struct ChatPreviewView_Previews: PreviewProvider {
             ))
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
+                chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent, true, false)]
+            ))
+            ChatPreviewView(chat: Chat(
+                chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent)],
                 chatStats: ChatStats(unreadCount: 3, minUnreadItemId: 0),
                 serverInfo: Chat.ServerInfo(networkStatus: .error("status"))
