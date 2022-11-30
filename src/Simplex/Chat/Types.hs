@@ -261,6 +261,11 @@ chatFeatureToText = \case
   CFFullDelete -> "Full deletion"
   CFVoice -> "Voice messages"
 
+featureAllowed :: ChatFeature -> (PrefEnabled -> Bool) -> Contact -> Bool
+featureAllowed feature forWhom Contact {mergedPreferences} =
+  let ContactUserPreference {enabled} = getContactUserPreference feature mergedPreferences
+   in forWhom enabled
+
 instance ToJSON ChatFeature where
   toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "CF"
   toJSON = J.genericToJSON . enumJSON $ dropPrefix "CF"
@@ -335,6 +340,11 @@ groupFeatureToText = \case
   GFDirectMessages -> "Direct messages"
   GFFullDelete -> "Full deletion"
   GFVoice -> "Voice messages"
+
+groupFeatureAllowed :: GroupFeature -> GroupInfo -> Bool
+groupFeatureAllowed feature GroupInfo {fullGroupPreferences} =
+  let GroupPreference {enable} = getGroupPreference feature fullGroupPreferences
+   in enable == FEOn
 
 instance ToJSON GroupFeature where
   toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "GF"
