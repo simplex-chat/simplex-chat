@@ -78,7 +78,7 @@ responseToView user_ testView ts = \case
   CRLastMessages chatItems -> concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True ts) chatItems
   CRChatItemStatusUpdated _ -> []
   CRChatItemUpdated (AChatItem _ _ chat item) -> unmuted chat item $ viewItemUpdate chat item ts
-  CRChatItemDeleted (AChatItem _ _ chat deletedItem) _ byUser -> unmuted chat deletedItem $ viewItemDelete chat deletedItem byUser ts
+  CRChatItemDeleted (AChatItem _ _ chat deletedItem) toItem byUser -> unmuted chat deletedItem $ viewItemDelete chat deletedItem (isJust toItem) byUser ts
   CRChatItemDeletedNotFound Contact {localDisplayName = c} _ -> [ttyFrom $ c <> "> [deleted - original message not found]"]
   CRBroadcastSent mc n t -> viewSentBroadcast mc n ts t
   CRMsgIntegrityError mErr -> viewMsgIntegrityError mErr
@@ -223,14 +223,14 @@ responseToView user_ testView ts = \case
         toChatView (AChat _ (Chat (ContactRequest UserContactRequest {localDisplayName}) items _)) = ("<@" <> localDisplayName, toCIPreview items, Nothing)
         toChatView (AChat _ (Chat (ContactConnection PendingContactConnection {pccConnId, pccConnStatus}) items _)) = (":" <> T.pack (show pccConnId), toCIPreview items, Just pccConnStatus)
         toCIPreview :: [CChatItem c] -> Text
-        toCIPreview ((CChatItem _ ChatItem {meta}) : _) = itemText meta
+        toCIPreview (ci : _) = testViewItem ci
         toCIPreview _ = ""
     testViewChat :: AChat -> [StyledString]
     testViewChat (AChat _ Chat {chatItems}) = [sShow $ map toChatView chatItems]
       where
         toChatView :: CChatItem c -> ((Int, Text), Maybe (Int, Text), Maybe String)
-        toChatView (CChatItem dir ChatItem {meta, quotedItem, file}) =
-          ((msgDirectionInt $ toMsgDirection dir, itemText meta), qItem, fPath)
+        toChatView ci@(CChatItem dir ChatItem {quotedItem, file}) =
+          ((msgDirectionInt $ toMsgDirection dir, testViewItem ci), qItem, fPath)
           where
             qItem = case quotedItem of
               Nothing -> Nothing
@@ -239,6 +239,8 @@ responseToView user_ testView ts = \case
             fPath = case file of
               Just CIFile {filePath = Just fp} -> Just fp
               _ -> Nothing
+    testViewItem :: CChatItem c -> Text
+    testViewItem (CChatItem _ ChatItem {meta = CIMeta {itemText, itemDeleted}}) = itemText <> if itemDeleted then " [marked deleted]" else ""
     viewErrorsSummary :: [a] -> StyledString -> [StyledString]
     viewErrorsSummary summary s = [ttyError (T.pack . show $ length summary) <> s <> " (run with -c option to show each error)" | not (null summary)]
     contactList :: [ContactRef] -> String
@@ -298,7 +300,7 @@ viewChatItem chat ChatItem {chatDir, meta = meta@CIMeta {itemDeleted}, content, 
         quote = maybe [] (groupQuote g) quotedItem
     _ -> []
   where
-    withItemDeleted item = if itemDeleted then item <> styled (colored Red) (" [deleted]" :: String) else item
+    withItemDeleted item = if itemDeleted then item <> styled (colored Red) (" [marked deleted]" :: String) else item
     withSndFile = withFile viewSentFileInvitation
     withRcvFile = withFile viewReceivedFileInvitation
     withFile view dir l = maybe l (\f -> l <> view dir f ts meta) file
@@ -336,16 +338,16 @@ viewItemUpdate chat ChatItem {chatDir, meta, content, quotedItem} ts = case chat
     CIGroupSnd -> ["message updated"]
   _ -> []
 
-viewItemDelete :: ChatInfo c -> ChatItem c d -> Bool -> CurrentTime -> [StyledString]
-viewItemDelete chat ChatItem {chatDir, meta, content = deletedContent} byUser ts =
+viewItemDelete :: ChatInfo c -> ChatItem c d -> Bool -> Bool -> CurrentTime -> [StyledString]
+viewItemDelete chat ChatItem {chatDir, meta, content = deletedContent} markedDeleted byUser ts =
   if byUser
-    then ["message deleted"]
+    then if markedDeleted then ["message marked deleted"] else ["message deleted"]
     else case chat of
       DirectChat Contact {localDisplayName = c} -> case (chatDir, deletedContent) of
-        (CIDirectRcv, CIRcvMsgContent mc) -> viewReceivedMessage (ttyFromContactDeleted c) [] mc ts meta
+        (CIDirectRcv, CIRcvMsgContent mc) -> viewReceivedMessage (ttyFromContactDeleted c markedDeleted) [] mc ts meta
         _ -> prohibited
       GroupChat g -> case (chatDir, deletedContent) of
-        (CIGroupRcv GroupMember {localDisplayName = m}, CIRcvMsgContent mc) -> viewReceivedMessage (ttyFromGroupDeleted g m) [] mc ts meta
+        (CIGroupRcv GroupMember {localDisplayName = m}, CIRcvMsgContent mc) -> viewReceivedMessage (ttyFromGroupDeleted g m markedDeleted) [] mc ts meta
         _ -> prohibited
       _ -> prohibited
   where
@@ -1167,8 +1169,10 @@ ttyFromContact c = ttyFrom $ c <> "> "
 ttyFromContactEdited :: ContactName -> StyledString
 ttyFromContactEdited c = ttyFrom $ c <> "> [edited] "
 
-ttyFromContactDeleted :: ContactName -> StyledString
-ttyFromContactDeleted c = ttyFrom $ c <> "> [deleted] "
+ttyFromContactDeleted :: ContactName -> Bool -> StyledString
+ttyFromContactDeleted c markedDeleted
+  | markedDeleted = ttyFrom $ c <> "> [marked deleted] "
+  | otherwise = ttyFrom $ c <> "> [deleted] "
 
 ttyToContact' :: Contact -> StyledString
 ttyToContact' Contact {localDisplayName = c, activeConn = Connection {customUserProfileId}} =
@@ -1206,8 +1210,10 @@ ttyFromGroup GroupInfo {localDisplayName = g} c = ttyFrom $ "#" <> g <> " " <> c
 ttyFromGroupEdited :: GroupInfo -> ContactName -> StyledString
 ttyFromGroupEdited GroupInfo {localDisplayName = g} c = ttyFrom $ "#" <> g <> " " <> c <> "> [edited] "
 
-ttyFromGroupDeleted :: GroupInfo -> ContactName -> StyledString
-ttyFromGroupDeleted GroupInfo {localDisplayName = g} c = ttyFrom $ "#" <> g <> " " <> c <> "> [deleted] "
+ttyFromGroupDeleted :: GroupInfo -> ContactName -> Bool -> StyledString
+ttyFromGroupDeleted GroupInfo {localDisplayName = g} c markedDeleted
+  | markedDeleted = ttyFrom $ "#" <> g <> " " <> c <> "> [marked deleted] "
+  | otherwise = ttyFrom $ "#" <> g <> " " <> c <> "> [deleted] "
 
 ttyFrom :: Text -> StyledString
 ttyFrom = styled $ colored Yellow

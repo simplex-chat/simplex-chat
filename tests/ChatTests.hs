@@ -399,18 +399,19 @@ testDirectMessageDelete =
       alice @@@ [("@bob", "hey alice")]
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hey alice")])
 
-      -- bob: deletes msg id 2
-      bob #$> ("/_delete item @2 " <> itemId 2 <> " broadcast", id, "message deleted")
-      alice <# "bob> [deleted] hey alice"
-      alice @@@ [("@bob", "this item is deleted (broadcast)")]
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "this item is deleted (broadcast)")])
+      -- bob: marks deleted msg id 2
+      bob #$> ("/_delete item @2 " <> itemId 2 <> " broadcast", id, "message marked deleted")
+      bob @@@ [("@alice", "hey alice [marked deleted]")]
+      alice <# "bob> [marked deleted] hey alice"
+      alice @@@ [("@bob", "hey alice [marked deleted]")]
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hey alice [marked deleted]")])
 
       -- alice: deletes msg id 1 that was broadcast deleted by bob
       alice #$> ("/_delete item @2 " <> itemId 1 <> " internal", id, "message deleted")
       alice @@@ [("@bob", "Voice messages: enabled")]
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures)
 
-      -- alice: msg id 1, bob: msg id 2 (quoting message alice deleted locally)
+      -- alice: msg id 1, bob: msg id 3 (quoting message alice deleted locally)
       bob `send` "> @alice (hello 🙂) do you receive my messages?"
       bob <# "@alice > hello 🙂"
       bob <## "      do you receive my messages?"
@@ -420,20 +421,25 @@ testDirectMessageDelete =
       alice #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((0, "do you receive my messages?"), Just (1, "hello 🙂"))])
       alice #$> ("/_delete item @2 " <> itemId 1 <> " broadcast", id, "cannot delete this item")
 
-      -- alice: msg id 2, bob: msg id 3
+      -- alice: msg id 2, bob: msg id 4
       bob #> "@alice how are you?"
       alice <# "bob> how are you?"
 
       -- alice: deletes msg id 2
       alice #$> ("/_delete item @2 " <> itemId 2 <> " internal", id, "message deleted")
 
-      -- bob: deletes msg id 3 (that alice deleted locally)
-      bob #$> ("/_delete item @2 " <> itemId 3 <> " broadcast", id, "message deleted")
+      -- bob: marks deleted msg id 4 (that alice deleted locally)
+      bob #$> ("/_delete item @2 " <> itemId 4 <> " broadcast", id, "message marked deleted")
       alice <## "bob> [deleted - original message not found]"
 
       alice @@@ [("@bob", "do you receive my messages?")]
       alice #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((0, "do you receive my messages?"), Just (1, "hello 🙂"))])
-      bob @@@ [("@alice", "do you receive my messages?")]
+      bob @@@ [("@alice", "how are you? [marked deleted]")]
+      bob #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((0, "hello 🙂"), Nothing), ((1, "hey alice [marked deleted]"), Just (0, "hello 🙂")), ((1, "do you receive my messages?"), Just (0, "hello 🙂")), ((1, "how are you? [marked deleted]"), Nothing)])
+
+      -- bob: deletes msg ids 2,4 (that he has marked deleted)
+      bob #$> ("/_delete item @2 " <> itemId 2 <> " internal", id, "message deleted")
+      bob #$> ("/_delete item @2 " <> itemId 4 <> " internal", id, "message deleted")
       bob #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((0, "hello 🙂"), Nothing), ((1, "do you receive my messages?"), Just (0, "hello 🙂"))])
 
 testGroup :: Spec
@@ -1285,17 +1291,17 @@ testGroupMessageDelete =
         (alice <# "#team cath> how are you?")
         (bob <# "#team cath> how are you?")
 
-      cath #$> ("/_delete item #1 " <> groupItemId 2 7 <> " broadcast", id, "message deleted")
+      cath #$> ("/_delete item #1 " <> groupItemId 2 7 <> " broadcast", id, "message marked deleted")
       concurrently_
-        (alice <# "#team cath> [deleted] how are you?")
-        (bob <# "#team cath> [deleted] how are you?")
+        (alice <# "#team cath> [marked deleted] how are you?")
+        (bob <# "#team cath> [marked deleted] how are you?")
 
       alice #$> ("/_delete item #1 " <> groupItemId 2 5 <> " broadcast", id, "cannot delete this item")
       alice #$> ("/_delete item #1 " <> groupItemId 2 5 <> " internal", id, "message deleted")
 
-      alice #$> ("/_get chat #1 count=1", chat', [((0, "this item is deleted (broadcast)"), Nothing)])
-      bob #$> ("/_get chat #1 count=3", chat', [((0, "hello!"), Nothing), ((1, "hi alice"), Just (0, "hello!")), ((0, "this item is deleted (broadcast)"), Nothing)])
-      cath #$> ("/_get chat #1 count=2", chat', [((0, "hello!"), Nothing), ((0, "hi alice"), Just (0, "hello!"))])
+      alice #$> ("/_get chat #1 count=1", chat', [((0, "how are you? [marked deleted]"), Nothing)])
+      bob #$> ("/_get chat #1 count=3", chat', [((0, "hello!"), Nothing), ((1, "hi alice"), Just (0, "hello!")), ((0, "how are you? [marked deleted]"), Nothing)])
+      cath #$> ("/_get chat #1 count=3", chat', [((0, "hello!"), Nothing), ((0, "hi alice"), Just (0, "hello!")), ((1, "how are you? [marked deleted]"), Nothing)])
 
 testUpdateGroupProfile :: IO ()
 testUpdateGroupProfile =
