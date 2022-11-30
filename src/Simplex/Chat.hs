@@ -290,9 +290,9 @@ processChatCommand = \case
     CTDirect -> do
       ct@Contact {localDisplayName = c, contactUsed} <- withStore $ \db -> getContact db user chatId
       unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
-      case featureProhibited forUser ct mc of
-        Just f -> pure $ chatCmdError $ "feature not allowed " <> T.unpack (chatFeatureToText f)
-        _ -> do
+      if isVoice mc && not (featureAllowed CFVoice forUser ct)
+        then pure $ chatCmdError $ "feature not allowed " <> T.unpack (chatFeatureToText CFVoice)
+        else do
           (fileInvitation_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer ct
           (msgContainer, quotedItem_) <- prepareMsg fileInvitation_
           (msg@SndMessage {sharedMsgId}, _) <- sendDirectContactMessage ct (XMsgNew msgContainer)
@@ -339,9 +339,9 @@ processChatCommand = \case
     CTGroup -> do
       Group gInfo@GroupInfo {membership, localDisplayName = gName} ms <- withStore $ \db -> getGroup db user chatId
       unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
-      case groupFeatureProhibited gInfo mc of
-        Just f -> pure $ chatCmdError $ "feature not allowed " <> T.unpack (groupFeatureToText f)
-        _ -> do
+      if isVoice mc && not (groupFeatureAllowed GFVoice gInfo)
+        then pure $ chatCmdError $ "feature not allowed " <> T.unpack (groupFeatureToText GFVoice)
+        else do
           (fileInvitation_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer gInfo (length ms)
           (msgContainer, quotedItem_) <- prepareMsg fileInvitation_ membership
           msg@SndMessage {sharedMsgId} <- sendGroupMessage gInfo ms (XMsgNew msgContainer)
@@ -2199,9 +2199,9 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
       unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       let ExtMsgContent content fileInvitation_ = mcExtMsgContent mc
-      case featureProhibited forContact ct content of
-        Just f -> void $ newChatItem (CIRcvChatFeatureRejected f) Nothing
-        _ -> do
+      if isVoice content && not (featureAllowed CFVoice forContact ct)
+        then void $ newChatItem (CIRcvChatFeatureRejected CFVoice) Nothing
+        else do
           ciFile_ <- processFileInvitation fileInvitation_ content $ \db -> createRcvFileTransfer db userId ct
           ChatItem {formattedText} <- newChatItem (CIRcvMsgContent content) ciFile_
           when (enableNtfs chatSettings) $ showMsgToast (c <> "> ") content formattedText
@@ -2265,9 +2265,9 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
     newGroupContentMessage :: GroupInfo -> GroupMember -> MsgContainer -> RcvMessage -> MsgMeta -> m ()
     newGroupContentMessage gInfo@GroupInfo {chatSettings} m@GroupMember {localDisplayName = c} mc msg msgMeta = do
       let (ExtMsgContent content fInv_) = mcExtMsgContent mc
-      case groupFeatureProhibited gInfo content of
-        Just f -> void $ newChatItem (CIRcvGroupFeatureRejected f) Nothing
-        _ -> do
+      if isVoice content && not (groupFeatureAllowed GFVoice gInfo)
+        then void $ newChatItem (CIRcvGroupFeatureRejected GFVoice) Nothing
+        else do
           ciFile_ <- processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId m
           ChatItem {formattedText} <- newChatItem (CIRcvMsgContent content) ciFile_
           let g = groupName' gInfo
@@ -3140,16 +3140,6 @@ createGroupFeatureChangedItems user cd ciContent p p' =
 
 sameGroupProfileInfo :: GroupProfile -> GroupProfile -> Bool
 sameGroupProfileInfo p p' = p {groupPreferences = Nothing} == p' {groupPreferences = Nothing}
-
-featureProhibited :: (PrefEnabled -> Bool) -> Contact -> MsgContent -> Maybe ChatFeature
-featureProhibited forWhom ct = \case
-  MCVoice {} -> if featureAllowed CFVoice forWhom ct then Nothing else Just CFVoice
-  _ -> Nothing
-
-groupFeatureProhibited :: GroupInfo -> MsgContent -> Maybe GroupFeature
-groupFeatureProhibited gInfo = \case
-  MCVoice {} -> if groupFeatureAllowed GFVoice gInfo then Nothing else Just GFVoice
-  _ -> Nothing
 
 createInternalChatItem :: forall c d m. (ChatTypeI c, MsgDirectionI d, ChatMonad m) => User -> ChatDirection c d -> CIContent d -> Maybe UTCTime -> m ()
 createInternalChatItem user cd content itemTs_ = do
