@@ -316,7 +316,7 @@ viewChatItem chat ChatItem {chatDir, meta = meta@CIMeta {itemDeleted}, content, 
     showRcvItemProhibited from = showItem $ receivedWithTime_ ts from [] meta [plainContent content <> " " <> prohibited]
     showItem ss = if doShow then ss else []
     plainContent = plain . ciContentToText
-    prohibited = styled (colored Red) ("[prohibited - it's a bug if this chat item was created in this context, please report it to developers]" :: String)
+    prohibited = styled (colored Red) ("[unexpected chat item created, please report to developers]" :: String)
 
 viewItemUpdate :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> CurrentTime -> [StyledString]
 viewItemUpdate chat ChatItem {chatDir, meta, content, quotedItem} ts = case chat of
@@ -350,7 +350,7 @@ viewItemDelete chat ChatItem {chatDir, meta, content = deletedContent} markedDel
       _ -> prohibited
     _ -> prohibited
   where
-    prohibited = [styled (colored Red) ("[prohibited message deletion happened, please report it to developers]" :: String)]
+    prohibited = [styled (colored Red) ("[unexpected message deletion, please report to developers]" :: String)]
 
 directQuote :: forall d'. MsgDirectionI d' => CIDirection 'CTDirect d' -> CIQuote 'CTDirect -> [StyledString]
 directQuote _ CIQuote {content = qmc, chatDir = quoteDir} =
