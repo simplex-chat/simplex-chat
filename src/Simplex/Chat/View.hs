@@ -339,17 +339,16 @@ viewItemUpdate chat ChatItem {chatDir, meta, content, quotedItem} ts = case chat
   _ -> []
 
 viewItemDelete :: ChatInfo c -> ChatItem c d -> Bool -> Bool -> CurrentTime -> [StyledString]
-viewItemDelete chat ChatItem {chatDir, meta, content = deletedContent} markedDeleted byUser ts =
-  if byUser
-    then if markedDeleted then ["message marked deleted"] else ["message deleted"]
-    else case chat of
-      DirectChat Contact {localDisplayName = c} -> case (chatDir, deletedContent) of
-        (CIDirectRcv, CIRcvMsgContent mc) -> viewReceivedMessage (ttyFromContactDeleted c markedDeleted) [] mc ts meta
-        _ -> prohibited
-      GroupChat g -> case (chatDir, deletedContent) of
-        (CIGroupRcv GroupMember {localDisplayName = m}, CIRcvMsgContent mc) -> viewReceivedMessage (ttyFromGroupDeleted g m markedDeleted) [] mc ts meta
-        _ -> prohibited
+viewItemDelete chat ChatItem {chatDir, meta, content = deletedContent} markedDeleted byUser ts
+  | byUser = if markedDeleted then ["message marked deleted"] else ["message deleted"]
+  | otherwise = case chat of
+    DirectChat Contact {localDisplayName = c} -> case (chatDir, deletedContent) of
+      (CIDirectRcv, CIRcvMsgContent mc) -> viewReceivedMessage (ttyFromContactDeleted c markedDeleted) [] mc ts meta
       _ -> prohibited
+    GroupChat g -> case (chatDir, deletedContent) of
+      (CIGroupRcv GroupMember {localDisplayName = m}, CIRcvMsgContent mc) -> viewReceivedMessage (ttyFromGroupDeleted g m markedDeleted) [] mc ts meta
+      _ -> prohibited
+    _ -> prohibited
   where
     prohibited = [styled (colored Red) ("[prohibited message deletion happened, please report it to developers]" :: String)]
 
