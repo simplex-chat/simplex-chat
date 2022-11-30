@@ -1490,7 +1490,7 @@ class SharedPreference<T>(val get: () -> T, set: (T) -> Unit) {
   init {
     this.set = { value ->
       set(value)
-      _state.value = get()
+      _state.value = value
     }
   }
 }
