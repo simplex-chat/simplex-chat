@@ -32,7 +32,7 @@ fun PreferencesView(m: ChatModel, user: User) {
       preferences = currentPreferences
     },
     savePrefs = {
-      withApi {
+      withBGApi {
         val newProfile = user.profile.toProfile().copy(preferences = preferences.toPreferences())
         val updatedProfile = m.controller.apiUpdateProfile(newProfile)
         if (updatedProfile != null) {

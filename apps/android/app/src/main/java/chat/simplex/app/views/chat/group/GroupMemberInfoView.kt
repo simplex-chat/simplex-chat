@@ -50,12 +50,12 @@ fun GroupMemberInfoView(
       newRole,
       developerTools,
       openDirectChat = {
-        withApi {
-          val oldChat = chatModel.getContactChat(member.memberContactId ?: return@withApi)
+        withBGApi {
+          val oldChat = chatModel.getContactChat(member.memberContactId ?: return@withBGApi)
           if (oldChat != null) {
             openChat(oldChat.chatInfo, chatModel)
           } else {
-            var newChat = chatModel.controller.apiGetChat(ChatType.Direct, member.memberContactId) ?: return@withApi
+            var newChat = chatModel.controller.apiGetChat(ChatType.Direct, member.memberContactId) ?: return@withBGApi
             // TODO it's not correct to blindly set network status to connected - we should manage network status in model / backend
             newChat = newChat.copy(serverInfo = Chat.ServerInfo(networkStatus = Chat.NetworkStatus.Connected()))
             chatModel.addChat(newChat)
@@ -73,7 +73,7 @@ fun GroupMemberInfoView(
         updateMemberRoleDialog(it, member, onDismiss = {
           newRole.value = prevValue
         }) {
-          withApi {
+          withBGApi {
             kotlin.runCatching {
               val mem = chatModel.controller.apiMemberRole(groupInfo.groupId, member.groupMemberId, it)
               chatModel.upsertGroupMember(groupInfo, mem)
@@ -96,7 +96,7 @@ fun removeMemberDialog(groupInfo: GroupInfo, member: GroupMember, chatModel: Cha
     text = generalGetString(R.string.member_will_be_removed_from_group_cannot_be_undone),
     confirmText = generalGetString(R.string.remove_member_confirmation),
     onConfirm = {
-      withApi {
+      withBGApi {
         val removedMember = chatModel.controller.apiRemoveMember(member.groupId, member.groupMemberId)
         if (removedMember != null) {
           chatModel.upsertGroupMember(groupInfo, removedMember)
@@ -286,7 +286,7 @@ private fun updateMemberRoleDialog(
   )
 }
 
-private fun switchMemberAddress(m: ChatModel, groupInfo: GroupInfo, member: GroupMember) = withApi {
+private fun switchMemberAddress(m: ChatModel, groupInfo: GroupInfo, member: GroupMember) = withBGApi {
   m.controller.apiSwitchGroupMember(groupInfo.apiId, member.groupMemberId)
 }
 

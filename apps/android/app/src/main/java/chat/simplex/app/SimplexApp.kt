@@ -59,7 +59,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
     } else if (startChat) {
       // If we migrated successfully means previous re-encryption process on database level finished successfully too
       if (appPreferences.encryptionStartedAt.get() != null) appPreferences.encryptionStartedAt.set(null)
-      withApi {
+      withBGApi {
         val user = chatController.apiGetActiveUser()
         if (user == null) {
           chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo
@@ -93,7 +93,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
   override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
     Log.d(TAG, "onStateChanged: $event")
-    withApi {
+    withBGApi {
       when (event) {
         Lifecycle.Event.ON_START -> {
           if (chatModel.chatRunning.value == true) {

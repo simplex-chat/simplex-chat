@@ -301,7 +301,7 @@ private suspend fun runServersTest(servers: List<ServerCfg>, m: ChatModel, onUpd
 }
 
 private fun saveSMPServers(servers: List<ServerCfg>, m: ChatModel) {
-  withApi {
+  withBGApi {
     if (m.controller.setUserSMPServers(servers)) {
       m.userSMPServers.value = servers
       m.userSMPServersUnsaved.value = null

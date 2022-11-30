@@ -43,7 +43,7 @@ fun UserProfileView(chatModel: ChatModel, close: () -> Unit) {
       profile = profile,
       close,
       saveProfile = { displayName, fullName, image ->
-        withApi {
+        withBGApi {
           val p = Profile(displayName, fullName, image)
           val newProfile = chatModel.controller.apiUpdateProfile(p)
           if (newProfile != null) {

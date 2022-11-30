@@ -80,7 +80,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
 
 fun directChatAction(chatInfo: ChatInfo, chatModel: ChatModel) {
   if (chatInfo.ready) {
-    withApi { openChat(chatInfo, chatModel) }
+    withBGApi { openChat(chatInfo, chatModel) }
   } else {
     pendingContactAlertDialog(chatInfo, chatModel)
   }
@@ -90,7 +90,7 @@ fun groupChatAction(groupInfo: GroupInfo, chatModel: ChatModel) {
   when (groupInfo.membership.memberStatus) {
     GroupMemberStatus.MemInvited -> acceptGroupInvitationAlertDialog(groupInfo, chatModel)
     GroupMemberStatus.MemAccepted -> groupInvitationAcceptedAlert()
-    else -> withApi { openChat(ChatInfo.Group(groupInfo), chatModel) }
+    else -> withBGApi { openChat(ChatInfo.Group(groupInfo), chatModel) }
   }
 }
 
@@ -250,7 +250,7 @@ fun DeleteGroupAction(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, sh
 
 @Composable
 fun JoinGroupAction(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
-  val joinGroup: () -> Unit = { withApi { chatModel.controller.apiJoinGroup(groupInfo.groupId) } }
+  val joinGroup: () -> Unit = { withBGApi { chatModel.controller.apiJoinGroup(groupInfo.groupId) } }
   ItemAction(
     if (chat.chatInfo.incognito) stringResource(R.string.join_group_incognito_button) else stringResource(R.string.join_group_button),
     if (chat.chatInfo.incognito) Icons.Filled.TheaterComedy else Icons.Outlined.Login,
@@ -322,7 +322,7 @@ fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: 
 
 fun markChatRead(c: Chat, chatModel: ChatModel) {
   var chat = c
-  withApi {
+  withBGApi {
     if (chat.chatStats.unreadCount > 0) {
       val minUnreadItemId = chat.chatStats.minUnreadItemId
       chatModel.markChatItemsRead(chat.chatInfo)
@@ -331,7 +331,7 @@ fun markChatRead(c: Chat, chatModel: ChatModel) {
         chat.chatInfo.apiId,
         CC.ItemRange(minUnreadItemId, chat.chatItems.last().id)
       )
-      chat = chatModel.getChat(chat.id) ?: return@withApi
+      chat = chatModel.getChat(chat.id) ?: return@withBGApi
     }
     if (chat.chatStats.unreadChat) {
       val success = chatModel.controller.apiChatUnread(
@@ -350,7 +350,7 @@ fun markChatUnread(chat: Chat, chatModel: ChatModel) {
   // Just to be sure
   if (chat.chatStats.unreadChat) return
 
-  withApi {
+  withBGApi {
     val success = chatModel.controller.apiChatUnread(
       chat.chatInfo.chatType,
       chat.chatInfo.apiId,
@@ -374,7 +374,7 @@ fun contactRequestAlertDialog(contactRequest: ChatInfo.ContactRequest, chatModel
 }
 
 fun acceptContactRequest(contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel) {
-  withApi {
+  withBGApi {
     val contact = chatModel.controller.apiAcceptContactRequest(contactRequest.apiId)
     if (contact != null) {
       val chat = Chat(ChatInfo.Direct(contact), listOf())
@@ -384,7 +384,7 @@ fun acceptContactRequest(contactRequest: ChatInfo.ContactRequest, chatModel: Cha
 }
 
 fun rejectContactRequest(contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel) {
-  withApi {
+  withBGApi {
     chatModel.controller.apiRejectContactRequest(contactRequest.apiId)
     chatModel.removeChat(contactRequest.id)
   }
@@ -431,7 +431,7 @@ fun deleteContactConnectionAlert(connection: PendingContactConnection, chatModel
     ),
     confirmText = generalGetString(R.string.delete_verb),
     onConfirm = {
-      withApi {
+      withBGApi {
         AlertManager.shared.hideAlert()
         if (chatModel.controller.apiDeleteChat(ChatType.ContactConnection, connection.apiId)) {
           chatModel.removeChat(connection.id)
@@ -448,7 +448,7 @@ fun pendingContactAlertDialog(chatInfo: ChatInfo, chatModel: ChatModel) {
     text = generalGetString(R.string.alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry),
     confirmText = generalGetString(R.string.button_delete_contact),
     onConfirm = {
-      withApi {
+      withBGApi {
         val r = chatModel.controller.apiDeleteChat(chatInfo.chatType, chatInfo.apiId)
         if (r) {
           chatModel.removeChat(chatInfo.id)
@@ -465,7 +465,7 @@ fun acceptGroupInvitationAlertDialog(groupInfo: GroupInfo, chatModel: ChatModel)
     title = generalGetString(R.string.join_group_question),
     text = generalGetString(R.string.you_are_invited_to_group_join_to_connect_with_group_members),
     confirmText = if (groupInfo.membership.memberIncognito) generalGetString(R.string.join_group_incognito_button) else generalGetString(R.string.join_group_button),
-    onConfirm = { withApi { chatModel.controller.apiJoinGroup(groupInfo.groupId) } },
+    onConfirm = { withBGApi { chatModel.controller.apiJoinGroup(groupInfo.groupId) } },
     dismissText = generalGetString(R.string.delete_verb),
     onDismiss = { deleteGroup(groupInfo, chatModel) }
   )
@@ -480,7 +480,7 @@ fun cantInviteIncognitoAlert() {
 }
 
 fun deleteGroup(groupInfo: GroupInfo, chatModel: ChatModel) {
-  withApi {
+  withBGApi {
     val r = chatModel.controller.apiDeleteChat(ChatType.Group, groupInfo.apiId)
     if (r) {
       chatModel.removeChat(groupInfo.id)
@@ -507,7 +507,7 @@ fun changeNtfsStatePerChat(enabled: Boolean, currentState: MutableState<Boolean>
     }
     else -> null
   }
-  withApi {
+  withBGApi {
     val res = when (newChatInfo) {
       is ChatInfo.Direct -> with(newChatInfo) {
         chatModel.controller.apiSetSettings(chatType, apiId, contact.chatSettings)

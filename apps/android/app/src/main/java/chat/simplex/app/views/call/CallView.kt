@@ -39,7 +39,7 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.ProfileImage
-import chat.simplex.app.views.helpers.withApi
+import chat.simplex.app.views.helpers.withBGApi
 import chat.simplex.app.views.usersettings.NotificationsMode
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import kotlinx.coroutines.*
@@ -51,7 +51,7 @@ import kotlinx.serialization.encodeToString
 fun ActiveCallView(chatModel: ChatModel) {
   BackHandler(onBack = {
     val call = chatModel.activeCall.value
-    if (call != null) withApi { chatModel.callManager.endCall(call) }
+    if (call != null) withBGApi { chatModel.callManager.endCall(call) }
   })
   val ntfModeService = remember { chatModel.controller.appPrefs.notificationsMode.get() == NotificationsMode.SERVICE.name }
   LaunchedEffect(Unit) {
@@ -79,20 +79,20 @@ fun ActiveCallView(chatModel: ChatModel) {
       if (call != null) {
         Log.d(TAG, "has active call $call")
         when (val r = apiMsg.resp) {
-          is WCallResponse.Capabilities -> withApi {
+          is WCallResponse.Capabilities -> withBGApi {
             val callType = CallType(call.localMedia, r.capabilities)
             chatModel.controller.apiSendCallInvitation(call.contact, callType)
             chatModel.activeCall.value = call.copy(callState = CallState.InvitationSent, localCapabilities = r.capabilities)
           }
-          is WCallResponse.Offer -> withApi {
+          is WCallResponse.Offer -> withBGApi {
             chatModel.controller.apiSendCallOffer(call.contact, r.offer, r.iceCandidates, call.localMedia, r.capabilities)
             chatModel.activeCall.value = call.copy(callState = CallState.OfferSent, localCapabilities = r.capabilities)
           }
-          is WCallResponse.Answer -> withApi {
+          is WCallResponse.Answer -> withBGApi {
             chatModel.controller.apiSendCallAnswer(call.contact, r.answer, r.iceCandidates)
             chatModel.activeCall.value = call.copy(callState = CallState.Negotiated)
           }
-          is WCallResponse.Ice -> withApi {
+          is WCallResponse.Ice -> withBGApi {
             chatModel.controller.apiSendCallExtraInfo(call.contact, r.iceCandidates)
           }
           is WCallResponse.Connection ->
@@ -101,7 +101,7 @@ fun ActiveCallView(chatModel: ChatModel) {
               if (callStatus == WebRTCCallStatus.Connected) {
                 chatModel.activeCall.value = call.copy(callState = CallState.Connected)
               }
-              withApi { chatModel.controller.apiCallStatus(call.contact, callStatus) }
+              withBGApi { chatModel.controller.apiCallStatus(call.contact, callStatus) }
             } catch (e: Error) {
               Log.d(TAG,"call status ${r.state.connectionState} not used")
             }
@@ -114,7 +114,7 @@ fun ActiveCallView(chatModel: ChatModel) {
           }
           is WCallResponse.Ended -> {
             chatModel.activeCall.value = call.copy(callState = CallState.Ended)
-            withApi { chatModel.callManager.endCall(call) }
+            withBGApi { chatModel.callManager.endCall(call) }
             chatModel.showCallView.value = false
           }
           is WCallResponse.Ok -> when (val cmd = apiMsg.command) {
@@ -163,7 +163,7 @@ private fun ActiveCallOverlay(call: Call, chatModel: ChatModel) {
   var cxt = LocalContext.current
   ActiveCallOverlayLayout(
     call = call,
-    dismiss = { withApi { chatModel.callManager.endCall(call) } },
+    dismiss = { withBGApi { chatModel.callManager.endCall(call) } },
     toggleAudio = { chatModel.callCommand.value = WCallCommand.Media(CallMediaType.Audio, enable = !call.audioEnabled) },
     toggleVideo = { chatModel.callCommand.value = WCallCommand.Media(CallMediaType.Video, enable = !call.videoEnabled) },
     toggleSound = {

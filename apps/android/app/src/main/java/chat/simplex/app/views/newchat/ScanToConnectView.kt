@@ -51,7 +51,7 @@ fun ScanToConnectView(chatModel: ChatModel, close: () -> Unit) {
                 title = generalGetString(R.string.connect_via_group_link),
                 text = generalGetString(R.string.you_will_join_group),
                 confirmText = generalGetString(R.string.connect_via_link_verb),
-                onConfirm = { withApi { action() } }
+                onConfirm = { withBGApi { action() } }
               )
             } else action()
           }
@@ -93,7 +93,7 @@ fun withUriAction(uri: Uri, run: suspend (ConnectionLinkType) -> Unit) {
     else -> null
   }
   if (type != null) {
-    withApi { run(type) }
+    withBGApi { run(type) }
   } else {
     AlertManager.shared.showAlertMsg(
       title = generalGetString(R.string.invalid_contact_link),

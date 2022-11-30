@@ -4,7 +4,7 @@ import android.util.Log
 import chat.simplex.app.TAG
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.views.helpers.ModalManager
-import chat.simplex.app.views.helpers.withApi
+import chat.simplex.app.views.helpers.withBGApi
 import kotlinx.datetime.Clock
 import kotlin.time.Duration.Companion.minutes
 
@@ -29,13 +29,13 @@ class CallManager(val chatModel: ChatModel) {
     if (call == null) {
       justAcceptIncomingCall(invitation = invitation)
     } else {
-      withApi {
+      withBGApi {
         chatModel.switchingCall.value = true
         try {
           endCall(call = call)
           justAcceptIncomingCall(invitation = invitation)
         } finally {
-          withApi { chatModel.switchingCall.value = false }
+          chatModel.switchingCall.value = false
         }
       }
     }
@@ -90,7 +90,7 @@ class CallManager(val chatModel: ChatModel) {
         activeCallInvitation.value = null
         controller.ntfManager.cancelCallNotification()
       }
-      withApi {
+      withBGApi {
         if (!controller.apiRejectCall(invitation.contact)) {
           Log.e(TAG, "apiRejectCall error")
         }

@@ -44,7 +44,7 @@ fun AddGroupMembersView(groupInfo: GroupInfo, chatModel: ChatModel, close: () ->
     allowModifyMembers = allowModifyMembers,
     inviteMembers = {
       allowModifyMembers = false
-      withApi {
+      withBGApi {
         for (contactId in selectedContacts) {
           val member = chatModel.controller.apiAddMember(groupInfo.groupId, contactId, selectedRole.value)
           if (member != null) {

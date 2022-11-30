@@ -42,7 +42,7 @@ fun ContactPreferencesView(
       featuresAllowed = currentFeaturesAllowed
     },
     savePrefs = {
-      withApi {
+      withBGApi {
         val prefs = contactFeaturesAllowedToPrefs(featuresAllowed)
         val toContact = m.controller.apiSetContactPrefs(ct.contactId, prefs)
         if (toContact != null) {

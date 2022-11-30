@@ -82,7 +82,7 @@ fun deleteContactDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> 
     text = generalGetString(R.string.delete_contact_all_messages_deleted_cannot_undo_warning),
     confirmText = generalGetString(R.string.delete_verb),
     onConfirm = {
-      withApi {
+      withBGApi {
         val r = chatModel.controller.apiDeleteChat(chatInfo.chatType, chatInfo.apiId)
         if (r) {
           chatModel.removeChat(chatInfo.id)
@@ -101,7 +101,7 @@ fun clearChatDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit
     text = generalGetString(R.string.clear_chat_warning),
     confirmText = generalGetString(R.string.clear_verb),
     onConfirm = {
-      withApi {
+      withBGApi {
         val updatedChatInfo = chatModel.controller.apiClearChat(chatInfo.chatType, chatInfo.apiId)
         if (updatedChatInfo != null) {
           chatModel.clearChat(updatedChatInfo)
@@ -367,7 +367,7 @@ fun DeleteContactButton(onClick: () -> Unit) {
   )
 }
 
-private fun setContactAlias(contactApiId: Long, localAlias: String, chatModel: ChatModel) = withApi {
+private fun setContactAlias(contactApiId: Long, localAlias: String, chatModel: ChatModel) = withBGApi {
   chatModel.controller.apiSetContactAlias(contactApiId, localAlias)?.let {
     chatModel.updateContact(it)
   }
@@ -384,7 +384,7 @@ private fun showSwitchContactAddressAlert(m: ChatModel, contactId: Long) {
   )
 }
 
-private fun switchContactAddress(m: ChatModel, contactId: Long) = withApi {
+private fun switchContactAddress(m: ChatModel, contactId: Long) = withBGApi {
   m.controller.apiSwitchContact(contactId)
 }
 

@@ -14,7 +14,7 @@ import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.DEFAULT_PADDING
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.views.helpers.ModalManager
-import chat.simplex.app.views.helpers.withApi
+import chat.simplex.app.views.helpers.withBGApi
 import chat.simplex.app.views.usersettings.UserAddressView
 
 enum class CreateLinkTab {
@@ -94,7 +94,7 @@ fun CreateLinkView(m: ChatModel, initialSelection: CreateLinkTab) {
 
 private fun createInvitation(m: ChatModel, creatingConnReq: MutableState<Boolean>, connReqInvitation: MutableState<String?>) {
   creatingConnReq.value = true
-  withApi {
+  withBGApi {
     val connReq = m.controller.apiAddContact()
     if (connReq != null) {
       connReqInvitation.value = connReq

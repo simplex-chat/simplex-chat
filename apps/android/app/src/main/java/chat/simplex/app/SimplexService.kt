@@ -84,7 +84,7 @@ class SimplexService: Service() {
     if (wakeLock != null || isStartingService) return
     val self = this
     isStartingService = true
-    withApi {
+    withBGApi {
       val chatController = (application as SimplexApp).chatController
       try {
         Log.w(TAG, "Starting foreground service")
@@ -93,7 +93,7 @@ class SimplexService: Service() {
           Log.w(chat.simplex.app.TAG, "SimplexService: problem with the database: $chatDbStatus")
           showPassphraseNotification(chatDbStatus)
           safeStopService(self)
-          return@withApi
+          return@withBGApi
         }
         saveServiceState(self, ServiceState.STARTED)
         wakeLock = (getSystemService(Context.POWER_SERVICE) as PowerManager).run {

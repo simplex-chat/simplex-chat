@@ -35,7 +35,7 @@ fun GroupProfileView(groupInfo: GroupInfo, chatModel: ChatModel, close: () -> Un
     close = close,
     groupProfile = groupInfo.groupProfile,
     saveProfile = { p ->
-      withApi {
+      withBGApi {
         val gInfo = chatModel.controller.apiUpdateGroup(groupInfo.groupId, p)
         if (gInfo != null) {
           chatModel.updateGroup(gInfo)

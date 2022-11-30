@@ -49,7 +49,7 @@ fun PasteToConnectView(chatModel: ChatModel, close: () -> Unit) {
               title = generalGetString(R.string.connect_via_group_link),
               text = generalGetString(R.string.you_will_join_group),
               confirmText = generalGetString(R.string.connect_via_link_verb),
-              onConfirm = { withApi { action() } }
+              onConfirm = { withBGApi { action() } }
             )
           } else action()
         }
@@ -127,7 +127,7 @@ fun PreviewPasteToConnectTextbox() {
       connectViaLink = { link ->
         try {
           println(link)
-  //        withApi { chatModel.controller.apiConnect(link) }
+  //        withBGApi { chatModel.controller.apiConnect(link) }
         } catch (e: Exception) {
           e.printStackTrace()
         }

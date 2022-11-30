@@ -41,7 +41,6 @@ import chat.simplex.app.views.newchat.*
 import chat.simplex.app.views.onboarding.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 
 class MainActivity: FragmentActivity() {
@@ -402,7 +401,7 @@ fun processNotificationIntent(intent: Intent?, chatModel: ChatModel) {
       if (chatId != null) {
         val cInfo = chatModel.getChat(chatId)?.chatInfo
         chatModel.clearOverlays.value = true
-        if (cInfo != null) withApi { openChat(cInfo, chatModel) }
+        if (cInfo != null) withBGApi { openChat(cInfo, chatModel) }
       }
     }
     NtfManager.ShowChatsAction -> {
@@ -486,7 +485,7 @@ fun connectIfOpenedViaUri(uri: Uri, chatModel: ChatModel) {
           generalGetString(R.string.profile_will_be_sent_to_contact_sending_link),
         confirmText = generalGetString(R.string.connect_via_link_verb),
         onConfirm = {
-          withApi {
+          withBGApi {
             Log.d(TAG, "connectIfOpenedViaUri: connecting")
             connectViaUri(chatModel, linkType, uri)
           }

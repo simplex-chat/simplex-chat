@@ -1061,9 +1061,9 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         chatModel.addChatItem(cInfo, cItem)
         val file = cItem.file
         if (cItem.content.msgContent is MsgContent.MCImage && file != null && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV && appPrefs.privacyAcceptImages.get()) {
-          withApi { receiveFile(file.fileId) }
+          withBGApi { receiveFile(file.fileId) }
         } else if (cItem.content.msgContent is MsgContent.MCVoice && file != null && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileSize > MAX_VOICE_SIZE_FOR_SENDING && appPrefs.privacyAcceptImages.get()) {
-          withApi { receiveFile(file.fileId) } // TODO check inlineFileMode != IFMSent
+          withBGApi { receiveFile(file.fileId) } // TODO check inlineFileMode != IFMSent
         }
         if (cItem.showNotification && (!isAppOnForeground(appContext) || chatModel.chatId.value != cInfo.id)) {
           ntfManager.notifyMessageReceived(cInfo, cItem)
@@ -1183,10 +1183,8 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         }
         withCall(r, r.contact) { _ ->
           chatModel.callCommand.value = WCallCommand.End
-          withApi {
-            chatModel.activeCall.value = null
-            chatModel.showCallView.value = false
-          }
+          chatModel.activeCall.value = null
+          chatModel.showCallView.value = false
         }
       }
       else ->

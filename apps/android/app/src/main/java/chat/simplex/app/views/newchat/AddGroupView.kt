@@ -38,7 +38,7 @@ fun AddGroupView(chatModel: ChatModel, close: () -> Unit) {
   AddGroupLayout(
     chatModel.incognito.value,
     createGroup = { groupProfile ->
-      withApi {
+      withBGApi {
         val groupInfo = chatModel.controller.apiNewGroup(groupProfile)
         if (groupInfo != null) {
           chatModel.addChat(Chat(chatInfo = ChatInfo.Group(groupInfo), chatItems = listOf()))

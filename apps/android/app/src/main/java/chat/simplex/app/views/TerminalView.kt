@@ -107,7 +107,7 @@ private fun sendCommand(chatModel: ChatModel, composeState: MutableState<Compose
     chatModel.terminalItems.add(TerminalItem.resp(resp))
     composeState.value = ComposeState(useLinkPreviews = false)
   } else {
-    withApi {
+    withBGApi {
       // show "in progress"
       chatModel.controller.sendCmd(CC.Console(s))
       composeState.value = ComposeState(useLinkPreviews = false)

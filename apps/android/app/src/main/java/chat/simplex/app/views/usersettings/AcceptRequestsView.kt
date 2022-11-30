@@ -29,7 +29,7 @@ fun AcceptRequestsView(m: ChatModel, contactLink: UserContactLinkRec) {
   AcceptRequestsLayout(
     contactLink,
     saveState = { new: MutableState<AutoAcceptState>, old: MutableState<AutoAcceptState> ->
-      withApi {
+      withBGApi {
         val link = m.controller.userAddressAutoAccept(new.value.autoAccept)
         if (link != null) {
           contactLink = link

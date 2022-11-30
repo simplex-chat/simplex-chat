@@ -244,11 +244,9 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
     Icons.Outlined.ToggleOn,
     stringResource(R.string.chat_preferences),
     click = {
-      withApi {
-        showSettingsModal {
-          PreferencesView(it, it.currentUser.value ?: return@showSettingsModal)
-        }()
-      }
+      showSettingsModal {
+        PreferencesView(it, it.currentUser.value ?: return@showSettingsModal)
+      }()
     }
   )
 }

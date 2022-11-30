@@ -27,7 +27,7 @@ import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.AppBarTitle
-import chat.simplex.app.views.helpers.withApi
+import chat.simplex.app.views.helpers.withBGApi
 import chat.simplex.app.views.onboarding.OnboardingStage
 import chat.simplex.app.views.onboarding.ReadableText
 import com.google.accompanist.insets.navigationBarsWithImePadding
@@ -106,7 +106,7 @@ fun CreateProfilePanel(chatModel: ChatModel) {
 }
 
 fun createProfile(chatModel: ChatModel, displayName: String, fullName: String) {
-  withApi {
+  withBGApi {
     val user = chatModel.controller.apiCreateActiveUser(
       Profile(displayName, fullName, null)
     )

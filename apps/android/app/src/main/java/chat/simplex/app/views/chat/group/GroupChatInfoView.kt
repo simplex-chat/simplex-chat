@@ -46,7 +46,7 @@ fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
         .sortedBy { it.displayName.lowercase() },
       developerTools,
       addMembers = {
-        withApi {
+        withBGApi {
           setGroupMembers(groupInfo, chatModel)
           ModalManager.shared.showModalCloseable(true) { close ->
             AddGroupMembersView(groupInfo, chatModel, close)
@@ -54,7 +54,7 @@ fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
         }
       },
       showMemberInfo = { member ->
-        withApi {
+        withBGApi {
           val stats = chatModel.controller.apiGroupMemberInfo(groupInfo.groupId, member.groupMemberId)
           ModalManager.shared.showModalCloseable(true) { closeCurrent ->
             GroupMemberInfoView(groupInfo, member, stats, chatModel, closeCurrent) { closeCurrent(); close() }
@@ -76,7 +76,7 @@ fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) },
       leaveGroup = { leaveGroupDialog(groupInfo, chatModel, close) },
       manageGroupLink = {
-        withApi {
+        withBGApi {
           val groupLink = chatModel.controller.apiGetGroupLink(groupInfo.groupId)
           ModalManager.shared.showModal { GroupLinkView(chatModel, groupInfo, groupLink) }
         }
@@ -94,7 +94,7 @@ fun deleteGroupDialog(chatInfo: ChatInfo, groupInfo: GroupInfo, chatModel: ChatM
     text = generalGetString(alertTextKey),
     confirmText = generalGetString(R.string.delete_verb),
     onConfirm = {
-      withApi {
+      withBGApi {
         val r = chatModel.controller.apiDeleteChat(chatInfo.chatType, chatInfo.apiId)
         if (r) {
           chatModel.removeChat(chatInfo.id)
@@ -113,7 +113,7 @@ fun leaveGroupDialog(groupInfo: GroupInfo, chatModel: ChatModel, close: (() -> U
     text = generalGetString(R.string.you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved),
     confirmText = generalGetString(R.string.leave_group_button),
     onConfirm = {
-      withApi {
+      withBGApi {
         chatModel.controller.leaveGroup(groupInfo.groupId)
         close?.invoke()
       }

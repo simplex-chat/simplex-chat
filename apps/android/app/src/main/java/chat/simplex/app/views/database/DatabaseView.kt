@@ -334,7 +334,7 @@ fun chatArchiveTitle(chatArchiveTime: Instant, chatLastStart: Instant): String {
 }
 
 private fun startChat(m: ChatModel, runChat: MutableState<Boolean>, chatLastStart: MutableState<Instant?>, chatDbChanged: MutableState<Boolean>) {
-  withApi {
+  withBGApi {
     try {
       if (chatDbChanged.value) {
         SimplexApp.context.initChatController()
@@ -343,7 +343,7 @@ private fun startChat(m: ChatModel, runChat: MutableState<Boolean>, chatLastStar
       if (m.chatDbStatus.value !is DBMigrationResult.OK) {
         /** Hide current view and show [DatabaseErrorView] */
         ModalManager.shared.closeModals()
-        return@withApi
+        return@withBGApi
       }
       m.controller.apiStartChat()
       runChat.value = true
@@ -404,7 +404,7 @@ private fun authStopChat(m: ChatModel, runChat: MutableState<Boolean>, context: 
 }
 
 private fun stopChat(m: ChatModel, runChat: MutableState<Boolean>, context: Context) {
-  withApi {
+  withBGApi {
     try {
       m.controller.apiStopChat()
       runChat.value = false
@@ -428,7 +428,7 @@ private fun exportArchive(
   saveArchiveLauncher: ManagedActivityResultLauncher<String, Uri?>
 ) {
   progressIndicator.value = true
-  withApi {
+  withBGApi {
     try {
       val archiveFile = exportChatArchive(m, context, chatArchiveName, chatArchiveTime, chatArchiveFile)
       chatArchiveFile.value = archiveFile
@@ -531,7 +531,7 @@ private fun importArchive(
   progressIndicator.value = true
   val archivePath = saveArchiveFromUri(context, importedArchiveUri)
   if (archivePath != null) {
-    withApi {
+    withBGApi {
       try {
         m.controller.apiDeleteStorage()
         try {
@@ -588,7 +588,7 @@ private fun deleteChatAlert(m: ChatModel, progressIndicator: MutableState<Boolea
 
 private fun deleteChat(m: ChatModel, progressIndicator: MutableState<Boolean>) {
   progressIndicator.value = true
-  withApi {
+  withBGApi {
     try {
       m.controller.apiDeleteStorage()
       m.chatDbDeleted.value = true
@@ -614,7 +614,7 @@ private fun setCiTTL(
 ) {
   Log.d(TAG, "DatabaseView setChatItemTTL ${chatItemTTL.value.seconds ?: -1}")
   progressIndicator.value = true
-  withApi {
+  withBGApi {
     try {
       m.controller.setChatItemTTL(chatItemTTL.value)
       // Update model on success
@@ -629,7 +629,7 @@ private fun setCiTTL(
   }
 }
 
-private fun afterSetCiTTL(
+private suspend fun afterSetCiTTL(
   m: ChatModel,
   progressIndicator: MutableState<Boolean>,
   appFilesCountAndSize: MutableState<Pair<Int, Long>>,
@@ -637,13 +637,11 @@ private fun afterSetCiTTL(
 ) {
   progressIndicator.value = false
   appFilesCountAndSize.value = directoryFileCountAndSize(getAppFilesDirectory(context))
-  withApi {
-    try {
-      val chats = m.controller.apiGetChats()
-      m.updateChats(chats)
-    } catch (e: Exception) {
-      Log.e(TAG, "apiGetChats error: ${e.message}")
-    }
+  try {
+    val chats = m.controller.apiGetChats()
+    m.updateChats(chats)
+  } catch (e: Exception) {
+    Log.e(TAG, "apiGetChats error: ${e.message}")
   }
 }
 

@@ -27,7 +27,7 @@ fun GroupLinkView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: St
   GroupLinkLayout(
     groupLink = groupLink,
     createLink = {
-      withApi {
+      withBGApi {
         groupLink = chatModel.controller.apiCreateGroupLink(groupInfo.groupId)
       }
     },
@@ -38,7 +38,7 @@ fun GroupLinkView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: St
         text = generalGetString(R.string.all_group_members_will_remain_connected),
         confirmText = generalGetString(R.string.delete_verb),
         onConfirm = {
-          withApi {
+          withBGApi {
             val r = chatModel.controller.apiDeleteGroupLink(groupInfo.groupId)
             if (r) {
               groupLink = null

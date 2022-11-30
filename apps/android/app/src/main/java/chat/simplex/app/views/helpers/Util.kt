@@ -35,7 +35,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.*
 
-fun withApi(action: suspend CoroutineScope.() -> Unit): Job = CoroutineScope(Dispatchers.Default).launch(block = action)
+fun withBGApi(action: suspend CoroutineScope.() -> Unit): Job = CoroutineScope(Dispatchers.Default).launch(block = action)
 
 enum class KeyboardState {
   Opened, Closed

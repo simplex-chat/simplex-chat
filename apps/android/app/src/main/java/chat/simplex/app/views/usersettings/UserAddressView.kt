@@ -30,7 +30,7 @@ fun UserAddressView(chatModel: ChatModel) {
   UserAddressLayout(
     userAddress = remember { chatModel.userAddress }.value,
     createAddress = {
-      withApi {
+      withBGApi {
         val connReqContact = chatModel.controller.apiCreateUserAddress()
         if (connReqContact != null) {
           chatModel.userAddress.value = UserContactLinkRec(connReqContact)
@@ -49,7 +49,7 @@ fun UserAddressView(chatModel: ChatModel) {
         text = generalGetString(R.string.all_your_contacts_will_remain_connected),
         confirmText = generalGetString(R.string.delete_verb),
         onConfirm = {
-          withApi {
+          withBGApi {
             chatModel.controller.apiDeleteUserAddress()
             chatModel.userAddress.value = null
           }

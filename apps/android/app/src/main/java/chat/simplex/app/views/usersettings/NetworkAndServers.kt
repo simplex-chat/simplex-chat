@@ -49,7 +49,7 @@ fun NetworkAndServersView(
           text = generalGetString(R.string.network_enable_socks_info),
           confirmText = generalGetString(R.string.confirm_verb),
           onConfirm = {
-            withApi {
+            withBGApi {
               chatModel.controller.apiSetNetworkConfig(NetCfg.proxyDefaults)
               chatModel.controller.setNetCfg(NetCfg.proxyDefaults)
               networkUseSocksProxy.value = true
@@ -63,7 +63,7 @@ fun NetworkAndServersView(
           text = generalGetString(R.string.network_disable_socks_info),
           confirmText = generalGetString(R.string.confirm_verb),
           onConfirm = {
-            withApi {
+            withBGApi {
               chatModel.controller.apiSetNetworkConfig(NetCfg.defaults)
               chatModel.controller.setNetCfg(NetCfg.defaults)
               networkUseSocksProxy.value = false
@@ -85,7 +85,7 @@ fun NetworkAndServersView(
       updateOnionHostsDialog(startsWith, onDismiss = {
         onionHosts.value = prevValue
       }) {
-        withApi {
+        withBGApi {
           val newCfg = chatModel.controller.getNetCfg().withOnionHosts(it)
           val res = chatModel.controller.apiSetNetworkConfig(newCfg)
           if (res) {

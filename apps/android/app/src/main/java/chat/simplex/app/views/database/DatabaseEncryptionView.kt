@@ -62,7 +62,7 @@ fun DatabaseEncryptionView(m: ChatModel) {
       progressIndicator,
       onConfirmEncrypt = {
         progressIndicator.value = true
-        withApi {
+        withBGApi {
           try {
             prefs.encryptionStartedAt.set(Clock.System.now())
             val error = m.controller.apiStorageEncryption(currentKey.value, newKey.value)

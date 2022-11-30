@@ -34,7 +34,7 @@ fun GroupPreferencesView(m: ChatModel, groupInfo: GroupInfo) {
       preferences = currentPreferences
     },
     savePrefs = {
-      withApi {
+      withBGApi {
         val gp = groupInfo.groupProfile.copy(groupPreferences = preferences.toGroupPreferences())
         val gInfo = m.controller.apiUpdateGroup(groupInfo.groupId, gp)
         if (gInfo != null) {

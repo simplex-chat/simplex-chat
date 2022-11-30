@@ -128,7 +128,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
       },
       info = {
         hideKeyboard(view)
-        withApi {
+        withBGApi {
           if (chat.chatInfo is ChatInfo.Direct) {
             val contactInfo = chatModel.controller.apiContactInfo(chat.chatInfo.apiId)
             ModalManager.shared.showModalCloseable(true) { close ->
@@ -147,7 +147,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
       },
       showMemberInfo = { groupInfo: GroupInfo, member: GroupMember ->
         hideKeyboard(view)
-        withApi {
+        withBGApi {
           val stats = chatModel.controller.apiGroupMemberInfo(groupInfo.groupId, member.groupMemberId)
           ModalManager.shared.showModalCloseable(true) { close ->
             GroupMemberInfoView(groupInfo, member, stats, chatModel, close, close)
@@ -158,13 +158,13 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
         val c = chatModel.getChat(cInfo.id)
         val firstId = chatModel.chatItems.firstOrNull()?.id
         if (c != null && firstId != null) {
-          withApi {
+          withBGApi {
             apiLoadPrevMessages(c.chatInfo, chatModel, firstId, searchText.value)
           }
         }
       },
       deleteMessage = { itemId, mode ->
-        withApi {
+        withBGApi {
           val cInfo = chat.chatInfo
           val toItem = chatModel.controller.apiDeleteChatItem(
             type = cInfo.chatType,
@@ -176,10 +176,10 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
         }
       },
       receiveFile = { fileId ->
-        withApi { chatModel.controller.receiveFile(fileId) }
+        withBGApi { chatModel.controller.receiveFile(fileId) }
       },
       joinGroup = { groupId ->
-        withApi { chatModel.controller.apiJoinGroup(groupId) }
+        withBGApi { chatModel.controller.apiJoinGroup(groupId) }
       },
       startCall = { media ->
         val cInfo = chat.chatInfo
@@ -200,7 +200,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
       },
       addMembers = { groupInfo ->
         hideKeyboard(view)
-        withApi {
+        withBGApi {
           setGroupMembers(groupInfo, chatModel)
           ModalManager.shared.showModalCloseable(true) { close ->
               AddGroupMembersView(groupInfo, chatModel, close)
@@ -210,7 +210,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
       markRead = { range, unreadCountAfter ->
         chatModel.markChatItemsRead(chat.chatInfo, range, unreadCountAfter)
         chatModel.controller.ntfManager.cancelNotificationsForChat(chat.id)
-        withApi {
+        withBGApi {
           chatModel.controller.apiChatRead(
             chat.chatInfo.chatType,
             chat.chatInfo.apiId,
@@ -222,7 +222,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
       onSearchValueChanged = { value ->
         if (searchText.value == value) return@ChatLayout
         val c = chatModel.getChat(chat.chatInfo.id) ?: return@ChatLayout
-        withApi {
+        withBGApi {
           apiFindMessages(c.chatInfo, chatModel, value)
           searchText.value = value
         }
@@ -821,7 +821,7 @@ private fun bottomEndFloatingButton(
 private fun markUnreadChatAsRead(activeChat: MutableState<Chat?>, chatModel: ChatModel) {
   val chat = activeChat.value
   if (chat?.chatStats?.unreadChat != true) return
-  withApi {
+  withBGApi {
     val success = chatModel.controller.apiChatUnread(
       chat.chatInfo.chatType,
       chat.chatInfo.apiId,

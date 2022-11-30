@@ -275,7 +275,7 @@ fun ComposeView(
   fun loadLinkPreview(url: String, wait: Long? = null) {
     if (pendingLinkUrl.value == url) {
       composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(null))
-      withApi {
+      withBGApi {
         if (wait != null) delay(wait)
         val lp = getLinkPreview(url)
         if (lp != null && pendingLinkUrl.value == url) {
@@ -359,7 +359,7 @@ fun ComposeView(
         val ei = contextItem.chatItem
         val oldMsgContent = ei.content.msgContent
         if (oldMsgContent != null) {
-          withApi {
+          withBGApi {
             val updatedItem = chatModel.controller.apiUpdateChatItem(
               type = cInfo.chatType,
               id = cInfo.apiId,
@@ -414,7 +414,7 @@ fun ComposeView(
           else -> null
         }
         if (msgs.isNotEmpty()) {
-          withApi {
+          withBGApi {
             msgs.forEachIndexed { index, content ->
               if (index > 0) delay(100)
               val aChatItem = chatModel.controller.apiSendMessage(
@@ -458,7 +458,7 @@ fun ComposeView(
   fun allowVoiceToContact() {
     val contact = (chat.chatInfo as ChatInfo.Direct?)?.contact ?: return
     val featuresAllowed = contactUserPrefsToFeaturesAllowed(contact.mergedPreferences)
-    withApi {
+    withBGApi {
       val prefs = contactFeaturesAllowedToPrefs(featuresAllowed).copy(voice = ChatPreference(FeatureAllowed.YES))
       val toContact = chatModel.controller.apiSetContactPrefs(contact.contactId, prefs)
       if (toContact != null) {
