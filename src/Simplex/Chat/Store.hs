@@ -3246,7 +3246,6 @@ getDirectChatPreviews_ db user@User {userId} = do
         LEFT JOIN (
           SELECT contact_id, MAX(chat_item_id) AS MaxId
           FROM chat_items
-          WHERE item_deleted != 1
           GROUP BY contact_id
         ) MaxIds ON MaxIds.contact_id = ct.contact_id
         LEFT JOIN chat_items i ON i.contact_id = MaxIds.contact_id
@@ -3255,7 +3254,7 @@ getDirectChatPreviews_ db user@User {userId} = do
         LEFT JOIN (
           SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
           FROM chat_items
-          WHERE item_status = ? AND item_deleted != 1
+          WHERE item_status = ?
           GROUP BY contact_id
         ) ChatStats ON ChatStats.contact_id = ct.contact_id
         LEFT JOIN chat_items ri ON ri.shared_msg_id = i.quoted_shared_msg_id AND ri.contact_id = i.contact_id
@@ -3321,7 +3320,6 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
         LEFT JOIN (
           SELECT group_id, MAX(chat_item_id) AS MaxId
           FROM chat_items
-          WHERE item_deleted != 1
           GROUP BY group_id
         ) MaxIds ON MaxIds.group_id = g.group_id
         LEFT JOIN chat_items i ON i.group_id = MaxIds.group_id
@@ -3330,7 +3328,7 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
         LEFT JOIN (
           SELECT group_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
           FROM chat_items
-          WHERE item_status = ? AND item_deleted != 1
+          WHERE item_status = ?
           GROUP BY group_id
         ) ChatStats ON ChatStats.group_id = g.group_id
         LEFT JOIN group_members m ON m.group_member_id = i.group_member_id
@@ -3469,7 +3467,7 @@ getDirectChatLast_ db user@User {userId} contactId count search = do
             FROM chat_items i
             LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
             LEFT JOIN chat_items ri ON ri.shared_msg_id = i.quoted_shared_msg_id AND ri.contact_id = i.contact_id
-            WHERE i.user_id = ? AND i.contact_id = ? AND i.item_deleted != 1 AND i.item_text LIKE '%' || ? || '%'
+            WHERE i.user_id = ? AND i.contact_id = ? AND i.item_text LIKE '%' || ? || '%'
             ORDER BY i.chat_item_id DESC
             LIMIT ?
           |]
@@ -3500,7 +3498,7 @@ getDirectChatAfter_ db user@User {userId} contactId afterChatItemId count search
             FROM chat_items i
             LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
             LEFT JOIN chat_items ri ON ri.shared_msg_id = i.quoted_shared_msg_id AND ri.contact_id = i.contact_id
-            WHERE i.user_id = ? AND i.contact_id = ? AND i.item_deleted != 1 AND i.item_text LIKE '%' || ? || '%'
+            WHERE i.user_id = ? AND i.contact_id = ? AND i.item_text LIKE '%' || ? || '%'
               AND i.chat_item_id > ?
             ORDER BY i.chat_item_id ASC
             LIMIT ?
@@ -3532,7 +3530,7 @@ getDirectChatBefore_ db user@User {userId} contactId beforeChatItemId count sear
             FROM chat_items i
             LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
             LEFT JOIN chat_items ri ON ri.shared_msg_id = i.quoted_shared_msg_id AND ri.contact_id = i.contact_id
-            WHERE i.user_id = ? AND i.contact_id = ? AND i.item_deleted != 1 AND i.item_text LIKE '%' || ? || '%'
+            WHERE i.user_id = ? AND i.contact_id = ? AND i.item_text LIKE '%' || ? || '%'
               AND i.chat_item_id < ?
             ORDER BY i.chat_item_id DESC
             LIMIT ?
@@ -3598,7 +3596,7 @@ getGroupChatLast_ db user@User {userId} groupId count search = do
           [sql|
             SELECT chat_item_id
             FROM chat_items
-            WHERE user_id = ? AND group_id = ? AND item_deleted != 1 AND item_text LIKE '%' || ? || '%'
+            WHERE user_id = ? AND group_id = ? AND item_text LIKE '%' || ? || '%'
             ORDER BY item_ts DESC, chat_item_id DESC
             LIMIT ?
           |]
@@ -3621,7 +3619,7 @@ getGroupChatAfter_ db user@User {userId} groupId afterChatItemId count search = 
           [sql|
             SELECT chat_item_id
             FROM chat_items
-            WHERE user_id = ? AND group_id = ? AND item_deleted != 1 AND item_text LIKE '%' || ? || '%'
+            WHERE user_id = ? AND group_id = ? AND item_text LIKE '%' || ? || '%'
               AND (item_ts > ? OR (item_ts = ? AND chat_item_id > ?))
             ORDER BY item_ts ASC, chat_item_id ASC
             LIMIT ?
@@ -3645,7 +3643,7 @@ getGroupChatBefore_ db user@User {userId} groupId beforeChatItemId count search 
           [sql|
             SELECT chat_item_id
             FROM chat_items
-            WHERE user_id = ? AND group_id = ? AND item_deleted != 1 AND item_text LIKE '%' || ? || '%'
+            WHERE user_id = ? AND group_id = ? AND item_text LIKE '%' || ? || '%'
               AND (item_ts < ? OR (item_ts = ? AND chat_item_id < ?))
             ORDER BY item_ts DESC, chat_item_id DESC
             LIMIT ?
