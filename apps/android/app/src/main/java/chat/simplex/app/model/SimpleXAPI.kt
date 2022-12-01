@@ -448,9 +448,9 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return null
   }
 
-  suspend fun apiDeleteChatItem(type: ChatType, id: Long, itemId: Long, mode: CIDeleteMode): AChatItem? {
+  suspend fun apiDeleteChatItem(type: ChatType, id: Long, itemId: Long, mode: CIDeleteMode): Pair<ChatItem, ChatItem?>? {
     val r = sendCmd(CC.ApiDeleteChatItem(type, id, itemId, mode))
-    if (r is CR.ChatItemDeleted) return r.toChatItem
+    if (r is CR.ChatItemDeleted) return Pair(r.deletedChatItem.chatItem, r.toChatItem?.chatItem)
     Log.e(TAG, "apiDeleteChatItem bad response: ${r.responseType} ${r.details}")
     return null
   }
@@ -1082,14 +1082,11 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       is CR.ChatItemUpdated ->
         chatItemSimpleUpdate(r.chatItem)
       is CR.ChatItemDeleted -> {
-        val cInfo = r.toChatItem.chatInfo
-        val cItem = r.toChatItem.chatItem
-        if (cItem.meta.itemDeleted) {
-          chatModel.removeChatItem(cInfo, cItem)
+        AudioPlayer.stop(r.deletedChatItem.chatItem)
+        if (r.toChatItem != null) {
+          chatModel.upsertChatItem(r.toChatItem.chatInfo, r.toChatItem.chatItem)
         } else {
-          // currently only broadcast deletion of rcv message can be received, and only this case should happen
-          AudioPlayer.stop(cItem)
-          chatModel.upsertChatItem(cInfo, cItem)
+          chatModel.removeChatItem(r.deletedChatItem.chatInfo, r.deletedChatItem.chatItem)
         }
       }
       is CR.ReceivedGroupInvitation -> {
@@ -2373,7 +2370,7 @@ sealed class CR {
   @Serializable @SerialName("newChatItem") class NewChatItem(val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemStatusUpdated") class ChatItemStatusUpdated(val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemUpdated") class ChatItemUpdated(val chatItem: AChatItem): CR()
-  @Serializable @SerialName("chatItemDeleted") class ChatItemDeleted(val deletedChatItem: AChatItem, val toChatItem: AChatItem): CR()
+  @Serializable @SerialName("chatItemDeleted") class ChatItemDeleted(val deletedChatItem: AChatItem, val toChatItem: AChatItem? = null, val byUser: Boolean): CR()
   @Serializable @SerialName("contactsList") class ContactsList(val contacts: List<Contact>): CR()
   // group events
   @Serializable @SerialName("groupCreated") class GroupCreated(val groupInfo: GroupInfo): CR()
@@ -2567,7 +2564,7 @@ sealed class CR {
     is NewChatItem -> json.encodeToString(chatItem)
     is ChatItemStatusUpdated -> json.encodeToString(chatItem)
     is ChatItemUpdated -> json.encodeToString(chatItem)
-    is ChatItemDeleted -> "deletedChatItem:\n${json.encodeToString(deletedChatItem)}\ntoChatItem:\n${json.encodeToString(toChatItem)}"
+    is ChatItemDeleted -> "deletedChatItem:\n${json.encodeToString(deletedChatItem)}\ntoChatItem:\n${json.encodeToString(toChatItem)}\nbyUser: $byUser"
     is ContactsList -> json.encodeToString(contacts)
     is GroupCreated -> json.encodeToString(groupInfo)
     is SentGroupInvitation -> "groupInfo: $groupInfo\ncontact: $contact\nmember: $member"
