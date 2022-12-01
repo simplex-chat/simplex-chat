@@ -415,19 +415,23 @@ struct ChatView: View {
         let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
         var menu: [UIAction] = []
         if let mc = ci.content.msgContent {
-            menu.append(contentsOf: [
-                UIAction(
-                    title: NSLocalizedString("Reply", comment: "chat item action"),
-                    image: UIImage(systemName: "arrowshape.turn.up.left")
-                ) { _ in
-                    withAnimation {
-                        if composeState.editing {
-                            composeState = ComposeState(contextItem: .quotedItem(chatItem: ci))
-                        } else {
-                            composeState = composeState.copy(contextItem: .quotedItem(chatItem: ci))
+            if !ci.meta.itemDeleted {
+                menu.append(
+                    UIAction(
+                        title: NSLocalizedString("Reply", comment: "chat item action"),
+                        image: UIImage(systemName: "arrowshape.turn.up.left")
+                    ) { _ in
+                        withAnimation {
+                            if composeState.editing {
+                                composeState = ComposeState(contextItem: .quotedItem(chatItem: ci))
+                            } else {
+                                composeState = composeState.copy(contextItem: .quotedItem(chatItem: ci))
+                            }
                         }
                     }
-                },
+                )
+            }
+            menu.append(
                 UIAction(
                     title: NSLocalizedString("Share", comment: "chat item action"),
                     image: UIImage(systemName: "square.and.arrow.up")
@@ -437,7 +441,9 @@ struct ChatView: View {
                         shareItems.append(image)
                     }
                     showShareSheet(items: shareItems)
-                },
+                }
+            )
+            menu.append(
                 UIAction(
                     title: NSLocalizedString("Copy", comment: "chat item action"),
                     image: UIImage(systemName: "doc.on.doc")
@@ -450,7 +456,7 @@ struct ChatView: View {
                         UIPasteboard.general.string = ci.content.text
                     }
                 }
-            ])
+            )
             if let filePath = getLoadedFilePath(ci.file) {
                 if case .image = ci.content.msgContent,
                    let image = UIImage(contentsOfFile: filePath) {

@@ -42,9 +42,9 @@ struct FramedItemView: View {
                         }
                 }
 
-                if chatItem.formattedText == nil && chatItem.file == nil && isShortEmoji(chatItem.content.text) {
+                if chatItem.formattedText == nil && chatItem.file == nil && isShortEmoji(chatItem.text) {
                     VStack {
-                        emojiText(chatItem.content.text)
+                        emojiText(chatItem.text)
                         Text("")
                     }
                     .padding(.vertical, 6)
@@ -96,7 +96,7 @@ struct FramedItemView: View {
                 .padding(.bottom, 6)
                 .overlay(DetermineWidth())
         }
-        .background(chatItemFrameColor(chatItem, colorScheme))
+        .background(chatItemFrameColorMaybeImage(chatItem, colorScheme))
         .cornerRadius(18)
         .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
 
@@ -242,10 +242,14 @@ func onlyImage(_ ci: ChatItem) -> Bool {
     return false
 }
 
-func chatItemFrameColor(_ ci: ChatItem, _ colorScheme: ColorScheme) -> Color {
+func chatItemFrameColorMaybeImage(_ ci: ChatItem, _ colorScheme: ColorScheme) -> Color {
     onlyImage(ci)
     ? Color.clear
-    : ci.chatDir.sent
+    : chatItemFrameColor(ci, colorScheme)
+}
+
+func chatItemFrameColor(_ ci: ChatItem, _ colorScheme: ColorScheme) -> Color {
+    ci.chatDir.sent
     ? (colorScheme == .light ? sentColorLight : sentColorDark)
     : Color(uiColor: .tertiarySystemGroupedBackground)
 }

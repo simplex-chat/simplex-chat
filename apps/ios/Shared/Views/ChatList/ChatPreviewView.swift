@@ -102,7 +102,7 @@ struct ChatPreviewView: View {
     @ViewBuilder private func chatPreviewText(_ cItem: ChatItem?) -> some View {
         if let cItem = cItem {
             ZStack(alignment: .topTrailing) {
-                (itemStatusMark(cItem) + messageText(cItem.text, cItem.formattedText, cItem.memberDisplayName, preview: true))
+                (itemStatusMark(cItem) + messageText(cItem.text_, cItem.formattedText_, cItem.memberDisplayName, preview: true))
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .topLeading)

@@ -10,6 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 struct MarkedDeletedItemView: View {
+    @Environment(\.colorScheme) var colorScheme
     var chatItem: ChatItem
     var showMember = false
 
@@ -39,7 +40,7 @@ struct MarkedDeletedItemView: View {
         }
         .padding(.leading, 12)
         .padding(.vertical, 6)
-        .background(Color(uiColor: .tertiarySystemGroupedBackground))
+        .background(chatItemFrameColor(chatItem, colorScheme))
         .cornerRadius(18)
         .textSelection(.disabled)
     }

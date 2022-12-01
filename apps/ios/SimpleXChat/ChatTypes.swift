@@ -1374,15 +1374,29 @@ public struct ChatItem: Identifiable, Decodable {
 
     public var timestampText: Text { meta.timestampText }
 
+    // pairs with formattedText
     public var text: String {
+        switch (content.text, content.msgContent, file) {
+        case let ("", .some(.voice(_, duration)), _): return "Voice message (\(durationText(duration)))"
+        case let ("", _, .some(file)): return file.fileName
+        default: return content.text
+        }
+    }
+
+    // pairs with formattedText_
+    public var text_: String {
         if meta.itemDeleted {
             return "Marked deleted"
         } else {
-            switch (content.text, content.msgContent, file) {
-            case let ("", .some(.voice(_, duration)), _): return "Voice message (\(durationText(duration)))"
-            case let ("", _, .some(file)): return file.fileName
-            default: return content.text
-            }
+            return text
+        }
+    }
+
+    public var formattedText_: [FormattedText]? {
+        if meta.itemDeleted {
+            return nil
+        } else {
+            return formattedText
         }
     }
 
