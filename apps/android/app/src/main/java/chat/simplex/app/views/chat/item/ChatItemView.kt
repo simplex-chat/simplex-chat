@@ -93,12 +93,12 @@ fun ChatItemView(
             val filePath = getLoadedFilePath(SimplexApp.context, cItem.file)
             when {
               filePath != null -> shareFile(context, cItem.text, filePath)
-              else -> shareText(context, cItem.content.text)
+              else -> shareText(context, cItem.text)
             }
             showMenu.value = false
           })
           ItemAction(stringResource(R.string.copy_verb), Icons.Outlined.ContentCopy, onClick = {
-            copyText(context, cItem.content.text)
+            copyText(context, cItem.text)
             showMenu.value = false
           })
           if (cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCFile || cItem.content.msgContent is MsgContent.MCVoice) {

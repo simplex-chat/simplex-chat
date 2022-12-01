@@ -392,6 +392,9 @@ interface SomeChat {
   val ready: Boolean
   val sendMsgEnabled: Boolean
   val ntfsEnabled: Boolean
+  val incognito: Boolean
+  val voiceMessageAllowed: Boolean
+  val fullDeletionAllowed: Boolean
   val createdAt: Instant
   val updatedAt: Instant
 }
@@ -442,7 +445,6 @@ data class Chat (
 
 @Serializable
 sealed class ChatInfo: SomeChat, NamedChat {
-  abstract val incognito: Boolean
 
   @Serializable @SerialName("direct")
   data class Direct(val contact: Contact): ChatInfo() {
@@ -452,8 +454,10 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val apiId get() = contact.apiId
     override val ready get() = contact.ready
     override val sendMsgEnabled get() = contact.sendMsgEnabled
-    override val ntfsEnabled get() = contact.chatSettings.enableNtfs
-    override val incognito get() = contact.contactConnIncognito
+    override val ntfsEnabled get() = contact.ntfsEnabled
+    override val incognito get() = contact.incognito
+    override val voiceMessageAllowed get() = contact.voiceMessageAllowed
+    override val fullDeletionAllowed get() = contact.fullDeletionAllowed
     override val createdAt get() = contact.createdAt
     override val updatedAt get() = contact.updatedAt
     override val displayName get() = contact.displayName
@@ -474,8 +478,10 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val apiId get() = groupInfo.apiId
     override val ready get() = groupInfo.ready
     override val sendMsgEnabled get() = groupInfo.sendMsgEnabled
-    override val ntfsEnabled get() = groupInfo.chatSettings.enableNtfs
-    override val incognito get() = groupInfo.membership.memberIncognito
+    override val ntfsEnabled get() = groupInfo.ntfsEnabled
+    override val incognito get() = groupInfo.incognito
+    override val voiceMessageAllowed get() = groupInfo.voiceMessageAllowed
+    override val fullDeletionAllowed get() = groupInfo.fullDeletionAllowed
     override val createdAt get() = groupInfo.createdAt
     override val updatedAt get() = groupInfo.updatedAt
     override val displayName get() = groupInfo.displayName
@@ -496,8 +502,10 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val apiId get() = contactRequest.apiId
     override val ready get() = contactRequest.ready
     override val sendMsgEnabled get() = contactRequest.sendMsgEnabled
-    override val ntfsEnabled get() = false
-    override val incognito get() = false
+    override val ntfsEnabled get() = contactRequest.ntfsEnabled
+    override val incognito get() = contactRequest.incognito
+    override val voiceMessageAllowed get() = contactRequest.voiceMessageAllowed
+    override val fullDeletionAllowed get() = contactRequest.fullDeletionAllowed
     override val createdAt get() = contactRequest.createdAt
     override val updatedAt get() = contactRequest.updatedAt
     override val displayName get() = contactRequest.displayName
@@ -518,8 +526,10 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val apiId get() = contactConnection.apiId
     override val ready get() = contactConnection.ready
     override val sendMsgEnabled get() = contactConnection.sendMsgEnabled
-    override val ntfsEnabled get() = false
+    override val ntfsEnabled get() = contactConnection.incognito
     override val incognito get() = contactConnection.incognito
+    override val voiceMessageAllowed get() = contactConnection.voiceMessageAllowed
+    override val fullDeletionAllowed get() = contactConnection.fullDeletionAllowed
     override val createdAt get() = contactConnection.createdAt
     override val updatedAt get() = contactConnection.updatedAt
     override val displayName get() = contactConnection.displayName
@@ -553,6 +563,9 @@ data class Contact(
   override val ready get() = activeConn.connStatus == ConnStatus.Ready
   override val sendMsgEnabled get() = true
   override val ntfsEnabled get() = chatSettings.enableNtfs
+  override val incognito get() = contactConnIncognito
+  override val voiceMessageAllowed get() = mergedPreferences.voice.enabled.forUser
+  override val fullDeletionAllowed get() = mergedPreferences.fullDelete.enabled.forUser
   override val displayName get() = localAlias.ifEmpty { profile.displayName }
   override val fullName get() = profile.fullName
   override val image get() = profile.image
@@ -675,6 +688,9 @@ data class GroupInfo (
   override val ready get() = membership.memberActive
   override val sendMsgEnabled get() = membership.memberActive
   override val ntfsEnabled get() = chatSettings.enableNtfs
+  override val incognito get() = membership.memberIncognito
+  override val voiceMessageAllowed get() = fullGroupPreferences.voice.on
+  override val fullDeletionAllowed get() = fullGroupPreferences.fullDelete.on
   override val displayName get() = groupProfile.displayName
   override val fullName get() = groupProfile.fullName
   override val image get() = groupProfile.image
@@ -918,6 +934,9 @@ class UserContactRequest (
   override val ready get() = true
   override val sendMsgEnabled get() = false
   override val ntfsEnabled get() = false
+  override val incognito get() = false
+  override val voiceMessageAllowed get() = false
+  override val fullDeletionAllowed get() = false
   override val displayName get() = profile.displayName
   override val fullName get() = profile.fullName
   override val image get() = profile.image
@@ -953,6 +972,9 @@ class PendingContactConnection(
   override val ready get() = false
   override val sendMsgEnabled get() = false
   override val ntfsEnabled get() = false
+  override val incognito get() = customUserProfileId != null
+  override val voiceMessageAllowed get() = false
+  override val fullDeletionAllowed get() = false
   override val localDisplayName get() = String.format(generalGetString(R.string.connection_local_display_name), pccConnId)
   override val displayName: String get() {
     if (localAlias.isNotEmpty()) return localAlias
@@ -971,8 +993,6 @@ class PendingContactConnection(
   override val image get() = null
 
   val initiated get() = (pccConnStatus.initiated ?: false) && !viaContactUri
-
-  val incognito = customUserProfileId != null
 
   val description: String get() {
     val initiated = pccConnStatus.initiated
@@ -1043,14 +1063,32 @@ data class ChatItem (
   val id: Long get() = meta.itemId
   val timestampText: String get() = meta.timestampText
 
-  val text: String get() =
-    when {
-      content.text == "" && file != null && content.msgContent is MsgContent.MCVoice -> {
-        (content.msgContent as MsgContent.MCVoice).toTextWithDuration(false)
-      }
+  // pair with formattedText
+  val text: String get() {
+    val mc = content.msgContent
+    return when {
+      content.text == "" && file != null && mc is MsgContent.MCVoice -> String.format(generalGetString(R.string.voice_message_with_duration), durationText(mc.duration))
       content.text == "" && file != null -> file.fileName
       else -> content.text
     }
+  }
+
+  // pair with formattedText_
+  val text_: String get() {
+    if (meta.itemDeleted) {
+      return generalGetString(R.string.marked_deleted_description)
+    } else {
+      return text
+    }
+  }
+
+  val formattedText_: List<FormattedText>? get() {
+    if (meta.itemDeleted) {
+      return null
+    } else {
+      return formattedText
+    }
+  }
 
   val isRcvNew: Boolean get() = meta.itemStatus is CIStatus.RcvNew
 
@@ -1318,8 +1356,8 @@ class CIQuote (
   val formattedText: List<FormattedText>? = null
 ): ItemContent {
   override val text: String by lazy {
-    if (content is MsgContent.MCVoice && content.text.isEmpty())
-      content.toTextWithDuration(true)
+    if (content.text == "" && content is MsgContent.MCVoice)
+      durationText(content.duration)
     else
       content.text
   }
@@ -1404,11 +1442,6 @@ sealed class MsgContent {
     is MCFile -> "json ${json.encodeToString(this)}"
     is MCUnknown -> "json $json"
   }
-}
-
-fun MsgContent.MCVoice.toTextWithDuration(short: Boolean): String {
-  val time = durationToString(duration)
-  return if (short) time else generalGetString(R.string.voice_message) + " ($time)"
 }
 
 @Serializable
@@ -1644,10 +1677,12 @@ enum class CICallStatus {
     Accepted -> generalGetString(R.string.callstatus_accepted)
     Negotiated -> generalGetString(R.string.callstatus_connecting)
     Progress -> generalGetString(R.string.callstatus_in_progress)
-    Ended -> String.format(generalGetString(R.string.callstatus_ended), durationToString(sec))
+    Ended -> String.format(generalGetString(R.string.callstatus_ended), durationText(sec))
     Error -> generalGetString(R.string.callstatus_error)
   }
 }
+
+fun durationText(sec: Int): String = "%02d:%02d".format(sec / 60, sec % 60)
 
 @Serializable
 sealed class MsgErrorType() {

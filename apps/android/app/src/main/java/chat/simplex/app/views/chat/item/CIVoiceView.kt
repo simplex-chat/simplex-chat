@@ -59,7 +59,7 @@ fun CIVoiceView(
             audioPlaying.value || progress.value != 0 -> progress.value
             else -> duration.value
           }
-          durationToString(time / 1000)
+          durationText(time / 1000)
         }
       }
       VoiceLayout(file, ci, metaColor, text, audioPlaying, progress, duration, brokenAudio, sent, hasText, play, pause, longClick)

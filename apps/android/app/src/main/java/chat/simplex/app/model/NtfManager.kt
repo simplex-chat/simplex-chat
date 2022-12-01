@@ -218,19 +218,15 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
   }
 
   private fun hideSecrets(cItem: ChatItem) : String {
-    val md = cItem.formattedText
-    return if (md == null) {
-      if (cItem.content.text != "") {
-        cItem.content.text
-      } else {
-        if (cItem.content.msgContent is MsgContent.MCVoice) generalGetString(R.string.voice_message) else cItem.file?.fileName ?: ""
-      }
-    } else {
+    val md = cItem.formattedText_
+    return if (md != null) {
       var res = ""
       for (ft in md) {
         res += if (ft.format is Format.Secret) "..." else ft.text
       }
       res
+    } else {
+      cItem.text_
     }
   }
 

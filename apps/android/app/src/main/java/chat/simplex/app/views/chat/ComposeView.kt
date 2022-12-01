@@ -150,7 +150,7 @@ fun ComposeView(
   val textStyle = remember { mutableStateOf(smallFont) }
   // attachments
   val chosenContent = rememberSaveable { mutableStateOf<List<UploadContent>>(emptyList()) }
-  val audioSaver = Saver<MutableState<Pair<Uri, Int>?>, Pair<String, Int>> (
+  val audioSaver = Saver<MutableState<Pair<Uri, Int>?>, Pair<String, Int>>(
     save = { it.value.let { if (it == null) null else it.first.toString() to it.second } },
     restore = { mutableStateOf(Uri.parse(it.first) to it.second) }
   )
@@ -457,15 +457,15 @@ fun ComposeView(
 
   fun allowVoiceToContact() {
     val contact = (chat.chatInfo as ChatInfo.Direct?)?.contact ?: return
-    val featuresAllowed = contactUserPrefsToFeaturesAllowed(contact.mergedPreferences)
+    val prefs = contact.mergedPreferences.toPreferences().copy(voice = ChatPreference(allow = FeatureAllowed.YES))
     withApi {
-      val prefs = contactFeaturesAllowedToPrefs(featuresAllowed).copy(voice = ChatPreference(FeatureAllowed.YES))
       val toContact = chatModel.controller.apiSetContactPrefs(contact.contactId, prefs)
       if (toContact != null) {
         chatModel.updateContact(toContact)
       }
     }
   }
+
   fun showDisabledVoiceAlert() {
     AlertManager.shared.showAlertMsg(
       title = generalGetString(R.string.voice_messages_prohibited),
@@ -575,13 +575,7 @@ fun ComposeView(
             .clip(CircleShape)
         )
       }
-      val allowedVoiceByPrefs = remember(chat.chatInfo) {
-        when (chat.chatInfo) {
-          is ChatInfo.Direct -> chat.chatInfo.contact.mergedPreferences.voice.enabled.forUser
-          is ChatInfo.Group -> chat.chatInfo.groupInfo.fullGroupPreferences.voice.enable == GroupFeatureEnabled.ON
-          else -> false
-        }
-      }
+      val allowedVoiceByPrefs = remember { chat.chatInfo.voiceMessageAllowed }
       val needToAllowVoiceToContact = remember(chat.chatInfo) {
         when (chat.chatInfo) {
           is ChatInfo.Direct -> with(chat.chatInfo.contact.mergedPreferences.voice) {

@@ -115,6 +115,7 @@ fun FramedItemView(
     }
   }
 
+  // TODO MCVoice shouldn't affect it, see https://github.com/simplex-chat/simplex-chat/pull/1451#discussion_r1033429901
   val transparentBackground = (ci.content.msgContent is MsgContent.MCImage || ci.content.msgContent is MsgContent.MCVoice) && ci.content.text.isEmpty() && ci.quotedItem == null
 
   Box(Modifier
@@ -131,7 +132,7 @@ fun FramedItemView(
       Column(Modifier.width(IntrinsicSize.Max)) {
         PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID) {
           ci.quotedItem?.let { ciQuoteView(it) }
-          if (ci.file == null && ci.formattedText == null && isShortEmoji(ci.content.text)) {
+          if (ci.file == null && ci.formattedText == null && isShortEmoji(ci.text)) {
             Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
               Column(
                 Modifier
@@ -139,7 +140,7 @@ fun FramedItemView(
                   .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
               ) {
-                EmojiText(ci.content.text)
+                EmojiText(ci.text)
                 Text("")
               }
             }
@@ -175,6 +176,7 @@ fun FramedItemView(
           }
         }
       }
+      // TODO CIMetaView shouldn't be conditional, see https://github.com/simplex-chat/simplex-chat/pull/1451#discussion_r1033429901
       if (ci.content.msgContent !is MsgContent.MCVoice || ci.content.text.isNotEmpty() || ci.quotedItem != null) {
         Box(Modifier.padding(bottom = 6.dp, end = 12.dp)) {
           CIMetaView(ci, metaColor)
@@ -194,7 +196,7 @@ fun CIMarkdownText(
 ) {
   Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
     MarkdownText(
-      ci.content.text, ci.formattedText, if (showMember) ci.memberDisplayName else null,
+      ci.text, ci.formattedText, if (showMember) ci.memberDisplayName else null,
       metaText = ci.timestampText, edited = ci.meta.itemEdited, linkMode = linkMode,
       uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick
     )

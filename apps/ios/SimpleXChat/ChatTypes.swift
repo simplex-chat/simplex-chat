@@ -695,7 +695,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
         switch self {
         case let .direct(contact): return contact.mergedPreferences.voice.enabled.forUser
         case let .group(groupInfo): return groupInfo.fullGroupPreferences.voice.on
-        default: return true
+        default: return false
         }
     }
 
@@ -703,7 +703,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
         switch self {
         case let .direct(contact): return contact.mergedPreferences.fullDelete.enabled.forUser
         case let .group(groupInfo): return groupInfo.fullGroupPreferences.fullDelete.on
-        default: return true
+        default: return false
         }
     }
 
@@ -1374,7 +1374,7 @@ public struct ChatItem: Identifiable, Decodable {
 
     public var timestampText: Text { meta.timestampText }
 
-    // pairs with formattedText
+    // pair with formattedText
     public var text: String {
         switch (content.text, content.msgContent, file) {
         case let ("", .some(.voice(_, duration)), _): return "Voice message (\(durationText(duration)))"
@@ -1383,7 +1383,7 @@ public struct ChatItem: Identifiable, Decodable {
         }
     }
 
-    // pairs with formattedText_
+    // pair with formattedText_
     public var text_: String {
         if meta.itemDeleted {
             return "Marked deleted"

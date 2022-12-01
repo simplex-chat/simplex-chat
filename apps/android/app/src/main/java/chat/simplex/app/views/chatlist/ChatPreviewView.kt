@@ -83,8 +83,8 @@ fun ChatPreviewView(chat: Chat, chatModelIncognito: Boolean, currentUserProfileD
     val ci = chat.chatItems.lastOrNull()
     if (ci != null) {
       MarkdownText(
-        ci.text,
-        ci.formattedText,
+        ci.text_,
+        ci.formattedText_,
         sender = if (cInfo is ChatInfo.Group && !ci.chatDir.sent) ci.memberDisplayName else null,
         linkMode = linkMode,
         senderBold = true,

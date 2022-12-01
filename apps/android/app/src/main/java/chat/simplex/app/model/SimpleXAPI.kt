@@ -1958,7 +1958,6 @@ data class FullChatPreferences(
   val fullDelete: ChatPreference,
   val voice: ChatPreference,
 ) {
-
   fun toPreferences(): ChatPreferences = ChatPreferences(fullDelete = fullDelete, voice = voice)
 
   companion object {
@@ -1971,7 +1970,6 @@ data class ChatPreferences(
   val fullDelete: ChatPreference? = null,
   val voice: ChatPreference? = null,
 ) {
-
   companion object {
     val sampleData = ChatPreferences(fullDelete = ChatPreference(allow = FeatureAllowed.NO), voice = ChatPreference(allow = FeatureAllowed.YES))
   }
@@ -1987,6 +1985,11 @@ data class ContactUserPreferences(
   val fullDelete: ContactUserPreference,
   val voice: ContactUserPreference,
 ) {
+  fun toPreferences(): ChatPreferences = ChatPreferences(
+    fullDelete = fullDelete.userPreference.pref,
+    voice = voice.userPreference.pref
+  )
+
   companion object {
     val sampleData = ContactUserPreferences(
       fullDelete = ContactUserPreference(
@@ -2042,6 +2045,12 @@ data class FeatureEnabled(
 sealed class ContactUserPref {
   @Serializable @SerialName("contact") data class Contact(val preference: ChatPreference): ContactUserPref() // contact override is set
   @Serializable @SerialName("user") data class User(val preference: ChatPreference): ContactUserPref() // global user default is used
+
+  val pref: ChatPreference
+    get() = when(this) {
+      is Contact -> preference
+      is User -> preference
+    }
 }
 
 interface Feature {
@@ -2276,7 +2285,10 @@ data class GroupPreferences(
 @Serializable
 data class GroupPreference(
   val enable: GroupFeatureEnabled
-)
+) {
+  val on: Boolean
+    get() = enable == GroupFeatureEnabled.ON
+}
 
 @Serializable
 enum class GroupFeatureEnabled {
