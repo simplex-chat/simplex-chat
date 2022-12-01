@@ -206,41 +206,41 @@ struct VoiceMessagePlayer: View {
         playbackState = .playing
     }
 }
-//
-//struct CIVoiceView_Previews: PreviewProvider {
-//    static var previews: some View {
-//        let sentVoiceMessage: ChatItem = ChatItem(
-//            chatDir: .directSnd,
-//            meta: CIMeta.getSample(1, .now, "", .sndSent, false, true, false),
-//            content: .sndMsgContent(msgContent: .voice(text: "", duration: 30)),
-//            quotedItem: nil,
-//            file: CIFile.getSample(fileStatus: .sndComplete)
-//        )
-//        let voiceMessageWtFile = ChatItem(
-//            chatDir: .directRcv,
-//            meta: CIMeta.getSample(1, .now, "", .rcvRead, false, false, false),
-//            content: .rcvMsgContent(msgContent: .voice(text: "", duration: 30)),
-//            quotedItem: nil,
-//            file: nil
-//        )
-//        Group {
-//            CIVoiceView(
-//                chatItem: ChatItem.getVoiceMsgContentSample(),
-//                recordingFile: CIFile.getSample(fileName: "voice.m4a", fileSize: 65536, fileStatus: .rcvComplete),
-//                duration: 30,
-//                playbackState: .playing,
-//                playbackTime: TimeInterval(20)
-//            )
-//            .environmentObject(ChatModel())
-//            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: sentVoiceMessage)
-//                .environmentObject(ChatModel())
-//            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample())
-//                .environmentObject(ChatModel())
-//            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample(fileStatus: .rcvTransfer))
-//                .environmentObject(ChatModel())
-//            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: voiceMessageWtFile)
-//                .environmentObject(ChatModel())
-//        }
-//        .previewLayout(.fixed(width: 360, height: 360))
-//    }
-//}
+
+struct CIVoiceView_Previews: PreviewProvider {
+    static var previews: some View {
+        let sentVoiceMessage: ChatItem = ChatItem(
+            chatDir: .directSnd,
+            meta: CIMeta.getSample(1, .now, "", .sndSent, false, true, false),
+            content: .sndMsgContent(msgContent: .voice(text: "", duration: 30)),
+            quotedItem: nil,
+            file: CIFile.getSample(fileStatus: .sndComplete)
+        )
+        let voiceMessageWtFile = ChatItem(
+            chatDir: .directRcv,
+            meta: CIMeta.getSample(1, .now, "", .rcvRead, false, false, false),
+            content: .rcvMsgContent(msgContent: .voice(text: "", duration: 30)),
+            quotedItem: nil,
+            file: nil
+        )
+        return Group {
+            CIVoiceView(
+                chatItem: ChatItem.getVoiceMsgContentSample(),
+                recordingFile: CIFile.getSample(fileName: "voice.m4a", fileSize: 65536, fileStatus: .rcvComplete),
+                duration: 30,
+                playbackState: .playing,
+                playbackTime: TimeInterval(20)
+            )
+            .environmentObject(ChatModel())
+            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: sentVoiceMessage, revealed: Binding.constant(false))
+                .environmentObject(ChatModel())
+            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample(), revealed: Binding.constant(false))
+                .environmentObject(ChatModel())
+            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample(fileStatus: .rcvTransfer), revealed: Binding.constant(false))
+                .environmentObject(ChatModel())
+            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: voiceMessageWtFile, revealed: Binding.constant(false))
+                .environmentObject(ChatModel())
+        }
+        .previewLayout(.fixed(width: 360, height: 360))
+    }
+}
