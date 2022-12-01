@@ -15,26 +15,14 @@ struct MarkedDeletedItemView: View {
     var showMember = false
 
     var body: some View {
-        let metaReserve = chatItem.meta.itemEdited
-          ? "                     "
-          : "                 "
-        ZStack(alignment: .bottomTrailing) {
-            VStack(alignment: .leading) {
-                HStack(alignment: .bottom, spacing: 0) {
-                    if showMember, let member = chatItem.memberDisplayName {
-                        Text(member).fontWeight(.medium) + Text(": ")
-                    }
-                    Text("marked deleted")
-                        .foregroundColor(.secondary)
-                        .italic()
-                }
-                HStack {
-                    Text("Tap to view")
-                        .font(.caption)
-                        .foregroundColor(.accentColor)
-                    Text(metaReserve)
-                }
+        HStack(alignment: .bottom, spacing: 0) {
+            if showMember, let member = chatItem.memberDisplayName {
+                Text(member).fontWeight(.medium) + Text(": ")
             }
+            Text("marked deleted")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .italic()
             CIMetaView(chatItem: chatItem)
                 .padding(.horizontal, 12)
         }

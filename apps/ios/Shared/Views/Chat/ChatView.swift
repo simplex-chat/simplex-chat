@@ -402,20 +402,70 @@ struct ChatView: View {
                     Rectangle().fill(.clear)
                         .frame(width: memberImageSize, height: memberImageSize)
                 }
-                chatItemWithMenu(ci, maxWidth, showMember: showMember).padding(.leading, 8)
+                ChatItemWithMenu(
+                    chat: chat,
+                    ci: ci,
+                    showMember: showMember,
+                    maxWidth: maxWidth,
+                    scrollProxy: scrollProxy,
+                    deleteMessage: deleteMessage,
+                    deletingItem: $deletingItem,
+                    composeState: $composeState,
+                    showDeleteMessage: $showDeleteMessage
+                ).padding(.leading, 8)
             }
             .padding(.trailing)
             .padding(.leading, 12)
         } else {
-            chatItemWithMenu(ci, maxWidth).padding(.horizontal)
+            ChatItemWithMenu(
+                chat: chat,
+                ci: ci,
+                maxWidth: maxWidth,
+                scrollProxy: scrollProxy,
+                deleteMessage: deleteMessage,
+                deletingItem: $deletingItem,
+                composeState: $composeState,
+                showDeleteMessage: $showDeleteMessage
+            ).padding(.horizontal)
         }
     }
 
-    private func chatItemWithMenu(_ ci: ChatItem, _ maxWidth: CGFloat, showMember: Bool = false) -> some View {
-        let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
-        var menu: [UIAction] = []
-        if let mc = ci.content.msgContent {
-            if !ci.meta.itemDeleted {
+    private struct ChatItemWithMenu: View {
+        var chat: Chat
+        var ci: ChatItem
+        var showMember: Bool = false
+        var maxWidth: CGFloat
+        var scrollProxy: ScrollViewProxy?
+        var deleteMessage: (CIDeleteMode) -> Void
+        @Binding var deletingItem: ChatItem?
+        @Binding var composeState: ComposeState
+        @Binding var showDeleteMessage: Bool
+
+        @State private var revealed = false
+
+        var body: some View {
+            let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
+
+            ChatItemView(chatInfo: chat.chatInfo, chatItem: ci, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy, revealed: $revealed)
+                .uiKitContextMenu(actions: menu())
+                .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {
+                    Button("Delete for me", role: .destructive) {
+                        deleteMessage(.cidmInternal)
+                    }
+                    if let di = deletingItem, di.meta.editable {
+                        Button(broadcastDeleteButtonText, role: .destructive) {
+                            deleteMessage(.cidmBroadcast)
+                        }
+                    }
+                }
+                .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
+                .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
+        }
+
+        private func menu() -> [UIAction] {
+            var menu: [UIAction] = []
+            if let mc = ci.content.msgContent,
+               !ci.meta.itemDeleted || revealed {
                 menu.append(
                     UIAction(
                         title: NSLocalizedString("Reply", comment: "chat item action"),
@@ -430,110 +480,101 @@ struct ChatView: View {
                         }
                     }
                 )
-            }
-            menu.append(
-                UIAction(
-                    title: NSLocalizedString("Share", comment: "chat item action"),
-                    image: UIImage(systemName: "square.and.arrow.up")
-                ) { _ in
-                    var shareItems: [Any] = [ci.content.text]
-                    if case .image = ci.content.msgContent, let image = getLoadedImage(ci.file) {
-                        shareItems.append(image)
-                    }
-                    showShareSheet(items: shareItems)
-                }
-            )
-            menu.append(
-                UIAction(
-                    title: NSLocalizedString("Copy", comment: "chat item action"),
-                    image: UIImage(systemName: "doc.on.doc")
-                ) { _ in
-                    if case let .image(text, _) = ci.content.msgContent,
-                       text == "",
-                       let image = getLoadedImage(ci.file) {
-                        UIPasteboard.general.image = image
-                    } else {
-                        UIPasteboard.general.string = ci.content.text
-                    }
-                }
-            )
-            if let filePath = getLoadedFilePath(ci.file) {
-                if case .image = ci.content.msgContent,
-                   let image = UIImage(contentsOfFile: filePath) {
-                    menu.append(
-                        UIAction(
-                            title: NSLocalizedString("Save", comment: "chat item action"),
-                            image: UIImage(systemName: "square.and.arrow.down")
-                        ) { _ in
-                            UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
-                        }
-                    )
-                } else {
-                    menu.append(
-                        UIAction(
-                            title: NSLocalizedString("Save", comment: "chat item action"),
-                            image: UIImage(systemName: "square.and.arrow.down")
-                        ) { _ in
-                            let fileURL = URL(fileURLWithPath: filePath)
-                            showShareSheet(items: [fileURL])
-                        }
-                    )
-                }
-            }
-            if ci.meta.editable,
-               !mc.isVoice {
                 menu.append(
                     UIAction(
-                        title: NSLocalizedString("Edit", comment: "chat item action"),
-                        image: UIImage(systemName: "square.and.pencil")
+                        title: NSLocalizedString("Share", comment: "chat item action"),
+                        image: UIImage(systemName: "square.and.arrow.up")
                     ) { _ in
-                        withAnimation {
-                            composeState = ComposeState(editingItem: ci)
+                        var shareItems: [Any] = [ci.content.text]
+                        if case .image = ci.content.msgContent, let image = getLoadedImage(ci.file) {
+                            shareItems.append(image)
+                        }
+                        showShareSheet(items: shareItems)
+                    }
+                )
+                menu.append(
+                    UIAction(
+                        title: NSLocalizedString("Copy", comment: "chat item action"),
+                        image: UIImage(systemName: "doc.on.doc")
+                    ) { _ in
+                        if case let .image(text, _) = ci.content.msgContent,
+                           text == "",
+                           let image = getLoadedImage(ci.file) {
+                            UIPasteboard.general.image = image
+                        } else {
+                            UIPasteboard.general.string = ci.content.text
                         }
                     }
                 )
-            }
-            menu.append(
-                UIAction(
-                    title: NSLocalizedString("Delete", comment: "chat item action"),
-                    image: UIImage(systemName: "trash"),
-                    attributes: [.destructive]
-                ) { _ in
-                    showDeleteMessage = true
-                    deletingItem = ci
-                }
-            )
-        } else if ci.isDeletedContent {
-            menu.append(
-                UIAction(
-                    title: NSLocalizedString("Delete", comment: "chat item action"),
-                    image: UIImage(systemName: "trash"),
-                    attributes: [.destructive]
-                ) { _ in
-                    showDeleteMessage = true
-                    deletingItem = ci
-                }
-            )
-        }
-
-        return ChatItemView(chatInfo: chat.chatInfo, chatItem: ci, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy)
-            .uiKitContextMenu(actions: menu)
-            .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {
-                Button("Delete for me", role: .destructive) {
-                    deleteMessage(.cidmInternal)
-                }
-                if let di = deletingItem, di.meta.editable {
-                    Button(broadcastDeleteButtonText, role: .destructive) {
-                        deleteMessage(.cidmBroadcast)
+                if let filePath = getLoadedFilePath(ci.file) {
+                    if case .image = ci.content.msgContent,
+                       let image = UIImage(contentsOfFile: filePath) {
+                        menu.append(
+                            UIAction(
+                                title: NSLocalizedString("Save", comment: "chat item action"),
+                                image: UIImage(systemName: "square.and.arrow.down")
+                            ) { _ in
+                                UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+                            }
+                        )
+                    } else {
+                        menu.append(
+                            UIAction(
+                                title: NSLocalizedString("Save", comment: "chat item action"),
+                                image: UIImage(systemName: "square.and.arrow.down")
+                            ) { _ in
+                                let fileURL = URL(fileURLWithPath: filePath)
+                                showShareSheet(items: [fileURL])
+                            }
+                        )
                     }
                 }
+                if ci.meta.editable,
+                   !mc.isVoice {
+                    menu.append(
+                        UIAction(
+                            title: NSLocalizedString("Edit", comment: "chat item action"),
+                            image: UIImage(systemName: "square.and.pencil")
+                        ) { _ in
+                            withAnimation {
+                                composeState = ComposeState(editingItem: ci)
+                            }
+                        }
+                    )
+                }
+                menu.append(deleteUIAction())
+            } else if ci.meta.itemDeleted {
+                menu.append(
+                    UIAction(
+                        title: NSLocalizedString("Reveal", comment: "chat item action"),
+                        image: UIImage(systemName: "eye")
+                    ) { _ in
+                        withAnimation {
+                            revealed = true
+                        }
+                    }
+                )
+                menu.append(deleteUIAction())
+            } else if ci.isDeletedContent {
+                menu.append(deleteUIAction())
             }
-            .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
-            .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
-    }
+            return menu
+        }
 
-    private var broadcastDeleteButtonText: LocalizedStringKey {
-        return chat.chatInfo.fullDeletionAllowed ? "Delete for everyone" : "Mark deleted for everyone"
+        private func deleteUIAction() -> UIAction {
+            UIAction(
+                title: NSLocalizedString("Delete", comment: "chat item action"),
+                image: UIImage(systemName: "trash"),
+                attributes: [.destructive]
+            ) { _ in
+                showDeleteMessage = true
+                deletingItem = ci
+            }
+        }
+
+        private var broadcastDeleteButtonText: LocalizedStringKey {
+            chat.chatInfo.fullDeletionAllowed ? "Delete for everyone" : "Mark deleted for everyone"
+        }
     }
 
     private func showMemberImage(_ member: GroupMember, _ prevItem: ChatItem?) -> Bool {

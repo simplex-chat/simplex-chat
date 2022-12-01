@@ -15,14 +15,11 @@ struct ChatItemView: View {
     var showMember = false
     var maxWidth: CGFloat = .infinity
     @State var scrollProxy: ScrollViewProxy? = nil
-    @State private var tapped: Bool = false
+    @Binding var revealed: Bool
 
     var body: some View {
-        if chatItem.meta.itemDeleted && !tapped {
+        if chatItem.meta.itemDeleted && !revealed {
             markedDeletedItemView()
-                .onTapGesture {
-                    tapped = true
-                }
         } else {
             switch chatItem.content {
             case .sndMsgContent: contentItemView()
@@ -84,16 +81,16 @@ struct ChatItemView: View {
     }
 }
 
-struct ChatItemView_Previews: PreviewProvider {
-    static var previews: some View {
-        Group{
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello"))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too"))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(1, .directSnd, .now, "🙂"))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂"))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂🙂"))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getDeletedContentSample())
-        }
-        .previewLayout(.fixed(width: 360, height: 70))
-    }
-}
+//struct ChatItemView_Previews: PreviewProvider {
+//    static var previews: some View {
+//        Group{
+//            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello"))
+//            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too"))
+//            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(1, .directSnd, .now, "🙂"))
+//            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂"))
+//            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂🙂"))
+//            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getDeletedContentSample())
+//        }
+//        .previewLayout(.fixed(width: 360, height: 70))
+//    }
+//}

@@ -43,34 +43,34 @@ struct FramedCIVoiceView: View {
     }
 }
 
-struct FramedCIVoiceView_Previews: PreviewProvider {
-    static var previews: some View {
-        let sentVoiceMessage: ChatItem = ChatItem(
-            chatDir: .directSnd,
-            meta: CIMeta.getSample(1, .now, "", .sndSent, false, true, false),
-            content: .sndMsgContent(msgContent: .voice(text: "Hello there", duration: 30)),
-            quotedItem: nil,
-            file: CIFile.getSample(fileStatus: .sndComplete)
-        )
-        let voiceMessageWithQuote: ChatItem = ChatItem(
-            chatDir: .directSnd,
-            meta: CIMeta.getSample(1, .now, "", .sndSent, false, true, false),
-            content: .sndMsgContent(msgContent: .voice(text: "", duration: 30)),
-            quotedItem: CIQuote.getSample(1, .now, "Hi", chatDir: .directRcv),
-            file: CIFile.getSample(fileStatus: .sndComplete)
-        )
-        Group {
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: sentVoiceMessage)
-                .environmentObject(ChatModel())
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample(text: "Hello there"))
-                .environmentObject(ChatModel())
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample(text: "Hello there", fileStatus: .rcvTransfer))
-                .environmentObject(ChatModel())
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample(text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."))
-                .environmentObject(ChatModel())
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: voiceMessageWithQuote)
-                .environmentObject(ChatModel())
-        }
-        .previewLayout(.fixed(width: 360, height: 360))
-    }
-}
+//struct FramedCIVoiceView_Previews: PreviewProvider {
+//    static var previews: some View {
+//        let sentVoiceMessage: ChatItem = ChatItem(
+//            chatDir: .directSnd,
+//            meta: CIMeta.getSample(1, .now, "", .sndSent, false, true, false),
+//            content: .sndMsgContent(msgContent: .voice(text: "Hello there", duration: 30)),
+//            quotedItem: nil,
+//            file: CIFile.getSample(fileStatus: .sndComplete)
+//        )
+//        let voiceMessageWithQuote: ChatItem = ChatItem(
+//            chatDir: .directSnd,
+//            meta: CIMeta.getSample(1, .now, "", .sndSent, false, true, false),
+//            content: .sndMsgContent(msgContent: .voice(text: "", duration: 30)),
+//            quotedItem: CIQuote.getSample(1, .now, "Hi", chatDir: .directRcv),
+//            file: CIFile.getSample(fileStatus: .sndComplete)
+//        )
+//        Group {
+//            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: sentVoiceMessage)
+//                .environmentObject(ChatModel())
+//            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample(text: "Hello there"))
+//                .environmentObject(ChatModel())
+//            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample(text: "Hello there", fileStatus: .rcvTransfer))
+//                .environmentObject(ChatModel())
+//            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample(text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."))
+//                .environmentObject(ChatModel())
+//            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: voiceMessageWithQuote)
+//                .environmentObject(ChatModel())
+//        }
+//        .previewLayout(.fixed(width: 360, height: 360))
+//    }
+//}
