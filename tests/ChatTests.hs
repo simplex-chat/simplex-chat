@@ -124,6 +124,7 @@ chatTests = do
     it "update group preferences" testUpdateGroupPrefs
     it "allow full deletion to contact" testAllowFullDeletionContact
     it "allow full deletion to group" testAllowFullDeletionGroup
+    it "prohibit direct messages to group members" testProhibitDirectMessages
   describe "SMP servers" $ do
     it "get and set SMP servers" testGetSetSMPServers
     it "test SMP server connection" testTestSMPServerConnection
@@ -3157,6 +3158,31 @@ testAllowFullDeletionGroup =
       alice <# "#team bob> [deleted] hey"
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "hi"), (1, "Full deletion: on")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "hi"), (0, "Full deletion: on")])
+
+testProhibitDirectMessages :: IO ()
+testProhibitDirectMessages =
+  testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    createGroup3 "team" alice bob cath
+    threadDelay 1000000
+    alice ##> "/set direct #team off"
+    alice <## "updated group preferences:"
+    alice <## "Direct messages enabled: off"
+    directProhibited bob
+    directProhibited cath
+    threadDelay 1000000
+    -- still can send direct messages to direct contacts
+    alice #> "@bob hello again"
+    bob <# "alice> hello again"
+    alice #> "@cath hello again"
+    cath <# "alice> hello again"
+    bob ##> "@cath hello again"
+    bob <## "direct messages to indirect contact cath are prohibited"
+    (cath </)
+  where
+    directProhibited cc = do
+      cc <## "alice updated group #team:"
+      cc <## "updated group preferences:"
+      cc <## "Direct messages enabled: off"
 
 testGetSetSMPServers :: IO ()
 testGetSetSMPServers =

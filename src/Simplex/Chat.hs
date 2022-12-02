@@ -290,7 +290,7 @@ processChatCommand = \case
   APISendMessage (ChatRef cType chatId) (ComposedMessage file_ quotedItemId_ mc) -> withUser $ \user@User {userId} -> withChatLock "sendMessage" $ case cType of
     CTDirect -> do
       ct@Contact {localDisplayName = c, contactUsed} <- withStore $ \db -> getContact db user chatId
-      assertDirectAllowed user ct
+      assertDirectAllowed user MDSnd ct
       unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
       if isVoice mc && not (featureAllowed CFVoice forUser ct)
         then pure $ chatCmdError $ "feature not allowed " <> T.unpack (chatFeatureToText CFVoice)
@@ -417,7 +417,7 @@ processChatCommand = \case
   APIUpdateChatItem (ChatRef cType chatId) itemId mc -> withUser $ \user@User {userId} -> withChatLock "updateChatItem" $ case cType of
     CTDirect -> do
       (ct@Contact {contactId, localDisplayName = c}, ci) <- withStore $ \db -> (,) <$> getContact db user chatId <*> getDirectChatItem db userId chatId itemId
-      assertDirectAllowed user ct
+      assertDirectAllowed user MDSnd ct
       case ci of
         CChatItem SMDSnd ChatItem {meta = CIMeta {itemSharedMsgId}, content = ciContent} -> do
           case (ciContent, itemSharedMsgId) of
@@ -447,7 +447,7 @@ processChatCommand = \case
   APIDeleteChatItem (ChatRef cType chatId) itemId mode -> withUser $ \user@User {userId} -> withChatLock "deleteChatItem" $ case cType of
     CTDirect -> do
       (ct@Contact {localDisplayName = c}, ci@(CChatItem msgDir ChatItem {meta = CIMeta {itemSharedMsgId}})) <- withStore $ \db -> (,) <$> getContact db user chatId <*> getDirectChatItem db userId chatId itemId
-      assertDirectAllowed user ct
+      assertDirectAllowed user MDSnd ct
       case (mode, msgDir, itemSharedMsgId) of
         (CIDMInternal, _, _) -> deleteDirectCI user ct ci True
         (CIDMBroadcast, SMDSnd, Just itemSharedMId) -> do
@@ -571,7 +571,7 @@ processChatCommand = \case
   APISendCallInvitation contactId callType -> withUser $ \user@User {userId} -> do
     -- party initiating call
     ct <- withStore $ \db -> getContact db user contactId
-    assertDirectAllowed user ct
+    assertDirectAllowed user MDSnd ct
     calls <- asks currentCalls
     withChatLock "sendCallInvitation" $ do
       callId <- CallId <$> (asks idsDrg >>= liftIO . (`randomBytes` 16))
@@ -656,7 +656,7 @@ processChatCommand = \case
   APIUpdateProfile profile -> withUser (`updateProfile` profile)
   APISetContactPrefs contactId prefs' -> withUser $ \user -> do
     ct <- withStore $ \db -> getContact db user contactId
-    assertDirectAllowed user ct
+    assertDirectAllowed user MDSnd ct
     updateContactPrefs user ct prefs'
   APISetContactAlias contactId localAlias -> withUser $ \user@User {userId} -> do
     ct' <- withStore $ \db -> do
@@ -1255,13 +1255,13 @@ processChatCommand = \case
       ci <- saveSndChatItem user (CDDirectSnd ct) msg content Nothing Nothing
       toView . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
       setActive $ ActiveG localDisplayName
-    assertDirectAllowed :: User -> Contact -> m ()
-    assertDirectAllowed user ct =
-      unless (anyDirectContact ct) . unlessM (directMessagesAllowed user ct) $
-        throwChatError $ CECommandError "direct message not allowed for this contact"
 
-directMessagesAllowed :: ChatMonad m => User -> Contact -> m Bool
-directMessagesAllowed user ct = any (groupFeatureAllowed' GFDirectMessages) <$> withStore' (\db -> getContactGroupPreferences db user ct)
+assertDirectAllowed :: ChatMonad m => User -> MsgDirection -> Contact -> m ()
+assertDirectAllowed user dir ct =
+  unless (anyDirectContact ct) . unlessM directMessagesAllowed $
+    throwChatError $ CEDirectMessagesProhibited dir ct
+  where
+    directMessagesAllowed = any (groupFeatureAllowed' GFDirectMessages) <$> withStore' (\db -> getContactGroupPreferences db user ct)
 
 setExpireCIs :: (MonadUnliftIO m, MonadReader ChatController m) => Bool -> m ()
 setExpireCIs b = do
@@ -1724,8 +1724,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
         MSG msgMeta _msgFlags msgBody -> do
           cmdId <- createAckCmd conn
           withAckMessage agentConnId cmdId msgMeta $ do
-            unless (anyDirectContact ct) . unlessM (directMessagesAllowed user ct) $
-              throwChatError $ CEInvalidChatMessage "direct message not allowed for this contact"
+            assertDirectAllowed user MDRcv ct
             msg@RcvMessage {chatMsgEvent = ACME _ event} <- saveRcvMSG conn (ConnectionId connId) msgMeta msgBody cmdId
             updateChatLock "directMessage" event
             case event of
