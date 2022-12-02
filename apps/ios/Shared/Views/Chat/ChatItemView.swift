@@ -22,9 +22,7 @@ struct ChatItemView: View {
             if !revealed {
                 markedDeletedItemView()
             } else {
-                FramedItemView(chatItem: chatItem) {
-                    chatItemContentView()
-                }
+                chatItemContentView()
             }
         } else {
             chatItemContentView()
@@ -66,7 +64,7 @@ struct ChatItemView: View {
                   case let .voice(_, duration) = chatItem.content.msgContent {
             CIVoiceView(chatItem: chatItem, recordingFile: chatItem.file, duration: duration)
         } else {
-            FramedContentItemView(chatInfo: chatInfo, chatItem: chatItem, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy)
+            FramedItemView(chatInfo: chatInfo, chatItem: chatItem, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy)
         }
     }
 
