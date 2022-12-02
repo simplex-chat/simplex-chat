@@ -105,3 +105,67 @@ struct ChatItemView_Previews: PreviewProvider {
         .previewLayout(.fixed(width: 360, height: 70))
     }
 }
+
+struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
+    static var previews: some View {
+        let ciFeatureContent = CIContent.rcvChatFeature(feature: .fullDelete, enabled: FeatureEnabled(forUser: false, forContact: false))
+        Group{
+            ChatItemView(
+                chatInfo: ChatInfo.sampleData.direct,
+                chatItem: ChatItem(
+                    chatDir: .directRcv,
+                    meta: CIMeta.getSample(1, .now, "this item is deleted", .rcvRead, true, false, false),
+                    content: .rcvDeleted(deleteMode: .cidmBroadcast),
+                    quotedItem: nil,
+                    file: nil
+                ),
+                revealed: Binding.constant(true)
+            )
+            ChatItemView(
+                chatInfo: ChatInfo.sampleData.direct,
+                chatItem: ChatItem(
+                    chatDir: .directRcv,
+                    meta: CIMeta.getSample(1, .now, "1 skipped message", .rcvRead, true, false, false),
+                    content: .rcvIntegrityError(msgError: .msgSkipped(fromMsgId: 1, toMsgId: 2)),
+                    quotedItem: nil,
+                    file: nil
+                ),
+                revealed: Binding.constant(true)
+            )
+            ChatItemView(
+                chatInfo: ChatInfo.sampleData.direct,
+                chatItem: ChatItem(
+                    chatDir: .directRcv,
+                    meta: CIMeta.getSample(1, .now, "received invitation to join group team as admin", .rcvRead, true, false, false),
+                    content: .rcvGroupInvitation(groupInvitation: CIGroupInvitation.getSample(status: .pending), memberRole: .admin),
+                    quotedItem: nil,
+                    file: nil
+                ),
+                revealed: Binding.constant(true)
+            )
+            ChatItemView(
+                chatInfo: ChatInfo.sampleData.direct,
+                chatItem: ChatItem(
+                    chatDir: .directRcv,
+                    meta: CIMeta.getSample(1, .now, "group event text", .rcvRead, true, false, false),
+                    content: .rcvGroupEvent(rcvGroupEvent: .memberAdded(groupMemberId: 1, profile: Profile.sampleData)),
+                    quotedItem: nil,
+                    file: nil
+                ),
+                revealed: Binding.constant(true)
+            )
+            ChatItemView(
+                chatInfo: ChatInfo.sampleData.direct,
+                chatItem: ChatItem(
+                    chatDir: .directRcv,
+                    meta: CIMeta.getSample(1, .now, ciFeatureContent.text, .rcvRead, true, false, false),
+                    content: ciFeatureContent,
+                    quotedItem: nil,
+                    file: nil
+                ),
+                revealed: Binding.constant(true)
+            )
+        }
+        .previewLayout(.fixed(width: 360, height: 70))
+    }
+}

@@ -60,10 +60,12 @@ struct FramedItemView: View {
             }
             .onPreferenceChange(MetaColorPreferenceKey.self) { metaColor = $0 }
 
-            CIMetaView(chatItem: chatItem, metaColor: metaColor)
-                .padding(.horizontal, 12)
-                .padding(.bottom, 6)
-                .overlay(DetermineWidth())
+            if chatItem.content.msgContent != nil {
+                CIMetaView(chatItem: chatItem, metaColor: metaColor)
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 6)
+                    .overlay(DetermineWidth())
+            }
         }
             .background(chatItemFrameColorMaybeImage(chatItem, colorScheme))
             .cornerRadius(18)

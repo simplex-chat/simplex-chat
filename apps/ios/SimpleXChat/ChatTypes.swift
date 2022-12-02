@@ -54,7 +54,7 @@ public struct Profile: Codable, NamedChat {
         (fullName == "" || displayName == fullName) ? displayName : "\(displayName) (\(fullName))"
     }
 
-    static let sampleData = Profile(
+    public static let sampleData = Profile(
         displayName: "alice",
         fullName: "Alice"
     )
