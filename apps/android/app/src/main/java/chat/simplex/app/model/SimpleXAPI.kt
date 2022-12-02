@@ -2313,6 +2313,7 @@ val json = Json {
   prettyPrint = true
   ignoreUnknownKeys = true
   encodeDefaults = true
+  explicitNulls = false
 }
 
 @Serializable
