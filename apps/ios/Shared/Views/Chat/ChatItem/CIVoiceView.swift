@@ -223,7 +223,7 @@ struct CIVoiceView_Previews: PreviewProvider {
             quotedItem: nil,
             file: nil
         )
-        return Group {
+        Group {
             CIVoiceView(
                 chatItem: ChatItem.getVoiceMsgContentSample(),
                 recordingFile: CIFile.getSample(fileName: "voice.m4a", fileSize: 65536, fileStatus: .rcvComplete),
