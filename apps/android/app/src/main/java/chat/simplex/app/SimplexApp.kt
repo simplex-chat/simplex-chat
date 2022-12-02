@@ -37,6 +37,8 @@ external fun chatParseServer(str: String): String
 class SimplexApp: Application(), LifecycleEventObserver {
   lateinit var chatController: ChatController
 
+  var isAppOnForeground: Boolean = false
+
   fun initChatController(useKey: String? = null, startChat: Boolean = true) {
     val dbKey = useKey ?: DatabaseUtils.useDatabaseKey() ?: ""
     val dbAbsolutePathPrefix = getFilesDirectory(SimplexApp.context)
@@ -93,6 +95,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
   override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
     Log.d(TAG, "onStateChanged: $event")
+    isAppOnForeground = event == Lifecycle.Event.ON_START || event == Lifecycle.Event.ON_RESUME
     withApi {
       when (event) {
         Lifecycle.Event.ON_START -> {

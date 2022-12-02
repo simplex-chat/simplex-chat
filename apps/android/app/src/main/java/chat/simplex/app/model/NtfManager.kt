@@ -151,7 +151,7 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
   }
 
   fun notifyCallInvitation(invitation: RcvCallInvitation) {
-    if (isAppOnForeground(context)) return
+    if (SimplexApp.context.isAppOnForeground) return
     val contactId = invitation.contact.id
     Log.d(TAG, "notifyCallInvitation $contactId")
     val keyguardManager = getKeyguardManager(context)
