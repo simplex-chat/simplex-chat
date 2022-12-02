@@ -3181,7 +3181,7 @@ testTestSMPServerConnection =
       alice ##> "/smp test smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:5001"
       alice <## "SMP server test passed"
       alice ##> "/smp test smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZwjI=@localhost:5001"
-      alice <## "SMP server test failed at Connect, error: BROKER NETWORK"
+      alice <## ("SMP server test failed at Connect, error: BROKER " <> B.unpack (strEncode testServer) <> " NETWORK")
       alice <## "Possibly, certificate fingerprint in server address is incorrect"
 
 testAsyncInitiatingOffline :: IO ()
