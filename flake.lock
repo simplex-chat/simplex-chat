@@ -302,11 +302,11 @@
     "hackage": {
       "flake": false,
       "locked": {
-        "lastModified": 1669598104,
-        "narHash": "sha256-wQsum1dNHzCIBAv86rrLo2/b0SyD2VX+V8xvTjbSmys=",
+        "lastModified": 1669857312,
+        "narHash": "sha256-m0jYF2gOKTaCcedV+dZkCjVbfv0CWkRziCeEk/NF/34=",
         "owner": "input-output-hk",
         "repo": "hackage.nix",
-        "rev": "4b8298897fb6b1dc8a6c004d3e46acdb54bcf31d",
+        "rev": "8299f5acc68f0e91563e7688f24cbc70391600bf",
         "type": "github"
       },
       "original": {
@@ -343,11 +343,11 @@
         "tullia": "tullia"
       },
       "locked": {
-        "lastModified": 1669654385,
-        "narHash": "sha256-nwA1MTbtRdlSK3WmqmfTJoiJq6utWlUP/5PmgUdFmZI=",
+        "lastModified": 1669979126,
+        "narHash": "sha256-CZBKwljLLv2GhE7jq7Gr54rJhxM0TRTFSM+Ix5H52ak=",
         "owner": "simplex-chat",
         "repo": "haskell.nix",
-        "rev": "7c10fab3c29392c05a90198e2c23b90ce978536d",
+        "rev": "3634dc742f197396880593d9007465bccbb7292c",
         "type": "github"
       },
       "original": {
@@ -720,16 +720,16 @@
     },
     "nixpkgs_5": {
       "locked": {
-        "lastModified": 1653936696,
-        "narHash": "sha256-M6bJShji9AIDZ7Kh7CPwPBPb/T7RiVev2PAcOi4fxDQ=",
+        "lastModified": 1669833724,
+        "narHash": "sha256-/HEZNyGbnQecrgJnfE8d0WC5c1xuPSD2LUpB6YXlg4c=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "ce6aa13369b667ac2542593170993504932eb836",
+        "rev": "4d2b37a84fad1091b9de401eb450aae66f1a741e",
         "type": "github"
       },
       "original": {
         "owner": "nixos",
-        "ref": "22.05",
+        "ref": "22.11",
         "repo": "nixpkgs",
         "type": "github"
       }

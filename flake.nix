@@ -1,6 +1,6 @@
 {
   description = "nix flake for simplex-chat";
-  inputs.nixpkgs.url = "github:nixos/nixpkgs/22.05";
+  inputs.nixpkgs.url = "github:nixos/nixpkgs/22.11";
   inputs.haskellNix.url = "github:simplex-chat/haskell.nix";
   inputs.haskellNix.inputs.nixpkgs.follows = "nixpkgs";
   inputs.hackage = {
