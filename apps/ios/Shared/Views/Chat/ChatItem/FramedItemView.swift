@@ -26,19 +26,19 @@ struct FramedItemView<Content: View>: View {
     @State var imgWidth: CGFloat? = nil
     @State var metaColor = Color.secondary
     @State var showFullScreenImage = false
-
+    
     var isContentFramedItemView = true
     @ViewBuilder var content: Content
-
+    
     var body: some View {
         let v = ZStack(alignment: .bottomTrailing) {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: isContentFramedItemView ? .leading : .center, spacing: 0) {
                 if chatItem.meta.itemDeleted || chatItem.quotedItem != nil {
                     VStack(spacing: 6) {
                         if chatItem.meta.itemDeleted {
                             ciDeletedView()
                         }
-
+                        
                         if let qi = chatItem.quotedItem {
                             ciQuoteView(qi)
                                 .onTapGesture {
@@ -54,7 +54,7 @@ struct FramedItemView<Content: View>: View {
                     .padding(.vertical, 6)
                     .background(chatItemFrameContextColor(chatItem, colorScheme))
                 }
-
+                
                 if !isContentFramedItemView {
                     content
                         .padding(.horizontal, 4)
@@ -110,7 +110,7 @@ struct FramedItemView<Content: View>: View {
                 }
             }
             .onPreferenceChange(MetaColorPreferenceKey.self) { metaColor = $0 }
-
+            
             if isContentFramedItemView {
                 CIMetaView(chatItem: chatItem, metaColor: metaColor)
                     .padding(.horizontal, 12)
@@ -118,10 +118,10 @@ struct FramedItemView<Content: View>: View {
                     .overlay(DetermineWidth())
             }
         }
-        .background(chatItemFrameColorMaybeImage(chatItem, colorScheme))
-        .cornerRadius(18)
-        .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
-
+            .background(chatItemFrameColorMaybeImage(chatItem, colorScheme))
+            .cornerRadius(18)
+            .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
+        
         switch chatItem.meta.itemStatus {
         case .sndErrorAuth:
             v.onTapGesture { msgDeliveryError("Most likely this contact has deleted the connection with you.") }
@@ -130,31 +130,37 @@ struct FramedItemView<Content: View>: View {
         default: v
         }
     }
-
+    
     private func msgDeliveryError(_ err: LocalizedStringKey) {
         AlertManager.shared.showAlertMsg(
             title: "Message delivery error",
             message: err
         )
     }
-
+    
     @ViewBuilder private func ciDeletedView() -> some View {
-        let v = ZStack(alignment: .topLeading) {
+        let v = HStack(spacing: 6) {
+            Image(systemName: "trash")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+            //                .foregroundColor(Color(uiColor: .tertiaryLabel))
+                .frame(width: 14, height: 14)
             Text("marked deleted")
                 .font(.caption)
-                .foregroundColor(.secondary)
                 .italic()
-                .padding(.horizontal, 12)
+                .lineLimit(1)
         }
-        .overlay(DetermineWidth())
-        .frame(minWidth: msgWidth, alignment: .leading)
+            .foregroundColor(.secondary)
+            .padding(.horizontal, 12)
+            .overlay(DetermineWidth())
+            .frame(minWidth: msgWidth, alignment: .leading)
         if let imgWidth = imgWidth, imgWidth < maxWidth {
             v.frame(maxWidth: imgWidth, alignment: .leading)
         } else {
             v
         }
     }
-
+    
     @ViewBuilder private func ciQuoteView(_ qi: CIQuote) -> some View {
         let v = ZStack(alignment: .topTrailing) {
             switch (qi.content) {
@@ -183,16 +189,16 @@ struct FramedItemView<Content: View>: View {
                 ciQuotedMsgView(qi)
             }
         }
-        .overlay(DetermineWidth())
-        .frame(minWidth: msgWidth, alignment: .leading)
-
+            .overlay(DetermineWidth())
+            .frame(minWidth: msgWidth, alignment: .leading)
+        
         if let imgWidth = imgWidth, imgWidth < maxWidth {
             v.frame(maxWidth: imgWidth, alignment: .leading)
         } else {
             v
         }
     }
-
+    
     private func ciQuotedMsgView(_ qi: CIQuote) -> some View {
         MsgContentView(
             text: qi.text,
@@ -203,7 +209,7 @@ struct FramedItemView<Content: View>: View {
         .font(.subheadline)
         .padding(.horizontal, 12)
     }
-
+    
     private func ciQuoteIconView(_ image: String) -> some View {
         Image(systemName: image)
             .resizable()
@@ -213,14 +219,14 @@ struct FramedItemView<Content: View>: View {
             .padding(.top, 6)
             .padding(.trailing, 6)
     }
-
+    
     private func membership() -> GroupMember? {
         switch chatInfo {
         case let .group(groupInfo: groupInfo): return groupInfo.membership
         default: return nil
         }
     }
-
+    
     @ViewBuilder private func ciMsgContentView(_ ci: ChatItem, _ showMember: Bool = false) -> some View {
         let rtl = isRightToLeft(chatItem.text)
         let v = MsgContentView(
@@ -231,20 +237,20 @@ struct FramedItemView<Content: View>: View {
             edited: ci.meta.itemEdited,
             rightToLeft: rtl
         )
-        .multilineTextAlignment(rtl ? .trailing : .leading)
-        .padding(.vertical, 6)
-        .padding(.horizontal, 12)
-        .overlay(DetermineWidth())
-        .frame(minWidth: 0, alignment: .leading)
-        .textSelection(.enabled)
-
+            .multilineTextAlignment(rtl ? .trailing : .leading)
+            .padding(.vertical, 6)
+            .padding(.horizontal, 12)
+            .overlay(DetermineWidth())
+            .frame(minWidth: 0, alignment: .leading)
+            .textSelection(.enabled)
+        
         if let imgWidth = imgWidth, imgWidth < maxWidth {
             v.frame(maxWidth: imgWidth, alignment: .leading)
         } else {
             v
         }
     }
-
+    
     @ViewBuilder private func ciFileView(_ ci: ChatItem, _ text: String) -> some View {
         CIFileView(file: chatItem.file, edited: chatItem.meta.itemEdited)
             .overlay(DetermineWidth())
