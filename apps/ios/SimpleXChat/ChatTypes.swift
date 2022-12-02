@@ -1792,6 +1792,13 @@ public enum MsgContent {
         }
     }
 
+    public var isText: Bool {
+        switch self {
+        case .text: return true
+        default: return false
+        }
+    }
+
     public var isVoice: Bool {
         switch self {
         case .voice: return true

@@ -18,29 +18,37 @@ struct ChatItemView: View {
     @Binding var revealed: Bool
 
     var body: some View {
-        if !chatItem.meta.itemDeleted {
-            chatItemContentView()
-        } else if !revealed {
-            markedDeletedItemView()
-        } else if isFramedItemView {
-            chatItemContentView()
+        let ci = chatItem
+        if ci.quotedItem == nil && !ci.meta.itemDeleted {
+            if let mc = ci.content.msgContent, mc.isText && isShortEmoji(ci.content.text) {
+                EmojiItemView(chatItem: ci)
+            } else if ci.content.text.isEmpty, case let .voice(_, duration) = ci.content.msgContent {
+                CIVoiceView(chatItem: ci, recordingFile: ci.file, duration: duration)
+            } else if ci.content.msgContent == nil {
+                ChatItemContentView(chatInfo: chatInfo, chatItem: chatItem, showMember: showMember, msgContentView: { Text(ci.text) }) // msgContent is unreachable branch in this case
+            } else {
+                framedItemView()
+            }
         } else {
-            FramedItemView(
-                chatInfo: chatInfo,
-                chatItem: chatItem,
-                showMember: showMember,
-                maxWidth: maxWidth,
-                scrollProxy: scrollProxy,
-                isContentFramedItemView: false,
-                content: chatItemContentView
-            )
+            framedItemView()
         }
     }
 
-    @ViewBuilder private func chatItemContentView() -> some View {
+    private func framedItemView() -> some View {
+        FramedItemView(chatInfo: chatInfo, chatItem: chatItem, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy, revealed: $revealed)
+    }
+}
+
+struct ChatItemContentView<Content: View>: View {
+    var chatInfo: ChatInfo
+    var chatItem: ChatItem
+    var showMember: Bool
+    var msgContentView: () -> Content
+
+    var body: some View {
         switch chatItem.content {
-        case .sndMsgContent: contentItemView()
-        case .rcvMsgContent: contentItemView()
+        case .sndMsgContent: msgContentView()
+        case .rcvMsgContent: msgContentView()
         case .sndDeleted: deletedItemView()
         case .rcvDeleted: deletedItemView()
         case let .sndCall(status, duration): callItemView(status, duration)
@@ -58,53 +66,6 @@ struct ChatItemView: View {
         case let .sndGroupFeature(feature, preference): chatFeatureView(feature, preference.enable.iconColor)
         case let .rcvChatFeatureRejected(feature): chatFeatureView(feature, .red)
         case let .rcvGroupFeatureRejected(feature): chatFeatureView(feature, .red)
-        }
-    }
-
-    private func markedDeletedItemView() -> some View {
-        MarkedDeletedItemView(chatItem: chatItem, showMember: showMember)
-    }
-
-    private var isFramedItemView: Bool {
-        switch chatItem.content {
-        case .sndMsgContent: return msgContentViewType.isFramed
-        case .rcvMsgContent: return msgContentViewType.isFramed
-        default: return false
-        }
-    }
-
-    private enum MsgContentViewType {
-        case emoji
-        case voice(duration: Int)
-        case framed
-
-        var isFramed: Bool {
-            switch self {
-            case .framed: return true
-            default: return false
-            }
-        }
-    }
-
-    private var msgContentViewType: MsgContentViewType {
-        if (chatItem.quotedItem == nil && chatItem.file == nil && isShortEmoji(chatItem.content.text)) {
-            return .emoji
-        } else if chatItem.quotedItem == nil && chatItem.content.text.isEmpty,
-                  case let .voice(_, duration) = chatItem.content.msgContent {
-            return .voice(duration: duration)
-        } else {
-            return .framed
-        }
-    }
-
-    @ViewBuilder private func contentItemView() -> some View {
-        switch msgContentViewType {
-        case .emoji:
-            EmojiItemView(chatItem: chatItem)
-        case let .voice(duration):
-            CIVoiceView(chatItem: chatItem, recordingFile: chatItem.file, duration: duration)
-        case .framed:
-            FramedItemView(chatInfo: chatInfo, chatItem: chatItem, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy, content: {})
         }
     }
 
