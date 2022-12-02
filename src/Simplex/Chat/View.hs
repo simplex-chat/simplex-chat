@@ -654,9 +654,12 @@ viewSMPTestResult = \case
   Just SMPTestFailure {testStep, testError} ->
     result
       <> ["Server requires authorization to create queues, check password" | testStep == TSCreateQueue && testError == SMP SMP.AUTH]
-      <> ["Possibly, certificate fingerprint in server address is incorrect" | testStep == TSConnect && testError == BROKER NETWORK]
+      <> ["Possibly, certificate fingerprint in server address is incorrect" | testStep == TSConnect && brokerErr]
     where
       result = ["SMP server test failed at " <> plain (drop 2 $ show testStep) <> ", error: " <> plain (strEncode testError)]
+      brokerErr = case testError of
+        BROKER _ NETWORK -> True
+        _ -> False
   _ -> ["SMP server test passed"]
 
 viewChatItemTTL :: Maybe Int64 -> [StyledString]
