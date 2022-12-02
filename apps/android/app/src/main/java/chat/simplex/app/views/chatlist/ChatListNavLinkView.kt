@@ -33,7 +33,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
     chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat
   }
   val stopped = chatModel.chatRunning.value == false
-  val linkMode = chatModel.controller.appPrefs.simplexLinkMode.get()
+  val linkMode by remember { chatModel.controller.appPrefs.simplexLinkMode.state }
   LaunchedEffect(chat.id) {
     showMenu.value = false
     delay(500L)
