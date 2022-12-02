@@ -134,15 +134,13 @@ class MainActivity: FragmentActivity() {
   }
 
   override fun onBackPressed() {
-    when {
-      // Has something to do in a backstack
-      onBackPressedDispatcher.hasEnabledCallbacks() -> super.onBackPressed()
-      Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q && !isTaskRoot -> {
-        // Do nothing on Android 10 and before, see for more info:
-        // https://medium.com/mobile-app-development-publication/the-risk-of-android-strandhogg-security-issue-and-how-it-can-be-mitigated-80d2ddb4af06
-      }
-      // Fire back press which will open a launcher
-      else -> super.onBackPressed()
+    if (
+      onBackPressedDispatcher.hasEnabledCallbacks() // Has something to do in a backstack
+      || Build.VERSION.SDK_INT >= Build.VERSION_CODES.R // Android 11 or above
+      || isTaskRoot // there are still other tasks after we reach the main (home) activity
+    ) {
+      // https://medium.com/mobile-app-development-publication/the-risk-of-android-strandhogg-security-issue-and-how-it-can-be-mitigated-80d2ddb4af06
+      super.onBackPressed()
     }
 
     if (!onBackPressedDispatcher.hasEnabledCallbacks() && vm.chatModel.controller.appPrefs.performLA.get()) {
