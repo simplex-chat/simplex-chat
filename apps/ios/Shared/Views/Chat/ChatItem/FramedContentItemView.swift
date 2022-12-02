@@ -42,9 +42,9 @@ struct FramedContentItemView: View {
                         }
                 }
 
-                if chatItem.formattedText == nil && chatItem.file == nil && isShortEmoji(chatItem.text) {
+                if chatItem.formattedText == nil && chatItem.file == nil && isShortEmoji(chatItem.content.text) {
                     VStack {
-                        emojiText(chatItem.text)
+                        emojiText(chatItem.content.text)
                         Text("")
                     }
                     .padding(.vertical, 6)

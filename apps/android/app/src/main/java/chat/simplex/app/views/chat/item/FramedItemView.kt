@@ -132,7 +132,7 @@ fun FramedItemView(
       Column(Modifier.width(IntrinsicSize.Max)) {
         PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID) {
           ci.quotedItem?.let { ciQuoteView(it) }
-          if (ci.file == null && ci.formattedText == null && isShortEmoji(ci.text)) {
+          if (ci.file == null && ci.formattedText == null && isShortEmoji(ci.content.text)) {
             Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
               Column(
                 Modifier
@@ -140,7 +140,7 @@ fun FramedItemView(
                   .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
               ) {
-                EmojiText(ci.text)
+                EmojiText(ci.content.text)
                 Text("")
               }
             }
@@ -196,7 +196,7 @@ fun CIMarkdownText(
 ) {
   Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
     MarkdownText(
-      ci.text, ci.formattedText, if (showMember) ci.memberDisplayName else null,
+      ci.content.text, ci.formattedText, if (showMember) ci.memberDisplayName else null,
       metaText = ci.timestampText, edited = ci.meta.itemEdited, linkMode = linkMode,
       uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick
     )
