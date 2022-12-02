@@ -252,7 +252,7 @@ data ChatCommand
   | UpdateProfileImage (Maybe ImageData)
   | SetUserFeature ChatFeature FeatureAllowed
   | SetContactFeature ChatFeature ContactName (Maybe FeatureAllowed)
-  | SetGroupFeature ChatFeature GroupName GroupFeatureEnabled
+  | SetGroupFeature GroupFeature GroupName GroupFeatureEnabled
   | QuitChat
   | ShowVersion
   | DebugLocks
@@ -279,7 +279,7 @@ data ChatResponse
   | CRNewChatItem {chatItem :: AChatItem}
   | CRChatItemStatusUpdated {chatItem :: AChatItem}
   | CRChatItemUpdated {chatItem :: AChatItem}
-  | CRChatItemDeleted {deletedChatItem :: AChatItem, toChatItem :: AChatItem}
+  | CRChatItemDeleted {deletedChatItem :: AChatItem, toChatItem :: Maybe AChatItem, byUser :: Bool}
   | CRChatItemDeletedNotFound {contact :: Contact, sharedMsgId :: SharedMsgId}
   | CRBroadcastSent MsgContent Int ZonedTime
   | CRMsgIntegrityError {msgError :: MsgErrorType}

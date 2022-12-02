@@ -3,9 +3,11 @@ package chat.simplex.app.model
 import android.app.*
 import android.content.*
 import android.graphics.BitmapFactory
+import android.hardware.display.DisplayManager
 import android.media.AudioAttributes
 import android.net.Uri
 import android.util.Log
+import android.view.Display
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import chat.simplex.app.*
@@ -151,19 +153,28 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
   }
 
   fun notifyCallInvitation(invitation: RcvCallInvitation) {
-    if (isAppOnForeground(context)) return
+    val inForeground = isAppOnForeground(context)
+    val keyguardManager = getKeyguardManager(context)
+    Log.d(TAG,
+      "notifyCallInvitation pre-requests: device locked ${keyguardManager.isDeviceLocked}, " +
+          "keyguard locked ${keyguardManager.isKeyguardLocked}, " +
+          "callOnLockScreen ${appPreferences.callOnLockScreen.get()}, " +
+          "inForeground $inForeground"
+    )
+    if (inForeground) return
     val contactId = invitation.contact.id
     Log.d(TAG, "notifyCallInvitation $contactId")
-    val keyguardManager = getKeyguardManager(context)
     val image = invitation.contact.image
+    val displayManager = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
+    val screenOff = displayManager.displays.all { it.state != Display.STATE_ON }
     var ntfBuilder =
-      if (keyguardManager.isDeviceLocked && appPreferences.callOnLockScreen.get() != CallOnLockScreen.DISABLE) {
+      if ((keyguardManager.isKeyguardLocked || screenOff) && appPreferences.callOnLockScreen.get() != CallOnLockScreen.DISABLE) {
         val fullScreenIntent = Intent(context, IncomingCallActivity::class.java)
         val fullScreenPendingIntent = PendingIntent.getActivity(context, 0, fullScreenIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         NotificationCompat.Builder(context, LockScreenCallChannel)
           .setFullScreenIntent(fullScreenPendingIntent, true)
           .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-          .setSilent(true)
+          .setSilent(false)
       } else {
         val soundUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + context.packageName + "/" + R.raw.ring_once)
         NotificationCompat.Builder(context, CallChannel)
