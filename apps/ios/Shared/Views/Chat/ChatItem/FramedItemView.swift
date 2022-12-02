@@ -39,30 +39,23 @@ struct FramedItemView: View {
     @ViewBuilder private func framedContentView() -> some View {
         let v = ZStack(alignment: .bottomTrailing) {
             VStack(alignment: .leading, spacing: 0) {
-                if chatItem.meta.itemDeleted || chatItem.quotedItem != nil {
-                    VStack(spacing: 6) {
-                        if chatItem.meta.itemDeleted {
-                            ciDeletedView()
-                        }
-
-                        if let qi = chatItem.quotedItem {
-                            ciQuoteView(qi)
-                                .onTapGesture {
-                                    if let proxy = scrollProxy,
-                                       let ci = m.reversedChatItems.first(where: { $0.id == qi.itemId }) {
-                                        withAnimation {
-                                            proxy.scrollTo(ci.viewId, anchor: .bottom)
-                                        }
-                                    }
-                                }
-                        }
-                    }
-                    .padding(.vertical, 6)
-                    .background(chatItemFrameContextColor(chatItem, colorScheme))
-                    .overlay(DetermineWidth())
+                if chatItem.meta.itemDeleted {
+                    ciDeletedView()
                 }
 
-                ChatItemContentView(chatInfo: chatInfo, chatItem: chatItem, showMember: showMember, msgContentView: msgContentView)
+                if let qi = chatItem.quotedItem {
+                    ciQuoteView(qi)
+                        .onTapGesture {
+                            if let proxy = scrollProxy,
+                               let ci = m.reversedChatItems.first(where: { $0.id == qi.itemId }) {
+                                withAnimation {
+                                    proxy.scrollTo(ci.viewId, anchor: .bottom)
+                                }
+                            }
+                        }
+                }
+
+                ChatItemContentView(chatInfo: chatInfo, chatItem: chatItem, showMember: showMember, msgContentView: framedMsgContentView)
                     .overlay(DetermineWidth())
             }
             .onPreferenceChange(MetaColorPreferenceKey.self) { metaColor = $0 }
@@ -85,7 +78,7 @@ struct FramedItemView: View {
         }
     }
     
-    @ViewBuilder private func msgContentView() -> some View {
+    @ViewBuilder private func framedMsgContentView() -> some View {
         if chatItem.formattedText == nil && chatItem.file == nil && isShortEmoji(chatItem.content.text) {
             VStack {
                 emojiText(chatItem.content.text)
@@ -154,8 +147,11 @@ struct FramedItemView: View {
         }
             .foregroundColor(.secondary)
             .padding(.horizontal, 12)
+            .padding(.top, 6)
+            .padding(.bottom, chatItem.quotedItem == nil ? 6 : 0) // TODO think how to regroup
             .overlay(DetermineWidth())
             .frame(minWidth: msgWidth, alignment: .leading)
+            .background(chatItemFrameContextColor(chatItem, colorScheme))
         if let imgWidth = imgWidth, imgWidth < maxWidth {
             v.frame(maxWidth: imgWidth, alignment: .leading)
         } else {
@@ -193,6 +189,7 @@ struct FramedItemView: View {
         }
             .overlay(DetermineWidth())
             .frame(minWidth: msgWidth, alignment: .leading)
+            .background(chatItemFrameContextColor(chatItem, colorScheme))
         
         if let imgWidth = imgWidth, imgWidth < maxWidth {
             v.frame(maxWidth: imgWidth, alignment: .leading)
@@ -209,6 +206,7 @@ struct FramedItemView: View {
         )
         .lineLimit(3)
         .font(.subheadline)
+        .padding(.vertical, 6)
         .padding(.horizontal, 12)
     }
     
@@ -278,7 +276,7 @@ private struct MetaColorPreferenceKey: PreferenceKey {
 
 func onlyImage(_ ci: ChatItem) -> Bool {
     if case let .image(text, _) = ci.content.msgContent {
-        return ci.quotedItem == nil && text == ""
+        return !ci.meta.itemDeleted && ci.quotedItem == nil && text == ""
     }
     return false
 }
