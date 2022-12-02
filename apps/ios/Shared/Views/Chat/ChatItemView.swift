@@ -18,28 +18,22 @@ struct ChatItemView: View {
     @Binding var revealed: Bool
 
     var body: some View {
-        if chatItem.meta.itemDeleted {
-            if !revealed {
-                markedDeletedItemView()
-            } else {
-                if isFramedItemView {
-                    chatItemContentView()
-                } else {
-                    FramedItemView(
-                        chatInfo: chatInfo,
-                        chatItem: chatItem,
-                        showMember: showMember,
-                        maxWidth: maxWidth,
-                        scrollProxy: scrollProxy,
-                        isContentFramedItemView: false,
-                        content: {
-                            chatItemContentView()
-                        }
-                    )
-                }
-            }
-        } else {
+        if !chatItem.meta.itemDeleted {
             chatItemContentView()
+        } else if !revealed {
+            markedDeletedItemView()
+        } else if isFramedItemView {
+            chatItemContentView()
+        } else {
+            FramedItemView(
+                chatInfo: chatInfo,
+                chatItem: chatItem,
+                showMember: showMember,
+                maxWidth: maxWidth,
+                scrollProxy: scrollProxy,
+                isContentFramedItemView: false,
+                content: chatItemContentView
+            )
         }
     }
 
