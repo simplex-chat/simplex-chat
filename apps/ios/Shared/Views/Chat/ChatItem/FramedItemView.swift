@@ -302,14 +302,14 @@ func chatItemFrameContextColor(_ ci: ChatItem, _ colorScheme: ColorScheme) -> Co
 struct FramedItemView_Previews: PreviewProvider {
     static var previews: some View {
         Group{
-            FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello"))
-            FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(1, .groupRcv(groupMember: GroupMember.sampleData), .now, "hello", quotedItem: CIQuote.getSample(1, .now, "hi", chatDir: .directSnd)))
-            FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndSent, quotedItem: CIQuote.getSample(1, .now, "hi", chatDir: .directRcv)))
-            FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directSnd, .now, "👍", .sndSent, quotedItem: CIQuote.getSample(1, .now, "Hello too", chatDir: .directRcv)))
-            FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too!!! this covers -"))
-            FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too!!! this text has the time on the same line "))
-            FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directRcv, .now, "https://simplex.chat"))
-            FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directRcv, .now, "chaT@simplex.chat"))
+            FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello"), content: {})
+            FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(1, .groupRcv(groupMember: GroupMember.sampleData), .now, "hello", quotedItem: CIQuote.getSample(1, .now, "hi", chatDir: .directSnd)), content: {})
+            FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directSnd, .now, "https://simplex.chat", .sndSent, quotedItem: CIQuote.getSample(1, .now, "hi", chatDir: .directRcv)), content: {})
+            FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directSnd, .now, "👍", .sndSent, quotedItem: CIQuote.getSample(1, .now, "Hello too", chatDir: .directRcv)), content: {})
+            FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too!!! this covers -"), content: {})
+            FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too!!! this text has the time on the same line "), content: {})
+            FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directRcv, .now, "https://simplex.chat"), content: {})
+            FramedItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directRcv, .now, "chaT@simplex.chat"), content: {})
         }
         .previewLayout(.fixed(width: 360, height: 200))
     }
