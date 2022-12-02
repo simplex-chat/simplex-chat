@@ -3178,10 +3178,13 @@ testTestSMPServerConnection =
     \alice _ -> do
       alice ##> "/smp test smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:5001"
       alice <## "SMP server test passed"
+      -- to test with password:
+      -- alice <## "SMP server test failed at CreateQueue, error: SMP AUTH"
+      -- alice <## "Server requires authorization to create queues, check password"
       alice ##> "/smp test smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:5001"
       alice <## "SMP server test passed"
-      alice ##> "/smp test smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZwjI=@localhost:5001"
-      alice <## ("SMP server test failed at Connect, error: BROKER " <> B.unpack (strEncode testServer) <> " NETWORK")
+      alice ##> "/smp test smp://LcJU@localhost:5001"
+      alice <## ("SMP server test failed at Connect, error: BROKER smp://LcJU@localhost:5001 NETWORK")
       alice <## "Possibly, certificate fingerprint in server address is incorrect"
 
 testAsyncInitiatingOffline :: IO ()

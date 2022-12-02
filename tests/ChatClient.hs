@@ -27,7 +27,6 @@ import Simplex.Chat.Terminal
 import Simplex.Chat.Terminal.Output (newChatTerminal)
 import Simplex.Chat.Types (Profile, User (..))
 import Simplex.Messaging.Agent.Env.SQLite
-import Simplex.Messaging.Agent.Protocol (SMPServerWithAuth)
 import Simplex.Messaging.Agent.RetryInterval
 import Simplex.Messaging.Client (ProtocolClientConfig (..), defaultNetworkConfig)
 import Simplex.Messaging.Server (runSMPServerBlocking)
@@ -46,16 +45,13 @@ testDBPrefix = "tests/tmp/test"
 serverPort :: ServiceName
 serverPort = "5001"
 
-testServer :: SMPServerWithAuth
-testServer = "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:5001"
-
 testOpts :: ChatOpts
 testOpts =
   ChatOpts
     { dbFilePrefix = undefined,
       dbKey = "",
       -- dbKey = "this is a pass-phrase to encrypt the database",
-      smpServers = [testServer],
+      smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:5001"],
       networkConfig = defaultNetworkConfig,
       logConnections = False,
       logServerHosts = False,
@@ -280,6 +276,7 @@ serverCfg =
       storeLogFile = Nothing,
       storeMsgsFile = Nothing,
       allowNewQueues = True,
+      -- server password is disabled as otherwise v1 tests fail
       newQueueBasicAuth = Nothing, -- Just "server_password",
       messageExpiration = Just defaultMessageExpiration,
       inactiveClientExpiration = Just defaultInactiveClientExpiration,
