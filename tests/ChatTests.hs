@@ -3161,7 +3161,7 @@ testAllowFullDeletionGroup =
 
 testProhibitDirectMessages :: IO ()
 testProhibitDirectMessages =
-  testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+  testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
     createGroup3 "team" alice bob cath
     threadDelay 1000000
     alice ##> "/set direct #team off"
@@ -3178,6 +3178,37 @@ testProhibitDirectMessages =
     bob ##> "@cath hello again"
     bob <## "direct messages to indirect contact cath are prohibited"
     (cath </)
+    connectUsers cath dan
+    addMember "team" cath dan GRMember
+    dan ##> "/j #team"
+    concurrentlyN_
+      [ cath <## ("#team: dan joined the group"),
+        do
+          dan <## ("#team: you joined the group")
+          dan <### 
+                [ "#team: member alice (Alice) is connected",
+                  "#team: member bob (Bob) is connected"
+                ],
+        do
+          alice <## ("#team: cath added dan (Daniel) to the group (connecting...)")
+          alice <## ("#team: new member dan is connected"),
+        do
+          bob <## ("#team: cath added dan (Daniel) to the group (connecting...)")
+          bob <## ("#team: new member dan is connected")
+      ]
+    alice ##> "@dan hi"
+    alice <## "direct messages to indirect contact dan are prohibited"
+    bob ##> "@dan hi"
+    bob <## "direct messages to indirect contact dan are prohibited"
+    (dan </)
+    dan ##> "@alice hi"
+    dan <## "direct messages to indirect contact alice are prohibited"
+    dan ##> "@bob hi"
+    dan <## "direct messages to indirect contact bob are prohibited"
+    dan #> "@cath hi"
+    cath <# "dan> hi"
+    cath #> "@dan hi"
+    dan <# "cath> hi"
   where
     directProhibited cc = do
       cc <## "alice updated group #team:"

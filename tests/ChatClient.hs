@@ -214,7 +214,7 @@ testChatN cfg opts ps test = withTmpFiles $ do
 getTermLine :: TestCC -> IO String
 getTermLine cc =
   5000000 `timeout` atomically (readTQueue $ termQ cc) >>= \case
-    Just s ->
+    Just s -> do
       -- uncomment code below to echo virtual terminal
       -- name <- userName cc
       -- putStrLn $ name <> ": " <> s
