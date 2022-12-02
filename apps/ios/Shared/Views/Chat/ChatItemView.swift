@@ -114,17 +114,6 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItem: ChatItem(
                     chatDir: .directRcv,
-                    meta: CIMeta.getSample(1, .now, "this item is deleted", .rcvRead, true, false, false),
-                    content: .rcvDeleted(deleteMode: .cidmBroadcast),
-                    quotedItem: nil,
-                    file: nil
-                ),
-                revealed: Binding.constant(true)
-            )
-            ChatItemView(
-                chatInfo: ChatInfo.sampleData.direct,
-                chatItem: ChatItem(
-                    chatDir: .directRcv,
                     meta: CIMeta.getSample(1, .now, "1 skipped message", .rcvRead, true, false, false),
                     content: .rcvIntegrityError(msgError: .msgSkipped(fromMsgId: 1, toMsgId: 2)),
                     quotedItem: nil,

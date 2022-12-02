@@ -56,6 +56,7 @@ struct FramedItemView: View {
                 }
 
                 ChatItemContentView(chatInfo: chatInfo, chatItem: chatItem, showMember: showMember, msgContentView: framedMsgContentView)
+                    .padding(chatItem.content.msgContent != nil ? 0 : 4)
                     .overlay(DetermineWidth())
             }
             .onPreferenceChange(MetaColorPreferenceKey.self) { metaColor = $0 }
