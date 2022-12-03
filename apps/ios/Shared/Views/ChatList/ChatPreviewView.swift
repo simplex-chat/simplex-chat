@@ -101,8 +101,8 @@ struct ChatPreviewView: View {
 
     @ViewBuilder private func chatPreviewText(_ cItem: ChatItem?) -> some View {
         if let cItem = cItem {
-            var itemText = !cItem.meta.itemDeleted ? cItem.text : NSLocalizedString("Marked deleted", comment: "marked deleted chat item preview text")
-            var itemFormattedText = !cItem.meta.itemDeleted ? cItem.formattedText : nil
+            let itemText = !cItem.meta.itemDeleted ? cItem.text : NSLocalizedString("marked deleted", comment: "marked deleted chat item preview text")
+            let itemFormattedText = !cItem.meta.itemDeleted ? cItem.formattedText : nil
             ZStack(alignment: .topTrailing) {
                 (itemStatusMark(cItem) + messageText(itemText, itemFormattedText, cItem.memberDisplayName, preview: true))
                     .lineLimit(2)
