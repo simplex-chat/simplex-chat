@@ -196,5 +196,5 @@ suspend fun testServerConnection(server: ServerCfg, m: ChatModel): Pair<ServerCf
     server.copy(tested = false) to null
   }
 
-fun serverHostname(srv: ServerCfg): String =
-  parseServerAddress(srv.server)?.hostnames?.firstOrNull() ?: srv.server
+fun serverHostname(srv: String): String =
+  parseServerAddress(srv)?.hostnames?.firstOrNull() ?: srv

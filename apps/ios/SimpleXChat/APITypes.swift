@@ -734,7 +734,7 @@ public struct SMPTestFailure: Decodable, Error, Equatable {
         switch testError {
         case .SMP(.AUTH):
             return err + " " + NSLocalizedString("Server requires authorization to create queues, check password", comment: "server test error")
-        case .BROKER(.NETWORK):
+        case .BROKER(_, .NETWORK):
             return err + " " + NSLocalizedString("Possibly, certificate fingerprint in server address is incorrect", comment: "server test error")
         default:
             return err
@@ -1081,7 +1081,7 @@ public enum AgentErrorType: Decodable {
     case CONN(connErr: ConnectionErrorType)
     case SMP(smpErr: ProtocolErrorType)
     case NTF(ntfErr: ProtocolErrorType)
-    case BROKER(brokerErr: BrokerErrorType)
+    case BROKER(brokerAddress: String, brokerErr: BrokerErrorType)
     case AGENT(agentErr: SMPAgentError)
     case INTERNAL(internalErr: String)
 }

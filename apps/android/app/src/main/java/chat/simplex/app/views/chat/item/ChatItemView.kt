@@ -59,7 +59,7 @@ fun ChatItemView(
           showMsgDeliveryErrorAlert(generalGetString(R.string.message_delivery_error_desc))
         }
         is CIStatus.SndError -> {
-          showMsgDeliveryErrorAlert(generalGetString(R.string.unknown_error) + ": ${cItem.meta.itemStatus.agentError.string}")
+          showMsgDeliveryErrorAlert(generalGetString(R.string.unknown_error) + ": ${cItem.meta.itemStatus.agentError}")
         }
         else -> {}
       }

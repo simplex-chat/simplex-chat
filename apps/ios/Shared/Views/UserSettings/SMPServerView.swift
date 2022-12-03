@@ -155,8 +155,8 @@ func testServerConnection(server: Binding<ServerCfg>) async -> SMPTestFailure? {
     }
 }
 
-func serverHostname(_ srv: ServerCfg) -> String {
-    parseServerAddress(srv.server)?.hostnames.first ?? srv.server
+func serverHostname(_ srv: String) -> String {
+    parseServerAddress(srv)?.hostnames.first ?? srv
 }
 
 struct SMPServerView_Previews: PreviewProvider {

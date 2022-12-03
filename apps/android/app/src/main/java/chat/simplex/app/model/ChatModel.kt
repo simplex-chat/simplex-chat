@@ -1266,7 +1266,7 @@ sealed class CIStatus {
   @Serializable @SerialName("sndNew") class SndNew: CIStatus()
   @Serializable @SerialName("sndSent") class SndSent: CIStatus()
   @Serializable @SerialName("sndErrorAuth") class SndErrorAuth: CIStatus()
-  @Serializable @SerialName("sndError") class SndError(val agentError: AgentErrorType): CIStatus()
+  @Serializable @SerialName("sndError") class SndError(val agentError: String): CIStatus()
   @Serializable @SerialName("rcvNew") class RcvNew: CIStatus()
   @Serializable @SerialName("rcvRead") class RcvRead: CIStatus()
 }
