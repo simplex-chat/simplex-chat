@@ -2153,7 +2153,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
 
     agentErrToItemStatus :: AgentErrorType -> CIStatus 'MDSnd
     agentErrToItemStatus (SMP AUTH) = CISSndErrorAuth
-    agentErrToItemStatus err = CISSndError err
+    agentErrToItemStatus err = CISSndError . T.unpack . safeDecodeUtf8 $ strEncode err
 
     badRcvFileChunk :: RcvFileTransfer -> String -> m ()
     badRcvFileChunk ft@RcvFileTransfer {cancelled} err =
