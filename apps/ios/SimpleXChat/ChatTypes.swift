@@ -1374,7 +1374,6 @@ public struct ChatItem: Identifiable, Decodable {
 
     public var timestampText: Text { meta.timestampText }
 
-    // pair with formattedText
     public var text: String {
         switch (content.text, content.msgContent, file) {
         case let ("", .some(.voice(_, duration)), _): return "Voice message (\(durationText(duration)))"
