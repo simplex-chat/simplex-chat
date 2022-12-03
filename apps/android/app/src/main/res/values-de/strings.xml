@@ -952,7 +952,8 @@
   <string name="contact_preferences">Kontakt Präferenzen</string>
   <string name="group_preferences">Gruppen Präferenzen</string>
   <string name="your_preferences">Ihre Präferenzen</string>
-  <string name="full_deletion">Vollständige Löschung</string>
+  <string name="direct_messages">***Direct messages</string>
+  <string name="full_deletion">***Beseitigung für alle</string>
   <string name="voice_messages">Sprachnachrichten</string>
   <string name="feature_enabled">aktiviert</string>
   <string name="feature_enabled_for_you">Für Sie aktiviert</string>
@@ -968,18 +969,22 @@
   <string name="both_you_and_your_contacts_can_delete">Sowohl Ihr Kontakt, als auch Sie können Nachrichten unwiederbringlich löschen.</string>
   <string name="only_you_can_delete_messages">Nur Sie können Nachrichten unwiederbringlich löschen (Ihr Kontakt kann sie zum Löschen markieren).</string>
   <string name="only_your_contact_can_delete">Nur Ihr Kontakt kann Nachrichten unwiederbringlich löschen (Sie können sie zum Löschen markieren).</string>
-  <string name="message_deletion_prohibited">In diesem Chat ist das unwiederbringliche Löschen von Nachrichten untersagt.</string>
+  <string name="message_deletion_prohibited">***In diesem Gruppe ist das unwiederbringliche Löschen von Nachrichten untersagt.</string>
   <string name="both_you_and_your_contact_can_send_voice">Sowohl Ihr Kontakt, als auch Sie können Sprachnachrichten senden.</string>
   <string name="only_you_can_send_voice">Nur Sie können Sprachnachrichten senden.</string>
   <string name="only_your_contact_can_send_voice">Nur Ihr Kontakt kann Sprachnachrichten senden.</string>
   <string name="voice_prohibited_in_this_chat">In diesem Chat sind Sprachnachrichten untersagt.</string>
+  <string name="allow_direct_messages">***Allow sending direct messages to members.</string>
+  <string name="prohibit_direct_messages">***Prohibit sending direct messages to members.</string>
   <string name="allow_to_delete_messages">Unwiederbringliches Löschen von gesendeten Nachrichten erlauben.</string>
   <string name="prohibit_message_deletion">Unwiederbringliches Löschen von Nachrichten verbieten.</string>
   <string name="allow_to_send_voice">Senden von Sprachnachrichten erlauben.</string>
   <string name="prohibit_sending_voice">Senden von Sprachnachrichten untersagen.</string>
+  <string name="group_members_can_send_dms">***Group members can send direct messages.</string>
+  <string name="direct_messages_are_prohibited_in_chat">***Direct messages between members are prohibited in this group.</string>
   <string name="group_members_can_delete">Gruppenmitglieder können gesendete Nachrichten unwiederbringlich löschen.</string>
-  <string name="message_deletion_prohibited_in_chat">In diesem Chat ist das unwiederbringliche Löschen von Nachrichten verboten.</string>
+  <string name="message_deletion_prohibited_in_chat">***In diesem Gruppe ist das unwiederbringliche Löschen von Nachrichten verboten.</string>
   <string name="group_members_can_send_voice">Gruppenmitglieder können Sprachnachrichten senden.</string>
-  <string name="voice_messages_are_prohibited">In diesem Chat sind Sprachnachrichten untersagt.</string>
+  <string name="voice_messages_are_prohibited">***In diesem Gruppe sind Sprachnachrichten untersagt.</string>
 
 </resources>
