@@ -19,7 +19,9 @@ struct ChatItemView: View {
 
     var body: some View {
         let ci = chatItem
-        if ci.quotedItem == nil && !ci.meta.itemDeleted {
+        if chatItem.meta.itemDeleted && !revealed {
+            MarkedDeletedItemView(chatItem: chatItem, showMember: showMember)
+        } else if ci.quotedItem == nil && !ci.meta.itemDeleted {
             if let mc = ci.content.msgContent, mc.isText && isShortEmoji(ci.content.text) {
                 EmojiItemView(chatItem: ci)
             } else if ci.content.text.isEmpty, case let .voice(_, duration) = ci.content.msgContent {
@@ -35,7 +37,7 @@ struct ChatItemView: View {
     }
 
     private func framedItemView() -> some View {
-        FramedItemView(chatInfo: chatInfo, chatItem: chatItem, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy, revealed: $revealed)
+        FramedItemView(chatInfo: chatInfo, chatItem: chatItem, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy)
     }
 }
 
