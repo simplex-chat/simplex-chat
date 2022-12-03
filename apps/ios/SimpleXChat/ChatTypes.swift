@@ -1595,7 +1595,7 @@ public enum CIStatus: Decodable {
     case sndNew
     case sndSent
     case sndErrorAuth
-    case sndError(agentError: AgentErrorType)
+    case sndError(agentError: String)
     case rcvNew
     case rcvRead
 

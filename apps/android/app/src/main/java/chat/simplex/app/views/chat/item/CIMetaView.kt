@@ -88,7 +88,7 @@ fun PreviewCIMetaViewSendFailed() {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
       1, CIDirection.DirectSnd(), Clock.System.now(), "hello",
-      status = CIStatus.SndError(AgentErrorType.CMD(CommandErrorType.SYNTAX()))
+      status = CIStatus.SndError("CMD SYNTAX")
     )
   )
 }

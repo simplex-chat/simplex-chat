@@ -67,7 +67,7 @@ struct FramedItemView: View {
         case .sndErrorAuth:
             v.onTapGesture { msgDeliveryError("Most likely this contact has deleted the connection with you.") }
         case let .sndError(agentError):
-            v.onTapGesture { msgDeliveryError("Unexpected error: \(String(describing: agentError))") }
+            v.onTapGesture { msgDeliveryError("Unexpected error: \(agentError)") }
         default: v
         }
     }
