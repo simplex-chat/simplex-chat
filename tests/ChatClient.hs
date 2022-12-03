@@ -276,6 +276,7 @@ serverCfg =
       storeLogFile = Nothing,
       storeMsgsFile = Nothing,
       allowNewQueues = True,
+      -- server password is disabled as otherwise v1 tests fail
       newQueueBasicAuth = Nothing, -- Just "server_password",
       messageExpiration = Just defaultMessageExpiration,
       inactiveClientExpiration = Just defaultInactiveClientExpiration,

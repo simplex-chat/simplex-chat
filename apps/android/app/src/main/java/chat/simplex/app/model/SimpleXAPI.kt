@@ -1,8 +1,6 @@
 package chat.simplex.app.model
 
 import android.annotation.SuppressLint
-import android.app.ActivityManager
-import android.app.ActivityManager.RunningAppProcessInfo
 import android.app.Application
 import android.content.*
 import android.net.Uri
@@ -14,6 +12,7 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -40,18 +39,6 @@ import kotlinx.serialization.json.jsonObject
 import java.util.Date
 
 typealias ChatCtrl = Long
-
-fun isAppOnForeground(context: Context): Boolean {
-  val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-  val appProcesses = activityManager.runningAppProcesses ?: return false
-  val packageName = context.packageName
-  for (appProcess in appProcesses) {
-    if (appProcess.importance == RunningAppProcessInfo.IMPORTANCE_FOREGROUND && appProcess.processName == packageName) {
-      return true
-    }
-  }
-  return false
-}
 
 enum class CallOnLockScreen {
   DISABLE,
@@ -1064,7 +1051,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         } else if (cItem.content.msgContent is MsgContent.MCVoice && file != null && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileSize > MAX_VOICE_SIZE_FOR_SENDING && appPrefs.privacyAcceptImages.get()) {
           withApi { receiveFile(file.fileId) } // TODO check inlineFileMode != IFMSent
         }
-        if (cItem.showNotification && (!isAppOnForeground(appContext) || chatModel.chatId.value != cInfo.id)) {
+        if (cItem.showNotification && (!SimplexApp.context.isAppOnForeground || chatModel.chatId.value != cInfo.id)) {
           ntfManager.notifyMessageReceived(cInfo, cItem)
         }
       }
@@ -1477,7 +1464,18 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   }
 }
 
-class SharedPreference<T>(val get: () -> T, val set: (T) -> Unit)
+class SharedPreference<T>(val get: () -> T, set: (T) -> Unit) {
+  val set: (T) -> Unit
+  private val _state: MutableState<T> by lazy { mutableStateOf(get()) }
+  val state: State<T> by lazy { _state }
+
+  init {
+    this.set = { value ->
+      set(value)
+      _state.value = value
+    }
+  }
+}
 
 // ChatCommand
 sealed class CC {
@@ -2306,6 +2304,7 @@ val json = Json {
   prettyPrint = true
   ignoreUnknownKeys = true
   encodeDefaults = true
+  explicitNulls = false
 }
 
 @Serializable
