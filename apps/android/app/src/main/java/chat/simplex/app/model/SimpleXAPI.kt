@@ -2043,14 +2043,16 @@ data class FeatureEnabled(
 
 @Serializable
 sealed class ContactUserPref {
-  @Serializable @SerialName("contact") data class Contact(val preference: ChatPreference): ContactUserPref() // contact override is set
-  @Serializable @SerialName("user") data class User(val preference: ChatPreference): ContactUserPref() // global user default is used
+  abstract val pref: ChatPreference
 
-  val pref: ChatPreference
-    get() = when(this) {
-      is Contact -> preference
-      is User -> preference
-    }
+  // contact override is set
+  @Serializable @SerialName("contact") data class Contact(val preference: ChatPreference): ContactUserPref() {
+    override val pref get() = preference
+  }
+  // global user default is used
+  @Serializable @SerialName("user") data class User(val preference: ChatPreference): ContactUserPref() {
+    override val pref get() = preference
+  }
 }
 
 interface Feature {
