@@ -168,11 +168,14 @@
   <string name="save_verb">Save</string>
   <string name="edit_verb">Edit</string>
   <string name="delete_verb">Delete</string>
+  <string name="reveal_verb">Reveal</string>
+  <string name="hide_verb">Hide</string>
   <string name="allow_verb">Allow</string>
   <string name="delete_message__question">Delete message?</string>
   <string name="delete_message_cannot_be_undone_warning">Message will be deleted - this cannot be undone!</string>
   <string name="for_me_only">For me only</string>
   <string name="for_everybody">For everyone</string>
+  <string name="mark_deleted_for_everyone">Mark deleted for everyone</string>
 
   <!-- CIMetaView.kt -->
   <string name="icon_descr_edited">edited</string>

@@ -168,11 +168,14 @@
   <string name="save_verb">Speichern</string>
   <string name="edit_verb">Bearbeiten</string>
   <string name="delete_verb">Löschen</string>
+  <string name="reveal_verb">***Reveal</string>
+  <string name="hide_verb">***Hide</string>
   <string name="allow_verb">Erlauben</string>
   <string name="delete_message__question">Die Nachricht löschen?</string>
   <string name="delete_message_cannot_be_undone_warning">Nachricht wird gelöscht - dies kann nicht rückgängig gemacht werden!</string>
   <string name="for_me_only">Nur für mich</string>
   <string name="for_everybody">Für alle</string>
+  <string name="mark_deleted_for_everyone">***Mark deleted for everyone</string>
 
   <!-- CIMetaView.kt -->
   <string name="icon_descr_edited">Bearbeitet</string>

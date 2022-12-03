@@ -27,7 +27,7 @@ fun MarkedDeletedItemView(ci: ChatItem, showMember: Boolean = false) {
   ) {
     Row(
       Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-      verticalAlignment = Alignment.Bottom
+      verticalAlignment = Alignment.CenterVertically
     ) {
       Text(
         buildAnnotatedString {

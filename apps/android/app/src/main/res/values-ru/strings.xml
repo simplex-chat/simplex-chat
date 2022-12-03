@@ -168,11 +168,14 @@
     <string name="save_verb">Сохранить</string>
     <string name="edit_verb">Редактировать</string>
     <string name="delete_verb">Удалить</string>
+    <string name="reveal_verb">Показать</string>
+    <string name="hide_verb">Спрятать</string>
     <string name="allow_verb">Разрешить</string>
     <string name="delete_message__question">Удалить сообщение?</string>
     <string name="delete_message_cannot_be_undone_warning">Сообщение будет удалено – это действие нельзя отменить!</string>
     <string name="for_me_only">Только для меня</string>
     <string name="for_everybody">Для всех</string>
+    <string name="mark_deleted_for_everyone">Пометить на удаление для всех</string>
 
     <!-- CIMetaView.kt -->
     <string name="icon_descr_edited">отредактировано</string>
