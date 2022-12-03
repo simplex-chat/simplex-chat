@@ -24,6 +24,8 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 
+// TODO refactor https://github.com/simplex-chat/simplex-chat/pull/1451#discussion_r1033429901
+
 @Composable
 fun CIVoiceView(
   providedDurationSec: Int,
@@ -32,7 +34,6 @@ fun CIVoiceView(
   sent: Boolean,
   hasText: Boolean,
   ci: ChatItem,
-  metaColor: Color,
   longClick: () -> Unit,
 ) {
   Row(
@@ -62,7 +63,7 @@ fun CIVoiceView(
           durationText(time / 1000)
         }
       }
-      VoiceLayout(file, ci, metaColor, text, audioPlaying, progress, duration, brokenAudio, sent, hasText, play, pause, longClick)
+      VoiceLayout(file, ci, text, audioPlaying, progress, duration, brokenAudio, sent, hasText, play, pause, longClick)
     } else {
       VoiceMsgIndicator(null, false, sent, hasText, null, null, false, {}, {}, longClick)
       val metaReserve = if (edited)
@@ -78,7 +79,6 @@ fun CIVoiceView(
 private fun VoiceLayout(
   file: CIFile,
   ci: ChatItem,
-  metaColor: Color,
   text: State<String>,
   audioPlaying: State<Boolean>,
   progress: State<Int>,
@@ -105,7 +105,7 @@ private fun VoiceLayout(
         Column {
           VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick)
           Box(Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp)) {
-            CIMetaView(ci, metaColor)
+            CIMetaView(ci)
           }
         }
       }
@@ -115,7 +115,7 @@ private fun VoiceLayout(
         Column {
           VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick)
           Box(Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp)) {
-            CIMetaView(ci, metaColor)
+            CIMetaView(ci)
           }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
