@@ -17,7 +17,7 @@ struct MarkedDeletedItemView: View {
     var body: some View {
         HStack(alignment: .bottom, spacing: 0) {
             if showMember, let member = chatItem.memberDisplayName {
-                Text(member).fontWeight(.medium) + Text(": ")
+                Text(member).font(.caption).fontWeight(.medium) + Text(": ").font(.caption)
             }
             Text("marked deleted")
                 .font(.caption)
