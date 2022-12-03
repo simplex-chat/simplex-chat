@@ -49,6 +49,7 @@ fun ChatItemView(
   val alignment = if (sent) Alignment.CenterEnd else Alignment.CenterStart
   val showMenu = remember { mutableStateOf(false) }
   val revealed = remember { mutableStateOf(false) }
+  val fullDeleteAllowed = remember(cInfo) { cInfo.fullDeletionAllowed }
   val saveFileLauncher = rememberSaveFileLauncher(cxt = context, ciFile = cItem.file)
   val onLinkLongClick = { _: String -> showMenu.value = true }
 
@@ -77,6 +78,14 @@ fun ChatItemView(
       @Composable
       fun framedItemView() {
         FramedItemView(cInfo, cItem, uriHandler, imageProvider, showMember = showMember, linkMode = linkMode, showMenu, receiveFile, onLinkLongClick, scrollToItem)
+      }
+
+      fun deleteMessageQuestionText(): String {
+        return if (fullDeleteAllowed) {
+          generalGetString(R.string.delete_message_cannot_be_undone_warning)
+        } else {
+          generalGetString(R.string.delete_message_mark_deleted_warning)
+        }
       }
 
       @Composable
@@ -138,7 +147,7 @@ fun ChatItemView(
               }
             )
           }
-          DeleteItemAction(cItem, showMenu, deleteMessage)
+          DeleteItemAction(cItem, showMenu, questionText = deleteMessageQuestionText(), deleteMessage)
         }
       }
 
@@ -157,7 +166,7 @@ fun ChatItemView(
               showMenu.value = false
             }
           )
-          DeleteItemAction(cItem, showMenu, deleteMessage)
+          DeleteItemAction(cItem, showMenu, questionText = deleteMessageQuestionText(), deleteMessage)
         }
       }
 
@@ -191,7 +200,7 @@ fun ChatItemView(
           onDismissRequest = { showMenu.value = false },
           Modifier.width(220.dp)
         ) {
-          DeleteItemAction(cItem, showMenu, deleteMessage)
+          DeleteItemAction(cItem, showMenu, questionText = deleteMessageQuestionText(), deleteMessage)
         }
       }
 
@@ -228,6 +237,7 @@ fun ChatItemView(
 fun DeleteItemAction(
   cItem: ChatItem,
   showMenu: MutableState<Boolean>,
+  questionText: String,
   deleteMessage: (Long, CIDeleteMode) -> Unit
 ) {
   ItemAction(
@@ -235,7 +245,7 @@ fun DeleteItemAction(
     Icons.Outlined.Delete,
     onClick = {
       showMenu.value = false
-      deleteMessageAlertDialog(cItem, deleteMessage = deleteMessage)
+      deleteMessageAlertDialog(cItem, questionText, deleteMessage = deleteMessage)
     },
     color = Color.Red
   )
@@ -258,10 +268,10 @@ fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Colo
   }
 }
 
-fun deleteMessageAlertDialog(chatItem: ChatItem, deleteMessage: (Long, CIDeleteMode) -> Unit) {
+fun deleteMessageAlertDialog(chatItem: ChatItem, questionText: String, deleteMessage: (Long, CIDeleteMode) -> Unit) {
   AlertManager.shared.showAlertDialogButtons(
     title = generalGetString(R.string.delete_message__question),
-    text = generalGetString(R.string.delete_message_cannot_be_undone_warning),
+    text = questionText,
     buttons = {
       Row(
         Modifier
@@ -278,7 +288,7 @@ fun deleteMessageAlertDialog(chatItem: ChatItem, deleteMessage: (Long, CIDeleteM
           TextButton(onClick = {
             deleteMessage(chatItem.id, CIDeleteMode.cidmBroadcast)
             AlertManager.shared.hideAlert()
-          }) { Text(stringResource(R.string.for_everybody)) } // TODO conditionally use mark_deleted_for_everyone text
+          }) { Text(stringResource(R.string.for_everybody)) }
         }
       }
     }
