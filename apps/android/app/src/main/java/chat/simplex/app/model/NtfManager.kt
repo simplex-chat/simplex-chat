@@ -158,8 +158,7 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
     Log.d(TAG,
       "notifyCallInvitation pre-requests: device locked ${keyguardManager.isDeviceLocked}, " +
           "keyguard locked ${keyguardManager.isKeyguardLocked}, " +
-          "callOnLockScreen ${appPreferences.callOnLockScreen.get()}, " +
-          "inForeground $inForeground"
+          "callOnLockScreen ${appPreferences.callOnLockScreen.get()}"
     )
     val contactId = invitation.contact.id
     Log.d(TAG, "notifyCallInvitation $contactId")
