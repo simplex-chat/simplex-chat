@@ -246,7 +246,7 @@ struct ComposeView: View {
                 CameraImageListPicker(images: $chosenImages)
             }
         }
-        .appSheet(isPresented: $showImagePicker) {
+        .sheet(isPresented: $showImagePicker) {
             LibraryImageListPicker(images: $chosenImages, selectionLimit: 10) { itemsSelected in
                 showImagePicker = false
                 if itemsSelected {

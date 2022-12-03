@@ -136,7 +136,7 @@ struct AddGroupView: View {
                 CameraImagePicker(image: $chosenImage)
             }
         }
-        .appSheet(isPresented: $showImagePicker) {
+        .sheet(isPresented: $showImagePicker) {
             LibraryImagePicker(image: $chosenImage) {
                 didSelectItem in showImagePicker = false
             }

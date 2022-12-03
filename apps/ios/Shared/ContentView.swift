@@ -76,9 +76,9 @@ struct ContentView: View {
             userAuthorized = true
         } else {
             dismissAllSheets(animated: false) {
+                chatModel.chatId = nil
                 justAuthenticate()
             }
-            chatModel.chatId = nil
         }
     }
 
