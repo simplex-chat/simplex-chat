@@ -115,6 +115,7 @@ fun FramedItemView(
     }
   }
 
+  // TODO MCVoice shouldn't affect it, see https://github.com/simplex-chat/simplex-chat/pull/1451#discussion_r1033429901
   val transparentBackground = (ci.content.msgContent is MsgContent.MCImage || ci.content.msgContent is MsgContent.MCVoice) && ci.content.text.isEmpty() && ci.quotedItem == null
 
   Box(Modifier
@@ -175,6 +176,7 @@ fun FramedItemView(
           }
         }
       }
+      // TODO CIMetaView shouldn't be conditional, see https://github.com/simplex-chat/simplex-chat/pull/1451#discussion_r1033429901
       if (ci.content.msgContent !is MsgContent.MCVoice || ci.content.text.isNotEmpty() || ci.quotedItem != null) {
         Box(Modifier.padding(bottom = 6.dp, end = 12.dp)) {
           CIMetaView(ci, metaColor)

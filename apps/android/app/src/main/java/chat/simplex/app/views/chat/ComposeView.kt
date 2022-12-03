@@ -150,7 +150,7 @@ fun ComposeView(
   val textStyle = remember { mutableStateOf(smallFont) }
   // attachments
   val chosenContent = rememberSaveable { mutableStateOf<List<UploadContent>>(emptyList()) }
-  val audioSaver = Saver<MutableState<Pair<Uri, Int>?>, Pair<String, Int>> (
+  val audioSaver = Saver<MutableState<Pair<Uri, Int>?>, Pair<String, Int>>(
     save = { it.value.let { if (it == null) null else it.first.toString() to it.second } },
     restore = { mutableStateOf(Uri.parse(it.first) to it.second) }
   )
@@ -466,6 +466,7 @@ fun ComposeView(
       }
     }
   }
+
   fun showDisabledVoiceAlert() {
     AlertManager.shared.showAlertMsg(
       title = generalGetString(R.string.voice_messages_prohibited),
