@@ -21,6 +21,7 @@
 
   <!-- Item Content - ChatModel.kt -->
   <string name="deleted_description">deleted</string>
+  <string name="marked_deleted_description">marked deleted</string>
   <string name="sending_files_not_yet_supported">sending files is not supported yet</string>
   <string name="receiving_files_not_yet_supported">receiving files is not supported yet</string>
   <string name="sender_you_pronoun">you</string>
@@ -230,6 +231,7 @@
 
   <!-- Voice messages -->
   <string name="voice_message">Voice message</string>
+  <string name="voice_message_with_duration">Voice message (<xliff:g id="duration">%1$s</xliff:g>)</string>
   <string name="voice_message_send_text">Voice message…</string>
 
   <!-- Chat Info Settings - ChatInfoView.kt -->

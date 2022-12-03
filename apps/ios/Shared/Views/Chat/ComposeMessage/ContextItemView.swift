@@ -16,10 +16,6 @@ struct ContextItemView: View {
     let cancelContextItem: () -> Void
 
     var body: some View {
-        let bgColor = contextItem.chatDir.sent
-        ? (colorScheme == .light ? sentColorLight : sentColorDark)
-        : Color(uiColor: .tertiarySystemGroupedBackground)
-
         HStack {
             Image(systemName: contextIcon)
                 .resizable()
@@ -45,7 +41,7 @@ struct ContextItemView: View {
         .padding(12)
         .frame(minHeight: 50)
         .frame(maxWidth: .infinity)
-        .background(bgColor)
+        .background(chatItemFrameColor(contextItem, colorScheme))
         .padding(.top, 8)
     }
 }

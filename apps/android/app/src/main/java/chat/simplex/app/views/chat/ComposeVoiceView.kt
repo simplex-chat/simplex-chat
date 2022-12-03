@@ -14,6 +14,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
+import chat.simplex.app.model.durationText
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.item.SentColorLight
 import chat.simplex.app.views.helpers.*
@@ -94,7 +95,7 @@ fun ComposeVoiceView(
         }
       }
       Text(
-        durationToString(numberInText.value),
+        durationText(numberInText.value),
         fontSize = 18.sp,
         color = HighOrLowlight,
       )

@@ -32,7 +32,7 @@ import GHC.Generics (Generic)
 import Simplex.Chat.Markdown
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (AgentErrorType, AgentMsgId, MsgErrorType (..), MsgMeta (..), SwitchPhase (..))
+import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgErrorType (..), MsgMeta (..), SwitchPhase (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, fstToLower, singleFieldJSON, sumTypeJSON)
 import Simplex.Messaging.Protocol (MsgBody)
@@ -267,7 +267,7 @@ mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId
 mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemEdited tz currentTs itemTs createdAt updatedAt =
   let localItemTs = utcToZonedTime tz itemTs
       editable = case itemContent of
-        CISndMsgContent _ -> diffUTCTime currentTs itemTs < nominalDay
+        CISndMsgContent _ -> diffUTCTime currentTs itemTs < nominalDay && not itemDeleted
         _ -> False
    in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, editable, localItemTs, createdAt, updatedAt}
 
@@ -406,7 +406,7 @@ data CIStatus (d :: MsgDirection) where
   CISSndNew :: CIStatus 'MDSnd
   CISSndSent :: CIStatus 'MDSnd
   CISSndErrorAuth :: CIStatus 'MDSnd
-  CISSndError :: AgentErrorType -> CIStatus 'MDSnd
+  CISSndError :: String -> CIStatus 'MDSnd
   CISRcvNew :: CIStatus 'MDRcv
   CISRcvRead :: CIStatus 'MDRcv
 
@@ -434,7 +434,7 @@ instance MsgDirectionI d => StrEncoding (CIStatus d) where
     CISSndNew -> "snd_new"
     CISSndSent -> "snd_sent"
     CISSndErrorAuth -> "snd_error_auth"
-    CISSndError e -> "snd_error " <> strEncode e
+    CISSndError e -> "snd_error " <> encodeUtf8 (T.pack e)
     CISRcvNew -> "rcv_new"
     CISRcvRead -> "rcv_read"
   strP = (\(ACIStatus _ st) -> checkDirection st) <$?> strP
@@ -446,7 +446,7 @@ instance StrEncoding ACIStatus where
       "snd_new" -> pure $ ACIStatus SMDSnd CISSndNew
       "snd_sent" -> pure $ ACIStatus SMDSnd CISSndSent
       "snd_error_auth" -> pure $ ACIStatus SMDSnd CISSndErrorAuth
-      "snd_error" -> ACIStatus SMDSnd . CISSndError <$> (A.space *> strP)
+      "snd_error " -> ACIStatus SMDSnd . CISSndError . T.unpack . safeDecodeUtf8 <$> A.takeByteString
       "rcv_new" -> pure $ ACIStatus SMDRcv CISRcvNew
       "rcv_read" -> pure $ ACIStatus SMDRcv CISRcvRead
       _ -> fail "bad status"
@@ -455,7 +455,7 @@ data JSONCIStatus
   = JCISSndNew
   | JCISSndSent
   | JCISSndErrorAuth
-  | JCISSndError {agentError :: AgentErrorType}
+  | JCISSndError {agentError :: String}
   | JCISRcvNew
   | JCISRcvRead
   deriving (Show, Generic)

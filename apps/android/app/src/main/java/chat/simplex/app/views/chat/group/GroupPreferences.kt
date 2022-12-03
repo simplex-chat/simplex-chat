@@ -66,11 +66,11 @@ private fun GroupPreferencesLayout(
     FeatureSection(GroupFeature.DirectMessages, allowDirectMessages, groupInfo) {
       applyPrefs(preferences.copy(directMessages = GroupPreference(enable = it)))
     }
-//    val allowFullDeletion = remember(preferences) { mutableStateOf(preferences.fullDelete.enable) }
-//    FeatureSection(Feature.FullDelete, allowFullDeletion, groupInfo) {
-//      applyPrefs(preferences.copy(fullDelete = GroupPreference(enable = it)))
-//    }
-//    SectionSpacer()
+    val allowFullDeletion = remember(preferences) { mutableStateOf(preferences.fullDelete.enable) }
+    FeatureSection(GroupFeature.FullDelete, allowFullDeletion, groupInfo) {
+      applyPrefs(preferences.copy(fullDelete = GroupPreference(enable = it)))
+    }
+    SectionSpacer()
     val allowVoice = remember(preferences) { mutableStateOf(preferences.voice.enable) }
     FeatureSection(GroupFeature.Voice, allowVoice, groupInfo) {
       applyPrefs(preferences.copy(voice = GroupPreference(enable = it)))

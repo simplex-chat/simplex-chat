@@ -447,8 +447,6 @@ fun directoryFileCountAndSize(dir: String): Pair<Int, Long> { // count, size in 
   return fileCount to bytes
 }
 
-fun durationToString(sec: Int): String = "%02d:%02d".format(sec / 60, sec % 60)
-
 fun Color.darker(factor: Float = 0.1f): Color =
   Color(max(red * (1 - factor), 0f), max(green * (1 - factor), 0f), max(blue * (1 - factor), 0f), alpha)
 

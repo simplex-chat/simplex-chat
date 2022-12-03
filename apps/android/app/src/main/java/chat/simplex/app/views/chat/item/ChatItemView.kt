@@ -70,10 +70,13 @@ fun ChatItemView(
         .combinedClickable(onLongClick = { showMenu.value = true }, onClick = onClick),
     ) {
       @Composable fun ContentItem() {
+        val mc = cItem.content.msgContent
+        val onLinkLongClick = { _: String -> showMenu.value = true }
         if (cItem.file == null && cItem.quotedItem == null && isShortEmoji(cItem.content.text)) {
           EmojiItemView(cItem)
+        } else if (mc is MsgContent.MCVoice && cItem.content.text.isEmpty() && cItem.quotedItem == null) {
+          CIVoiceView(mc.duration, cItem.file, cItem.meta.itemEdited, cItem.chatDir.sent, hasText = false, cItem, longClick = { onLinkLongClick("") })
         } else {
-          val onLinkLongClick = { _: String -> showMenu.value = true }
           FramedItemView(cInfo, cItem, uriHandler, imageProvider, showMember = showMember, linkMode = linkMode, showMenu, receiveFile, onLinkLongClick, scrollToItem)
         }
         DropdownMenu(
@@ -175,6 +178,7 @@ fun ChatItemView(
         is CIContent.RcvGroupFeature -> CIChatFeatureView(cItem, c.groupFeature, c.preference.enable.iconColor)
         is CIContent.SndGroupFeature -> CIChatFeatureView(cItem, c.groupFeature, c.preference.enable.iconColor)
         is CIContent.RcvChatFeatureRejected -> CIChatFeatureView(cItem, c.feature, Color.Red)
+        is CIContent.RcvGroupFeatureRejected -> CIChatFeatureView(cItem, c.groupFeature, Color.Red)
       }
     }
   }

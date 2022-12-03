@@ -261,9 +261,9 @@ func apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent
     throw r
 }
 
-func apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode) async throws -> ChatItem {
+func apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode) async throws -> (ChatItem, ChatItem?) {
     let r = await chatSendCmd(.apiDeleteChatItem(type: type, id: id, itemId: itemId, mode: mode), bgDelay: msgDelay)
-    if case let .chatItemDeleted(_, toChatItem) = r { return toChatItem.chatItem }
+    if case let .chatItemDeleted(deletedChatItem, toChatItem, _) = r { return (deletedChatItem.chatItem, toChatItem?.chatItem) }
     throw r
 }
 
@@ -1010,14 +1010,11 @@ func processReceivedMsg(_ res: ChatResponse) async {
             }
         case let .chatItemUpdated(aChatItem):
             chatItemSimpleUpdate(aChatItem)
-        case let .chatItemDeleted(_, toChatItem):
-            let cInfo = toChatItem.chatInfo
-            let cItem = toChatItem.chatItem
-            if cItem.meta.itemDeleted {
-                m.removeChatItem(cInfo, cItem)
+        case let .chatItemDeleted(deletedChatItem, toChatItem, _):
+            if let toChatItem = toChatItem {
+                _ = m.upsertChatItem(toChatItem.chatInfo, toChatItem.chatItem)
             } else {
-                // currently only broadcast deletion of rcv message can be received, and only this case should happen
-                _ = m.upsertChatItem(cInfo, cItem)
+                m.removeChatItem(deletedChatItem.chatInfo, deletedChatItem.chatItem)
             }
         case let .receivedGroupInvitation(groupInfo, _, _):
             m.updateGroup(groupInfo) // update so that repeat group invitations are not duplicated
