@@ -195,11 +195,11 @@ module Simplex.Chat.Store
     updateDirectChatItemStatus,
     updateDirectCIFileStatus,
     updateDirectChatItem,
-    deleteDirectChatItemLocal,
-    deleteDirectChatItemRcvBroadcast,
+    deleteDirectChatItem,
+    markDirectChatItemDeleted,
     updateGroupChatItem,
-    deleteGroupChatItemLocal,
-    deleteGroupChatItemRcvBroadcast,
+    deleteGroupChatItem,
+    markGroupChatItemDeleted,
     updateDirectChatItemsRead,
     updateGroupChatItemsRead,
     getSMPServers,
@@ -298,6 +298,8 @@ import Simplex.Chat.Migrations.M20221025_chat_settings
 import Simplex.Chat.Migrations.M20221029_group_link_id
 import Simplex.Chat.Migrations.M20221112_server_password
 import Simplex.Chat.Migrations.M20221115_server_cfg
+import Simplex.Chat.Migrations.M20221129_delete_group_feature_items
+import Simplex.Chat.Migrations.M20221130_delete_item_deleted
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..))
@@ -346,7 +348,9 @@ schemaMigrations =
     ("20221025_chat_settings", m20221025_chat_settings),
     ("20221029_group_link_id", m20221029_group_link_id),
     ("20221112_server_password", m20221112_server_password),
-    ("20221115_server_cfg", m20221115_server_cfg)
+    ("20221115_server_cfg", m20221115_server_cfg),
+    ("20221129_delete_group_feature_items", m20221129_delete_group_feature_items),
+    ("20221130_delete_item_deleted", m20221130_delete_item_deleted)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -3242,7 +3246,6 @@ getDirectChatPreviews_ db user@User {userId} = do
         LEFT JOIN (
           SELECT contact_id, MAX(chat_item_id) AS MaxId
           FROM chat_items
-          WHERE item_deleted != 1
           GROUP BY contact_id
         ) MaxIds ON MaxIds.contact_id = ct.contact_id
         LEFT JOIN chat_items i ON i.contact_id = MaxIds.contact_id
@@ -3251,7 +3254,7 @@ getDirectChatPreviews_ db user@User {userId} = do
         LEFT JOIN (
           SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
           FROM chat_items
-          WHERE item_status = ? AND item_deleted != 1
+          WHERE item_status = ?
           GROUP BY contact_id
         ) ChatStats ON ChatStats.contact_id = ct.contact_id
         LEFT JOIN chat_items ri ON ri.shared_msg_id = i.quoted_shared_msg_id AND ri.contact_id = i.contact_id
@@ -3317,7 +3320,6 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
         LEFT JOIN (
           SELECT group_id, MAX(chat_item_id) AS MaxId
           FROM chat_items
-          WHERE item_deleted != 1
           GROUP BY group_id
         ) MaxIds ON MaxIds.group_id = g.group_id
         LEFT JOIN chat_items i ON i.group_id = MaxIds.group_id
@@ -3326,7 +3328,7 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
         LEFT JOIN (
           SELECT group_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
           FROM chat_items
-          WHERE item_status = ? AND item_deleted != 1
+          WHERE item_status = ?
           GROUP BY group_id
         ) ChatStats ON ChatStats.group_id = g.group_id
         LEFT JOIN group_members m ON m.group_member_id = i.group_member_id
@@ -3465,7 +3467,7 @@ getDirectChatLast_ db user@User {userId} contactId count search = do
             FROM chat_items i
             LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
             LEFT JOIN chat_items ri ON ri.shared_msg_id = i.quoted_shared_msg_id AND ri.contact_id = i.contact_id
-            WHERE i.user_id = ? AND i.contact_id = ? AND i.item_deleted != 1 AND i.item_text LIKE '%' || ? || '%'
+            WHERE i.user_id = ? AND i.contact_id = ? AND i.item_text LIKE '%' || ? || '%'
             ORDER BY i.chat_item_id DESC
             LIMIT ?
           |]
@@ -3496,7 +3498,7 @@ getDirectChatAfter_ db user@User {userId} contactId afterChatItemId count search
             FROM chat_items i
             LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
             LEFT JOIN chat_items ri ON ri.shared_msg_id = i.quoted_shared_msg_id AND ri.contact_id = i.contact_id
-            WHERE i.user_id = ? AND i.contact_id = ? AND i.item_deleted != 1 AND i.item_text LIKE '%' || ? || '%'
+            WHERE i.user_id = ? AND i.contact_id = ? AND i.item_text LIKE '%' || ? || '%'
               AND i.chat_item_id > ?
             ORDER BY i.chat_item_id ASC
             LIMIT ?
@@ -3528,7 +3530,7 @@ getDirectChatBefore_ db user@User {userId} contactId beforeChatItemId count sear
             FROM chat_items i
             LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
             LEFT JOIN chat_items ri ON ri.shared_msg_id = i.quoted_shared_msg_id AND ri.contact_id = i.contact_id
-            WHERE i.user_id = ? AND i.contact_id = ? AND i.item_deleted != 1 AND i.item_text LIKE '%' || ? || '%'
+            WHERE i.user_id = ? AND i.contact_id = ? AND i.item_text LIKE '%' || ? || '%'
               AND i.chat_item_id < ?
             ORDER BY i.chat_item_id DESC
             LIMIT ?
@@ -3594,7 +3596,7 @@ getGroupChatLast_ db user@User {userId} groupId count search = do
           [sql|
             SELECT chat_item_id
             FROM chat_items
-            WHERE user_id = ? AND group_id = ? AND item_deleted != 1 AND item_text LIKE '%' || ? || '%'
+            WHERE user_id = ? AND group_id = ? AND item_text LIKE '%' || ? || '%'
             ORDER BY item_ts DESC, chat_item_id DESC
             LIMIT ?
           |]
@@ -3617,7 +3619,7 @@ getGroupChatAfter_ db user@User {userId} groupId afterChatItemId count search = 
           [sql|
             SELECT chat_item_id
             FROM chat_items
-            WHERE user_id = ? AND group_id = ? AND item_deleted != 1 AND item_text LIKE '%' || ? || '%'
+            WHERE user_id = ? AND group_id = ? AND item_text LIKE '%' || ? || '%'
               AND (item_ts > ? OR (item_ts = ? AND chat_item_id > ?))
             ORDER BY item_ts ASC, chat_item_id ASC
             LIMIT ?
@@ -3641,7 +3643,7 @@ getGroupChatBefore_ db user@User {userId} groupId beforeChatItemId count search 
           [sql|
             SELECT chat_item_id
             FROM chat_items
-            WHERE user_id = ? AND group_id = ? AND item_deleted != 1 AND item_text LIKE '%' || ? || '%'
+            WHERE user_id = ? AND group_id = ? AND item_text LIKE '%' || ? || '%'
               AND (item_ts < ? OR (item_ts = ? AND chat_item_id < ?))
             ORDER BY item_ts DESC, chat_item_id DESC
             LIMIT ?
@@ -3789,24 +3791,17 @@ updateDirectChatItem_ db userId contactId itemId newContent currentTs = do
     correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
     correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
 
-deleteDirectChatItemLocal :: DB.Connection -> UserId -> Contact -> ChatItemId -> CIDeleteMode -> ExceptT StoreError IO AChatItem
-deleteDirectChatItemLocal db userId ct itemId mode = do
-  liftIO $ deleteChatItemMessages_ db itemId
-  deleteDirectChatItem_ db userId ct itemId mode
-
-deleteDirectChatItem_ :: DB.Connection -> UserId -> Contact -> ChatItemId -> CIDeleteMode -> ExceptT StoreError IO AChatItem
-deleteDirectChatItem_ db userId ct@Contact {contactId} itemId mode = do
-  (CChatItem msgDir ci) <- getDirectChatItem db userId contactId itemId
-  let toContent = msgDirToDeletedContent_ msgDir mode
-  liftIO $ do
-    DB.execute
-      db
-      [sql|
-        DELETE FROM chat_items
-        WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
-      |]
-      (userId, contactId, itemId)
-  pure $ AChatItem SCTDirect msgDir (DirectChat ct) (ci {content = toContent, meta = (meta ci) {itemText = ciDeleteModeToText mode, itemDeleted = True}, formattedText = Nothing})
+deleteDirectChatItem :: DB.Connection -> User -> Contact -> CChatItem 'CTDirect -> IO ()
+deleteDirectChatItem db User {userId} Contact {contactId} (CChatItem _ ci) = do
+  let itemId = chatItemId' ci
+  deleteChatItemMessages_ db itemId
+  DB.execute
+    db
+    [sql|
+      DELETE FROM chat_items
+      WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
+    |]
+    (userId, contactId, itemId)
 
 deleteChatItemMessages_ :: DB.Connection -> ChatItemId -> IO ()
 deleteChatItemMessages_ db itemId =
@@ -3822,27 +3817,20 @@ deleteChatItemMessages_ db itemId =
     |]
     (Only itemId)
 
-deleteDirectChatItemRcvBroadcast :: DB.Connection -> UserId -> Contact -> ChatItemId -> MessageId -> ExceptT StoreError IO AChatItem
-deleteDirectChatItemRcvBroadcast db userId ct itemId msgId = do
+markDirectChatItemDeleted :: DB.Connection -> User -> Contact -> CChatItem 'CTDirect -> MessageId -> IO AChatItem
+markDirectChatItemDeleted db User {userId} ct@Contact {contactId} (CChatItem msgDir ci) msgId = do
   currentTs <- liftIO getCurrentTime
-  liftIO $ insertChatItemMessage_ db itemId msgId currentTs
-  updateDirectChatItemRcvDeleted_ db userId ct itemId currentTs
-
-updateDirectChatItemRcvDeleted_ :: DB.Connection -> UserId -> Contact -> ChatItemId -> UTCTime -> ExceptT StoreError IO AChatItem
-updateDirectChatItemRcvDeleted_ db userId ct@Contact {contactId} itemId currentTs = do
-  (CChatItem msgDir ci) <- getDirectChatItem db userId contactId itemId
-  let toContent = msgDirToDeletedContent_ msgDir CIDMBroadcast
-      toText = ciDeleteModeToText CIDMBroadcast
-  liftIO $ do
-    DB.execute
-      db
-      [sql|
-        UPDATE chat_items
-        SET item_content = ?, item_text = ?, updated_at = ?
-        WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
-      |]
-      (toContent, toText, currentTs, userId, contactId, itemId)
-  pure $ AChatItem SCTDirect msgDir (DirectChat ct) (ci {content = toContent, meta = (meta ci) {itemText = toText}, formattedText = Nothing})
+  let itemId = chatItemId' ci
+  insertChatItemMessage_ db itemId msgId currentTs
+  DB.execute
+    db
+    [sql|
+      UPDATE chat_items
+      SET item_deleted = 1, updated_at = ?
+      WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
+    |]
+    (currentTs, userId, contactId, itemId)
+  pure $ AChatItem SCTDirect msgDir (DirectChat ct) (ci {meta = (meta ci) {itemDeleted = True}})
 
 getDirectChatItemBySharedMsgId :: DB.Connection -> UserId -> ContactId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTDirect)
 getDirectChatItemBySharedMsgId db userId contactId sharedMsgId = do
@@ -3926,46 +3914,32 @@ updateGroupChatItem db user@User {userId} groupId itemId newContent msgId = do
     correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
     correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
 
-deleteGroupChatItemLocal :: DB.Connection -> User -> GroupInfo -> ChatItemId -> CIDeleteMode -> ExceptT StoreError IO AChatItem
-deleteGroupChatItemLocal db user gInfo itemId mode = do
-  liftIO $ deleteChatItemMessages_ db itemId
-  deleteGroupChatItem_ db user gInfo itemId mode
+deleteGroupChatItem :: DB.Connection -> User -> GroupInfo -> CChatItem 'CTGroup -> IO ()
+deleteGroupChatItem db User {userId} GroupInfo {groupId} (CChatItem _ ci) = do
+  let itemId = chatItemId' ci
+  deleteChatItemMessages_ db itemId
+  DB.execute
+    db
+    [sql|
+      DELETE FROM chat_items
+      WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
+    |]
+    (userId, groupId, itemId)
 
-deleteGroupChatItem_ :: DB.Connection -> User -> GroupInfo -> ChatItemId -> CIDeleteMode -> ExceptT StoreError IO AChatItem
-deleteGroupChatItem_ db user@User {userId} gInfo@GroupInfo {groupId} itemId mode = do
-  (CChatItem msgDir ci) <- getGroupChatItem db user groupId itemId
-  let toContent = msgDirToDeletedContent_ msgDir mode
-  liftIO $ do
-    DB.execute
-      db
-      [sql|
-        DELETE FROM chat_items
-        WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
-      |]
-      (userId, groupId, itemId)
-  pure $ AChatItem SCTGroup msgDir (GroupChat gInfo) (ci {content = toContent, meta = (meta ci) {itemText = ciDeleteModeToText mode, itemDeleted = True}, formattedText = Nothing})
-
-deleteGroupChatItemRcvBroadcast :: DB.Connection -> User -> GroupInfo -> ChatItemId -> MessageId -> ExceptT StoreError IO AChatItem
-deleteGroupChatItemRcvBroadcast db user gInfo itemId msgId = do
+markGroupChatItemDeleted :: DB.Connection -> User -> GroupInfo -> CChatItem 'CTGroup -> MessageId -> IO AChatItem
+markGroupChatItemDeleted db User {userId} gInfo@GroupInfo {groupId} (CChatItem msgDir ci) msgId = do
   currentTs <- liftIO getCurrentTime
-  liftIO $ insertChatItemMessage_ db itemId msgId currentTs
-  updateGroupChatItemRcvDeleted_ db user gInfo itemId currentTs
-
-updateGroupChatItemRcvDeleted_ :: DB.Connection -> User -> GroupInfo -> ChatItemId -> UTCTime -> ExceptT StoreError IO AChatItem
-updateGroupChatItemRcvDeleted_ db user@User {userId} gInfo@GroupInfo {groupId} itemId currentTs = do
-  (CChatItem msgDir ci) <- getGroupChatItem db user groupId itemId
-  let toContent = msgDirToDeletedContent_ msgDir CIDMBroadcast
-      toText = ciDeleteModeToText CIDMBroadcast
-  liftIO $ do
-    DB.execute
-      db
-      [sql|
-        UPDATE chat_items
-        SET item_content = ?, item_text = ?, updated_at = ?
-        WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
-      |]
-      (toContent, toText, currentTs, userId, groupId, itemId)
-  pure $ AChatItem SCTGroup msgDir (GroupChat gInfo) (ci {content = toContent, meta = (meta ci) {itemText = toText}, formattedText = Nothing})
+  let itemId = chatItemId' ci
+  insertChatItemMessage_ db itemId msgId currentTs
+  DB.execute
+    db
+    [sql|
+      UPDATE chat_items
+      SET item_deleted = 1, updated_at = ?
+      WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
+    |]
+    (currentTs, userId, groupId, itemId)
+  pure $ AChatItem SCTGroup msgDir (GroupChat gInfo) (ci {meta = (meta ci) {itemDeleted = True}})
 
 getGroupChatItemBySharedMsgId :: DB.Connection -> User -> GroupId -> GroupMemberId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTGroup)
 getGroupChatItemBySharedMsgId db user@User {userId} groupId groupMemberId sharedMsgId = do

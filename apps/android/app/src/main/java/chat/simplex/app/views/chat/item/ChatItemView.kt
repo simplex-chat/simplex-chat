@@ -172,8 +172,8 @@ fun ChatItemView(
         is CIContent.SndConnEventContent -> CIEventView(cItem)
         is CIContent.RcvChatFeature -> CIChatFeatureView(cItem, c.feature, c.enabled.iconColor)
         is CIContent.SndChatFeature -> CIChatFeatureView(cItem, c.feature, c.enabled.iconColor)
-        is CIContent.RcvGroupFeature -> CIChatFeatureView(cItem, c.feature, c.preference.enable.iconColor)
-        is CIContent.SndGroupFeature -> CIChatFeatureView(cItem, c.feature, c.preference.enable.iconColor)
+        is CIContent.RcvGroupFeature -> CIChatFeatureView(cItem, c.groupFeature, c.preference.enable.iconColor)
+        is CIContent.SndGroupFeature -> CIChatFeatureView(cItem, c.groupFeature, c.preference.enable.iconColor)
         is CIContent.RcvChatFeatureRejected -> CIChatFeatureView(cItem, c.feature, Color.Red)
       }
     }

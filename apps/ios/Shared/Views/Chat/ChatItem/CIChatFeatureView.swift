@@ -29,6 +29,6 @@ struct CIChatFeatureView: View {
 struct CIChatFeatureView_Previews: PreviewProvider {
     static var previews: some View {
         let enabled = FeatureEnabled(forUser: false, forContact: false)
-        CIChatFeatureView(chatItem: ChatItem.getChatFeatureSample(.fullDelete, enabled), feature: .fullDelete, iconColor: enabled.iconColor)
+        CIChatFeatureView(chatItem: ChatItem.getChatFeatureSample(.fullDelete, enabled), feature: ChatFeature.fullDelete, iconColor: enabled.iconColor)
     }
 }

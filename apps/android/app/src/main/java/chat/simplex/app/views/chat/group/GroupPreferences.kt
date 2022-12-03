@@ -62,13 +62,17 @@ private fun GroupPreferencesLayout(
     horizontalAlignment = Alignment.Start,
   ) {
     AppBarTitle(stringResource(R.string.group_preferences))
+    val allowDirectMessages = remember(preferences) { mutableStateOf(preferences.directMessages.enable) }
+    FeatureSection(GroupFeature.DirectMessages, allowDirectMessages, groupInfo) {
+      applyPrefs(preferences.copy(directMessages = GroupPreference(enable = it)))
+    }
 //    val allowFullDeletion = remember(preferences) { mutableStateOf(preferences.fullDelete.enable) }
 //    FeatureSection(Feature.FullDelete, allowFullDeletion, groupInfo) {
 //      applyPrefs(preferences.copy(fullDelete = GroupPreference(enable = it)))
 //    }
 //    SectionSpacer()
     val allowVoice = remember(preferences) { mutableStateOf(preferences.voice.enable) }
-    FeatureSection(Feature.Voice, allowVoice, groupInfo) {
+    FeatureSection(GroupFeature.Voice, allowVoice, groupInfo) {
       applyPrefs(preferences.copy(voice = GroupPreference(enable = it)))
     }
     if (groupInfo.canEdit) {
@@ -83,7 +87,7 @@ private fun GroupPreferencesLayout(
 }
 
 @Composable
-private fun FeatureSection(feature: Feature, enableFeature: State<GroupFeatureEnabled>, groupInfo: GroupInfo, onSelected: (GroupFeatureEnabled) -> Unit) {
+private fun FeatureSection(feature: GroupFeature, enableFeature: State<GroupFeatureEnabled>, groupInfo: GroupInfo, onSelected: (GroupFeatureEnabled) -> Unit) {
   SectionView {
     if (groupInfo.canEdit) {
       SectionItemView {
@@ -102,7 +106,7 @@ private fun FeatureSection(feature: Feature, enableFeature: State<GroupFeatureEn
       )
     }
   }
-  SectionTextFooter(feature.enableGroupPrefDescription(enableFeature.value, groupInfo.canEdit))
+  SectionTextFooter(feature.enableDescription(enableFeature.value, groupInfo.canEdit))
 }
 
 @Composable
