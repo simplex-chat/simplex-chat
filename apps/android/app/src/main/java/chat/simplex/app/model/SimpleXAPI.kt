@@ -1083,10 +1083,10 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         chatItemSimpleUpdate(r.chatItem)
       is CR.ChatItemDeleted -> {
         AudioPlayer.stop(r.deletedChatItem.chatItem)
-        if (r.toChatItem != null) {
-          chatModel.upsertChatItem(r.toChatItem.chatInfo, r.toChatItem.chatItem)
-        } else {
+        if (r.toChatItem == null) {
           chatModel.removeChatItem(r.deletedChatItem.chatInfo, r.deletedChatItem.chatItem)
+        } else {
+          chatModel.upsertChatItem(r.toChatItem.chatInfo, r.toChatItem.chatItem)
         }
       }
       is CR.ReceivedGroupInvitation -> {

@@ -174,10 +174,10 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
           )
           if (r != null) {
             val toChatItem = r.toChatItem
-            if (toChatItem != null) {
-              chatModel.upsertChatItem(cInfo, toChatItem.chatItem)
-            } else {
+            if (toChatItem == null) {
               chatModel.removeChatItem(cInfo, r.deletedChatItem.chatItem)
+            } else {
+              chatModel.upsertChatItem(cInfo, toChatItem.chatItem)
             }
           }
         }
