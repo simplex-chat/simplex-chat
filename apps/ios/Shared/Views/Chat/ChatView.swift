@@ -34,7 +34,7 @@ struct ChatView: View {
     // opening GroupMemberInfoView on member icon
     @State private var selectedMember: GroupMember? = nil
     @State private var memberConnectionStats: ConnectionStats?
-
+    
     var body: some View {
         let cInfo = chat.chatInfo
         return VStack(spacing: 0) {
@@ -48,9 +48,9 @@ struct ChatView: View {
                     floatingButtons(proxy)
                 }
             }
-
+            
             Spacer(minLength: 0)
-
+            
             ComposeView(
                 chat: chat,
                 composeState: $composeState,
@@ -170,16 +170,16 @@ struct ChatView: View {
             }
         }
     }
-
+    
     private func searchToolbar() -> some View {
         HStack {
             HStack {
                 Image(systemName: "magnifyingglass")
                 TextField("Search", text: $searchText)
-                .focused($searchFocussed)
-                .foregroundColor(.primary)
-                .frame(maxWidth: .infinity)
-
+                    .focused($searchFocussed)
+                    .foregroundColor(.primary)
+                    .frame(maxWidth: .infinity)
+                
                 Button {
                     searchText = ""
                 } label: {
@@ -190,7 +190,7 @@ struct ChatView: View {
             .foregroundColor(.secondary)
             .background(Color(.secondarySystemBackground))
             .cornerRadius(10.0)
-
+            
             Button ("Cancel") {
                 searchText = ""
                 searchMode = false
@@ -204,37 +204,37 @@ struct ChatView: View {
         .padding(.horizontal)
         .padding(.vertical, 8)
     }
-
+    
     private func chatItemsList() -> some View {
         let cInfo = chat.chatInfo
         return GeometryReader { g in
             ScrollViewReader { proxy in
                 ScrollView {
                     let maxWidth =
-                        cInfo.chatType == .group
-                        ? (g.size.width - 28) * 0.84 - 42
-                        : (g.size.width - 32) * 0.84
+                    cInfo.chatType == .group
+                    ? (g.size.width - 28) * 0.84 - 42
+                    : (g.size.width - 32) * 0.84
                     LazyVStack(spacing: 5)  {
                         ForEach(chatModel.reversedChatItems, id: \.viewId) { ci in
                             chatItemView(ci, maxWidth)
-                            .scaleEffect(x: 1, y: -1, anchor: .center)
-                            .onAppear {
-                                itemsInView.insert(ci.viewId)
-                                loadChatItems(cInfo, ci, proxy)
-                                if ci.isRcvNew() {
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                                        if chatModel.chatId == cInfo.id && itemsInView.contains(ci.viewId) {
-                                            Task {
-                                                await apiMarkChatItemRead(cInfo, ci)
-                                                NtfManager.shared.decNtfBadgeCount()
+                                .scaleEffect(x: 1, y: -1, anchor: .center)
+                                .onAppear {
+                                    itemsInView.insert(ci.viewId)
+                                    loadChatItems(cInfo, ci, proxy)
+                                    if ci.isRcvNew() {
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                                            if chatModel.chatId == cInfo.id && itemsInView.contains(ci.viewId) {
+                                                Task {
+                                                    await apiMarkChatItemRead(cInfo, ci)
+                                                    NtfManager.shared.decNtfBadgeCount()
+                                                }
                                             }
                                         }
                                     }
                                 }
-                            }
-                            .onDisappear {
-                                itemsInView.remove(ci.viewId)
-                            }
+                                .onDisappear {
+                                    itemsInView.remove(ci.viewId)
+                                }
                         }
                     }
                 }
@@ -258,7 +258,7 @@ struct ChatView: View {
         }
         .scaleEffect(x: 1, y: -1, anchor: .center)
     }
-
+    
     private func floatingButtons(_ proxy: ScrollViewProxy) -> some View {
         let counts = chatModel.unreadChatItemCounts(itemsInView: itemsInView)
         return VStack {
@@ -300,7 +300,7 @@ struct ChatView: View {
         }
         .padding()
     }
-
+    
     private func circleButton<Content: View>(_ content: @escaping () -> Content) -> some View {
         ZStack {
             Circle()
@@ -309,7 +309,7 @@ struct ChatView: View {
             content()
         }
     }
-
+    
     private func callButton(_ contact: Contact, _ media: CallMediaType, imageName: String) -> some View {
         Button {
             CallController.shared.startCall(contact, media)
@@ -317,7 +317,7 @@ struct ChatView: View {
             Image(systemName: imageName)
         }
     }
-
+    
     private func searchButton() -> some View {
         Button {
             searchMode = true
@@ -327,7 +327,7 @@ struct ChatView: View {
             Label("Search", systemImage: "magnifyingglass")
         }
     }
-
+    
     private func addMembersButton() -> some View {
         Button {
             if case let .group(gInfo) = chat.chatInfo {
@@ -343,7 +343,7 @@ struct ChatView: View {
             Image(systemName: "person.crop.circle.badge.plus")
         }
     }
-
+    
     private func loadChatItems(_ cInfo: ChatInfo, _ ci: ChatItem, _ proxy: ScrollViewProxy) {
         if let firstItem = chatModel.reversedChatItems.last, firstItem.id == ci.id {
             if loadingItems || firstPage { return }
@@ -371,7 +371,7 @@ struct ChatView: View {
             }
         }
     }
-
+    
     @ViewBuilder private func chatItemView(_ ci: ChatItem, _ maxWidth: CGFloat) -> some View {
         if case let .groupRcv(member) = ci.chatDir,
            case let .group(groupInfo) = chat.chatInfo {
@@ -429,7 +429,7 @@ struct ChatView: View {
             ).padding(.horizontal)
         }
     }
-
+    
     private struct ChatItemWithMenu: View {
         var chat: Chat
         var ci: ChatItem
@@ -589,7 +589,7 @@ struct ChatView: View {
             chat.chatInfo.fullDeletionAllowed ? "Delete for everyone" : "Mark deleted for everyone"
         }
     }
-
+    
     private func showMemberImage(_ member: GroupMember, _ prevItem: ChatItem?) -> Bool {
         switch (prevItem?.chatDir) {
         case .groupSnd: return true
@@ -597,19 +597,19 @@ struct ChatView: View {
         default: return false
         }
     }
-
+    
     private func scrollToBottom(_ proxy: ScrollViewProxy) {
         if let ci = chatModel.reversedChatItems.first {
             withAnimation { proxy.scrollTo(ci.viewId, anchor: .top) }
         }
     }
-
+    
     private func scrollUp(_ proxy: ScrollViewProxy) {
         if let ci = chatModel.topItemInView(itemsInView: itemsInView) {
             withAnimation { proxy.scrollTo(ci.viewId, anchor: .top) }
         }
     }
-
+    
     private func deleteMessage(_ mode: CIDeleteMode) {
         logger.debug("ChatView deleteMessage")
         Task {
