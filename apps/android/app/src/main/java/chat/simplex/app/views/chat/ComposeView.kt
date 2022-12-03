@@ -457,8 +457,9 @@ fun ComposeView(
 
   fun allowVoiceToContact() {
     val contact = (chat.chatInfo as ChatInfo.Direct?)?.contact ?: return
-    val prefs = contact.mergedPreferences.toPreferences().copy(voice = ChatPreference(allow = FeatureAllowed.YES))
+    val featuresAllowed = contactUserPrefsToFeaturesAllowed(contact.mergedPreferences)
     withApi {
+      val prefs = contactFeaturesAllowedToPrefs(featuresAllowed).copy(voice = ChatPreference(FeatureAllowed.YES))
       val toContact = chatModel.controller.apiSetContactPrefs(contact.contactId, prefs)
       if (toContact != null) {
         chatModel.updateContact(toContact)

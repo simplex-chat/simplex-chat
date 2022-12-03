@@ -1985,11 +1985,6 @@ data class ContactUserPreferences(
   val fullDelete: ContactUserPreference,
   val voice: ContactUserPreference,
 ) {
-  fun toPreferences(): ChatPreferences = ChatPreferences(
-    fullDelete = fullDelete.userPreference.pref,
-    voice = voice.userPreference.pref
-  )
-
   companion object {
     val sampleData = ContactUserPreferences(
       fullDelete = ContactUserPreference(
