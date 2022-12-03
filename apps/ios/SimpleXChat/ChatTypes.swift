@@ -1374,7 +1374,6 @@ public struct ChatItem: Identifiable, Decodable {
 
     public var timestampText: Text { meta.timestampText }
 
-    // pair with formattedText
     public var text: String {
         switch (content.text, content.msgContent, file) {
         case let ("", .some(.voice(_, duration)), _): return "Voice message (\(durationText(duration)))"
@@ -1596,7 +1595,7 @@ public enum CIStatus: Decodable {
     case sndNew
     case sndSent
     case sndErrorAuth
-    case sndError(agentError: AgentErrorType)
+    case sndError(agentError: String)
     case rcvNew
     case rcvRead
 

@@ -603,16 +603,16 @@ func apiReceiveFile(fileId: Int64, inline: Bool) async -> AChatItem? {
 func networkErrorAlert(_ r: ChatResponse) -> Bool {
     let am = AlertManager.shared
     switch r {
-    case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
+    case let .chatCmdError(.errorAgent(.BROKER(addr, .TIMEOUT))):
         am.showAlertMsg(
             title: "Connection timeout",
-            message: "Please check your network connection and try again."
+            message: "Please check your network connection with \(serverHostname(addr)) and try again."
         )
         return true
-    case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
+    case let .chatCmdError(.errorAgent(.BROKER(addr, .NETWORK))):
         am.showAlertMsg(
             title: "Connection error",
-            message: "Please check your network connection and try again."
+            message: "Please check your network connection with \(serverHostname(addr)) and try again."
         )
         return true
     default:
@@ -1146,7 +1146,7 @@ func processContactSubError(_ contact: Contact, _ chatError: ChatError) {
     m.updateContact(contact)
     var err: String
     switch chatError {
-    case .errorAgent(agentError: .BROKER(brokerErr: .NETWORK)): err = "network"
+    case .errorAgent(agentError: .BROKER(_, .NETWORK)): err = "network"
     case .errorAgent(agentError: .SMP(smpErr: .AUTH)): err = "contact deleted"
     default: err = String(describing: chatError)
     }

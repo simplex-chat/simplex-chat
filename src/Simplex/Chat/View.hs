@@ -496,6 +496,10 @@ viewCannotResendInvitation GroupInfo {localDisplayName = gn} c =
     "to re-send invitation: " <> highlight ("/rm " <> gn <> " " <> c) <> ", " <> highlight ("/a " <> gn <> " " <> c)
   ]
 
+viewDirectMessagesProhibited :: MsgDirection -> Contact -> [StyledString]
+viewDirectMessagesProhibited MDSnd c = [ "direct messages to indirect contact " <> ttyContact' c <> " are prohibited"]
+viewDirectMessagesProhibited MDRcv c = [ "received prohibited direct message from indirect contact " <> ttyContact' c <> " (discarded)"]
+
 viewUserJoinedGroup :: GroupInfo -> [StyledString]
 viewUserJoinedGroup g@GroupInfo {membership = membership@GroupMember {memberProfile}} =
   if memberIncognito membership
@@ -1098,6 +1102,7 @@ viewChatError = \case
     CENoCurrentCall -> ["no call in progress"]
     CECallContact _ -> []
     CECallState _ -> []
+    CEDirectMessagesProhibited dir ct -> viewDirectMessagesProhibited dir ct
     CEAgentVersion -> ["unsupported agent version"]
     CEAgentNoSubResult connId -> ["no subscription result for connection: " <> sShow connId]
     CECommandError e -> ["bad chat command: " <> plain e]

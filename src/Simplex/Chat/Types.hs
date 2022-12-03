@@ -123,6 +123,9 @@ directContact :: Contact -> Bool
 directContact Contact {contactUsed, activeConn = Connection {connLevel, viaGroupLink}} =
   (connLevel == 0 && not viaGroupLink) || contactUsed
 
+anyDirectContact :: Contact -> Bool
+anyDirectContact Contact {contactUsed, activeConn = Connection {connLevel}} = connLevel == 0 || contactUsed
+
 data ContactRef = ContactRef
   { contactId :: ContactId,
     localDisplayName :: ContactName
@@ -342,8 +345,11 @@ groupFeatureToText = \case
   GFVoice -> "Voice messages"
 
 groupFeatureAllowed :: GroupFeature -> GroupInfo -> Bool
-groupFeatureAllowed feature GroupInfo {fullGroupPreferences} =
-  let GroupPreference {enable} = getGroupPreference feature fullGroupPreferences
+groupFeatureAllowed feature gInfo = groupFeatureAllowed' feature $ fullGroupPreferences gInfo
+
+groupFeatureAllowed' :: GroupFeature -> FullGroupPreferences -> Bool
+groupFeatureAllowed' feature prefs =
+  let GroupPreference {enable} = getGroupPreference feature prefs
    in enable == FEOn
 
 instance ToJSON GroupFeature where
@@ -489,6 +495,9 @@ defaultGroupPrefs =
       -- receipts = GroupPreference {enable = FEOff},
       voice = GroupPreference {enable = FEOn}
     }
+
+emptyGroupPrefs :: GroupPreferences
+emptyGroupPrefs = GroupPreferences Nothing Nothing Nothing
 
 data Preference = Preference
   {allow :: FeatureAllowed}

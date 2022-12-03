@@ -124,6 +124,7 @@ chatTests = do
     it "update group preferences" testUpdateGroupPrefs
     it "allow full deletion to contact" testAllowFullDeletionContact
     it "allow full deletion to group" testAllowFullDeletionGroup
+    it "prohibit direct messages to group members" testProhibitDirectMessages
   describe "SMP servers" $ do
     it "get and set SMP servers" testGetSetSMPServers
     it "test SMP server connection" testTestSMPServerConnection
@@ -3010,7 +3011,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     bob ##> sendVoice
     bob <## voiceNotAllowed
     -- alice ##> "/_set prefs @2 {\"voice\": {\"allow\": \"always\"}}"
-    alice ##> "/voice @bob always"
+    alice ##> "/set voice @bob always"
     alice <## "you updated preferences for bob:"
     alice <## "Voice messages: enabled for contact (you allow: always, contact allows: no)"
     alice #$> ("/_get chat @2 count=100", chat, startFeatures <> [(1, "Voice messages: enabled for contact")])
@@ -3029,7 +3030,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     alice <## "completed receiving file 1 (test.txt) from bob"
     (bob </)
     -- alice ##> "/_profile {\"displayName\": \"alice\", \"fullName\": \"Alice\", \"preferences\": {\"voice\": {\"allow\": \"no\"}}}"
-    alice ##> "/voice no"
+    alice ##> "/set voice no"
     alice <## "updated preferences:"
     alice <## "Voice messages allowed: no"
     (alice </)
@@ -3074,7 +3075,7 @@ testUpdateGroupPrefs =
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected")])
       threadDelay 1000000
-      alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"on\"}}}"
+      alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"on\"}, \"directMessages\": {\"enable\": \"on\"}}}"
       alice <## "updated group preferences:"
       alice <## "Full deletion enabled: on"
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Full deletion: on")])
@@ -3083,7 +3084,7 @@ testUpdateGroupPrefs =
       bob <## "Full deletion enabled: on"
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Full deletion: on")])
       threadDelay 1000000
-      alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"off\"}}}"
+      alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"off\"}, \"directMessages\": {\"enable\": \"on\"}}}"
       alice <## "updated group preferences:"
       alice <## "Full deletion enabled: off"
       alice <## "Voice messages enabled: off"
@@ -3095,7 +3096,7 @@ testUpdateGroupPrefs =
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Full deletion: on"), (0, "Full deletion: off"), (0, "Voice messages: off")])
       threadDelay 1000000
       -- alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"on\"}}}"
-      alice ##> "/voice #team on"
+      alice ##> "/set voice #team on"
       alice <## "updated group preferences:"
       alice <## "Voice messages enabled: on"
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on")])
@@ -3104,7 +3105,7 @@ testUpdateGroupPrefs =
       bob <## "Voice messages enabled: on"
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Full deletion: on"), (0, "Full deletion: off"), (0, "Voice messages: off"), (0, "Voice messages: on")])
       threadDelay 1000000
-      alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"on\"}}}"
+      alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"on\"}, \"directMessages\": {\"enable\": \"on\"}}}"
       -- no update
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on")])
       threadDelay 1000000
@@ -3122,7 +3123,7 @@ testAllowFullDeletionContact =
     \alice bob -> do
       connectUsers alice bob
       alice <##> bob
-      alice ##> "/full_delete @bob always"
+      alice ##> "/set delete @bob always"
       alice <## "you updated preferences for bob:"
       alice <## "Full deletion: enabled for contact (you allow: always, contact allows: no)"
       bob <## "alice updated preferences for you:"
@@ -3145,7 +3146,7 @@ testAllowFullDeletionGroup =
       threadDelay 1000000
       bob #> "#team hey"
       alice <# "#team bob> hey"
-      alice ##> "/full_delete #team on"
+      alice ##> "/set delete #team on"
       alice <## "updated group preferences:"
       alice <## "Full deletion enabled: on"
       bob <## "alice updated group #team:"
@@ -3157,6 +3158,62 @@ testAllowFullDeletionGroup =
       alice <# "#team bob> [deleted] hey"
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "hi"), (1, "Full deletion: on")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "hi"), (0, "Full deletion: on")])
+
+testProhibitDirectMessages :: IO ()
+testProhibitDirectMessages =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
+    createGroup3 "team" alice bob cath
+    threadDelay 1000000
+    alice ##> "/set direct #team off"
+    alice <## "updated group preferences:"
+    alice <## "Direct messages enabled: off"
+    directProhibited bob
+    directProhibited cath
+    threadDelay 1000000
+    -- still can send direct messages to direct contacts
+    alice #> "@bob hello again"
+    bob <# "alice> hello again"
+    alice #> "@cath hello again"
+    cath <# "alice> hello again"
+    bob ##> "@cath hello again"
+    bob <## "direct messages to indirect contact cath are prohibited"
+    (cath </)
+    connectUsers cath dan
+    addMember "team" cath dan GRMember
+    dan ##> "/j #team"
+    concurrentlyN_
+      [ cath <## ("#team: dan joined the group"),
+        do
+          dan <## ("#team: you joined the group")
+          dan <### 
+                [ "#team: member alice (Alice) is connected",
+                  "#team: member bob (Bob) is connected"
+                ],
+        do
+          alice <## ("#team: cath added dan (Daniel) to the group (connecting...)")
+          alice <## ("#team: new member dan is connected"),
+        do
+          bob <## ("#team: cath added dan (Daniel) to the group (connecting...)")
+          bob <## ("#team: new member dan is connected")
+      ]
+    alice ##> "@dan hi"
+    alice <## "direct messages to indirect contact dan are prohibited"
+    bob ##> "@dan hi"
+    bob <## "direct messages to indirect contact dan are prohibited"
+    (dan </)
+    dan ##> "@alice hi"
+    dan <## "direct messages to indirect contact alice are prohibited"
+    dan ##> "@bob hi"
+    dan <## "direct messages to indirect contact bob are prohibited"
+    dan #> "@cath hi"
+    cath <# "dan> hi"
+    cath #> "@dan hi"
+    dan <# "cath> hi"
+  where
+    directProhibited cc = do
+      cc <## "alice updated group #team:"
+      cc <## "updated group preferences:"
+      cc <## "Direct messages enabled: off"
 
 testGetSetSMPServers :: IO ()
 testGetSetSMPServers =
@@ -4296,7 +4353,7 @@ groupFeatures :: [(Int, String)]
 groupFeatures = map (\(a, _, _) -> a) groupFeatures''
 
 groupFeatures'' :: [((Int, String), Maybe (Int, String), Maybe String)]
-groupFeatures'' = [((0, "Direct messages: off"), Nothing, Nothing), ((0, "Full deletion: off"), Nothing, Nothing), ((0, "Voice messages: on"), Nothing, Nothing)]
+groupFeatures'' = [((0, "Direct messages: on"), Nothing, Nothing), ((0, "Full deletion: off"), Nothing, Nothing), ((0, "Voice messages: on"), Nothing, Nothing)]
 
 itemId :: Int -> String
 itemId i = show $ length chatFeatures + i

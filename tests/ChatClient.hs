@@ -212,15 +212,14 @@ testChatN cfg opts ps test = withTmpFiles $ do
 (<//) cc t = timeout t (getTermLine cc) `shouldReturn` Nothing
 
 getTermLine :: TestCC -> IO String
-getTermLine = atomically . readTQueue . termQ
-
--- Use code below to echo virtual terminal
--- getTermLine :: TestCC -> IO String
--- getTermLine cc = do
---   s <- atomically . readTQueue $ termQ cc
---   name <- userName cc
---   putStrLn $ name <> ": " <> s
---   pure s
+getTermLine cc =
+  5000000 `timeout` atomically (readTQueue $ termQ cc) >>= \case
+    Just s -> do
+      -- uncomment code below to echo virtual terminal
+      -- name <- userName cc
+      -- putStrLn $ name <> ": " <> s
+      pure s
+    _ -> error "no output for 5 seconds"
 
 userName :: TestCC -> IO [Char]
 userName (TestCC ChatController {currentUser} _ _ _ _) = T.unpack . localDisplayName . fromJust <$> readTVarIO currentUser
