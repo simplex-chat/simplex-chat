@@ -576,7 +576,13 @@ fun ComposeView(
             .clip(CircleShape)
         )
       }
-      val allowedVoiceByPrefs = remember { chat.chatInfo.voiceMessageAllowed }
+      val allowedVoiceByPrefs = remember(chat.chatInfo) {
+        when (chat.chatInfo) {
+          is ChatInfo.Direct -> chat.chatInfo.contact.mergedPreferences.voice.enabled.forUser
+          is ChatInfo.Group -> chat.chatInfo.groupInfo.fullGroupPreferences.voice.enable == GroupFeatureEnabled.ON
+          else -> false
+        }
+      }
       val needToAllowVoiceToContact = remember(chat.chatInfo) {
         when (chat.chatInfo) {
           is ChatInfo.Direct -> with(chat.chatInfo.contact.mergedPreferences.voice) {
