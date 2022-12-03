@@ -166,13 +166,20 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
       deleteMessage = { itemId, mode ->
         withApi {
           val cInfo = chat.chatInfo
-          val toItem = chatModel.controller.apiDeleteChatItem(
+          val r = chatModel.controller.apiDeleteChatItem(
             type = cInfo.chatType,
             id = cInfo.apiId,
             itemId = itemId,
             mode = mode
           )
-          if (toItem != null) chatModel.removeChatItem(cInfo, toItem.chatItem)
+          if (r != null) {
+            val toChatItem = r.toChatItem
+            if (toChatItem == null) {
+              chatModel.removeChatItem(cInfo, r.deletedChatItem.chatItem)
+            } else {
+              chatModel.upsertChatItem(cInfo, toChatItem.chatItem)
+            }
+          }
         }
       },
       receiveFile = { fileId ->

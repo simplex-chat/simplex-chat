@@ -54,7 +54,7 @@ public struct Profile: Codable, NamedChat {
         (fullName == "" || displayName == fullName) ? displayName : "\(displayName) (\(fullName))"
     }
 
-    static let sampleData = Profile(
+    public static let sampleData = Profile(
         displayName: "alice",
         fullName: "Alice"
     )
@@ -695,7 +695,15 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
         switch self {
         case let .direct(contact): return contact.mergedPreferences.voice.enabled.forUser
         case let .group(groupInfo): return groupInfo.fullGroupPreferences.voice.on
-        default: return true
+        default: return false
+        }
+    }
+
+    public var fullDeletionAllowed: Bool {
+        switch self {
+        case let .direct(contact): return contact.mergedPreferences.fullDelete.enabled.forUser
+        case let .group(groupInfo): return groupInfo.fullGroupPreferences.fullDelete.on
+        default: return false
         }
     }
 
@@ -1366,6 +1374,7 @@ public struct ChatItem: Identifiable, Decodable {
 
     public var timestampText: Text { meta.timestampText }
 
+    // pair with formattedText
     public var text: String {
         switch (content.text, content.msgContent, file) {
         case let ("", .some(.voice(_, duration)), _): return "Voice message (\(durationText(duration)))"
@@ -1763,6 +1772,13 @@ public enum MsgContent {
         case let .voice(text, _): return text
         case let .file(text): return text
         case let .unknown(_, text): return text
+        }
+    }
+
+    public var isText: Bool {
+        switch self {
+        case .text: return true
+        default: return false
         }
     }
 

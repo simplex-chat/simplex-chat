@@ -37,6 +37,8 @@ external fun chatParseServer(str: String): String
 class SimplexApp: Application(), LifecycleEventObserver {
   lateinit var chatController: ChatController
 
+  var isAppOnForeground: Boolean = false
+
   fun initChatController(useKey: String? = null, startChat: Boolean = true) {
     val dbKey = useKey ?: DatabaseUtils.useDatabaseKey() ?: ""
     val dbAbsolutePathPrefix = getFilesDirectory(SimplexApp.context)
@@ -96,6 +98,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
     withApi {
       when (event) {
         Lifecycle.Event.ON_START -> {
+          isAppOnForeground = true
           if (chatModel.chatRunning.value == true) {
             kotlin.runCatching {
               val chats = chatController.apiGetChats()
@@ -104,6 +107,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
           }
         }
         Lifecycle.Event.ON_RESUME -> {
+          isAppOnForeground = true
           if (chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete) {
             chatController.showBackgroundServiceNoticeIfNeeded()
           }
@@ -115,7 +119,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
           if (chatModel.chatRunning.value != false && appPreferences.notificationsMode.get() == NotificationsMode.SERVICE.name)
             SimplexService.start(applicationContext)
         }
-        else -> {}
+        else -> isAppOnForeground = false
       }
     }
   }
