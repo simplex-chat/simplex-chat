@@ -91,6 +91,7 @@ module Simplex.Chat.Store
     deleteGroup,
     getUserGroups,
     getUserGroupDetails,
+    getContactGroupPreferences,
     getGroupInvitation,
     createNewContactMember,
     createNewContactMemberAsync,
@@ -1816,6 +1817,20 @@ getUserGroupDetails db User {userId, userContactId} =
         WHERE g.user_id = ? AND mu.contact_id = ?
       |]
       (userId, userContactId)
+
+getContactGroupPreferences :: DB.Connection -> User -> Contact -> IO [FullGroupPreferences]
+getContactGroupPreferences db User {userId} Contact {contactId} = do
+  map (mergeGroupPreferences . fromOnly)
+    <$> DB.query
+      db
+      [sql|
+        SELECT gp.preferences
+        FROM groups g
+        JOIN group_profiles gp USING (group_profile_id)
+        JOIN group_members m USING (group_id)
+        WHERE g.user_id = ? AND m.contact_id = ?
+      |]
+      (userId, contactId)
 
 getGroupInfoByName :: DB.Connection -> User -> GroupName -> ExceptT StoreError IO GroupInfo
 getGroupInfoByName db user gName = do

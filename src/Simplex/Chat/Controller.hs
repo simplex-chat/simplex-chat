@@ -547,6 +547,7 @@ data ChatErrorType
   | CENoCurrentCall
   | CECallContact {contactId :: Int64}
   | CECallState {currentCallState :: CallStateTag}
+  | CEDirectMessagesProhibited {direction :: MsgDirection, contact :: Contact}
   | CEAgentVersion
   | CEAgentNoSubResult {agentConnId :: AgentConnId}
   | CECommandError {message :: String}

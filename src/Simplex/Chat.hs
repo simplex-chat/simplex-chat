@@ -290,6 +290,7 @@ processChatCommand = \case
   APISendMessage (ChatRef cType chatId) (ComposedMessage file_ quotedItemId_ mc) -> withUser $ \user@User {userId} -> withChatLock "sendMessage" $ case cType of
     CTDirect -> do
       ct@Contact {localDisplayName = c, contactUsed} <- withStore $ \db -> getContact db user chatId
+      assertDirectAllowed user MDSnd ct XMsgNew_
       unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
       if isVoice mc && not (featureAllowed CFVoice forUser ct)
         then pure $ chatCmdError $ "feature not allowed " <> T.unpack (chatFeatureToText CFVoice)
@@ -418,6 +419,7 @@ processChatCommand = \case
   APIUpdateChatItem (ChatRef cType chatId) itemId mc -> withUser $ \user@User {userId} -> withChatLock "updateChatItem" $ case cType of
     CTDirect -> do
       (ct@Contact {contactId, localDisplayName = c}, ci) <- withStore $ \db -> (,) <$> getContact db user chatId <*> getDirectChatItem db userId chatId itemId
+      assertDirectAllowed user MDSnd ct XMsgUpdate_
       case ci of
         CChatItem SMDSnd ChatItem {meta = CIMeta {itemSharedMsgId}, content = ciContent} -> do
           case (ciContent, itemSharedMsgId) of
@@ -447,6 +449,7 @@ processChatCommand = \case
   APIDeleteChatItem (ChatRef cType chatId) itemId mode -> withUser $ \user@User {userId} -> withChatLock "deleteChatItem" $ case cType of
     CTDirect -> do
       (ct@Contact {localDisplayName = c}, ci@(CChatItem msgDir ChatItem {meta = CIMeta {itemSharedMsgId}})) <- withStore $ \db -> (,) <$> getContact db user chatId <*> getDirectChatItem db userId chatId itemId
+      assertDirectAllowed user MDSnd ct XMsgDel_
       case (mode, msgDir, itemSharedMsgId) of
         (CIDMInternal, _, _) -> deleteDirectCI user ct ci True
         (CIDMBroadcast, SMDSnd, Just itemSharedMId) -> do
@@ -570,6 +573,7 @@ processChatCommand = \case
   APISendCallInvitation contactId callType -> withUser $ \user@User {userId} -> do
     -- party initiating call
     ct <- withStore $ \db -> getContact db user contactId
+    assertDirectAllowed user MDSnd ct XCallInv_
     calls <- asks currentCalls
     withChatLock "sendCallInvitation" $ do
       callId <- CallId <$> (asks idsDrg >>= liftIO . (`randomBytes` 16))
@@ -852,6 +856,7 @@ processChatCommand = \case
   APIAddMember groupId contactId memRole -> withUser $ \user -> withChatLock "addMember" $ do
     -- TODO for large groups: no need to load all members to determine if contact is a member
     (group, contact) <- withStore $ \db -> (,) <$> getGroup db user groupId <*> getContact db user contactId
+    assertDirectAllowed user MDSnd contact XGrpInv_
     let Group gInfo@GroupInfo {membership} members = group
         GroupMember {memberRole = userRole} = membership
         Contact {localDisplayName = cName} = contact
@@ -1184,6 +1189,7 @@ processChatCommand = \case
     updateContactPrefs user@User {userId} ct@Contact {activeConn = Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
       | contactUserPrefs == contactUserPrefs' = pure $ CRContactPrefsUpdated ct ct
       | otherwise = do
+        assertDirectAllowed user MDSnd ct XInfo_
         ct' <- withStore' $ \db -> updateContactUserPreferences db user ct contactUserPrefs'
         incognitoProfile <- forM customUserProfileId $ \profileId -> withStore $ \db -> getProfileById db userId profileId
         let p' = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct')
@@ -1252,6 +1258,21 @@ processChatCommand = \case
       ci <- saveSndChatItem user (CDDirectSnd ct) msg content Nothing Nothing
       toView . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
       setActive $ ActiveG localDisplayName
+
+assertDirectAllowed :: ChatMonad m => User -> MsgDirection -> Contact -> CMEventTag e -> m ()
+assertDirectAllowed user dir ct event =
+  unless (allowedChatEvent || anyDirectContact ct) . unlessM directMessagesAllowed $
+    throwChatError $ CEDirectMessagesProhibited dir ct
+  where
+    directMessagesAllowed = any (groupFeatureAllowed' GFDirectMessages) <$> withStore' (\db -> getContactGroupPreferences db user ct)
+    allowedChatEvent = case event of
+      XMsgNew_ -> False
+      XMsgUpdate_ -> False
+      XMsgDel_ -> False
+      XFile_ -> False
+      XGrpInv_ -> False
+      XCallInv_ -> False
+      _ -> True
 
 setExpireCIs :: (MonadUnliftIO m, MonadReader ChatController m) => Bool -> m ()
 setExpireCIs b = do
@@ -1713,9 +1734,10 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
               CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
         MSG msgMeta _msgFlags msgBody -> do
           cmdId <- createAckCmd conn
-          msg@RcvMessage {chatMsgEvent = ACME _ event} <- saveRcvMSG conn (ConnectionId connId) msgMeta msgBody cmdId
-          updateChatLock "directMessage" event
-          withAckMessage agentConnId cmdId msgMeta $
+          withAckMessage agentConnId cmdId msgMeta $ do
+            msg@RcvMessage {chatMsgEvent = ACME _ event} <- saveRcvMSG conn (ConnectionId connId) msgMeta msgBody cmdId
+            assertDirectAllowed user MDRcv ct $ toCMEventTag event
+            updateChatLock "directMessage" event
             case event of
               XMsgNew mc -> newContentMessage ct mc msg msgMeta
               XMsgUpdate sharedMsgId mContent -> messageUpdate ct sharedMsgId mContent msg msgMeta
@@ -3404,13 +3426,13 @@ chatCommandP =
       "/profile_image" $> UpdateProfileImage Nothing,
       ("/profile " <|> "/p ") *> (uncurry UpdateProfile <$> userNames),
       ("/profile" <|> "/p") $> ShowProfile,
-      "/voice #" *> (SetGroupFeature GFVoice <$> displayName <*> (A.space *> strP)),
-      "/voice @" *> (SetContactFeature CFVoice <$> displayName <*> optional (A.space *> strP)),
-      "/voice " *> (SetUserFeature CFVoice <$> strP),
-      "/full_delete #" *> (SetGroupFeature GFFullDelete <$> displayName <*> (A.space *> strP)),
-      "/full_delete @" *> (SetContactFeature CFFullDelete <$> displayName <*> optional (A.space *> strP)),
-      "/full_delete " *> (SetUserFeature CFFullDelete <$> strP),
-      "/dms #" *> (SetGroupFeature GFDirectMessages <$> displayName <*> (A.space *> strP)),
+      "/set voice #" *> (SetGroupFeature GFVoice <$> displayName <*> (A.space *> strP)),
+      "/set voice @" *> (SetContactFeature CFVoice <$> displayName <*> optional (A.space *> strP)),
+      "/set voice " *> (SetUserFeature CFVoice <$> strP),
+      "/set delete #" *> (SetGroupFeature GFFullDelete <$> displayName <*> (A.space *> strP)),
+      "/set delete @" *> (SetContactFeature CFFullDelete <$> displayName <*> optional (A.space *> strP)),
+      "/set delete " *> (SetUserFeature CFFullDelete <$> strP),
+      "/set direct #" *> (SetGroupFeature GFDirectMessages <$> displayName <*> (A.space *> strP)),
       "/incognito " *> (SetIncognito <$> onOffP),
       ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
       ("/version" <|> "/v") $> ShowVersion,
@@ -3445,7 +3467,8 @@ chatCommandP =
     groupProfile = do
       gName <- displayName
       fullName <- fullNameP gName
-      pure GroupProfile {displayName = gName, fullName, image = Nothing, groupPreferences = Nothing}
+      let groupPreferences = Just (emptyGroupPrefs :: GroupPreferences) {directMessages = Just GroupPreference {enable = FEOn}}
+      pure GroupProfile {displayName = gName, fullName, image = Nothing, groupPreferences}
     fullNameP name = do
       n <- (A.space *> A.takeByteString) <|> pure ""
       pure $ if B.null n then name else safeDecodeUtf8 n
