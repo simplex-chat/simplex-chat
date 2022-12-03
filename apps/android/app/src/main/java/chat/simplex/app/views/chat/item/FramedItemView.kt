@@ -115,8 +115,7 @@ fun FramedItemView(
     }
   }
 
-  // TODO MCVoice shouldn't affect it, see https://github.com/simplex-chat/simplex-chat/pull/1451#discussion_r1033429901
-  val transparentBackground = (ci.content.msgContent is MsgContent.MCImage || ci.content.msgContent is MsgContent.MCVoice) && ci.content.text.isEmpty() && ci.quotedItem == null
+  val transparentBackground = (ci.content.msgContent is MsgContent.MCImage) && ci.content.text.isEmpty() && ci.quotedItem == null
 
   Box(Modifier
     .clip(RoundedCornerShape(18.dp))
@@ -155,7 +154,7 @@ fun FramedItemView(
                 }
               }
               is MsgContent.MCVoice -> {
-                CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, mc.text != "" || ci.quotedItem != null, ci, metaColor, longClick = { onLinkLongClick("") })
+                CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = true, ci, longClick = { onLinkLongClick("") })
                 if (mc.text != "") {
                   CIMarkdownText(ci, showMember, linkMode, uriHandler)
                 }
@@ -176,11 +175,8 @@ fun FramedItemView(
           }
         }
       }
-      // TODO CIMetaView shouldn't be conditional, see https://github.com/simplex-chat/simplex-chat/pull/1451#discussion_r1033429901
-      if (ci.content.msgContent !is MsgContent.MCVoice || ci.content.text.isNotEmpty() || ci.quotedItem != null) {
-        Box(Modifier.padding(bottom = 6.dp, end = 12.dp)) {
-          CIMetaView(ci, metaColor)
-        }
+      Box(Modifier.padding(bottom = 6.dp, end = 12.dp)) {
+        CIMetaView(ci, metaColor)
       }
     }
   }
