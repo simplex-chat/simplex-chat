@@ -1063,30 +1063,12 @@ data class ChatItem (
   val id: Long get() = meta.itemId
   val timestampText: String get() = meta.timestampText
 
-  // pair with formattedText
   val text: String get() {
     val mc = content.msgContent
     return when {
       content.text == "" && file != null && mc is MsgContent.MCVoice -> String.format(generalGetString(R.string.voice_message_with_duration), durationText(mc.duration))
       content.text == "" && file != null -> file.fileName
       else -> content.text
-    }
-  }
-
-  // pair with formattedText_
-  val text_: String get() {
-    if (meta.itemDeleted) {
-      return generalGetString(R.string.marked_deleted_description)
-    } else {
-      return text
-    }
-  }
-
-  val formattedText_: List<FormattedText>? get() {
-    if (meta.itemDeleted) {
-      return null
-    } else {
-      return formattedText
     }
   }
 

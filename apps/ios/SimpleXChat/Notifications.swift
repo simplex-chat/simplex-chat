@@ -162,7 +162,7 @@ public func createNotification(categoryIdentifier: String, title: String, subtit
 }
 
 func hideSecrets(_ cItem: ChatItem) -> String {
-    if let md = cItem.formattedText_ {
+    if let md = cItem.formattedText {
         var res = ""
         for ft in md {
             if case .secret = ft.format {
@@ -173,6 +173,6 @@ func hideSecrets(_ cItem: ChatItem) -> String {
         }
         return res
     } else {
-        return cItem.text_
+        return cItem.text
     }
 }

@@ -23,11 +23,11 @@ struct ContextItemView: View {
                 .frame(width: 16, height: 16)
                 .foregroundColor(.secondary)
             MsgContentView(
-                text: contextItem.text_,
-                formattedText: contextItem.formattedText_,
+                text: contextItem.text,
+                formattedText: contextItem.formattedText,
                 sender: contextItem.memberDisplayName
             )
-            .multilineTextAlignment(isRightToLeft(contextItem.text_) ? .trailing : .leading)
+            .multilineTextAlignment(isRightToLeft(contextItem.text) ? .trailing : .leading)
             .lineLimit(3)
             Spacer()
             Button {

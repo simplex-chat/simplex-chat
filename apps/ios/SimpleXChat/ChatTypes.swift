@@ -1383,23 +1383,6 @@ public struct ChatItem: Identifiable, Decodable {
         }
     }
 
-    // pair with formattedText_
-    public var text_: String {
-        if meta.itemDeleted {
-            return "Marked deleted"
-        } else {
-            return text
-        }
-    }
-
-    public var formattedText_: [FormattedText]? {
-        if meta.itemDeleted {
-            return nil
-        } else {
-            return formattedText
-        }
-    }
-
     public func isRcvNew() -> Bool {
         if case .rcvNew = meta.itemStatus { return true }
         return false

@@ -83,8 +83,8 @@ fun ChatPreviewView(chat: Chat, chatModelIncognito: Boolean, currentUserProfileD
     val ci = chat.chatItems.lastOrNull()
     if (ci != null) {
       MarkdownText(
-        ci.text_,
-        ci.formattedText_,
+        if (!ci.meta.itemDeleted) ci.text else generalGetString(R.string.marked_deleted_description),
+        if (!ci.meta.itemDeleted) ci.formattedText else null,
         sender = if (cInfo is ChatInfo.Group && !ci.chatDir.sent) ci.memberDisplayName else null,
         linkMode = linkMode,
         senderBold = true,

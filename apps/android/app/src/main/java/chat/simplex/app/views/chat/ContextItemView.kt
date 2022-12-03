@@ -50,7 +50,7 @@ fun ContextItemView(
         tint = HighOrLowlight,
       )
       MarkdownText(
-        contextItem.text_, contextItem.formattedText_,
+        contextItem.text, contextItem.formattedText,
         sender = contextItem.memberDisplayName, senderBold = true, maxLines = 3,
         linkMode = SimplexLinkMode.DESCRIPTION,
         modifier = Modifier.fillMaxWidth(),

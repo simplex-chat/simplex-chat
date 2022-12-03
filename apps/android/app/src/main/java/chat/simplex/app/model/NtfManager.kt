@@ -218,7 +218,7 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
   }
 
   private fun hideSecrets(cItem: ChatItem) : String {
-    val md = cItem.formattedText_
+    val md = cItem.formattedText
     return if (md != null) {
       var res = ""
       for (ft in md) {
@@ -226,7 +226,7 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
       }
       res
     } else {
-      cItem.text_
+      cItem.text
     }
   }
 
