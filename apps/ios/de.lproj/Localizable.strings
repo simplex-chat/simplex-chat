@@ -204,7 +204,7 @@
 "Allow irreversible message deletion only if your contact allows it to you." = "Erlauben Sie das unwiederbringliche löschen von Nachrichten nur dann, wenn es Ihnen Ihr Kontakt ebenfalls erlaubt.";
 
 /* No comment provided by engineer. */
-"Allow sending direct messages to members." = "***Allow sending direct messages to members.";
+"Allow sending direct messages to members." = "Erlauben Sie das Senden von Direktnachrichten an Mitglieder";
 
 /* No comment provided by engineer. */
 "Allow to irreversibly delete sent messages." = "Unwiederbringliches Löschen von gesendeten Nachrichten erlauben.";
@@ -711,10 +711,10 @@
 "direct" = "direkt";
 
 /* chat feature */
-"Direct messages" = "***Direct messages";
+"Direct messages" = "Direkte Nachrichten";
 
 /* No comment provided by engineer. */
-"Direct messages between members are prohibited in this group." = "***Direct messages between members are prohibited in this group.";
+"Direct messages between members are prohibited in this group." = "In dieser Gruppe sind Direktnachrichten zwischen Mitgliedern nicht möglich.";
 
 /* authentication reason */
 "Disable SimpleX Lock" = "SimpleX Sperre deaktivieren";
@@ -927,7 +927,7 @@
 "Error: URL is invalid" = "Fehler: URL ist ungültig";
 
 /* No comment provided by engineer. */
-"Exit without saving" = "***Exit without saving";
+"Exit without saving" = "Beenden ohne Speichern";
 
 /* No comment provided by engineer. */
 "Export database" = "Datenbank exportieren";
@@ -990,7 +990,7 @@
 "Group members can irreversibly delete sent messages." = "Gruppenmitglieder können gesendete Nachrichten unwiederbringlich löschen.";
 
 /* No comment provided by engineer. */
-"Group members can send direct messages." = "***Group members can send direct messages.";
+"Group members can send direct messages." = "Gruppenmitglieder können Direktnachrichten versenden.";
 
 /* No comment provided by engineer. */
 "Group members can send voice messages." = "Gruppenmitglieder können Sprachnachrichten senden.";
@@ -1023,7 +1023,7 @@
 "Hidden" = "Verborgen";
 
 /* chat item action */
-"Hide" = "***Hide";
+"Hide" = "Verbergen";
 
 /* No comment provided by engineer. */
 "How it works" = "Wie es funktioniert";
@@ -1158,7 +1158,7 @@
 "Irreversible message deletion is prohibited in this chat." = "In diesem Chat ist das unwiederbringliche Löschen von Nachrichten untersagt.";
 
 /* No comment provided by engineer. */
-"Irreversible message deletion is prohibited in this group." = "***In diesem Gruppe ist das unwiederbringliche Löschen von Nachrichten verboten.";
+"Irreversible message deletion is prohibited in this group." = "In dieser Gruppe ist das unwiederbringliche Löschen von Nachrichten verboten.";
 
 /* No comment provided by engineer. */
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "Er ermöglicht mehrere anonyme Verbindungen in einem einzigen Chat-Profil ohne Daten zwischen diesen zu teilen.";
@@ -1224,7 +1224,7 @@
 "Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" = "Viele Menschen haben gefragt: *Wie kann SimpleX Nachrichten zustellen, wenn es keine Benutzerkennungen gibt?*";
 
 /* No comment provided by engineer. */
-"Mark deleted for everyone" = "***Mark deleted for everyone";
+"Mark deleted for everyone" = "Für Alle als gelöscht markieren";
 
 /* No comment provided by engineer. */
 "Mark read" = "Als gelesen markieren";
@@ -1233,7 +1233,7 @@
 "Markdown in messages" = "Markdowns in Nachrichten";
 
 /* marked deleted chat item preview text */
-"marked deleted" = "***marked deleted";
+"marked deleted" = "als gelöscht markiert";
 
 /* member role */
 "member" = "Mitglied";
@@ -1459,7 +1459,7 @@
 "Please check that you used the correct link or ask your contact to send you another one." = "Überprüfen Sie bitte, ob Sie den richtigen Link genutzt haben oder bitten Sie Ihren Kontakt nochmal darum, Ihnen einen Link zuzusenden.";
 
 /* No comment provided by engineer. */
-"Please check your network connection with %@ and try again." = "***Bitte überprüfen Sie Ihre Netzwerkverbindung mit %@ und versuchen Sie es erneut.";
+"Please check your network connection with %@ and try again." = "Bitte überprüfen Sie Ihre Netzwerkverbindung mit %@ und versuchen Sie es erneut.";
 
 /* No comment provided by engineer. */
 "Please check yours and your contact preferences." = "Bitte überprüfen sie sowohl Ihre, als auch die Präferenzen Ihres Kontakts.";
@@ -1501,7 +1501,7 @@
 "Prohibit irreversible message deletion." = "Unwiederbringliches Löschen von Nachrichten verbieten.";
 
 /* No comment provided by engineer. */
-"Prohibit sending direct messages to members." = "***Prohibit sending direct messages to members.";
+"Prohibit sending direct messages to members." = "Verbieten Sie das Senden von Direktnachrichten an Mitglieder";
 
 /* No comment provided by engineer. */
 "Prohibit sending voice messages." = "Senden von Sprachnachrichten untersagen.";
@@ -1612,7 +1612,7 @@
 "Restore database error" = "Fehler bei der Wiederherstellung der Datenbank";
 
 /* chat item action */
-"Reveal" = "***Reveal";
+"Reveal" = "Aufdecken";
 
 /* No comment provided by engineer. */
 "Revert" = "Zurückkehren";
@@ -1645,7 +1645,7 @@
 "Save passphrase in Keychain" = "Passwort im Schlüsselbund speichern";
 
 /* No comment provided by engineer. */
-"Save preferences?" = "***Save preferences?";
+"Save preferences?" = "Präferenzen speichern?";
 
 /* No comment provided by engineer. */
 "Save servers" = "Server speichern";
@@ -1711,7 +1711,7 @@
 "Set contact name…" = "Kontaktname festlegen…";
 
 /* No comment provided by engineer. */
-"Set group preferences" = "***Group preferences";
+"Set group preferences" = "Gruppenpräferenzen einstellen";
 
 /* No comment provided by engineer. */
 "Set passphrase to export" = "Passwort für den Export festlegen";
@@ -2056,7 +2056,7 @@
 "Voice messages are prohibited in this chat." = "In diesem Chat sind Sprachnachrichten untersagt.";
 
 /* No comment provided by engineer. */
-"Voice messages are prohibited in this group." = "***In diesem Gruppe sind Sprachnachrichten untersagt.";
+"Voice messages are prohibited in this group." = "In dieser Gruppe sind Sprachnachrichten untersagt.";
 
 /* No comment provided by engineer. */
 "Voice messages prohibited!" = "Sprachnachrichten sind untersagt!";
