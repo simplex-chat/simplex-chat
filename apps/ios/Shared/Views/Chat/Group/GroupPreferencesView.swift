@@ -10,12 +10,16 @@ import SwiftUI
 import SimpleXChat
 
 struct GroupPreferencesView: View {
+    @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var chatModel: ChatModel
     @Binding var groupInfo: GroupInfo
     @State var preferences: FullGroupPreferences
     @State var currentPreferences: FullGroupPreferences
+    let creatingGroup: Bool
+    @State private var showSaveDialogue = false
 
     var body: some View {
+        let saveText: LocalizedStringKey = creatingGroup ? "Save" : "Save and notify group members"
         VStack {
             List {
                 featureSection(.fullDelete, $preferences.fullDelete.enable)
@@ -25,18 +29,34 @@ struct GroupPreferencesView: View {
                 if groupInfo.canEdit {
                     Section {
                         Button("Reset") { preferences = currentPreferences }
-                        Button("Save (and notify group members)") { savePreferences() }
+                        Button(saveText) { savePreferences() }
                     }
                     .disabled(currentPreferences == preferences)
                 }
             }
         }
+        .modifier(BackButton {
+            if currentPreferences == preferences {
+                dismiss()
+            } else {
+                showSaveDialogue = true
+            }
+        })
+        .confirmationDialog("Save preferences?", isPresented: $showSaveDialogue) {
+            Button(saveText) {
+                savePreferences()
+                dismiss()
+            }
+            Button("Exit without saving") { dismiss() }
+        }
     }
 
     private func featureSection(_ feature: GroupFeature, _ enableFeature: Binding<GroupFeatureEnabled>) -> some View {
         Section {
+            let color: Color = enableFeature.wrappedValue == .on ? .green : .secondary
+            let icon = enableFeature.wrappedValue == .on ? feature.iconFilled : feature.icon
             if (groupInfo.canEdit) {
-                settingsRow(feature.icon) {
+                settingsRow(icon, color: color) {
                     Picker(feature.text, selection: enableFeature) {
                         ForEach(GroupFeatureEnabled.values) { enable in
                             Text(enable.text)
@@ -46,7 +66,7 @@ struct GroupPreferencesView: View {
                 }
             }
             else {
-                settingsRow(feature.icon) {
+                settingsRow(icon, color: color) {
                     infoRow(feature.text, enableFeature.wrappedValue.text)
                 }
             }
@@ -79,7 +99,8 @@ struct GroupPreferencesView_Previews: PreviewProvider {
         GroupPreferencesView(
             groupInfo: Binding.constant(GroupInfo.sampleData),
             preferences: FullGroupPreferences.sampleData,
-            currentPreferences: FullGroupPreferences.sampleData
+            currentPreferences: FullGroupPreferences.sampleData,
+            creatingGroup: false
         )
     }
 }

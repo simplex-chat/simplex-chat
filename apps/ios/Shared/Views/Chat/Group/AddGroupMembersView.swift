@@ -13,8 +13,8 @@ struct AddGroupMembersView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
     var chat: Chat
-    var groupInfo: GroupInfo
-    var showSkip: Bool = false
+    @State var groupInfo: GroupInfo
+    var creatingGroup: Bool = false
     var showFooterCounter: Bool = true
     var addedMembersCb: ((Set<Int64>) -> Void)? = nil
     @State private var selectedContacts = Set<Int64>()
@@ -52,6 +52,9 @@ struct AddGroupMembersView: View {
                 } else {
                     let count = selectedContacts.count
                     Section {
+                        if creatingGroup {
+                            groupPreferencesButton($groupInfo, true)
+                        }
                         rolePicker()
                         inviteMembersButton()
                             .disabled(count < 1)
@@ -78,14 +81,10 @@ struct AddGroupMembersView: View {
                 }
             }
 
-            if (showSkip) {
+            if creatingGroup {
                 v.toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
-                        if showSkip {
-                            Button ("Skip") {
-                                if let cb = addedMembersCb { cb(selectedContacts) }
-                            }
-                        }
+                        Button ("Skip") { addedMembersCb?(selectedContacts) }
                     }
                 }
             } else {
@@ -142,6 +141,7 @@ struct AddGroupMembersView: View {
                 }
             }
         }
+        .frame(height: 36)
     }
 
     private func contactCheckView(_ contact: Contact) -> some View {
