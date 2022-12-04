@@ -217,7 +217,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
       markRead = { range, unreadCountAfter ->
         chatModel.markChatItemsRead(chat.chatInfo, range, unreadCountAfter)
         chatModel.controller.ntfManager.cancelNotificationsForChat(chat.id)
-        withApi {
+        withBGApi {
           chatModel.controller.apiChatRead(
             chat.chatInfo.chatType,
             chat.chatInfo.apiId,

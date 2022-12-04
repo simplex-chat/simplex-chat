@@ -40,6 +40,9 @@ fun withApi(action: suspend CoroutineScope.() -> Unit): Job = withScope(GlobalSc
 fun withScope(scope: CoroutineScope, action: suspend CoroutineScope.() -> Unit): Job =
   scope.launch { withContext(Dispatchers.Main, action) }
 
+fun withBGApi(action: suspend CoroutineScope.() -> Unit): Job =
+  CoroutineScope(Dispatchers.Default).launch(block = action)
+
 enum class KeyboardState {
   Opened, Closed
 }
