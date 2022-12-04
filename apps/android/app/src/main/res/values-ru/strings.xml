@@ -21,7 +21,7 @@
 
     <!-- Item Content - ChatModel.kt -->
     <string name="deleted_description">удалено</string>
-    <string name="marked_deleted_description">помечено как удаленное</string>
+    <string name="marked_deleted_description">помечено к удалению</string>
     <string name="sending_files_not_yet_supported">отправка файлов не поддерживается</string>
     <string name="receiving_files_not_yet_supported">получение файлов не поддерживается</string>
     <string name="sender_you_pronoun">вы</string>
@@ -952,7 +952,8 @@
     <string name="contact_preferences">Предпочтения контакта</string>
     <string name="group_preferences">Предпочтения группы</string>
     <string name="your_preferences">Ваши предпочтения</string>
-    <string name="full_deletion">Полное удаление</string>
+    <string name="direct_messages">Прямые сообщения</string>
+    <string name="full_deletion">Удаление для всех</string>
     <string name="voice_messages">Голосовые сообщения</string>
     <string name="feature_enabled">включено</string>
     <string name="feature_enabled_for_you">включено для вас</string>
@@ -968,18 +969,22 @@
     <string name="both_you_and_your_contacts_can_delete">Вы и ваш контакт можете необратимо удалять отправленные сообщения.</string>
     <string name="only_you_can_delete_messages">Только вы можете необратимо удалять сообщения (ваш контакт может помечать их на удаление).</string>
     <string name="only_your_contact_can_delete">Только ваш контакт может необратимо удалять сообщения (вы можете помечать их на удаление).</string>
-    <string name="message_deletion_prohibited">Необратимое удаление сообщений запрещено в этом чате.</string>
+    <string name="message_deletion_prohibited">Необратимое удаление сообщений запрещено в этой группе.</string>
     <string name="both_you_and_your_contact_can_send_voice">Вы и ваш контакт можете отправлять голосовые сообщения.</string>
     <string name="only_you_can_send_voice">Только вы можете отправлять голосовые сообщения.</string>
     <string name="only_your_contact_can_send_voice">Только ваш контакт может отправлять голосовые сообщения.</string>
     <string name="voice_prohibited_in_this_chat">Голосовые сообщения запрещены в этом чате.</string>
+    <string name="allow_direct_messages">Разрешить посылать прямые сообщения членам группы.</string>
+    <string name="prohibit_direct_messages">Запретить посылать прямые сообщения членам группы.</string>
     <string name="allow_to_delete_messages">Разрешить необратимо удалять отправленные сообщения.</string>
     <string name="prohibit_message_deletion">Запретить необратимое удаление сообщений.</string>
     <string name="allow_to_send_voice">Разрешить отправлять голосовые сообщения.</string>
     <string name="prohibit_sending_voice">Запретить отправлять голосовые сообщений.</string>
+    <string name="group_members_can_send_dms">Члены группы могут посылать прямые сообщения.</string>
+    <string name="direct_messages_are_prohibited_in_chat">Прямые сообщения между членами группы запрещены.</string>
     <string name="group_members_can_delete">Члены группы могут необратимо удалять отправленные сообщения.</string>
-    <string name="message_deletion_prohibited_in_chat">Необратимое удаление сообщений запрещено в этом чате.</string>
+    <string name="message_deletion_prohibited_in_chat">Необратимое удаление сообщений запрещено в этой группе.</string>
     <string name="group_members_can_send_voice">Члены группы могут отправлять голосовые сообщения.</string>
-    <string name="voice_messages_are_prohibited">Голосовые сообщения запрещены в этом чате.</string>
+    <string name="voice_messages_are_prohibited">Голосовые сообщения запрещены в этой группе.</string>
 
 </resources>

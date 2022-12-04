@@ -954,7 +954,7 @@
   <string name="group_preferences">Group preferences</string>
   <string name="your_preferences">Your preferences</string>
   <string name="direct_messages">Direct messages</string>
-  <string name="full_deletion">Full deletion</string>
+  <string name="full_deletion">Delete for everyone</string>
   <string name="voice_messages">Voice messages</string>
   <string name="feature_enabled">enabled</string>
   <string name="feature_enabled_for_you">enabled for you</string>

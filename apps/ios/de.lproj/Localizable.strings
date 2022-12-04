@@ -204,6 +204,9 @@
 "Allow irreversible message deletion only if your contact allows it to you." = "Erlauben Sie das unwiederbringliche löschen von Nachrichten nur dann, wenn es Ihnen Ihr Kontakt ebenfalls erlaubt.";
 
 /* No comment provided by engineer. */
+"Allow sending direct messages to members." = "***Allow sending direct messages to members.";
+
+/* No comment provided by engineer. */
 "Allow to irreversibly delete sent messages." = "Unwiederbringliches Löschen von gesendeten Nachrichten erlauben.";
 
 /* No comment provided by engineer. */
@@ -632,7 +635,7 @@
 /* No comment provided by engineer. */
 "Delete files and media?" = "Dateien und Medien löschen?";
 
-/* No comment provided by engineer. */
+/* chat feature */
 "Delete for everyone" = "Für Alle löschen";
 
 /* No comment provided by engineer. */
@@ -703,6 +706,12 @@
 
 /* connection level description */
 "direct" = "direkt";
+
+/* chat feature */
+"Direct messages" = "***Direct messages";
+
+/* No comment provided by engineer. */
+"Direct messages between members are prohibited in this group." = "***Direct messages between members are prohibited in this group.";
 
 /* authentication reason */
 "Disable SimpleX Lock" = "SimpleX Sperre deaktivieren";
@@ -938,9 +947,6 @@
 /* No comment provided by engineer. */
 "For console" = "Für Konsole";
 
-/* chat feature */
-"Full deletion" = "Vollständige Löschung";
-
 /* No comment provided by engineer. */
 "Full link" = "Vollständiger Link";
 
@@ -978,6 +984,9 @@
 "Group members can irreversibly delete sent messages." = "Gruppenmitglieder können gesendete Nachrichten unwiederbringlich löschen.";
 
 /* No comment provided by engineer. */
+"Group members can send direct messages." = "***Group members can send direct messages.";
+
+/* No comment provided by engineer. */
 "Group members can send voice messages." = "Gruppenmitglieder können Sprachnachrichten senden.";
 
 /* notification */
@@ -1006,6 +1015,9 @@
 
 /* No comment provided by engineer. */
 "Hidden" = "Verborgen";
+
+/* chat item action */
+"Hide" = "***Hide";
 
 /* No comment provided by engineer. */
 "How it works" = "Wie es funktioniert";
@@ -1140,6 +1152,9 @@
 "Irreversible message deletion is prohibited in this chat." = "In diesem Chat ist das unwiederbringliche Löschen von Nachrichten untersagt.";
 
 /* No comment provided by engineer. */
+"Irreversible message deletion is prohibited in this group." = "***In diesem Gruppe ist das unwiederbringliche Löschen von Nachrichten verboten.";
+
+/* No comment provided by engineer. */
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "Er ermöglicht mehrere anonyme Verbindungen in einem einzigen Chat-Profil ohne Daten zwischen diesen zu teilen.";
 
 /* No comment provided by engineer. */
@@ -1203,10 +1218,16 @@
 "Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" = "Viele Menschen haben gefragt: *Wie kann SimpleX Nachrichten zustellen, wenn es keine Benutzerkennungen gibt?*";
 
 /* No comment provided by engineer. */
+"Mark deleted for everyone" = "***Mark deleted for everyone";
+
+/* No comment provided by engineer. */
 "Mark read" = "Als gelesen markieren";
 
 /* No comment provided by engineer. */
 "Markdown in messages" = "Markdowns in Nachrichten";
+
+/* marked deleted chat item preview text */
+"marked deleted" = "***marked deleted";
 
 /* member role */
 "member" = "Mitglied";
@@ -1432,7 +1453,7 @@
 "Please check that you used the correct link or ask your contact to send you another one." = "Überprüfen Sie bitte, ob Sie den richtigen Link genutzt haben oder bitten Sie Ihren Kontakt nochmal darum, Ihnen einen Link zuzusenden.";
 
 /* No comment provided by engineer. */
-"Please check your network connection and try again." = "Bitte überprüfen Sie Ihre Netzwerkverbindung und versuchen Sie es erneut.";
+"Please check your network connection with %@ and try again." = "***Bitte überprüfen Sie Ihre Netzwerkverbindung mit %@ und versuchen Sie es erneut.";
 
 /* No comment provided by engineer. */
 "Please check yours and your contact preferences." = "Bitte überprüfen sie sowohl Ihre, als auch die Präferenzen Ihres Kontakts.";
@@ -1472,6 +1493,9 @@
 
 /* No comment provided by engineer. */
 "Prohibit irreversible message deletion." = "Unwiederbringliches Löschen von Nachrichten verbieten.";
+
+/* No comment provided by engineer. */
+"Prohibit sending direct messages to members." = "***Prohibit sending direct messages to members.";
 
 /* No comment provided by engineer. */
 "Prohibit sending voice messages." = "Senden von Sprachnachrichten untersagen.";
@@ -1580,6 +1604,9 @@
 
 /* No comment provided by engineer. */
 "Restore database error" = "Fehler bei der Wiederherstellung der Datenbank";
+
+/* chat item action */
+"Reveal" = "***Reveal";
 
 /* No comment provided by engineer. */
 "Revert" = "Zurückkehren";
@@ -2015,6 +2042,9 @@
 
 /* No comment provided by engineer. */
 "Voice messages are prohibited in this chat." = "In diesem Chat sind Sprachnachrichten untersagt.";
+
+/* No comment provided by engineer. */
+"Voice messages are prohibited in this group." = "***In diesem Gruppe sind Sprachnachrichten untersagt.";
 
 /* No comment provided by engineer. */
 "Voice messages prohibited!" = "Sprachnachrichten sind untersagt!";

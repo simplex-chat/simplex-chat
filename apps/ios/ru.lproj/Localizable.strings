@@ -204,6 +204,9 @@
 "Allow irreversible message deletion only if your contact allows it to you." = "Разрешить необратимое удаление сообщений, только если ваш контакт разрешает это вам.";
 
 /* No comment provided by engineer. */
+"Allow sending direct messages to members." = "Разрешить посылать прямые сообщения членам группы.";
+
+/* No comment provided by engineer. */
 "Allow to irreversibly delete sent messages." = "Разрешить необратимо удалять отправленные сообщения.";
 
 /* No comment provided by engineer. */
@@ -632,7 +635,7 @@
 /* No comment provided by engineer. */
 "Delete files and media?" = "Удалить файлы и медиа?";
 
-/* No comment provided by engineer. */
+/* chat feature */
 "Delete for everyone" = "Удалить для всех";
 
 /* No comment provided by engineer. */
@@ -703,6 +706,12 @@
 
 /* connection level description */
 "direct" = "прямое";
+
+/* chat feature */
+"Direct messages" = "Прямые сообщения";
+
+/* No comment provided by engineer. */
+"Direct messages between members are prohibited in this group." = "Прямые сообщения между членами группы запрещены.";
 
 /* authentication reason */
 "Disable SimpleX Lock" = "Отключить блокировку SimpleX";
@@ -938,9 +947,6 @@
 /* No comment provided by engineer. */
 "For console" = "Для консоли";
 
-/* chat feature */
-"Full deletion" = "Полное удаление";
-
 /* No comment provided by engineer. */
 "Full link" = "Полная ссылка";
 
@@ -978,6 +984,9 @@
 "Group members can irreversibly delete sent messages." = "Члены группы могут необратимо удалять отправленные сообщения.";
 
 /* No comment provided by engineer. */
+"Group members can send direct messages." = "Члены группы могут посылать прямые сообщения.";
+
+/* No comment provided by engineer. */
 "Group members can send voice messages." = "Члены группы могут отправлять голосовые сообщения.";
 
 /* notification */
@@ -1006,6 +1015,9 @@
 
 /* No comment provided by engineer. */
 "Hidden" = "Скрытое";
+
+/* chat item action */
+"Hide" = "Спрятать";
 
 /* No comment provided by engineer. */
 "How it works" = "Как это работает";
@@ -1140,6 +1152,9 @@
 "Irreversible message deletion is prohibited in this chat." = "Необратимое удаление сообщений запрещено в этом чате.";
 
 /* No comment provided by engineer. */
+"Irreversible message deletion is prohibited in this group." = "Необратимое удаление сообщений запрещено в этой группе.";
+
+/* No comment provided by engineer. */
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "Это позволяет иметь много анонимных соединений без общих данных между ними в одном профиле пользователя.";
 
 /* No comment provided by engineer. */
@@ -1203,10 +1218,16 @@
 "Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" = "Много пользователей спросили: *как SimpleX доставляет сообщения без идентификаторов пользователей?*";
 
 /* No comment provided by engineer. */
+"Mark deleted for everyone" = "Пометить как удаленное для всех";
+
+/* No comment provided by engineer. */
 "Mark read" = "Прочитано";
 
 /* No comment provided by engineer. */
 "Markdown in messages" = "Форматирование сообщений";
+
+/* marked deleted chat item preview text */
+"marked deleted" = "помечено к удалению";
 
 /* member role */
 "member" = "член группы";
@@ -1432,7 +1453,7 @@
 "Please check that you used the correct link or ask your contact to send you another one." = "Пожалуйста, проверьте, что вы использовали правильную ссылку или попросите, чтобы ваш контакт отправил вам другую ссылку.";
 
 /* No comment provided by engineer. */
-"Please check your network connection and try again." = "Пожалуйста, проверьте ваше соединение с сетью и попробуйте еще раз.";
+"Please check your network connection with %@ and try again." = "Пожалуйста, проверьте ваше соединение с %@ и попробуйте еще раз.";
 
 /* No comment provided by engineer. */
 "Please check yours and your contact preferences." = "Проверьте предпочтения вашего контакта.";
@@ -1472,6 +1493,9 @@
 
 /* No comment provided by engineer. */
 "Prohibit irreversible message deletion." = "Запретить необратимое удаление сообщений.";
+
+/* No comment provided by engineer. */
+"Prohibit sending direct messages to members." = "Запретить посылать прямые сообщения членам группы.";
 
 /* No comment provided by engineer. */
 "Prohibit sending voice messages." = "Запретить отправлять голосовые сообщений.";
@@ -1580,6 +1604,9 @@
 
 /* No comment provided by engineer. */
 "Restore database error" = "Ошибка при восстановлении базы данных";
+
+/* chat item action */
+"Reveal" = "Показать";
 
 /* No comment provided by engineer. */
 "Revert" = "Отменить изменения";
@@ -2015,6 +2042,9 @@
 
 /* No comment provided by engineer. */
 "Voice messages are prohibited in this chat." = "Голосовые сообщения запрещены в этом чате.";
+
+/* No comment provided by engineer. */
+"Voice messages are prohibited in this group." = "Голосовые сообщения запрещены в этой группе.";
 
 /* No comment provided by engineer. */
 "Voice messages prohibited!" = "Голосовые сообщения запрещены!";

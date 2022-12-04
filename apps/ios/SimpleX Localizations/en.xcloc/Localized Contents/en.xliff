@@ -303,6 +303,11 @@
         <target>Allow irreversible message deletion only if your contact allows it to you.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Allow sending direct messages to members." xml:space="preserve">
+        <source>Allow sending direct messages to members.</source>
+        <target>Allow sending direct messages to members.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Allow to irreversibly delete sent messages." xml:space="preserve">
         <source>Allow to irreversibly delete sent messages.</source>
         <target>Allow to irreversibly delete sent messages.</target>
@@ -879,7 +884,7 @@
       <trans-unit id="Delete for everyone" xml:space="preserve">
         <source>Delete for everyone</source>
         <target>Delete for everyone</target>
-        <note>No comment provided by engineer.</note>
+        <note>chat feature</note>
       </trans-unit>
       <trans-unit id="Delete for me" xml:space="preserve">
         <source>Delete for me</source>
@@ -979,6 +984,16 @@
       <trans-unit id="Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." xml:space="preserve">
         <source>Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication.</source>
         <target>Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Direct messages" xml:space="preserve">
+        <source>Direct messages</source>
+        <target>Direct messages</target>
+        <note>chat feature</note>
+      </trans-unit>
+      <trans-unit id="Direct messages between members are prohibited in this group." xml:space="preserve">
+        <source>Direct messages between members are prohibited in this group.</source>
+        <target>Direct messages between members are prohibited in this group.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disable SimpleX Lock" xml:space="preserve">
@@ -1331,11 +1346,6 @@
         <target>For console</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Full deletion" xml:space="preserve">
-        <source>Full deletion</source>
-        <target>Full deletion</target>
-        <note>chat feature</note>
-      </trans-unit>
       <trans-unit id="Full link" xml:space="preserve">
         <source>Full link</source>
         <target>Full link</target>
@@ -1391,6 +1401,11 @@
         <target>Group members can irreversibly delete sent messages.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Group members can send direct messages." xml:space="preserve">
+        <source>Group members can send direct messages.</source>
+        <target>Group members can send direct messages.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Group members can send voice messages." xml:space="preserve">
         <source>Group members can send voice messages.</source>
         <target>Group members can send voice messages.</target>
@@ -1435,6 +1450,11 @@
         <source>Hidden</source>
         <target>Hidden</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Hide" xml:space="preserve">
+        <source>Hide</source>
+        <target>Hide</target>
+        <note>chat item action</note>
       </trans-unit>
       <trans-unit id="How SimpleX works" xml:space="preserve">
         <source>How SimpleX works</source>
@@ -1603,6 +1623,11 @@
         <target>Irreversible message deletion is prohibited in this chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Irreversible message deletion is prohibited in this group." xml:space="preserve">
+        <source>Irreversible message deletion is prohibited in this group.</source>
+        <target>Irreversible message deletion is prohibited in this group.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="It allows having many anonymous connections without any shared data between them in a single chat profile." xml:space="preserve">
         <source>It allows having many anonymous connections without any shared data between them in a single chat profile.</source>
         <target>It allows having many anonymous connections without any shared data between them in a single chat profile.</target>
@@ -1701,6 +1726,11 @@ We will be adding server redundancy to prevent lost messages.</target>
       <trans-unit id="Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" xml:space="preserve">
         <source>Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*</source>
         <target>Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Mark deleted for everyone" xml:space="preserve">
+        <source>Mark deleted for everyone</source>
+        <target>Mark deleted for everyone</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Mark read" xml:space="preserve">
@@ -2018,9 +2048,9 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>Please check that you used the correct link or ask your contact to send you another one.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please check your network connection and try again." xml:space="preserve">
-        <source>Please check your network connection and try again.</source>
-        <target>Please check your network connection and try again.</target>
+      <trans-unit id="Please check your network connection with %@ and try again." xml:space="preserve">
+        <source>Please check your network connection with %@ and try again.</source>
+        <target>Please check your network connection with %@ and try again.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please check yours and your contact preferences." xml:space="preserve">
@@ -2086,6 +2116,11 @@ We will be adding server redundancy to prevent lost messages.</target>
       <trans-unit id="Prohibit irreversible message deletion." xml:space="preserve">
         <source>Prohibit irreversible message deletion.</source>
         <target>Prohibit irreversible message deletion.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Prohibit sending direct messages to members." xml:space="preserve">
+        <source>Prohibit sending direct messages to members.</source>
+        <target>Prohibit sending direct messages to members.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit sending voice messages." xml:space="preserve">
@@ -2237,6 +2272,11 @@ We will be adding server redundancy to prevent lost messages.</target>
         <source>Restore database error</source>
         <target>Restore database error</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Reveal" xml:space="preserve">
+        <source>Reveal</source>
+        <target>Reveal</target>
+        <note>chat item action</note>
       </trans-unit>
       <trans-unit id="Revert" xml:space="preserve">
         <source>Revert</source>
@@ -2897,6 +2937,11 @@ To connect, please ask your contact to create another connection link and check 
         <target>Voice messages are prohibited in this chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Voice messages are prohibited in this group." xml:space="preserve">
+        <source>Voice messages are prohibited in this group.</source>
+        <target>Voice messages are prohibited in this group.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Voice messages prohibited!" xml:space="preserve">
         <source>Voice messages prohibited!</source>
         <target>Voice messages prohibited!</target>
@@ -3555,6 +3600,11 @@ SimpleX servers cannot see your profile.</target>
         <source>left</source>
         <target>left</target>
         <note>rcv group event chat item</note>
+      </trans-unit>
+      <trans-unit id="marked deleted" xml:space="preserve">
+        <source>marked deleted</source>
+        <target>marked deleted</target>
+        <note>marked deleted chat item preview text</note>
       </trans-unit>
       <trans-unit id="member" xml:space="preserve">
         <source>member</source>
