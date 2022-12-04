@@ -55,8 +55,6 @@ fun PrivacySettingsView(
       SectionDivider()
       SettingsPreferenceItem(Icons.Outlined.TravelExplore, stringResource(R.string.send_link_previews), chatModel.controller.appPrefs.privacyLinkPreviews)
       SectionDivider()
-      SettingsPreferenceItem(Icons.Outlined.Backup, stringResource(R.string.full_backup), chatModel.controller.appPrefs.privacyFullBackup)
-      SectionDivider()
       SectionItemView { SimpleXLinkOptions(chatModel.simplexLinkMode, onSelected = {
         simplexLinkMode.set(it)
         chatModel.simplexLinkMode.value = it

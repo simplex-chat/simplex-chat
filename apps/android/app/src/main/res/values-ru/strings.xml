@@ -618,7 +618,7 @@
     <string name="auto_accept_images">Автоприем изображений</string>
     <string name="transfer_images_faster">Передавать изображения быстрее</string>
     <string name="send_link_previews">Отправлять картинки ссылок</string>
-    <string name="full_backup">Разрешить Android делать бэкап</string>
+    <string name="full_backup">Резервная копия данных</string>
 
     <!-- Settings sections -->
     <string name="settings_section_title_you">ВЫ</string>
