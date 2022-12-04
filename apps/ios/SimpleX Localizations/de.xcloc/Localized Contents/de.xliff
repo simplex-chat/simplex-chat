@@ -388,6 +388,11 @@
         <target>Automatisch</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Back" xml:space="preserve">
+        <source>Back</source>
+        <target>Zurück</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Both you and your contact can irreversibly delete sent messages." xml:space="preserve">
         <source>Both you and your contact can irreversibly delete sent messages.</source>
         <target>Sowohl Ihr Kontakt, als auch Sie können gesendete Nachrichten unwiederbringlich löschen.</target>
@@ -1304,6 +1309,11 @@
       <trans-unit id="Error: no database file" xml:space="preserve">
         <source>Error: no database file</source>
         <target>Fehler: Keine Datenbankdatei</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Exit without saving" xml:space="preserve">
+        <source>Exit without saving</source>
+        <target>***Exit without saving</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Export database" xml:space="preserve">
@@ -2298,19 +2308,19 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>Speichern</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Save (and notify contact)" xml:space="preserve">
-        <source>Save (and notify contact)</source>
-        <target>Speichern (und Kontakt benachrichtigen)</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Save (and notify contacts)" xml:space="preserve">
         <source>Save (and notify contacts)</source>
         <target>Speichern (und Kontakte benachrichtigen)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save (and notify group members)" xml:space="preserve">
-        <source>Save (and notify group members)</source>
-        <target>Speichern (und Gruppenmitglieder benachrichtigen)</target>
+      <trans-unit id="Save and notify contact" xml:space="preserve">
+        <source>Save and notify contact</source>
+        <target>Speichern und Kontakt benachrichtigen</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Save and notify group members" xml:space="preserve">
+        <source>Save and notify group members</source>
+        <target>Speichern und Gruppenmitglieder benachrichtigen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save archive" xml:space="preserve">
@@ -2331,6 +2341,11 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       <trans-unit id="Save passphrase in Keychain" xml:space="preserve">
         <source>Save passphrase in Keychain</source>
         <target>Passwort im Schlüsselbund speichern</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Save preferences?" xml:space="preserve">
+        <source>Save preferences?</source>
+        <target>***Save preferences?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save servers" xml:space="preserve">
@@ -2426,6 +2441,11 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       <trans-unit id="Set contact name…" xml:space="preserve">
         <source>Set contact name…</source>
         <target>Kontaktname festlegen…</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Set group preferences" xml:space="preserve">
+        <source>Set group preferences</source>
+        <target>***Group preferences</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set passphrase to export" xml:space="preserve">

@@ -260,6 +260,9 @@
 /* No comment provided by engineer. */
 "Automatically" = "Автоматически";
 
+/* No comment provided by engineer. */
+"Back" = "Назад";
+
 /* integrity error chat item */
 "bad message hash" = "ошибка хэш сообщения";
 
@@ -922,6 +925,9 @@
 
 /* No comment provided by engineer. */
 "Error: URL is invalid" = "Ошибка: неверная ссылка";
+
+/* No comment provided by engineer. */
+"Exit without saving" = "Выйти без сохранения";
 
 /* No comment provided by engineer. */
 "Export database" = "Экспорт архива чата";
@@ -1618,13 +1624,13 @@
 "Save" = "Сохранить";
 
 /* No comment provided by engineer. */
-"Save (and notify contact)" = "Сохранить (и уведомить контакт)";
-
-/* No comment provided by engineer. */
 "Save (and notify contacts)" = "Сохранить (и уведомить контакты)";
 
 /* No comment provided by engineer. */
-"Save (and notify group members)" = "Сохранить (и уведомить членов группы)";
+"Save and notify contact" = "Сохранить и уведомить контакт";
+
+/* No comment provided by engineer. */
+"Save and notify group members" = "Сохранить и уведомить членов группы";
 
 /* No comment provided by engineer. */
 "Save archive" = "Сохранить архив";
@@ -1637,6 +1643,9 @@
 
 /* No comment provided by engineer. */
 "Save passphrase in Keychain" = "Сохранить пароль в Keychain";
+
+/* No comment provided by engineer. */
+"Save preferences?" = "Сохранить предпочтения?";
 
 /* No comment provided by engineer. */
 "Save servers" = "Сохранить серверы";
@@ -1700,6 +1709,9 @@
 
 /* No comment provided by engineer. */
 "Set contact name…" = "Имя контакта…";
+
+/* No comment provided by engineer. */
+"Set group preferences" = "Предпочтения группы";
 
 /* No comment provided by engineer. */
 "Set passphrase to export" = "Установите пароль";
