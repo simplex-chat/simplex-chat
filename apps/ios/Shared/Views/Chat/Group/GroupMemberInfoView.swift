@@ -42,7 +42,7 @@ struct GroupMemberInfoView: View {
                     groupMemberInfoHeader(member)
                         .listRowBackground(Color.clear)
 
-                    if let contactId = member.memberContactId {
+                    if let contactId = member.memberContactId, groupInfo.fullGroupPreferences.directMessages.enable == .on {
                         Section {
                             openDirectChatButton(contactId)
                         }

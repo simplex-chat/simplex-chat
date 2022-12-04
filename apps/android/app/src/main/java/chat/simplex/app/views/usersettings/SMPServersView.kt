@@ -301,7 +301,7 @@ private suspend fun runServersTest(servers: List<ServerCfg>, m: ChatModel, onUpd
       // toList() is important. Otherwise, Compose will not redraw the screen after first update
       onUpdated(updatedServers.toList())
       if (f != null) {
-        fs[serverHostname(updatedServer)] = f
+        fs[serverHostname(updatedServer.server)] = f
       }
     }
   }

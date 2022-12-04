@@ -123,7 +123,10 @@ fun IncomingCallLockScreenAlert(invitation: RcvCallInvitation, chatModel: ChatMo
     invitation,
     callOnLockScreen,
     rejectCall = { cm.endCall(invitation = invitation) },
-    ignoreCall = { chatModel.activeCallInvitation.value = null },
+    ignoreCall = {
+      chatModel.activeCallInvitation.value = null
+      chatModel.controller.ntfManager.cancelCallNotification()
+    },
     acceptCall = { cm.acceptIncomingCall(invitation = invitation) },
     openApp = {
       SoundPlayer.shared.stop()

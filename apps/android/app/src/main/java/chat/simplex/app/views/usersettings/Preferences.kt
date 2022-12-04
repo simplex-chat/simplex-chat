@@ -61,13 +61,13 @@ private fun PreferencesLayout(
     horizontalAlignment = Alignment.Start,
   ) {
     AppBarTitle(stringResource(R.string.your_preferences))
-//    val allowFullDeletion = remember(preferences) { mutableStateOf(preferences.fullDelete.allow) }
-//    FeatureSection(Feature.FullDelete, allowFullDeletion) {
-//      applyPrefs(preferences.copy(fullDelete = ChatPreference(allow = it)))
-//    }
-//    SectionSpacer()
+    val allowFullDeletion = remember(preferences) { mutableStateOf(preferences.fullDelete.allow) }
+    FeatureSection(ChatFeature.FullDelete, allowFullDeletion) {
+      applyPrefs(preferences.copy(fullDelete = ChatPreference(allow = it)))
+    }
+    SectionSpacer()
     val allowVoice = remember(preferences) { mutableStateOf(preferences.voice.allow) }
-    FeatureSection(Feature.Voice, allowVoice) {
+    FeatureSection(ChatFeature.Voice, allowVoice) {
       applyPrefs(preferences.copy(voice = ChatPreference(allow = it)))
     }
     SectionSpacer()
@@ -80,7 +80,7 @@ private fun PreferencesLayout(
 }
 
 @Composable
-private fun FeatureSection(feature: Feature, allowFeature: State<FeatureAllowed>, onSelected: (FeatureAllowed) -> Unit) {
+private fun FeatureSection(feature: ChatFeature, allowFeature: State<FeatureAllowed>, onSelected: (FeatureAllowed) -> Unit) {
   SectionView {
     SectionItemView {
       ExposedDropDownSettingRow(

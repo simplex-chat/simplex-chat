@@ -266,7 +266,8 @@ export interface CRChatItemUpdated extends CR {
 export interface CRChatItemDeleted extends CR {
   type: "chatItemDeleted"
   deletedChatItem: AChatItem
-  toChatItem: AChatItem
+  toChatItem?: AChatItem
+  byUser: boolean
 }
 
 export interface CRMsgIntegrityError extends CR {

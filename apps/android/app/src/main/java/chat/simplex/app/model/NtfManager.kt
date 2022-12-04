@@ -3,9 +3,11 @@ package chat.simplex.app.model
 import android.app.*
 import android.content.*
 import android.graphics.BitmapFactory
+import android.hardware.display.DisplayManager
 import android.media.AudioAttributes
 import android.net.Uri
 import android.util.Log
+import android.view.Display
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import chat.simplex.app.*
@@ -151,19 +153,26 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
   }
 
   fun notifyCallInvitation(invitation: RcvCallInvitation) {
-    if (isAppOnForeground(context)) return
+    if (SimplexApp.context.isAppOnForeground) return
+    val keyguardManager = getKeyguardManager(context)
+    Log.d(TAG,
+      "notifyCallInvitation pre-requests: device locked ${keyguardManager.isDeviceLocked}, " +
+          "keyguard locked ${keyguardManager.isKeyguardLocked}, " +
+          "callOnLockScreen ${appPreferences.callOnLockScreen.get()}"
+    )
     val contactId = invitation.contact.id
     Log.d(TAG, "notifyCallInvitation $contactId")
-    val keyguardManager = getKeyguardManager(context)
     val image = invitation.contact.image
+    val displayManager = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
+    val screenOff = displayManager.displays.all { it.state != Display.STATE_ON }
     var ntfBuilder =
-      if (keyguardManager.isDeviceLocked && appPreferences.callOnLockScreen.get() != CallOnLockScreen.DISABLE) {
+      if ((keyguardManager.isKeyguardLocked || screenOff) && appPreferences.callOnLockScreen.get() != CallOnLockScreen.DISABLE) {
         val fullScreenIntent = Intent(context, IncomingCallActivity::class.java)
         val fullScreenPendingIntent = PendingIntent.getActivity(context, 0, fullScreenIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         NotificationCompat.Builder(context, LockScreenCallChannel)
           .setFullScreenIntent(fullScreenPendingIntent, true)
           .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-          .setSilent(true)
+          .setSilent(false)
       } else {
         val soundUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + context.packageName + "/" + R.raw.ring_once)
         NotificationCompat.Builder(context, CallChannel)
@@ -208,18 +217,14 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
 
   private fun hideSecrets(cItem: ChatItem) : String {
     val md = cItem.formattedText
-    return if (md == null) {
-      if (cItem.content.text != "") {
-        cItem.content.text
-      } else {
-        if (cItem.content.msgContent is MsgContent.MCVoice) generalGetString(R.string.voice_message) else cItem.file?.fileName ?: ""
-      }
-    } else {
+    return if (md != null) {
       var res = ""
       for (ft in md) {
         res += if (ft.format is Format.Secret) "..." else ft.text
       }
       res
+    } else {
+      cItem.text
     }
   }
 

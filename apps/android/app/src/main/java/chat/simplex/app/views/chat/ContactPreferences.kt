@@ -72,13 +72,13 @@ private fun ContactPreferencesLayout(
     horizontalAlignment = Alignment.Start,
   ) {
     AppBarTitle(stringResource(R.string.contact_preferences))
-//    val allowFullDeletion: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.fullDelete) }
-//    FeatureSection(Feature.FullDelete, user.fullPreferences.fullDelete.allow, contact.mergedPreferences.fullDelete, allowFullDeletion) {
-//      applyPrefs(featuresAllowed.copy(fullDelete = it))
-//    }
-//    SectionSpacer()
+    val allowFullDeletion: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.fullDelete) }
+    FeatureSection(ChatFeature.FullDelete, user.fullPreferences.fullDelete.allow, contact.mergedPreferences.fullDelete, allowFullDeletion) {
+      applyPrefs(featuresAllowed.copy(fullDelete = it))
+    }
+    SectionSpacer()
     val allowVoice: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.voice) }
-    FeatureSection(Feature.Voice, user.fullPreferences.voice.allow, contact.mergedPreferences.voice, allowVoice) {
+    FeatureSection(ChatFeature.Voice, user.fullPreferences.voice.allow, contact.mergedPreferences.voice, allowVoice) {
       applyPrefs(featuresAllowed.copy(voice = it))
     }
     SectionSpacer()
@@ -92,7 +92,7 @@ private fun ContactPreferencesLayout(
 
 @Composable
 private fun FeatureSection(
-  feature: Feature,
+  feature: ChatFeature,
   userDefault: FeatureAllowed,
   pref: ContactUserPreference,
   allowFeature: State<ContactFeatureAllowed>,

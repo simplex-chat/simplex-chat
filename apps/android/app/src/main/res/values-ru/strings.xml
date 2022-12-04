@@ -21,6 +21,7 @@
 
     <!-- Item Content - ChatModel.kt -->
     <string name="deleted_description">удалено</string>
+    <string name="marked_deleted_description">помечено как удаленное</string>
     <string name="sending_files_not_yet_supported">отправка файлов не поддерживается</string>
     <string name="receiving_files_not_yet_supported">получение файлов не поддерживается</string>
     <string name="sender_you_pronoun">вы</string>
@@ -60,7 +61,7 @@
     <!-- API Error Responses - SimpleXAPI.kt -->
     <string name="connection_timeout">Превышено время соединения</string>
     <string name="connection_error">Ошибка соединения</string>
-    <string name="network_error_desc">Пожалуйста, проверьте ваше соединение с сетью и попробуйте еще раз.</string>
+    <string name="network_error_desc">Пожалуйста, проверьте ваше соединение с сервером <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g> и попробуйте еще раз.</string>
     <string name="error_sending_message">Ошибка при отправке сообщения</string>
     <string name="error_adding_members">Ошибка при добавлении членов группы</string>
     <string name="error_joining_group">Ошибка при вступлении в группу</string>
@@ -167,10 +168,13 @@
     <string name="save_verb">Сохранить</string>
     <string name="edit_verb">Редактировать</string>
     <string name="delete_verb">Удалить</string>
+    <string name="reveal_verb">Показать</string>
+    <string name="hide_verb">Спрятать</string>
     <string name="allow_verb">Разрешить</string>
     <string name="delete_message__question">Удалить сообщение?</string>
     <string name="delete_message_cannot_be_undone_warning">Сообщение будет удалено – это действие нельзя отменить!</string>
-    <string name="for_me_only">Только для меня</string>
+    <string name="delete_message_mark_deleted_warning">Сообщение будет помечено на удаление. Получатель(и) сможет(смогут) посмотреть это сообщение.</string>
+    <string name="for_me_only">Удалить для меня</string>
     <string name="for_everybody">Для всех</string>
 
     <!-- CIMetaView.kt -->
@@ -230,6 +234,7 @@
 
     <!-- Voice messages -->
     <string name="voice_message">Голосовое сообщение</string>
+    <string name="voice_message_with_duration">Голосовое сообщение (<xliff:g id="duration">%1$s</xliff:g>)</string>
     <string name="voice_message_send_text">Голосовое сообщение…</string>
 
     <!-- Chat Info Settings - ChatInfoView.kt -->

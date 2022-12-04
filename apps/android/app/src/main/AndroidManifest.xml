@@ -104,7 +104,9 @@
 
 
     <activity android:name=".views.call.IncomingCallActivity"
-        android:showOnLockScreen="true"/>
+        android:showOnLockScreen="true"
+        android:exported="false"
+        android:launchMode="singleTask"/>
 
     <provider
         android:name="androidx.core.content.FileProvider"

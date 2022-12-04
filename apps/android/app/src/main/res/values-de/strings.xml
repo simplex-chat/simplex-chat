@@ -21,6 +21,7 @@
 
   <!-- Item Content - ChatModel.kt -->
   <string name="deleted_description">Gelöscht</string>
+  <string name="marked_deleted_description">***marked deleted</string>
   <string name="sending_files_not_yet_supported">Das Senden von Dateien wird noch nicht unterstützt</string>
   <string name="receiving_files_not_yet_supported">Der Empfang von Dateien wird noch nicht unterstützt</string>
   <string name="sender_you_pronoun">Meine Daten</string>
@@ -60,7 +61,7 @@
   <!-- API Error Responses - SimpleXAPI.kt -->
   <string name="connection_timeout">Verbindungszeitüberschreitung</string>
   <string name="connection_error">Verbindungsfehler</string>
-  <string name="network_error_desc">Bitte überprüfen Sie Ihre Netzwerkverbindung und versuchen Sie es erneut.</string>
+  <string name="network_error_desc">*** Bitte überprüfen Sie Ihre Netzwerkverbindung mit <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g> und versuchen Sie es erneut.</string>
   <string name="error_sending_message">Fehler beim Senden der Nachricht</string>
   <string name="error_adding_members">Fehler beim Hinzufügen von Mitgliedern</string>
   <string name="error_joining_group">Fehler beim Beitritt zur Gruppe</string>
@@ -167,10 +168,13 @@
   <string name="save_verb">Speichern</string>
   <string name="edit_verb">Bearbeiten</string>
   <string name="delete_verb">Löschen</string>
+  <string name="reveal_verb">***Reveal</string>
+  <string name="hide_verb">***Hide</string>
   <string name="allow_verb">Erlauben</string>
   <string name="delete_message__question">Die Nachricht löschen?</string>
   <string name="delete_message_cannot_be_undone_warning">Nachricht wird gelöscht - dies kann nicht rückgängig gemacht werden!</string>
-  <string name="for_me_only">Nur für mich</string>
+  <string name="delete_message_mark_deleted_warning">***Message will be marked for deletion. The recipient(s) will be able to reveal this message.</string>
+  <string name="for_me_only">***Delete for me</string>
   <string name="for_everybody">Für alle</string>
 
   <!-- CIMetaView.kt -->
@@ -230,6 +234,7 @@
 
   <!-- Voice messages -->
   <string name="voice_message">Sprachnachricht</string>
+  <string name="voice_message_with_duration">Sprachnachricht (<xliff:g id="duration">%1$s</xliff:g>)</string>
   <string name="voice_message_send_text">Sprachnachricht…</string>
 
   <!-- Chat Info Settings - ChatInfoView.kt -->

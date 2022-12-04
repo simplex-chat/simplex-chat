@@ -101,8 +101,10 @@ struct ChatPreviewView: View {
 
     @ViewBuilder private func chatPreviewText(_ cItem: ChatItem?) -> some View {
         if let cItem = cItem {
+            let itemText = !cItem.meta.itemDeleted ? cItem.text : NSLocalizedString("marked deleted", comment: "marked deleted chat item preview text")
+            let itemFormattedText = !cItem.meta.itemDeleted ? cItem.formattedText : nil
             ZStack(alignment: .topTrailing) {
-                (itemStatusMark(cItem) + messageText(cItem.text, cItem.formattedText, cItem.memberDisplayName, preview: true))
+                (itemStatusMark(cItem) + messageText(itemText, itemFormattedText, cItem.memberDisplayName, preview: true))
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -203,6 +205,10 @@ struct ChatPreviewView_Previews: PreviewProvider {
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent)],
                 chatStats: ChatStats(unreadCount: 11, minUnreadItemId: 0)
+            ))
+            ChatPreviewView(chat: Chat(
+                chatInfo: ChatInfo.sampleData.direct,
+                chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent, true, false)]
             ))
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
