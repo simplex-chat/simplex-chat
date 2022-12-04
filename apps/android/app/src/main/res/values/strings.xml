@@ -832,6 +832,8 @@
   <string name="new_member_role">New member role</string>
   <string name="icon_descr_expand_role">Expand role selection</string>
   <string name="invite_to_group_button">Invite to group</string>
+  <string name="skip_inviting_button">Skip inviting members</string>
+  <string name="select_contacts">Select contacts</string>
   <string name="icon_descr_contact_checked">Contact checked</string>
   <string name="clear_contacts_selection_button">Clear</string>
   <string name="num_contacts_selected"><xliff:g id="num_contacts">%1$s</xliff:g> contact(s) selected</string>
@@ -952,6 +954,7 @@
   <string name="chat_preferences">Chat preferences</string>
   <string name="contact_preferences">Contact preferences</string>
   <string name="group_preferences">Group preferences</string>
+  <string name="set_group_preferences">Set group preferences</string>
   <string name="your_preferences">Your preferences</string>
   <string name="direct_messages">Direct messages</string>
   <string name="full_deletion">Delete for everyone</string>

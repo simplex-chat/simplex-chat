@@ -832,6 +832,8 @@
     <string name="new_member_role">Роль члена группы</string>
     <string name="icon_descr_expand_role">Развернуть выбор роли</string>
     <string name="invite_to_group_button">Пригласить в группу</string>
+    <string name="skip_inviting_button">Не приглашать членов</string>
+    <string name="select_contacts">Выберите контакты</string>
     <string name="icon_descr_contact_checked">Контакт выбран</string>
     <string name="clear_contacts_selection_button">Очистить</string>
     <string name="num_contacts_selected">Выбрано контактов: <xliff:g id="num_contacts">%1$s</xliff:g></string>
@@ -951,6 +953,7 @@
     <string name="chat_preferences">Предпочтения</string>
     <string name="contact_preferences">Предпочтения контакта</string>
     <string name="group_preferences">Предпочтения группы</string>
+    <string name="set_group_preferences">Предпочтения группы</string>
     <string name="your_preferences">Ваши предпочтения</string>
     <string name="direct_messages">Прямые сообщения</string>
     <string name="full_deletion">Удаление для всех</string>
