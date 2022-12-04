@@ -103,6 +103,7 @@ class AppPreferences(val context: Context) {
     },
     set = fun(mode: SimplexLinkMode) { _simplexLinkMode.set(mode.name) }
   )
+  val privacyFullBackup = mkBoolPreference(SHARED_PREFS_PRIVACY_FULL_BACKUP, true)
   val experimentalCalls = mkBoolPreference(SHARED_PREFS_EXPERIMENTAL_CALLS, false)
   val chatArchiveName = mkStrPreference(SHARED_PREFS_CHAT_ARCHIVE_NAME, null)
   val chatArchiveTime = mkDatePreference(SHARED_PREFS_CHAT_ARCHIVE_TIME, null)
@@ -178,7 +179,7 @@ class AppPreferences(val context: Context) {
     )
 
   companion object {
-    private const val SHARED_PREFS_ID = "chat.simplex.app.SIMPLEX_APP_PREFS"
+    internal const val SHARED_PREFS_ID = "chat.simplex.app.SIMPLEX_APP_PREFS"
     private const val SHARED_PREFS_AUTO_RESTART_WORKER_VERSION = "AutoRestartWorkerVersion"
     private const val SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND = "RunServiceInBackground"
     private const val SHARED_PREFS_NOTIFICATIONS_MODE = "NotificationsMode"
@@ -195,6 +196,7 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_PRIVACY_TRANSFER_IMAGES_INLINE = "PrivacyTransferImagesInline"
     private const val SHARED_PREFS_PRIVACY_LINK_PREVIEWS = "PrivacyLinkPreviews"
     private const val SHARED_PREFS_PRIVACY_SIMPLEX_LINK_MODE = "PrivacySimplexLinkMode"
+    internal val SHARED_PREFS_PRIVACY_FULL_BACKUP = "FullBackup"
     private const val SHARED_PREFS_EXPERIMENTAL_CALLS = "ExperimentalCalls"
     private const val SHARED_PREFS_CHAT_ARCHIVE_NAME = "ChatArchiveName"
     private const val SHARED_PREFS_CHAT_ARCHIVE_TIME = "ChatArchiveTime"

@@ -618,6 +618,7 @@
   <string name="auto_accept_images">Auto-accept images</string>
   <string name="transfer_images_faster">Transfer images faster</string>
   <string name="send_link_previews">Send link previews</string>
+  <string name="full_backup">App data backup</string>
 
   <!-- Settings sections -->
   <string name="settings_section_title_you">YOU</string>
