@@ -260,6 +260,9 @@
 /* No comment provided by engineer. */
 "Automatically" = "Automatisch";
 
+/* No comment provided by engineer. */
+"Back" = "Zurück";
+
 /* integrity error chat item */
 "bad message hash" = "Ungültiger Nachrichten-Hash";
 
@@ -922,6 +925,9 @@
 
 /* No comment provided by engineer. */
 "Error: URL is invalid" = "Fehler: URL ist ungültig";
+
+/* No comment provided by engineer. */
+"Exit without saving" = "***Exit without saving";
 
 /* No comment provided by engineer. */
 "Export database" = "Datenbank exportieren";
@@ -1618,13 +1624,13 @@
 "Save" = "Speichern";
 
 /* No comment provided by engineer. */
-"Save (and notify contact)" = "Speichern (und Kontakt benachrichtigen)";
-
-/* No comment provided by engineer. */
 "Save (and notify contacts)" = "Speichern (und Kontakte benachrichtigen)";
 
 /* No comment provided by engineer. */
-"Save (and notify group members)" = "Speichern (und Gruppenmitglieder benachrichtigen)";
+"Save and notify contact" = "Speichern und Kontakt benachrichtigen";
+
+/* No comment provided by engineer. */
+"Save and notify group members" = "Speichern und Gruppenmitglieder benachrichtigen";
 
 /* No comment provided by engineer. */
 "Save archive" = "Archiv speichern";
@@ -1637,6 +1643,9 @@
 
 /* No comment provided by engineer. */
 "Save passphrase in Keychain" = "Passwort im Schlüsselbund speichern";
+
+/* No comment provided by engineer. */
+"Save preferences?" = "***Save preferences?";
 
 /* No comment provided by engineer. */
 "Save servers" = "Server speichern";
@@ -1700,6 +1709,9 @@
 
 /* No comment provided by engineer. */
 "Set contact name…" = "Kontaktname festlegen…";
+
+/* No comment provided by engineer. */
+"Set group preferences" = "***Group preferences";
 
 /* No comment provided by engineer. */
 "Set passphrase to export" = "Passwort für den Export festlegen";
