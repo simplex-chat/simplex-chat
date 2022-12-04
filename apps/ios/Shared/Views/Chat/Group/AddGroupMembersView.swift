@@ -84,9 +84,7 @@ struct AddGroupMembersView: View {
             if creatingGroup {
                 v.toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
-                        Button ("Skip") {
-                            if let cb = addedMembersCb { cb(selectedContacts) }
-                        }
+                        Button ("Skip") { addedMembersCb?(selectedContacts) }
                     }
                 }
             } else {
