@@ -21,7 +21,7 @@
 
   <!-- Item Content - ChatModel.kt -->
   <string name="deleted_description">Gelöscht</string>
-  <string name="marked_deleted_description">***marked deleted</string>
+  <string name="marked_deleted_description">***markiert gelöscht</string>
   <string name="sending_files_not_yet_supported">Das Senden von Dateien wird noch nicht unterstützt</string>
   <string name="receiving_files_not_yet_supported">Der Empfang von Dateien wird noch nicht unterstützt</string>
   <string name="sender_you_pronoun">Meine Daten</string>
@@ -61,7 +61,7 @@
   <!-- API Error Responses - SimpleXAPI.kt -->
   <string name="connection_timeout">Verbindungszeitüberschreitung</string>
   <string name="connection_error">Verbindungsfehler</string>
-  <string name="network_error_desc">*** Bitte überprüfen Sie Ihre Netzwerkverbindung mit <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g> und versuchen Sie es erneut.</string>
+  <string name="network_error_desc">Bitte überprüfen Sie Ihre Netzwerkverbindung mit <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g> und versuchen Sie es erneut.</string>
   <string name="error_sending_message">Fehler beim Senden der Nachricht</string>
   <string name="error_adding_members">Fehler beim Hinzufügen von Mitgliedern</string>
   <string name="error_joining_group">Fehler beim Beitritt zur Gruppe</string>
@@ -832,6 +832,8 @@
   <string name="new_member_role">Neue Mitgliedsrolle</string>
   <string name="icon_descr_expand_role">Rollenauswahl erweitern</string>
   <string name="invite_to_group_button">In Gruppe einladen</string>
+  <string name="skip_inviting_button">***Skip inviting members</string>
+  <string name="select_contacts">***Select contacts</string>
   <string name="icon_descr_contact_checked">Kontakt geprüft</string>
   <string name="clear_contacts_selection_button">Löschen</string>
   <string name="num_contacts_selected"><xliff:g id="num_contacts">%1$s</xliff:g> Kontakt(e) ausgewählt</string>
@@ -952,6 +954,7 @@
   <string name="chat_preferences">Chat Präferenzen</string>
   <string name="contact_preferences">Kontakt Präferenzen</string>
   <string name="group_preferences">Gruppen Präferenzen</string>
+  <string name="set_group_preferences">***Gruppenpräferenzen einstellen</string>
   <string name="your_preferences">Ihre Präferenzen</string>
   <string name="direct_messages">***Direct messages</string>
   <string name="full_deletion">***Beseitigung für alle</string>

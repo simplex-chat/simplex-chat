@@ -49,7 +49,7 @@ fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
         withApi {
           setGroupMembers(groupInfo, chatModel)
           ModalManager.shared.showModalCloseable(true) { close ->
-            AddGroupMembersView(groupInfo, chatModel, close)
+            AddGroupMembersView(groupInfo, false, chatModel, close)
           }
         }
       },

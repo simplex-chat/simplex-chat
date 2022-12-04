@@ -31,17 +31,23 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.SettingsActionItem
 
 @Composable
-fun AddGroupMembersView(groupInfo: GroupInfo, chatModel: ChatModel, close: () -> Unit) {
+fun AddGroupMembersView(groupInfo: GroupInfo, creatingGroup: Boolean = false, chatModel: ChatModel, close: () -> Unit) {
   val selectedContacts = remember { mutableStateListOf<Long>() }
   val selectedRole = remember { mutableStateOf(GroupMemberRole.Member) }
   var allowModifyMembers by remember { mutableStateOf(true) }
   BackHandler(onBack = close)
   AddGroupMembersLayout(
     groupInfo = groupInfo,
+    creatingGroup = creatingGroup,
     contactsToAdd = getContactsToAdd(chatModel),
     selectedContacts = selectedContacts,
     selectedRole = selectedRole,
     allowModifyMembers = allowModifyMembers,
+    openPreferences = {
+      ModalManager.shared.showModal(true) {
+        GroupPreferencesView(chatModel, groupInfo.id)
+      }
+    },
     inviteMembers = {
       allowModifyMembers = false
       withApi {
@@ -59,6 +65,7 @@ fun AddGroupMembersView(groupInfo: GroupInfo, chatModel: ChatModel, close: () ->
     clearSelection = { selectedContacts.clear() },
     addContact = { contactId -> if (contactId !in selectedContacts) selectedContacts.add(contactId) },
     removeContact = { contactId -> selectedContacts.removeIf { it == contactId } },
+    close = close,
   )
 }
 
@@ -79,14 +86,17 @@ fun getContactsToAdd(chatModel: ChatModel): List<Contact> {
 @Composable
 fun AddGroupMembersLayout(
   groupInfo: GroupInfo,
+  creatingGroup: Boolean,
   contactsToAdd: List<Contact>,
   selectedContacts: List<Long>,
   selectedRole: MutableState<GroupMemberRole>,
   allowModifyMembers: Boolean,
+  openPreferences: () -> Unit,
   inviteMembers: () -> Unit,
   clearSelection: () -> Unit,
   addContact: (Long) -> Unit,
   removeContact: (Long) -> Unit,
+  close: () -> Unit,
 ) {
   Column(
     Modifier
@@ -120,18 +130,28 @@ fun AddGroupMembersLayout(
       }
     } else {
       SectionView {
+        if (creatingGroup) {
+          SectionItemView(openPreferences) {
+            Text(stringResource(R.string.set_group_preferences))
+          }
+          SectionDivider()
+        }
         SectionItemView {
           RoleSelectionRow(groupInfo, selectedRole, allowModifyMembers)
         }
         SectionDivider()
-        InviteMembersButton(inviteMembers, disabled = selectedContacts.isEmpty() || !allowModifyMembers)
+        if (creatingGroup && selectedContacts.isEmpty()) {
+          SkipInvitingButton(close)
+        } else {
+          InviteMembersButton(inviteMembers, disabled = selectedContacts.isEmpty() || !allowModifyMembers)
+        }
       }
       SectionCustomFooter {
         InviteSectionFooter(selectedContactsCount = selectedContacts.size, allowModifyMembers, clearSelection)
       }
       SectionSpacer()
 
-      SectionView {
+      SectionView(stringResource(R.string.select_contacts)) {
         ContactList(contacts = contactsToAdd, selectedContacts, groupInfo, allowModifyMembers, addContact, removeContact)
       }
       SectionSpacer()
@@ -167,6 +187,17 @@ fun InviteMembersButton(onClick: () -> Unit, disabled: Boolean) {
     textColor = MaterialTheme.colors.primary,
     iconColor = MaterialTheme.colors.primary,
     disabled = disabled,
+  )
+}
+
+@Composable
+fun SkipInvitingButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    Icons.Outlined.Check,
+    stringResource(R.string.skip_inviting_button),
+    click = onClick,
+    textColor = MaterialTheme.colors.primary,
+    iconColor = MaterialTheme.colors.primary,
   )
 }
 
@@ -288,14 +319,17 @@ fun PreviewAddGroupMembersLayout() {
   SimpleXTheme {
     AddGroupMembersLayout(
       groupInfo = GroupInfo.sampleData,
+      creatingGroup = false,
       contactsToAdd = listOf(Contact.sampleData, Contact.sampleData, Contact.sampleData),
       selectedContacts = remember { mutableStateListOf() },
       selectedRole = remember { mutableStateOf(GroupMemberRole.Admin) },
       allowModifyMembers = true,
+      openPreferences = {},
       inviteMembers = {},
       clearSelection = {},
       addContact = {},
-      removeContact = {}
+      removeContact = {},
+      close = {},
     )
   }
 }
