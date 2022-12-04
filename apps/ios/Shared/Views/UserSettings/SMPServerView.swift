@@ -28,20 +28,10 @@ struct SMPServerView: View {
                 ProgressView().scaleEffect(2)
             }
         }
-        .navigationBarBackButtonHidden(true)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    server = serverToEdit
-                    dismiss()
-                } label: {
-                    HStack {
-                        Image(systemName: "chevron.left")
-                        Text("Your SMP servers")
-                    }
-                }
-            }
-        }
+        .modifier(BackButton(label: "Your SMP servers") {
+            server = serverToEdit
+            dismiss()
+        })
         .alert(isPresented: $showTestFailure) {
             Alert(
                 title: Text("Server test failed!"),
@@ -117,6 +107,26 @@ struct SMPServerView: View {
                 showTestStatus(server: serverToEdit)
             }
             Toggle("Use for new connections", isOn: $serverToEdit.enabled)
+        }
+    }
+}
+
+struct BackButton: ViewModifier {
+    var label: LocalizedStringKey = "Back"
+    var action: () -> Void
+
+    func body(content: Content) -> some View {
+        content
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: action) {
+                    HStack {
+                        Image(systemName: "chevron.left")
+                        Text(label)
+                    }
+                }
+            }
         }
     }
 }

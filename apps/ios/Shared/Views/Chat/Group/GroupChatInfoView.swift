@@ -45,7 +45,7 @@ struct GroupChatInfoView: View {
                     if groupInfo.canEdit {
                         editGroupButton()
                     }
-                    groupPreferencesButton()
+                    groupPreferencesButton($groupInfo)
                 } header: {
                     Text("")
                 } footer: {
@@ -200,20 +200,6 @@ struct GroupChatInfoView: View {
         }
     }
 
-    func groupPreferencesButton() -> some View {
-        NavigationLink {
-            GroupPreferencesView(
-                groupInfo: $groupInfo,
-                preferences: groupInfo.fullGroupPreferences,
-                currentPreferences: groupInfo.fullGroupPreferences
-            )
-            .navigationBarTitle("Group preferences")
-            .navigationBarTitleDisplayMode(.large)
-        } label: {
-            Label("Group preferences", systemImage: "switch.2")
-        }
-    }
-
     func editGroupButton() -> some View {
         NavigationLink {
             GroupProfileView(
@@ -307,6 +293,25 @@ struct GroupChatInfoView: View {
             },
             secondaryButton: .cancel()
         )
+    }
+}
+
+func groupPreferencesButton(_ groupInfo: Binding<GroupInfo>, _ creatingGroup: Bool = false) -> some View {
+    NavigationLink {
+        GroupPreferencesView(
+            groupInfo: groupInfo,
+            preferences: groupInfo.wrappedValue.fullGroupPreferences,
+            currentPreferences: groupInfo.wrappedValue.fullGroupPreferences,
+            creatingGroup: creatingGroup
+        )
+        .navigationBarTitle("Group preferences")
+        .navigationBarTitleDisplayMode(.large)
+    } label: {
+        if creatingGroup {
+            Text("Set group preferences")
+        } else {
+            Label("Group preferences", systemImage: "switch.2")
+        }
     }
 }
 

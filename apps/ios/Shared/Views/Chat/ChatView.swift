@@ -480,6 +480,9 @@ struct ChatView: View {
                 if ci.meta.editable && !mc.isVoice {
                     menu.append(editAction())
                 }
+                if revealed {
+                    menu.append(hideUIAction())
+                }
                 menu.append(deleteUIAction())
             } else if ci.meta.itemDeleted {
                 menu.append(revealUIAction())
@@ -559,6 +562,17 @@ struct ChatView: View {
             ) { _ in
                 withAnimation {
                     composeState = ComposeState(editingItem: ci)
+                }
+            }
+        }
+
+        private func hideUIAction() -> UIAction {
+            UIAction(
+                title: NSLocalizedString("Hide", comment: "chat item action"),
+                image: UIImage(systemName: "eye.slash")
+            ) { _ in
+                withAnimation {
+                    revealed = false
                 }
             }
         }

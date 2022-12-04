@@ -259,7 +259,7 @@ public enum ChatFeature: String, Decodable, Feature {
 
     public var text: String {
         switch self {
-        case .fullDelete: return NSLocalizedString("Full deletion", comment: "chat feature")
+        case .fullDelete: return NSLocalizedString("Delete for everyone", comment: "chat feature")
         case .voice: return NSLocalizedString("Voice messages", comment: "chat feature")
         }
     }
@@ -329,7 +329,7 @@ public enum GroupFeature: String, Decodable, Feature {
     public var text: String {
         switch self {
         case .directMessages: return NSLocalizedString("Direct messages", comment: "chat feature")
-        case .fullDelete: return NSLocalizedString("Full deletion", comment: "chat feature")
+        case .fullDelete: return NSLocalizedString("Delete for everyone", comment: "chat feature")
         case .voice: return NSLocalizedString("Voice messages", comment: "chat feature")
         }
     }

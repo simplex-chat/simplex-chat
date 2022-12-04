@@ -84,6 +84,7 @@ fun DatabaseView(
       chatArchiveTime,
       chatLastStart,
       chatDbDeleted.value,
+      m.controller.appPrefs.privacyFullBackup,
       appFilesCountAndSize,
       chatItemTTL,
       startChat = { startChat(m, runChat, chatLastStart, m.chatDbChanged) },
@@ -132,6 +133,7 @@ fun DatabaseLayout(
   chatArchiveTime: MutableState<Instant?>,
   chatLastStart: MutableState<Instant?>,
   chatDbDeleted: Boolean,
+  privacyFullBackup: SharedPreference<Boolean>,
   appFilesCountAndSize: MutableState<Pair<Int, Long>>,
   chatItemTTL: MutableState<ChatItemTTL>,
   startChat: () -> Unit,
@@ -164,6 +166,8 @@ fun DatabaseLayout(
         iconColor = if (unencrypted) WarningOrange else HighOrLowlight,
         disabled = operationsDisabled
       )
+      SectionDivider()
+      SettingsPreferenceItem(Icons.Outlined.Backup, stringResource(R.string.full_backup), privacyFullBackup)
       SectionDivider()
       SettingsActionItem(
         Icons.Outlined.IosShare,
@@ -689,6 +693,7 @@ fun PreviewDatabaseLayout() {
       chatArchiveTime = remember { mutableStateOf(Clock.System.now()) },
       chatLastStart = remember { mutableStateOf(Clock.System.now()) },
       chatDbDeleted = false,
+      privacyFullBackup = SharedPreference({ true }, {}),
       appFilesCountAndSize = remember { mutableStateOf(0 to 0L) },
       chatItemTTL = remember { mutableStateOf(ChatItemTTL.None) },
       startChat = {},

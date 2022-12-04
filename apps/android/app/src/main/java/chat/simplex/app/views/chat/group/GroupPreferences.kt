@@ -13,10 +13,12 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
+import chat.simplex.app.ui.theme.SimplexGreen
 import chat.simplex.app.views.helpers.*
 
 @Composable
@@ -66,6 +68,7 @@ private fun GroupPreferencesLayout(
     FeatureSection(GroupFeature.DirectMessages, allowDirectMessages, groupInfo) {
       applyPrefs(preferences.copy(directMessages = GroupPreference(enable = it)))
     }
+    SectionSpacer()
     val allowFullDeletion = remember(preferences) { mutableStateOf(preferences.fullDelete.enable) }
     FeatureSection(GroupFeature.FullDelete, allowFullDeletion, groupInfo) {
       applyPrefs(preferences.copy(fullDelete = GroupPreference(enable = it)))
@@ -89,20 +92,26 @@ private fun GroupPreferencesLayout(
 @Composable
 private fun FeatureSection(feature: GroupFeature, enableFeature: State<GroupFeatureEnabled>, groupInfo: GroupInfo, onSelected: (GroupFeatureEnabled) -> Unit) {
   SectionView {
+    val on = enableFeature.value == GroupFeatureEnabled.ON
+    val icon = if (on) feature.iconFilled else feature.icon
+    val iconTint = if (on) SimplexGreen else HighOrLowlight
     if (groupInfo.canEdit) {
       SectionItemView {
         ExposedDropDownSettingRow(
           feature.text,
           GroupFeatureEnabled.values().map { it to it.text },
           enableFeature,
-          icon = feature.icon,
+          icon = icon,
+          iconTint = iconTint,
           onSelected = onSelected
         )
       }
     } else {
       InfoRow(
         feature.text,
-        enableFeature.value.text
+        enableFeature.value.text,
+        icon = icon,
+        iconTint = iconTint,
       )
     }
   }

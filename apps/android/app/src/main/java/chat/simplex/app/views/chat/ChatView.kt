@@ -210,14 +210,14 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
         withApi {
           setGroupMembers(groupInfo, chatModel)
           ModalManager.shared.showModalCloseable(true) { close ->
-              AddGroupMembersView(groupInfo, chatModel, close)
+              AddGroupMembersView(groupInfo, false, chatModel, close)
           }
         }
       },
       markRead = { range, unreadCountAfter ->
         chatModel.markChatItemsRead(chat.chatInfo, range, unreadCountAfter)
         chatModel.controller.ntfManager.cancelNotificationsForChat(chat.id)
-        withApi {
+        withBGApi {
           chatModel.controller.apiChatRead(
             chat.chatInfo.chatType,
             chat.chatInfo.apiId,
