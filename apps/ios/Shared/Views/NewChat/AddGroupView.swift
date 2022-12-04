@@ -27,7 +27,7 @@ struct AddGroupView: View {
             AddGroupMembersView(
                 chat: chat,
                 groupInfo: groupInfo,
-                showSkip: true,
+                creatingGroup: true,
                 showFooterCounter: false
             ) { _ in
                 dismiss()
