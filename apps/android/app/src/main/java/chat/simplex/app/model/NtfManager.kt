@@ -26,7 +26,7 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
 
     // DO NOT change notification channel settings / names
     const val CallChannel: String = "chat.simplex.app.CALL_NOTIFICATION2"
-    const val LockScreenCallChannel: String = "chat.simplex.app.LOCK_SCREEN_CALL_NOTIFICATION3"
+    const val LockScreenCallChannel: String = "chat.simplex.app.LOCK_SCREEN_CALL_NOTIFICATION1"
     const val AcceptCallAction: String = "chat.simplex.app.ACCEPT_CALL"
     const val CallNotificationId: Int = -1
 
@@ -44,7 +44,6 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
     // Remove old channels since they can't be edited
     manager.deleteNotificationChannel("chat.simplex.app.CALL_NOTIFICATION")
     manager.deleteNotificationChannel("chat.simplex.app.LOCK_SCREEN_CALL_NOTIFICATION")
-    manager.deleteNotificationChannel("chat.simplex.app.LOCK_SCREEN_CALL_NOTIFICATION2")
   }
 
   enum class NotificationAction {
