@@ -59,7 +59,9 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
     Log.d(TAG,"callNotificationChannel sound: $soundUri")
     callChannel.setSound(soundUri, attrs)
     callChannel.enableVibration(true)
-    callChannel.vibrationPattern = longArrayOf(0, 250, 0, 3500)
+    // the numbers below are explained here: https://developer.android.com/reference/android/os/Vibrator
+    // (wait, vibration duration, wait till off, wait till on again = ringtone mp3 duration - vibration duration - ~50ms lost somewhere)
+    callChannel.vibrationPattern = longArrayOf(250, 250, 0, 2600)
     return callChannel
   }
 
