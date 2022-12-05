@@ -957,7 +957,11 @@ processChatCommand = \case
       toView . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
       -- TODO delete direct connections that were unused
       deleteGroupLink' user gInfo `catchError` \_ -> pure ()
-      forM_ members $ deleteMemberConnection user
+      forM_ members $ \m -> do
+        deleteMemberConnection user m
+        withStore' $ \db -> do
+          itemId_ <- checkGroupMemberHasItems db user m
+          unless (isJust itemId_) $ deleteGroupMember db user m
       withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemLeft
       pure $ CRLeftMemberUser gInfo {membership = membership {memberStatus = GSMemLeft}}
   APIListMembers groupId -> CRGroupMembers <$> withUser (\user -> withStore (\db -> getGroup db user groupId))
@@ -2792,23 +2796,31 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
       if memberId (membership :: GroupMember) == memId
         then checkRole membership $ do
           deleteGroupLink' user gInfo `catchError` \_ -> pure ()
-          forM_ members $ deleteMemberConnection user
-          deleteMember membership RGEUserDeleted
+          forM_ members $ \member -> do
+            deleteMemberConnection user member
+            withStore' $ \db -> do
+              itemId_ <- checkGroupMemberHasItems db user member
+              unless (isJust itemId_) $ deleteGroupMember db user member
+          withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemRemoved
+          deleteMemberItem RGEUserDeleted
           toView $ CRDeletedMemberUser gInfo {membership = membership {memberStatus = GSMemRemoved}} m
         else case find (sameMemberId memId) members of
           Nothing -> messageError "x.grp.mem.del with unknown member ID"
           Just member@GroupMember {groupMemberId, memberProfile} ->
             checkRole member $ do
               deleteMemberConnection user member
-              deleteMember member $ RGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
+              withStore' $ \db ->
+                checkGroupMemberHasItems db user member >>= \case
+                  Just _ -> updateGroupMemberStatus db userId member GSMemRemoved
+                  Nothing -> deleteGroupMember db user member
+              deleteMemberItem $ RGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
               toView $ CRDeletedMember gInfo m member {memberStatus = GSMemRemoved}
       where
         checkRole GroupMember {memberRole} a
           | senderRole < GRAdmin || senderRole < memberRole =
             messageError "x.grp.mem.del with insufficient member permissions"
           | otherwise = a
-        deleteMember member gEvent = do
-          withStore' $ \db -> updateGroupMemberStatus db userId member GSMemRemoved
+        deleteMemberItem gEvent = do
           ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvGroupEvent gEvent) Nothing
           groupMsgToView gInfo m ci msgMeta
 
@@ -2818,9 +2830,13 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
     xGrpLeave :: GroupInfo -> GroupMember -> RcvMessage -> MsgMeta -> m ()
     xGrpLeave gInfo m msg msgMeta = do
       deleteMemberConnection user m
-      withStore' $ \db -> updateGroupMemberStatus db userId m GSMemLeft
-      ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvGroupEvent RGEMemberLeft) Nothing
-      groupMsgToView gInfo m ci msgMeta
+      memDeleted <- withStore' $ \db ->
+        checkGroupMemberHasItems db user m >>= \case
+          Just _ -> updateGroupMemberStatus db userId m GSMemLeft $> False
+          Nothing -> deleteGroupMember db user m $> True
+      unless memDeleted $ do
+        ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvGroupEvent RGEMemberLeft) Nothing
+        groupMsgToView gInfo m ci msgMeta
       toView $ CRLeftMember gInfo m {memberStatus = GSMemLeft}
 
     xGrpDel :: GroupInfo -> GroupMember -> RcvMessage -> MsgMeta -> m ()
@@ -2830,7 +2846,11 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
         members <- getGroupMembers db user gInfo
         updateGroupMemberStatus db userId membership GSMemGroupDeleted
         pure members
-      forM_ ms $ deleteMemberConnection user
+      forM_ ms $ \member -> do
+        deleteMemberConnection user member
+        withStore' $ \db -> do
+          itemId_ <- checkGroupMemberHasItems db user member
+          unless (isJust itemId_) $ deleteGroupMember db user member
       ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvGroupEvent RGEGroupDeleted) Nothing
       groupMsgToView gInfo m ci msgMeta
       toView $ CRGroupDeleted gInfo {membership = membership {memberStatus = GSMemGroupDeleted}} m
