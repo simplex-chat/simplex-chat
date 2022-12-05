@@ -59,6 +59,7 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
     Log.d(TAG,"callNotificationChannel sound: $soundUri")
     callChannel.setSound(soundUri, attrs)
     callChannel.enableVibration(true)
+    callChannel.vibrationPattern = longArrayOf(0, 250, 0, 3500)
     return callChannel
   }
 
