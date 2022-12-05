@@ -28,6 +28,7 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
     const val CallChannel: String = "chat.simplex.app.CALL_NOTIFICATION2"
     const val LockScreenCallChannel: String = "chat.simplex.app.LOCK_SCREEN_CALL_NOTIFICATION1"
     const val AcceptCallAction: String = "chat.simplex.app.ACCEPT_CALL"
+    const val RejectCallAction: String = "chat.simplex.app.REJECT_CALL"
     const val CallNotificationId: Int = -1
 
     private const val ChatIdKey: String = "chatId"
@@ -178,9 +179,12 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
           .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
       } else {
         val soundUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + context.packageName + "/" + R.raw.ring_once)
+        val fullScreenPendingIntent = PendingIntent.getActivity(context, 0, Intent(), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         NotificationCompat.Builder(context, CallChannel)
           .setContentIntent(chatPendingIntent(OpenChatAction, invitation.contact.id))
           .addAction(R.drawable.ntf_icon, generalGetString(R.string.accept), chatPendingIntent(AcceptCallAction, contactId))
+          .addAction(R.drawable.ntf_icon, generalGetString(R.string.reject), chatPendingIntent(RejectCallAction, contactId, true))
+          .setFullScreenIntent(fullScreenPendingIntent, true)
           .setSound(soundUri)
       }
     val text = generalGetString(
@@ -234,16 +238,20 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
     }
   }
 
-  private fun chatPendingIntent(intentAction: String, chatId: String? = null): PendingIntent {
+  private fun chatPendingIntent(intentAction: String, chatId: String? = null, broadcast: Boolean = false): PendingIntent {
     Log.d(TAG, "chatPendingIntent for $intentAction")
     val uniqueInt = (System.currentTimeMillis() and 0xfffffff).toInt()
-    var intent = Intent(context, MainActivity::class.java)
+    var intent = Intent(context, if (!broadcast) MainActivity::class.java else NtfActionReceiver::class.java)
       .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
       .setAction(intentAction)
     if (chatId != null) intent = intent.putExtra(ChatIdKey, chatId)
-    return TaskStackBuilder.create(context).run {
-      addNextIntentWithParentStack(intent)
-      getPendingIntent(uniqueInt, PendingIntent.FLAG_IMMUTABLE)
+    return if (!broadcast) {
+      TaskStackBuilder.create(context).run {
+        addNextIntentWithParentStack(intent)
+        getPendingIntent(uniqueInt, PendingIntent.FLAG_IMMUTABLE)
+      }
+    } else {
+      PendingIntent.getBroadcast(SimplexApp.context, uniqueInt, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
     }
   }
 
@@ -260,6 +268,12 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
           if (cInfo !is ChatInfo.ContactRequest) return
           acceptContactRequest(cInfo, SimplexApp.context.chatModel)
           SimplexApp.context.chatModel.controller.ntfManager.cancelNotificationsForChat(chatId)
+        }
+        RejectCallAction -> {
+          val invitation = SimplexApp.context.chatModel.callInvitations[chatId]
+          if (invitation != null) {
+            SimplexApp.context.chatModel.callManager.endCall(invitation = invitation)
+          }
         }
         else -> {
           Log.e(TAG, "Unknown action. Make sure you provide action from NotificationAction enum")
