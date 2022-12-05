@@ -155,15 +155,13 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
   }
 
   fun notifyCallInvitation(invitation: RcvCallInvitation) {
-    val inForeground = isAppOnForeground(context)
+    if (SimplexApp.context.isAppOnForeground) return
     val keyguardManager = getKeyguardManager(context)
     Log.d(TAG,
       "notifyCallInvitation pre-requests: device locked ${keyguardManager.isDeviceLocked}, " +
           "keyguard locked ${keyguardManager.isKeyguardLocked}, " +
-          "callOnLockScreen ${appPreferences.callOnLockScreen.get()}, " +
-          "inForeground $inForeground"
+          "callOnLockScreen ${appPreferences.callOnLockScreen.get()}"
     )
-    if (inForeground) return
     val contactId = invitation.contact.id
     Log.d(TAG, "notifyCallInvitation $contactId")
     val image = invitation.contact.image
@@ -223,18 +221,14 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
 
   private fun hideSecrets(cItem: ChatItem) : String {
     val md = cItem.formattedText
-    return if (md == null) {
-      if (cItem.content.text != "") {
-        cItem.content.text
-      } else {
-        if (cItem.content.msgContent is MsgContent.MCVoice) generalGetString(R.string.voice_message) else cItem.file?.fileName ?: ""
-      }
-    } else {
+    return if (md != null) {
       var res = ""
       for (ft in md) {
         res += if (ft.format is Format.Secret) "..." else ft.text
       }
       res
+    } else {
+      cItem.text
     }
   }
 

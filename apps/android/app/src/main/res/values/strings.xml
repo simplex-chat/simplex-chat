@@ -21,6 +21,7 @@
 
   <!-- Item Content - ChatModel.kt -->
   <string name="deleted_description">deleted</string>
+  <string name="marked_deleted_description">marked deleted</string>
   <string name="sending_files_not_yet_supported">sending files is not supported yet</string>
   <string name="receiving_files_not_yet_supported">receiving files is not supported yet</string>
   <string name="sender_you_pronoun">you</string>
@@ -60,7 +61,7 @@
   <!-- API Error Responses - SimpleXAPI.kt -->
   <string name="connection_timeout">Connection timeout</string>
   <string name="connection_error">Connection error</string>
-  <string name="network_error_desc">Please check your network connection and try again.</string>
+  <string name="network_error_desc">Please check your network connection with <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g> and try again.</string>
   <string name="error_sending_message">Error sending message</string>
   <string name="error_adding_members">Error adding member(s)</string>
   <string name="error_joining_group">Error joining group</string>
@@ -167,10 +168,13 @@
   <string name="save_verb">Save</string>
   <string name="edit_verb">Edit</string>
   <string name="delete_verb">Delete</string>
+  <string name="reveal_verb">Reveal</string>
+  <string name="hide_verb">Hide</string>
   <string name="allow_verb">Allow</string>
   <string name="delete_message__question">Delete message?</string>
   <string name="delete_message_cannot_be_undone_warning">Message will be deleted - this cannot be undone!</string>
-  <string name="for_me_only">For me only</string>
+  <string name="delete_message_mark_deleted_warning">Message will be marked for deletion. The recipient(s) will be able to reveal this message.</string>
+  <string name="for_me_only">Delete for me</string>
   <string name="for_everybody">For everyone</string>
 
   <!-- CIMetaView.kt -->
@@ -230,6 +234,7 @@
 
   <!-- Voice messages -->
   <string name="voice_message">Voice message</string>
+  <string name="voice_message_with_duration">Voice message (<xliff:g id="duration">%1$s</xliff:g>)</string>
   <string name="voice_message_send_text">Voice message…</string>
 
   <!-- Chat Info Settings - ChatInfoView.kt -->
@@ -613,6 +618,7 @@
   <string name="auto_accept_images">Auto-accept images</string>
   <string name="transfer_images_faster">Transfer images faster</string>
   <string name="send_link_previews">Send link previews</string>
+  <string name="full_backup">App data backup</string>
 
   <!-- Settings sections -->
   <string name="settings_section_title_you">YOU</string>
@@ -826,6 +832,8 @@
   <string name="new_member_role">New member role</string>
   <string name="icon_descr_expand_role">Expand role selection</string>
   <string name="invite_to_group_button">Invite to group</string>
+  <string name="skip_inviting_button">Skip inviting members</string>
+  <string name="select_contacts">Select contacts</string>
   <string name="icon_descr_contact_checked">Contact checked</string>
   <string name="clear_contacts_selection_button">Clear</string>
   <string name="num_contacts_selected"><xliff:g id="num_contacts">%1$s</xliff:g> contact(s) selected</string>
@@ -946,8 +954,10 @@
   <string name="chat_preferences">Chat preferences</string>
   <string name="contact_preferences">Contact preferences</string>
   <string name="group_preferences">Group preferences</string>
+  <string name="set_group_preferences">Set group preferences</string>
   <string name="your_preferences">Your preferences</string>
-  <string name="full_deletion">Full deletion</string>
+  <string name="direct_messages">Direct messages</string>
+  <string name="full_deletion">Delete for everyone</string>
   <string name="voice_messages">Voice messages</string>
   <string name="feature_enabled">enabled</string>
   <string name="feature_enabled_for_you">enabled for you</string>
@@ -968,13 +978,17 @@
   <string name="only_you_can_send_voice">Only you can send voice messages.</string>
   <string name="only_your_contact_can_send_voice">Only your contact can send voice messages.</string>
   <string name="voice_prohibited_in_this_chat">Voice messages are prohibited in this chat.</string>
+  <string name="allow_direct_messages">Allow sending direct messages to members.</string>
+  <string name="prohibit_direct_messages">Prohibit sending direct messages to members.</string>
   <string name="allow_to_delete_messages">Allow to irreversibly delete sent messages.</string>
   <string name="prohibit_message_deletion">Prohibit irreversible message deletion.</string>
   <string name="allow_to_send_voice">Allow to send voice messages.</string>
   <string name="prohibit_sending_voice">Prohibit sending voice messages.</string>
+  <string name="group_members_can_send_dms">Group members can send direct messages.</string>
+  <string name="direct_messages_are_prohibited_in_chat">Direct messages between members are prohibited in this group.</string>
   <string name="group_members_can_delete">Group members can irreversibly delete sent messages.</string>
-  <string name="message_deletion_prohibited_in_chat">Irreversible message deletion is prohibited in this chat.</string>
+  <string name="message_deletion_prohibited_in_chat">Irreversible message deletion is prohibited in this group.</string>
   <string name="group_members_can_send_voice">Group members can send voice messages.</string>
-  <string name="voice_messages_are_prohibited">Voice messages are prohibited in this chat.</string>
+  <string name="voice_messages_are_prohibited">Voice messages are prohibited in this group.</string>
 
 </resources>

@@ -6,6 +6,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -16,15 +17,15 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.*
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.*
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.tooling.preview.*
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.util.fastMap
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
-import chat.simplex.app.views.helpers.ChatItemLinkView
-import chat.simplex.app.views.helpers.base64ToBitmap
+import chat.simplex.app.views.helpers.*
 import kotlinx.datetime.Clock
 
 val SentColorLight = Color(0x1E45B8FF)
@@ -61,6 +62,33 @@ fun FramedItemView(
         qi.text, qi.formattedText, sender = qi.sender(membership()), senderBold = true, maxLines = 3,
         style = TextStyle(fontSize = 15.sp, color = MaterialTheme.colors.onSurface),
         linkMode = linkMode
+      )
+    }
+  }
+
+  @Composable
+  fun ciDeletedView() {
+    Row(
+      Modifier
+        .background(if (sent) SentQuoteColorLight else ReceivedQuoteColorLight)
+        .fillMaxWidth()
+        .padding(start = 8.dp)
+        .padding(end = 12.dp)
+        .padding(top = 6.dp)
+        .padding(bottom = if (ci.quotedItem == null) 6.dp else 0.dp),
+      horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+      Icon(
+        Icons.Outlined.Delete,
+        stringResource(R.string.marked_deleted_description),
+        Modifier.size(18.dp),
+        tint = if (isInDarkTheme()) FileDark else FileLight
+      )
+      Text(
+        buildAnnotatedString {
+          withStyle(SpanStyle(fontSize = 12.sp, fontStyle = FontStyle.Italic, color = HighOrLowlight)) { append(generalGetString(R.string.marked_deleted_description)) }
+        },
+        style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
       )
     }
   }
@@ -115,7 +143,7 @@ fun FramedItemView(
     }
   }
 
-  val transparentBackground = (ci.content.msgContent is MsgContent.MCImage || ci.content.msgContent is MsgContent.MCVoice) && ci.content.text.isEmpty() && ci.quotedItem == null
+  val transparentBackground = (ci.content.msgContent is MsgContent.MCImage) && ci.content.text.isEmpty() && ci.quotedItem == null
 
   Box(Modifier
     .clip(RoundedCornerShape(18.dp))
@@ -130,6 +158,7 @@ fun FramedItemView(
     Box(contentAlignment = Alignment.BottomEnd) {
       Column(Modifier.width(IntrinsicSize.Max)) {
         PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID) {
+          if (ci.meta.itemDeleted) { ciDeletedView() }
           ci.quotedItem?.let { ciQuoteView(it) }
           if (ci.file == null && ci.formattedText == null && isShortEmoji(ci.content.text)) {
             Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
@@ -154,7 +183,7 @@ fun FramedItemView(
                 }
               }
               is MsgContent.MCVoice -> {
-                CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, mc.text != "" || ci.quotedItem != null, ci, metaColor, longClick = { onLinkLongClick("") })
+                CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = true, ci, longClick = { onLinkLongClick("") })
                 if (mc.text != "") {
                   CIMarkdownText(ci, showMember, linkMode, uriHandler)
                 }
@@ -175,10 +204,8 @@ fun FramedItemView(
           }
         }
       }
-      if (ci.content.msgContent !is MsgContent.MCVoice || ci.content.text.isNotEmpty() || ci.quotedItem != null) {
-        Box(Modifier.padding(bottom = 6.dp, end = 12.dp)) {
-          CIMetaView(ci, metaColor)
-        }
+      Box(Modifier.padding(bottom = 6.dp, end = 12.dp)) {
+        CIMetaView(ci, metaColor)
       }
     }
   }

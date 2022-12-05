@@ -332,7 +332,7 @@ public enum ChatResponse: Decodable, Error {
     case newChatItem(chatItem: AChatItem)
     case chatItemStatusUpdated(chatItem: AChatItem)
     case chatItemUpdated(chatItem: AChatItem)
-    case chatItemDeleted(deletedChatItem: AChatItem, toChatItem: AChatItem)
+    case chatItemDeleted(deletedChatItem: AChatItem, toChatItem: AChatItem?, byUser: Bool)
     case contactsList(contacts: [Contact])
     // group events
     case groupCreated(groupInfo: GroupInfo)
@@ -538,7 +538,7 @@ public enum ChatResponse: Decodable, Error {
             case let .newChatItem(chatItem): return String(describing: chatItem)
             case let .chatItemStatusUpdated(chatItem): return String(describing: chatItem)
             case let .chatItemUpdated(chatItem): return String(describing: chatItem)
-            case let .chatItemDeleted(deletedChatItem, toChatItem): return "deletedChatItem:\n\(String(describing: deletedChatItem))\ntoChatItem:\n\(String(describing: toChatItem))"
+            case let .chatItemDeleted(deletedChatItem, toChatItem, byUser): return "deletedChatItem:\n\(String(describing: deletedChatItem))\ntoChatItem:\n\(String(describing: toChatItem))\nbyUser: \(byUser)"
             case let .contactsList(contacts): return String(describing: contacts)
             case let .groupCreated(groupInfo): return String(describing: groupInfo)
             case let .sentGroupInvitation(groupInfo, contact, member): return "groupInfo: \(groupInfo)\ncontact: \(contact)\nmember: \(member)"
@@ -734,7 +734,7 @@ public struct SMPTestFailure: Decodable, Error, Equatable {
         switch testError {
         case .SMP(.AUTH):
             return err + " " + NSLocalizedString("Server requires authorization to create queues, check password", comment: "server test error")
-        case .BROKER(.NETWORK):
+        case .BROKER(_, .NETWORK):
             return err + " " + NSLocalizedString("Possibly, certificate fingerprint in server address is incorrect", comment: "server test error")
         default:
             return err
@@ -1081,7 +1081,7 @@ public enum AgentErrorType: Decodable {
     case CONN(connErr: ConnectionErrorType)
     case SMP(smpErr: ProtocolErrorType)
     case NTF(ntfErr: ProtocolErrorType)
-    case BROKER(brokerErr: BrokerErrorType)
+    case BROKER(brokerAddress: String, brokerErr: BrokerErrorType)
     case AGENT(agentErr: SMPAgentError)
     case INTERNAL(internalErr: String)
 }

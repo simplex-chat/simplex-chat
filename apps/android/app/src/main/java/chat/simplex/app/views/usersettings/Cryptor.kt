@@ -3,7 +3,9 @@ package chat.simplex.app.views.usersettings
 import android.annotation.SuppressLint
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import android.util.Log
 import chat.simplex.app.R
+import chat.simplex.app.TAG
 import chat.simplex.app.views.helpers.AlertManager
 import chat.simplex.app.views.helpers.generalGetString
 import java.security.KeyStore
@@ -31,7 +33,7 @@ internal class Cryptor {
     val cipher: Cipher = Cipher.getInstance(TRANSFORMATION)
     val spec = GCMParameterSpec(128, iv)
     cipher.init(Cipher.DECRYPT_MODE, secretKey, spec)
-    return String(cipher.doFinal(data))
+    return runCatching { String(cipher.doFinal(data))}.onFailure { Log.e(TAG, "doFinal: ${it.stackTraceToString()}") }.getOrNull()
   }
 
   fun encryptText(text: String, alias: String): Pair<ByteArray, ByteArray> {

@@ -186,9 +186,13 @@ fun SectionSpacer() {
 }
 
 @Composable
-fun InfoRow(title: String, value: String) {
+fun InfoRow(title: String, value: String, icon: ImageVector? = null, iconTint: Color? = null) {
   SectionItemViewSpaceBetween {
-    Text(title)
+    Row {
+      val iconSize = with(LocalDensity.current) { 21.sp.toDp() }
+      if (icon != null) Icon(icon, title, Modifier.padding(end = 8.dp).size(iconSize), tint = iconTint ?: HighOrLowlight)
+      Text(title)
+    }
     Text(value, color = HighOrLowlight)
   }
 }

@@ -21,6 +21,7 @@
 
   <!-- Item Content - ChatModel.kt -->
   <string name="deleted_description">Gelöscht</string>
+  <string name="marked_deleted_description">als gelöscht markiert</string>
   <string name="sending_files_not_yet_supported">Das Senden von Dateien wird noch nicht unterstützt</string>
   <string name="receiving_files_not_yet_supported">Der Empfang von Dateien wird noch nicht unterstützt</string>
   <string name="sender_you_pronoun">Meine Daten</string>
@@ -60,7 +61,7 @@
   <!-- API Error Responses - SimpleXAPI.kt -->
   <string name="connection_timeout">Verbindungszeitüberschreitung</string>
   <string name="connection_error">Verbindungsfehler</string>
-  <string name="network_error_desc">Bitte überprüfen Sie Ihre Netzwerkverbindung und versuchen Sie es erneut.</string>
+  <string name="network_error_desc">Bitte überprüfen Sie Ihre Netzwerkverbindung mit <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g> und versuchen Sie es erneut.</string>
   <string name="error_sending_message">Fehler beim Senden der Nachricht</string>
   <string name="error_adding_members">Fehler beim Hinzufügen von Mitgliedern</string>
   <string name="error_joining_group">Fehler beim Beitritt zur Gruppe</string>
@@ -167,10 +168,13 @@
   <string name="save_verb">Speichern</string>
   <string name="edit_verb">Bearbeiten</string>
   <string name="delete_verb">Löschen</string>
+  <string name="reveal_verb">Aufdecken</string>
+  <string name="hide_verb">Verbergen</string>
   <string name="allow_verb">Erlauben</string>
   <string name="delete_message__question">Die Nachricht löschen?</string>
   <string name="delete_message_cannot_be_undone_warning">Nachricht wird gelöscht - dies kann nicht rückgängig gemacht werden!</string>
-  <string name="for_me_only">Nur für mich</string>
+  <string name="delete_message_mark_deleted_warning">Die Nachricht wird zum Löschen markiert. Der/die Empfänger kann/können diese Nachricht aufdecken.</string>
+  <string name="for_me_only">Für mich löschen</string>
   <string name="for_everybody">Für alle</string>
 
   <!-- CIMetaView.kt -->
@@ -230,6 +234,7 @@
 
   <!-- Voice messages -->
   <string name="voice_message">Sprachnachricht</string>
+  <string name="voice_message_with_duration">Sprachnachricht (<xliff:g id="duration">%1$s</xliff:g>)</string>
   <string name="voice_message_send_text">Sprachnachricht…</string>
 
   <!-- Chat Info Settings - ChatInfoView.kt -->
@@ -613,6 +618,7 @@
   <string name="auto_accept_images">Bilder automatisch akzeptieren</string>
   <string name="transfer_images_faster">Bilder schneller übertragen</string>
   <string name="send_link_previews">Link-Vorschau senden</string>
+  <string name="full_backup">App-Datensicherung</string>
 
   <!-- Settings sections -->
   <string name="settings_section_title_you">MEINE DATEN</string>
@@ -826,6 +832,8 @@
   <string name="new_member_role">Neue Mitgliedsrolle</string>
   <string name="icon_descr_expand_role">Rollenauswahl erweitern</string>
   <string name="invite_to_group_button">In Gruppe einladen</string>
+  <string name="skip_inviting_button">Mitgliedereinladungen überspringen</string>
+  <string name="select_contacts">Kontakte auswählen</string>
   <string name="icon_descr_contact_checked">Kontakt geprüft</string>
   <string name="clear_contacts_selection_button">Löschen</string>
   <string name="num_contacts_selected"><xliff:g id="num_contacts">%1$s</xliff:g> Kontakt(e) ausgewählt</string>
@@ -946,8 +954,10 @@
   <string name="chat_preferences">Chat Präferenzen</string>
   <string name="contact_preferences">Kontakt Präferenzen</string>
   <string name="group_preferences">Gruppen Präferenzen</string>
+  <string name="set_group_preferences">Gruppenpräferenzen einstellen</string>
   <string name="your_preferences">Ihre Präferenzen</string>
-  <string name="full_deletion">Vollständige Löschung</string>
+  <string name="direct_messages">Direkte Nachrichten</string>
+  <string name="full_deletion">Für Alle löschen</string>
   <string name="voice_messages">Sprachnachrichten</string>
   <string name="feature_enabled">aktiviert</string>
   <string name="feature_enabled_for_you">Für Sie aktiviert</string>
@@ -963,18 +973,22 @@
   <string name="both_you_and_your_contacts_can_delete">Sowohl Ihr Kontakt, als auch Sie können Nachrichten unwiederbringlich löschen.</string>
   <string name="only_you_can_delete_messages">Nur Sie können Nachrichten unwiederbringlich löschen (Ihr Kontakt kann sie zum Löschen markieren).</string>
   <string name="only_your_contact_can_delete">Nur Ihr Kontakt kann Nachrichten unwiederbringlich löschen (Sie können sie zum Löschen markieren).</string>
-  <string name="message_deletion_prohibited">In diesem Chat ist das unwiederbringliche Löschen von Nachrichten untersagt.</string>
+  <string name="message_deletion_prohibited">In dieser Gruppe ist das unwiederbringliche Löschen von Nachrichten nicht erlaubt.</string>
   <string name="both_you_and_your_contact_can_send_voice">Sowohl Ihr Kontakt, als auch Sie können Sprachnachrichten senden.</string>
   <string name="only_you_can_send_voice">Nur Sie können Sprachnachrichten senden.</string>
   <string name="only_your_contact_can_send_voice">Nur Ihr Kontakt kann Sprachnachrichten senden.</string>
   <string name="voice_prohibited_in_this_chat">In diesem Chat sind Sprachnachrichten untersagt.</string>
+  <string name="allow_direct_messages">Das Senden von Direktnachrichten an Mitglieder erlauben.</string>
+  <string name="prohibit_direct_messages">Das Senden von Direktnachrichten an Mitglieder verbieten.</string>
   <string name="allow_to_delete_messages">Unwiederbringliches Löschen von gesendeten Nachrichten erlauben.</string>
   <string name="prohibit_message_deletion">Unwiederbringliches Löschen von Nachrichten verbieten.</string>
   <string name="allow_to_send_voice">Senden von Sprachnachrichten erlauben.</string>
   <string name="prohibit_sending_voice">Senden von Sprachnachrichten untersagen.</string>
+  <string name="group_members_can_send_dms">Gruppenmitglieder können Direktnachrichten versenden.</string>
+  <string name="direct_messages_are_prohibited_in_chat">In dieser Gruppe sind Direktnachrichten zwischen Mitgliedern nicht möglich.</string>
   <string name="group_members_can_delete">Gruppenmitglieder können gesendete Nachrichten unwiederbringlich löschen.</string>
-  <string name="message_deletion_prohibited_in_chat">In diesem Chat ist das unwiederbringliche Löschen von Nachrichten verboten.</string>
+  <string name="message_deletion_prohibited_in_chat">In dieser Gruppe ist das unwiederbringliche Löschen von Nachrichten verboten.</string>
   <string name="group_members_can_send_voice">Gruppenmitglieder können Sprachnachrichten senden.</string>
-  <string name="voice_messages_are_prohibited">In diesem Chat sind Sprachnachrichten untersagt.</string>
+  <string name="voice_messages_are_prohibited">In dieser Gruppe sind Sprachnachrichten untersagt.</string>
 
 </resources>

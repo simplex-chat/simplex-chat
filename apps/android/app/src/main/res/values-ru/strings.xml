@@ -21,6 +21,7 @@
 
     <!-- Item Content - ChatModel.kt -->
     <string name="deleted_description">удалено</string>
+    <string name="marked_deleted_description">помечено к удалению</string>
     <string name="sending_files_not_yet_supported">отправка файлов не поддерживается</string>
     <string name="receiving_files_not_yet_supported">получение файлов не поддерживается</string>
     <string name="sender_you_pronoun">вы</string>
@@ -60,7 +61,7 @@
     <!-- API Error Responses - SimpleXAPI.kt -->
     <string name="connection_timeout">Превышено время соединения</string>
     <string name="connection_error">Ошибка соединения</string>
-    <string name="network_error_desc">Пожалуйста, проверьте ваше соединение с сетью и попробуйте еще раз.</string>
+    <string name="network_error_desc">Пожалуйста, проверьте ваше соединение с сервером <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g> и попробуйте еще раз.</string>
     <string name="error_sending_message">Ошибка при отправке сообщения</string>
     <string name="error_adding_members">Ошибка при добавлении членов группы</string>
     <string name="error_joining_group">Ошибка при вступлении в группу</string>
@@ -167,10 +168,13 @@
     <string name="save_verb">Сохранить</string>
     <string name="edit_verb">Редактировать</string>
     <string name="delete_verb">Удалить</string>
+    <string name="reveal_verb">Показать</string>
+    <string name="hide_verb">Спрятать</string>
     <string name="allow_verb">Разрешить</string>
     <string name="delete_message__question">Удалить сообщение?</string>
     <string name="delete_message_cannot_be_undone_warning">Сообщение будет удалено – это действие нельзя отменить!</string>
-    <string name="for_me_only">Только для меня</string>
+    <string name="delete_message_mark_deleted_warning">Сообщение будет помечено на удаление. Получатель(и) сможет(смогут) посмотреть это сообщение.</string>
+    <string name="for_me_only">Удалить для меня</string>
     <string name="for_everybody">Для всех</string>
 
     <!-- CIMetaView.kt -->
@@ -230,6 +234,7 @@
 
     <!-- Voice messages -->
     <string name="voice_message">Голосовое сообщение</string>
+    <string name="voice_message_with_duration">Голосовое сообщение (<xliff:g id="duration">%1$s</xliff:g>)</string>
     <string name="voice_message_send_text">Голосовое сообщение…</string>
 
     <!-- Chat Info Settings - ChatInfoView.kt -->
@@ -613,6 +618,7 @@
     <string name="auto_accept_images">Автоприем изображений</string>
     <string name="transfer_images_faster">Передавать изображения быстрее</string>
     <string name="send_link_previews">Отправлять картинки ссылок</string>
+    <string name="full_backup">Резервная копия данных</string>
 
     <!-- Settings sections -->
     <string name="settings_section_title_you">ВЫ</string>
@@ -826,6 +832,8 @@
     <string name="new_member_role">Роль члена группы</string>
     <string name="icon_descr_expand_role">Развернуть выбор роли</string>
     <string name="invite_to_group_button">Пригласить в группу</string>
+    <string name="skip_inviting_button">Не приглашать членов</string>
+    <string name="select_contacts">Выберите контакты</string>
     <string name="icon_descr_contact_checked">Контакт выбран</string>
     <string name="clear_contacts_selection_button">Очистить</string>
     <string name="num_contacts_selected">Выбрано контактов: <xliff:g id="num_contacts">%1$s</xliff:g></string>
@@ -945,8 +953,10 @@
     <string name="chat_preferences">Предпочтения</string>
     <string name="contact_preferences">Предпочтения контакта</string>
     <string name="group_preferences">Предпочтения группы</string>
+    <string name="set_group_preferences">Предпочтения группы</string>
     <string name="your_preferences">Ваши предпочтения</string>
-    <string name="full_deletion">Полное удаление</string>
+    <string name="direct_messages">Прямые сообщения</string>
+    <string name="full_deletion">Удаление для всех</string>
     <string name="voice_messages">Голосовые сообщения</string>
     <string name="feature_enabled">включено</string>
     <string name="feature_enabled_for_you">включено для вас</string>
@@ -962,18 +972,22 @@
     <string name="both_you_and_your_contacts_can_delete">Вы и ваш контакт можете необратимо удалять отправленные сообщения.</string>
     <string name="only_you_can_delete_messages">Только вы можете необратимо удалять сообщения (ваш контакт может помечать их на удаление).</string>
     <string name="only_your_contact_can_delete">Только ваш контакт может необратимо удалять сообщения (вы можете помечать их на удаление).</string>
-    <string name="message_deletion_prohibited">Необратимое удаление сообщений запрещено в этом чате.</string>
+    <string name="message_deletion_prohibited">Необратимое удаление сообщений запрещено в этой группе.</string>
     <string name="both_you_and_your_contact_can_send_voice">Вы и ваш контакт можете отправлять голосовые сообщения.</string>
     <string name="only_you_can_send_voice">Только вы можете отправлять голосовые сообщения.</string>
     <string name="only_your_contact_can_send_voice">Только ваш контакт может отправлять голосовые сообщения.</string>
     <string name="voice_prohibited_in_this_chat">Голосовые сообщения запрещены в этом чате.</string>
+    <string name="allow_direct_messages">Разрешить посылать прямые сообщения членам группы.</string>
+    <string name="prohibit_direct_messages">Запретить посылать прямые сообщения членам группы.</string>
     <string name="allow_to_delete_messages">Разрешить необратимо удалять отправленные сообщения.</string>
     <string name="prohibit_message_deletion">Запретить необратимое удаление сообщений.</string>
     <string name="allow_to_send_voice">Разрешить отправлять голосовые сообщения.</string>
     <string name="prohibit_sending_voice">Запретить отправлять голосовые сообщений.</string>
+    <string name="group_members_can_send_dms">Члены группы могут посылать прямые сообщения.</string>
+    <string name="direct_messages_are_prohibited_in_chat">Прямые сообщения между членами группы запрещены.</string>
     <string name="group_members_can_delete">Члены группы могут необратимо удалять отправленные сообщения.</string>
-    <string name="message_deletion_prohibited_in_chat">Необратимое удаление сообщений запрещено в этом чате.</string>
+    <string name="message_deletion_prohibited_in_chat">Необратимое удаление сообщений запрещено в этой группе.</string>
     <string name="group_members_can_send_voice">Члены группы могут отправлять голосовые сообщения.</string>
-    <string name="voice_messages_are_prohibited">Голосовые сообщения запрещены в этом чате.</string>
+    <string name="voice_messages_are_prohibited">Голосовые сообщения запрещены в этой группе.</string>
 
 </resources>

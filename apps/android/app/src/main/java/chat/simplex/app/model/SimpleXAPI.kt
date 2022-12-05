@@ -1,8 +1,6 @@
 package chat.simplex.app.model
 
 import android.annotation.SuppressLint
-import android.app.ActivityManager
-import android.app.ActivityManager.RunningAppProcessInfo
 import android.app.Application
 import android.content.*
 import android.net.Uri
@@ -12,9 +10,9 @@ import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DeleteForever
-import androidx.compose.material.icons.filled.KeyboardVoice
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -30,8 +28,7 @@ import chat.simplex.app.views.call.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.ConnectViaLinkTab
 import chat.simplex.app.views.onboarding.OnboardingStage
-import chat.simplex.app.views.usersettings.NotificationPreviewMode
-import chat.simplex.app.views.usersettings.NotificationsMode
+import chat.simplex.app.views.usersettings.*
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -41,18 +38,6 @@ import kotlinx.serialization.json.jsonObject
 import java.util.Date
 
 typealias ChatCtrl = Long
-
-fun isAppOnForeground(context: Context): Boolean {
-  val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-  val appProcesses = activityManager.runningAppProcesses ?: return false
-  val packageName = context.packageName
-  for (appProcess in appProcesses) {
-    if (appProcess.importance == RunningAppProcessInfo.IMPORTANCE_FOREGROUND && appProcess.processName == packageName) {
-      return true
-    }
-  }
-  return false
-}
 
 enum class CallOnLockScreen {
   DISABLE,
@@ -118,6 +103,7 @@ class AppPreferences(val context: Context) {
     },
     set = fun(mode: SimplexLinkMode) { _simplexLinkMode.set(mode.name) }
   )
+  val privacyFullBackup = mkBoolPreference(SHARED_PREFS_PRIVACY_FULL_BACKUP, true)
   val experimentalCalls = mkBoolPreference(SHARED_PREFS_EXPERIMENTAL_CALLS, false)
   val chatArchiveName = mkStrPreference(SHARED_PREFS_CHAT_ARCHIVE_NAME, null)
   val chatArchiveTime = mkDatePreference(SHARED_PREFS_CHAT_ARCHIVE_TIME, null)
@@ -193,7 +179,7 @@ class AppPreferences(val context: Context) {
     )
 
   companion object {
-    private const val SHARED_PREFS_ID = "chat.simplex.app.SIMPLEX_APP_PREFS"
+    internal const val SHARED_PREFS_ID = "chat.simplex.app.SIMPLEX_APP_PREFS"
     private const val SHARED_PREFS_AUTO_RESTART_WORKER_VERSION = "AutoRestartWorkerVersion"
     private const val SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND = "RunServiceInBackground"
     private const val SHARED_PREFS_NOTIFICATIONS_MODE = "NotificationsMode"
@@ -210,6 +196,7 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_PRIVACY_TRANSFER_IMAGES_INLINE = "PrivacyTransferImagesInline"
     private const val SHARED_PREFS_PRIVACY_LINK_PREVIEWS = "PrivacyLinkPreviews"
     private const val SHARED_PREFS_PRIVACY_SIMPLEX_LINK_MODE = "PrivacySimplexLinkMode"
+    internal val SHARED_PREFS_PRIVACY_FULL_BACKUP = "FullBackup"
     private const val SHARED_PREFS_EXPERIMENTAL_CALLS = "ExperimentalCalls"
     private const val SHARED_PREFS_CHAT_ARCHIVE_NAME = "ChatArchiveName"
     private const val SHARED_PREFS_CHAT_ARCHIVE_TIME = "ChatArchiveTime"
@@ -449,9 +436,9 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return null
   }
 
-  suspend fun apiDeleteChatItem(type: ChatType, id: Long, itemId: Long, mode: CIDeleteMode): AChatItem? {
+  suspend fun apiDeleteChatItem(type: ChatType, id: Long, itemId: Long, mode: CIDeleteMode): CR.ChatItemDeleted? {
     val r = sendCmd(CC.ApiDeleteChatItem(type, id, itemId, mode))
-    if (r is CR.ChatItemDeleted) return r.toChatItem
+    if (r is CR.ChatItemDeleted) return r
     Log.e(TAG, "apiDeleteChatItem bad response: ${r.responseType} ${r.details}")
     return null
   }
@@ -972,7 +959,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
           && r.chatError.agentError.brokerErr is BrokerErrorType.TIMEOUT -> {
         AlertManager.shared.showAlertMsg(
           generalGetString(R.string.connection_timeout),
-          generalGetString(R.string.network_error_desc)
+          String.format(generalGetString(R.string.network_error_desc), serverHostname(r.chatError.agentError.brokerAddress))
         )
         true
       }
@@ -981,7 +968,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
           && r.chatError.agentError.brokerErr is BrokerErrorType.NETWORK -> {
         AlertManager.shared.showAlertMsg(
           generalGetString(R.string.connection_error),
-          generalGetString(R.string.network_error_desc)
+          String.format(generalGetString(R.string.network_error_desc), serverHostname(r.chatError.agentError.brokerAddress))
         )
         true
       }
@@ -1065,7 +1052,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         } else if (cItem.content.msgContent is MsgContent.MCVoice && file != null && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileSize > MAX_VOICE_SIZE_FOR_SENDING && appPrefs.privacyAcceptImages.get()) {
           withApi { receiveFile(file.fileId) } // TODO check inlineFileMode != IFMSent
         }
-        if (cItem.showNotification && (!isAppOnForeground(appContext) || chatModel.chatId.value != cInfo.id)) {
+        if (cItem.showNotification && (!SimplexApp.context.isAppOnForeground || chatModel.chatId.value != cInfo.id)) {
           ntfManager.notifyMessageReceived(cInfo, cItem)
         }
       }
@@ -1083,14 +1070,11 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       is CR.ChatItemUpdated ->
         chatItemSimpleUpdate(r.chatItem)
       is CR.ChatItemDeleted -> {
-        val cInfo = r.toChatItem.chatInfo
-        val cItem = r.toChatItem.chatItem
-        if (cItem.meta.itemDeleted) {
-          chatModel.removeChatItem(cInfo, cItem)
+        AudioPlayer.stop(r.deletedChatItem.chatItem)
+        if (r.toChatItem == null) {
+          chatModel.removeChatItem(r.deletedChatItem.chatInfo, r.deletedChatItem.chatItem)
         } else {
-          // currently only broadcast deletion of rcv message can be received, and only this case should happen
-          AudioPlayer.stop(cItem)
-          chatModel.upsertChatItem(cInfo, cItem)
+          chatModel.upsertChatItem(r.toChatItem.chatInfo, r.toChatItem.chatItem)
         }
       }
       is CR.ReceivedGroupInvitation -> {
@@ -1481,7 +1465,18 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   }
 }
 
-class SharedPreference<T>(val get: () -> T, val set: (T) -> Unit)
+class SharedPreference<T>(val get: () -> T, set: (T) -> Unit) {
+  val set: (T) -> Unit
+  private val _state: MutableState<T> by lazy { mutableStateOf(get()) }
+  val state: State<T> by lazy { _state }
+
+  init {
+    this.set = { value ->
+      set(value)
+      _state.value = value
+    }
+  }
+}
 
 // ChatCommand
 sealed class CC {
@@ -1962,7 +1957,6 @@ data class FullChatPreferences(
   val fullDelete: ChatPreference,
   val voice: ChatPreference,
 ) {
-
   fun toPreferences(): ChatPreferences = ChatPreferences(fullDelete = fullDelete, voice = voice)
 
   companion object {
@@ -1975,7 +1969,6 @@ data class ChatPreferences(
   val fullDelete: ChatPreference? = null,
   val voice: ChatPreference? = null,
 ) {
-
   companion object {
     val sampleData = ChatPreferences(fullDelete = ChatPreference(allow = FeatureAllowed.NO), voice = ChatPreference(allow = FeatureAllowed.YES))
   }
@@ -1991,6 +1984,11 @@ data class ContactUserPreferences(
   val fullDelete: ContactUserPreference,
   val voice: ContactUserPreference,
 ) {
+  fun toPreferences(): ChatPreferences = ChatPreferences(
+    fullDelete = fullDelete.userPreference.pref,
+    voice = voice.userPreference.pref
+  )
+
   companion object {
     val sampleData = ContactUserPreferences(
       fullDelete = ContactUserPreference(
@@ -2044,16 +2042,30 @@ data class FeatureEnabled(
 
 @Serializable
 sealed class ContactUserPref {
-  @Serializable @SerialName("contact") data class Contact(val preference: ChatPreference): ContactUserPref() // contact override is set
-  @Serializable @SerialName("user") data class User(val preference: ChatPreference): ContactUserPref() // global user default is used
+  abstract val pref: ChatPreference
+
+  // contact override is set
+  @Serializable @SerialName("contact") data class Contact(val preference: ChatPreference): ContactUserPref() {
+    override val pref get() = preference
+  }
+  // global user default is used
+  @Serializable @SerialName("user") data class User(val preference: ChatPreference): ContactUserPref() {
+    override val pref get() = preference
+  }
+}
+
+interface Feature {
+//  val icon: ImageVector
+  val text: String
+  val iconFilled: ImageVector
 }
 
 @Serializable
-enum class Feature {
+enum class ChatFeature: Feature {
   @SerialName("fullDelete") FullDelete,
   @SerialName("voice") Voice;
 
-  val text: String
+  override val text: String
     get() = when(this) {
       FullDelete -> generalGetString(R.string.full_deletion)
       Voice -> generalGetString(R.string.voice_messages)
@@ -2065,7 +2077,7 @@ enum class Feature {
       Voice -> Icons.Outlined.KeyboardVoice
     }
 
-  val iconFilled: ImageVector
+  override val iconFilled: ImageVector
     get() = when(this) {
       FullDelete -> Icons.Filled.DeleteForever
       Voice -> Icons.Filled.KeyboardVoice
@@ -2100,31 +2112,67 @@ enum class Feature {
         else -> generalGetString(R.string.voice_prohibited_in_this_chat)
       }
   }
+}
 
-fun enableGroupPrefDescription(enabled: GroupFeatureEnabled, canEdit: Boolean): String =
-  if (canEdit) {
-    when(this) {
-      FullDelete -> when(enabled) {
-        GroupFeatureEnabled.ON -> generalGetString(R.string.allow_to_delete_messages)
-        GroupFeatureEnabled.OFF -> generalGetString(R.string.prohibit_message_deletion)
+@Serializable
+enum class GroupFeature: Feature {
+  @SerialName("directMessages") DirectMessages,
+  @SerialName("fullDelete") FullDelete,
+  @SerialName("voice") Voice;
+
+  override val text: String
+    get() = when(this) {
+      DirectMessages -> generalGetString(R.string.direct_messages)
+      FullDelete -> generalGetString(R.string.full_deletion)
+      Voice -> generalGetString(R.string.voice_messages)
+    }
+
+  val icon: ImageVector
+    get() = when(this) {
+      DirectMessages -> Icons.Outlined.SwapHorizontalCircle
+      FullDelete -> Icons.Outlined.DeleteForever
+      Voice -> Icons.Outlined.KeyboardVoice
+    }
+
+  override val iconFilled: ImageVector
+    get() = when(this) {
+      DirectMessages -> Icons.Filled.SwapHorizontalCircle
+      FullDelete -> Icons.Filled.DeleteForever
+      Voice -> Icons.Filled.KeyboardVoice
+    }
+
+  fun enableDescription(enabled: GroupFeatureEnabled, canEdit: Boolean): String =
+    if (canEdit) {
+      when(this) {
+        DirectMessages -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(R.string.allow_direct_messages)
+          GroupFeatureEnabled.OFF -> generalGetString(R.string.prohibit_direct_messages)
+        }
+        FullDelete -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(R.string.allow_to_delete_messages)
+          GroupFeatureEnabled.OFF -> generalGetString(R.string.prohibit_message_deletion)
+        }
+        Voice -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(R.string.allow_to_send_voice)
+          GroupFeatureEnabled.OFF -> generalGetString(R.string.prohibit_sending_voice)
+        }
       }
-      Voice -> when(enabled) {
-        GroupFeatureEnabled.ON -> generalGetString(R.string.allow_to_send_voice)
-        GroupFeatureEnabled.OFF -> generalGetString(R.string.prohibit_sending_voice)
+    } else {
+      when(this) {
+        DirectMessages -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(R.string.group_members_can_send_dms)
+          GroupFeatureEnabled.OFF -> generalGetString(R.string.direct_messages_are_prohibited_in_chat)
+        }
+        FullDelete -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(R.string.group_members_can_delete)
+          GroupFeatureEnabled.OFF -> generalGetString(R.string.message_deletion_prohibited_in_chat)
+        }
+        Voice -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(R.string.group_members_can_send_voice)
+          GroupFeatureEnabled.OFF -> generalGetString(R.string.voice_messages_are_prohibited)
+        }
       }
     }
-  } else {
-    when(this) {
-      FullDelete -> when(enabled) {
-        GroupFeatureEnabled.ON -> generalGetString(R.string.group_members_can_delete)
-        GroupFeatureEnabled.OFF -> generalGetString(R.string.message_deletion_prohibited_in_chat)
-      }
-      Voice -> when(enabled) {
-        GroupFeatureEnabled.ON -> generalGetString(R.string.group_members_can_send_voice)
-        GroupFeatureEnabled.OFF -> generalGetString(R.string.voice_messages_are_prohibited)
-      }
-    }
-  }
 }
 
 @Serializable
@@ -2212,31 +2260,35 @@ enum class FeatureAllowed {
 
 @Serializable
 data class FullGroupPreferences(
+  val directMessages: GroupPreference,
   val fullDelete: GroupPreference,
   val voice: GroupPreference
 ) {
   fun toGroupPreferences(): GroupPreferences =
-    GroupPreferences(fullDelete = fullDelete, voice = voice)
+    GroupPreferences(directMessages = directMessages, fullDelete = fullDelete, voice = voice)
 
   companion object {
-    val sampleData = FullGroupPreferences(fullDelete = GroupPreference(enable = GroupFeatureEnabled.OFF), voice = GroupPreference(enable = GroupFeatureEnabled.ON))
+    val sampleData = FullGroupPreferences(directMessages = GroupPreference(GroupFeatureEnabled.OFF), fullDelete = GroupPreference(GroupFeatureEnabled.OFF), voice = GroupPreference(GroupFeatureEnabled.ON))
   }
 }
 
 @Serializable
 data class GroupPreferences(
+  val directMessages: GroupPreference?,
   val fullDelete: GroupPreference?,
   val voice: GroupPreference?
 ) {
   companion object {
-    val sampleData = GroupPreferences(fullDelete = GroupPreference(enable = GroupFeatureEnabled.OFF), voice = GroupPreference(enable = GroupFeatureEnabled.ON))
+    val sampleData = GroupPreferences(directMessages = GroupPreference(GroupFeatureEnabled.OFF), fullDelete = GroupPreference(GroupFeatureEnabled.OFF), voice = GroupPreference(GroupFeatureEnabled.ON))
   }
 }
 
 @Serializable
 data class GroupPreference(
   val enable: GroupFeatureEnabled
-)
+) {
+  val on: Boolean get() = enable == GroupFeatureEnabled.ON
+}
 
 @Serializable
 enum class GroupFeatureEnabled {
@@ -2258,6 +2310,7 @@ val json = Json {
   prettyPrint = true
   ignoreUnknownKeys = true
   encodeDefaults = true
+  explicitNulls = false
 }
 
 @Serializable
@@ -2330,7 +2383,7 @@ sealed class CR {
   @Serializable @SerialName("newChatItem") class NewChatItem(val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemStatusUpdated") class ChatItemStatusUpdated(val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemUpdated") class ChatItemUpdated(val chatItem: AChatItem): CR()
-  @Serializable @SerialName("chatItemDeleted") class ChatItemDeleted(val deletedChatItem: AChatItem, val toChatItem: AChatItem): CR()
+  @Serializable @SerialName("chatItemDeleted") class ChatItemDeleted(val deletedChatItem: AChatItem, val toChatItem: AChatItem? = null, val byUser: Boolean): CR()
   @Serializable @SerialName("contactsList") class ContactsList(val contacts: List<Contact>): CR()
   // group events
   @Serializable @SerialName("groupCreated") class GroupCreated(val groupInfo: GroupInfo): CR()
@@ -2524,7 +2577,7 @@ sealed class CR {
     is NewChatItem -> json.encodeToString(chatItem)
     is ChatItemStatusUpdated -> json.encodeToString(chatItem)
     is ChatItemUpdated -> json.encodeToString(chatItem)
-    is ChatItemDeleted -> "deletedChatItem:\n${json.encodeToString(deletedChatItem)}\ntoChatItem:\n${json.encodeToString(toChatItem)}"
+    is ChatItemDeleted -> "deletedChatItem:\n${json.encodeToString(deletedChatItem)}\ntoChatItem:\n${json.encodeToString(toChatItem)}\nbyUser: $byUser"
     is ContactsList -> json.encodeToString(contacts)
     is GroupCreated -> json.encodeToString(groupInfo)
     is SentGroupInvitation -> "groupInfo: $groupInfo\ncontact: $contact\nmember: $member"
@@ -2698,7 +2751,7 @@ sealed class AgentErrorType {
   @Serializable @SerialName("CMD") class CMD(val cmdErr: CommandErrorType): AgentErrorType()
   @Serializable @SerialName("CONN") class CONN(val connErr: ConnectionErrorType): AgentErrorType()
   @Serializable @SerialName("SMP") class SMP(val smpErr: SMPErrorType): AgentErrorType()
-  @Serializable @SerialName("BROKER") class BROKER(val brokerErr: BrokerErrorType): AgentErrorType()
+  @Serializable @SerialName("BROKER") class BROKER(val brokerAddress: String, val brokerErr: BrokerErrorType): AgentErrorType()
   @Serializable @SerialName("AGENT") class AGENT(val agentErr: SMPAgentError): AgentErrorType()
   @Serializable @SerialName("INTERNAL") class INTERNAL(val internalErr: String): AgentErrorType()
 }

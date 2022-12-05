@@ -40,6 +40,9 @@ fun withApi(action: suspend CoroutineScope.() -> Unit): Job = withScope(GlobalSc
 fun withScope(scope: CoroutineScope, action: suspend CoroutineScope.() -> Unit): Job =
   scope.launch { withContext(Dispatchers.Main, action) }
 
+fun withBGApi(action: suspend CoroutineScope.() -> Unit): Job =
+  CoroutineScope(Dispatchers.Default).launch(block = action)
+
 enum class KeyboardState {
   Opened, Closed
 }
@@ -446,8 +449,6 @@ fun directoryFileCountAndSize(dir: String): Pair<Int, Long> { // count, size in 
   }
   return fileCount to bytes
 }
-
-fun durationToString(sec: Int): String = "%02d:%02d".format(sec / 60, sec % 60)
 
 fun Color.darker(factor: Float = 0.1f): Color =
   Color(max(red * (1 - factor), 0f), max(green * (1 - factor), 0f), max(blue * (1 - factor), 0f), alpha)

@@ -10,29 +10,45 @@ import SwiftUI
 import SimpleXChat
 
 struct ContactPreferencesView: View {
+    @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var chatModel: ChatModel
     @Binding var contact: Contact
     @State var featuresAllowed: ContactFeaturesAllowed
     @State var currentFeaturesAllowed: ContactFeaturesAllowed
+    @State private var showSaveDialogue = false
 
     var body: some View {
         let user: User = chatModel.currentUser!
 
         VStack {
             List {
-                // featureSection(.fullDelete, user.fullPreferences.fullDelete.allow, contact.mergedPreferences.fullDelete, $featuresAllowed.fullDelete)
+                featureSection(.fullDelete, user.fullPreferences.fullDelete.allow, contact.mergedPreferences.fullDelete, $featuresAllowed.fullDelete)
                 featureSection(.voice, user.fullPreferences.voice.allow, contact.mergedPreferences.voice, $featuresAllowed.voice)
 
                 Section {
                     Button("Reset") { featuresAllowed = currentFeaturesAllowed }
-                    Button("Save (and notify contact)") { savePreferences() }
+                    Button("Save and notify contact") { savePreferences() }
                 }
                 .disabled(currentFeaturesAllowed == featuresAllowed)
             }
         }
+        .modifier(BackButton {
+            if currentFeaturesAllowed == featuresAllowed {
+                dismiss()
+            } else {
+                showSaveDialogue = true
+            }
+        })
+        .confirmationDialog("Save preferences?", isPresented: $showSaveDialogue) {
+            Button("Save and notify contact") {
+                savePreferences()
+                dismiss()
+            }
+            Button("Exit without saving") { dismiss() }
+        }
     }
 
-    private func featureSection(_ feature: Feature, _ userDefault: FeatureAllowed, _ pref: ContactUserPreference, _ allowFeature: Binding<ContactFeatureAllowed>) -> some View {
+    private func featureSection(_ feature: ChatFeature, _ userDefault: FeatureAllowed, _ pref: ContactUserPreference, _ allowFeature: Binding<ContactFeatureAllowed>) -> some View {
         let enabled = FeatureEnabled.enabled(
             user: Preference(allow: allowFeature.wrappedValue.allowed),
             contact: pref.contactPreference

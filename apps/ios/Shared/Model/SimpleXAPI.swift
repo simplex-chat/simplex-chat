@@ -261,9 +261,9 @@ func apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent
     throw r
 }
 
-func apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode) async throws -> ChatItem {
+func apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode) async throws -> (ChatItem, ChatItem?) {
     let r = await chatSendCmd(.apiDeleteChatItem(type: type, id: id, itemId: itemId, mode: mode), bgDelay: msgDelay)
-    if case let .chatItemDeleted(_, toChatItem) = r { return toChatItem.chatItem }
+    if case let .chatItemDeleted(deletedChatItem, toChatItem, _) = r { return (deletedChatItem.chatItem, toChatItem?.chatItem) }
     throw r
 }
 
@@ -603,16 +603,16 @@ func apiReceiveFile(fileId: Int64, inline: Bool) async -> AChatItem? {
 func networkErrorAlert(_ r: ChatResponse) -> Bool {
     let am = AlertManager.shared
     switch r {
-    case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
+    case let .chatCmdError(.errorAgent(.BROKER(addr, .TIMEOUT))):
         am.showAlertMsg(
             title: "Connection timeout",
-            message: "Please check your network connection and try again."
+            message: "Please check your network connection with \(serverHostname(addr)) and try again."
         )
         return true
-    case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
+    case let .chatCmdError(.errorAgent(.BROKER(addr, .NETWORK))):
         am.showAlertMsg(
             title: "Connection error",
-            message: "Please check your network connection and try again."
+            message: "Please check your network connection with \(serverHostname(addr)) and try again."
         )
         return true
     default:
@@ -1010,14 +1010,11 @@ func processReceivedMsg(_ res: ChatResponse) async {
             }
         case let .chatItemUpdated(aChatItem):
             chatItemSimpleUpdate(aChatItem)
-        case let .chatItemDeleted(_, toChatItem):
-            let cInfo = toChatItem.chatInfo
-            let cItem = toChatItem.chatItem
-            if cItem.meta.itemDeleted {
-                m.removeChatItem(cInfo, cItem)
+        case let .chatItemDeleted(deletedChatItem, toChatItem, _):
+            if let toChatItem = toChatItem {
+                _ = m.upsertChatItem(toChatItem.chatInfo, toChatItem.chatItem)
             } else {
-                // currently only broadcast deletion of rcv message can be received, and only this case should happen
-                _ = m.upsertChatItem(cInfo, cItem)
+                m.removeChatItem(deletedChatItem.chatInfo, deletedChatItem.chatItem)
             }
         case let .receivedGroupInvitation(groupInfo, _, _):
             m.updateGroup(groupInfo) // update so that repeat group invitations are not duplicated
@@ -1149,7 +1146,7 @@ func processContactSubError(_ contact: Contact, _ chatError: ChatError) {
     m.updateContact(contact)
     var err: String
     switch chatError {
-    case .errorAgent(agentError: .BROKER(brokerErr: .NETWORK)): err = "network"
+    case .errorAgent(agentError: .BROKER(_, .NETWORK)): err = "network"
     case .errorAgent(agentError: .SMP(smpErr: .AUTH)): err = "contact deleted"
     default: err = String(describing: chatError)
     }

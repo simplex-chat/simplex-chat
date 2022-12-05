@@ -237,16 +237,13 @@ private fun NativeKeyboard(
 
   var showKeyboard by remember { mutableStateOf(false) }
   LaunchedEffect(cs.contextItem) {
-    when (cs.contextItem) {
-      is ComposeContextItem.QuotedItem -> {
-        delay(100)
-        showKeyboard = true
-      }
-      is ComposeContextItem.EditingItem -> {
-        // Keyboard will not show up if we try to show it too fast
-        delay(300)
-        showKeyboard = true
-      }
+    if (cs.contextItem is ComposeContextItem.QuotedItem) {
+      delay(100)
+      showKeyboard = true
+    } else if (cs.contextItem is ComposeContextItem.EditingItem) {
+      // Keyboard will not show up if we try to show it too fast
+      delay(300)
+      showKeyboard = true
     }
   }
 

@@ -222,8 +222,10 @@ final class ChatModel: ObservableObject {
             withAnimation(.default) {
                 self.reversedChatItems[i] = cItem
                 self.reversedChatItems[i].viewTimestamp = .now
+                // on some occasions the confirmation of message being accepted by the server (tick)
+                // arrives earlier than the response from API, and item remains without tick
                 if case .sndNew = cItem.meta.itemStatus {
-                    self.reversedChatItems[i].meta = ci.meta
+                    self.reversedChatItems[i].meta.itemStatus = ci.meta.itemStatus
                 }
             }
             return false

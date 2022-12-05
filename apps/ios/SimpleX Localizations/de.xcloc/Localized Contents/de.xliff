@@ -303,6 +303,11 @@
         <target>Erlauben Sie das unwiederbringliche löschen von Nachrichten nur dann, wenn es Ihnen Ihr Kontakt ebenfalls erlaubt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Allow sending direct messages to members." xml:space="preserve">
+        <source>Allow sending direct messages to members.</source>
+        <target>Erlauben Sie das Senden von Direktnachrichten an Mitglieder</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Allow to irreversibly delete sent messages." xml:space="preserve">
         <source>Allow to irreversibly delete sent messages.</source>
         <target>Unwiederbringliches Löschen von gesendeten Nachrichten erlauben.</target>
@@ -381,6 +386,11 @@
       <trans-unit id="Automatically" xml:space="preserve">
         <source>Automatically</source>
         <target>Automatisch</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Back" xml:space="preserve">
+        <source>Back</source>
+        <target>Zurück</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can irreversibly delete sent messages." xml:space="preserve">
@@ -879,7 +889,7 @@
       <trans-unit id="Delete for everyone" xml:space="preserve">
         <source>Delete for everyone</source>
         <target>Für Alle löschen</target>
-        <note>No comment provided by engineer.</note>
+        <note>chat feature</note>
       </trans-unit>
       <trans-unit id="Delete for me" xml:space="preserve">
         <source>Delete for me</source>
@@ -979,6 +989,16 @@
       <trans-unit id="Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." xml:space="preserve">
         <source>Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication.</source>
         <target>Die Geräteauthentifizierung ist deaktiviert. Sie können die SimpleX Sperre über die Einstellungen aktivieren, sobald Sie die Geräteauthentifizierung aktiviert haben.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Direct messages" xml:space="preserve">
+        <source>Direct messages</source>
+        <target>Direkte Nachrichten</target>
+        <note>chat feature</note>
+      </trans-unit>
+      <trans-unit id="Direct messages between members are prohibited in this group." xml:space="preserve">
+        <source>Direct messages between members are prohibited in this group.</source>
+        <target>In dieser Gruppe sind Direktnachrichten zwischen Mitgliedern nicht möglich.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disable SimpleX Lock" xml:space="preserve">
@@ -1291,6 +1311,11 @@
         <target>Fehler: Keine Datenbankdatei</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Exit without saving" xml:space="preserve">
+        <source>Exit without saving</source>
+        <target>Beenden ohne Speichern</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Export database" xml:space="preserve">
         <source>Export database</source>
         <target>Datenbank exportieren</target>
@@ -1330,11 +1355,6 @@
         <source>For console</source>
         <target>Für Konsole</target>
         <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Full deletion" xml:space="preserve">
-        <source>Full deletion</source>
-        <target>Vollständige Löschung</target>
-        <note>chat feature</note>
       </trans-unit>
       <trans-unit id="Full link" xml:space="preserve">
         <source>Full link</source>
@@ -1391,6 +1411,11 @@
         <target>Gruppenmitglieder können gesendete Nachrichten unwiederbringlich löschen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Group members can send direct messages." xml:space="preserve">
+        <source>Group members can send direct messages.</source>
+        <target>Gruppenmitglieder können Direktnachrichten versenden.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Group members can send voice messages." xml:space="preserve">
         <source>Group members can send voice messages.</source>
         <target>Gruppenmitglieder können Sprachnachrichten senden.</target>
@@ -1435,6 +1460,11 @@
         <source>Hidden</source>
         <target>Verborgen</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Hide" xml:space="preserve">
+        <source>Hide</source>
+        <target>Verbergen</target>
+        <note>chat item action</note>
       </trans-unit>
       <trans-unit id="How SimpleX works" xml:space="preserve">
         <source>How SimpleX works</source>
@@ -1603,6 +1633,11 @@
         <target>In diesem Chat ist das unwiederbringliche Löschen von Nachrichten untersagt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Irreversible message deletion is prohibited in this group." xml:space="preserve">
+        <source>Irreversible message deletion is prohibited in this group.</source>
+        <target>In dieser Gruppe ist das unwiederbringliche Löschen von Nachrichten verboten.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="It allows having many anonymous connections without any shared data between them in a single chat profile." xml:space="preserve">
         <source>It allows having many anonymous connections without any shared data between them in a single chat profile.</source>
         <target>Er ermöglicht mehrere anonyme Verbindungen in einem einzigen Chat-Profil ohne Daten zwischen diesen zu teilen.</target>
@@ -1701,6 +1736,11 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       <trans-unit id="Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" xml:space="preserve">
         <source>Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*</source>
         <target>Viele Menschen haben gefragt: *Wie kann SimpleX Nachrichten zustellen, wenn es keine Benutzerkennungen gibt?*</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Mark deleted for everyone" xml:space="preserve">
+        <source>Mark deleted for everyone</source>
+        <target>Für Alle als gelöscht markieren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Mark read" xml:space="preserve">
@@ -2018,9 +2058,9 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>Überprüfen Sie bitte, ob Sie den richtigen Link genutzt haben oder bitten Sie Ihren Kontakt nochmal darum, Ihnen einen Link zuzusenden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please check your network connection and try again." xml:space="preserve">
-        <source>Please check your network connection and try again.</source>
-        <target>Bitte überprüfen Sie Ihre Netzwerkverbindung und versuchen Sie es erneut.</target>
+      <trans-unit id="Please check your network connection with %@ and try again." xml:space="preserve">
+        <source>Please check your network connection with %@ and try again.</source>
+        <target>Bitte überprüfen Sie Ihre Netzwerkverbindung mit %@ und versuchen Sie es erneut.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please check yours and your contact preferences." xml:space="preserve">
@@ -2086,6 +2126,11 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       <trans-unit id="Prohibit irreversible message deletion." xml:space="preserve">
         <source>Prohibit irreversible message deletion.</source>
         <target>Unwiederbringliches Löschen von Nachrichten verbieten.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Prohibit sending direct messages to members." xml:space="preserve">
+        <source>Prohibit sending direct messages to members.</source>
+        <target>Verbieten Sie das Senden von Direktnachrichten an Mitglieder</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit sending voice messages." xml:space="preserve">
@@ -2238,6 +2283,11 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>Fehler bei der Wiederherstellung der Datenbank</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Reveal" xml:space="preserve">
+        <source>Reveal</source>
+        <target>Aufdecken</target>
+        <note>chat item action</note>
+      </trans-unit>
       <trans-unit id="Revert" xml:space="preserve">
         <source>Revert</source>
         <target>Zurückkehren</target>
@@ -2258,19 +2308,19 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>Speichern</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Save (and notify contact)" xml:space="preserve">
-        <source>Save (and notify contact)</source>
-        <target>Speichern (und Kontakt benachrichtigen)</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Save (and notify contacts)" xml:space="preserve">
         <source>Save (and notify contacts)</source>
         <target>Speichern (und Kontakte benachrichtigen)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save (and notify group members)" xml:space="preserve">
-        <source>Save (and notify group members)</source>
-        <target>Speichern (und Gruppenmitglieder benachrichtigen)</target>
+      <trans-unit id="Save and notify contact" xml:space="preserve">
+        <source>Save and notify contact</source>
+        <target>Speichern und Kontakt benachrichtigen</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Save and notify group members" xml:space="preserve">
+        <source>Save and notify group members</source>
+        <target>Speichern und Gruppenmitglieder benachrichtigen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save archive" xml:space="preserve">
@@ -2291,6 +2341,11 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       <trans-unit id="Save passphrase in Keychain" xml:space="preserve">
         <source>Save passphrase in Keychain</source>
         <target>Passwort im Schlüsselbund speichern</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Save preferences?" xml:space="preserve">
+        <source>Save preferences?</source>
+        <target>Präferenzen speichern?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save servers" xml:space="preserve">
@@ -2386,6 +2441,11 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       <trans-unit id="Set contact name…" xml:space="preserve">
         <source>Set contact name…</source>
         <target>Kontaktname festlegen…</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Set group preferences" xml:space="preserve">
+        <source>Set group preferences</source>
+        <target>Gruppenpräferenzen einstellen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set passphrase to export" xml:space="preserve">
@@ -2895,6 +2955,11 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
       <trans-unit id="Voice messages are prohibited in this chat." xml:space="preserve">
         <source>Voice messages are prohibited in this chat.</source>
         <target>In diesem Chat sind Sprachnachrichten untersagt.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Voice messages are prohibited in this group." xml:space="preserve">
+        <source>Voice messages are prohibited in this group.</source>
+        <target>In dieser Gruppe sind Sprachnachrichten untersagt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Voice messages prohibited!" xml:space="preserve">
@@ -3555,6 +3620,11 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <source>left</source>
         <target>hat die Gruppe verlassen</target>
         <note>rcv group event chat item</note>
+      </trans-unit>
+      <trans-unit id="marked deleted" xml:space="preserve">
+        <source>marked deleted</source>
+        <target>als gelöscht markiert</target>
+        <note>marked deleted chat item preview text</note>
       </trans-unit>
       <trans-unit id="member" xml:space="preserve">
         <source>member</source>
