@@ -534,7 +534,9 @@ processChatCommand = \case
           ct <- withStore $ \db -> getContact db user contactId
           unless (directContact ct) $ do
             ctGroups <- withStore' $ \db -> getContactGroupProfiles db user ct
-            when (null ctGroups) $
+            when (null ctGroups) $ do
+              conns <- withStore $ \db -> getContactConnections db userId ct
+              forM_ conns $ \conn -> deleteAgentConnectionAsync user conn `catchError` \_ -> pure ()
               withStore' $ \db -> deleteContactNoGroups db user ct
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIClearChat (ChatRef cType chatId) -> withUser $ \user -> case cType of
