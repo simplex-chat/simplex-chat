@@ -25,7 +25,7 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
     const val ShowChatsAction: String = "chat.simplex.app.SHOW_CHATS"
 
     // DO NOT change notification channel settings / names
-    const val CallChannel: String = "chat.simplex.app.CALL_NOTIFICATION2"
+    const val CallChannel: String = "chat.simplex.app.CALL_NOTIFICATION_1"
     const val AcceptCallAction: String = "chat.simplex.app.ACCEPT_CALL"
     const val RejectCallAction: String = "chat.simplex.app.REJECT_CALL"
     const val CallNotificationId: Int = -1
