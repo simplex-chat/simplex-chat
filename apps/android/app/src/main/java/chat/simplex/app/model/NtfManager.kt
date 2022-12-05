@@ -155,13 +155,14 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
   }
 
   fun notifyCallInvitation(invitation: RcvCallInvitation) {
-    if (SimplexApp.context.isAppOnForeground) return
     val keyguardManager = getKeyguardManager(context)
     Log.d(TAG,
-      "notifyCallInvitation pre-requests: device locked ${keyguardManager.isDeviceLocked}, " +
+      "notifyCallInvitation pre-requests: " +
           "keyguard locked ${keyguardManager.isKeyguardLocked}, " +
-          "callOnLockScreen ${appPreferences.callOnLockScreen.get()}"
+          "callOnLockScreen ${appPreferences.callOnLockScreen.get()}, " +
+          "onForeground ${SimplexApp.context.isAppOnForeground}"
     )
+    if (SimplexApp.context.isAppOnForeground) return
     val contactId = invitation.contact.id
     Log.d(TAG, "notifyCallInvitation $contactId")
     val image = invitation.contact.image
