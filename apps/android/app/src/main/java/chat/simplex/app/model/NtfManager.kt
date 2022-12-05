@@ -25,8 +25,8 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
     const val ShowChatsAction: String = "chat.simplex.app.SHOW_CHATS"
 
     // DO NOT change notification channel settings / names
-    const val CallChannel: String = "chat.simplex.app.CALL_NOTIFICATION"
-    const val LockScreenCallChannel: String = "chat.simplex.app.LOCK_SCREEN_CALL_NOTIFICATION2"
+    const val CallChannel: String = "chat.simplex.app.CALL_NOTIFICATION2"
+    const val LockScreenCallChannel: String = "chat.simplex.app.LOCK_SCREEN_CALL_NOTIFICATION3"
     const val AcceptCallAction: String = "chat.simplex.app.ACCEPT_CALL"
     const val CallNotificationId: Int = -1
 
@@ -42,7 +42,9 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
     manager.createNotificationChannel(callNotificationChannel(LockScreenCallChannel, generalGetString(R.string.ntf_channel_calls_lockscreen)))
     manager.createNotificationChannel(callNotificationChannel(CallChannel, generalGetString(R.string.ntf_channel_calls)))
     // Remove old channels since they can't be edited
+    manager.deleteNotificationChannel("chat.simplex.app.CALL_NOTIFICATION")
     manager.deleteNotificationChannel("chat.simplex.app.LOCK_SCREEN_CALL_NOTIFICATION")
+    manager.deleteNotificationChannel("chat.simplex.app.LOCK_SCREEN_CALL_NOTIFICATION2")
   }
 
   enum class NotificationAction {
@@ -53,7 +55,7 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
     val callChannel = NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_HIGH)
     val attrs = AudioAttributes.Builder()
       .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-      .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+      .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
       .build()
     val soundUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + context.packageName + "/" + R.raw.ring_once)
     Log.d(TAG,"callNotificationChannel sound: $soundUri")
