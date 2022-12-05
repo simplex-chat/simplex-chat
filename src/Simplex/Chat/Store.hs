@@ -35,6 +35,7 @@ module Simplex.Chat.Store
     createDirectContact,
     deleteContactConnectionsAndFiles,
     deleteContact,
+    deleteContactNoGroups,
     getContactByName,
     getContact,
     getContactIdByName,
@@ -92,6 +93,7 @@ module Simplex.Chat.Store
     getUserGroups,
     getUserGroupDetails,
     getContactGroupPreferences,
+    getContactGroupProfiles,
     getGroupInvitation,
     createNewContactMember,
     createNewContactMemberAsync,
@@ -592,6 +594,14 @@ deleteContact db user@User {userId} Contact {contactId, localDisplayName, active
     else do
       currentTs <- getCurrentTime
       DB.execute db "UPDATE group_members SET contact_id = NULL, updated_at = ? WHERE user_id = ? AND contact_id = ?" (currentTs, userId, contactId)
+  DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+  forM_ customUserProfileId $ \profileId -> deleteUnusedIncognitoProfileById_ db user profileId
+
+deleteContactNoGroups :: DB.Connection -> User -> Contact -> IO ()
+deleteContactNoGroups db user@User {userId} Contact {contactId, localDisplayName, activeConn = Connection {customUserProfileId}} = do
+  DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+  deleteContactProfile_ db userId contactId
+  DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
   DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
   forM_ customUserProfileId $ \profileId -> deleteUnusedIncognitoProfileById_ db user profileId
 
@@ -1834,6 +1844,25 @@ getContactGroupPreferences db User {userId} Contact {contactId} = do
       |]
       (userId, contactId)
 
+getContactGroupProfiles :: DB.Connection -> User -> Contact -> IO [(GroupId, GroupProfile)]
+getContactGroupProfiles db User {userId} Contact {contactId} = do
+  map toGroupIdProfile
+    <$> DB.query
+      db
+      [sql|
+        SELECT g.group_id, gp.display_name, gp.full_name, gp.image, gp.preferences
+        FROM groups g
+        JOIN group_profiles gp USING (group_profile_id)
+        JOIN group_members m USING (group_id)
+        WHERE g.user_id = ? AND m.contact_id = ?
+      |]
+      (userId, contactId)
+  where
+    toGroupIdProfile :: (GroupId, GroupName, Text, Maybe ImageData, Maybe GroupPreferences) -> (GroupId, GroupProfile)
+    toGroupIdProfile (groupId, displayName, fullName, image, groupPreferences) =
+      let groupProfile = GroupProfile {displayName, fullName, image, groupPreferences}
+       in (groupId, groupProfile)
+
 getGroupInfoByName :: DB.Connection -> User -> GroupName -> ExceptT StoreError IO GroupInfo
 getGroupInfoByName db user gName = do
   gId <- getGroupIdByName db user gName
@@ -2141,9 +2170,11 @@ deleteGroupMember db user@User {userId} m@GroupMember {groupMemberId, groupId, m
 
 cleanupMemberProfileAndName_ :: DB.Connection -> User -> GroupMember -> IO ()
 cleanupMemberProfileAndName_ db User {userId} GroupMember {groupMemberId, memberContactId, memberContactProfileId, localDisplayName} =
-  when (isNothing memberContactId) $ do -- check record has no memberContactId (contact_id) - it means contact has been deleted and doesn't use profile & ldn
+  when (isNothing memberContactId) $ do
+    -- check record has no memberContactId (contact_id) - it means contact has been deleted and doesn't use profile & ldn
     sameProfileMember :: (Maybe GroupMemberId) <- maybeFirstRow fromOnly $ DB.query db "SELECT group_member_id FROM group_members WHERE user_id = ? AND contact_profile_id = ? AND group_member_id != ? LIMIT 1" (userId, memberContactProfileId, groupMemberId)
-    when (isNothing sameProfileMember) $ do -- check other group member records don't use profile & ldn
+    when (isNothing sameProfileMember) $ do
+      -- check other group member records don't use profile & ldn
       DB.execute db "DELETE FROM contact_profiles WHERE user_id = ? AND contact_profile_id = ?" (userId, memberContactProfileId)
       DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
 

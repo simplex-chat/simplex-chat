@@ -513,6 +513,7 @@ processChatCommand = \case
     CTGroup -> do
       Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user chatId
       let canDelete = memberRole (membership :: GroupMember) == GROwner || not (memberCurrent membership)
+          contactIds = mapMaybe memberContactId members
       unless canDelete $ throwChatError CEGroupUserRole
       filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
       withChatLock "deleteChat group" . procCmd $ do
@@ -525,7 +526,16 @@ processChatCommand = \case
         withStore' $ \db -> deleteGroupConnectionsAndFiles db user gInfo members
         withStore' $ \db -> deleteGroupItemsAndMembers db user gInfo members
         withStore' $ \db -> deleteGroup db user gInfo
+        forM_ contactIds $ \ctId ->
+          deleteUnusedContact ctId `catchError` \_ -> pure ()
         pure $ CRGroupDeletedUser gInfo
+      where
+        deleteUnusedContact contactId = do
+          ct <- withStore $ \db -> getContact db user contactId
+          unless (directContact ct) $ do
+            ctGroups <- withStore' $ \db -> getContactGroupProfiles db user ct
+            when (null ctGroups) $
+              withStore' $ \db -> deleteContactNoGroups db user ct
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIClearChat (ChatRef cType chatId) -> withUser $ \user -> case cType of
     CTDirect -> do
