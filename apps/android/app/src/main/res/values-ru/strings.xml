@@ -115,7 +115,6 @@
     <!-- Notification channels -->
     <string name="ntf_channel_messages">SimpleX Chat сообщения</string>
     <string name="ntf_channel_calls">SimpleX Chat звонки</string>
-    <string name="ntf_channel_calls_lockscreen">SimpleX Chat звонки (экран блокировки)</string>
 
     <!-- Notifications -->
     <string name="settings_notifications_mode_title">Сервис уведомлений</string>

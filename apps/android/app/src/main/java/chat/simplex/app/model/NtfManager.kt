@@ -26,7 +26,6 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
 
     // DO NOT change notification channel settings / names
     const val CallChannel: String = "chat.simplex.app.CALL_NOTIFICATION2"
-    const val LockScreenCallChannel: String = "chat.simplex.app.LOCK_SCREEN_CALL_NOTIFICATION1"
     const val AcceptCallAction: String = "chat.simplex.app.ACCEPT_CALL"
     const val RejectCallAction: String = "chat.simplex.app.REJECT_CALL"
     const val CallNotificationId: Int = -1
@@ -40,7 +39,6 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
 
   init {
     manager.createNotificationChannel(NotificationChannel(MessageChannel, generalGetString(R.string.ntf_channel_messages), NotificationManager.IMPORTANCE_HIGH))
-    manager.createNotificationChannel(callNotificationChannel(LockScreenCallChannel, generalGetString(R.string.ntf_channel_calls_lockscreen)))
     manager.createNotificationChannel(callNotificationChannel(CallChannel, generalGetString(R.string.ntf_channel_calls)))
     // Remove old channels since they can't be edited
     manager.deleteNotificationChannel("chat.simplex.app.CALL_NOTIFICATION")
@@ -174,7 +172,7 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
       if ((keyguardManager.isKeyguardLocked || screenOff) && appPreferences.callOnLockScreen.get() != CallOnLockScreen.DISABLE) {
         val fullScreenIntent = Intent(context, IncomingCallActivity::class.java)
         val fullScreenPendingIntent = PendingIntent.getActivity(context, 0, fullScreenIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        NotificationCompat.Builder(context, LockScreenCallChannel)
+        NotificationCompat.Builder(context, CallChannel)
           .setFullScreenIntent(fullScreenPendingIntent, true)
           .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
       } else {

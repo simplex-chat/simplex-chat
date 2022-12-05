@@ -115,7 +115,6 @@
   <!-- Notification channels -->
   <string name="ntf_channel_messages">SimpleX Chat messages</string>
   <string name="ntf_channel_calls">SimpleX Chat calls</string>
-  <string name="ntf_channel_calls_lockscreen">SimpleX Chat calls (lock screen)</string>
 
   <!-- Notifications -->
   <string name="settings_notifications_mode_title">Notification service</string>
