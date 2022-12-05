@@ -2170,11 +2170,11 @@ deleteGroupMember db user@User {userId} m@GroupMember {groupMemberId, groupId, m
 
 cleanupMemberProfileAndName_ :: DB.Connection -> User -> GroupMember -> IO ()
 cleanupMemberProfileAndName_ db User {userId} GroupMember {groupMemberId, memberContactId, memberContactProfileId, localDisplayName} =
+  -- check record has no memberContactId (contact_id) - it means contact has been deleted and doesn't use profile & ldn
   when (isNothing memberContactId) $ do
-    -- check record has no memberContactId (contact_id) - it means contact has been deleted and doesn't use profile & ldn
+    -- check other group member records don't use profile & ldn
     sameProfileMember :: (Maybe GroupMemberId) <- maybeFirstRow fromOnly $ DB.query db "SELECT group_member_id FROM group_members WHERE user_id = ? AND contact_profile_id = ? AND group_member_id != ? LIMIT 1" (userId, memberContactProfileId, groupMemberId)
     when (isNothing sameProfileMember) $ do
-      -- check other group member records don't use profile & ldn
       DB.execute db "DELETE FROM contact_profiles WHERE user_id = ? AND contact_profile_id = ?" (userId, memberContactProfileId)
       DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
 
