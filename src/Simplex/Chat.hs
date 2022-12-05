@@ -926,7 +926,7 @@ processChatCommand = \case
                 ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent gEvent) Nothing Nothing
                 toView . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
           pure CRMemberRoleUser {groupInfo = gInfo, member = m {memberRole = memRole}, fromRole = mRole, toRole = memRole}
-  APIRemoveMember groupId memberId -> withUser $ \user@User {userId} -> do
+  APIRemoveMember groupId memberId -> withUser $ \user -> do
     Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user groupId
     case find ((== memberId) . groupMemberId') members of
       Nothing -> throwChatError CEGroupMemberNotFound
@@ -945,10 +945,7 @@ processChatCommand = \case
               toView . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
               deleteMemberConnection user m
               -- undeleted "member connected" chat item will prevent deletion of member record
-              withStore' $ \db ->
-                checkGroupMemberHasItems db user m >>= \case
-                  Just _ -> updateGroupMemberStatus db userId m GSMemRemoved
-                  Nothing -> deleteGroupMember db user m
+              deleteOrUpdateMemberRecord user m
           pure $ CRUserDeletedMember gInfo m {memberStatus = GSMemRemoved}
   APILeaveGroup groupId -> withUser $ \user@User {userId} -> do
     Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user groupId
@@ -2805,10 +2802,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
             checkRole member $ do
               deleteMemberConnection user member
               -- undeleted "member connected" chat item will prevent deletion of member record
-              withStore' $ \db ->
-                checkGroupMemberHasItems db user member >>= \case
-                  Just _ -> updateGroupMemberStatus db userId member GSMemRemoved
-                  Nothing -> deleteGroupMember db user member
+              deleteOrUpdateMemberRecord user member
               deleteMemberItem $ RGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
               toView $ CRDeletedMember gInfo m member {memberStatus = GSMemRemoved}
       where
@@ -2996,6 +2990,13 @@ deleteMemberConnection user GroupMember {activeConn} = do
   forM_ activeConn $ \conn -> do
     deleteAgentConnectionAsync user conn `catchError` \_ -> pure ()
     withStore' $ \db -> updateConnectionStatus db conn ConnDeleted
+
+deleteOrUpdateMemberRecord :: ChatMonad m => User -> GroupMember -> m ()
+deleteOrUpdateMemberRecord user@User {userId} member =
+  withStore' $ \db ->
+    checkGroupMemberHasItems db user member >>= \case
+      Just _ -> updateGroupMemberStatus db userId member GSMemRemoved
+      Nothing -> deleteGroupMember db user member
 
 sendDirectContactMessage :: (MsgEncodingI e, ChatMonad m) => Contact -> ChatMsgEvent e -> m (SndMessage, Int64)
 sendDirectContactMessage ct@Contact {activeConn = conn@Connection {connId, connStatus}} chatMsgEvent = do
