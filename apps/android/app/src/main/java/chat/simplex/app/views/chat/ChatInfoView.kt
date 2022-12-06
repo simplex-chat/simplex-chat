@@ -63,9 +63,9 @@ fun ChatInfoView(
         setContactAlias(chat.chatInfo.apiId, it, chatModel)
       },
       openPreferences = {
-        val user = chatModel.currentUser.value
-        if (user != null) {
-          ModalManager.shared.showCustomModal { close ->
+        ModalManager.shared.showCustomModal { close ->
+          val user = chatModel.currentUser.value
+          if (user != null) {
             ContactPreferencesView(chatModel, user, contact.contactId, close)
           }
         }
