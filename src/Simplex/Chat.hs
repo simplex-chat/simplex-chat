@@ -525,7 +525,19 @@ processChatCommand = \case
         withStore' $ \db -> deleteGroupConnectionsAndFiles db user gInfo members
         withStore' $ \db -> deleteGroupItemsAndMembers db user gInfo members
         withStore' $ \db -> deleteGroup db user gInfo
+        let contactIds = mapMaybe memberContactId members
+        forM_ contactIds $ \ctId ->
+          deleteUnusedContact ctId `catchError` (toView . CRChatError)
         pure $ CRGroupDeletedUser gInfo
+      where
+        deleteUnusedContact contactId = do
+          ct <- withStore $ \db -> getContact db user contactId
+          unless (directContact ct) $ do
+            ctGroupId <- withStore' $ \db -> checkContactHasGroups db user ct
+            when (isNothing ctGroupId) $ do
+              conns <- withStore $ \db -> getContactConnections db userId ct
+              forM_ conns $ \conn -> deleteAgentConnectionAsync user conn `catchError` \_ -> pure ()
+              withStore' $ \db -> deleteContactWithoutGroups db user ct
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIClearChat (ChatRef cType chatId) -> withUser $ \user -> case cType of
     CTDirect -> do
@@ -926,7 +938,7 @@ processChatCommand = \case
                 ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent gEvent) Nothing Nothing
                 toView . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
           pure CRMemberRoleUser {groupInfo = gInfo, member = m {memberRole = memRole}, fromRole = mRole, toRole = memRole}
-  APIRemoveMember groupId memberId -> withUser $ \user@User {userId} -> do
+  APIRemoveMember groupId memberId -> withUser $ \user -> do
     Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user groupId
     case find ((== memberId) . groupMemberId') members of
       Nothing -> throwChatError CEGroupMemberNotFound
@@ -944,10 +956,8 @@ processChatCommand = \case
               ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent $ SGEMemberDeleted memberId (fromLocalProfile memberProfile)) Nothing Nothing
               toView . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
               deleteMemberConnection user m
-              withStore' $ \db ->
-                checkGroupMemberHasItems db user m >>= \case
-                  Just _ -> updateGroupMemberStatus db userId m GSMemRemoved
-                  Nothing -> deleteGroupMember db user m
+              -- undeleted "member connected" chat item will prevent deletion of member record
+              deleteOrUpdateMemberRecord user m
           pure $ CRUserDeletedMember gInfo m {memberStatus = GSMemRemoved}
   APILeaveGroup groupId -> withUser $ \user@User {userId} -> do
     Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user groupId
@@ -957,6 +967,7 @@ processChatCommand = \case
       toView . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
       -- TODO delete direct connections that were unused
       deleteGroupLink' user gInfo `catchError` \_ -> pure ()
+      -- member records are not deleted to keep history
       forM_ members $ deleteMemberConnection user
       withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemLeft
       pure $ CRLeftMemberUser gInfo {membership = membership {memberStatus = GSMemLeft}}
@@ -2792,23 +2803,26 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
       if memberId (membership :: GroupMember) == memId
         then checkRole membership $ do
           deleteGroupLink' user gInfo `catchError` \_ -> pure ()
+          -- member records are not deleted to keep history
           forM_ members $ deleteMemberConnection user
-          deleteMember membership RGEUserDeleted
+          withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemRemoved
+          deleteMemberItem RGEUserDeleted
           toView $ CRDeletedMemberUser gInfo {membership = membership {memberStatus = GSMemRemoved}} m
         else case find (sameMemberId memId) members of
           Nothing -> messageError "x.grp.mem.del with unknown member ID"
           Just member@GroupMember {groupMemberId, memberProfile} ->
             checkRole member $ do
               deleteMemberConnection user member
-              deleteMember member $ RGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
+              -- undeleted "member connected" chat item will prevent deletion of member record
+              deleteOrUpdateMemberRecord user member
+              deleteMemberItem $ RGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
               toView $ CRDeletedMember gInfo m member {memberStatus = GSMemRemoved}
       where
         checkRole GroupMember {memberRole} a
           | senderRole < GRAdmin || senderRole < memberRole =
             messageError "x.grp.mem.del with insufficient member permissions"
           | otherwise = a
-        deleteMember member gEvent = do
-          withStore' $ \db -> updateGroupMemberStatus db userId member GSMemRemoved
+        deleteMemberItem gEvent = do
           ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvGroupEvent gEvent) Nothing
           groupMsgToView gInfo m ci msgMeta
 
@@ -2818,6 +2832,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
     xGrpLeave :: GroupInfo -> GroupMember -> RcvMessage -> MsgMeta -> m ()
     xGrpLeave gInfo m msg msgMeta = do
       deleteMemberConnection user m
+      -- member record is not deleted to allow creation of "member left" chat item
       withStore' $ \db -> updateGroupMemberStatus db userId m GSMemLeft
       ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvGroupEvent RGEMemberLeft) Nothing
       groupMsgToView gInfo m ci msgMeta
@@ -2830,6 +2845,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
         members <- getGroupMembers db user gInfo
         updateGroupMemberStatus db userId membership GSMemGroupDeleted
         pure members
+      -- member records are not deleted to keep history
       forM_ ms $ deleteMemberConnection user
       ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvGroupEvent RGEGroupDeleted) Nothing
       groupMsgToView gInfo m ci msgMeta
@@ -2986,6 +3002,13 @@ deleteMemberConnection user GroupMember {activeConn} = do
   forM_ activeConn $ \conn -> do
     deleteAgentConnectionAsync user conn `catchError` \_ -> pure ()
     withStore' $ \db -> updateConnectionStatus db conn ConnDeleted
+
+deleteOrUpdateMemberRecord :: ChatMonad m => User -> GroupMember -> m ()
+deleteOrUpdateMemberRecord user@User {userId} member =
+  withStore' $ \db ->
+    checkGroupMemberHasItems db user member >>= \case
+      Just _ -> updateGroupMemberStatus db userId member GSMemRemoved
+      Nothing -> deleteGroupMember db user member
 
 sendDirectContactMessage :: (MsgEncodingI e, ChatMonad m) => Contact -> ChatMsgEvent e -> m (SndMessage, Int64)
 sendDirectContactMessage ct@Contact {activeConn = conn@Connection {connId, connStatus}} chatMsgEvent = do
