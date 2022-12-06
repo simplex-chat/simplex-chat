@@ -33,7 +33,7 @@ Users who do not want to receive voice messages can disable them, either globall
 
 ### Irreversible message deletion
 
-<img src="./images/20221206-delete1.png" width="288"> &nbsp;&nbsp; <img src="./images/20221206-delete2.png" width="288">
+<img src="./images/20221206-deleted1.png" width="288"> &nbsp;&nbsp; <img src="./images/20221206-deleted2.png" width="288">
 
 When you receive email, you have full confidence that the sender cannot delete their email from your mailbox after you have received it. And it seems correct – in the end, this is your device, and nobody should be able to delete any data from it.
 
