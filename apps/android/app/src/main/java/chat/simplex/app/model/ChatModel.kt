@@ -222,10 +222,10 @@ class ChatModel(val controller: ChatController) {
       chat = chats[i]
       val pItem = chat.chatItems.lastOrNull()
       if (pItem?.id == cItem.id) {
-        chats[i] = chat.copy(chatItems = arrayListOf(ChatItem.defaultDeleted(false)))
-        if (cItem.isRcvNew) {
-          decreaseCounterInChat(cInfo.id)
-        }
+        chats[i] = chat.copy(chatItems = arrayListOf(ChatItem.defaultDeleted))
+      }
+      if (cItem.isRcvNew) {
+        decreaseCounterInChat(cInfo.id)
       }
     }
     // remove from current chat
@@ -1209,27 +1209,23 @@ data class ChatItem (
     }
 
     private const val TEMP_DELETED_CHAT_ITEM_ID = -1L
-    private const val TEMP_MARKED_DELETED_CHAT_ITEM_ID = -2L
-    fun defaultDeleted(onlyMarked: Boolean): ChatItem = ChatItem(
-      chatDir = CIDirection.DirectRcv(),
-      meta = CIMeta(
-        itemId = if (onlyMarked) TEMP_MARKED_DELETED_CHAT_ITEM_ID else TEMP_DELETED_CHAT_ITEM_ID,
-        itemTs = Clock.System.now(),
-        itemText = if (onlyMarked) generalGetString(R.string.marked_deleted_description) else generalGetString(R.string.deleted_description),
-        itemStatus = CIStatus.RcvRead(),
-        createdAt = Clock.System.now(),
-        itemDeleted = true,
-        itemEdited = false,
-        editable = false
-      ),
-      content = if (onlyMarked) {
-        CIContent.RcvMsgContent(MsgContent.MCText(generalGetString(R.string.marked_deleted_description)))
-      } else {
-        CIContent.RcvDeleted(deleteMode = CIDeleteMode.cidmBroadcast)
-      },
-      quotedItem = null,
-      file = null
-    )
+    val defaultDeleted: ChatItem
+      get() = ChatItem(
+        chatDir = CIDirection.DirectRcv(),
+        meta = CIMeta(
+          itemId = TEMP_DELETED_CHAT_ITEM_ID,
+          itemTs = Clock.System.now(),
+          itemText = generalGetString(R.string.deleted_description),
+          itemStatus = CIStatus.RcvRead(),
+          createdAt = Clock.System.now(),
+          itemDeleted = true,
+          itemEdited = false,
+          editable = false
+        ),
+        content = CIContent.RcvDeleted(deleteMode = CIDeleteMode.cidmBroadcast),
+        quotedItem = null,
+        file = null
+      )
   }
 }
 
