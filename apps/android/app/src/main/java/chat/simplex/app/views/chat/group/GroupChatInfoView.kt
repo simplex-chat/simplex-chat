@@ -65,10 +65,11 @@ fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
         ModalManager.shared.showCustomModal { close -> GroupProfileView(groupInfo, chatModel, close) }
       },
       openPreferences = {
-        ModalManager.shared.showModal(true) {
+        ModalManager.shared.showCustomModal { close ->
           GroupPreferencesView(
             chatModel,
-            chat.id
+            chat.id,
+            close
           )
         }
       },

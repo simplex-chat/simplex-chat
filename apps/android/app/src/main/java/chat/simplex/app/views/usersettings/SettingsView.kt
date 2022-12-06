@@ -116,7 +116,7 @@ fun SettingsLayout(
         SectionDivider()
         SettingsActionItem(Icons.Outlined.QrCode, stringResource(R.string.your_simplex_contact_address), showModal { CreateLinkView(it, CreateLinkTab.LONG_TERM) }, disabled = stopped)
         SectionDivider()
-        ChatPreferencesItem(showSettingsModal)
+        ChatPreferencesItem(showCustomModal)
       }
       SectionSpacer()
 
@@ -239,14 +239,14 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
   }
 }
 
-@Composable fun ChatPreferencesItem(showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)) {
+@Composable fun ChatPreferencesItem(showCustomModal: ((@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit))) {
   SettingsActionItem(
     Icons.Outlined.ToggleOn,
     stringResource(R.string.chat_preferences),
     click = {
       withApi {
-        showSettingsModal {
-          PreferencesView(it, it.currentUser.value ?: return@showSettingsModal)
+        showCustomModal { m, close ->
+          PreferencesView(m, m.currentUser.value ?: return@showCustomModal, close)
         }()
       }
     }
