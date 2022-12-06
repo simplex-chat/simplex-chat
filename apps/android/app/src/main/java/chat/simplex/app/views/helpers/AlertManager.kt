@@ -94,7 +94,7 @@ class AlertManager {
     }
   }
 
-  fun showAlertDialogWithButtonsStacked(
+  fun showAlertDialogStacked(
     title: String,
     text: String? = null,
     confirmText: String = generalGetString(R.string.ok),
@@ -112,7 +112,7 @@ class AlertManager {
         text = alertText,
         buttons = {
           Column(
-            Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
+            Modifier.fillMaxWidth().padding(horizontal = 8.dp).padding(top = 16.dp, bottom = 2.dp),
             horizontalAlignment = Alignment.End
           ) {
             TextButton(onClick = {

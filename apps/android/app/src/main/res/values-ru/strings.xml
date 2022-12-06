@@ -473,9 +473,9 @@
     <string name="edit_image">Поменять аватар</string>
     <string name="delete_image">Удалить аватар</string>
     <string name="save_preferences_question">Сохранить предпочтения?</string>
-    <string name="save_and_notify_contact">Сохранить (и уведомить контакт)</string>
-    <string name="save_and_notify_contacts">Сохранить (и послать обновление контактам)</string>
-    <string name="save_and_notify_group_members">Сохранить (и уведомить членов группы)</string>
+    <string name="save_and_notify_contact">Сохранить и уведомить контакт</string>
+    <string name="save_and_notify_contacts">Сохранить и уведомить контакты</string>
+    <string name="save_and_notify_group_members">Сохранить и уведомить членов группы</string>
     <string name="exit_without_saving">Выйти без сохранения</string>
 
     <!-- Welcome Prompts - WelcomeView.kt -->

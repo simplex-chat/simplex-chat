@@ -476,9 +476,9 @@
   <string name="edit_image">Edit image</string>
   <string name="delete_image">Delete image</string>
   <string name="save_preferences_question">Save preferences?</string>
-  <string name="save_and_notify_contact">Save (and notify contact)</string>
-  <string name="save_and_notify_contacts">Save (and notify contacts)</string>
-  <string name="save_and_notify_group_members">Save (and notify group members)</string>
+  <string name="save_and_notify_contact">Save and notify contact</string>
+  <string name="save_and_notify_contacts">Save and notify contacts</string>
+  <string name="save_and_notify_group_members">Save and notify group members</string>
   <string name="exit_without_saving">Exit without saving</string>
 
   <!-- Welcome Prompts - WelcomeView.kt -->

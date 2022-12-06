@@ -44,7 +44,10 @@ fun ContactPreferencesView(
     }
   }
   ModalView(
-    close = { if (featuresAllowed == currentFeaturesAllowed) close() else showUnsavedChangesAlert({ savePrefs(close) }, close) },
+    close = {
+      if (featuresAllowed == currentFeaturesAllowed) close()
+      else showUnsavedChangesAlert({ savePrefs(close) }, close)
+    },
     background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
   ) {
     ContactPreferencesLayout(
@@ -150,7 +153,7 @@ private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Bool
 }
 
 private fun showUnsavedChangesAlert(save: () -> Unit, revert: () -> Unit) {
-  AlertManager.shared.showAlertDialogWithButtonsStacked(
+  AlertManager.shared.showAlertDialogStacked(
     title = generalGetString(R.string.save_preferences_question),
     confirmText = generalGetString(R.string.save_and_notify_contact),
     dismissText = generalGetString(R.string.exit_without_saving),
