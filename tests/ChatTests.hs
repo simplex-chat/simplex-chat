@@ -52,6 +52,7 @@ chatTests :: Spec
 chatTests = do
   describe "direct messages" $ do
     describe "add contact and send/receive message" testAddContact
+    it "deleting contact deletes profile" testDeleteContactDeletesProfile
     it "direct message quoted replies" testDirectMessageQuotedReply
     it "direct message update" testDirectMessageUpdate
     it "direct message delete" testDirectMessageDelete
@@ -126,8 +127,8 @@ chatTests = do
     it "delete group, re-join via same link" testGroupLinkDeleteGroupRejoin
     it "sending message to contact created via group link marks it used" testGroupLinkContactUsed
     it "create group link, join via group link - incognito membership" testGroupLinkIncognitoMembership
-    fit "unused host contact is deleted after all groups with it are deleted" testGroupLinkUnusedHostContactDeleted
-    fit "leaving groups with unused host contacts deletes incognito profiles" testGroupLinkIncognitoUnusedHostContactsDeleted
+    it "unused host contact is deleted after all groups with it are deleted" testGroupLinkUnusedHostContactDeleted
+    it "leaving groups with unused host contacts deletes incognito profiles" testGroupLinkIncognitoUnusedHostContactsDeleted
   describe "contact aliases" $ do
     it "set contact alias" testSetAlias
     it "set connection alias" testSetConnectionAlias
@@ -267,7 +268,9 @@ testAddContact = versionTestMatrix2 runTestAddContact
       alice ##> "@bob_1 hey"
       alice <## "no contact bob_1"
       alice @@@ [("@bob", "how are you?")]
+      alice `hasContactProfiles` ["alice", "bob"]
       bob @@@ [("@alice_1", "hi"), ("@alice", "how are you?")]
+      bob `hasContactProfiles` ["alice", "alice", "bob"]
       -- test clearing chat
       alice #$> ("/clear bob", id, "bob: all messages are removed locally ONLY")
       alice #$> ("/_get chat @2 count=100", chat, [])
@@ -298,6 +301,25 @@ testAddContact = versionTestMatrix2 runTestAddContact
       bob #$> ("/_read chat @2 from=1 to=100", id, "ok")
       alice #$> ("/_read chat @2", id, "ok")
       bob #$> ("/_read chat @2", id, "ok")
+
+testDeleteContactDeletesProfile :: IO ()
+testDeleteContactDeletesProfile =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice <##> bob
+      -- alice deletes contact, profile is deleted
+      alice ##> "/d bob"
+      alice <## "bob: contact is deleted"
+      alice ##> "/cs"
+      (alice </)
+      alice `hasContactProfiles` ["alice"]
+      -- bob deletes contact, profile is deleted
+      bob ##> "/d alice"
+      bob <## "alice: contact is deleted"
+      bob ##> "/cs"
+      (bob </)
+      bob `hasContactProfiles` ["bob"]
 
 testDirectMessageQuotedReply :: IO ()
 testDirectMessageQuotedReply =
@@ -2721,6 +2743,28 @@ testConnectIncognitoInvitationLink = testChat3 aliceProfile bobProfile cathProfi
     alice <## "Full deletion: off (you allow: no, contact allows: no)"
     bob <## (aliceIncognito <> " updated preferences for you:")
     bob <## "Full deletion: off (you allow: no, contact allows: no)"
+    -- list contacts
+    alice ##> "/cs"
+    alice
+      <### [ ConsoleString $ "i " <> bobIncognito,
+             "cath (Catherine)"
+           ]
+    alice `hasContactProfiles` ["alice", T.pack aliceIncognito, T.pack bobIncognito, "cath"]
+    bob ##> "/cs"
+    bob <## ("i " <> aliceIncognito)
+    bob `hasContactProfiles` ["bob", T.pack aliceIncognito, T.pack bobIncognito]
+    -- alice deletes contact, incognito profile is deleted
+    alice ##> ("/d " <> bobIncognito)
+    alice <## (bobIncognito <> ": contact is deleted")
+    alice ##> "/cs"
+    alice <## "cath (Catherine)"
+    alice `hasContactProfiles` ["alice", "cath"]
+    -- bob deletes contact, incognito profile is deleted
+    bob ##> ("/d " <> aliceIncognito)
+    bob <## (aliceIncognito <> ": contact is deleted")
+    bob ##> "/cs"
+    (bob </)
+    bob `hasContactProfiles` ["bob"]
 
 testConnectIncognitoContactAddress :: IO ()
 testConnectIncognitoContactAddress = testChat2 aliceProfile bobProfile $
@@ -2750,6 +2794,16 @@ testConnectIncognitoContactAddress = testChat2 aliceProfile bobProfile $
     bob ?<# "alice> who are you?"
     bob ?#> "@alice I'm Batman"
     alice <# (bobIncognito <> "> I'm Batman")
+    -- list contacts
+    bob ##> "/cs"
+    bob <## "i alice (Alice)"
+    bob `hasContactProfiles` ["alice", "bob", T.pack bobIncognito]
+    -- delete contact, incognito profile is deleted
+    bob ##> "/d alice"
+    bob <## "alice: contact is deleted"
+    bob ##> "/cs"
+    (bob </)
+    bob `hasContactProfiles` ["bob"]
 
 testAcceptContactRequestIncognito :: IO ()
 testAcceptContactRequestIncognito = testChat2 aliceProfile bobProfile $
@@ -2775,6 +2829,16 @@ testAcceptContactRequestIncognito = testChat2 aliceProfile bobProfile $
     bob <# (aliceIncognito <> "> my profile is totally inconspicuous")
     bob #> ("@" <> aliceIncognito <> " I know!")
     alice ?<# "bob> I know!"
+    -- list contacts
+    alice ##> "/cs"
+    alice <## "i bob (Bob)"
+    alice `hasContactProfiles` ["alice", "bob", T.pack aliceIncognito]
+    -- delete contact, incognito profile is deleted
+    alice ##> "/d bob"
+    alice <## "bob: contact is deleted"
+    alice ##> "/cs"
+    (alice </)
+    alice `hasContactProfiles` ["alice"]
 
 testJoinGroupIncognito :: IO ()
 testJoinGroupIncognito = testChat4 aliceProfile bobProfile cathProfile danProfile $
