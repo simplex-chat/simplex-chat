@@ -1,16 +1,24 @@
 ---
 layout: layouts/article.html
-title: "SimpleX Chat v4.3 – voice messages, improved server management and conversation preferences"
+title: "SimpleX Chat reviews and v4.3 released – with instant voice messages, irreversible deletion of sent messages and improved server configuration."
 date: 2022-12-06
 image: images/20221206-voice.png
 imageBottom: true
-preview: Voice messages are released!
+previewBody: blog_previews/20221206.html
 permalink: "/blog/20221206-simplex-chat-v4.3-voice-messages.html"
 ---
 
-# SimpleX Chat reviews and v4.3 released – with voice messages, irreversible deletion of sent messages and improved server configuration.
+# SimpleX Chat reviews and v4.3 released – with instant voice messages, irreversible deletion of sent messages and improved server configuration.
 
 **Published:** Dec 6, 2022
+
+## SimpleX Chat reviews
+
+Since we published [the security assessment of SimpleX Chat](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html) completed by Trail of Bits in November, several sites published the reviews and included it in their recommendations:
+
+- Privacy Guides added SimpleX Chat to [the recommended private and secure messengers](https://www.privacyguides.org/real-time-communication/#simplex-chat).
+- Mike Kuketz – a well-known security expert – published [the review of SimpleX Chat](https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/) and added it to [the messenger matrix](https://www.messenger-matrix.de).
+- Supernova published [the review](https://supernova.tilde.team/detailed_reviews.html#simplex) and increased [SimpleX Chat recommendation ratings](https://supernova.tilde.team/messengers.html).
 
 ## What's new in v4.3
 
