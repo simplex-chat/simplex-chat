@@ -527,7 +527,7 @@ processChatCommand = \case
         withStore' $ \db -> deleteGroup db user gInfo
         let contactIds = mapMaybe memberContactId members
         forM_ contactIds $ \ctId ->
-          deleteUnusedContact ctId `catchError` \_ -> pure ()
+          deleteUnusedContact ctId `catchError` (toView . CRChatError)
         pure $ CRGroupDeletedUser gInfo
       where
         deleteUnusedContact contactId = do
