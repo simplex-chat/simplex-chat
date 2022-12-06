@@ -10,16 +10,15 @@ import androidx.compose.runtime.*
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatItem
+import chat.simplex.app.views.helpers.AudioPlayer.duration
 import kotlinx.coroutines.*
 import java.io.*
 import java.text.SimpleDateFormat
 import java.util.*
 
 interface Recorder {
-  val recordingInProgress: MutableState<Boolean>
-  fun start(onStop: () -> Unit): String
-  fun stop()
-  fun cancel(filePath: String, recordingInProgress: MutableState<Boolean>)
+  fun start(onProgressUpdate: (position: Int?) -> Unit): String
+  fun stop(): Int
 }
 
 class RecorderNative(private val recordedBytesLimit: Long): Recorder {
@@ -27,8 +26,10 @@ class RecorderNative(private val recordedBytesLimit: Long): Recorder {
     // Allows to stop the recorder from outside without having the recorder in a variable
     var stopRecording: (() -> Unit)? = null
   }
-  override val recordingInProgress = mutableStateOf(false)
   private var recorder: MediaRecorder? = null
+  private var progressJob: Job? = null
+  private var filePath: String? = null
+  private var recStartedAt: Long? = null
   private fun initRecorder() =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
       MediaRecorder(SimplexApp.context)
@@ -36,9 +37,8 @@ class RecorderNative(private val recordedBytesLimit: Long): Recorder {
       MediaRecorder()
     }
 
-  override fun start(onStop: () -> Unit): String {
+  override fun start(onProgressUpdate: (position: Int?) -> Unit): String {
     AudioPlayer.stop()
-    recordingInProgress.value = true
     val rec: MediaRecorder
     recorder = initRecorder().also { rec = it }
     rec.setAudioSource(MediaRecorder.AudioSource.MIC)
@@ -50,28 +50,41 @@ class RecorderNative(private val recordedBytesLimit: Long): Recorder {
     rec.setMaxDuration(-1) // TODO set limit
     rec.setMaxFileSize(recordedBytesLimit)
     val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-    val filePath = getAppFilePath(SimplexApp.context, uniqueCombine(SimplexApp.context, getAppFilePath(SimplexApp.context, "voice_${timestamp}.m4a")))
-    rec.setOutputFile(filePath)
+    val path = getAppFilePath(SimplexApp.context, uniqueCombine(SimplexApp.context, getAppFilePath(SimplexApp.context, "voice_${timestamp}.m4a")))
+    filePath = path
+    rec.setOutputFile(path)
     rec.prepare()
     rec.start()
+    recStartedAt = System.currentTimeMillis()
+    progressJob = CoroutineScope(Dispatchers.Default).launch {
+      onProgressUpdate(progress())
+      while(isActive) {
+        delay(50)
+        onProgressUpdate(progress())
+      }
+      progress()?.let(onProgressUpdate)
+    }.apply {
+      invokeOnCompletion { onProgressUpdate(null) }
+    }
     rec.setOnInfoListener { mr, what, extra ->
       if (what == MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED) {
         stop()
-        onStop()
       }
     }
-    stopRecording = { stop(); onStop() }
-    return filePath
+    stopRecording = { stop() }
+    return path
   }
 
-  override fun stop() {
-    if (!recordingInProgress.value) return
+  override fun stop(): Int {
+    val path = filePath ?: return 0
     stopRecording = null
-    recordingInProgress.value = false
-    recorder?.metrics?.
+    progressJob?.cancel()
+    progressJob = null
+    filePath = null
     runCatching {
       recorder?.stop()
     }
+    val countedDuration = progress() ?: 0
     runCatching {
       recorder?.reset()
     }
@@ -80,12 +93,14 @@ class RecorderNative(private val recordedBytesLimit: Long): Recorder {
       recorder?.release()
     }
     recorder = null
+    recStartedAt = null
+    // Return real duration from AudioPlayer if it's possible (should always be possible).
+    // As a fallback, return internally counted duration
+    val audioPlayerDuration = duration(path)
+    return if (audioPlayerDuration != 0) audioPlayerDuration else countedDuration
   }
 
-  override fun cancel(filePath: String, recordingInProgress: MutableState<Boolean>) {
-    stop()
-    runCatching { File(filePath).delete() }.getOrElse { Log.d(TAG, "Unable to delete a file: ${it.stackTraceToString()}") }
-  }
+  private fun progress(): Int? = recStartedAt?.let { (System.currentTimeMillis() - it).toInt() }
 }
 
 object AudioPlayer {
