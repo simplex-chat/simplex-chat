@@ -20,7 +20,7 @@ permalink: "/blog/20221206-simplex-chat-v4.3-voice-messages.html"
 - [privacy and security improvements](#privacy-and-security-improvements):
   - protect app screen in recent apps and prevent screenshots
   - improved privacy and security of SimpleX invitation links in the app
-  - optional app data backup
+  - optional Android app data backup
   - optionally allow direct messages between group members
 
 ### Instant voice messages
@@ -83,7 +83,7 @@ Previously, when you sent somebody an invitation link, a contact address or a gr
 
 This version instead of showing the full link shows a short description, and it replaces a public web address with an internal URI scheme that the app uses (simplex:/) – such links open directly in the app. There is an option to show the full link, if you need it, and even to open it in the browser from the app, but in this case if this link is not using https://simplex.chat website it will show as red to highlight it.
 
-### Optional app data backup
+### Optional Android app data backup
 
 The previous version always backed up app data in the way it was configured by the system. Now you can override it from inside the app, preventing the backup even if it's enabled by the system settings. This version requires disabling it manually, we will make it disabled by default in the next release (v4.3.1).
 
