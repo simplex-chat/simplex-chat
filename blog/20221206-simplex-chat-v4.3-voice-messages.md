@@ -73,15 +73,15 @@ You can read how to install and configure SMP servers in [this guide](https://gi
 
 It is now enabled by default, but you can disable it via settings.
 
-iOS app only hides the app screen in the receint apps, Android app in addition to that also prevents the screenshots.
+iOS app only hides the app screen in the recent apps, Android app in addition to that also prevents the screenshots.
 
 This is not the security measure for the senders, and we made it optional, as the recipient could circumvent it anyway – this is for you to protect your app screen when you give your phone to somebody.
 
 #### Privacy and security of SimpleX invitation links
 
-Previously, when you sent somebody an invitation link, a contact address or a group link, they would take half a screen in the chat and they could open in the browser in some cases. Aldo, as these links are quire large, it is not easy to see if the page domain is maliciously replaced, what SMP server the connection would go through or what kind of link it is.
+Previously, when you sent somebody an invitation link, a contact address or a group link, they would take half a screen in the chat and they could open in the browser in some cases. Also, as these links are quire large, it is not easy to see if the page domain is maliciously replaced, what SMP server the connection would go through or what kind of link it is.
 
-This version instead of showing the full link shows a short description, and it replaces a public web address with an internal URI scheme that the app uses (simplex:/) – such links open directly in the app. There is an option to show the full link, if you need it, and even to open it in the browser from the app, but in this case if this link is not using https://simplex.chat website it will show as read to highlight it.
+This version instead of showing the full link shows a short description, and it replaces a public web address with an internal URI scheme that the app uses (simplex:/) – such links open directly in the app. There is an option to show the full link, if you need it, and even to open it in the browser from the app, but in this case if this link is not using https://simplex.chat website it will show as red to highlight it.
 
 ### Optional app data backup
 
