@@ -119,8 +119,8 @@ chatTests = do
     it "join group incognito" testJoinGroupIncognito
     it "can't invite contact to whom user connected incognito to a group" testCantInviteContactIncognito
     it "can't see global preferences update" testCantSeeGlobalPrefsUpdateIncognito
-    fit "deleting contact first, group second deletes incognito profile" testDeleteContactThenGroupDeletesIncognitoProfile
-    fit "deleting group first, contact second deletes incognito profile" testDeleteGroupThenContactDeletesIncognitoProfile
+    it "deleting contact first, group second deletes incognito profile" testDeleteContactThenGroupDeletesIncognitoProfile
+    it "deleting group first, contact second deletes incognito profile" testDeleteGroupThenContactDeletesIncognitoProfile
   describe "contact aliases" $ do
     it "set contact alias" testSetAlias
     it "set connection alias" testSetConnectionAlias
