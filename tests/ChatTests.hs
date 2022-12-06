@@ -119,6 +119,8 @@ chatTests = do
     it "join group incognito" testJoinGroupIncognito
     it "can't invite contact to whom user connected incognito to a group" testCantInviteContactIncognito
     it "can't see global preferences update" testCantSeeGlobalPrefsUpdateIncognito
+    fit "deleting contact first, group second deletes incognito profile" testDeleteContactThenGroupDeletesIncognitoProfile
+    fit "deleting group first, contact second deletes incognito profile" testDeleteGroupThenContactDeletesIncognitoProfile
   describe "contact aliases" $ do
     it "set contact alias" testSetAlias
     it "set connection alias" testSetConnectionAlias
@@ -3053,6 +3055,110 @@ testCantSeeGlobalPrefsUpdateIncognito = testChat3 aliceProfile bobProfile cathPr
     alice <## "Full deletion: off (you allow: yes, contact allows: no)"
     cath <## "alice updated preferences for you:"
     cath <## "Full deletion: off (you allow: default (no), contact allows: yes)"
+
+testDeleteContactThenGroupDeletesIncognitoProfile :: IO ()
+testDeleteContactThenGroupDeletesIncognitoProfile = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    -- bob connects incognito to alice
+    alice ##> "/c"
+    inv <- getInvitation alice
+    bob #$> ("/incognito on", id, "ok")
+    bob ##> ("/c " <> inv)
+    bob <## "confirmation sent!"
+    bobIncognito <- getTermLine bob
+    concurrentlyN_
+      [ alice <## (bobIncognito <> ": contact is connected"),
+        do
+          bob <## ("alice (Alice): contact is connected, your incognito profile for this contact is " <> bobIncognito)
+          bob <## "use /info alice to print out this incognito profile again"
+      ]
+    -- bob joins group using incognito profile
+    alice ##> "/g team"
+    alice <## "group #team is created"
+    alice <## "use /a team <name> to add members"
+    alice ##> ("/a team " <> bobIncognito)
+    concurrentlyN_
+      [ alice <## ("invitation to join the group #team sent to " <> bobIncognito),
+        do
+          bob <## "#team: alice invites you to join the group as admin"
+          bob <## ("use /j team to join incognito as " <> bobIncognito)
+      ]
+    bob ##> "/j team"
+    concurrently_
+      (alice <## ("#team: " <> bobIncognito <> " joined the group"))
+      (bob <## ("#team: you joined the group incognito as " <> bobIncognito))
+    bob ##> "/cs"
+    bob <## "i alice (Alice)"
+    bob `hasContactProfiles` ["alice", "bob", T.pack bobIncognito]
+    -- delete contact
+    bob ##> "/d alice"
+    bob <## "alice: contact is deleted"
+    bob ##> "/cs"
+    (bob </)
+    bob `hasContactProfiles` ["alice", "bob", T.pack bobIncognito]
+    -- delete group
+    bob ##> "/l team"
+    concurrentlyN_
+      [ do
+          bob <## "#team: you left the group"
+          bob <## "use /d #team to delete the group",
+        alice <## ("#team: " <> bobIncognito <> " left the group")
+      ]
+    bob ##> "/d #team"
+    bob <## "#team: you deleted the group"
+    bob `hasContactProfiles` ["bob"]
+
+testDeleteGroupThenContactDeletesIncognitoProfile :: IO ()
+testDeleteGroupThenContactDeletesIncognitoProfile = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    -- bob connects incognito to alice
+    alice ##> "/c"
+    inv <- getInvitation alice
+    bob #$> ("/incognito on", id, "ok")
+    bob ##> ("/c " <> inv)
+    bob <## "confirmation sent!"
+    bobIncognito <- getTermLine bob
+    concurrentlyN_
+      [ alice <## (bobIncognito <> ": contact is connected"),
+        do
+          bob <## ("alice (Alice): contact is connected, your incognito profile for this contact is " <> bobIncognito)
+          bob <## "use /info alice to print out this incognito profile again"
+      ]
+    -- bob joins group using incognito profile
+    alice ##> "/g team"
+    alice <## "group #team is created"
+    alice <## "use /a team <name> to add members"
+    alice ##> ("/a team " <> bobIncognito)
+    concurrentlyN_
+      [ alice <## ("invitation to join the group #team sent to " <> bobIncognito),
+        do
+          bob <## "#team: alice invites you to join the group as admin"
+          bob <## ("use /j team to join incognito as " <> bobIncognito)
+      ]
+    bob ##> "/j team"
+    concurrently_
+      (alice <## ("#team: " <> bobIncognito <> " joined the group"))
+      (bob <## ("#team: you joined the group incognito as " <> bobIncognito))
+    bob ##> "/cs"
+    bob <## "i alice (Alice)"
+    bob `hasContactProfiles` ["alice", "bob", T.pack bobIncognito]
+    -- delete group
+    bob ##> "/l team"
+    concurrentlyN_
+      [ do
+          bob <## "#team: you left the group"
+          bob <## "use /d #team to delete the group",
+        alice <## ("#team: " <> bobIncognito <> " left the group")
+      ]
+    bob ##> "/d #team"
+    bob <## "#team: you deleted the group"
+    bob `hasContactProfiles` ["alice", "bob", T.pack bobIncognito]
+    -- delete contact
+    bob ##> "/d alice"
+    bob <## "alice: contact is deleted"
+    bob ##> "/cs"
+    (bob </)
+    bob `hasContactProfiles` ["bob"]
 
 testSetAlias :: IO ()
 testSetAlias = testChat2 aliceProfile bobProfile $
