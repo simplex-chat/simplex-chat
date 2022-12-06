@@ -123,7 +123,7 @@ private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Bool
 }
 
 private fun showUnsavedChangesAlert(save: () -> Unit, revert: () -> Unit) {
-  AlertManager.shared.showAlertDialogWithLongButtons(
+  AlertManager.shared.showAlertDialogWithButtonsStacked(
     title = generalGetString(R.string.save_preferences_question),
     confirmText = generalGetString(R.string.save_and_notify_contacts),
     dismissText = generalGetString(R.string.exit_without_saving),

@@ -94,7 +94,7 @@ class AlertManager {
     }
   }
 
-  fun showAlertDialogWithLongButtons(
+  fun showAlertDialogWithButtonsStacked(
     title: String,
     text: String? = null,
     confirmText: String = generalGetString(R.string.ok),
