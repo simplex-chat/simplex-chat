@@ -2,6 +2,8 @@
 layout: layouts/article.html
 title: "SimpleX Chat v4.3 – voice messages, improved server management and conversation preferences"
 date: 2022-12-06
+image: images/20221206-voice.png
+imageBottom: true
 preview: Voice messages are released!
 permalink: "/blog/20221206-simplex-chat-v4.3-voice-messages.html"
 ---
@@ -23,13 +25,15 @@ permalink: "/blog/20221206-simplex-chat-v4.3-voice-messages.html"
 
 ### Instant voice messages
 
-TODO screenshot
+<img src="./images/20221206-voice.png" width="288">
 
 Voice messages, unlike normal files, are sent instantly, in the existing connection with your contact and without acceptance from the recipient. For this reason we limited the size of voice messages to ~92.5kb (an equivalent of 6 messages), that limits the duration to 30 seconds on iOS and to ~42 seconds on Android (the size is different because of different encoders). The voice messages are sent in MP4AAC format that is natively supported both on iOS and on Android, and iOS can play voice message files outside of the app as well.
 
 Users who do not want to receive voice messages can disable them, either globally, for all contacts, or for each contact independently. Groups have a separate policy that allows disabling voice messages (they are allowed by default). This policy can be set when creating a group or later, via Group preferences page.
 
 ### Irreversible message deletion
+
+<img src="./images/20221206-delete1.png" width="288"> &nbsp;&nbsp; <img src="./images/20221206-delete2.png" width="288">
 
 When you receive email, you have full confidence that the sender cannot delete their email from your mailbox after you have received it. And it seems correct – in the end, this is your device, and nobody should be able to delete any data from it.
 
@@ -51,6 +55,8 @@ If irreversible message deletion is not allowed in the conversation, the senders
 
 ### SMP servers configuration and password
 
+<img src="./images/20221206-server1.png" width="288"> &nbsp;&nbsp; <img src="./images/20221206-server2.png" width="288"> &nbsp;&nbsp; <img src="./images/20221206-server3.png" width="288">
+
 When you self-host your own SMP server you may want to make it public so that anybody can use it to receive messages via it. But several users wanted to host their private servers, so that only they and their friends can use them to receive the messages.
 
 v4.0 of SMP server and the new version of the apps adds support for server password. It is chosen randomly when you initialize the new server, and if you already have a server you can change it. Anybody can still message you, it doesn't require knowing the password, and the links you share do not include it, but to be able to receive the messages you need a server address that includes password.
@@ -62,6 +68,8 @@ You can read how to install and configure SMP server in [this guide](https://git
 ### Privacy and security improvements
 
 #### Protect app screen
+
+<img src="./images/20221206-protect.png" width="330">
 
 It is enabled by default, but you can disable it via settings.
 
