@@ -2202,6 +2202,7 @@ sealed class ContactFeatureAllowed {
     }
 }
 
+@Serializable
 data class ContactFeaturesAllowed(
   val fullDelete: ContactFeatureAllowed,
   val voice: ContactFeatureAllowed
