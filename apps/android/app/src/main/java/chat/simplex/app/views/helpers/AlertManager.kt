@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.*
@@ -110,7 +111,10 @@ class AlertManager {
         title = { Text(title) },
         text = alertText,
         buttons = {
-          Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp)) {
+          Column(
+            Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
+            horizontalAlignment = Alignment.End
+          ) {
             TextButton(onClick = {
               onDismiss?.invoke()
               hideAlert()
