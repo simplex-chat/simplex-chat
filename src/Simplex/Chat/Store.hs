@@ -35,7 +35,7 @@ module Simplex.Chat.Store
     createDirectContact,
     deleteContactConnectionsAndFiles,
     deleteContact,
-    deleteContactNoGroups,
+    deleteContactWtGroups,
     getContactByName,
     getContact,
     getContactIdByName,
@@ -94,7 +94,7 @@ module Simplex.Chat.Store
     getUserGroups,
     getUserGroupDetails,
     getContactGroupPreferences,
-    getContactGroupProfiles,
+    checkContactHasGroups,
     getGroupInvitation,
     createNewContactMember,
     createNewContactMemberAsync,
@@ -598,8 +598,9 @@ deleteContact db user@User {userId} Contact {contactId, localDisplayName, active
   DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
   forM_ customUserProfileId $ \profileId -> deleteUnusedIncognitoProfileById_ db user profileId
 
-deleteContactNoGroups :: DB.Connection -> User -> Contact -> IO ()
-deleteContactNoGroups db user@User {userId} Contact {contactId, localDisplayName, activeConn = Connection {customUserProfileId}} = do
+-- should only be used if contact is not member of any groups
+deleteContactWtGroups :: DB.Connection -> User -> Contact -> IO ()
+deleteContactWtGroups db user@User {userId} Contact {contactId, localDisplayName, activeConn = Connection {customUserProfileId}} = do
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
   deleteContactProfile_ db userId contactId
   DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
@@ -1862,24 +1863,9 @@ getContactGroupPreferences db User {userId} Contact {contactId} = do
       |]
       (userId, contactId)
 
-getContactGroupProfiles :: DB.Connection -> User -> Contact -> IO [(GroupId, GroupProfile)]
-getContactGroupProfiles db User {userId} Contact {contactId} = do
-  map toGroupIdProfile
-    <$> DB.query
-      db
-      [sql|
-        SELECT g.group_id, gp.display_name, gp.full_name, gp.image, gp.preferences
-        FROM groups g
-        JOIN group_profiles gp USING (group_profile_id)
-        JOIN group_members m USING (group_id)
-        WHERE g.user_id = ? AND m.contact_id = ?
-      |]
-      (userId, contactId)
-  where
-    toGroupIdProfile :: (GroupId, GroupName, Text, Maybe ImageData, Maybe GroupPreferences) -> (GroupId, GroupProfile)
-    toGroupIdProfile (groupId, displayName, fullName, image, groupPreferences) =
-      let groupProfile = GroupProfile {displayName, fullName, image, groupPreferences}
-       in (groupId, groupProfile)
+checkContactHasGroups :: DB.Connection -> User -> Contact -> IO (Maybe GroupId)
+checkContactHasGroups db User {userId} Contact {contactId} =
+  maybeFirstRow fromOnly $ DB.query db "SELECT group_id FROM group_members WHERE user_id = ? AND contact_id = ? LIMIT 1" (userId, contactId)
 
 getGroupInfoByName :: DB.Connection -> User -> GroupName -> ExceptT StoreError IO GroupInfo
 getGroupInfoByName db user gName = do
