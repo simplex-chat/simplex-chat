@@ -121,6 +121,13 @@ chatTests = do
     it "can't see global preferences update" testCantSeeGlobalPrefsUpdateIncognito
     it "deleting contact first, group second deletes incognito profile" testDeleteContactThenGroupDeletesIncognitoProfile
     it "deleting group first, contact second deletes incognito profile" testDeleteGroupThenContactDeletesIncognitoProfile
+  describe "group links" $ do
+    it "create group link, join via group link" testGroupLink
+    it "delete group, re-join via same link" testGroupLinkDeleteGroupRejoin
+    it "sending message to contact created via group link marks it used" testGroupLinkContactUsed
+    it "create group link, join via group link - incognito membership" testGroupLinkIncognitoMembership
+    fit "unused host contact is deleted after all groups with it are deleted" testGroupLinkUnusedHostContactDeleted
+    fit "leaving groups with unused host contacts deletes incognito profiles" testGroupLinkIncognitoUnusedHostContactsDeleted
   describe "contact aliases" $ do
     it "set contact alias" testSetAlias
     it "set connection alias" testSetConnectionAlias
@@ -157,11 +164,6 @@ chatTests = do
     it "mute/unmute group" testMuteGroup
   describe "chat item expiration" $ do
     it "set chat item TTL" testSetChatItemTTL
-  describe "group links" $ do
-    it "create group link, join via group link" testGroupLink
-    it "delete group, re-join via same link" testGroupLinkDeleteGroupRejoin
-    it "sending message to contact created via group link marks it used" testGroupLinkContactUsed
-    it "create group link, join via group link - incognito membership" testGroupLinkIncognitoMembership
   describe "queue rotation" $ do
     it "switch contact to a different queue" testSwitchContact
     it "switch group member to a different queue" testSwitchGroupMember
@@ -1433,22 +1435,8 @@ testGroupDeleteUnusedContacts =
       cath ##> "/cs"
       cath <## "alice (Alice)"
       cath <## "bob (Bob)"
-      -- delete group 1
-      alice ##> "/d #team"
-      concurrentlyN_
-        [ alice <## "#team: you deleted the group",
-          do
-            bob <## "#team: alice deleted the group"
-            bob <## "use /d #team to delete the local copy of the group",
-          do
-            cath <## "#team: alice deleted the group"
-            cath <## "use /d #team to delete the local copy of the group"
-        ]
-      bob ##> "/d #team"
-      bob <## "#team: you deleted the group"
-      cath ##> "/d #team"
-      cath <## "#team: you deleted the group"
-      -- contacts and profiles are kept
+      -- delete group 1, contacts and profiles are kept
+      deleteGroup alice bob cath "team"
       bob ##> "/cs"
       bob <## "alice (Alice)"
       bob <## "cath (Catherine)"
@@ -1457,28 +1445,30 @@ testGroupDeleteUnusedContacts =
       cath <## "alice (Alice)"
       cath <## "bob (Bob)"
       cath `hasContactProfiles` ["alice", "bob", "cath"]
-      -- delete group 2
-      alice ##> "/d #club"
-      concurrentlyN_
-        [ alice <## "#club: you deleted the group",
-          do
-            bob <## "#club: alice deleted the group"
-            bob <## "use /d #club to delete the local copy of the group",
-          do
-            cath <## "#club: alice deleted the group"
-            cath <## "use /d #club to delete the local copy of the group"
-        ]
-      bob ##> "/d #club"
-      bob <## "#club: you deleted the group"
-      cath ##> "/d #club"
-      cath <## "#club: you deleted the group"
-      -- unused contacts and profiles are deleted
+      -- delete group 2, unused contacts and profiles are deleted
+      deleteGroup alice bob cath "club"
       bob ##> "/cs"
       bob <## "alice (Alice)"
       bob `hasContactProfiles` ["alice", "bob"]
       cath ##> "/cs"
       cath <## "alice (Alice)"
       cath `hasContactProfiles` ["alice", "cath"]
+  where
+    deleteGroup alice bob cath group = do
+      alice ##> ("/d #" <> group)
+      concurrentlyN_
+        [ alice <## ("#" <> group <> ": you deleted the group"),
+          do
+            bob <## ("#" <> group <> ": alice deleted the group")
+            bob <## ("use /d #" <> group <> " to delete the local copy of the group"),
+          do
+            cath <## ("#" <> group <> ": alice deleted the group")
+            cath <## ("use /d #" <> group <> " to delete the local copy of the group")
+        ]
+      bob ##> ("/d #" <> group)
+      bob <## ("#" <> group <> ": you deleted the group")
+      cath ##> ("/d #" <> group)
+      cath <## ("#" <> group <> ": you deleted the group")
 
 testGroupAsync :: IO ()
 testGroupAsync = withTmpFiles $ do
@@ -4340,6 +4330,134 @@ testGroupLinkIncognitoMembership =
           bob ?<# ("#team " <> danIncognito <> "> how is it going?"),
           cath <# ("#team " <> danIncognito <> "> how is it going?")
         ]
+
+testGroupLinkUnusedHostContactDeleted :: IO ()
+testGroupLinkUnusedHostContactDeleted =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      -- create group 1
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "use /a team <name> to add members"
+      alice ##> "/create link #team"
+      gLinkTeam <- getGroupLink alice "team" True
+      bob ##> ("/c " <> gLinkTeam)
+      bob <## "connection request sent!"
+      alice <## "bob (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ do
+            alice <## "bob (Bob): contact is connected"
+            alice <## "bob invited to group #team via your group link"
+            alice <## "#team: bob joined the group",
+          do
+            bob <## "alice (Alice): contact is connected"
+            bob <## "#team: you joined the group"
+        ]
+      -- create group 2
+      alice ##> "/g club"
+      alice <## "group #club is created"
+      alice <## "use /a club <name> to add members"
+      alice ##> "/create link #club"
+      gLinkClub <- getGroupLink alice "club" True
+      bob ##> ("/c " <> gLinkClub)
+      bob <## "connection request sent!"
+      alice <## "bob_1 (Bob): accepting request to join group #club..."
+      concurrentlyN_
+        [ alice
+            <### [ "bob_1 (Bob): contact is connected",
+                   "contact bob_1 is merged into bob",
+                   "use @bob <message> to send messages",
+                   EndsWith "invited to group #club via your group link",
+                   EndsWith "joined the group"
+                 ],
+          bob
+            <### [ "alice_1 (Alice): contact is connected",
+                   "contact alice_1 is merged into alice",
+                   "use @alice <message> to send messages",
+                   "#club: you joined the group"
+                 ]
+        ]
+      -- list contacts
+      bob ##> "/cs"
+      bob <## "alice (Alice)"
+      -- delete group 1, host contact and profile are kept
+      bobLeaveDeleteGroup alice bob "team"
+      bob ##> "/cs"
+      bob <## "alice (Alice)"
+      bob `hasContactProfiles` ["alice", "bob"]
+      -- delete group 2, unused host contact and profile are deleted
+      bobLeaveDeleteGroup alice bob "club"
+      bob ##> "/cs"
+      (bob </)
+      bob `hasContactProfiles` ["bob"]
+  where
+    bobLeaveDeleteGroup alice bob group = do
+      bob ##> ("/l " <> group)
+      concurrentlyN_
+        [ do
+            bob <## ("#" <> group <> ": you left the group")
+            bob <## ("use /d #" <> group <> " to delete the group"),
+          alice <## ("#" <> group <> ": bob left the group")
+        ]
+      bob ##> ("/d #" <> group)
+      bob <## ("#" <> group <> ": you deleted the group")
+
+testGroupLinkIncognitoUnusedHostContactsDeleted :: IO ()
+testGroupLinkIncognitoUnusedHostContactsDeleted =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      bob #$> ("/incognito on", id, "ok")
+      bobIncognitoTeam <- createGroupBobIncognito alice bob "team" "alice"
+      bobIncognitoClub <- createGroupBobIncognito alice bob "club" "alice_1"
+      bobIncognitoTeam `shouldNotBe` bobIncognitoClub
+      -- list contacts
+      bob ##> "/cs"
+      bob <## "i alice (Alice)"
+      bob <## "i alice_1 (Alice)"
+      bob `hasContactProfiles` ["alice", "alice", "bob", T.pack bobIncognitoTeam, T.pack bobIncognitoClub]
+      -- delete group 1, unused host contact and profile are deleted
+      bobLeaveDeleteGroup alice bob "team" bobIncognitoTeam
+      bob ##> "/cs"
+      bob <## "i alice_1 (Alice)"
+      bob `hasContactProfiles` ["alice", "bob", T.pack bobIncognitoClub]
+      -- delete group 2, unused host contact and profile are deleted
+      bobLeaveDeleteGroup alice bob "club" bobIncognitoClub
+      bob ##> "/cs"
+      (bob </)
+      bob `hasContactProfiles` ["bob"]
+  where
+    createGroupBobIncognito alice bob group bobsAliceContact = do
+      alice ##> ("/g " <> group)
+      alice <## ("group #" <> group <> " is created")
+      alice <## ("use /a " <> group <> " <name> to add members")
+      alice ##> ("/create link #" <> group)
+      gLinkTeam <- getGroupLink alice group True
+      bob ##> ("/c " <> gLinkTeam)
+      bobIncognito <- getTermLine bob
+      bob <## "connection request sent incognito!"
+      alice <## (bobIncognito <> ": accepting request to join group #" <> group <> "...")
+      _ <- getTermLine bob
+      concurrentlyN_
+        [ do
+            alice <## (bobIncognito <> ": contact is connected")
+            alice <## (bobIncognito <> " invited to group #" <> group <> " via your group link")
+            alice <## ("#" <> group <> ": " <> bobIncognito <> " joined the group"),
+          do
+            bob <## (bobsAliceContact <> " (Alice): contact is connected, your incognito profile for this contact is " <> bobIncognito)
+            bob <## ("use /info " <> bobsAliceContact <> " to print out this incognito profile again")
+            bob <## ("#" <> group <> ": you joined the group incognito as " <> bobIncognito)
+        ]
+      pure bobIncognito
+    bobLeaveDeleteGroup alice bob group bobIncognito = do
+      bob ##> ("/l " <> group)
+      concurrentlyN_
+        [ do
+            bob <## ("#" <> group <> ": you left the group")
+            bob <## ("use /d #" <> group <> " to delete the group"),
+          alice <## ("#" <> group <> ": " <> bobIncognito <> " left the group")
+        ]
+      bob ##> ("/d #" <> group)
+      bob <## ("#" <> group <> ": you deleted the group")
 
 testSwitchContact :: IO ()
 testSwitchContact =
