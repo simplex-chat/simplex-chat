@@ -781,6 +781,7 @@ getUserContacts db user@User {userId} = do
   contactIds <- map fromOnly <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ?" (Only userId)
   rights <$> mapM (runExceptT . getContact db user) contactIds
 
+-- only used in tests
 getUserContactProfiles :: DB.Connection -> User -> IO [Profile]
 getUserContactProfiles db User {userId} =
   map toContactProfile

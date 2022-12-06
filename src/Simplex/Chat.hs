@@ -513,7 +513,6 @@ processChatCommand = \case
     CTGroup -> do
       Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user chatId
       let canDelete = memberRole (membership :: GroupMember) == GROwner || not (memberCurrent membership)
-          contactIds = mapMaybe memberContactId members
       unless canDelete $ throwChatError CEGroupUserRole
       filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
       withChatLock "deleteChat group" . procCmd $ do
@@ -526,6 +525,7 @@ processChatCommand = \case
         withStore' $ \db -> deleteGroupConnectionsAndFiles db user gInfo members
         withStore' $ \db -> deleteGroupItemsAndMembers db user gInfo members
         withStore' $ \db -> deleteGroup db user gInfo
+        let contactIds = mapMaybe memberContactId members
         forM_ contactIds $ \ctId ->
           deleteUnusedContact ctId `catchError` \_ -> pure ()
         pure $ CRGroupDeletedUser gInfo
