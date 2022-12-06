@@ -48,6 +48,7 @@ module Simplex.Chat.Store
     updateContactUnreadChat,
     updateGroupUnreadChat,
     getUserContacts,
+    getUserContactProfiles,
     createUserContactLink,
     getUserAddressConnections,
     getUserContactLinks,
@@ -779,6 +780,21 @@ getUserContacts :: DB.Connection -> User -> IO [Contact]
 getUserContacts db user@User {userId} = do
   contactIds <- map fromOnly <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ?" (Only userId)
   rights <$> mapM (runExceptT . getContact db user) contactIds
+
+getUserContactProfiles :: DB.Connection -> User -> IO [Profile]
+getUserContactProfiles db User {userId} =
+  map toContactProfile
+    <$> DB.query
+      db
+      [sql|
+        SELECT display_name, full_name, image, preferences
+        FROM contact_profiles
+        WHERE user_id = ?
+      |]
+      (Only userId)
+  where
+    toContactProfile :: (ContactName, Text, Maybe ImageData, Maybe Preferences) -> (Profile)
+    toContactProfile (displayName, fullName, image, preferences) = Profile {displayName, fullName, image, preferences}
 
 createUserContactLink :: DB.Connection -> UserId -> ConnId -> ConnReqContact -> ExceptT StoreError IO ()
 createUserContactLink db userId agentConnId cReq =

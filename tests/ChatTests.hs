@@ -24,7 +24,9 @@ import qualified Data.Text as T
 import Simplex.Chat.Call
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), InlineFilesConfig (..), defaultInlineFilesConfig)
 import Simplex.Chat.Options (ChatOpts (..))
+import Simplex.Chat.Store (getUserContactProfiles)
 import Simplex.Chat.Types
+import Simplex.Messaging.Agent.Store.SQLite (withTransaction)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Util (unlessM)
 import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist, doesFileExist)
@@ -1444,13 +1446,15 @@ testGroupDeleteUnusedContacts =
       bob <## "#team: you deleted the group"
       cath ##> "/d #team"
       cath <## "#team: you deleted the group"
-      -- contacts are kept
+      -- contacts and profiles are kept
       bob ##> "/cs"
       bob <## "alice (Alice)"
       bob <## "cath (Catherine)"
+      bob `hasContactProfiles` ["alice", "bob", "cath"]
       cath ##> "/cs"
       cath <## "alice (Alice)"
       cath <## "bob (Bob)"
+      cath `hasContactProfiles` ["alice", "bob", "cath"]
       -- delete group 1
       alice ##> "/d #club"
       concurrentlyN_
@@ -1466,11 +1470,13 @@ testGroupDeleteUnusedContacts =
       bob <## "#club: you deleted the group"
       cath ##> "/d #club"
       cath <## "#club: you deleted the group"
-      -- unused contacts are deleted
+      -- unused contacts and profiles are deleted
       bob ##> "/cs"
       bob <## "alice (Alice)"
+      bob `hasContactProfiles` ["alice", "bob"]
       cath ##> "/cs"
       cath <## "alice (Alice)"
+      cath `hasContactProfiles` ["alice", "cath"]
 
 testGroupAsync :: IO ()
 testGroupAsync = withTmpFiles $ do
@@ -4575,3 +4581,16 @@ getGroupLink cc gName created = do
   cc <## ("to show it again: /show link #" <> gName)
   cc <## ("to delete it: /delete link #" <> gName <> " (joined members will remain connected to you)")
   pure link
+
+hasContactProfiles :: TestCC -> [ContactName] -> Expectation
+hasContactProfiles cc names =
+  getContactProfiles cc >>= \ps -> ps `shouldMatchList` names
+
+getContactProfiles :: TestCC -> IO [ContactName]
+getContactProfiles cc = do
+  user_ <- readTVarIO (currentUser $ chatController cc)
+  case user_ of
+    Nothing -> pure []
+    Just user -> do
+      profiles <- withTransaction (chatStore $ chatController cc) $ \db -> getUserContactProfiles db user
+      pure $ map (\Profile {displayName} -> displayName) profiles
