@@ -1071,7 +1071,10 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         chatItemSimpleUpdate(r.chatItem)
       is CR.ChatItemDeleted -> {
         AudioPlayer.stop(r.deletedChatItem.chatItem)
-        ntfManager.cancelNotificationsForChat(r.deletedChatItem.chatInfo.id)
+        // If the deleted chat item was the last one, cancel notification
+        if (chatModel.getChat(r.deletedChatItem.chatInfo.id)?.chatItems?.lastOrNull()?.id == r.deletedChatItem.chatItem.id) {
+          ntfManager.cancelNotificationsForChat(r.deletedChatItem.chatInfo.id)
+        }
         if (r.toChatItem == null) {
           chatModel.removeChatItem(r.deletedChatItem.chatInfo, r.deletedChatItem.chatItem)
         } else {
