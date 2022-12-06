@@ -1457,7 +1457,7 @@ testGroupDeleteUnusedContacts =
       cath <## "alice (Alice)"
       cath <## "bob (Bob)"
       cath `hasContactProfiles` ["alice", "bob", "cath"]
-      -- delete group 1
+      -- delete group 2
       alice ##> "/d #club"
       concurrentlyN_
         [ alice <## "#club: you deleted the group",
