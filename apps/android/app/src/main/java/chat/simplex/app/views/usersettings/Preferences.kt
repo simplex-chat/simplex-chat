@@ -39,7 +39,13 @@ fun PreferencesView(m: ChatModel, user: User, close: () -> Unit,) {
     }
   }
   ModalView(
-    close = { if (preferences == currentPreferences) close() else showUnsavedChangesAlert({ savePrefs(close) }, close) },
+    close = {
+      if (preferences == currentPreferences) {
+        close()
+      } else {
+        showUnsavedChangesAlert({ savePrefs(close) }, close)
+      }
+    },
     background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
   ) {
     PreferencesLayout(

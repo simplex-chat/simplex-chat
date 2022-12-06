@@ -63,8 +63,11 @@ fun ChatInfoView(
         setContactAlias(chat.chatInfo.apiId, it, chatModel)
       },
       openPreferences = {
-        ModalManager.shared.showCustomModal { close ->
-          ContactPreferencesView(chatModel, chatModel.currentUser.value ?: return@showCustomModal, contact.contactId, close)
+        val user = chatModel.currentUser.value
+        if (user != null) {
+          ModalManager.shared.showCustomModal { close ->
+            ContactPreferencesView(chatModel, user, contact.contactId, close)
+          }
         }
       },
       deleteContact = { deleteContactDialog(chat.chatInfo, chatModel, close) },

@@ -38,7 +38,13 @@ fun GroupPreferencesView(m: ChatModel, chatId: String, close: () -> Unit,) {
     }
   }
   ModalView(
-    close = { if (preferences == currentPreferences) close() else showUnsavedChangesAlert({ savePrefs(close) }, close) },
+    close = {
+      if (preferences == currentPreferences) {
+        close()
+      } else {
+        showUnsavedChangesAlert({ savePrefs(close) }, close)
+      }
+    },
     background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
   ) {
     GroupPreferencesLayout(
