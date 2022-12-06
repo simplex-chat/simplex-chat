@@ -1,5 +1,21 @@
 # Blog
 
+Dec 12, 2022 [SimpleX Chat reviews and v4.3 released]
+
+November reviews:
+
+- [Privacy Guides](https://www.privacyguides.org/real-time-communication/#simplex-chat) recommendations.
+- [Review by Mike Kuketz](https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/).
+- [The messenger matrix](https://www.messenger-matrix.de).
+- [Supernova review](https://supernova.tilde.team/detailed_reviews.html#simplex) and [messenger ratings](https://supernova.tilde.team/messengers.html).
+
+v4.3 is released:
+
+- instant voice messages!
+- irreversible deletion of sent messages for all recipients
+- improved SMP server configuration and support for server passwords
+- privacy and security improvements: protect app screen, SimpleX links security, etc.
+
 Nov 8, 2022 [Security audit by Trail of Bits, the new website and v4.2 released](./20221108-simplex-chat-v4.2-security-audit-new-website.md)
 
 _"Have you been audited or should we just ignore you?"_
