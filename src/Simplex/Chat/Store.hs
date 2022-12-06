@@ -35,7 +35,7 @@ module Simplex.Chat.Store
     createDirectContact,
     deleteContactConnectionsAndFiles,
     deleteContact,
-    deleteContactWtGroups,
+    deleteContactWithoutGroups,
     getContactByName,
     getContact,
     getContactIdByName,
@@ -599,8 +599,8 @@ deleteContact db user@User {userId} Contact {contactId, localDisplayName, active
   forM_ customUserProfileId $ \profileId -> deleteUnusedIncognitoProfileById_ db user profileId
 
 -- should only be used if contact is not member of any groups
-deleteContactWtGroups :: DB.Connection -> User -> Contact -> IO ()
-deleteContactWtGroups db user@User {userId} Contact {contactId, localDisplayName, activeConn = Connection {customUserProfileId}} = do
+deleteContactWithoutGroups :: DB.Connection -> User -> Contact -> IO ()
+deleteContactWithoutGroups db user@User {userId} Contact {contactId, localDisplayName, activeConn = Connection {customUserProfileId}} = do
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
   deleteContactProfile_ db userId contactId
   DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
