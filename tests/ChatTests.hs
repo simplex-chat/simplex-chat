@@ -71,6 +71,7 @@ chatTests = do
     it "group message delete" testGroupMessageDelete
     it "update group profile" testUpdateGroupProfile
     it "update member role" testUpdateMemberRole
+    it "unused contacts are deleted after all their groups are deleted" testGroupDeleteUnusedContacts
   describe "async group connections" $ do
     xit "create and join group when clients go offline" testGroupAsync
   describe "user profiles" $ do
@@ -1378,6 +1379,98 @@ testUpdateMemberRole =
         ]
       alice ##> "/d #team"
       alice <## "you have insufficient permissions for this group command"
+
+testGroupDeleteUnusedContacts :: IO ()
+testGroupDeleteUnusedContacts =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      -- create group 1
+      createGroup3 "team" alice bob cath
+      -- create group 2
+      alice ##> "/g club"
+      alice <## "group #club is created"
+      alice <## "use /a club <name> to add members"
+      alice ##> "/a club bob"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #club sent to bob",
+          do
+            bob <## "#club: alice invites you to join the group as admin"
+            bob <## "use /j club to accept"
+        ]
+      bob ##> "/j club"
+      concurrently_
+        (alice <## "#club: bob joined the group")
+        (bob <## "#club: you joined the group")
+      alice ##> "/a club cath"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #club sent to cath",
+          do
+            cath <## "#club: alice invites you to join the group as admin"
+            cath <## "use /j club to accept"
+        ]
+      cath ##> "/j club"
+      concurrentlyN_
+        [ alice <## "#club: cath joined the group",
+          do
+            cath <## "#club: you joined the group"
+            cath <## "#club: member bob_1 (Bob) is connected"
+            cath <## "contact bob_1 is merged into bob"
+            cath <## "use @bob <message> to send messages",
+          do
+            bob <## "#club: alice added cath_1 (Catherine) to the group (connecting...)"
+            bob <## "#club: new member cath_1 is connected"
+            bob <## "contact cath_1 is merged into cath"
+            bob <## "use @cath <message> to send messages"
+        ]
+      -- list contacts
+      bob ##> "/cs"
+      bob <## "alice (Alice)"
+      bob <## "cath (Catherine)"
+      cath ##> "/cs"
+      cath <## "alice (Alice)"
+      cath <## "bob (Bob)"
+      -- delete group 1
+      alice ##> "/d #team"
+      concurrentlyN_
+        [ alice <## "#team: you deleted the group",
+          do
+            bob <## "#team: alice deleted the group"
+            bob <## "use /d #team to delete the local copy of the group",
+          do
+            cath <## "#team: alice deleted the group"
+            cath <## "use /d #team to delete the local copy of the group"
+        ]
+      bob ##> "/d #team"
+      bob <## "#team: you deleted the group"
+      cath ##> "/d #team"
+      cath <## "#team: you deleted the group"
+      -- contacts are kept
+      bob ##> "/cs"
+      bob <## "alice (Alice)"
+      bob <## "cath (Catherine)"
+      cath ##> "/cs"
+      cath <## "alice (Alice)"
+      cath <## "bob (Bob)"
+      -- delete group 1
+      alice ##> "/d #club"
+      concurrentlyN_
+        [ alice <## "#club: you deleted the group",
+          do
+            bob <## "#club: alice deleted the group"
+            bob <## "use /d #club to delete the local copy of the group",
+          do
+            cath <## "#club: alice deleted the group"
+            cath <## "use /d #club to delete the local copy of the group"
+        ]
+      bob ##> "/d #club"
+      bob <## "#club: you deleted the group"
+      cath ##> "/d #club"
+      cath <## "#club: you deleted the group"
+      -- unused contacts are deleted
+      bob ##> "/cs"
+      bob <## "alice (Alice)"
+      cath ##> "/cs"
+      cath <## "alice (Alice)"
 
 testGroupAsync :: IO ()
 testGroupAsync = withTmpFiles $ do
@@ -3185,10 +3278,10 @@ testProhibitDirectMessages =
       [ cath <## ("#team: dan joined the group"),
         do
           dan <## ("#team: you joined the group")
-          dan <### 
-                [ "#team: member alice (Alice) is connected",
-                  "#team: member bob (Bob) is connected"
-                ],
+          dan
+            <### [ "#team: member alice (Alice) is connected",
+                   "#team: member bob (Bob) is connected"
+                 ],
         do
           alice <## ("#team: cath added dan (Daniel) to the group (connecting...)")
           alice <## ("#team: new member dan is connected"),
