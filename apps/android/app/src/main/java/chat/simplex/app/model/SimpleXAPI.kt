@@ -1070,20 +1070,22 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       is CR.ChatItemUpdated ->
         chatItemSimpleUpdate(r.chatItem)
       is CR.ChatItemDeleted -> {
-        AudioPlayer.stop(r.deletedChatItem.chatItem)
-        val isLastChatItem = chatModel.getChat(r.deletedChatItem.chatInfo.id)?.chatItems?.lastOrNull()?.id == r.deletedChatItem.chatItem.id
-        if (isLastChatItem && ntfManager.hasNotificationsForChat(r.deletedChatItem.chatInfo.id)) {
-          ntfManager.cancelNotificationsForChat(r.deletedChatItem.chatInfo.id)
+        val cInfo = r.deletedChatItem.chatInfo
+        val cItem = r.deletedChatItem.chatItem
+        AudioPlayer.stop(cItem)
+        val isLastChatItem = chatModel.getChat(cInfo.id)?.chatItems?.lastOrNull()?.id == cItem.id
+        if (isLastChatItem && ntfManager.hasNotificationsForChat(cInfo.id)) {
+          ntfManager.cancelNotificationsForChat(cInfo.id)
           ntfManager.notifyMessageReceived(
-            r.deletedChatItem.chatInfo.id,
-            r.deletedChatItem.chatInfo.displayName,
+            cInfo.id,
+            cInfo.displayName,
             generalGetString(if (r.toChatItem != null) R.string.marked_deleted_description else R.string.deleted_description)
           )
         }
         if (r.toChatItem == null) {
-          chatModel.removeChatItem(r.deletedChatItem.chatInfo, r.deletedChatItem.chatItem)
+          chatModel.removeChatItem(cInfo, cItem)
         } else {
-          chatModel.upsertChatItem(r.toChatItem.chatInfo, r.toChatItem.chatItem)
+          chatModel.upsertChatItem(cInfo, r.toChatItem.chatItem)
         }
       }
       is CR.ReceivedGroupInvitation -> {
