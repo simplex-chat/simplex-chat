@@ -2236,12 +2236,15 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       let ExtMsgContent content fileInvitation_ = mcExtMsgContent mc
       if isVoice content && not (featureAllowed CFVoice forContact ct)
-        then void $ newChatItem (CIRcvChatFeatureRejected CFVoice) Nothing
+        then do
+          void $ newChatItem (CIRcvChatFeatureRejected CFVoice) Nothing
+          setActive $ ActiveC c
         else do
           ciFile_ <- processFileInvitation fileInvitation_ content $ \db -> createRcvFileTransfer db userId ct
           ChatItem {formattedText} <- newChatItem (CIRcvMsgContent content) ciFile_
-          when (enableNtfs chatSettings) $ showMsgToast (c <> "> ") content formattedText
-      setActive $ ActiveC c
+          when (enableNtfs chatSettings) $ do
+            showMsgToast (c <> "> ") content formattedText
+            setActive $ ActiveC c      
       where
         newChatItem ciContent ciFile_ = do
           ci <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta ciContent ciFile_
@@ -2307,8 +2310,9 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
           ciFile_ <- processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId m
           ChatItem {formattedText} <- newChatItem (CIRcvMsgContent content) ciFile_
           let g = groupName' gInfo
-          when (enableNtfs chatSettings) $ showMsgToast ("#" <> g <> " " <> c <> "> ") content formattedText
-          setActive $ ActiveG g
+          when (enableNtfs chatSettings) $ do
+            showMsgToast ("#" <> g <> " " <> c <> "> ") content formattedText
+            setActive $ ActiveG g
       where
         newChatItem ciContent ciFile_ = do
           ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta ciContent ciFile_
