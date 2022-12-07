@@ -55,6 +55,10 @@ fun SendMsgView(
     val showVoiceButton = cs.message.isEmpty() && showVoiceRecordIcon && attachEnabled &&
         (cs.preview is ComposePreview.NoPreview || (cs.preview is ComposePreview.VoicePreview && recState.isStarted))
     NativeKeyboard(composeState, textStyle, onMessageChange)
+    // Disable clicks on text field
+    if (cs.preview is ComposePreview.VoicePreview) {
+      Box(Modifier.matchParentSize().clickable(enabled = false, onClick = { }))
+    }
     Box(Modifier.align(Alignment.BottomEnd)) {
       when {
         cs.inProgress && (cs.preview is ComposePreview.ImagePreview || cs.preview is ComposePreview.VoicePreview || cs.preview is ComposePreview.FilePreview) -> {
