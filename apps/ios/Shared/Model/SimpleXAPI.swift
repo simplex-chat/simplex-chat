@@ -917,7 +917,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
         case let .contactConnectionDeleted(connection):
             m.removeChat(connection.id)
         case let .contactConnected(contact, _):
-            if !contact.viaGroupLink {
+            if contact.directContact {
                 m.updateContact(contact)
                 m.dismissConnReqView(contact.activeConn.id)
                 m.removeChat(contact.activeConn.id)
@@ -925,7 +925,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 NtfManager.shared.notifyContactConnected(contact)
             }
         case let .contactConnecting(contact):
-            if !contact.viaGroupLink {
+            if contact.directContact {
                 m.updateContact(contact)
                 m.dismissConnReqView(contact.activeConn.id)
                 m.removeChat(contact.activeConn.id)

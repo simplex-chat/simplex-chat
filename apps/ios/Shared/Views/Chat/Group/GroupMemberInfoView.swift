@@ -42,7 +42,8 @@ struct GroupMemberInfoView: View {
                     groupMemberInfoHeader(member)
                         .listRowBackground(Color.clear)
 
-                    if let contactId = member.memberContactId, groupInfo.fullGroupPreferences.directMessages.enable == .on {
+                    if let contactId = member.memberContactId,
+                       groupInfo.fullGroupPreferences.directMessages.on || (chatModel.getContactChat(contactId)?.chatInfo.contact?.directContact ?? false) {
                         Section {
                             openDirectChatButton(contactId)
                         }

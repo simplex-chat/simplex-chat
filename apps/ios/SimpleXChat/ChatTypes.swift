@@ -802,6 +802,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     public var profile: LocalProfile
     public var activeConn: Connection
     public var viaGroup: Int64?
+    public var contactUsed: Bool
     public var chatSettings: ChatSettings
     public var userPreferences: Preferences
     public var mergedPreferences: ContactUserPreferences
@@ -817,12 +818,8 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     public var image: String? { get { profile.image } }
     public var localAlias: String { profile.localAlias }
 
-    public var isIndirectContact: Bool {
-        activeConn.connLevel > 0 || viaGroup != nil
-    }
-
-    public var viaGroupLink: Bool {
-        activeConn.viaGroupLink
+    public var directContact: Bool {
+        (activeConn.connLevel == 0 && !activeConn.viaGroupLink) || contactUsed
     }
 
     public var contactConnIncognito: Bool {
@@ -834,6 +831,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
         localDisplayName: "alice",
         profile: LocalProfile.sampleData,
         activeConn: Connection.sampleData,
+        contactUsed: true,
         chatSettings: ChatSettings.defaults,
         userPreferences: Preferences.sampleData,
         mergedPreferences: ContactUserPreferences.sampleData,
