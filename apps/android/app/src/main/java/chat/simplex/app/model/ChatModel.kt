@@ -222,7 +222,10 @@ class ChatModel(val controller: ChatController) {
       chat = chats[i]
       val pItem = chat.chatItems.lastOrNull()
       if (pItem?.id == cItem.id) {
-        chats[i] = chat.copy(chatItems = arrayListOf(cItem))
+        chats[i] = chat.copy(chatItems = arrayListOf(ChatItem.defaultDeleted))
+      }
+      if (cItem.isRcvNew) {
+        decreaseCounterInChat(cInfo.id)
       }
     }
     // remove from current chat
@@ -1201,6 +1204,25 @@ data class ChatItem (
         file = null
       )
     }
+
+    private const val TEMP_DELETED_CHAT_ITEM_ID = -1L
+    val defaultDeleted: ChatItem
+      get() = ChatItem(
+        chatDir = CIDirection.DirectRcv(),
+        meta = CIMeta(
+          itemId = TEMP_DELETED_CHAT_ITEM_ID,
+          itemTs = Clock.System.now(),
+          itemText = generalGetString(R.string.deleted_description),
+          itemStatus = CIStatus.RcvRead(),
+          createdAt = Clock.System.now(),
+          itemDeleted = false,
+          itemEdited = false,
+          editable = false
+        ),
+        content = CIContent.RcvDeleted(deleteMode = CIDeleteMode.cidmBroadcast),
+        quotedItem = null,
+        file = null
+      )
   }
 }
 
