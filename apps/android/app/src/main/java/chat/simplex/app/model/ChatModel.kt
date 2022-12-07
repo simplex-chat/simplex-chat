@@ -101,7 +101,7 @@ class ChatModel(val controller: ChatController) {
 
   fun updateContactConnection(contactConnection: PendingContactConnection) = updateChat(ChatInfo.ContactConnection(contactConnection))
 
-  fun updateContact(contact: Contact) = updateChat(ChatInfo.Direct(contact), addMissing = !contact.isIndirectContact && !contact.viaGroupLink)
+  fun updateContact(contact: Contact) = updateChat(ChatInfo.Direct(contact), addMissing = contact.directContact)
 
   fun updateGroup(groupInfo: GroupInfo) = updateChat(ChatInfo.Group(groupInfo))
 
@@ -551,6 +551,7 @@ data class Contact(
   val profile: LocalProfile,
   val activeConn: Connection,
   val viaGroup: Long? = null,
+  val contactUsed: Boolean,
   val chatSettings: ChatSettings,
   val userPreferences: ChatPreferences,
   val mergedPreferences: ContactUserPreferences,
@@ -571,11 +572,8 @@ data class Contact(
   override val image get() = profile.image
   override val localAlias get() = profile.localAlias
 
-  val isIndirectContact: Boolean get() =
-    activeConn.connLevel > 0 || viaGroup != null
-
-  val viaGroupLink: Boolean get() =
-    activeConn.viaGroupLink
+  val directContact: Boolean get() =
+    (activeConn.connLevel == 0 && !activeConn.viaGroupLink) || contactUsed
 
   val contactConnIncognito =
     activeConn.customUserProfileId != null
@@ -586,6 +584,7 @@ data class Contact(
       localDisplayName = "alice",
       profile = LocalProfile.sampleData,
       activeConn = Connection.sampleData,
+      contactUsed = true,
       chatSettings = ChatSettings(true),
       userPreferences = ChatPreferences.sampleData,
       mergedPreferences = ContactUserPreferences.sampleData,
