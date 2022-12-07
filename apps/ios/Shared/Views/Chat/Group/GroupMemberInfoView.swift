@@ -46,11 +46,11 @@ struct GroupMemberInfoView: View {
                         if let chat = chatModel.getContactChat(contactId),
                            chat.chatInfo.contact?.directContact ?? false {
                             Section {
-                                openKnownDirectChatButton(chat)
+                                knownDirectChatButton(chat)
                             }
                         } else if groupInfo.fullGroupPreferences.directMessages.on {
                             Section {
-                                openUnknownDirectChatButton(contactId)
+                                newDirectChatButton(contactId)
                             }
                         }
                     }
@@ -119,7 +119,7 @@ struct GroupMemberInfoView: View {
         }
     }
 
-    func openKnownDirectChatButton(_ chat: Chat) -> some View {
+    func knownDirectChatButton(_ chat: Chat) -> some View {
         Button {
             dismissAllSheets(animated: true)
             DispatchQueue.main.async {
@@ -130,7 +130,7 @@ struct GroupMemberInfoView: View {
         }
     }
 
-    func openUnknownDirectChatButton(_ contactId: Int64) -> some View {
+    func newDirectChatButton(_ contactId: Int64) -> some View {
         Button {
             do {
                 let chat = try apiGetChat(type: .direct, id: contactId)
