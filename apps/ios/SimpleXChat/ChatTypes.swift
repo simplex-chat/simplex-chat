@@ -1806,6 +1806,13 @@ public enum MsgContent {
         }
     }
 
+    public var isImage: Bool {
+        switch self {
+        case .image: return true
+        default: return false
+        }
+    }
+
     var cmdString: String {
         switch self {
         case let .text(text): return "text \(text)"

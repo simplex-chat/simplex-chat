@@ -972,20 +972,15 @@ func processReceivedMsg(_ res: ChatResponse) async {
             let cInfo = aChatItem.chatInfo
             let cItem = aChatItem.chatItem
             m.addChatItem(cInfo, cItem)
-            if case .image = cItem.content.msgContent,
-               let file = cItem.file,
-               file.fileSize <= MAX_IMAGE_SIZE,
-               UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_ACCEPT_IMAGES) {
-                Task {
-                    await receiveFile(fileId: file.fileId)
-                }
-            } else if case .voice = cItem.content.msgContent, // TODO check inlineFileMode != IFMSent
-               let file = cItem.file,
-               file.fileSize <= MAX_IMAGE_SIZE,
-               file.fileSize > MAX_VOICE_MESSAGE_SIZE_INLINE_SEND,
-               UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_ACCEPT_IMAGES) {
-                Task {
-                    await receiveFile(fileId: file.fileId)
+            if let file = cItem.file,
+               let mc = cItem.content.msgContent,
+               file.fileSize <= MAX_IMAGE_SIZE {
+                let acceptImages = UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_ACCEPT_IMAGES)
+                if (mc.isImage && acceptImages)
+                    || (mc.isVoice && ((file.fileSize > MAX_VOICE_MESSAGE_SIZE_INLINE_SEND && acceptImages) || cInfo.chatType == .group)) {
+                    Task {
+                        await receiveFile(fileId: file.fileId) // TODO check inlineFileMode != IFMSent
+                    }
                 }
             }
             if cItem.showNotification {

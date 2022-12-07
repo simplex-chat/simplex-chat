@@ -344,7 +344,7 @@ processChatCommand = \case
       if isVoice mc && not (groupFeatureAllowed GFVoice gInfo)
         then pure $ chatCmdError $ "feature not allowed " <> T.unpack (groupFeatureToText GFVoice)
         else do
-          (fileInvitation_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer gInfo (length ms)
+          (fileInvitation_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer gInfo (length $ filter memberCurrent ms)
           (msgContainer, quotedItem_) <- prepareMsg fileInvitation_ membership
           msg@SndMessage {sharedMsgId} <- sendGroupMessage gInfo ms (XMsgNew msgContainer)
           mapM_ (sendGroupFileInline ms sharedMsgId) ft_
@@ -2243,7 +2243,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
           ChatItem {formattedText} <- newChatItem (CIRcvMsgContent content) ciFile_
           when (enableNtfs chatSettings) $ do
             showMsgToast (c <> "> ") content formattedText
-            setActive $ ActiveC c      
+            setActive $ ActiveC c
       where
         newChatItem ciContent ciFile_ = do
           ci <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta ciContent ciFile_
