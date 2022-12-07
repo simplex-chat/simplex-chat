@@ -21,8 +21,8 @@ import chat.simplex.app.views.helpers.*
 
 @Composable
 fun PreferencesView(m: ChatModel, user: User, close: () -> Unit,) {
-  var preferences by remember { mutableStateOf(user.fullPreferences) }
-  var currentPreferences by remember { mutableStateOf(preferences) }
+  var preferences by rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(user.fullPreferences) }
+  var currentPreferences by rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(preferences) }
 
   fun savePrefs(afterSave: () -> Unit = {}) {
     withApi {

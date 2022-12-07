@@ -24,8 +24,8 @@ import chat.simplex.app.views.helpers.*
 fun GroupPreferencesView(m: ChatModel, chatId: String, close: () -> Unit,) {
   val groupInfo = remember { derivedStateOf { (m.getChat(chatId)?.chatInfo as? ChatInfo.Group)?.groupInfo } }
   val gInfo = groupInfo.value ?: return
-  var preferences by remember(gInfo) { mutableStateOf(gInfo.fullGroupPreferences) }
-  var currentPreferences by remember(gInfo) { mutableStateOf(preferences) }
+  var preferences by rememberSaveable(gInfo, stateSaver = serializableSaver()) { mutableStateOf(gInfo.fullGroupPreferences) }
+  var currentPreferences by rememberSaveable(gInfo, stateSaver = serializableSaver()) { mutableStateOf(preferences) }
 
   fun savePrefs(afterSave: () -> Unit = {}) {
     withApi {
