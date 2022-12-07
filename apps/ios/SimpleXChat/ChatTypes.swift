@@ -1380,7 +1380,7 @@ public struct ChatItem: Identifiable, Decodable {
         }
     }
 
-    public func isRcvNew() -> Bool {
+    public var isRcvNew: Bool {
         if case .rcvNew = meta.itemStatus { return true }
         return false
     }
@@ -1458,7 +1458,7 @@ public struct ChatItem: Identifiable, Decodable {
             content: .sndMsgContent(msgContent: .text(text)),
             quotedItem: quotedItem,
             file: file
-       )
+        )
     }
 
     public static func getVoiceMsgContentSample (id: Int64 = 1, text: String = "", fileName: String = "voice.m4a", fileSize: Int64 = 65536, fileStatus: CIFileStatus = .rcvComplete) -> ChatItem {
@@ -1468,7 +1468,7 @@ public struct ChatItem: Identifiable, Decodable {
             content: .rcvMsgContent(msgContent: .voice(text: text, duration: 30)),
             quotedItem: nil,
             file: CIFile.getSample(fileName: fileName, fileSize: fileSize, fileStatus: fileStatus)
-       )
+        )
     }
 
     public static func getFileMsgContentSample (id: Int64 = 1, text: String = "", fileName: String = "test.txt", fileSize: Int64 = 100, fileStatus: CIFileStatus = .rcvComplete) -> ChatItem {
@@ -1478,7 +1478,7 @@ public struct ChatItem: Identifiable, Decodable {
             content: .rcvMsgContent(msgContent: .file(text)),
             quotedItem: nil,
             file: CIFile.getSample(fileName: fileName, fileSize: fileSize, fileStatus: fileStatus)
-       )
+        )
     }
 
     public static func getDeletedContentSample (_ id: Int64 = 1, dir: CIDirection = .directRcv, _ ts: Date = .now, _ text: String = "this item is deleted", _ status: CIStatus = .rcvRead) -> ChatItem {
@@ -1488,7 +1488,7 @@ public struct ChatItem: Identifiable, Decodable {
             content: .rcvDeleted(deleteMode: .cidmBroadcast),
             quotedItem: nil,
             file: nil
-       )
+        )
     }
 
     public static func getIntegrityErrorSample (_ status: CIStatus = .rcvRead, fromMsgId: Int64 = 1, toMsgId: Int64 = 2) -> ChatItem {
@@ -1498,7 +1498,7 @@ public struct ChatItem: Identifiable, Decodable {
             content: .rcvIntegrityError(msgError: .msgSkipped(fromMsgId: fromMsgId, toMsgId: toMsgId)),
             quotedItem: nil,
             file: nil
-       )
+        )
     }
 
     public static func getGroupInvitationSample (_ status: CIGroupInvitationStatus = .pending) -> ChatItem {
@@ -1508,7 +1508,7 @@ public struct ChatItem: Identifiable, Decodable {
             content: .rcvGroupInvitation(groupInvitation: CIGroupInvitation.getSample(status: status), memberRole: .admin),
             quotedItem: nil,
             file: nil
-       )
+        )
     }
 
     public static func getGroupEventSample () -> ChatItem {
@@ -1518,7 +1518,7 @@ public struct ChatItem: Identifiable, Decodable {
             content: .rcvGroupEvent(rcvGroupEvent: .memberAdded(groupMemberId: 1, profile: Profile.sampleData)),
             quotedItem: nil,
             file: nil
-       )
+        )
     }
 
     public static func getChatFeatureSample(_ feature: ChatFeature, _ enabled: FeatureEnabled) -> ChatItem {
@@ -1529,7 +1529,27 @@ public struct ChatItem: Identifiable, Decodable {
             content: content,
             quotedItem: nil,
             file: nil
-       )
+        )
+    }
+
+    public static func deletedItemDummy() -> ChatItem {
+        ChatItem(
+            chatDir: CIDirection.directRcv,
+            meta: CIMeta(
+                itemId: -1,
+                itemTs: .now,
+                itemText: NSLocalizedString("deleted", comment: "deleted chat item"),
+                itemStatus: .rcvRead,
+                createdAt: .now,
+                updatedAt: .now,
+                itemDeleted: false,
+                itemEdited: false,
+                editable: false
+            ),
+            content: .rcvDeleted(deleteMode: .cidmBroadcast),
+            quotedItem: nil,
+            file: nil
+        )
     }
 }
 

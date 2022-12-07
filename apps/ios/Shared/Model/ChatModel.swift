@@ -236,16 +236,19 @@ final class ChatModel: ObservableObject {
     }
     
     func removeChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
+        if cItem.isRcvNew {
+            decreaseUnreadCounter(cInfo)
+        }
         // update previews
         if let chat = getChat(cInfo.id) {
             if let pItem = chat.chatItems.last, pItem.id == cItem.id {
-                chat.chatItems = [cItem]
+                chat.chatItems = [ChatItem.deletedItemDummy()]
             }
         }
         // remove from current chat
         if chatId == cInfo.id {
             if let i = reversedChatItems.firstIndex(where: { $0.id == cItem.id }) {
-                if reversedChatItems[i].isRcvNew() == true {
+                if reversedChatItems[i].isRcvNew {
                     NtfManager.shared.decNtfBadgeCount()
                 }
                 _ = withAnimation {
@@ -342,13 +345,17 @@ final class ChatModel: ObservableObject {
 
     func markChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) {
         // update preview
-        if let i = getChatIndex(cInfo.id) {
-            chats[i].chatStats.unreadCount = chats[i].chatStats.unreadCount - 1
-        }
+        decreaseUnreadCounter(cInfo)
         // update current chat
         if chatId == cInfo.id, let j = reversedChatItems.firstIndex(where: { $0.id == cItem.id }) {
             reversedChatItems[j].meta.itemStatus = .rcvRead
             reversedChatItems[j].viewTimestamp = .now
+        }
+    }
+
+    func decreaseUnreadCounter(_ cInfo: ChatInfo) {
+        if let i = getChatIndex(cInfo.id) {
+            chats[i].chatStats.unreadCount = chats[i].chatStats.unreadCount - 1
         }
     }
 
@@ -418,7 +425,7 @@ final class ChatModel: ObservableObject {
         var unreadBelow = 0
         while i < reversedChatItems.count - 1 && !itemsInView.contains(reversedChatItems[i].viewId) {
             totalBelow += 1
-            if reversedChatItems[i].isRcvNew() {
+            if reversedChatItems[i].isRcvNew {
                 unreadBelow += 1
             }
             i += 1
