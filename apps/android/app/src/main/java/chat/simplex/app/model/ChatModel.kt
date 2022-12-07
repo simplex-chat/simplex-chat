@@ -1088,8 +1088,6 @@ data class ChatItem (
       else -> false
     }
 
-  val isPermDeleted: Boolean get() = id == TEMP_DELETED_CHAT_ITEM_ID
-
   private val showNtfDir: Boolean get() = !chatDir.sent
 
   val showNotification: Boolean get() =
@@ -1218,7 +1216,7 @@ data class ChatItem (
           itemText = generalGetString(R.string.deleted_description),
           itemStatus = CIStatus.RcvRead(),
           createdAt = Clock.System.now(),
-          itemDeleted = true,
+          itemDeleted = false,
           itemEdited = false,
           editable = false
         ),
