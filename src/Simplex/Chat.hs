@@ -286,7 +286,8 @@ processChatCommand = \case
     CTGroup -> CRApiChat . AChat SCTGroup <$> withStore (\db -> getGroupChat db user cId pagination search)
     CTContactRequest -> pure $ chatCmdError "not implemented"
     CTContactConnection -> pure $ chatCmdError "not supported"
-  APIGetChatItems _pagination -> pure $ chatCmdError "not implemented"
+  APIGetChatItems pagination search -> withUser $ \user -> withStore $ \db ->
+    CRApiChatItems <$> getAllChatItems db user pagination search
   APISendMessage (ChatRef cType chatId) (ComposedMessage file_ quotedItemId_ mc) -> withUser $ \user@User {userId} -> withChatLock "sendMessage" $ case cType of
     CTDirect -> do
       ct@Contact {localDisplayName = c, contactUsed} <- withStore $ \db -> getContact db user chatId
@@ -1036,9 +1037,9 @@ processChatCommand = \case
     processChatCommand . APISendMessage (ChatRef CTGroup groupId) $ ComposedMessage Nothing (Just quotedItemId) mc
   LastMessages (Just chatName) count search -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
-    CRLastMessages . aChatItems . chat <$> processChatCommand (APIGetChat chatRef (CPLast count) search)
-  LastMessages Nothing count search -> withUser $ \user -> withStore $ \db ->
-    CRLastMessages <$> getAllChatItems db user (CPLast count) search
+    CRApiChatItems . aChatItems . chat <$> processChatCommand (APIGetChat chatRef (CPLast count) search)
+  LastMessages Nothing count search ->
+    processChatCommand (APIGetChatItems (CPLast count) search)
   SendFile chatName f -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     processChatCommand . APISendMessage chatRef $ ComposedMessage (Just f) Nothing (MCFile "")
@@ -3329,7 +3330,7 @@ chatCommandP =
       "/sql agent " *> (ExecAgentStoreSQL <$> textP),
       "/_get chats" *> (APIGetChats <$> (" pcc=on" $> True <|> " pcc=off" $> False <|> pure False)),
       "/_get chat " *> (APIGetChat <$> chatRefP <* A.space <*> chatPaginationP <*> optional (" search=" *> stringP)),
-      "/_get items count=" *> (APIGetChatItems <$> A.decimal),
+      "/_get items " *> (APIGetChatItems <$> chatPaginationP <*> optional (" search=" *> stringP)),
       "/_send " *> (APISendMessage <$> chatRefP <*> (" json " *> jsonP <|> " text " *> (ComposedMessage Nothing Nothing <$> mcTextP))),
       "/_update item " *> (APIUpdateChatItem <$> chatRefP <* A.space <*> A.decimal <* A.space <*> msgContentP),
       "/_delete item " *> (APIDeleteChatItem <$> chatRefP <* A.space <*> A.decimal <* A.space <*> ciDeleteMode),
