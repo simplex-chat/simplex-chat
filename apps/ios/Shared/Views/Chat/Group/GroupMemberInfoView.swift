@@ -42,9 +42,16 @@ struct GroupMemberInfoView: View {
                     groupMemberInfoHeader(member)
                         .listRowBackground(Color.clear)
 
-                    if let contactId = member.memberContactId, groupInfo.fullGroupPreferences.directMessages.enable == .on {
-                        Section {
-                            openDirectChatButton(contactId)
+                    if let contactId = member.memberContactId {
+                        if let chat = chatModel.getContactChat(contactId),
+                           chat.chatInfo.contact?.directContact ?? false {
+                            Section {
+                                knownDirectChatButton(chat)
+                            }
+                        } else if groupInfo.fullGroupPreferences.directMessages.on {
+                            Section {
+                                newDirectChatButton(contactId)
+                            }
                         }
                     }
 
@@ -112,26 +119,30 @@ struct GroupMemberInfoView: View {
         }
     }
 
-    func openDirectChatButton(_ contactId: Int64) -> some View {
+    func knownDirectChatButton(_ chat: Chat) -> some View {
         Button {
-            var chat = chatModel.getContactChat(contactId)
-            if chat == nil {
-                do {
-                    chat = try apiGetChat(type: .direct, id: contactId)
-                    if let chat = chat {
-                        // TODO it's not correct to blindly set network status to connected - we should manage network status in model / backend
-                        chat.serverInfo = Chat.ServerInfo(networkStatus: .connected)
-                        chatModel.addChat(chat)
-                    }
-                } catch let error {
-                    logger.error("openDirectChatButton apiGetChat error: \(responseError(error))")
-                }
+            dismissAllSheets(animated: true)
+            DispatchQueue.main.async {
+                chatModel.chatId = chat.id
             }
-            if let chat = chat {
+        } label: {
+            Label("Send direct message", systemImage: "message")
+        }
+    }
+
+    func newDirectChatButton(_ contactId: Int64) -> some View {
+        Button {
+            do {
+                let chat = try apiGetChat(type: .direct, id: contactId)
+                // TODO it's not correct to blindly set network status to connected - we should manage network status in model / backend
+                chat.serverInfo = Chat.ServerInfo(networkStatus: .connected)
+                chatModel.addChat(chat)
                 dismissAllSheets(animated: true)
                 DispatchQueue.main.async {
                     chatModel.chatId = chat.id
                 }
+            } catch let error {
+                logger.error("openDirectChatButton apiGetChat error: \(responseError(error))")
             }
         } label: {
             Label("Send direct message", systemImage: "message")
