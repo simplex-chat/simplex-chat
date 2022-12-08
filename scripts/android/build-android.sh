@@ -4,8 +4,7 @@ set -eu
 
 u="$USER"
 tmp=$(mktemp -d -t)
-source="github:simplex-chat/simplex-chat"
-commit="$1"
+folder="$tmp/simplex-chat"
 commands="nix git curl gradle zip unzip zipalign"
 
 nix_install() {
@@ -30,14 +29,11 @@ nix_setup() {
 }
 
 git_setup() {
-  # Clone simplex
-  git clone https://github.com/simplex-chat/simplex-chat "$tmp/simplex-chat"
-
   # Switch to nix-android branch
-  git -C "$tmp/simplex-chat" checkout "$commit"
+  git -C "$folder" checkout "$commit"
 
   # Create missing folders
-  mkdir -p "$tmp/simplex-chat/apps/android/app/src/main/cpp/libs/arm64-v8a"
+  mkdir -p "$folder/apps/android/app/src/main/cpp/libs/arm64-v8a"
 }
 
 checks() {
@@ -59,6 +55,10 @@ checks() {
     esac
   done
 
+  [ "$folder" != "." ] && {
+    git clone https://github.com/simplex-chat/simplex-chat "$folder"
+  }
+
   if [ -n "$commands_failed" ]; then
     commands_failed=${commands_failed% *}
     printf "%s is not found in your \$PATH. Please install them and re-run the script.\n" "$commands_failed"
@@ -70,19 +70,19 @@ checks() {
 
 build() {
   # Build simplex lib
-  nix build "$source/$commit#hydraJobs.aarch64-android:lib:simplex-chat.x86_64-linux"
-  unzip -o "$PWD/result/pkg-aarch64-android-libsimplex.zip" -d "$tmp/simplex-chat/apps/android/app/src/main/cpp/libs/arm64-v8a"
+  nix build "$folder#hydraJobs.aarch64-android:lib:simplex-chat.x86_64-linux"
+  unzip -o "$PWD/result/pkg-aarch64-android-libsimplex.zip" -d "$folder/apps/android/app/src/main/cpp/libs/arm64-v8a"
 
   # Build android suppprt lib
-  nix build "$source/$commit#hydraJobs.aarch64-android:lib:support.x86_64-linux"
-  unzip -o "$PWD/result/pkg-aarch64-android-libsupport.zip" -d "$tmp/simplex-chat/apps/android/app/src/main/cpp/libs/arm64-v8a"
+  nix build "$folder#hydraJobs.aarch64-android:lib:support.x86_64-linux"
+  unzip -o "$PWD/result/pkg-aarch64-android-libsupport.zip" -d "$folder/apps/android/app/src/main/cpp/libs/arm64-v8a"
 
-  sed -i.bak 's/${extract_native_libs}/true/' "$tmp/simplex-chat/apps/android/app/src/main/AndroidManifest.xml"
+  sed -i.bak 's/${extract_native_libs}/true/' "$folder/apps/android/app/src/main/AndroidManifest.xml"
 
-  gradle -p "$tmp/simplex-chat/apps/android/" clean build assembleRelease
+  gradle -p "$folder/apps/android/" clean build assembleRelease
 
   mkdir -p "$tmp/android"
-  unzip -oqd "$tmp/android/" "$tmp/simplex-chat/apps/android/app/build/outputs/apk/release/app-release-unsigned.apk"
+  unzip -oqd "$tmp/android/" "$folder/apps/android/app/build/outputs/apk/release/app-release-unsigned.apk"
   
   (cd "$tmp/android" && zip -rq5 "$tmp/simplex-chat.apk" . && zip -rq0 "$tmp/simplex-chat.apk" resources.arsc res)
 
@@ -94,10 +94,18 @@ final() {
 }
 
 main() {
+  while getopts ":s" opt; do
+    case $opt in
+      s) folder="." ;;
+      *) printf "Flag '-%s' doesn't exist.\n" "$OPTARG"; exit 1 ;;
+    esac
+  done
+  shift $(( $OPTIND - 1 ))
+  commit="$1"; shift 1
   checks
   git_setup
   build
   final
 }
 
-main
+main "$@"
