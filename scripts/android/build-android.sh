@@ -55,7 +55,7 @@ checks() {
     esac
   done
 
-  [ "$folder" -ne "." ] && {
+  [ "$folder" != "." ] && {
     git clone https://github.com/simplex-chat/simplex-chat "$folder"
   }
 
