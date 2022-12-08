@@ -18,7 +18,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 interface Recorder {
-  fun start(onProgressUpdate: (position: Int?) -> Unit): String
+  fun start(onProgressUpdate: (position: Int?, finished: Boolean) -> Unit): String
   fun stop(): Int
 }
 
@@ -38,7 +38,7 @@ class RecorderNative(private val recordedBytesLimit: Long): Recorder {
       MediaRecorder()
     }
 
-  override fun start(onProgressUpdate: (position: Int?) -> Unit): String {
+  override fun start(onProgressUpdate: (position: Int?, finished: Boolean) -> Unit): String {
     AudioPlayer.stop()
     val rec: MediaRecorder
     recorder = initRecorder().also { rec = it }
@@ -58,16 +58,16 @@ class RecorderNative(private val recordedBytesLimit: Long): Recorder {
     rec.start()
     recStartedAt = System.currentTimeMillis()
     progressJob = CoroutineScope(Dispatchers.Default).launch {
-      onProgressUpdate(progress())
       while(isActive) {
+        onProgressUpdate(progress(), false)
         delay(50)
-        onProgressUpdate(progress())
       }
-      progress()?.let(onProgressUpdate)
     }.apply {
-      invokeOnCompletion { onProgressUpdate(null) }
+      invokeOnCompletion {
+        onProgressUpdate(realDuration(path), true)
+      }
     }
-    rec.setOnInfoListener { mr, what, extra ->
+    rec.setOnInfoListener { _, what, _ ->
       if (what == MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED || what == MEDIA_RECORDER_INFO_MAX_DURATION_REACHED) {
         stop()
       }
@@ -79,29 +79,32 @@ class RecorderNative(private val recordedBytesLimit: Long): Recorder {
   override fun stop(): Int {
     val path = filePath ?: return 0
     stopRecording = null
-    progressJob?.cancel()
-    progressJob = null
-    filePath = null
     runCatching {
       recorder?.stop()
     }
-    val countedDuration = progress() ?: 0
     runCatching {
       recorder?.reset()
     }
     runCatching {
-      // release all resources
       recorder?.release()
     }
+    // Await coroutine finishes in order to send real duration to it's listener
+    runBlocking {
+      progressJob?.cancelAndJoin()
+    }
+    progressJob = null
+    filePath = null
     recorder = null
-    recStartedAt = null
-    // Return real duration from AudioPlayer if it's possible (should always be possible).
-    // As a fallback, return internally counted duration
-    val audioPlayerDuration = duration(path)
-    return if (audioPlayerDuration != 0) audioPlayerDuration else countedDuration
+    return (realDuration(path) ?: 0).also { recStartedAt = null }
   }
 
   private fun progress(): Int? = recStartedAt?.let { (System.currentTimeMillis() - it).toInt() }
+
+  /**
+  * Return real duration from [AudioPlayer] if it's possible (should always be possible).
+  * As a fallback, return internally counted duration
+  * */
+  private fun realDuration(path: String): Int? = duration(path) ?: progress()
 }
 
 object AudioPlayer {
@@ -267,8 +270,8 @@ object AudioPlayer {
     audioPlaying.value = false
   }
 
-  fun duration(filePath: String): Int {
-    var res = 0
+  fun duration(filePath: String): Int? {
+    var res: Int? = null
     kotlin.runCatching {
       helperPlayer.setDataSource(filePath)
       helperPlayer.prepare()

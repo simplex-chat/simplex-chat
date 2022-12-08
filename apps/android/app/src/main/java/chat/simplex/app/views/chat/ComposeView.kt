@@ -45,6 +45,7 @@ import chat.simplex.app.views.helpers.*
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
@@ -587,16 +588,15 @@ fun ComposeView(
     LaunchedEffect(Unit) {
       snapshotFlow { composeState.value.preview }
         .distinctUntilChanged()
+        .filter { it !is ComposePreview.VoicePreview && recState.value.isStarted }
         .collect {
-          if (it !is ComposePreview.VoicePreview && recState.value.isStarted) {
-            // Pressed on X icon in preview
-            val filePath = recState.value.filePathNullable
-            recState.value = RecordingState.NotStarted
-            withBGApi {
-              rec.stop()
-              AudioPlayer.stop(filePath)
-              filePath?.let { File(it).delete() }
-            }
+          // Pressed on X icon in preview
+          val filePath = recState.value.filePathNullable
+          recState.value = RecordingState.NotStarted
+          withBGApi {
+            rec.stop()
+            AudioPlayer.stop(filePath)
+            filePath?.let { File(it).delete() }
           }
         }
     }
@@ -628,12 +628,13 @@ fun ComposeView(
         recState.value.isStarted -> stopRecordingAndAddAudio()
         recState.value.isNotStarted -> {
           recState.value = RecordingState.Started(
-            filePath = rec.start { progress: Int? ->
+            filePath = rec.start { progress: Int?, finished: Boolean ->
               if (recState.value.isStarted) {
-                if (progress == null) {
-                  stopRecordingAndAddAudio()
-                } else {
-                  recState.value.filePathNullable?.let { onAudioAdded(it, progress, false) }
+                if (progress != null) {
+                  recState.value.filePathNullable?.let { onAudioAdded(it, progress, finished) }
+                }
+                if (finished) {
+                  recState.value = RecordingState.NotStarted
                 }
               }
             },
