@@ -3,9 +3,7 @@ package chat.simplex.app.views.chat
 import ComposeVoiceView
 import ComposeFileView
 import android.Manifest
-import android.app.Activity
 import android.content.*
-import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
@@ -14,7 +12,6 @@ import android.graphics.drawable.AnimatedImageDrawable
 import android.net.Uri
 import android.provider.MediaStore
 import android.util.Log
-import android.view.Surface
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
@@ -42,10 +39,7 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.views.chat.item.*
 import chat.simplex.app.views.helpers.*
-import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
@@ -607,9 +601,9 @@ fun ComposeView(
         composeState,
         showVoiceRecordIcon = true,
         recState,
+        chat.chatInfo is ChatInfo.Direct,
         needToAllowVoiceToContact,
         allowedVoiceByPrefs,
-        chat.chatInfo is ChatInfo.Direct,
         allowVoiceToContact = ::allowVoiceToContact,
         onAudioAdded = ::onAudioAdded,
         sendMessage = {

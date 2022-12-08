@@ -48,9 +48,9 @@ fun SendMsgView(
   composeState: MutableState<ComposeState>,
   showVoiceRecordIcon: Boolean,
   recState: MutableState<RecordingState>,
+  isDirectChat: Boolean,
   needToAllowVoiceToContact: Boolean,
   allowedVoiceByPrefs: Boolean,
-  isDirectChat: Boolean,
   allowVoiceToContact: () -> Unit,
   onAudioAdded: (filePath: String, durationMs: Int, finished: Boolean) -> Unit,
   sendMessage: () -> Unit,
@@ -79,7 +79,8 @@ fun SendMsgView(
             DisallowedVoiceButton { showDisabledVoiceAlert(isDirectChat) }
           !permissionsState.allPermissionsGranted ->
             DisallowedVoiceButton { permissionsState.launchMultiplePermissionRequest() }
-          else -> RecordVoiceView(recState, onAudioAdded)
+          else ->
+            RecordVoiceView(recState, onAudioAdded)
         }
         else -> {
           val icon = if (cs.editing) Icons.Filled.Check else Icons.Outlined.ArrowUpward
@@ -179,27 +180,6 @@ private fun NativeKeyboard(
       Modifier.padding(padding),
       color = HighOrLowlight,
       style = textStyle.value.copy(fontStyle = FontStyle.Italic)
-    )
-  }
-}
-
-@Composable
-private fun ProgressIndicator() {
-  CircularProgressIndicator(Modifier.size(36.dp).padding(4.dp), color = HighOrLowlight, strokeWidth = 3.dp)
-}
-
-@Composable
-private fun SendTextButton(icon: ImageVector, backgroundColor: Color, enabled: Boolean, sendMessage: () -> Unit) {
-  IconButton(sendMessage, Modifier.size(36.dp), enabled = enabled) {
-    Icon(
-      icon,
-      stringResource(R.string.icon_descr_send_message),
-      tint = Color.White,
-      modifier = Modifier
-        .size(36.dp)
-        .padding(4.dp)
-        .clip(CircleShape)
-        .background(backgroundColor)
     )
   }
 }
@@ -313,6 +293,27 @@ fun RecordVoiceButton(interactionSource: MutableInteractionSource) {
   }
 }
 
+@Composable
+private fun ProgressIndicator() {
+  CircularProgressIndicator(Modifier.size(36.dp).padding(4.dp), color = HighOrLowlight, strokeWidth = 3.dp)
+}
+
+@Composable
+private fun SendTextButton(icon: ImageVector, backgroundColor: Color, enabled: Boolean, sendMessage: () -> Unit) {
+  IconButton(sendMessage, Modifier.size(36.dp), enabled = enabled) {
+    Icon(
+      icon,
+      stringResource(R.string.icon_descr_send_message),
+      tint = Color.White,
+      modifier = Modifier
+        .size(36.dp)
+        .padding(4.dp)
+        .clip(CircleShape)
+        .background(backgroundColor)
+    )
+  }
+}
+
 private fun showNeedToAllowVoiceAlert(onConfirm: () -> Unit) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.allow_voice_messages_question),
@@ -350,13 +351,13 @@ fun PreviewSendMsgView() {
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       showVoiceRecordIcon = false,
       recState = mutableStateOf(RecordingState.NotStarted),
+      isDirectChat = true,
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
-      isDirectChat = true,
-      sendMessage = {},
-      onMessageChange = { _ -> },
       allowVoiceToContact = {},
       onAudioAdded = {_, _, _ -> },
+      sendMessage = {},
+      onMessageChange = { _ -> },
       textStyle = textStyle
     )
   }
@@ -378,9 +379,9 @@ fun PreviewSendMsgViewEditing() {
       composeState = remember { mutableStateOf(composeStateEditing) },
       showVoiceRecordIcon = false,
       recState = mutableStateOf(RecordingState.NotStarted),
+      isDirectChat = true,
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
-      isDirectChat = true,
       allowVoiceToContact = {},
       onAudioAdded = {_, _, _ -> },
       sendMessage = {},
@@ -406,9 +407,9 @@ fun PreviewSendMsgViewInProgress() {
       composeState = remember { mutableStateOf(composeStateInProgress) },
       showVoiceRecordIcon = false,
       recState = mutableStateOf(RecordingState.NotStarted),
+      isDirectChat = true,
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
-      isDirectChat = true,
       allowVoiceToContact = {},
       onAudioAdded = {_, _, _ -> },
       sendMessage = {},
