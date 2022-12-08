@@ -214,22 +214,21 @@ fun RecordVoiceView(
     StopRecordButton(stopRecordingAndAddAudio)
   } else {
     val startStopRecording: () -> Unit = {
-      when {
-        recState.value.isStarted -> stopRecordingAndAddAudio()
-        recState.value.isNotStarted -> {
-          recState.value = RecordingState.Started(
-            filePath = rec.start { progress: Int?, finished: Boolean ->
-              if (recState.value.isStarted) {
-                if (progress != null) {
-                  recState.value.filePathNullable?.let { onAudioAdded(it, progress, finished) }
-                }
-                if (finished) {
-                  recState.value = RecordingState.NotStarted
-                }
+      if (recState.value.isStarted) {
+        stopRecordingAndAddAudio()
+      } else {
+        recState.value = RecordingState.Started(
+          filePath = rec.start { progress: Int?, finished: Boolean ->
+            if (recState.value.isStarted) {
+              if (progress != null) {
+                recState.value.filePathNullable?.let { onAudioAdded(it, progress, finished) }
               }
-            },
-          )
-        }
+              if (finished) {
+                recState.value = RecordingState.NotStarted
+              }
+            }
+          },
+        )
       }
     }
     val interactionSource = interactionSourceWithTapDetection(
