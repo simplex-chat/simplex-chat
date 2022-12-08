@@ -758,24 +758,39 @@ processChatCommand = \case
     case memberConnId m of
       Just connId -> withAgent (\a -> switchConnectionAsync a "" connId) $> CRCmdOk
       _ -> throwChatError CEGroupMemberNotActive
+  APIGetContactCode contactId -> withUser $ \user -> do
+    ct <- withStore $ \db -> getContact db user contactId
+    ad <- withAgent $ \a -> getConnectionRatchetAdHash a $ contactConnId ct
+    pure $ CRConnectionCode [B.unpack ad] -- TODO
+  APIGetGroupMemberCode gId gMemberId -> withUser $ \user -> do
+    m <- withStore $ \db -> getGroupMember db user gId gMemberId
+    case memberConnId m of
+      Just connId -> do
+        ad <- withAgent $ \a -> getConnectionRatchetAdHash a connId
+        pure $ CRConnectionCode [B.unpack ad] -- TODO
+      _ -> throwChatError CEGroupMemberNotActive
+  APISetContactVerified contactId -> withUser $ \user -> do
+    ct <- withStore $ \db -> getContact db user contactId
+    pure CRCmdOk
+  APISetGroupMemberVerified gId gMemberId -> withUser $ \user -> do
+    m <- withStore $ \db -> getGroupMember db user gId gMemberId
+    case memberConnId m of
+      Just connId -> pure CRCmdOk
+      _ -> throwChatError CEGroupMemberNotActive
   ShowMessages (ChatName cType name) ntfOn -> withUser $ \user -> do
     chatId <- case cType of
       CTDirect -> withStore $ \db -> getContactIdByName db user name
       CTGroup -> withStore $ \db -> getGroupIdByName db user name
       _ -> throwChatError $ CECommandError "not supported"
     processChatCommand $ APISetChatSettings (ChatRef cType chatId) $ ChatSettings ntfOn
-  ContactInfo cName -> withUser $ \user -> do
-    contactId <- withStore $ \db -> getContactIdByName db user cName
-    processChatCommand $ APIContactInfo contactId
-  GroupMemberInfo gName mName -> withUser $ \user -> do
-    (gId, mId) <- withStore $ \db -> getGroupIdByName db user gName >>= \gId -> (gId,) <$> getGroupMemberIdByName db user gId mName
-    processChatCommand $ APIGroupMemberInfo gId mId
-  SwitchContact cName -> withUser $ \user -> do
-    contactId <- withStore $ \db -> getContactIdByName db user cName
-    processChatCommand $ APISwitchContact contactId
-  SwitchGroupMember gName mName -> withUser $ \user -> do
-    (gId, mId) <- withStore $ \db -> getGroupIdByName db user gName >>= \gId -> (gId,) <$> getGroupMemberIdByName db user gId mName
-    processChatCommand $ APISwitchGroupMember gId mId
+  ContactInfo cName -> withContactName cName APIContactInfo
+  GroupMemberInfo gName mName -> withMemberName gName mName APIGroupMemberInfo
+  SwitchContact cName -> withContactName cName APISwitchContact
+  SwitchGroupMember gName mName -> withMemberName gName mName APISwitchGroupMember
+  GetContactCode cName -> withContactName cName APIGetContactCode
+  GetGroupMemberCode gName mName -> withMemberName gName mName APIGetGroupMemberCode
+  SetContactVerified cName -> withContactName cName APIGetContactCode
+  SetGroupMemberVerified gName mName -> withMemberName gName mName APISetGroupMemberVerified
   ChatHelp section -> pure $ CRChatHelp section
   Welcome -> withUser $ pure . CRWelcome
   AddContact -> withUser $ \User {userId} -> withChatLock "addContact" . procCmd $ do
@@ -802,12 +817,8 @@ processChatCommand = \case
   ConnectSimplex -> withUser $ \user ->
     -- [incognito] generate profile to send
     connectViaContact user adminContactReq
-  DeleteContact cName -> withUser $ \user -> do
-    contactId <- withStore $ \db -> getContactIdByName db user cName
-    processChatCommand $ APIDeleteChat (ChatRef CTDirect contactId)
-  ClearContact cName -> withUser $ \user -> do
-    contactId <- withStore $ \db -> getContactIdByName db user cName
-    processChatCommand $ APIClearChat (ChatRef CTDirect contactId)
+  DeleteContact cName -> withContactName cName $ APIDeleteChat . ChatRef CTDirect
+  ClearContact cName -> withContactName cName $ APIClearChat . ChatRef CTDirect
   ListContacts -> withUser $ \user -> CRContactsList <$> withStore' (`getUserContacts` user)
   CreateMyAddress -> withUser $ \User {userId} -> withChatLock "createMyAddress" . procCmd $ do
     (connId, cReq) <- withAgent $ \a -> createConnection a True SCMContact Nothing
@@ -977,12 +988,8 @@ processChatCommand = \case
   JoinGroup gName -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIJoinGroup groupId
-  MemberRole gName groupMemberName memRole -> do
-    (groupId, groupMemberId) <- getGroupAndMemberId gName groupMemberName
-    processChatCommand $ APIMemberRole groupId groupMemberId memRole
-  RemoveMember gName groupMemberName -> do
-    (groupId, groupMemberId) <- getGroupAndMemberId gName groupMemberName
-    processChatCommand $ APIRemoveMember groupId groupMemberId
+  MemberRole gName gMemberName memRole -> withMemberName gName gMemberName $ \gId gMemberId -> APIMemberRole gId gMemberId memRole
+  RemoveMember gName gMemberName -> withMemberName gName gMemberName APIRemoveMember
   LeaveGroup gName -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APILeaveGroup groupId
@@ -1135,6 +1142,14 @@ processChatCommand = \case
     withStoreChanged a = checkChatStopped $ a >> setStoreChanged $> CRCmdOk
     checkStoreNotChanged :: m ChatResponse -> m ChatResponse
     checkStoreNotChanged = ifM (asks chatStoreChanged >>= readTVarIO) (throwChatError CEChatStoreChanged)
+    withContactName :: ContactName -> (ContactId -> ChatCommand) -> m ChatResponse
+    withContactName cName cmd = withUser $ \user -> do
+      contactId <- withStore $ \db -> getContactIdByName db user cName
+      processChatCommand $ cmd contactId
+    withMemberName :: GroupName -> ContactName -> (GroupId -> GroupMemberId -> ChatCommand) -> m ChatResponse
+    withMemberName gName mName cmd = withUser $ \user -> do
+      (gId, mId) <- withStore $ \db -> getGroupIdByName db user gName >>= \gId -> (gId,) <$> getGroupMemberIdByName db user gId mName
+      processChatCommand $ cmd gId mId
     getSentChatItemIdByText :: User -> ChatRef -> ByteString -> m Int64
     getSentChatItemIdByText user@User {userId, localDisplayName} (ChatRef cType cId) msg = case cType of
       CTDirect -> withStore $ \db -> getDirectChatItemIdByText db userId cId SMDSnd (safeDecodeUtf8 msg)
@@ -3391,6 +3406,14 @@ chatCommandP =
       "/_switch @" *> (APISwitchContact <$> A.decimal),
       "/switch #" *> (SwitchGroupMember <$> displayName <* A.space <* optional (A.char '@') <*> displayName),
       ("/switch @" <|> "/switch ") *> (SwitchContact <$> displayName),
+      "_code @" *> (APIGetContactCode <$> A.decimal),
+      "_code #" *> (APIGetGroupMemberCode <$> A.decimal <* A.space <*> A.decimal),
+      "_verified @" *> (APISetContactVerified <$> A.decimal),
+      "_verified @" *> (APISetGroupMemberVerified <$> A.decimal <* A.space <*> A.decimal),
+      ("code @" <|> "code ") *> (GetContactCode <$> displayName),
+      "code #" *> (GetGroupMemberCode <$> displayName <* A.space <* optional (A.char '@') <*> displayName),
+      ("verified @" <|> "verified ") *> (SetContactVerified <$> displayName),
+      "_verified @" *> (SetGroupMemberVerified <$> displayName <* A.space <* optional (A.char '@') <*> displayName),
       ("/help files" <|> "/help file" <|> "/hf") $> ChatHelp HSFiles,
       ("/help groups" <|> "/help group" <|> "/hg") $> ChatHelp HSGroups,
       ("/help address" <|> "/ha") $> ChatHelp HSMyAddress,
