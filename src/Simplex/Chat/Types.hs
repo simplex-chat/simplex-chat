@@ -28,11 +28,13 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString, pack, unpack)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.Fixed (Fixed (MkFixed), Pico)
 import Data.Int (Int64)
 import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
+import Data.Time (diffUTCTime, nominalDiffTimeToSeconds)
 import Data.Time.Clock (UTCTime)
 import Data.Typeable
 import Database.SQLite.Simple (ResultError (..), SQLData (..))
@@ -1572,3 +1574,11 @@ instance ToJSON ServerCfg where
 
 instance FromJSON ServerCfg where
   parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
+
+-- move to Util
+
+diffInMillis :: UTCTime -> UTCTime -> Int
+diffInMillis a b = (`div` 1000000000) . fromInteger . fromPico . nominalDiffTimeToSeconds $ diffUTCTime a b
+
+fromPico :: Pico -> Integer
+fromPico (MkFixed i) = i
