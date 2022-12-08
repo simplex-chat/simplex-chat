@@ -484,28 +484,6 @@ fun ComposeView(
     }
   }
 
-  fun showNeedToAllowVoiceAlert() {
-    AlertManager.shared.showAlertDialog(
-      title = generalGetString(R.string.allow_voice_messages_question),
-      text = generalGetString(R.string.you_need_to_allow_to_send_voice),
-      confirmText = generalGetString(R.string.allow_verb),
-      dismissText = generalGetString(R.string.cancel_verb),
-      onConfirm = ::allowVoiceToContact,
-    )
-  }
-
-  fun showDisabledVoiceAlert() {
-    AlertManager.shared.showAlertMsg(
-      title = generalGetString(R.string.voice_messages_prohibited),
-      text = generalGetString(
-        if (chat.chatInfo is ChatInfo.Direct)
-          R.string.ask_your_contact_to_enable_voice
-        else
-          R.string.only_group_owners_can_enable_voice
-      )
-    )
-  }
-
   fun cancelLinkPreview() {
     val uri = composeState.value.linkPreview?.uri
     if (uri != null) {
@@ -520,8 +498,16 @@ fun ComposeView(
     chosenContent.value = emptyList()
   }
 
+  val recState: MutableState<RecordingState> = remember { mutableStateOf(RecordingState.NotStarted) }
   fun cancelVoice() {
+    val filePath = recState.value.filePathNullable
+    recState.value = RecordingState.NotStarted
     composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
+    withBGApi {
+      RecorderNative.stopRecording?.invoke()
+      AudioPlayer.stop(filePath)
+      filePath?.let { File(it).delete() }
+    }
     chosenAudio.value = null
   }
 
@@ -568,108 +554,6 @@ fun ComposeView(
     }
   }
 
-  @Composable
-  fun RecordVoiceButton(recState: MutableState<RecordingState>) {
-    val rec: Recorder = remember { RecorderNative(MAX_VOICE_SIZE_FOR_SENDING) }
-    DisposableEffect((recState.value as? RecordingState.Started)?.stopRecOnNextClick?.value) {
-      val activity = context as Activity
-      if ((recState.value as? RecordingState.Started)?.stopRecOnNextClick?.value == true) {
-        // Lock orientation to current orientation because screen rotation will break the recording
-        activity.requestedOrientation = when (activity.display?.rotation) {
-          Surface.ROTATION_90 -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-          Surface.ROTATION_180 -> ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT
-          Surface.ROTATION_270 -> ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
-          else -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-        }
-      }
-      // Unlock orientation
-      onDispose { activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED }
-    }
-    LaunchedEffect(Unit) {
-      snapshotFlow { composeState.value.preview }
-        .distinctUntilChanged()
-        .filter { it !is ComposePreview.VoicePreview && recState.value.isStarted }
-        .collect {
-          // Pressed on X icon in preview
-          val filePath = recState.value.filePathNullable
-          recState.value = RecordingState.NotStarted
-          withBGApi {
-            rec.stop()
-            AudioPlayer.stop(filePath)
-            filePath?.let { File(it).delete() }
-          }
-        }
-    }
-    DisposableEffect(Unit) { onDispose { rec.stop() } }
-
-    val permissionsState = rememberMultiplePermissionsState(listOf(Manifest.permission.RECORD_AUDIO))
-    val allowedVoiceByPrefs = remember(chat.chatInfo) { chat.chatInfo.voiceMessageAllowed }
-    LaunchedEffect(allowedVoiceByPrefs) {
-      if (!allowedVoiceByPrefs && chosenAudio.value != null) {
-        // Voice was disabled right when this user records it, just cancel it
-        cancelVoice()
-      }
-    }
-    val needToAllowVoiceToContact = remember(chat.chatInfo) {
-      chat.chatInfo is ChatInfo.Direct && with(chat.chatInfo.contact.mergedPreferences.voice) {
-        ((userPreference as? ContactUserPref.User)?.preference?.allow == FeatureAllowed.NO || (userPreference as? ContactUserPref.Contact)?.preference?.allow == FeatureAllowed.NO) &&
-            contactPreference.allow == FeatureAllowed.YES
-      }
-    }
-    val stopRecordingAndAddAudio: () -> Unit = {
-      recState.value.filePathNullable?.let { onAudioAdded(it, rec.stop(), true) }
-      recState.value = RecordingState.NotStarted
-    }
-    val startStopRecording: () -> Unit = {
-      when {
-        needToAllowVoiceToContact -> showNeedToAllowVoiceAlert()
-        !allowedVoiceByPrefs -> showDisabledVoiceAlert()
-        !permissionsState.allPermissionsGranted -> permissionsState.launchMultiplePermissionRequest()
-        recState.value.isStarted -> stopRecordingAndAddAudio()
-        recState.value.isNotStarted -> {
-          recState.value = RecordingState.Started(
-            filePath = rec.start { progress: Int?, finished: Boolean ->
-              if (recState.value.isStarted) {
-                if (progress != null) {
-                  recState.value.filePathNullable?.let { onAudioAdded(it, progress, finished) }
-                }
-                if (finished) {
-                  recState.value = RecordingState.NotStarted
-                }
-              }
-            },
-          )
-        }
-      }
-    }
-    val interactionSource = interactionSourceWithTapDetection(
-      // It's just a key for triggering dropping a state in the compose function. Without it
-      // nothing will react on changed params like needToAllowVoiceToContact or allowedVoiceByPrefs
-      needToAllowVoiceToContact.toString() + allowedVoiceByPrefs.toString(),
-      onPress = { if (recState.value.isNotStarted) startStopRecording() },
-      onClick = {
-        // Voice not allowed or not granted voice record permission for the app
-        val state = recState.value
-        if (!allowedVoiceByPrefs || !permissionsState.allPermissionsGranted || state !is RecordingState.Started) return@interactionSourceWithTapDetection
-        if (state.stopRecOnNextClick.value) {
-          stopRecordingAndAddAudio()
-          state.stopRecOnNextClick.value = false
-        } else {
-          // tapped and didn't hold a finger
-          state.stopRecOnNextClick.value = true
-        }
-      },
-      onCancel = startStopRecording,
-      onRelease = startStopRecording
-    )
-    SendAudioButton(
-      recState.value.isStarted && (recState.value as RecordingState.Started).stopRecOnNextClick.value,
-      allowedVoiceByPrefs,
-      !composeState.value.inProgress,
-      interactionSource
-    )
-  }
-
   LaunchedEffect(chatModel.sharedContent.value) {
     // Important. If it's null, don't do anything, chat is not closed yet but will be after a moment
     if (chatModel.chatId.value == null) return@LaunchedEffect
@@ -705,14 +589,29 @@ fun ComposeView(
             .clip(CircleShape)
         )
       }
-      val recState: MutableState<RecordingState> = remember { mutableStateOf(RecordingState.NotStarted) }
+      val allowedVoiceByPrefs = remember(chat.chatInfo) { chat.chatInfo.voiceMessageAllowed }
+      LaunchedEffect(allowedVoiceByPrefs) {
+        if (!allowedVoiceByPrefs && chosenAudio.value != null) {
+          // Voice was disabled right when this user records it, just cancel it
+          cancelVoice()
+        }
+      }
+      val needToAllowVoiceToContact = remember(chat.chatInfo) {
+        chat.chatInfo is ChatInfo.Direct && with(chat.chatInfo.contact.mergedPreferences.voice) {
+          ((userPreference as? ContactUserPref.User)?.preference?.allow == FeatureAllowed.NO || (userPreference as? ContactUserPref.Contact)?.preference?.allow == FeatureAllowed.NO) &&
+              contactPreference.allow == FeatureAllowed.YES
+        }
+      }
+
       SendMsgView(
         composeState,
         showVoiceRecordIcon = true,
-        recState = recState.value,
-        recordVoiceButton = {
-          RecordVoiceButton(recState)
-        },
+        recState,
+        needToAllowVoiceToContact,
+        allowedVoiceByPrefs,
+        chat.chatInfo is ChatInfo.Direct,
+        allowVoiceToContact = ::allowVoiceToContact,
+        onAudioAdded = ::onAudioAdded,
         sendMessage = {
           sendMessage()
           resetLinkPreview()
