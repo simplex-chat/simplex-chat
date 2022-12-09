@@ -1020,9 +1020,12 @@ processChatCommand = \case
   APIUpdateGroupProfile groupId p' -> withUser $ \user -> do
     g <- withStore $ \db -> getGroup db user groupId
     runUpdateGroupProfile user g p'
-  UpdateGroupProfile gName profile -> withUser $ \user -> do
-    groupId <- withStore $ \db -> getGroupIdByName db user gName
-    processChatCommand $ APIUpdateGroupProfile groupId profile
+  UpdateGroupNames gName GroupProfile {displayName, fullName} ->
+    updateGroupProfileByName gName $ \p -> p {displayName, fullName}
+  ShowGroupProfile gName -> withUser $ \user ->
+    CRGroupProfile <$> withStore (\db -> getGroupInfoByName db user gName)
+  UpdateGroupDescription gName description ->
+    updateGroupProfileByName gName $ \p -> p {description}
   APICreateGroupLink groupId -> withUser $ \user -> withChatLock "createGroupLink" $ do
     gInfo@GroupInfo {membership = membership@GroupMember {memberRole = userRole}} <- withStore $ \db -> getGroupInfo db user groupId
     when (userRole < GRAdmin) $ throwChatError CEGroupUserRole
@@ -1117,10 +1120,9 @@ processChatCommand = \case
     ct@Contact {userPreferences} <- withStore $ \db -> getContactByName db user cName
     let prefs' = setPreference f allowed_ $ Just userPreferences
     updateContactPrefs user ct prefs'
-  SetGroupFeature f gName enabled -> withUser $ \user -> do
-    g@(Group GroupInfo {groupProfile = p} _) <- withStore $ \db -> getGroup db user =<< getGroupIdByName db user gName
-    let p' = p {groupPreferences = Just . setGroupPreference f enabled $ groupPreferences p}
-    runUpdateGroupProfile user g p'
+  SetGroupFeature f gName enabled ->
+    updateGroupProfileByName gName $ \p ->
+      p {groupPreferences = Just . setGroupPreference f enabled $ groupPreferences p}
   QuitChat -> liftIO exitSuccess
   ShowVersion -> pure $ CRVersionInfo versionNumber
   DebugLocks -> do
@@ -1257,6 +1259,11 @@ processChatCommand = \case
         toView . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat g') ci
       createGroupFeatureChangedItems user cd CISndGroupFeature p p'
       pure $ CRGroupUpdated g g' Nothing
+    updateGroupProfileByName :: GroupName -> (GroupProfile -> GroupProfile) -> m ChatResponse
+    updateGroupProfileByName gName update = withUser $ \user -> do
+      g@(Group GroupInfo {groupProfile = p} _) <- withStore $ \db ->
+        getGroupIdByName db user gName >>= getGroup db user
+      runUpdateGroupProfile user g $ update p
     isReady :: Contact -> Bool
     isReady ct =
       let s = connStatus $ activeConn (ct :: Contact)
@@ -1957,7 +1964,9 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
           GCHostMember -> do
             toView $ CRUserJoinedGroup gInfo {membership = membership {memberStatus = GSMemConnected}} m {memberStatus = GSMemConnected}
             createGroupFeatureItems gInfo m
+            let GroupInfo {groupProfile = GroupProfile {description}} = gInfo
             memberConnectedChatItem gInfo m
+            forM_ description $ groupDescriptionChatItem gInfo m
             setActive $ ActiveG gName
             showToast ("#" <> gName) "you are connected to group"
           GCInviteeMember -> do
@@ -2232,6 +2241,10 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
     memberConnectedChatItem gInfo m =
       -- ts should be broker ts but we don't have it for CON
       createInternalChatItem user (CDGroupRcv gInfo m) (CIRcvGroupEvent RGEMemberConnected) Nothing
+
+    groupDescriptionChatItem :: GroupInfo -> GroupMember -> Text -> m ()
+    groupDescriptionChatItem gInfo m descr =
+      createInternalChatItem user (CDGroupRcv gInfo m) (CIRcvMsgContent $ MCText descr) Nothing
 
     notifyMemberConnected :: GroupInfo -> GroupMember -> m ()
     notifyMemberConnected gInfo m@GroupMember {localDisplayName = c} = do
@@ -3454,8 +3467,9 @@ chatCommandP =
       ("/members #" <|> "/members " <|> "/ms #" <|> "/ms ") *> (ListMembers <$> displayName),
       ("/groups" <|> "/gs") $> ListGroups,
       "/_group_profile #" *> (APIUpdateGroupProfile <$> A.decimal <* A.space <*> jsonP),
-      -- TODO group profile update via terminal should not reset image and preferences to Nothing (now it does)
-      ("/group_profile #" <|> "/gp #" <|> "/group_profile " <|> "/gp ") *> (UpdateGroupProfile <$> displayName <* A.space <*> groupProfile),
+      ("/group_profile " <|> "/gp ") *> char_ '#' *> (UpdateGroupNames <$> displayName <* A.space <*> groupProfile),
+      ("/group_profile " <|> "/gp ") *> char_ '#' *> (ShowGroupProfile <$> displayName),
+      "/group_description " *> char_ '#' *> (UpdateGroupDescription <$> displayName <*> optional (A.space *> textP)),
       "/_create link #" *> (APICreateGroupLink <$> A.decimal),
       "/_delete link #" *> (APIDeleteGroupLink <$> A.decimal),
       "/_get link #" *> (APIGetGroupLink <$> A.decimal),
@@ -3537,7 +3551,7 @@ chatCommandP =
       gName <- displayName
       fullName <- fullNameP gName
       let groupPreferences = Just (emptyGroupPrefs :: GroupPreferences) {directMessages = Just GroupPreference {enable = FEOn}}
-      pure GroupProfile {displayName = gName, fullName, image = Nothing, groupPreferences}
+      pure GroupProfile {displayName = gName, fullName, description = Nothing, image = Nothing, groupPreferences}
     fullNameP name = do
       n <- (A.space *> A.takeByteString) <|> pure ""
       pure $ if B.null n then name else safeDecodeUtf8 n

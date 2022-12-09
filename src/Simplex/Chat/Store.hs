@@ -307,6 +307,7 @@ import Simplex.Chat.Migrations.M20221129_delete_group_feature_items
 import Simplex.Chat.Migrations.M20221130_delete_item_deleted
 import Simplex.Chat.Migrations.M20221209_verified_connection
 import Simplex.Chat.Migrations.M20221210_idxs
+import Simplex.Chat.Migrations.M20221211_group_description
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..))
@@ -359,7 +360,8 @@ schemaMigrations =
     ("20221129_delete_group_feature_items", m20221129_delete_group_feature_items),
     ("20221130_delete_item_deleted", m20221130_delete_item_deleted),
     ("20221209_verified_connection", m20221209_verified_connection),
-    ("20221210_idxs", m20221210_idxs)
+    ("20221210_idxs", m20221210_idxs),
+    ("20221211_group_description", m20221211_group_description)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -1509,7 +1511,7 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
           [sql|
             SELECT
               -- GroupInfo
-              g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at,
+              g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at,
               -- GroupInfo {membership}
               mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
               mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -1610,7 +1612,7 @@ getGroupAndMember db User {userId, userContactId} groupMemberId =
       [sql|
         SELECT
           -- GroupInfo
-          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at,
+          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at,
           -- GroupInfo {membership}
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -1650,15 +1652,15 @@ updateConnectionStatus db Connection {connId} connStatus = do
 -- | creates completely new group with a single member - the current user
 createNewGroup :: DB.Connection -> TVar ChaChaDRG -> User -> GroupProfile -> ExceptT StoreError IO GroupInfo
 createNewGroup db gVar user@User {userId} groupProfile = ExceptT $ do
-  let GroupProfile {displayName, fullName, image, groupPreferences} = groupProfile
+  let GroupProfile {displayName, fullName, description, image, groupPreferences} = groupProfile
       fullGroupPreferences = mergeGroupPreferences groupPreferences
   currentTs <- getCurrentTime
   withLocalDisplayName db userId displayName $ \ldn -> runExceptT $ do
     groupId <- liftIO $ do
       DB.execute
         db
-        "INSERT INTO group_profiles (display_name, full_name, image, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
-        (displayName, fullName, image, userId, groupPreferences, currentTs, currentTs)
+        "INSERT INTO group_profiles (display_name, full_name, description, image, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
+        (displayName, fullName, description, image, userId, groupPreferences, currentTs, currentTs)
       profileId <- insertedRowId db
       DB.execute
         db
@@ -1694,7 +1696,7 @@ createGroupInvitation db user@User {userId} contact@Contact {contactId, activeCo
         DB.query db "SELECT group_id FROM groups WHERE inv_queue_info = ? AND user_id = ? LIMIT 1" (connRequest, userId)
     createGroupInvitation_ :: ExceptT StoreError IO (GroupInfo, GroupMemberId)
     createGroupInvitation_ = do
-      let GroupProfile {displayName, fullName, image, groupPreferences} = groupProfile
+      let GroupProfile {displayName, fullName, description, image, groupPreferences} = groupProfile
           fullGroupPreferences = mergeGroupPreferences groupPreferences
       ExceptT $
         withLocalDisplayName db userId displayName $ \localDisplayName -> runExceptT $ do
@@ -1702,8 +1704,8 @@ createGroupInvitation db user@User {userId} contact@Contact {contactId, activeCo
           groupId <- liftIO $ do
             DB.execute
               db
-              "INSERT INTO group_profiles (display_name, full_name, image, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
-              (displayName, fullName, image, userId, groupPreferences, currentTs, currentTs)
+              "INSERT INTO group_profiles (display_name, full_name, description, image, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
+              (displayName, fullName, description, image, userId, groupPreferences, currentTs, currentTs)
             profileId <- insertedRowId db
             DB.execute
               db
@@ -1849,7 +1851,7 @@ getUserGroupDetails db User {userId, userContactId} =
     <$> DB.query
       db
       [sql|
-        SELECT g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at,
+        SELECT g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at,
           mu.group_member_id, g.group_id, mu.member_id, mu.member_role, mu.member_category, mu.member_status,
           mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id, pu.display_name, pu.full_name, pu.image, pu.local_alias, pu.preferences
         FROM groups g
@@ -1883,14 +1885,15 @@ getGroupInfoByName db user gName = do
   gId <- getGroupIdByName db user gName
   getGroupInfo db user gId
 
-type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe ImageData, Maybe ProfileId, Maybe Bool, Maybe GroupPreferences, UTCTime, UTCTime) :. GroupMemberRow
+type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Maybe ImageData, Maybe ProfileId, Maybe Bool, Maybe GroupPreferences, UTCTime, UTCTime) :. GroupMemberRow
 
 toGroupInfo :: Int64 -> GroupInfoRow -> GroupInfo
-toGroupInfo userContactId ((groupId, localDisplayName, displayName, fullName, image, hostConnCustomUserProfileId, enableNtfs_, groupPreferences, createdAt, updatedAt) :. userMemberRow) =
+toGroupInfo userContactId ((groupId, localDisplayName, displayName, fullName, description, image, hostConnCustomUserProfileId, enableNtfs_, groupPreferences, createdAt, updatedAt) :. userMemberRow) =
   let membership = toGroupMember userContactId userMemberRow
       chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_}
       fullGroupPreferences = mergeGroupPreferences groupPreferences
-   in GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, fullName, image, groupPreferences}, fullGroupPreferences, membership, hostConnCustomUserProfileId, chatSettings, createdAt, updatedAt}
+      groupProfile = GroupProfile {displayName, fullName, description, image, groupPreferences}
+   in GroupInfo {groupId, localDisplayName, groupProfile, fullGroupPreferences, membership, hostConnCustomUserProfileId, chatSettings, createdAt, updatedAt}
 
 getGroupMember :: DB.Connection -> User -> GroupId -> GroupMemberId -> ExceptT StoreError IO GroupMember
 getGroupMember db user@User {userId} groupId groupMemberId =
@@ -2366,7 +2369,7 @@ getViaGroupMember db User {userId, userContactId} Contact {contactId} =
       [sql|
         SELECT
           -- GroupInfo
-          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at,
+          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at,
           -- GroupInfo {membership}
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -3348,7 +3351,7 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
       [sql|
         SELECT
           -- GroupInfo
-          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at,
+          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at,
           -- GroupMember - membership
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -3714,7 +3717,7 @@ getGroupInfo db User {userId, userContactId} groupId =
       [sql|
         SELECT
           -- GroupInfo
-          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at,
+          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at,
           -- GroupMember - membership
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -3728,7 +3731,7 @@ getGroupInfo db User {userId, userContactId} groupId =
       (groupId, userId, userContactId)
 
 updateGroupProfile :: DB.Connection -> User -> GroupInfo -> GroupProfile -> ExceptT StoreError IO GroupInfo
-updateGroupProfile db User {userId} g@GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName}} p'@GroupProfile {displayName = newName, fullName, image, groupPreferences}
+updateGroupProfile db User {userId} g@GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName}} p'@GroupProfile {displayName = newName, fullName, description, image, groupPreferences}
   | displayName == newName = liftIO $ do
     currentTs <- getCurrentTime
     updateGroupProfile_ currentTs $> (g :: GroupInfo) {groupProfile = p', fullGroupPreferences}
@@ -3745,14 +3748,14 @@ updateGroupProfile db User {userId} g@GroupInfo {groupId, localDisplayName, grou
         db
         [sql|
           UPDATE group_profiles
-          SET display_name = ?, full_name = ?, image = ?, preferences = ?, updated_at = ?
+          SET display_name = ?, full_name = ?, description = ?, image = ?, preferences = ?, updated_at = ?
           WHERE group_profile_id IN (
             SELECT group_profile_id
             FROM groups
             WHERE user_id = ? AND group_id = ?
           )
         |]
-        (newName, fullName, image, groupPreferences, currentTs, userId, groupId)
+        (newName, fullName, description, image, groupPreferences, currentTs, userId, groupId)
     updateGroup_ ldn currentTs = do
       DB.execute
         db
