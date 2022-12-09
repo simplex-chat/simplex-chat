@@ -52,7 +52,6 @@ fun SendMsgView(
   needToAllowVoiceToContact: Boolean,
   allowedVoiceByPrefs: Boolean,
   allowVoiceToContact: () -> Unit,
-  onAudioAdded: (filePath: String, durationMs: Int, finished: Boolean) -> Unit,
   sendMessage: () -> Unit,
   onMessageChange: (String) -> Unit,
   textStyle: MutableState<TextStyle>
@@ -62,7 +61,7 @@ fun SendMsgView(
     val attachEnabled = !composeState.value.editing
     val showProgress = cs.inProgress && (cs.preview is ComposePreview.ImagePreview  || cs.preview is ComposePreview.FilePreview)
     val showVoiceButton = cs.message.isEmpty() && showVoiceRecordIcon && attachEnabled &&
-        (cs.preview is ComposePreview.NoPreview || (cs.preview is ComposePreview.VoicePreview && recState.value.isStarted))
+        (cs.preview is ComposePreview.NoPreview || recState.value.isStarted)
     NativeKeyboard(composeState, textStyle, onMessageChange)
     // Disable clicks on text field
     if (cs.preview is ComposePreview.VoicePreview) {
@@ -80,7 +79,7 @@ fun SendMsgView(
           !permissionsState.allPermissionsGranted ->
             DisallowedVoiceButton { permissionsState.launchMultiplePermissionRequest() }
           else ->
-            RecordVoiceView(recState, onAudioAdded)
+            RecordVoiceView(recState)
         }
         else -> {
           val icon = if (cs.editing) Icons.Filled.Check else Icons.Outlined.ArrowUpward
@@ -185,15 +184,13 @@ private fun NativeKeyboard(
 }
 
 @Composable
-private fun RecordVoiceView(
-  recState: MutableState<RecordingState>,
-  onAudioAdded: (filePath: String, durationMs: Int, finished: Boolean) -> Unit,
-) {
+private fun RecordVoiceView(recState: MutableState<RecordingState>) {
   val rec: Recorder = remember { RecorderNative(MAX_VOICE_SIZE_FOR_SENDING) }
   DisposableEffect(Unit) { onDispose { rec.stop() } }
   val stopRecordingAndAddAudio: () -> Unit = {
-    recState.value.filePathNullable?.let { onAudioAdded(it, rec.stop(), true) }
-    recState.value = RecordingState.NotStarted
+    recState.value.filePathNullable?.let {
+      recState.value = RecordingState.Finished(it, rec.stop())
+    }
   }
   var stopRecOnNextClick by remember { mutableStateOf(false) }
   if (stopRecOnNextClick) {
@@ -208,12 +205,12 @@ private fun RecordVoiceView(
     val startRecording: () -> Unit = {
       recState.value = RecordingState.Started(
         filePath = rec.start { progress: Int?, finished: Boolean ->
-          if (recState.value.isStarted) {
-            if (progress != null) {
-              recState.value.filePathNullable?.let { onAudioAdded(it, progress, finished) }
-            }
-            if (finished) {
-              recState.value = RecordingState.NotStarted
+          val state = recState.value
+          if (state is RecordingState.Started && progress != null) {
+            if (!finished) {
+              recState.value = RecordingState.Started(state.filePath, progress)
+            } else {
+              recState.value = RecordingState.Finished(state.filePath, progress)
             }
           }
         },
@@ -358,7 +355,6 @@ fun PreviewSendMsgView() {
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
       allowVoiceToContact = {},
-      onAudioAdded = {_, _, _ -> },
       sendMessage = {},
       onMessageChange = { _ -> },
       textStyle = textStyle
@@ -386,7 +382,6 @@ fun PreviewSendMsgViewEditing() {
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
       allowVoiceToContact = {},
-      onAudioAdded = {_, _, _ -> },
       sendMessage = {},
       onMessageChange = { _ -> },
       textStyle = textStyle
@@ -414,7 +409,6 @@ fun PreviewSendMsgViewInProgress() {
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
       allowVoiceToContact = {},
-      onAudioAdded = {_, _, _ -> },
       sendMessage = {},
       onMessageChange = { _ -> },
       textStyle = textStyle

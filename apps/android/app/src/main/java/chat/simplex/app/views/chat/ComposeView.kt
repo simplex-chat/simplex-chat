@@ -40,6 +40,8 @@ import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.views.chat.item.*
 import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
@@ -119,7 +121,8 @@ data class ComposeState(
 
 sealed class RecordingState {
   object NotStarted: RecordingState()
-  class Started(val filePath: String): RecordingState()
+  class Started(val filePath: String, val progressMs: Int = 0): RecordingState()
+  class Finished(val filePath: String, val durationMs: Int): RecordingState()
 
   val filePathNullable: String?
     get() = (this as? Started)?.filePath
@@ -244,6 +247,7 @@ fun ComposeView(
   val galleryLauncher = rememberLauncherForActivityResult(contract = PickMultipleFromGallery()) { processPickedImage(it, null) }
   val galleryLauncherFallback = rememberGetMultipleContentsLauncher { processPickedImage(it, null) }
   val filesLauncher = rememberGetContentLauncher { processPickedFile(it, null) }
+  val recState: MutableState<RecordingState> = remember { mutableStateOf(RecordingState.NotStarted) }
 
   LaunchedEffect(attachmentOption.value) {
     when (attachmentOption.value) {
@@ -351,6 +355,7 @@ fun ComposeView(
 
   fun clearState() {
     composeState.value = ComposeState(useLinkPreviews = useLinkPreviews)
+    recState.value = RecordingState.NotStarted
     textStyle.value = smallFont
     chosenContent.value = emptyList()
     chosenAudio.value = null
@@ -492,7 +497,6 @@ fun ComposeView(
     chosenContent.value = emptyList()
   }
 
-  val recState: MutableState<RecordingState> = remember { mutableStateOf(RecordingState.NotStarted) }
   fun cancelVoice() {
     val filePath = recState.value.filePathNullable
     recState.value = RecordingState.NotStarted
@@ -596,6 +600,17 @@ fun ComposeView(
               contactPreference.allow == FeatureAllowed.YES
         }
       }
+      LaunchedEffect(Unit) {
+        snapshotFlow { recState.value }
+          .distinctUntilChanged()
+          .collect {
+            when(it) {
+              is RecordingState.Started -> onAudioAdded(it.filePath, it.progressMs, false)
+              is RecordingState.Finished -> onAudioAdded(it.filePath, it.durationMs, true)
+              is RecordingState.NotStarted -> {}
+            }
+          }
+      }
 
       SendMsgView(
         composeState,
@@ -605,7 +620,6 @@ fun ComposeView(
         needToAllowVoiceToContact,
         allowedVoiceByPrefs,
         allowVoiceToContact = ::allowVoiceToContact,
-        onAudioAdded = ::onAudioAdded,
         sendMessage = {
           sendMessage()
           resetLinkPreview()
