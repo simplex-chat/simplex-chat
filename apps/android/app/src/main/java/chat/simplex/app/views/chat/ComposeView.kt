@@ -126,10 +126,6 @@ sealed class RecordingState {
 
   val filePathNullable: String?
     get() = (this as? Started)?.filePath
-  val isStarted: Boolean
-    get() = this is Started
-  val isNotStarted: Boolean
-    get() = this is NotStarted
 }
 
 fun chatItemPreview(chatItem: ChatItem): ComposePreview {

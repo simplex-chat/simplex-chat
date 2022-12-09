@@ -61,7 +61,7 @@ fun SendMsgView(
     val attachEnabled = !composeState.value.editing
     val showProgress = cs.inProgress && (cs.preview is ComposePreview.ImagePreview  || cs.preview is ComposePreview.FilePreview)
     val showVoiceButton = cs.message.isEmpty() && showVoiceRecordIcon && attachEnabled &&
-        (cs.preview is ComposePreview.NoPreview || recState.value.isStarted)
+        (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started)
     NativeKeyboard(composeState, textStyle, onMessageChange)
     // Disable clicks on text field
     if (cs.preview is ComposePreview.VoicePreview) {
@@ -195,7 +195,7 @@ private fun RecordVoiceView(recState: MutableState<RecordingState>) {
   var stopRecOnNextClick by remember { mutableStateOf(false) }
   if (stopRecOnNextClick) {
     LaunchedEffect(recState.value) {
-      if (recState.value.isNotStarted) {
+      if (recState.value is RecordingState.NotStarted) {
         stopRecOnNextClick = false
       }
     }
@@ -217,7 +217,7 @@ private fun RecordVoiceView(recState: MutableState<RecordingState>) {
       )
     }
     val interactionSource = interactionSourceWithTapDetection(
-      onPress = { if (recState.value.isNotStarted) startRecording() },
+      onPress = { if (recState.value is RecordingState.NotStarted) startRecording() },
       onClick = {
         if (stopRecOnNextClick) {
           stopRecordingAndAddAudio()
