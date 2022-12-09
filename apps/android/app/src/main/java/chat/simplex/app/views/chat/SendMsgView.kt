@@ -201,6 +201,7 @@ private fun RecordVoiceView(recState: MutableState<RecordingState>) {
         stopRecOnNextClick = false
       }
     }
+    // Lock orientation to current orientation because screen rotation will break the recording
     LockToCurrentOrientationUntilDispose()
     StopRecordButton(stopRecordingAndAddAudio)
   } else {
@@ -254,7 +255,6 @@ private fun LockToCurrentOrientationUntilDispose() {
   val context = LocalContext.current
   DisposableEffect(Unit) {
     val activity = context as Activity
-    // Lock orientation to current orientation because screen rotation will break the recording
     activity.requestedOrientation = when (activity.display?.rotation) {
       android.view.Surface.ROTATION_90 -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
       android.view.Surface.ROTATION_180 -> ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT
