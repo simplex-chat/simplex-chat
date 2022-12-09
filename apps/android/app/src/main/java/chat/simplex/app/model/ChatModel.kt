@@ -101,7 +101,7 @@ class ChatModel(val controller: ChatController) {
 
   fun updateContactConnection(contactConnection: PendingContactConnection) = updateChat(ChatInfo.ContactConnection(contactConnection))
 
-  fun updateContact(contact: Contact) = updateChat(ChatInfo.Direct(contact), addMissing = !contact.isIndirectContact && !contact.viaGroupLink)
+  fun updateContact(contact: Contact) = updateChat(ChatInfo.Direct(contact), addMissing = contact.directContact)
 
   fun updateGroup(groupInfo: GroupInfo) = updateChat(ChatInfo.Group(groupInfo))
 
@@ -215,6 +215,9 @@ class ChatModel(val controller: ChatController) {
   }
 
   fun removeChatItem(cInfo: ChatInfo, cItem: ChatItem) {
+    if (cItem.isRcvNew) {
+      decreaseCounterInChat(cInfo.id)
+    }
     // update previews
     val i = getChatIndex(cInfo.id)
     val chat: Chat
@@ -222,7 +225,7 @@ class ChatModel(val controller: ChatController) {
       chat = chats[i]
       val pItem = chat.chatItems.lastOrNull()
       if (pItem?.id == cItem.id) {
-        chats[i] = chat.copy(chatItems = arrayListOf(cItem))
+        chats[i] = chat.copy(chatItems = arrayListOf(ChatItem.deletedItemDummy))
       }
     }
     // remove from current chat
@@ -551,6 +554,7 @@ data class Contact(
   val profile: LocalProfile,
   val activeConn: Connection,
   val viaGroup: Long? = null,
+  val contactUsed: Boolean,
   val chatSettings: ChatSettings,
   val userPreferences: ChatPreferences,
   val mergedPreferences: ContactUserPreferences,
@@ -571,11 +575,8 @@ data class Contact(
   override val image get() = profile.image
   override val localAlias get() = profile.localAlias
 
-  val isIndirectContact: Boolean get() =
-    activeConn.connLevel > 0 || viaGroup != null
-
-  val viaGroupLink: Boolean get() =
-    activeConn.viaGroupLink
+  val directContact: Boolean get() =
+    (activeConn.connLevel == 0 && !activeConn.viaGroupLink) || contactUsed
 
   val contactConnIncognito =
     activeConn.customUserProfileId != null
@@ -586,6 +587,7 @@ data class Contact(
       localDisplayName = "alice",
       profile = LocalProfile.sampleData,
       activeConn = Connection.sampleData,
+      contactUsed = true,
       chatSettings = ChatSettings(true),
       userPreferences = ChatPreferences.sampleData,
       mergedPreferences = ContactUserPreferences.sampleData,
@@ -1202,6 +1204,26 @@ data class ChatItem (
         file = null
       )
     }
+    
+    private const val TEMP_DELETED_CHAT_ITEM_ID = -1L
+    
+    val deletedItemDummy: ChatItem
+      get() = ChatItem(
+        chatDir = CIDirection.DirectRcv(),
+        meta = CIMeta(
+          itemId = TEMP_DELETED_CHAT_ITEM_ID,
+          itemTs = Clock.System.now(),
+          itemText = generalGetString(R.string.deleted_description),
+          itemStatus = CIStatus.RcvRead(),
+          createdAt = Clock.System.now(),
+          itemDeleted = false,
+          itemEdited = false,
+          editable = false
+        ),
+        content = CIContent.RcvDeleted(deleteMode = CIDeleteMode.cidmBroadcast),
+        quotedItem = null,
+        file = null
+      )
   }
 }
 

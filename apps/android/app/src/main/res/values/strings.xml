@@ -115,7 +115,6 @@
   <!-- Notification channels -->
   <string name="ntf_channel_messages">SimpleX Chat messages</string>
   <string name="ntf_channel_calls">SimpleX Chat calls</string>
-  <string name="ntf_channel_calls_lockscreen">SimpleX Chat calls (lock screen)</string>
 
   <!-- Notifications -->
   <string name="settings_notifications_mode_title">Notification service</string>
@@ -476,9 +475,11 @@
   <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Your profile is stored on your device and shared only with your contacts.\n\n<xliff:g id="appName">SimpleX</xliff:g> servers cannot see your profile.</string>
   <string name="edit_image">Edit image</string>
   <string name="delete_image">Delete image</string>
-  <string name="save_and_notify_contact">Save (and notify contact)</string>
-  <string name="save_and_notify_contacts">Save (and notify contacts)</string>
-  <string name="save_and_notify_group_members">Save (and notify group members)</string>
+  <string name="save_preferences_question">Save preferences?</string>
+  <string name="save_and_notify_contact">Save and notify contact</string>
+  <string name="save_and_notify_contacts">Save and notify contacts</string>
+  <string name="save_and_notify_group_members">Save and notify group members</string>
+  <string name="exit_without_saving">Exit without saving</string>
 
   <!-- Welcome Prompts - WelcomeView.kt -->
   <string name="you_control_your_chat">You control your chat!</string>

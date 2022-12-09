@@ -103,7 +103,7 @@ class AppPreferences(val context: Context) {
     },
     set = fun(mode: SimplexLinkMode) { _simplexLinkMode.set(mode.name) }
   )
-  val privacyFullBackup = mkBoolPreference(SHARED_PREFS_PRIVACY_FULL_BACKUP, true)
+  val privacyFullBackup = mkBoolPreference(SHARED_PREFS_PRIVACY_FULL_BACKUP, false)
   val experimentalCalls = mkBoolPreference(SHARED_PREFS_EXPERIMENTAL_CALLS, false)
   val chatArchiveName = mkStrPreference(SHARED_PREFS_CHAT_ARCHIVE_NAME, null)
   val chatArchiveTime = mkDatePreference(SHARED_PREFS_CHAT_ARCHIVE_TIME, null)
@@ -196,7 +196,7 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_PRIVACY_TRANSFER_IMAGES_INLINE = "PrivacyTransferImagesInline"
     private const val SHARED_PREFS_PRIVACY_LINK_PREVIEWS = "PrivacyLinkPreviews"
     private const val SHARED_PREFS_PRIVACY_SIMPLEX_LINK_MODE = "PrivacySimplexLinkMode"
-    internal val SHARED_PREFS_PRIVACY_FULL_BACKUP = "FullBackup"
+    internal const val SHARED_PREFS_PRIVACY_FULL_BACKUP = "FullBackup"
     private const val SHARED_PREFS_EXPERIMENTAL_CALLS = "ExperimentalCalls"
     private const val SHARED_PREFS_CHAT_ARCHIVE_NAME = "ChatArchiveName"
     private const val SHARED_PREFS_CHAT_ARCHIVE_TIME = "ChatArchiveTime"
@@ -993,7 +993,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         chatModel.removeChat(r.connection.id)
       }
       is CR.ContactConnected -> {
-        if (!r.contact.viaGroupLink) {
+        if (r.contact.directContact) {
           chatModel.updateContact(r.contact)
           chatModel.dismissConnReqView(r.contact.activeConn.id)
           chatModel.removeChat(r.contact.activeConn.id)
@@ -1002,7 +1002,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         }
       }
       is CR.ContactConnecting -> {
-        if (!r.contact.viaGroupLink) {
+        if (r.contact.directContact) {
           chatModel.updateContact(r.contact)
           chatModel.dismissConnReqView(r.contact.activeConn.id)
           chatModel.removeChat(r.contact.activeConn.id)
@@ -1047,10 +1047,13 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         val cItem = r.chatItem.chatItem
         chatModel.addChatItem(cInfo, cItem)
         val file = cItem.file
-        if (cItem.content.msgContent is MsgContent.MCImage && file != null && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV && appPrefs.privacyAcceptImages.get()) {
-          withApi { receiveFile(file.fileId) }
-        } else if (cItem.content.msgContent is MsgContent.MCVoice && file != null && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileSize > MAX_VOICE_SIZE_FOR_SENDING && appPrefs.privacyAcceptImages.get()) {
-          withApi { receiveFile(file.fileId) } // TODO check inlineFileMode != IFMSent
+        val mc = cItem.content.msgContent
+        if (file != null && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV) {
+          val acceptImages = appPrefs.privacyAcceptImages.get()
+          if ((mc is MsgContent.MCImage && acceptImages)
+            || (mc is MsgContent.MCVoice && ((file.fileSize > MAX_VOICE_SIZE_FOR_SENDING && acceptImages) || cInfo is ChatInfo.Group))) {
+            withApi { receiveFile(file.fileId) } // TODO check inlineFileMode != IFMSent
+          }
         }
         if (cItem.showNotification && (!SimplexApp.context.isAppOnForeground || chatModel.chatId.value != cInfo.id)) {
           ntfManager.notifyMessageReceived(cInfo, cItem)
@@ -1070,11 +1073,22 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       is CR.ChatItemUpdated ->
         chatItemSimpleUpdate(r.chatItem)
       is CR.ChatItemDeleted -> {
-        AudioPlayer.stop(r.deletedChatItem.chatItem)
+        val cInfo = r.deletedChatItem.chatInfo
+        val cItem = r.deletedChatItem.chatItem
+        AudioPlayer.stop(cItem)
+        val isLastChatItem = chatModel.getChat(cInfo.id)?.chatItems?.lastOrNull()?.id == cItem.id
+        if (isLastChatItem && ntfManager.hasNotificationsForChat(cInfo.id)) {
+          ntfManager.cancelNotificationsForChat(cInfo.id)
+          ntfManager.notifyMessageReceived(
+            cInfo.id,
+            cInfo.displayName,
+            generalGetString(if (r.toChatItem != null) R.string.marked_deleted_description else R.string.deleted_description)
+          )
+        }
         if (r.toChatItem == null) {
-          chatModel.removeChatItem(r.deletedChatItem.chatInfo, r.deletedChatItem.chatItem)
+          chatModel.removeChatItem(cInfo, cItem)
         } else {
-          chatModel.upsertChatItem(r.toChatItem.chatInfo, r.toChatItem.chatItem)
+          chatModel.upsertChatItem(cInfo, r.toChatItem.chatItem)
         }
       }
       is CR.ReceivedGroupInvitation -> {
@@ -2202,6 +2216,7 @@ sealed class ContactFeatureAllowed {
     }
 }
 
+@Serializable
 data class ContactFeaturesAllowed(
   val fullDelete: ContactFeatureAllowed,
   val voice: ContactFeatureAllowed

@@ -44,8 +44,8 @@ fun AddGroupMembersView(groupInfo: GroupInfo, creatingGroup: Boolean = false, ch
     selectedRole = selectedRole,
     allowModifyMembers = allowModifyMembers,
     openPreferences = {
-      ModalManager.shared.showModal(true) {
-        GroupPreferencesView(chatModel, groupInfo.id)
+      ModalManager.shared.showCustomModal { close ->
+        GroupPreferencesView(chatModel, groupInfo.id, close)
       }
     },
     inviteMembers = {

@@ -115,7 +115,6 @@
     <!-- Notification channels -->
     <string name="ntf_channel_messages">SimpleX Chat сообщения</string>
     <string name="ntf_channel_calls">SimpleX Chat звонки</string>
-    <string name="ntf_channel_calls_lockscreen">SimpleX Chat звонки (экран блокировки)</string>
 
     <!-- Notifications -->
     <string name="settings_notifications_mode_title">Сервис уведомлений</string>
@@ -473,9 +472,11 @@
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Ваш профиль хранится на вашем устройстве и отправляется только вашим контактам.\n\n<xliff:g id="appName">SimpleX</xliff:g> серверы не могут получить доступ к вашему профилю.</string>
     <string name="edit_image">Поменять аватар</string>
     <string name="delete_image">Удалить аватар</string>
-    <string name="save_and_notify_contact">Сохранить (и уведомить контакт)</string>
-    <string name="save_and_notify_contacts">Сохранить (и послать обновление контактам)</string>
-    <string name="save_and_notify_group_members">Сохранить (и уведомить членов группы)</string>
+    <string name="save_preferences_question">Сохранить предпочтения?</string>
+    <string name="save_and_notify_contact">Сохранить и уведомить контакт</string>
+    <string name="save_and_notify_contacts">Сохранить и уведомить контакты</string>
+    <string name="save_and_notify_group_members">Сохранить и уведомить членов группы</string>
+    <string name="exit_without_saving">Выйти без сохранения</string>
 
     <!-- Welcome Prompts - WelcomeView.kt -->
     <string name="you_control_your_chat">Вы котролируете ваш чат!</string>

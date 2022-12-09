@@ -20,6 +20,7 @@
 module Simplex.Chat.Types where
 
 import Control.Applicative ((<|>))
+import Crypto.Number.Serialize (os2ip)
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
@@ -125,6 +126,9 @@ directContact Contact {contactUsed, activeConn = Connection {connLevel, viaGroup
 
 anyDirectContact :: Contact -> Bool
 anyDirectContact Contact {contactUsed, activeConn = Connection {connLevel}} = connLevel == 0 || contactUsed
+
+contactSecurityCode :: Contact -> Maybe SecurityCode
+contactSecurityCode Contact {activeConn} = connectionCode activeConn
 
 data ContactRef = ContactRef
   { contactId :: ContactId,
@@ -866,6 +870,9 @@ groupMemberId' GroupMember {groupMemberId} = groupMemberId
 memberIncognito :: GroupMember -> Bool
 memberIncognito GroupMember {memberProfile, memberContactProfileId} = localProfileId memberProfile /= memberContactProfileId
 
+memberSecurityCode :: GroupMember -> Maybe SecurityCode
+memberSecurityCode GroupMember {activeConn} = connectionCode =<< activeConn
+
 data NewGroupMember = NewGroupMember
   { memInfo :: MemberInfo,
     memCategory :: GroupMemberCategory,
@@ -1302,9 +1309,28 @@ data Connection = Connection
     connStatus :: ConnStatus,
     localAlias :: Text,
     entityId :: Maybe Int64, -- contact, group member, file ID or user contact ID
+    connectionCode :: Maybe SecurityCode,
     createdAt :: UTCTime
   }
   deriving (Eq, Show, Generic)
+
+data SecurityCode = SecurityCode {securityCode :: Text, verifiedAt :: UTCTime}
+  deriving (Eq, Show, Generic)
+
+instance ToJSON SecurityCode where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+verificationCode :: ByteString -> Text
+verificationCode = T.pack . unwords . chunks 5 . show . os2ip
+  where
+    chunks _ [] = []
+    chunks n xs = let (h, t) = splitAt n xs in h : chunks n t
+
+sameVerificationCode :: Text -> Text -> Bool
+sameVerificationCode c1 c2 = noSpaces c1 == noSpaces c2
+  where
+    noSpaces = T.filter (/= ' ')
 
 aConnId :: Connection -> ConnId
 aConnId Connection {agentConnId = AgentConnId cId} = cId

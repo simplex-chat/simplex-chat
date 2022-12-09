@@ -115,7 +115,6 @@
   <!-- Notification channels -->
   <string name="ntf_channel_messages">SimpleX Chat Nachrichten</string>
   <string name="ntf_channel_calls">SimpleX Chat Anrufe</string>
-  <string name="ntf_channel_calls_lockscreen">SimpleX Chat Anrufe (Sperrbildschirm)</string>
 
   <!-- Notifications -->
   <string name="settings_notifications_mode_title">Benachrichtigungsdienst</string>
@@ -476,9 +475,11 @@
   <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Ihr Profil wird auf Ihrem Gerät gespeichert und nur mit Ihren Kontakten geteilt.\n\n<xliff:g id="appName">SimpleX</xliff:g>-Server können Ihr Profil nicht sehen.</string>
   <string name="edit_image">Bild bearbeiten</string>
   <string name="delete_image">Bild löschen</string>
-  <string name="save_and_notify_contact">Speichern (und Kontakt benachrichtigen)</string>
-  <string name="save_and_notify_contacts">Speichern (und Kontakte benachrichtigen)</string>
-  <string name="save_and_notify_group_members">Speichern (und Gruppenmitglieder benachrichtigen)</string>
+  <string name="save_preferences_question">Präferenzen speichern?</string>
+  <string name="save_and_notify_contact">Speichern und Kontakt benachrichtigen</string>
+  <string name="save_and_notify_contacts">Speichern und Kontakte benachrichtigen</string>
+  <string name="save_and_notify_group_members">Speichern und Gruppenmitglieder benachrichtigen</string>
+  <string name="exit_without_saving">Beenden ohne Speichern</string>
 
   <!-- Welcome Prompts - WelcomeView.kt -->
   <string name="you_control_your_chat">Sie haben volle Kontrolle über Ihren Chat!</string>

@@ -49,20 +49,26 @@ fun GroupMemberInfoView(
       connStats,
       newRole,
       developerTools,
-      openDirectChat = {
+      getContactChat = { chatModel.getContactChat(it) },
+      knownDirectChat = {
         withApi {
-          val oldChat = chatModel.getContactChat(member.memberContactId ?: return@withApi)
-          if (oldChat != null) {
-            openChat(oldChat.chatInfo, chatModel)
-          } else {
-            var newChat = chatModel.controller.apiGetChat(ChatType.Direct, member.memberContactId) ?: return@withApi
+          chatModel.chatItems.clear()
+          chatModel.chatItems.addAll(it.chatItems)
+          chatModel.chatId.value = it.chatInfo.id
+          closeAll()
+        }
+      },
+      newDirectChat = {
+        withApi {
+          val c = chatModel.controller.apiGetChat(ChatType.Direct, it)
+          if (c != null) {
             // TODO it's not correct to blindly set network status to connected - we should manage network status in model / backend
-            newChat = newChat.copy(serverInfo = Chat.ServerInfo(networkStatus = Chat.NetworkStatus.Connected()))
+            val newChat = c.copy(serverInfo = Chat.ServerInfo(networkStatus = Chat.NetworkStatus.Connected()))
             chatModel.addChat(newChat)
             chatModel.chatItems.clear()
             chatModel.chatId.value = newChat.id
+            closeAll()
           }
-          closeAll()
         }
       },
       removeMember = { removeMemberDialog(groupInfo, member, chatModel, close) },
@@ -114,7 +120,9 @@ fun GroupMemberInfoLayout(
   connStats: ConnectionStats?,
   newRole: MutableState<GroupMemberRole>,
   developerTools: Boolean,
-  openDirectChat: () -> Unit,
+  getContactChat: (Long) -> Chat?,
+  knownDirectChat: (Chat) -> Unit,
+  newDirectChat: (Long) -> Unit,
   removeMember: () -> Unit,
   onRoleSelected: (GroupMemberRole) -> Unit,
   switchMemberAddress: () -> Unit,
@@ -133,11 +141,20 @@ fun GroupMemberInfoLayout(
     }
     SectionSpacer()
 
-    if (member.memberContactId != null && groupInfo.fullGroupPreferences.directMessages.enable == GroupFeatureEnabled.ON) {
-      SectionView {
-        OpenChatButton(openDirectChat)
+    val contactId = member.memberContactId
+    if (contactId != null) {
+      val chat = getContactChat(contactId)
+      if (chat != null && chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.directContact) {
+        SectionView {
+          OpenChatButton(onClick = { knownDirectChat(chat) })
+        }
+        SectionSpacer()
+      } else if (groupInfo.fullGroupPreferences.directMessages.on) {
+        SectionView {
+          OpenChatButton(onClick = { newDirectChat(contactId) })
+        }
+        SectionSpacer()
       }
-      SectionSpacer()
     }
 
     SectionView(title = stringResource(R.string.member_info_section_title_member)) {
@@ -302,7 +319,9 @@ fun PreviewGroupMemberInfoLayout() {
       connStats = null,
       newRole = remember { mutableStateOf(GroupMemberRole.Member) },
       developerTools = false,
-      openDirectChat = {},
+      getContactChat = { Chat.sampleData },
+      knownDirectChat = {},
+      newDirectChat = {},
       removeMember = {},
       onRoleSelected = {},
       switchMemberAddress = {},

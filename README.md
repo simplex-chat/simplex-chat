@@ -5,8 +5,9 @@
 [![build](https://github.com/simplex-chat/simplex-chat/actions/workflows/build.yml/badge.svg?branch=stable)](https://github.com/simplex-chat/simplex-chat/actions/workflows/build.yml)
 [![GitHub downloads](https://img.shields.io/github/downloads/simplex-chat/simplex-chat/total)](https://github.com/simplex-chat/simplex-chat/releases)
 [![GitHub release](https://img.shields.io/github/v/release/simplex-chat/simplex-chat)](https://github.com/simplex-chat/simplex-chat/releases)
-[![Follow on Twitter](https://img.shields.io/twitter/follow/SimpleXChat?style=social)](https://twitter.com/SimpleXChat)
 [![Join on Reddit](https://img.shields.io/reddit/subreddit-subscribers/SimpleXChat?style=social)](https://www.reddit.com/r/SimpleXChat)
+[![Follow on Mastodon](https://img.shields.io/mastodon/follow/108619463746856738?domain=https%3A%2F%2Fmastodon.social&style=social)](https://mastodon.social/@simplex)
+[![Follow on Twitter](https://img.shields.io/twitter/follow/SimpleXChat?style=social)](https://twitter.com/SimpleXChat)
 
 [<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apple_store.svg" alt="iOS app" height="42">](https://apps.apple.com/us/app/simplex-chat/id1605771084)
 &nbsp;
@@ -85,15 +86,13 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 Recent updates:
 
+[Dec 06, 2022. November reviews and v4.3 released - with instant voice messages, irreversible deletion of sent messages and improved server configuration.](./blog/20221206-simplex-chat-v4.3-voice-messages.md)
+
 [Nov 08, 2022. Security audit by Trail of Bits, the new website and v4.2 released](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md)
 
 [Sep 28, 2022. v4.0: encrypted local chat database and many other changes](./blog/20220928-simplex-chat-v4-encrypted-database.md)
 
 [Sep 1, 2022. v3.2: incognito mode, support .onion server hostnames, setting contact names, changing color scheme, etc. Implementation audit is arranged for October!](./blog/20220901-simplex-chat-v3.2-incognito-mode.md)
-
-[Aug 8, 2022. v3.1: secret chat groups, access via Tor, reduced battery and traffic usage, advanced network settings, etc.](./blog/20220808-simplex-chat-v3.1-chat-groups.md)
-
-[Jul 11, 2022. v3.0: instant push notifications for iOS, e2e encrypted WebRTC audio/video calls, chat database export/import, privacy and performance improvements](./blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md)
 
 [All updates](./blog)
 
@@ -103,7 +102,7 @@ You need to share a link or scan a QR code (in person or during a video call) to
 
 The channel through which you share the link does not have to be secure - it is enough that you can confirm who sent you the message and that your SimpleX connection is established.
 
-<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/conversation.png" alt="Make a private connection" width="594" height="360">
+<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/app1.png" alt="Make a private connection" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/arrow.png" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/app2.png" alt="Conversation" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/arrow.png" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/app3.png" alt="Video call" height="360">
 
 ## :zap: Quick installation of a terminal app
 
@@ -187,19 +186,20 @@ If you are considering developing with SimpleX platform please get in touch for 
 - ✅ Chat database encryption.
 - ✅ Automatic chat history deletion.
 - ✅ Links to join groups and improve groups stability.
+- ✅ Voice messages (with recipient opt-out per contact).
+- ✅ Basic authentication for SMP servers (to authorize creating new queues).
+- ✅ View deleted messages, full message deletion by sender (with recipient opt-in per contact).
+- ✅ Block screenshots and view in recent apps.
+- ✅ Advanced server configuration.
 - 🏗 SMP queue redundancy and rotation (manual is supported).
-- 🏗 Voice messages (with recipient opt-out per contact).
-- 🏗 Basic authentication for SMP servers (to authorize creating new queues).
-- View deleted messages, full message deletion by sender (with recipient opt-in per contact).
-- Block screenshots and view in recent apps.
+- 🏗 Contact verification via a separate out-of-band channel.
+- 🏗 Ephemeral/disappearing/OTR conversations with the existing contacts.
 - Optionally avoid re-using the same TCP session for multiple connections.
 - Access password/pin (with optional alternative access password).
-- Ephemeral/disappearing/OTR conversations with the existing contacts.
 - Media server to optimize sending large files to groups.
 - Video messages.
 - Message delivery confirmation (with sender opt-in or opt-out per contact, TBC).
 - Multiple user profiles in the same chat database.
-- Advanced server configuration.
 - Feeds/broadcasts.
 - Unconfirmed: disappearing messages (with recipient opt-in per-contact).
 - Web widgets for custom interactivity in the chats.
@@ -246,8 +246,9 @@ It is possible to donate via:
 
 - [GitHub](https://github.com/sponsors/simplex-chat) - it is commission-free for us.
 - [OpenCollective](https://opencollective.com/simplex-chat) - it charges a commission, and also accepts donations in crypto-currencies.
-- Monero wallet: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt
-- Bitcoin wallet: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
+- Monero address: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt
+- Bitcoin address: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
+- Ethereum address: 0x83fd788f7241a2be61780ea9dc72d2151e6843e2
 - please let us know, via GitHub issue or chat, if you want to create a donation in some other cryptocurrency - we will add the address to the list.
 
 Thank you,

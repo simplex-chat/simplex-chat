@@ -258,6 +258,8 @@ CREATE TABLE connections(
   local_alias DEFAULT '' CHECK(local_alias NOT NULL),
   via_group_link INTEGER DEFAULT 0 CHECK(via_group_link NOT NULL),
   group_link_id BLOB,
+  security_code TEXT NULL,
+  security_code_verified_at TEXT NULL,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
@@ -450,3 +452,6 @@ CREATE UNIQUE INDEX idx_user_contact_links_group_id ON user_contact_links(
 CREATE UNIQUE INDEX idx_snd_files_last_inline_msg_delivery_id ON snd_files(
   last_inline_msg_delivery_id
 );
+CREATE INDEX idx_messages_connection_id ON messages(connection_id);
+CREATE INDEX idx_chat_items_group_member_id ON chat_items(group_member_id);
+CREATE INDEX idx_chat_items_contact_id ON chat_items(contact_id);

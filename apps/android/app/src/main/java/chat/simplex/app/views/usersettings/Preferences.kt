@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -19,33 +20,40 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 
 @Composable
-fun PreferencesView(m: ChatModel, user: User) {
-  var preferences by remember { mutableStateOf(user.fullPreferences) }
-  var currentPreferences by remember { mutableStateOf(preferences) }
-  PreferencesLayout(
-    preferences,
-    currentPreferences,
-    applyPrefs = { prefs ->
-      preferences = prefs
-    },
-    reset = {
-      preferences = currentPreferences
-    },
-    savePrefs = {
-      withApi {
-        val newProfile = user.profile.toProfile().copy(preferences = preferences.toPreferences())
-        val updatedProfile = m.controller.apiUpdateProfile(newProfile)
-        if (updatedProfile != null) {
-          val updatedUser = user.copy(
-            profile = updatedProfile.toLocalProfile(user.profile.profileId),
-            fullPreferences = preferences
-          )
-          currentPreferences = preferences
-          m.currentUser.value = updatedUser
-        }
+fun PreferencesView(m: ChatModel, user: User, close: () -> Unit,) {
+  var preferences by rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(user.fullPreferences) }
+  var currentPreferences by rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(preferences) }
+
+  fun savePrefs(afterSave: () -> Unit = {}) {
+    withApi {
+      val newProfile = user.profile.toProfile().copy(preferences = preferences.toPreferences())
+      val updatedProfile = m.controller.apiUpdateProfile(newProfile)
+      if (updatedProfile != null) {
+        val updatedUser = user.copy(
+          profile = updatedProfile.toLocalProfile(user.profile.profileId),
+          fullPreferences = preferences
+        )
+        currentPreferences = preferences
+        m.currentUser.value = updatedUser
       }
+      afterSave()
+    }
+  }
+  ModalView(
+    close = {
+      if (preferences == currentPreferences) close()
+      else  showUnsavedChangesAlert({ savePrefs(close) }, close)
     },
-  )
+    background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
+  ) {
+    PreferencesLayout(
+      preferences,
+      currentPreferences,
+      applyPrefs = { preferences = it },
+      reset = { preferences = currentPreferences },
+      savePrefs = ::savePrefs,
+    )
+  }
 }
 
 @Composable
@@ -106,4 +114,14 @@ private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Bool
       Text(stringResource(R.string.save_and_notify_contacts), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
     }
   }
+}
+
+private fun showUnsavedChangesAlert(save: () -> Unit, revert: () -> Unit) {
+  AlertManager.shared.showAlertDialogStacked(
+    title = generalGetString(R.string.save_preferences_question),
+    confirmText = generalGetString(R.string.save_and_notify_contacts),
+    dismissText = generalGetString(R.string.exit_without_saving),
+    onConfirm = save,
+    onDismiss = revert,
+  )
 }

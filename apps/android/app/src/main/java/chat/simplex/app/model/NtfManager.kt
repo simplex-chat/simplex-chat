@@ -25,9 +25,9 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
     const val ShowChatsAction: String = "chat.simplex.app.SHOW_CHATS"
 
     // DO NOT change notification channel settings / names
-    const val CallChannel: String = "chat.simplex.app.CALL_NOTIFICATION"
-    const val LockScreenCallChannel: String = "chat.simplex.app.LOCK_SCREEN_CALL_NOTIFICATION"
+    const val CallChannel: String = "chat.simplex.app.CALL_NOTIFICATION_1"
     const val AcceptCallAction: String = "chat.simplex.app.ACCEPT_CALL"
+    const val RejectCallAction: String = "chat.simplex.app.REJECT_CALL"
     const val CallNotificationId: Int = -1
 
     private const val ChatIdKey: String = "chatId"
@@ -39,24 +39,29 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
 
   init {
     manager.createNotificationChannel(NotificationChannel(MessageChannel, generalGetString(R.string.ntf_channel_messages), NotificationManager.IMPORTANCE_HIGH))
-    manager.createNotificationChannel(NotificationChannel(LockScreenCallChannel, generalGetString(R.string.ntf_channel_calls_lockscreen), NotificationManager.IMPORTANCE_HIGH))
-    manager.createNotificationChannel(callNotificationChannel())
+    manager.createNotificationChannel(callNotificationChannel(CallChannel, generalGetString(R.string.ntf_channel_calls)))
+    // Remove old channels since they can't be edited
+    manager.deleteNotificationChannel("chat.simplex.app.CALL_NOTIFICATION")
+    manager.deleteNotificationChannel("chat.simplex.app.LOCK_SCREEN_CALL_NOTIFICATION")
   }
 
   enum class NotificationAction {
     ACCEPT_CONTACT_REQUEST
   }
 
-  private fun callNotificationChannel(): NotificationChannel {
-    val callChannel = NotificationChannel(CallChannel, generalGetString(R.string.ntf_channel_calls), NotificationManager.IMPORTANCE_HIGH)
+  private fun callNotificationChannel(channelId: String, channelName: String): NotificationChannel {
+    val callChannel = NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_HIGH)
     val attrs = AudioAttributes.Builder()
       .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-      .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+      .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
       .build()
     val soundUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + context.packageName + "/" + R.raw.ring_once)
     Log.d(TAG,"callNotificationChannel sound: $soundUri")
     callChannel.setSound(soundUri, attrs)
     callChannel.enableVibration(true)
+    // the numbers below are explained here: https://developer.android.com/reference/android/os/Vibrator
+    // (wait, vibration duration, wait till off, wait till on again = ringtone mp3 duration - vibration duration - ~50ms lost somewhere)
+    callChannel.vibrationPattern = longArrayOf(250, 250, 0, 2600)
     return callChannel
   }
 
@@ -153,13 +158,14 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
   }
 
   fun notifyCallInvitation(invitation: RcvCallInvitation) {
-    if (SimplexApp.context.isAppOnForeground) return
     val keyguardManager = getKeyguardManager(context)
     Log.d(TAG,
-      "notifyCallInvitation pre-requests: device locked ${keyguardManager.isDeviceLocked}, " +
+      "notifyCallInvitation pre-requests: " +
           "keyguard locked ${keyguardManager.isKeyguardLocked}, " +
-          "callOnLockScreen ${appPreferences.callOnLockScreen.get()}"
+          "callOnLockScreen ${appPreferences.callOnLockScreen.get()}, " +
+          "onForeground ${SimplexApp.context.isAppOnForeground}"
     )
+    if (SimplexApp.context.isAppOnForeground) return
     val contactId = invitation.contact.id
     Log.d(TAG, "notifyCallInvitation $contactId")
     val image = invitation.contact.image
@@ -169,15 +175,17 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
       if ((keyguardManager.isKeyguardLocked || screenOff) && appPreferences.callOnLockScreen.get() != CallOnLockScreen.DISABLE) {
         val fullScreenIntent = Intent(context, IncomingCallActivity::class.java)
         val fullScreenPendingIntent = PendingIntent.getActivity(context, 0, fullScreenIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        NotificationCompat.Builder(context, LockScreenCallChannel)
+        NotificationCompat.Builder(context, CallChannel)
           .setFullScreenIntent(fullScreenPendingIntent, true)
           .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-          .setSilent(false)
       } else {
         val soundUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + context.packageName + "/" + R.raw.ring_once)
+        val fullScreenPendingIntent = PendingIntent.getActivity(context, 0, Intent(), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         NotificationCompat.Builder(context, CallChannel)
           .setContentIntent(chatPendingIntent(OpenChatAction, invitation.contact.id))
           .addAction(R.drawable.ntf_icon, generalGetString(R.string.accept), chatPendingIntent(AcceptCallAction, contactId))
+          .addAction(R.drawable.ntf_icon, generalGetString(R.string.reject), chatPendingIntent(RejectCallAction, contactId, true))
+          .setFullScreenIntent(fullScreenPendingIntent, true)
           .setSound(soundUri)
       }
     val text = generalGetString(
@@ -206,14 +214,19 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
       .setLargeIcon(largeIcon)
       .setColor(0x88FFFF)
       .setAutoCancel(true)
+    val notification = ntfBuilder.build()
+    // This makes notification sound and vibration repeat endlessly
+    notification.flags = notification.flags or NotificationCompat.FLAG_INSISTENT
     with(NotificationManagerCompat.from(context)) {
-      notify(CallNotificationId, ntfBuilder.build())
+      notify(CallNotificationId, notification)
     }
   }
 
   fun cancelCallNotification() {
     manager.cancel(CallNotificationId)
   }
+
+  fun hasNotificationsForChat(chatId: String): Boolean = manager.activeNotifications.any { it.id == chatId.hashCode() }
 
   private fun hideSecrets(cItem: ChatItem) : String {
     val md = cItem.formattedText
@@ -228,16 +241,20 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
     }
   }
 
-  private fun chatPendingIntent(intentAction: String, chatId: String? = null): PendingIntent {
+  private fun chatPendingIntent(intentAction: String, chatId: String? = null, broadcast: Boolean = false): PendingIntent {
     Log.d(TAG, "chatPendingIntent for $intentAction")
     val uniqueInt = (System.currentTimeMillis() and 0xfffffff).toInt()
-    var intent = Intent(context, MainActivity::class.java)
+    var intent = Intent(context, if (!broadcast) MainActivity::class.java else NtfActionReceiver::class.java)
       .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
       .setAction(intentAction)
     if (chatId != null) intent = intent.putExtra(ChatIdKey, chatId)
-    return TaskStackBuilder.create(context).run {
-      addNextIntentWithParentStack(intent)
-      getPendingIntent(uniqueInt, PendingIntent.FLAG_IMMUTABLE)
+    return if (!broadcast) {
+      TaskStackBuilder.create(context).run {
+        addNextIntentWithParentStack(intent)
+        getPendingIntent(uniqueInt, PendingIntent.FLAG_IMMUTABLE)
+      }
+    } else {
+      PendingIntent.getBroadcast(SimplexApp.context, uniqueInt, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
     }
   }
 
@@ -254,6 +271,12 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
           if (cInfo !is ChatInfo.ContactRequest) return
           acceptContactRequest(cInfo, SimplexApp.context.chatModel)
           SimplexApp.context.chatModel.controller.ntfManager.cancelNotificationsForChat(chatId)
+        }
+        RejectCallAction -> {
+          val invitation = SimplexApp.context.chatModel.callInvitations[chatId]
+          if (invitation != null) {
+            SimplexApp.context.chatModel.callManager.endCall(invitation = invitation)
+          }
         }
         else -> {
           Log.e(TAG, "Unknown action. Make sure you provide action from NotificationAction enum")

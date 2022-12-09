@@ -5,9 +5,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.*
 import androidx.compose.ui.window.Dialog
 import chat.simplex.app.R
 import chat.simplex.app.TAG
@@ -89,6 +90,41 @@ class AlertManager {
             hideAlert()
           }) { Text(dismissText) }
         }
+      )
+    }
+  }
+
+  fun showAlertDialogStacked(
+    title: String,
+    text: String? = null,
+    confirmText: String = generalGetString(R.string.ok),
+    onConfirm: (() -> Unit)? = null,
+    dismissText: String = generalGetString(R.string.cancel_verb),
+    onDismiss: (() -> Unit)? = null,
+    onDismissRequest: (() -> Unit)? = null,
+    destructive: Boolean = false
+  ) {
+    val alertText: (@Composable () -> Unit)? = if (text == null) null else { -> Text(text) }
+    showAlert {
+      AlertDialog(
+        onDismissRequest = { onDismissRequest?.invoke(); hideAlert() },
+        title = { Text(title) },
+        text = alertText,
+        buttons = {
+          Column(
+            Modifier.fillMaxWidth().padding(horizontal = 8.dp).padding(top = 16.dp, bottom = 2.dp),
+            horizontalAlignment = Alignment.End
+          ) {
+            TextButton(onClick = {
+              onDismiss?.invoke()
+              hideAlert()
+            }) { Text(dismissText) }
+            TextButton(onClick = {
+              onConfirm?.invoke()
+              hideAlert()
+            }) { Text(confirmText, color = if (destructive) MaterialTheme.colors.error else Color.Unspecified) }
+          }
+        },
       )
     }
   }

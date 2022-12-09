@@ -29,7 +29,10 @@ import androidx.core.content.FileProvider
 import androidx.core.text.HtmlCompat
 import chat.simplex.app.*
 import chat.simplex.app.model.CIFile
+import chat.simplex.app.model.json
 import kotlinx.coroutines.*
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 import java.io.*
 import java.text.SimpleDateFormat
 import java.util.*
@@ -462,3 +465,9 @@ val LongRange.Companion.saver
     save = { it.value.first to it.value.last },
     restore = { mutableStateOf(it.first..it.second) }
     )
+
+/* Make sure that T class has @Serializable annotation */
+inline fun <reified T> serializableSaver(): Saver<T, *> = Saver(
+    save = { json.encodeToString(it) },
+    restore = { json.decodeFromString(it) }
+  )
