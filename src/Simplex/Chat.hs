@@ -276,8 +276,8 @@ processChatCommand = \case
   APIStorageEncryption cfg -> withStoreChanged $ sqlCipherExport cfg
   ExecChatStoreSQL query -> CRSQLResult <$> withStore' (`execSQL` query)
   ExecAgentStoreSQL query -> CRSQLResult <$> withAgent (`execAgentStoreSQL` query)
-  APIGetChats withPCC -> CRApiChats <$> withUser (\user -> withStore' $ \db -> getChatPreviews db user withPCC)
-  APIGetChat (ChatRef cType cId) pagination search -> withUser' $ \user -> case cType of
+  APIGetChats withPCC -> CRApiChats <$> withUser' (\user -> withStore' $ \db -> getChatPreviews db user withPCC)
+  APIGetChat (ChatRef cType cId) pagination search -> withUser $ \user -> case cType of
     -- TODO optimize queries calculating ChatStats, currently they're disabled
     CTDirect -> do
       directChat <- withStore (\db -> getDirectChat db user cId pagination search)
@@ -525,7 +525,8 @@ processChatCommand = \case
         withStore' $ \db -> deleteGroupItemsAndMembers db user gInfo members
         withStore' $ \db -> deleteGroup db user gInfo
         let contactIds = mapMaybe memberContactId members
-        forM_ contactIds $ \ctId -> deleteUnusedContact ctId `catchError` (toView . CRChatError)
+        forM_ contactIds $ \ctId ->
+          deleteUnusedContact ctId `catchError` (toView . CRChatError)
         pure $ CRGroupDeletedUser gInfo
       where
         deleteUnusedContact contactId = do

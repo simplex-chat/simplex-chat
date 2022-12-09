@@ -607,8 +607,7 @@ deleteContactWithoutGroups db user@User {userId} Contact {contactId, localDispla
   deleteContactProfile_ db userId contactId
   DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
   DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
-  forM_ customUserProfileId $ \profileId ->
-    deleteUnusedIncognitoProfileById_ db user profileId
+  forM_ customUserProfileId $ \profileId -> deleteUnusedIncognitoProfileById_ db user profileId
 
 deleteUnusedIncognitoProfileById_ :: DB.Connection -> User -> ProfileId -> IO ()
 deleteUnusedIncognitoProfileById_ db User {userId} profile_id =
