@@ -766,10 +766,10 @@ processChatCommand = \case
     case memberConnId m of
       Just connId -> CRGroupMemberCode g m <$> getConnectionCode connId
       _ -> throwChatError CEGroupMemberNotActive
-  APISetContactVerified contactId code -> withUser $ \user -> do
+  APIVerifyContact contactId code -> withUser $ \user -> do
     Contact {activeConn} <- withStore $ \db -> getContact db user contactId
     verifyConnectionCode user activeConn code
-  APISetGroupMemberVerified gId gMemberId code -> withUser $ \user -> do
+  APIVerifyGroupMember gId gMemberId code -> withUser $ \user -> do
     GroupMember {activeConn} <- withStore $ \db -> getGroupMember db user gId gMemberId
     case activeConn of
       Just conn -> verifyConnectionCode user conn code
@@ -786,8 +786,8 @@ processChatCommand = \case
   SwitchGroupMember gName mName -> withMemberName gName mName APISwitchGroupMember
   GetContactCode cName -> withContactName cName APIGetContactCode
   GetGroupMemberCode gName mName -> withMemberName gName mName APIGetGroupMemberCode
-  SetContactVerified cName code -> withContactName cName (`APISetContactVerified` code)
-  SetGroupMemberVerified gName mName code -> withMemberName gName mName $ \gId mId -> APISetGroupMemberVerified gId mId code
+  VerifyContact cName code -> withContactName cName (`APIVerifyContact` code)
+  VerifyGroupMember gName mName code -> withMemberName gName mName $ \gId mId -> APIVerifyGroupMember gId mId code
   ChatHelp section -> pure $ CRChatHelp section
   Welcome -> withUser $ pure . CRWelcome
   AddContact -> withUser $ \User {userId} -> withChatLock "addContact" . procCmd $ do
@@ -1150,9 +1150,9 @@ processChatCommand = \case
     verifyConnectionCode :: User -> Connection -> Text -> m ChatResponse
     verifyConnectionCode user conn@Connection {connId} code = do
       code' <- getConnectionCode $ aConnId conn
-      unless (sameVerificationCode code code') $ throwChatError $ CEBadConnectionCode code'
-      withStore' $ \db -> setConnectionVerified db user connId $ Just code
-      pure CRCmdOk
+      let verified = sameVerificationCode code code'
+      when verified $withStore' $ \db -> setConnectionVerified db user connId $ Just code'
+      pure $ CRCodeVerification verified code'
     getSentChatItemIdByText :: User -> ChatRef -> ByteString -> m Int64
     getSentChatItemIdByText user@User {userId, localDisplayName} (ChatRef cType cId) msg = case cType of
       CTDirect -> withStore $ \db -> getDirectChatItemIdByText db userId cId SMDSnd (safeDecodeUtf8 msg)
@@ -3411,12 +3411,12 @@ chatCommandP =
       ("/switch @" <|> "/switch ") *> (SwitchContact <$> displayName),
       "/_get code @" *> (APIGetContactCode <$> A.decimal),
       "/_get code #" *> (APIGetGroupMemberCode <$> A.decimal <* A.space <*> A.decimal),
-      "/_verify code @" *> (APISetContactVerified <$> A.decimal <* A.space <*> textP),
-      "/_verify code @" *> (APISetGroupMemberVerified <$> A.decimal <* A.space <*> A.decimal <* A.space <*> textP),
+      "/_verify code @" *> (APIVerifyContact <$> A.decimal <* A.space <*> textP),
+      "/_verify code @" *> (APIVerifyGroupMember <$> A.decimal <* A.space <*> A.decimal <* A.space <*> textP),
       ("/code @" <|> "/code ") *> (GetContactCode <$> displayName),
       "/code #" *> (GetGroupMemberCode <$> displayName <* A.space <* optional (A.char '@') <*> displayName),
-      ("/verify @" <|> "/verify ") *> (SetContactVerified <$> displayName <* A.space <*> textP),
-      "/verify #" *> (SetGroupMemberVerified <$> displayName <* A.space <* optional (A.char '@') <*> displayName <* A.space <*> textP),
+      ("/verify @" <|> "/verify ") *> (VerifyContact <$> displayName <* A.space <*> textP),
+      "/verify #" *> (VerifyGroupMember <$> displayName <* A.space <* optional (A.char '@') <*> displayName <* A.space <*> textP),
       ("/help files" <|> "/help file" <|> "/hf") $> ChatHelp HSFiles,
       ("/help groups" <|> "/help group" <|> "/hg") $> ChatHelp HSGroups,
       ("/help address" <|> "/ha") $> ChatHelp HSMyAddress,

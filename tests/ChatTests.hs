@@ -4573,7 +4573,8 @@ testMarkContactVerified =
     bCode `shouldBe` aCode
     alice ##> "/verify bob 123"
     alice <##. "error: current connection code is "
-    alice #$> ("/verify bob " <> aCode, id, "ok")
+    alice ##> ("/verify bob " <> aCode)
+    alice <## "connection verified"
     alice ##> "/i bob"
     bobInfo alice
     alice <## "connection verified"
@@ -4598,7 +4599,8 @@ testMarkGroupMemberVerified =
     bCode `shouldBe` aCode
     alice ##> "/verify #team bob 123"
     alice <##. "error: current connection code is "
-    alice #$> ("/verify #team bob " <> aCode, id, "ok")
+    alice ##> ("/verify #team bob " <> aCode)
+    alice <## "connection verified"
     alice ##> "/i #team bob"
     bobInfo alice
     alice <## "connection verified"

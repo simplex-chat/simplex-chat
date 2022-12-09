@@ -74,6 +74,7 @@ responseToView user_ testView ts = \case
   CRGroupMemberInfo g m cStats -> viewGroupMemberInfo g m cStats
   CRContactSwitch ct progress -> viewContactSwitch ct progress
   CRGroupMemberSwitch g m progress -> viewGroupMemberSwitch g m progress
+  CRCodeVerification verified code -> [plain $ if verified then "connection verified" else "error: current connection code is " <> code]
   CRContactCode ct code -> viewContactCode ct code testView
   CRGroupMemberCode g m code -> viewGroupMemberCode g m code testView
   CRNewChatItem (AChatItem _ _ chat item) -> unmuted chat item $ viewChatItem chat item False ts
@@ -1122,7 +1123,6 @@ viewChatError = \case
     CECallContact _ -> []
     CECallState _ -> []
     CEDirectMessagesProhibited dir ct -> viewDirectMessagesProhibited dir ct
-    CEBadConnectionCode code -> [plain $ "error: current connection code is " <> code]
     CEAgentVersion -> ["unsupported agent version"]
     CEAgentNoSubResult connId -> ["no subscription result for connection: " <> sShow connId]
     CECommandError e -> ["bad chat command: " <> plain e]
