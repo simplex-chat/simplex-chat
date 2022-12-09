@@ -603,17 +603,12 @@ deleteContact db user@User {userId} Contact {contactId, localDisplayName, active
 -- should only be used if contact is not member of any groups
 deleteContactWithoutGroups :: DB.Connection -> User -> Contact -> IO ()
 deleteContactWithoutGroups db user@User {userId} Contact {contactId, localDisplayName, activeConn = Connection {customUserProfileId}} = do
-  timeItIO "DELETE FROM chat_items" $
-    DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
-  timeItIO "deleteContactProfile_" $
-    deleteContactProfile_ db userId contactId
-  timeItIO "DELETE FROM display_names" $
-    DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
-  timeItIO "DELETE FROM contacts" $
-    DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+  DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+  deleteContactProfile_ db userId contactId
+  DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
+  DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
   forM_ customUserProfileId $ \profileId ->
-    timeItIO "deleteUnusedIncognitoProfileById_" $
-      deleteUnusedIncognitoProfileById_ db user profileId
+    deleteUnusedIncognitoProfileById_ db user profileId
 
 deleteUnusedIncognitoProfileById_ :: DB.Connection -> User -> ProfileId -> IO ()
 deleteUnusedIncognitoProfileById_ db User {userId} profile_id =
@@ -1787,28 +1782,17 @@ getGroup db user groupId = do
 
 deleteGroupConnectionsAndFiles :: DB.Connection -> User -> GroupInfo -> [GroupMember] -> IO ()
 deleteGroupConnectionsAndFiles db User {userId} GroupInfo {groupId} members = do
-  timeItIO "forM_ members DELETE FROM connections" $
-    forM_ members $ \m@GroupMember {groupMemberId} ->
-      timeItIO ("DELETE FROM connections, group_member_id " <> show groupMemberId) $
-        DB.execute db "DELETE FROM connections WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId' m)
-  timeItIO "DELETE FROM files" $
-    DB.execute db "DELETE FROM files WHERE user_id = ? AND group_id = ?" (userId, groupId)
+  forM_ members $ \m -> DB.execute db "DELETE FROM connections WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId' m)
+  DB.execute db "DELETE FROM files WHERE user_id = ? AND group_id = ?" (userId, groupId)
 
 deleteGroupItemsAndMembers :: DB.Connection -> User -> GroupInfo -> [GroupMember] -> IO ()
 deleteGroupItemsAndMembers db user@User {userId} GroupInfo {groupId} members = do
-  timeItIO "DELETE FROM chat_items" $
-    DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
-  timeItIO "cleanupHostGroupLinkConn_" $
-    void $ runExceptT cleanupHostGroupLinkConn_ -- to allow repeat connection via the same group link if one was used
-  timeItIO "DELETE FROM group_members" $
-    DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_id = ?" (userId, groupId)
-  timeItIO "forM_ members cleanupMemberProfileAndName_, maybe deleteUnusedIncognitoProfileById_" $
-    forM_ members $ \m@GroupMember {memberProfile = LocalProfile {profileId}} -> do
-      timeItIO "cleanupMemberProfileAndName_" $
-        cleanupMemberProfileAndName_ db user m
-      when (memberIncognito m) $
-        timeItIO "deleteUnusedIncognitoProfileById_" $
-          deleteUnusedIncognitoProfileById_ db user profileId
+  DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
+  void $ runExceptT cleanupHostGroupLinkConn_ -- to allow repeat connection via the same group link if one was used
+  DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_id = ?" (userId, groupId)
+  forM_ members $ \m@GroupMember {memberProfile = LocalProfile {profileId}} -> do
+    cleanupMemberProfileAndName_ db user m
+    when (memberIncognito m) $ deleteUnusedIncognitoProfileById_ db user profileId
   where
     cleanupHostGroupLinkConn_ = do
       hostId <- getHostMemberId_ db user groupId
@@ -2196,14 +2180,10 @@ cleanupMemberProfileAndName_ db User {userId} GroupMember {groupMemberId, member
   -- check record has no memberContactId (contact_id) - it means contact has been deleted and doesn't use profile & ldn
   when (isNothing memberContactId) $ do
     -- check other group member records don't use profile & ldn
-    sameProfileMember :: (Maybe GroupMemberId) <-
-      timeItIO "sameProfileMember <- SELECT group_member_id FROM group_members" $
-        maybeFirstRow fromOnly $ DB.query db "SELECT group_member_id FROM group_members WHERE user_id = ? AND contact_profile_id = ? AND group_member_id != ? LIMIT 1" (userId, memberContactProfileId, groupMemberId)
+    sameProfileMember :: (Maybe GroupMemberId) <- maybeFirstRow fromOnly $ DB.query db "SELECT group_member_id FROM group_members WHERE user_id = ? AND contact_profile_id = ? AND group_member_id != ? LIMIT 1" (userId, memberContactProfileId, groupMemberId)
     when (isNothing sameProfileMember) $ do
-      timeItIO "DELETE FROM contact_profiles" $
-        DB.execute db "DELETE FROM contact_profiles WHERE user_id = ? AND contact_profile_id = ?" (userId, memberContactProfileId)
-      timeItIO "DELETE FROM display_names" $
-        DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
+      DB.execute db "DELETE FROM contact_profiles WHERE user_id = ? AND contact_profile_id = ?" (userId, memberContactProfileId)
+      DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
 
 deleteGroupMemberConnection :: DB.Connection -> User -> GroupMember -> IO ()
 deleteGroupMemberConnection db User {userId} GroupMember {groupMemberId} =
@@ -4671,12 +4651,3 @@ data StoreError
 instance ToJSON StoreError where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "SE"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "SE"
-
-timeItIO :: String -> IO a -> IO a
-timeItIO s a = do
-  t1 <- getCurrentTime
-  r <- a
-  t2 <- getCurrentTime
-  let diff = diffInMillis t2 t1
-  print $ show diff <> " ms - " <> s
-  pure r

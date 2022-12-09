@@ -1574,11 +1574,3 @@ instance ToJSON ServerCfg where
 
 instance FromJSON ServerCfg where
   parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
-
--- move to Util
-
-diffInMillis :: UTCTime -> UTCTime -> Int
-diffInMillis a b = (`div` 1000000000) . fromInteger . fromPico . nominalDiffTimeToSeconds $ diffUTCTime a b
-
-fromPico :: Pico -> Integer
-fromPico (MkFixed i) = i

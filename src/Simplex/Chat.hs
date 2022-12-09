@@ -509,34 +509,33 @@ processChatCommand = \case
       deleteAgentConnectionAsync' user pccConnId pccAgentConnId
       withStore' $ \db -> deletePendingContactConnection db userId chatId
       pure $ CRContactConnectionDeleted conn
-    CTGroup -> timeItM "APIDeleteChat CTGroup" $ do
-      Group gInfo@GroupInfo {membership} members <- timeItM "getGroup" $ withStore $ \db -> getGroup db user chatId
+    CTGroup -> do
+      Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user chatId
       let canDelete = memberRole (membership :: GroupMember) == GROwner || not (memberCurrent membership)
       unless canDelete $ throwChatError CEGroupUserRole
-      filesInfo <- timeItM "getGroupFileInfo" $ withStore' $ \db -> getGroupFileInfo db user gInfo
+      filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
       withChatLock "deleteChat group" . procCmd $ do
-        timeItM "forM_ filesInfo deleteFile" $ forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
+        forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
         when (memberActive membership) . void $ sendGroupMessage gInfo members XGrpDel
-        timeItM "deleteGroupLink'" $ deleteGroupLink' user gInfo `catchError` \_ -> pure ()
-        timeItM "forM_ members deleteMemberConnection" $ forM_ members $ deleteMemberConnection user
+        deleteGroupLink' user gInfo `catchError` \_ -> pure ()
+        forM_ members $ deleteMemberConnection user
         -- functions below are called in separate transactions to prevent crashes on android
         -- (possibly, race condition on integrity check?)
-        timeItM "deleteGroupConnectionsAndFiles" $ withStore' $ \db -> deleteGroupConnectionsAndFiles db user gInfo members
-        timeItM "deleteGroupItemsAndMembers" $ withStore' $ \db -> deleteGroupItemsAndMembers db user gInfo members
-        timeItM "deleteGroup" $ withStore' $ \db -> deleteGroup db user gInfo
+        withStore' $ \db -> deleteGroupConnectionsAndFiles db user gInfo members
+        withStore' $ \db -> deleteGroupItemsAndMembers db user gInfo members
+        withStore' $ \db -> deleteGroup db user gInfo
         let contactIds = mapMaybe memberContactId members
-        timeItM "forM_ contactIds deleteUnusedContact" $
-          forM_ contactIds $ \ctId -> timeItM ("deleteUnusedContact " <> show ctId) $ deleteUnusedContact ctId `catchError` (toView . CRChatError)
+        forM_ contactIds $ \ctId -> deleteUnusedContact ctId `catchError` (toView . CRChatError)
         pure $ CRGroupDeletedUser gInfo
       where
         deleteUnusedContact contactId = do
-          ct <- timeItM "getContact" $ withStore $ \db -> getContact db user contactId
+          ct <- withStore $ \db -> getContact db user contactId
           unless (directContact ct) $ do
-            ctGroupId <- timeItM "checkContactHasGroups" $ withStore' $ \db -> checkContactHasGroups db user ct
+            ctGroupId <- withStore' $ \db -> checkContactHasGroups db user ct
             when (isNothing ctGroupId) $ do
-              conns <- timeItM "getContactConnections" $ withStore $ \db -> getContactConnections db userId ct
-              timeItM "forM_ conns deleteAgentConnectionAsync" $ forM_ conns $ \conn -> deleteAgentConnectionAsync user conn `catchError` \_ -> pure ()
-              timeItM "deleteContactWithoutGroups" $ withStore' $ \db -> deleteContactWithoutGroups db user ct
+              conns <- withStore $ \db -> getContactConnections db userId ct
+              forM_ conns $ \conn -> deleteAgentConnectionAsync user conn `catchError` \_ -> pure ()
+              withStore' $ \db -> deleteContactWithoutGroups db user ct
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIClearChat (ChatRef cType chatId) -> withUser $ \user -> case cType of
     CTDirect -> do
@@ -3536,12 +3535,3 @@ chatCommandP =
 adminContactReq :: ConnReqContact
 adminContactReq =
   either error id $ strDecode "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D"
-
-timeItM :: ChatMonad m => String -> m a -> m a
-timeItM s a = do
-  t1 <- liftIO getCurrentTime
-  r <- a
-  t2 <- liftIO getCurrentTime
-  let diff = diffInMillis t2 t1
-  liftIO . print $ show diff <> " ms - " <> s
-  pure r
