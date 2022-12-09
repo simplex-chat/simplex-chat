@@ -173,7 +173,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
       thread(name="stdout/stderr pipe") {
         Log.d(TAG, "starting server")
         var server: LocalServerSocket? = null
-        for (i in 0..100_000 step 1234) {
+        for (i in 0..100) {
           try {
             server = LocalServerSocket(socketName + i)
             break
