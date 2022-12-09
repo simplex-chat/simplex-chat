@@ -3537,7 +3537,7 @@ chatCommandP =
       gName <- displayName
       fullName <- fullNameP gName
       let groupPreferences = Just (emptyGroupPrefs :: GroupPreferences) {directMessages = Just GroupPreference {enable = FEOn}}
-      pure GroupProfile {displayName = gName, fullName, description = Nothing, image = Nothing, groupPreferences}
+      pure GroupProfile {displayName = gName, fullName, image = Nothing, groupPreferences}
     fullNameP name = do
       n <- (A.space *> A.takeByteString) <|> pure ""
       pure $ if B.null n then name else safeDecodeUtf8 n
