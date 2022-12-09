@@ -759,12 +759,29 @@ processChatCommand = \case
       Just connId -> withAgent (\a -> switchConnectionAsync a "" connId) $> CRCmdOk
       _ -> throwChatError CEGroupMemberNotActive
   APIGetContactCode contactId -> withUser $ \user -> do
-    ct <- withStore $ \db -> getContact db user contactId
-    CRContactCode ct <$> getConnectionCode (contactConnId ct)
+    ct@Contact {activeConn = conn@Connection {connId}} <- withStore $ \db -> getContact db user contactId
+    code <- getConnectionCode (contactConnId ct)
+    ct' <- case contactSecurityCode ct of
+      Just SecurityCode {securityCode}
+        | sameVerificationCode code securityCode -> pure ct
+        | otherwise -> do
+          withStore' $ \db -> setConnectionVerified db user connId Nothing
+          pure (ct :: Contact) {activeConn = conn {connectionCode = Nothing}}
+      _ -> pure ct
+    pure $ CRContactCode ct' code
   APIGetGroupMemberCode gId gMemberId -> withUser $ \user -> do
-    (g, m) <- withStore $ \db -> (,) <$> getGroupInfo db user gId <*> getGroupMember db user gId gMemberId
-    case memberConnId m of
-      Just connId -> CRGroupMemberCode g m <$> getConnectionCode connId
+    (g, m@GroupMember {activeConn}) <- withStore $ \db -> (,) <$> getGroupInfo db user gId <*> getGroupMember db user gId gMemberId
+    case activeConn of
+      Just conn@Connection {connId} -> do
+        code <- getConnectionCode $ aConnId conn
+        m' <- case memberSecurityCode m of
+          Just SecurityCode {securityCode}
+            | sameVerificationCode code securityCode -> pure m
+            | otherwise -> do
+              withStore' $ \db -> setConnectionVerified db user connId Nothing
+              pure (m :: GroupMember) {activeConn = Just $ (conn :: Connection) {connectionCode = Nothing}}
+          _ -> pure m
+        pure $ CRGroupMemberCode g m' code
       _ -> throwChatError CEGroupMemberNotActive
   APIVerifyContact contactId code -> withUser $ \user -> do
     Contact {activeConn} <- withStore $ \db -> getContact db user contactId
@@ -1151,7 +1168,7 @@ processChatCommand = \case
     verifyConnectionCode user conn@Connection {connId} code = do
       code' <- getConnectionCode $ aConnId conn
       let verified = sameVerificationCode code code'
-      when verified $withStore' $ \db -> setConnectionVerified db user connId $ Just code'
+      when verified . withStore' $ \db -> setConnectionVerified db user connId $ Just code'
       pure $ CRCodeVerification verified code'
     getSentChatItemIdByText :: User -> ChatRef -> ByteString -> m Int64
     getSentChatItemIdByText user@User {userId, localDisplayName} (ChatRef cType cId) msg = case cType of
