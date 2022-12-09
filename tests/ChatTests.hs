@@ -498,7 +498,7 @@ testGroupShared alice bob cath checkMessages = do
   connectUsers alice cath
   alice ##> "/g team"
   alice <## "group #team is created"
-  alice <## "use /a team <name> to add members"
+  alice <## "to add members use /a team <name> or /create link #team"
   alice ##> "/a team bob"
   concurrentlyN_
     [ alice <## "invitation to join the group #team sent to bob",
@@ -633,7 +633,7 @@ testGroup2 =
       connectUsers alice dan
       alice ##> "/g club"
       alice <## "group #club is created"
-      alice <## "use /a club <name> to add members"
+      alice <## "to add members use /a club <name> or /create link #club"
       alice ##> "/a club bob"
       concurrentlyN_
         [ alice <## "invitation to join the group #club sent to bob",
@@ -851,10 +851,10 @@ testGroupSameName =
     \alice _ -> do
       alice ##> "/g team"
       alice <## "group #team is created"
-      alice <## "use /a team <name> to add members"
+      alice <## "to add members use /a team <name> or /create link #team"
       alice ##> "/g team"
       alice <## "group #team_1 (team) is created"
-      alice <## "use /a team_1 <name> to add members"
+      alice <## "to add members use /a team_1 <name> or /create link #team_1"
 
 testGroupDeleteWhenInvited :: IO ()
 testGroupDeleteWhenInvited =
@@ -863,7 +863,7 @@ testGroupDeleteWhenInvited =
       connectUsers alice bob
       alice ##> "/g team"
       alice <## "group #team is created"
-      alice <## "use /a team <name> to add members"
+      alice <## "to add members use /a team <name> or /create link #team"
       alice ##> "/a team bob"
       concurrentlyN_
         [ alice <## "invitation to join the group #team sent to bob",
@@ -890,7 +890,7 @@ testGroupReAddInvited =
       connectUsers alice bob
       alice ##> "/g team"
       alice <## "group #team is created"
-      alice <## "use /a team <name> to add members"
+      alice <## "to add members use /a team <name> or /create link #team"
       alice ##> "/a team bob"
       concurrentlyN_
         [ alice <## "invitation to join the group #team sent to bob",
@@ -925,7 +925,7 @@ testGroupReAddInvitedChangeRole =
       connectUsers alice bob
       alice ##> "/g team"
       alice <## "group #team is created"
-      alice <## "use /a team <name> to add members"
+      alice <## "to add members use /a team <name> or /create link #team"
       alice ##> "/a team bob"
       concurrentlyN_
         [ alice <## "invitation to join the group #team sent to bob",
@@ -965,7 +965,7 @@ testGroupDeleteInvitedContact =
       connectUsers alice bob
       alice ##> "/g team"
       alice <## "group #team is created"
-      alice <## "use /a team <name> to add members"
+      alice <## "to add members use /a team <name> or /create link #team"
       alice ##> "/a team bob"
       concurrentlyN_
         [ alice <## "invitation to join the group #team sent to bob",
@@ -996,7 +996,7 @@ testDeleteGroupMemberProfileKept =
       -- group 1
       alice ##> "/g team"
       alice <## "group #team is created"
-      alice <## "use /a team <name> to add members"
+      alice <## "to add members use /a team <name> or /create link #team"
       alice ##> "/a team bob"
       concurrentlyN_
         [ alice <## "invitation to join the group #team sent to bob",
@@ -1015,7 +1015,7 @@ testDeleteGroupMemberProfileKept =
       -- group 2
       alice ##> "/g club"
       alice <## "group #club is created"
-      alice <## "use /a club <name> to add members"
+      alice <## "to add members use /a club <name> or /create link #club"
       alice ##> "/a club bob"
       concurrentlyN_
         [ alice <## "invitation to join the group #club sent to bob",
@@ -1108,7 +1108,7 @@ testGroupList =
       createGroup2 "team" alice bob
       alice ##> "/g tennis"
       alice <## "group #tennis is created"
-      alice <## "use /a tennis <name> to add members"
+      alice <## "to add members use /a tennis <name> or /create link #tennis"
       alice ##> "/a tennis bob"
       concurrentlyN_
         [ alice <## "invitation to join the group #tennis sent to bob",
@@ -1377,7 +1377,7 @@ testUpdateMemberRole =
       connectUsers alice bob
       alice ##> "/g team"
       alice <## "group #team is created"
-      alice <## "use /a team <name> to add members"
+      alice <## "to add members use /a team <name> or /create link #team"
       addMember "team" alice bob GRAdmin
       alice ##> "/mr team bob member"
       alice <## "#team: you changed the role of bob from admin to member"
@@ -1425,7 +1425,7 @@ testGroupDeleteUnusedContacts =
       -- create group 2
       alice ##> "/g club"
       alice <## "group #club is created"
-      alice <## "use /a club <name> to add members"
+      alice <## "to add members use /a club <name> or /create link #club"
       alice ##> "/a club bob"
       concurrentlyN_
         [ alice <## "invitation to join the group #club sent to bob",
@@ -1508,7 +1508,7 @@ testGroupAsync = withTmpFiles $ do
       connectUsers alice bob
       alice ##> "/g team"
       alice <## "group #team is created"
-      alice <## "use /a team <name> to add members"
+      alice <## "to add members use /a team <name> or /create link #team"
       alice ##> "/a team bob"
       concurrentlyN_
         [ alice <## "invitation to join the group #team sent to bob",
@@ -2691,7 +2691,7 @@ testAutoReplyMessageInIncognito = testChat2 aliceProfile bobProfile $
         do
           alice <## ("bob (Bob): contact is connected, your incognito profile for this contact is " <> aliceIncognito)
           alice
-            <### [ "use /info bob to print out this incognito profile again",
+            <### [ "use /i bob to print out this incognito profile again",
                    WithTime "i @bob hello!"
                  ]
       ]
@@ -2710,10 +2710,10 @@ testConnectIncognitoInvitationLink = testChat3 aliceProfile bobProfile cathProfi
     concurrentlyN_
       [ do
           bob <## (aliceIncognito <> ": contact is connected, your incognito profile for this contact is " <> bobIncognito)
-          bob <## ("use /info " <> aliceIncognito <> " to print out this incognito profile again"),
+          bob <## ("use /i " <> aliceIncognito <> " to print out this incognito profile again"),
         do
           alice <## (bobIncognito <> ": contact is connected, your incognito profile for this contact is " <> aliceIncognito)
-          alice <## ("use /info " <> bobIncognito <> " to print out this incognito profile again")
+          alice <## ("use /i " <> bobIncognito <> " to print out this incognito profile again")
       ]
     -- after turning incognito mode off conversation is incognito
     alice #$> ("/incognito off", id, "ok")
@@ -2792,7 +2792,7 @@ testConnectIncognitoContactAddress = testChat2 aliceProfile bobProfile $
     concurrentlyN_
       [ do
           bob <## ("alice (Alice): contact is connected, your incognito profile for this contact is " <> bobIncognito)
-          bob <## "use /info alice to print out this incognito profile again",
+          bob <## "use /i alice to print out this incognito profile again",
         alice <## (bobIncognito <> ": contact is connected")
       ]
     -- after turning incognito mode off conversation is incognito
@@ -2828,7 +2828,7 @@ testAcceptContactRequestIncognito = testChat2 aliceProfile bobProfile $
       [ bob <## (aliceIncognito <> ": contact is connected"),
         do
           alice <## ("bob (Bob): contact is connected, your incognito profile for this contact is " <> aliceIncognito)
-          alice <## "use /info bob to print out this incognito profile again"
+          alice <## "use /i bob to print out this incognito profile again"
       ]
     -- after turning incognito mode off conversation is incognito
     alice #$> ("/incognito off", id, "ok")
@@ -2867,13 +2867,13 @@ testJoinGroupIncognito = testChat4 aliceProfile bobProfile cathProfile danProfil
     concurrentlyN_
       [ do
           cath <## ("alice (Alice): contact is connected, your incognito profile for this contact is " <> cathIncognito)
-          cath <## "use /info alice to print out this incognito profile again",
+          cath <## "use /i alice to print out this incognito profile again",
         alice <## (cathIncognito <> ": contact is connected")
       ]
     -- alice creates group
     alice ##> "/g secret_club"
     alice <## "group #secret_club is created"
-    alice <## "use /a secret_club <name> to add members"
+    alice <## "to add members use /a secret_club <name> or /create link #secret_club"
     -- alice invites bob
     alice ##> "/a secret_club bob"
     concurrentlyN_
@@ -3053,13 +3053,13 @@ testCantInviteContactIncognito = testChat2 aliceProfile bobProfile $
       [ bob <## (aliceIncognito <> ": contact is connected"),
         do
           alice <## ("bob (Bob): contact is connected, your incognito profile for this contact is " <> aliceIncognito)
-          alice <## "use /info bob to print out this incognito profile again"
+          alice <## "use /i bob to print out this incognito profile again"
       ]
     -- alice creates group non incognito
     alice #$> ("/incognito off", id, "ok")
     alice ##> "/g club"
     alice <## "group #club is created"
-    alice <## "use /a club <name> to add members"
+    alice <## "to add members use /a club <name> or /create link #club"
     alice ##> "/a club bob"
     alice <## "you're using your main profile for this group - prohibited to invite contacts to whom you are connected incognito"
     -- bob doesn't receive invitation
@@ -3083,7 +3083,7 @@ testCantSeeGlobalPrefsUpdateIncognito = testChat3 aliceProfile bobProfile cathPr
       [ bob <## (aliceIncognito <> ": contact is connected"),
         do
           alice <## ("bob (Bob): contact is connected, your incognito profile for this contact is " <> aliceIncognito)
-          alice <## "use /info bob to print out this incognito profile again",
+          alice <## "use /i bob to print out this incognito profile again",
         do
           cath <## "alice (Alice): contact is connected"
       ]
@@ -3132,12 +3132,12 @@ testDeleteContactThenGroupDeletesIncognitoProfile = testChat2 aliceProfile bobPr
       [ alice <## (bobIncognito <> ": contact is connected"),
         do
           bob <## ("alice (Alice): contact is connected, your incognito profile for this contact is " <> bobIncognito)
-          bob <## "use /info alice to print out this incognito profile again"
+          bob <## "use /i alice to print out this incognito profile again"
       ]
     -- bob joins group using incognito profile
     alice ##> "/g team"
     alice <## "group #team is created"
-    alice <## "use /a team <name> to add members"
+    alice <## "to add members use /a team <name> or /create link #team"
     alice ##> ("/a team " <> bobIncognito)
     concurrentlyN_
       [ alice <## ("invitation to join the group #team sent to " <> bobIncognito),
@@ -3184,12 +3184,12 @@ testDeleteGroupThenContactDeletesIncognitoProfile = testChat2 aliceProfile bobPr
       [ alice <## (bobIncognito <> ": contact is connected"),
         do
           bob <## ("alice (Alice): contact is connected, your incognito profile for this contact is " <> bobIncognito)
-          bob <## "use /info alice to print out this incognito profile again"
+          bob <## "use /i alice to print out this incognito profile again"
       ]
     -- bob joins group using incognito profile
     alice ##> "/g team"
     alice <## "group #team is created"
-    alice <## "use /a team <name> to add members"
+    alice <## "to add members use /a team <name> or /create link #team"
     alice ##> ("/a team " <> bobIncognito)
     concurrentlyN_
       [ alice <## ("invitation to join the group #team sent to " <> bobIncognito),
@@ -4101,7 +4101,7 @@ testGroupLink =
     \alice bob cath -> do
       alice ##> "/g team"
       alice <## "group #team is created"
-      alice <## "use /a team <name> to add members"
+      alice <## "to add members use /a team <name> or /create link #team"
       alice ##> "/show link #team"
       alice <## "no group link, to create: /create link #team"
       alice ##> "/create link #team"
@@ -4201,7 +4201,7 @@ testGroupLinkDeleteGroupRejoin =
     \alice bob -> do
       alice ##> "/g team"
       alice <## "group #team is created"
-      alice <## "use /a team <name> to add members"
+      alice <## "to add members use /a team <name> or /create link #team"
       alice ##> "/create link #team"
       gLink <- getGroupLink alice "team" True
       bob ##> ("/c " <> gLink)
@@ -4257,7 +4257,7 @@ testGroupLinkContactUsed =
     \alice bob -> do
       alice ##> "/g team"
       alice <## "group #team is created"
-      alice <## "use /a team <name> to add members"
+      alice <## "to add members use /a team <name> or /create link #team"
       alice ##> "/create link #team"
       gLink <- getGroupLink alice "team" True
       bob ##> ("/c " <> gLink)
@@ -4296,14 +4296,14 @@ testGroupLinkIncognitoMembership =
       concurrentlyN_
         [ do
             bob <## ("alice (Alice): contact is connected, your incognito profile for this contact is " <> bobIncognito)
-            bob <## "use /info alice to print out this incognito profile again",
+            bob <## "use /i alice to print out this incognito profile again",
           alice <## (bobIncognito <> ": contact is connected")
         ]
       bob #$> ("/incognito off", id, "ok")
       -- alice creates group
       alice ##> "/g team"
       alice <## "group #team is created"
-      alice <## "use /a team <name> to add members"
+      alice <## "to add members use /a team <name> or /create link #team"
       -- alice invites bob
       alice ##> ("/a team " <> bobIncognito)
       concurrentlyN_
@@ -4326,7 +4326,7 @@ testGroupLinkIncognitoMembership =
       concurrentlyN_
         [ do
             bob <## ("cath (Catherine): contact is connected, your incognito profile for this contact is " <> bobIncognito)
-            bob <## "use /info cath to print out this incognito profile again"
+            bob <## "use /i cath to print out this incognito profile again"
             bob <## "cath invited to group #team via your group link"
             bob <## "#team: cath joined the group",
           do
@@ -4352,12 +4352,12 @@ testGroupLinkIncognitoMembership =
       concurrentlyN_
         [ do
             bob <## (danIncognito <> ": contact is connected, your incognito profile for this contact is " <> bobIncognito)
-            bob <## ("use /info " <> danIncognito <> " to print out this incognito profile again")
+            bob <## ("use /i " <> danIncognito <> " to print out this incognito profile again")
             bob <## (danIncognito <> " invited to group #team via your group link")
             bob <## ("#team: " <> danIncognito <> " joined the group"),
           do
             dan <## (bobIncognito <> ": contact is connected, your incognito profile for this contact is " <> danIncognito)
-            dan <## ("use /info " <> bobIncognito <> " to print out this incognito profile again")
+            dan <## ("use /i " <> bobIncognito <> " to print out this incognito profile again")
             dan <## ("#team: you joined the group incognito as " <> danIncognito)
             dan
               <### [ "#team: member alice (Alice) is connected",
@@ -4407,7 +4407,7 @@ testGroupLinkUnusedHostContactDeleted =
       -- create group 1
       alice ##> "/g team"
       alice <## "group #team is created"
-      alice <## "use /a team <name> to add members"
+      alice <## "to add members use /a team <name> or /create link #team"
       alice ##> "/create link #team"
       gLinkTeam <- getGroupLink alice "team" True
       bob ##> ("/c " <> gLinkTeam)
@@ -4425,7 +4425,7 @@ testGroupLinkUnusedHostContactDeleted =
       -- create group 2
       alice ##> "/g club"
       alice <## "group #club is created"
-      alice <## "use /a club <name> to add members"
+      alice <## "to add members use /a club <name> or /create link #club"
       alice ##> "/create link #club"
       gLinkClub <- getGroupLink alice "club" True
       bob ##> ("/c " <> gLinkClub)
@@ -4498,7 +4498,7 @@ testGroupLinkIncognitoUnusedHostContactsDeleted =
     createGroupBobIncognito alice bob group bobsAliceContact = do
       alice ##> ("/g " <> group)
       alice <## ("group #" <> group <> " is created")
-      alice <## ("use /a " <> group <> " <name> to add members")
+      alice <## ("to add members use /a " <> group <> " <name> or /create link #" <> group)
       alice ##> ("/create link #" <> group)
       gLinkTeam <- getGroupLink alice group True
       bob ##> ("/c " <> gLinkTeam)
@@ -4513,7 +4513,7 @@ testGroupLinkIncognitoUnusedHostContactsDeleted =
             alice <## ("#" <> group <> ": " <> bobIncognito <> " joined the group"),
           do
             bob <## (bobsAliceContact <> " (Alice): contact is connected, your incognito profile for this contact is " <> bobIncognito)
-            bob <## ("use /info " <> bobsAliceContact <> " to print out this incognito profile again")
+            bob <## ("use /i " <> bobsAliceContact <> " to print out this incognito profile again")
             bob <## ("#" <> group <> ": you joined the group incognito as " <> bobIncognito)
         ]
       pure bobIncognito
@@ -4701,7 +4701,7 @@ createGroup2 gName cc1 cc2 = do
   name2 <- userName cc2
   cc1 ##> ("/g " <> gName)
   cc1 <## ("group #" <> gName <> " is created")
-  cc1 <## ("use /a " <> gName <> " <name> to add members")
+  cc1 <## ("to add members use /a " <> gName <> " <name> or /create link #" <> gName)
   addMember gName cc1 cc2 GRAdmin
   cc2 ##> ("/j " <> gName)
   concurrently_

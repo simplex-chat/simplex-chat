@@ -126,6 +126,7 @@ groupsHelpInfo =
       indent <> highlight "/gp <group> <new_name> [<full_name>]  " <> " - update group profile",
       indent <> highlight "/groups                        " <> " - list groups",
       indent <> highlight "#<group> <message>             " <> " - send message to group",
+      indent <> highlight "/create link #<group>          " <> " - create public group link",
       "",
       "The commands may be abbreviated: " <> listHighlight ["/g", "/a", "/j", "/rm", "/l", "/d", "/ms", "/gs"]
     ]
