@@ -119,7 +119,7 @@ data class ComposeState(
 
 sealed class RecordingState {
   object NotStarted: RecordingState()
-  class Started(val filePath: String, val stopRecOnNextClick: MutableState<Boolean> = mutableStateOf(false)): RecordingState()
+  class Started(val filePath: String): RecordingState()
 
   val filePathNullable: String?
     get() = (this as? Started)?.filePath

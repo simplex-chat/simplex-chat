@@ -60,7 +60,7 @@ fun SendMsgView(
   Box(Modifier.padding(vertical = 8.dp)) {
     val cs = composeState.value
     val attachEnabled = !composeState.value.editing
-    val showProgress = cs.inProgress && (cs.preview is ComposePreview.ImagePreview || cs.preview is ComposePreview.VoicePreview || cs.preview is ComposePreview.FilePreview)
+    val showProgress = cs.inProgress && (cs.preview is ComposePreview.ImagePreview  || cs.preview is ComposePreview.FilePreview)
     val showVoiceButton = cs.message.isEmpty() && showVoiceRecordIcon && attachEnabled &&
         (cs.preview is ComposePreview.NoPreview || (cs.preview is ComposePreview.VoicePreview && recState.value.isStarted))
     NativeKeyboard(composeState, textStyle, onMessageChange)
@@ -185,7 +185,7 @@ private fun NativeKeyboard(
 }
 
 @Composable
-fun RecordVoiceView(
+private fun RecordVoiceView(
   recState: MutableState<RecordingState>,
   onAudioAdded: (filePath: String, durationMs: Int, finished: Boolean) -> Unit,
 ) {
@@ -195,63 +195,49 @@ fun RecordVoiceView(
     recState.value.filePathNullable?.let { onAudioAdded(it, rec.stop(), true) }
     recState.value = RecordingState.NotStarted
   }
-  if (recState.value.isStarted && (recState.value as RecordingState.Started).stopRecOnNextClick.value) {
-    val context = LocalContext.current
-    DisposableEffect((recState.value as? RecordingState.Started)?.stopRecOnNextClick?.value) {
-      val activity = context as Activity
-      if ((recState.value as? RecordingState.Started)?.stopRecOnNextClick?.value == true) {
-        // Lock orientation to current orientation because screen rotation will break the recording
-        activity.requestedOrientation = when (activity.display?.rotation) {
-          android.view.Surface.ROTATION_90 -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-          android.view.Surface.ROTATION_180 -> ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT
-          android.view.Surface.ROTATION_270 -> ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
-          else -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-        }
+  var stopRecOnNextClick by remember { mutableStateOf(false) }
+  if (stopRecOnNextClick) {
+    LaunchedEffect(recState.value) {
+      if (recState.value.isNotStarted) {
+        stopRecOnNextClick = false
       }
-      // Unlock orientation
-      onDispose { activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED }
     }
+    LockToCurrentOrientationUntilDispose()
     StopRecordButton(stopRecordingAndAddAudio)
   } else {
-    val startStopRecording: () -> Unit = {
-      if (recState.value.isStarted) {
-        stopRecordingAndAddAudio()
-      } else {
-        recState.value = RecordingState.Started(
-          filePath = rec.start { progress: Int?, finished: Boolean ->
-            if (recState.value.isStarted) {
-              if (progress != null) {
-                recState.value.filePathNullable?.let { onAudioAdded(it, progress, finished) }
-              }
-              if (finished) {
-                recState.value = RecordingState.NotStarted
-              }
+    val startRecording: () -> Unit = {
+      recState.value = RecordingState.Started(
+        filePath = rec.start { progress: Int?, finished: Boolean ->
+          if (recState.value.isStarted) {
+            if (progress != null) {
+              recState.value.filePathNullable?.let { onAudioAdded(it, progress, finished) }
             }
-          },
-        )
-      }
+            if (finished) {
+              recState.value = RecordingState.NotStarted
+            }
+          }
+        },
+      )
     }
     val interactionSource = interactionSourceWithTapDetection(
-      onPress = { if (recState.value.isNotStarted) startStopRecording() },
+      onPress = { if (recState.value.isNotStarted) startRecording() },
       onClick = {
-        val state = recState.value as RecordingState.Started
-        if (state.stopRecOnNextClick.value) {
+        if (stopRecOnNextClick) {
           stopRecordingAndAddAudio()
-          state.stopRecOnNextClick.value = false
         } else {
           // tapped and didn't hold a finger
-          state.stopRecOnNextClick.value = true
+          stopRecOnNextClick = true
         }
       },
-      onCancel = startStopRecording,
-      onRelease = startStopRecording
+      onCancel = stopRecordingAndAddAudio,
+      onRelease = stopRecordingAndAddAudio
     )
     RecordVoiceButton(interactionSource)
   }
 }
 
 @Composable
-fun DisallowedVoiceButton(onClick: () -> Unit) {
+private fun DisallowedVoiceButton(onClick: () -> Unit) {
   IconButton(onClick, Modifier.size(36.dp)) {
     Icon(
       Icons.Outlined.KeyboardVoice,
@@ -265,7 +251,25 @@ fun DisallowedVoiceButton(onClick: () -> Unit) {
 }
 
 @Composable
-fun StopRecordButton(onClick: () -> Unit) {
+private fun LockToCurrentOrientationUntilDispose() {
+  val context = LocalContext.current
+  DisposableEffect(Unit) {
+    val activity = context as Activity
+    // Lock orientation to current orientation because screen rotation will break the recording
+    activity.requestedOrientation = when (activity.display?.rotation) {
+      android.view.Surface.ROTATION_90 -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+      android.view.Surface.ROTATION_180 -> ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT
+      android.view.Surface.ROTATION_270 -> ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
+      else -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+    }
+    // Unlock orientation
+    onDispose { activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED }
+  }
+}
+
+
+@Composable
+private fun StopRecordButton(onClick: () -> Unit) {
   IconButton(onClick, Modifier.size(36.dp)) {
     Icon(
       Icons.Filled.Stop,
@@ -279,7 +283,7 @@ fun StopRecordButton(onClick: () -> Unit) {
 }
 
 @Composable
-fun RecordVoiceButton(interactionSource: MutableInteractionSource) {
+private fun RecordVoiceButton(interactionSource: MutableInteractionSource) {
   IconButton({}, Modifier.size(36.dp), interactionSource = interactionSource) {
     Icon(
       Icons.Filled.KeyboardVoice,
