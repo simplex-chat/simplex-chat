@@ -210,11 +210,10 @@ private fun RecordVoiceView(recState: MutableState<RecordingState>) {
         filePath = rec.start { progress: Int?, finished: Boolean ->
           val state = recState.value
           if (state is RecordingState.Started && progress != null) {
-            if (!finished) {
-              recState.value = RecordingState.Started(state.filePath, progress)
-            } else {
-              recState.value = RecordingState.Finished(state.filePath, progress)
-            }
+            recState.value = if (!finished)
+              RecordingState.Started(state.filePath, progress)
+            else
+              RecordingState.Finished(state.filePath, progress)
           }
         },
       )
