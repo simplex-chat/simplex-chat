@@ -65,26 +65,6 @@ fun NotificationsSettingsView(
   )
 }
 
-fun changeNotificationsMode(mode: NotificationsMode, chatModel: ChatModel) {
-  chatModel.controller.appPrefs.notificationsMode.set(mode.name)
-  if (mode.requiresIgnoringBattery && !chatModel.controller.isIgnoringBatteryOptimizations(chatModel.controller.appContext)) {
-    chatModel.controller.appPrefs.backgroundServiceNoticeShown.set(false)
-  }
-  chatModel.notificationsMode.value = mode
-  SimplexService.StartReceiver.toggleReceiver(mode == NotificationsMode.SERVICE)
-  CoroutineScope(Dispatchers.Default).launch {
-    if (mode == NotificationsMode.SERVICE)
-      SimplexService.start(SimplexApp.context)
-    else
-      SimplexService.safeStopService(SimplexApp.context)
-  }
-
-  if (mode != NotificationsMode.PERIODIC) {
-    MessagesFetcherWorker.cancelAll()
-  }
-  chatModel.controller.showBackgroundServiceNoticeIfNeeded()
-}
-
 enum class CurrentPage {
   NOTIFICATIONS_MODE, NOTIFICATION_PREVIEW_MODE
 }
@@ -211,4 +191,24 @@ fun notificationPreviewModes(): List<ValueTitleDesc<NotificationPreviewMode>> {
     )
   )
   return res
+}
+
+fun changeNotificationsMode(mode: NotificationsMode, chatModel: ChatModel) {
+  chatModel.controller.appPrefs.notificationsMode.set(mode.name)
+  if (mode.requiresIgnoringBattery && !chatModel.controller.isIgnoringBatteryOptimizations(chatModel.controller.appContext)) {
+    chatModel.controller.appPrefs.backgroundServiceNoticeShown.set(false)
+  }
+  chatModel.notificationsMode.value = mode
+  SimplexService.StartReceiver.toggleReceiver(mode == NotificationsMode.SERVICE)
+  CoroutineScope(Dispatchers.Default).launch {
+    if (mode == NotificationsMode.SERVICE)
+      SimplexService.start(SimplexApp.context)
+    else
+      SimplexService.safeStopService(SimplexApp.context)
+  }
+
+  if (mode != NotificationsMode.PERIODIC) {
+    MessagesFetcherWorker.cancelAll()
+  }
+  chatModel.controller.showBackgroundServiceNoticeIfNeeded()
 }
