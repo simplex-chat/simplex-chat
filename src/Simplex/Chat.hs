@@ -19,7 +19,6 @@ import Control.Logger.Simple
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
-import Crypto.Number.Serialize (os2ip)
 import Crypto.Random (drgNew)
 import qualified Data.Aeson as J
 import Data.Attoparsec.ByteString.Char8 (Parser)
@@ -1141,13 +1140,11 @@ processChatCommand = \case
     checkStoreNotChanged :: m ChatResponse -> m ChatResponse
     checkStoreNotChanged = ifM (asks chatStoreChanged >>= readTVarIO) (throwChatError CEChatStoreChanged)
     withContactName :: ContactName -> (ContactId -> ChatCommand) -> m ChatResponse
-    withContactName cName cmd = withUser $ \user -> do
-      contactId <- withStore $ \db -> getContactIdByName db user cName
-      processChatCommand $ cmd contactId
+    withContactName cName cmd = withUser $ \user ->
+      withStore (\db -> getContactIdByName db user cName) >>= processChatCommand . cmd
     withMemberName :: GroupName -> ContactName -> (GroupId -> GroupMemberId -> ChatCommand) -> m ChatResponse
-    withMemberName gName mName cmd = withUser $ \user -> do
-      (gId, mId) <- withStore $ \db -> getGroupIdByName db user gName >>= \gId -> (gId,) <$> getGroupMemberIdByName db user gId mName
-      processChatCommand $ cmd gId mId
+    withMemberName gName mName cmd = withUser $ \user ->
+      getGroupAndMemberId user gName mName >>= processChatCommand . uncurry cmd
     getConnectionCode :: ConnId -> m Text
     getConnectionCode connId = verificationCode <$> withAgent (`getConnectionRatchetAdHash` connId)
     verifyConnectionCode :: User -> Connection -> Text -> m ChatResponse
@@ -1274,8 +1271,8 @@ processChatCommand = \case
         _ -> throwChatError CEFileNotReceived {fileId}
       where
         forward = processChatCommand . sendCommand chatName
-    getGroupAndMemberId :: GroupName -> ContactName -> m (GroupId, GroupMemberId)
-    getGroupAndMemberId gName groupMemberName = withUser $ \user -> do
+    getGroupAndMemberId :: User -> GroupName -> ContactName -> m (GroupId, GroupMemberId)
+    getGroupAndMemberId user gName groupMemberName =
       withStore $ \db -> do
         groupId <- getGroupIdByName db user gName
         groupMemberId <- getGroupMemberIdByName db user groupId groupMemberName
@@ -3412,14 +3409,14 @@ chatCommandP =
       "/_switch @" *> (APISwitchContact <$> A.decimal),
       "/switch #" *> (SwitchGroupMember <$> displayName <* A.space <* optional (A.char '@') <*> displayName),
       ("/switch @" <|> "/switch ") *> (SwitchContact <$> displayName),
-      "/_code @" *> (APIGetContactCode <$> A.decimal),
-      "/_code #" *> (APIGetGroupMemberCode <$> A.decimal <* A.space <*> A.decimal),
-      "/_verified @" *> (APISetContactVerified <$> A.decimal <* A.space <*> textP),
-      "/_verified @" *> (APISetGroupMemberVerified <$> A.decimal <* A.space <*> A.decimal <* A.space <*> textP),
+      "/_get code @" *> (APIGetContactCode <$> A.decimal),
+      "/_get code #" *> (APIGetGroupMemberCode <$> A.decimal <* A.space <*> A.decimal),
+      "/_verify code @" *> (APISetContactVerified <$> A.decimal <* A.space <*> textP),
+      "/_verify code @" *> (APISetGroupMemberVerified <$> A.decimal <* A.space <*> A.decimal <* A.space <*> textP),
       ("/code @" <|> "/code ") *> (GetContactCode <$> displayName),
       "/code #" *> (GetGroupMemberCode <$> displayName <* A.space <* optional (A.char '@') <*> displayName),
-      ("/verified @" <|> "/verified ") *> (SetContactVerified <$> displayName <* A.space <*> textP),
-      "/verified #" *> (SetGroupMemberVerified <$> displayName <* A.space <* optional (A.char '@') <*> displayName <* A.space <*> textP),
+      ("/verify @" <|> "/verify ") *> (SetContactVerified <$> displayName <* A.space <*> textP),
+      "/verify #" *> (SetGroupMemberVerified <$> displayName <* A.space <* optional (A.char '@') <*> displayName <* A.space <*> textP),
       ("/help files" <|> "/help file" <|> "/hf") $> ChatHelp HSFiles,
       ("/help groups" <|> "/help group" <|> "/hg") $> ChatHelp HSGroups,
       ("/help address" <|> "/ha") $> ChatHelp HSMyAddress,
