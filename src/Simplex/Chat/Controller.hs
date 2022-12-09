@@ -202,8 +202,8 @@ data ChatCommand
   | APISwitchGroupMember GroupId GroupMemberId
   | APIGetContactCode ContactId
   | APIGetGroupMemberCode GroupId GroupMemberId
-  | APISetContactVerified ContactId
-  | APISetGroupMemberVerified GroupId GroupMemberId
+  | APISetContactVerified ContactId Text
+  | APISetGroupMemberVerified GroupId GroupMemberId Text
   | ShowMessages ChatName Bool
   | ContactInfo ContactName
   | GroupMemberInfo GroupName ContactName
@@ -211,8 +211,8 @@ data ChatCommand
   | SwitchGroupMember GroupName ContactName
   | GetContactCode ContactName
   | GetGroupMemberCode GroupName ContactName
-  | SetContactVerified ContactName
-  | SetGroupMemberVerified GroupName ContactName
+  | SetContactVerified ContactName Text
+  | SetGroupMemberVerified GroupName ContactName Text
   | ChatHelp HelpSection
   | Welcome
   | AddContact
@@ -284,7 +284,8 @@ data ChatResponse
   | CRGroupMemberInfo {groupInfo :: GroupInfo, member :: GroupMember, connectionStats_ :: Maybe ConnectionStats}
   | CRContactSwitch {contact :: Contact, switchProgress :: SwitchProgress}
   | CRGroupMemberSwitch {groupInfo :: GroupInfo, member :: GroupMember, switchProgress :: SwitchProgress}
-  | CRConnectionCode [String]
+  | CRContactCode {contact :: Contact, connectionCode :: Text}
+  | CRGroupMemberCode {groupInfo :: GroupInfo, member :: GroupMember, connectionCode :: Text}
   | CRNewChatItem {chatItem :: AChatItem}
   | CRChatItemStatusUpdated {chatItem :: AChatItem}
   | CRChatItemUpdated {chatItem :: AChatItem}
@@ -557,6 +558,7 @@ data ChatErrorType
   | CECallContact {contactId :: Int64}
   | CECallState {currentCallState :: CallStateTag}
   | CEDirectMessagesProhibited {direction :: MsgDirection, contact :: Contact}
+  | CEBadConnectionCode {connectionCode :: Text}
   | CEAgentVersion
   | CEAgentNoSubResult {agentConnId :: AgentConnId}
   | CECommandError {message :: String}

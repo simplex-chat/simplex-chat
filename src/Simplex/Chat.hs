@@ -19,6 +19,7 @@ import Control.Logger.Simple
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
+import Crypto.Number.Serialize (os2ip)
 import Crypto.Random (drgNew)
 import qualified Data.Aeson as J
 import Data.Attoparsec.ByteString.Char8 (Parser)
@@ -760,22 +761,19 @@ processChatCommand = \case
       _ -> throwChatError CEGroupMemberNotActive
   APIGetContactCode contactId -> withUser $ \user -> do
     ct <- withStore $ \db -> getContact db user contactId
-    ad <- withAgent $ \a -> getConnectionRatchetAdHash a $ contactConnId ct
-    pure $ CRConnectionCode [B.unpack ad] -- TODO
+    CRContactCode ct <$> getConnectionCode (contactConnId ct)
   APIGetGroupMemberCode gId gMemberId -> withUser $ \user -> do
-    m <- withStore $ \db -> getGroupMember db user gId gMemberId
+    (g, m) <- withStore $ \db -> (,) <$> getGroupInfo db user gId <*> getGroupMember db user gId gMemberId
     case memberConnId m of
-      Just connId -> do
-        ad <- withAgent $ \a -> getConnectionRatchetAdHash a connId
-        pure $ CRConnectionCode [B.unpack ad] -- TODO
+      Just connId -> CRGroupMemberCode g m <$> getConnectionCode connId
       _ -> throwChatError CEGroupMemberNotActive
-  APISetContactVerified contactId -> withUser $ \user -> do
-    ct <- withStore $ \db -> getContact db user contactId
-    pure CRCmdOk
-  APISetGroupMemberVerified gId gMemberId -> withUser $ \user -> do
-    m <- withStore $ \db -> getGroupMember db user gId gMemberId
-    case memberConnId m of
-      Just connId -> pure CRCmdOk
+  APISetContactVerified contactId code -> withUser $ \user -> do
+    Contact {activeConn} <- withStore $ \db -> getContact db user contactId
+    verifyConnectionCode user activeConn code
+  APISetGroupMemberVerified gId gMemberId code -> withUser $ \user -> do
+    GroupMember {activeConn} <- withStore $ \db -> getGroupMember db user gId gMemberId
+    case activeConn of
+      Just conn -> verifyConnectionCode user conn code
       _ -> throwChatError CEGroupMemberNotActive
   ShowMessages (ChatName cType name) ntfOn -> withUser $ \user -> do
     chatId <- case cType of
@@ -789,8 +787,8 @@ processChatCommand = \case
   SwitchGroupMember gName mName -> withMemberName gName mName APISwitchGroupMember
   GetContactCode cName -> withContactName cName APIGetContactCode
   GetGroupMemberCode gName mName -> withMemberName gName mName APIGetGroupMemberCode
-  SetContactVerified cName -> withContactName cName APIGetContactCode
-  SetGroupMemberVerified gName mName -> withMemberName gName mName APISetGroupMemberVerified
+  SetContactVerified cName code -> withContactName cName (`APISetContactVerified` code)
+  SetGroupMemberVerified gName mName code -> withMemberName gName mName $ \gId mId -> APISetGroupMemberVerified gId mId code
   ChatHelp section -> pure $ CRChatHelp section
   Welcome -> withUser $ pure . CRWelcome
   AddContact -> withUser $ \User {userId} -> withChatLock "addContact" . procCmd $ do
@@ -1150,6 +1148,14 @@ processChatCommand = \case
     withMemberName gName mName cmd = withUser $ \user -> do
       (gId, mId) <- withStore $ \db -> getGroupIdByName db user gName >>= \gId -> (gId,) <$> getGroupMemberIdByName db user gId mName
       processChatCommand $ cmd gId mId
+    getConnectionCode :: ConnId -> m Text
+    getConnectionCode connId = verificationCode <$> withAgent (`getConnectionRatchetAdHash` connId)
+    verifyConnectionCode :: User -> Connection -> Text -> m ChatResponse
+    verifyConnectionCode user conn@Connection {connId} code = do
+      code' <- getConnectionCode $ aConnId conn
+      unless (sameVerificationCode code code') $ throwChatError $ CEBadConnectionCode code'
+      withStore' $ \db -> setConnectionVerified db user connId $ Just code
+      pure CRCmdOk
     getSentChatItemIdByText :: User -> ChatRef -> ByteString -> m Int64
     getSentChatItemIdByText user@User {userId, localDisplayName} (ChatRef cType cId) msg = case cType of
       CTDirect -> withStore $ \db -> getDirectChatItemIdByText db userId cId SMDSnd (safeDecodeUtf8 msg)
@@ -3408,12 +3414,12 @@ chatCommandP =
       ("/switch @" <|> "/switch ") *> (SwitchContact <$> displayName),
       "/_code @" *> (APIGetContactCode <$> A.decimal),
       "/_code #" *> (APIGetGroupMemberCode <$> A.decimal <* A.space <*> A.decimal),
-      "/_verified @" *> (APISetContactVerified <$> A.decimal),
-      "/_verified @" *> (APISetGroupMemberVerified <$> A.decimal <* A.space <*> A.decimal),
+      "/_verified @" *> (APISetContactVerified <$> A.decimal <* A.space <*> textP),
+      "/_verified @" *> (APISetGroupMemberVerified <$> A.decimal <* A.space <*> A.decimal <* A.space <*> textP),
       ("/code @" <|> "/code ") *> (GetContactCode <$> displayName),
       "/code #" *> (GetGroupMemberCode <$> displayName <* A.space <* optional (A.char '@') <*> displayName),
-      ("/verified @" <|> "/verified ") *> (SetContactVerified <$> displayName),
-      "/verified #" *> (SetGroupMemberVerified <$> displayName <* A.space <* optional (A.char '@') <*> displayName),
+      ("/verified @" <|> "/verified ") *> (SetContactVerified <$> displayName <* A.space <*> textP),
+      "/verified #" *> (SetGroupMemberVerified <$> displayName <* A.space <* optional (A.char '@') <*> displayName <* A.space <*> textP),
       ("/help files" <|> "/help file" <|> "/hf") $> ChatHelp HSFiles,
       ("/help groups" <|> "/help group" <|> "/hg") $> ChatHelp HSGroups,
       ("/help address" <|> "/ha") $> ChatHelp HSMyAddress,

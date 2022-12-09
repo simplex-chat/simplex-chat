@@ -74,7 +74,8 @@ responseToView user_ testView ts = \case
   CRGroupMemberInfo g m cStats -> viewGroupMemberInfo g m cStats
   CRContactSwitch ct progress -> viewContactSwitch ct progress
   CRGroupMemberSwitch g m progress -> viewGroupMemberSwitch g m progress
-  CRConnectionCode _ -> []
+  CRContactCode ct code -> viewContactCode ct code testView
+  CRGroupMemberCode g m code -> viewGroupMemberCode g m code testView
   CRNewChatItem (AChatItem _ _ chat item) -> unmuted chat item $ viewChatItem chat item False ts
   CRLastMessages chatItems -> concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True ts) chatItems
   CRChatItemStatusUpdated _ -> []
@@ -498,8 +499,8 @@ viewCannotResendInvitation GroupInfo {localDisplayName = gn} c =
   ]
 
 viewDirectMessagesProhibited :: MsgDirection -> Contact -> [StyledString]
-viewDirectMessagesProhibited MDSnd c = [ "direct messages to indirect contact " <> ttyContact' c <> " are prohibited"]
-viewDirectMessagesProhibited MDRcv c = [ "received prohibited direct message from indirect contact " <> ttyContact' c <> " (discarded)"]
+viewDirectMessagesProhibited MDSnd c = ["direct messages to indirect contact " <> ttyContact' c <> " are prohibited"]
+viewDirectMessagesProhibited MDRcv c = ["received prohibited direct message from indirect contact " <> ttyContact' c <> " (discarded)"]
 
 viewUserJoinedGroup :: GroupInfo -> [StyledString]
 viewUserJoinedGroup g@GroupInfo {membership = membership@GroupMember {memberProfile}} =
@@ -682,21 +683,27 @@ viewNetworkConfig NetworkConfig {socksProxy, tcpTimeout} =
   ]
 
 viewContactInfo :: Contact -> ConnectionStats -> Maybe Profile -> [StyledString]
-viewContactInfo Contact {contactId, profile = LocalProfile {localAlias}} stats incognitoProfile =
+viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias}} stats incognitoProfile =
   ["contact ID: " <> sShow contactId] <> viewConnectionStats stats
     <> maybe
       ["you've shared main profile with this contact"]
       (\p -> ["you've shared incognito profile with this contact: " <> incognitoProfile' p])
       incognitoProfile
-    <> if localAlias /= "" then ["alias: " <> plain localAlias] else ["alias not set"]
+    <> ["alias: " <> plain localAlias | localAlias /= ""]
+    <> [viewConnectionVerified (contactSecurityCode ct)]
 
 viewGroupMemberInfo :: GroupInfo -> GroupMember -> Maybe ConnectionStats -> [StyledString]
-viewGroupMemberInfo GroupInfo {groupId} GroupMember {groupMemberId, memberProfile = LocalProfile {localAlias}} stats =
+viewGroupMemberInfo GroupInfo {groupId} m@GroupMember {groupMemberId, memberProfile = LocalProfile {localAlias}} stats =
   [ "group ID: " <> sShow groupId,
     "member ID: " <> sShow groupMemberId
   ]
     <> maybe ["member not connected"] viewConnectionStats stats
-    <> if localAlias /= "" then ["alias: " <> plain localAlias] else ["no alias for contact"]
+    <> ["alias: " <> plain localAlias | localAlias /= ""]
+    <> [viewConnectionVerified (memberSecurityCode m) | isJust stats]
+
+viewConnectionVerified :: Maybe SecurityCode -> StyledString
+viewConnectionVerified (Just _) = "connection verified" -- TODO show verification time?
+viewConnectionVerified _ = "connection not verified, use " <> highlight' "/code" <> " command to see security code"
 
 viewConnectionStats :: ConnectionStats -> [StyledString]
 viewConnectionStats ConnectionStats {rcvServers, sndServers} =
@@ -720,6 +727,17 @@ viewGroupMemberSwitch _ _ (SwitchProgress _ SPConfirmed _) = []
 viewGroupMemberSwitch g m (SwitchProgress qd phase _) = case qd of
   QDRcv -> [ttyGroup' g <> ": you " <> viewSwitchPhase phase <> " for " <> ttyMember m]
   QDSnd -> [ttyGroup' g <> ": " <> ttyMember m <> " " <> viewSwitchPhase phase <> " for you"]
+
+viewContactCode :: Contact -> Text -> Bool -> [StyledString]
+viewContactCode ct@Contact {localDisplayName = c} = viewSecurityCode (ttyContact' ct) ("/verify " <> c <> " <code from your contact>")
+
+viewGroupMemberCode :: GroupInfo -> GroupMember -> Text -> Bool -> [StyledString]
+viewGroupMemberCode g m@GroupMember {localDisplayName = n} = viewSecurityCode (ttyGroup' g <> " " <> ttyMember m) ("/verify #" <> groupName' g <> " " <> n <> " <code from your contact>")
+
+viewSecurityCode :: StyledString -> Text -> Text -> Bool -> [StyledString]
+viewSecurityCode name cmd code testView
+  | testView = [plain code]
+  | otherwise = [name <> " security code:", plain code, "pass this code to your contact and use " <> highlight cmd <> " to verify"]
 
 viewSwitchPhase :: SwitchPhase -> StyledString
 viewSwitchPhase SPCompleted = "changed address"
@@ -1104,6 +1122,7 @@ viewChatError = \case
     CECallContact _ -> []
     CECallState _ -> []
     CEDirectMessagesProhibited dir ct -> viewDirectMessagesProhibited dir ct
+    CEBadConnectionCode code -> [plain $ "error: current connection code is " <> code]
     CEAgentVersion -> ["unsupported agent version"]
     CEAgentNoSubResult connId -> ["no subscription result for connection: " <> sShow connId]
     CECommandError e -> ["bad chat command: " <> plain e]
