@@ -72,14 +72,16 @@ fun SendMsgView(
       when {
         showProgress -> ProgressIndicator()
         showVoiceButton -> when {
-          needToAllowVoiceToContact ->
-            DisallowedVoiceButton { showNeedToAllowVoiceAlert(allowVoiceToContact) }
-          !allowedVoiceByPrefs ->
-            DisallowedVoiceButton { showDisabledVoiceAlert(isDirectChat) }
-          !permissionsState.allPermissionsGranted ->
-            DisallowedVoiceButton { permissionsState.launchMultiplePermissionRequest() }
-          else ->
-            RecordVoiceView(recState)
+          needToAllowVoiceToContact || !allowedVoiceByPrefs || !permissionsState.allPermissionsGranted -> {
+            DisallowedVoiceButton {
+              when {
+                needToAllowVoiceToContact -> showNeedToAllowVoiceAlert(allowVoiceToContact)
+                !allowedVoiceByPrefs -> showDisabledVoiceAlert(isDirectChat)
+                else -> permissionsState.launchMultiplePermissionRequest()
+              }
+            }
+          }
+          else -> RecordVoiceView(recState)
         }
         else -> {
           val icon = if (cs.editing) Icons.Filled.Check else Icons.Outlined.ArrowUpward
