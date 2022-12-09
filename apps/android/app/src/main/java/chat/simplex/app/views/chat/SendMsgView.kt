@@ -58,9 +58,8 @@ fun SendMsgView(
 ) {
   Box(Modifier.padding(vertical = 8.dp)) {
     val cs = composeState.value
-    val attachEnabled = !composeState.value.editing
     val showProgress = cs.inProgress && (cs.preview is ComposePreview.ImagePreview  || cs.preview is ComposePreview.FilePreview)
-    val showVoiceButton = cs.message.isEmpty() && showVoiceRecordIcon && attachEnabled &&
+    val showVoiceButton = cs.message.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
         (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started)
     NativeKeyboard(composeState, textStyle, onMessageChange)
     // Disable clicks on text field
