@@ -488,9 +488,9 @@ viewReceivedContactRequest c Profile {fullName} =
   ]
 
 viewGroupCreated :: GroupInfo -> [StyledString]
-viewGroupCreated g@GroupInfo {localDisplayName} =
+viewGroupCreated g@GroupInfo {localDisplayName = n} =
   [ "group " <> ttyFullGroup g <> " is created",
-    "use " <> highlight ("/a " <> localDisplayName <> " <name>") <> " to add members"
+    "to add members use " <> highlight ("/a " <> n <> " <name>") <> " or " <> highlight ("/create link #" <> n)
   ]
 
 viewCannotResendInvitation :: GroupInfo -> ContactName -> [StyledString]
@@ -581,7 +581,7 @@ viewContactConnected ct@Contact {localDisplayName} userIncognitoProfile testView
       where
         message =
           [ ttyFullContact ct <> ": contact is connected, your incognito profile for this contact is " <> incognitoProfile' profile,
-            "use " <> highlight ("/info " <> localDisplayName) <> " to print out this incognito profile again"
+            "use " <> highlight ("/i " <> localDisplayName) <> " to print out this incognito profile again"
           ]
     Nothing ->
       [ttyFullContact ct <> ": contact is connected"]
