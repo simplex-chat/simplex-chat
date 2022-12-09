@@ -258,6 +258,8 @@ CREATE TABLE connections(
   local_alias DEFAULT '' CHECK(local_alias NOT NULL),
   via_group_link INTEGER DEFAULT 0 CHECK(via_group_link NOT NULL),
   group_link_id BLOB,
+  security_code TEXT NULL,
+  security_code_verified_at TEXT NULL,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE

@@ -27,6 +27,7 @@ import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.Chat.Store (getUserContactProfiles)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Store.SQLite (withTransaction)
+import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Util (unlessM)
 import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist, doesFileExist)
@@ -168,6 +169,13 @@ chatTests = do
   describe "queue rotation" $ do
     it "switch contact to a different queue" testSwitchContact
     it "switch group member to a different queue" testSwitchGroupMember
+  describe "connection verification code" $ do
+    it "verificationCode function converts ByteString to series of digits" $
+      verificationCode (C.sha256Hash "abcd") `shouldBe` "61889 38426 63934 09576 96390 79389 84124 85253 63658 69469 70853 37788 95900 68296 20156 25"
+    it "sameVerificationCode function should ignore spaces" $
+      sameVerificationCode "123 456 789" "12345 6789" `shouldBe` True
+    it "mark contact verified" testMarkContactVerified
+    it "mark group member verified" testMarkGroupMemberVerified
 
 versionTestMatrix2 :: (TestCC -> TestCC -> IO ()) -> Spec
 versionTestMatrix2 runTest = do
@@ -4550,6 +4558,58 @@ testSwitchGroupMember =
       bob <# "#team alice> hey"
       bob #> "#team hi"
       alice <# "#team bob> hi"
+
+testMarkContactVerified :: IO ()
+testMarkContactVerified =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    alice ##> "/i bob"
+    bobInfo alice
+    alice <## "connection not verified, use /code command to see security code"
+    alice ##> "/code bob"
+    bCode <- getTermLine alice
+    bob ##> "/code alice"
+    aCode <- getTermLine bob
+    bCode `shouldBe` aCode
+    alice ##> "/verify bob 123"
+    alice <##. "error: current connection code is "
+    alice ##> ("/verify bob " <> aCode)
+    alice <## "connection verified"
+    alice ##> "/i bob"
+    bobInfo alice
+    alice <## "connection verified"
+  where
+    bobInfo alice = do
+      alice <## "contact ID: 2"
+      alice <## "receiving messages via: localhost"
+      alice <## "sending messages via: localhost"
+      alice <## "you've shared main profile with this contact"
+
+testMarkGroupMemberVerified :: IO ()
+testMarkGroupMemberVerified =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    createGroup2 "team" alice bob
+    alice ##> "/i #team bob"
+    bobInfo alice
+    alice <## "connection not verified, use /code command to see security code"
+    alice ##> "/code #team bob"
+    bCode <- getTermLine alice
+    bob ##> "/code #team alice"
+    aCode <- getTermLine bob
+    bCode `shouldBe` aCode
+    alice ##> "/verify #team bob 123"
+    alice <##. "error: current connection code is "
+    alice ##> ("/verify #team bob " <> aCode)
+    alice <## "connection verified"
+    alice ##> "/i #team bob"
+    bobInfo alice
+    alice <## "connection verified"
+  where
+    bobInfo alice = do
+      alice <## "group ID: 1"
+      alice <## "member ID: 2"
+      alice <## "receiving messages via: localhost"
+      alice <## "sending messages via: localhost"
 
 withTestChatContactConnected :: String -> (TestCC -> IO a) -> IO a
 withTestChatContactConnected dbPrefix action =

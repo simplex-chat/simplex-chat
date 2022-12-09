@@ -1,12 +1,12 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Migrations.M20221209_idxs where
+module Simplex.Chat.Migrations.M20221210_idxs where
 
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
-m20221209_idxs :: Query
-m20221209_idxs =
+m20221210_idxs :: Query
+m20221210_idxs =
   [sql|
 CREATE INDEX idx_messages_connection_id ON messages(connection_id);
 

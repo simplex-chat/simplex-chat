@@ -65,7 +65,8 @@ library
       Simplex.Chat.Migrations.M20221115_server_cfg
       Simplex.Chat.Migrations.M20221129_delete_group_feature_items
       Simplex.Chat.Migrations.M20221130_delete_item_deleted
-      Simplex.Chat.Migrations.M20221209_idxs
+      Simplex.Chat.Migrations.M20221209_verified_connection
+      Simplex.Chat.Migrations.M20221210_idxs
       Simplex.Chat.Mobile
       Simplex.Chat.Options
       Simplex.Chat.ProfileGenerator
