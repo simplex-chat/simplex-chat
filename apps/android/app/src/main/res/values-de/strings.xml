@@ -545,6 +545,9 @@
   <string name="read_more_in_github">Erfahren Sie in unserem GitHub-Repository mehr dazu.</string>
   <string name="read_more_in_github_with_link">Erfahren Sie in unserem <font color="#0088ff">GitHub-Repository</font> mehr dazu.</string>
 
+  <!-- SetNotificationsMode.kt -->
+  <string name="use_chat">Verwenden Sie Chat</string>
+
   <!-- MakeConnection -->
   <string name="paste_the_link_you_received">Fügen Sie den erhaltenen Link ein</string>
 
