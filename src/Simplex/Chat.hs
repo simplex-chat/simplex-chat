@@ -3538,10 +3538,10 @@ adminContactReq =
   either error id $ strDecode "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D"
 
 timeItM :: ChatMonad m => String -> m a -> m a
-timeItM s action = do
+timeItM s a = do
   t1 <- liftIO getCurrentTime
-  a <- action
+  r <- a
   t2 <- liftIO getCurrentTime
   let diff = diffInMillis t2 t1
   liftIO . print $ show diff <> " ms - " <> s
-  pure a
+  pure r
