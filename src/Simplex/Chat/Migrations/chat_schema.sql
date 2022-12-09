@@ -452,3 +452,6 @@ CREATE UNIQUE INDEX idx_user_contact_links_group_id ON user_contact_links(
 CREATE UNIQUE INDEX idx_snd_files_last_inline_msg_delivery_id ON snd_files(
   last_inline_msg_delivery_id
 );
+CREATE INDEX idx_messages_connection_id ON messages(connection_id);
+CREATE INDEX idx_chat_items_group_member_id ON chat_items(group_member_id);
+CREATE INDEX idx_chat_items_contact_id ON chat_items(contact_id);
