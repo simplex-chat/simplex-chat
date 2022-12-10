@@ -74,7 +74,7 @@ responseToView user_ testView ts = \case
   CRGroupMemberInfo g m cStats -> viewGroupMemberInfo g m cStats
   CRContactSwitch ct progress -> viewContactSwitch ct progress
   CRGroupMemberSwitch g m progress -> viewGroupMemberSwitch g m progress
-  CRCodeVerification verified code -> [plain $ if verified then "connection verified" else "error: current connection code is " <> code]
+  CRConnectionVerified verified code -> [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
   CRContactCode ct code -> viewContactCode ct code testView
   CRGroupMemberCode g m code -> viewGroupMemberCode g m code testView
   CRNewChatItem (AChatItem _ _ chat item) -> unmuted chat item $ viewChatItem chat item False ts
