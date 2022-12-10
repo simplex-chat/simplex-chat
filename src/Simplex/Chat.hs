@@ -3442,7 +3442,7 @@ chatCommandP =
       "/_get code @" *> (APIGetContactCode <$> A.decimal),
       "/_get code #" *> (APIGetGroupMemberCode <$> A.decimal <* A.space <*> A.decimal),
       "/_verify code @" *> (APIVerifyContact <$> A.decimal <* A.space <*> textP),
-      "/_verify code @" *> (APIVerifyGroupMember <$> A.decimal <* A.space <*> A.decimal <* A.space <*> textP),
+      "/_verify code #" *> (APIVerifyGroupMember <$> A.decimal <* A.space <*> A.decimal <* A.space <*> textP),
       "/code " *> char_ '@' *> (GetContactCode <$> displayName),
       "/code #" *> (GetGroupMemberCode <$> displayName <* A.space <* char_ '@' <*> displayName),
       "/verify " *> char_ '@' *> (VerifyContact <$> displayName <* A.space <*> textP),
