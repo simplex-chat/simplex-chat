@@ -822,11 +822,11 @@ viewGroupUpdated
       groupProfileUpdated =
         ["changed to " <> ttyFullGroup g' | n /= n']
           <> ["full name " <> if T.null fullName' || fullName' == n' then "removed" else "changed to: " <> plain fullName' | n == n' && fullName /= fullName']
-          <> ["description " <> maybe "removed" (\descr -> "changed to: " <> plain descr) description' | description /= description']
           <> ["profile image " <> maybe "removed" (const "updated") image' | image /= image']
+          <> (if description == description' then [] else maybe ["description removed"] ((bold' "description changed to:" :) . map plain . T.lines) description')
       groupPrefsUpdated
         | null prefs = []
-        | otherwise = "updated group preferences:" : prefs
+        | otherwise = bold' "updated group preferences:" : prefs
         where
           prefs = mapMaybe viewPref allGroupFeatures
           viewPref pt
@@ -838,15 +838,16 @@ viewGroupUpdated
 viewGroupProfile :: GroupInfo -> [StyledString]
 viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {description, image, groupPreferences = gps}} =
   [ttyFullGroup g]
-    <> maybe [] (\descr -> ["description: " <> plain descr]) description
-    <> [ maybe "no image" (const "with profile image") image,
-         "group preferences:"
-       ]
-    <> map viewPref allGroupFeatures
+    <> maybe [] (const ["has profile image"]) image
+    <> maybe [] ((bold' "description:" :) . map plain . T.lines) description
+    <> (bold' "group preferences:" : map viewPref allGroupFeatures)
   where
     viewPref pt = plain (groupFeatureToText pt) <> " enabled: " <> plain (groupPrefToText $ pref gps)
       where
         pref = getGroupPreference pt . mergeGroupPreferences
+
+bold' :: String -> StyledString
+bold' = styled Bold
 
 viewContactAliasUpdated :: Contact -> [StyledString]
 viewContactAliasUpdated Contact {localDisplayName = n, profile = LocalProfile {localAlias}}

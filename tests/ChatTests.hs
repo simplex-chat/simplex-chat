@@ -76,7 +76,7 @@ chatTests = do
     it "update group profile" testUpdateGroupProfile
     it "update member role" testUpdateMemberRole
     it "unused contacts are deleted after all their groups are deleted" testGroupDeleteUnusedContacts
-    it "show group description as the first message to new members" testGroupDescription
+    it "group description is shown as the first message to new members" testGroupDescription
   describe "async group connections" $ do
     xit "create and join group when clients go offline" testGroupAsync
   describe "user profiles" $ do
@@ -1517,12 +1517,15 @@ testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile 
   alice <## "#team"
   groupInfo alice
   alice ##> "/group_description team Welcome to the team!"
-  alice <## "description changed to: Welcome to the team!"
+  alice <## "description changed to:"
+  alice <## "Welcome to the team!"
   bob <## "alice updated group #team:"
-  bob <## "description changed to: Welcome to the team!"
+  bob <## "description changed to:"
+  bob <## "Welcome to the team!"
   alice ##> "/group_profile team"
   alice <## "#team"
-  alice <## "description: Welcome to the team!"
+  alice <## "description:"
+  alice <## "Welcome to the team!"
   groupInfo alice
   connectUsers alice cath
   addMember "team" alice cath GRMember
@@ -1554,7 +1557,6 @@ testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile 
     ]
   where
     groupInfo alice = do
-      alice <## "no image"
       alice <## "group preferences:"
       alice <## "Direct messages enabled: on"
       alice <## "Full deletion enabled: off"
