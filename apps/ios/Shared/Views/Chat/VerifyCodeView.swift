@@ -11,18 +11,24 @@ import SwiftUI
 struct VerifyCodeView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     var displayName: String
-    var connectionCode: String
-    @State var verified: Bool
-    var verify: (String?) async -> Bool
+    @State var connectionCode: String?
+    @State var connectionVerified: Bool
+    var verify: (String?) -> (Bool, String)?
     @State private var showCodeError = false
 
     var body: some View {
+        if let code = connectionCode {
+            verifyCodeView(code)
+        }
+    }
+
+    private func verifyCodeView(_ code: String) -> some View {
         ScrollView {
-            let splitCode = splitToParts(connectionCode, length: 24)
+            let splitCode = splitToParts(code, length: 24)
             VStack(alignment: .leading) {
                 Group {
                     HStack {
-                        if verified {
+                        if connectionVerified {
                             Image(systemName: "checkmark.shield")
                                 .foregroundColor(.secondary)
                             Text("\(displayName) is verified")
@@ -32,7 +38,7 @@ struct VerifyCodeView: View {
                     }
                     .frame(height: 24)
 
-                    QRCode(uri: connectionCode)
+                    QRCode(uri: code)
                         .padding(.horizontal)
 
                     Text(splitCode)
@@ -47,11 +53,11 @@ struct VerifyCodeView: View {
                     .padding(.bottom)
 
                 Group {
-                    if verified {
+                    if connectionVerified {
                         Button {
-                            Task {
-                                let ok = await verify(nil)
-                                await MainActor.run { verified = ok }
+                            if let (_, existingCode) = verify(nil) {
+                                connectionVerified = false
+                                connectionCode = existingCode
                             }
                         } label: {
                             Text("Clear verification")
@@ -60,7 +66,7 @@ struct VerifyCodeView: View {
                     } else {
                         HStack {
                             NavigationLink {
-                                ScanCodeView(verified: $verified, verify: verify)
+                                ScanCodeView(connectionVerified: $connectionVerified, verify: verify)
                                     .navigationBarTitleDisplayMode(.inline)
                                     .navigationTitle("Scan code")
                             } label: {
@@ -68,12 +74,10 @@ struct VerifyCodeView: View {
                             }
                             .padding()
                             Button {
-                                Task {
-                                    let ok = await verify(connectionCode)
-                                    await MainActor.run {
-                                        verified = ok
-                                        if !ok { showCodeError = true }
-                                    }
+                                if let (verified, existingCode) = verify(code) {
+                                    connectionVerified = verified
+                                    connectionCode = existingCode
+                                    if !verified { showCodeError = true }
                                 }
                             } label: {
                                 Label("Mark verified", systemImage: "checkmark")
@@ -98,9 +102,7 @@ struct VerifyCodeView: View {
                     }
                 }
             }
-            .onChange(of: verified) { _ in
-                if verified { dismiss() }
-            }
+            .onChange(of: connectionVerified) { _ in dismiss() }
         }
     }
 
@@ -114,6 +116,6 @@ struct VerifyCodeView: View {
 
 struct VerifyCodeView_Previews: PreviewProvider {
     static var previews: some View {
-        VerifyCodeView(displayName: "alice", connectionCode: "12345 67890 12345 67890", verified: false, verify: {_ in true})
+        VerifyCodeView(displayName: "alice", connectionCode: "12345 67890 12345 67890", connectionVerified: false, verify: {_ in nil})
     }
 }

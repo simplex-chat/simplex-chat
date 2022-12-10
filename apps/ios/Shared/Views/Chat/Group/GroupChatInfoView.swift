@@ -21,6 +21,7 @@ struct GroupChatInfoView: View {
     @State private var selectedMember: GroupMember? = nil
     @State private var connectionStats: ConnectionStats?
     @State private var connectionCode: String?
+    @State private var connectionVerified: Bool = false
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     enum GroupChatInfoViewAlert: Identifiable {
@@ -74,6 +75,7 @@ struct GroupChatInfoView: View {
                                     await MainActor.run {
                                         connectionStats = stats
                                         connectionCode = code
+                                        connectionVerified = mem.verified
                                         selectedMember = mem
                                     }
                                 } catch let error {
@@ -90,8 +92,9 @@ struct GroupChatInfoView: View {
                 .appSheet(item: $selectedMember, onDismiss: {
                     selectedMember = nil
                     connectionStats = nil
-                }) { mem in
-                    GroupMemberInfoView(groupInfo: groupInfo, member: $selectedMember, connectionStats: $connectionStats, connectionCode: $connectionCode, connectionVerified: mem.verified)
+                    connectionVerified = false
+                }) { _ in
+                    GroupMemberInfoView(groupInfo: groupInfo, member: $selectedMember, connectionStats: $connectionStats, connectionCode: $connectionCode)
                 }
 
                 Section {

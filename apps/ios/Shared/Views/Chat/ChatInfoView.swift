@@ -208,24 +208,20 @@ struct ChatInfoView: View {
             VerifyCodeView(
                 displayName: contact.displayName,
                 connectionCode: code,
-                verified: contact.verified,
+                connectionVerified: contact.verified,
                 verify: { code in
-                    do {
-                        var securityCode: SecurityCode? = nil
-                        if let code = code {
-                            securityCode = SecurityCode(securityCode: code, verifiedAt: .now)
-                        }
-                        let (verified, expectedCode) = try await apiVerifyContact(chat.chatInfo.apiId, connectionCode: code)
-                        await MainActor.run {
-                            contact.activeConn.connectionCode = verified ? securityCode : nil
-                            chat.chatInfo = .direct(contact: contact)
-                            connectionCode = expectedCode
-                        }
-                        return verified
-                    } catch let error {
-                        logger.error("apiVerifyContact error: \(responseError(error))")
-                        return false
+                    var securityCode: SecurityCode? = nil
+                    if let code = code {
+                        securityCode = SecurityCode(securityCode: code, verifiedAt: .now)
                     }
+                    if let r = apiVerifyContact(chat.chatInfo.apiId, connectionCode: code) {
+                        contact.activeConn.connectionCode = r.0 ? securityCode : nil
+                        DispatchQueue.main.async {
+                            chat.chatInfo = .direct(contact: contact)
+                        }
+                        return r
+                    }
+                    return nil
                 }
             )
             .navigationBarTitleDisplayMode(.inline)

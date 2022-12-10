@@ -34,8 +34,6 @@ struct ChatView: View {
     @FocusState private var searchFocussed
     // opening GroupMemberInfoView on member icon
     @State private var selectedMember: GroupMember? = nil
-    @State private var memberConnectionStats: ConnectionStats?
-    @State private var memberConnectionCode: String?
 
     var body: some View {
         let cInfo = chat.chatInfo
@@ -395,8 +393,8 @@ struct ChatView: View {
                                     let stats = try await apiGroupMemberInfo(member.groupId, member.groupMemberId)
                                     let (mem, code) = member.memberActive ? try await apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId) : (member, nil)
                                     await MainActor.run {
-                                        memberConnectionStats = stats
-                                        memberConnectionCode = code
+                                        connectionStats = stats
+                                        connectionCode = code
                                         selectedMember = mem
                                     }
                                 } catch let error {
@@ -406,10 +404,10 @@ struct ChatView: View {
                             }
                         }
                         .appSheet(item: $selectedMember, onDismiss: {
-                            selectedMember = nil
-                            memberConnectionStats = nil
+                            connectionStats = nil
+                            connectionCode = nil
                         }) { _ in
-                            GroupMemberInfoView(groupInfo: groupInfo, member: $selectedMember, connectionStats: $memberConnectionStats, connectionCode: $memberConnectionCode, connectionVerified: member.verified)
+                            GroupMemberInfoView(groupInfo: groupInfo, member: $selectedMember, connectionStats: $connectionStats, connectionCode: $connectionCode)
                         }
                 } else {
                     Rectangle().fill(.clear)

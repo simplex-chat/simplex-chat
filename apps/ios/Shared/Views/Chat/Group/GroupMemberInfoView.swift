@@ -16,7 +16,6 @@ struct GroupMemberInfoView: View {
     @Binding var member: GroupMember?
     @Binding var connectionStats: ConnectionStats?
     @Binding var connectionCode: String?
-    @State var connectionVerified: Bool
     @State private var newRole: GroupMemberRole = .member
     @State private var alert: GroupMemberInfoViewAlert?
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
@@ -158,7 +157,7 @@ struct GroupMemberInfoView: View {
                 .padding(.top, 12)
                 .padding()
             HStack {
-                if connectionVerified {
+                if mem.verified {
                     Image(systemName: "checkmark.shield")
                 }
                 Text(mem.displayName)
@@ -180,27 +179,23 @@ struct GroupMemberInfoView: View {
             VerifyCodeView(
                 displayName: mem.displayName,
                 connectionCode: code,
-                verified: connectionVerified,
+                connectionVerified: mem.verified,
                 verify: { code in
-                    do {
-                        let (verified, expectedCode) = try await apiVerifyGroupMember(mem.groupId, mem.groupMemberId, connectionCode: code)
-                        await MainActor.run {
-                            connectionVerified = verified
-                            connectionCode = expectedCode
-                        }
-                        return verified
-                    } catch let error {
-                        logger.error("apiVerifyGroupMember error: \(responseError(error))")
-                        return false
+                    if let r = apiVerifyGroupMember(mem.groupId, mem.groupMemberId, connectionCode: code) {
+                        let (verified, existingCode) = r
+                        member?.activeConn?.connectionCode = verified ? SecurityCode(securityCode: existingCode, verifiedAt: .now) : nil
+                        connectionCode = existingCode
+                        return r
                     }
+                    return nil
                 }
             )
             .navigationBarTitleDisplayMode(.inline)
             .navigationTitle("Security code")
         } label: {
             Label(
-                connectionVerified ? "View security code" : "Verify security code",
-                systemImage: connectionVerified ? "checkmark.shield" : "exclamationmark.shield"
+                mem.verified ? "View security code" : "Verify security code",
+                systemImage: mem.verified ? "checkmark.shield" : "exclamationmark.shield"
             )
         }
 
@@ -288,8 +283,7 @@ struct GroupMemberInfoView_Previews: PreviewProvider {
             groupInfo: GroupInfo.sampleData,
             member: Binding.constant(GroupMember.sampleData),
             connectionStats: Binding.constant(nil),
-            connectionCode: Binding.constant(nil),
-            connectionVerified: false
+            connectionCode: Binding.constant(nil)
         )
     }
 }

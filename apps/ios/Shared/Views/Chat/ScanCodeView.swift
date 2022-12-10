@@ -11,8 +11,8 @@ import CodeScanner
 
 struct ScanCodeView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
-    @Binding var verified: Bool
-    var verify: (String?) async -> Bool
+    @Binding var connectionVerified: Bool
+    var verify: (String?) async -> (Bool, String)?
     @State private var showCodeError = false
 
     var body: some View {
@@ -35,13 +35,14 @@ struct ScanCodeView: View {
         switch resp {
         case let .success(r):
             Task {
-                let ok = await verify(r.string)
-                await MainActor.run {
-                    verified = ok
-                    if ok {
-                        dismiss()
-                    } else {
-                        showCodeError = true
+                if let (ok, _) = await verify(r.string) {
+                    await MainActor.run {
+                        connectionVerified = ok
+                        if ok {
+                            dismiss()
+                        } else {
+                            showCodeError = true
+                        }
                     }
                 }
             }
@@ -54,6 +55,6 @@ struct ScanCodeView: View {
 
 struct ScanCodeView_Previews: PreviewProvider {
     static var previews: some View {
-        ScanCodeView(verified: Binding.constant(true), verify: {_ in true})
+        ScanCodeView(connectionVerified: Binding.constant(true), verify: {_ in nil})
     }
 }

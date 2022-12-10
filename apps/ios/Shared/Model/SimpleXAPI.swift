@@ -388,16 +388,18 @@ func apiGetGroupMemberCode(_ groupId: Int64, _ groupMemberId: Int64) async throw
     throw r
 }
 
-func apiVerifyContact(_ contactId: Int64, connectionCode: String?) async throws -> (Bool, String) {
-    let r = await chatSendCmd(.apiVerifyContact(contactId: contactId, connectionCode: connectionCode))
+func apiVerifyContact(_ contactId: Int64, connectionCode: String?) -> (Bool, String)? {
+    let r = chatSendCmdSync(.apiVerifyContact(contactId: contactId, connectionCode: connectionCode))
     if case let .connectionVerified(verified, expectedCode) = r { return (verified, expectedCode) }
-    throw r
+    logger.error("apiVerifyContact error: \(String(describing: r))")
+    return nil
 }
 
-func apiVerifyGroupMember(_ groupId: Int64, _ groupMemberId: Int64, connectionCode: String?) async throws -> (Bool, String) {
-    let r = await chatSendCmd(.apiVerifyGroupMember(groupId: groupId, groupMemberId: groupMemberId, connectionCode: connectionCode))
+func apiVerifyGroupMember(_ groupId: Int64, _ groupMemberId: Int64, connectionCode: String?) -> (Bool, String)? {
+    let r = chatSendCmdSync(.apiVerifyGroupMember(groupId: groupId, groupMemberId: groupMemberId, connectionCode: connectionCode))
     if case let .connectionVerified(verified, expectedCode) = r { return (verified, expectedCode) }
-    throw r
+    logger.error("apiVerifyGroupMember error: \(String(describing: r))")
+    return nil
 }
 
 func apiAddContact() async -> String? {
