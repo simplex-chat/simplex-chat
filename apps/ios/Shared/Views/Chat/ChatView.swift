@@ -23,6 +23,7 @@ struct ChatView: View {
     @State private var showDeleteMessage = false
     @State private var connectionStats: ConnectionStats?
     @State private var customUserProfile: Profile?
+    @State private var connectionCode: String?
     @State private var tableView: UITableView?
     @State private var loadingItems = false
     @State private var firstPage = false
@@ -34,7 +35,8 @@ struct ChatView: View {
     // opening GroupMemberInfoView on member icon
     @State private var selectedMember: GroupMember? = nil
     @State private var memberConnectionStats: ConnectionStats?
-    
+    @State private var memberConnectionCode: String?
+
     var body: some View {
         let cInfo = chat.chatInfo
         return VStack(spacing: 0) {
@@ -90,24 +92,30 @@ struct ChatView: View {
                     Button {
                         Task {
                             do {
-                                let (stats, profile) = try await apiContactInfo(contactId: chat.chatInfo.apiId)
+                                let (stats, profile) = try await apiContactInfo(chat.chatInfo.apiId)
+                                let (ct, code) = try await apiGetContactCode(chat.chatInfo.apiId)
                                 await MainActor.run {
                                     connectionStats = stats
                                     customUserProfile = profile
+                                    connectionCode = code
+                                    if contact.activeConn.connectionCode != ct.activeConn.connectionCode {
+                                        chat.chatInfo = .direct(contact: ct)
+                                    }
                                 }
                             } catch let error {
-                                logger.error("apiContactInfo error: \(responseError(error))")
+                                logger.error("apiContactInfo or apiGetContactCode error: \(responseError(error))")
                             }
                             await MainActor.run { showChatInfoSheet = true }
                         }
                     } label: {
                         ChatInfoToolbar(chat: chat)
                     }
-                    .appSheet(isPresented: $showChatInfoSheet, onDismiss: {
+                    .sheet(isPresented: $showChatInfoSheet, onDismiss: {
                         connectionStats = nil
                         customUserProfile = nil
+                        connectionCode = nil
                     }) {
-                        ChatInfoView(chat: chat, contact: contact, connectionStats: $connectionStats, customUserProfile: customUserProfile, localAlias: chat.chatInfo.localAlias)
+                        ChatInfoView(chat: chat, contact: contact, connectionStats: $connectionStats, customUserProfile: $customUserProfile, localAlias: chat.chatInfo.localAlias, connectionCode: $connectionCode)
                     }
                 } else if case let .group(groupInfo) = cInfo {
                     Button {
@@ -385,18 +393,23 @@ struct ChatView: View {
                             Task {
                                 do {
                                     let stats = try await apiGroupMemberInfo(member.groupId, member.groupMemberId)
-                                    await MainActor.run { memberConnectionStats = stats }
+                                    let (mem, code) = member.memberActive ? try await apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId) : (member, nil)
+                                    await MainActor.run {
+                                        memberConnectionStats = stats
+                                        memberConnectionCode = code
+                                        selectedMember = mem
+                                    }
                                 } catch let error {
                                     logger.error("apiGroupMemberInfo error: \(responseError(error))")
+                                    await MainActor.run { selectedMember = member }
                                 }
-                                await MainActor.run { selectedMember = member }
                             }
                         }
                         .appSheet(item: $selectedMember, onDismiss: {
                             selectedMember = nil
                             memberConnectionStats = nil
                         }) { _ in
-                            GroupMemberInfoView(groupInfo: groupInfo, member: $selectedMember, connectionStats: $memberConnectionStats)
+                            GroupMemberInfoView(groupInfo: groupInfo, member: $selectedMember, connectionStats: $memberConnectionStats, connectionCode: $memberConnectionCode, connectionVerified: member.verified)
                         }
                 } else {
                     Rectangle().fill(.clear)

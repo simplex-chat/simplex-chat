@@ -356,7 +356,7 @@ func apiSetChatSettings(type: ChatType, id: Int64, chatSettings: ChatSettings) a
     try await sendCommandOkResp(.apiSetChatSettings(type: type, id: id, chatSettings: chatSettings))
 }
 
-func apiContactInfo(contactId: Int64) async throws -> (ConnectionStats?, Profile?) {
+func apiContactInfo(_ contactId: Int64) async throws -> (ConnectionStats?, Profile?) {
     let r = await chatSendCmd(.apiContactInfo(contactId: contactId))
     if case let .contactInfo(_, connStats, customUserProfile) = r { return (connStats, customUserProfile) }
     throw r
@@ -374,6 +374,30 @@ func apiSwitchContact(contactId: Int64) async throws {
 
 func apiSwitchGroupMember(_ groupId: Int64, _ groupMemberId: Int64) async throws {
     try await sendCommandOkResp(.apiSwitchGroupMember(groupId: groupId, groupMemberId: groupMemberId))
+}
+
+func apiGetContactCode(_ contactId: Int64) async throws -> (Contact, String) {
+    let r = await chatSendCmd(.apiGetContactCode(contactId: contactId))
+    if case let .contactCode(contact, connectionCode) = r { return (contact, connectionCode) }
+    throw r
+}
+
+func apiGetGroupMemberCode(_ groupId: Int64, _ groupMemberId: Int64) async throws -> (GroupMember, String) {
+    let r = await chatSendCmd(.apiGetGroupMemberCode(groupId: groupId, groupMemberId: groupMemberId))
+    if case let .groupMemberCode(_, member, connectionCode) = r { return (member, connectionCode) }
+    throw r
+}
+
+func apiVerifyContact(_ contactId: Int64, connectionCode: String?) async throws -> (Bool, String) {
+    let r = await chatSendCmd(.apiVerifyContact(contactId: contactId, connectionCode: connectionCode))
+    if case let .connectionVerified(verified, expectedCode) = r { return (verified, expectedCode) }
+    throw r
+}
+
+func apiVerifyGroupMember(_ groupId: Int64, _ groupMemberId: Int64, connectionCode: String?) async throws -> (Bool, String) {
+    let r = await chatSendCmd(.apiVerifyGroupMember(groupId: groupId, groupMemberId: groupMemberId, connectionCode: connectionCode))
+    if case let .connectionVerified(verified, expectedCode) = r { return (verified, expectedCode) }
+    throw r
 }
 
 func apiAddContact() async -> String? {

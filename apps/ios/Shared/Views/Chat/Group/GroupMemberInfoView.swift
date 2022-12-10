@@ -15,6 +15,8 @@ struct GroupMemberInfoView: View {
     var groupInfo: GroupInfo
     @Binding var member: GroupMember?
     @Binding var connectionStats: ConnectionStats?
+    @Binding var connectionCode: String?
+    @State var connectionVerified: Bool
     @State private var newRole: GroupMemberRole = .member
     @State private var alert: GroupMemberInfoViewAlert?
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
@@ -42,17 +44,16 @@ struct GroupMemberInfoView: View {
                     groupMemberInfoHeader(member)
                         .listRowBackground(Color.clear)
 
-                    if let contactId = member.memberContactId {
-                        if let chat = chatModel.getContactChat(contactId),
-                           chat.chatInfo.contact?.directContact ?? false {
-                            Section {
+                    Section {
+                        if let contactId = member.memberContactId {
+                            if let chat = chatModel.getContactChat(contactId),
+                               chat.chatInfo.contact?.directContact ?? false {
                                 knownDirectChatButton(chat)
-                            }
-                        } else if groupInfo.fullGroupPreferences.directMessages.on {
-                            Section {
+                            } else if groupInfo.fullGroupPreferences.directMessages.on {
                                 newDirectChatButton(contactId)
                             }
                         }
+                        if let code = connectionCode { verifyCodeButton(member, code) }
                     }
 
                     Section("Member") {
@@ -64,6 +65,7 @@ struct GroupMemberInfoView: View {
                                     Text(role.text)
                                 }
                             }
+                            .frame(height: 36)
                         } else {
                             infoRow("Role", member.memberRole.text)
                         }
@@ -75,12 +77,12 @@ struct GroupMemberInfoView: View {
                         }
                     }
 
-                    Section("Servers") {
+                    if let connStats = connectionStats {
+                        Section("Servers") {
                         // TODO network connection status
-                        Button("Change receiving address") {
-                            alert = .switchAddressAlert
-                        }
-                        if let connStats = connectionStats {
+                            Button("Change receiving address") {
+                                alert = .switchAddressAlert
+                            }
                             smpServers("Receiving via", connStats.rcvServers)
                             smpServers("Sending via", connStats.sndServers)
                         }
@@ -155,10 +157,15 @@ struct GroupMemberInfoView: View {
                 .frame(width: 192, height: 192)
                 .padding(.top, 12)
                 .padding()
-            Text(mem.displayName)
-                .font(.largeTitle)
-                .lineLimit(1)
-                .padding(.bottom, 2)
+            HStack {
+                if connectionVerified {
+                    Image(systemName: "checkmark.shield")
+                }
+                Text(mem.displayName)
+                    .font(.largeTitle)
+                    .lineLimit(1)
+            }
+            .padding(.bottom, 2)
             if mem.fullName != "" && mem.fullName != mem.displayName {
                 Text(mem.fullName)
                     .font(.title2)
@@ -168,7 +175,38 @@ struct GroupMemberInfoView: View {
         .frame(maxWidth: .infinity, alignment: .center)
     }
 
-    func removeMemberButton(_ mem: GroupMember) -> some View {
+    private func verifyCodeButton(_ mem: GroupMember, _ code: String) -> some View {
+        NavigationLink {
+            VerifyCodeView(
+                displayName: mem.displayName,
+                connectionCode: code,
+                verified: connectionVerified,
+                verify: { code in
+                    do {
+                        let (verified, expectedCode) = try await apiVerifyGroupMember(mem.groupId, mem.groupMemberId, connectionCode: code)
+                        await MainActor.run {
+                            connectionVerified = verified
+                            connectionCode = expectedCode
+                        }
+                        return verified
+                    } catch let error {
+                        logger.error("apiVerifyGroupMember error: \(responseError(error))")
+                        return false
+                    }
+                }
+            )
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Security code")
+        } label: {
+            Label(
+                connectionVerified ? "View security code" : "Verify security code",
+                systemImage: connectionVerified ? "checkmark.shield" : "exclamationmark.shield"
+            )
+        }
+
+    }
+
+    private func removeMemberButton(_ mem: GroupMember) -> some View {
         Button(role: .destructive) {
             alert = .removeMemberAlert(mem: mem)
         } label: {
@@ -249,7 +287,9 @@ struct GroupMemberInfoView_Previews: PreviewProvider {
         GroupMemberInfoView(
             groupInfo: GroupInfo.sampleData,
             member: Binding.constant(GroupMember.sampleData),
-            connectionStats: Binding.constant(nil)
+            connectionStats: Binding.constant(nil),
+            connectionCode: Binding.constant(nil),
+            connectionVerified: false
         )
     }
 }

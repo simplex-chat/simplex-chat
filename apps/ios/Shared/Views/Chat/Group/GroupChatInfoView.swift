@@ -20,6 +20,7 @@ struct GroupChatInfoView: View {
     @State private var showAddMembersSheet: Bool = false
     @State private var selectedMember: GroupMember? = nil
     @State private var connectionStats: ConnectionStats?
+    @State private var connectionCode: String?
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     enum GroupChatInfoViewAlert: Identifiable {
@@ -69,11 +70,16 @@ struct GroupChatInfoView: View {
                             Task {
                                 do {
                                     let stats = try await apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
-                                    await MainActor.run { connectionStats = stats }
+                                    let (mem, code) = member.memberActive ? try await apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId) : (member, nil)
+                                    await MainActor.run {
+                                        connectionStats = stats
+                                        connectionCode = code
+                                        selectedMember = mem
+                                    }
                                 } catch let error {
-                                    logger.error("apiGroupMemberInfo error: \(responseError(error))")
+                                    logger.error("apiGroupMemberInfo or apiGetGroupMemberCode error: \(responseError(error))")
+                                    await MainActor.run { selectedMember = member }
                                 }
-                                await MainActor.run { selectedMember = member }
                             }
                         } label: { memberView(member) }
                     }
@@ -84,8 +90,8 @@ struct GroupChatInfoView: View {
                 .appSheet(item: $selectedMember, onDismiss: {
                     selectedMember = nil
                     connectionStats = nil
-                }) { _ in
-                    GroupMemberInfoView(groupInfo: groupInfo, member: $selectedMember, connectionStats: $connectionStats)
+                }) { mem in
+                    GroupMemberInfoView(groupInfo: groupInfo, member: $selectedMember, connectionStats: $connectionStats, connectionCode: $connectionCode, connectionVerified: mem.verified)
                 }
 
                 Section {
