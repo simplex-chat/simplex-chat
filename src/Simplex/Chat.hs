@@ -308,6 +308,7 @@ processChatCommand = \case
         setupSndFileTransfer :: Contact -> m (Maybe (FileInvitation, CIFile 'MDSnd, FileTransferMeta))
         setupSndFileTransfer ct = forM file_ $ \file -> do
           (fileSize, chSize, fileInline) <- checkSndFile mc file 1
+          -- ? do we show alert if createConnection fails here?
           (agentConnId_, fileConnReq) <-
             if isJust fileInline
               then pure (Nothing, Nothing)
@@ -1407,48 +1408,44 @@ acceptFileReceive :: forall m. ChatMonad m => User -> RcvFileTransfer -> Maybe B
 acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName = fName, fileConnReq, fileInline, fileSize}, fileStatus, grpMemberId} rcvInline_ filePath_ = do
   unless (fileStatus == RFSNew) $ case fileStatus of
     RFSCancelled _ -> throwChatError $ CEFileCancelled fName
-    _ -> pure () -- throwChatError $ CEFileAlreadyReceiving fName
+    _ -> throwChatError $ CEFileAlreadyReceiving fName
   case fileConnReq of
     -- direct file protocol
     Just connReq -> do
-      agentConnId <- withAgent $ \a -> joinConnection a True connReq . directMessage $ XFileAcpt fName
+      connIds <- joinAgentConnectionAsync user True connReq . directMessage $ XFileAcpt fName
       filePath <- getRcvFilePath fileId filePath_ fName
-      withStore $ \db -> acceptRcvFileTransfer db user fileId agentConnId ConnJoined filePath
+      withStore $ \db -> acceptRcvFileTransfer db user fileId connIds ConnJoined filePath
     -- group & direct file protocol
     Nothing -> do
       chatRef <- withStore $ \db -> getChatRefByFileId db user fileId
       case (chatRef, grpMemberId) of
         (ChatRef CTDirect contactId, Nothing) -> do
           ct <- withStore $ \db -> getContact db user contactId
-          (msg, ci) <- acceptFile
-          void $ sendDirectContactMessage ct msg
-          pure ci
+          acceptFile CFCreateConnFileAcptInvDirect $ \msg -> void $ sendDirectContactMessage ct msg
         (ChatRef CTGroup groupId, Just memId) -> do
           GroupMember {activeConn} <- withStore $ \db -> getGroupMember db user groupId memId
           case activeConn of
             Just conn -> do
-              (msg, ci) <- acceptFile
-              void $ sendDirectMessage conn msg $ GroupId groupId
-              pure ci
+              acceptFile CFCreateConnFileAcptInvGroup $ \msg -> void $ sendDirectMessage conn msg $ GroupId groupId
             _ -> throwChatError $ CEFileInternal "member connection not active"
         _ -> throwChatError $ CEFileInternal "invalid chat ref for file transfer"
   where
-    acceptFile :: m (ChatMsgEvent 'Json, AChatItem)
-    acceptFile = do
-      sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
+    acceptFile :: CommandFunction -> (ChatMsgEvent 'Json -> m ()) -> m AChatItem
+    acceptFile cmdFunction send = do
       filePath <- getRcvFilePath fileId filePath_ fName
       inline <- receiveInline
       if
           | inline -> do
             -- accepting inline
             ci <- withStore $ \db -> acceptRcvInlineFT db user fileId filePath
-            pure (XFileAcptInv sharedMsgId Nothing fName, ci)
+            sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
+            send $ XFileAcptInv sharedMsgId Nothing fName
+            pure ci
           | fileInline == Just IFMSent -> throwChatError $ CEFileAlreadyReceiving fName
           | otherwise -> do
             -- accepting via a new connection
-            (agentConnId, fileInvConnReq) <- withAgent $ \a -> createConnection a True SCMInvitation Nothing
-            ci <- withStore $ \db -> acceptRcvFileTransfer db user fileId agentConnId ConnNew filePath
-            pure (XFileAcptInv sharedMsgId (Just fileInvConnReq) fName, ci)
+            connIds <- createAgentConnectionAsync user cmdFunction True SCMInvitation
+            withStore $ \db -> acceptRcvFileTransfer db user fileId connIds ConnNew filePath
     receiveInline :: m Bool
     receiveInline = do
       ChatConfig {fileChunkSize, inlineFiles = InlineFilesConfig {receiveChunks, offerChunks}} <- asks config
@@ -2083,8 +2080,31 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
         _ -> pure ()
 
     processRcvFileConn :: ACommand 'Agent -> Connection -> RcvFileTransfer -> m ()
-    processRcvFileConn agentMsg conn ft =
+    processRcvFileConn agentMsg conn ft@RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}, grpMemberId} =
       case agentMsg of
+        INV (ACR _ cReq) ->
+          withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
+            case cReq of
+              fileInvConnReq@(CRInvitationUri _ _) -> case cmdFunction of
+                -- [async agent commands] direct XFileAcptInv continuation on receiving INV
+                CFCreateConnFileAcptInvDirect -> do
+                  -- ? setConnConnReqInv db user connId cReq -- is it required?
+                  ct <- withStore $ \db -> getContactByFileId db user fileId
+                  sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
+                  void $ sendDirectContactMessage ct (XFileAcptInv sharedMsgId (Just fileInvConnReq) fileName)
+                -- [async agent commands] group XFileAcptInv continuation on receiving INV
+                CFCreateConnFileAcptInvGroup -> case grpMemberId of
+                  Just gMemberId -> do
+                    GroupMember {groupId, activeConn} <- withStore $ \db -> getGroupMemberById db user gMemberId
+                    case activeConn of
+                      Just gMemberConn -> do
+                        -- ? setConnConnReqInv db user connId cReq -- is it required?
+                        sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
+                        void $ sendDirectMessage gMemberConn (XFileAcptInv sharedMsgId (Just fileInvConnReq) fileName) $ GroupId groupId
+                      _ -> throwChatError $ CECommandError "no GroupMember activeConn"
+                  _ -> throwChatError $ CECommandError "no grpMemberId"
+                _ -> throwChatError $ CECommandError "unexpected cmdFunction"
+              CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
         -- SMP CONF for RcvFileConnection happens for group file protocol
         -- when sender of the file "joins" connection created by the recipient
         -- (sender doesn't create connections for all group members)
@@ -2534,7 +2554,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
     xFileAcptInvGroup g@GroupInfo {groupId} m@GroupMember {activeConn} sharedMsgId fileConnReq_ fName msgMeta = do
       checkIntegrityCreateItem (CDGroupRcv g m) msgMeta
       fileId <- withStore $ \db -> getGroupFileIdBySharedMsgId db userId groupId sharedMsgId
-      -- TODO check that it's not already accpeted
+      -- TODO check that it's not already accepted
       ft@FileTransferMeta {fileName, fileSize, fileInline, cancelled} <- withStore (\db -> getFileTransferMeta db user fileId)
       if fName == fileName
         then unless cancelled $ case (fileConnReq_, activeConn) of
