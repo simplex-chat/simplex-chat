@@ -4637,12 +4637,17 @@ testMarkContactVerified =
     aCode <- getTermLine bob
     bCode `shouldBe` aCode
     alice ##> "/verify bob 123"
-    alice <##. "error: current connection code is "
+    alice <##. "connection not verified, current code is "
     alice ##> ("/verify bob " <> aCode)
     alice <## "connection verified"
     alice ##> "/i bob"
     bobInfo alice
     alice <## "connection verified"
+    alice ##> "/verify bob"
+    alice <##. "connection not verified, current code is "
+    alice ##> "/i bob"
+    bobInfo alice
+    alice <## "connection not verified, use /code command to see security code"
   where
     bobInfo alice = do
       alice <## "contact ID: 2"
@@ -4663,12 +4668,17 @@ testMarkGroupMemberVerified =
     aCode <- getTermLine bob
     bCode `shouldBe` aCode
     alice ##> "/verify #team bob 123"
-    alice <##. "error: current connection code is "
+    alice <##. "connection not verified, current code is "
     alice ##> ("/verify #team bob " <> aCode)
     alice <## "connection verified"
     alice ##> "/i #team bob"
     bobInfo alice
     alice <## "connection verified"
+    alice ##> "/verify #team bob"
+    alice <##. "connection not verified, current code is "
+    alice ##> "/i #team bob"
+    bobInfo alice
+    alice <## "connection not verified, use /code command to see security code"
   where
     bobInfo alice = do
       alice <## "group ID: 1"
