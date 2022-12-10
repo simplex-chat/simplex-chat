@@ -18,10 +18,9 @@ struct GroupChatInfoView: View {
     @State private var alert: GroupChatInfoViewAlert? = nil
     @State private var groupLink: String?
     @State private var showAddMembersSheet: Bool = false
-    @State private var selectedMember: GroupMember? = nil
+    @State private var selectedMember: Int64? = nil
     @State private var connectionStats: ConnectionStats?
     @State private var connectionCode: String?
-    @State private var connectionVerified: Bool = false
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     enum GroupChatInfoViewAlert: Identifiable {
@@ -67,34 +66,25 @@ struct GroupChatInfoView: View {
                     }
                     memberView(groupInfo.membership, user: true)
                     ForEach(members) { member in
-                        Button {
-                            Task {
-                                do {
-                                    let stats = try await apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
-                                    let (mem, code) = member.memberActive ? try await apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId) : (member, nil)
-                                    await MainActor.run {
-                                        connectionStats = stats
-                                        connectionCode = code
-                                        connectionVerified = mem.verified
-                                        selectedMember = mem
-                                    }
-                                } catch let error {
-                                    logger.error("apiGroupMemberInfo or apiGetGroupMemberCode error: \(responseError(error))")
-                                    await MainActor.run { selectedMember = member }
-                                }
-                            }
-                        } label: { memberView(member) }
+                        NavLinkPlain(
+                            tag: member.groupMemberId,
+                            selection: $selectedMember,
+                            label: { memberView(member) }
+                        )
                     }
+                    .background(
+                        NavigationLink(
+                            destination: memberInfoView(selectedMember),
+                            isActive: Binding(
+                                get: { selectedMember != nil },
+                                set: { _, _ in selectedMember = nil }
+                            )
+                        ) { EmptyView() }
+                        .opacity(0)
+                    )
                 }
                 .appSheet(isPresented: $showAddMembersSheet) {
                     AddGroupMembersView(chat: chat, groupInfo: groupInfo)
-                }
-                .appSheet(item: $selectedMember, onDismiss: {
-                    selectedMember = nil
-                    connectionStats = nil
-                    connectionVerified = false
-                }) { _ in
-                    GroupMemberInfoView(groupInfo: groupInfo, member: $selectedMember, connectionStats: $connectionStats, connectionCode: $connectionCode)
                 }
 
                 Section {
@@ -196,6 +186,12 @@ struct GroupChatInfoView: View {
                 Text(member.memberRole.text)
                     .foregroundColor(.secondary)
             }
+        }
+    }
+
+    @ViewBuilder private func memberInfoView(_ groupMemberId: Int64?) -> some View {
+        if let mId = groupMemberId, let member = chatModel.groupMembers.first(where: { $0.groupMemberId == mId }) {
+            GroupMemberInfoView(groupInfo: groupInfo, member: member)
         }
     }
 

@@ -210,12 +210,10 @@ struct ChatInfoView: View {
                 connectionCode: code,
                 connectionVerified: contact.verified,
                 verify: { code in
-                    var securityCode: SecurityCode? = nil
-                    if let code = code {
-                        securityCode = SecurityCode(securityCode: code, verifiedAt: .now)
-                    }
                     if let r = apiVerifyContact(chat.chatInfo.apiId, connectionCode: code) {
-                        contact.activeConn.connectionCode = r.0 ? securityCode : nil
+                        let (verified, existingCode) = r
+                        contact.activeConn.connectionCode = verified ? SecurityCode(securityCode: existingCode, verifiedAt: .now) : nil
+                        connectionCode = existingCode
                         DispatchQueue.main.async {
                             chat.chatInfo = .direct(contact: contact)
                         }

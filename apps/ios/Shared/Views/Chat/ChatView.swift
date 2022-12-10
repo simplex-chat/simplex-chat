@@ -387,27 +387,9 @@ struct ChatView: View {
                 if showMember {
                     ProfileImage(imageStr: member.memberProfile.image)
                         .frame(width: memberImageSize, height: memberImageSize)
-                        .onTapGesture {
-                            Task {
-                                do {
-                                    let stats = try await apiGroupMemberInfo(member.groupId, member.groupMemberId)
-                                    let (mem, code) = member.memberActive ? try await apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId) : (member, nil)
-                                    await MainActor.run {
-                                        connectionStats = stats
-                                        connectionCode = code
-                                        selectedMember = mem
-                                    }
-                                } catch let error {
-                                    logger.error("apiGroupMemberInfo error: \(responseError(error))")
-                                    await MainActor.run { selectedMember = member }
-                                }
-                            }
-                        }
-                        .appSheet(item: $selectedMember, onDismiss: {
-                            connectionStats = nil
-                            connectionCode = nil
-                        }) { _ in
-                            GroupMemberInfoView(groupInfo: groupInfo, member: $selectedMember, connectionStats: $connectionStats, connectionCode: $connectionCode)
+                        .onTapGesture { selectedMember = member }
+                        .appSheet(item: $selectedMember) { member in
+                            GroupMemberInfoView(groupInfo: groupInfo, member: member)
                         }
                 } else {
                     Rectangle().fill(.clear)

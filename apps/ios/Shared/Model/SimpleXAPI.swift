@@ -362,8 +362,8 @@ func apiContactInfo(_ contactId: Int64) async throws -> (ConnectionStats?, Profi
     throw r
 }
 
-func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) async throws -> (ConnectionStats?) {
-    let r = await chatSendCmd(.apiGroupMemberInfo(groupId: groupId, groupMemberId: groupMemberId))
+func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) throws -> (ConnectionStats?) {
+    let r = chatSendCmdSync(.apiGroupMemberInfo(groupId: groupId, groupMemberId: groupMemberId))
     if case let .groupMemberInfo(_, _, connStats_) = r { return (connStats_) }
     throw r
 }
@@ -382,8 +382,8 @@ func apiGetContactCode(_ contactId: Int64) async throws -> (Contact, String) {
     throw r
 }
 
-func apiGetGroupMemberCode(_ groupId: Int64, _ groupMemberId: Int64) async throws -> (GroupMember, String) {
-    let r = await chatSendCmd(.apiGetGroupMemberCode(groupId: groupId, groupMemberId: groupMemberId))
+func apiGetGroupMemberCode(_ groupId: Int64, _ groupMemberId: Int64) throws -> (GroupMember, String) {
+    let r = chatSendCmdSync(.apiGetGroupMemberCode(groupId: groupId, groupMemberId: groupMemberId))
     if case let .groupMemberCode(_, member, connectionCode) = r { return (member, connectionCode) }
     throw r
 }

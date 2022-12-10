@@ -13,9 +13,9 @@ struct GroupMemberInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
     var groupInfo: GroupInfo
-    @Binding var member: GroupMember?
-    @Binding var connectionStats: ConnectionStats?
-    @Binding var connectionCode: String?
+    @State var member: GroupMember
+    @State private var connectionStats: ConnectionStats? = nil
+    @State private var connectionCode: String? = nil
     @State private var newRole: GroupMemberRole = .member
     @State private var alert: GroupMemberInfoViewAlert?
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
@@ -38,7 +38,6 @@ struct GroupMemberInfoView: View {
 
     var body: some View {
         NavigationView {
-            if let member = member {
                 List {
                     groupMemberInfoHeader(member)
                         .listRowBackground(Color.clear)
@@ -52,7 +51,7 @@ struct GroupMemberInfoView: View {
                                 newDirectChatButton(contactId)
                             }
                         }
-                        if let code = connectionCode { verifyCodeButton(member, code) }
+                        if let code = connectionCode { verifyCodeButton(code) }
                     }
 
                     Section("Member") {
@@ -101,13 +100,23 @@ struct GroupMemberInfoView: View {
                     }
                 }
                 .navigationBarHidden(true)
-                .onAppear { newRole = member.memberRole }
+                .onAppear {
+                    newRole = member.memberRole
+                    do {
+                        let stats = try apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
+                        let (mem, code) = member.memberActive ? try apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId) : (member, nil)
+                        member = mem
+                        connectionStats = stats
+                        connectionCode = code
+                    } catch let error {
+                        logger.error("apiGroupMemberInfo or apiGetGroupMemberCode error: \(responseError(error))")
+                    }
+                }
                 .onChange(of: newRole) { _ in
                     if newRole != member.memberRole {
                         alert = .changeMemberRoleAlert(mem: member, role: newRole)
                     }
                 }
-            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .alert(item: $alert) { alertItem in
@@ -174,17 +183,21 @@ struct GroupMemberInfoView: View {
         .frame(maxWidth: .infinity, alignment: .center)
     }
 
-    private func verifyCodeButton(_ mem: GroupMember, _ code: String) -> some View {
+    private func verifyCodeButton(_ code: String) -> some View {
         NavigationLink {
             VerifyCodeView(
-                displayName: mem.displayName,
+                displayName: member.displayName,
                 connectionCode: code,
-                connectionVerified: mem.verified,
+                connectionVerified: member.verified,
                 verify: { code in
-                    if let r = apiVerifyGroupMember(mem.groupId, mem.groupMemberId, connectionCode: code) {
+                    if let r = apiVerifyGroupMember(member.groupId, member.groupMemberId, connectionCode: code) {
                         let (verified, existingCode) = r
-                        member?.activeConn?.connectionCode = verified ? SecurityCode(securityCode: existingCode, verifiedAt: .now) : nil
+                        let connCode = verified ? SecurityCode(securityCode: existingCode, verifiedAt: .now) : nil
                         connectionCode = existingCode
+//                        member.activeConn?.connectionCode = connCode
+//                        if let i = chatModel.groupMembers.firstIndex(where: { $0.groupMemberId == member.groupMemberId }) {
+//                            chatModel.groupMembers[i].activeConn?.connectionCode = connCode
+//                        }
                         return r
                     }
                     return nil
@@ -194,8 +207,8 @@ struct GroupMemberInfoView: View {
             .navigationTitle("Security code")
         } label: {
             Label(
-                mem.verified ? "View security code" : "Verify security code",
-                systemImage: mem.verified ? "checkmark.shield" : "exclamationmark.shield"
+                member.verified ? "View security code" : "Verify security code",
+                systemImage: member.verified ? "checkmark.shield" : "exclamationmark.shield"
             )
         }
 
@@ -263,9 +276,7 @@ struct GroupMemberInfoView: View {
     private func switchMemberAddress() {
         Task {
             do {
-                if let member = member {
-                    try await apiSwitchGroupMember(groupInfo.apiId, member.groupMemberId)
-                }
+                try await apiSwitchGroupMember(groupInfo.apiId, member.groupMemberId)
             } catch let error {
                 logger.error("switchMemberAddress apiSwitchGroupMember error: \(responseError(error))")
                 let a = getErrorAlert(error, "Error changing address")
@@ -281,9 +292,7 @@ struct GroupMemberInfoView_Previews: PreviewProvider {
     static var previews: some View {
         GroupMemberInfoView(
             groupInfo: GroupInfo.sampleData,
-            member: Binding.constant(GroupMember.sampleData),
-            connectionStats: Binding.constant(nil),
-            connectionCode: Binding.constant(nil)
+            member: GroupMember.sampleData
         )
     }
 }

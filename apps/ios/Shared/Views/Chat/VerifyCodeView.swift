@@ -55,10 +55,7 @@ struct VerifyCodeView: View {
                 Group {
                     if connectionVerified {
                         Button {
-                            if let (_, existingCode) = verify(nil) {
-                                connectionVerified = false
-                                connectionCode = existingCode
-                            }
+                            verifyCode(nil)
                         } label: {
                             Text("Clear verification")
                         }
@@ -74,9 +71,7 @@ struct VerifyCodeView: View {
                             }
                             .padding()
                             Button {
-                                if let (verified, existingCode) = verify(code) {
-                                    connectionVerified = verified
-                                    connectionCode = existingCode
+                                verifyCode(code) { verified in
                                     if !verified { showCodeError = true }
                                 }
                             } label: {
@@ -106,7 +101,15 @@ struct VerifyCodeView: View {
         }
     }
 
-    func splitToParts(_ s: String, length: Int) -> String {
+    private func verifyCode(_ code: String?, _ cb: ((Bool) -> Void)? = nil) {
+        if let (verified, existingCode) = verify(code) {
+            connectionVerified = verified
+            connectionCode = existingCode
+            cb?(verified)
+        }
+    }
+
+    private func splitToParts(_ s: String, length: Int) -> String {
         if length >= s.count { return s }
         return (0 ... (s.count - 1) / length)
             .map { s.dropFirst($0 * length).prefix(length) }
