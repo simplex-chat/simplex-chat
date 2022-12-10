@@ -724,6 +724,7 @@ fromLocalProfile LocalProfile {displayName, fullName, image, preferences} =
 data GroupProfile = GroupProfile
   { displayName :: GroupName,
     fullName :: Text,
+    description :: Maybe Text,
     image :: Maybe ImageData,
     groupPreferences :: Maybe GroupPreferences
   }

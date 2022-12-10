@@ -242,7 +242,9 @@ data ChatCommand
   | ClearGroup GroupName
   | ListMembers GroupName
   | ListGroups
-  | UpdateGroupProfile GroupName GroupProfile
+  | UpdateGroupNames GroupName GroupProfile
+  | ShowGroupProfile GroupName
+  | UpdateGroupDescription GroupName (Maybe Text)
   | CreateGroupLink GroupName
   | DeleteGroupLink GroupName
   | ShowGroupLink GroupName
@@ -368,6 +370,7 @@ data ChatResponse
   | CRGroupRemoved {groupInfo :: GroupInfo}
   | CRGroupDeleted {groupInfo :: GroupInfo, member :: GroupMember}
   | CRGroupUpdated {fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember}
+  | CRGroupProfile {groupInfo :: GroupInfo}
   | CRGroupLinkCreated {groupInfo :: GroupInfo, connReqContact :: ConnReqContact}
   | CRGroupLink {groupInfo :: GroupInfo, connReqContact :: ConnReqContact}
   | CRGroupLinkDeleted {groupInfo :: GroupInfo}

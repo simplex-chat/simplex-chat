@@ -76,6 +76,7 @@ chatTests = do
     it "update group profile" testUpdateGroupProfile
     it "update member role" testUpdateMemberRole
     it "unused contacts are deleted after all their groups are deleted" testGroupDeleteUnusedContacts
+    it "group description is shown as the first message to new members" testGroupDescription
   describe "async group connections" $ do
     xit "create and join group when clients go offline" testGroupAsync
   describe "user profiles" $ do
@@ -1499,6 +1500,70 @@ testGroupDeleteUnusedContacts =
       bob <## ("#" <> group <> ": you deleted the group")
       cath ##> ("/d #" <> group)
       cath <## ("#" <> group <> ": you deleted the group")
+
+testGroupDescription :: IO ()
+testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
+  connectUsers alice bob
+  alice ##> "/g team"
+  alice <## "group #team is created"
+  alice <## "to add members use /a team <name> or /create link #team"
+  addMember "team" alice bob GRAdmin
+  bob ##> "/j team"
+  concurrentlyN_
+    [ alice <## "#team: bob joined the group",
+      bob <## "#team: you joined the group"
+    ]
+  alice ##> "/group_profile team"
+  alice <## "#team"
+  groupInfo alice
+  alice ##> "/group_descr team Welcome to the team!"
+  alice <## "description changed to:"
+  alice <## "Welcome to the team!"
+  bob <## "alice updated group #team:"
+  bob <## "description changed to:"
+  bob <## "Welcome to the team!"
+  alice ##> "/group_profile team"
+  alice <## "#team"
+  alice <## "description:"
+  alice <## "Welcome to the team!"
+  groupInfo alice
+  connectUsers alice cath
+  addMember "team" alice cath GRMember
+  cath ##> "/j team"
+  concurrentlyN_
+    [ alice <## "#team: cath joined the group",
+      do
+        cath <## "#team: you joined the group"
+        cath <# "#team alice> Welcome to the team!"
+        cath <## "#team: member bob (Bob) is connected",
+      do
+        bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+        bob <## "#team: new member cath is connected"
+    ]
+  connectUsers bob dan
+  addMember "team" bob dan GRMember
+  dan ##> "/j team"
+  concurrentlyN_
+    [ bob <## "#team: dan joined the group",
+      do
+        dan <## "#team: you joined the group"
+        dan <# "#team bob> Welcome to the team!"
+        dan
+          <### [ "#team: member alice (Alice) is connected",
+                 "#team: member cath (Catherine) is connected"
+               ],
+      bobAddedDan alice,
+      bobAddedDan cath
+    ]
+  where
+    groupInfo alice = do
+      alice <## "group preferences:"
+      alice <## "Direct messages enabled: on"
+      alice <## "Full deletion enabled: off"
+      alice <## "Voice messages enabled: on"
+    bobAddedDan cc = do
+      cc <## "#team: bob added dan (Daniel) to the group (connecting...)"
+      cc <## "#team: new member dan is connected"
 
 testGroupAsync :: IO ()
 testGroupAsync = withTmpFiles $ do
@@ -3449,19 +3514,19 @@ testProhibitDirectMessages =
     addMember "team" cath dan GRMember
     dan ##> "/j #team"
     concurrentlyN_
-      [ cath <## ("#team: dan joined the group"),
+      [ cath <## "#team: dan joined the group",
         do
-          dan <## ("#team: you joined the group")
+          dan <## "#team: you joined the group"
           dan
             <### [ "#team: member alice (Alice) is connected",
                    "#team: member bob (Bob) is connected"
                  ],
         do
-          alice <## ("#team: cath added dan (Daniel) to the group (connecting...)")
-          alice <## ("#team: new member dan is connected"),
+          alice <## "#team: cath added dan (Daniel) to the group (connecting...)"
+          alice <## "#team: new member dan is connected",
         do
-          bob <## ("#team: cath added dan (Daniel) to the group (connecting...)")
-          bob <## ("#team: new member dan is connected")
+          bob <## "#team: cath added dan (Daniel) to the group (connecting...)"
+          bob <## "#team: new member dan is connected"
       ]
     alice ##> "@dan hi"
     alice <## "direct messages to indirect contact dan are prohibited"
@@ -3508,7 +3573,7 @@ testTestSMPServerConnection =
       alice ##> "/smp test smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:5001"
       alice <## "SMP server test passed"
       alice ##> "/smp test smp://LcJU@localhost:5001"
-      alice <## ("SMP server test failed at Connect, error: BROKER smp://LcJU@localhost:5001 NETWORK")
+      alice <## "SMP server test failed at Connect, error: BROKER smp://LcJU@localhost:5001 NETWORK"
       alice <## "Possibly, certificate fingerprint in server address is incorrect"
 
 testAsyncInitiatingOffline :: IO ()
