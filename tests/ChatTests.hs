@@ -1516,7 +1516,7 @@ testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile 
   alice ##> "/group_profile team"
   alice <## "#team"
   groupInfo alice
-  alice ##> "/group_description team Welcome to the team!"
+  alice ##> "/group_descr team Welcome to the team!"
   alice <## "description changed to:"
   alice <## "Welcome to the team!"
   bob <## "alice updated group #team:"
