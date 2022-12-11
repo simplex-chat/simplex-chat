@@ -83,9 +83,6 @@ struct GroupChatInfoView: View {
                         .opacity(0)
                     )
                 }
-                .appSheet(isPresented: $showAddMembersSheet) {
-                    AddGroupMembersView(chat: chat, groupInfo: groupInfo)
-                }
 
                 Section {
                     clearChatButton()
@@ -145,14 +142,11 @@ struct GroupChatInfoView: View {
     }
 
     private func addMembersButton() -> some View {
-        Button {
-            Task {
-                let groupMembers = await apiListMembers(groupInfo.groupId)
-                await MainActor.run {
-                    ChatModel.shared.groupMembers = groupMembers
-                    showAddMembersSheet = true
+        NavigationLink {
+            AddGroupMembersView(chat: chat, groupInfo: groupInfo)
+                .onAppear {
+                    ChatModel.shared.groupMembers = apiListMembersSync(groupInfo.groupId)
                 }
-            }
         } label: {
             Label("Invite members", systemImage: "plus")
         }

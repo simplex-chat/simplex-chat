@@ -57,7 +57,7 @@ struct VerifyCodeView: View {
                         Button {
                             verifyCode(nil)
                         } label: {
-                            Text("Clear verification")
+                            Label("Clear verification", systemImage: "shield")
                         }
                         .padding()
                     } else {
@@ -75,7 +75,7 @@ struct VerifyCodeView: View {
                                     if !verified { showCodeError = true }
                                 }
                             } label: {
-                                Label("Mark verified", systemImage: "checkmark")
+                                Label("Mark verified", systemImage: "checkmark.shield")
                             }
                             .padding()
                             .alert(isPresented: $showCodeError) {

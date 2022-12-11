@@ -808,6 +808,12 @@ func apiListMembers(_ groupId: Int64) async -> [GroupMember] {
     return []
 }
 
+func apiListMembersSync(_ groupId: Int64) -> [GroupMember] {
+    let r = chatSendCmdSync(.apiListMembers(groupId: groupId))
+    if case let .groupMembers(group) = r { return group.members }
+    return []
+}
+
 func filterMembersToAdd(_ ms: [GroupMember]) -> [Contact] {
     let memberContactIds = ms.compactMap{ m in m.memberCurrent ? m.memberContactId : nil }
     return ChatModel.shared.chats

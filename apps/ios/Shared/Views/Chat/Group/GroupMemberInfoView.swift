@@ -217,7 +217,7 @@ struct GroupMemberInfoView: View {
         } label: {
             Label(
                 member.verified ? "View security code" : "Verify security code",
-                systemImage: member.verified ? "checkmark.shield" : "exclamationmark.shield"
+                systemImage: member.verified ? "checkmark.shield" : "shield"
             )
         }
 

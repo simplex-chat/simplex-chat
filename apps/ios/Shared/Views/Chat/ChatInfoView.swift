@@ -228,7 +228,7 @@ struct ChatInfoView: View {
         } label: {
             Label(
                 contact.verified ? "View security code" : "Verify security code",
-                systemImage: contact.verified ? "checkmark.shield" : "exclamationmark.shield"
+                systemImage: contact.verified ? "checkmark.shield" : "shield"
             )
         }
     }
