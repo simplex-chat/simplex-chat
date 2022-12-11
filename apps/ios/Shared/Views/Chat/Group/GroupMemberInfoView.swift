@@ -203,10 +203,10 @@ struct GroupMemberInfoView: View {
                         let (verified, existingCode) = r
                         let connCode = verified ? SecurityCode(securityCode: existingCode, verifiedAt: .now) : nil
                         connectionCode = existingCode
-//                        member.activeConn?.connectionCode = connCode
-//                        if let i = chatModel.groupMembers.firstIndex(where: { $0.groupMemberId == member.groupMemberId }) {
-//                            chatModel.groupMembers[i].activeConn?.connectionCode = connCode
-//                        }
+                        member.activeConn?.connectionCode = connCode
+                        if let i = chatModel.groupMembers.firstIndex(where: { $0.groupMemberId == member.groupMemberId }) {
+                            chatModel.groupMembers[i].activeConn?.connectionCode = connCode
+                        }
                         return r
                     }
                     return nil
