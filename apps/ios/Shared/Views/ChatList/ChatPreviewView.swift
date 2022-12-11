@@ -79,9 +79,8 @@ struct ChatPreviewView: View {
     }
 
     @ViewBuilder private func chatPreviewTitle() -> some View {
-        let v = Text(chat.chatInfo.chatViewName)
-            .font(.title3)
-            .fontWeight(.bold)
+        let t = Text(chat.chatInfo.chatViewName).font(.title3).fontWeight(.bold)
+        let v = (chat.chatInfo.contact?.verified == true ? contactVerifiedShield + t : t)
             .lineLimit(1)
             .frame(alignment: .topLeading)
         switch (chat.chatInfo) {
@@ -97,6 +96,13 @@ struct ChatPreviewView: View {
             }
         default: v
         }
+    }
+
+    private var contactVerifiedShield: Text {
+        (Text(Image(systemName: "checkmark.shield")) + Text(" "))
+            .foregroundColor(.secondary)
+            .baselineOffset(1)
+            .kerning(-2)
     }
 
     @ViewBuilder private func chatPreviewText(_ cItem: ChatItem?) -> some View {

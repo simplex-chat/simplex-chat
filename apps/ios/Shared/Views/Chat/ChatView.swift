@@ -389,7 +389,7 @@ struct ChatView: View {
                         .frame(width: memberImageSize, height: memberImageSize)
                         .onTapGesture { selectedMember = member }
                         .appSheet(item: $selectedMember) { member in
-                            GroupMemberInfoView(groupInfo: groupInfo, member: member)
+                            GroupMemberInfoView(groupInfo: groupInfo, member: member, navigation: true)
                         }
                 } else {
                     Rectangle().fill(.clear)

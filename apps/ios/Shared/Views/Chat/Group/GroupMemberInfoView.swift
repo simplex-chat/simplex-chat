@@ -14,6 +14,7 @@ struct GroupMemberInfoView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     var groupInfo: GroupInfo
     @State var member: GroupMember
+    var navigation: Bool = false
     @State private var connectionStats: ConnectionStats? = nil
     @State private var connectionCode: String? = nil
     @State private var newRole: GroupMemberRole = .member
@@ -37,86 +38,94 @@ struct GroupMemberInfoView: View {
     }
 
     var body: some View {
-        NavigationView {
-                List {
-                    groupMemberInfoHeader(member)
-                        .listRowBackground(Color.clear)
+        if navigation {
+            NavigationView { groupMemberInfoView() }
+        } else {
+            groupMemberInfoView()
+        }
+    }
 
-                    Section {
-                        if let contactId = member.memberContactId {
-                            if let chat = chatModel.getContactChat(contactId),
-                               chat.chatInfo.contact?.directContact ?? false {
-                                knownDirectChatButton(chat)
-                            } else if groupInfo.fullGroupPreferences.directMessages.on {
-                                newDirectChatButton(contactId)
-                            }
-                        }
-                        if let code = connectionCode { verifyCodeButton(code) }
-                    }
+    private func groupMemberInfoView() -> some View {
+        VStack {
+            List {
+                groupMemberInfoHeader(member)
+                    .listRowBackground(Color.clear)
 
-                    Section("Member") {
-                        infoRow("Group", groupInfo.displayName)
-
-                        if let roles = member.canChangeRoleTo(groupInfo: groupInfo) {
-                            Picker("Change role", selection: $newRole) {
-                                ForEach(roles) { role in
-                                    Text(role.text)
-                                }
-                            }
-                            .frame(height: 36)
-                        } else {
-                            infoRow("Role", member.memberRole.text)
-                        }
-
-                        // TODO invited by - need to get contact by contact id
-                        if let conn = member.activeConn {
-                            let connLevelDesc = conn.connLevel == 0 ? NSLocalizedString("direct", comment: "connection level description") : String.localizedStringWithFormat(NSLocalizedString("indirect (%d)", comment: "connection level description"), conn.connLevel)
-                            infoRow("Connection", connLevelDesc)
+                Section {
+                    if let contactId = member.memberContactId {
+                        if let chat = chatModel.getContactChat(contactId),
+                           chat.chatInfo.contact?.directContact ?? false {
+                            knownDirectChatButton(chat)
+                        } else if groupInfo.fullGroupPreferences.directMessages.on {
+                            newDirectChatButton(contactId)
                         }
                     }
+                    if let code = connectionCode { verifyCodeButton(code) }
+                }
 
-                    if let connStats = connectionStats {
-                        Section("Servers") {
+                Section("Member") {
+                    infoRow("Group", groupInfo.displayName)
+
+                    if let roles = member.canChangeRoleTo(groupInfo: groupInfo) {
+                        Picker("Change role", selection: $newRole) {
+                            ForEach(roles) { role in
+                                Text(role.text)
+                            }
+                        }
+                        .frame(height: 36)
+                    } else {
+                        infoRow("Role", member.memberRole.text)
+                    }
+
+                    // TODO invited by - need to get contact by contact id
+                    if let conn = member.activeConn {
+                        let connLevelDesc = conn.connLevel == 0 ? NSLocalizedString("direct", comment: "connection level description") : String.localizedStringWithFormat(NSLocalizedString("indirect (%d)", comment: "connection level description"), conn.connLevel)
+                        infoRow("Connection", connLevelDesc)
+                    }
+                }
+
+                if let connStats = connectionStats {
+                    Section("Servers") {
                         // TODO network connection status
-                            Button("Change receiving address") {
-                                alert = .switchAddressAlert
-                            }
-                            smpServers("Receiving via", connStats.rcvServers)
-                            smpServers("Sending via", connStats.sndServers)
+                        Button("Change receiving address") {
+                            alert = .switchAddressAlert
                         }
+                        smpServers("Receiving via", connStats.rcvServers)
+                        smpServers("Sending via", connStats.sndServers)
                     }
+                }
 
-                    if member.canBeRemoved(groupInfo: groupInfo) {
-                        Section {
-                            removeMemberButton(member)
-                        }
+                if member.canBeRemoved(groupInfo: groupInfo) {
+                    Section {
+                        removeMemberButton(member)
                     }
+                }
 
-                    if developerTools {
-                        Section("For console") {
-                            infoRow("Local name", member.localDisplayName)
-                            infoRow("Database ID", "\(member.groupMemberId)")
-                        }
+                if developerTools {
+                    Section("For console") {
+                        infoRow("Local name", member.localDisplayName)
+                        infoRow("Database ID", "\(member.groupMemberId)")
                     }
                 }
-                .navigationBarHidden(true)
-                .onAppear {
-                    newRole = member.memberRole
-                    do {
-                        let stats = try apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
-                        let (mem, code) = member.memberActive ? try apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId) : (member, nil)
-                        member = mem
-                        connectionStats = stats
-                        connectionCode = code
-                    } catch let error {
-                        logger.error("apiGroupMemberInfo or apiGetGroupMemberCode error: \(responseError(error))")
-                    }
+            }
+            .navigationBarHidden(true)
+            .onAppear {
+                newRole = member.memberRole
+                do {
+                    let stats = try apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
+                    let (mem, code) = member.memberActive ? try apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId) : (member, nil)
+                    member = mem
+                    connectionStats = stats
+                    connectionCode = code
+                } catch let error {
+                    logger.error("apiGroupMemberInfo or apiGetGroupMemberCode error: \(responseError(error))")
                 }
-                .onChange(of: newRole) { _ in
-                    if newRole != member.memberRole {
-                        alert = .changeMemberRoleAlert(mem: member, role: newRole)
-                    }
+            }
+            .onChange(of: newRole) { _ in
+                if newRole != member.memberRole {
+                    alert = .changeMemberRoleAlert(mem: member, role: newRole)
                 }
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .alert(item: $alert) { alertItem in
