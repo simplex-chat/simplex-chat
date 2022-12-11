@@ -22,19 +22,19 @@
         <target state="translated"> (</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id=" (can be copied)" xml:space="preserve">
+      <trans-unit id=" (can be copied)" xml:space="preserve" approved="no">
         <source> (can be copied)</source>
-        <target/>
+        <target state="translated"> (peut être copié)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="!1 colored!" xml:space="preserve">
+      <trans-unit id="!1 colored!" xml:space="preserve" approved="no">
         <source>!1 colored!</source>
-        <target/>
+        <target state="translated">!1 coloré!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="#secret#" xml:space="preserve">
+      <trans-unit id="#secret#" xml:space="preserve" approved="no">
         <source>#secret#</source>
-        <target/>
+        <target state="translated">#secret#</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@" xml:space="preserve" approved="no">
