@@ -157,6 +157,7 @@ struct ChatInfoView: View {
             HStack {
                 if contact.verified {
                     Image(systemName: "checkmark.shield")
+                        .foregroundColor(.secondary)
                 }
                 Text(contact.profile.displayName)
                     .font(.largeTitle)

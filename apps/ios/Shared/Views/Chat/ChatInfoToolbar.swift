@@ -19,10 +19,6 @@ struct ChatInfoToolbar: View {
     var body: some View {
         let cInfo = chat.chatInfo
         return HStack {
-            if cInfo.contact?.verified == true {
-                Image(systemName: "checkmark.shield")
-                    .foregroundColor(.secondary)
-            }
             if (cInfo.incognito) {
                 Image(systemName: "theatermasks").frame(maxWidth: 24, maxHeight: 24, alignment: .center).foregroundColor(.indigo)
                 Spacer().frame(width: 16)
@@ -36,14 +32,25 @@ struct ChatInfoToolbar: View {
             .frame(width: imageSize, height: imageSize)
             .padding(.trailing, 4)
             VStack {
-                Text(cInfo.displayName).font(.headline)
+                let t = Text(cInfo.displayName).font(.headline)
+                (cInfo.contact?.verified == true ? contactVerifiedShield + t : t)
+                    .lineLimit(1)
                 if cInfo.fullName != "" && cInfo.displayName != cInfo.fullName {
                     Text(cInfo.fullName).font(.subheadline)
+                        .lineLimit(1)
                 }
             }
         }
         .foregroundColor(.primary)
         .frame(width: 220)
+    }
+
+    private var contactVerifiedShield: Text {
+        (Text(Image(systemName: "checkmark.shield")) + Text(" "))
+            .font(.caption)
+            .foregroundColor(.secondary)
+            .baselineOffset(1)
+            .kerning(-2)
     }
 }
 
