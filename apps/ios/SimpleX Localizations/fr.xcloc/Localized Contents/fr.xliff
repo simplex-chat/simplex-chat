@@ -8,18 +8,18 @@
       <trans-unit id="&#10;" xml:space="preserve" approved="no">
         <source>
 </source>
-        <target state="needs-translation">
+        <target state="translated">
 </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id=" " xml:space="preserve" approved="no">
         <source> </source>
-        <target state="needs-translation"> </target>
+        <target state="translated"> </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id=" (" xml:space="preserve" approved="no">
         <source> (</source>
-        <target state="needs-translation"> (</target>
+        <target state="translated"> (</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id=" (can be copied)" xml:space="preserve">
@@ -39,17 +39,17 @@
       </trans-unit>
       <trans-unit id="%@" xml:space="preserve" approved="no">
         <source>%@</source>
-        <target state="needs-translation">%@</target>
+        <target state="translated">%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ %@" xml:space="preserve" approved="no">
         <source>%@ %@</source>
-        <target state="needs-translation">%@ %@</target>
+        <target state="translated">%@ %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ / %@" xml:space="preserve" approved="no">
         <source>%@ / %@</source>
-        <target state="needs-translation">%@ / %@</target>
+        <target state="translated">%@ / %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ is connected!" xml:space="preserve">
@@ -74,7 +74,7 @@
       </trans-unit>
       <trans-unit id="%lld %@" xml:space="preserve" approved="no">
         <source>%lld %@</source>
-        <target state="needs-translation">%lld %@</target>
+        <target state="translated">%lld %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld contact(s) selected" xml:space="preserve">
@@ -99,17 +99,17 @@
       </trans-unit>
       <trans-unit id="%lldk" xml:space="preserve" approved="no">
         <source>%lldk</source>
-        <target state="needs-translation">%lldk</target>
+        <target state="translated">%lldk</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="(" xml:space="preserve" approved="no">
         <source>(</source>
-        <target state="needs-translation">(</target>
+        <target state="translated">(</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id=")" xml:space="preserve" approved="no">
         <source>)</source>
-        <target state="needs-translation">)</target>
+        <target state="translated">)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Add new contact**: to create your one-time QR Code for your contact." xml:space="preserve">
@@ -174,7 +174,7 @@
       </trans-unit>
       <trans-unit id=", " xml:space="preserve" approved="no">
         <source>, </source>
-        <target state="needs-translation">, </target>
+        <target state="translated">, </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="1 day" xml:space="preserve">
@@ -194,12 +194,12 @@
       </trans-unit>
       <trans-unit id="6" xml:space="preserve" approved="no">
         <source>6</source>
-        <target state="needs-translation">6</target>
+        <target state="translated">6</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id=": " xml:space="preserve" approved="no">
         <source>: </source>
-        <target state="needs-translation">: </target>
+        <target state="translated">: </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="A new contact" xml:space="preserve">
