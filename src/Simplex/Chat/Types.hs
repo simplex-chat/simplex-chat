@@ -1522,8 +1522,8 @@ instance TextEncoding CommandStatus where
 data CommandFunction
   = CFCreateConnGrpMemInv
   | CFCreateConnGrpInv
-  | CFCreateConnFileAcptInvDirect
-  | CFCreateConnFileAcptInvGroup
+  | CFCreateConnFileInvDirect
+  | CFCreateConnFileInvGroup
   | CFJoinConn
   | CFAllowConn
   | CFAcceptContact
@@ -1539,8 +1539,8 @@ instance TextEncoding CommandFunction where
   textDecode = \case
     "create_conn" -> Just CFCreateConnGrpMemInv
     "create_conn_grp_inv" -> Just CFCreateConnGrpInv
-    "create_conn_file_acpt_inv_direct" -> Just CFCreateConnFileAcptInvDirect
-    "create_conn_file_acpt_inv_group" -> Just CFCreateConnFileAcptInvGroup
+    "create_conn_file_inv_direct" -> Just CFCreateConnFileInvDirect
+    "create_conn_file_inv_group" -> Just CFCreateConnFileInvGroup
     "join_conn" -> Just CFJoinConn
     "allow_conn" -> Just CFAllowConn
     "accept_contact" -> Just CFAcceptContact
@@ -1550,8 +1550,8 @@ instance TextEncoding CommandFunction where
   textEncode = \case
     CFCreateConnGrpMemInv -> "create_conn"
     CFCreateConnGrpInv -> "create_conn_grp_inv"
-    CFCreateConnFileAcptInvDirect -> "create_conn_file_acpt_inv_direct"
-    CFCreateConnFileAcptInvGroup -> "create_conn_file_acpt_inv_group"
+    CFCreateConnFileInvDirect -> "create_conn_file_inv_direct"
+    CFCreateConnFileInvGroup -> "create_conn_file_inv_group"
     CFJoinConn -> "join_conn"
     CFAllowConn -> "allow_conn"
     CFAcceptContact -> "accept_contact"
@@ -1562,8 +1562,8 @@ commandExpectedResponse :: CommandFunction -> ACommandTag 'Agent
 commandExpectedResponse = \case
   CFCreateConnGrpMemInv -> INV_
   CFCreateConnGrpInv -> INV_
-  CFCreateConnFileAcptInvDirect -> INV_
-  CFCreateConnFileAcptInvGroup -> INV_
+  CFCreateConnFileInvDirect -> INV_
+  CFCreateConnFileInvGroup -> INV_
   CFJoinConn -> OK_
   CFAllowConn -> OK_
   CFAcceptContact -> OK_

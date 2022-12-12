@@ -1421,12 +1421,12 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
       case (chatRef, grpMemberId) of
         (ChatRef CTDirect contactId, Nothing) -> do
           ct <- withStore $ \db -> getContact db user contactId
-          acceptFile CFCreateConnFileAcptInvDirect $ \msg -> void $ sendDirectContactMessage ct msg
+          acceptFile CFCreateConnFileInvDirect $ \msg -> void $ sendDirectContactMessage ct msg
         (ChatRef CTGroup groupId, Just memId) -> do
           GroupMember {activeConn} <- withStore $ \db -> getGroupMember db user groupId memId
           case activeConn of
             Just conn -> do
-              acceptFile CFCreateConnFileAcptInvGroup $ \msg -> void $ sendDirectMessage conn msg $ GroupId groupId
+              acceptFile CFCreateConnFileInvGroup $ \msg -> void $ sendDirectMessage conn msg $ GroupId groupId
             _ -> throwChatError $ CEFileInternal "member connection not active"
         _ -> throwChatError $ CEFileInternal "invalid chat ref for file transfer"
   where
@@ -2087,13 +2087,13 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
             case cReq of
               fileInvConnReq@(CRInvitationUri _ _) -> case cmdFunction of
                 -- [async agent commands] direct XFileAcptInv continuation on receiving INV
-                CFCreateConnFileAcptInvDirect -> do
+                CFCreateConnFileInvDirect -> do
                   -- ? setConnConnReqInv db user connId cReq -- is it required?
                   ct <- withStore $ \db -> getContactByFileId db user fileId
                   sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
                   void $ sendDirectContactMessage ct (XFileAcptInv sharedMsgId (Just fileInvConnReq) fileName)
                 -- [async agent commands] group XFileAcptInv continuation on receiving INV
-                CFCreateConnFileAcptInvGroup -> case grpMemberId of
+                CFCreateConnFileInvGroup -> case grpMemberId of
                   Just gMemberId -> do
                     GroupMember {groupId, activeConn} <- withStore $ \db -> getGroupMemberById db user gMemberId
                     case activeConn of
