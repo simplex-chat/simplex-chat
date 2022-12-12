@@ -3,6 +3,7 @@ package chat.simplex.app.views.helpers
 import android.content.Context
 import android.media.*
 import android.media.AudioManager.AudioPlaybackCallback
+import android.media.MediaRecorder.MEDIA_RECORDER_INFO_MAX_DURATION_REACHED
 import android.media.MediaRecorder.MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED
 import android.os.Build
 import android.util.Log
@@ -10,16 +11,15 @@ import androidx.compose.runtime.*
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatItem
+import chat.simplex.app.views.helpers.AudioPlayer.duration
 import kotlinx.coroutines.*
 import java.io.*
 import java.text.SimpleDateFormat
 import java.util.*
 
 interface Recorder {
-  val recordingInProgress: MutableState<Boolean>
-  fun start(onStop: () -> Unit): String
-  fun stop()
-  fun cancel(filePath: String, recordingInProgress: MutableState<Boolean>)
+  fun start(onProgressUpdate: (position: Int?, finished: Boolean) -> Unit): String
+  fun stop(): Int
 }
 
 class RecorderNative(private val recordedBytesLimit: Long): Recorder {
@@ -27,8 +27,10 @@ class RecorderNative(private val recordedBytesLimit: Long): Recorder {
     // Allows to stop the recorder from outside without having the recorder in a variable
     var stopRecording: (() -> Unit)? = null
   }
-  override val recordingInProgress = mutableStateOf(false)
   private var recorder: MediaRecorder? = null
+  private var progressJob: Job? = null
+  private var filePath: String? = null
+  private var recStartedAt: Long? = null
   private fun initRecorder() =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
       MediaRecorder(SimplexApp.context)
@@ -36,9 +38,8 @@ class RecorderNative(private val recordedBytesLimit: Long): Recorder {
       MediaRecorder()
     }
 
-  override fun start(onStop: () -> Unit): String {
+  override fun start(onProgressUpdate: (position: Int?, finished: Boolean) -> Unit): String {
     AudioPlayer.stop()
-    recordingInProgress.value = true
     val rec: MediaRecorder
     recorder = initRecorder().also { rec = it }
     rec.setAudioSource(MediaRecorder.AudioSource.MIC)
@@ -47,28 +48,37 @@ class RecorderNative(private val recordedBytesLimit: Long): Recorder {
     rec.setAudioChannels(1)
     rec.setAudioSamplingRate(16000)
     rec.setAudioEncodingBitRate(16000)
-    rec.setMaxDuration(-1) // TODO set limit
+    rec.setMaxDuration(MAX_VOICE_MILLIS_FOR_SENDING)
     rec.setMaxFileSize(recordedBytesLimit)
     val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-    val filePath = getAppFilePath(SimplexApp.context, uniqueCombine(SimplexApp.context, getAppFilePath(SimplexApp.context, "voice_${timestamp}.m4a")))
-    rec.setOutputFile(filePath)
+    val path = getAppFilePath(SimplexApp.context, uniqueCombine(SimplexApp.context, getAppFilePath(SimplexApp.context, "voice_${timestamp}.m4a")))
+    filePath = path
+    rec.setOutputFile(path)
     rec.prepare()
     rec.start()
-    rec.setOnInfoListener { mr, what, extra ->
-      if (what == MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED) {
-        stop()
-        onStop()
+    recStartedAt = System.currentTimeMillis()
+    progressJob = CoroutineScope(Dispatchers.Default).launch {
+      while(isActive) {
+        onProgressUpdate(progress(), false)
+        delay(50)
+      }
+    }.apply {
+      invokeOnCompletion {
+        onProgressUpdate(realDuration(path), true)
       }
     }
-    stopRecording = { stop(); onStop() }
-    return filePath
+    rec.setOnInfoListener { _, what, _ ->
+      if (what == MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED || what == MEDIA_RECORDER_INFO_MAX_DURATION_REACHED) {
+        stop()
+      }
+    }
+    stopRecording = { stop() }
+    return path
   }
 
-  override fun stop() {
-    if (!recordingInProgress.value) return
+  override fun stop(): Int {
+    val path = filePath ?: return 0
     stopRecording = null
-    recordingInProgress.value = false
-    recorder?.metrics?.
     runCatching {
       recorder?.stop()
     }
@@ -76,16 +86,25 @@ class RecorderNative(private val recordedBytesLimit: Long): Recorder {
       recorder?.reset()
     }
     runCatching {
-      // release all resources
       recorder?.release()
     }
+    // Await coroutine finishes in order to send real duration to it's listener
+    runBlocking {
+      progressJob?.cancelAndJoin()
+    }
+    progressJob = null
+    filePath = null
     recorder = null
+    return (realDuration(path) ?: 0).also { recStartedAt = null }
   }
 
-  override fun cancel(filePath: String, recordingInProgress: MutableState<Boolean>) {
-    stop()
-    runCatching { File(filePath).delete() }.getOrElse { Log.d(TAG, "Unable to delete a file: ${it.stackTraceToString()}") }
-  }
+  private fun progress(): Int? = recStartedAt?.let { (System.currentTimeMillis() - it).toInt() }
+
+  /**
+  * Return real duration from [AudioPlayer] if it's possible (should always be possible).
+  * As a fallback, return internally counted duration
+  * */
+  private fun realDuration(path: String): Int? = duration(path) ?: progress()
 }
 
 object AudioPlayer {
@@ -251,8 +270,8 @@ object AudioPlayer {
     audioPlaying.value = false
   }
 
-  fun duration(filePath: String): Int {
-    var res = 0
+  fun duration(filePath: String): Int? {
+    var res: Int? = null
     kotlin.runCatching {
       helperPlayer.setDataSource(filePath)
       helperPlayer.prepare()

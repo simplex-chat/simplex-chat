@@ -46,7 +46,7 @@ fun ComposeVoiceView(
           val endTime = when {
             finishedRecording -> duration.value
             audioPlaying.value -> recordedDurationMs
-            else -> MAX_VOICE_MILLIS_FOR_SENDING.toInt()
+            else -> MAX_VOICE_MILLIS_FOR_SENDING
           }
           val to = ((startTime.toDouble() / endTime) * maxWidth.value).dp
           progressBarWidth.animateTo(to.value, audioProgressBarAnimationSpec())

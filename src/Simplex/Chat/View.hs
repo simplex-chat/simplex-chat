@@ -74,6 +74,9 @@ responseToView user_ testView ts = \case
   CRGroupMemberInfo g m cStats -> viewGroupMemberInfo g m cStats
   CRContactSwitch ct progress -> viewContactSwitch ct progress
   CRGroupMemberSwitch g m progress -> viewGroupMemberSwitch g m progress
+  CRConnectionVerified verified code -> [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
+  CRContactCode ct code -> viewContactCode ct code testView
+  CRGroupMemberCode g m code -> viewGroupMemberCode g m code testView
   CRNewChatItem (AChatItem _ _ chat item) -> unmuted chat item $ viewChatItem chat item False ts
   CRLastMessages chatItems -> concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True ts) chatItems
   CRChatItemStatusUpdated _ -> []
@@ -181,6 +184,7 @@ responseToView user_ testView ts = \case
   CRGroupRemoved g -> [ttyFullGroup g <> ": you are no longer a member or group deleted"]
   CRGroupDeleted g m -> [ttyGroup' g <> ": " <> ttyMember m <> " deleted the group", "use " <> highlight ("/d #" <> groupName' g) <> " to delete the local copy of the group"]
   CRGroupUpdated g g' m -> viewGroupUpdated g g' m
+  CRGroupProfile g -> viewGroupProfile g
   CRGroupLinkCreated g cReq -> groupLink_ "Group link is created!" g cReq
   CRGroupLink g cReq -> groupLink_ "Group link:" g cReq
   CRGroupLinkDeleted g -> viewGroupLinkDeleted g
@@ -485,9 +489,9 @@ viewReceivedContactRequest c Profile {fullName} =
   ]
 
 viewGroupCreated :: GroupInfo -> [StyledString]
-viewGroupCreated g@GroupInfo {localDisplayName} =
+viewGroupCreated g@GroupInfo {localDisplayName = n} =
   [ "group " <> ttyFullGroup g <> " is created",
-    "use " <> highlight ("/a " <> localDisplayName <> " <name>") <> " to add members"
+    "to add members use " <> highlight ("/a " <> n <> " <name>") <> " or " <> highlight ("/create link #" <> n)
   ]
 
 viewCannotResendInvitation :: GroupInfo -> ContactName -> [StyledString]
@@ -497,8 +501,8 @@ viewCannotResendInvitation GroupInfo {localDisplayName = gn} c =
   ]
 
 viewDirectMessagesProhibited :: MsgDirection -> Contact -> [StyledString]
-viewDirectMessagesProhibited MDSnd c = [ "direct messages to indirect contact " <> ttyContact' c <> " are prohibited"]
-viewDirectMessagesProhibited MDRcv c = [ "received prohibited direct message from indirect contact " <> ttyContact' c <> " (discarded)"]
+viewDirectMessagesProhibited MDSnd c = ["direct messages to indirect contact " <> ttyContact' c <> " are prohibited"]
+viewDirectMessagesProhibited MDRcv c = ["received prohibited direct message from indirect contact " <> ttyContact' c <> " (discarded)"]
 
 viewUserJoinedGroup :: GroupInfo -> [StyledString]
 viewUserJoinedGroup g@GroupInfo {membership = membership@GroupMember {memberProfile}} =
@@ -578,7 +582,7 @@ viewContactConnected ct@Contact {localDisplayName} userIncognitoProfile testView
       where
         message =
           [ ttyFullContact ct <> ": contact is connected, your incognito profile for this contact is " <> incognitoProfile' profile,
-            "use " <> highlight ("/info " <> localDisplayName) <> " to print out this incognito profile again"
+            "use " <> highlight ("/i " <> localDisplayName) <> " to print out this incognito profile again"
           ]
     Nothing ->
       [ttyFullContact ct <> ": contact is connected"]
@@ -681,21 +685,27 @@ viewNetworkConfig NetworkConfig {socksProxy, tcpTimeout} =
   ]
 
 viewContactInfo :: Contact -> ConnectionStats -> Maybe Profile -> [StyledString]
-viewContactInfo Contact {contactId, profile = LocalProfile {localAlias}} stats incognitoProfile =
+viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias}} stats incognitoProfile =
   ["contact ID: " <> sShow contactId] <> viewConnectionStats stats
     <> maybe
       ["you've shared main profile with this contact"]
       (\p -> ["you've shared incognito profile with this contact: " <> incognitoProfile' p])
       incognitoProfile
-    <> if localAlias /= "" then ["alias: " <> plain localAlias] else ["alias not set"]
+    <> ["alias: " <> plain localAlias | localAlias /= ""]
+    <> [viewConnectionVerified (contactSecurityCode ct)]
 
 viewGroupMemberInfo :: GroupInfo -> GroupMember -> Maybe ConnectionStats -> [StyledString]
-viewGroupMemberInfo GroupInfo {groupId} GroupMember {groupMemberId, memberProfile = LocalProfile {localAlias}} stats =
+viewGroupMemberInfo GroupInfo {groupId} m@GroupMember {groupMemberId, memberProfile = LocalProfile {localAlias}} stats =
   [ "group ID: " <> sShow groupId,
     "member ID: " <> sShow groupMemberId
   ]
     <> maybe ["member not connected"] viewConnectionStats stats
-    <> if localAlias /= "" then ["alias: " <> plain localAlias] else ["no alias for contact"]
+    <> ["alias: " <> plain localAlias | localAlias /= ""]
+    <> [viewConnectionVerified (memberSecurityCode m) | isJust stats]
+
+viewConnectionVerified :: Maybe SecurityCode -> StyledString
+viewConnectionVerified (Just _) = "connection verified" -- TODO show verification time?
+viewConnectionVerified _ = "connection not verified, use " <> highlight' "/code" <> " command to see security code"
 
 viewConnectionStats :: ConnectionStats -> [StyledString]
 viewConnectionStats ConnectionStats {rcvServers, sndServers} =
@@ -719,6 +729,17 @@ viewGroupMemberSwitch _ _ (SwitchProgress _ SPConfirmed _) = []
 viewGroupMemberSwitch g m (SwitchProgress qd phase _) = case qd of
   QDRcv -> [ttyGroup' g <> ": you " <> viewSwitchPhase phase <> " for " <> ttyMember m]
   QDSnd -> [ttyGroup' g <> ": " <> ttyMember m <> " " <> viewSwitchPhase phase <> " for you"]
+
+viewContactCode :: Contact -> Text -> Bool -> [StyledString]
+viewContactCode ct@Contact {localDisplayName = c} = viewSecurityCode (ttyContact' ct) ("/verify " <> c <> " <code from your contact>")
+
+viewGroupMemberCode :: GroupInfo -> GroupMember -> Text -> Bool -> [StyledString]
+viewGroupMemberCode g m@GroupMember {localDisplayName = n} = viewSecurityCode (ttyGroup' g <> " " <> ttyMember m) ("/verify #" <> groupName' g <> " " <> n <> " <code from your contact>")
+
+viewSecurityCode :: StyledString -> Text -> Text -> Bool -> [StyledString]
+viewSecurityCode name cmd code testView
+  | testView = [plain code]
+  | otherwise = [name <> " security code:", plain code, "pass this code to your contact and use " <> highlight cmd <> " to verify"]
 
 viewSwitchPhase :: SwitchPhase -> StyledString
 viewSwitchPhase SPCompleted = "changed address"
@@ -789,8 +810,8 @@ viewCountactUserPref = \case
 
 viewGroupUpdated :: GroupInfo -> GroupInfo -> Maybe GroupMember -> [StyledString]
 viewGroupUpdated
-  GroupInfo {localDisplayName = n, groupProfile = GroupProfile {fullName, image, groupPreferences = gps}}
-  g'@GroupInfo {localDisplayName = n', groupProfile = GroupProfile {fullName = fullName', image = image', groupPreferences = gps'}}
+  GroupInfo {localDisplayName = n, groupProfile = GroupProfile {fullName, description, image, groupPreferences = gps}}
+  g'@GroupInfo {localDisplayName = n', groupProfile = GroupProfile {fullName = fullName', description = description', image = image', groupPreferences = gps'}}
   m = do
     let update = groupProfileUpdated <> groupPrefsUpdated
     if null update
@@ -798,21 +819,35 @@ viewGroupUpdated
       else memberUpdated <> update
     where
       memberUpdated = maybe [] (\m' -> [ttyMember m' <> " updated group " <> ttyGroup n <> ":"]) m
-      groupProfileUpdated
-        | n == n' && fullName == fullName' && image == image' = []
-        | n == n' && fullName == fullName' = ["profile image " <> (if isNothing image' then "removed" else "updated")]
-        | n == n' = ["full name " <> if T.null fullName' || fullName' == n' then "removed" else "changed to " <> plain fullName']
-        | otherwise = ["changed to " <> ttyFullGroup g']
+      groupProfileUpdated =
+        ["changed to " <> ttyFullGroup g' | n /= n']
+          <> ["full name " <> if T.null fullName' || fullName' == n' then "removed" else "changed to: " <> plain fullName' | n == n' && fullName /= fullName']
+          <> ["profile image " <> maybe "removed" (const "updated") image' | image /= image']
+          <> (if description == description' then [] else maybe ["description removed"] ((bold' "description changed to:" :) . map plain . T.lines) description')
       groupPrefsUpdated
         | null prefs = []
-        | otherwise = "updated group preferences:" : prefs
+        | otherwise = bold' "updated group preferences:" : prefs
         where
           prefs = mapMaybe viewPref allGroupFeatures
           viewPref pt
             | pref gps == pref gps' = Nothing
             | otherwise = Just $ plain (groupFeatureToText pt) <> " enabled: " <> plain (groupPrefToText $ pref gps')
             where
-              pref pss = getGroupPreference pt $ mergeGroupPreferences pss
+              pref = getGroupPreference pt . mergeGroupPreferences
+
+viewGroupProfile :: GroupInfo -> [StyledString]
+viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {description, image, groupPreferences = gps}} =
+  [ttyFullGroup g]
+    <> maybe [] (const ["has profile image"]) image
+    <> maybe [] ((bold' "description:" :) . map plain . T.lines) description
+    <> (bold' "group preferences:" : map viewPref allGroupFeatures)
+  where
+    viewPref pt = plain (groupFeatureToText pt) <> " enabled: " <> plain (groupPrefToText $ pref gps)
+      where
+        pref = getGroupPreference pt . mergeGroupPreferences
+
+bold' :: String -> StyledString
+bold' = styled Bold
 
 viewContactAliasUpdated :: Contact -> [StyledString]
 viewContactAliasUpdated Contact {localDisplayName = n, profile = LocalProfile {localAlias}}

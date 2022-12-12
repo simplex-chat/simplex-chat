@@ -123,9 +123,12 @@ groupsHelpInfo =
       indent <> highlight "/leave <group>                 " <> " - leave group",
       indent <> highlight "/delete <group>                " <> " - delete group",
       indent <> highlight "/members <group>               " <> " - list group members",
+      indent <> highlight "/gp <group>                    " <> " - view group profile",
       indent <> highlight "/gp <group> <new_name> [<full_name>]  " <> " - update group profile",
+      indent <> highlight "/group_descr <group> [<descr>] " <> " - update/remove group description",
       indent <> highlight "/groups                        " <> " - list groups",
       indent <> highlight "#<group> <message>             " <> " - send message to group",
+      indent <> highlight "/create link #<group>          " <> " - create public group link",
       "",
       "The commands may be abbreviated: " <> listHighlight ["/g", "/a", "/j", "/rm", "/l", "/d", "/ms", "/gs"]
     ]

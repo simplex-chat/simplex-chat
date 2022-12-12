@@ -214,8 +214,8 @@ fun interactionSourceWithDetection(onClick: () -> Unit, onLongClick: () -> Unit)
 }
 
 @Composable
-fun interactionSourceWithTapDetection(key: Any, onPress: () -> Unit, onClick: () -> Unit, onCancel: () -> Unit, onRelease: ()-> Unit): MutableInteractionSource {
-  val interactionSource = remember(key) { MutableInteractionSource() }
+fun interactionSourceWithTapDetection(onPress: () -> Unit, onClick: () -> Unit, onCancel: () -> Unit, onRelease: ()-> Unit): MutableInteractionSource {
+  val interactionSource = remember { MutableInteractionSource() }
   LaunchedEffect(interactionSource) {
     var firstTapTime = 0L
     interactionSource.interactions.collect { interaction ->

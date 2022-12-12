@@ -200,11 +200,19 @@ data ChatCommand
   | APIGroupMemberInfo GroupId GroupMemberId
   | APISwitchContact ContactId
   | APISwitchGroupMember GroupId GroupMemberId
+  | APIGetContactCode ContactId
+  | APIGetGroupMemberCode GroupId GroupMemberId
+  | APIVerifyContact ContactId (Maybe Text)
+  | APIVerifyGroupMember GroupId GroupMemberId (Maybe Text)
   | ShowMessages ChatName Bool
   | ContactInfo ContactName
   | GroupMemberInfo GroupName ContactName
   | SwitchContact ContactName
   | SwitchGroupMember GroupName ContactName
+  | GetContactCode ContactName
+  | GetGroupMemberCode GroupName ContactName
+  | VerifyContact ContactName (Maybe Text)
+  | VerifyGroupMember GroupName ContactName (Maybe Text)
   | ChatHelp HelpSection
   | Welcome
   | AddContact
@@ -234,7 +242,9 @@ data ChatCommand
   | ClearGroup GroupName
   | ListMembers GroupName
   | ListGroups
-  | UpdateGroupProfile GroupName GroupProfile
+  | UpdateGroupNames GroupName GroupProfile
+  | ShowGroupProfile GroupName
+  | UpdateGroupDescription GroupName (Maybe Text)
   | CreateGroupLink GroupName
   | DeleteGroupLink GroupName
   | ShowGroupLink GroupName
@@ -276,6 +286,9 @@ data ChatResponse
   | CRGroupMemberInfo {groupInfo :: GroupInfo, member :: GroupMember, connectionStats_ :: Maybe ConnectionStats}
   | CRContactSwitch {contact :: Contact, switchProgress :: SwitchProgress}
   | CRGroupMemberSwitch {groupInfo :: GroupInfo, member :: GroupMember, switchProgress :: SwitchProgress}
+  | CRContactCode {contact :: Contact, connectionCode :: Text}
+  | CRGroupMemberCode {groupInfo :: GroupInfo, member :: GroupMember, connectionCode :: Text}
+  | CRConnectionVerified {verified :: Bool, expectedCode :: Text}
   | CRNewChatItem {chatItem :: AChatItem}
   | CRChatItemStatusUpdated {chatItem :: AChatItem}
   | CRChatItemUpdated {chatItem :: AChatItem}
@@ -357,6 +370,7 @@ data ChatResponse
   | CRGroupRemoved {groupInfo :: GroupInfo}
   | CRGroupDeleted {groupInfo :: GroupInfo, member :: GroupMember}
   | CRGroupUpdated {fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember}
+  | CRGroupProfile {groupInfo :: GroupInfo}
   | CRGroupLinkCreated {groupInfo :: GroupInfo, connReqContact :: ConnReqContact}
   | CRGroupLink {groupInfo :: GroupInfo, connReqContact :: ConnReqContact}
   | CRGroupLinkDeleted {groupInfo :: GroupInfo}

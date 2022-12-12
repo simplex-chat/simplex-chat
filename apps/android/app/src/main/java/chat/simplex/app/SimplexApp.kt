@@ -11,8 +11,7 @@ import chat.simplex.app.views.onboarding.OnboardingStage
 import chat.simplex.app.views.usersettings.NotificationsMode
 import kotlinx.coroutines.*
 import kotlinx.serialization.decodeFromString
-import java.io.BufferedReader
-import java.io.InputStreamReader
+import java.io.*
 import java.util.*
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
@@ -173,7 +172,18 @@ class SimplexApp: Application(), LifecycleEventObserver {
       val s = Semaphore(0)
       thread(name="stdout/stderr pipe") {
         Log.d(TAG, "starting server")
-        val server = LocalServerSocket(socketName)
+        var server: LocalServerSocket? = null
+        for (i in 0..100) {
+          try {
+            server = LocalServerSocket(socketName + i)
+            break
+          } catch (e: IOException) {
+            Log.e(TAG, e.stackTraceToString())
+          }
+        }
+        if (server == null) {
+          throw Error("Unable to setup local server socket. Contact developers")
+        }
         Log.d(TAG, "started server")
         s.release()
         val receiver = server.accept()

@@ -79,24 +79,31 @@ struct ChatPreviewView: View {
     }
 
     @ViewBuilder private func chatPreviewTitle() -> some View {
-        let v = Text(chat.chatInfo.chatViewName)
-            .font(.title3)
-            .fontWeight(.bold)
-            .lineLimit(1)
-            .frame(alignment: .topLeading)
-        switch (chat.chatInfo) {
-        case .direct:
-            v.foregroundColor(chat.chatInfo.ready ? .primary : .secondary)
-        case .group(groupInfo: let groupInfo):
+        let t = Text(chat.chatInfo.chatViewName).font(.title3).fontWeight(.bold)
+        switch chat.chatInfo {
+        case let .direct(contact):
+            previewTitle(contact.verified == true ? verifiedIcon + t : t)
+                .foregroundColor(chat.chatInfo.ready ? .primary : .secondary)
+        case let .group(groupInfo):
+            let v = previewTitle(t)
             switch (groupInfo.membership.memberStatus) {
-            case .memInvited:
-                chat.chatInfo.incognito ? v.foregroundColor(.indigo) : v.foregroundColor(.accentColor)
-            case .memAccepted:
-                v.foregroundColor(.secondary)
+            case .memInvited: v.foregroundColor(chat.chatInfo.incognito ? .indigo : .accentColor)
+            case .memAccepted: v.foregroundColor(.secondary)
             default: v
             }
-        default: v
+        default: previewTitle(t)
         }
+    }
+
+    private func previewTitle(_ t: Text) -> some View {
+        t.lineLimit(1).frame(alignment: .topLeading)
+    }
+
+    private var verifiedIcon: Text {
+        (Text(Image(systemName: "checkmark.shield")) + Text(" "))
+            .foregroundColor(.secondary)
+            .baselineOffset(1)
+            .kerning(-2)
     }
 
     @ViewBuilder private func chatPreviewText(_ cItem: ChatItem?) -> some View {
