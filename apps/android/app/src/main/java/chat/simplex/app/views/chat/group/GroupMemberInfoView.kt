@@ -141,19 +141,21 @@ fun GroupMemberInfoLayout(
     }
     SectionSpacer()
 
-    val contactId = member.memberContactId
-    if (contactId != null && member.memberActive) {
-      val chat = getContactChat(contactId)
-      if (chat != null && chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.directContact) {
-        SectionView {
-          OpenChatButton(onClick = { knownDirectChat(chat) })
+    if (member.memberActive) {
+      val contactId = member.memberContactId
+      if (contactId != null) {
+        val chat = getContactChat(contactId)
+        if (chat != null && chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.directContact) {
+          SectionView {
+            OpenChatButton(onClick = { knownDirectChat(chat) })
+          }
+          SectionSpacer()
+        } else if (groupInfo.fullGroupPreferences.directMessages.on) {
+          SectionView {
+            OpenChatButton(onClick = { newDirectChat(contactId) })
+          }
+          SectionSpacer()
         }
-        SectionSpacer()
-      } else if (groupInfo.fullGroupPreferences.directMessages.on) {
-        SectionView {
-          OpenChatButton(onClick = { newDirectChat(contactId) })
-        }
-        SectionSpacer()
       }
     }
 
