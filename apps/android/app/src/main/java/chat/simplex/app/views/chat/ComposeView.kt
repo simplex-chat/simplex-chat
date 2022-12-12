@@ -572,7 +572,8 @@ fun ComposeView(
       modifier = Modifier.padding(end = 8.dp),
       verticalAlignment = Alignment.Bottom,
     ) {
-      val attachEnabled = !composeState.value.editing && composeState.value.preview !is ComposePreview.VoicePreview
+      val attachEnabled = !composeState.value.editing &&
+          (composeState.value.preview is ComposePreview.NoPreview || composeState.value.preview is ComposePreview.CLinkPreview)
       IconButton(showChooseAttachment, enabled = attachEnabled) {
         Icon(
           Icons.Filled.AttachFile,
