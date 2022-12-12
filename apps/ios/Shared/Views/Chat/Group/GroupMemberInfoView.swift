@@ -52,7 +52,7 @@ struct GroupMemberInfoView: View {
                     .listRowBackground(Color.clear)
 
                 Section {
-                    if let contactId = member.memberContactId {
+                    if let contactId = member.memberContactId, member.memberActive {
                         if let chat = chatModel.getContactChat(contactId),
                            chat.chatInfo.contact?.directContact ?? false {
                             knownDirectChatButton(chat)

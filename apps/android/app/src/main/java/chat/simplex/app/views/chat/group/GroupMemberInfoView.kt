@@ -142,7 +142,7 @@ fun GroupMemberInfoLayout(
     SectionSpacer()
 
     val contactId = member.memberContactId
-    if (contactId != null) {
+    if (contactId != null && member.memberActive) {
       val chat = getContactChat(contactId)
       if (chat != null && chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.directContact) {
         SectionView {
