@@ -308,7 +308,6 @@ processChatCommand = \case
         setupSndFileTransfer :: Contact -> m (Maybe (FileInvitation, CIFile 'MDSnd, FileTransferMeta))
         setupSndFileTransfer ct = forM file_ $ \file -> do
           (fileSize, chSize, fileInline) <- checkSndFile mc file 1
-          -- ? do we show alert if createConnection fails here?
           (agentConnId_, fileConnReq) <-
             if isJust fileInline
               then pure (Nothing, Nothing)
@@ -2088,7 +2087,6 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
               fileInvConnReq@(CRInvitationUri _ _) -> case cmdFunction of
                 -- [async agent commands] direct XFileAcptInv continuation on receiving INV
                 CFCreateConnFileInvDirect -> do
-                  -- ? setConnConnReqInv db user connId cReq -- is it required?
                   ct <- withStore $ \db -> getContactByFileId db user fileId
                   sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
                   void $ sendDirectContactMessage ct (XFileAcptInv sharedMsgId (Just fileInvConnReq) fileName)
@@ -2098,7 +2096,6 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
                     GroupMember {groupId, activeConn} <- withStore $ \db -> getGroupMemberById db user gMemberId
                     case activeConn of
                       Just gMemberConn -> do
-                        -- ? setConnConnReqInv db user connId cReq -- is it required?
                         sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
                         void $ sendDirectMessage gMemberConn (XFileAcptInv sharedMsgId (Just fileInvConnReq) fileName) $ GroupId groupId
                       _ -> throwChatError $ CECommandError "no GroupMember activeConn"
