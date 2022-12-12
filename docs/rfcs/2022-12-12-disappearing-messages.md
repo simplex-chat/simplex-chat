@@ -22,7 +22,7 @@
 
 ## Design
 
-- `disappearing_chat_items` table references `chat_items`, has deleteAt date - to avoid more indices on `chat_items` table
+- add `delete_at` field to `chat_items` table, index `idx_chat_items_delete_at`
 
 - add `disappearingItems :: TMap ChatItemId (Async ())` to ChatController (use `Weak ThreadId`?)
 
@@ -30,7 +30,7 @@
 
   - add `cleanupManager :: TVar (Async ())` to ChatController
 
-  - periodically gets items to schedule for deletion from disappearing_chat_items table
+  - periodically gets items to schedule for deletion based on delete_at field
 
   - for items to be deleted in next 30 minutes - add thread to disappearingItems - thread delays until deleteAt date, then deletes and sends CRChatItemDeleted to view
 
@@ -40,7 +40,7 @@
 
 - when chat item is deleted locally, either by user or via "delete for everyone" feature, kill thread and remove from map
 
-- when MsgContent chat item is created or received, add thread to disappearingItems based on chat preference
+- when MsgContent chat item is created or marked read, add thread to disappearingItems based on chat preference
 
 - UI shows timer based on chat item's createdAt date and deleteAt date
 
