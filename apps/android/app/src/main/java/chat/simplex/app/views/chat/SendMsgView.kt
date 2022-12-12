@@ -71,15 +71,16 @@ fun SendMsgView(
       when {
         showProgress -> ProgressIndicator()
         showVoiceButton -> when {
-          needToAllowVoiceToContact || !allowedVoiceByPrefs || !permissionsState.allPermissionsGranted -> {
+          needToAllowVoiceToContact || !allowedVoiceByPrefs -> {
             DisallowedVoiceButton {
-              when {
-                needToAllowVoiceToContact -> showNeedToAllowVoiceAlert(allowVoiceToContact)
-                !allowedVoiceByPrefs -> showDisabledVoiceAlert(isDirectChat)
-                else -> permissionsState.launchMultiplePermissionRequest()
+              if (needToAllowVoiceToContact) {
+                showNeedToAllowVoiceAlert(allowVoiceToContact)
+              } else {
+                showDisabledVoiceAlert(isDirectChat)
               }
             }
           }
+          !permissionsState.allPermissionsGranted -> VoiceButtonWithoutPermission { permissionsState.launchMultiplePermissionRequest() }
           else -> RecordVoiceView(recState)
         }
         else -> {
@@ -241,6 +242,20 @@ private fun DisallowedVoiceButton(onClick: () -> Unit) {
       Icons.Outlined.KeyboardVoice,
       stringResource(R.string.icon_descr_record_voice_message),
       tint = HighOrLowlight,
+      modifier = Modifier
+        .size(36.dp)
+        .padding(4.dp)
+    )
+  }
+}
+
+@Composable
+private fun VoiceButtonWithoutPermission(onClick: () -> Unit) {
+  IconButton(onClick, Modifier.size(36.dp)) {
+    Icon(
+      Icons.Filled.KeyboardVoice,
+      stringResource(R.string.icon_descr_record_voice_message),
+      tint = MaterialTheme.colors.primary,
       modifier = Modifier
         .size(36.dp)
         .padding(4.dp)
