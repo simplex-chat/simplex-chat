@@ -140,7 +140,7 @@ fun NotificationPreviewView(
 }
 
 // mode, name, description
-fun notificationModes(): List<ValueTitleDesc<NotificationsMode>> {
+private fun notificationModes(): List<ValueTitleDesc<NotificationsMode>> {
   val res = ArrayList<ValueTitleDesc<NotificationsMode>>()
   res.add(
     ValueTitleDesc(

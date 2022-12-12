@@ -13,8 +13,8 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.*
-import chat.simplex.app.views.helpers.AppBarTitle
-import chat.simplex.app.views.usersettings.notificationModes
+import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.usersettings.NotificationsMode
 import chat.simplex.app.views.usersettings.changeNotificationsMode
 
 @Composable
@@ -25,7 +25,7 @@ fun SetNotificationsMode(m: ChatModel) {
         .verticalScroll(rememberScrollState())
         .padding(20.dp)
     ) {
-      AppBarTitle(stringResource(R.string.settings_notifications_mode_title), false)
+      AppBarTitle(stringResource(R.string.onboarding_notifications_mode_title), false)
       Spacer(Modifier.padding(DEFAULT_PADDING_HALF))
       val modes = remember { notificationModes() }
       val currentMode = remember { m.controller.appPrefs.notificationsMode.state }
@@ -54,4 +54,31 @@ fun SetNotificationsMode(m: ChatModel) {
       }
       Spacer(Modifier.fillMaxHeight().weight(1f))
     }
+}
+
+// mode, name, description
+private fun notificationModes(): List<ValueTitleDesc<NotificationsMode>> {
+  val res = ArrayList<ValueTitleDesc<NotificationsMode>>()
+  res.add(
+    ValueTitleDesc(
+      NotificationsMode.OFF,
+      generalGetString(R.string.onboarding_notifications_mode_off),
+      generalGetString(R.string.onboarding_notifications_mode_off_desc),
+    )
+  )
+  res.add(
+    ValueTitleDesc(
+      NotificationsMode.PERIODIC,
+      generalGetString(R.string.onboarding_notifications_mode_periodic),
+      generalGetString(R.string.onboarding_notifications_mode_periodic_desc),
+    )
+  )
+  res.add(
+    ValueTitleDesc(
+      NotificationsMode.SERVICE,
+      generalGetString(R.string.onboarding_notifications_mode_service),
+      generalGetString(R.string.onboarding_notifications_mode_service_desc),
+    )
+  )
+  return res
 }
