@@ -40,7 +40,7 @@
 
 - when chat item is deleted locally, either by user or via "delete for everyone" feature, kill thread and remove from map
 
-- when MsgContent chat item is created or marked read, add thread to disappearingItems based on chat preference
+- when MsgContent chat item is sent or marked read, add thread to disappearingItems based on chat preference
 
 - UI shows timer based on chat item's createdAt date and deleteAt date
 
