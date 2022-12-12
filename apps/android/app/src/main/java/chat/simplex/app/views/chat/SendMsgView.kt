@@ -80,8 +80,10 @@ fun SendMsgView(
               }
             }
           }
-          !permissionsState.allPermissionsGranted -> VoiceButtonWithoutPermission { permissionsState.launchMultiplePermissionRequest() }
-          else -> RecordVoiceView(recState)
+          !permissionsState.allPermissionsGranted ->
+            VoiceButtonWithoutPermission { permissionsState.launchMultiplePermissionRequest() }
+          else ->
+            RecordVoiceView(recState)
         }
         else -> {
           val icon = if (cs.editing) Icons.Filled.Check else Icons.Outlined.ArrowUpward
