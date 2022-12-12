@@ -30,8 +30,9 @@ fun SetNotificationsMode(m: ChatModel) {
         .padding(20.dp)
     ) {
       AppBarTitle(stringResource(R.string.onboarding_notifications_mode_title), false)
-      Spacer(Modifier.padding(DEFAULT_PADDING_HALF))
       val currentMode = rememberSaveable { mutableStateOf(NotificationsMode.default) }
+      Text(stringResource(R.string.onboarding_notifications_mode_subtitle))
+      Spacer(Modifier.padding(DEFAULT_PADDING_HALF))
       NotificationButton(currentMode, NotificationsMode.OFF, R.string.onboarding_notifications_mode_off, R.string.onboarding_notifications_mode_off_desc)
       NotificationButton(currentMode, NotificationsMode.PERIODIC, R.string.onboarding_notifications_mode_periodic, R.string.onboarding_notifications_mode_periodic_desc)
       NotificationButton(currentMode, NotificationsMode.SERVICE, R.string.onboarding_notifications_mode_service, R.string.onboarding_notifications_mode_service_desc)
