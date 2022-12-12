@@ -88,6 +88,12 @@
 /* notification title */
 "%@ is connected!" = "Установлено соединение с %@!";
 
+/* No comment provided by engineer. */
+"%@ is not verified" = "%@ не подтверждён";
+
+/* No comment provided by engineer. */
+"%@ is verified" = "%@ подтверждён";
+
 /* notification title */
 "%@ wants to connect!" = "%@ хочет соединиться!";
 
@@ -385,6 +391,9 @@
 
 /* No comment provided by engineer. */
 "Clear conversation?" = "Очистить разговор?";
+
+/* No comment provided by engineer. */
+"Clear verification" = "Сбросить подтверждение";
 
 /* No comment provided by engineer. */
 "colored" = "цвет";
@@ -1106,6 +1115,9 @@
 /* notification */
 "Incoming video call" = "Входящий видеозвонок";
 
+/* No comment provided by engineer. */
+"Incorrect security code!" = "Неправильный код шифрования!";
+
 /* connection level description */
 "indirect (%d)" = "непрямое (%d)";
 
@@ -1228,6 +1240,9 @@
 
 /* No comment provided by engineer. */
 "Mark read" = "Прочитано";
+
+/* No comment provided by engineer. */
+"Mark verified" = "Подтвердить";
 
 /* No comment provided by engineer. */
 "Markdown in messages" = "Форматирование сообщений";
@@ -1654,7 +1669,13 @@
 "Saved WebRTC ICE servers will be removed" = "Сохраненные WebRTC ICE серверы будут удалены";
 
 /* No comment provided by engineer. */
+"Scan code" = "Сканировать код";
+
+/* No comment provided by engineer. */
 "Scan QR code" = "Сканировать QR код";
+
+/* No comment provided by engineer. */
+"Scan security code from your contact's app." = "Сканируйте код шифрования из приложения контакта.";
 
 /* No comment provided by engineer. */
 "Scan server QR code" = "Сканировать QR код сервера";
@@ -1670,6 +1691,9 @@
 
 /* server test step */
 "Secure queue" = "Защита очереди";
+
+/* No comment provided by engineer. */
+"Security code" = "Код шифрования";
 
 /* No comment provided by engineer. */
 "Send direct message" = "Отправить сообщение";
@@ -1933,6 +1957,9 @@
 "To support instant push notifications the chat database has to be migrated." = "Для поддержки мгновенный доставки уведомлений данные чата должны быть перемещены.";
 
 /* No comment provided by engineer. */
+"To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "Чтобы подтвердить end-to-end шифрование с вашим контактом сравните (или сканируйте) код на ваших устройствах.";
+
+/* No comment provided by engineer. */
 "Transfer images faster" = "Передавать изображения быстрее";
 
 /* No comment provided by engineer. */
@@ -2026,6 +2053,9 @@
 "v%@ (%@)" = "v%@ (%@)";
 
 /* No comment provided by engineer. */
+"Verify security code" = "Подтвердить код шифрования";
+
+/* No comment provided by engineer. */
 "Via browser" = "В браузере";
 
 /* chat list item description */
@@ -2045,6 +2075,9 @@
 
 /* No comment provided by engineer. */
 "video call (not e2e encrypted)" = "видеозвонок (не e2e зашифрованный)";
+
+/* No comment provided by engineer. */
+"View security code" = "Показать код шифрования";
 
 /* No comment provided by engineer. */
 "Voice message…" = "Голосовое сообщение…";

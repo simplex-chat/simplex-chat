@@ -3159,7 +3159,7 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
       </trans-unit>
       <trans-unit id="You will join a group this link refers to and connect to its group members." xml:space="preserve" approved="no">
         <source>You will join a group this link refers to and connect to its group members.</source>
-        <target state="translated">Vous allez rejoindre le groupe auquel ce lien fait référence et vous connecter aux membres de ce groupe.</target>
+        <target state="translated">Vous allez rejoindre le groupe correspondant à ce lien et être mis en relation avec les autres membres du groupe.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will stop receiving messages from this group. Chat history will be preserved." xml:space="preserve" approved="no">
