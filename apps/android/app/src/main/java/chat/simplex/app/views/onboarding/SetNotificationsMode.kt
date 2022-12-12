@@ -1,5 +1,6 @@
 package chat.simplex.app.views.onboarding
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -9,6 +10,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
@@ -28,58 +30,35 @@ fun SetNotificationsMode(m: ChatModel) {
     ) {
       AppBarTitle(stringResource(R.string.onboarding_notifications_mode_title), false)
       Spacer(Modifier.padding(DEFAULT_PADDING_HALF))
-      val modes = remember { notificationModes() }
-      var currentMode by rememberSaveable { mutableStateOf(NotificationsMode.default) }
-      modes.forEach { mode ->
-        TextButton(
-          onClick = { currentMode = mode.value },
-          border = BorderStroke(2.dp, color = if (currentMode == mode.value) MaterialTheme.colors.primary else HighOrLowlight.copy(alpha = 0.5f)),
-          shape = RoundedCornerShape(15.dp),
-        ) {
-          Column(Modifier.padding(5.dp)) {
-            Text(
-              mode.title,
-              fontWeight = FontWeight.Medium,
-              color = if (currentMode == mode.value) MaterialTheme.colors.primary else HighOrLowlight
-            )
-            Text(mode.description, color = MaterialTheme.colors.onBackground)
-          }
-        }
-        Spacer(Modifier.height(DEFAULT_PADDING))
-      }
+      val currentMode = rememberSaveable { mutableStateOf(NotificationsMode.default) }
+      NotificationButton(currentMode, NotificationsMode.OFF, R.string.onboarding_notifications_mode_off, R.string.onboarding_notifications_mode_off_desc)
+      NotificationButton(currentMode, NotificationsMode.PERIODIC, R.string.onboarding_notifications_mode_periodic, R.string.onboarding_notifications_mode_periodic_desc)
+      NotificationButton(currentMode, NotificationsMode.SERVICE, R.string.onboarding_notifications_mode_service, R.string.onboarding_notifications_mode_service_desc)
       Spacer(Modifier.fillMaxHeight().weight(1f))
       Box(Modifier.fillMaxWidth().padding(bottom = 16.dp), contentAlignment = Alignment.Center) {
         OnboardingActionButton(R.string.use_chat, OnboardingStage.OnboardingComplete, m.onboardingStage) {
-          changeNotificationsMode(currentMode, m)
+          changeNotificationsMode(currentMode.value, m)
         }
       }
       Spacer(Modifier.fillMaxHeight().weight(1f))
     }
 }
 
-// mode, name, description
-private fun notificationModes(): List<ValueTitleDesc<NotificationsMode>> {
-  val res = ArrayList<ValueTitleDesc<NotificationsMode>>()
-  res.add(
-    ValueTitleDesc(
-      NotificationsMode.OFF,
-      generalGetString(R.string.onboarding_notifications_mode_off),
-      generalGetString(R.string.onboarding_notifications_mode_off_desc),
-    )
-  )
-  res.add(
-    ValueTitleDesc(
-      NotificationsMode.PERIODIC,
-      generalGetString(R.string.onboarding_notifications_mode_periodic),
-      generalGetString(R.string.onboarding_notifications_mode_periodic_desc),
-    )
-  )
-  res.add(
-    ValueTitleDesc(
-      NotificationsMode.SERVICE,
-      generalGetString(R.string.onboarding_notifications_mode_service),
-      generalGetString(R.string.onboarding_notifications_mode_service_desc),
-    )
-  )
-  return res
+@Composable
+private fun NotificationButton(currentMode: MutableState<NotificationsMode>, mode: NotificationsMode, @StringRes title: Int, @StringRes description: Int) {
+  TextButton(
+    onClick = { currentMode.value = mode },
+    border = BorderStroke(2.dp, color = if (currentMode.value == mode) MaterialTheme.colors.primary else HighOrLowlight.copy(alpha = 0.5f)),
+    shape = RoundedCornerShape(15.dp),
+  ) {
+    Column(Modifier.padding(5.dp)) {
+      Text(
+        stringResource(title),
+        fontWeight = FontWeight.Medium,
+        color = if (currentMode.value == mode) MaterialTheme.colors.primary else HighOrLowlight
+      )
+      Text(annotatedStringResource(description), color = MaterialTheme.colors.onBackground)
+    }
+  }
+  Spacer(Modifier.height(DEFAULT_PADDING))
 }
