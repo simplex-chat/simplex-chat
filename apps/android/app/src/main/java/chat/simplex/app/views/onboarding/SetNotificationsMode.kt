@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -28,18 +29,18 @@ fun SetNotificationsMode(m: ChatModel) {
       AppBarTitle(stringResource(R.string.onboarding_notifications_mode_title), false)
       Spacer(Modifier.padding(DEFAULT_PADDING_HALF))
       val modes = remember { notificationModes() }
-      val currentMode = remember { m.controller.appPrefs.notificationsMode.state }
+      var currentMode by rememberSaveable { mutableStateOf(NotificationsMode.default) }
       modes.forEach { mode ->
         TextButton(
-          onClick = { changeNotificationsMode(mode.value, m) },
-          border = BorderStroke(2.dp, color = if (currentMode.value == mode.value.name) MaterialTheme.colors.primary else HighOrLowlight.copy(alpha = 0.5f)),
+          onClick = { currentMode = mode.value },
+          border = BorderStroke(2.dp, color = if (currentMode == mode.value) MaterialTheme.colors.primary else HighOrLowlight.copy(alpha = 0.5f)),
           shape = RoundedCornerShape(15.dp),
         ) {
           Column(Modifier.padding(5.dp)) {
             Text(
               mode.title,
               fontWeight = FontWeight.Medium,
-              color = if (currentMode.value == mode.value.name) MaterialTheme.colors.primary else HighOrLowlight
+              color = if (currentMode == mode.value) MaterialTheme.colors.primary else HighOrLowlight
             )
             Text(mode.description, color = MaterialTheme.colors.onBackground)
           }
@@ -49,7 +50,7 @@ fun SetNotificationsMode(m: ChatModel) {
       Spacer(Modifier.fillMaxHeight().weight(1f))
       Box(Modifier.fillMaxWidth().padding(bottom = 16.dp), contentAlignment = Alignment.Center) {
         OnboardingActionButton(R.string.use_chat, OnboardingStage.OnboardingComplete, m.onboardingStage) {
-          m.controller.showBackgroundServiceNoticeIfNeeded()
+          changeNotificationsMode(currentMode, m)
         }
       }
       Spacer(Modifier.fillMaxHeight().weight(1f))
