@@ -229,7 +229,7 @@
       </trans-unit>
       <trans-unit id="Accent color" xml:space="preserve" approved="no">
         <source>Accent color</source>
-        <target state="needs-translation">Couleur de l'accent</target>
+        <target state="translated">Couleur secondaire</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accept" xml:space="preserve" approved="no">
@@ -575,7 +575,7 @@
       </trans-unit>
       <trans-unit id="Connect via group link?" xml:space="preserve" approved="no">
         <source>Connect via group link?</source>
-        <target state="translated">Se connecter via le lien du groupe ?</target>
+        <target state="translated">Se connecter via le lien du groupe ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect via link" xml:space="preserve" approved="no">
@@ -1148,7 +1148,7 @@
       </trans-unit>
       <trans-unit id="Error adding member(s)" xml:space="preserve" approved="no">
         <source>Error adding member(s)</source>
-        <target state="translated">Erreur d'ajout de membre·s</target>
+        <target state="translated">Erreur lors de l'ajout de membre·s</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error changing address" xml:space="preserve" approved="no">
@@ -1740,12 +1740,12 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
       </trans-unit>
       <trans-unit id="Mark deleted for everyone" xml:space="preserve" approved="no">
         <source>Mark deleted for everyone</source>
-        <target state="translated">Marquer comme lu</target>
+        <target state="translated">Marquer comme supprimé pour tout le monde</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Mark read" xml:space="preserve" approved="no">
         <source>Mark read</source>
-        <target state="translated">Note de lecture</target>
+        <target state="translated">Marquer comme lu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Markdown in messages" xml:space="preserve" approved="no">
@@ -3623,7 +3623,7 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
       </trans-unit>
       <trans-unit id="marked deleted" xml:space="preserve" approved="no">
         <source>marked deleted</source>
-        <target state="translated">noté supprimé</target>
+        <target state="translated">marquer comme supprimé</target>
         <note>marked deleted chat item preview text</note>
       </trans-unit>
       <trans-unit id="member" xml:space="preserve" approved="no">
@@ -3860,6 +3860,61 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
       <trans-unit id="~strike~" xml:space="preserve" approved="no">
         <source>\~strike~</source>
         <target state="translated">\~barré~</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Clear verification" xml:space="preserve" approved="no">
+        <source>Clear verification</source>
+        <target state="translated">Retirer la vérification</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Incorrect security code!" xml:space="preserve" approved="no">
+        <source>Incorrect security code!</source>
+        <target state="translated">Code de sécurité incorrect !</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Mark verified" xml:space="preserve" approved="no">
+        <source>Mark verified</source>
+        <target state="translated">Marquer comme vérifié</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Scan code" xml:space="preserve" approved="no">
+        <source>Scan code</source>
+        <target state="translated">Scanner le code</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Security code" xml:space="preserve" approved="no">
+        <source>Security code</source>
+        <target state="translated">Code de sécurité</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%@ is verified" xml:space="preserve" approved="no">
+        <source>%@ is verified</source>
+        <target state="translated">%@ est vérifié·e</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Scan security code from your contact's app." xml:space="preserve" approved="no">
+        <source>Scan security code from your contact's app.</source>
+        <target state="translated">Scannez le code de sécurité depuis l'application de votre contact.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%@ is not verified" xml:space="preserve" approved="no">
+        <source>%@ is not verified</source>
+        <target state="translated">%@ n'est pas vérifié·e</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="To verify end-to-end encryption with your contact compare (or scan) the code on your devices." xml:space="preserve" approved="no">
+        <source>To verify end-to-end encryption with your contact compare (or scan) the code on your devices.</source>
+        <target state="translated">Pour vérifier le chiffrement de bout en bout avec votre contact, comparez (ou scannez) le code sur vos appareils.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="View security code" xml:space="preserve" approved="no">
+        <source>View security code</source>
+        <target state="translated">Afficher le code de sécurité</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Verify security code" xml:space="preserve" approved="no">
+        <source>Verify security code</source>
+        <target state="translated">Vérifier le code de sécurité</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>
