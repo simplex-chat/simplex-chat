@@ -8,4 +8,65 @@
     <string name="connect_via_link_verb">Se connecter</string>
     <string name="connect_via_group_link">Se connecter via le lien du groupe \?</string>
     <string name="connect_via_invitation_link">Se connecter via un lien d\'invitation \?</string>
+    <string name="server_error">erreur</string>
+    <string name="server_connecting">connexion</string>
+    <string name="server_connected">connecté</string>
+    <string name="display_name_connection_established">connexion établie</string>
+    <string name="display_name_invited_to_connect">invité à se connecter</string>
+    <string name="simplex_link_invitation">Invitation unique SimpleX</string>
+    <string name="simplex_link_connection">via <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g></string>
+    <string name="simplex_link_mode">Liens SimpleX</string>
+    <string name="simplex_link_mode_description">Description</string>
+    <string name="error_deleting_contact">Erreur lors de la suppression du contact</string>
+    <string name="error_joining_group">Erreur lors de la liaison avec le groupe</string>
+    <string name="sender_cancelled_file_transfer">L\'expéditeur a annulé le transfert de fichiers.</string>
+    <string name="deleted_description">supprimé</string>
+    <string name="marked_deleted_description">marquer comme supprimé</string>
+    <string name="unknown_message_format">format de message inconnu</string>
+    <string name="display_name_connecting">connexion…</string>
+    <string name="description_you_shared_one_time_link_incognito">vous avez partagé un lien unique en incognito</string>
+    <string name="description_via_group_link">via le lien de groupe</string>
+    <string name="description_via_contact_address_link">via le lien d\'adresse du contact</string>
+    <string name="description_via_contact_address_link_incognito">mode incognito via le lien d\'adresse du contact</string>
+    <string name="simplex_link_group">Lien de groupe SimpleX</string>
+    <string name="simplex_link_mode_browser">Via navigateur</string>
+    <string name="simplex_link_mode_browser_warning">Ouvrir le lien dans le navigateur peut réduire la confidentialité et la sécurité de la connexion. Les liens SimpleX non fiables seront en rouge.</string>
+    <string name="network_error_desc">Vérifiez votre connexion réseau avec <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g> et réessayez.</string>
+    <string name="error_receiving_file">Erreur lors de la réception du fichier</string>
+    <string name="sender_may_have_deleted_the_connection_request">L\'expéditeur a peut-être supprimé la demande de connexion.</string>
+    <string name="connected_to_server_to_receive_messages_from_contact">Vous êtes connecté·e au serveur utilisé pour recevoir les messages de ce contact.</string>
+    <string name="sending_files_not_yet_supported">l\'envoi de fichiers n\'est pas encore supporté</string>
+    <string name="sender_you_pronoun">vous</string>
+    <string name="description_via_group_link_incognito">mode incognito via le lien de groupe</string>
+    <string name="simplex_link_contact">Adresse de contact SimpleX</string>
+    <string name="trying_to_connect_to_server_to_receive_messages">Tentative de connexion au serveur utilisé pour recevoir les messages de ce contact.</string>
+    <string name="receiving_files_not_yet_supported">la réception de fichiers n\'est pas encore supportée</string>
+    <string name="connection_local_display_name">connexion <xliff:g id="connection ID" example="1">%1$d</xliff:g></string>
+    <string name="description_you_shared_one_time_link">vous avez partagé un lien unique</string>
+    <string name="description_via_one_time_link">via un lien unique</string>
+    <string name="description_via_one_time_link_incognito">mode incognito via un lien unique</string>
+    <string name="ensure_smp_server_address_are_correct_format_and_unique">Assurez-vous que les adresses des serveurs SMP sont au bon format, séparées par des lignes et ne sont pas dupliquées.</string>
+    <string name="error_setting_network_config">Erreur lors de la mise à jour de la configuration réseau</string>
+    <string name="error_creating_address">Erreur lors de la création de l\'adresse</string>
+    <string name="contact_already_exists">Contact déjà existant</string>
+    <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Veuillez vérifier que vous avez utilisé le bon lien ou demandez à votre contact de vous en envoyer un autre.</string>
+    <string name="connection_error">Erreur de connexion</string>
+    <string name="error_adding_members">Erreur lors de l\'ajout de membre·s</string>
+    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Tentative de connexion au serveur utilisé pour recevoir les messages de ce contact (erreur : <xliff:g id="errorMsg">%1$s</xliff:g>).</string>
+    <string name="invalid_message_format">format de message invalide</string>
+    <string name="simplex_link_mode_full">Lien entier</string>
+    <string name="error_saving_smp_servers">Erreur lors de la sauvegarde des serveurs SMP</string>
+    <string name="cannot_receive_file">Impossible de recevoir le fichier</string>
+    <string name="invalid_connection_link">Lien de connection invalide</string>
+    <string name="connection_timeout">Délai de connexion</string>
+    <string name="error_sending_message">Erreur lors de l\'envoi du message</string>
+    <string name="you_are_already_connected_to_vName_via_this_link">Vous êtes déjà connecté à <xliff:g id="contactName" example="Alice">%1$s!</xliff:g>.</string>
+    <string name="connection_error_auth">Erreur de connexion (AUTH)</string>
+    <string name="connection_error_auth_desc">A moins que votre contact ait supprimé la connexion ou que ce lien ait déjà été utilisé, il peut s\'agir d\'un bug - veuillez le signaler.
+\nPour vous connecter, veuillez demander à votre contact de créer un autre lien de connexion et vérifiez que vous disposez d\'une connexion réseau stable.</string>
+    <string name="error_accepting_contact_request">Erreur de validation de la demande de contact</string>
+    <string name="error_deleting_group">Erreur lors de la suppression du groupe</string>
+    <string name="error_deleting_contact_request">Erreur lors de la suppression du contact</string>
+    <string name="error_deleting_pending_contact_connection">Erreur lors de la suppression de la connexion en attente</string>
+    <string name="error_changing_address">Erreur de changement d\'adresse</string>
 </resources>
