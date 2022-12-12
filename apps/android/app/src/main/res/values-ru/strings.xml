@@ -545,6 +545,9 @@
     <string name="read_more_in_github">Узнайте больше из нашего GitHub репозитория.</string>
     <string name="read_more_in_github_with_link">Узнайте больше из нашего <font color="#0088ff">GitHub репозитория</font>.</string>
 
+    <!-- SetNotificationsMode.kt -->
+    <string name="use_chat">Использовать чат</string>
+
     <!-- MakeConnection -->
     <string name="paste_the_link_you_received">Вставить полученную ссылку</string>
 

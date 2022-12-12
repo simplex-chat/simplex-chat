@@ -1249,6 +1249,9 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   fun showBackgroundServiceNoticeIfNeeded() {
     val mode = NotificationsMode.valueOf(appPrefs.notificationsMode.get()!!)
     Log.d(TAG, "showBackgroundServiceNoticeIfNeeded")
+    // Nothing to do if mode is OFF. Can be selected on on-boarding stage
+    if (mode == NotificationsMode.OFF) return
+
     if (!appPrefs.backgroundServiceNoticeShown.get()) {
       // the branch for the new users who have never seen service notice
       if (!mode.requiresIgnoringBattery || isIgnoringBatteryOptimizations(appContext)) {

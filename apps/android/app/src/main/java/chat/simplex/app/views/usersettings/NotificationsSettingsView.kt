@@ -46,25 +46,6 @@ enum class NotificationPreviewMode {
 fun NotificationsSettingsView(
   chatModel: ChatModel,
 ) {
-  val onNotificationsModeSelected = { mode: NotificationsMode ->
-    chatModel.controller.appPrefs.notificationsMode.set(mode.name)
-    if (mode.requiresIgnoringBattery && !chatModel.controller.isIgnoringBatteryOptimizations(chatModel.controller.appContext)) {
-      chatModel.controller.appPrefs.backgroundServiceNoticeShown.set(false)
-    }
-    chatModel.notificationsMode.value = mode
-    SimplexService.StartReceiver.toggleReceiver(mode == NotificationsMode.SERVICE)
-    CoroutineScope(Dispatchers.Default).launch {
-      if (mode == NotificationsMode.SERVICE)
-        SimplexService.start(SimplexApp.context)
-      else
-        SimplexService.safeStopService(SimplexApp.context)
-    }
-
-    if (mode != NotificationsMode.PERIODIC) {
-      MessagesFetcherWorker.cancelAll()
-    }
-    chatModel.controller.showBackgroundServiceNoticeIfNeeded()
-  }
   val onNotificationPreviewModeSelected = { mode: NotificationPreviewMode ->
     chatModel.controller.appPrefs.notificationPreviewMode.set(mode.name)
     chatModel.notificationPreviewMode.value = mode
@@ -76,7 +57,7 @@ fun NotificationsSettingsView(
     showPage = { page ->
       ModalManager.shared.showModalCloseable(true) {
           when (page) {
-            CurrentPage.NOTIFICATIONS_MODE -> NotificationsModeView(chatModel.notificationsMode, onNotificationsModeSelected)
+            CurrentPage.NOTIFICATIONS_MODE -> NotificationsModeView(chatModel.notificationsMode) { changeNotificationsMode(it, chatModel) }
             CurrentPage.NOTIFICATION_PREVIEW_MODE -> NotificationPreviewView(chatModel.notificationPreviewMode, onNotificationPreviewModeSelected)
           }
       }
@@ -159,7 +140,7 @@ fun NotificationPreviewView(
 }
 
 // mode, name, description
-fun notificationModes(): List<ValueTitleDesc<NotificationsMode>> {
+private fun notificationModes(): List<ValueTitleDesc<NotificationsMode>> {
   val res = ArrayList<ValueTitleDesc<NotificationsMode>>()
   res.add(
     ValueTitleDesc(
@@ -210,4 +191,24 @@ fun notificationPreviewModes(): List<ValueTitleDesc<NotificationPreviewMode>> {
     )
   )
   return res
+}
+
+fun changeNotificationsMode(mode: NotificationsMode, chatModel: ChatModel) {
+  chatModel.controller.appPrefs.notificationsMode.set(mode.name)
+  if (mode.requiresIgnoringBattery && !chatModel.controller.isIgnoringBatteryOptimizations(chatModel.controller.appContext)) {
+    chatModel.controller.appPrefs.backgroundServiceNoticeShown.set(false)
+  }
+  chatModel.notificationsMode.value = mode
+  SimplexService.StartReceiver.toggleReceiver(mode == NotificationsMode.SERVICE)
+  CoroutineScope(Dispatchers.Default).launch {
+    if (mode == NotificationsMode.SERVICE)
+      SimplexService.start(SimplexApp.context)
+    else
+      SimplexService.safeStopService(SimplexApp.context)
+  }
+
+  if (mode != NotificationsMode.PERIODIC) {
+    MessagesFetcherWorker.cancelAll()
+  }
+  chatModel.controller.showBackgroundServiceNoticeIfNeeded()
 }

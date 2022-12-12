@@ -395,6 +395,7 @@ fun MainPage(
       }
       onboarding == OnboardingStage.Step1_SimpleXInfo -> SimpleXInfo(chatModel, onboarding = true)
       onboarding == OnboardingStage.Step2_CreateProfile -> CreateProfile(chatModel)
+      onboarding == OnboardingStage.Step3_SetNotificationsMode -> SetNotificationsMode(chatModel)
     }
     ModalManager.shared.showInView()
     val invitation = chatModel.activeCallInvitation.value
