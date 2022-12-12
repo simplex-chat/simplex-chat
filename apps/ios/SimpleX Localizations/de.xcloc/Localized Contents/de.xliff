@@ -57,6 +57,14 @@
         <target>%@ ist mit Ihnen verbunden!</target>
         <note>notification title</note>
       </trans-unit>
+      <trans-unit id="%@ is not verified" xml:space="preserve">
+        <source>%@ is not verified</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%@ is verified" xml:space="preserve">
+        <source>%@ is verified</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="%@ wants to connect!" xml:space="preserve">
         <source>%@ wants to connect!</source>
         <target>%@ will sich mit Ihnen verbinden!</target>
@@ -541,6 +549,10 @@
       <trans-unit id="Clear conversation?" xml:space="preserve">
         <source>Clear conversation?</source>
         <target>Unterhaltung löschen?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Clear verification" xml:space="preserve">
+        <source>Clear verification</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Colors" xml:space="preserve">
@@ -1586,6 +1598,10 @@
         <target>Eingehender Videoanruf</target>
         <note>notification</note>
       </trans-unit>
+      <trans-unit id="Incorrect security code!" xml:space="preserve">
+        <source>Incorrect security code!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" xml:space="preserve">
         <source>Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)</source>
         <target>Installieren Sie [SimpleX Chat als Terminalanwendung](https://github.com/simplex-chat/simplex-chat)</target>
@@ -1746,6 +1762,10 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       <trans-unit id="Mark read" xml:space="preserve">
         <source>Mark read</source>
         <target>Als gelesen markieren</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Mark verified" xml:space="preserve">
+        <source>Mark verified</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Markdown in messages" xml:space="preserve">
@@ -2363,6 +2383,14 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>QR-Code scannen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Scan code" xml:space="preserve">
+        <source>Scan code</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Scan security code from your contact's app." xml:space="preserve">
+        <source>Scan security code from your contact's app.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Scan server QR code" xml:space="preserve">
         <source>Scan server QR code</source>
         <target>Scannen Sie den QR-Code des Servers</target>
@@ -2377,6 +2405,10 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <source>Secure queue</source>
         <target>Sichere Warteschlange</target>
         <note>server test step</note>
+      </trans-unit>
+      <trans-unit id="Security code" xml:space="preserve">
+        <source>Security code</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send direct message" xml:space="preserve">
         <source>Send direct message</source>
@@ -2795,6 +2827,10 @@ Sie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funkt
         <target>Um sofortige Push-Benachrichtigungen zu unterstützen, muss die Chat-Datenbank migriert werden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="To verify end-to-end encryption with your contact compare (or scan) the code on your devices." xml:space="preserve">
+        <source>To verify end-to-end encryption with your contact compare (or scan) the code on your devices.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Transfer images faster" xml:space="preserve">
         <source>Transfer images faster</source>
         <target>Bilder schneller übertragen</target>
@@ -2937,6 +2973,10 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>Verwende SimpleX Chat Server.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Verify security code" xml:space="preserve">
+        <source>Verify security code</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Via browser" xml:space="preserve">
         <source>Via browser</source>
         <target>Über den Browser</target>
@@ -2945,6 +2985,10 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
       <trans-unit id="Video call" xml:space="preserve">
         <source>Video call</source>
         <target>Videoanruf</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="View security code" xml:space="preserve">
+        <source>View security code</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Voice messages" xml:space="preserve">

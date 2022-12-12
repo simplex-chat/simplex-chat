@@ -819,7 +819,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     public var localAlias: String { profile.localAlias }
     public var verified: Bool { activeConn.connectionCode != nil }
 
-    public var directContact: Bool {
+    public var directOrUsed: Bool {
         (activeConn.connLevel == 0 && !activeConn.viaGroupLink) || contactUsed
     }
 

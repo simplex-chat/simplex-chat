@@ -120,12 +120,12 @@ contactConnId = aConnId . contactConn
 contactConnIncognito :: Contact -> Bool
 contactConnIncognito = connIncognito . contactConn
 
-directContact :: Contact -> Bool
-directContact Contact {contactUsed, activeConn = Connection {connLevel, viaGroupLink}} =
+directOrUsed :: Contact -> Bool
+directOrUsed Contact {contactUsed, activeConn = Connection {connLevel, viaGroupLink}} =
   (connLevel == 0 && not viaGroupLink) || contactUsed
 
-anyDirectContact :: Contact -> Bool
-anyDirectContact Contact {contactUsed, activeConn = Connection {connLevel}} = connLevel == 0 || contactUsed
+anyDirectOrUsed :: Contact -> Bool
+anyDirectOrUsed Contact {contactUsed, activeConn = Connection {connLevel}} = connLevel == 0 || contactUsed
 
 contactSecurityCode :: Contact -> Maybe SecurityCode
 contactSecurityCode Contact {activeConn} = connectionCode activeConn
@@ -1522,6 +1522,8 @@ instance TextEncoding CommandStatus where
 data CommandFunction
   = CFCreateConnGrpMemInv
   | CFCreateConnGrpInv
+  | CFCreateConnFileInvDirect
+  | CFCreateConnFileInvGroup
   | CFJoinConn
   | CFAllowConn
   | CFAcceptContact
@@ -1537,6 +1539,8 @@ instance TextEncoding CommandFunction where
   textDecode = \case
     "create_conn" -> Just CFCreateConnGrpMemInv
     "create_conn_grp_inv" -> Just CFCreateConnGrpInv
+    "create_conn_file_inv_direct" -> Just CFCreateConnFileInvDirect
+    "create_conn_file_inv_group" -> Just CFCreateConnFileInvGroup
     "join_conn" -> Just CFJoinConn
     "allow_conn" -> Just CFAllowConn
     "accept_contact" -> Just CFAcceptContact
@@ -1546,6 +1550,8 @@ instance TextEncoding CommandFunction where
   textEncode = \case
     CFCreateConnGrpMemInv -> "create_conn"
     CFCreateConnGrpInv -> "create_conn_grp_inv"
+    CFCreateConnFileInvDirect -> "create_conn_file_inv_direct"
+    CFCreateConnFileInvGroup -> "create_conn_file_inv_group"
     CFJoinConn -> "join_conn"
     CFAllowConn -> "allow_conn"
     CFAcceptContact -> "accept_contact"
@@ -1556,6 +1562,8 @@ commandExpectedResponse :: CommandFunction -> ACommandTag 'Agent
 commandExpectedResponse = \case
   CFCreateConnGrpMemInv -> INV_
   CFCreateConnGrpInv -> INV_
+  CFCreateConnFileInvDirect -> INV_
+  CFCreateConnFileInvGroup -> INV_
   CFJoinConn -> OK_
   CFAllowConn -> OK_
   CFAcceptContact -> OK_

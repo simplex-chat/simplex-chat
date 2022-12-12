@@ -1032,7 +1032,7 @@ public enum ChatErrorType: Decodable {
     case groupNotJoined(groupInfo: GroupInfo)
     case groupMemberNotActive
     case groupMemberUserRemoved
-    case groupMemberNotFound(contactName: ContactName)
+    case groupMemberNotFound
     case groupMemberIntroNotFound(contactName: ContactName)
     case groupCantResendInvitation(groupInfo: GroupInfo, contactName: ContactName)
     case groupInternal(message: String)
