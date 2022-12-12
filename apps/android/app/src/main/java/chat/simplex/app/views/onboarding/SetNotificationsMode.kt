@@ -13,6 +13,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.*
@@ -48,16 +49,18 @@ fun SetNotificationsMode(m: ChatModel) {
 private fun NotificationButton(currentMode: MutableState<NotificationsMode>, mode: NotificationsMode, @StringRes title: Int, @StringRes description: Int) {
   TextButton(
     onClick = { currentMode.value = mode },
-    border = BorderStroke(2.dp, color = if (currentMode.value == mode) MaterialTheme.colors.primary else HighOrLowlight.copy(alpha = 0.5f)),
+    border = BorderStroke(1.dp, color = if (currentMode.value == mode) MaterialTheme.colors.primary else HighOrLowlight.copy(alpha = 0.5f)),
     shape = RoundedCornerShape(15.dp),
   ) {
-    Column(Modifier.padding(5.dp)) {
+    Column(Modifier.padding(bottom = 6.dp).padding(horizontal = 8.dp)) {
       Text(
         stringResource(title),
+        style = MaterialTheme.typography.h2,
         fontWeight = FontWeight.Medium,
-        color = if (currentMode.value == mode) MaterialTheme.colors.primary else HighOrLowlight
+        color = if (currentMode.value == mode) MaterialTheme.colors.primary else HighOrLowlight,
+        modifier = Modifier.padding(bottom = 4.dp)
       )
-      Text(annotatedStringResource(description), color = MaterialTheme.colors.onBackground)
+      Text(annotatedStringResource(description), color = MaterialTheme.colors.onBackground, lineHeight = 24.sp)
     }
   }
   Spacer(Modifier.height(DEFAULT_PADDING))
