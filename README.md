@@ -248,6 +248,7 @@ It is possible to donate via:
 - [OpenCollective](https://opencollective.com/simplex-chat) - it charges a commission, and also accepts donations in crypto-currencies.
 - Monero address: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt
 - Bitcoin address: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
+- BCH address: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
 - Ethereum address: 0x83fd788f7241a2be61780ea9dc72d2151e6843e2
 - please let us know, via GitHub issue or chat, if you want to create a donation in some other cryptocurrency - we will add the address to the list.
 

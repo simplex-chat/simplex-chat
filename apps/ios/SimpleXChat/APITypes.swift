@@ -58,6 +58,10 @@ public enum ChatCommand {
     case apiGroupMemberInfo(groupId: Int64, groupMemberId: Int64)
     case apiSwitchContact(contactId: Int64)
     case apiSwitchGroupMember(groupId: Int64, groupMemberId: Int64)
+    case apiGetContactCode(contactId: Int64)
+    case apiGetGroupMemberCode(groupId: Int64, groupMemberId: Int64)
+    case apiVerifyContact(contactId: Int64, connectionCode: String?)
+    case apiVerifyGroupMember(groupId: Int64, groupMemberId: Int64, connectionCode: String?)
     case addContact
     case connect(connReq: String)
     case apiDeleteChat(type: ChatType, id: Int64)
@@ -138,6 +142,12 @@ public enum ChatCommand {
             case let .apiGroupMemberInfo(groupId, groupMemberId): return "/_info #\(groupId) \(groupMemberId)"
             case let .apiSwitchContact(contactId): return "/_switch @\(contactId)"
             case let .apiSwitchGroupMember(groupId, groupMemberId): return "/_switch #\(groupId) \(groupMemberId)"
+            case let .apiGetContactCode(contactId): return "/_get code @\(contactId)"
+            case let .apiGetGroupMemberCode(groupId, groupMemberId): return "/_get code #\(groupId) \(groupMemberId)"
+            case let .apiVerifyContact(contactId, .some(connectionCode)): return "/_verify code @\(contactId) \(connectionCode)"
+            case let .apiVerifyContact(contactId, .none): return "/_verify code @\(contactId)"
+            case let .apiVerifyGroupMember(groupId, groupMemberId, .some(connectionCode)): return "/_verify code #\(groupId) \(groupMemberId) \(connectionCode)"
+            case let .apiVerifyGroupMember(groupId, groupMemberId, .none): return "/_verify code #\(groupId) \(groupMemberId)"
             case .addContact: return "/connect"
             case let .connect(connReq): return "/connect \(connReq)"
             case let .apiDeleteChat(type, id): return "/_delete \(ref(type, id))"
@@ -217,6 +227,10 @@ public enum ChatCommand {
             case .apiGroupMemberInfo: return "apiGroupMemberInfo"
             case .apiSwitchContact: return "apiSwitchContact"
             case .apiSwitchGroupMember: return "apiSwitchGroupMember"
+            case .apiGetContactCode: return "apiGetContactCode"
+            case .apiGetGroupMemberCode: return "apiGetGroupMemberCode"
+            case .apiVerifyContact: return "apiVerifyContact"
+            case .apiVerifyGroupMember: return "apiVerifyGroupMember"
             case .addContact: return "addContact"
             case .connect: return "connect"
             case .apiDeleteChat: return "apiDeleteChat"
@@ -300,6 +314,9 @@ public enum ChatResponse: Decodable, Error {
     case networkConfig(networkConfig: NetCfg)
     case contactInfo(contact: Contact, connectionStats: ConnectionStats, customUserProfile: Profile?)
     case groupMemberInfo(groupInfo: GroupInfo, member: GroupMember, connectionStats_: ConnectionStats?)
+    case contactCode(contact: Contact, connectionCode: String)
+    case groupMemberCode(groupInfo: GroupInfo, member: GroupMember, connectionCode: String)
+    case connectionVerified(verified: Bool, expectedCode: String)
     case invitation(connReqInvitation: String)
     case sentConfirmation
     case sentInvitation
@@ -403,6 +420,9 @@ public enum ChatResponse: Decodable, Error {
             case .networkConfig: return "networkConfig"
             case .contactInfo: return "contactInfo"
             case .groupMemberInfo: return "groupMemberInfo"
+            case .contactCode: return "contactCode"
+            case .groupMemberCode: return "groupMemberCode"
+            case .connectionVerified: return "connectionVerified"
             case .invitation: return "invitation"
             case .sentConfirmation: return "sentConfirmation"
             case .sentInvitation: return "sentInvitation"
@@ -506,6 +526,9 @@ public enum ChatResponse: Decodable, Error {
             case let .networkConfig(networkConfig): return String(describing: networkConfig)
             case let .contactInfo(contact, connectionStats, customUserProfile): return "contact: \(String(describing: contact))\nconnectionStats: \(String(describing: connectionStats))\ncustomUserProfile: \(String(describing: customUserProfile))"
             case let .groupMemberInfo(groupInfo, member, connectionStats_): return "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionStats_: \(String(describing: connectionStats_)))"
+            case let .contactCode(contact, connectionCode): return "contact: \(String(describing: contact))\nconnectionCode: \(connectionCode)"
+            case let .groupMemberCode(groupInfo, member, connectionCode): return "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionCode: \(connectionCode)"
+            case let .connectionVerified(verified, expectedCode): return "verified: \(verified)\nconnectionCode: \(expectedCode)"
             case let .invitation(connReqInvitation): return connReqInvitation
             case .sentConfirmation: return noDetails
             case .sentInvitation: return noDetails
