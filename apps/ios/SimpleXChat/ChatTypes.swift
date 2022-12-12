@@ -817,6 +817,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     public var fullName: String { get { profile.fullName } }
     public var image: String? { get { profile.image } }
     public var localAlias: String { profile.localAlias }
+    public var verified: Bool { activeConn.connectionCode != nil }
 
     public var directContact: Bool {
         (activeConn.connLevel == 0 && !activeConn.viaGroupLink) || contactUsed
@@ -858,6 +859,7 @@ public struct Connection: Decodable {
     public var connLevel: Int
     public var viaGroupLink: Bool
     public var customUserProfileId: Int64?
+    public var connectionCode: SecurityCode?
 
     public var id: ChatId { get { ":\(connId)" } }
 
@@ -867,6 +869,16 @@ public struct Connection: Decodable {
         connLevel: 0,
         viaGroupLink: false
     )
+}
+
+public struct SecurityCode: Decodable, Equatable {
+    public init(securityCode: String, verifiedAt: Date) {
+        self.securityCode = securityCode
+        self.verifiedAt = verifiedAt
+    }
+
+    public var securityCode: String
+    public var verifiedAt: Date
 }
 
 public struct UserContact: Decodable {
@@ -1124,6 +1136,7 @@ public struct GroupMember: Identifiable, Decodable {
     }
     public var fullName: String { get { memberProfile.fullName } }
     public var image: String? { get { memberProfile.image } }
+    public var verified: Bool { activeConn?.connectionCode != nil }
 
     var directChatId: ChatId? {
         get {

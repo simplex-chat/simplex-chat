@@ -34,10 +34,24 @@ struct AddGroupMembersView: View {
     }
 
     var body: some View {
-        NavigationView {
-            let membersToAdd = filterMembersToAdd(chatModel.groupMembers)
+        if creatingGroup {
+            NavigationView {
+                addGroupMembersView()
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button ("Skip") { addedMembersCb?(selectedContacts) }
+                        }
+                    }
+            }
+        } else {
+            addGroupMembersView()
+        }
+    }
 
-            let v = List {
+    private func addGroupMembersView() -> some View {
+        VStack {
+            let membersToAdd = filterMembersToAdd(chatModel.groupMembers)
+            List {
                 ChatInfoToolbar(chat: chat, imageSize: 48)
                 .frame(maxWidth: .infinity, alignment: .center)
                 .listRowBackground(Color.clear)
@@ -79,16 +93,6 @@ struct AddGroupMembersView: View {
                         }
                     }
                 }
-            }
-
-            if creatingGroup {
-                v.toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button ("Skip") { addedMembersCb?(selectedContacts) }
-                    }
-                }
-            } else {
-                v.navigationBarHidden(true)
             }
         }
         .frame(maxHeight: .infinity, alignment: .top)
