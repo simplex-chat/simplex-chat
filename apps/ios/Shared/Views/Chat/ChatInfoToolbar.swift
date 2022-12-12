@@ -32,14 +32,25 @@ struct ChatInfoToolbar: View {
             .frame(width: imageSize, height: imageSize)
             .padding(.trailing, 4)
             VStack {
-                Text(cInfo.displayName).font(.headline)
+                let t = Text(cInfo.displayName).font(.headline)
+                (cInfo.contact?.verified == true ? contactVerifiedShield + t : t)
+                    .lineLimit(1)
                 if cInfo.fullName != "" && cInfo.displayName != cInfo.fullName {
                     Text(cInfo.fullName).font(.subheadline)
+                        .lineLimit(1)
                 }
             }
         }
         .foregroundColor(.primary)
         .frame(width: 220)
+    }
+
+    private var contactVerifiedShield: Text {
+        (Text(Image(systemName: "checkmark.shield")) + Text(" "))
+            .font(.caption)
+            .foregroundColor(.secondary)
+            .baselineOffset(1)
+            .kerning(-2)
     }
 }
 

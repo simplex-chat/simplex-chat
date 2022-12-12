@@ -11,6 +11,7 @@ import android.view.ViewGroup
 import android.view.inputmethod.*
 import android.widget.EditText
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
@@ -18,10 +19,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -35,185 +36,59 @@ import androidx.core.view.inputmethod.InputConnectionCompat
 import androidx.core.widget.*
 import chat.simplex.app.R
 import chat.simplex.app.SimplexApp
-import chat.simplex.app.model.ChatItem
+import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.*
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import kotlinx.coroutines.*
-import java.io.*
 
 @Composable
 fun SendMsgView(
   composeState: MutableState<ComposeState>,
   showVoiceRecordIcon: Boolean,
-  allowedVoiceByPrefs: Boolean,
+  recState: MutableState<RecordingState>,
+  isDirectChat: Boolean,
   needToAllowVoiceToContact: Boolean,
+  allowedVoiceByPrefs: Boolean,
+  allowVoiceToContact: () -> Unit,
   sendMessage: () -> Unit,
   onMessageChange: (String) -> Unit,
-  onAudioAdded: (String, Int, Boolean) -> Unit,
-  allowVoiceToContact: () -> Unit,
-  showDisabledVoiceAlert: () -> Unit,
   textStyle: MutableState<TextStyle>
 ) {
-  Column(Modifier.padding(vertical = 8.dp)) {
-    Box {
-      val cs = composeState.value
-      val attachEnabled = !composeState.value.editing
-      val filePath = rememberSaveable { mutableStateOf(null as String?) }
-      var recordingTimeRange by rememberSaveable(saver = LongRange.saver) { mutableStateOf(0L..0L) } // since..to
-      val showVoiceButton = ((cs.message.isEmpty() || recordingTimeRange.first > 0L) && showVoiceRecordIcon && attachEnabled && cs.preview is ComposePreview.NoPreview) || filePath.value != null
-      Box(if (recordingTimeRange.first == 0L)
-        Modifier
-      else
-        Modifier.clickable(false, onClick = {})
-      ) {
-        NativeKeyboard(composeState, textStyle, onMessageChange)
-      }
-      Box(Modifier.align(Alignment.BottomEnd)) {
-        val icon = if (cs.editing) Icons.Filled.Check else Icons.Outlined.ArrowUpward
-        val color = if (cs.sendEnabled()) MaterialTheme.colors.primary else HighOrLowlight
-        if (cs.inProgress && (cs.preview is ComposePreview.ImagePreview || cs.preview is ComposePreview.VoicePreview || cs.preview is ComposePreview.FilePreview)) {
-          CircularProgressIndicator(Modifier.size(36.dp).padding(4.dp), color = HighOrLowlight, strokeWidth = 3.dp)
-        } else if (!showVoiceButton) {
-          IconButton(sendMessage, Modifier.size(36.dp), enabled = cs.sendEnabled()) {
-            Icon(
-              icon,
-              stringResource(R.string.icon_descr_send_message),
-              tint = Color.White,
-              modifier = Modifier
-                .size(36.dp)
-                .padding(4.dp)
-                .clip(CircleShape)
-                .background(color)
-            )
-          }
-        } else {
-          val permissionsState = rememberMultiplePermissionsState(
-            permissions = listOf(
-              Manifest.permission.RECORD_AUDIO,
-            )
-          )
-          val rec: Recorder = remember { RecorderNative(MAX_VOICE_SIZE_FOR_SENDING) }
-          val recordingInProgress: State<Boolean> = remember { rec.recordingInProgress }
-          var now by remember { mutableStateOf(System.currentTimeMillis()) }
-          LaunchedEffect(Unit) {
-            while (isActive) {
-              now = System.currentTimeMillis()
-              if (recordingTimeRange.first != 0L && recordingInProgress.value && composeState.value.preview is ComposePreview.VoicePreview) {
-                filePath.value?.let { onAudioAdded(it, (now - recordingTimeRange.first).toInt(), false) }
-              }
-              delay(100)
-            }
-          }
-          val stopRecordingAndAddAudio: () -> Unit = {
-            rec.stop()
-            recordingTimeRange = recordingTimeRange.first..System.currentTimeMillis()
-            filePath.value?.let { onAudioAdded(it, (recordingTimeRange.last - recordingTimeRange.first).toInt(), true) }
-          }
-          val startStopRecording: () -> Unit = {
-            when {
-              needToAllowVoiceToContact -> {
-                AlertManager.shared.showAlertDialog(
-                  title = generalGetString(R.string.allow_voice_messages_question),
-                  text = generalGetString(R.string.you_need_to_allow_to_send_voice),
-                  confirmText = generalGetString(R.string.allow_verb),
-                  dismissText = generalGetString(R.string.cancel_verb),
-                  onConfirm = allowVoiceToContact,
-                )
-              }
-              !allowedVoiceByPrefs -> showDisabledVoiceAlert()
-              !permissionsState.allPermissionsGranted -> permissionsState.launchMultiplePermissionRequest()
-              recordingInProgress.value -> stopRecordingAndAddAudio()
-              filePath.value == null -> {
-                recordingTimeRange = System.currentTimeMillis()..0L
-                filePath.value = rec.start(stopRecordingAndAddAudio)
-                filePath.value?.let { onAudioAdded(it, (now - recordingTimeRange.first).toInt(), false) }
-              }
-            }
-          }
-          var stopRecOnNextClick by remember { mutableStateOf(false) }
-          val context = LocalContext.current
-          DisposableEffect(stopRecOnNextClick) {
-            val activity = context as? Activity ?: return@DisposableEffect onDispose {}
-            if (stopRecOnNextClick) {
-              // Lock orientation to current orientation because screen rotation will break the recording
-              activity.requestedOrientation = if (activity.resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT)
-                ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-              else
-                ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-            }
-            // Unlock orientation
-            onDispose { activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED }
-          }
-          val cleanUp = { remove: Boolean ->
-            rec.stop()
-            AudioPlayer.stop(filePath.value)
-            if (remove) filePath.value?.let { File(it).delete() }
-            filePath.value = null
-            stopRecOnNextClick = false
-            recordingTimeRange = 0L..0L
-          }
-          LaunchedEffect(cs.preview) {
-            if (cs.preview !is ComposePreview.VoicePreview && filePath.value != null) {
-              // Pressed on X icon in preview
-              cleanUp(true)
-            }
-          }
-          val interactionSource = interactionSourceWithTapDetection(
-            // It's just a key for triggering dropping a state in the compose function. Without it
-            // nothing will react on changed params like needToAllowVoiceToContact or allowedVoiceByPrefs
-            needToAllowVoiceToContact.toString() + allowedVoiceByPrefs.toString(),
-            onPress = {
-              if (filePath.value == null) startStopRecording()
-            },
-            onClick = {
-              // Voice not allowed or not granted voice record permission for the app
-              if (!allowedVoiceByPrefs || !permissionsState.allPermissionsGranted) return@interactionSourceWithTapDetection
-              if (!recordingInProgress.value && filePath.value != null) {
-                sendMessage()
-                cleanUp(false)
-              } else if (stopRecOnNextClick) {
-                stopRecordingAndAddAudio()
-                stopRecOnNextClick = false
+  Box(Modifier.padding(vertical = 8.dp)) {
+    val cs = composeState.value
+    val showProgress = cs.inProgress && (cs.preview is ComposePreview.ImagePreview  || cs.preview is ComposePreview.FilePreview)
+    val showVoiceButton = cs.message.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
+        (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started)
+    NativeKeyboard(composeState, textStyle, onMessageChange)
+    // Disable clicks on text field
+    if (cs.preview is ComposePreview.VoicePreview) {
+      Box(Modifier.matchParentSize().clickable(enabled = false, onClick = { }))
+    }
+    Box(Modifier.align(Alignment.BottomEnd)) {
+      val permissionsState = rememberMultiplePermissionsState(listOf(Manifest.permission.RECORD_AUDIO))
+      when {
+        showProgress -> ProgressIndicator()
+        showVoiceButton -> when {
+          needToAllowVoiceToContact || !allowedVoiceByPrefs -> {
+            DisallowedVoiceButton {
+              if (needToAllowVoiceToContact) {
+                showNeedToAllowVoiceAlert(allowVoiceToContact)
               } else {
-                // tapped and didn't hold a finger
-                stopRecOnNextClick = true
+                showDisabledVoiceAlert(isDirectChat)
               }
-            },
-            onCancel = startStopRecording,
-            onRelease = startStopRecording
-          )
-          val sendButtonModifier = if (recordingTimeRange.last != 0L)
-            Modifier.clip(CircleShape).background(color)
-          else
-            Modifier
-          IconButton({}, Modifier.size(36.dp), enabled = !cs.inProgress, interactionSource = interactionSource) {
-            Icon(
-              when {
-                recordingTimeRange.last != 0L -> Icons.Outlined.ArrowUpward
-                stopRecOnNextClick -> Icons.Filled.Stop
-                allowedVoiceByPrefs -> Icons.Filled.KeyboardVoice
-                else -> Icons.Outlined.KeyboardVoice
-              },
-              stringResource(R.string.icon_descr_record_voice_message),
-              tint = when {
-                recordingTimeRange.last != 0L -> Color.White
-                stopRecOnNextClick -> MaterialTheme.colors.primary
-                allowedVoiceByPrefs -> MaterialTheme.colors.primary
-                else -> HighOrLowlight
-              },
-              modifier = Modifier
-                .size(36.dp)
-                .padding(4.dp)
-                .then(sendButtonModifier)
-            )
-          }
-          DisposableEffect(Unit) {
-            onDispose {
-              rec.stop()
             }
           }
+          !permissionsState.allPermissionsGranted ->
+            VoiceButtonWithoutPermission { permissionsState.launchMultiplePermissionRequest() }
+          else ->
+            RecordVoiceView(recState)
+        }
+        else -> {
+          val icon = if (cs.editing) Icons.Filled.Check else Icons.Outlined.ArrowUpward
+          val color = if (cs.sendEnabled()) MaterialTheme.colors.primary else HighOrLowlight
+          SendTextButton(icon, color, cs.sendEnabled(), sendMessage)
         }
       }
     }
@@ -312,6 +187,172 @@ private fun NativeKeyboard(
   }
 }
 
+@Composable
+private fun RecordVoiceView(recState: MutableState<RecordingState>) {
+  val rec: Recorder = remember { RecorderNative(MAX_VOICE_SIZE_FOR_SENDING) }
+  DisposableEffect(Unit) { onDispose { rec.stop() } }
+  val stopRecordingAndAddAudio: () -> Unit = {
+    recState.value.filePathNullable?.let {
+      recState.value = RecordingState.Finished(it, rec.stop())
+    }
+  }
+  var stopRecOnNextClick by remember { mutableStateOf(false) }
+  if (stopRecOnNextClick) {
+    LaunchedEffect(recState.value) {
+      if (recState.value is RecordingState.NotStarted) {
+        stopRecOnNextClick = false
+      }
+    }
+    // Lock orientation to current orientation because screen rotation will break the recording
+    LockToCurrentOrientationUntilDispose()
+    StopRecordButton(stopRecordingAndAddAudio)
+  } else {
+    val startRecording: () -> Unit = {
+      recState.value = RecordingState.Started(
+        filePath = rec.start { progress: Int?, finished: Boolean ->
+          val state = recState.value
+          if (state is RecordingState.Started && progress != null) {
+            recState.value = if (!finished)
+              RecordingState.Started(state.filePath, progress)
+            else
+              RecordingState.Finished(state.filePath, progress)
+          }
+        },
+      )
+    }
+    val interactionSource = interactionSourceWithTapDetection(
+      onPress = { if (recState.value is RecordingState.NotStarted) startRecording() },
+      onClick = {
+        if (stopRecOnNextClick) {
+          stopRecordingAndAddAudio()
+        } else {
+          // tapped and didn't hold a finger
+          stopRecOnNextClick = true
+        }
+      },
+      onCancel = stopRecordingAndAddAudio,
+      onRelease = stopRecordingAndAddAudio
+    )
+    RecordVoiceButton(interactionSource)
+  }
+}
+
+@Composable
+private fun DisallowedVoiceButton(onClick: () -> Unit) {
+  IconButton(onClick, Modifier.size(36.dp)) {
+    Icon(
+      Icons.Outlined.KeyboardVoice,
+      stringResource(R.string.icon_descr_record_voice_message),
+      tint = HighOrLowlight,
+      modifier = Modifier
+        .size(36.dp)
+        .padding(4.dp)
+    )
+  }
+}
+
+@Composable
+private fun VoiceButtonWithoutPermission(onClick: () -> Unit) {
+  IconButton(onClick, Modifier.size(36.dp)) {
+    Icon(
+      Icons.Filled.KeyboardVoice,
+      stringResource(R.string.icon_descr_record_voice_message),
+      tint = MaterialTheme.colors.primary,
+      modifier = Modifier
+        .size(36.dp)
+        .padding(4.dp)
+    )
+  }
+}
+
+@Composable
+private fun LockToCurrentOrientationUntilDispose() {
+  val context = LocalContext.current
+  DisposableEffect(Unit) {
+    val activity = context as Activity
+    activity.requestedOrientation = when (activity.display?.rotation) {
+      android.view.Surface.ROTATION_90 -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+      android.view.Surface.ROTATION_180 -> ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT
+      android.view.Surface.ROTATION_270 -> ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
+      else -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+    }
+    // Unlock orientation
+    onDispose { activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED }
+  }
+}
+
+
+@Composable
+private fun StopRecordButton(onClick: () -> Unit) {
+  IconButton(onClick, Modifier.size(36.dp)) {
+    Icon(
+      Icons.Filled.Stop,
+      stringResource(R.string.icon_descr_record_voice_message),
+      tint = MaterialTheme.colors.primary,
+      modifier = Modifier
+        .size(36.dp)
+        .padding(4.dp)
+    )
+  }
+}
+
+@Composable
+private fun RecordVoiceButton(interactionSource: MutableInteractionSource) {
+  IconButton({}, Modifier.size(36.dp), interactionSource = interactionSource) {
+    Icon(
+      Icons.Filled.KeyboardVoice,
+      stringResource(R.string.icon_descr_record_voice_message),
+      tint = MaterialTheme.colors.primary,
+      modifier = Modifier
+        .size(36.dp)
+        .padding(4.dp)
+    )
+  }
+}
+
+@Composable
+private fun ProgressIndicator() {
+  CircularProgressIndicator(Modifier.size(36.dp).padding(4.dp), color = HighOrLowlight, strokeWidth = 3.dp)
+}
+
+@Composable
+private fun SendTextButton(icon: ImageVector, backgroundColor: Color, enabled: Boolean, sendMessage: () -> Unit) {
+  IconButton(sendMessage, Modifier.size(36.dp), enabled = enabled) {
+    Icon(
+      icon,
+      stringResource(R.string.icon_descr_send_message),
+      tint = Color.White,
+      modifier = Modifier
+        .size(36.dp)
+        .padding(4.dp)
+        .clip(CircleShape)
+        .background(backgroundColor)
+    )
+  }
+}
+
+private fun showNeedToAllowVoiceAlert(onConfirm: () -> Unit) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(R.string.allow_voice_messages_question),
+    text = generalGetString(R.string.you_need_to_allow_to_send_voice),
+    confirmText = generalGetString(R.string.allow_verb),
+    dismissText = generalGetString(R.string.cancel_verb),
+    onConfirm = onConfirm,
+  )
+}
+
+private fun showDisabledVoiceAlert(isDirectChat: Boolean) {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(R.string.voice_messages_prohibited),
+    text = generalGetString(
+      if (isDirectChat)
+        R.string.ask_your_contact_to_enable_voice
+      else
+        R.string.only_group_owners_can_enable_voice
+    )
+  )
+}
+
 @Preview(showBackground = true)
 @Preview(
   uiMode = Configuration.UI_MODE_NIGHT_YES,
@@ -326,13 +367,13 @@ fun PreviewSendMsgView() {
     SendMsgView(
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       showVoiceRecordIcon = false,
-      allowedVoiceByPrefs = false,
+      recState = mutableStateOf(RecordingState.NotStarted),
+      isDirectChat = true,
       needToAllowVoiceToContact = false,
+      allowedVoiceByPrefs = true,
+      allowVoiceToContact = {},
       sendMessage = {},
       onMessageChange = { _ -> },
-      onAudioAdded = { _, _, _ -> },
-      allowVoiceToContact = {},
-      showDisabledVoiceAlert = {},
       textStyle = textStyle
     )
   }
@@ -353,13 +394,13 @@ fun PreviewSendMsgViewEditing() {
     SendMsgView(
       composeState = remember { mutableStateOf(composeStateEditing) },
       showVoiceRecordIcon = false,
-      allowedVoiceByPrefs = false,
+      recState = mutableStateOf(RecordingState.NotStarted),
+      isDirectChat = true,
       needToAllowVoiceToContact = false,
+      allowedVoiceByPrefs = true,
+      allowVoiceToContact = {},
       sendMessage = {},
       onMessageChange = { _ -> },
-      onAudioAdded = { _, _, _ -> },
-      allowVoiceToContact = {},
-      showDisabledVoiceAlert = {},
       textStyle = textStyle
     )
   }
@@ -380,13 +421,13 @@ fun PreviewSendMsgViewInProgress() {
     SendMsgView(
       composeState = remember { mutableStateOf(composeStateInProgress) },
       showVoiceRecordIcon = false,
-      allowedVoiceByPrefs = false,
+      recState = mutableStateOf(RecordingState.NotStarted),
+      isDirectChat = true,
       needToAllowVoiceToContact = false,
+      allowedVoiceByPrefs = true,
+      allowVoiceToContact = {},
       sendMessage = {},
       onMessageChange = { _ -> },
-      onAudioAdded = { _, _, _ -> },
-      allowVoiceToContact = {},
-      showDisabledVoiceAlert = {},
       textStyle = textStyle
     )
   }

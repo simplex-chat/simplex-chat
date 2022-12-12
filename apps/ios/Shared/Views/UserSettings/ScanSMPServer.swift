@@ -47,7 +47,7 @@ struct ScanSMPServer: View {
                 showAddressError = true
             }
         case let .failure(e):
-            logger.error("ConnectContactView.processQRCode QR code error: \(e.localizedDescription)")
+            logger.error("ScanSMPServer.processQRCode QR code error: \(e.localizedDescription)")
             dismiss()
         }
     }
