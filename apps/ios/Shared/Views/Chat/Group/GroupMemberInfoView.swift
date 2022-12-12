@@ -55,7 +55,7 @@ struct GroupMemberInfoView: View {
                     Section {
                         if let contactId = member.memberContactId {
                             if let chat = chatModel.getContactChat(contactId),
-                               chat.chatInfo.contact?.directContact ?? false {
+                               chat.chatInfo.contact?.directOrUsed ?? false {
                                 knownDirectChatButton(chat)
                             } else if groupInfo.fullGroupPreferences.directMessages.on {
                                 newDirectChatButton(contactId)

@@ -120,12 +120,12 @@ contactConnId = aConnId . contactConn
 contactConnIncognito :: Contact -> Bool
 contactConnIncognito = connIncognito . contactConn
 
-directContact :: Contact -> Bool
-directContact Contact {contactUsed, activeConn = Connection {connLevel, viaGroupLink}} =
+directOrUsed :: Contact -> Bool
+directOrUsed Contact {contactUsed, activeConn = Connection {connLevel, viaGroupLink}} =
   (connLevel == 0 && not viaGroupLink) || contactUsed
 
-anyDirectContact :: Contact -> Bool
-anyDirectContact Contact {contactUsed, activeConn = Connection {connLevel}} = connLevel == 0 || contactUsed
+anyDirectOrUsed :: Contact -> Bool
+anyDirectOrUsed Contact {contactUsed, activeConn = Connection {connLevel}} = connLevel == 0 || contactUsed
 
 contactSecurityCode :: Contact -> Maybe SecurityCode
 contactSecurityCode Contact {activeConn} = connectionCode activeConn

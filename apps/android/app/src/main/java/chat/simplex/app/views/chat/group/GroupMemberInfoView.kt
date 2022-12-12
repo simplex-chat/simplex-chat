@@ -25,7 +25,6 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.SimplexServers
 import chat.simplex.app.views.chat.SwitchAddressButton
-import chat.simplex.app.views.chatlist.openChat
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.SettingsActionItem
 
@@ -145,7 +144,7 @@ fun GroupMemberInfoLayout(
       val contactId = member.memberContactId
       if (contactId != null) {
         val chat = getContactChat(contactId)
-        if (chat != null && chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.directContact) {
+        if (chat != null && chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.directOrUsed) {
           SectionView {
             OpenChatButton(onClick = { knownDirectChat(chat) })
           }
