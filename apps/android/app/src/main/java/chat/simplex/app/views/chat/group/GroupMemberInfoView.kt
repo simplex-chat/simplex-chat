@@ -185,8 +185,14 @@ fun GroupMemberInfoLayout(
           val chat = getContactChat(contactId)
           if (chat != null && chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.directOrUsed) {
             OpenChatButton(onClick = { knownDirectChat(chat) })
+            if (connectionCode != null) {
+              SectionDivider()
+            }
           } else if (groupInfo.fullGroupPreferences.directMessages.on) {
             OpenChatButton(onClick = { newDirectChat(contactId) })
+            if (connectionCode != null) {
+              SectionDivider()
+            }
           }
           if (connectionCode != null) {
             VerifyCodeButton(member.verified, verifyClicked)

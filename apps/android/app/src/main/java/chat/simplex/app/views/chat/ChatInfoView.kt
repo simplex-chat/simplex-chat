@@ -191,6 +191,7 @@ fun ChatInfoLayout(
     SectionView {
       if (connectionCode != null) {
         VerifyCodeButton(contact.verified, verifyClicked)
+        SectionDivider()
       }
       ContactPreferencesButton(openPreferences)
     }
