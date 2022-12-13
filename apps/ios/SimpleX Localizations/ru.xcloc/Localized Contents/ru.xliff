@@ -708,6 +708,10 @@
         <target>Создать адрес</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Create group link" xml:space="preserve">
+        <source>Create group link</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Create link" xml:space="preserve">
         <source>Create link</source>
         <target>Создать ссылку</target>
