@@ -104,9 +104,9 @@ struct GroupLinkView: View {
                 }
             } catch let error {
                 logger.error("GroupLinkView apiCreateGroupLink: \(responseError(error))")
-                let a = getErrorAlert(error, "Error creating group link")
                 await MainActor.run {
                     creatingLink = false
+                    let a = getErrorAlert(error, "Error creating group link")
                     alert = .error(title: a.title, error: a.message)
                 }
             }
