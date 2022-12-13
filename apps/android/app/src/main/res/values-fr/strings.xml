@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="thousand_abbreviation">k</string>
+    <string name="connect_via_contact_link">Se connecter via le lien du contact \?</string>
+    <string name="app_name"><xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="profile_will_be_sent_to_contact_sending_link">Votre profil va être envoyé au contact qui vous a envoyé ce lien.</string>
+    <string name="you_will_join_group">Vous allez rejoindre le groupe correspondant à ce lien et être mis en relation avec les autres membres du groupe.</string>
+    <string name="connect_via_link_verb">Se connecter</string>
+    <string name="connect_via_group_link">Se connecter via le lien du groupe \?</string>
+    <string name="connect_via_invitation_link">Se connecter via un lien d\'invitation \?</string>
+</resources>

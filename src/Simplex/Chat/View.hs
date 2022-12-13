@@ -50,6 +50,7 @@ import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (bshow)
 import System.Console.ANSI.Types
+import GHC.Records.Compat
 
 type CurrentTime = UTCTime
 
@@ -775,15 +776,15 @@ viewContactPreferences :: User -> Contact -> Contact -> ContactUserPreferences -
 viewContactPreferences user ct ct' cups =
   mapMaybe (viewContactPref (mergeUserChatPrefs user ct) (mergeUserChatPrefs user ct') (preferences' ct) cups) allChatFeatures
 
-viewContactPref :: FullPreferences -> FullPreferences -> Maybe Preferences -> ContactUserPreferences -> ChatFeature -> Maybe StyledString
-viewContactPref userPrefs userPrefs' ctPrefs cups pt
+viewContactPref :: FullPreferences -> FullPreferences -> Maybe Preferences -> ContactUserPreferences -> AChatFeature -> Maybe StyledString
+viewContactPref userPrefs userPrefs' ctPrefs cups (ACF f)
   | userPref == userPref' && ctPref == contactPreference = Nothing
-  | otherwise = Just $ plain (chatFeatureToText pt) <> ": " <> plain (prefEnabledToText enabled) <> " (you allow: " <> viewCountactUserPref userPreference <> ", contact allows: " <> viewPreference contactPreference <> ")"
+  | otherwise = Just $ plain (chatFeatureToText $ chatFeature f) <> ": " <> plain (prefEnabledToText enabled) <> " (you allow: " <> viewCountactUserPref userPreference <> ", contact allows: " <> viewPreference contactPreference <> ")"
   where
-    userPref = getPreference pt userPrefs
-    userPref' = getPreference pt userPrefs'
-    ctPref = getPreference pt ctPrefs
-    ContactUserPreference {enabled, userPreference, contactPreference} = getContactUserPreference pt cups
+    userPref = getPreference f userPrefs
+    userPref' = getPreference f userPrefs'
+    ctPref = getPreference f ctPrefs
+    ContactUserPreference {enabled, userPreference, contactPreference} = getContactUserPreference f cups
 
 viewPrefsUpdated :: Maybe Preferences -> Maybe Preferences -> [StyledString]
 viewPrefsUpdated ps ps'
@@ -791,20 +792,19 @@ viewPrefsUpdated ps ps'
   | otherwise = "updated preferences:" : prefs
   where
     prefs = mapMaybe viewPref allChatFeatures
-    viewPref pt
+    viewPref (ACF f)
       | pref ps == pref ps' = Nothing
-      | otherwise = Just $ plain (chatFeatureToText pt) <> " allowed: " <> viewPreference (pref ps')
+      | otherwise = Just $ plain (chatFeatureToText $ chatFeature f) <> " allowed: " <> viewPreference (pref ps')
       where
-        pref pss = getPreference pt $ mergePreferences pss Nothing
+        pref pss = getPreference f $ mergePreferences pss Nothing
 
-viewPreference :: Preference -> StyledString
-viewPreference = \case
-  Preference {allow} -> case allow of
-    FAAlways -> "always"
-    FAYes -> "yes"
-    FANo -> "no"
+viewPreference :: FeatureI f => FeaturePreference f -> StyledString
+viewPreference p = case getField @"allow" p of
+  FAAlways -> "always"
+  FAYes -> "yes"
+  FANo -> "no"
 
-viewCountactUserPref :: ContactUserPref -> StyledString
+viewCountactUserPref :: FeatureI f => ContactUserPref (FeaturePreference f) -> StyledString
 viewCountactUserPref = \case
   CUPUser p -> "default (" <> viewPreference p <> ")"
   CUPContact p -> viewPreference p

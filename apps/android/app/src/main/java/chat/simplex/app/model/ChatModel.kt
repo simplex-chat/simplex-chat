@@ -101,7 +101,7 @@ class ChatModel(val controller: ChatController) {
 
   fun updateContactConnection(contactConnection: PendingContactConnection) = updateChat(ChatInfo.ContactConnection(contactConnection))
 
-  fun updateContact(contact: Contact) = updateChat(ChatInfo.Direct(contact), addMissing = contact.directContact)
+  fun updateContact(contact: Contact) = updateChat(ChatInfo.Direct(contact), addMissing = contact.directOrUsed)
 
   fun updateGroup(groupInfo: GroupInfo) = updateChat(ChatInfo.Group(groupInfo))
 
@@ -575,7 +575,7 @@ data class Contact(
   override val image get() = profile.image
   override val localAlias get() = profile.localAlias
 
-  val directContact: Boolean get() =
+  val directOrUsed: Boolean get() =
     (activeConn.connLevel == 0 && !activeConn.viaGroupLink) || contactUsed
 
   val contactConnIncognito =

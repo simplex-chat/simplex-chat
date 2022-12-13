@@ -115,8 +115,12 @@ class SimplexApp: Application(), LifecycleEventObserver {
            * after calling [ChatController.showBackgroundServiceNoticeIfNeeded] notification mode in prefs can be changed.
            * It can happen when app was started and a user enables battery optimization while app in background
            * */
-          if (chatModel.chatRunning.value != false && appPreferences.notificationsMode.get() == NotificationsMode.SERVICE.name)
+          if (chatModel.chatRunning.value != false &&
+            chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete &&
+            appPreferences.notificationsMode.get() == NotificationsMode.SERVICE.name
+          ) {
             SimplexService.start(applicationContext)
+          }
         }
         else -> isAppOnForeground = false
       }

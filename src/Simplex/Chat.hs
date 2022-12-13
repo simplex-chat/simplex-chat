@@ -301,7 +301,7 @@ processChatCommand = \case
       ct@Contact {localDisplayName = c, contactUsed} <- withStore $ \db -> getContact db user chatId
       assertDirectAllowed user MDSnd ct XMsgNew_
       unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
-      if isVoice mc && not (featureAllowed CFVoice forUser ct)
+      if isVoice mc && not (featureAllowed SCFVoice forUser ct)
         then pure $ chatCmdError $ "feature not allowed " <> T.unpack (chatFeatureToText CFVoice)
         else do
           (fileInvitation_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer ct
@@ -466,7 +466,7 @@ processChatCommand = \case
           assertDirectAllowed user MDSnd ct XMsgDel_
           (SndMessage {msgId}, _) <- sendDirectContactMessage ct (XMsgDel itemSharedMId)
           setActive $ ActiveC c
-          if featureAllowed CFFullDelete forUser ct
+          if featureAllowed SCFFullDelete forUser ct
             then deleteDirectCI user ct ci True False
             else markDirectCIDeleted user ct ci msgId True
         (CIDMBroadcast, _, _) -> throwChatError CEInvalidChatItemDelete
@@ -544,7 +544,7 @@ processChatCommand = \case
       where
         deleteUnusedContact contactId = do
           ct <- withStore $ \db -> getContact db user contactId
-          unless (directContact ct) $ do
+          unless (directOrUsed ct) $ do
             ctGroupId <- withStore' $ \db -> checkContactHasGroups db user ct
             when (isNothing ctGroupId) $ do
               conns <- withStore $ \db -> getContactConnections db userId ct
@@ -875,7 +875,7 @@ processChatCommand = \case
     contacts <- withStore' (`getUserContacts` user)
     withChatLock "sendMessageBroadcast" . procCmd $ do
       let mc = MCText $ safeDecodeUtf8 msg
-          cts = filter (\ct -> isReady ct && directContact ct) contacts
+          cts = filter (\ct -> isReady ct && directOrUsed ct) contacts
       forM_ cts $ \ct ->
         void
           ( do
@@ -1126,11 +1126,13 @@ processChatCommand = \case
   UpdateProfileImage image -> withUser $ \user@User {profile} -> do
     let p = (fromLocalProfile profile :: Profile) {image}
     updateProfile user p
-  SetUserFeature f allowed -> withUser $ \user@User {profile} -> do
+  SetUserFeature cf allowed -> withUser $ \user@User {profile} -> do
+    ACF f <- pure $ aChatFeature cf
     let p = (fromLocalProfile profile :: Profile) {preferences = Just . setPreference f (Just allowed) $ preferences' user}
     updateProfile user p
-  SetContactFeature f cName allowed_ -> withUser $ \user -> do
+  SetContactFeature cf cName allowed_ -> withUser $ \user -> do
     ct@Contact {userPreferences} <- withStore $ \db -> getContactByName db user cName
+    ACF f <- pure $ aChatFeature cf
     let prefs' = setPreference f allowed_ $ Just userPreferences
     updateContactPrefs user ct prefs'
   SetGroupFeature f gName enabled ->
@@ -1247,7 +1249,7 @@ processChatCommand = \case
             let mergedProfile = userProfileToSend user' Nothing $ Just ct
                 ct' = updateMergedPreferences user' ct
             void (sendDirectContactMessage ct $ XInfo mergedProfile) `catchError` (toView . CRChatError)
-            when (directContact ct) $ createFeatureChangedItems user' ct ct' CDDirectSnd CISndChatFeature
+            when (directOrUsed ct) $ createFeatureChangedItems user' ct ct' CDDirectSnd CISndChatFeature
           pure $ CRUserProfileUpdated (fromLocalProfile p) p'
     updateContactPrefs :: User -> Contact -> Preferences -> m ChatResponse
     updateContactPrefs user@User {userId} ct@Contact {activeConn = Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
@@ -1259,7 +1261,7 @@ processChatCommand = \case
         let p' = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct')
         withChatLock "updateProfile" . procCmd $ do
           void (sendDirectContactMessage ct' $ XInfo p') `catchError` (toView . CRChatError)
-          when (directContact ct) $ createFeatureChangedItems user ct ct' CDDirectSnd CISndChatFeature
+          when (directOrUsed ct) $ createFeatureChangedItems user ct ct' CDDirectSnd CISndChatFeature
           pure $ CRContactPrefsUpdated ct ct'
     runUpdateGroupProfile :: User -> Group -> GroupProfile -> m ChatResponse
     runUpdateGroupProfile user (Group g@GroupInfo {groupProfile = p} ms) p' = do
@@ -1330,7 +1332,7 @@ processChatCommand = \case
 
 assertDirectAllowed :: ChatMonad m => User -> MsgDirection -> Contact -> CMEventTag e -> m ()
 assertDirectAllowed user dir ct event =
-  unless (allowedChatEvent || anyDirectContact ct) . unlessM directMessagesAllowed $
+  unless (allowedChatEvent || anyDirectOrUsed ct) . unlessM directMessagesAllowed $
     throwChatError $ CEDirectMessagesProhibited dir ct
   where
     directMessagesAllowed = any (groupFeatureAllowed' GFDirectMessages) <$> withStore' (\db -> getContactGroupPreferences db user ct)
@@ -1420,48 +1422,44 @@ acceptFileReceive :: forall m. ChatMonad m => User -> RcvFileTransfer -> Maybe B
 acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName = fName, fileConnReq, fileInline, fileSize}, fileStatus, grpMemberId} rcvInline_ filePath_ = do
   unless (fileStatus == RFSNew) $ case fileStatus of
     RFSCancelled _ -> throwChatError $ CEFileCancelled fName
-    _ -> pure () -- throwChatError $ CEFileAlreadyReceiving fName
+    _ -> throwChatError $ CEFileAlreadyReceiving fName
   case fileConnReq of
     -- direct file protocol
     Just connReq -> do
-      agentConnId <- withAgent $ \a -> joinConnection a True connReq . directMessage $ XFileAcpt fName
+      connIds <- joinAgentConnectionAsync user True connReq . directMessage $ XFileAcpt fName
       filePath <- getRcvFilePath fileId filePath_ fName
-      withStore $ \db -> acceptRcvFileTransfer db user fileId agentConnId ConnJoined filePath
+      withStore $ \db -> acceptRcvFileTransfer db user fileId connIds ConnJoined filePath
     -- group & direct file protocol
     Nothing -> do
       chatRef <- withStore $ \db -> getChatRefByFileId db user fileId
       case (chatRef, grpMemberId) of
         (ChatRef CTDirect contactId, Nothing) -> do
           ct <- withStore $ \db -> getContact db user contactId
-          (msg, ci) <- acceptFile
-          void $ sendDirectContactMessage ct msg
-          pure ci
+          acceptFile CFCreateConnFileInvDirect $ \msg -> void $ sendDirectContactMessage ct msg
         (ChatRef CTGroup groupId, Just memId) -> do
           GroupMember {activeConn} <- withStore $ \db -> getGroupMember db user groupId memId
           case activeConn of
             Just conn -> do
-              (msg, ci) <- acceptFile
-              void $ sendDirectMessage conn msg $ GroupId groupId
-              pure ci
+              acceptFile CFCreateConnFileInvGroup $ \msg -> void $ sendDirectMessage conn msg $ GroupId groupId
             _ -> throwChatError $ CEFileInternal "member connection not active"
         _ -> throwChatError $ CEFileInternal "invalid chat ref for file transfer"
   where
-    acceptFile :: m (ChatMsgEvent 'Json, AChatItem)
-    acceptFile = do
-      sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
+    acceptFile :: CommandFunction -> (ChatMsgEvent 'Json -> m ()) -> m AChatItem
+    acceptFile cmdFunction send = do
       filePath <- getRcvFilePath fileId filePath_ fName
       inline <- receiveInline
       if
           | inline -> do
             -- accepting inline
             ci <- withStore $ \db -> acceptRcvInlineFT db user fileId filePath
-            pure (XFileAcptInv sharedMsgId Nothing fName, ci)
+            sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
+            send $ XFileAcptInv sharedMsgId Nothing fName
+            pure ci
           | fileInline == Just IFMSent -> throwChatError $ CEFileAlreadyReceiving fName
           | otherwise -> do
             -- accepting via a new connection
-            (agentConnId, fileInvConnReq) <- withAgent $ \a -> createConnection a True SCMInvitation Nothing
-            ci <- withStore $ \db -> acceptRcvFileTransfer db user fileId agentConnId ConnNew filePath
-            pure (XFileAcptInv sharedMsgId (Just fileInvConnReq) fName, ci)
+            connIds <- createAgentConnectionAsync user cmdFunction True SCMInvitation
+            withStore $ \db -> acceptRcvFileTransfer db user fileId connIds ConnNew filePath
     receiveInline :: m Bool
     receiveInline = do
       ChatConfig {fileChunkSize, inlineFiles = InlineFilesConfig {receiveChunks, offerChunks}} <- asks config
@@ -1893,7 +1891,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
               -- [incognito] print incognito profile used for this contact
               incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
               toView $ CRContactConnected ct (fmap fromLocalProfile incognitoProfile)
-              when (directContact ct) $ createFeatureEnabledItems ct
+              when (directOrUsed ct) $ createFeatureEnabledItems ct
               setActive $ ActiveC c
               showToast (c <> "> ") "connected"
               forM_ groupLinkId $ \_ -> probeMatchingContacts ct $ contactConnIncognito ct
@@ -2134,8 +2132,29 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
         _ -> pure ()
 
     processRcvFileConn :: ACommand 'Agent -> Connection -> RcvFileTransfer -> m ()
-    processRcvFileConn agentMsg conn ft =
+    processRcvFileConn agentMsg conn ft@RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}, grpMemberId} =
       case agentMsg of
+        INV (ACR _ cReq) ->
+          withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
+            case cReq of
+              fileInvConnReq@(CRInvitationUri _ _) -> case cmdFunction of
+                -- [async agent commands] direct XFileAcptInv continuation on receiving INV
+                CFCreateConnFileInvDirect -> do
+                  ct <- withStore $ \db -> getContactByFileId db user fileId
+                  sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
+                  void $ sendDirectContactMessage ct (XFileAcptInv sharedMsgId (Just fileInvConnReq) fileName)
+                -- [async agent commands] group XFileAcptInv continuation on receiving INV
+                CFCreateConnFileInvGroup -> case grpMemberId of
+                  Just gMemberId -> do
+                    GroupMember {groupId, activeConn} <- withStore $ \db -> getGroupMemberById db user gMemberId
+                    case activeConn of
+                      Just gMemberConn -> do
+                        sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
+                        void $ sendDirectMessage gMemberConn (XFileAcptInv sharedMsgId (Just fileInvConnReq) fileName) $ GroupId groupId
+                      _ -> throwChatError $ CECommandError "no GroupMember activeConn"
+                  _ -> throwChatError $ CECommandError "no grpMemberId"
+                _ -> throwChatError $ CECommandError "unexpected cmdFunction"
+              CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
         -- SMP CONF for RcvFileConnection happens for group file protocol
         -- when sender of the file "joins" connection created by the recipient
         -- (sender doesn't create connections for all group members)
@@ -2337,7 +2356,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
       unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       let ExtMsgContent content fileInvitation_ = mcExtMsgContent mc
-      if isVoice content && not (featureAllowed CFVoice forContact ct)
+      if isVoice content && not (featureAllowed SCFVoice forContact ct)
         then do
           void $ newChatItem (CIRcvChatFeatureRejected CFVoice) Nothing
           setActive $ ActiveC c
@@ -2398,7 +2417,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
           ci@(CChatItem msgDir _) <- withStore $ \db -> getDirectChatItemBySharedMsgId db userId contactId sharedMsgId
           case msgDir of
             SMDRcv ->
-              if featureAllowed CFFullDelete forContact ct
+              if featureAllowed SCFFullDelete forContact ct
                 then deleteDirectCI user ct ci False False >>= toView
                 else markDirectCIDeleted user ct ci msgId False >>= toView
             SMDSnd -> messageError "x.msg.del: contact attempted invalid message delete"
@@ -2585,7 +2604,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
     xFileAcptInvGroup g@GroupInfo {groupId} m@GroupMember {activeConn} sharedMsgId fileConnReq_ fName msgMeta = do
       checkIntegrityCreateItem (CDGroupRcv g m) msgMeta
       fileId <- withStore $ \db -> getGroupFileIdBySharedMsgId db userId groupId sharedMsgId
-      -- TODO check that it's not already accpeted
+      -- TODO check that it's not already accepted
       ft@FileTransferMeta {fileName, fileSize, fileInline, cancelled} <- withStore (\db -> getFileTransferMeta db user fileId)
       if fName == fileName
         then unless cancelled $ case (fileConnReq_, activeConn) of
@@ -2651,13 +2670,13 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
     xInfo c@Contact {profile = p} p' = unless (fromLocalProfile p == p') $ do
       c' <- withStore $ \db -> updateContactProfile db user c p'
       toView $ CRContactUpdated c c'
-      when (directContact c) $ createFeatureChangedItems user c c' CDDirectRcv CIRcvChatFeature
+      when (directOrUsed c) $ createFeatureChangedItems user c c' CDDirectRcv CIRcvChatFeature
 
     createFeatureEnabledItems :: Contact -> m ()
     createFeatureEnabledItems ct@Contact {mergedPreferences} =
-      forM_ allChatFeatures $ \f -> do
+      forM_ allChatFeatures $ \(ACF f) -> do
         let ContactUserPreference {enabled} = getContactUserPreference f mergedPreferences
-        createInternalChatItem user (CDDirectRcv ct) (CIRcvChatFeature f enabled) Nothing
+        createInternalChatItem user (CDDirectRcv ct) (CIRcvChatFeature (chatFeature f) enabled) Nothing
 
     createGroupFeatureItems :: GroupInfo -> GroupMember -> m ()
     createGroupFeatureItems g@GroupInfo {groupProfile} m = do
@@ -3279,11 +3298,11 @@ userProfileToSend user@User {profile = p} incognitoProfile ct =
 
 createFeatureChangedItems :: (MsgDirectionI d, ChatMonad m) => User -> Contact -> Contact -> (Contact -> ChatDirection 'CTDirect d) -> (ChatFeature -> PrefEnabled -> CIContent d) -> m ()
 createFeatureChangedItems user Contact {mergedPreferences = cups} ct'@Contact {mergedPreferences = cups'} chatDir ciContent =
-  forM_ allChatFeatures $ \f -> do
+  forM_ allChatFeatures $ \(ACF f) -> do
     let ContactUserPreference {enabled} = getContactUserPreference f cups
         ContactUserPreference {enabled = enabled'} = getContactUserPreference f cups'
     unless (enabled == enabled') $
-      createInternalChatItem user (chatDir ct') (ciContent f enabled') Nothing
+      createInternalChatItem user (chatDir ct') (ciContent (chatFeature f) enabled') Nothing
 
 createGroupFeatureChangedItems :: (MsgDirectionI d, ChatMonad m) => User -> ChatDirection 'CTGroup d -> (GroupFeature -> GroupPreference -> CIContent d) -> GroupProfile -> GroupProfile -> m ()
 createGroupFeatureChangedItems user cd ciContent p p' =

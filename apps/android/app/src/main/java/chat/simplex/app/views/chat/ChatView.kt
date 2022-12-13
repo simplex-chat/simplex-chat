@@ -617,17 +617,21 @@ private fun ScrollToBottom(chatId: ChatId, listState: LazyListState, chatItems: 
     // Don't autoscroll next time until it will be needed
     shouldAutoScroll = false to chatId
   }
+  val scrollDistance = with(LocalDensity.current) { -39.dp.toPx() }
   /*
   * Since we use key with each item in LazyColumn, LazyColumn will not autoscroll to bottom item. We need to do it ourselves.
-  * When the first visible item (from bottom) is fully visible we can autoscroll to 0 item
+  * When the first visible item (from bottom) is visible (even partially) we can autoscroll to 0 item. Or just scrollBy small distance otherwise
   * */
   LaunchedEffect(Unit) {
     snapshotFlow { chatItems.lastOrNull()?.id }
       .distinctUntilChanged()
-      .filter { listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0 }
       .filter { listState.layoutInfo.visibleItemsInfo.firstOrNull()?.key != it }
       .collect {
-        listState.animateScrollToItem(0)
+        if (listState.firstVisibleItemIndex == 0) {
+          listState.animateScrollToItem(0)
+        } else {
+          listState.animateScrollBy(scrollDistance)
+        }
       }
   }
 }

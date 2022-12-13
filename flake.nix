@@ -1,7 +1,7 @@
 {
   description = "nix flake for simplex-chat";
-  inputs.nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable"; #angerman/nixpkgs/patch-1"; # based on 21.11, still need this, until everything is merged into 21.11.
-  inputs.haskellNix.url = "github:input-output-hk/haskell.nix?ref=angerman/try-no-libcharset";
+  inputs.nixpkgs.url = "github:nixos/nixpkgs/22.11";
+  inputs.haskellNix.url = "github:simplex-chat/haskell.nix";
   inputs.haskellNix.inputs.nixpkgs.follows = "nixpkgs";
   inputs.hackage = {
     url = "github:input-output-hk/hackage.nix";
@@ -26,7 +26,6 @@
         sha256map = import ./scripts/nix/sha256map.nix;
         modules = [{
           packages.direct-sqlcipher.patches = [ ./scripts/nix/direct-sqlcipher-2.3.27.patch ];
-          packages.entropy.patches = [ ./scripts/nix/entropy.patch ];
         }
         ({ pkgs,lib, ... }: lib.mkIf (pkgs.stdenv.hostPlatform.isAndroid) {
           packages.simplex-chat.components.library.ghcOptions = [ "-pie" ];
@@ -293,6 +292,7 @@
                 extra-modules = [{
                   packages.simplexmq.flags.swift = true;
                   packages.direct-sqlcipher.flags.commoncrypto = true;
+                  packages.entropy.patches = [ ./scripts/nix/entropy.patch ];
                 }];
               }).simplex-chat.components.library.override (
                 iosOverrides "pkg-ios-aarch64-swift-json"
@@ -302,6 +302,7 @@
                 pkgs' = pkgs;
                 extra-modules = [{
                   packages.direct-sqlcipher.flags.commoncrypto = true;
+                  packages.entropy.patches = [ ./scripts/nix/entropy.patch ];
                 }];
               }).simplex-chat.components.library.override (
                 iosOverrides "pkg-ios-aarch64-tagged-json"
@@ -314,6 +315,7 @@
                 extra-modules = [{
                   packages.simplexmq.flags.swift = true;
                   packages.direct-sqlcipher.flags.commoncrypto = true;
+                  packages.entropy.patches = [ ./scripts/nix/entropy.patch ];
                 }];
               }).simplex-chat.components.library.override (
                 iosOverrides "pkg-ios-x86_64-swift-json"
@@ -323,6 +325,7 @@
                 pkgs' = pkgs;
                 extra-modules = [{
                   packages.direct-sqlcipher.flags.commoncrypto = true;
+                  packages.entropy.patches = [ ./scripts/nix/entropy.patch ];
                 }];
               }).simplex-chat.components.library.override (
                 iosOverrides "pkg-ios-x86_64-tagged-json"

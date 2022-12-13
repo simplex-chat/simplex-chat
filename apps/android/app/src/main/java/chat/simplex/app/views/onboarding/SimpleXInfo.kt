@@ -25,7 +25,6 @@ import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.User
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.ModalManager
-import chat.simplex.app.views.helpers.generalGetString
 
 @Composable
 fun SimpleXInfo(chatModel: ChatModel, onboarding: Boolean = true) {
@@ -105,14 +104,14 @@ private fun InfoRow(icon: Painter, @StringRes titleId: Int, @StringRes textId: I
 @Composable
 fun OnboardingActionButton(user: User?, onboardingStage: MutableState<OnboardingStage?>, onclick: (() -> Unit)? = null) {
   if (user == null) {
-    ActionButton(R.string.create_your_profile, onboarding = OnboardingStage.Step2_CreateProfile, onboardingStage, onclick)
+    OnboardingActionButton(R.string.create_your_profile, onboarding = OnboardingStage.Step2_CreateProfile, onboardingStage, onclick)
   } else {
-    ActionButton(R.string.make_private_connection, onboarding = OnboardingStage.OnboardingComplete, onboardingStage, onclick)
+    OnboardingActionButton(R.string.make_private_connection, onboarding = OnboardingStage.OnboardingComplete, onboardingStage, onclick)
   }
 }
 
 @Composable
-private fun ActionButton(
+fun OnboardingActionButton(
   @StringRes labelId: Int,
   onboarding: OnboardingStage?,
   onboardingStage: MutableState<OnboardingStage?>,

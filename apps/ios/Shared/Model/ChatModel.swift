@@ -101,7 +101,7 @@ final class ChatModel: ObservableObject {
     }
 
     func updateContact(_ contact: Contact) {
-        updateChat(.direct(contact: contact), addMissing: contact.directContact)
+        updateChat(.direct(contact: contact), addMissing: contact.directOrUsed)
     }
 
     func updateGroup(_ groupInfo: GroupInfo) {
