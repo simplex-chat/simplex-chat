@@ -366,7 +366,8 @@ CREATE TABLE chat_items(
   quoted_sent INTEGER,
   quoted_member_id BLOB,
   item_edited INTEGER,
-  delete_at TEXT
+  timed_ttl INTEGER,
+  timed_delete_at TEXT
 );
 CREATE TABLE chat_item_messages(
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
@@ -457,4 +458,4 @@ CREATE UNIQUE INDEX idx_snd_files_last_inline_msg_delivery_id ON snd_files(
 CREATE INDEX idx_messages_connection_id ON messages(connection_id);
 CREATE INDEX idx_chat_items_group_member_id ON chat_items(group_member_id);
 CREATE INDEX idx_chat_items_contact_id ON chat_items(contact_id);
-CREATE INDEX idx_chat_items_delete_at ON chat_items(delete_at);
+CREATE INDEX idx_chat_items_timed_delete_at ON chat_items(timed_delete_at);
