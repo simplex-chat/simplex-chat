@@ -320,12 +320,6 @@ chatFeature = \case
   SCFFullDelete -> CFFullDelete
   SCFVoice -> CFVoice
 
-aChatFeature :: ChatFeature -> AChatFeature
-aChatFeature = \case
-  CFTimedMessages -> ACF SCFTimedMessages
-  CFFullDelete -> ACF SCFFullDelete
-  CFVoice -> ACF SCFVoice
-
 class PreferenceI p where
   getPreference :: SChatFeature f -> p -> FeaturePreference f
 
