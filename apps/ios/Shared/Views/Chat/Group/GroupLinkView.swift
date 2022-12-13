@@ -56,7 +56,8 @@ struct GroupLinkView: View {
                     .disabled(creatingLink)
                     .padding(.bottom)
                     if creatingLink {
-                        ProgressView().scaleEffect(2)
+                        ProgressView()
+                            .scaleEffect(2)
                             .frame(maxWidth: .infinity)
                     }
                 }
