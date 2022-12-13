@@ -24,7 +24,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time (nominalDiffTimeToSeconds)
-import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDay)
+import Data.Time.Clock (UTCTime, diffUTCTime, nominalDay)
 import Data.Time.LocalTime (TimeZone, ZonedTime, utcToZonedTime)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
@@ -279,28 +279,16 @@ instance ToJSON (CIMeta d) where toEncoding = J.genericToEncoding J.defaultOptio
 cleanupManagerInterval :: Int
 cleanupManagerInterval = 1800 * 1000000 -- 30 minutes
 
-mayBeTimedForDeletion :: UTCTime -> IO Bool
-mayBeTimedForDeletion deleteAt = do
-  ts <- getCurrentTime
-  pure $ diffInSeconds deleteAt ts <= 2 * cleanupManagerInterval
-
-itemMayBeTimedForDeletion :: ChatItem c d -> IO Bool
-itemMayBeTimedForDeletion ChatItem {meta = CIMeta {deleteAt}} =
-  case deleteAt of
-    Just delAt -> mayBeTimedForDeletion delAt
-    Nothing -> pure False
-
-fromPico :: Pico -> Integer
-fromPico (MkFixed i) = i
-
-diffInSeconds :: UTCTime -> UTCTime -> Int
-diffInSeconds a b = (`div` 1000000000000) $ diffInPicos a b
+-- move to Utils
 
 diffInMicros :: UTCTime -> UTCTime -> Int
 diffInMicros a b = (`div` 1000000) $ diffInPicos a b
 
 diffInPicos :: UTCTime -> UTCTime -> Int
 diffInPicos a b = fromInteger . fromPico . nominalDiffTimeToSeconds $ diffUTCTime a b
+
+fromPico :: Pico -> Integer
+fromPico (MkFixed i) = i
 
 data CIQuote (c :: ChatType) = CIQuote
   { chatDir :: CIQDirection c,

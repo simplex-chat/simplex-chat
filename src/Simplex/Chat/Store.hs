@@ -223,10 +223,10 @@ module Simplex.Chat.Store
     getTimedItems,
     getChatItemTTL,
     setChatItemTTL,
-    getContactExpiredData,
+    getContactExpiredFileInfo,
     deleteContactExpiredCIs,
     getContactCICount,
-    getGroupExpiredData,
+    getGroupExpiredFileInfo,
     deleteGroupExpiredCIs,
     getGroupCICount,
     getPendingContactConnection,
@@ -4514,21 +4514,18 @@ setChatItemTTL db User {userId} chatItemTTL = do
         "INSERT INTO settings (user_id, chat_item_ttl, created_at, updated_at) VALUES (?,?,?,?)"
         (userId, chatItemTTL, currentTs, currentTs)
 
-getContactExpiredData :: DB.Connection -> User -> Contact -> UTCTime -> IO [(ChatItemId, Maybe UTCTime, CIFileInfo)]
-getContactExpiredData db User {userId} Contact {contactId} expirationDate =
-  map toExpiredData
+getContactExpiredFileInfo :: DB.Connection -> User -> Contact -> UTCTime -> IO [CIFileInfo]
+getContactExpiredFileInfo db User {userId} Contact {contactId} expirationDate =
+  map toFileInfo
     <$> DB.query
       db
       [sql|
-        SELECT i.chat_item_id, i.delete_at, f.file_id, f.ci_file_status, f.file_path
+        SELECT f.file_id, f.ci_file_status, f.file_path
         FROM chat_items i
         JOIN files f ON f.chat_item_id = i.chat_item_id
         WHERE i.user_id = ? AND i.contact_id = ? AND i.created_at <= ?
       |]
       (userId, contactId, expirationDate)
-  where
-    toExpiredData :: ((ChatItemId, Maybe UTCTime) :. (Int64, Maybe ACIFileStatus, Maybe FilePath)) -> (ChatItemId, Maybe UTCTime, CIFileInfo)
-    toExpiredData ((itemId, deleteAt) :. fileInfoRow) = (itemId, deleteAt, toFileInfo fileInfoRow)
 
 deleteContactExpiredCIs :: DB.Connection -> User -> Contact -> UTCTime -> IO ()
 deleteContactExpiredCIs db user@User {userId} ct@Contact {contactId} expirationDate = do
@@ -4542,21 +4539,18 @@ getContactCICount db User {userId} Contact {contactId} =
   fmap join . maybeFirstRow fromOnly $
     DB.query db "SELECT COUNT(1) FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
 
-getGroupExpiredData :: DB.Connection -> User -> GroupInfo -> UTCTime -> UTCTime -> IO [(ChatItemId, Maybe UTCTime, CIFileInfo)]
-getGroupExpiredData db User {userId} GroupInfo {groupId} expirationDate createdAtCutoff =
-  map toExpiredData
+getGroupExpiredFileInfo :: DB.Connection -> User -> GroupInfo -> UTCTime -> UTCTime -> IO [CIFileInfo]
+getGroupExpiredFileInfo db User {userId} GroupInfo {groupId} expirationDate createdAtCutoff =
+  map toFileInfo
     <$> DB.query
       db
       [sql|
-        SELECT i.chat_item_id, i.delete_at, f.file_id, f.ci_file_status, f.file_path
+        SELECT f.file_id, f.ci_file_status, f.file_path
         FROM chat_items i
         JOIN files f ON f.chat_item_id = i.chat_item_id
         WHERE i.user_id = ? AND i.group_id = ? AND i.item_ts <= ? AND i.created_at <= ?
       |]
       (userId, groupId, expirationDate, createdAtCutoff)
-  where
-    toExpiredData :: ((ChatItemId, Maybe UTCTime) :. (Int64, Maybe ACIFileStatus, Maybe FilePath)) -> (ChatItemId, Maybe UTCTime, CIFileInfo)
-    toExpiredData ((itemId, deleteAt) :. fileInfoRow) = (itemId, deleteAt, toFileInfo fileInfoRow)
 
 deleteGroupExpiredCIs :: DB.Connection -> User -> GroupInfo -> UTCTime -> UTCTime -> IO ()
 deleteGroupExpiredCIs db User {userId} GroupInfo {groupId} expirationDate createdAtCutoff = do
