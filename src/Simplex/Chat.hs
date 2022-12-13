@@ -312,6 +312,7 @@ processChatCommand = \case
             Just ft@FileTransferMeta {fileInline = Just IFMSent} ->
               sendDirectFileInline ct ft sharedMsgId
             _ -> pure ()
+          -- TODO based on preference - save with deleteAt, maybe start timed deletion thread
           ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc) ciFile_ quotedItem_
           setActive $ ActiveC c
           pure . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
@@ -359,6 +360,7 @@ processChatCommand = \case
           (msgContainer, quotedItem_) <- prepareMsg fileInvitation_ membership
           msg@SndMessage {sharedMsgId} <- sendGroupMessage gInfo ms (XMsgNew msgContainer)
           mapM_ (sendGroupFileInline ms sharedMsgId) ft_
+          -- TODO based on preference - save with deleteAt, maybe start timed deletion thread
           ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndMsgContent mc) ciFile_ quotedItem_
           setActive $ ActiveG gName
           pure . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
@@ -485,6 +487,7 @@ processChatCommand = \case
     CTContactRequest -> pure $ chatCmdError "not supported"
     CTContactConnection -> pure $ chatCmdError "not supported"
   APIChatRead (ChatRef cType chatId) fromToIds -> case cType of
+    -- TODO based on preference - update deleteAt, maybe start timed deletion threads
     CTDirect -> withStore' (\db -> updateDirectChatItemsRead db chatId fromToIds) $> CRCmdOk
     CTGroup -> withStore' (\db -> updateGroupChatItemsRead db chatId fromToIds) $> CRCmdOk
     CTContactRequest -> pure $ chatCmdError "not supported"
