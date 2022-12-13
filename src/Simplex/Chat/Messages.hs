@@ -262,19 +262,27 @@ data CIMeta (d :: MsgDirection) = CIMeta
     localItemTs :: ZonedTime,
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
-    deleteAt :: Maybe UTCTime
+    timed :: Maybe CITimed
   }
   deriving (Show, Generic)
 
-mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Bool -> Bool -> TimeZone -> UTCTime -> ChatItemTs -> UTCTime -> UTCTime -> Maybe UTCTime -> CIMeta d
-mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemEdited tz currentTs itemTs createdAt updatedAt deleteAt =
+data CITimed = CITimed
+  { ttl :: Int, -- seconds
+    deleteAt :: UTCTime
+  }
+  deriving (Show, Generic)
+
+mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Bool -> Bool -> TimeZone -> UTCTime -> ChatItemTs -> UTCTime -> UTCTime -> Maybe CITimed -> CIMeta d
+mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemEdited tz currentTs itemTs createdAt updatedAt timed =
   let localItemTs = utcToZonedTime tz itemTs
       editable = case itemContent of
         CISndMsgContent _ -> diffUTCTime currentTs itemTs < nominalDay && not itemDeleted
         _ -> False
-   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, editable, localItemTs, createdAt, updatedAt, deleteAt}
+   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, editable, localItemTs, createdAt, updatedAt, timed}
 
 instance ToJSON (CIMeta d) where toEncoding = J.genericToEncoding J.defaultOptions
+
+instance ToJSON CITimed where toEncoding = J.genericToEncoding J.defaultOptions
 
 cleanupManagerInterval :: Int
 cleanupManagerInterval = 1800 * 1000000 -- 30 minutes

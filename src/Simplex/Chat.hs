@@ -311,8 +311,8 @@ processChatCommand = \case
             Just ft@FileTransferMeta {fileInline = Just IFMSent} ->
               sendDirectFileInline ct ft sharedMsgId
             _ -> pure ()
-          -- TODO based on preference - save with deleteAt, maybe start timed deletion thread
-          ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc) ciFile_ quotedItem_
+          -- TODO based on preference - save with CITimed, maybe start timed deletion thread
+          ci <- saveSndChatItemTimed user (CDDirectSnd ct) msg (CISndMsgContent mc) ciFile_ quotedItem_ Nothing
           setActive $ ActiveC c
           pure . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
       where
@@ -359,8 +359,8 @@ processChatCommand = \case
           (msgContainer, quotedItem_) <- prepareMsg fileInvitation_ membership
           msg@SndMessage {sharedMsgId} <- sendGroupMessage gInfo ms (XMsgNew msgContainer)
           mapM_ (sendGroupFileInline ms sharedMsgId) ft_
-          -- TODO based on preference - save with deleteAt, maybe start timed deletion thread
-          ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndMsgContent mc) ciFile_ quotedItem_
+          -- TODO based on preference - save with CITimed, maybe start timed deletion thread
+          ci <- saveSndChatItemTimed user (CDGroupSnd gInfo) msg (CISndMsgContent mc) ciFile_ quotedItem_ Nothing
           setActive $ ActiveG gName
           pure . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
       where
@@ -3204,12 +3204,15 @@ saveRcvMSG Connection {connId} connOrGroupId agentMsgMeta msgBody agentAckCmdId 
   withStore' $ \db -> createNewMessageAndRcvMsgDelivery db connOrGroupId newMsg sharedMsgId_ rcvMsgDelivery
 
 saveSndChatItem :: ChatMonad m => User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> Maybe (CIFile 'MDSnd) -> Maybe (CIQuote c) -> m (ChatItem c 'MDSnd)
-saveSndChatItem user cd msg@SndMessage {sharedMsgId} content ciFile quotedItem = do
+saveSndChatItem user cd msg content ciFile quotedItem =
+  saveSndChatItemTimed user cd msg content ciFile quotedItem Nothing
+
+saveSndChatItemTimed :: ChatMonad m => User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> Maybe (CIFile 'MDSnd) -> Maybe (CIQuote c) -> Maybe CITimed -> m (ChatItem c 'MDSnd)
+saveSndChatItemTimed user cd msg@SndMessage {sharedMsgId} content ciFile quotedItem timed = do
   createdAt <- liftIO getCurrentTime
-  ciId <- withStore' $ \db -> createNewSndChatItem db user cd msg content quotedItem createdAt
+  ciId <- withStore' $ \db -> createNewSndChatItem db user cd msg content quotedItem createdAt timed
   forM_ ciFile $ \CIFile {fileId} -> withStore' $ \db -> updateFileTransferChatItemId db fileId ciId
-  -- TODO save with deleteAt ts
-  liftIO $ mkChatItem cd ciId content ciFile quotedItem (Just sharedMsgId) createdAt createdAt Nothing
+  liftIO $ mkChatItem cd ciId content ciFile quotedItem (Just sharedMsgId) createdAt createdAt timed
 
 saveRcvChatItem :: ChatMonad m => User -> ChatDirection c 'MDRcv -> RcvMessage -> MsgMeta -> CIContent 'MDRcv -> Maybe (CIFile 'MDRcv) -> m (ChatItem c 'MDRcv)
 saveRcvChatItem user cd msg@RcvMessage {sharedMsgId_} = saveRcvChatItem' user cd msg sharedMsgId_
@@ -3221,12 +3224,12 @@ saveRcvChatItem' user cd msg sharedMsgId_ MsgMeta {broker = (_, brokerTs)} conte
   forM_ ciFile $ \CIFile {fileId} -> withStore' $ \db -> updateFileTransferChatItemId db fileId ciId
   liftIO $ mkChatItem cd ciId content ciFile quotedItem sharedMsgId_ brokerTs createdAt Nothing
 
-mkChatItem :: ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> ChatItemTs -> UTCTime -> Maybe UTCTime -> IO (ChatItem c d)
-mkChatItem cd ciId content file quotedItem sharedMsgId itemTs currentTs deleteAt = do
+mkChatItem :: ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> ChatItemTs -> UTCTime -> Maybe CITimed -> IO (ChatItem c d)
+mkChatItem cd ciId content file quotedItem sharedMsgId itemTs currentTs timed = do
   tz <- getCurrentTimeZone
   let itemText = ciContentToText content
       itemStatus = ciCreateStatus content
-      meta = mkCIMeta ciId content itemText itemStatus sharedMsgId False False tz currentTs itemTs currentTs currentTs deleteAt
+      meta = mkCIMeta ciId content itemText itemStatus sharedMsgId False False tz currentTs itemTs currentTs currentTs timed
   pure ChatItem {chatDir = toCIDirection cd, meta, content, formattedText = parseMaybeMarkdownList itemText, quotedItem, file}
 
 deleteDirectCI :: ChatMonad m => User -> Contact -> CChatItem 'CTDirect -> Bool -> Bool -> m ChatResponse

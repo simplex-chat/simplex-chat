@@ -68,7 +68,7 @@ library
       Simplex.Chat.Migrations.M20221209_verified_connection
       Simplex.Chat.Migrations.M20221210_idxs
       Simplex.Chat.Migrations.M20221211_group_description
-      Simplex.Chat.Migrations.M20221212_chat_items_delete_at
+      Simplex.Chat.Migrations.M20221212_chat_items_timed
       Simplex.Chat.Mobile
       Simplex.Chat.Options
       Simplex.Chat.ProfileGenerator
