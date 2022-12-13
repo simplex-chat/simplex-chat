@@ -12,6 +12,7 @@ import SimpleXChat
 struct SendMessageView: View {
     @Binding var composeState: ComposeState
     var sendMessage: () -> Void
+    var updateLiveMessage: (() async -> Void)? = nil
     var showVoiceMessageButton: Bool = true
     var voiceMessageAllowed: Bool = true
     var showEnableVoiceMessagesAlert: ChatInfo.ShowEnableVoiceMessagesAlert = .other
@@ -72,15 +73,20 @@ struct SendMessageView: View {
                        !composeState.editing,
                        (composeState.noPreview && vmrs == .noRecording)
                         || (vmrs == .recording && holdingVMR) {
-                        if voiceMessageAllowed {
-                            RecordVoiceMessageButton(
-                                startVoiceMessageRecording: startVoiceMessageRecording,
-                                finishVoiceMessageRecording: finishVoiceMessageRecording,
-                                holdingVMR: $holdingVMR,
-                                disabled: composeState.disabled
-                            )
-                        } else {
-                            voiceMessageNotAllowedButton()
+                        HStack {
+                            if voiceMessageAllowed {
+                                RecordVoiceMessageButton(
+                                    startVoiceMessageRecording: startVoiceMessageRecording,
+                                    finishVoiceMessageRecording: finishVoiceMessageRecording,
+                                    holdingVMR: $holdingVMR,
+                                    disabled: composeState.disabled
+                                )
+                            } else {
+                                voiceMessageNotAllowedButton()
+                            }
+                            if composeState.liveMessage == nil, let update = updateLiveMessage {
+                                startLiveMessageButton(update: update)
+                            }
                         }
                     } else if vmrs == .recording && !holdingVMR {
                         finishVoiceMessageRecordingButton()
@@ -98,7 +104,7 @@ struct SendMessageView: View {
     }
 
     private func sendMessageButton() -> some View {
-        Button(action: { sendMessage() }) {
+        Button(action: sendMessage) {
             Image(systemName: composeState.editing ? "checkmark.circle.fill" : "arrow.up.circle.fill")
                 .resizable()
                 .foregroundColor(.accentColor)
@@ -146,7 +152,7 @@ struct SendMessageView: View {
     }
 
     private func voiceMessageNotAllowedButton() -> some View {
-        Button(action: {
+        Button {
             switch showEnableVoiceMessagesAlert {
             case .userEnable:
                 AlertManager.shared.showAlert(Alert(
@@ -173,13 +179,41 @@ struct SendMessageView: View {
                     message: "Please check yours and your contact preferences."
                 )
             }
-        }) {
+        } label: {
             Image(systemName: "mic")
                 .foregroundColor(.secondary)
         }
         .disabled(composeState.disabled)
         .frame(width: 29, height: 29)
         .padding([.bottom, .trailing], 4)
+    }
+
+    private func startLiveMessageButton(update: @escaping () async -> Void) -> some View {
+        Button {
+            switch composeState.preview {
+            case .noPreview: runLiveMessage(update)
+            default: ()
+            }
+        } label: {
+            Image(systemName: "bolt.fill")
+                .foregroundColor(.accentColor)
+        }
+        .frame(width: 29, height: 29)
+        .padding([.bottom, .trailing], 4)
+    }
+
+    private func runLiveMessage(_ update: @escaping () async -> Void) {
+        Task {
+            while true {
+                await update()
+                _ = try? await Task.sleep(nanoseconds: 3000_000000)
+                if composeState.liveMessage == nil {
+                    break
+                } else {
+                    await update()
+                }
+            }
+        }
     }
 
     private func finishVoiceMessageRecordingButton() -> some View {

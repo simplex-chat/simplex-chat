@@ -29,8 +29,14 @@ enum VoiceMessageRecordingState {
     case finished
 }
 
+struct LiveMessage {
+    var chatItem: ChatItem?
+    var message: String
+}
+
 struct ComposeState {
     var message: String
+    var liveMessage: LiveMessage? = nil
     var preview: ComposePreview
     var contextItem: ComposeContextItem
     var voiceMessageRecordingState: VoiceMessageRecordingState
@@ -40,11 +46,13 @@ struct ComposeState {
 
     init(
         message: String = "",
+        liveMessage: LiveMessage? = nil,
         preview: ComposePreview = .noPreview,
         contextItem: ComposeContextItem = .noContextItem,
         voiceMessageRecordingState: VoiceMessageRecordingState = .noRecording
     ) {
         self.message = message
+        self.liveMessage = liveMessage
         self.preview = preview
         self.contextItem = contextItem
         self.voiceMessageRecordingState = voiceMessageRecordingState
@@ -64,12 +72,14 @@ struct ComposeState {
 
     func copy(
         message: String? = nil,
+        liveMessage: LiveMessage? = nil,
         preview: ComposePreview? = nil,
         contextItem: ComposeContextItem? = nil,
         voiceMessageRecordingState: VoiceMessageRecordingState? = nil
     ) -> ComposeState {
         ComposeState(
             message: message ?? self.message,
+            liveMessage: liveMessage ?? self.liveMessage,
             preview: preview ?? self.preview,
             contextItem: contextItem ?? self.contextItem,
             voiceMessageRecordingState: voiceMessageRecordingState ?? self.voiceMessageRecordingState
@@ -194,14 +204,69 @@ struct ComposeView: View {
                 .frame(width: 25, height: 25)
                 .padding(.bottom, 12)
                 .padding(.leading, 12)
+                let cInfo = chat.chatInfo
                 SendMessageView(
                     composeState: $composeState,
                     sendMessage: {
                         sendMessage()
                         resetLinkPreview()
                     },
-                    voiceMessageAllowed: chat.chatInfo.voiceMessageAllowed,
-                    showEnableVoiceMessagesAlert: chat.chatInfo.showEnableVoiceMessagesAlert,
+                    updateLiveMessage: {
+                        // TODO only send full words
+                        let msg = composeState.message
+                        if var liveMessage = composeState.liveMessage {
+                            if liveMessage.message != msg {
+                                if let ci = liveMessage.chatItem {
+                                    if let ci1 = try? await apiUpdateChatItem(type: cInfo.chatType, id: cInfo.apiId, itemId: ci.id, msg: .text(msg)) {
+                                        await MainActor.run { _ = chatModel.upsertChatItem(cInfo, ci1) }
+                                    }
+                                } else if let ci = await send() {
+                                    liveMessage.chatItem = ci
+                                    await MainActor.run { chatModel.addChatItem(cInfo, ci) }
+                                }
+                                liveMessage.message = msg
+                                await update(liveMessage)
+                            }
+                        } else {
+                            var liveMessage = LiveMessage(chatItem: nil, message: msg)
+                            if msg != "", let ci = await send() {
+                                liveMessage.chatItem = ci
+                                await MainActor.run { chatModel.addChatItem(cInfo, ci) }
+                            }
+                            await update(liveMessage)
+                        }
+
+                        func send() async -> ChatItem? {
+                            await apiSendMessage(type: cInfo.chatType, id: cInfo.apiId, file: nil, quotedItemId: nil, msg: .text(msg))
+                        }
+
+                        func update(_ liveMessage: LiveMessage) async {
+                            await MainActor.run { composeState = composeState.copy(liveMessage: liveMessage) }
+                        }
+//                        if msg == "" && composeState.liveMessage == nil {
+//                            composeState = composeState.copy(liveMessage: LiveMessage(chatItem: nil, message: ""))
+//                        } else {
+//                            if var liveMessage = composeState.liveMessage {
+//                                if liveMessage.message != msg,
+//                                   let ci = try? await apiUpdateChatItem(type: cInfo.chatType, id: cInfo.apiId, itemId: liveMessage.chatItem.id, msg: .text(msg)) {
+//                                    await MainActor.run {
+//                                        _ = chatModel.upsertChatItem(cInfo, ci)
+//                                        if composeState.liveMessage != nil {
+//                                            liveMessage.message = msg
+//                                            composeState = composeState.copy(liveMessage: liveMessage)
+//                                        }
+//                                    }
+//                                }
+//                            } else if let ci = await apiSendMessage(type: cInfo.chatType, id: cInfo.apiId, file: nil, quotedItemId: nil, msg: .text(msg)) {
+//                                await MainActor.run {
+//                                    chatModel.addChatItem(cInfo, ci)
+//                                    composeState = composeState.copy(liveMessage: LiveMessage(chatItem: ci, message: msg))
+//                                }
+//                            }
+//                        }
+                    },
+                    voiceMessageAllowed: cInfo.voiceMessageAllowed,
+                    showEnableVoiceMessagesAlert: cInfo.showEnableVoiceMessagesAlert,
                     startVoiceMessageRecording: {
                         Task {
                             await startVoiceMessageRecording()
@@ -382,34 +447,11 @@ struct ComposeView: View {
         logger.debug("ChatView sendMessage")
         Task {
             logger.debug("ChatView sendMessage: in Task")
-            switch composeState.contextItem {
-            case let .editingItem(chatItem: ei):
-                if let oldMsgContent = ei.content.msgContent {
-                    do {
-                        await sending()
-                        let mc = updateMsgContent(oldMsgContent)
-                        let chatItem = try await apiUpdateChatItem(
-                            type: chat.chatInfo.chatType,
-                            id: chat.chatInfo.apiId,
-                            itemId: ei.id,
-                            msg: mc
-                        )
-                        await MainActor.run {
-                            clearState()
-                            let _ = self.chatModel.upsertChatItem(self.chat.chatInfo, chatItem)
-                        }
-                    } catch {
-                        logger.error("ChatView.sendMessage error: \(error.localizedDescription)")
-                        await MainActor.run {
-                            composeState.disabled = false
-                            composeState.inProgress = false
-                        }
-                        AlertManager.shared.showAlertMsg(title: "Error updating message", message: "Error: \(responseError(error))")
-                    }
-                } else {
-                    await MainActor.run { clearState() }
-                }
-            default:
+            if case let .editingItem(ci) = composeState.contextItem {
+                await updateMessage(ci)
+            } else if let ci = composeState.liveMessage?.chatItem {
+                await updateMessage(ci)
+            } else {
                 await sending()
                 var quoted: Int64? = nil
                 if case let .quotedItem(chatItem: quotedItem) = composeState.contextItem {
@@ -453,6 +495,34 @@ struct ComposeView: View {
             await MainActor.run { composeState.disabled = true }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 if composeState.disabled { composeState.inProgress = true }
+            }
+        }
+
+        func updateMessage(_ ei: ChatItem) async {
+            if let oldMsgContent = ei.content.msgContent {
+                do {
+                    await sending()
+                    let mc = updateMsgContent(oldMsgContent)
+                    let chatItem = try await apiUpdateChatItem(
+                        type: chat.chatInfo.chatType,
+                        id: chat.chatInfo.apiId,
+                        itemId: ei.id,
+                        msg: mc
+                    )
+                    await MainActor.run {
+                        clearState()
+                        let _ = self.chatModel.upsertChatItem(self.chat.chatInfo, chatItem)
+                    }
+                } catch {
+                    logger.error("ChatView.sendMessage error: \(error.localizedDescription)")
+                    await MainActor.run {
+                        composeState.disabled = false
+                        composeState.inProgress = false
+                    }
+                    AlertManager.shared.showAlertMsg(title: "Error updating message", message: "Error: \(responseError(error))")
+                }
+            } else {
+                await MainActor.run { clearState() }
             }
         }
 

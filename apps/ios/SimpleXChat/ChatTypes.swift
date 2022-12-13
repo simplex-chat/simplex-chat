@@ -250,6 +250,7 @@ public protocol Feature {
 }
 
 public enum ChatFeature: String, Decodable, Feature {
+    case timedMessages
     case fullDelete
     case voice
 
@@ -259,6 +260,7 @@ public enum ChatFeature: String, Decodable, Feature {
 
     public var text: String {
         switch self {
+        case .timedMessages: return NSLocalizedString("Disappearing messages", comment: "chat feature")
         case .fullDelete: return NSLocalizedString("Delete for everyone", comment: "chat feature")
         case .voice: return NSLocalizedString("Voice messages", comment: "chat feature")
         }
@@ -266,6 +268,7 @@ public enum ChatFeature: String, Decodable, Feature {
 
     public var icon: String {
         switch self {
+        case .timedMessages: return "timer"
         case .fullDelete: return "trash.slash"
         case .voice: return "mic"
         }
@@ -273,6 +276,7 @@ public enum ChatFeature: String, Decodable, Feature {
 
     public var iconFilled: String {
         switch self {
+        case .timedMessages: return "timer"
         case .fullDelete: return "trash.slash.fill"
         case .voice: return "mic.fill"
         }
@@ -280,6 +284,12 @@ public enum ChatFeature: String, Decodable, Feature {
 
     public func allowDescription(_ allowed: FeatureAllowed) -> LocalizedStringKey {
         switch self {
+        case .timedMessages:
+            switch allowed {
+            case .always: return "Allow your contacts to send disappearing messages."
+            case .yes: return "Allow disappearing messages only if your contact allows it to you."
+            case .no: return "Prohibit sending disappearing messages."
+            }
         case .fullDelete:
             switch allowed {
             case .always: return "Allow your contacts to irreversibly delete sent messages."
@@ -297,6 +307,14 @@ public enum ChatFeature: String, Decodable, Feature {
 
     public func enabledDescription(_ enabled: FeatureEnabled) -> LocalizedStringKey {
         switch self {
+        case .timedMessages:
+            return enabled.forUser && enabled.forContact
+                    ? "Both you and your contact can send disappearing messages."
+                    : enabled.forUser
+                    ? "Only you can send disappearing messages."
+                    : enabled.forContact
+                    ? "Only your contact can send disappearing messages."
+                    : "Disappearing messages are prohibited in this chat."
         case .fullDelete:
             return enabled.forUser && enabled.forContact
                     ? "Both you and your contact can irreversibly delete sent messages."
