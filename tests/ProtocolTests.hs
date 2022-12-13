@@ -80,10 +80,10 @@ s #==# msg = do
   s ==# msg
 
 testChatPreferences :: Maybe Preferences
-testChatPreferences = Just Preferences {voice = Just Preference {allow = FAYes}, fullDelete = Nothing}
+testChatPreferences = Just Preferences {voice = Just Preference {allow = FAYes, intValue = Nothing}, fullDelete = Nothing}
 
 testGroupPreferences :: Maybe GroupPreferences
-testGroupPreferences = Just GroupPreferences {directMessages = Nothing, voice = Just GroupPreference {enable = FEOn}, fullDelete = Nothing}
+testGroupPreferences = Just GroupPreferences {directMessages = Nothing, voice = Just GroupPreference {enable = FEOn, intValue = Nothing}, fullDelete = Nothing}
 
 testProfile :: Profile
 testProfile = Profile {displayName = "alice", fullName = "Alice", image = Just (ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="), preferences = testChatPreferences}
