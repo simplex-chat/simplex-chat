@@ -291,7 +291,7 @@ processChatCommand = \case
       ct@Contact {localDisplayName = c, contactUsed} <- withStore $ \db -> getContact db user chatId
       assertDirectAllowed user MDSnd ct XMsgNew_
       unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
-      if isVoice mc && not (featureAllowed CFVoice forUser ct)
+      if isVoice mc && not (featureAllowed SCFVoice forUser ct)
         then pure $ chatCmdError $ "feature not allowed " <> T.unpack (chatFeatureToText CFVoice)
         else do
           (fileInvitation_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer ct
@@ -454,7 +454,7 @@ processChatCommand = \case
         (CIDMBroadcast, SMDSnd, Just itemSharedMId) -> do
           (SndMessage {msgId}, _) <- sendDirectContactMessage ct (XMsgDel itemSharedMId)
           setActive $ ActiveC c
-          if featureAllowed CFFullDelete forUser ct
+          if featureAllowed SCFFullDelete forUser ct
             then deleteDirectCI user ct ci True
             else markDirectCIDeleted user ct ci msgId True
         (CIDMBroadcast, _, _) -> throwChatError CEInvalidChatItemDelete
@@ -1113,11 +1113,13 @@ processChatCommand = \case
   UpdateProfileImage image -> withUser $ \user@User {profile} -> do
     let p = (fromLocalProfile profile :: Profile) {image}
     updateProfile user p
-  SetUserFeature f allowed -> withUser $ \user@User {profile} -> do
+  SetUserFeature cf allowed -> withUser $ \user@User {profile} -> do
+    ACF f <- pure $ aChatFeature cf
     let p = (fromLocalProfile profile :: Profile) {preferences = Just . setPreference f (Just allowed) $ preferences' user}
     updateProfile user p
-  SetContactFeature f cName allowed_ -> withUser $ \user -> do
+  SetContactFeature cf cName allowed_ -> withUser $ \user -> do
     ct@Contact {userPreferences} <- withStore $ \db -> getContactByName db user cName
+    ACF f <- pure $ aChatFeature cf
     let prefs' = setPreference f allowed_ $ Just userPreferences
     updateContactPrefs user ct prefs'
   SetGroupFeature f gName enabled ->
@@ -2303,7 +2305,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
       unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       let ExtMsgContent content fileInvitation_ = mcExtMsgContent mc
-      if isVoice content && not (featureAllowed CFVoice forContact ct)
+      if isVoice content && not (featureAllowed SCFVoice forContact ct)
         then do
           void $ newChatItem (CIRcvChatFeatureRejected CFVoice) Nothing
           setActive $ ActiveC c
@@ -2364,7 +2366,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
           ci@(CChatItem msgDir _) <- withStore $ \db -> getDirectChatItemBySharedMsgId db userId contactId sharedMsgId
           case msgDir of
             SMDRcv ->
-              if featureAllowed CFFullDelete forContact ct
+              if featureAllowed SCFFullDelete forContact ct
                 then deleteDirectCI user ct ci False >>= toView
                 else markDirectCIDeleted user ct ci msgId False >>= toView
             SMDSnd -> messageError "x.msg.del: contact attempted invalid message delete"
@@ -2621,9 +2623,9 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
 
     createFeatureEnabledItems :: Contact -> m ()
     createFeatureEnabledItems ct@Contact {mergedPreferences} =
-      forM_ allChatFeatures $ \f -> do
+      forM_ allChatFeatures $ \(ACF f) -> do
         let ContactUserPreference {enabled} = getContactUserPreference f mergedPreferences
-        createInternalChatItem user (CDDirectRcv ct) (CIRcvChatFeature f enabled) Nothing
+        createInternalChatItem user (CDDirectRcv ct) (CIRcvChatFeature (chatFeature f) enabled) Nothing
 
     createGroupFeatureItems :: GroupInfo -> GroupMember -> m ()
     createGroupFeatureItems g@GroupInfo {groupProfile} m = do
@@ -3244,11 +3246,11 @@ userProfileToSend user@User {profile = p} incognitoProfile ct =
 
 createFeatureChangedItems :: (MsgDirectionI d, ChatMonad m) => User -> Contact -> Contact -> (Contact -> ChatDirection 'CTDirect d) -> (ChatFeature -> PrefEnabled -> CIContent d) -> m ()
 createFeatureChangedItems user Contact {mergedPreferences = cups} ct'@Contact {mergedPreferences = cups'} chatDir ciContent =
-  forM_ allChatFeatures $ \f -> do
+  forM_ allChatFeatures $ \(ACF f) -> do
     let ContactUserPreference {enabled} = getContactUserPreference f cups
         ContactUserPreference {enabled = enabled'} = getContactUserPreference f cups'
     unless (enabled == enabled') $
-      createInternalChatItem user (chatDir ct') (ciContent f enabled') Nothing
+      createInternalChatItem user (chatDir ct') (ciContent (chatFeature f) enabled') Nothing
 
 createGroupFeatureChangedItems :: (MsgDirectionI d, ChatMonad m) => User -> ChatDirection 'CTGroup d -> (GroupFeature -> GroupPreference -> CIContent d) -> GroupProfile -> GroupProfile -> m ()
 createGroupFeatureChangedItems user cd ciContent p p' =
