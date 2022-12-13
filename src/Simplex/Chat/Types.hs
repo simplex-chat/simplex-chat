@@ -483,9 +483,9 @@ toChatPrefs FullPreferences {fullDelete, voice} =
 defaultChatPrefs :: FullPreferences
 defaultChatPrefs =
   FullPreferences
-    { fullDelete = Preference {allow = FANo, intValue = Nothing},
+    { fullDelete = Preference {allow = FANo},
       -- receipts = Preference {allow = FANo},
-      voice = Preference {allow = FAYes, intValue = Nothing}
+      voice = Preference {allow = FAYes}
     }
 
 emptyChatPrefs :: Preferences
@@ -494,37 +494,29 @@ emptyChatPrefs = Preferences Nothing Nothing
 defaultGroupPrefs :: FullGroupPreferences
 defaultGroupPrefs =
   FullGroupPreferences
-    { directMessages = GroupPreference {enable = FEOff, intValue = Nothing},
-      fullDelete = GroupPreference {enable = FEOff, intValue = Nothing},
+    { directMessages = GroupPreference {enable = FEOff},
+      fullDelete = GroupPreference {enable = FEOff},
       -- receipts = GroupPreference {enable = FEOff},
-      voice = GroupPreference {enable = FEOn, intValue = Nothing}
+      voice = GroupPreference {enable = FEOn}
     }
 
 emptyGroupPrefs :: GroupPreferences
 emptyGroupPrefs = GroupPreferences Nothing Nothing Nothing
 
 data Preference = Preference
-  { allow :: FeatureAllowed,
-    intValue :: Maybe Int
-  }
+  {allow :: FeatureAllowed}
   deriving (Eq, Show, Generic, FromJSON)
 
-instance ToJSON Preference where
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+instance ToJSON Preference where toEncoding = J.genericToEncoding J.defaultOptions
 
 data GroupPreference = GroupPreference
-  { enable :: GroupFeatureEnabled,
-    intValue :: Maybe Int
-  }
+  {enable :: GroupFeatureEnabled}
   deriving (Eq, Show, Generic, FromJSON)
 
 groupPrefToText :: GroupPreference -> Text
 groupPrefToText GroupPreference {enable} = safeDecodeUtf8 $ strEncode enable
 
-instance ToJSON GroupPreference where
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+instance ToJSON GroupPreference where toEncoding = J.genericToEncoding J.defaultOptions
 
 data FeatureAllowed
   = FAAlways -- allow unconditionally
