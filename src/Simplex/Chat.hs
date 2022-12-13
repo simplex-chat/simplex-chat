@@ -73,9 +73,10 @@ import Simplex.Messaging.Util
 import System.Exit (exitFailure, exitSuccess)
 import System.FilePath (combine, splitExtensions, takeFileName)
 import System.IO (Handle, IOMode (..), SeekMode (..), hFlush, openFile, stdout)
+import System.Mem.Weak (deRefWeak)
 import Text.Read (readMaybe)
 import UnliftIO.Async
-import UnliftIO.Concurrent (forkIO, threadDelay)
+import UnliftIO.Concurrent (forkFinally, forkIO, killThread, mkWeakThreadId, threadDelay)
 import UnliftIO.Directory
 import qualified UnliftIO.Exception as E
 import UnliftIO.IO (hClose, hSeek, hTell)
@@ -155,7 +156,9 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   chatStoreChanged <- newTVarIO False
   expireCIsAsync <- newTVarIO Nothing
   expireCIs <- newTVarIO False
-  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, incognitoMode, filesFolder, expireCIsAsync, expireCIs}
+  cleanupManagerAsync <- newTVarIO Nothing
+  timedItemThreads <- atomically TM.empty
+  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, incognitoMode, filesFolder, expireCIsAsync, expireCIs, cleanupManagerAsync, timedItemThreads}
   where
     configServers :: InitialAgentServers
     configServers =
@@ -189,8 +192,16 @@ startChatController user subConns enableExpireCIs = do
           then Just <$> async (void . runExceptT $ subscribeUserConnections Agent.subscribeConnections user)
           else pure Nothing
       atomically . writeTVar s $ Just (a1, a2)
+      startCleanupManager
       when enableExpireCIs startExpireCIs
       pure a1
+    startCleanupManager = do
+      cleanupAsync <- asks cleanupManagerAsync
+      readTVarIO cleanupAsync >>= \case
+        Nothing -> do
+          a <- Just <$> async (void . runExceptT $ cleanupManager user)
+          atomically $ writeTVar cleanupAsync a
+        _ -> pure ()
     startExpireCIs = do
       expireAsync <- asks expireCIsAsync
       readTVarIO expireAsync >>= \case
@@ -448,10 +459,10 @@ processChatCommand = \case
   APIDeleteChatItem (ChatRef cType chatId) itemId mode -> withUser $ \user@User {userId} -> withChatLock "deleteChatItem" $ case cType of
     CTDirect -> do
       (ct@Contact {localDisplayName = c}, ci@(CChatItem msgDir ChatItem {meta = CIMeta {itemSharedMsgId}})) <- withStore $ \db -> (,) <$> getContact db user chatId <*> getDirectChatItem db userId chatId itemId
-      assertDirectAllowed user MDSnd ct XMsgDel_
       case (mode, msgDir, itemSharedMsgId) of
         (CIDMInternal, _, _) -> deleteDirectCI user ct ci True
         (CIDMBroadcast, SMDSnd, Just itemSharedMId) -> do
+          assertDirectAllowed user MDSnd ct XMsgDel_
           (SndMessage {msgId}, _) <- sendDirectContactMessage ct (XMsgDel itemSharedMId)
           setActive $ ActiveC c
           if featureAllowed CFFullDelete forUser ct
@@ -1649,6 +1660,55 @@ subscribeUserConnections agentBatchSubscribe user = do
               Just _ -> Nothing
               _ -> Just . ChatError . CEAgentNoSubResult $ AgentConnId connId
 
+cleanupManager :: forall m. ChatMonad m => User -> m ()
+cleanupManager user = do
+  forever $ do
+    flip catchError (toView . CRChatError) $ do
+      agentStarted <- asks agentAsync
+      atomically $ readTVar agentStarted >>= \a -> unless (isJust a) retry
+      cleanupTimedItems
+    threadDelay cleanupManagerInterval
+  where
+    cleanupTimedItems = do
+      timedItems <- withStore' $ \db -> getTimedItems db user
+      forM_ timedItems $ uncurry (startTimedItemThread user)
+
+startTimedItemThread :: ChatMonad m => User -> (ChatRef, ChatItemId) -> UTCTime -> m ()
+startTimedItemThread user itemRef deleteAt = do
+  itemThreads <- asks timedItemThreads
+  unlessM (timedItemThreadExists itemRef) $ do
+    tId <- mkWeakThreadId =<< deleteTimedItem user itemRef deleteAt `forkFinally` const (atomically $ TM.delete itemRef itemThreads)
+    atomically $ TM.insert itemRef tId itemThreads
+
+timedItemThreadExists :: ChatMonad m => (ChatRef, ChatItemId) -> m Bool
+timedItemThreadExists itemRef = do
+  itemThreads <- asks timedItemThreads
+  atomically $ TM.member itemRef itemThreads
+
+deleteTimedItem :: ChatMonad m => User -> (ChatRef, ChatItemId) -> UTCTime -> m ()
+deleteTimedItem user@User {userId} (ChatRef cType chatId, itemId) deleteAt = do
+  ts <- liftIO getCurrentTime
+  threadDelay $ diffInMicros deleteAt ts
+  case cType of
+    CTDirect -> do
+      (ct, ci@(CChatItem msgDir deletedItem@ChatItem {file})) <- withStore $ \db -> (,) <$> getContact db user chatId <*> getDirectChatItem db userId chatId itemId
+      deleteCIFile user file
+      withStore' $ \db -> deleteDirectChatItem db user ct ci
+      toView $ CRChatItemDeleted (AChatItem SCTDirect msgDir (DirectChat ct) deletedItem) Nothing True True
+    CTGroup -> do
+      (gInfo, ci@(CChatItem msgDir deletedItem@ChatItem {file})) <- withStore $ \db -> (,) <$> getGroupInfo db user chatId <*> getGroupChatItem db user chatId itemId
+      deleteCIFile user file
+      withStore' $ \db -> deleteGroupChatItem db user gInfo ci
+      toView $ CRChatItemDeleted (AChatItem SCTGroup msgDir (GroupChat gInfo) deletedItem) Nothing True True
+    _ -> toView . CRChatError . ChatError $ CEInternalError "bad deleteTimedItem cType"
+
+cancelTimedItemThread :: ChatMonad m => (ChatRef, ChatItemId) -> m ()
+cancelTimedItemThread itemRef = do
+  itemThreads <- asks timedItemThreads
+  itemThread_ <- atomically (TM.lookup itemRef itemThreads)
+  forM_ itemThread_ $ \itemThread -> liftIO $ deRefWeak itemThread >>= mapM_ killThread
+  atomically $ TM.delete itemRef itemThreads
+
 expireChatItems :: forall m. ChatMonad m => User -> Int64 -> Bool -> m ()
 expireChatItems user ttl sync = do
   currentTs <- liftIO getCurrentTime
@@ -1669,10 +1729,15 @@ expireChatItems user ttl sync = do
     continue :: TVar Bool -> m () -> m ()
     continue expire = if sync then id else \a -> whenM (readTVarIO expire) $ threadDelay 100000 >> a
     processContact :: UTCTime -> Contact -> m ()
-    processContact expirationDate ct = do
-      filesInfo <- withStore' $ \db -> getContactExpiredFileInfo db user ct expirationDate
+    processContact expirationDate ct@Contact {contactId} = do
+      expiredData <- withStore' $ \db -> getContactExpiredData db user ct expirationDate
       maxItemTs_ <- withStore' $ \db -> getContactMaxItemTs db user ct
-      forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
+      forM_ expiredData $ \(itemId, deleteAt_, fileInfo) -> do
+        mayBeTimed <- case deleteAt_ of
+          Just deleteAt -> liftIO $ mayBeTimedForDeletion deleteAt
+          Nothing -> pure False
+        when mayBeTimed $ cancelTimedItemThread (ChatRef CTDirect contactId, itemId)
+        deleteFile user fileInfo
       withStore' $ \db -> deleteContactExpiredCIs db user ct expirationDate
       withStore' $ \db -> do
         ciCount_ <- getContactCICount db user ct
@@ -1680,10 +1745,15 @@ expireChatItems user ttl sync = do
           (Just ts, Just count) -> when (count == 0) $ updateContactTs db user ct ts
           _ -> pure ()
     processGroup :: UTCTime -> UTCTime -> GroupInfo -> m ()
-    processGroup expirationDate createdAtCutoff gInfo = do
-      filesInfo <- withStore' $ \db -> getGroupExpiredFileInfo db user gInfo expirationDate createdAtCutoff
+    processGroup expirationDate createdAtCutoff gInfo@GroupInfo {groupId} = do
+      expiredData <- withStore' $ \db -> getGroupExpiredData db user gInfo expirationDate createdAtCutoff
       maxItemTs_ <- withStore' $ \db -> getGroupMaxItemTs db user gInfo
-      forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
+      forM_ expiredData $ \(itemId, deleteAt_, fileInfo) -> do
+        mayBeTimed <- case deleteAt_ of
+          Just deleteAt -> liftIO $ mayBeTimedForDeletion deleteAt
+          Nothing -> pure False
+        when mayBeTimed $ cancelTimedItemThread (ChatRef CTGroup groupId, itemId)
+        deleteFile user fileInfo
       withStore' $ \db -> deleteGroupExpiredCIs db user gInfo expirationDate createdAtCutoff
       membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db user gInfo
       forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
@@ -3138,7 +3208,8 @@ saveSndChatItem user cd msg@SndMessage {sharedMsgId} content ciFile quotedItem =
   createdAt <- liftIO getCurrentTime
   ciId <- withStore' $ \db -> createNewSndChatItem db user cd msg content quotedItem createdAt
   forM_ ciFile $ \CIFile {fileId} -> withStore' $ \db -> updateFileTransferChatItemId db fileId ciId
-  liftIO $ mkChatItem cd ciId content ciFile quotedItem (Just sharedMsgId) createdAt createdAt
+  -- TODO save with deleteAt ts
+  liftIO $ mkChatItem cd ciId content ciFile quotedItem (Just sharedMsgId) createdAt createdAt Nothing
 
 saveRcvChatItem :: ChatMonad m => User -> ChatDirection c 'MDRcv -> RcvMessage -> MsgMeta -> CIContent 'MDRcv -> Maybe (CIFile 'MDRcv) -> m (ChatItem c 'MDRcv)
 saveRcvChatItem user cd msg@RcvMessage {sharedMsgId_} = saveRcvChatItem' user cd msg sharedMsgId_
@@ -3148,27 +3219,31 @@ saveRcvChatItem' user cd msg sharedMsgId_ MsgMeta {broker = (_, brokerTs)} conte
   createdAt <- liftIO getCurrentTime
   (ciId, quotedItem) <- withStore' $ \db -> createNewRcvChatItem db user cd msg sharedMsgId_ content brokerTs createdAt
   forM_ ciFile $ \CIFile {fileId} -> withStore' $ \db -> updateFileTransferChatItemId db fileId ciId
-  liftIO $ mkChatItem cd ciId content ciFile quotedItem sharedMsgId_ brokerTs createdAt
+  liftIO $ mkChatItem cd ciId content ciFile quotedItem sharedMsgId_ brokerTs createdAt Nothing
 
-mkChatItem :: ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> ChatItemTs -> UTCTime -> IO (ChatItem c d)
-mkChatItem cd ciId content file quotedItem sharedMsgId itemTs currentTs = do
+mkChatItem :: ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> ChatItemTs -> UTCTime -> Maybe UTCTime -> IO (ChatItem c d)
+mkChatItem cd ciId content file quotedItem sharedMsgId itemTs currentTs deleteAt = do
   tz <- getCurrentTimeZone
   let itemText = ciContentToText content
       itemStatus = ciCreateStatus content
-      meta = mkCIMeta ciId content itemText itemStatus sharedMsgId False False tz currentTs itemTs currentTs currentTs
+      meta = mkCIMeta ciId content itemText itemStatus sharedMsgId False False tz currentTs itemTs currentTs currentTs deleteAt
   pure ChatItem {chatDir = toCIDirection cd, meta, content, formattedText = parseMaybeMarkdownList itemText, quotedItem, file}
 
 deleteDirectCI :: ChatMonad m => User -> Contact -> CChatItem 'CTDirect -> Bool -> m ChatResponse
-deleteDirectCI user ct ci@(CChatItem msgDir deletedItem@ChatItem {file}) byUser = do
+deleteDirectCI user ct@Contact {contactId} ci@(CChatItem msgDir deletedItem@ChatItem {file}) byUser = do
   deleteCIFile user file
   withStore' $ \db -> deleteDirectChatItem db user ct ci
-  pure $ CRChatItemDeleted (AChatItem SCTDirect msgDir (DirectChat ct) deletedItem) Nothing byUser
+  mayBeTimed <- liftIO $ itemMayBeTimedForDeletion deletedItem
+  when mayBeTimed $ cancelTimedItemThread (ChatRef CTDirect contactId, chatItemId' deletedItem)
+  pure $ CRChatItemDeleted (AChatItem SCTDirect msgDir (DirectChat ct) deletedItem) Nothing byUser False
 
 deleteGroupCI :: ChatMonad m => User -> GroupInfo -> CChatItem 'CTGroup -> Bool -> m ChatResponse
-deleteGroupCI user gInfo ci@(CChatItem msgDir deletedItem@ChatItem {file}) byUser = do
+deleteGroupCI user gInfo@GroupInfo {groupId} ci@(CChatItem msgDir deletedItem@ChatItem {file}) byUser = do
   deleteCIFile user file
   withStore' $ \db -> deleteGroupChatItem db user gInfo ci
-  pure $ CRChatItemDeleted (AChatItem SCTGroup msgDir (GroupChat gInfo) deletedItem) Nothing byUser
+  mayBeTimed <- liftIO $ itemMayBeTimedForDeletion deletedItem
+  when mayBeTimed $ cancelTimedItemThread (ChatRef CTGroup groupId, chatItemId' deletedItem)
+  pure $ CRChatItemDeleted (AChatItem SCTGroup msgDir (GroupChat gInfo) deletedItem) Nothing byUser False
 
 deleteCIFile :: (ChatMonad m, MsgDirectionI d) => User -> Maybe (CIFile d) -> m ()
 deleteCIFile user file =
@@ -3179,12 +3254,12 @@ deleteCIFile user file =
 markDirectCIDeleted :: ChatMonad m => User -> Contact -> CChatItem 'CTDirect -> MessageId -> Bool -> m ChatResponse
 markDirectCIDeleted user ct ci@(CChatItem msgDir deletedItem) msgId byUser = do
   toCi <- withStore' $ \db -> markDirectChatItemDeleted db user ct ci msgId
-  pure $ CRChatItemDeleted (AChatItem SCTDirect msgDir (DirectChat ct) deletedItem) (Just toCi) byUser
+  pure $ CRChatItemDeleted (AChatItem SCTDirect msgDir (DirectChat ct) deletedItem) (Just toCi) byUser False
 
 markGroupCIDeleted :: ChatMonad m => User -> GroupInfo -> CChatItem 'CTGroup -> MessageId -> Bool -> m ChatResponse
 markGroupCIDeleted user gInfo ci@(CChatItem msgDir deletedItem) msgId byUser = do
   toCi <- withStore' $ \db -> markGroupChatItemDeleted db user gInfo ci msgId
-  pure $ CRChatItemDeleted (AChatItem SCTGroup msgDir (GroupChat gInfo) deletedItem) (Just toCi) byUser
+  pure $ CRChatItemDeleted (AChatItem SCTGroup msgDir (GroupChat gInfo) deletedItem) (Just toCi) byUser False
 
 createAgentConnectionAsync :: forall m c. (ChatMonad m, ConnectionModeI c) => User -> CommandFunction -> Bool -> SConnectionMode c -> m (CommandId, ConnId)
 createAgentConnectionAsync user cmdFunction enableNtfs cMode = do
@@ -3249,7 +3324,7 @@ createInternalChatItem user cd content itemTs_ = do
   createdAt <- liftIO getCurrentTime
   let itemTs = fromMaybe createdAt itemTs_
   ciId <- withStore' $ \db -> createNewChatItemNoMsg db user cd content itemTs createdAt
-  ci <- liftIO $ mkChatItem cd ciId content Nothing Nothing Nothing itemTs createdAt
+  ci <- liftIO $ mkChatItem cd ciId content Nothing Nothing Nothing itemTs createdAt Nothing
   toView $ CRNewChatItem $ AChatItem (chatTypeI @c) (msgDirection @d) (toChatInfo cd) ci
 
 getCreateActiveUser :: SQLiteStore -> IO User

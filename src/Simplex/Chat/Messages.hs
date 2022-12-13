@@ -18,11 +18,13 @@ import qualified Data.Aeson as J
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.Fixed (Fixed (MkFixed), Pico)
 import Data.Int (Int64)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
-import Data.Time.Clock (UTCTime, diffUTCTime, nominalDay)
+import Data.Time (nominalDiffTimeToSeconds)
+import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDay)
 import Data.Time.LocalTime (TimeZone, ZonedTime, utcToZonedTime)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
@@ -39,13 +41,13 @@ import Simplex.Messaging.Protocol (MsgBody)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 
 data ChatType = CTDirect | CTGroup | CTContactRequest | CTContactConnection
-  deriving (Show, Generic)
+  deriving (Eq, Show, Ord, Generic)
 
 data ChatName = ChatName ChatType Text
   deriving (Show)
 
 data ChatRef = ChatRef ChatType Int64
-  deriving (Show)
+  deriving (Eq, Show, Ord)
 
 instance ToJSON ChatType where
   toJSON = J.genericToJSON . enumJSON $ dropPrefix "CT"
@@ -259,19 +261,46 @@ data CIMeta (d :: MsgDirection) = CIMeta
     editable :: Bool,
     localItemTs :: ZonedTime,
     createdAt :: UTCTime,
-    updatedAt :: UTCTime
+    updatedAt :: UTCTime,
+    deleteAt :: Maybe UTCTime
   }
   deriving (Show, Generic)
 
-mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Bool -> Bool -> TimeZone -> UTCTime -> ChatItemTs -> UTCTime -> UTCTime -> CIMeta d
-mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemEdited tz currentTs itemTs createdAt updatedAt =
+mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Bool -> Bool -> TimeZone -> UTCTime -> ChatItemTs -> UTCTime -> UTCTime -> Maybe UTCTime -> CIMeta d
+mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemEdited tz currentTs itemTs createdAt updatedAt deleteAt =
   let localItemTs = utcToZonedTime tz itemTs
       editable = case itemContent of
         CISndMsgContent _ -> diffUTCTime currentTs itemTs < nominalDay && not itemDeleted
         _ -> False
-   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, editable, localItemTs, createdAt, updatedAt}
+   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, editable, localItemTs, createdAt, updatedAt, deleteAt}
 
 instance ToJSON (CIMeta d) where toEncoding = J.genericToEncoding J.defaultOptions
+
+cleanupManagerInterval :: Int
+cleanupManagerInterval = 1800 * 1000000 -- 30 minutes
+
+mayBeTimedForDeletion :: UTCTime -> IO Bool
+mayBeTimedForDeletion deleteAt = do
+  ts <- getCurrentTime
+  pure $ diffInSeconds deleteAt ts <= 2 * cleanupManagerInterval
+
+itemMayBeTimedForDeletion :: ChatItem c d -> IO Bool
+itemMayBeTimedForDeletion ChatItem {meta = CIMeta {deleteAt}} =
+  case deleteAt of
+    Just delAt -> mayBeTimedForDeletion delAt
+    Nothing -> pure False
+
+fromPico :: Pico -> Integer
+fromPico (MkFixed i) = i
+
+diffInSeconds :: UTCTime -> UTCTime -> Int
+diffInSeconds a b = (`div` 1000000000000) $ diffInPicos a b
+
+diffInMicros :: UTCTime -> UTCTime -> Int
+diffInMicros a b = (`div` 1000000) $ diffInPicos a b
+
+diffInPicos :: UTCTime -> UTCTime -> Int
+diffInPicos a b = fromInteger . fromPico . nominalDiffTimeToSeconds $ diffUTCTime a b
 
 data CIQuote (c :: ChatType) = CIQuote
   { chatDir :: CIQDirection c,
