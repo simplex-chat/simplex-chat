@@ -6,6 +6,7 @@ import SectionItemView
 import SectionSpacer
 import SectionTextFooter
 import SectionView
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -23,6 +24,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
+import chat.simplex.app.TAG
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.*
@@ -56,8 +58,24 @@ fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
       showMemberInfo = { member ->
         withApi {
           val stats = chatModel.controller.apiGroupMemberInfo(groupInfo.groupId, member.groupMemberId)
+          val (_, code) = if (member.memberActive) {
+            try {
+              chatModel.controller.apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId)
+            } catch (e: Exception) {
+              Log.e(TAG, e.stackTraceToString())
+              member to null
+            }
+          } else {
+            member to null
+          }
           ModalManager.shared.showModalCloseable(true) { closeCurrent ->
-            GroupMemberInfoView(groupInfo, member, stats, chatModel, closeCurrent) { closeCurrent(); close() }
+            val member = remember { derivedStateOf { chatModel.groupMembers.firstOrNull { it.memberId == member.memberId } } }
+            member.value?.let { mem ->
+              GroupMemberInfoView(groupInfo, mem, stats, code, chatModel, closeCurrent) {
+                closeCurrent()
+                close()
+              }
+            }
           }
         }
       },
@@ -206,7 +224,7 @@ fun GroupChatInfoLayout(
 }
 
 @Composable
-fun GroupChatInfoHeader(cInfo: ChatInfo) {
+private fun GroupChatInfoHeader(cInfo: ChatInfo) {
   Column(
     Modifier.padding(horizontal = 8.dp),
     horizontalAlignment = Alignment.CenterHorizontally
@@ -239,7 +257,7 @@ private fun GroupPreferencesButton(onClick: () -> Unit) {
 }
 
 @Composable
-fun AddMembersButton(tint: Color = MaterialTheme.colors.primary) {
+private fun AddMembersButton(tint: Color = MaterialTheme.colors.primary) {
   Row(
     Modifier.fillMaxSize(),
     verticalAlignment = Alignment.CenterVertically
@@ -255,7 +273,7 @@ fun AddMembersButton(tint: Color = MaterialTheme.colors.primary) {
 }
 
 @Composable
-fun MembersList(members: List<GroupMember>, showMemberInfo: (GroupMember) -> Unit) {
+private fun MembersList(members: List<GroupMember>, showMemberInfo: (GroupMember) -> Unit) {
   Column {
     members.forEachIndexed { index, member ->
       SectionItemView({ showMemberInfo(member) }, minHeight = 50.dp) {
@@ -269,7 +287,7 @@ fun MembersList(members: List<GroupMember>, showMemberInfo: (GroupMember) -> Uni
 }
 
 @Composable
-fun MemberRow(member: GroupMember, user: Boolean = false) {
+private fun MemberRow(member: GroupMember, user: Boolean = false) {
   Row(
     Modifier.fillMaxWidth(),
     horizontalArrangement = Arrangement.SpaceBetween,
@@ -281,10 +299,15 @@ fun MemberRow(member: GroupMember, user: Boolean = false) {
     ) {
       ProfileImage(size = 46.dp, member.image)
       Column {
-        Text(
-          member.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,
-          color = if (member.memberIncognito) Indigo else Color.Unspecified
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          if (member.verified) {
+            MemberVerifiedShield()
+          }
+          Text(
+            member.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            color = if (member.memberIncognito) Indigo else Color.Unspecified
+          )
+        }
         val s = member.memberStatus.shortText
         val statusDescr = if (user) String.format(generalGetString(R.string.group_info_member_you), s) else s
         Text(
@@ -304,7 +327,12 @@ fun MemberRow(member: GroupMember, user: Boolean = false) {
 }
 
 @Composable
-fun GroupLinkButton() {
+private fun MemberVerifiedShield() {
+  Icon(Icons.Outlined.VerifiedUser, null, Modifier.padding(end = 4.dp).size(16.dp), tint = HighOrLowlight)
+}
+
+@Composable
+private fun GroupLinkButton() {
   Row(
     Modifier
       .fillMaxSize(),
@@ -321,7 +349,7 @@ fun GroupLinkButton() {
 }
 
 @Composable
-fun EditGroupProfileButton() {
+private fun EditGroupProfileButton() {
   Row(
     Modifier
       .fillMaxSize(),
@@ -338,7 +366,7 @@ fun EditGroupProfileButton() {
 }
 
 @Composable
-fun LeaveGroupButton() {
+private fun LeaveGroupButton() {
   Row(
     Modifier.fillMaxSize(),
     verticalAlignment = Alignment.CenterVertically
@@ -354,7 +382,7 @@ fun LeaveGroupButton() {
 }
 
 @Composable
-fun DeleteGroupButton() {
+private fun DeleteGroupButton() {
   Row(
     Modifier.fillMaxSize(),
     verticalAlignment = Alignment.CenterVertically

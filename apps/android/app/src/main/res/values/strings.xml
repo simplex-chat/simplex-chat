@@ -250,6 +250,8 @@
   <string name="icon_descr_server_status_pending">Pending</string>
   <string name="switch_receiving_address_question">Switch receiving address?</string>
   <string name="switch_receiving_address_desc">This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member).</string>
+  <string name="view_security_code">View security code</string>
+  <string name="verify_security_code">Verify security code</string>
 
   <!-- Message Actions - SendMsgView.kt -->
   <string name="icon_descr_send_message">Send Message</string>
@@ -384,6 +386,19 @@
   <string name="create_one_time_link">Create one-time invitation link</string>
   <string name="one_time_link">One-time invitation link</string>
   <string name="your_contact_address">Your contact address</string>
+
+  <!-- ScanCodeView.kt -->
+  <string name="scan_code">Scan code</string>
+  <string name="incorrect_code">Incorrect security code!</string>
+  <string name="scan_code_from_contacts_app">Scan security code from your contact\'s app.</string>
+
+  <!-- VerifyCodeView.kt -->
+  <string name="security_code">Security code</string>
+  <string name="mark_code_verified">Mark verified</string>
+  <string name="clear_verification">Clear verification</string>
+  <string name="to_verify_compare">To verify end-to-end encryption with your contact compare (or scan) the code on your devices.</string>
+  <string name="is_verified">%s is verified</string>
+  <string name="is_not_verified">%s is not verified</string>
 
   <!-- settings - SettingsView.kt -->
   <string name="your_settings">Your settings</string>

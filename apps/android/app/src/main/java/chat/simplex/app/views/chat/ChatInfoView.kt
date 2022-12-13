@@ -38,6 +38,7 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
+import kotlinx.datetime.Clock
 
 @Composable
 fun ChatInfoView(
@@ -46,11 +47,28 @@ fun ChatInfoView(
   connStats: ConnectionStats?,
   customUserProfile: Profile?,
   localAlias: String,
+  connectionCode: String?,
   close: () -> Unit,
 ) {
   BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
+
+  suspend fun verifyContact(code: String?): Pair<Boolean, String>? {
+    val r = chatModel.controller.apiVerifyContact(contact.contactId, code)
+    return if (r != null) {
+      val (verified, existingCode) = r
+      chatModel.updateContact(
+        contact.copy(
+          activeConn = contact.activeConn.copy(
+            connectionCode = if (verified) SecurityCode(existingCode, Clock.System.now()) else null
+          )
+        )
+      )
+      r
+    } else null
+  }
+
   if (chat != null) {
     ChatInfoLayout(
       chat,
@@ -58,6 +76,7 @@ fun ChatInfoView(
       connStats,
       customUserProfile,
       localAlias,
+      connectionCode,
       developerTools,
       onLocalAliasChanged = {
         setContactAlias(chat.chatInfo.apiId, it, chatModel)
@@ -74,6 +93,20 @@ fun ChatInfoView(
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) },
       switchContactAddress = {
         showSwitchContactAddressAlert(chatModel, contact.contactId)
+      },
+      verifyClicked = {
+        ModalManager.shared.showModalCloseable { close ->
+          val contact = remember { derivedStateOf { (chatModel.getContactChat(contact.contactId)?.chatInfo as? ChatInfo.Direct)?.contact } }
+          contact.value?.let { ct ->
+            VerifyCodeView(
+              ct.displayName,
+              connectionCode,
+              ct.verified,
+              verify = ::verifyContact,
+              close,
+            )
+          }
+        }
       }
     )
   }
@@ -123,12 +156,14 @@ fun ChatInfoLayout(
   connStats: ConnectionStats?,
   customUserProfile: Profile?,
   localAlias: String,
+  connectionCode: String?,
   developerTools: Boolean,
   onLocalAliasChanged: (String) -> Unit,
   openPreferences: () -> Unit,
   deleteContact: () -> Unit,
   clearChat: () -> Unit,
   switchContactAddress: () -> Unit,
+  verifyClicked: () -> Unit,
 ) {
   Column(
     Modifier
@@ -154,6 +189,9 @@ fun ChatInfoLayout(
 
     SectionSpacer()
     SectionView {
+      if (connectionCode != null) {
+        VerifyCodeButton(contact.verified, verifyClicked)
+      }
       ContactPreferencesButton(openPreferences)
     }
 
@@ -208,13 +246,17 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     ChatInfoImage(cInfo, size = 192.dp, iconColor = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
-    Text(
-      contact.profile.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
-      color = MaterialTheme.colors.onBackground,
-      maxLines = 1,
-      overflow = TextOverflow.Ellipsis,
-      modifier = Modifier.padding(bottom = 8.dp)
-    )
+    Row(Modifier.padding(bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+      if (contact.verified) {
+        Icon(Icons.Outlined.VerifiedUser, null, Modifier.padding(end = 4.dp).size(22.dp), tint = HighOrLowlight)
+      }
+      Text(
+        contact.profile.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
+        color = MaterialTheme.colors.onBackground,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+      )
+    }
     if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName && cInfo.fullName != contact.profile.displayName) {
       Text(
         cInfo.fullName, style = MaterialTheme.typography.h2,
@@ -276,7 +318,7 @@ fun LocalAliasEditor(
 }
 
 @Composable
-fun NetworkStatusRow(networkStatus: Chat.NetworkStatus) {
+private fun NetworkStatusRow(networkStatus: Chat.NetworkStatus) {
   Row(
     Modifier.fillMaxSize(),
     horizontalArrangement = Arrangement.SpaceBetween,
@@ -308,7 +350,7 @@ fun NetworkStatusRow(networkStatus: Chat.NetworkStatus) {
 }
 
 @Composable
-fun ServerImage(networkStatus: Chat.NetworkStatus) {
+private fun ServerImage(networkStatus: Chat.NetworkStatus) {
   Box(Modifier.size(18.dp)) {
     when (networkStatus) {
       is Chat.NetworkStatus.Connected ->
@@ -340,6 +382,16 @@ fun SwitchAddressButton(onClick: () -> Unit) {
 }
 
 @Composable
+fun VerifyCodeButton(contactVerified: Boolean, onClick: () -> Unit) {
+  SettingsActionItem(
+    if (contactVerified) Icons.Outlined.VerifiedUser else Icons.Outlined.Shield,
+    stringResource(if (contactVerified) R.string.view_security_code else R.string.verify_security_code),
+    click = onClick,
+    iconColor = HighOrLowlight,
+  )
+}
+
+@Composable
 private fun ContactPreferencesButton(onClick: () -> Unit) {
   SettingsActionItem(
     Icons.Outlined.ToggleOn,
@@ -360,7 +412,7 @@ fun ClearChatButton(onClick: () -> Unit) {
 }
 
 @Composable
-fun DeleteContactButton(onClick: () -> Unit) {
+private fun DeleteContactButton(onClick: () -> Unit) {
   SettingsActionItem(
     Icons.Outlined.Delete,
     stringResource(R.string.button_delete_contact),
@@ -403,6 +455,7 @@ fun PreviewChatInfoLayout() {
       ),
       Contact.sampleData,
       localAlias = "",
+      connectionCode = "123",
       developerTools = false,
       connStats = null,
       onLocalAliasChanged = {},
@@ -411,6 +464,7 @@ fun PreviewChatInfoLayout() {
       deleteContact = {},
       clearChat = {},
       switchContactAddress = {},
+      verifyClicked = {},
     )
   }
 }

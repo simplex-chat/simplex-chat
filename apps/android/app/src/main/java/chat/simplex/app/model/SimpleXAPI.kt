@@ -553,6 +553,34 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     }
   }
 
+  suspend fun apiGetContactCode(contactId: Long): Pair<Contact, String> {
+    val r = sendCmd(CC.APIGetContactCode(contactId))
+    if (r is CR.ContactCode) return r.contact to r.connectionCode
+    throw Exception("failed to get contact code: ${r.responseType} ${r.details}")
+  }
+
+  suspend fun apiGetGroupMemberCode(groupId: Long, groupMemberId: Long): Pair<GroupMember, String> {
+    val r = sendCmd(CC.APIGetGroupMemberCode(groupId, groupMemberId))
+    if (r is CR.GroupMemberCode) return r.member to r.connectionCode
+    throw Exception("failed to get group member code: ${r.responseType} ${r.details}")
+  }
+
+  suspend fun apiVerifyContact(contactId: Long, connectionCode: String?): Pair<Boolean, String>? {
+    return when (val r = sendCmd(CC.APIVerifyContact(contactId, connectionCode))) {
+      is CR.ConnectionVerified -> r.verified to r.expectedCode
+      else -> null
+    }
+  }
+
+  suspend fun apiVerifyGroupMember(groupId: Long, groupMemberId: Long, connectionCode: String?): Pair<Boolean, String>? {
+    return when (val r = sendCmd(CC.APIVerifyGroupMember(groupId, groupMemberId, connectionCode))) {
+      is CR.ConnectionVerified -> r.verified to r.expectedCode
+      else -> null
+    }
+  }
+
+
+
   suspend fun apiAddContact(): String? {
     val r = sendCmd(CC.AddContact())
     return when (r) {
@@ -1536,6 +1564,10 @@ sealed class CC {
   class APIGroupMemberInfo(val groupId: Long, val groupMemberId: Long): CC()
   class APISwitchContact(val contactId: Long): CC()
   class APISwitchGroupMember(val groupId: Long, val groupMemberId: Long): CC()
+  class APIGetContactCode(val contactId: Long): CC()
+  class APIGetGroupMemberCode(val groupId: Long, val groupMemberId: Long): CC()
+  class APIVerifyContact(val contactId: Long, val connectionCode: String?): CC()
+  class APIVerifyGroupMember(val groupId: Long, val groupMemberId: Long, val connectionCode: String?): CC()
   class AddContact: CC()
   class Connect(val connReq: String): CC()
   class ApiDeleteChat(val type: ChatType, val id: Long): CC()
@@ -1603,6 +1635,10 @@ sealed class CC {
     is APIGroupMemberInfo -> "/_info #$groupId $groupMemberId"
     is APISwitchContact -> "/_switch @$contactId"
     is APISwitchGroupMember -> "/_switch #$groupId $groupMemberId"
+    is APIGetContactCode -> "/_get code @$contactId"
+    is APIGetGroupMemberCode -> "/_get code #$groupId $groupMemberId"
+    is APIVerifyContact -> "/_verify code @$contactId" + if (connectionCode != null) " $connectionCode" else ""
+    is APIVerifyGroupMember -> "/_verify code #$groupId $groupMemberId" + if (connectionCode != null) " $connectionCode" else ""
     is AddContact -> "/connect"
     is Connect -> "/connect $connReq"
     is ApiDeleteChat -> "/_delete ${chatRef(type, id)}"
@@ -1671,6 +1707,10 @@ sealed class CC {
     is APIGroupMemberInfo -> "apiGroupMemberInfo"
     is APISwitchContact -> "apiSwitchContact"
     is APISwitchGroupMember -> "apiSwitchGroupMember"
+    is APIGetContactCode -> "apiGetContactCode"
+    is APIGetGroupMemberCode -> "apiGetGroupMemberCode"
+    is APIVerifyContact -> "apiVerifyContact"
+    is APIVerifyGroupMember -> "apiVerifyGroupMember"
     is AddContact -> "addContact"
     is Connect -> "connect"
     is ApiDeleteChat -> "apiDeleteChat"
@@ -2368,6 +2408,9 @@ sealed class CR {
   @Serializable @SerialName("networkConfig") class NetworkConfig(val networkConfig: NetCfg): CR()
   @Serializable @SerialName("contactInfo") class ContactInfo(val contact: Contact, val connectionStats: ConnectionStats, val customUserProfile: Profile? = null): CR()
   @Serializable @SerialName("groupMemberInfo") class GroupMemberInfo(val groupInfo: GroupInfo, val member: GroupMember, val connectionStats_: ConnectionStats?): CR()
+  @Serializable @SerialName("contactCode") class ContactCode(val contact: Contact, val connectionCode: String): CR()
+  @Serializable @SerialName("groupMemberCode") class GroupMemberCode(val groupInfo: GroupInfo, val member: GroupMember, val connectionCode: String): CR()
+  @Serializable @SerialName("connectionVerified") class ConnectionVerified(val verified: Boolean, val expectedCode: String): CR()
   @Serializable @SerialName("invitation") class Invitation(val connReqInvitation: String): CR()
   @Serializable @SerialName("sentConfirmation") class SentConfirmation: CR()
   @Serializable @SerialName("sentInvitation") class SentInvitation: CR()
@@ -2466,6 +2509,9 @@ sealed class CR {
     is NetworkConfig -> "networkConfig"
     is ContactInfo -> "contactInfo"
     is GroupMemberInfo -> "groupMemberInfo"
+    is ContactCode -> "contactCode"
+    is GroupMemberCode -> "groupMemberCode"
+    is ConnectionVerified -> "connectionVerified"
     is Invitation -> "invitation"
     is SentConfirmation -> "sentConfirmation"
     is SentInvitation -> "sentInvitation"
@@ -2562,6 +2608,9 @@ sealed class CR {
     is NetworkConfig -> json.encodeToString(networkConfig)
     is ContactInfo -> "contact: ${json.encodeToString(contact)}\nconnectionStats: ${json.encodeToString(connectionStats)}"
     is GroupMemberInfo -> "group: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionStats: ${json.encodeToString(connectionStats_)}"
+    is ContactCode -> "contact: ${json.encodeToString(contact)}\nconnectionCode: $connectionCode"
+    is GroupMemberCode -> "groupInfo: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionCode: $connectionCode"
+    is ConnectionVerified -> "verified: $verified\nconnectionCode: $expectedCode"
     is Invitation -> connReqInvitation
     is SentConfirmation -> noDetails()
     is SentInvitation -> noDetails()

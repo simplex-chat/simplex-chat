@@ -574,6 +574,7 @@ data class Contact(
   override val fullName get() = profile.fullName
   override val image get() = profile.image
   override val localAlias get() = profile.localAlias
+  val verified get() = activeConn.connectionCode != null
 
   val directOrUsed: Boolean get() =
     (activeConn.connLevel == 0 && !activeConn.viaGroupLink) || contactUsed
@@ -612,12 +613,22 @@ class ContactSubStatus(
 )
 
 @Serializable
-class Connection(val connId: Long, val connStatus: ConnStatus, val connLevel: Int, val viaGroupLink: Boolean, val customUserProfileId: Long? = null) {
+data class Connection(
+  val connId: Long,
+  val connStatus: ConnStatus,
+  val connLevel: Int,
+  val viaGroupLink: Boolean,
+  val customUserProfileId: Long? = null,
+  val connectionCode: SecurityCode? = null
+) {
   val id: ChatId get() = ":$connId"
   companion object {
     val sampleData = Connection(connId = 1, connStatus = ConnStatus.Ready, connLevel = 0, viaGroupLink = false, customUserProfileId = null)
   }
 }
+
+@Serializable
+data class SecurityCode(val securityCode: String, val verifiedAt: Instant)
 
 @Serializable
 data class Profile(
@@ -757,6 +768,7 @@ data class GroupMember (
   val displayName: String get() = memberProfile.localAlias.ifEmpty { memberProfile.displayName }
   val fullName: String get() = memberProfile.fullName
   val image: String? get() = memberProfile.image
+  val verified get() = activeConn?.connectionCode != null
 
   val chatViewName: String
     get() = memberProfile.localAlias.ifEmpty { displayName + (if (fullName == "" || fullName == displayName) "" else " / $fullName") }
