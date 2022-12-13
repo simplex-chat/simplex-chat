@@ -3917,6 +3917,11 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
         <target state="translated">Vérifier le code de sécurité</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Create group link" xml:space="preserve" approved="no">
+        <source>Create group link</source>
+        <target state="translated">Créer un lien de groupe</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
     </body>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="fr" datatype="plaintext">
