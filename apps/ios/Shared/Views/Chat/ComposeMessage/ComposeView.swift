@@ -243,27 +243,6 @@ struct ComposeView: View {
                         func update(_ liveMessage: LiveMessage) async {
                             await MainActor.run { composeState = composeState.copy(liveMessage: liveMessage) }
                         }
-//                        if msg == "" && composeState.liveMessage == nil {
-//                            composeState = composeState.copy(liveMessage: LiveMessage(chatItem: nil, message: ""))
-//                        } else {
-//                            if var liveMessage = composeState.liveMessage {
-//                                if liveMessage.message != msg,
-//                                   let ci = try? await apiUpdateChatItem(type: cInfo.chatType, id: cInfo.apiId, itemId: liveMessage.chatItem.id, msg: .text(msg)) {
-//                                    await MainActor.run {
-//                                        _ = chatModel.upsertChatItem(cInfo, ci)
-//                                        if composeState.liveMessage != nil {
-//                                            liveMessage.message = msg
-//                                            composeState = composeState.copy(liveMessage: liveMessage)
-//                                        }
-//                                    }
-//                                }
-//                            } else if let ci = await apiSendMessage(type: cInfo.chatType, id: cInfo.apiId, file: nil, quotedItemId: nil, msg: .text(msg)) {
-//                                await MainActor.run {
-//                                    chatModel.addChatItem(cInfo, ci)
-//                                    composeState = composeState.copy(liveMessage: LiveMessage(chatItem: ci, message: msg))
-//                                }
-//                            }
-//                        }
                     },
                     voiceMessageAllowed: cInfo.voiceMessageAllowed,
                     showEnableVoiceMessagesAlert: cInfo.showEnableVoiceMessagesAlert,
