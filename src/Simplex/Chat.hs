@@ -510,6 +510,7 @@ processChatCommand = \case
       filesInfo <- withStore' $ \db -> getContactFileInfo db user ct
       conns <- withStore $ \db -> getContactConnections db userId ct
       withChatLock "deleteChat direct" . procCmd $ do
+        -- TODO cancel timed deletion threads
         forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
         forM_ conns $ \conn -> deleteAgentConnectionAsync user conn `catchError` \_ -> pure ()
         -- functions below are called in separate transactions to prevent crashes on android
@@ -529,6 +530,7 @@ processChatCommand = \case
       unless canDelete $ throwChatError CEGroupUserRole
       filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
       withChatLock "deleteChat group" . procCmd $ do
+        -- TODO cancel timed deletion threads
         forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
         when (memberActive membership) . void $ sendGroupMessage gInfo members XGrpDel
         deleteGroupLink' user gInfo `catchError` \_ -> pure ()
@@ -557,6 +559,7 @@ processChatCommand = \case
       ct <- withStore $ \db -> getContact db user chatId
       filesInfo <- withStore' $ \db -> getContactFileInfo db user ct
       maxItemTs_ <- withStore' $ \db -> getContactMaxItemTs db user ct
+      -- TODO cancel timed deletion threads
       forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
       withStore' $ \db -> deleteContactCIs db user ct
       ct' <- case maxItemTs_ of
@@ -569,6 +572,7 @@ processChatCommand = \case
       gInfo <- withStore $ \db -> getGroupInfo db user chatId
       filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
       maxItemTs_ <- withStore' $ \db -> getGroupMaxItemTs db user gInfo
+      -- TODO cancel timed deletion threads
       forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
       withStore' $ \db -> deleteGroupCIs db user gInfo
       membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db user gInfo
