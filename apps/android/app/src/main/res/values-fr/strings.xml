@@ -69,4 +69,23 @@
     <string name="error_deleting_contact_request">Erreur lors de la suppression du contact</string>
     <string name="error_deleting_pending_contact_connection">Erreur lors de la suppression de la connexion en attente</string>
     <string name="error_changing_address">Erreur de changement d\'adresse</string>
+    <string name="error_smp_test_failed_at_step">Échec du test à l\'étape %s.</string>
+    <string name="error_smp_test_certificate">Il est possible que l\'empreinte du certificat dans l\'adresse du serveur soit incorrecte</string>
+    <string name="smp_server_test_connect">Se connecter</string>
+    <string name="smp_server_test_create_queue">Créer une file d\'attente</string>
+    <string name="smp_server_test_secure_queue">File d\'attente sécurisée</string>
+    <string name="smp_server_test_delete_queue">Supprimer la file d\'attente</string>
+    <string name="smp_server_test_disconnect">Se déconnecter</string>
+    <string name="icon_descr_instant_notifications">Notifications instantanées</string>
+    <string name="service_notifications">Notifications instantanées !</string>
+    <string name="service_notifications_disabled">Les notifications instantanées sont désactivées !</string>
+    <string name="it_can_disabled_via_settings_notifications_still_shown"><b>Il peut être désactivé via les paramètres</b> - les notifications seront toujours affichées lorsque l\'application est en cours d\'exécution.</string>
+    <string name="turning_off_service_and_periodic">L\'optimisation de la batterie est active et désactive le service de fond et les demandes périodiques de nouveaux messages. Vous pouvez les réactiver via les paramètres.</string>
+    <string name="periodic_notifications">Notifications périodiques</string>
+    <string name="periodic_notifications_disabled">Les notifications périodiques sont désactivées !</string>
+    <string name="enter_passphrase_notification_title">Une phrase secrète est nécessaire</string>
+    <string name="turn_off_battery_optimization">Pour l\'utiliser, veuillez <b>désactiver l\'optimisation de la batterie</b> pour <xliff:g id="appName">SimpleX</xliff:g> dans la prochaine fenêtre de dialogue. Sinon, les notifications seront désactivées.</string>
+    <string name="error_smp_test_server_auth">Le serveur requiert une autorisation pour créer des files d\'attente, vérifiez le mot de passe</string>
+    <string name="periodic_notifications_desc">L\'application récupère périodiquement les nouveaux messages - elle utilise un peu votre batterie chaque jour. L\'application n\'utilise pas les notifications push - les données de votre appareil ne sont pas envoyées aux serveurs.</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Pour protéger votre vie privée, au lieu des notifications push, l\'application possède un <b><xliff:g id="appName">SimpleX</xliff:g> service de fond</b> - il utilise quelques pour cent de la batterie par jour.</string>
 </resources>
