@@ -1,17 +1,22 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StrictData #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
@@ -42,6 +47,7 @@ import Database.SQLite.Simple.Internal (Field (..))
 import Database.SQLite.Simple.Ok (Ok (Ok))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
+import GHC.Records.Compat
 import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, sumTypeJSON, taggedObjectJSON)
@@ -258,17 +264,30 @@ pattern DisableNtfs :: ChatSettings
 pattern DisableNtfs = ChatSettings {enableNtfs = False}
 
 data ChatFeature
-  = CFFullDelete
+  = CFTimedMessages
+  | CFFullDelete
   | -- | CFReceipts
     CFVoice
   deriving (Show, Generic)
 
+data SChatFeature (f :: ChatFeature) where
+  SCFTimedMessages :: SChatFeature 'CFTimedMessages
+  SCFFullDelete :: SChatFeature 'CFFullDelete
+  SCFVoice :: SChatFeature 'CFVoice
+
+deriving instance Show (SChatFeature f)
+
+data AChatFeature = forall f. FeatureI f => ACF (SChatFeature f)
+
+deriving instance Show AChatFeature
+
 chatFeatureToText :: ChatFeature -> Text
 chatFeatureToText = \case
+  CFTimedMessages -> "Disappearing messages"
   CFFullDelete -> "Full deletion"
   CFVoice -> "Voice messages"
 
-featureAllowed :: ChatFeature -> (PrefEnabled -> Bool) -> Contact -> Bool
+featureAllowed :: SChatFeature f -> (PrefEnabled -> Bool) -> Contact -> Bool
 featureAllowed feature forWhom Contact {mergedPreferences} =
   let ContactUserPreference {enabled} = getContactUserPreference feature mergedPreferences
    in forWhom enabled
@@ -280,48 +299,62 @@ instance ToJSON ChatFeature where
 instance FromJSON ChatFeature where
   parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "CF"
 
-allChatFeatures :: [ChatFeature]
+allChatFeatures :: [AChatFeature]
 allChatFeatures =
-  [ CFFullDelete,
+  [ ACF SCFTimedMessages,
+    ACF SCFFullDelete,
     -- CFReceipts,
-    CFVoice
+    ACF SCFVoice
   ]
 
-chatPrefSel :: ChatFeature -> Preferences -> Maybe Preference
+chatPrefSel :: SChatFeature f -> Preferences -> Maybe (FeaturePreference f)
 chatPrefSel = \case
-  CFFullDelete -> fullDelete
+  SCFTimedMessages -> timedMessages
+  SCFFullDelete -> fullDelete
   -- CFReceipts -> receipts
-  CFVoice -> voice
+  SCFVoice -> voice
+
+chatFeature :: SChatFeature f -> ChatFeature
+chatFeature = \case
+  SCFTimedMessages -> CFTimedMessages
+  SCFFullDelete -> CFFullDelete
+  SCFVoice -> CFVoice
 
 class PreferenceI p where
-  getPreference :: ChatFeature -> p -> Preference
+  getPreference :: SChatFeature f -> p -> FeaturePreference f
 
 instance PreferenceI Preferences where
-  getPreference pt prefs = fromMaybe (getPreference pt defaultChatPrefs) (chatPrefSel pt prefs)
+  getPreference f prefs = fromMaybe (getPreference f defaultChatPrefs) (chatPrefSel f prefs)
 
 instance PreferenceI (Maybe Preferences) where
-  getPreference pt prefs = fromMaybe (getPreference pt defaultChatPrefs) (chatPrefSel pt =<< prefs)
+  getPreference f prefs = fromMaybe (getPreference f defaultChatPrefs) (chatPrefSel f =<< prefs)
 
 instance PreferenceI FullPreferences where
   getPreference = \case
-    CFFullDelete -> fullDelete
+    SCFTimedMessages -> timedMessages
+    SCFFullDelete -> fullDelete
     -- CFReceipts -> receipts
-    CFVoice -> voice
+    SCFVoice -> voice
   {-# INLINE getPreference #-}
 
-setPreference :: ChatFeature -> Maybe FeatureAllowed -> Maybe Preferences -> Preferences
+setPreference :: forall f. FeatureI f => SChatFeature f -> Maybe FeatureAllowed -> Maybe Preferences -> Preferences
 setPreference f allow_ prefs_ =
-  let prefs = toChatPrefs $ mergePreferences Nothing prefs_
-      pref = (\allow -> (getPreference f prefs :: Preference) {allow}) <$> allow_
+  let pref = setAllow <$> allow_
    in case f of
-        CFVoice -> prefs {voice = pref}
-        CFFullDelete -> prefs {fullDelete = pref}
+        SCFTimedMessages -> prefs {timedMessages = pref}
+        SCFFullDelete -> prefs {fullDelete = pref}
+        SCFVoice -> prefs {voice = pref}
+  where
+    setAllow :: FeatureAllowed -> FeaturePreference f
+    setAllow = setField @"allow" (getPreference f prefs)
+    prefs = toChatPrefs $ mergePreferences Nothing prefs_
 
 -- collection of optional chat preferences for the user and the contact
 data Preferences = Preferences
-  { fullDelete :: Maybe Preference,
-    -- receipts :: Maybe Preference,
-    voice :: Maybe Preference
+  { timedMessages :: Maybe TimedMessagesPreference,
+    fullDelete :: Maybe FullDeletePreference,
+    -- receipts :: Maybe SimplePreference,
+    voice :: Maybe VoicePreference
   }
   deriving (Eq, Show, Generic, FromJSON)
 
@@ -336,25 +369,39 @@ instance FromField Preferences where
   fromField = fromTextField_ decodeJSON
 
 data GroupFeature
-  = GFDirectMessages
+  = GFTimedMessages
+  | GFDirectMessages
   | GFFullDelete
   | -- | GFReceipts
     GFVoice
   deriving (Show, Generic)
 
+data SGroupFeature (f :: GroupFeature) where
+  SGFTimedMessages :: SGroupFeature 'GFTimedMessages
+  SGFDirectMessages :: SGroupFeature 'GFDirectMessages
+  SGFFullDelete :: SGroupFeature 'GFFullDelete
+  -- SGFReceipts
+  SGFVoice :: SGroupFeature 'GFVoice
+
+deriving instance Show (SGroupFeature f)
+
+data AGroupFeature = forall f. GroupFeatureI f => AGF (SGroupFeature f)
+
+deriving instance Show AGroupFeature
+
 groupFeatureToText :: GroupFeature -> Text
 groupFeatureToText = \case
+  GFTimedMessages -> "Disappearing messages"
   GFDirectMessages -> "Direct messages"
   GFFullDelete -> "Full deletion"
   GFVoice -> "Voice messages"
 
-groupFeatureAllowed :: GroupFeature -> GroupInfo -> Bool
+groupFeatureAllowed :: GroupFeatureI f => SGroupFeature f -> GroupInfo -> Bool
 groupFeatureAllowed feature gInfo = groupFeatureAllowed' feature $ fullGroupPreferences gInfo
 
-groupFeatureAllowed' :: GroupFeature -> FullGroupPreferences -> Bool
+groupFeatureAllowed' :: GroupFeatureI f => SGroupFeature f -> FullGroupPreferences -> Bool
 groupFeatureAllowed' feature prefs =
-  let GroupPreference {enable} = getGroupPreference feature prefs
-   in enable == FEOn
+  getField @"enable" (getGroupPreference feature prefs) == FEOn
 
 instance ToJSON GroupFeature where
   toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "GF"
@@ -363,23 +410,32 @@ instance ToJSON GroupFeature where
 instance FromJSON GroupFeature where
   parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "GF"
 
-allGroupFeatures :: [GroupFeature]
+allGroupFeatures :: [AGroupFeature]
 allGroupFeatures =
-  [ GFDirectMessages,
-    GFFullDelete,
+  [ AGF SGFTimedMessages,
+    AGF SGFDirectMessages,
+    AGF SGFFullDelete,
     -- GFReceipts,
-    GFVoice
+    AGF SGFVoice
   ]
 
-groupPrefSel :: GroupFeature -> GroupPreferences -> Maybe GroupPreference
+groupPrefSel :: SGroupFeature f -> GroupPreferences -> Maybe (GroupFeaturePreference f)
 groupPrefSel = \case
-  GFDirectMessages -> directMessages
-  GFFullDelete -> fullDelete
+  SGFTimedMessages -> timedMessages
+  SGFDirectMessages -> directMessages
+  SGFFullDelete -> fullDelete
   -- GFReceipts -> receipts
-  GFVoice -> voice
+  SGFVoice -> voice
+
+toGroupFeature :: SGroupFeature f -> GroupFeature
+toGroupFeature = \case
+  SGFTimedMessages -> GFTimedMessages
+  SGFDirectMessages -> GFDirectMessages
+  SGFFullDelete -> GFFullDelete
+  SGFVoice -> GFVoice
 
 class GroupPreferenceI p where
-  getGroupPreference :: GroupFeature -> p -> GroupPreference
+  getGroupPreference :: SGroupFeature f -> p -> GroupFeaturePreference f
 
 instance GroupPreferenceI GroupPreferences where
   getGroupPreference pt prefs = fromMaybe (getGroupPreference pt defaultGroupPrefs) (groupPrefSel pt prefs)
@@ -389,18 +445,20 @@ instance GroupPreferenceI (Maybe GroupPreferences) where
 
 instance GroupPreferenceI FullGroupPreferences where
   getGroupPreference = \case
-    GFDirectMessages -> directMessages
-    GFFullDelete -> fullDelete
+    SGFTimedMessages -> timedMessages
+    SGFDirectMessages -> directMessages
+    SGFFullDelete -> fullDelete
     -- GFReceipts -> receipts
-    GFVoice -> voice
+    SGFVoice -> voice
   {-# INLINE getGroupPreference #-}
 
 -- collection of optional group preferences
 data GroupPreferences = GroupPreferences
-  { directMessages :: Maybe GroupPreference,
-    fullDelete :: Maybe GroupPreference,
+  { timedMessages :: Maybe TimedMessagesGroupPreference,
+    directMessages :: Maybe DirectMessagesGroupPreference,
+    fullDelete :: Maybe FullDeleteGroupPreference,
     -- receipts :: Maybe GroupPreference,
-    voice :: Maybe GroupPreference
+    voice :: Maybe VoiceGroupPreference
   }
   deriving (Eq, Show, Generic, FromJSON)
 
@@ -414,21 +472,25 @@ instance ToField GroupPreferences where
 instance FromField GroupPreferences where
   fromField = fromTextField_ decodeJSON
 
-setGroupPreference :: GroupFeature -> GroupFeatureEnabled -> Maybe GroupPreferences -> GroupPreferences
+setGroupPreference :: forall f. GroupFeatureI f => SGroupFeature f -> GroupFeatureEnabled -> Maybe GroupPreferences -> GroupPreferences
 setGroupPreference f enable prefs_ =
-  let prefs = mergeGroupPreferences prefs_
-      pref = (getGroupPreference f prefs :: GroupPreference) {enable}
-   in toGroupPreferences $ case f of
-        GFDirectMessages -> prefs {directMessages = pref}
-        GFVoice -> prefs {voice = pref}
-        GFFullDelete -> prefs {fullDelete = pref}
+  toGroupPreferences $ case f of
+    SGFTimedMessages -> prefs {timedMessages = pref}
+    SGFDirectMessages -> prefs {directMessages = pref}
+    SGFVoice -> prefs {voice = pref}
+    SGFFullDelete -> prefs {fullDelete = pref}
+  where
+    prefs = mergeGroupPreferences prefs_
+    pref :: GroupFeaturePreference f
+    pref = setField @"enable" (getGroupPreference f prefs) enable
 
 -- full collection of chat preferences defined in the app - it is used to ensure we include all preferences and to simplify processing
 -- if some of the preferences are not defined in Preferences, defaults from defaultChatPrefs are used here.
 data FullPreferences = FullPreferences
-  { fullDelete :: Preference,
-    -- receipts :: Preference,
-    voice :: Preference
+  { timedMessages :: TimedMessagesPreference,
+    fullDelete :: FullDeletePreference,
+    -- receipts :: SimplePreference,
+    voice :: VoicePreference
   }
   deriving (Eq, Show, Generic, FromJSON)
 
@@ -437,10 +499,11 @@ instance ToJSON FullPreferences where toEncoding = J.genericToEncoding J.default
 -- full collection of group preferences defined in the app - it is used to ensure we include all preferences and to simplify processing
 -- if some of the preferences are not defined in GroupPreferences, defaults from defaultGroupPrefs are used here.
 data FullGroupPreferences = FullGroupPreferences
-  { directMessages :: GroupPreference,
-    fullDelete :: GroupPreference,
+  { timedMessages :: TimedMessagesGroupPreference,
+    directMessages :: DirectMessagesGroupPreference,
+    fullDelete :: FullDeleteGroupPreference,
     -- receipts :: GroupPreference,
-    voice :: GroupPreference
+    voice :: VoiceGroupPreference
   }
   deriving (Eq, Show, Generic, FromJSON)
 
@@ -448,34 +511,36 @@ instance ToJSON FullGroupPreferences where toEncoding = J.genericToEncoding J.de
 
 -- merged preferences of user for a given contact - they differentiate between specific preferences for the contact and global user preferences
 data ContactUserPreferences = ContactUserPreferences
-  { fullDelete :: ContactUserPreference,
+  { timedMessages :: ContactUserPreference TimedMessagesPreference,
+    fullDelete :: ContactUserPreference FullDeletePreference,
     -- receipts :: ContactUserPreference,
-    voice :: ContactUserPreference
+    voice :: ContactUserPreference VoicePreference
   }
   deriving (Eq, Show, Generic)
 
-data ContactUserPreference = ContactUserPreference
+data ContactUserPreference p = ContactUserPreference
   { enabled :: PrefEnabled,
-    userPreference :: ContactUserPref,
-    contactPreference :: Preference
+    userPreference :: ContactUserPref p,
+    contactPreference :: p
   }
   deriving (Eq, Show, Generic)
 
-data ContactUserPref = CUPContact {preference :: Preference} | CUPUser {preference :: Preference}
+data ContactUserPref p = CUPContact {preference :: p} | CUPUser {preference :: p}
   deriving (Eq, Show, Generic)
 
 instance ToJSON ContactUserPreferences where toEncoding = J.genericToEncoding J.defaultOptions
 
-instance ToJSON ContactUserPreference where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON p => ToJSON (ContactUserPreference p) where toEncoding = J.genericToEncoding J.defaultOptions
 
-instance ToJSON ContactUserPref where
+instance ToJSON p => ToJSON (ContactUserPref p) where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CUP"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CUP"
 
 toChatPrefs :: FullPreferences -> Preferences
-toChatPrefs FullPreferences {fullDelete, voice} =
+toChatPrefs FullPreferences {fullDelete, voice, timedMessages} =
   Preferences
-    { fullDelete = Just fullDelete,
+    { timedMessages = Just timedMessages,
+      fullDelete = Just fullDelete,
       -- receipts = Just receipts,
       voice = Just voice
     }
@@ -483,40 +548,134 @@ toChatPrefs FullPreferences {fullDelete, voice} =
 defaultChatPrefs :: FullPreferences
 defaultChatPrefs =
   FullPreferences
-    { fullDelete = Preference {allow = FANo},
-      -- receipts = Preference {allow = FANo},
-      voice = Preference {allow = FAYes}
+    { timedMessages = TimedMessagesPreference {allow = FANo, ttl = 86400},
+      fullDelete = FullDeletePreference {allow = FANo},
+      -- receipts = SimplePreference {allow = FANo},
+      voice = VoicePreference {allow = FAYes}
     }
 
 emptyChatPrefs :: Preferences
-emptyChatPrefs = Preferences Nothing Nothing
+emptyChatPrefs = Preferences Nothing Nothing Nothing
 
 defaultGroupPrefs :: FullGroupPreferences
 defaultGroupPrefs =
   FullGroupPreferences
-    { directMessages = GroupPreference {enable = FEOff},
-      fullDelete = GroupPreference {enable = FEOff},
+    { timedMessages = TimedMessagesGroupPreference {enable = FEOff, ttl = 86400},
+      directMessages = DirectMessagesGroupPreference {enable = FEOff},
+      fullDelete = FullDeleteGroupPreference {enable = FEOff},
       -- receipts = GroupPreference {enable = FEOff},
-      voice = GroupPreference {enable = FEOn}
+      voice = VoiceGroupPreference {enable = FEOn}
     }
 
 emptyGroupPrefs :: GroupPreferences
-emptyGroupPrefs = GroupPreferences Nothing Nothing Nothing
+emptyGroupPrefs = GroupPreferences Nothing Nothing Nothing Nothing
 
-data Preference = Preference
-  {allow :: FeatureAllowed}
+data TimedMessagesPreference = TimedMessagesPreference
+  { allow :: FeatureAllowed,
+    ttl :: Int
+  }
   deriving (Eq, Show, Generic, FromJSON)
 
-instance ToJSON Preference where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON TimedMessagesPreference where toEncoding = J.genericToEncoding J.defaultOptions
+
+data FullDeletePreference = FullDeletePreference {allow :: FeatureAllowed}
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON FullDeletePreference where toEncoding = J.genericToEncoding J.defaultOptions
+
+data VoicePreference = VoicePreference {allow :: FeatureAllowed}
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON VoicePreference where toEncoding = J.genericToEncoding J.defaultOptions
+
+class (Eq (FeaturePreference f), HasField "allow" (FeaturePreference f) FeatureAllowed) => FeatureI f where
+  type FeaturePreference (f :: ChatFeature) = p | p -> f
+
+instance HasField "allow" TimedMessagesPreference FeatureAllowed where
+  hasField p = (\allow -> p {allow}, allow (p :: TimedMessagesPreference))
+
+instance HasField "allow" FullDeletePreference FeatureAllowed where
+  hasField p = (\allow -> p {allow}, allow (p :: FullDeletePreference))
+
+instance HasField "allow" VoicePreference FeatureAllowed where
+  hasField p = (\allow -> p {allow}, allow (p :: VoicePreference))
+
+instance FeatureI 'CFTimedMessages where
+  type FeaturePreference 'CFTimedMessages = TimedMessagesPreference
+
+instance FeatureI 'CFFullDelete where
+  type FeaturePreference 'CFFullDelete = FullDeletePreference
+
+instance FeatureI 'CFVoice where
+  type FeaturePreference 'CFVoice = VoicePreference
 
 data GroupPreference = GroupPreference
   {enable :: GroupFeatureEnabled}
   deriving (Eq, Show, Generic, FromJSON)
 
-groupPrefToText :: GroupPreference -> Text
-groupPrefToText GroupPreference {enable} = safeDecodeUtf8 $ strEncode enable
+data TimedMessagesGroupPreference = TimedMessagesGroupPreference
+  { enable :: GroupFeatureEnabled,
+    ttl :: Int
+  }
+  deriving (Eq, Show, Generic, FromJSON)
+
+data DirectMessagesGroupPreference = DirectMessagesGroupPreference
+  {enable :: GroupFeatureEnabled}
+  deriving (Eq, Show, Generic, FromJSON)
+
+data FullDeleteGroupPreference = FullDeleteGroupPreference
+  {enable :: GroupFeatureEnabled}
+  deriving (Eq, Show, Generic, FromJSON)
+
+data VoiceGroupPreference = VoiceGroupPreference
+  {enable :: GroupFeatureEnabled}
+  deriving (Eq, Show, Generic, FromJSON)
 
 instance ToJSON GroupPreference where toEncoding = J.genericToEncoding J.defaultOptions
+
+instance ToJSON TimedMessagesGroupPreference where toEncoding = J.genericToEncoding J.defaultOptions
+
+instance ToJSON DirectMessagesGroupPreference where toEncoding = J.genericToEncoding J.defaultOptions
+
+instance ToJSON FullDeleteGroupPreference where toEncoding = J.genericToEncoding J.defaultOptions
+
+instance ToJSON VoiceGroupPreference where toEncoding = J.genericToEncoding J.defaultOptions
+
+class (Eq (GroupFeaturePreference f), HasField "enable" (GroupFeaturePreference f) GroupFeatureEnabled) => GroupFeatureI f where
+  type GroupFeaturePreference (f :: GroupFeature) = p | p -> f
+
+instance HasField "enable" GroupPreference GroupFeatureEnabled where
+  hasField p = (\enable -> p {enable}, enable (p :: GroupPreference))
+
+instance HasField "enable" TimedMessagesGroupPreference GroupFeatureEnabled where
+  hasField p = (\enable -> p {enable}, enable (p :: TimedMessagesGroupPreference))
+
+instance HasField "enable" DirectMessagesGroupPreference GroupFeatureEnabled where
+  hasField p = (\enable -> p {enable}, enable (p :: DirectMessagesGroupPreference))
+
+instance HasField "enable" FullDeleteGroupPreference GroupFeatureEnabled where
+  hasField p = (\enable -> p {enable}, enable (p :: FullDeleteGroupPreference))
+
+instance HasField "enable" VoiceGroupPreference GroupFeatureEnabled where
+  hasField p = (\enable -> p {enable}, enable (p :: VoiceGroupPreference))
+
+instance GroupFeatureI 'GFTimedMessages where
+  type GroupFeaturePreference 'GFTimedMessages = TimedMessagesGroupPreference
+
+instance GroupFeatureI 'GFDirectMessages where
+  type GroupFeaturePreference 'GFDirectMessages = DirectMessagesGroupPreference
+
+instance GroupFeatureI 'GFFullDelete where
+  type GroupFeaturePreference 'GFFullDelete = FullDeleteGroupPreference
+
+instance GroupFeatureI 'GFVoice where
+  type GroupFeaturePreference 'GFVoice = VoiceGroupPreference
+
+groupPrefToText :: HasField "enable" p GroupFeatureEnabled => p -> Text
+groupPrefToText = safeDecodeUtf8 . strEncode . getField @"enable"
+
+toGroupPreference :: GroupFeatureI f => GroupFeaturePreference f -> GroupPreference
+toGroupPreference p = GroupPreference {enable = getField @"enable" p}
 
 data FeatureAllowed
   = FAAlways -- allow unconditionally
@@ -574,14 +733,16 @@ instance ToJSON GroupFeatureEnabled where
 mergePreferences :: Maybe Preferences -> Maybe Preferences -> FullPreferences
 mergePreferences contactPrefs userPreferences =
   FullPreferences
-    { fullDelete = pref CFFullDelete,
+    { timedMessages = pref SCFTimedMessages,
+      fullDelete = pref SCFFullDelete,
       -- receipts = pref CFReceipts,
-      voice = pref CFVoice
+      voice = pref SCFVoice
     }
   where
-    pref pt =
-      let sel = chatPrefSel pt
-       in fromMaybe (getPreference pt defaultChatPrefs) $ (contactPrefs >>= sel) <|> (userPreferences >>= sel)
+    pref :: SChatFeature f -> FeaturePreference f
+    pref f =
+      let sel = chatPrefSel f
+       in fromMaybe (getPreference f defaultChatPrefs) $ (contactPrefs >>= sel) <|> (userPreferences >>= sel)
 
 mergeUserChatPrefs :: User -> Contact -> FullPreferences
 mergeUserChatPrefs user ct = mergeUserChatPrefs' user (contactConnIncognito ct) (userPreferences ct)
@@ -594,23 +755,27 @@ mergeUserChatPrefs' user connectedIncognito userPreferences =
 mergeGroupPreferences :: Maybe GroupPreferences -> FullGroupPreferences
 mergeGroupPreferences groupPreferences =
   FullGroupPreferences
-    { directMessages = pref GFDirectMessages,
-      fullDelete = pref GFFullDelete,
+    { timedMessages = pref SGFTimedMessages,
+      directMessages = pref SGFDirectMessages,
+      fullDelete = pref SGFFullDelete,
       -- receipts = pref GFReceipts,
-      voice = pref GFVoice
+      voice = pref SGFVoice
     }
   where
+    pref :: SGroupFeature f -> GroupFeaturePreference f
     pref pt = fromMaybe (getGroupPreference pt defaultGroupPrefs) (groupPreferences >>= groupPrefSel pt)
 
 toGroupPreferences :: FullGroupPreferences -> GroupPreferences
 toGroupPreferences groupPreferences =
   GroupPreferences
-    { directMessages = pref GFDirectMessages,
-      fullDelete = pref GFFullDelete,
+    { timedMessages = pref SGFTimedMessages,
+      directMessages = pref SGFDirectMessages,
+      fullDelete = pref SGFFullDelete,
       -- receipts = pref GFReceipts,
-      voice = pref GFVoice
+      voice = pref SGFVoice
     }
   where
+    pref :: SGroupFeature f -> Maybe (GroupFeaturePreference f)
     pref f = Just $ getGroupPreference f groupPreferences
 
 data PrefEnabled = PrefEnabled {forUser :: Bool, forContact :: Bool}
@@ -620,8 +785,8 @@ instance ToJSON PrefEnabled where
   toJSON = J.genericToJSON J.defaultOptions
   toEncoding = J.genericToEncoding J.defaultOptions
 
-prefEnabled :: Preference -> Preference -> PrefEnabled
-prefEnabled Preference {allow = user} Preference {allow = contact} = case (user, contact) of
+prefEnabled :: FeatureI f => FeaturePreference f -> FeaturePreference f -> PrefEnabled
+prefEnabled user contact = case (getField @"allow" user, getField @"allow" contact) of
   (FAAlways, FANo) -> PrefEnabled {forUser = False, forContact = True}
   (FANo, FAAlways) -> PrefEnabled {forUser = True, forContact = False}
   (_, FANo) -> PrefEnabled False False
@@ -643,12 +808,14 @@ updateMergedPreferences user ct =
 contactUserPreferences :: User -> Preferences -> Maybe Preferences -> Bool -> ContactUserPreferences
 contactUserPreferences user userPreferences contactPreferences connectedIncognito =
   ContactUserPreferences
-    { fullDelete = pref CFFullDelete,
+    { timedMessages = pref SCFTimedMessages,
+      fullDelete = pref SCFFullDelete,
       -- receipts = pref CFReceipts,
-      voice = pref CFVoice
+      voice = pref SCFVoice
     }
   where
-    pref pt =
+    pref :: FeatureI f => SChatFeature f -> ContactUserPreference (FeaturePreference f)
+    pref f =
       ContactUserPreference
         { enabled = prefEnabled userPref ctPref,
           -- incognito contact cannot have default user preference used
@@ -656,18 +823,19 @@ contactUserPreferences user userPreferences contactPreferences connectedIncognit
           contactPreference = ctPref
         }
       where
-        ctUserPref = getPreference pt userPreferences
-        ctUserPref_ = chatPrefSel pt userPreferences
-        userPref = getPreference pt ctUserPrefs
-        ctPref = getPreference pt ctPrefs
+        ctUserPref = getPreference f userPreferences
+        ctUserPref_ = chatPrefSel f userPreferences
+        userPref = getPreference f ctUserPrefs
+        ctPref = getPreference f ctPrefs
     ctUserPrefs = mergeUserChatPrefs' user connectedIncognito userPreferences
     ctPrefs = mergePreferences contactPreferences Nothing
 
-getContactUserPreference :: ChatFeature -> ContactUserPreferences -> ContactUserPreference
+getContactUserPreference :: SChatFeature f -> ContactUserPreferences -> ContactUserPreference (FeaturePreference f)
 getContactUserPreference = \case
-  CFFullDelete -> fullDelete
+  SCFTimedMessages -> timedMessages
+  SCFFullDelete -> fullDelete
   -- CFReceipts -> receipts
-  CFVoice -> voice
+  SCFVoice -> voice
 
 data Profile = Profile
   { displayName :: ContactName,

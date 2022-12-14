@@ -204,7 +204,11 @@ struct GroupChatInfoView: View {
                 .navigationBarTitle("Group link")
                 .navigationBarTitleDisplayMode(.large)
         } label: {
-            Label("Group link", systemImage: "link")
+            if groupLink == nil {
+                Label("Create group link", systemImage: "link.badge.plus")
+            } else {
+                Label("Group link", systemImage: "link")
+            }
         }
     }
 

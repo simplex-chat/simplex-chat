@@ -26,6 +26,7 @@ import Data.Time.Clock (DiffTime, UTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import Data.Time.LocalTime (ZonedTime (..), localDay, localTimeOfDay, timeOfDayToTime, utcToZonedTime)
 import GHC.Generics (Generic)
+import GHC.Records.Compat
 import qualified Network.HTTP.Types as Q
 import Numeric (showFFloat)
 import Simplex.Chat (maxImageSize)
@@ -774,15 +775,15 @@ viewContactPreferences :: User -> Contact -> Contact -> ContactUserPreferences -
 viewContactPreferences user ct ct' cups =
   mapMaybe (viewContactPref (mergeUserChatPrefs user ct) (mergeUserChatPrefs user ct') (preferences' ct) cups) allChatFeatures
 
-viewContactPref :: FullPreferences -> FullPreferences -> Maybe Preferences -> ContactUserPreferences -> ChatFeature -> Maybe StyledString
-viewContactPref userPrefs userPrefs' ctPrefs cups pt
+viewContactPref :: FullPreferences -> FullPreferences -> Maybe Preferences -> ContactUserPreferences -> AChatFeature -> Maybe StyledString
+viewContactPref userPrefs userPrefs' ctPrefs cups (ACF f)
   | userPref == userPref' && ctPref == contactPreference = Nothing
-  | otherwise = Just $ plain (chatFeatureToText pt) <> ": " <> plain (prefEnabledToText enabled) <> " (you allow: " <> viewCountactUserPref userPreference <> ", contact allows: " <> viewPreference contactPreference <> ")"
+  | otherwise = Just $ plain (chatFeatureToText $ chatFeature f) <> ": " <> plain (prefEnabledToText enabled) <> " (you allow: " <> viewCountactUserPref userPreference <> ", contact allows: " <> viewPreference contactPreference <> ")"
   where
-    userPref = getPreference pt userPrefs
-    userPref' = getPreference pt userPrefs'
-    ctPref = getPreference pt ctPrefs
-    ContactUserPreference {enabled, userPreference, contactPreference} = getContactUserPreference pt cups
+    userPref = getPreference f userPrefs
+    userPref' = getPreference f userPrefs'
+    ctPref = getPreference f ctPrefs
+    ContactUserPreference {enabled, userPreference, contactPreference} = getContactUserPreference f cups
 
 viewPrefsUpdated :: Maybe Preferences -> Maybe Preferences -> [StyledString]
 viewPrefsUpdated ps ps'
@@ -790,20 +791,19 @@ viewPrefsUpdated ps ps'
   | otherwise = "updated preferences:" : prefs
   where
     prefs = mapMaybe viewPref allChatFeatures
-    viewPref pt
+    viewPref (ACF f)
       | pref ps == pref ps' = Nothing
-      | otherwise = Just $ plain (chatFeatureToText pt) <> " allowed: " <> viewPreference (pref ps')
+      | otherwise = Just $ plain (chatFeatureToText $ chatFeature f) <> " allowed: " <> viewPreference (pref ps')
       where
-        pref pss = getPreference pt $ mergePreferences pss Nothing
+        pref pss = getPreference f $ mergePreferences pss Nothing
 
-viewPreference :: Preference -> StyledString
-viewPreference = \case
-  Preference {allow} -> case allow of
-    FAAlways -> "always"
-    FAYes -> "yes"
-    FANo -> "no"
+viewPreference :: FeatureI f => FeaturePreference f -> StyledString
+viewPreference p = case getField @"allow" p of
+  FAAlways -> "always"
+  FAYes -> "yes"
+  FANo -> "no"
 
-viewCountactUserPref :: ContactUserPref -> StyledString
+viewCountactUserPref :: FeatureI f => ContactUserPref (FeaturePreference f) -> StyledString
 viewCountactUserPref = \case
   CUPUser p -> "default (" <> viewPreference p <> ")"
   CUPContact p -> viewPreference p
@@ -829,11 +829,11 @@ viewGroupUpdated
         | otherwise = bold' "updated group preferences:" : prefs
         where
           prefs = mapMaybe viewPref allGroupFeatures
-          viewPref pt
+          viewPref (AGF f)
             | pref gps == pref gps' = Nothing
-            | otherwise = Just $ plain (groupFeatureToText pt) <> " enabled: " <> plain (groupPrefToText $ pref gps')
+            | otherwise = Just $ plain (groupFeatureToText $ toGroupFeature f) <> " enabled: " <> plain (groupPrefToText $ pref gps')
             where
-              pref = getGroupPreference pt . mergeGroupPreferences
+              pref = getGroupPreference f . mergeGroupPreferences
 
 viewGroupProfile :: GroupInfo -> [StyledString]
 viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {description, image, groupPreferences = gps}} =
@@ -842,9 +842,9 @@ viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {description, image, g
     <> maybe [] ((bold' "description:" :) . map plain . T.lines) description
     <> (bold' "group preferences:" : map viewPref allGroupFeatures)
   where
-    viewPref pt = plain (groupFeatureToText pt) <> " enabled: " <> plain (groupPrefToText $ pref gps)
+    viewPref (AGF f) = plain (groupFeatureToText $ toGroupFeature f) <> " enabled: " <> plain (groupPrefToText $ pref gps)
       where
-        pref = getGroupPreference pt . mergeGroupPreferences
+        pref = getGroupPreference f . mergeGroupPreferences
 
 bold' :: String -> StyledString
 bold' = styled Bold
