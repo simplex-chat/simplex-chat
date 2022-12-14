@@ -310,6 +310,7 @@ import Simplex.Chat.Migrations.M20221130_delete_item_deleted
 import Simplex.Chat.Migrations.M20221209_verified_connection
 import Simplex.Chat.Migrations.M20221210_idxs
 import Simplex.Chat.Migrations.M20221211_group_description
+import Simplex.Chat.Migrations.M20221214_live_message
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..))
@@ -363,7 +364,8 @@ schemaMigrations =
     ("20221130_delete_item_deleted", m20221130_delete_item_deleted),
     ("20221209_verified_connection", m20221209_verified_connection),
     ("20221210_idxs", m20221210_idxs),
-    ("20221211_group_description", m20221211_group_description)
+    ("20221211_group_description", m20221211_group_description),
+    ("20221214_live_message", m20221214_live_message)
   ]
 
 -- | The list of migrations in ascending order by date
