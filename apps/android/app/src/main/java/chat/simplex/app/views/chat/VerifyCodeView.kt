@@ -5,18 +5,20 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.Icon
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
+import chat.simplex.app.SimplexApp
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.QRCode
@@ -76,13 +78,21 @@ private fun VerifyCodeLayout(
       QRCode(connectionCode, Modifier.aspectRatio(1f))
     }
 
-    SelectionContainer(Modifier.padding(vertical = DEFAULT_PADDING_HALF).align(Alignment.CenterHorizontally)) {
-      Text(
-        splitCode,
-        fontFamily = FontFamily.Monospace,
-        fontSize = 18.sp,
-        maxLines = 20
-      )
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+      Spacer(Modifier.weight(2f))
+      SelectionContainer(Modifier.padding(vertical = DEFAULT_PADDING_HALF)) {
+        Text(
+          splitCode,
+          fontFamily = FontFamily.Monospace,
+          fontSize = 18.sp,
+          maxLines = 20
+        )
+      }
+      val context = LocalContext.current
+      IconButton({ shareText(context, connectionCode) }, Modifier.weight(1f)) {
+        Icon(Icons.Filled.Share, null, Modifier.size(20.dp), tint = MaterialTheme.colors.primary)
+      }
+      Spacer(Modifier.weight(1f))
     }
 
     Text(
