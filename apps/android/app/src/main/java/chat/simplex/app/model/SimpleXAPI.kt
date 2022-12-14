@@ -1983,11 +1983,16 @@ data class FullChatPreferences(
 
 @Serializable
 data class ChatPreferences(
+  val timedMessages: ChatPreference? = null,
   val fullDelete: ChatPreference? = null,
   val voice: ChatPreference? = null,
 ) {
   companion object {
-    val sampleData = ChatPreferences(fullDelete = ChatPreference(allow = FeatureAllowed.NO), voice = ChatPreference(allow = FeatureAllowed.YES))
+    val sampleData = ChatPreferences(
+      timedMessages = ChatPreference(allow = FeatureAllowed.NO),
+      fullDelete = ChatPreference(allow = FeatureAllowed.NO),
+      voice = ChatPreference(allow = FeatureAllowed.YES)
+    )
   }
 }
 
@@ -1998,16 +2003,23 @@ data class ChatPreference(
 
 @Serializable
 data class ContactUserPreferences(
+  val timedMessages: ContactUserPreference,
   val fullDelete: ContactUserPreference,
   val voice: ContactUserPreference,
 ) {
   fun toPreferences(): ChatPreferences = ChatPreferences(
+    timedMessages = timedMessages.userPreference.pref,
     fullDelete = fullDelete.userPreference.pref,
     voice = voice.userPreference.pref
   )
 
   companion object {
     val sampleData = ContactUserPreferences(
+      timedMessages = ContactUserPreference(
+        enabled = FeatureEnabled(forUser = false, forContact = false),
+        userPreference = ContactUserPref.User(preference = ChatPreference(allow = FeatureAllowed.NO)),
+        contactPreference = ChatPreference(allow = FeatureAllowed.NO)
+      ),
       fullDelete = ContactUserPreference(
         enabled = FeatureEnabled(forUser = false, forContact = false),
         userPreference = ContactUserPref.User(preference = ChatPreference(allow = FeatureAllowed.NO)),
@@ -2079,29 +2091,38 @@ interface Feature {
 
 @Serializable
 enum class ChatFeature: Feature {
+  @SerialName("timedMessages") TimedMessages,
   @SerialName("fullDelete") FullDelete,
   @SerialName("voice") Voice;
 
   override val text: String
     get() = when(this) {
+      TimedMessages -> generalGetString(R.string.timed_messages)
       FullDelete -> generalGetString(R.string.full_deletion)
       Voice -> generalGetString(R.string.voice_messages)
     }
 
   val icon: ImageVector
     get() = when(this) {
+      TimedMessages -> Icons.Outlined.Timer
       FullDelete -> Icons.Outlined.DeleteForever
       Voice -> Icons.Outlined.KeyboardVoice
     }
 
   override val iconFilled: ImageVector
     get() = when(this) {
+      TimedMessages -> Icons.Filled.Timer
       FullDelete -> Icons.Filled.DeleteForever
       Voice -> Icons.Filled.KeyboardVoice
     }
 
   fun allowDescription(allowed: FeatureAllowed): String =
     when (this) {
+      TimedMessages -> when (allowed) {
+        FeatureAllowed.ALWAYS -> generalGetString(R.string.allow_your_contacts_to_send_disappearing_messages)
+        FeatureAllowed.YES -> generalGetString(R.string.allow_disappearing_messages_only_if)
+        FeatureAllowed.NO -> generalGetString(R.string.prohibit_sending_disappearing_messages)
+      }
       FullDelete -> when (allowed) {
         FeatureAllowed.ALWAYS -> generalGetString(R.string.allow_your_contacts_irreversibly_delete)
         FeatureAllowed.YES -> generalGetString(R.string.allow_irreversible_message_deletion_only_if)
@@ -2116,6 +2137,12 @@ enum class ChatFeature: Feature {
 
   fun enabledDescription(enabled: FeatureEnabled): String =
     when (this) {
+      TimedMessages -> when {
+        enabled.forUser && enabled.forContact -> generalGetString(R.string.both_you_and_your_contact_can_send_disappearing)
+        enabled.forUser -> generalGetString(R.string.only_you_can_send_disappearing)
+        enabled.forContact -> generalGetString(R.string.only_your_contact_can_send_disappearing)
+        else -> generalGetString(R.string.disappearing_prohibited_in_this_chat)
+      }
       FullDelete -> when {
         enabled.forUser && enabled.forContact -> generalGetString(R.string.both_you_and_your_contacts_can_delete)
         enabled.forUser -> generalGetString(R.string.only_you_can_delete_messages)
@@ -2133,12 +2160,14 @@ enum class ChatFeature: Feature {
 
 @Serializable
 enum class GroupFeature: Feature {
+  @SerialName("timedMessages") TimedMessages,
   @SerialName("directMessages") DirectMessages,
   @SerialName("fullDelete") FullDelete,
   @SerialName("voice") Voice;
 
   override val text: String
     get() = when(this) {
+      TimedMessages -> generalGetString(R.string.timed_messages)
       DirectMessages -> generalGetString(R.string.direct_messages)
       FullDelete -> generalGetString(R.string.full_deletion)
       Voice -> generalGetString(R.string.voice_messages)
@@ -2146,6 +2175,7 @@ enum class GroupFeature: Feature {
 
   val icon: ImageVector
     get() = when(this) {
+      TimedMessages -> Icons.Outlined.Timer
       DirectMessages -> Icons.Outlined.SwapHorizontalCircle
       FullDelete -> Icons.Outlined.DeleteForever
       Voice -> Icons.Outlined.KeyboardVoice
@@ -2153,6 +2183,7 @@ enum class GroupFeature: Feature {
 
   override val iconFilled: ImageVector
     get() = when(this) {
+      TimedMessages -> Icons.Filled.Timer
       DirectMessages -> Icons.Filled.SwapHorizontalCircle
       FullDelete -> Icons.Filled.DeleteForever
       Voice -> Icons.Filled.KeyboardVoice
@@ -2161,6 +2192,10 @@ enum class GroupFeature: Feature {
   fun enableDescription(enabled: GroupFeatureEnabled, canEdit: Boolean): String =
     if (canEdit) {
       when(this) {
+        TimedMessages -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(R.string.allow_to_send_disappearing)
+          GroupFeatureEnabled.OFF -> generalGetString(R.string.prohibit_sending_disappearing)
+        }
         DirectMessages -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(R.string.allow_direct_messages)
           GroupFeatureEnabled.OFF -> generalGetString(R.string.prohibit_direct_messages)
@@ -2176,6 +2211,10 @@ enum class GroupFeature: Feature {
       }
     } else {
       when(this) {
+        TimedMessages -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(R.string.group_members_can_send_disappearing)
+          GroupFeatureEnabled.OFF -> generalGetString(R.string.disappearing_messages_are_prohibited)
+        }
         DirectMessages -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(R.string.group_members_can_send_dms)
           GroupFeatureEnabled.OFF -> generalGetString(R.string.direct_messages_are_prohibited_in_chat)
@@ -2221,11 +2260,13 @@ sealed class ContactFeatureAllowed {
 
 @Serializable
 data class ContactFeaturesAllowed(
+  val timedMessages: ContactFeatureAllowed,
   val fullDelete: ContactFeatureAllowed,
   val voice: ContactFeatureAllowed
 ) {
   companion object {
     val sampleData = ContactFeaturesAllowed(
+      timedMessages = ContactFeatureAllowed.UserDefault(FeatureAllowed.NO),
       fullDelete = ContactFeatureAllowed.UserDefault(FeatureAllowed.NO),
       voice = ContactFeatureAllowed.UserDefault(FeatureAllowed.YES)
     )
@@ -2234,6 +2275,7 @@ data class ContactFeaturesAllowed(
 
 fun contactUserPrefsToFeaturesAllowed(contactUserPreferences: ContactUserPreferences): ContactFeaturesAllowed =
   ContactFeaturesAllowed(
+    timedMessages = contactUserPrefToFeatureAllowed(contactUserPreferences.timedMessages),
     fullDelete = contactUserPrefToFeatureAllowed(contactUserPreferences.fullDelete),
     voice = contactUserPrefToFeatureAllowed(contactUserPreferences.voice)
   )
@@ -2250,6 +2292,7 @@ fun contactUserPrefToFeatureAllowed(contactUserPreference: ContactUserPreference
 
 fun contactFeaturesAllowedToPrefs(contactFeaturesAllowed: ContactFeaturesAllowed): ChatPreferences =
   ChatPreferences(
+    timedMessages = contactFeatureAllowedToPref(contactFeaturesAllowed.timedMessages),
     fullDelete = contactFeatureAllowedToPref(contactFeaturesAllowed.fullDelete),
     voice = contactFeatureAllowedToPref(contactFeaturesAllowed.voice)
   )
@@ -2278,26 +2321,38 @@ enum class FeatureAllowed {
 
 @Serializable
 data class FullGroupPreferences(
+  val timedMessages: GroupPreference,
   val directMessages: GroupPreference,
   val fullDelete: GroupPreference,
   val voice: GroupPreference
 ) {
   fun toGroupPreferences(): GroupPreferences =
-    GroupPreferences(directMessages = directMessages, fullDelete = fullDelete, voice = voice)
+    GroupPreferences(timedMessages = timedMessages, directMessages = directMessages, fullDelete = fullDelete, voice = voice)
 
   companion object {
-    val sampleData = FullGroupPreferences(directMessages = GroupPreference(GroupFeatureEnabled.OFF), fullDelete = GroupPreference(GroupFeatureEnabled.OFF), voice = GroupPreference(GroupFeatureEnabled.ON))
+    val sampleData = FullGroupPreferences(
+      timedMessages = GroupPreference(GroupFeatureEnabled.OFF),
+      directMessages = GroupPreference(GroupFeatureEnabled.OFF),
+      fullDelete = GroupPreference(GroupFeatureEnabled.OFF),
+      voice = GroupPreference(GroupFeatureEnabled.ON)
+    )
   }
 }
 
 @Serializable
 data class GroupPreferences(
+  val timedMessages: GroupPreference?,
   val directMessages: GroupPreference?,
   val fullDelete: GroupPreference?,
   val voice: GroupPreference?
 ) {
   companion object {
-    val sampleData = GroupPreferences(directMessages = GroupPreference(GroupFeatureEnabled.OFF), fullDelete = GroupPreference(GroupFeatureEnabled.OFF), voice = GroupPreference(GroupFeatureEnabled.ON))
+    val sampleData = GroupPreferences(
+      timedMessages = GroupPreference(GroupFeatureEnabled.OFF),
+      directMessages = GroupPreference(GroupFeatureEnabled.OFF),
+      fullDelete = GroupPreference(GroupFeatureEnabled.OFF),
+      voice = GroupPreference(GroupFeatureEnabled.ON)
+    )
   }
 }
 
