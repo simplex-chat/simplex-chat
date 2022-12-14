@@ -53,22 +53,6 @@ fun ChatInfoView(
   BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
-
-  suspend fun verifyContact(code: String?): Pair<Boolean, String>? {
-    val r = chatModel.controller.apiVerifyContact(contact.contactId, code)
-    return if (r != null) {
-      val (verified, existingCode) = r
-      chatModel.updateContact(
-        contact.copy(
-          activeConn = contact.activeConn.copy(
-            connectionCode = if (verified) SecurityCode(existingCode, Clock.System.now()) else null
-          )
-        )
-      )
-      r
-    } else null
-  }
-
   if (chat != null) {
     ChatInfoLayout(
       chat,
@@ -96,13 +80,24 @@ fun ChatInfoView(
       },
       verifyClicked = {
         ModalManager.shared.showModalCloseable { close ->
-          val contact = remember { derivedStateOf { (chatModel.getContactChat(contact.contactId)?.chatInfo as? ChatInfo.Direct)?.contact } }
-          contact.value?.let { ct ->
+          remember { derivedStateOf { (chatModel.getContactChat(contact.contactId)?.chatInfo as? ChatInfo.Direct)?.contact } }.value?.let { ct ->
             VerifyCodeView(
               ct.displayName,
               connectionCode,
               ct.verified,
-              verify = ::verifyContact,
+              verify = { code ->
+                chatModel.controller.apiVerifyContact(ct.contactId, code)?.let { r ->
+                  val (verified, existingCode) = r
+                  chatModel.updateContact(
+                    ct.copy(
+                      activeConn = ct.activeConn.copy(
+                        connectionCode = if (verified) SecurityCode(existingCode, Clock.System.now()) else null
+                      )
+                    )
+                  )
+                  r
+                }
+              },
               close,
             )
           }

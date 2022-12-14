@@ -69,8 +69,7 @@ fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
             member to null
           }
           ModalManager.shared.showModalCloseable(true) { closeCurrent ->
-            val member = remember { derivedStateOf { chatModel.groupMembers.firstOrNull { it.memberId == member.memberId } } }
-            member.value?.let { mem ->
+            remember { derivedStateOf { chatModel.groupMembers.firstOrNull { it.memberId == member.memberId } } }.value?.let { mem ->
               GroupMemberInfoView(groupInfo, mem, stats, code, chatModel, closeCurrent) {
                 closeCurrent()
                 close()

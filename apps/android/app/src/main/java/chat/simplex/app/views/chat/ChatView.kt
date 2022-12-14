@@ -133,8 +133,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
             val contactInfo = chatModel.controller.apiContactInfo(chat.chatInfo.apiId)
             val (_, code) = chatModel.controller.apiGetContactCode(chat.chatInfo.apiId)
             ModalManager.shared.showModalCloseable(true) { close ->
-              val contact = remember { derivedStateOf { (chatModel.getContactChat(chat.chatInfo.contact.contactId)?.chatInfo as? ChatInfo.Direct)?.contact } }
-              contact.value?.let { ct ->
+              remember { derivedStateOf { (chatModel.getContactChat(chat.chatInfo.apiId)?.chatInfo as? ChatInfo.Direct)?.contact } }.value?.let { ct ->
                 ChatInfoView(chatModel, ct, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, code, close)
               }
             }
@@ -161,8 +160,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
             member to null
           }
           ModalManager.shared.showModalCloseable(true) { close ->
-            val member = remember { derivedStateOf { chatModel.groupMembers.firstOrNull { it.memberId == member.memberId } } }
-            member.value?.let { mem ->
+            remember { derivedStateOf { chatModel.groupMembers.firstOrNull { it.memberId == member.memberId } } }.value?.let { mem ->
               GroupMemberInfoView(groupInfo, mem, stats, code, chatModel, close, close)
             }
           }

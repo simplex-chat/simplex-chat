@@ -44,23 +44,6 @@ fun GroupMemberInfoView(
   BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
-
-  suspend fun verifyMember(code: String?): Pair<Boolean, String>? {
-    val r = chatModel.controller.apiVerifyGroupMember(member.groupId, member.groupMemberId, code)
-    return if (r != null) {
-      val (verified, existingCode) = r
-      chatModel.upsertGroupMember(
-        groupInfo,
-        member.copy(
-          activeConn = member.activeConn?.copy(
-            connectionCode = if (verified) SecurityCode(existingCode, Clock.System.now()) else null
-          )
-        )
-      )
-      r
-    } else null
-  }
-
   if (chat != null) {
     val newRole = remember { mutableStateOf(member.memberRole) }
     GroupMemberInfoLayout(
@@ -115,13 +98,25 @@ fun GroupMemberInfoView(
       },
       verifyClicked = {
         ModalManager.shared.showModalCloseable { close ->
-          val member = remember { derivedStateOf { chatModel.groupMembers.firstOrNull { it.memberId == member.memberId } } }
-          member.value?.let { mem ->
+          remember { derivedStateOf { chatModel.groupMembers.firstOrNull { it.memberId == member.memberId } } }.value?.let { mem ->
             VerifyCodeView(
               mem.displayName,
               connectionCode,
               mem.verified,
-              verify = ::verifyMember,
+              verify = { code ->
+                chatModel.controller.apiVerifyGroupMember(mem.groupId, mem.groupMemberId, code)?.let { r ->
+                  val (verified, existingCode) = r
+                  chatModel.upsertGroupMember(
+                    groupInfo,
+                    mem.copy(
+                      activeConn = mem.activeConn?.copy(
+                        connectionCode = if (verified) SecurityCode(existingCode, Clock.System.now()) else null
+                      )
+                    )
+                  )
+                  r
+                }
+              },
               close,
             )
           }
