@@ -6,8 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Cancel
-import androidx.compose.material.icons.filled.NotificationsOff
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -64,10 +63,20 @@ fun ChatPreviewView(chat: Chat, chatModelIncognito: Boolean, currentUserProfileD
   }
 
   @Composable
+  fun VerifiedIcon() {
+    Icon(Icons.Outlined.VerifiedUser, null, Modifier.size(19.dp).padding(end = 3.dp, top = 1.dp), tint = HighOrLowlight)
+  }
+
+  @Composable
   fun chatPreviewTitle() {
     when (cInfo) {
       is ChatInfo.Direct ->
-        chatPreviewTitleText(if (cInfo.ready) Color.Unspecified else HighOrLowlight)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          if (cInfo.contact.verified) {
+            VerifiedIcon()
+          }
+          chatPreviewTitleText(if (cInfo.ready) Color.Unspecified else HighOrLowlight)
+        }
       is ChatInfo.Group ->
         when (cInfo.groupInfo.membership.memberStatus) {
           GroupMemberStatus.MemInvited -> chatPreviewTitleText(if (chat.chatInfo.incognito) Indigo else MaterialTheme.colors.primary)

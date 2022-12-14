@@ -5,6 +5,7 @@ import SectionDivider
 import SectionItemView
 import SectionSpacer
 import SectionView
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -12,6 +13,7 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -21,18 +23,20 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
+import chat.simplex.app.TAG
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
-import chat.simplex.app.views.chat.SimplexServers
-import chat.simplex.app.views.chat.SwitchAddressButton
+import chat.simplex.app.views.chat.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.SettingsActionItem
+import kotlinx.datetime.Clock
 
 @Composable
 fun GroupMemberInfoView(
   groupInfo: GroupInfo,
   member: GroupMember,
   connStats: ConnectionStats?,
+  connectionCode: String?,
   chatModel: ChatModel,
   close: () -> Unit,
   closeAll: () -> Unit, // Close all open windows up to ChatView
@@ -48,6 +52,7 @@ fun GroupMemberInfoView(
       connStats,
       newRole,
       developerTools,
+      connectionCode,
       getContactChat = { chatModel.getContactChat(it) },
       knownDirectChat = {
         withApi {
@@ -90,6 +95,32 @@ fun GroupMemberInfoView(
       },
       switchMemberAddress = {
         switchMemberAddress(chatModel, groupInfo, member)
+      },
+      verifyClicked = {
+        ModalManager.shared.showModalCloseable { close ->
+          remember { derivedStateOf { chatModel.groupMembers.firstOrNull { it.memberId == member.memberId } } }.value?.let { mem ->
+            VerifyCodeView(
+              mem.displayName,
+              connectionCode,
+              mem.verified,
+              verify = { code ->
+                chatModel.controller.apiVerifyGroupMember(mem.groupId, mem.groupMemberId, code)?.let { r ->
+                  val (verified, existingCode) = r
+                  chatModel.upsertGroupMember(
+                    groupInfo,
+                    mem.copy(
+                      activeConn = mem.activeConn?.copy(
+                        connectionCode = if (verified) SecurityCode(existingCode, Clock.System.now()) else null
+                      )
+                    )
+                  )
+                  r
+                }
+              },
+              close,
+            )
+          }
+        }
       }
     )
   }
@@ -119,12 +150,14 @@ fun GroupMemberInfoLayout(
   connStats: ConnectionStats?,
   newRole: MutableState<GroupMemberRole>,
   developerTools: Boolean,
+  connectionCode: String?,
   getContactChat: (Long) -> Chat?,
   knownDirectChat: (Chat) -> Unit,
   newDirectChat: (Long) -> Unit,
   removeMember: () -> Unit,
   onRoleSelected: (GroupMemberRole) -> Unit,
   switchMemberAddress: () -> Unit,
+  verifyClicked: () -> Unit,
 ) {
   Column(
     Modifier
@@ -143,18 +176,24 @@ fun GroupMemberInfoLayout(
     if (member.memberActive) {
       val contactId = member.memberContactId
       if (contactId != null) {
-        val chat = getContactChat(contactId)
-        if (chat != null && chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.directOrUsed) {
-          SectionView {
+        SectionView {
+          val chat = getContactChat(contactId)
+          if (chat != null && chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.directOrUsed) {
             OpenChatButton(onClick = { knownDirectChat(chat) })
-          }
-          SectionSpacer()
-        } else if (groupInfo.fullGroupPreferences.directMessages.on) {
-          SectionView {
+            if (connectionCode != null) {
+              SectionDivider()
+            }
+          } else if (groupInfo.fullGroupPreferences.directMessages.on) {
             OpenChatButton(onClick = { newDirectChat(contactId) })
+            if (connectionCode != null) {
+              SectionDivider()
+            }
           }
-          SectionSpacer()
+          if (connectionCode != null) {
+            VerifyCodeButton(member.verified, verifyClicked)
+          }
         }
+        SectionSpacer()
       }
     }
 
@@ -179,10 +218,10 @@ fun GroupMemberInfoLayout(
       }
     }
     SectionSpacer()
-    SectionView(title = stringResource(R.string.conn_stats_section_title_servers)) {
+    if (connStats != null) {
+      SectionView(title = stringResource(R.string.conn_stats_section_title_servers)) {
       SwitchAddressButton(switchMemberAddress)
       SectionDivider()
-      if (connStats != null) {
         val rcvServers = connStats.rcvServers
         val sndServers = connStats.sndServers
         if ((rcvServers != null && rcvServers.isNotEmpty()) || (sndServers != null && sndServers.isNotEmpty())) {
@@ -197,8 +236,8 @@ fun GroupMemberInfoLayout(
           }
         }
       }
+      SectionSpacer()
     }
-    SectionSpacer()
 
     if (member.canBeRemoved(groupInfo)) {
       SectionView {
@@ -225,12 +264,17 @@ fun GroupMemberInfoHeader(member: GroupMember) {
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     ProfileImage(size = 192.dp, member.image, color = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
-    Text(
-      member.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
-      color = MaterialTheme.colors.onBackground,
-      maxLines = 1,
-      overflow = TextOverflow.Ellipsis
-    )
+    Row(verticalAlignment = Alignment.CenterVertically) {
+      if (member.verified) {
+        Icon(Icons.Outlined.VerifiedUser, null, Modifier.padding(end = 6.dp, top = 4.dp).size(24.dp), tint = HighOrLowlight)
+      }
+      Text(
+        member.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
+        color = MaterialTheme.colors.onBackground,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
+      )
+    }
     if (member.fullName != "" && member.fullName != member.displayName) {
       Text(
         member.fullName, style = MaterialTheme.typography.h2,
@@ -320,12 +364,14 @@ fun PreviewGroupMemberInfoLayout() {
       connStats = null,
       newRole = remember { mutableStateOf(GroupMemberRole.Member) },
       developerTools = false,
+      connectionCode = "123",
       getContactChat = { Chat.sampleData },
       knownDirectChat = {},
       newDirectChat = {},
       removeMember = {},
       onRoleSelected = {},
       switchMemberAddress = {},
+      verifyClicked = {},
     )
   }
 }

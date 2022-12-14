@@ -3,6 +3,7 @@ package chat.simplex.app.views.chat
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.*
@@ -12,8 +13,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.mapSaver
@@ -131,10 +131,10 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
         withApi {
           if (chat.chatInfo is ChatInfo.Direct) {
             val contactInfo = chatModel.controller.apiContactInfo(chat.chatInfo.apiId)
+            val (_, code) = chatModel.controller.apiGetContactCode(chat.chatInfo.apiId)
             ModalManager.shared.showModalCloseable(true) { close ->
-              val contact = remember { derivedStateOf { (chatModel.getContactChat(chat.chatInfo.contact.contactId)?.chatInfo as? ChatInfo.Direct)?.contact } }
-              contact.value?.let { ct ->
-                ChatInfoView(chatModel, ct, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, close)
+              remember { derivedStateOf { (chatModel.getContactChat(chat.chatInfo.apiId)?.chatInfo as? ChatInfo.Direct)?.contact } }.value?.let { ct ->
+                ChatInfoView(chatModel, ct, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, code, close)
               }
             }
           } else if (chat.chatInfo is ChatInfo.Group) {
@@ -150,8 +150,20 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
         hideKeyboard(view)
         withApi {
           val stats = chatModel.controller.apiGroupMemberInfo(groupInfo.groupId, member.groupMemberId)
+          val (_, code) = if (member.memberActive) {
+            try {
+              chatModel.controller.apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId)
+            } catch (e: Exception) {
+              Log.e(TAG, e.stackTraceToString())
+              member to null
+            }
+          } else {
+            member to null
+          }
           ModalManager.shared.showModalCloseable(true) { close ->
-            GroupMemberInfoView(groupInfo, member, stats, chatModel, close, close)
+            remember { derivedStateOf { chatModel.groupMembers.firstOrNull { it.memberId == member.memberId } } }.value?.let { mem ->
+              GroupMemberInfoView(groupInfo, mem, stats, code, chatModel, close, close)
+            }
           }
         }
       },
@@ -425,10 +437,15 @@ fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Colo
       Modifier.padding(start = 8.dp),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
-      Text(
-        cInfo.displayName, fontWeight = FontWeight.SemiBold,
-        maxLines = 1, overflow = TextOverflow.Ellipsis
-      )
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        if ((cInfo as? ChatInfo.Direct)?.contact?.verified == true) {
+          ContactVerifiedShield()
+        }
+        Text(
+          cInfo.displayName, fontWeight = FontWeight.SemiBold,
+          maxLines = 1, overflow = TextOverflow.Ellipsis
+        )
+      }
       if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName && cInfo.localAlias.isEmpty()) {
         Text(
           cInfo.fullName,
@@ -437,6 +454,11 @@ fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Colo
       }
     }
   }
+}
+
+@Composable
+private fun ContactVerifiedShield() {
+  Icon(Icons.Outlined.VerifiedUser, null, Modifier.size(18.dp).padding(end = 3.dp, top = 1.dp), tint = HighOrLowlight)
 }
 
 data class CIListState(val scrolled: Boolean, val itemCount: Int, val keyboardState: KeyboardState)
