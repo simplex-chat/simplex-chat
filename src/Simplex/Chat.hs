@@ -298,7 +298,7 @@ processChatCommand = \case
   APIGetChatItems _pagination -> pure $ chatCmdError "not implemented"
   APISendMessage (ChatRef cType chatId) (ComposedMessage file_ quotedItemId_ mc) -> withUser $ \user@User {userId} -> withChatLock "sendMessage" $ case cType of
     CTDirect -> do
-      ct@Contact {localDisplayName = c, contactUsed} <- withStore $ \db -> getContact db user chatId
+      ct@Contact {contactId, localDisplayName = c, contactUsed} <- withStore $ \db -> getContact db user chatId
       assertDirectAllowed user MDSnd ct XMsgNew_
       unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
       if isVoice mc && not (featureAllowed SCFVoice forUser ct)
@@ -311,8 +311,9 @@ processChatCommand = \case
             Just ft@FileTransferMeta {fileInline = Just IFMSent} ->
               sendDirectFileInline ct ft sharedMsgId
             _ -> pure ()
-          -- TODO based on preference - save with CITimed, maybe start timed deletion thread
-          ci <- saveSndChatItemTimed user (CDDirectSnd ct) msg (CISndMsgContent mc) ciFile_ quotedItem_ Nothing
+          timed <- liftIO $ contactCITimed ct
+          ci <- saveSndChatItemTimed user (CDDirectSnd ct) msg (CISndMsgContent mc) ciFile_ quotedItem_ timed
+          forM_ timed $ \CITimed {ttl, deleteAt} -> when (ttl <= cleanupManagerInterval) $ startTimedItemThread user (ChatRef CTDirect contactId, chatItemId' ci) deleteAt
           setActive $ ActiveC c
           pure . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
       where
@@ -1667,7 +1668,7 @@ cleanupManager user = do
       agentStarted <- asks agentAsync
       atomically $ readTVar agentStarted >>= \a -> unless (isJust a) retry
       cleanupTimedItems
-    threadDelay cleanupManagerInterval
+    threadDelay $ cleanupManagerInterval * 1000000
   where
     cleanupTimedItems = do
       timedItems <- withStore' $ \db -> getTimedItems db user
