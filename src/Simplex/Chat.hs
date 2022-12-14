@@ -1715,7 +1715,7 @@ cleanupManager user = do
 startTimedItemThread :: ChatMonad m => User -> (ChatRef, ChatItemId) -> UTCTime -> m ()
 startTimedItemThread user itemRef deleteAt = do
   itemThreads <- asks timedItemThreads
-  unlessM (timedItemThreadExists itemRef) $ do
+  unlessM (timedItemThreadExists itemRef) $ do -- TODO atomically with insert
     tId <- mkWeakThreadId =<< deleteTimedItem user itemRef deleteAt `forkFinally` const (atomically $ TM.delete itemRef itemThreads)
     atomically $ TM.insert itemRef tId itemThreads
 
