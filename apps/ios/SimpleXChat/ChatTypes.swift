@@ -125,35 +125,48 @@ extension NamedChat {
 public typealias ChatId = String
 
 public struct FullPreferences: Decodable, Equatable {
+    public var timedMessages: Preference
     public var fullDelete: Preference
     public var voice: Preference
 
-    public init(fullDelete: Preference, voice: Preference) {
+    public init(timedMessages: Preference, fullDelete: Preference, voice: Preference) {
+        self.timedMessages = timedMessages
         self.fullDelete = fullDelete
         self.voice = voice
     }
 
-    public static let sampleData = FullPreferences(fullDelete: Preference(allow: .no), voice: Preference(allow: .yes))
+    public static let sampleData = FullPreferences(
+        timedMessages:  Preference(allow: .no),
+        fullDelete: Preference(allow: .no),
+        voice: Preference(allow: .yes)
+    )
 }
 
 public struct Preferences: Codable {
+    public var timedMessages: Preference?
     public var fullDelete: Preference?
     public var voice: Preference?
 
-    public init(fullDelete: Preference?, voice: Preference?) {
+    public init(timedMessages: Preference?, fullDelete: Preference?, voice: Preference?) {
+        self.timedMessages = timedMessages
         self.fullDelete = fullDelete
         self.voice = voice
     }
 
-    public static let sampleData = Preferences(fullDelete: Preference(allow: .no), voice: Preference(allow: .yes))
+    public static let sampleData = Preferences(timedMessages: Preference(allow: .no), fullDelete: Preference(allow: .no), voice: Preference(allow: .yes))
 }
 
 public func fullPreferencesToPreferences(_ fullPreferences: FullPreferences) -> Preferences {
-    Preferences(fullDelete: fullPreferences.fullDelete, voice: fullPreferences.voice)
+    Preferences(
+        timedMessages: fullPreferences.timedMessages,
+        fullDelete: fullPreferences.fullDelete,
+        voice: fullPreferences.voice
+    )
 }
 
 public func contactUserPreferencesToPreferences(_ contactUserPreferences: ContactUserPreferences) -> Preferences {
     Preferences(
+        timedMessages: contactUserPreferences.timedMessages.userPreference.preference,
         fullDelete: contactUserPreferences.fullDelete.userPreference.preference,
         voice: contactUserPreferences.voice.userPreference.preference
     )
@@ -168,15 +181,22 @@ public struct Preference: Codable, Equatable {
 }
 
 public struct ContactUserPreferences: Decodable {
+    public var timedMessages: ContactUserPreference
     public var fullDelete: ContactUserPreference
     public var voice: ContactUserPreference
 
-    public init(fullDelete: ContactUserPreference, voice: ContactUserPreference) {
+    public init(timedMessages: ContactUserPreference, fullDelete: ContactUserPreference, voice: ContactUserPreference) {
+        self.timedMessages = timedMessages
         self.fullDelete = fullDelete
         self.voice = voice
     }
 
     public static let sampleData = ContactUserPreferences(
+        timedMessages: ContactUserPreference(
+            enabled: FeatureEnabled(forUser: false, forContact: false),
+            userPreference: .user(preference: Preference(allow: .no)),
+            contactPreference: Preference(allow: .no)
+        ),
         fullDelete: ContactUserPreference(
             enabled: FeatureEnabled(forUser: false, forContact: false),
             userPreference: .user(preference: Preference(allow: .no)),
@@ -250,6 +270,7 @@ public protocol Feature {
 }
 
 public enum ChatFeature: String, Decodable, Feature {
+    case timedMessages
     case fullDelete
     case voice
 
@@ -259,6 +280,7 @@ public enum ChatFeature: String, Decodable, Feature {
 
     public var text: String {
         switch self {
+        case .timedMessages: return NSLocalizedString("Disappearing messages", comment: "chat feature")
         case .fullDelete: return NSLocalizedString("Delete for everyone", comment: "chat feature")
         case .voice: return NSLocalizedString("Voice messages", comment: "chat feature")
         }
@@ -266,6 +288,7 @@ public enum ChatFeature: String, Decodable, Feature {
 
     public var icon: String {
         switch self {
+        case .timedMessages: return "timer"
         case .fullDelete: return "trash.slash"
         case .voice: return "mic"
         }
@@ -273,6 +296,7 @@ public enum ChatFeature: String, Decodable, Feature {
 
     public var iconFilled: String {
         switch self {
+        case .timedMessages: return "timer"
         case .fullDelete: return "trash.slash.fill"
         case .voice: return "mic.fill"
         }
@@ -280,6 +304,12 @@ public enum ChatFeature: String, Decodable, Feature {
 
     public func allowDescription(_ allowed: FeatureAllowed) -> LocalizedStringKey {
         switch self {
+        case .timedMessages:
+             switch allowed {
+             case .always: return "Allow your contacts to send disappearing messages."
+             case .yes: return "Allow disappearing messages only if your contact allows it to you."
+             case .no: return "Prohibit sending disappearing messages."
+             }
         case .fullDelete:
             switch allowed {
             case .always: return "Allow your contacts to irreversibly delete sent messages."
@@ -297,6 +327,14 @@ public enum ChatFeature: String, Decodable, Feature {
 
     public func enabledDescription(_ enabled: FeatureEnabled) -> LocalizedStringKey {
         switch self {
+        case .timedMessages:
+             return enabled.forUser && enabled.forContact
+                     ? "Both you and your contact can send disappearing messages."
+                     : enabled.forUser
+                     ? "Only you can send disappearing messages."
+                     : enabled.forContact
+                     ? "Only your contact can send disappearing messages."
+                     : "Disappearing messages are prohibited in this chat."
         case .fullDelete:
             return enabled.forUser && enabled.forContact
                     ? "Both you and your contact can irreversibly delete sent messages."
@@ -318,6 +356,7 @@ public enum ChatFeature: String, Decodable, Feature {
 }
 
 public enum GroupFeature: String, Decodable, Feature {
+    case timedMessages
     case fullDelete
     case voice
     case directMessages
@@ -328,6 +367,7 @@ public enum GroupFeature: String, Decodable, Feature {
 
     public var text: String {
         switch self {
+        case .timedMessages: return NSLocalizedString("Disappearing messages", comment: "chat feature")
         case .directMessages: return NSLocalizedString("Direct messages", comment: "chat feature")
         case .fullDelete: return NSLocalizedString("Delete for everyone", comment: "chat feature")
         case .voice: return NSLocalizedString("Voice messages", comment: "chat feature")
@@ -336,6 +376,7 @@ public enum GroupFeature: String, Decodable, Feature {
 
     public var icon: String {
         switch self {
+        case .timedMessages: return "timer"
         case .directMessages: return "arrow.left.and.right.circle"
         case .fullDelete: return "trash.slash"
         case .voice: return "mic"
@@ -344,6 +385,7 @@ public enum GroupFeature: String, Decodable, Feature {
 
     public var iconFilled: String {
         switch self {
+        case .timedMessages: return "timer"
         case .directMessages: return "arrow.left.and.right.circle.fill"
         case .fullDelete: return "trash.slash.fill"
         case .voice: return "mic.fill"
@@ -353,6 +395,11 @@ public enum GroupFeature: String, Decodable, Feature {
     public func enableDescription(_ enabled: GroupFeatureEnabled, _ canEdit: Bool) -> LocalizedStringKey {
         if canEdit {
             switch self {
+            case .timedMessages:
+                switch enabled {
+                case .on: return "Allow sending disappearing messages."
+                case .off: return "Prohibit sending disappearing messages."
+                }
             case .directMessages:
                 switch enabled {
                 case .on: return "Allow sending direct messages to members."
@@ -371,6 +418,11 @@ public enum GroupFeature: String, Decodable, Feature {
             }
         } else {
             switch self {
+            case .timedMessages:
+                switch enabled {
+                case .on: return "Group members can send disappearing messages."
+                case .off: return "Disappearing messages are prohibited in this group."
+                }
             case .directMessages:
                 switch enabled {
                 case .on: return "Group members can send direct messages."
@@ -423,15 +475,18 @@ public enum ContactFeatureAllowed: Identifiable, Hashable {
 }
 
 public struct ContactFeaturesAllowed: Equatable {
+    public var timedMessages: ContactFeatureAllowed
     public var fullDelete: ContactFeatureAllowed
     public var voice: ContactFeatureAllowed
 
-    public init(fullDelete: ContactFeatureAllowed, voice: ContactFeatureAllowed) {
+    public init(timedMessages: ContactFeatureAllowed, fullDelete: ContactFeatureAllowed, voice: ContactFeatureAllowed) {
+        self.timedMessages = timedMessages
         self.fullDelete = fullDelete
         self.voice = voice
     }
 
     public static let sampleData = ContactFeaturesAllowed(
+        timedMessages: ContactFeatureAllowed.userDefault(.no),
         fullDelete: ContactFeatureAllowed.userDefault(.no),
         voice: ContactFeatureAllowed.userDefault(.yes)
     )
@@ -439,6 +494,7 @@ public struct ContactFeaturesAllowed: Equatable {
 
 public func contactUserPrefsToFeaturesAllowed(_ contactUserPreferences: ContactUserPreferences) -> ContactFeaturesAllowed {
     ContactFeaturesAllowed(
+        timedMessages: contactUserPrefToFeatureAllowed(contactUserPreferences.timedMessages),
         fullDelete: contactUserPrefToFeatureAllowed(contactUserPreferences.fullDelete),
         voice: contactUserPrefToFeatureAllowed(contactUserPreferences.voice)
     )
@@ -458,6 +514,7 @@ public func contactUserPrefToFeatureAllowed(_ contactUserPreference: ContactUser
 
 public func contactFeaturesAllowedToPrefs(_ contactFeaturesAllowed: ContactFeaturesAllowed) -> Preferences {
     Preferences(
+        timedMessages: contactFeatureAllowedToPref(contactFeaturesAllowed.timedMessages),
         fullDelete: contactFeatureAllowedToPref(contactFeaturesAllowed.fullDelete),
         voice: contactFeatureAllowedToPref(contactFeaturesAllowed.voice)
     )
@@ -491,35 +548,54 @@ public enum FeatureAllowed: String, Codable, Identifiable {
 }
 
 public struct FullGroupPreferences: Decodable, Equatable {
+    public var timedMessages: GroupPreference
     public var directMessages: GroupPreference
     public var fullDelete: GroupPreference
     public var voice: GroupPreference
 
-    public init(directMessages: GroupPreference, fullDelete: GroupPreference, voice: GroupPreference) {
+    public init(timedMessages:  GroupPreference, directMessages: GroupPreference, fullDelete: GroupPreference, voice: GroupPreference) {
+        self.timedMessages = timedMessages
         self.directMessages = directMessages
         self.fullDelete = fullDelete
         self.voice = voice
     }
 
-    public static let sampleData = FullGroupPreferences(directMessages: GroupPreference(enable: .off), fullDelete: GroupPreference(enable: .off), voice: GroupPreference(enable: .on))
+    public static let sampleData = FullGroupPreferences(
+        timedMessages: GroupPreference(enable: .off),
+        directMessages: GroupPreference(enable: .off),
+        fullDelete: GroupPreference(enable: .off),
+        voice: GroupPreference(enable: .on)
+    )
 }
 
 public struct GroupPreferences: Codable {
+    public var timedMessages: GroupPreference?
     public var directMessages: GroupPreference?
     public var fullDelete: GroupPreference?
     public var voice: GroupPreference?
 
-    public init(directMessages: GroupPreference?, fullDelete: GroupPreference?, voice: GroupPreference?) {
+    public init(timedMessages: GroupPreference?, directMessages: GroupPreference?, fullDelete: GroupPreference?, voice: GroupPreference?) {
+        self.timedMessages = timedMessages
         self.directMessages = directMessages
         self.fullDelete = fullDelete
         self.voice = voice
     }
 
-    public static let sampleData = GroupPreferences(directMessages: GroupPreference(enable: .off), fullDelete: GroupPreference(enable: .off), voice: GroupPreference(enable: .on))
+    public static let sampleData = GroupPreferences(
+        timedMessages: GroupPreference(enable: .off),
+        directMessages: GroupPreference(enable: .off),
+        fullDelete: GroupPreference(enable: .off),
+        voice: GroupPreference(enable: .on)
+    )
 }
 
 public func toGroupPreferences(_ fullPreferences: FullGroupPreferences) -> GroupPreferences {
-    GroupPreferences(directMessages: fullPreferences.directMessages, fullDelete: fullPreferences.fullDelete, voice: fullPreferences.voice)
+    GroupPreferences(
+        timedMessages: fullPreferences.timedMessages,
+        directMessages: fullPreferences.directMessages,
+        fullDelete: fullPreferences.fullDelete,
+        voice: fullPreferences.voice
+    )
 }
 
 public struct GroupPreference: Codable, Equatable {
