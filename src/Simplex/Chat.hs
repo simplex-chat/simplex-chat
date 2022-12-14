@@ -425,7 +425,7 @@ processChatCommand = \case
     CTContactConnection -> pure $ chatCmdError "not supported"
     where
       ttl_ :: Maybe CITimed -> Maybe Int
-      ttl_ timed_ = (\CITimed {ttl} -> Just ttl) =<< timed_
+      ttl_ timed_ = timed_ >>= \CITimed {ttl} -> Just ttl
       quoteContent :: forall d. MsgContent -> Maybe (CIFile d) -> MsgContent
       quoteContent qmc ciFile_
         | replaceContent = MCText qTextOrFile
