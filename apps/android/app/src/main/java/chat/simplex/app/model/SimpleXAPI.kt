@@ -553,6 +553,34 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     }
   }
 
+  suspend fun apiGetContactCode(contactId: Long): Pair<Contact, String> {
+    val r = sendCmd(CC.APIGetContactCode(contactId))
+    if (r is CR.ContactCode) return r.contact to r.connectionCode
+    throw Exception("failed to get contact code: ${r.responseType} ${r.details}")
+  }
+
+  suspend fun apiGetGroupMemberCode(groupId: Long, groupMemberId: Long): Pair<GroupMember, String> {
+    val r = sendCmd(CC.APIGetGroupMemberCode(groupId, groupMemberId))
+    if (r is CR.GroupMemberCode) return r.member to r.connectionCode
+    throw Exception("failed to get group member code: ${r.responseType} ${r.details}")
+  }
+
+  suspend fun apiVerifyContact(contactId: Long, connectionCode: String?): Pair<Boolean, String>? {
+    return when (val r = sendCmd(CC.APIVerifyContact(contactId, connectionCode))) {
+      is CR.ConnectionVerified -> r.verified to r.expectedCode
+      else -> null
+    }
+  }
+
+  suspend fun apiVerifyGroupMember(groupId: Long, groupMemberId: Long, connectionCode: String?): Pair<Boolean, String>? {
+    return when (val r = sendCmd(CC.APIVerifyGroupMember(groupId, groupMemberId, connectionCode))) {
+      is CR.ConnectionVerified -> r.verified to r.expectedCode
+      else -> null
+    }
+  }
+
+
+
   suspend fun apiAddContact(): String? {
     val r = sendCmd(CC.AddContact())
     return when (r) {
@@ -1536,6 +1564,10 @@ sealed class CC {
   class APIGroupMemberInfo(val groupId: Long, val groupMemberId: Long): CC()
   class APISwitchContact(val contactId: Long): CC()
   class APISwitchGroupMember(val groupId: Long, val groupMemberId: Long): CC()
+  class APIGetContactCode(val contactId: Long): CC()
+  class APIGetGroupMemberCode(val groupId: Long, val groupMemberId: Long): CC()
+  class APIVerifyContact(val contactId: Long, val connectionCode: String?): CC()
+  class APIVerifyGroupMember(val groupId: Long, val groupMemberId: Long, val connectionCode: String?): CC()
   class AddContact: CC()
   class Connect(val connReq: String): CC()
   class ApiDeleteChat(val type: ChatType, val id: Long): CC()
@@ -1603,6 +1635,10 @@ sealed class CC {
     is APIGroupMemberInfo -> "/_info #$groupId $groupMemberId"
     is APISwitchContact -> "/_switch @$contactId"
     is APISwitchGroupMember -> "/_switch #$groupId $groupMemberId"
+    is APIGetContactCode -> "/_get code @$contactId"
+    is APIGetGroupMemberCode -> "/_get code #$groupId $groupMemberId"
+    is APIVerifyContact -> "/_verify code @$contactId" + if (connectionCode != null) " $connectionCode" else ""
+    is APIVerifyGroupMember -> "/_verify code #$groupId $groupMemberId" + if (connectionCode != null) " $connectionCode" else ""
     is AddContact -> "/connect"
     is Connect -> "/connect $connReq"
     is ApiDeleteChat -> "/_delete ${chatRef(type, id)}"
@@ -1671,6 +1707,10 @@ sealed class CC {
     is APIGroupMemberInfo -> "apiGroupMemberInfo"
     is APISwitchContact -> "apiSwitchContact"
     is APISwitchGroupMember -> "apiSwitchGroupMember"
+    is APIGetContactCode -> "apiGetContactCode"
+    is APIGetGroupMemberCode -> "apiGetGroupMemberCode"
+    is APIVerifyContact -> "apiVerifyContact"
+    is APIVerifyGroupMember -> "apiVerifyGroupMember"
     is AddContact -> "addContact"
     is Connect -> "connect"
     is ApiDeleteChat -> "apiDeleteChat"
@@ -1983,11 +2023,16 @@ data class FullChatPreferences(
 
 @Serializable
 data class ChatPreferences(
+  val timedMessages: ChatPreference? = null,
   val fullDelete: ChatPreference? = null,
   val voice: ChatPreference? = null,
 ) {
   companion object {
-    val sampleData = ChatPreferences(fullDelete = ChatPreference(allow = FeatureAllowed.NO), voice = ChatPreference(allow = FeatureAllowed.YES))
+    val sampleData = ChatPreferences(
+      timedMessages = ChatPreference(allow = FeatureAllowed.NO),
+      fullDelete = ChatPreference(allow = FeatureAllowed.NO),
+      voice = ChatPreference(allow = FeatureAllowed.YES)
+    )
   }
 }
 
@@ -1998,16 +2043,23 @@ data class ChatPreference(
 
 @Serializable
 data class ContactUserPreferences(
+  val timedMessages: ContactUserPreference,
   val fullDelete: ContactUserPreference,
   val voice: ContactUserPreference,
 ) {
   fun toPreferences(): ChatPreferences = ChatPreferences(
+    timedMessages = timedMessages.userPreference.pref,
     fullDelete = fullDelete.userPreference.pref,
     voice = voice.userPreference.pref
   )
 
   companion object {
     val sampleData = ContactUserPreferences(
+      timedMessages = ContactUserPreference(
+        enabled = FeatureEnabled(forUser = false, forContact = false),
+        userPreference = ContactUserPref.User(preference = ChatPreference(allow = FeatureAllowed.NO)),
+        contactPreference = ChatPreference(allow = FeatureAllowed.NO)
+      ),
       fullDelete = ContactUserPreference(
         enabled = FeatureEnabled(forUser = false, forContact = false),
         userPreference = ContactUserPref.User(preference = ChatPreference(allow = FeatureAllowed.NO)),
@@ -2079,29 +2131,38 @@ interface Feature {
 
 @Serializable
 enum class ChatFeature: Feature {
+  @SerialName("timedMessages") TimedMessages,
   @SerialName("fullDelete") FullDelete,
   @SerialName("voice") Voice;
 
   override val text: String
     get() = when(this) {
+      TimedMessages -> generalGetString(R.string.timed_messages)
       FullDelete -> generalGetString(R.string.full_deletion)
       Voice -> generalGetString(R.string.voice_messages)
     }
 
   val icon: ImageVector
     get() = when(this) {
+      TimedMessages -> Icons.Outlined.Timer
       FullDelete -> Icons.Outlined.DeleteForever
       Voice -> Icons.Outlined.KeyboardVoice
     }
 
   override val iconFilled: ImageVector
     get() = when(this) {
+      TimedMessages -> Icons.Filled.Timer
       FullDelete -> Icons.Filled.DeleteForever
       Voice -> Icons.Filled.KeyboardVoice
     }
 
   fun allowDescription(allowed: FeatureAllowed): String =
     when (this) {
+      TimedMessages -> when (allowed) {
+        FeatureAllowed.ALWAYS -> generalGetString(R.string.allow_your_contacts_to_send_disappearing_messages)
+        FeatureAllowed.YES -> generalGetString(R.string.allow_disappearing_messages_only_if)
+        FeatureAllowed.NO -> generalGetString(R.string.prohibit_sending_disappearing_messages)
+      }
       FullDelete -> when (allowed) {
         FeatureAllowed.ALWAYS -> generalGetString(R.string.allow_your_contacts_irreversibly_delete)
         FeatureAllowed.YES -> generalGetString(R.string.allow_irreversible_message_deletion_only_if)
@@ -2116,6 +2177,12 @@ enum class ChatFeature: Feature {
 
   fun enabledDescription(enabled: FeatureEnabled): String =
     when (this) {
+      TimedMessages -> when {
+        enabled.forUser && enabled.forContact -> generalGetString(R.string.both_you_and_your_contact_can_send_disappearing)
+        enabled.forUser -> generalGetString(R.string.only_you_can_send_disappearing)
+        enabled.forContact -> generalGetString(R.string.only_your_contact_can_send_disappearing)
+        else -> generalGetString(R.string.disappearing_prohibited_in_this_chat)
+      }
       FullDelete -> when {
         enabled.forUser && enabled.forContact -> generalGetString(R.string.both_you_and_your_contacts_can_delete)
         enabled.forUser -> generalGetString(R.string.only_you_can_delete_messages)
@@ -2133,12 +2200,14 @@ enum class ChatFeature: Feature {
 
 @Serializable
 enum class GroupFeature: Feature {
+  @SerialName("timedMessages") TimedMessages,
   @SerialName("directMessages") DirectMessages,
   @SerialName("fullDelete") FullDelete,
   @SerialName("voice") Voice;
 
   override val text: String
     get() = when(this) {
+      TimedMessages -> generalGetString(R.string.timed_messages)
       DirectMessages -> generalGetString(R.string.direct_messages)
       FullDelete -> generalGetString(R.string.full_deletion)
       Voice -> generalGetString(R.string.voice_messages)
@@ -2146,6 +2215,7 @@ enum class GroupFeature: Feature {
 
   val icon: ImageVector
     get() = when(this) {
+      TimedMessages -> Icons.Outlined.Timer
       DirectMessages -> Icons.Outlined.SwapHorizontalCircle
       FullDelete -> Icons.Outlined.DeleteForever
       Voice -> Icons.Outlined.KeyboardVoice
@@ -2153,6 +2223,7 @@ enum class GroupFeature: Feature {
 
   override val iconFilled: ImageVector
     get() = when(this) {
+      TimedMessages -> Icons.Filled.Timer
       DirectMessages -> Icons.Filled.SwapHorizontalCircle
       FullDelete -> Icons.Filled.DeleteForever
       Voice -> Icons.Filled.KeyboardVoice
@@ -2161,6 +2232,10 @@ enum class GroupFeature: Feature {
   fun enableDescription(enabled: GroupFeatureEnabled, canEdit: Boolean): String =
     if (canEdit) {
       when(this) {
+        TimedMessages -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(R.string.allow_to_send_disappearing)
+          GroupFeatureEnabled.OFF -> generalGetString(R.string.prohibit_sending_disappearing)
+        }
         DirectMessages -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(R.string.allow_direct_messages)
           GroupFeatureEnabled.OFF -> generalGetString(R.string.prohibit_direct_messages)
@@ -2176,6 +2251,10 @@ enum class GroupFeature: Feature {
       }
     } else {
       when(this) {
+        TimedMessages -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(R.string.group_members_can_send_disappearing)
+          GroupFeatureEnabled.OFF -> generalGetString(R.string.disappearing_messages_are_prohibited)
+        }
         DirectMessages -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(R.string.group_members_can_send_dms)
           GroupFeatureEnabled.OFF -> generalGetString(R.string.direct_messages_are_prohibited_in_chat)
@@ -2221,11 +2300,13 @@ sealed class ContactFeatureAllowed {
 
 @Serializable
 data class ContactFeaturesAllowed(
+  val timedMessages: ContactFeatureAllowed,
   val fullDelete: ContactFeatureAllowed,
   val voice: ContactFeatureAllowed
 ) {
   companion object {
     val sampleData = ContactFeaturesAllowed(
+      timedMessages = ContactFeatureAllowed.UserDefault(FeatureAllowed.NO),
       fullDelete = ContactFeatureAllowed.UserDefault(FeatureAllowed.NO),
       voice = ContactFeatureAllowed.UserDefault(FeatureAllowed.YES)
     )
@@ -2234,6 +2315,7 @@ data class ContactFeaturesAllowed(
 
 fun contactUserPrefsToFeaturesAllowed(contactUserPreferences: ContactUserPreferences): ContactFeaturesAllowed =
   ContactFeaturesAllowed(
+    timedMessages = contactUserPrefToFeatureAllowed(contactUserPreferences.timedMessages),
     fullDelete = contactUserPrefToFeatureAllowed(contactUserPreferences.fullDelete),
     voice = contactUserPrefToFeatureAllowed(contactUserPreferences.voice)
   )
@@ -2250,6 +2332,7 @@ fun contactUserPrefToFeatureAllowed(contactUserPreference: ContactUserPreference
 
 fun contactFeaturesAllowedToPrefs(contactFeaturesAllowed: ContactFeaturesAllowed): ChatPreferences =
   ChatPreferences(
+    timedMessages = contactFeatureAllowedToPref(contactFeaturesAllowed.timedMessages),
     fullDelete = contactFeatureAllowedToPref(contactFeaturesAllowed.fullDelete),
     voice = contactFeatureAllowedToPref(contactFeaturesAllowed.voice)
   )
@@ -2278,26 +2361,38 @@ enum class FeatureAllowed {
 
 @Serializable
 data class FullGroupPreferences(
+  val timedMessages: GroupPreference,
   val directMessages: GroupPreference,
   val fullDelete: GroupPreference,
   val voice: GroupPreference
 ) {
   fun toGroupPreferences(): GroupPreferences =
-    GroupPreferences(directMessages = directMessages, fullDelete = fullDelete, voice = voice)
+    GroupPreferences(timedMessages = timedMessages, directMessages = directMessages, fullDelete = fullDelete, voice = voice)
 
   companion object {
-    val sampleData = FullGroupPreferences(directMessages = GroupPreference(GroupFeatureEnabled.OFF), fullDelete = GroupPreference(GroupFeatureEnabled.OFF), voice = GroupPreference(GroupFeatureEnabled.ON))
+    val sampleData = FullGroupPreferences(
+      timedMessages = GroupPreference(GroupFeatureEnabled.OFF),
+      directMessages = GroupPreference(GroupFeatureEnabled.OFF),
+      fullDelete = GroupPreference(GroupFeatureEnabled.OFF),
+      voice = GroupPreference(GroupFeatureEnabled.ON)
+    )
   }
 }
 
 @Serializable
 data class GroupPreferences(
+  val timedMessages: GroupPreference?,
   val directMessages: GroupPreference?,
   val fullDelete: GroupPreference?,
   val voice: GroupPreference?
 ) {
   companion object {
-    val sampleData = GroupPreferences(directMessages = GroupPreference(GroupFeatureEnabled.OFF), fullDelete = GroupPreference(GroupFeatureEnabled.OFF), voice = GroupPreference(GroupFeatureEnabled.ON))
+    val sampleData = GroupPreferences(
+      timedMessages = GroupPreference(GroupFeatureEnabled.OFF),
+      directMessages = GroupPreference(GroupFeatureEnabled.OFF),
+      fullDelete = GroupPreference(GroupFeatureEnabled.OFF),
+      voice = GroupPreference(GroupFeatureEnabled.ON)
+    )
   }
 }
 
@@ -2368,6 +2463,9 @@ sealed class CR {
   @Serializable @SerialName("networkConfig") class NetworkConfig(val networkConfig: NetCfg): CR()
   @Serializable @SerialName("contactInfo") class ContactInfo(val contact: Contact, val connectionStats: ConnectionStats, val customUserProfile: Profile? = null): CR()
   @Serializable @SerialName("groupMemberInfo") class GroupMemberInfo(val groupInfo: GroupInfo, val member: GroupMember, val connectionStats_: ConnectionStats?): CR()
+  @Serializable @SerialName("contactCode") class ContactCode(val contact: Contact, val connectionCode: String): CR()
+  @Serializable @SerialName("groupMemberCode") class GroupMemberCode(val groupInfo: GroupInfo, val member: GroupMember, val connectionCode: String): CR()
+  @Serializable @SerialName("connectionVerified") class ConnectionVerified(val verified: Boolean, val expectedCode: String): CR()
   @Serializable @SerialName("invitation") class Invitation(val connReqInvitation: String): CR()
   @Serializable @SerialName("sentConfirmation") class SentConfirmation: CR()
   @Serializable @SerialName("sentInvitation") class SentInvitation: CR()
@@ -2466,6 +2564,9 @@ sealed class CR {
     is NetworkConfig -> "networkConfig"
     is ContactInfo -> "contactInfo"
     is GroupMemberInfo -> "groupMemberInfo"
+    is ContactCode -> "contactCode"
+    is GroupMemberCode -> "groupMemberCode"
+    is ConnectionVerified -> "connectionVerified"
     is Invitation -> "invitation"
     is SentConfirmation -> "sentConfirmation"
     is SentInvitation -> "sentInvitation"
@@ -2562,6 +2663,9 @@ sealed class CR {
     is NetworkConfig -> json.encodeToString(networkConfig)
     is ContactInfo -> "contact: ${json.encodeToString(contact)}\nconnectionStats: ${json.encodeToString(connectionStats)}"
     is GroupMemberInfo -> "group: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionStats: ${json.encodeToString(connectionStats_)}"
+    is ContactCode -> "contact: ${json.encodeToString(contact)}\nconnectionCode: $connectionCode"
+    is GroupMemberCode -> "groupInfo: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionCode: $connectionCode"
+    is ConnectionVerified -> "verified: $verified\nconnectionCode: $expectedCode"
     is Invitation -> connReqInvitation
     is SentConfirmation -> noDetails()
     is SentInvitation -> noDetails()

@@ -250,6 +250,8 @@
   <string name="icon_descr_server_status_pending">Pending</string>
   <string name="switch_receiving_address_question">Switch receiving address?</string>
   <string name="switch_receiving_address_desc">This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member).</string>
+  <string name="view_security_code">View security code</string>
+  <string name="verify_security_code">Verify security code</string>
 
   <!-- Message Actions - SendMsgView.kt -->
   <string name="icon_descr_send_message">Send Message</string>
@@ -384,6 +386,19 @@
   <string name="create_one_time_link">Create one-time invitation link</string>
   <string name="one_time_link">One-time invitation link</string>
   <string name="your_contact_address">Your contact address</string>
+
+  <!-- ScanCodeView.kt -->
+  <string name="scan_code">Scan code</string>
+  <string name="incorrect_code">Incorrect security code!</string>
+  <string name="scan_code_from_contacts_app">Scan security code from your contact\'s app.</string>
+
+  <!-- VerifyCodeView.kt -->
+  <string name="security_code">Security code</string>
+  <string name="mark_code_verified">Mark verified</string>
+  <string name="clear_verification">Clear verification</string>
+  <string name="to_verify_compare">To verify end-to-end encryption with your contact compare (or scan) the code on your devices.</string>
+  <string name="is_verified">%s is verified</string>
+  <string name="is_not_verified">%s is not verified</string>
 
   <!-- settings - SettingsView.kt -->
   <string name="your_settings">Your settings</string>
@@ -968,6 +983,7 @@
   <string name="group_preferences">Group preferences</string>
   <string name="set_group_preferences">Set group preferences</string>
   <string name="your_preferences">Your preferences</string>
+  <string name="timed_messages">Disappearing messages</string>
   <string name="direct_messages">Direct messages</string>
   <string name="full_deletion">Delete for everyone</string>
   <string name="voice_messages">Voice messages</string>
@@ -976,12 +992,19 @@
   <string name="feature_enabled_for_contact">enabled for contact</string>
   <string name="feature_off">off</string>
   <string name="feature_received_prohibited">received, prohibited</string>
+  <string name="allow_your_contacts_to_send_disappearing_messages">Allow your contacts to send disappearing messages.</string>
+  <string name="allow_disappearing_messages_only_if">Allow disappearing messages only if your contact allows them.</string>
+  <string name="prohibit_sending_disappearing_messages">Prohibit sending disappearing messages.</string>
   <string name="allow_your_contacts_irreversibly_delete">Allow your contacts to irreversibly delete sent messages.</string>
   <string name="allow_irreversible_message_deletion_only_if">Allow irreversible message deletion only if your contact allows it to you.</string>
   <string name="contacts_can_mark_messages_for_deletion">Contacts can mark messages for deletion; you will be able to view them.</string>
   <string name="allow_your_contacts_to_send_voice_messages">Allow your contacts to send voice messages.</string>
   <string name="allow_voice_messages_only_if">Allow voice messages only if your contact allows them.</string>
   <string name="prohibit_sending_voice_messages">Prohibit sending voice messages.</string>
+  <string name="both_you_and_your_contact_can_send_disappearing">Both you and your contact can send disappearing messages.</string>
+  <string name="only_you_can_send_disappearing">Only you can send disappearing messages.</string>
+  <string name="only_your_contact_can_send_disappearing">Only your contact can send disappearing messages.</string>
+  <string name="disappearing_prohibited_in_this_chat">Disappearing messages are prohibited in this chat.</string>
   <string name="both_you_and_your_contacts_can_delete">Both you and your contact can irreversibly delete sent messages.</string>
   <string name="only_you_can_delete_messages">Only you can irreversibly delete messages (your contact can mark them for deletion).</string>
   <string name="only_your_contact_can_delete">Only your contact can irreversibly delete messages (you can mark them for deletion).</string>
@@ -990,12 +1013,16 @@
   <string name="only_you_can_send_voice">Only you can send voice messages.</string>
   <string name="only_your_contact_can_send_voice">Only your contact can send voice messages.</string>
   <string name="voice_prohibited_in_this_chat">Voice messages are prohibited in this chat.</string>
+  <string name="allow_to_send_disappearing">Allow to send disappearing messages.</string>
+  <string name="prohibit_sending_disappearing">Prohibit sending disappearing messages.</string>
   <string name="allow_direct_messages">Allow sending direct messages to members.</string>
   <string name="prohibit_direct_messages">Prohibit sending direct messages to members.</string>
   <string name="allow_to_delete_messages">Allow to irreversibly delete sent messages.</string>
   <string name="prohibit_message_deletion">Prohibit irreversible message deletion.</string>
   <string name="allow_to_send_voice">Allow to send voice messages.</string>
   <string name="prohibit_sending_voice">Prohibit sending voice messages.</string>
+  <string name="group_members_can_send_disappearing">Group members can send disappearing messages.</string>
+  <string name="disappearing_messages_are_prohibited">Disappearing messages are prohibited in this group.</string>
   <string name="group_members_can_send_dms">Group members can send direct messages.</string>
   <string name="direct_messages_are_prohibited_in_chat">Direct messages between members are prohibited in this group.</string>
   <string name="group_members_can_delete">Group members can irreversibly delete sent messages.</string>
