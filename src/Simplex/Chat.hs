@@ -1707,7 +1707,9 @@ cleanupManager user = do
     threadDelay $ cleanupManagerInterval * 1000000
   where
     cleanupTimedItems = do
-      timedItems <- withStore' $ \db -> getTimedItems db user
+      ts <- liftIO getCurrentTime
+      let startTimedThreadCutoff = addUTCTime (toEnum cleanupManagerInterval) ts
+      timedItems <- withStore' $ \db -> getTimedItems db user startTimedThreadCutoff
       forM_ timedItems $ uncurry (startTimedItemThread user)
 
 startTimedItemThread :: ChatMonad m => User -> (ChatRef, ChatItemId) -> UTCTime -> m ()

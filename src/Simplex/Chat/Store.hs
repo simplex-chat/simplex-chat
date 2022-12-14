@@ -260,7 +260,7 @@ import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (sortBy, sortOn)
 import Data.List.NonEmpty (NonEmpty)
-import Data.Maybe (fromMaybe, isJust, isNothing, listToMaybe)
+import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, listToMaybe)
 import Data.Ord (Down (..))
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -4562,9 +4562,23 @@ getXGrpMemIntroContGroup db User {userId} GroupMember {groupMemberId} = do
       Just connReq -> Just (hostConnId, connReq)
       _ -> Nothing
 
-getTimedItems :: DB.Connection -> User -> IO [((ChatRef, ChatItemId), UTCTime)]
-getTimedItems _db _user = do
-  pure []
+getTimedItems :: DB.Connection -> User -> UTCTime -> IO [((ChatRef, ChatItemId), UTCTime)]
+getTimedItems db User {userId} startTimedThreadCutoff =
+  catMaybes . map toCIRefDeleteAt
+    <$> DB.query
+      db
+      [sql|
+        SELECT chat_item_id, contact_id, group_id, timed_delete_at
+        FROM chat_items
+        WHERE user_id = ? AND timed_delete_at IS NOT NULL AND timed_delete_at <= ?
+      |]
+      (userId, startTimedThreadCutoff)
+  where
+    toCIRefDeleteAt :: (ChatItemId, Maybe ContactId, Maybe GroupId, UTCTime) -> Maybe ((ChatRef, ChatItemId), UTCTime)
+    toCIRefDeleteAt = \case
+      (itemId, Just contactId, Nothing, deleteAt) -> Just ((ChatRef CTDirect contactId, itemId), deleteAt)
+      (itemId, Nothing, Just groupId, deleteAt) -> Just ((ChatRef CTGroup groupId, itemId), deleteAt)
+      _ -> Nothing
 
 getChatItemTTL :: DB.Connection -> User -> IO (Maybe Int64)
 getChatItemTTL db User {userId} =
