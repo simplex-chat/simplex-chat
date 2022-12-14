@@ -80,7 +80,7 @@ private fun VerifyCodeLayout(
 
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
       Spacer(Modifier.weight(2f))
-      SelectionContainer(Modifier.padding(vertical = DEFAULT_PADDING_HALF)) {
+      SelectionContainer(Modifier.padding(vertical = DEFAULT_PADDING_HALF, horizontal = DEFAULT_PADDING_HALF)) {
         Text(
           splitCode,
           fontFamily = FontFamily.Monospace,
@@ -89,8 +89,10 @@ private fun VerifyCodeLayout(
         )
       }
       val context = LocalContext.current
-      IconButton({ shareText(context, connectionCode) }, Modifier.weight(1f)) {
-        Icon(Icons.Filled.Share, null, Modifier.size(20.dp), tint = MaterialTheme.colors.primary)
+      Box(Modifier.weight(1f)) {
+        IconButton({ shareText(context, connectionCode) }, Modifier.size(20.dp).align(Alignment.CenterStart)) {
+          Icon(Icons.Filled.Share, null, tint = MaterialTheme.colors.primary)
+        }
       }
       Spacer(Modifier.weight(1f))
     }
