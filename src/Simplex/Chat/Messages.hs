@@ -296,6 +296,15 @@ contactCITimed Contact {mergedPreferences = ContactUserPreferences {timedMessage
       pure . Just $ CITimed {ttl, deleteAt}
     else pure Nothing
 
+groupCITimed :: GroupInfo -> IO (Maybe CITimed)
+groupCITimed GroupInfo {fullGroupPreferences = FullGroupPreferences {timedMessages = TimedMessagesGroupPreference {enable, ttl}}} =
+  if enable == FEOn
+    then do
+      ts <- getCurrentTime
+      let deleteAt = addUTCTime (toEnum ttl) ts
+      pure . Just $ CITimed {ttl, deleteAt}
+    else pure Nothing
+
 cleanupManagerInterval :: Int
 cleanupManagerInterval = 1800 -- 30 minutes
 

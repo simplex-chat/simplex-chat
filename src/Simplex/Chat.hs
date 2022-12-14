@@ -351,7 +351,7 @@ processChatCommand = \case
             quoteData ChatItem {content = CIRcvMsgContent qmc} = pure (qmc, CIQDirectRcv, False)
             quoteData _ = throwChatError CEInvalidQuote
     CTGroup -> do
-      Group gInfo@GroupInfo {membership, localDisplayName = gName} ms <- withStore $ \db -> getGroup db user chatId
+      Group gInfo@GroupInfo {groupId, membership, localDisplayName = gName} ms <- withStore $ \db -> getGroup db user chatId
       unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
       if isVoice mc && not (groupFeatureAllowed SGFVoice gInfo)
         then pure $ chatCmdError $ "feature not allowed " <> T.unpack (groupFeatureToText GFVoice)
@@ -360,8 +360,9 @@ processChatCommand = \case
           (msgContainer, quotedItem_) <- prepareMsg fileInvitation_ membership
           msg@SndMessage {sharedMsgId} <- sendGroupMessage gInfo ms (XMsgNew msgContainer)
           mapM_ (sendGroupFileInline ms sharedMsgId) ft_
-          -- TODO based on preference - save with CITimed, maybe start timed deletion thread
-          ci <- saveSndChatItemTimed user (CDGroupSnd gInfo) msg (CISndMsgContent mc) ciFile_ quotedItem_ Nothing
+          timed <- liftIO $ groupCITimed gInfo
+          ci <- saveSndChatItemTimed user (CDGroupSnd gInfo) msg (CISndMsgContent mc) ciFile_ quotedItem_ timed
+          forM_ timed $ \CITimed {ttl, deleteAt} -> when (ttl <= cleanupManagerInterval) $ startTimedItemThread user (ChatRef CTGroup groupId, chatItemId' ci) deleteAt
           setActive $ ActiveG gName
           pure . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
       where
