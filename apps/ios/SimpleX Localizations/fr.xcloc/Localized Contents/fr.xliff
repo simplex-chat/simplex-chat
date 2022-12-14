@@ -380,7 +380,7 @@
       </trans-unit>
       <trans-unit id="Auto-accept images" xml:space="preserve" approved="no">
         <source>Auto-accept images</source>
-        <target state="translated">Auto-acceptation des images</target>
+        <target state="translated">Images auto-acceptées</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Automatically" xml:space="preserve" approved="no">
