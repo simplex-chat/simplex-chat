@@ -284,16 +284,16 @@ instance ToJSON (CIMeta d) where toEncoding = J.genericToEncoding J.defaultOptio
 
 instance ToJSON CITimed where toEncoding = J.genericToEncoding J.defaultOptions
 
-contactCITtl :: Contact -> Maybe Int
-contactCITtl Contact {mergedPreferences = ContactUserPreferences {timedMessages = ContactUserPreference {enabled, userPreference}}} =
+contactCITimedTTL :: Contact -> Maybe Int
+contactCITimedTTL Contact {mergedPreferences = ContactUserPreferences {timedMessages = ContactUserPreference {enabled, userPreference}}} =
   if forUser enabled && forContact enabled
     then case userPreference of
       CUPContact TimedMessagesPreference {ttl = t} -> Just t
       CUPUser TimedMessagesPreference {ttl = t} -> Just t
     else Nothing
 
-groupCITtl :: GroupInfo -> Maybe Int
-groupCITtl GroupInfo {fullGroupPreferences = FullGroupPreferences {timedMessages = TimedMessagesGroupPreference {enable, ttl}}} =
+groupCITimedTTL :: GroupInfo -> Maybe Int
+groupCITimedTTL GroupInfo {fullGroupPreferences = FullGroupPreferences {timedMessages = TimedMessagesGroupPreference {enable, ttl}}} =
   if enable == FEOn
     then Just ttl
     else Nothing
