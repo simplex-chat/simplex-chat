@@ -518,7 +518,7 @@ processChatCommand = \case
         withStore' $ \db -> setDirectChatItemDeleteAt db user chatId itemId deleteAt
         when (ttl <= cleanupManagerInterval) $ startTimedItemThread user (ChatRef CTDirect chatId, itemId) deleteAt
       withStore' $ \db -> updateDirectChatItemsRead db userId chatId fromToIds
-      pure CRCmdOk
+      pure CRChatRead
     CTGroup -> do
       timedItems <- withStore' $ \db -> getGroupUnreadTimedItems db user chatId fromToIds
       ts <- liftIO getCurrentTime
@@ -527,7 +527,7 @@ processChatCommand = \case
         withStore' $ \db -> setGroupChatItemDeleteAt db user chatId itemId deleteAt
         when (ttl <= cleanupManagerInterval) $ startTimedItemThread user (ChatRef CTGroup chatId, itemId) deleteAt
       withStore' $ \db -> updateGroupChatItemsRead db userId chatId fromToIds
-      pure CRCmdOk
+      pure CRChatRead
     CTContactRequest -> pure $ chatCmdError "not supported"
     CTContactConnection -> pure $ chatCmdError "not supported"
   APIChatUnread (ChatRef cType chatId) unreadChat -> withUser $ \user -> case cType of
