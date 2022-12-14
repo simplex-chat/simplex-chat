@@ -57,6 +57,9 @@
   <string name="error_saving_smp_servers">Error saving SMP servers</string>
   <string name="ensure_smp_server_address_are_correct_format_and_unique">Make sure SMP server addresses are in correct format, line separated and are not duplicated.</string>
   <string name="error_setting_network_config">Error updating network configuration</string>
+  <string name="failed_to_parse_chat_title">Failed to parse chat</string>
+  <string name="failed_to_parse_chats_title">Failed to parse chats list</string>
+  <string name="contact_developers">Please, contact developers or update the app</string>
 
   <!-- API Error Responses - SimpleXAPI.kt -->
   <string name="connection_timeout">Connection timeout</string>
