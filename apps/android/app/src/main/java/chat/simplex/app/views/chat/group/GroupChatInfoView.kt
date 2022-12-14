@@ -163,7 +163,9 @@ fun GroupChatInfoLayout(
 
     SectionView(title = String.format(generalGetString(R.string.group_info_section_title_num_members), members.count() + 1)) {
       if (groupInfo.canAddMembers) {
-        SectionItemView(manageGroupLink) { GroupLinkButton() }
+        SectionItemView(manageGroupLink) {
+          GroupLinkButton()
+        }
         SectionDivider()
         val onAddMembersClick = if (chat.chatInfo.incognito) ::cantInviteIncognitoAlert else addMembers
         SectionItemView(onAddMembersClick) {

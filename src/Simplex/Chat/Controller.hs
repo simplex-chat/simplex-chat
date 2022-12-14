@@ -264,9 +264,9 @@ data ChatCommand
   | ShowProfile
   | UpdateProfile ContactName Text
   | UpdateProfileImage (Maybe ImageData)
-  | SetUserFeature ChatFeature FeatureAllowed
-  | SetContactFeature ChatFeature ContactName (Maybe FeatureAllowed)
-  | SetGroupFeature GroupFeature GroupName GroupFeatureEnabled
+  | SetUserFeature AChatFeature FeatureAllowed
+  | SetContactFeature AChatFeature ContactName (Maybe FeatureAllowed)
+  | SetGroupFeature AGroupFeature GroupName GroupFeatureEnabled
   | QuitChat
   | ShowVersion
   | DebugLocks

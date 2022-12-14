@@ -353,7 +353,7 @@ processChatCommand = \case
     CTGroup -> do
       Group gInfo@GroupInfo {membership, localDisplayName = gName} ms <- withStore $ \db -> getGroup db user chatId
       unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
-      if isVoice mc && not (groupFeatureAllowed GFVoice gInfo)
+      if isVoice mc && not (groupFeatureAllowed SGFVoice gInfo)
         then pure $ chatCmdError $ "feature not allowed " <> T.unpack (groupFeatureToText GFVoice)
         else do
           (fileInvitation_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer gInfo (length $ filter memberCurrent ms)
@@ -480,7 +480,7 @@ processChatCommand = \case
         (CIDMBroadcast, SMDSnd, Just itemSharedMId) -> do
           SndMessage {msgId} <- sendGroupMessage gInfo ms (XMsgDel itemSharedMId)
           setActive $ ActiveG gName
-          if groupFeatureAllowed GFFullDelete gInfo
+          if groupFeatureAllowed SGFFullDelete gInfo
             then deleteGroupCI user gInfo ci True False
             else markGroupCIDeleted user gInfo ci msgId True
         (CIDMBroadcast, _, _) -> throwChatError CEInvalidChatItemDelete
@@ -1127,16 +1127,14 @@ processChatCommand = \case
   UpdateProfileImage image -> withUser $ \user@User {profile} -> do
     let p = (fromLocalProfile profile :: Profile) {image}
     updateProfile user p
-  SetUserFeature cf allowed -> withUser $ \user@User {profile} -> do
-    ACF f <- pure $ aChatFeature cf
+  SetUserFeature (ACF f) allowed -> withUser $ \user@User {profile} -> do
     let p = (fromLocalProfile profile :: Profile) {preferences = Just . setPreference f (Just allowed) $ preferences' user}
     updateProfile user p
-  SetContactFeature cf cName allowed_ -> withUser $ \user -> do
+  SetContactFeature (ACF f) cName allowed_ -> withUser $ \user -> do
     ct@Contact {userPreferences} <- withStore $ \db -> getContactByName db user cName
-    ACF f <- pure $ aChatFeature cf
     let prefs' = setPreference f allowed_ $ Just userPreferences
     updateContactPrefs user ct prefs'
-  SetGroupFeature f gName enabled ->
+  SetGroupFeature (AGF f) gName enabled ->
     updateGroupProfileByName gName $ \p ->
       p {groupPreferences = Just . setGroupPreference f enabled $ groupPreferences p}
   QuitChat -> liftIO exitSuccess
@@ -1336,7 +1334,7 @@ assertDirectAllowed user dir ct event =
   unless (allowedChatEvent || anyDirectOrUsed ct) . unlessM directMessagesAllowed $
     throwChatError $ CEDirectMessagesProhibited dir ct
   where
-    directMessagesAllowed = any (groupFeatureAllowed' GFDirectMessages) <$> withStore' (\db -> getContactGroupPreferences db user ct)
+    directMessagesAllowed = any (groupFeatureAllowed' SGFDirectMessages) <$> withStore' (\db -> getContactGroupPreferences db user ct)
     allowedChatEvent = case event of
       XMsgNew_ -> False
       XMsgUpdate_ -> False
@@ -2426,7 +2424,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
     newGroupContentMessage :: GroupInfo -> GroupMember -> MsgContainer -> RcvMessage -> MsgMeta -> m ()
     newGroupContentMessage gInfo@GroupInfo {chatSettings} m@GroupMember {localDisplayName = c} mc msg msgMeta = do
       let (ExtMsgContent content fInv_) = mcExtMsgContent mc
-      if isVoice content && not (groupFeatureAllowed GFVoice gInfo)
+      if isVoice content && not (groupFeatureAllowed SGFVoice gInfo)
         then void $ newChatItem (CIRcvGroupFeatureRejected GFVoice) Nothing
         else do
           ciFile_ <- processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId m
@@ -2473,7 +2471,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
         (SMDRcv, CIGroupRcv m) ->
           if sameMemberId memberId m
             then
-              if groupFeatureAllowed GFFullDelete gInfo
+              if groupFeatureAllowed SGFFullDelete gInfo
                 then deleteGroupCI user gInfo ci False False >>= toView
                 else markGroupCIDeleted user gInfo ci msgId False >>= toView
             else messageError "x.msg.del: group member attempted to delete a message of another member" -- shouldn't happen now that query includes group member id
@@ -2682,9 +2680,9 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
     createGroupFeatureItems :: GroupInfo -> GroupMember -> m ()
     createGroupFeatureItems g@GroupInfo {groupProfile} m = do
       let prefs = mergeGroupPreferences $ groupPreferences groupProfile
-      forM_ allGroupFeatures $ \f -> do
+      forM_ allGroupFeatures $ \(AGF f) -> do
         let p = getGroupPreference f prefs
-        createInternalChatItem user (CDGroupRcv g m) (CIRcvGroupFeature f p) Nothing
+        createInternalChatItem user (CDGroupRcv g m) (CIRcvGroupFeature (toGroupFeature f) (toGroupPreference p)) Nothing
 
     xInfoProbe :: Contact -> Probe -> m ()
     xInfoProbe c2 probe =
@@ -3310,11 +3308,11 @@ createFeatureChangedItems user Contact {mergedPreferences = cups} ct'@Contact {m
 
 createGroupFeatureChangedItems :: (MsgDirectionI d, ChatMonad m) => User -> ChatDirection 'CTGroup d -> (GroupFeature -> GroupPreference -> CIContent d) -> GroupProfile -> GroupProfile -> m ()
 createGroupFeatureChangedItems user cd ciContent p p' =
-  forM_ allGroupFeatures $ \f -> do
+  forM_ allGroupFeatures $ \(AGF f) -> do
     let pref = getGroupPreference f $ groupPreferences p
         pref' = getGroupPreference f $ groupPreferences p'
     unless (pref == pref') $
-      createInternalChatItem user cd (ciContent f pref') Nothing
+      createInternalChatItem user cd (ciContent (toGroupFeature f) (toGroupPreference pref')) Nothing
 
 sameGroupProfileInfo :: GroupProfile -> GroupProfile -> Bool
 sameGroupProfileInfo p p' = p {groupPreferences = Nothing} == p' {groupPreferences = Nothing}
@@ -3588,13 +3586,13 @@ chatCommandP =
       "/profile_image" $> UpdateProfileImage Nothing,
       ("/profile " <|> "/p ") *> (uncurry UpdateProfile <$> userNames),
       ("/profile" <|> "/p") $> ShowProfile,
-      "/set voice #" *> (SetGroupFeature GFVoice <$> displayName <*> (A.space *> strP)),
-      "/set voice @" *> (SetContactFeature CFVoice <$> displayName <*> optional (A.space *> strP)),
-      "/set voice " *> (SetUserFeature CFVoice <$> strP),
-      "/set delete #" *> (SetGroupFeature GFFullDelete <$> displayName <*> (A.space *> strP)),
-      "/set delete @" *> (SetContactFeature CFFullDelete <$> displayName <*> optional (A.space *> strP)),
-      "/set delete " *> (SetUserFeature CFFullDelete <$> strP),
-      "/set direct #" *> (SetGroupFeature GFDirectMessages <$> displayName <*> (A.space *> strP)),
+      "/set voice #" *> (SetGroupFeature (AGF SGFVoice) <$> displayName <*> (A.space *> strP)),
+      "/set voice @" *> (SetContactFeature (ACF SCFVoice) <$> displayName <*> optional (A.space *> strP)),
+      "/set voice " *> (SetUserFeature (ACF SCFVoice) <$> strP),
+      "/set delete #" *> (SetGroupFeature (AGF SGFFullDelete) <$> displayName <*> (A.space *> strP)),
+      "/set delete @" *> (SetContactFeature (ACF SCFFullDelete) <$> displayName <*> optional (A.space *> strP)),
+      "/set delete " *> (SetUserFeature (ACF SCFFullDelete) <$> strP),
+      "/set direct #" *> (SetGroupFeature (AGF SGFDirectMessages) <$> displayName <*> (A.space *> strP)),
       "/incognito " *> (SetIncognito <$> onOffP),
       ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
       ("/version" <|> "/v") $> ShowVersion,
@@ -3629,7 +3627,7 @@ chatCommandP =
     groupProfile = do
       gName <- displayName
       fullName <- fullNameP gName
-      let groupPreferences = Just (emptyGroupPrefs :: GroupPreferences) {directMessages = Just GroupPreference {enable = FEOn}}
+      let groupPreferences = Just (emptyGroupPrefs :: GroupPreferences) {directMessages = Just DirectMessagesGroupPreference {enable = FEOn}}
       pure GroupProfile {displayName = gName, fullName, description = Nothing, image = Nothing, groupPreferences}
     fullNameP name = do
       n <- (A.space *> A.takeByteString) <|> pure ""

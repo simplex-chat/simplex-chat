@@ -26,6 +26,7 @@ import Data.Time.Clock (DiffTime, UTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import Data.Time.LocalTime (ZonedTime (..), localDay, localTimeOfDay, timeOfDayToTime, utcToZonedTime)
 import GHC.Generics (Generic)
+import GHC.Records.Compat
 import qualified Network.HTTP.Types as Q
 import Numeric (showFFloat)
 import Simplex.Chat (maxImageSize)
@@ -50,7 +51,6 @@ import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (bshow)
 import System.Console.ANSI.Types
-import GHC.Records.Compat
 
 type CurrentTime = UTCTime
 
@@ -830,11 +830,11 @@ viewGroupUpdated
         | otherwise = bold' "updated group preferences:" : prefs
         where
           prefs = mapMaybe viewPref allGroupFeatures
-          viewPref pt
+          viewPref (AGF f)
             | pref gps == pref gps' = Nothing
-            | otherwise = Just $ plain (groupFeatureToText pt) <> " enabled: " <> plain (groupPrefToText $ pref gps')
+            | otherwise = Just $ plain (groupFeatureToText $ toGroupFeature f) <> " enabled: " <> plain (groupPrefToText $ pref gps')
             where
-              pref = getGroupPreference pt . mergeGroupPreferences
+              pref = getGroupPreference f . mergeGroupPreferences
 
 viewGroupProfile :: GroupInfo -> [StyledString]
 viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {description, image, groupPreferences = gps}} =
@@ -843,9 +843,9 @@ viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {description, image, g
     <> maybe [] ((bold' "description:" :) . map plain . T.lines) description
     <> (bold' "group preferences:" : map viewPref allGroupFeatures)
   where
-    viewPref pt = plain (groupFeatureToText pt) <> " enabled: " <> plain (groupPrefToText $ pref gps)
+    viewPref (AGF f) = plain (groupFeatureToText $ toGroupFeature f) <> " enabled: " <> plain (groupPrefToText $ pref gps)
       where
-        pref = getGroupPreference pt . mergeGroupPreferences
+        pref = getGroupPreference f . mergeGroupPreferences
 
 bold' :: String -> StyledString
 bold' = styled Bold
