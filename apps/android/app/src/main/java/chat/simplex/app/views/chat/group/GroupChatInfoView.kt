@@ -329,7 +329,7 @@ private fun MemberRow(member: GroupMember, user: Boolean = false) {
 
 @Composable
 private fun MemberVerifiedShield() {
-  Icon(Icons.Outlined.VerifiedUser, null, Modifier.padding(end = 4.dp).size(16.dp), tint = HighOrLowlight)
+  Icon(Icons.Outlined.VerifiedUser, null, Modifier.padding(end = 3.dp).size(16.dp), tint = HighOrLowlight)
 }
 
 @Composable

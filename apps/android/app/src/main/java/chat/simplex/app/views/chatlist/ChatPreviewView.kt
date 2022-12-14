@@ -64,7 +64,7 @@ fun ChatPreviewView(chat: Chat, chatModelIncognito: Boolean, currentUserProfileD
 
   @Composable
   fun VerifiedIcon() {
-    Icon(Icons.Outlined.VerifiedUser, null, Modifier.padding(end = 4.dp).size(16.dp), tint = HighOrLowlight)
+    Icon(Icons.Outlined.VerifiedUser, null, Modifier.size(19.dp).padding(end = 3.dp, top = 1.dp), tint = HighOrLowlight)
   }
 
   @Composable

@@ -244,7 +244,7 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
     ChatInfoImage(cInfo, size = 192.dp, iconColor = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
     Row(Modifier.padding(bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
       if (contact.verified) {
-        Icon(Icons.Outlined.VerifiedUser, null, Modifier.padding(end = 4.dp).size(22.dp), tint = HighOrLowlight)
+        Icon(Icons.Outlined.VerifiedUser, null, Modifier.padding(end = 6.dp, top = 4.dp).size(24.dp), tint = HighOrLowlight)
       }
       Text(
         contact.profile.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
