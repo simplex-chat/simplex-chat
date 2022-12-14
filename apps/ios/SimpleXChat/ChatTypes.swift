@@ -328,7 +328,6 @@ public enum ChatFeature: String, Decodable, Feature {
     public func enabledDescription(_ enabled: FeatureEnabled) -> LocalizedStringKey {
         switch self {
         case .timedMessages:
-<<<<<<< HEAD
             return enabled.forUser && enabled.forContact
                     ? "Both you and your contact can send disappearing messages."
                     : enabled.forUser
@@ -336,15 +335,6 @@ public enum ChatFeature: String, Decodable, Feature {
                     : enabled.forContact
                     ? "Only your contact can send disappearing messages."
                     : "Disappearing messages are prohibited in this chat."
-=======
-             return enabled.forUser && enabled.forContact
-                     ? "Both you and your contact can send disappearing messages."
-                     : enabled.forUser
-                     ? "Only you can send disappearing messages."
-                     : enabled.forContact
-                     ? "Only your contact can send disappearing messages."
-                     : "Disappearing messages are prohibited in this chat."
->>>>>>> master
         case .fullDelete:
             return enabled.forUser && enabled.forContact
                     ? "Both you and your contact can irreversibly delete sent messages."
