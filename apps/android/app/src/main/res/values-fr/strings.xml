@@ -88,4 +88,5 @@
     <string name="error_smp_test_server_auth">Le serveur requiert une autorisation pour créer des files d\'attente, vérifiez le mot de passe</string>
     <string name="periodic_notifications_desc">L\'application récupère périodiquement les nouveaux messages - elle utilise un peu votre batterie chaque jour. L\'application n\'utilise pas les notifications push - les données de votre appareil ne sont pas envoyées aux serveurs.</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Pour protéger votre vie privée, au lieu des notifications push, l\'application possède un <b><xliff:g id="appName">SimpleX</xliff:g> service de fond</b> - il utilise quelques pour cent de la batterie par jour.</string>
+    <string name="hide_notification">Cacher</string>
 </resources>
