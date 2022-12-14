@@ -23,7 +23,7 @@ import Data.Int (Int64)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
-import Data.Time (addUTCTime, getCurrentTime, nominalDiffTimeToSeconds)
+import Data.Time (nominalDiffTimeToSeconds)
 import Data.Time.Clock (UTCTime, diffUTCTime, nominalDay)
 import Data.Time.LocalTime (TimeZone, ZonedTime, utcToZonedTime)
 import Data.Type.Equality
@@ -268,7 +268,7 @@ data CIMeta (d :: MsgDirection) = CIMeta
 
 data CITimed = CITimed
   { ttl :: Int, -- seconds
-    deleteAt :: UTCTime
+    deleteAt :: Maybe UTCTime
   }
   deriving (Show, Generic)
 
@@ -284,26 +284,19 @@ instance ToJSON (CIMeta d) where toEncoding = J.genericToEncoding J.defaultOptio
 
 instance ToJSON CITimed where toEncoding = J.genericToEncoding J.defaultOptions
 
-contactCITimed :: Contact -> IO (Maybe CITimed)
-contactCITimed Contact {mergedPreferences = ContactUserPreferences {timedMessages = ContactUserPreference {enabled, userPreference}}} =
+contactCITtl :: Contact -> Maybe Int
+contactCITtl Contact {mergedPreferences = ContactUserPreferences {timedMessages = ContactUserPreference {enabled, userPreference}}} =
   if forUser enabled && forContact enabled
-    then do
-      let ttl = case userPreference of
-            CUPContact TimedMessagesPreference {ttl = t} -> t
-            CUPUser TimedMessagesPreference {ttl = t} -> t
-      ts <- getCurrentTime
-      let deleteAt = addUTCTime (toEnum ttl) ts
-      pure . Just $ CITimed {ttl, deleteAt}
-    else pure Nothing
+    then case userPreference of
+      CUPContact TimedMessagesPreference {ttl = t} -> Just t
+      CUPUser TimedMessagesPreference {ttl = t} -> Just t
+    else Nothing
 
-groupCITimed :: GroupInfo -> IO (Maybe CITimed)
-groupCITimed GroupInfo {fullGroupPreferences = FullGroupPreferences {timedMessages = TimedMessagesGroupPreference {enable, ttl}}} =
+groupCITtl :: GroupInfo -> Maybe Int
+groupCITtl GroupInfo {fullGroupPreferences = FullGroupPreferences {timedMessages = TimedMessagesGroupPreference {enable, ttl}}} =
   if enable == FEOn
-    then do
-      ts <- getCurrentTime
-      let deleteAt = addUTCTime (toEnum ttl) ts
-      pure . Just $ CITimed {ttl, deleteAt}
-    else pure Nothing
+    then Just ttl
+    else Nothing
 
 cleanupManagerInterval :: Int
 cleanupManagerInterval = 1800 -- 30 minutes

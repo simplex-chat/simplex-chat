@@ -3195,7 +3195,7 @@ createNewChatItem_ db User {userId} chatDirection msgId_ sharedMsgId ciContent q
     itemRow = (msgDirection @d, itemTs, ciContent, ciContentToText ciContent, ciCreateStatus ciContent, sharedMsgId, createdAt, createdAt, timedTtl, timedDeleteAt)
       where
         (timedTtl, timedDeleteAt) = case timed of
-          Just CITimed {ttl, deleteAt} -> (Just ttl, Just deleteAt)
+          Just CITimed {ttl, deleteAt} -> (Just ttl, deleteAt)
           Nothing -> (Nothing, Nothing)
     idsRow :: (Maybe Int64, Maybe Int64, Maybe Int64)
     idsRow = case chatDirection of
@@ -4251,7 +4251,7 @@ toDirectChatItem tz currentTs (((itemId, itemTs, itemContent, itemText, itemStat
     ciTimed :: Maybe CITimed
     ciTimed =
       case (timedTtl, timedDeleteAt) of
-        (Just ttl, Just deleteAt) -> Just CITimed {ttl, deleteAt}
+        (Just ttl, deleteAt) -> Just CITimed {ttl, deleteAt}
         _ -> Nothing
 
 toDirectChatItemList :: TimeZone -> UTCTime -> MaybeChatItemRow :. QuoteRow -> [CChatItem 'CTDirect]
@@ -4300,7 +4300,7 @@ toGroupChatItem tz currentTs userContactId (((itemId, itemTs, itemContent, itemT
     ciTimed :: Maybe CITimed
     ciTimed =
       case (timedTtl, timedDeleteAt) of
-        (Just ttl, Just deleteAt) -> Just CITimed {ttl, deleteAt}
+        (Just ttl, deleteAt) -> Just CITimed {ttl, deleteAt}
         _ -> Nothing
 
 toGroupChatItemList :: TimeZone -> UTCTime -> Int64 -> MaybeGroupChatItemRow -> [CChatItem 'CTGroup]
