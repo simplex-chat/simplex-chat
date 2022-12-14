@@ -139,8 +139,9 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
             }
           } else if (chat.chatInfo is ChatInfo.Group) {
             setGroupMembers(chat.chatInfo.groupInfo, chatModel)
+            var groupLink = chatModel.controller.apiGetGroupLink(chat.chatInfo.groupInfo.groupId)
             ModalManager.shared.showModalCloseable(true) { close ->
-              GroupChatInfoView(chatModel, close)
+              GroupChatInfoView(chatModel, groupLink, { groupLink = it }, close)
             }
           }
         }

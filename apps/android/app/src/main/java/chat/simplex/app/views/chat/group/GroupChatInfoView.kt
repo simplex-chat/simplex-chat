@@ -32,7 +32,7 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.*
 
 @Composable
-fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
+fun GroupChatInfoView(chatModel: ChatModel, groupLink: String?, onGroupLinkUpdated: (String?) -> Unit, close: () -> Unit) {
   BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
@@ -45,6 +45,7 @@ fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
         .filter { it.memberStatus != GroupMemberStatus.MemLeft && it.memberStatus != GroupMemberStatus.MemRemoved }
         .sortedBy { it.displayName.lowercase() },
       developerTools,
+      groupLink,
       addMembers = {
         withApi {
           setGroupMembers(groupInfo, chatModel)
@@ -78,8 +79,7 @@ fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
       leaveGroup = { leaveGroupDialog(groupInfo, chatModel, close) },
       manageGroupLink = {
         withApi {
-          val groupLink = chatModel.controller.apiGetGroupLink(groupInfo.groupId)
-          ModalManager.shared.showModal { GroupLinkView(chatModel, groupInfo, groupLink) }
+          ModalManager.shared.showModal { GroupLinkView(chatModel, groupInfo, groupLink, onGroupLinkUpdated) }
         }
       }
     )
@@ -128,6 +128,7 @@ fun GroupChatInfoLayout(
   groupInfo: GroupInfo,
   members: List<GroupMember>,
   developerTools: Boolean,
+  groupLink: String?,
   addMembers: () -> Unit,
   showMemberInfo: (GroupMember) -> Unit,
   editGroupProfile: () -> Unit,
@@ -164,7 +165,11 @@ fun GroupChatInfoLayout(
     SectionView(title = String.format(generalGetString(R.string.group_info_section_title_num_members), members.count() + 1)) {
       if (groupInfo.canAddMembers) {
         SectionItemView(manageGroupLink) {
-          GroupLinkButton()
+          if (groupLink == null) {
+            CreateGroupLinkButton()
+          } else {
+            GroupLinkButton()
+          }
         }
         SectionDivider()
         val onAddMembersClick = if (chat.chatInfo.incognito) ::cantInviteIncognitoAlert else addMembers
@@ -306,7 +311,7 @@ fun MemberRow(member: GroupMember, user: Boolean = false) {
 }
 
 @Composable
-fun GroupLinkButton() {
+private fun GroupLinkButton() {
   Row(
     Modifier
       .fillMaxSize(),
@@ -319,6 +324,23 @@ fun GroupLinkButton() {
     )
     Spacer(Modifier.size(8.dp))
     Text(stringResource(R.string.group_link))
+  }
+}
+
+@Composable
+private fun CreateGroupLinkButton() {
+  Row(
+    Modifier
+      .fillMaxSize(),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Icon(
+      Icons.Outlined.AddLink,
+      stringResource(R.string.create_group_link),
+      tint = HighOrLowlight
+    )
+    Spacer(Modifier.size(8.dp))
+    Text(stringResource(R.string.create_group_link))
   }
 }
 
@@ -384,6 +406,7 @@ fun PreviewGroupChatInfoLayout() {
       groupInfo = GroupInfo.sampleData,
       members = listOf(GroupMember.sampleData, GroupMember.sampleData, GroupMember.sampleData),
       developerTools = false,
+      groupLink = null,
       addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, openPreferences = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}, manageGroupLink = {},
     )
   }
