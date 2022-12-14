@@ -30,7 +30,7 @@ enum VoiceMessageRecordingState {
 }
 
 struct LiveMessage {
-    var chatItem: ChatItem?
+    var chatItem: ChatItem
     var message: String
 }
 
@@ -98,7 +98,7 @@ struct ComposeState {
         case .imagePreviews: return true
         case .voicePreview: return voiceMessageRecordingState == .finished
         case .filePreview: return true
-        default: return !message.isEmpty
+        default: return !message.isEmpty || liveMessage != nil
         }
     }
 
@@ -184,7 +184,7 @@ struct ComposeView: View {
     // fails to stop on ComposeVoiceView.playbackMode().onDisappear,
     // this is a workaround to fire an explicit event in certain cases
     @State private var stopPlayback: Bool = false
-    
+
     var body: some View {
         VStack(spacing: 0) {
             contextItemView()
@@ -211,37 +211,26 @@ struct ComposeView: View {
                         sendMessage()
                         resetLinkPreview()
                     },
+                    sendLiveMessage: {
+                        let msg = composeState.message
+                        if composeState.liveMessage == nil,
+                           let ci = await apiSendMessage(type: cInfo.chatType, id: cInfo.apiId, file: nil, quotedItemId: nil, msg: .text(msg)) {
+                            await MainActor.run {
+                                chatModel.addChatItem(cInfo, ci)
+                                composeState = composeState.copy(liveMessage: LiveMessage(chatItem: ci, message: msg))
+                            }
+                        }
+                    },
                     updateLiveMessage: {
                         // TODO only send full words
                         let msg = composeState.message
-                        if var liveMessage = composeState.liveMessage {
-                            if liveMessage.message != msg {
-                                if let ci = liveMessage.chatItem {
-                                    if let ci1 = try? await apiUpdateChatItem(type: cInfo.chatType, id: cInfo.apiId, itemId: ci.id, msg: .text(msg)) {
-                                        await MainActor.run { _ = chatModel.upsertChatItem(cInfo, ci1) }
-                                    }
-                                } else if let ci = await send() {
-                                    liveMessage.chatItem = ci
-                                    await MainActor.run { chatModel.addChatItem(cInfo, ci) }
-                                }
-                                liveMessage.message = msg
-                                await update(liveMessage)
+                        if let liveMessage = composeState.liveMessage,
+                           liveMessage.message != msg,
+                           let ci = try? await apiUpdateChatItem(type: cInfo.chatType, id: cInfo.apiId, itemId: liveMessage.chatItem.id, msg: .text(msg)) {
+                            await MainActor.run {
+                                _ = chatModel.upsertChatItem(cInfo, ci)
+                                composeState = composeState.copy(liveMessage: LiveMessage(chatItem: ci, message: msg))
                             }
-                        } else {
-                            var liveMessage = LiveMessage(chatItem: nil, message: msg)
-                            if msg != "", let ci = await send() {
-                                liveMessage.chatItem = ci
-                                await MainActor.run { chatModel.addChatItem(cInfo, ci) }
-                            }
-                            await update(liveMessage)
-                        }
-
-                        func send() async -> ChatItem? {
-                            await apiSendMessage(type: cInfo.chatType, id: cInfo.apiId, file: nil, quotedItemId: nil, msg: .text(msg))
-                        }
-
-                        func update(_ liveMessage: LiveMessage) async {
-                            await MainActor.run { composeState = composeState.copy(liveMessage: liveMessage) }
                         }
                     },
                     voiceMessageAllowed: cInfo.voiceMessageAllowed,
