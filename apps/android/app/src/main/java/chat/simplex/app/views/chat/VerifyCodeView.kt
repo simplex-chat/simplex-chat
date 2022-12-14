@@ -20,7 +20,6 @@ import chat.simplex.app.R
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.QRCode
-import chat.simplex.app.views.usersettings.ScanCodeView
 
 @Composable
 fun VerifyCodeView(
@@ -91,7 +90,10 @@ private fun VerifyCodeLayout(
       Modifier.padding(bottom = DEFAULT_PADDING)
     )
 
-    Row(Modifier.padding(bottom = DEFAULT_PADDING).align(Alignment.CenterHorizontally)) {
+    Row(
+      Modifier.padding(bottom = DEFAULT_PADDING).align(Alignment.CenterHorizontally),
+      horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
       if (connectionVerified) {
         SimpleButton(generalGetString(R.string.clear_verification), Icons.Outlined.Shield) {
           verifyCode(null) {}

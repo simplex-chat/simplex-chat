@@ -1,4 +1,4 @@
-package chat.simplex.app.views.usersettings
+package chat.simplex.app.views.chat
 
 import android.Manifest
 import androidx.compose.foundation.layout.*
