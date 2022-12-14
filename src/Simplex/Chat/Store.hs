@@ -208,7 +208,11 @@ module Simplex.Chat.Store
     deleteGroupChatItem,
     markGroupChatItemDeleted,
     updateDirectChatItemsRead,
+    getDirectUnreadTimedItems,
+    setDirectChatItemDeleteAt,
     updateGroupChatItemsRead,
+    getGroupUnreadTimedItems,
+    setGroupChatItemDeleteAt,
     getSMPServers,
     overwriteSMPServers,
     createCall,
@@ -4160,8 +4164,8 @@ toChatItemRef = \case
   (itemId, Nothing, Just groupId) -> Right (itemId, ChatRef CTGroup groupId)
   (itemId, _, _) -> Left $ SEBadChatItem itemId
 
-updateDirectChatItemsRead :: DB.Connection -> Int64 -> Maybe (ChatItemId, ChatItemId) -> IO ()
-updateDirectChatItemsRead db contactId itemsRange_ = do
+updateDirectChatItemsRead :: DB.Connection -> UserId -> ContactId -> Maybe (ChatItemId, ChatItemId) -> IO ()
+updateDirectChatItemsRead db userId contactId itemsRange_ = do
   currentTs <- getCurrentTime
   case itemsRange_ of
     Just (fromItemId, toItemId) ->
@@ -4169,20 +4173,48 @@ updateDirectChatItemsRead db contactId itemsRange_ = do
         db
         [sql|
           UPDATE chat_items SET item_status = ?, updated_at = ?
-          WHERE contact_id = ? AND chat_item_id >= ? AND chat_item_id <= ? AND item_status = ?
+          WHERE user_id = ? AND contact_id = ? AND chat_item_id >= ? AND chat_item_id <= ? AND item_status = ?
         |]
-        (CISRcvRead, currentTs, contactId, fromItemId, toItemId, CISRcvNew)
+        (userId, CISRcvRead, currentTs, contactId, fromItemId, toItemId, CISRcvNew)
     _ ->
       DB.execute
         db
         [sql|
           UPDATE chat_items SET item_status = ?, updated_at = ?
-          WHERE contact_id = ? AND item_status = ?
+          WHERE user_id = ? AND contact_id = ? AND item_status = ?
         |]
-        (CISRcvRead, currentTs, contactId, CISRcvNew)
+        (userId, CISRcvRead, currentTs, contactId, CISRcvNew)
 
-updateGroupChatItemsRead :: DB.Connection -> Int64 -> Maybe (ChatItemId, ChatItemId) -> IO ()
-updateGroupChatItemsRead db groupId itemsRange_ = do
+getDirectUnreadTimedItems :: DB.Connection -> User -> ContactId -> Maybe (ChatItemId, ChatItemId) -> IO [(ChatItemId, Int)]
+getDirectUnreadTimedItems db User {userId} contactId itemsRange_ = case itemsRange_ of
+  Just (fromItemId, toItemId) ->
+    DB.query
+      db
+      [sql|
+        SELECT chat_item_id, timed_ttl
+        FROM chat_items
+        WHERE user_id = ? AND contact_id = ? AND chat_item_id >= ? AND chat_item_id <= ? AND item_status = ? AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
+      |]
+      (userId, contactId, fromItemId, toItemId, CISRcvNew)
+  _ ->
+    DB.query
+      db
+      [sql|
+        SELECT chat_item_id, timed_ttl
+        FROM chat_items
+        WHERE user_id = ? AND contact_id = ? AND item_status = ? AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
+      |]
+      (userId, contactId, CISRcvNew)
+
+setDirectChatItemDeleteAt :: DB.Connection -> User -> ContactId -> ChatItemId -> UTCTime -> IO ()
+setDirectChatItemDeleteAt db User {userId} contactId chatItemId deleteAt =
+  DB.execute
+    db
+    "UPDATE chat_items SET timed_delete_at = ? WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?"
+    (deleteAt, userId, contactId, chatItemId)
+
+updateGroupChatItemsRead :: DB.Connection -> UserId -> GroupId -> Maybe (ChatItemId, ChatItemId) -> IO ()
+updateGroupChatItemsRead db userId groupId itemsRange_ = do
   currentTs <- getCurrentTime
   case itemsRange_ of
     Just (fromItemId, toItemId) ->
@@ -4190,17 +4222,45 @@ updateGroupChatItemsRead db groupId itemsRange_ = do
         db
         [sql|
           UPDATE chat_items SET item_status = ?, updated_at = ?
-          WHERE group_id = ? AND chat_item_id >= ? AND chat_item_id <= ? AND item_status = ?
+          WHERE user_id = ? AND group_id = ? AND chat_item_id >= ? AND chat_item_id <= ? AND item_status = ?
         |]
-        (CISRcvRead, currentTs, groupId, fromItemId, toItemId, CISRcvNew)
+        (userId, CISRcvRead, currentTs, groupId, fromItemId, toItemId, CISRcvNew)
     _ ->
       DB.execute
         db
         [sql|
           UPDATE chat_items SET item_status = ?, updated_at = ?
-          WHERE group_id = ? AND item_status = ?
+          WHERE user_id = ? AND group_id = ? AND item_status = ?
         |]
-        (CISRcvRead, currentTs, groupId, CISRcvNew)
+        (userId, CISRcvRead, currentTs, groupId, CISRcvNew)
+
+getGroupUnreadTimedItems :: DB.Connection -> User -> GroupId -> Maybe (ChatItemId, ChatItemId) -> IO [(ChatItemId, Int)]
+getGroupUnreadTimedItems db User {userId} groupId itemsRange_ = case itemsRange_ of
+  Just (fromItemId, toItemId) ->
+    DB.query
+      db
+      [sql|
+        SELECT chat_item_id, timed_ttl
+        FROM chat_items
+        WHERE user_id = ? AND group_id = ? AND chat_item_id >= ? AND chat_item_id <= ? AND item_status = ? AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
+      |]
+      (userId, groupId, fromItemId, toItemId, CISRcvNew)
+  _ ->
+    DB.query
+      db
+      [sql|
+        SELECT chat_item_id, timed_ttl
+        FROM chat_items
+        WHERE user_id = ? AND group_id = ? AND item_status = ? AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
+      |]
+      (userId, groupId, CISRcvNew)
+
+setGroupChatItemDeleteAt :: DB.Connection -> User -> GroupId -> ChatItemId -> UTCTime -> IO ()
+setGroupChatItemDeleteAt db User {userId} groupId chatItemId deleteAt =
+  DB.execute
+    db
+    "UPDATE chat_items SET timed_delete_at = ? WHERE user_id = ? AND group_id = ? AND chat_item_id = ?"
+    (deleteAt, userId, groupId, chatItemId)
 
 type ChatStatsRow = (Int, ChatItemId, Bool)
 

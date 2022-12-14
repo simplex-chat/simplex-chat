@@ -509,10 +509,25 @@ processChatCommand = \case
         (CIDMBroadcast, _, _) -> throwChatError CEInvalidChatItemDelete
     CTContactRequest -> pure $ chatCmdError "not supported"
     CTContactConnection -> pure $ chatCmdError "not supported"
-  APIChatRead (ChatRef cType chatId) fromToIds -> case cType of
-    -- TODO based on preference - update deleteAt, maybe start timed deletion threads
-    CTDirect -> withStore' (\db -> updateDirectChatItemsRead db chatId fromToIds) $> CRCmdOk
-    CTGroup -> withStore' (\db -> updateGroupChatItemsRead db chatId fromToIds) $> CRCmdOk
+  APIChatRead (ChatRef cType chatId) fromToIds -> withUser $ \user@User {userId} -> case cType of
+    CTDirect -> do
+      timedItems <- withStore' $ \db -> getDirectUnreadTimedItems db user chatId fromToIds
+      ts <- liftIO getCurrentTime
+      forM_ timedItems $ \(itemId, ttl) -> do
+        let deleteAt = addUTCTime (toEnum ttl) ts
+        withStore' $ \db -> setDirectChatItemDeleteAt db user chatId itemId deleteAt
+        when (ttl <= cleanupManagerInterval) $ startTimedItemThread user (ChatRef CTDirect chatId, itemId) deleteAt
+      withStore' $ \db -> updateDirectChatItemsRead db userId chatId fromToIds
+      pure CRCmdOk
+    CTGroup -> do
+      timedItems <- withStore' $ \db -> getGroupUnreadTimedItems db user chatId fromToIds
+      ts <- liftIO getCurrentTime
+      forM_ timedItems $ \(itemId, ttl) -> do
+        let deleteAt = addUTCTime (toEnum ttl) ts
+        withStore' $ \db -> setGroupChatItemDeleteAt db user chatId itemId deleteAt
+        when (ttl <= cleanupManagerInterval) $ startTimedItemThread user (ChatRef CTGroup chatId, itemId) deleteAt
+      withStore' $ \db -> updateGroupChatItemsRead db userId chatId fromToIds
+      pure CRCmdOk
     CTContactRequest -> pure $ chatCmdError "not supported"
     CTContactConnection -> pure $ chatCmdError "not supported"
   APIChatUnread (ChatRef cType chatId) unreadChat -> withUser $ \user -> case cType of
@@ -643,7 +658,7 @@ processChatCommand = \case
     withCurrentCall contactId $ \userId ct Call {chatItemId, callState} -> case callState of
       CallInvitationReceived {} -> do
         let aciContent = ACIContent SMDRcv $ CIRcvCall CISCallRejected 0
-        withStore' $ \db -> updateDirectChatItemsRead db contactId $ Just (chatItemId, chatItemId)
+        withStore' $ \db -> updateDirectChatItemsRead db userId contactId $ Just (chatItemId, chatItemId)
         updateDirectChatItemView userId ct chatItemId aciContent Nothing $> Nothing
       _ -> throwChatError . CECallState $ callStateTag callState
   APISendCallOffer contactId WebRTCCallOffer {callType, rtcSession} ->
@@ -655,7 +670,7 @@ processChatCommand = \case
             callState' = CallOfferSent {localCallType = callType, peerCallType, localCallSession = rtcSession, sharedKey}
             aciContent = ACIContent SMDRcv $ CIRcvCall CISCallAccepted 0
         (SndMessage {msgId}, _) <- sendDirectContactMessage ct (XCallOffer callId offer)
-        withStore' $ \db -> updateDirectChatItemsRead db contactId $ Just (chatItemId, chatItemId)
+        withStore' $ \db -> updateDirectChatItemsRead db userId contactId $ Just (chatItemId, chatItemId)
         updateDirectChatItemView userId ct chatItemId aciContent $ Just msgId
         pure $ Just call {callState = callState'}
       _ -> throwChatError . CECallState $ callStateTag callState
