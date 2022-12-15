@@ -807,12 +807,12 @@ ciContentToText = \case
   CISndConnEvent event -> sndConnEventToText event
   CIRcvChatFeature feature enabled -> chatFeatureToText feature <> ": " <> prefEnabledToText enabled
   CISndChatFeature feature enabled -> chatFeatureToText feature <> ": " <> prefEnabledToText enabled
-  CIRcvChatTimedMessagesFeature userTimedMessagesPreference contactTimedMessagesPreference -> сhatTimedMessagesFeatureText userTimedMessagesPreference contactTimedMessagesPreference
-  CISndChatTimedMessagesFeature userTimedMessagesPreference contactTimedMessagesPreference -> сhatTimedMessagesFeatureText userTimedMessagesPreference contactTimedMessagesPreference
+  CIRcvChatTimedMessagesFeature userTMP contactTMP -> сhatTimedMessagesFeatureText userTMP contactTMP
+  CISndChatTimedMessagesFeature userTMP contactTMP -> сhatTimedMessagesFeatureText userTMP contactTMP
   CIRcvGroupFeature feature pref -> groupFeatureToText feature <> ": " <> groupPrefToText pref
   CISndGroupFeature feature pref -> groupFeatureToText feature <> ": " <> groupPrefToText pref
-  CIRcvGroupTimedMessagesFeature groupTimedMessagesPreference -> groupTimedMessagesFeatureText groupTimedMessagesPreference
-  CISndGroupTimedMessagesFeature groupTimedMessagesPreference -> groupTimedMessagesFeatureText groupTimedMessagesPreference
+  CIRcvGroupTimedMessagesFeature tmgp -> groupTimedMessagesFeatureText tmgp
+  CISndGroupTimedMessagesFeature tmgp -> groupTimedMessagesFeatureText tmgp
   CIRcvChatFeatureRejected feature -> chatFeatureToText feature <> ": received, prohibited"
   CIRcvGroupFeatureRejected feature -> groupFeatureToText feature <> ": received, prohibited"
 
@@ -883,8 +883,8 @@ data JSONCIContent
   | JCISndChatTimedMessagesFeature {userTimedMessagesPreference :: TimedMessagesPreference, contactTimedMessagesPreference :: TimedMessagesPreference}
   | JCIRcvGroupFeature {groupFeature :: GroupFeature, preference :: GroupPreference}
   | JCISndGroupFeature {groupFeature :: GroupFeature, preference :: GroupPreference}
-  | JCIRcvGroupTimedMessagesFeature {groupTimedMessagesPreference :: TimedMessagesGroupPreference}
-  | JCISndGroupTimedMessagesFeature {groupTimedMessagesPreference :: TimedMessagesGroupPreference}
+  | JCIRcvGroupTimedMessagesFeature {timedMessagesGroupPreference :: TimedMessagesGroupPreference}
+  | JCISndGroupTimedMessagesFeature {timedMessagesGroupPreference :: TimedMessagesGroupPreference}
   | JCIRcvChatFeatureRejected {feature :: ChatFeature}
   | JCIRcvGroupFeatureRejected {groupFeature :: GroupFeature}
   deriving (Generic)
@@ -913,12 +913,12 @@ jsonCIContent = \case
   CISndConnEvent sndConnEvent -> JCISndConnEvent {sndConnEvent}
   CIRcvChatFeature feature enabled -> JCIRcvChatFeature {feature, enabled}
   CISndChatFeature feature enabled -> JCISndChatFeature {feature, enabled}
-  CIRcvChatTimedMessagesFeature userTimedMessagesPreference contactTimedMessagesPreference -> JCIRcvChatTimedMessagesFeature {userTimedMessagesPreference, contactTimedMessagesPreference}
-  CISndChatTimedMessagesFeature userTimedMessagesPreference contactTimedMessagesPreference -> JCISndChatTimedMessagesFeature {userTimedMessagesPreference, contactTimedMessagesPreference}
+  CIRcvChatTimedMessagesFeature userTMP contactTMP -> JCIRcvChatTimedMessagesFeature userTMP contactTMP
+  CISndChatTimedMessagesFeature userTMP contactTMP -> JCISndChatTimedMessagesFeature userTMP contactTMP
   CIRcvGroupFeature groupFeature preference -> JCIRcvGroupFeature {groupFeature, preference}
   CISndGroupFeature groupFeature preference -> JCISndGroupFeature {groupFeature, preference}
-  CIRcvGroupTimedMessagesFeature groupTimedMessagesPreference -> JCIRcvGroupTimedMessagesFeature {groupTimedMessagesPreference}
-  CISndGroupTimedMessagesFeature groupTimedMessagesPreference -> JCISndGroupTimedMessagesFeature {groupTimedMessagesPreference}
+  CIRcvGroupTimedMessagesFeature tmgp -> JCIRcvGroupTimedMessagesFeature tmgp
+  CISndGroupTimedMessagesFeature tmgp -> JCISndGroupTimedMessagesFeature tmgp
   CIRcvChatFeatureRejected feature -> JCIRcvChatFeatureRejected {feature}
   CIRcvGroupFeatureRejected groupFeature -> JCIRcvGroupFeatureRejected {groupFeature}
 
@@ -939,12 +939,12 @@ aciContentJSON = \case
   JCISndConnEvent {sndConnEvent} -> ACIContent SMDSnd $ CISndConnEvent sndConnEvent
   JCIRcvChatFeature {feature, enabled} -> ACIContent SMDRcv $ CIRcvChatFeature feature enabled
   JCISndChatFeature {feature, enabled} -> ACIContent SMDSnd $ CISndChatFeature feature enabled
-  JCIRcvChatTimedMessagesFeature {userTimedMessagesPreference, contactTimedMessagesPreference} -> ACIContent SMDRcv $ CIRcvChatTimedMessagesFeature userTimedMessagesPreference contactTimedMessagesPreference
-  JCISndChatTimedMessagesFeature {userTimedMessagesPreference, contactTimedMessagesPreference} -> ACIContent SMDSnd $ CISndChatTimedMessagesFeature userTimedMessagesPreference contactTimedMessagesPreference
+  JCIRcvChatTimedMessagesFeature userTMP contactTMP -> ACIContent SMDRcv $ CIRcvChatTimedMessagesFeature userTMP contactTMP
+  JCISndChatTimedMessagesFeature userTMP contactTMP -> ACIContent SMDSnd $ CISndChatTimedMessagesFeature userTMP contactTMP
   JCIRcvGroupFeature {groupFeature, preference} -> ACIContent SMDRcv $ CIRcvGroupFeature groupFeature preference
   JCISndGroupFeature {groupFeature, preference} -> ACIContent SMDSnd $ CISndGroupFeature groupFeature preference
-  JCIRcvGroupTimedMessagesFeature {groupTimedMessagesPreference} -> ACIContent SMDRcv $ CIRcvGroupTimedMessagesFeature groupTimedMessagesPreference
-  JCISndGroupTimedMessagesFeature {groupTimedMessagesPreference} -> ACIContent SMDSnd $ CISndGroupTimedMessagesFeature groupTimedMessagesPreference
+  JCIRcvGroupTimedMessagesFeature tmgp -> ACIContent SMDRcv $ CIRcvGroupTimedMessagesFeature tmgp
+  JCISndGroupTimedMessagesFeature tmgp -> ACIContent SMDSnd $ CISndGroupTimedMessagesFeature tmgp
   JCIRcvChatFeatureRejected {feature} -> ACIContent SMDRcv $ CIRcvChatFeatureRejected feature
   JCIRcvGroupFeatureRejected {groupFeature} -> ACIContent SMDRcv $ CIRcvGroupFeatureRejected groupFeature
 
@@ -969,8 +969,8 @@ data DBJSONCIContent
   | DBJCISndChatTimedMessagesFeature {userTimedMessagesPreference :: TimedMessagesPreference, contactTimedMessagesPreference :: TimedMessagesPreference}
   | DBJCIRcvGroupFeature {groupFeature :: GroupFeature, preference :: GroupPreference}
   | DBJCISndGroupFeature {groupFeature :: GroupFeature, preference :: GroupPreference}
-  | DBJCIRcvGroupTimedMessagesFeature {groupTimedMessagesPreference :: TimedMessagesGroupPreference}
-  | DBJCISndGroupTimedMessagesFeature {groupTimedMessagesPreference :: TimedMessagesGroupPreference}
+  | DBJCIRcvGroupTimedMessagesFeature {timedMessagesGroupPreference :: TimedMessagesGroupPreference}
+  | DBJCISndGroupTimedMessagesFeature {timedMessagesGroupPreference :: TimedMessagesGroupPreference}
   | DBJCIRcvChatFeatureRejected {feature :: ChatFeature}
   | DBJCIRcvGroupFeatureRejected {groupFeature :: GroupFeature}
   deriving (Generic)
@@ -999,12 +999,12 @@ dbJsonCIContent = \case
   CISndConnEvent sce -> DBJCISndConnEvent $ SCE sce
   CIRcvChatFeature feature enabled -> DBJCIRcvChatFeature {feature, enabled}
   CISndChatFeature feature enabled -> DBJCISndChatFeature {feature, enabled}
-  CIRcvChatTimedMessagesFeature userTimedMessagesPreference contactTimedMessagesPreference -> DBJCIRcvChatTimedMessagesFeature {userTimedMessagesPreference, contactTimedMessagesPreference}
-  CISndChatTimedMessagesFeature userTimedMessagesPreference contactTimedMessagesPreference -> DBJCISndChatTimedMessagesFeature {userTimedMessagesPreference, contactTimedMessagesPreference}
+  CIRcvChatTimedMessagesFeature userTMP contactTMP -> DBJCIRcvChatTimedMessagesFeature userTMP contactTMP
+  CISndChatTimedMessagesFeature userTMP contactTMP -> DBJCISndChatTimedMessagesFeature userTMP contactTMP
   CIRcvGroupFeature groupFeature preference -> DBJCIRcvGroupFeature {groupFeature, preference}
   CISndGroupFeature groupFeature preference -> DBJCISndGroupFeature {groupFeature, preference}
-  CIRcvGroupTimedMessagesFeature groupTimedMessagesPreference -> DBJCIRcvGroupTimedMessagesFeature {groupTimedMessagesPreference}
-  CISndGroupTimedMessagesFeature groupTimedMessagesPreference -> DBJCISndGroupTimedMessagesFeature {groupTimedMessagesPreference}
+  CIRcvGroupTimedMessagesFeature tmgp -> DBJCIRcvGroupTimedMessagesFeature tmgp
+  CISndGroupTimedMessagesFeature tmgp -> DBJCISndGroupTimedMessagesFeature tmgp
   CIRcvChatFeatureRejected feature -> DBJCIRcvChatFeatureRejected {feature}
   CIRcvGroupFeatureRejected groupFeature -> DBJCIRcvGroupFeatureRejected {groupFeature}
 
@@ -1025,12 +1025,12 @@ aciContentDBJSON = \case
   DBJCISndConnEvent (SCE sce) -> ACIContent SMDSnd $ CISndConnEvent sce
   DBJCIRcvChatFeature {feature, enabled} -> ACIContent SMDRcv $ CIRcvChatFeature feature enabled
   DBJCISndChatFeature {feature, enabled} -> ACIContent SMDSnd $ CISndChatFeature feature enabled
-  DBJCIRcvChatTimedMessagesFeature {userTimedMessagesPreference, contactTimedMessagesPreference} -> ACIContent SMDRcv $ CIRcvChatTimedMessagesFeature userTimedMessagesPreference contactTimedMessagesPreference
-  DBJCISndChatTimedMessagesFeature {userTimedMessagesPreference, contactTimedMessagesPreference} -> ACIContent SMDSnd $ CISndChatTimedMessagesFeature userTimedMessagesPreference contactTimedMessagesPreference
+  DBJCIRcvChatTimedMessagesFeature userTMP contactTMP -> ACIContent SMDRcv $ CIRcvChatTimedMessagesFeature userTMP contactTMP
+  DBJCISndChatTimedMessagesFeature userTMP contactTMP -> ACIContent SMDSnd $ CISndChatTimedMessagesFeature userTMP contactTMP
   DBJCIRcvGroupFeature {groupFeature, preference} -> ACIContent SMDRcv $ CIRcvGroupFeature groupFeature preference
   DBJCISndGroupFeature {groupFeature, preference} -> ACIContent SMDSnd $ CISndGroupFeature groupFeature preference
-  DBJCIRcvGroupTimedMessagesFeature {groupTimedMessagesPreference} -> ACIContent SMDRcv $ CIRcvGroupTimedMessagesFeature groupTimedMessagesPreference
-  DBJCISndGroupTimedMessagesFeature {groupTimedMessagesPreference} -> ACIContent SMDSnd $ CISndGroupTimedMessagesFeature groupTimedMessagesPreference
+  DBJCIRcvGroupTimedMessagesFeature tmgp -> ACIContent SMDRcv $ CIRcvGroupTimedMessagesFeature tmgp
+  DBJCISndGroupTimedMessagesFeature tmgp -> ACIContent SMDSnd $ CISndGroupTimedMessagesFeature tmgp
   DBJCIRcvChatFeatureRejected {feature} -> ACIContent SMDRcv $ CIRcvChatFeatureRejected feature
   DBJCIRcvGroupFeatureRejected {groupFeature} -> ACIContent SMDRcv $ CIRcvGroupFeatureRejected groupFeature
 
