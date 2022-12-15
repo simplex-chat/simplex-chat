@@ -367,7 +367,8 @@ CREATE TABLE chat_items(
   quoted_member_id BLOB,
   item_edited INTEGER,
   timed_ttl INTEGER,
-  timed_delete_at TEXT
+  timed_delete_at TEXT,
+  item_live INTEGER
 );
 CREATE TABLE chat_item_messages(
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
