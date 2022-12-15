@@ -452,8 +452,10 @@ struct ComposeView: View {
             logger.debug("ChatView sendMessage: in Task")
             if case let .editingItem(ci) = composeState.contextItem {
                 await updateMessage(ci)
-            } else if let liveMessage = composeState.liveMessage, liveMessage.typedMsg != liveMessage.sentMsg {
-                await updateMessage(liveMessage.chatItem)
+            } else if let liveMessage = composeState.liveMessage {
+                if liveMessage.typedMsg != liveMessage.sentMsg {
+                    await updateMessage(liveMessage.chatItem)
+                }
             } else {
                 await sending()
                 var quoted: Int64? = nil
