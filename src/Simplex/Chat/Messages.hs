@@ -18,12 +18,10 @@ import qualified Data.Aeson as J
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.Fixed (Fixed (MkFixed), Pico)
 import Data.Int (Int64)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
-import Data.Time (nominalDiffTimeToSeconds)
 import Data.Time.Clock (UTCTime, diffUTCTime, nominalDay)
 import Data.Time.LocalTime (TimeZone, ZonedTime, utcToZonedTime)
 import Data.Type.Equality
@@ -314,20 +312,6 @@ groupCITimedTTL GroupInfo {fullGroupPreferences = FullGroupPreferences {timedMes
   if enable == FEOn
     then Just ttl
     else Nothing
-
-cleanupManagerInterval :: Int
-cleanupManagerInterval = 1800 -- 30 minutes
-
--- move to Utils
-
-diffInMicros :: UTCTime -> UTCTime -> Int
-diffInMicros a b = (`div` 1000000) $ diffInPicos a b
-
-diffInPicos :: UTCTime -> UTCTime -> Int
-diffInPicos a b = fromInteger . fromPico . nominalDiffTimeToSeconds $ diffUTCTime a b
-
-fromPico :: Pico -> Integer
-fromPico (MkFixed i) = i
 
 data CIQuote (c :: ChatType) = CIQuote
   { chatDir :: CIQDirection c,

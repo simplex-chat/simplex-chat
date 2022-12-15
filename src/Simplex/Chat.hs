@@ -55,6 +55,7 @@ import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store
 import Simplex.Chat.Types
+import Simplex.Chat.Util (diffInMicros)
 import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), AgentDatabase (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Lock
@@ -1697,6 +1698,9 @@ subscribeUserConnections agentBatchSubscribe user = do
               Just _ -> Nothing
               _ -> Just . ChatError . CEAgentNoSubResult $ AgentConnId connId
 
+cleanupManagerInterval :: Int
+cleanupManagerInterval = 1800 -- 30 minutes
+
 cleanupManager :: forall m. ChatMonad m => User -> m ()
 cleanupManager user = do
   forever $ do
@@ -1715,7 +1719,8 @@ cleanupManager user = do
 startTimedItemThread :: ChatMonad m => User -> (ChatRef, ChatItemId) -> UTCTime -> m ()
 startTimedItemThread user itemRef deleteAt = do
   itemThreads <- asks timedItemThreads
-  unlessM (timedItemThreadExists itemRef) $ do -- TODO atomically with insert
+  unlessM (timedItemThreadExists itemRef) $ do
+    -- TODO atomically with insert
     tId <- mkWeakThreadId =<< deleteTimedItem user itemRef deleteAt `forkFinally` const (atomically $ TM.delete itemRef itemThreads)
     atomically $ TM.insert itemRef tId itemThreads
 
