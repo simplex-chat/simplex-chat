@@ -346,7 +346,7 @@ processChatCommand = \case
           Nothing -> pure Nothing
         prepareMsg :: Maybe FileInvitation -> Maybe CITimed -> m (MsgContainer, Maybe (CIQuote 'CTDirect))
         prepareMsg fileInvitation_ timed_ = case quotedItemId_ of
-          Nothing -> pure (MCSimple (extMsgContent mc fileInvitation_ $ ttl_ timed_), Nothing)
+          Nothing -> pure (MCSimple (extMsgContent mc fileInvitation_ $ ciTimedToTTL timed_), Nothing)
           Just quotedItemId -> do
             CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, file} <-
               withStore $ \db -> getDirectChatItem db userId chatId quotedItemId
@@ -354,7 +354,7 @@ processChatCommand = \case
             let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Nothing}
                 qmc = quoteContent origQmc file
                 quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
-            pure (MCQuote QuotedMsg {msgRef, content = qmc} (extMsgContent mc fileInvitation_ $ ttl_ timed_), Just quotedItem)
+            pure (MCQuote QuotedMsg {msgRef, content = qmc} (extMsgContent mc fileInvitation_ $ ciTimedToTTL timed_), Just quotedItem)
           where
             quoteData :: ChatItem c d -> m (MsgContent, CIQDirection 'CTDirect, Bool)
             quoteData ChatItem {meta = CIMeta {itemDeleted = True}} = throwChatError CEInvalidQuote
@@ -407,7 +407,7 @@ processChatCommand = \case
             _ -> pure ()
         prepareMsg :: Maybe FileInvitation -> Maybe CITimed -> GroupMember -> m (MsgContainer, Maybe (CIQuote 'CTGroup))
         prepareMsg fileInvitation_ timed_ membership = case quotedItemId_ of
-          Nothing -> pure (MCSimple (extMsgContent mc fileInvitation_ $ ttl_ timed_), Nothing)
+          Nothing -> pure (MCSimple (extMsgContent mc fileInvitation_ $ ciTimedToTTL timed_), Nothing)
           Just quotedItemId -> do
             CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, file} <-
               withStore $ \db -> getGroupChatItem db user chatId quotedItemId
@@ -415,7 +415,7 @@ processChatCommand = \case
             let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Just memberId}
                 qmc = quoteContent origQmc file
                 quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
-            pure (MCQuote QuotedMsg {msgRef, content = qmc} (extMsgContent mc fileInvitation_ $ ttl_ timed_), Just quotedItem)
+            pure (MCQuote QuotedMsg {msgRef, content = qmc} (extMsgContent mc fileInvitation_ $ ciTimedToTTL timed_), Just quotedItem)
           where
             quoteData :: ChatItem c d -> GroupMember -> m (MsgContent, CIQDirection 'CTGroup, Bool, GroupMember)
             quoteData ChatItem {meta = CIMeta {itemDeleted = True}} _ = throwChatError CEInvalidQuote
@@ -425,8 +425,6 @@ processChatCommand = \case
     CTContactRequest -> pure $ chatCmdError "not supported"
     CTContactConnection -> pure $ chatCmdError "not supported"
     where
-      ttl_ :: Maybe CITimed -> Maybe Int
-      ttl_ timed_ = timed_ >>= \CITimed {ttl} -> Just ttl
       quoteContent :: forall d. MsgContent -> Maybe (CIFile d) -> MsgContent
       quoteContent qmc ciFile_
         | replaceContent = MCText qTextOrFile
@@ -457,10 +455,10 @@ processChatCommand = \case
       (ct@Contact {contactId, localDisplayName = c}, ci) <- withStore $ \db -> (,) <$> getContact db user chatId <*> getDirectChatItem db userId chatId itemId
       assertDirectAllowed user MDSnd ct XMsgUpdate_
       case ci of
-        CChatItem SMDSnd ChatItem {meta = CIMeta {itemSharedMsgId}, content = ciContent} -> do
+        CChatItem SMDSnd ChatItem {meta = CIMeta {itemSharedMsgId, timed}, content = ciContent} -> do
           case (ciContent, itemSharedMsgId) of
             (CISndMsgContent _, Just itemSharedMId) -> do
-              (SndMessage {msgId}, _) <- sendDirectContactMessage ct (XMsgUpdate itemSharedMId mc Nothing)
+              (SndMessage {msgId}, _) <- sendDirectContactMessage ct (XMsgUpdate itemSharedMId mc (ciTimedToTTL timed) Nothing)
               updCi <- withStore $ \db -> updateDirectChatItem db userId contactId itemId (CISndMsgContent mc) $ Just msgId
               setActive $ ActiveC c
               pure . CRChatItemUpdated $ AChatItem SCTDirect SMDSnd (DirectChat ct) updCi
@@ -471,10 +469,10 @@ processChatCommand = \case
       unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
       ci <- withStore $ \db -> getGroupChatItem db user chatId itemId
       case ci of
-        CChatItem SMDSnd ChatItem {meta = CIMeta {itemSharedMsgId}, content = ciContent} -> do
+        CChatItem SMDSnd ChatItem {meta = CIMeta {itemSharedMsgId, timed}, content = ciContent} -> do
           case (ciContent, itemSharedMsgId) of
             (CISndMsgContent _, Just itemSharedMId) -> do
-              SndMessage {msgId} <- sendGroupMessage gInfo ms (XMsgUpdate itemSharedMId mc Nothing)
+              SndMessage {msgId} <- sendGroupMessage gInfo ms (XMsgUpdate itemSharedMId mc (ciTimedToTTL timed) Nothing)
               updCi <- withStore $ \db -> updateGroupChatItem db user groupId itemId (CISndMsgContent mc) msgId
               setActive $ ActiveG gName
               pure . CRChatItemUpdated $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) updCi
@@ -1891,7 +1889,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
             updateChatLock "directMessage" event
             case event of
               XMsgNew mc -> newContentMessage ct mc msg msgMeta
-              XMsgUpdate sharedMsgId mContent _ -> messageUpdate ct sharedMsgId mContent msg msgMeta
+              XMsgUpdate sharedMsgId mContent ttl _ -> messageUpdate ct sharedMsgId mContent ttl msg msgMeta
               XMsgDel sharedMsgId -> messageDelete ct sharedMsgId msg msgMeta
               -- TODO discontinue XFile
               XFile fInv -> processFileInvitation' ct fInv msg msgMeta
@@ -2097,7 +2095,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
         withAckMessage agentConnId cmdId msgMeta $
           case event of
             XMsgNew mc -> newGroupContentMessage gInfo m mc msg msgMeta
-            XMsgUpdate sharedMsgId mContent _ -> groupMessageUpdate gInfo m sharedMsgId mContent msg msgMeta
+            XMsgUpdate sharedMsgId mContent ttl _ -> groupMessageUpdate gInfo m sharedMsgId mContent ttl msg msgMeta
             XMsgDel sharedMsgId -> groupMessageDelete gInfo m sharedMsgId msg
             -- TODO discontinue XFile
             XFile fInv -> processGroupFileInvitation' gInfo m fInv msg msgMeta
@@ -2404,22 +2402,21 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
       let ExtMsgContent content fileInvitation_ _ _ = mcExtMsgContent mc
       if isVoice content && not (featureAllowed SCFVoice forContact ct)
         then do
-          void $ newChatItem (CIRcvChatFeatureRejected CFVoice) Nothing
+          void $ newChatItem (CIRcvChatFeatureRejected CFVoice) Nothing Nothing
           setActive $ ActiveC c
         else do
+          let ExtMsgContent _ _ itemTTL _ = mcExtMsgContent mc
+              timed_ = rcvMsgCITimed (contactCITimedTTL ct) itemTTL
           ciFile_ <- processFileInvitation fileInvitation_ content $ \db -> createRcvFileTransfer db userId ct
-          ChatItem {formattedText} <- newChatItem (CIRcvMsgContent content) ciFile_
+          ChatItem {formattedText} <- newChatItem (CIRcvMsgContent content) ciFile_ timed_
           when (enableNtfs chatSettings) $ do
             showMsgToast (c <> "> ") content formattedText
             setActive $ ActiveC c
       where
-        newChatItem ciContent ciFile_ = do
-          ci <- saveRcvChatItemTimed user (CDDirectRcv ct) msg msgMeta ciContent ciFile_ timed
+        newChatItem ciContent ciFile_ timed_ = do
+          ci <- saveRcvChatItemTimed user (CDDirectRcv ct) msg msgMeta ciContent ciFile_ timed_
           toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
           pure ci
-        timed = case (contactCITimedTTL ct, mcExtMsgContent mc) of
-          (Just _, ExtMsgContent _ _ (Just ttl) _) -> Just $ CITimed ttl Nothing
-          _ -> Nothing
 
     processFileInvitation :: Maybe FileInvitation -> MsgContent -> (DB.Connection -> FileInvitation -> Maybe InlineFileMode -> Integer -> IO RcvFileTransfer) -> m (Maybe (CIFile 'MDRcv))
     processFileInvitation fInv_ mc createRcvFT = forM fInv_ $ \fInv@FileInvitation {fileName, fileSize} -> do
@@ -2434,8 +2431,8 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
         _ -> pure (Nothing, CIFSRcvInvitation)
       pure CIFile {fileId, fileName, fileSize, filePath, fileStatus}
 
-    messageUpdate :: Contact -> SharedMsgId -> MsgContent -> RcvMessage -> MsgMeta -> m ()
-    messageUpdate ct@Contact {contactId, localDisplayName = c} sharedMsgId mc msg@RcvMessage {msgId} msgMeta = do
+    messageUpdate :: Contact -> SharedMsgId -> MsgContent -> Maybe Int -> RcvMessage -> MsgMeta -> m ()
+    messageUpdate ct@Contact {contactId, localDisplayName = c} sharedMsgId mc ttl msg@RcvMessage {msgId} msgMeta = do
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       updateRcvChatItem `catchError` \e ->
         case e of
@@ -2443,11 +2440,10 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
             -- This patches initial sharedMsgId into chat item when locally deleted chat item
             -- received an update from the sender, so that it can be referenced later (e.g. by broadcast delete).
             -- Chat item and update message which created it will have different sharedMsgId in this case...
-            ci <- saveRcvChatItem' user (CDDirectRcv ct) msg (Just sharedMsgId) msgMeta (CIRcvMsgContent mc) Nothing timed
+            let timed_ = rcvMsgCITimed (contactCITimedTTL ct) ttl
+            ci <- saveRcvChatItem' user (CDDirectRcv ct) msg (Just sharedMsgId) msgMeta (CIRcvMsgContent mc) Nothing timed_
             toView . CRChatItemUpdated $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
             setActive $ ActiveC c
-            where
-              timed = contactCITimedTTL ct >>= \ttl -> Just $ CITimed ttl Nothing
           _ -> throwError e
       where
         updateRcvChatItem = do
@@ -2477,36 +2473,34 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
     newGroupContentMessage gInfo@GroupInfo {chatSettings} m@GroupMember {localDisplayName = c} mc msg msgMeta = do
       let (ExtMsgContent content fInv_ _ _) = mcExtMsgContent mc
       if isVoice content && not (groupFeatureAllowed SGFVoice gInfo)
-        then void $ newChatItem (CIRcvGroupFeatureRejected GFVoice) Nothing
+        then void $ newChatItem (CIRcvGroupFeatureRejected GFVoice) Nothing Nothing
         else do
+          let ExtMsgContent _ _ itemTTL _ = mcExtMsgContent mc
+              timed_ = rcvMsgCITimed (groupCITimedTTL gInfo) itemTTL
           ciFile_ <- processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId m
-          ChatItem {formattedText} <- newChatItem (CIRcvMsgContent content) ciFile_
+          ChatItem {formattedText} <- newChatItem (CIRcvMsgContent content) ciFile_ timed_
           let g = groupName' gInfo
           when (enableNtfs chatSettings) $ do
             showMsgToast ("#" <> g <> " " <> c <> "> ") content formattedText
             setActive $ ActiveG g
       where
-        newChatItem ciContent ciFile_ = do
-          ci <- saveRcvChatItemTimed user (CDGroupRcv gInfo m) msg msgMeta ciContent ciFile_ timed
+        newChatItem ciContent ciFile_ timed_ = do
+          ci <- saveRcvChatItemTimed user (CDGroupRcv gInfo m) msg msgMeta ciContent ciFile_ timed_
           groupMsgToView gInfo m ci msgMeta
           pure ci
-        timed = case (groupCITimedTTL gInfo, mcExtMsgContent mc) of
-          (Just _, ExtMsgContent _ _ (Just ttl) _) -> Just $ CITimed ttl Nothing
-          _ -> Nothing
 
-    groupMessageUpdate :: GroupInfo -> GroupMember -> SharedMsgId -> MsgContent -> RcvMessage -> MsgMeta -> m ()
-    groupMessageUpdate gInfo@GroupInfo {groupId, localDisplayName = g} m@GroupMember {groupMemberId, memberId} sharedMsgId mc msg@RcvMessage {msgId} msgMeta =
+    groupMessageUpdate :: GroupInfo -> GroupMember -> SharedMsgId -> MsgContent -> Maybe Int -> RcvMessage -> MsgMeta -> m ()
+    groupMessageUpdate gInfo@GroupInfo {groupId, localDisplayName = g} m@GroupMember {groupMemberId, memberId} sharedMsgId mc ttl msg@RcvMessage {msgId} msgMeta =
       updateRcvChatItem `catchError` \e ->
         case e of
           (ChatErrorStore (SEChatItemSharedMsgIdNotFound _)) -> do
             -- This patches initial sharedMsgId into chat item when locally deleted chat item
             -- received an update from the sender, so that it can be referenced later (e.g. by broadcast delete).
             -- Chat item and update message which created it will have different sharedMsgId in this case...
-            ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg (Just sharedMsgId) msgMeta (CIRcvMsgContent mc) Nothing timed
+            let timed_ = rcvMsgCITimed (groupCITimedTTL gInfo) ttl
+            ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg (Just sharedMsgId) msgMeta (CIRcvMsgContent mc) Nothing timed_
             toView . CRChatItemUpdated $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci
             setActive $ ActiveG g
-            where
-              timed = groupCITimedTTL gInfo >>= \ttl -> Just $ CITimed ttl Nothing
           _ -> throwError e
       where
         updateRcvChatItem = do
