@@ -1891,7 +1891,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
             updateChatLock "directMessage" event
             case event of
               XMsgNew mc -> newContentMessage ct mc msg msgMeta
-              XMsgUpdate sharedMsgId mContent ttl live -> messageUpdate ct sharedMsgId mContent ttl live msg msgMeta
+              XMsgUpdate sharedMsgId mContent ttl live -> messageUpdate ct sharedMsgId mContent msg msgMeta ttl live
               XMsgDel sharedMsgId -> messageDelete ct sharedMsgId msg msgMeta
               -- TODO discontinue XFile
               XFile fInv -> processFileInvitation' ct fInv msg msgMeta
@@ -2434,8 +2434,8 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
         _ -> pure (Nothing, CIFSRcvInvitation)
       pure CIFile {fileId, fileName, fileSize, filePath, fileStatus}
 
-    messageUpdate :: Contact -> SharedMsgId -> MsgContent -> Maybe Int -> Maybe Bool -> RcvMessage -> MsgMeta -> m ()
-    messageUpdate ct@Contact {contactId, localDisplayName = c} sharedMsgId mc ttl live_ msg@RcvMessage {msgId} msgMeta = do
+    messageUpdate :: Contact -> SharedMsgId -> MsgContent -> RcvMessage -> MsgMeta -> Maybe Int -> Maybe Bool -> m ()
+    messageUpdate ct@Contact {contactId, localDisplayName = c} sharedMsgId mc msg@RcvMessage {msgId} msgMeta ttl live_ = do
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       updateRcvChatItem `catchError` \e ->
         case e of
