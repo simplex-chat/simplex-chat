@@ -1540,10 +1540,10 @@ public struct ChatItem: Identifiable, Decodable {
         }
     }
 
-    public static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, file: CIFile? = nil, _ itemDeleted: Bool = false, _ itemEdited: Bool = false, _ editable: Bool = true) -> ChatItem {
+    public static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, file: CIFile? = nil, _ itemDeleted: Bool = false, _ itemEdited: Bool = false, _ itemLive: Bool = false, _ editable: Bool = true) -> ChatItem {
         ChatItem(
             chatDir: dir,
-            meta: CIMeta.getSample(id, ts, text, status, itemDeleted, itemEdited, editable),
+            meta: CIMeta.getSample(id, ts, text, status, itemDeleted, itemEdited, itemLive, editable),
             content: .sndMsgContent(msgContent: .text(text)),
             quotedItem: quotedItem,
             file: file
@@ -1669,11 +1669,12 @@ public struct CIMeta: Decodable {
     var updatedAt: Date
     public var itemDeleted: Bool
     public var itemEdited: Bool
+    public var itemLive: Bool?
     public var editable: Bool
 
     var timestampText: Text { get { formatTimestampText(itemTs) } }
 
-    public static func getSample(_ id: Int64, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, _ itemDeleted: Bool = false, _ itemEdited: Bool = false, _ editable: Bool = true) -> CIMeta {
+    public static func getSample(_ id: Int64, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, _ itemDeleted: Bool = false, _ itemEdited: Bool = false, _ itemLive: Bool = false, _ editable: Bool = true) -> CIMeta {
         CIMeta(
             itemId: id,
             itemTs: ts,
@@ -1683,6 +1684,7 @@ public struct CIMeta: Decodable {
             updatedAt: ts,
             itemDeleted: itemDeleted,
             itemEdited: itemEdited,
+            itemLive: itemLive,
             editable: editable
         )
     }

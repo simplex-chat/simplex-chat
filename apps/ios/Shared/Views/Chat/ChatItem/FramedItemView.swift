@@ -31,7 +31,9 @@ struct FramedItemView: View {
         let v = ZStack(alignment: .bottomTrailing) {
             VStack(alignment: .leading, spacing: 0) {
                 if chatItem.meta.itemDeleted {
-                    ciDeletedView()
+                    framedItemHeader(icon: "trash", caption: Text("marked deleted").italic())
+                } else if chatItem.meta.itemLive == true {
+                    framedItemHeader(icon: "ellipsis", caption: Text("LIVE"))
                 }
                 
                 if let qi = chatItem.quotedItem {
@@ -73,7 +75,7 @@ struct FramedItemView: View {
     }
     
     @ViewBuilder private func framedMsgContentView() -> some View {
-        if chatItem.formattedText == nil && chatItem.file == nil && isShortEmoji(chatItem.content.text) {
+        if chatItem.formattedText == nil && chatItem.file == nil && chatItem.meta.itemLive != true && isShortEmoji(chatItem.content.text) {
             VStack {
                 emojiText(chatItem.content.text)
                 Text("")
@@ -127,32 +129,31 @@ struct FramedItemView: View {
             message: err
         )
     }
-    
-    @ViewBuilder private func ciDeletedView() -> some View {
+
+    @ViewBuilder func framedItemHeader(icon: String, caption: Text) -> some View {
         let v = HStack(spacing: 6) {
-            Image(systemName: "trash")
+            Image(systemName: icon)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 14, height: 14)
-            Text("marked deleted")
+            caption
                 .font(.caption)
-                .italic()
                 .lineLimit(1)
         }
-            .foregroundColor(.secondary)
-            .padding(.horizontal, 12)
-            .padding(.top, 6)
-            .padding(.bottom, chatItem.quotedItem == nil ? 6 : 0) // TODO think how to regroup
-            .overlay(DetermineWidth())
-            .frame(minWidth: msgWidth, alignment: .leading)
-            .background(chatItemFrameContextColor(chatItem, colorScheme))
+        .foregroundColor(.secondary)
+        .padding(.horizontal, 12)
+        .padding(.top, 6)
+        .padding(.bottom, chatItem.quotedItem == nil ? 6 : 0) // TODO think how to regroup
+        .overlay(DetermineWidth())
+        .frame(minWidth: msgWidth, alignment: .leading)
+        .background(chatItemFrameContextColor(chatItem, colorScheme))
         if let imgWidth = imgWidth, imgWidth < maxWidth {
             v.frame(maxWidth: imgWidth, alignment: .leading)
         } else {
             v
         }
     }
-    
+
     @ViewBuilder private func ciQuoteView(_ qi: CIQuote) -> some View {
         let v = ZStack(alignment: .topTrailing) {
             switch (qi.content) {
@@ -228,6 +229,8 @@ struct FramedItemView: View {
             formattedText: ci.formattedText,
             sender: showMember ? ci.memberDisplayName : nil,
             metaText: ci.timestampText,
+            itemLive: ci.meta.itemLive == true,
+            typing: true,
             edited: ci.meta.itemEdited,
             rightToLeft: rtl
         )

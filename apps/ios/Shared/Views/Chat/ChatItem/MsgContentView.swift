@@ -11,23 +11,73 @@ import SimpleXChat
 
 private let uiLinkColor = UIColor(red: 0, green: 0.533, blue: 1, alpha: 1)
 
+private let typingIndicators: [Text] = [
+    Text("   "),
+    (typing() + typing() + typing()),
+    (typing(.black) + typing() + typing()),
+    (typing(.bold) + typing(.black) + typing()),
+    (typing() + typing(.bold) + typing(.black)),
+    (typing() + typing() + typing(.bold))
+]
+
+private func typing(_ w: Font.Weight = .light) -> Text {
+    Text(".").fontWeight(w)
+}
+
 struct MsgContentView: View {
     var text: String
     var formattedText: [FormattedText]? = nil
     var sender: String? = nil
     var metaText: Text? = nil
+    var itemLive = false
+    var typing: Bool = false
     var edited = false
     var rightToLeft = false
+    @State private var typingIdx = 0
+    @State private var timer: Timer?
 
     var body: some View {
-        let v = messageText(text, formattedText, sender)
-        if let mt = metaText {
-            return v + reserveSpaceForMeta(mt, edited)
+        if itemLive {
+            msgContentView()
+            .onAppear(perform: showTyping)
+            .onChange(of: typing) { _ in showTyping() }
+            .onDisappear { timer?.invalidate() }
         } else {
-            return v
+            msgContentView()
         }
     }
-    
+
+    private func showTyping() {
+        if typing {
+            timer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { _ in
+                typingIdx += 1
+                if typingIdx == typingIndicators.count { typingIdx = 1 }
+            }
+        } else {
+            timer?.invalidate()
+            typingIdx = 0
+            timer = nil
+        }
+    }
+
+    private func msgContentView() -> Text {
+        var v = messageText(text, formattedText, sender)
+        if itemLive {
+            v = v + typingIndicator()
+        }
+        if let mt = metaText {
+            v = v + reserveSpaceForMeta(mt, edited)
+        }
+        return v
+    }
+
+    private func typingIndicator() -> Text {
+        typingIndicators[typingIdx]
+            .font(.body.monospaced())
+            .kerning(-2)
+            .foregroundColor(.secondary)
+    }
+
     private func reserveSpaceForMeta(_ meta: Text, _ edited: Bool) -> Text {
         let reserve = rightToLeft ? "\n" : edited ? "          " : "      "
         return (Text(reserve) + meta)
