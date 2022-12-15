@@ -548,7 +548,7 @@ toChatPrefs FullPreferences {fullDelete, voice, timedMessages} =
 defaultChatPrefs :: FullPreferences
 defaultChatPrefs =
   FullPreferences
-    { timedMessages = TimedMessagesPreference {allow = FANo, ttl = 86400},
+    { timedMessages = TimedMessagesPreference {allow = FANo, ttl = Nothing},
       fullDelete = FullDeletePreference {allow = FANo},
       -- receipts = SimplePreference {allow = FANo},
       voice = VoicePreference {allow = FAYes}
@@ -572,7 +572,7 @@ emptyGroupPrefs = GroupPreferences Nothing Nothing Nothing Nothing
 
 data TimedMessagesPreference = TimedMessagesPreference
   { allow :: FeatureAllowed,
-    ttl :: Int
+    ttl :: Maybe Int
   }
   deriving (Eq, Show, Generic, FromJSON)
 
