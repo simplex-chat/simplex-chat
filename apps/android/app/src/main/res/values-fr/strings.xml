@@ -89,4 +89,39 @@
     <string name="periodic_notifications_desc">L\'application récupère périodiquement les nouveaux messages - elle utilise un peu votre batterie chaque jour. L\'application n\'utilise pas les notifications push - les données de votre appareil ne sont pas envoyées aux serveurs.</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Pour protéger votre vie privée, au lieu des notifications push, l\'application possède un <b><xliff:g id="appName">SimpleX</xliff:g> service de fond</b> - il utilise quelques pour cent de la batterie par jour.</string>
     <string name="hide_notification">Cacher</string>
+    <string name="settings_notification_preview_mode_title">Montrer l\'aperçu</string>
+    <string name="notification_preview_mode_contact">Nom du contact</string>
+    <string name="notification_preview_somebody">Contact masqué :</string>
+    <string name="notification_preview_new_message">nouveau message</string>
+    <string name="notification_new_contact_request">Nouvelle demande de contact</string>
+    <string name="notification_contact_connected">Connecté</string>
+    <string name="la_notice_title_simplex_lock">SimpleX Lock</string>
+    <string name="la_notice_turn_on">Activer</string>
+    <string name="auth_simplex_lock_turned_on">SimpleX Lock activé</string>
+    <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">Il vous sera demandé de vous authentifier lorsque vous démarrez ou reprenez l\'application après 30 secondes en arrière-plan.</string>
+    <string name="auth_unlock">Déverrouiller</string>
+    <string name="auth_enable_simplex_lock">Activer SimpleX Lock</string>
+    <string name="auth_disable_simplex_lock">Désactiver SimpleX Lock</string>
+    <string name="auth_unavailable">Authentification indisponible</string>
+    <string name="auth_device_authentication_is_disabled_turning_off">L\'authentification de l\'appareil est désactivée. Désactivation de SimpleX Lock.</string>
+    <string name="auth_open_chat_console">Ouvrir la console du chat</string>
+    <string name="message_delivery_error_title">Erreur de distribution du message</string>
+    <string name="message_delivery_error_desc">Il est fort probable que ce contact ait supprimé la connexion avec vous.</string>
+    <string name="reply_verb">Répondre</string>
+    <string name="share_verb">Partager</string>
+    <string name="copy_verb">Copier</string>
+    <string name="delete_verb">Supprimer</string>
+    <string name="save_verb">Sauvegarder</string>
+    <string name="edit_verb">Modifier</string>
+    <string name="reveal_verb">Révéler</string>
+    <string name="hide_verb">Cacher</string>
+    <string name="allow_verb">Autoriser</string>
+    <string name="delete_message__question">Supprimer le message \?</string>
+    <string name="for_me_only">Supprimer pour moi</string>
+    <string name="your_chats">Vos chats</string>
+    <string name="notification_preview_mode_message">Texte du message</string>
+    <string name="notification_preview_mode_hidden">Caché</string>
+    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Pour protéger vos informations, activez la fonction SimpleX Lock.
+\nVous serez invité à confirmer l\'authentification avant que cette fonction ne soit activée.</string>
+    <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">L\'authentification de l\'appareil n\'est pas activée. Vous pouvez activer SimpleX Lock via Paramètres, une fois que vous avez activé l\'authentification de l\'appareil.</string>
 </resources>
