@@ -301,17 +301,15 @@ instance ToJSON CITimed where toEncoding = J.genericToEncoding J.defaultOptions
 
 contactCITimedTTL :: Contact -> Maybe Int
 contactCITimedTTL Contact {mergedPreferences = ContactUserPreferences {timedMessages = ContactUserPreference {enabled, userPreference}}} =
-  if forUser enabled && forContact enabled
-    then case userPreference of
-      CUPContact TimedMessagesPreference {ttl = t} -> Just t
-      CUPUser TimedMessagesPreference {ttl = t} -> Just t
-    else Nothing
+  | forUser enabled && forContact enabled -> case userPreference of
+    CUPContact TimedMessagesPreference {ttl = t} -> Just t
+    CUPUser TimedMessagesPreference {ttl = t} -> Just t
+  | otherwise -> Nothing
 
 groupCITimedTTL :: GroupInfo -> Maybe Int
 groupCITimedTTL GroupInfo {fullGroupPreferences = FullGroupPreferences {timedMessages = TimedMessagesGroupPreference {enable, ttl}}} =
-  if enable == FEOn
-    then Just ttl
-    else Nothing
+  | enable == FEOn -> Just ttl
+  | otherwise -> Nothing
 
 data CIQuote (c :: ChatType) = CIQuote
   { chatDir :: CIQDirection c,
