@@ -367,8 +367,8 @@ parseMsgContainer v =
   where
     mc = ExtMsgContent <$> v .: "content" <*> v .:? "file" <*> v .:? "ttl" <*> v .:? "live"
 
-extMsgContent :: MsgContent -> Maybe FileInvitation -> ExtMsgContent
-extMsgContent mc file = ExtMsgContent mc file Nothing Nothing
+extMsgContent :: MsgContent -> Maybe FileInvitation -> Maybe Int -> ExtMsgContent
+extMsgContent mc file ttl = ExtMsgContent mc file ttl Nothing
 
 instance FromJSON MsgContent where
   parseJSON (J.Object v) =
