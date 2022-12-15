@@ -281,12 +281,6 @@ data CIMeta (d :: MsgDirection) = CIMeta
   }
   deriving (Show, Generic)
 
-data CITimed = CITimed
-  { ttl :: Int, -- seconds
-    deleteAt :: Maybe UTCTime
-  }
-  deriving (Show, Generic)
-
 mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Bool -> Bool -> TimeZone -> UTCTime -> ChatItemTs -> UTCTime -> UTCTime -> Maybe CITimed -> CIMeta d
 mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemEdited tz currentTs itemTs createdAt updatedAt timed =
   let localItemTs = utcToZonedTime tz itemTs
@@ -296,6 +290,12 @@ mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted item
    in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, editable, localItemTs, createdAt, updatedAt, timed}
 
 instance ToJSON (CIMeta d) where toEncoding = J.genericToEncoding J.defaultOptions
+
+data CITimed = CITimed
+  { ttl :: Int, -- seconds
+    deleteAt :: Maybe UTCTime
+  }
+  deriving (Show, Generic)
 
 instance ToJSON CITimed where toEncoding = J.genericToEncoding J.defaultOptions
 
