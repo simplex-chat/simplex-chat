@@ -83,9 +83,12 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
          * In this case only error log will be printed here (no crash).
          * TODO: Re-write [ChatModel.chats] logic to a new list assignment instead of changing content of mutableList to prevent that
          * */
-        runCatching { chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value } }
-          .onFailure { Log.e(TAG, it.stackTraceToString()) }
-          .getOrNull()
+        try {
+          chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }
+        } catch (e: ConcurrentModificationException) {
+          Log.e(TAG, e.stackTraceToString())
+          null
+        }
       }
         .distinctUntilChanged()
         // Only changed chatInfo is important thing. Other properties can be skipped for reducing recompositions
