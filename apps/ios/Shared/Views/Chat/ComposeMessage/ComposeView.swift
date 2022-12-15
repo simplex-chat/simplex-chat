@@ -31,7 +31,10 @@ enum VoiceMessageRecordingState {
 
 struct LiveMessage {
     var chatItem: ChatItem
-    var message: String
+    var typedMsg: String
+    var sentMsg: String
+
+    var changed: Bool { typedMsg != sentMsg }
 }
 
 struct ComposeState {
@@ -212,24 +215,31 @@ struct ComposeView: View {
                         resetLinkPreview()
                     },
                     sendLiveMessage: {
-                        let msg = composeState.message
+                        let typedMsg = composeState.message
+                        let sentMsg = truncateToWords(typedMsg)
                         if composeState.liveMessage == nil,
-                           let ci = await apiSendMessage(type: cInfo.chatType, id: cInfo.apiId, file: nil, quotedItemId: nil, msg: .text(msg)) {
+                           let ci = await apiSendMessage(type: cInfo.chatType, id: cInfo.apiId, file: nil, quotedItemId: nil, msg: .text(sentMsg)) {
                             await MainActor.run {
                                 chatModel.addChatItem(cInfo, ci)
-                                composeState = composeState.copy(liveMessage: LiveMessage(chatItem: ci, message: msg))
+                                composeState = composeState.copy(liveMessage: LiveMessage(chatItem: ci, typedMsg: typedMsg, sentMsg: sentMsg))
                             }
                         }
                     },
                     updateLiveMessage: {
-                        // TODO only send full words
-                        let msg = composeState.message
-                        if let liveMessage = composeState.liveMessage,
-                           liveMessage.message != msg,
-                           let ci = try? await apiUpdateChatItem(type: cInfo.chatType, id: cInfo.apiId, itemId: liveMessage.chatItem.id, msg: .text(msg)) {
-                            await MainActor.run {
-                                _ = chatModel.upsertChatItem(cInfo, ci)
-                                composeState = composeState.copy(liveMessage: LiveMessage(chatItem: ci, message: msg))
+                        let typedMsg = composeState.message
+                        if let liveMessage = composeState.liveMessage {
+                            if let sentMsg = liveMessageToSend(liveMessage, typedMsg),
+                               let ci = try? await apiUpdateChatItem(type: cInfo.chatType, id: cInfo.apiId, itemId: liveMessage.chatItem.id, msg: .text(sentMsg)) {
+                                await MainActor.run {
+                                    _ = chatModel.upsertChatItem(cInfo, ci)
+                                    composeState = composeState.copy(liveMessage: LiveMessage(chatItem: ci, typedMsg: typedMsg, sentMsg: sentMsg))
+                                }
+                            } else if liveMessage.typedMsg != typedMsg {
+                                await MainActor.run {
+                                    var lm = liveMessage
+                                    lm.typedMsg = typedMsg
+                                    composeState = composeState.copy(liveMessage: lm)
+                                }
                             }
                         }
                     },
@@ -358,6 +368,31 @@ struct ComposeView: View {
         }
     }
 
+    private func liveMessageToSend(_ liveMessage: LiveMessage, _ typedMsg: String) -> String? {
+        if liveMessage.typedMsg != typedMsg {
+            let s = truncateToWords(typedMsg)
+            return s == liveMessage.sentMsg ? nil : s
+        }
+        return liveMessage.changed
+        ? liveMessage.typedMsg
+        : nil
+    }
+
+    private func truncateToWords(_ s: String) -> String {
+        if let i = s.lastIndex(where: { !alphaNumeric($0) }) {
+            let s1 = s[...i]
+            if let j = s1.lastIndex(where: alphaNumeric), i < s1.endIndex {
+                return String(s1[...j])
+            }
+            return String(s1)
+        }
+        return ""
+
+        func alphaNumeric(_ c: Character) -> Bool {
+            c.isLetter || c.isNumber
+        }
+    }
+
     @ViewBuilder func previewView() -> some View {
         switch composeState.preview {
         case .noPreview:
@@ -417,8 +452,8 @@ struct ComposeView: View {
             logger.debug("ChatView sendMessage: in Task")
             if case let .editingItem(ci) = composeState.contextItem {
                 await updateMessage(ci)
-            } else if let ci = composeState.liveMessage?.chatItem {
-                await updateMessage(ci)
+            } else if let liveMessage = composeState.liveMessage, liveMessage.typedMsg != liveMessage.sentMsg {
+                await updateMessage(liveMessage.chatItem)
             } else {
                 await sending()
                 var quoted: Int64? = nil

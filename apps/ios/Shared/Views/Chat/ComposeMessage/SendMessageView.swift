@@ -26,6 +26,7 @@ struct SendMessageView: View {
     @State private var teHeight: CGFloat = 42
     @State private var teFont: Font = .body
     @State private var sendButtonSize: CGFloat = 29
+    @State private var sendButtonOpacity: CGFloat = 1
     var maxHeight: CGFloat = 360
     var minHeight: CGFloat = 37
     @AppStorage(DEFAULT_LIVE_MESSAGE_ALERT_SHOWN) private var liveMessageAlertShown = false
@@ -129,6 +130,7 @@ struct SendMessageView: View {
                 .resizable()
                 .foregroundColor(.accentColor)
                 .frame(width: sendButtonSize, height: sendButtonSize)
+                .opacity(sendButtonOpacity)
         }
         .disabled(
             !composeState.sendEnabled ||
@@ -252,10 +254,12 @@ struct SendMessageView: View {
             Timer.scheduledTimer(withTimeInterval: 0.75, repeats: true) { t in
                 withAnimation(.easeInOut(duration: 0.7)) {
                     sendButtonSize = sendButtonSize == 29 ? 26 : 29
+                    sendButtonOpacity = sendButtonOpacity == 1 ? 0.75 : 1
                 }
                 if composeState.liveMessage == nil {
                     t.invalidate()
                     sendButtonSize = 29
+                    sendButtonOpacity = 1
                 }
             }
             Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { t in
