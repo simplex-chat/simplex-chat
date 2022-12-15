@@ -3224,7 +3224,7 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
       </trans-unit>
       <trans-unit id="Your chats" xml:space="preserve" approved="no">
         <source>Your chats</source>
-        <target state="translated">Vos discussions</target>
+        <target state="translated">Vos chats</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact address" xml:space="preserve" approved="no">
