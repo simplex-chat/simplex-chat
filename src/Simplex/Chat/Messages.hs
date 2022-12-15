@@ -825,6 +825,7 @@ msgIntegrityError = \case
   MsgBadHash -> "incorrect message hash"
   MsgDuplicate -> "duplicate message ID"
 
+-- TODO pretty ttl text, see viewChatItemTTL
 сhatTimedMessagesFeatureText :: TimedMessagesPreference -> TimedMessagesPreference -> Text
 сhatTimedMessagesFeatureText userTMP@TimedMessagesPreference {ttl = userTTL} contactTMP@TimedMessagesPreference {ttl = contactTTL} =
   if
