@@ -57,6 +57,9 @@
   <string name="error_saving_smp_servers">Error saving SMP servers</string>
   <string name="ensure_smp_server_address_are_correct_format_and_unique">Make sure SMP server addresses are in correct format, line separated and are not duplicated.</string>
   <string name="error_setting_network_config">Error updating network configuration</string>
+  <string name="failed_to_parse_chat_title">Failed to load chat</string>
+  <string name="failed_to_parse_chats_title">Failed to load chats</string>
+  <string name="contact_developers">Please update the app and contact developers.</string>
 
   <!-- API Error Responses - SimpleXAPI.kt -->
   <string name="connection_timeout">Connection timeout</string>
@@ -879,6 +882,7 @@
   <string name="button_leave_group">Leave group</string>
   <string name="button_edit_group_profile">Edit group profile</string>
   <string name="group_link">Group link</string>
+  <string name="create_group_link">Create group link</string>
   <string name="button_create_group_link">Create link</string>
   <string name="delete_link_question">Delete link?</string>
   <string name="delete_link">Delete link</string>
