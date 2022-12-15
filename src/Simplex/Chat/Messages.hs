@@ -299,6 +299,9 @@ data CITimed = CITimed
 
 instance ToJSON CITimed where toEncoding = J.genericToEncoding J.defaultOptions
 
+ciTimedToTTL :: Maybe CITimed -> Maybe Int
+ciTimedToTTL timed_ = timed_ >>= \CITimed {ttl} -> Just ttl
+
 contactCITimedTTL :: Contact -> Maybe Int
 contactCITimedTTL Contact {mergedPreferences = ContactUserPreferences {timedMessages = ContactUserPreference {enabled, userPreference}}}
   | forUser enabled && forContact enabled = case userPreference of
@@ -310,6 +313,11 @@ groupCITimedTTL :: GroupInfo -> Maybe Int
 groupCITimedTTL GroupInfo {fullGroupPreferences = FullGroupPreferences {timedMessages = TimedMessagesGroupPreference {enable, ttl}}}
   | enable == FEOn = Just ttl
   | otherwise = Nothing
+
+rcvMsgCITimed :: Maybe Int -> Maybe Int -> Maybe CITimed
+rcvMsgCITimed chatTTL itemTTL = case (chatTTL, itemTTL) of
+  (Just _, Just ttl) -> Just $ CITimed ttl Nothing
+  _ -> Nothing
 
 data CIQuote (c :: ChatType) = CIQuote
   { chatDir :: CIQDirection c,
