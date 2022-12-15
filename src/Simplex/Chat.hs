@@ -1719,15 +1719,14 @@ cleanupManager user = do
 startTimedItemThread :: ChatMonad m => User -> (ChatRef, ChatItemId) -> UTCTime -> m ()
 startTimedItemThread user itemRef deleteAt = do
   itemThreads <- asks timedItemThreads
-  unlessM (timedItemThreadExists itemRef) $ do
-    -- TODO atomically with insert
+  threadTVar <- newTVarIO Nothing
+  threadExists <- atomically $ do
+    exists <- TM.member itemRef itemThreads
+    unless exists $ TM.insert itemRef threadTVar itemThreads
+    pure exists
+  unless threadExists $ do
     tId <- mkWeakThreadId =<< deleteTimedItem user itemRef deleteAt `forkFinally` const (atomically $ TM.delete itemRef itemThreads)
-    atomically $ TM.insert itemRef tId itemThreads
-
-timedItemThreadExists :: ChatMonad m => (ChatRef, ChatItemId) -> m Bool
-timedItemThreadExists itemRef = do
-  itemThreads <- asks timedItemThreads
-  atomically $ TM.member itemRef itemThreads
+    atomically $ writeTVar threadTVar (Just tId)
 
 deleteTimedItem :: ChatMonad m => User -> (ChatRef, ChatItemId) -> UTCTime -> m ()
 deleteTimedItem user@User {userId} (ChatRef cType chatId, itemId) deleteAt = do

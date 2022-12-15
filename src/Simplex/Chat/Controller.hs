@@ -125,7 +125,7 @@ data ChatController = ChatController
     expireCIsAsync :: TVar (Maybe (Async ())),
     expireCIs :: TVar Bool,
     cleanupManagerAsync :: TVar (Maybe (Async ())),
-    timedItemThreads :: TMap (ChatRef, ChatItemId) (Weak ThreadId)
+    timedItemThreads :: TMap (ChatRef, ChatItemId) (TVar (Maybe (Weak ThreadId)))
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown | HSMessages | HSSettings
