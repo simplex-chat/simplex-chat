@@ -82,8 +82,9 @@ responseToView user_ testView ts = \case
   CRLastMessages chatItems -> concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True ts) chatItems
   CRChatItemStatusUpdated _ -> []
   CRChatItemUpdated (AChatItem _ _ chat item) -> unmuted chat item $ viewItemUpdate chat item ts
-  CRChatItemDeleted (AChatItem _ _ chat deletedItem) toItem byUser -> unmuted chat deletedItem $ viewItemDelete chat deletedItem (isJust toItem) byUser ts
+  CRChatItemDeleted (AChatItem _ _ chat deletedItem) toItem byUser timed -> unmuted chat deletedItem $ viewItemDelete chat deletedItem (isJust toItem) byUser timed ts
   CRChatItemDeletedNotFound Contact {localDisplayName = c} _ -> [ttyFrom $ c <> "> [deleted - original message not found]"]
+  CRChatRead -> []
   CRBroadcastSent mc n t -> viewSentBroadcast mc n ts t
   CRMsgIntegrityError mErr -> viewMsgIntegrityError mErr
   CRCmdAccepted _ -> []
@@ -251,10 +252,16 @@ responseToView user_ testView ts = \case
     contactList :: [ContactRef] -> String
     contactList cs = T.unpack . T.intercalate ", " $ map (\ContactRef {localDisplayName = n} -> "@" <> n) cs
     unmuted :: ChatInfo c -> ChatItem c d -> [StyledString] -> [StyledString]
-    unmuted chat ChatItem {chatDir} s = case (chat, chatDir) of
-      (DirectChat Contact {chatSettings = DisableNtfs}, CIDirectRcv) -> []
-      (GroupChat GroupInfo {chatSettings = DisableNtfs}, CIGroupRcv _) -> []
-      _ -> s
+    unmuted chat chatItem s =
+      if muted chat chatItem
+        then []
+        else s
+
+muted :: ChatInfo c -> ChatItem c d -> Bool
+muted chat ChatItem {chatDir} = case (chat, chatDir) of
+  (DirectChat Contact {chatSettings = DisableNtfs}, CIDirectRcv) -> True
+  (GroupChat GroupInfo {chatSettings = DisableNtfs}, CIGroupRcv _) -> True
+  _ -> False
 
 viewGroupSubscribed :: GroupInfo -> [StyledString]
 viewGroupSubscribed g@GroupInfo {membership} =
@@ -343,8 +350,9 @@ viewItemUpdate chat ChatItem {chatDir, meta, content, quotedItem} ts = case chat
     CIGroupSnd -> ["message updated"]
   _ -> []
 
-viewItemDelete :: ChatInfo c -> ChatItem c d -> Bool -> Bool -> CurrentTime -> [StyledString]
-viewItemDelete chat ChatItem {chatDir, meta, content = deletedContent} markedDeleted byUser ts
+viewItemDelete :: ChatInfo c -> ChatItem c d -> Bool -> Bool -> Bool -> CurrentTime -> [StyledString]
+viewItemDelete chat ChatItem {chatDir, meta, content = deletedContent} markedDeleted byUser timed ts
+  | timed = []
   | byUser = if markedDeleted then ["message marked deleted"] else ["message deleted"]
   | otherwise = case chat of
     DirectChat Contact {localDisplayName = c} -> case (chatDir, deletedContent) of
@@ -421,9 +429,9 @@ viewContactsList :: [Contact] -> [StyledString]
 viewContactsList =
   let ldn = T.toLower . (localDisplayName :: Contact -> ContactName)
       incognito ct = if contactConnIncognito ct then incognitoPrefix else ""
-   in map (\ct -> incognito ct <> ttyFullContact ct <> muted ct <> alias ct) . sortOn ldn
+   in map (\ct -> incognito ct <> ttyFullContact ct <> muted' ct <> alias ct) . sortOn ldn
   where
-    muted Contact {chatSettings, localDisplayName = ldn}
+    muted' Contact {chatSettings, localDisplayName = ldn}
       | enableNtfs chatSettings = ""
       | otherwise = " (muted, you can " <> highlight ("/unmute @" <> ldn) <> ")"
     alias Contact {profile = LocalProfile {localAlias}}
@@ -1142,6 +1150,7 @@ viewChatError = \case
     CEAgentNoSubResult connId -> ["no subscription result for connection: " <> sShow connId]
     CECommandError e -> ["bad chat command: " <> plain e]
     CEAgentCommandError e -> ["agent command error: " <> plain e]
+    CEInternalError e -> ["internal chat error: " <> plain e]
   -- e -> ["chat error: " <> sShow e]
   ChatErrorStore err -> case err of
     SEDuplicateName -> ["this display name is already used by user, contact or group"]
