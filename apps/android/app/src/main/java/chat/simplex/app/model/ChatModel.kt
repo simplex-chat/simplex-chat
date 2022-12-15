@@ -1060,7 +1060,8 @@ data class ChatItem (
   val content: CIContent,
   val formattedText: List<FormattedText>? = null,
   val quotedItem: CIQuote? = null,
-  val file: CIFile? = null
+  val file: CIFile? = null,
+  val test: Boolean
 ) {
   val id: Long get() = meta.itemId
   val timestampText: String get() = meta.timestampText
@@ -1143,7 +1144,8 @@ data class ChatItem (
         meta = CIMeta.getSample(id, ts, text, status, itemDeleted, itemEdited, editable),
         content = CIContent.SndMsgContent(msgContent = MsgContent.MCText(text)),
         quotedItem = quotedItem,
-        file = file
+        file = file,
+        test = true
       )
 
     fun getFileMsgContentSample(
@@ -1158,7 +1160,8 @@ data class ChatItem (
         meta = CIMeta.getSample(id, Clock.System.now(), text, CIStatus.RcvRead(), itemDeleted = false, itemEdited = false, editable = false),
         content = CIContent.RcvMsgContent(msgContent = MsgContent.MCFile(text)),
         quotedItem = null,
-        file = CIFile.getSample(fileName = fileName, fileSize = fileSize, fileStatus = fileStatus)
+        file = CIFile.getSample(fileName = fileName, fileSize = fileSize, fileStatus = fileStatus),
+        test = true
       )
 
     fun getDeletedContentSampleData(
@@ -1173,7 +1176,8 @@ data class ChatItem (
         meta = CIMeta.getSample(id, ts, text, status, itemDeleted = false, itemEdited = false, editable = false),
         content = CIContent.RcvDeleted(deleteMode = CIDeleteMode.cidmBroadcast),
         quotedItem = null,
-        file = null
+        file = null,
+        test = true
       )
 
     fun getGroupInvitationSample(status: CIGroupInvitationStatus = CIGroupInvitationStatus.Pending) =
@@ -1182,7 +1186,8 @@ data class ChatItem (
         meta = CIMeta.getSample(1, Clock.System.now(), "received invitation to join group team as admin", CIStatus.RcvRead(), itemDeleted = false, itemEdited = false, editable = false),
         content = CIContent.RcvGroupInvitation(groupInvitation = CIGroupInvitation.getSample(status = status), memberRole = GroupMemberRole.Admin),
         quotedItem = null,
-        file = null
+        file = null,
+        test = true
       )
 
     fun getGroupEventSample() =
@@ -1191,7 +1196,8 @@ data class ChatItem (
         meta = CIMeta.getSample(1, Clock.System.now(), "group event text", CIStatus.RcvRead(), itemDeleted = false, itemEdited = false, editable = false),
         content = CIContent.RcvGroupEventContent(rcvGroupEvent = RcvGroupEvent.MemberAdded(groupMemberId = 1, profile = Profile.sampleData)),
         quotedItem = null,
-        file = null
+        file = null,
+        test = true
       )
 
     fun getChatFeatureSample(feature: ChatFeature, enabled: FeatureEnabled): ChatItem {
@@ -1201,7 +1207,8 @@ data class ChatItem (
         meta = CIMeta.getSample(1, Clock.System.now(), content.text, CIStatus.RcvRead(), itemDeleted = false, itemEdited = false, editable = false),
         content = content,
         quotedItem = null,
-        file = null
+        file = null,
+        test = true
       )
     }
     
@@ -1222,7 +1229,8 @@ data class ChatItem (
         ),
         content = CIContent.RcvDeleted(deleteMode = CIDeleteMode.cidmBroadcast),
         quotedItem = null,
-        file = null
+        file = null,
+        test = true
       )
   }
 }
