@@ -548,7 +548,7 @@ toChatPrefs FullPreferences {fullDelete, voice, timedMessages} =
 defaultChatPrefs :: FullPreferences
 defaultChatPrefs =
   FullPreferences
-    { timedMessages = TimedMessagesPreference {allow = FANo, ttl = 86400},
+    { timedMessages = TimedMessagesPreference {allow = FANo, ttl = Nothing},
       fullDelete = FullDeletePreference {allow = FANo},
       -- receipts = SimplePreference {allow = FANo},
       voice = VoicePreference {allow = FAYes}
@@ -572,11 +572,13 @@ emptyGroupPrefs = GroupPreferences Nothing Nothing Nothing Nothing
 
 data TimedMessagesPreference = TimedMessagesPreference
   { allow :: FeatureAllowed,
-    ttl :: Int
+    ttl :: Maybe Int
   }
   deriving (Eq, Show, Generic, FromJSON)
 
-instance ToJSON TimedMessagesPreference where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON TimedMessagesPreference where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 data FullDeletePreference = FullDeletePreference {allow :: FeatureAllowed}
   deriving (Eq, Show, Generic, FromJSON)
