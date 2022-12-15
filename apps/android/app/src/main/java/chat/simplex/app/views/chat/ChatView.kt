@@ -78,6 +78,11 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
     }
     launch {
       snapshotFlow {
+        /**
+         * It's possible that in some cases concurrent modification can happen on [ChatModel.chats] list.
+         * In this case only error log will be printed here (no crash).
+         * TODO: Re-write [ChatModel.chats] logic to a new list assignment instead of changing content of mutableList to prevent that
+         * */
         runCatching { chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value } }
           .onFailure { Log.e(TAG, it.stackTraceToString()) }
           .getOrNull()
