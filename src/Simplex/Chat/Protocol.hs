@@ -179,7 +179,7 @@ instance StrEncoding AChatMessage where
 
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
-  XMsgUpdate :: {msgId :: SharedMsgId, content :: MsgContent, live :: Maybe Bool} -> ChatMsgEvent 'Json
+  XMsgUpdate :: {msgId :: SharedMsgId, content :: MsgContent, ttl :: Maybe Int, live :: Maybe Bool} -> ChatMsgEvent 'Json
   XMsgDel :: SharedMsgId -> ChatMsgEvent 'Json
   XMsgDeleted :: ChatMsgEvent 'Json
   XFile :: FileInvitation -> ChatMsgEvent 'Json -- TODO discontinue
@@ -638,7 +638,7 @@ appJsonToCM AppMessageJson {msgId, event, params} = do
     msg :: CMEventTag 'Json -> Either String (ChatMsgEvent 'Json)
     msg = \case
       XMsgNew_ -> XMsgNew <$> JT.parseEither parseMsgContainer params
-      XMsgUpdate_ -> XMsgUpdate <$> p "msgId" <*> p "content" <*> opt "live"
+      XMsgUpdate_ -> XMsgUpdate <$> p "msgId" <*> p "content" <*> opt "ttl" <*> opt "live"
       XMsgDel_ -> XMsgDel <$> p "msgId"
       XMsgDeleted_ -> pure XMsgDeleted
       XFile_ -> XFile <$> p "file"
@@ -691,7 +691,7 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = case encoding @e of
     params :: ChatMsgEvent 'Json -> J.Object
     params = \case
       XMsgNew container -> msgContainerJSON container
-      XMsgUpdate msgId' content live -> o $ ("live" .=? live) ["msgId" .= msgId', "content" .= content]
+      XMsgUpdate msgId' content ttl live -> o $ ("ttl" .=? ttl) $ ("live" .=? live) ["msgId" .= msgId', "content" .= content]
       XMsgDel msgId' -> o ["msgId" .= msgId']
       XMsgDeleted -> JM.empty
       XFile fileInv -> o ["file" .= fileInv]
