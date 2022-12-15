@@ -87,22 +87,6 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
         .filter { it?.chatInfo != activeChat.value?.chatInfo && it != null }
         .collect { activeChat.value = it }
     }
-    launch {
-      launch(Dispatchers.IO) {
-        while (true) {
-          chatModel.chats.add(Chat.sampleData.copy(chatInfo = activeChat.value!!.chatInfo))
-          delay(1)
-          chatModel.chats.remove(Chat.sampleData.copy(chatInfo = activeChat.value!!.chatInfo))
-        }
-      }
-      launch(Dispatchers.IO) {
-        while (true) {
-          chatModel.chats.add(Chat.sampleData.copy(chatInfo = activeChat.value!!.chatInfo))
-          delay(1)
-          chatModel.chats.remove(Chat.sampleData.copy(chatInfo = activeChat.value!!.chatInfo))
-        }
-      }
-    }
   }
   val view = LocalView.current
   if (activeChat.value == null || user == null) {
