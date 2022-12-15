@@ -124,4 +124,19 @@
     <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Pour protéger vos informations, activez la fonction SimpleX Lock.
 \nVous serez invité à confirmer l\'authentification avant que cette fonction ne soit activée.</string>
     <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">L\'authentification de l\'appareil n\'est pas activée. Vous pouvez activer SimpleX Lock via Paramètres, une fois que vous avez activé l\'authentification de l\'appareil.</string>
+    <string name="database_initialization_error_desc">La base de données ne fonctionne pas correctement. Appuyez ici pour en savoir plus.</string>
+    <string name="ntf_channel_calls">Appels SimpleX Chat</string>
+    <string name="ntf_channel_messages">Messages SimpleX Chat</string>
+    <string name="settings_notifications_mode_title">Service de notification</string>
+    <string name="notifications_mode_periodic">Lancer périodiquement</string>
+    <string name="notifications_mode_off">Exécuter lorsque l’app est ouverte</string>
+    <string name="notifications_mode_service">Toujours activé</string>
+    <string name="failed_to_parse_chat_title">Échec du chargement du chat</string>
+    <string name="failed_to_parse_chats_title">Échec du chargement des chats</string>
+    <string name="contact_developers">Veuillez mettre à jour l’app et contacter les développeurs.</string>
+    <string name="simplex_service_notification_text">Récupération des messages…</string>
+    <string name="settings_notification_preview_title">Aperçu de notification</string>
+    <string name="database_initialization_error_title">Échec d’initialisation de la base de données</string>
+    <string name="enter_passphrase_notification_desc">Pour recevoir des notifications, veuillez entrer la phrase secrète de la base de données</string>
+    <string name="simplex_service_notification_title">service <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
 </resources>
