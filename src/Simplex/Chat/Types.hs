@@ -576,7 +576,9 @@ data TimedMessagesPreference = TimedMessagesPreference
   }
   deriving (Eq, Show, Generic, FromJSON)
 
-instance ToJSON TimedMessagesPreference where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON TimedMessagesPreference where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 data FullDeletePreference = FullDeletePreference {allow :: FeatureAllowed}
   deriving (Eq, Show, Generic, FromJSON)
