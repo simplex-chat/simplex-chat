@@ -404,14 +404,17 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
 
   suspend fun apiGetChats(): List<Chat> {
     val r = sendCmd(CC.ApiGetChats())
-    if (r is CR.ApiChats ) return r.chats
-    throw Exception("failed getting the list of chats: ${r.responseType} ${r.details}")
+    if (r is CR.ApiChats) return r.chats
+    Log.e(TAG, "failed getting the list of chats: ${r.responseType} ${r.details}")
+    AlertManager.shared.showAlertMsg(generalGetString(R.string.failed_to_parse_chats_title), generalGetString(R.string.contact_developers))
+    return emptyList()
   }
 
   suspend fun apiGetChat(type: ChatType, id: Long, pagination: ChatPagination = ChatPagination.Last(ChatPagination.INITIAL_COUNT), search: String = ""): Chat? {
     val r = sendCmd(CC.ApiGetChat(type, id, pagination, search))
-    if (r is CR.ApiChat ) return r.chat
+    if (r is CR.ApiChat) return r.chat
     Log.e(TAG, "apiGetChat bad response: ${r.responseType} ${r.details}")
+    AlertManager.shared.showAlertMsg(generalGetString(R.string.failed_to_parse_chat_title), generalGetString(R.string.contact_developers))
     return null
   }
 

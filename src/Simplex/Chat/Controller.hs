@@ -10,6 +10,7 @@
 
 module Simplex.Chat.Controller where
 
+import Control.Concurrent (ThreadId)
 import Control.Concurrent.Async (Async)
 import Control.Exception
 import Control.Monad.Except
@@ -53,6 +54,7 @@ import Simplex.Messaging.Protocol (AProtocolType, CorrId, MsgFlags)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport.Client (TransportHost)
 import System.IO (Handle)
+import System.Mem.Weak (Weak)
 import UnliftIO.STM
 
 versionNumber :: String
@@ -121,7 +123,9 @@ data ChatController = ChatController
     filesFolder :: TVar (Maybe FilePath), -- path to files folder for mobile apps,
     incognitoMode :: TVar Bool,
     expireCIsAsync :: TVar (Maybe (Async ())),
-    expireCIs :: TVar Bool
+    expireCIs :: TVar Bool,
+    cleanupManagerAsync :: TVar (Maybe (Async ())),
+    timedItemThreads :: TMap (ChatRef, ChatItemId) (TVar (Maybe (Weak ThreadId)))
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown | HSMessages | HSSettings
@@ -292,8 +296,9 @@ data ChatResponse
   | CRNewChatItem {chatItem :: AChatItem}
   | CRChatItemStatusUpdated {chatItem :: AChatItem}
   | CRChatItemUpdated {chatItem :: AChatItem}
-  | CRChatItemDeleted {deletedChatItem :: AChatItem, toChatItem :: Maybe AChatItem, byUser :: Bool}
+  | CRChatItemDeleted {deletedChatItem :: AChatItem, toChatItem :: Maybe AChatItem, byUser :: Bool, timed :: Bool}
   | CRChatItemDeletedNotFound {contact :: Contact, sharedMsgId :: SharedMsgId}
+  | CRChatRead
   | CRBroadcastSent MsgContent Int ZonedTime
   | CRMsgIntegrityError {msgError :: MsgErrorType}
   | CRCmdAccepted {corr :: CorrId}
@@ -566,6 +571,7 @@ data ChatErrorType
   | CEAgentNoSubResult {agentConnId :: AgentConnId}
   | CECommandError {message :: String}
   | CEAgentCommandError {message :: String}
+  | CEInternalError {message :: String}
   deriving (Show, Exception, Generic)
 
 instance ToJSON ChatErrorType where
