@@ -300,16 +300,16 @@ data CITimed = CITimed
 instance ToJSON CITimed where toEncoding = J.genericToEncoding J.defaultOptions
 
 contactCITimedTTL :: Contact -> Maybe Int
-contactCITimedTTL Contact {mergedPreferences = ContactUserPreferences {timedMessages = ContactUserPreference {enabled, userPreference}}} =
-  | forUser enabled && forContact enabled -> case userPreference of
+contactCITimedTTL Contact {mergedPreferences = ContactUserPreferences {timedMessages = ContactUserPreference {enabled, userPreference}}}
+  | forUser enabled && forContact enabled = case userPreference of
     CUPContact TimedMessagesPreference {ttl = t} -> Just t
     CUPUser TimedMessagesPreference {ttl = t} -> Just t
-  | otherwise -> Nothing
+  | otherwise = Nothing
 
 groupCITimedTTL :: GroupInfo -> Maybe Int
-groupCITimedTTL GroupInfo {fullGroupPreferences = FullGroupPreferences {timedMessages = TimedMessagesGroupPreference {enable, ttl}}} =
-  | enable == FEOn -> Just ttl
-  | otherwise -> Nothing
+groupCITimedTTL GroupInfo {fullGroupPreferences = FullGroupPreferences {timedMessages = TimedMessagesGroupPreference {enable, ttl}}}
+  | enable == FEOn = Just ttl
+  | otherwise = Nothing
 
 data CIQuote (c :: ChatType) = CIQuote
   { chatDir :: CIQDirection c,
