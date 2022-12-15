@@ -139,4 +139,24 @@
     <string name="database_initialization_error_title">Échec d’initialisation de la base de données</string>
     <string name="enter_passphrase_notification_desc">Pour recevoir des notifications, veuillez entrer la phrase secrète de la base de données</string>
     <string name="simplex_service_notification_title">service <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
+    <string name="this_text_is_available_in_settings">Ce texte est disponible dans les paramètres</string>
+    <string name="group_preview_join_as">rejoindre en tant que %s</string>
+    <string name="group_preview_you_are_invited">vous êtes invité·e au groupe</string>
+    <string name="chat_with_developers">Discuter avec les développeurs</string>
+    <string name="tap_to_start_new_chat">Appuyez pour commencer un nouveau chat</string>
+    <string name="you_have_no_chats">Vous n\'avez aucune discussion</string>
+    <string name="images_limit_title">Trop d’images !</string>
+    <string name="share_file">Partager le fichier…</string>
+    <string name="attach">Attacher</string>
+    <string name="icon_descr_cancel_image_preview">Annuler l’aperçu d’image</string>
+    <string name="icon_descr_cancel_file_preview">Annuler l’aperçu du fichier</string>
+    <string name="icon_descr_sent_msg_status_send_failed">échec d’envoi</string>
+    <string name="icon_descr_received_msg_status_unread">non lu</string>
+    <string name="welcome">Bienvenue !</string>
+    <string name="contact_connection_pending">connexion…</string>
+    <string name="group_connection_pending">connexion…</string>
+    <string name="share_message">Partager le message…</string>
+    <string name="share_image">Partager l’image…</string>
+    <string name="images_limit_desc">Envoi de 10 images en même temps maximum</string>
+    <string name="personal_welcome">Bienvenue <xliff:g>%1$s</xliff:g> !</string>
 </resources>
