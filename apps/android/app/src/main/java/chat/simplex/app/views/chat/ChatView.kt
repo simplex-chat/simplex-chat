@@ -77,16 +77,15 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
         }
     }
     launch {
-      // .toList() is important for making observation working
-      snapshotFlow { chatModel.chats.toList() }
+      snapshotFlow {
+        runCatching { chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value } }
+          .onFailure { Log.e(TAG, it.stackTraceToString()) }
+          .getOrNull()
+      }
         .distinctUntilChanged()
-        .collect { chats ->
-          chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }.let {
-            // Only changed chatInfo is important thing. Other properties can be skipped for reducing recompositions
-            if (it?.chatInfo != activeChat.value?.chatInfo) {
-              activeChat.value = it
-          }}
-        }
+        // Only changed chatInfo is important thing. Other properties can be skipped for reducing recompositions
+        .filter { it?.chatInfo != activeChat.value?.chatInfo && it != null }
+        .collect { activeChat.value = it }
     }
   }
   val view = LocalView.current
