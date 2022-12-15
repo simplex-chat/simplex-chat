@@ -5,6 +5,7 @@ import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -21,16 +22,27 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.QRCode
 
 @Composable
-fun GroupLinkView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: String?) {
-  var groupLink by remember { mutableStateOf(connReqContact) }
+fun GroupLinkView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: String?, onGroupLinkUpdated: (String?) -> Unit) {
+  var groupLink by rememberSaveable { mutableStateOf(connReqContact) }
+  var creatingLink by rememberSaveable { mutableStateOf(false) }
   val cxt = LocalContext.current
+  fun createLink() {
+    creatingLink = true
+    withApi {
+      groupLink = chatModel.controller.apiCreateGroupLink(groupInfo.groupId)
+      onGroupLinkUpdated(groupLink)
+      creatingLink = false
+    }
+  }
+  LaunchedEffect(Unit) {
+    if (groupLink == null && !creatingLink) {
+      createLink()
+    }
+  }
   GroupLinkLayout(
     groupLink = groupLink,
-    createLink = {
-      withApi {
-        groupLink = chatModel.controller.apiCreateGroupLink(groupInfo.groupId)
-      }
-    },
+    creatingLink,
+    createLink = ::createLink,
     share = { shareText(cxt, groupLink ?: return@GroupLinkLayout) },
     deleteLink = {
       AlertManager.shared.showAlertMsg(
@@ -42,6 +54,7 @@ fun GroupLinkView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: St
             val r = chatModel.controller.apiDeleteGroupLink(groupInfo.groupId)
             if (r) {
               groupLink = null
+              onGroupLinkUpdated(null)
             }
           }
         }
@@ -53,6 +66,7 @@ fun GroupLinkView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: St
 @Composable
 fun GroupLinkLayout(
   groupLink: String?,
+  creatingLink: Boolean,
   createLink: () -> Unit,
   share: () -> Unit,
   deleteLink: () -> Unit
@@ -74,7 +88,7 @@ fun GroupLinkLayout(
       verticalArrangement = Arrangement.SpaceEvenly
     ) {
       if (groupLink == null) {
-        SimpleButton(stringResource(R.string.button_create_group_link), icon = Icons.Outlined.AddLink, click = createLink)
+        SimpleButton(stringResource(R.string.button_create_group_link), icon = Icons.Outlined.AddLink, disabled = creatingLink, click = createLink)
       } else {
         QRCode(groupLink, Modifier.weight(1f, fill = false).aspectRatio(1f))
         Row(
