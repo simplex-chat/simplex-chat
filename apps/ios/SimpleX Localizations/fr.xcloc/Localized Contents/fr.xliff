@@ -3809,7 +3809,7 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
       </trans-unit>
       <trans-unit id="you are invited to group" xml:space="preserve" approved="no">
         <source>you are invited to group</source>
-        <target state="translated">Vous êtes invité·e au groupe</target>
+        <target state="translated">vous êtes invité·e au groupe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="you changed address" xml:space="preserve" approved="no">
