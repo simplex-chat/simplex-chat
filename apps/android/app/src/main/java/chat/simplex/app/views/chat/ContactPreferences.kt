@@ -112,6 +112,7 @@ private fun FeatureSection(
   onSelected: (ContactFeatureAllowed) -> Unit
 ) {
   val enabled = FeatureEnabled.enabled(
+    feature.asymmetric,
     user = ChatPreference(allow = allowFeature.value.allowed),
     contact = pref.contactPreference
   )

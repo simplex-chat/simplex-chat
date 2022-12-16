@@ -2101,10 +2101,10 @@ data class FeatureEnabled(
     get() = if (forUser) SimplexGreen else if (forContact) WarningYellow else HighOrLowlight
 
   companion object {
-    fun enabled(user: ChatPreference, contact: ChatPreference): FeatureEnabled =
+    fun enabled(asymmetric: Boolean, user: ChatPreference, contact: ChatPreference): FeatureEnabled =
       when {
-        user.allow == FeatureAllowed.ALWAYS && contact.allow == FeatureAllowed.NO -> FeatureEnabled(forUser = false, forContact = true)
-        user.allow == FeatureAllowed.NO && contact.allow == FeatureAllowed.ALWAYS -> FeatureEnabled(forUser = true, forContact = false)
+        user.allow == FeatureAllowed.ALWAYS && contact.allow == FeatureAllowed.NO -> FeatureEnabled(forUser = false, forContact = asymmetric)
+        user.allow == FeatureAllowed.NO && contact.allow == FeatureAllowed.ALWAYS -> FeatureEnabled(forUser = asymmetric, forContact = false)
         contact.allow == FeatureAllowed.NO -> FeatureEnabled(forUser = false, forContact = false)
         user.allow == FeatureAllowed.NO -> FeatureEnabled(forUser = false, forContact = false)
         else -> FeatureEnabled(forUser = true, forContact = true)
@@ -2137,6 +2137,11 @@ enum class ChatFeature: Feature {
   @SerialName("timedMessages") TimedMessages,
   @SerialName("fullDelete") FullDelete,
   @SerialName("voice") Voice;
+
+  val asymmetric: Boolean get() = when (this) {
+    TimedMessages -> false
+    else -> true
+  }
 
   override val text: String
     get() = when(this) {

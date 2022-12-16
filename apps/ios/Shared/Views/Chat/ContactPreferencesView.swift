@@ -50,6 +50,7 @@ struct ContactPreferencesView: View {
 
     private func featureSection(_ feature: ChatFeature, _ userDefault: FeatureAllowed, _ pref: ContactUserPreference, _ allowFeature: Binding<ContactFeatureAllowed>) -> some View {
         let enabled = FeatureEnabled.enabled(
+            asymmetric: feature.asymmetric,
             user: Preference(allow: allowFeature.wrappedValue.allowed),
             contact: pref.contactPreference
         )
