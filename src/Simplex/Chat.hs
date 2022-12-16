@@ -1174,9 +1174,27 @@ processChatCommand = \case
   SetGroupFeature (AGF f) gName enabled ->
     updateGroupProfileByName gName $ \p ->
       p {groupPreferences = Just . setGroupPreference f enabled $ groupPreferences p}
-  SetUserTimedMessagesFeature onOff -> pure CRCmdOk
-  SetContactTimedMessagesFeature cName timedMessagesEnabled_ -> pure CRCmdOk
-  SetGroupTimedMessagesFeature gName ttl_ -> pure CRCmdOk
+  SetUserTimedMessagesFeature onOff -> withUser $ \user@User {profile} -> do
+    let allowed = if onOff then FAYes else FANo
+        pref = TimedMessagesPreference allowed Nothing
+        p = (fromLocalProfile profile :: Profile) {preferences = Just . setTimedMessagesPreference (Just pref) $ preferences' user}
+    updateProfile user p
+  SetContactTimedMessagesFeature cName timedMessagesEnabled_ -> withUser $ \user -> do
+    ct@Contact {userPreferences = userPreferences@Preferences {timedMessages}} <- withStore $ \db -> getContactByName db user cName
+    let currentTTL = case timedMessages of
+          Nothing -> Nothing
+          Just TimedMessagesPreference {ttl} -> ttl
+        pref_ = case timedMessagesEnabled_ of
+          Nothing -> Nothing
+          Just (TMEEnableSetTTL ttl) -> Just $ TimedMessagesPreference FAYes (Just ttl)
+          Just TMEEnableKeepTTL -> Just $ TimedMessagesPreference FAYes currentTTL
+          Just TMEDisableKeepTTL -> Just $ TimedMessagesPreference FANo currentTTL
+        prefs' = setTimedMessagesPreference pref_ $ Just userPreferences
+    updateContactPrefs user ct prefs'
+  SetGroupTimedMessagesFeature gName ttl_ -> do
+    let pref = maybe (TimedMessagesGroupPreference FEOff 86400) (TimedMessagesGroupPreference FEOn) ttl_
+    updateGroupProfileByName gName $ \p ->
+      p {groupPreferences = Just . setGroupTimedMessagesPreference pref $ groupPreferences p}
   QuitChat -> liftIO exitSuccess
   ShowVersion -> pure $ CRVersionInfo versionNumber
   DebugLocks -> do

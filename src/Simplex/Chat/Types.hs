@@ -349,6 +349,11 @@ setPreference f allow_ prefs_ =
     setAllow = setField @"allow" (getPreference f prefs)
     prefs = toChatPrefs $ mergePreferences Nothing prefs_
 
+setTimedMessagesPreference :: Maybe TimedMessagesPreference -> Maybe Preferences -> Preferences
+setTimedMessagesPreference pref_ prefs_ = prefs {timedMessages = pref_}
+  where
+    prefs = toChatPrefs $ mergePreferences Nothing prefs_
+
 -- collection of optional chat preferences for the user and the contact
 data Preferences = Preferences
   { timedMessages :: Maybe TimedMessagesPreference,
@@ -483,6 +488,12 @@ setGroupPreference f enable prefs_ =
     prefs = mergeGroupPreferences prefs_
     pref :: GroupFeaturePreference f
     pref = setField @"enable" (getGroupPreference f prefs) enable
+
+setGroupTimedMessagesPreference :: TimedMessagesGroupPreference -> Maybe GroupPreferences -> GroupPreferences
+setGroupTimedMessagesPreference pref prefs_ =
+  toGroupPreferences $ prefs {timedMessages = pref}
+  where
+    prefs = mergeGroupPreferences prefs_
 
 -- full collection of chat preferences defined in the app - it is used to ensure we include all preferences and to simplify processing
 -- if some of the preferences are not defined in Preferences, defaults from defaultChatPrefs are used here.
