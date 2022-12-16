@@ -548,7 +548,7 @@ toChatPrefs FullPreferences {fullDelete, voice, timedMessages} =
 defaultChatPrefs :: FullPreferences
 defaultChatPrefs =
   FullPreferences
-    { timedMessages = TimedMessagesPreference {allow = FANo, ttl = 86400},
+    { timedMessages = TimedMessagesPreference {allow = FANo, ttl = Nothing},
       fullDelete = FullDeletePreference {allow = FANo},
       -- receipts = SimplePreference {allow = FANo},
       voice = VoicePreference {allow = FAYes}
@@ -572,11 +572,13 @@ emptyGroupPrefs = GroupPreferences Nothing Nothing Nothing Nothing
 
 data TimedMessagesPreference = TimedMessagesPreference
   { allow :: FeatureAllowed,
-    ttl :: Int
+    ttl :: Maybe Int
   }
   deriving (Eq, Show, Generic, FromJSON)
 
-instance ToJSON TimedMessagesPreference where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON TimedMessagesPreference where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 data FullDeletePreference = FullDeletePreference {allow :: FeatureAllowed}
   deriving (Eq, Show, Generic, FromJSON)
@@ -785,10 +787,10 @@ instance ToJSON PrefEnabled where
   toJSON = J.genericToJSON J.defaultOptions
   toEncoding = J.genericToEncoding J.defaultOptions
 
-prefEnabled :: FeatureI f => FeaturePreference f -> FeaturePreference f -> PrefEnabled
-prefEnabled user contact = case (getField @"allow" user, getField @"allow" contact) of
-  (FAAlways, FANo) -> PrefEnabled {forUser = False, forContact = True}
-  (FANo, FAAlways) -> PrefEnabled {forUser = True, forContact = False}
+prefEnabled :: FeatureI f => Bool -> FeaturePreference f -> FeaturePreference f -> PrefEnabled
+prefEnabled asymmetric user contact = case (getField @"allow" user, getField @"allow" contact) of
+  (FAAlways, FANo) -> PrefEnabled {forUser = False, forContact = asymmetric}
+  (FANo, FAAlways) -> PrefEnabled {forUser = asymmetric, forContact = False}
   (_, FANo) -> PrefEnabled False False
   (FANo, _) -> PrefEnabled False False
   _ -> PrefEnabled True True
@@ -817,12 +819,14 @@ contactUserPreferences user userPreferences contactPreferences connectedIncognit
     pref :: FeatureI f => SChatFeature f -> ContactUserPreference (FeaturePreference f)
     pref f =
       ContactUserPreference
-        { enabled = prefEnabled userPref ctPref,
+        { enabled = prefEnabled (asymmetric f) userPref ctPref,
           -- incognito contact cannot have default user preference used
           userPreference = if connectedIncognito then CUPContact ctUserPref else maybe (CUPUser userPref) CUPContact ctUserPref_,
           contactPreference = ctPref
         }
       where
+        asymmetric SCFTimedMessages = False
+        asymmetric _ = True
         ctUserPref = getPreference f userPreferences
         ctUserPref_ = chatPrefSel f userPreferences
         userPref = getPreference f ctUserPrefs

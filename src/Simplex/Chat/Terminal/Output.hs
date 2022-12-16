@@ -12,6 +12,7 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Data.Time.Clock (getCurrentTime)
 import Simplex.Chat.Controller
+import Simplex.Chat.Messages hiding (NewChatItem (..))
 import Simplex.Chat.Styled
 import Simplex.Chat.View
 import System.Console.ANSI.Types
@@ -74,13 +75,26 @@ withTermLock ChatTerminal {termLock} action = do
   atomically $ putTMVar termLock ()
 
 runTerminalOutput :: ChatTerminal -> ChatController -> IO ()
-runTerminalOutput ct cc = do
-  let testV = testView $ config cc
+runTerminalOutput ct ChatController {currentUser, inputQ, outputQ, config = ChatConfig {testView}} = do
   forever $ do
-    (_, r) <- atomically . readTBQueue $ outputQ cc
-    user <- readTVarIO $ currentUser cc
+    (_, r) <- atomically $ readTBQueue outputQ
+    case r of
+      CRNewChatItem ci -> markChatItemRead ci
+      CRChatItemUpdated ci -> markChatItemRead ci
+      _ -> pure ()
+    user <- readTVarIO currentUser
     ts <- getCurrentTime
-    printToTerminal ct $ responseToView user testV ts r
+    printToTerminal ct $ responseToView user testView ts r
+  where
+    markChatItemRead :: AChatItem -> IO ()
+    markChatItemRead (AChatItem _ _ chat item@ChatItem {meta = CIMeta {itemStatus}}) =
+      case (muted chat item, itemStatus) of
+        (False, CISRcvNew) -> do
+          let itemId = chatItemId' item
+              chatRef = serializeChatRef $ chatInfoToRef chat
+              cmd = "/_read chat " <> chatRef <> " from=" <> show itemId <> " to=" <> show itemId
+          atomically $ writeTBQueue inputQ cmd
+        _ -> pure ()
 
 printToTerminal :: ChatTerminal -> [StyledString] -> IO ()
 printToTerminal ct s =

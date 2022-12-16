@@ -305,11 +305,6 @@ testAddContact = versionTestMatrix2 runTestAddContact
       alice #$> ("/_get chat @2 before=" <> itemId 2 <> " count=100", chat, chatFeatures <> [(1, "hello there 🙂")])
       -- search
       alice #$> ("/_get chat @2 count=100 search=ello ther", chat, [(1, "hello there 🙂"), (0, "hello there")])
-      -- read messages
-      alice #$> ("/_read chat @2 from=1 to=100", id, "ok")
-      bob #$> ("/_read chat @2 from=1 to=100", id, "ok")
-      alice #$> ("/_read chat @2", id, "ok")
-      bob #$> ("/_read chat @2", id, "ok")
 
 testDeleteContactDeletesProfile :: IO ()
 testDeleteContactDeletesProfile =
@@ -615,12 +610,6 @@ testGroupShared alice bob cath checkMessages = do
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "added cath (Catherine)"), (0, "connected"), (0, "hello"), (1, "hi there"), (0, "hey team")])
       cath @@@ [("@bob", "hey"), ("#team", "hey team"), ("@alice", "received invitation to join group team as admin")]
       cath #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "connected"), (0, "hello"), (0, "hi there"), (1, "hey team")])
-      alice #$> ("/_read chat #1 from=1 to=100", id, "ok")
-      bob #$> ("/_read chat #1 from=1 to=100", id, "ok")
-      cath #$> ("/_read chat #1 from=1 to=100", id, "ok")
-      alice #$> ("/_read chat #1", id, "ok")
-      bob #$> ("/_read chat #1", id, "ok")
-      cath #$> ("/_read chat #1", id, "ok")
       alice #$> ("/_unread chat #1 on", id, "ok")
       alice #$> ("/_unread chat #1 off", id, "ok")
 

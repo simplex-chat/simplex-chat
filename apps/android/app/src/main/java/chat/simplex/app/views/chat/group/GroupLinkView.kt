@@ -1,6 +1,7 @@
 package chat.simplex.app.views.chat.group
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
@@ -16,8 +17,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.GroupInfo
-import chat.simplex.app.ui.theme.DEFAULT_PADDING
-import chat.simplex.app.ui.theme.SimpleButton
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.QRCode
 
@@ -61,6 +61,9 @@ fun GroupLinkView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: St
       )
     }
   )
+  if (creatingLink) {
+    ProgressIndicator()
+  }
 }
 
 @Composable
@@ -113,3 +116,18 @@ fun GroupLinkLayout(
   }
 }
 
+@Composable
+fun ProgressIndicator() {
+  Box(
+    Modifier.fillMaxSize(),
+    contentAlignment = Alignment.Center
+  ) {
+    CircularProgressIndicator(
+      Modifier
+        .padding(horizontal = 2.dp)
+        .size(30.dp),
+      color = HighOrLowlight,
+      strokeWidth = 2.5.dp
+    )
+  }
+}

@@ -39,13 +39,23 @@ import Simplex.Messaging.Protocol (MsgBody)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 
 data ChatType = CTDirect | CTGroup | CTContactRequest | CTContactConnection
-  deriving (Show, Generic)
+  deriving (Eq, Show, Ord, Generic)
+
+serializeChatType :: ChatType -> String
+serializeChatType = \case
+  CTDirect -> "@"
+  CTGroup -> "#"
+  CTContactRequest -> "?" -- this isn't being parsed
+  CTContactConnection -> ":"
 
 data ChatName = ChatName ChatType Text
   deriving (Show)
 
 data ChatRef = ChatRef ChatType Int64
-  deriving (Show)
+  deriving (Eq, Show, Ord)
+
+serializeChatRef :: ChatRef -> String
+serializeChatRef (ChatRef cType chatId) = serializeChatType cType <> show chatId
 
 instance ToJSON ChatType where
   toJSON = J.genericToJSON . enumJSON $ dropPrefix "CT"
@@ -65,6 +75,13 @@ chatInfoUpdatedAt = \case
   GroupChat GroupInfo {updatedAt} -> updatedAt
   ContactRequest UserContactRequest {updatedAt} -> updatedAt
   ContactConnection PendingContactConnection {updatedAt} -> updatedAt
+
+chatInfoToRef :: ChatInfo c -> ChatRef
+chatInfoToRef = \case
+  DirectChat Contact {contactId} -> ChatRef CTDirect contactId
+  GroupChat GroupInfo {groupId} -> ChatRef CTGroup groupId
+  ContactRequest UserContactRequest {contactRequestId} -> ChatRef CTContactRequest contactRequestId
+  ContactConnection PendingContactConnection {pccConnId} -> ChatRef CTContactConnection pccConnId
 
 data JSONChatInfo
   = JCInfoDirect {contact :: Contact}
@@ -256,6 +273,8 @@ data CIMeta (d :: MsgDirection) = CIMeta
     itemSharedMsgId :: Maybe SharedMsgId,
     itemDeleted :: Bool,
     itemEdited :: Bool,
+    itemTimed :: Maybe CITimed,
+    itemLive :: Bool,
     editable :: Bool,
     localItemTs :: ZonedTime,
     createdAt :: UTCTime,
@@ -263,15 +282,43 @@ data CIMeta (d :: MsgDirection) = CIMeta
   }
   deriving (Show, Generic)
 
-mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Bool -> Bool -> TimeZone -> UTCTime -> ChatItemTs -> UTCTime -> UTCTime -> CIMeta d
-mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemEdited tz currentTs itemTs createdAt updatedAt =
+mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Bool -> Bool -> Maybe CITimed -> Bool -> TimeZone -> UTCTime -> ChatItemTs -> UTCTime -> UTCTime -> CIMeta d
+mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemEdited itemTimed itemLive tz currentTs itemTs createdAt updatedAt =
   let localItemTs = utcToZonedTime tz itemTs
       editable = case itemContent of
         CISndMsgContent _ -> diffUTCTime currentTs itemTs < nominalDay && not itemDeleted
         _ -> False
-   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, editable, localItemTs, createdAt, updatedAt}
+   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, itemTimed, itemLive, editable, localItemTs, createdAt, updatedAt}
 
 instance ToJSON (CIMeta d) where toEncoding = J.genericToEncoding J.defaultOptions
+
+data CITimed = CITimed
+  { ttl :: Int, -- seconds
+    deleteAt :: Maybe UTCTime
+  }
+  deriving (Show, Generic)
+
+instance ToJSON CITimed where toEncoding = J.genericToEncoding J.defaultOptions
+
+ciTimedToTTL :: Maybe CITimed -> Maybe Int
+ciTimedToTTL timed_ = timed_ >>= \CITimed {ttl} -> Just ttl
+
+contactCITimedTTL :: Contact -> Maybe Int
+contactCITimedTTL Contact {mergedPreferences = ContactUserPreferences {timedMessages = ContactUserPreference {enabled, userPreference}}}
+  | forUser enabled && forContact enabled = ttl
+  | otherwise = Nothing
+  where
+    TimedMessagesPreference {ttl} = preference (userPreference :: ContactUserPref TimedMessagesPreference)
+
+groupCITimedTTL :: GroupInfo -> Maybe Int
+groupCITimedTTL GroupInfo {fullGroupPreferences = FullGroupPreferences {timedMessages = TimedMessagesGroupPreference {enable, ttl}}}
+  | enable == FEOn = Just ttl
+  | otherwise = Nothing
+
+rcvMsgCITimed :: Maybe Int -> Maybe Int -> Maybe CITimed
+rcvMsgCITimed chatTTL itemTTL = case (chatTTL, itemTTL) of
+  (Just _, Just ttl) -> Just $ CITimed ttl Nothing
+  _ -> Nothing
 
 data CIQuote (c :: ChatType) = CIQuote
   { chatDir :: CIQDirection c,

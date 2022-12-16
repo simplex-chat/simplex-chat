@@ -77,16 +77,23 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
         }
     }
     launch {
-      // .toList() is important for making observation working
-      snapshotFlow { chatModel.chats.toList() }
-        .distinctUntilChanged()
-        .collect { chats ->
-          chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }.let {
-            // Only changed chatInfo is important thing. Other properties can be skipped for reducing recompositions
-            if (it?.chatInfo != activeChat.value?.chatInfo) {
-              activeChat.value = it
-          }}
+      snapshotFlow {
+        /**
+         * It's possible that in some cases concurrent modification can happen on [ChatModel.chats] list.
+         * In this case only error log will be printed here (no crash).
+         * TODO: Re-write [ChatModel.chats] logic to a new list assignment instead of changing content of mutableList to prevent that
+         * */
+        try {
+          chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }
+        } catch (e: ConcurrentModificationException) {
+          Log.e(TAG, e.stackTraceToString())
+          null
         }
+      }
+        .distinctUntilChanged()
+        // Only changed chatInfo is important thing. Other properties can be skipped for reducing recompositions
+        .filter { it?.chatInfo != activeChat.value?.chatInfo && it != null }
+        .collect { activeChat.value = it }
     }
   }
   val view = LocalView.current
@@ -160,6 +167,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
           } else {
             member to null
           }
+          setGroupMembers(groupInfo, chatModel)
           ModalManager.shared.showModalCloseable(true) { close ->
             remember { derivedStateOf { chatModel.groupMembers.firstOrNull { it.memberId == member.memberId } } }.value?.let { mem ->
               GroupMemberInfoView(groupInfo, mem, stats, code, chatModel, close, close)
