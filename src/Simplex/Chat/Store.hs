@@ -3847,7 +3847,7 @@ updateDirectChatItem_ :: forall d. (MsgDirectionI d) => DB.Connection -> UserId 
 updateDirectChatItem_ db userId contactId itemId newContent live currentTs = do
   ci@ChatItem {meta = CIMeta {itemEdited, itemLive}} <- liftEither . correctDir =<< getDirectChatItem db userId contactId itemId
   let newText = ciContentToText newContent
-      edited' = itemEdited || not itemLive
+      edited' = itemEdited || not live
       live' = itemLive && live
   liftIO $ do
     DB.execute
@@ -3971,7 +3971,7 @@ updateGroupChatItem db user@User {userId} groupId itemId newContent live msgId =
   ci@ChatItem {meta = CIMeta {itemEdited, itemLive}} <- liftEither . correctDir =<< getGroupChatItem db user groupId itemId
   currentTs <- liftIO getCurrentTime
   let newText = ciContentToText newContent
-      edited' = itemEdited || not itemLive
+      edited' = itemEdited || not live
       live' = itemLive && live
   liftIO $ do
     DB.execute
