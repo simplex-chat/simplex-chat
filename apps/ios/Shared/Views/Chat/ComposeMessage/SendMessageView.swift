@@ -18,11 +18,13 @@ struct SendMessageView: View {
     var startVoiceMessageRecording: (() -> Void)? = nil
     var finishVoiceMessageRecording: (() -> Void)? = nil
     var allowVoiceMessagesToContact: (() -> Void)? = nil
+    var onImageAdded: (UIImage) -> Void
     @State private var holdingVMR = false
     @Namespace var namespace
     @FocusState.Binding var keyboardVisible: Bool
     @State private var teHeight: CGFloat = 42
     @State private var teFont: Font = .body
+    @State private var teUiFont: UIFont = UIFont.preferredFont(forTextStyle: .body)
     var maxHeight: CGFloat = 360
     var minHeight: CGFloat = 37
 
@@ -49,14 +51,17 @@ struct SendMessageView: View {
                             .padding(.vertical, 8)
                             .matchedGeometryEffect(id: "te", in: namespace)
                             .background(GeometryReader(content: updateHeight))
-                        TextEditor(text: $composeState.message)
-                            .focused($keyboardVisible)
-                            .font(teFont)
-                            .textInputAutocapitalization(.sentences)
-                            .multilineTextAlignment(alignment)
-                            .padding(.horizontal, 5)
-                            .allowsTightening(false)
-                            .frame(height: teHeight)
+
+                        NativeTextEditor(
+                            text: $composeState.message,
+                            height: teHeight,
+                            font: teUiFont,
+                            focused: $keyboardVisible,
+                            alignment: alignment,
+                            onImageAdded: onImageAdded
+                        )
+                        .frame(height: teHeight)
+                        
                     }
                 }
 
@@ -200,6 +205,12 @@ struct SendMessageView: View {
             ? largeEmojiFont
             : mediumEmojiFont
             : .body
+            
+            teUiFont = isShortEmoji(composeState.message)
+            ? composeState.message.count < 4
+            ? largeEmojiUiFont
+            : mediumEmojiUiFont
+            : UIFont.preferredFont(forTextStyle: .body)
         }
         return Color.clear
     }
@@ -220,6 +231,7 @@ struct SendMessageView_Previews: PreviewProvider {
                 SendMessageView(
                     composeState: $composeStateNew,
                     sendMessage: {},
+                    onImageAdded: { _ in },
                     keyboardVisible: $keyboardVisible
                 )
             }
@@ -229,6 +241,7 @@ struct SendMessageView_Previews: PreviewProvider {
                 SendMessageView(
                     composeState: $composeStateEditing,
                     sendMessage: {},
+                    onImageAdded: { _ in },
                     keyboardVisible: $keyboardVisible
                 )
             }

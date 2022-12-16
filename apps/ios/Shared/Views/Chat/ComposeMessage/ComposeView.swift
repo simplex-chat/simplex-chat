@@ -186,7 +186,7 @@ struct ComposeView: View {
                     Image(systemName: "paperclip")
                         .resizable()
                 }
-                .disabled(composeState.editing || composeState.voiceMessageRecordingState != .noRecording)
+                .disabled(composeState.editing || !(composeState.noPreview || composeState.linkPreview != nil))
                 .frame(width: 25, height: 25)
                 .padding(.bottom, 12)
                 .padding(.leading, 12)
@@ -205,6 +205,7 @@ struct ComposeView: View {
                     },
                     finishVoiceMessageRecording: { finishVoiceMessageRecording() },
                     allowVoiceMessagesToContact: { allowVoiceMessagesToContact() },
+                    onImageAdded: { image in chosenImages = [image] },
                     keyboardVisible: $keyboardVisible
                 )
                 .padding(.trailing, 12)
