@@ -8,9 +8,10 @@
 module Simplex.Chat.Terminal.Output where
 
 import Control.Monad.Catch (MonadMask)
-import Control.Monad.IO.Unlift
+import Control.Monad.Except
 import Control.Monad.Reader
 import Data.Time.Clock (getCurrentTime)
+import Simplex.Chat (processChatCommand)
 import Simplex.Chat.Controller
 import Simplex.Chat.Messages hiding (NewChatItem (..))
 import Simplex.Chat.Styled
@@ -75,7 +76,7 @@ withTermLock ChatTerminal {termLock} action = do
   atomically $ putTMVar termLock ()
 
 runTerminalOutput :: ChatTerminal -> ChatController -> IO ()
-runTerminalOutput ct ChatController {currentUser, inputQ, outputQ, config = ChatConfig {testView}} = do
+runTerminalOutput ct cc@ChatController {currentUser, outputQ, config = ChatConfig {testView}} = do
   forever $ do
     (_, r) <- atomically $ readTBQueue outputQ
     case r of
@@ -91,9 +92,8 @@ runTerminalOutput ct ChatController {currentUser, inputQ, outputQ, config = Chat
       case (muted chat item, itemStatus) of
         (False, CISRcvNew) -> do
           let itemId = chatItemId' item
-              chatRef = serializeChatRef $ chatInfoToRef chat
-              cmd = "/_read chat " <> chatRef <> " from=" <> show itemId <> " to=" <> show itemId
-          atomically $ writeTBQueue inputQ cmd
+              chatRef = chatInfoToRef chat
+          void $ runReaderT (runExceptT $ processChatCommand (APIChatRead chatRef (Just (itemId, itemId)))) cc
         _ -> pure ()
 
 printToTerminal :: ChatTerminal -> [StyledString] -> IO ()

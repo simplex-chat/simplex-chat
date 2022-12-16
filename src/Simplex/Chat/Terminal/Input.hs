@@ -35,7 +35,7 @@ runInputLoop ct cc = forever $ do
   s <- atomically . readTBQueue $ inputQ cc
   let bs = encodeUtf8 $ T.pack s
       cmd = parseChatCommand bs
-  when (doEcho cmd) $ echo s
+  unless (isMessage cmd) $ echo s
   r <- runReaderT (execChatCommand bs) cc
   case r of
     CRChatCmdError _ -> when (isMessage cmd) $ echo s
@@ -46,9 +46,6 @@ runInputLoop ct cc = forever $ do
   printToTerminal ct $ responseToView user testV ts r
   where
     echo s = printToTerminal ct [plain s]
-    doEcho cmd = case cmd of
-      Right APIChatRead {} -> False
-      _ -> not $ isMessage cmd
     isMessage = \case
       Right SendMessage {} -> True
       Right SendFile {} -> True

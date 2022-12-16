@@ -298,7 +298,6 @@ data ChatResponse
   | CRChatItemUpdated {chatItem :: AChatItem}
   | CRChatItemDeleted {deletedChatItem :: AChatItem, toChatItem :: Maybe AChatItem, byUser :: Bool, timed :: Bool}
   | CRChatItemDeletedNotFound {contact :: Contact, sharedMsgId :: SharedMsgId}
-  | CRChatRead
   | CRBroadcastSent MsgContent Int ZonedTime
   | CRMsgIntegrityError {msgError :: MsgErrorType}
   | CRCmdAccepted {corr :: CorrId}
