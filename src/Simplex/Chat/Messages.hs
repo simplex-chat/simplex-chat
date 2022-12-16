@@ -41,21 +41,11 @@ import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 data ChatType = CTDirect | CTGroup | CTContactRequest | CTContactConnection
   deriving (Eq, Show, Ord, Generic)
 
-serializeChatType :: ChatType -> String
-serializeChatType = \case
-  CTDirect -> "@"
-  CTGroup -> "#"
-  CTContactRequest -> "?" -- this isn't being parsed
-  CTContactConnection -> ":"
-
 data ChatName = ChatName ChatType Text
   deriving (Show)
 
 data ChatRef = ChatRef ChatType Int64
   deriving (Eq, Show, Ord)
-
-serializeChatRef :: ChatRef -> String
-serializeChatRef (ChatRef cType chatId) = serializeChatType cType <> show chatId
 
 instance ToJSON ChatType where
   toJSON = J.genericToJSON . enumJSON $ dropPrefix "CT"
