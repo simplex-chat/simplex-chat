@@ -60,6 +60,7 @@ CREATE TABLE contacts(
   unread_chat INTEGER DEFAULT 0 CHECK(unread_chat NOT NULL),
   contact_used INTEGER DEFAULT 0 CHECK(contact_used NOT NULL),
   user_preferences TEXT DEFAULT '{}' CHECK(user_preferences NOT NULL),
+  unconfirmed_ttl_change INTEGER DEFAULT 0 CHECK(unconfirmed_ttl_change NOT NULL),
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
