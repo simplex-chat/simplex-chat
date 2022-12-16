@@ -14,6 +14,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
+import chat.simplex.app.model.durationText
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.item.SentColorLight
 import chat.simplex.app.views.helpers.*
@@ -39,15 +40,13 @@ fun ComposeVoiceView(
         .distinctUntilChanged()
         .collect {
           val startTime = when {
-            audioPlaying.value -> progress.value
-            finishedRecording && progress.value == duration.value -> progress.value
-            finishedRecording -> 0
+            finishedRecording -> progress.value
             else -> recordedDurationMs
           }
           val endTime = when {
             finishedRecording -> duration.value
             audioPlaying.value -> recordedDurationMs
-            else -> MAX_VOICE_MILLIS_FOR_SENDING.toInt()
+            else -> MAX_VOICE_MILLIS_FOR_SENDING
           }
           val to = ((startTime.toDouble() / endTime) * maxWidth.value).dp
           progressBarWidth.animateTo(to.value, audioProgressBarAnimationSpec())
@@ -71,7 +70,7 @@ fun ComposeVoiceView(
       IconButton(
         onClick = {
           if (!audioPlaying.value) {
-            AudioPlayer.play(filePath, audioPlaying, progress, duration)
+            AudioPlayer.play(filePath, audioPlaying, progress, duration, false)
           } else {
             AudioPlayer.pause(audioPlaying, progress)
           }
@@ -87,10 +86,16 @@ fun ComposeVoiceView(
         )
       }
       val numberInText = remember(recordedDurationMs, progress.value) {
-        derivedStateOf { if (audioPlaying.value) progress.value / 1000 else recordedDurationMs / 1000 }
+        derivedStateOf {
+          when {
+            finishedRecording && progress.value == 0 && !audioPlaying.value -> duration.value / 1000
+            finishedRecording -> progress.value / 1000
+            else -> recordedDurationMs / 1000
+          }
+        }
       }
       Text(
-        durationToString(numberInText.value),
+        durationText(numberInText.value),
         fontSize = 18.sp,
         color = HighOrLowlight,
       )

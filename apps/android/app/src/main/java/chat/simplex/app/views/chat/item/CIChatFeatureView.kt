@@ -9,7 +9,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.*
 
 @Composable
 fun CIChatFeatureView(
@@ -18,9 +17,11 @@ fun CIChatFeatureView(
   iconColor: Color
 ) {
   Row(
-    verticalAlignment = Alignment.CenterVertically
+    Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.spacedBy(4.dp)
   ) {
-    Icon(feature.icon(true), feature.text(), Modifier.size(15.dp), tint = iconColor)
+    Icon(feature.iconFilled, feature.text, Modifier.size(15.dp), tint = iconColor)
     Text(
       chatEventText(chatItem),
       Modifier,

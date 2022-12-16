@@ -19,8 +19,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AttachFile
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Reply
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.Saver
@@ -41,6 +40,8 @@ import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.views.chat.item.*
 import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
@@ -118,6 +119,15 @@ data class ComposeState(
   }
 }
 
+sealed class RecordingState {
+  object NotStarted: RecordingState()
+  class Started(val filePath: String, val progressMs: Int = 0): RecordingState()
+  class Finished(val filePath: String, val durationMs: Int): RecordingState()
+
+  val filePathNullable: String?
+    get() = (this as? Started)?.filePath
+}
+
 fun chatItemPreview(chatItem: ChatItem): ComposePreview {
   return when (val mc = chatItem.content.msgContent) {
     is MsgContent.MCText -> ComposePreview.NoPreview
@@ -150,7 +160,7 @@ fun ComposeView(
   val textStyle = remember { mutableStateOf(smallFont) }
   // attachments
   val chosenContent = rememberSaveable { mutableStateOf<List<UploadContent>>(emptyList()) }
-  val audioSaver = Saver<MutableState<Pair<Uri, Int>?>, Pair<String, Int>> (
+  val audioSaver = Saver<MutableState<Pair<Uri, Int>?>, Pair<String, Int>>(
     save = { it.value.let { if (it == null) null else it.first.toString() to it.second } },
     restore = { mutableStateOf(Uri.parse(it.first) to it.second) }
   )
@@ -167,7 +177,7 @@ fun ComposeView(
   }
   val cameraPermissionLauncher = rememberPermissionLauncher { isGranted: Boolean ->
     if (isGranted) {
-      cameraLauncher.launch(null)
+      cameraLauncher.launchWithFallback()
     } else {
       Toast.makeText(context, generalGetString(R.string.toast_permission_denied), Toast.LENGTH_SHORT).show()
     }
@@ -233,13 +243,14 @@ fun ComposeView(
   val galleryLauncher = rememberLauncherForActivityResult(contract = PickMultipleFromGallery()) { processPickedImage(it, null) }
   val galleryLauncherFallback = rememberGetMultipleContentsLauncher { processPickedImage(it, null) }
   val filesLauncher = rememberGetContentLauncher { processPickedFile(it, null) }
+  val recState: MutableState<RecordingState> = remember { mutableStateOf(RecordingState.NotStarted) }
 
   LaunchedEffect(attachmentOption.value) {
     when (attachmentOption.value) {
       AttachmentOption.TakePhoto -> {
         when (PackageManager.PERMISSION_GRANTED) {
           ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) -> {
-            cameraLauncher.launch(null)
+            cameraLauncher.launchWithFallback()
           }
           else -> {
             cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
@@ -340,6 +351,7 @@ fun ComposeView(
 
   fun clearState() {
     composeState.value = ComposeState(useLinkPreviews = useLinkPreviews)
+    recState.value = RecordingState.NotStarted
     textStyle.value = smallFont
     chosenContent.value = emptyList()
     chosenAudio.value = null
@@ -395,6 +407,7 @@ fun ComposeView(
               val file = chosenAudioVal.first.toFile().name
               files.add((file))
               chatModel.filesToDelete.remove(chosenAudioVal.first.toFile())
+              AudioPlayer.stop(chosenAudioVal.first.toFile().absolutePath)
               msgs.add(MsgContent.MCVoice(if (msgs.isEmpty()) cs.message else "", chosenAudioVal.second / 1000))
             }
           }
@@ -457,25 +470,13 @@ fun ComposeView(
 
   fun allowVoiceToContact() {
     val contact = (chat.chatInfo as ChatInfo.Direct?)?.contact ?: return
-    val featuresAllowed = contactUserPrefsToFeaturesAllowed(contact.mergedPreferences)
+    val prefs = contact.mergedPreferences.toPreferences().copy(voice = ChatPreference(allow = FeatureAllowed.YES))
     withApi {
-      val prefs = contactFeaturesAllowedToPrefs(featuresAllowed).copy(voice = ChatPreference(FeatureAllowed.YES))
       val toContact = chatModel.controller.apiSetContactPrefs(contact.contactId, prefs)
       if (toContact != null) {
         chatModel.updateContact(toContact)
       }
     }
-  }
-  fun showDisabledVoiceAlert() {
-    AlertManager.shared.showAlertMsg(
-      title = generalGetString(R.string.voice_messages_prohibited),
-      text = generalGetString(
-        if (chat.chatInfo is ChatInfo.Direct)
-          R.string.ask_your_contact_to_enable_voice
-        else
-          R.string.only_group_owners_can_enable_voice
-      )
-    )
   }
 
   fun cancelLinkPreview() {
@@ -493,8 +494,15 @@ fun ComposeView(
   }
 
   fun cancelVoice() {
+    val filePath = recState.value.filePathNullable
+    recState.value = RecordingState.NotStarted
     composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
-    chosenContent.value = emptyList()
+    withBGApi {
+      RecorderNative.stopRecording?.invoke()
+      AudioPlayer.stop(filePath)
+      filePath?.let { File(it).delete() }
+    }
+    chosenAudio.value = null
   }
 
   fun cancelFile() {
@@ -564,7 +572,8 @@ fun ComposeView(
       modifier = Modifier.padding(end = 8.dp),
       verticalAlignment = Alignment.Bottom,
     ) {
-      val attachEnabled = !composeState.value.editing && composeState.value.preview !is ComposePreview.VoicePreview
+      val attachEnabled = !composeState.value.editing &&
+          (composeState.value.preview is ComposePreview.NoPreview || composeState.value.preview is ComposePreview.CLinkPreview)
       IconButton(showChooseAttachment, enabled = attachEnabled) {
         Icon(
           Icons.Filled.AttachFile,
@@ -575,35 +584,44 @@ fun ComposeView(
             .clip(CircleShape)
         )
       }
-      val allowedVoiceByPrefs = remember(chat.chatInfo) {
-        when (chat.chatInfo) {
-          is ChatInfo.Direct -> chat.chatInfo.contact.mergedPreferences.voice.enabled.forUser
-          is ChatInfo.Group -> chat.chatInfo.groupInfo.fullGroupPreferences.voice.enable == GroupFeatureEnabled.ON
-          else -> false
+      val allowedVoiceByPrefs = remember(chat.chatInfo) { chat.chatInfo.voiceMessageAllowed }
+      LaunchedEffect(allowedVoiceByPrefs) {
+        if (!allowedVoiceByPrefs && chosenAudio.value != null) {
+          // Voice was disabled right when this user records it, just cancel it
+          cancelVoice()
         }
       }
       val needToAllowVoiceToContact = remember(chat.chatInfo) {
-        when (chat.chatInfo) {
-          is ChatInfo.Direct -> with(chat.chatInfo.contact.mergedPreferences.voice) {
-            ((userPreference as? ContactUserPref.User)?.preference?.allow == FeatureAllowed.NO || (userPreference as? ContactUserPref.Contact)?.preference?.allow == FeatureAllowed.NO) &&
-                contactPreference.allow == FeatureAllowed.YES
-          }
-          else -> false
+        chat.chatInfo is ChatInfo.Direct && with(chat.chatInfo.contact.mergedPreferences.voice) {
+          ((userPreference as? ContactUserPref.User)?.preference?.allow == FeatureAllowed.NO || (userPreference as? ContactUserPref.Contact)?.preference?.allow == FeatureAllowed.NO) &&
+              contactPreference.allow == FeatureAllowed.YES
         }
       }
+      LaunchedEffect(Unit) {
+        snapshotFlow { recState.value }
+          .distinctUntilChanged()
+          .collect {
+            when(it) {
+              is RecordingState.Started -> onAudioAdded(it.filePath, it.progressMs, false)
+              is RecordingState.Finished -> onAudioAdded(it.filePath, it.durationMs, true)
+              is RecordingState.NotStarted -> {}
+            }
+          }
+      }
+
       SendMsgView(
         composeState,
         showVoiceRecordIcon = true,
-        allowedVoiceByPrefs = allowedVoiceByPrefs,
-        needToAllowVoiceToContact = needToAllowVoiceToContact,
+        recState,
+        chat.chatInfo is ChatInfo.Direct,
+        needToAllowVoiceToContact,
+        allowedVoiceByPrefs,
+        allowVoiceToContact = ::allowVoiceToContact,
         sendMessage = {
           sendMessage()
           resetLinkPreview()
         },
         ::onMessageChange,
-        ::onAudioAdded,
-        ::allowVoiceToContact,
-        ::showDisabledVoiceAlert,
         textStyle
       )
     }

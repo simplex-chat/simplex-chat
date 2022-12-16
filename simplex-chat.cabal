@@ -1,11 +1,11 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.35.0.
 --
 -- see: https://github.com/sol/hpack
 
 name:           simplex-chat
-version:        4.3.0
+version:        4.3.2
 category:       Web, System, Services, Cryptography
 homepage:       https://github.com/simplex-chat/simplex-chat#readme
 author:         simplex.chat
@@ -63,6 +63,13 @@ library
       Simplex.Chat.Migrations.M20221029_group_link_id
       Simplex.Chat.Migrations.M20221112_server_password
       Simplex.Chat.Migrations.M20221115_server_cfg
+      Simplex.Chat.Migrations.M20221129_delete_group_feature_items
+      Simplex.Chat.Migrations.M20221130_delete_item_deleted
+      Simplex.Chat.Migrations.M20221209_verified_connection
+      Simplex.Chat.Migrations.M20221210_idxs
+      Simplex.Chat.Migrations.M20221211_group_description
+      Simplex.Chat.Migrations.M20221212_chat_items_timed
+      Simplex.Chat.Migrations.M20221214_live_message
       Simplex.Chat.Mobile
       Simplex.Chat.Options
       Simplex.Chat.ProfileGenerator
@@ -74,6 +81,7 @@ library
       Simplex.Chat.Terminal.Notification
       Simplex.Chat.Terminal.Output
       Simplex.Chat.Types
+      Simplex.Chat.Util
       Simplex.Chat.View
   other-modules:
       Paths_simplex_chat
@@ -102,6 +110,7 @@ library
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
+    , record-hasfield ==1.0.*
     , simple-logger ==0.1.*
     , simplexmq >=3.4
     , socks ==0.6.*
@@ -144,6 +153,7 @@ executable simplex-bot
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
+    , record-hasfield ==1.0.*
     , simple-logger ==0.1.*
     , simplex-chat
     , simplexmq >=3.4
@@ -187,6 +197,7 @@ executable simplex-bot-advanced
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
+    , record-hasfield ==1.0.*
     , simple-logger ==0.1.*
     , simplex-chat
     , simplexmq >=3.4
@@ -231,6 +242,7 @@ executable simplex-chat
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
+    , record-hasfield ==1.0.*
     , simple-logger ==0.1.*
     , simplex-chat
     , simplexmq >=3.4
@@ -284,6 +296,7 @@ test-suite simplex-chat-test
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
+    , record-hasfield ==1.0.*
     , simple-logger ==0.1.*
     , simplex-chat
     , simplexmq >=3.4

@@ -28,20 +28,10 @@ struct SMPServerView: View {
                 ProgressView().scaleEffect(2)
             }
         }
-        .navigationBarBackButtonHidden(true)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    server = serverToEdit
-                    dismiss()
-                } label: {
-                    HStack {
-                        Image(systemName: "chevron.left")
-                        Text("Your SMP servers")
-                    }
-                }
-            }
-        }
+        .modifier(BackButton(label: "Your SMP servers") {
+            server = serverToEdit
+            dismiss()
+        })
         .alert(isPresented: $showTestFailure) {
             Alert(
                 title: Text("Server test failed!"),
@@ -121,6 +111,26 @@ struct SMPServerView: View {
     }
 }
 
+struct BackButton: ViewModifier {
+    var label: LocalizedStringKey = "Back"
+    var action: () -> Void
+
+    func body(content: Content) -> some View {
+        content
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: action) {
+                    HStack {
+                        Image(systemName: "chevron.left")
+                        Text(label)
+                    }
+                }
+            }
+        }
+    }
+}
+
 @ViewBuilder func showTestStatus(server: ServerCfg) -> some View {
     switch server.tested {
     case .some(true):
@@ -155,8 +165,8 @@ func testServerConnection(server: Binding<ServerCfg>) async -> SMPTestFailure? {
     }
 }
 
-func serverHostname(_ srv: ServerCfg) -> String {
-    parseServerAddress(srv.server)?.hostnames.first ?? srv.server
+func serverHostname(_ srv: String) -> String {
+    parseServerAddress(srv)?.hostnames.first ?? srv
 }
 
 struct SMPServerView_Previews: PreviewProvider {

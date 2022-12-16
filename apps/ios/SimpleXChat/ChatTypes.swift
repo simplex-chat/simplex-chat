@@ -54,7 +54,7 @@ public struct Profile: Codable, NamedChat {
         (fullName == "" || displayName == fullName) ? displayName : "\(displayName) (\(fullName))"
     }
 
-    static let sampleData = Profile(
+    public static let sampleData = Profile(
         displayName: "alice",
         fullName: "Alice"
     )
@@ -125,35 +125,48 @@ extension NamedChat {
 public typealias ChatId = String
 
 public struct FullPreferences: Decodable, Equatable {
+    public var timedMessages: Preference
     public var fullDelete: Preference
     public var voice: Preference
 
-    public init(fullDelete: Preference, voice: Preference) {
+    public init(timedMessages: Preference, fullDelete: Preference, voice: Preference) {
+        self.timedMessages = timedMessages
         self.fullDelete = fullDelete
         self.voice = voice
     }
 
-    public static let sampleData = FullPreferences(fullDelete: Preference(allow: .no), voice: Preference(allow: .yes))
+    public static let sampleData = FullPreferences(
+        timedMessages:  Preference(allow: .no),
+        fullDelete: Preference(allow: .no),
+        voice: Preference(allow: .yes)
+    )
 }
 
 public struct Preferences: Codable {
+    public var timedMessages: Preference?
     public var fullDelete: Preference?
     public var voice: Preference?
 
-    public init(fullDelete: Preference?, voice: Preference?) {
+    public init(timedMessages: Preference?, fullDelete: Preference?, voice: Preference?) {
+        self.timedMessages = timedMessages
         self.fullDelete = fullDelete
         self.voice = voice
     }
 
-    public static let sampleData = Preferences(fullDelete: Preference(allow: .no), voice: Preference(allow: .yes))
+    public static let sampleData = Preferences(timedMessages: Preference(allow: .no), fullDelete: Preference(allow: .no), voice: Preference(allow: .yes))
 }
 
 public func fullPreferencesToPreferences(_ fullPreferences: FullPreferences) -> Preferences {
-    Preferences(fullDelete: fullPreferences.fullDelete, voice: fullPreferences.voice)
+    Preferences(
+        timedMessages: fullPreferences.timedMessages,
+        fullDelete: fullPreferences.fullDelete,
+        voice: fullPreferences.voice
+    )
 }
 
 public func contactUserPreferencesToPreferences(_ contactUserPreferences: ContactUserPreferences) -> Preferences {
     Preferences(
+        timedMessages: contactUserPreferences.timedMessages.userPreference.preference,
         fullDelete: contactUserPreferences.fullDelete.userPreference.preference,
         voice: contactUserPreferences.voice.userPreference.preference
     )
@@ -168,15 +181,22 @@ public struct Preference: Codable, Equatable {
 }
 
 public struct ContactUserPreferences: Decodable {
+    public var timedMessages: ContactUserPreference
     public var fullDelete: ContactUserPreference
     public var voice: ContactUserPreference
 
-    public init(fullDelete: ContactUserPreference, voice: ContactUserPreference) {
+    public init(timedMessages: ContactUserPreference, fullDelete: ContactUserPreference, voice: ContactUserPreference) {
+        self.timedMessages = timedMessages
         self.fullDelete = fullDelete
         self.voice = voice
     }
 
     public static let sampleData = ContactUserPreferences(
+        timedMessages: ContactUserPreference(
+            enabled: FeatureEnabled(forUser: false, forContact: false),
+            userPreference: .user(preference: Preference(allow: .no)),
+            contactPreference: Preference(allow: .no)
+        ),
         fullDelete: ContactUserPreference(
             enabled: FeatureEnabled(forUser: false, forContact: false),
             userPreference: .user(preference: Preference(allow: .no)),
@@ -211,10 +231,10 @@ public struct FeatureEnabled: Decodable {
         self.forContact = forContact
     }
 
-    public static func enabled(user: Preference, contact: Preference) -> FeatureEnabled {
+    public static func enabled(asymmetric: Bool, user: Preference, contact: Preference) -> FeatureEnabled {
         switch (user.allow, contact.allow) {
-        case (.always, .no): return FeatureEnabled(forUser: false, forContact: true)
-        case (.no, .always): return FeatureEnabled(forUser: true, forContact: false)
+        case (.always, .no): return FeatureEnabled(forUser: false, forContact: asymmetric)
+        case (.no, .always): return FeatureEnabled(forUser: asymmetric, forContact: false)
         case (_, .no): return FeatureEnabled(forUser: false, forContact: false)
         case (.no, _): return FeatureEnabled(forUser: false, forContact: false)
         default: return FeatureEnabled(forUser: true, forContact: true)
@@ -245,30 +265,58 @@ public enum ContactUserPref: Decodable {
     }
 }
 
-public enum Feature: String, Decodable {
+public protocol Feature {
+    var iconFilled: String { get }
+}
+
+public enum ChatFeature: String, Decodable, Feature {
+    case timedMessages
     case fullDelete
     case voice
 
-    public var values: [Feature] { [.fullDelete, .voice] }
+    public var values: [ChatFeature] { [.fullDelete, .voice] }
 
     public var id: Self { self }
 
+    public var asymmetric: Bool {
+        switch self {
+        case .timedMessages: return false
+        default: return true
+        }
+    }
+
     public var text: String {
         switch self {
-        case .fullDelete: return NSLocalizedString("Full deletion", comment: "chat feature")
+        case .timedMessages: return NSLocalizedString("Disappearing messages", comment: "chat feature")
+        case .fullDelete: return NSLocalizedString("Delete for everyone", comment: "chat feature")
         case .voice: return NSLocalizedString("Voice messages", comment: "chat feature")
         }
     }
 
     public var icon: String {
         switch self {
+        case .timedMessages: return "timer"
         case .fullDelete: return "trash.slash"
-        case .voice: return "speaker.wave.2"
+        case .voice: return "mic"
+        }
+    }
+
+    public var iconFilled: String {
+        switch self {
+        case .timedMessages: return "timer"
+        case .fullDelete: return "trash.slash.fill"
+        case .voice: return "mic.fill"
         }
     }
 
     public func allowDescription(_ allowed: FeatureAllowed) -> LocalizedStringKey {
         switch self {
+        case .timedMessages:
+             switch allowed {
+             case .always: return "Allow your contacts to send disappearing messages."
+             case .yes: return "Allow disappearing messages only if your contact allows it to you."
+             case .no: return "Prohibit sending disappearing messages."
+             }
         case .fullDelete:
             switch allowed {
             case .always: return "Allow your contacts to irreversibly delete sent messages."
@@ -286,6 +334,14 @@ public enum Feature: String, Decodable {
 
     public func enabledDescription(_ enabled: FeatureEnabled) -> LocalizedStringKey {
         switch self {
+        case .timedMessages:
+             return enabled.forUser && enabled.forContact
+                     ? "Both you and your contact can send disappearing messages."
+                     : enabled.forUser
+                     ? "Only you can send disappearing messages."
+                     : enabled.forContact
+                     ? "Only your contact can send disappearing messages."
+                     : "Disappearing messages are prohibited in this chat."
         case .fullDelete:
             return enabled.forUser && enabled.forContact
                     ? "Both you and your contact can irreversibly delete sent messages."
@@ -304,10 +360,58 @@ public enum Feature: String, Decodable {
                     : "Voice messages are prohibited in this chat."
         }
     }
+}
 
-    public func enableGroupPrefDescription(_ enabled: GroupFeatureEnabled, _ canEdit: Bool) -> LocalizedStringKey {
+public enum GroupFeature: String, Decodable, Feature {
+    case timedMessages
+    case fullDelete
+    case voice
+    case directMessages
+
+    public var values: [GroupFeature] { [.directMessages, .fullDelete, .voice] }
+
+    public var id: Self { self }
+
+    public var text: String {
+        switch self {
+        case .timedMessages: return NSLocalizedString("Disappearing messages", comment: "chat feature")
+        case .directMessages: return NSLocalizedString("Direct messages", comment: "chat feature")
+        case .fullDelete: return NSLocalizedString("Delete for everyone", comment: "chat feature")
+        case .voice: return NSLocalizedString("Voice messages", comment: "chat feature")
+        }
+    }
+
+    public var icon: String {
+        switch self {
+        case .timedMessages: return "timer"
+        case .directMessages: return "arrow.left.and.right.circle"
+        case .fullDelete: return "trash.slash"
+        case .voice: return "mic"
+        }
+    }
+
+    public var iconFilled: String {
+        switch self {
+        case .timedMessages: return "timer"
+        case .directMessages: return "arrow.left.and.right.circle.fill"
+        case .fullDelete: return "trash.slash.fill"
+        case .voice: return "mic.fill"
+        }
+    }
+
+    public func enableDescription(_ enabled: GroupFeatureEnabled, _ canEdit: Bool) -> LocalizedStringKey {
         if canEdit {
             switch self {
+            case .timedMessages:
+                switch enabled {
+                case .on: return "Allow sending disappearing messages."
+                case .off: return "Prohibit sending disappearing messages."
+                }
+            case .directMessages:
+                switch enabled {
+                case .on: return "Allow sending direct messages to members."
+                case .off: return "Prohibit sending direct messages to members."
+                }
             case .fullDelete:
                 switch enabled {
                 case .on: return "Allow to irreversibly delete sent messages."
@@ -321,15 +425,25 @@ public enum Feature: String, Decodable {
             }
         } else {
             switch self {
+            case .timedMessages:
+                switch enabled {
+                case .on: return "Group members can send disappearing messages."
+                case .off: return "Disappearing messages are prohibited in this group."
+                }
+            case .directMessages:
+                switch enabled {
+                case .on: return "Group members can send direct messages."
+                case .off: return "Direct messages between members are prohibited in this group."
+                }
             case .fullDelete:
                 switch enabled {
                 case .on: return "Group members can irreversibly delete sent messages."
-                case .off: return "Irreversible message deletion is prohibited in this chat."
+                case .off: return "Irreversible message deletion is prohibited in this group."
                 }
             case .voice:
                 switch enabled {
                 case .on: return "Group members can send voice messages."
-                case .off: return "Voice messages are prohibited in this chat."
+                case .off: return "Voice messages are prohibited in this group."
                 }
             }
         }
@@ -368,15 +482,18 @@ public enum ContactFeatureAllowed: Identifiable, Hashable {
 }
 
 public struct ContactFeaturesAllowed: Equatable {
+    public var timedMessages: ContactFeatureAllowed
     public var fullDelete: ContactFeatureAllowed
     public var voice: ContactFeatureAllowed
 
-    public init(fullDelete: ContactFeatureAllowed, voice: ContactFeatureAllowed) {
+    public init(timedMessages: ContactFeatureAllowed, fullDelete: ContactFeatureAllowed, voice: ContactFeatureAllowed) {
+        self.timedMessages = timedMessages
         self.fullDelete = fullDelete
         self.voice = voice
     }
 
     public static let sampleData = ContactFeaturesAllowed(
+        timedMessages: ContactFeatureAllowed.userDefault(.no),
         fullDelete: ContactFeatureAllowed.userDefault(.no),
         voice: ContactFeatureAllowed.userDefault(.yes)
     )
@@ -384,6 +501,7 @@ public struct ContactFeaturesAllowed: Equatable {
 
 public func contactUserPrefsToFeaturesAllowed(_ contactUserPreferences: ContactUserPreferences) -> ContactFeaturesAllowed {
     ContactFeaturesAllowed(
+        timedMessages: contactUserPrefToFeatureAllowed(contactUserPreferences.timedMessages),
         fullDelete: contactUserPrefToFeatureAllowed(contactUserPreferences.fullDelete),
         voice: contactUserPrefToFeatureAllowed(contactUserPreferences.voice)
     )
@@ -403,6 +521,7 @@ public func contactUserPrefToFeatureAllowed(_ contactUserPreference: ContactUser
 
 public func contactFeaturesAllowedToPrefs(_ contactFeaturesAllowed: ContactFeaturesAllowed) -> Preferences {
     Preferences(
+        timedMessages: contactFeatureAllowedToPref(contactFeaturesAllowed.timedMessages),
         fullDelete: contactFeatureAllowedToPref(contactFeaturesAllowed.fullDelete),
         voice: contactFeatureAllowedToPref(contactFeaturesAllowed.voice)
     )
@@ -436,31 +555,54 @@ public enum FeatureAllowed: String, Codable, Identifiable {
 }
 
 public struct FullGroupPreferences: Decodable, Equatable {
+    public var timedMessages: GroupPreference
+    public var directMessages: GroupPreference
     public var fullDelete: GroupPreference
     public var voice: GroupPreference
 
-    public init(fullDelete: GroupPreference, voice: GroupPreference) {
+    public init(timedMessages:  GroupPreference, directMessages: GroupPreference, fullDelete: GroupPreference, voice: GroupPreference) {
+        self.timedMessages = timedMessages
+        self.directMessages = directMessages
         self.fullDelete = fullDelete
         self.voice = voice
     }
 
-    public static let sampleData = FullGroupPreferences(fullDelete: GroupPreference(enable: .off), voice: GroupPreference(enable: .on))
+    public static let sampleData = FullGroupPreferences(
+        timedMessages: GroupPreference(enable: .off),
+        directMessages: GroupPreference(enable: .off),
+        fullDelete: GroupPreference(enable: .off),
+        voice: GroupPreference(enable: .on)
+    )
 }
 
 public struct GroupPreferences: Codable {
+    public var timedMessages: GroupPreference?
+    public var directMessages: GroupPreference?
     public var fullDelete: GroupPreference?
     public var voice: GroupPreference?
 
-    public init(fullDelete: GroupPreference?, voice: GroupPreference?) {
+    public init(timedMessages: GroupPreference?, directMessages: GroupPreference?, fullDelete: GroupPreference?, voice: GroupPreference?) {
+        self.timedMessages = timedMessages
+        self.directMessages = directMessages
         self.fullDelete = fullDelete
         self.voice = voice
     }
 
-    public static let sampleData = GroupPreferences(fullDelete: GroupPreference(enable: .off), voice: GroupPreference(enable: .on))
+    public static let sampleData = GroupPreferences(
+        timedMessages: GroupPreference(enable: .off),
+        directMessages: GroupPreference(enable: .off),
+        fullDelete: GroupPreference(enable: .off),
+        voice: GroupPreference(enable: .on)
+    )
 }
 
 public func toGroupPreferences(_ fullPreferences: FullGroupPreferences) -> GroupPreferences {
-    GroupPreferences(fullDelete: fullPreferences.fullDelete, voice: fullPreferences.voice)
+    GroupPreferences(
+        timedMessages: fullPreferences.timedMessages,
+        directMessages: fullPreferences.directMessages,
+        fullDelete: fullPreferences.fullDelete,
+        voice: fullPreferences.voice
+    )
 }
 
 public struct GroupPreference: Codable, Equatable {
@@ -636,7 +778,15 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
         switch self {
         case let .direct(contact): return contact.mergedPreferences.voice.enabled.forUser
         case let .group(groupInfo): return groupInfo.fullGroupPreferences.voice.on
-        default: return true
+        default: return false
+        }
+    }
+
+    public var fullDeletionAllowed: Bool {
+        switch self {
+        case let .direct(contact): return contact.mergedPreferences.fullDelete.enabled.forUser
+        case let .group(groupInfo): return groupInfo.fullGroupPreferences.fullDelete.on
+        default: return false
         }
     }
 
@@ -735,6 +885,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     public var profile: LocalProfile
     public var activeConn: Connection
     public var viaGroup: Int64?
+    public var contactUsed: Bool
     public var chatSettings: ChatSettings
     public var userPreferences: Preferences
     public var mergedPreferences: ContactUserPreferences
@@ -749,13 +900,10 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     public var fullName: String { get { profile.fullName } }
     public var image: String? { get { profile.image } }
     public var localAlias: String { profile.localAlias }
+    public var verified: Bool { activeConn.connectionCode != nil }
 
-    public var isIndirectContact: Bool {
-        activeConn.connLevel > 0 || viaGroup != nil
-    }
-
-    public var viaGroupLink: Bool {
-        activeConn.viaGroupLink
+    public var directOrUsed: Bool {
+        (activeConn.connLevel == 0 && !activeConn.viaGroupLink) || contactUsed
     }
 
     public var contactConnIncognito: Bool {
@@ -767,6 +915,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
         localDisplayName: "alice",
         profile: LocalProfile.sampleData,
         activeConn: Connection.sampleData,
+        contactUsed: true,
         chatSettings: ChatSettings.defaults,
         userPreferences: Preferences.sampleData,
         mergedPreferences: ContactUserPreferences.sampleData,
@@ -793,6 +942,7 @@ public struct Connection: Decodable {
     public var connLevel: Int
     public var viaGroupLink: Bool
     public var customUserProfileId: Int64?
+    public var connectionCode: SecurityCode?
 
     public var id: ChatId { get { ":\(connId)" } }
 
@@ -802,6 +952,16 @@ public struct Connection: Decodable {
         connLevel: 0,
         viaGroupLink: false
     )
+}
+
+public struct SecurityCode: Decodable, Equatable {
+    public init(securityCode: String, verifiedAt: Date) {
+        self.securityCode = securityCode
+        self.verifiedAt = verifiedAt
+    }
+
+    public var securityCode: String
+    public var verifiedAt: Date
 }
 
 public struct UserContact: Decodable {
@@ -1059,6 +1219,7 @@ public struct GroupMember: Identifiable, Decodable {
     }
     public var fullName: String { get { memberProfile.fullName } }
     public var image: String? { get { memberProfile.image } }
+    public var verified: Bool { activeConn?.connectionCode != nil }
 
     var directChatId: ChatId? {
         get {
@@ -1315,7 +1476,7 @@ public struct ChatItem: Identifiable, Decodable {
         }
     }
 
-    public func isRcvNew() -> Bool {
+    public var isRcvNew: Bool {
         if case .rcvNew = meta.itemStatus { return true }
         return false
     }
@@ -1364,6 +1525,7 @@ public struct ChatItem: Identifiable, Decodable {
         case .rcvGroupFeature: return false
         case .sndGroupFeature: return showNtfDir
         case .rcvChatFeatureRejected: return showNtfDir
+        case .rcvGroupFeatureRejected: return showNtfDir
         }
     }
 
@@ -1392,7 +1554,7 @@ public struct ChatItem: Identifiable, Decodable {
             content: .sndMsgContent(msgContent: .text(text)),
             quotedItem: quotedItem,
             file: file
-       )
+        )
     }
 
     public static func getVoiceMsgContentSample (id: Int64 = 1, text: String = "", fileName: String = "voice.m4a", fileSize: Int64 = 65536, fileStatus: CIFileStatus = .rcvComplete) -> ChatItem {
@@ -1402,7 +1564,7 @@ public struct ChatItem: Identifiable, Decodable {
             content: .rcvMsgContent(msgContent: .voice(text: text, duration: 30)),
             quotedItem: nil,
             file: CIFile.getSample(fileName: fileName, fileSize: fileSize, fileStatus: fileStatus)
-       )
+        )
     }
 
     public static func getFileMsgContentSample (id: Int64 = 1, text: String = "", fileName: String = "test.txt", fileSize: Int64 = 100, fileStatus: CIFileStatus = .rcvComplete) -> ChatItem {
@@ -1412,7 +1574,7 @@ public struct ChatItem: Identifiable, Decodable {
             content: .rcvMsgContent(msgContent: .file(text)),
             quotedItem: nil,
             file: CIFile.getSample(fileName: fileName, fileSize: fileSize, fileStatus: fileStatus)
-       )
+        )
     }
 
     public static func getDeletedContentSample (_ id: Int64 = 1, dir: CIDirection = .directRcv, _ ts: Date = .now, _ text: String = "this item is deleted", _ status: CIStatus = .rcvRead) -> ChatItem {
@@ -1422,7 +1584,7 @@ public struct ChatItem: Identifiable, Decodable {
             content: .rcvDeleted(deleteMode: .cidmBroadcast),
             quotedItem: nil,
             file: nil
-       )
+        )
     }
 
     public static func getIntegrityErrorSample (_ status: CIStatus = .rcvRead, fromMsgId: Int64 = 1, toMsgId: Int64 = 2) -> ChatItem {
@@ -1432,7 +1594,7 @@ public struct ChatItem: Identifiable, Decodable {
             content: .rcvIntegrityError(msgError: .msgSkipped(fromMsgId: fromMsgId, toMsgId: toMsgId)),
             quotedItem: nil,
             file: nil
-       )
+        )
     }
 
     public static func getGroupInvitationSample (_ status: CIGroupInvitationStatus = .pending) -> ChatItem {
@@ -1442,7 +1604,7 @@ public struct ChatItem: Identifiable, Decodable {
             content: .rcvGroupInvitation(groupInvitation: CIGroupInvitation.getSample(status: status), memberRole: .admin),
             quotedItem: nil,
             file: nil
-       )
+        )
     }
 
     public static func getGroupEventSample () -> ChatItem {
@@ -1452,10 +1614,10 @@ public struct ChatItem: Identifiable, Decodable {
             content: .rcvGroupEvent(rcvGroupEvent: .memberAdded(groupMemberId: 1, profile: Profile.sampleData)),
             quotedItem: nil,
             file: nil
-       )
+        )
     }
 
-    public static func getChatFeatureSample(_ feature: Feature, _ enabled: FeatureEnabled) -> ChatItem {
+    public static func getChatFeatureSample(_ feature: ChatFeature, _ enabled: FeatureEnabled) -> ChatItem {
         let content = CIContent.rcvChatFeature(feature: feature, enabled: enabled)
         return ChatItem(
             chatDir: .directRcv,
@@ -1463,7 +1625,27 @@ public struct ChatItem: Identifiable, Decodable {
             content: content,
             quotedItem: nil,
             file: nil
-       )
+        )
+    }
+
+    public static func deletedItemDummy() -> ChatItem {
+        ChatItem(
+            chatDir: CIDirection.directRcv,
+            meta: CIMeta(
+                itemId: -1,
+                itemTs: .now,
+                itemText: NSLocalizedString("deleted", comment: "deleted chat item"),
+                itemStatus: .rcvRead,
+                createdAt: .now,
+                updatedAt: .now,
+                itemDeleted: false,
+                itemEdited: false,
+                editable: false
+            ),
+            content: .rcvDeleted(deleteMode: .cidmBroadcast),
+            quotedItem: nil,
+            file: nil
+        )
     }
 }
 
@@ -1527,7 +1709,7 @@ public enum CIStatus: Decodable {
     case sndNew
     case sndSent
     case sndErrorAuth
-    case sndError(agentError: AgentErrorType)
+    case sndError(agentError: String)
     case rcvNew
     case rcvRead
 
@@ -1566,11 +1748,12 @@ public enum CIContent: Decodable, ItemContent {
     case sndGroupEvent(sndGroupEvent: SndGroupEvent)
     case rcvConnEvent(rcvConnEvent: RcvConnEvent)
     case sndConnEvent(sndConnEvent: SndConnEvent)
-    case rcvChatFeature(feature: Feature, enabled: FeatureEnabled)
-    case sndChatFeature(feature: Feature, enabled: FeatureEnabled)
-    case rcvGroupFeature(feature: Feature, preference: GroupPreference)
-    case sndGroupFeature(feature: Feature, preference: GroupPreference)
-    case rcvChatFeatureRejected(feature: Feature)
+    case rcvChatFeature(feature: ChatFeature, enabled: FeatureEnabled)
+    case sndChatFeature(feature: ChatFeature, enabled: FeatureEnabled)
+    case rcvGroupFeature(groupFeature: GroupFeature, preference: GroupPreference)
+    case sndGroupFeature(groupFeature: GroupFeature, preference: GroupPreference)
+    case rcvChatFeatureRejected(feature: ChatFeature)
+    case rcvGroupFeatureRejected(groupFeature: GroupFeature)
 
     public var text: String {
         get {
@@ -1593,6 +1776,7 @@ public enum CIContent: Decodable, ItemContent {
             case let .rcvGroupFeature(feature, preference): return "\(feature.text): \(preference.enable.text)"
             case let .sndGroupFeature(feature, preference): return "\(feature.text): \(preference.enable.text)"
             case let .rcvChatFeatureRejected(feature): return String.localizedStringWithFormat("%@: received, prohibited", feature.text)
+            case let .rcvGroupFeatureRejected(groupFeature): return String.localizedStringWithFormat("%@: received, prohibited", groupFeature.text)
             }
         }
     }
@@ -1704,9 +1888,23 @@ public enum MsgContent {
         }
     }
 
+    public var isText: Bool {
+        switch self {
+        case .text: return true
+        default: return false
+        }
+    }
+
     public var isVoice: Bool {
         switch self {
         case .voice: return true
+        default: return false
+        }
+    }
+
+    public var isImage: Bool {
+        switch self {
+        case .image: return true
         default: return false
         }
     }

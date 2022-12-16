@@ -13,8 +13,10 @@ struct GroupMemberInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
     var groupInfo: GroupInfo
-    @Binding var member: GroupMember?
-    @Binding var connectionStats: ConnectionStats?
+    @State var member: GroupMember
+    var navigation: Bool = false
+    @State private var connectionStats: ConnectionStats? = nil
+    @State private var connectionCode: String? = nil
     @State private var newRole: GroupMemberRole = .member
     @State private var alert: GroupMemberInfoViewAlert?
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
@@ -36,68 +38,94 @@ struct GroupMemberInfoView: View {
     }
 
     var body: some View {
-        NavigationView {
-            if let member = member {
-                List {
-                    groupMemberInfoHeader(member)
-                        .listRowBackground(Color.clear)
+        if navigation {
+            NavigationView { groupMemberInfoView() }
+        } else {
+            groupMemberInfoView()
+        }
+    }
 
-                    if let contactId = member.memberContactId {
-                        Section {
-                            openDirectChatButton(contactId)
-                        }
-                    }
+    private func groupMemberInfoView() -> some View {
+        VStack {
+            List {
+                groupMemberInfoHeader(member)
+                    .listRowBackground(Color.clear)
 
-                    Section("Member") {
-                        infoRow("Group", groupInfo.displayName)
-
-                        if let roles = member.canChangeRoleTo(groupInfo: groupInfo) {
-                            Picker("Change role", selection: $newRole) {
-                                ForEach(roles) { role in
-                                    Text(role.text)
-                                }
+                if member.memberActive {
+                    Section {
+                        if let contactId = member.memberContactId {
+                            if let chat = chatModel.getContactChat(contactId),
+                               chat.chatInfo.contact?.directOrUsed ?? false {
+                                knownDirectChatButton(chat)
+                            } else if groupInfo.fullGroupPreferences.directMessages.on {
+                                newDirectChatButton(contactId)
                             }
-                        } else {
-                            infoRow("Role", member.memberRole.text)
                         }
+                        if let code = connectionCode { verifyCodeButton(code) }
+                    }
+                }
 
-                        // TODO invited by - need to get contact by contact id
-                        if let conn = member.activeConn {
-                            let connLevelDesc = conn.connLevel == 0 ? NSLocalizedString("direct", comment: "connection level description") : String.localizedStringWithFormat(NSLocalizedString("indirect (%d)", comment: "connection level description"), conn.connLevel)
-                            infoRow("Connection", connLevelDesc)
+                Section("Member") {
+                    infoRow("Group", groupInfo.displayName)
+
+                    if let roles = member.canChangeRoleTo(groupInfo: groupInfo) {
+                        Picker("Change role", selection: $newRole) {
+                            ForEach(roles) { role in
+                                Text(role.text)
+                            }
                         }
+                        .frame(height: 36)
+                    } else {
+                        infoRow("Role", member.memberRole.text)
                     }
 
+                    // TODO invited by - need to get contact by contact id
+                    if let conn = member.activeConn {
+                        let connLevelDesc = conn.connLevel == 0 ? NSLocalizedString("direct", comment: "connection level description") : String.localizedStringWithFormat(NSLocalizedString("indirect (%d)", comment: "connection level description"), conn.connLevel)
+                        infoRow("Connection", connLevelDesc)
+                    }
+                }
+
+                if let connStats = connectionStats {
                     Section("Servers") {
                         // TODO network connection status
                         Button("Change receiving address") {
                             alert = .switchAddressAlert
                         }
-                        if let connStats = connectionStats {
-                            smpServers("Receiving via", connStats.rcvServers)
-                            smpServers("Sending via", connStats.sndServers)
-                        }
-                    }
-
-                    if member.canBeRemoved(groupInfo: groupInfo) {
-                        Section {
-                            removeMemberButton(member)
-                        }
-                    }
-
-                    if developerTools {
-                        Section("For console") {
-                            infoRow("Local name", member.localDisplayName)
-                            infoRow("Database ID", "\(member.groupMemberId)")
-                        }
+                        smpServers("Receiving via", connStats.rcvServers)
+                        smpServers("Sending via", connStats.sndServers)
                     }
                 }
-                .navigationBarHidden(true)
-                .onAppear { newRole = member.memberRole }
-                .onChange(of: newRole) { _ in
-                    if newRole != member.memberRole {
-                        alert = .changeMemberRoleAlert(mem: member, role: newRole)
+
+                if member.canBeRemoved(groupInfo: groupInfo) {
+                    Section {
+                        removeMemberButton(member)
                     }
+                }
+
+                if developerTools {
+                    Section("For console") {
+                        infoRow("Local name", member.localDisplayName)
+                        infoRow("Database ID", "\(member.groupMemberId)")
+                    }
+                }
+            }
+            .navigationBarHidden(true)
+            .onAppear {
+                newRole = member.memberRole
+                do {
+                    let stats = try apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
+                    let (mem, code) = member.memberActive ? try apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId) : (member, nil)
+                    member = mem
+                    connectionStats = stats
+                    connectionCode = code
+                } catch let error {
+                    logger.error("apiGroupMemberInfo or apiGetGroupMemberCode error: \(responseError(error))")
+                }
+            }
+            .onChange(of: newRole) { _ in
+                if newRole != member.memberRole {
+                    alert = .changeMemberRoleAlert(mem: member, role: newRole)
                 }
             }
         }
@@ -112,26 +140,30 @@ struct GroupMemberInfoView: View {
         }
     }
 
-    func openDirectChatButton(_ contactId: Int64) -> some View {
+    func knownDirectChatButton(_ chat: Chat) -> some View {
         Button {
-            var chat = chatModel.getContactChat(contactId)
-            if chat == nil {
-                do {
-                    chat = try apiGetChat(type: .direct, id: contactId)
-                    if let chat = chat {
-                        // TODO it's not correct to blindly set network status to connected - we should manage network status in model / backend
-                        chat.serverInfo = Chat.ServerInfo(networkStatus: .connected)
-                        chatModel.addChat(chat)
-                    }
-                } catch let error {
-                    logger.error("openDirectChatButton apiGetChat error: \(responseError(error))")
-                }
+            dismissAllSheets(animated: true)
+            DispatchQueue.main.async {
+                chatModel.chatId = chat.id
             }
-            if let chat = chat {
+        } label: {
+            Label("Send direct message", systemImage: "message")
+        }
+    }
+
+    func newDirectChatButton(_ contactId: Int64) -> some View {
+        Button {
+            do {
+                let chat = try apiGetChat(type: .direct, id: contactId)
+                // TODO it's not correct to blindly set network status to connected - we should manage network status in model / backend
+                chat.serverInfo = Chat.ServerInfo(networkStatus: .connected)
+                chatModel.addChat(chat)
                 dismissAllSheets(animated: true)
                 DispatchQueue.main.async {
                     chatModel.chatId = chat.id
                 }
+            } catch let error {
+                logger.error("openDirectChatButton apiGetChat error: \(responseError(error))")
             }
         } label: {
             Label("Send direct message", systemImage: "message")
@@ -144,10 +176,15 @@ struct GroupMemberInfoView: View {
                 .frame(width: 192, height: 192)
                 .padding(.top, 12)
                 .padding()
-            Text(mem.displayName)
-                .font(.largeTitle)
-                .lineLimit(1)
-                .padding(.bottom, 2)
+            HStack {
+                if mem.verified {
+                    Image(systemName: "checkmark.shield")
+                }
+                Text(mem.displayName)
+                    .font(.largeTitle)
+                    .lineLimit(1)
+            }
+            .padding(.bottom, 2)
             if mem.fullName != "" && mem.fullName != mem.displayName {
                 Text(mem.fullName)
                     .font(.title2)
@@ -157,7 +194,38 @@ struct GroupMemberInfoView: View {
         .frame(maxWidth: .infinity, alignment: .center)
     }
 
-    func removeMemberButton(_ mem: GroupMember) -> some View {
+    private func verifyCodeButton(_ code: String) -> some View {
+        NavigationLink {
+            VerifyCodeView(
+                displayName: member.displayName,
+                connectionCode: code,
+                connectionVerified: member.verified,
+                verify: { code in
+                    if let r = apiVerifyGroupMember(member.groupId, member.groupMemberId, connectionCode: code) {
+                        let (verified, existingCode) = r
+                        let connCode = verified ? SecurityCode(securityCode: existingCode, verifiedAt: .now) : nil
+                        connectionCode = existingCode
+                        member.activeConn?.connectionCode = connCode
+                        if let i = chatModel.groupMembers.firstIndex(where: { $0.groupMemberId == member.groupMemberId }) {
+                            chatModel.groupMembers[i].activeConn?.connectionCode = connCode
+                        }
+                        return r
+                    }
+                    return nil
+                }
+            )
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Security code")
+        } label: {
+            Label(
+                member.verified ? "View security code" : "Verify security code",
+                systemImage: member.verified ? "checkmark.shield" : "shield"
+            )
+        }
+
+    }
+
+    private func removeMemberButton(_ mem: GroupMember) -> some View {
         Button(role: .destructive) {
             alert = .removeMemberAlert(mem: mem)
         } label: {
@@ -219,9 +287,7 @@ struct GroupMemberInfoView: View {
     private func switchMemberAddress() {
         Task {
             do {
-                if let member = member {
-                    try await apiSwitchGroupMember(groupInfo.apiId, member.groupMemberId)
-                }
+                try await apiSwitchGroupMember(groupInfo.apiId, member.groupMemberId)
             } catch let error {
                 logger.error("switchMemberAddress apiSwitchGroupMember error: \(responseError(error))")
                 let a = getErrorAlert(error, "Error changing address")
@@ -237,8 +303,7 @@ struct GroupMemberInfoView_Previews: PreviewProvider {
     static var previews: some View {
         GroupMemberInfoView(
             groupInfo: GroupInfo.sampleData,
-            member: Binding.constant(GroupMember.sampleData),
-            connectionStats: Binding.constant(nil)
+            member: GroupMember.sampleData
         )
     }
 }

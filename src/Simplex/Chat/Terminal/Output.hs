@@ -8,10 +8,12 @@
 module Simplex.Chat.Terminal.Output where
 
 import Control.Monad.Catch (MonadMask)
-import Control.Monad.IO.Unlift
+import Control.Monad.Except
 import Control.Monad.Reader
 import Data.Time.Clock (getCurrentTime)
+import Simplex.Chat (processChatCommand)
 import Simplex.Chat.Controller
+import Simplex.Chat.Messages hiding (NewChatItem (..))
 import Simplex.Chat.Styled
 import Simplex.Chat.View
 import System.Console.ANSI.Types
@@ -74,13 +76,25 @@ withTermLock ChatTerminal {termLock} action = do
   atomically $ putTMVar termLock ()
 
 runTerminalOutput :: ChatTerminal -> ChatController -> IO ()
-runTerminalOutput ct cc = do
-  let testV = testView $ config cc
+runTerminalOutput ct cc@ChatController {currentUser, outputQ, config = ChatConfig {testView}} = do
   forever $ do
-    (_, r) <- atomically . readTBQueue $ outputQ cc
-    user <- readTVarIO $ currentUser cc
+    (_, r) <- atomically $ readTBQueue outputQ
+    case r of
+      CRNewChatItem ci -> markChatItemRead ci
+      CRChatItemUpdated ci -> markChatItemRead ci
+      _ -> pure ()
+    user <- readTVarIO currentUser
     ts <- getCurrentTime
-    printToTerminal ct $ responseToView user testV ts r
+    printToTerminal ct $ responseToView user testView ts r
+  where
+    markChatItemRead :: AChatItem -> IO ()
+    markChatItemRead (AChatItem _ _ chat item@ChatItem {meta = CIMeta {itemStatus}}) =
+      case (muted chat item, itemStatus) of
+        (False, CISRcvNew) -> do
+          let itemId = chatItemId' item
+              chatRef = chatInfoToRef chat
+          void $ runReaderT (runExceptT $ processChatCommand (APIChatRead chatRef (Just (itemId, itemId)))) cc
+        _ -> pure ()
 
 printToTerminal :: ChatTerminal -> [StyledString] -> IO ()
 printToTerminal ct s =

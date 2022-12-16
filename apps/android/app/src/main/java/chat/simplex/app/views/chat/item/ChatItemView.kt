@@ -26,6 +26,8 @@ import chat.simplex.app.views.chat.ComposeState
 import chat.simplex.app.views.helpers.*
 import kotlinx.datetime.Clock
 
+// TODO refactor so that FramedItemView can show all CIContent items if they're deleted (see Swift code)
+
 @Composable
 fun ChatItemView(
   cInfo: ChatInfo,
@@ -46,7 +48,11 @@ fun ChatItemView(
   val sent = cItem.chatDir.sent
   val alignment = if (sent) Alignment.CenterEnd else Alignment.CenterStart
   val showMenu = remember { mutableStateOf(false) }
+  val revealed = remember { mutableStateOf(false) }
+  val fullDeleteAllowed = remember(cInfo) { cInfo.fullDeletionAllowed }
   val saveFileLauncher = rememberSaveFileLauncher(cxt = context, ciFile = cItem.file)
+  val onLinkLongClick = { _: String -> showMenu.value = true }
+
   Box(
     modifier = Modifier
       .padding(bottom = 4.dp)
@@ -59,7 +65,7 @@ fun ChatItemView(
           showMsgDeliveryErrorAlert(generalGetString(R.string.message_delivery_error_desc))
         }
         is CIStatus.SndError -> {
-          showMsgDeliveryErrorAlert(generalGetString(R.string.unknown_error) + ": ${cItem.meta.itemStatus.agentError.string}")
+          showMsgDeliveryErrorAlert(generalGetString(R.string.unknown_error) + ": ${cItem.meta.itemStatus.agentError}")
         }
         else -> {}
       }
@@ -69,26 +75,36 @@ fun ChatItemView(
         .clip(RoundedCornerShape(18.dp))
         .combinedClickable(onLongClick = { showMenu.value = true }, onClick = onClick),
     ) {
-      @Composable fun ContentItem() {
-        if (cItem.file == null && cItem.quotedItem == null && isShortEmoji(cItem.content.text)) {
-          EmojiItemView(cItem)
+      @Composable
+      fun framedItemView() {
+        FramedItemView(cInfo, cItem, uriHandler, imageProvider, showMember = showMember, linkMode = linkMode, showMenu, receiveFile, onLinkLongClick, scrollToItem)
+      }
+
+      fun deleteMessageQuestionText(): String {
+        return if (fullDeleteAllowed) {
+          generalGetString(R.string.delete_message_cannot_be_undone_warning)
         } else {
-          val onLinkLongClick = { _: String -> showMenu.value = true }
-          FramedItemView(cInfo, cItem, uriHandler, imageProvider, showMember = showMember, linkMode = linkMode, showMenu, receiveFile, onLinkLongClick, scrollToItem)
+          generalGetString(R.string.delete_message_mark_deleted_warning)
         }
+      }
+
+      @Composable
+      fun MsgContentItemDropdownMenu() {
         DropdownMenu(
           expanded = showMenu.value,
           onDismissRequest = { showMenu.value = false },
           Modifier.width(220.dp)
         ) {
-          ItemAction(stringResource(R.string.reply_verb), Icons.Outlined.Reply, onClick = {
-            if (composeState.value.editing) {
-              composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
-            } else {
-              composeState.value = composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
-            }
-            showMenu.value = false
-          })
+          if (!cItem.meta.itemDeleted) {
+            ItemAction(stringResource(R.string.reply_verb), Icons.Outlined.Reply, onClick = {
+              if (composeState.value.editing) {
+                composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
+              } else {
+                composeState.value = composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
+              }
+              showMenu.value = false
+            })
+          }
           ItemAction(stringResource(R.string.share_verb), Icons.Outlined.Share, onClick = {
             val filePath = getLoadedFilePath(SimplexApp.context, cItem.file)
             when {
@@ -121,15 +137,59 @@ fun ChatItemView(
               showMenu.value = false
             })
           }
+          if (cItem.meta.itemDeleted && revealed.value) {
+            ItemAction(
+              stringResource(R.string.hide_verb),
+              Icons.Outlined.VisibilityOff,
+              onClick = {
+                revealed.value = false
+                showMenu.value = false
+              }
+            )
+          }
+          DeleteItemAction(cItem, showMenu, questionText = deleteMessageQuestionText(), deleteMessage)
+        }
+      }
+
+      @Composable
+      fun MarkedDeletedItemDropdownMenu() {
+        DropdownMenu(
+          expanded = showMenu.value,
+          onDismissRequest = { showMenu.value = false },
+          Modifier.width(220.dp)
+        ) {
           ItemAction(
-            stringResource(R.string.delete_verb),
-            Icons.Outlined.Delete,
+            stringResource(R.string.reveal_verb),
+            Icons.Outlined.Visibility,
             onClick = {
+              revealed.value = true
               showMenu.value = false
-              deleteMessageAlertDialog(cItem, deleteMessage = deleteMessage)
-            },
-            color = Color.Red
+            }
           )
+          DeleteItemAction(cItem, showMenu, questionText = deleteMessageQuestionText(), deleteMessage)
+        }
+      }
+
+      @Composable
+      fun ContentItem() {
+        val mc = cItem.content.msgContent
+        if (cItem.meta.itemDeleted && !revealed.value) {
+          MarkedDeletedItemView(cItem, showMember = showMember)
+          MarkedDeletedItemDropdownMenu()
+        } else if (cItem.quotedItem == null && !cItem.meta.itemDeleted) {
+          if (mc is MsgContent.MCText && isShortEmoji(cItem.content.text)) {
+            EmojiItemView(cItem)
+            MsgContentItemDropdownMenu()
+          } else if (mc is MsgContent.MCVoice && cItem.content.text.isEmpty()) {
+            CIVoiceView(mc.duration, cItem.file, cItem.meta.itemEdited, cItem.chatDir.sent, hasText = false, cItem, longClick = { onLinkLongClick("") })
+            MsgContentItemDropdownMenu()
+          } else {
+            framedItemView()
+            MsgContentItemDropdownMenu()
+          }
+        } else {
+          framedItemView()
+          MsgContentItemDropdownMenu()
         }
       }
 
@@ -140,15 +200,7 @@ fun ChatItemView(
           onDismissRequest = { showMenu.value = false },
           Modifier.width(220.dp)
         ) {
-          ItemAction(
-            stringResource(R.string.delete_verb),
-            Icons.Outlined.Delete,
-            onClick = {
-              showMenu.value = false
-              deleteMessageAlertDialog(cItem, deleteMessage = deleteMessage)
-            },
-            color = Color.Red
-          )
+          DeleteItemAction(cItem, showMenu, questionText = deleteMessageQuestionText(), deleteMessage)
         }
       }
 
@@ -172,12 +224,31 @@ fun ChatItemView(
         is CIContent.SndConnEventContent -> CIEventView(cItem)
         is CIContent.RcvChatFeature -> CIChatFeatureView(cItem, c.feature, c.enabled.iconColor)
         is CIContent.SndChatFeature -> CIChatFeatureView(cItem, c.feature, c.enabled.iconColor)
-        is CIContent.RcvGroupFeature -> CIChatFeatureView(cItem, c.feature, c.preference.enable.iconColor)
-        is CIContent.SndGroupFeature -> CIChatFeatureView(cItem, c.feature, c.preference.enable.iconColor)
+        is CIContent.RcvGroupFeature -> CIChatFeatureView(cItem, c.groupFeature, c.preference.enable.iconColor)
+        is CIContent.SndGroupFeature -> CIChatFeatureView(cItem, c.groupFeature, c.preference.enable.iconColor)
         is CIContent.RcvChatFeatureRejected -> CIChatFeatureView(cItem, c.feature, Color.Red)
+        is CIContent.RcvGroupFeatureRejected -> CIChatFeatureView(cItem, c.groupFeature, Color.Red)
       }
     }
   }
+}
+
+@Composable
+fun DeleteItemAction(
+  cItem: ChatItem,
+  showMenu: MutableState<Boolean>,
+  questionText: String,
+  deleteMessage: (Long, CIDeleteMode) -> Unit
+) {
+  ItemAction(
+    stringResource(R.string.delete_verb),
+    Icons.Outlined.Delete,
+    onClick = {
+      showMenu.value = false
+      deleteMessageAlertDialog(cItem, questionText, deleteMessage = deleteMessage)
+    },
+    color = Color.Red
+  )
 }
 
 @Composable
@@ -197,10 +268,10 @@ fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Colo
   }
 }
 
-fun deleteMessageAlertDialog(chatItem: ChatItem, deleteMessage: (Long, CIDeleteMode) -> Unit) {
+fun deleteMessageAlertDialog(chatItem: ChatItem, questionText: String, deleteMessage: (Long, CIDeleteMode) -> Unit) {
   AlertManager.shared.showAlertDialogButtons(
     title = generalGetString(R.string.delete_message__question),
-    text = generalGetString(R.string.delete_message_cannot_be_undone_warning),
+    text = questionText,
     buttons = {
       Row(
         Modifier

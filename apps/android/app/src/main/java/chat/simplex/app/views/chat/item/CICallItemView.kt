@@ -16,7 +16,6 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
-import chat.simplex.app.views.helpers.durationToString
 
 @Composable
 fun CICallItemView(cInfo: ChatInfo, cItem: ChatItem, status: CICallStatus, duration: Int, acceptCall: (Contact) -> Unit) {
@@ -39,7 +38,7 @@ fun CICallItemView(cInfo: ChatInfo, cItem: ChatItem, status: CICallStatus, durat
       CICallStatus.Progress -> Icon(Icons.Filled.PhoneInTalk, stringResource(R.string.icon_descr_call_progress), tint = SimplexGreen)
       CICallStatus.Ended -> Row {
         Icon(Icons.Outlined.CallEnd, stringResource(R.string.icon_descr_call_ended), tint = HighOrLowlight, modifier = Modifier.padding(end = 4.dp))
-        Text(durationToString(duration), color = HighOrLowlight)
+        Text(durationText(duration), color = HighOrLowlight)
       }
       CICallStatus.Error -> {}
     }

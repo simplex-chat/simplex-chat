@@ -22,12 +22,12 @@ output_dir="$root_dir/apps/android/app/src/main/cpp/libs/$output_arch/"
 
 mkdir -p "$output_dir" 2> /dev/null
 
-curl --location -o libsupport.zip $job_repo/simplex-chat-nix-android/$arch-android:lib:support.x86_64-linux/latest/download/1 && \
+curl --location -o libsupport.zip $job_repo/simplex-chat/$arch-android:lib:support.x86_64-linux/latest/download/1 && \
 unzip -o libsupport.zip && \
 mv libsupport.so "$output_dir" && \
 rm libsupport.zip
 
-curl --location -o libsimplex.zip $job_repo/simplex-chat-nix-android/$arch-android:lib:simplex-chat.x86_64-linux/latest/download/1 && \
+curl --location -o libsimplex.zip $job_repo/simplex-chat/$arch-android:lib:simplex-chat.x86_64-linux/latest/download/1 && \
 unzip -o libsimplex.zip && \
 mv libsimplex.so "$output_dir" && \
 rm libsimplex.zip

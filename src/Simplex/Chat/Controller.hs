@@ -10,6 +10,7 @@
 
 module Simplex.Chat.Controller where
 
+import Control.Concurrent (ThreadId)
 import Control.Concurrent.Async (Async)
 import Control.Exception
 import Control.Monad.Except
@@ -53,6 +54,7 @@ import Simplex.Messaging.Protocol (AProtocolType, CorrId, MsgFlags)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport.Client (TransportHost)
 import System.IO (Handle)
+import System.Mem.Weak (Weak)
 import UnliftIO.STM
 
 versionNumber :: String
@@ -121,7 +123,9 @@ data ChatController = ChatController
     filesFolder :: TVar (Maybe FilePath), -- path to files folder for mobile apps,
     incognitoMode :: TVar Bool,
     expireCIsAsync :: TVar (Maybe (Async ())),
-    expireCIs :: TVar Bool
+    expireCIs :: TVar Bool,
+    cleanupManagerAsync :: TVar (Maybe (Async ())),
+    timedItemThreads :: TMap (ChatRef, ChatItemId) (TVar (Maybe (Weak ThreadId)))
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown | HSMessages | HSSettings
@@ -150,8 +154,8 @@ data ChatCommand
   | APIGetChats {pendingConnections :: Bool}
   | APIGetChat ChatRef ChatPagination (Maybe String)
   | APIGetChatItems Int
-  | APISendMessage ChatRef ComposedMessage
-  | APIUpdateChatItem ChatRef ChatItemId MsgContent
+  | APISendMessage {chatRef :: ChatRef, liveMessage :: Bool, composedMessage :: ComposedMessage}
+  | APIUpdateChatItem {chatRef :: ChatRef, chatItemId :: ChatItemId, liveMessage :: Bool, msgContent :: MsgContent}
   | APIDeleteChatItem ChatRef ChatItemId CIDeleteMode
   | APIChatRead ChatRef (Maybe (ChatItemId, ChatItemId))
   | APIChatUnread ChatRef Bool
@@ -200,11 +204,19 @@ data ChatCommand
   | APIGroupMemberInfo GroupId GroupMemberId
   | APISwitchContact ContactId
   | APISwitchGroupMember GroupId GroupMemberId
+  | APIGetContactCode ContactId
+  | APIGetGroupMemberCode GroupId GroupMemberId
+  | APIVerifyContact ContactId (Maybe Text)
+  | APIVerifyGroupMember GroupId GroupMemberId (Maybe Text)
   | ShowMessages ChatName Bool
   | ContactInfo ContactName
   | GroupMemberInfo GroupName ContactName
   | SwitchContact ContactName
   | SwitchGroupMember GroupName ContactName
+  | GetContactCode ContactName
+  | GetGroupMemberCode GroupName ContactName
+  | VerifyContact ContactName (Maybe Text)
+  | VerifyGroupMember GroupName ContactName (Maybe Text)
   | ChatHelp HelpSection
   | Welcome
   | AddContact
@@ -234,7 +246,9 @@ data ChatCommand
   | ClearGroup GroupName
   | ListMembers GroupName
   | ListGroups
-  | UpdateGroupProfile GroupName GroupProfile
+  | UpdateGroupNames GroupName GroupProfile
+  | ShowGroupProfile GroupName
+  | UpdateGroupDescription GroupName (Maybe Text)
   | CreateGroupLink GroupName
   | DeleteGroupLink GroupName
   | ShowGroupLink GroupName
@@ -250,9 +264,9 @@ data ChatCommand
   | ShowProfile
   | UpdateProfile ContactName Text
   | UpdateProfileImage (Maybe ImageData)
-  | SetUserFeature ChatFeature FeatureAllowed
-  | SetContactFeature ChatFeature ContactName (Maybe FeatureAllowed)
-  | SetGroupFeature ChatFeature GroupName GroupFeatureEnabled
+  | SetUserFeature AChatFeature FeatureAllowed
+  | SetContactFeature AChatFeature ContactName (Maybe FeatureAllowed)
+  | SetGroupFeature AGroupFeature GroupName GroupFeatureEnabled
   | QuitChat
   | ShowVersion
   | DebugLocks
@@ -276,10 +290,13 @@ data ChatResponse
   | CRGroupMemberInfo {groupInfo :: GroupInfo, member :: GroupMember, connectionStats_ :: Maybe ConnectionStats}
   | CRContactSwitch {contact :: Contact, switchProgress :: SwitchProgress}
   | CRGroupMemberSwitch {groupInfo :: GroupInfo, member :: GroupMember, switchProgress :: SwitchProgress}
+  | CRContactCode {contact :: Contact, connectionCode :: Text}
+  | CRGroupMemberCode {groupInfo :: GroupInfo, member :: GroupMember, connectionCode :: Text}
+  | CRConnectionVerified {verified :: Bool, expectedCode :: Text}
   | CRNewChatItem {chatItem :: AChatItem}
   | CRChatItemStatusUpdated {chatItem :: AChatItem}
   | CRChatItemUpdated {chatItem :: AChatItem}
-  | CRChatItemDeleted {deletedChatItem :: AChatItem, toChatItem :: AChatItem}
+  | CRChatItemDeleted {deletedChatItem :: AChatItem, toChatItem :: Maybe AChatItem, byUser :: Bool, timed :: Bool}
   | CRChatItemDeletedNotFound {contact :: Contact, sharedMsgId :: SharedMsgId}
   | CRBroadcastSent MsgContent Int ZonedTime
   | CRMsgIntegrityError {msgError :: MsgErrorType}
@@ -357,6 +374,7 @@ data ChatResponse
   | CRGroupRemoved {groupInfo :: GroupInfo}
   | CRGroupDeleted {groupInfo :: GroupInfo, member :: GroupMember}
   | CRGroupUpdated {fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember}
+  | CRGroupProfile {groupInfo :: GroupInfo}
   | CRGroupLinkCreated {groupInfo :: GroupInfo, connReqContact :: ConnReqContact}
   | CRGroupLink {groupInfo :: GroupInfo, connReqContact :: ConnReqContact}
   | CRGroupLinkDeleted {groupInfo :: GroupInfo}
@@ -547,10 +565,12 @@ data ChatErrorType
   | CENoCurrentCall
   | CECallContact {contactId :: Int64}
   | CECallState {currentCallState :: CallStateTag}
+  | CEDirectMessagesProhibited {direction :: MsgDirection, contact :: Contact}
   | CEAgentVersion
   | CEAgentNoSubResult {agentConnId :: AgentConnId}
   | CECommandError {message :: String}
   | CEAgentCommandError {message :: String}
+  | CEInternalError {message :: String}
   deriving (Show, Exception, Generic)
 
 instance ToJSON ChatErrorType where

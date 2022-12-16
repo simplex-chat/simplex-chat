@@ -34,6 +34,7 @@ struct ComposeVoiceView: View {
     let cancelVoiceMessage: ((String) -> Void)
     let cancelEnabled: Bool
 
+    @Binding var stopPlayback: Bool // value is not taken into account, only the fact it switches
     @State private var audioPlayer: AudioPlayer?
     @State private var playbackState: VoiceMessagePlaybackState = .noPlayback
     @State private var playbackTime: TimeInterval?
@@ -54,18 +55,6 @@ struct ComposeVoiceView: View {
         .background(colorScheme == .light ? sentColorLight : sentColorDark)
         .frame(maxWidth: .infinity)
         .padding(.top, 8)
-        .onDisappear {
-            audioPlayer?.stop()
-        }
-        .onChange(of: chatModel.stopPreviousRecPlay) { _ in
-            if !startingPlayback {
-                audioPlayer?.stop()
-                playbackState = .noPlayback
-                playbackTime = TimeInterval(0)
-            } else {
-                startingPlayback = false
-            }
-        }
     }
 
     private func recordingMode() -> some View {
@@ -121,6 +110,21 @@ struct ComposeVoiceView: View {
 
             if let recordingLength = recordingTime {
                 ProgressBar(length: recordingLength, progress: $playbackTime)
+            }
+        }
+        .onChange(of: stopPlayback) { _ in
+            audioPlayer?.stop()
+        }
+        .onDisappear {
+            audioPlayer?.stop()
+        }
+        .onChange(of: chatModel.stopPreviousRecPlay) { _ in
+            if !startingPlayback {
+                audioPlayer?.stop()
+                playbackState = .noPlayback
+                playbackTime = TimeInterval(0)
+            } else {
+                startingPlayback = false
             }
         }
     }
@@ -183,7 +187,8 @@ struct ComposeVoiceView_Previews: PreviewProvider {
             recordingTime: Binding.constant(TimeInterval(20)),
             recordingState: Binding.constant(VoiceMessageRecordingState.recording),
             cancelVoiceMessage: { _ in },
-            cancelEnabled: true
+            cancelEnabled: true,
+            stopPlayback: Binding.constant(false)
         )
         .environmentObject(ChatModel())
     }

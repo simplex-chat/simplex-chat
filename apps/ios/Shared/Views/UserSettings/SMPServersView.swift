@@ -63,7 +63,7 @@ struct SMPServersView: View {
                 Button("Reset") { servers = m.userSMPServers ?? [] }
                     .disabled(servers == m.userSMPServers || testing)
                 Button("Test servers", action: testServers)
-                    .disabled(testing)
+                    .disabled(testing || allServersDisabled)
                 Button("Save servers", action: saveSMPServers)
                     .disabled(saveDisabled)
                 howToButton()
@@ -79,7 +79,7 @@ struct SMPServersView: View {
             Button("Add preset servers", action: addAllPresets)
                 .disabled(hasAllPresets())
         }
-        .appSheet(isPresented: $showScanSMPServer) {
+        .sheet(isPresented: $showScanSMPServer) {
             ScanSMPServer(servers: $servers)
         }
         .alert(item: $alert) { a in
@@ -101,12 +101,20 @@ struct SMPServersView: View {
     }
 
     private var saveDisabled: Bool {
-        servers.count == 0 || servers == m.userSMPServers || testing || !servers.allSatisfy { srv in
+        servers.isEmpty ||
+        servers == m.userSMPServers ||
+        testing ||
+        !servers.allSatisfy { srv in
             if let address = parseServerAddress(srv.server) {
                 return uniqueAddress(srv, address)
             }
             return false
-        }
+        } ||
+        allServersDisabled
+    }
+
+    private var allServersDisabled: Bool {
+        servers.allSatisfy { !$0.enabled }
     }
 
     private func smpServerView(_ server: Binding<ServerCfg>) -> some View {
@@ -214,7 +222,7 @@ struct SMPServersView: View {
         for i in 0..<servers.count {
             if servers[i].enabled {
                 if let f = await testServerConnection(server: $servers[i]) {
-                    fs[serverHostname(servers[i])] = f
+                    fs[serverHostname(servers[i].server)] = f
                 }
             }
         }

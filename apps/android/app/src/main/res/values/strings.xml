@@ -21,6 +21,7 @@
 
   <!-- Item Content - ChatModel.kt -->
   <string name="deleted_description">deleted</string>
+  <string name="marked_deleted_description">marked deleted</string>
   <string name="sending_files_not_yet_supported">sending files is not supported yet</string>
   <string name="receiving_files_not_yet_supported">receiving files is not supported yet</string>
   <string name="sender_you_pronoun">you</string>
@@ -56,11 +57,14 @@
   <string name="error_saving_smp_servers">Error saving SMP servers</string>
   <string name="ensure_smp_server_address_are_correct_format_and_unique">Make sure SMP server addresses are in correct format, line separated and are not duplicated.</string>
   <string name="error_setting_network_config">Error updating network configuration</string>
+  <string name="failed_to_parse_chat_title">Failed to load chat</string>
+  <string name="failed_to_parse_chats_title">Failed to load chats</string>
+  <string name="contact_developers">Please update the app and contact developers.</string>
 
   <!-- API Error Responses - SimpleXAPI.kt -->
   <string name="connection_timeout">Connection timeout</string>
   <string name="connection_error">Connection error</string>
-  <string name="network_error_desc">Please check your network connection and try again.</string>
+  <string name="network_error_desc">Please check your network connection with <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g> and try again.</string>
   <string name="error_sending_message">Error sending message</string>
   <string name="error_adding_members">Error adding member(s)</string>
   <string name="error_joining_group">Error joining group</string>
@@ -114,7 +118,6 @@
   <!-- Notification channels -->
   <string name="ntf_channel_messages">SimpleX Chat messages</string>
   <string name="ntf_channel_calls">SimpleX Chat calls</string>
-  <string name="ntf_channel_calls_lockscreen">SimpleX Chat calls (lock screen)</string>
 
   <!-- Notifications -->
   <string name="settings_notifications_mode_title">Notification service</string>
@@ -167,10 +170,13 @@
   <string name="save_verb">Save</string>
   <string name="edit_verb">Edit</string>
   <string name="delete_verb">Delete</string>
+  <string name="reveal_verb">Reveal</string>
+  <string name="hide_verb">Hide</string>
   <string name="allow_verb">Allow</string>
   <string name="delete_message__question">Delete message?</string>
   <string name="delete_message_cannot_be_undone_warning">Message will be deleted - this cannot be undone!</string>
-  <string name="for_me_only">For me only</string>
+  <string name="delete_message_mark_deleted_warning">Message will be marked for deletion. The recipient(s) will be able to reveal this message.</string>
+  <string name="for_me_only">Delete for me</string>
   <string name="for_everybody">For everyone</string>
 
   <!-- CIMetaView.kt -->
@@ -230,6 +236,7 @@
 
   <!-- Voice messages -->
   <string name="voice_message">Voice message</string>
+  <string name="voice_message_with_duration">Voice message (<xliff:g id="duration">%1$s</xliff:g>)</string>
   <string name="voice_message_send_text">Voice message…</string>
 
   <!-- Chat Info Settings - ChatInfoView.kt -->
@@ -246,6 +253,8 @@
   <string name="icon_descr_server_status_pending">Pending</string>
   <string name="switch_receiving_address_question">Switch receiving address?</string>
   <string name="switch_receiving_address_desc">This feature is experimental! It will only work if the other client has version 4.2 installed. You should see the message in the conversation once the address change is completed – please check that you can still receive messages from this contact (or group member).</string>
+  <string name="view_security_code">View security code</string>
+  <string name="verify_security_code">Verify security code</string>
 
   <!-- Message Actions - SendMsgView.kt -->
   <string name="icon_descr_send_message">Send Message</string>
@@ -381,6 +390,19 @@
   <string name="one_time_link">One-time invitation link</string>
   <string name="your_contact_address">Your contact address</string>
 
+  <!-- ScanCodeView.kt -->
+  <string name="scan_code">Scan code</string>
+  <string name="incorrect_code">Incorrect security code!</string>
+  <string name="scan_code_from_contacts_app">Scan security code from your contact\'s app.</string>
+
+  <!-- VerifyCodeView.kt -->
+  <string name="security_code">Security code</string>
+  <string name="mark_code_verified">Mark verified</string>
+  <string name="clear_verification">Clear verification</string>
+  <string name="to_verify_compare">To verify end-to-end encryption with your contact compare (or scan) the code on your devices.</string>
+  <string name="is_verified">%s is verified</string>
+  <string name="is_not_verified">%s is not verified</string>
+
   <!-- settings - SettingsView.kt -->
   <string name="your_settings">Your settings</string>
   <string name="your_simplex_contact_address">Your <xliff:g id="appName">SimpleX</xliff:g> contact address</string>
@@ -471,9 +493,11 @@
   <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Your profile is stored on your device and shared only with your contacts.\n\n<xliff:g id="appName">SimpleX</xliff:g> servers cannot see your profile.</string>
   <string name="edit_image">Edit image</string>
   <string name="delete_image">Delete image</string>
-  <string name="save_and_notify_contact">Save (and notify contact)</string>
-  <string name="save_and_notify_contacts">Save (and notify contacts)</string>
-  <string name="save_and_notify_group_members">Save (and notify group members)</string>
+  <string name="save_preferences_question">Save preferences?</string>
+  <string name="save_and_notify_contact">Save and notify contact</string>
+  <string name="save_and_notify_contacts">Save and notify contacts</string>
+  <string name="save_and_notify_group_members">Save and notify group members</string>
+  <string name="exit_without_saving">Exit without saving</string>
 
   <!-- Welcome Prompts - WelcomeView.kt -->
   <string name="you_control_your_chat">You control your chat!</string>
@@ -538,6 +562,17 @@
   <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Only client devices store user profiles, contacts, groups, and messages sent with <b>2-layer end-to-end encryption</b>.</string>
   <string name="read_more_in_github">Read more in our GitHub repository.</string>
   <string name="read_more_in_github_with_link">Read more in our <font color="#0088ff">GitHub repository</font>.</string>
+
+  <!-- SetNotificationsMode.kt -->
+  <string name="use_chat">Use chat</string>
+  <string name="onboarding_notifications_mode_title">Private notifications</string>
+  <string name="onboarding_notifications_mode_subtitle">It can be changed later via settings.</string>
+  <string name="onboarding_notifications_mode_off">When app is running</string>
+  <string name="onboarding_notifications_mode_periodic">Periodic</string>
+  <string name="onboarding_notifications_mode_service">Instant</string>
+  <string name="onboarding_notifications_mode_off_desc"><b>Best for battery</b>. You will receive notifications only when the app is running, background service will NOT be used.</string>
+  <string name="onboarding_notifications_mode_periodic_desc"><b>Good for battery</b>. Background service checks for new messages every 10 minutes. You may miss calls and urgent messages.</string>
+  <string name="onboarding_notifications_mode_service_desc"><b>Uses more battery</b>! Background service is always running – notifications will be shown as soon as the messages are available.</string>
 
   <!-- MakeConnection -->
   <string name="paste_the_link_you_received">Paste received link</string>
@@ -613,6 +648,7 @@
   <string name="auto_accept_images">Auto-accept images</string>
   <string name="transfer_images_faster">Transfer images faster</string>
   <string name="send_link_previews">Send link previews</string>
+  <string name="full_backup">App data backup</string>
 
   <!-- Settings sections -->
   <string name="settings_section_title_you">YOU</string>
@@ -826,6 +862,8 @@
   <string name="new_member_role">New member role</string>
   <string name="icon_descr_expand_role">Expand role selection</string>
   <string name="invite_to_group_button">Invite to group</string>
+  <string name="skip_inviting_button">Skip inviting members</string>
+  <string name="select_contacts">Select contacts</string>
   <string name="icon_descr_contact_checked">Contact checked</string>
   <string name="clear_contacts_selection_button">Clear</string>
   <string name="num_contacts_selected"><xliff:g id="num_contacts">%1$s</xliff:g> contact(s) selected</string>
@@ -844,6 +882,7 @@
   <string name="button_leave_group">Leave group</string>
   <string name="button_edit_group_profile">Edit group profile</string>
   <string name="group_link">Group link</string>
+  <string name="create_group_link">Create group link</string>
   <string name="button_create_group_link">Create link</string>
   <string name="delete_link_question">Delete link?</string>
   <string name="delete_link">Delete link</string>
@@ -946,20 +985,30 @@
   <string name="chat_preferences">Chat preferences</string>
   <string name="contact_preferences">Contact preferences</string>
   <string name="group_preferences">Group preferences</string>
+  <string name="set_group_preferences">Set group preferences</string>
   <string name="your_preferences">Your preferences</string>
-  <string name="full_deletion">Full deletion</string>
+  <string name="timed_messages">Disappearing messages</string>
+  <string name="direct_messages">Direct messages</string>
+  <string name="full_deletion">Delete for everyone</string>
   <string name="voice_messages">Voice messages</string>
   <string name="feature_enabled">enabled</string>
   <string name="feature_enabled_for_you">enabled for you</string>
   <string name="feature_enabled_for_contact">enabled for contact</string>
   <string name="feature_off">off</string>
   <string name="feature_received_prohibited">received, prohibited</string>
+  <string name="allow_your_contacts_to_send_disappearing_messages">Allow your contacts to send disappearing messages.</string>
+  <string name="allow_disappearing_messages_only_if">Allow disappearing messages only if your contact allows them.</string>
+  <string name="prohibit_sending_disappearing_messages">Prohibit sending disappearing messages.</string>
   <string name="allow_your_contacts_irreversibly_delete">Allow your contacts to irreversibly delete sent messages.</string>
   <string name="allow_irreversible_message_deletion_only_if">Allow irreversible message deletion only if your contact allows it to you.</string>
   <string name="contacts_can_mark_messages_for_deletion">Contacts can mark messages for deletion; you will be able to view them.</string>
   <string name="allow_your_contacts_to_send_voice_messages">Allow your contacts to send voice messages.</string>
   <string name="allow_voice_messages_only_if">Allow voice messages only if your contact allows them.</string>
   <string name="prohibit_sending_voice_messages">Prohibit sending voice messages.</string>
+  <string name="both_you_and_your_contact_can_send_disappearing">Both you and your contact can send disappearing messages.</string>
+  <string name="only_you_can_send_disappearing">Only you can send disappearing messages.</string>
+  <string name="only_your_contact_can_send_disappearing">Only your contact can send disappearing messages.</string>
+  <string name="disappearing_prohibited_in_this_chat">Disappearing messages are prohibited in this chat.</string>
   <string name="both_you_and_your_contacts_can_delete">Both you and your contact can irreversibly delete sent messages.</string>
   <string name="only_you_can_delete_messages">Only you can irreversibly delete messages (your contact can mark them for deletion).</string>
   <string name="only_your_contact_can_delete">Only your contact can irreversibly delete messages (you can mark them for deletion).</string>
@@ -968,13 +1017,21 @@
   <string name="only_you_can_send_voice">Only you can send voice messages.</string>
   <string name="only_your_contact_can_send_voice">Only your contact can send voice messages.</string>
   <string name="voice_prohibited_in_this_chat">Voice messages are prohibited in this chat.</string>
+  <string name="allow_to_send_disappearing">Allow to send disappearing messages.</string>
+  <string name="prohibit_sending_disappearing">Prohibit sending disappearing messages.</string>
+  <string name="allow_direct_messages">Allow sending direct messages to members.</string>
+  <string name="prohibit_direct_messages">Prohibit sending direct messages to members.</string>
   <string name="allow_to_delete_messages">Allow to irreversibly delete sent messages.</string>
   <string name="prohibit_message_deletion">Prohibit irreversible message deletion.</string>
   <string name="allow_to_send_voice">Allow to send voice messages.</string>
   <string name="prohibit_sending_voice">Prohibit sending voice messages.</string>
+  <string name="group_members_can_send_disappearing">Group members can send disappearing messages.</string>
+  <string name="disappearing_messages_are_prohibited">Disappearing messages are prohibited in this group.</string>
+  <string name="group_members_can_send_dms">Group members can send direct messages.</string>
+  <string name="direct_messages_are_prohibited_in_chat">Direct messages between members are prohibited in this group.</string>
   <string name="group_members_can_delete">Group members can irreversibly delete sent messages.</string>
-  <string name="message_deletion_prohibited_in_chat">Irreversible message deletion is prohibited in this chat.</string>
+  <string name="message_deletion_prohibited_in_chat">Irreversible message deletion is prohibited in this group.</string>
   <string name="group_members_can_send_voice">Group members can send voice messages.</string>
-  <string name="voice_messages_are_prohibited">Voice messages are prohibited in this chat.</string>
+  <string name="voice_messages_are_prohibited">Voice messages are prohibited in this group.</string>
 
 </resources>

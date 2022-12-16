@@ -3,6 +3,7 @@ package chat.simplex.app
 import android.app.Application
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Parcelable
 import android.os.SystemClock.elapsedRealtime
@@ -133,7 +134,15 @@ class MainActivity: FragmentActivity() {
   }
 
   override fun onBackPressed() {
-    super.onBackPressed()
+    if (
+      onBackPressedDispatcher.hasEnabledCallbacks() // Has something to do in a backstack
+      || Build.VERSION.SDK_INT >= Build.VERSION_CODES.R // Android 11 or above
+      || isTaskRoot // there are still other tasks after we reach the main (home) activity
+    ) {
+      // https://medium.com/mobile-app-development-publication/the-risk-of-android-strandhogg-security-issue-and-how-it-can-be-mitigated-80d2ddb4af06
+      super.onBackPressed()
+    }
+
     if (!onBackPressedDispatcher.hasEnabledCallbacks() && vm.chatModel.controller.appPrefs.performLA.get()) {
       // When pressed Back and there is no one wants to process the back event, clear auth state to force re-auth on launch
       clearAuthState()
@@ -386,6 +395,7 @@ fun MainPage(
       }
       onboarding == OnboardingStage.Step1_SimpleXInfo -> SimpleXInfo(chatModel, onboarding = true)
       onboarding == OnboardingStage.Step2_CreateProfile -> CreateProfile(chatModel)
+      onboarding == OnboardingStage.Step3_SetNotificationsMode -> SetNotificationsMode(chatModel)
     }
     ModalManager.shared.showInView()
     val invitation = chatModel.activeCallInvitation.value

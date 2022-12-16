@@ -116,7 +116,8 @@ CREATE TABLE group_profiles(
   updated_at TEXT CHECK(updated_at NOT NULL),
   image TEXT,
   user_id INTEGER DEFAULT NULL REFERENCES users ON DELETE CASCADE,
-  preferences TEXT
+  preferences TEXT,
+  description TEXT NULL
 );
 CREATE TABLE groups(
   group_id INTEGER PRIMARY KEY, -- local group ID
@@ -258,6 +259,8 @@ CREATE TABLE connections(
   local_alias DEFAULT '' CHECK(local_alias NOT NULL),
   via_group_link INTEGER DEFAULT 0 CHECK(via_group_link NOT NULL),
   group_link_id BLOB,
+  security_code TEXT NULL,
+  security_code_verified_at TEXT NULL,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
@@ -349,8 +352,8 @@ CREATE TABLE chat_items(
   created_by_msg_id INTEGER UNIQUE REFERENCES messages(message_id) ON DELETE SET NULL,
   item_sent INTEGER NOT NULL, -- 0 for received, 1 for sent
   item_ts TEXT NOT NULL, -- broker_ts of creating message for received, created_at for sent
-  item_deleted INTEGER NOT NULL DEFAULT 0, -- 1 for deleted, -- ! legacy field that was used for group chat items when they weren't fully deleted
-item_content TEXT NOT NULL, -- JSON
+  item_deleted INTEGER NOT NULL DEFAULT 0, -- 1 for deleted
+  item_content TEXT NOT NULL, -- JSON
   item_text TEXT NOT NULL, -- textual representation
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
@@ -362,7 +365,10 @@ item_content TEXT NOT NULL, -- JSON
   quoted_content TEXT,
   quoted_sent INTEGER,
   quoted_member_id BLOB,
-  item_edited INTEGER
+  item_edited INTEGER,
+  timed_ttl INTEGER,
+  timed_delete_at TEXT,
+  item_live INTEGER
 );
 CREATE TABLE chat_item_messages(
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
@@ -450,3 +456,7 @@ CREATE UNIQUE INDEX idx_user_contact_links_group_id ON user_contact_links(
 CREATE UNIQUE INDEX idx_snd_files_last_inline_msg_delivery_id ON snd_files(
   last_inline_msg_delivery_id
 );
+CREATE INDEX idx_messages_connection_id ON messages(connection_id);
+CREATE INDEX idx_chat_items_group_member_id ON chat_items(group_member_id);
+CREATE INDEX idx_chat_items_contact_id ON chat_items(contact_id);
+CREATE INDEX idx_chat_items_timed_delete_at ON chat_items(timed_delete_at);

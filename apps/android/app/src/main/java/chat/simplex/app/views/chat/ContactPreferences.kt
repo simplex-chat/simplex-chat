@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,33 +26,45 @@ fun ContactPreferencesView(
   m: ChatModel,
   user: User,
   contactId: Long,
+  close: () -> Unit,
 ) {
   val contact = remember { derivedStateOf { (m.getContactChat(contactId)?.chatInfo as? ChatInfo.Direct)?.contact } }
   val ct = contact.value ?: return
-  var featuresAllowed by remember(ct) { mutableStateOf(contactUserPrefsToFeaturesAllowed(ct.mergedPreferences)) }
-  var currentFeaturesAllowed by remember(ct) { mutableStateOf(featuresAllowed) }
-  ContactPreferencesLayout(
-    featuresAllowed,
-    currentFeaturesAllowed,
-    user,
-    ct,
-    applyPrefs = { prefs ->
-      featuresAllowed = prefs
-    },
-    reset = {
-      featuresAllowed = currentFeaturesAllowed
-    },
-    savePrefs = {
-      withApi {
-        val prefs = contactFeaturesAllowedToPrefs(featuresAllowed)
-        val toContact = m.controller.apiSetContactPrefs(ct.contactId, prefs)
-        if (toContact != null) {
-          m.updateContact(toContact)
-          currentFeaturesAllowed = featuresAllowed
-        }
+  var featuresAllowed by rememberSaveable(ct, stateSaver = serializableSaver()) { mutableStateOf(contactUserPrefsToFeaturesAllowed(ct.mergedPreferences)) }
+  var currentFeaturesAllowed by rememberSaveable(ct, stateSaver = serializableSaver()) { mutableStateOf(featuresAllowed) }
+
+  fun savePrefs(afterSave: () -> Unit = {}) {
+    withApi {
+      val prefs = contactFeaturesAllowedToPrefs(featuresAllowed)
+      val toContact = m.controller.apiSetContactPrefs(ct.contactId, prefs)
+      if (toContact != null) {
+        m.updateContact(toContact)
+        currentFeaturesAllowed = featuresAllowed
       }
+      afterSave()
+    }
+  }
+  ModalView(
+    close = {
+      if (featuresAllowed == currentFeaturesAllowed) close()
+      else showUnsavedChangesAlert({ savePrefs(close) }, close)
     },
-  )
+    background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
+  ) {
+    ContactPreferencesLayout(
+      featuresAllowed,
+      currentFeaturesAllowed,
+      user,
+      ct,
+      applyPrefs = { prefs ->
+        featuresAllowed = prefs
+      },
+      reset = {
+        featuresAllowed = currentFeaturesAllowed
+      },
+      savePrefs = ::savePrefs,
+    )
+  }
 }
 
 @Composable
@@ -72,13 +85,13 @@ private fun ContactPreferencesLayout(
     horizontalAlignment = Alignment.Start,
   ) {
     AppBarTitle(stringResource(R.string.contact_preferences))
-//    val allowFullDeletion: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.fullDelete) }
-//    FeatureSection(Feature.FullDelete, user.fullPreferences.fullDelete.allow, contact.mergedPreferences.fullDelete, allowFullDeletion) {
-//      applyPrefs(featuresAllowed.copy(fullDelete = it))
-//    }
-//    SectionSpacer()
+    val allowFullDeletion: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.fullDelete) }
+    FeatureSection(ChatFeature.FullDelete, user.fullPreferences.fullDelete.allow, contact.mergedPreferences.fullDelete, allowFullDeletion) {
+      applyPrefs(featuresAllowed.copy(fullDelete = it))
+    }
+    SectionSpacer()
     val allowVoice: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.voice) }
-    FeatureSection(Feature.Voice, user.fullPreferences.voice.allow, contact.mergedPreferences.voice, allowVoice) {
+    FeatureSection(ChatFeature.Voice, user.fullPreferences.voice.allow, contact.mergedPreferences.voice, allowVoice) {
       applyPrefs(featuresAllowed.copy(voice = it))
     }
     SectionSpacer()
@@ -92,20 +105,21 @@ private fun ContactPreferencesLayout(
 
 @Composable
 private fun FeatureSection(
-  feature: Feature,
+  feature: ChatFeature,
   userDefault: FeatureAllowed,
   pref: ContactUserPreference,
   allowFeature: State<ContactFeatureAllowed>,
   onSelected: (ContactFeatureAllowed) -> Unit
 ) {
   val enabled = FeatureEnabled.enabled(
+    feature.asymmetric,
     user = ChatPreference(allow = allowFeature.value.allowed),
     contact = pref.contactPreference
   )
 
   SectionView(
-    feature.text().uppercase(),
-    icon = feature.icon(true),
+    feature.text.uppercase(),
+    icon = feature.iconFilled,
     iconTint = if (enabled.forUser) SimplexGreen else if (enabled.forContact) WarningYellow else Color.Red,
     leadingIcon = true,
   ) {
@@ -138,4 +152,14 @@ private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Bool
       Text(stringResource(R.string.save_and_notify_contact), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
     }
   }
+}
+
+private fun showUnsavedChangesAlert(save: () -> Unit, revert: () -> Unit) {
+  AlertManager.shared.showAlertDialogStacked(
+    title = generalGetString(R.string.save_preferences_question),
+    confirmText = generalGetString(R.string.save_and_notify_contact),
+    dismissText = generalGetString(R.string.exit_without_saving),
+    onConfirm = save,
+    onDismiss = revert,
+  )
 }

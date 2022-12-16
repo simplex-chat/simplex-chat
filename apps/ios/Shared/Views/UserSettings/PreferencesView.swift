@@ -18,7 +18,7 @@ struct PreferencesView: View {
     var body: some View {
         VStack {
             List {
-                // featureSection(.fullDelete, $preferences.fullDelete.allow)
+                featureSection(.fullDelete, $preferences.fullDelete.allow)
                 featureSection(.voice, $preferences.voice.allow)
 
                 Section {
@@ -30,7 +30,7 @@ struct PreferencesView: View {
         }
     }
 
-    private func featureSection(_ feature: Feature, _ allowFeature: Binding<FeatureAllowed>) -> some View {
+    private func featureSection(_ feature: ChatFeature, _ allowFeature: Binding<FeatureAllowed>) -> some View {
         Section {
             settingsRow(feature.icon) {
                 Picker(feature.text, selection: allowFeature) {

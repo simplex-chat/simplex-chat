@@ -29,7 +29,10 @@ import androidx.core.content.FileProvider
 import androidx.core.text.HtmlCompat
 import chat.simplex.app.*
 import chat.simplex.app.model.CIFile
+import chat.simplex.app.model.json
 import kotlinx.coroutines.*
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 import java.io.*
 import java.text.SimpleDateFormat
 import java.util.*
@@ -39,6 +42,9 @@ fun withApi(action: suspend CoroutineScope.() -> Unit): Job = withScope(GlobalSc
 
 fun withScope(scope: CoroutineScope, action: suspend CoroutineScope.() -> Unit): Job =
   scope.launch { withContext(Dispatchers.Main, action) }
+
+fun withBGApi(action: suspend CoroutineScope.() -> Unit): Job =
+  CoroutineScope(Dispatchers.Default).launch(block = action)
 
 enum class KeyboardState {
   Opened, Closed
@@ -222,7 +228,7 @@ const val MAX_IMAGE_SIZE_AUTO_RCV: Long = MAX_IMAGE_SIZE * 2
 const val MAX_VOICE_SIZE_AUTO_RCV: Long = MAX_IMAGE_SIZE
 
 const val MAX_VOICE_SIZE_FOR_SENDING: Long = 94680 // 6 chunks * 15780 bytes per chunk
-const val MAX_VOICE_MILLIS_FOR_SENDING: Long = 43_000 // approximately is ok
+const val MAX_VOICE_MILLIS_FOR_SENDING: Int = 43_000
 
 const val MAX_FILE_SIZE: Long = 8000000
 
@@ -447,8 +453,6 @@ fun directoryFileCountAndSize(dir: String): Pair<Int, Long> { // count, size in 
   return fileCount to bytes
 }
 
-fun durationToString(sec: Int): String = "%02d:%02d".format(sec / 60, sec % 60)
-
 fun Color.darker(factor: Float = 0.1f): Color =
   Color(max(red * (1 - factor), 0f), max(green * (1 - factor), 0f), max(blue * (1 - factor), 0f), alpha)
 
@@ -461,3 +465,9 @@ val LongRange.Companion.saver
     save = { it.value.first to it.value.last },
     restore = { mutableStateOf(it.first..it.second) }
     )
+
+/* Make sure that T class has @Serializable annotation */
+inline fun <reified T> serializableSaver(): Saver<T, *> = Saver(
+    save = { json.encodeToString(it) },
+    restore = { json.decodeFromString(it) }
+  )

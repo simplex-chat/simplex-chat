@@ -3,6 +3,7 @@ package chat.simplex.app.views.helpers
 import android.Manifest
 import android.app.Activity
 import android.content.*
+import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.content.pm.PackageManager
 import android.graphics.*
 import android.net.Uri
@@ -32,11 +33,9 @@ import androidx.core.content.FileProvider
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.json
-import chat.simplex.app.views.chat.ComposeState
 import chat.simplex.app.views.chat.PickFromGallery
 import chat.simplex.app.views.newchat.ActionButton
 import kotlinx.serialization.builtins.*
-import kotlinx.serialization.decodeFromString
 import java.io.ByteArrayOutputStream
 import java.io.File
 import kotlin.math.min
@@ -177,6 +176,25 @@ fun rememberGetContentLauncher(cb: (Uri?) -> Unit): ManagedActivityResultLaunche
 fun rememberGetMultipleContentsLauncher(cb: (List<Uri>) -> Unit): ManagedActivityResultLauncher<String, List<Uri>> =
   rememberLauncherForActivityResult(contract = ActivityResultContracts.GetMultipleContents(), cb)
 
+fun ManagedActivityResultLauncher<Void?, Uri?>.launchWithFallback() {
+  try {
+    launch(null)
+  } catch (e: ActivityNotFoundException) {
+    // No Activity found to handle Intent android.media.action.IMAGE_CAPTURE
+    // Means, no system camera app (Android 11+ requirement)
+    // https://developer.android.com/about/versions/11/behavior-changes-11#media-capture
+    Log.e(TAG, "Camera launcher: " + e.stackTraceToString())
+
+    try {
+      // Try to open any camera just to capture an image, will not be returned like with previous intent
+      SimplexApp.context.startActivity(Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA).also { it.addFlags(FLAG_ACTIVITY_NEW_TASK) })
+    } catch (e: ActivityNotFoundException) {
+      // No camera apps available at all
+      Log.e(TAG, "Camera launcher2: " + e.stackTraceToString())
+    }
+  }
+}
+
 @Composable
 fun GetImageBottomSheet(
   imageBitmap: MutableState<Uri?>,
@@ -204,7 +222,7 @@ fun GetImageBottomSheet(
   }
   val permissionLauncher = rememberPermissionLauncher { isGranted: Boolean ->
     if (isGranted) {
-      cameraLauncher.launch(null)
+      cameraLauncher.launchWithFallback()
       hideBottomSheet()
     } else {
       Toast.makeText(context, generalGetString(R.string.toast_permission_denied), Toast.LENGTH_SHORT).show()
@@ -228,7 +246,7 @@ fun GetImageBottomSheet(
       ActionButton(null, stringResource(R.string.use_camera_button), icon = Icons.Outlined.PhotoCamera) {
         when (PackageManager.PERMISSION_GRANTED) {
           ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) -> {
-            cameraLauncher.launch(null)
+            cameraLauncher.launchWithFallback()
             hideBottomSheet()
           }
           else -> {

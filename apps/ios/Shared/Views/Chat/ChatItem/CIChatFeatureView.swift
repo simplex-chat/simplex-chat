@@ -15,8 +15,8 @@ struct CIChatFeatureView: View {
     var iconColor: Color
 
     var body: some View {
-        HStack(alignment: .bottom, spacing: 0) {
-            Image(systemName: feature.icon + ".fill")
+        HStack(alignment: .bottom, spacing: 4) {
+            Image(systemName: feature.iconFilled)
                 .foregroundColor(iconColor)
             chatEventText(chatItem)
         }
@@ -29,6 +29,6 @@ struct CIChatFeatureView: View {
 struct CIChatFeatureView_Previews: PreviewProvider {
     static var previews: some View {
         let enabled = FeatureEnabled(forUser: false, forContact: false)
-        CIChatFeatureView(chatItem: ChatItem.getChatFeatureSample(.fullDelete, enabled), feature: .fullDelete, iconColor: enabled.iconColor)
+        CIChatFeatureView(chatItem: ChatItem.getChatFeatureSample(.fullDelete, enabled), feature: ChatFeature.fullDelete, iconColor: enabled.iconColor)
     }
 }
