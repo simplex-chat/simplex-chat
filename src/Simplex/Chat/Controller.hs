@@ -268,7 +268,7 @@ data ChatCommand
   | SetContactFeature AChatFeature ContactName (Maybe FeatureAllowed)
   | SetGroupFeature AGroupFeature GroupName GroupFeatureEnabled
   | SetUserTimedMessagesFeature Bool
-  | SetContactTimedMessagesFeature ContactName (Maybe (Maybe Int))
+  | SetContactTimedMessagesFeature ContactName (Maybe TimedMessagesEnabled)
   | SetGroupTimedMessagesFeature GroupName (Maybe Int)
   | QuitChat
   | ShowVersion
@@ -514,6 +514,12 @@ data ServerAddress = ServerAddress
   deriving (Show, Generic)
 
 instance ToJSON ServerAddress where toEncoding = J.genericToEncoding J.defaultOptions
+
+data TimedMessagesEnabled
+  = TMEEnableSetTTL Int
+  | TMEEnableKeepTTL
+  | TMEDisableKeepTTL
+  deriving (Show)
 
 data ChatError
   = ChatError {errorType :: ChatErrorType}

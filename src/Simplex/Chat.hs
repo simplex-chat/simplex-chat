@@ -1177,7 +1177,7 @@ processChatCommand = \case
     updateGroupProfileByName gName $ \p ->
       p {groupPreferences = Just . setGroupPreference f enabled $ groupPreferences p}
   SetUserTimedMessagesFeature onOff -> pure CRCmdOk
-  SetContactTimedMessagesFeature cName ttl__ -> pure CRCmdOk
+  SetContactTimedMessagesFeature cName timedMessagesEnabled_ -> pure CRCmdOk
   SetGroupTimedMessagesFeature gName ttl_ -> pure CRCmdOk
   QuitChat -> liftIO exitSuccess
   ShowVersion -> pure $ CRVersionInfo versionNumber
@@ -3654,7 +3654,7 @@ chatCommandP =
       "/set delete " *> (SetUserFeature (ACF SCFFullDelete) <$> strP),
       "/set direct #" *> (SetGroupFeature (AGF SGFDirectMessages) <$> displayName <*> (A.space *> strP)),
       "/set disappear #" *> (SetGroupTimedMessagesFeature <$> displayName <*> (A.space *> timedTTLOffP)),
-      "/set disappear @" *> (SetContactTimedMessagesFeature <$> displayName <*> optional (A.space *> timedTTLOffP)),
+      "/set disappear @" *> (SetContactTimedMessagesFeature <$> displayName <*> optional (A.space *> timedMessagesEnabledP)),
       "/set disappear " *> (SetUserTimedMessagesFeature <$> onOffP),
       "/incognito " *> (SetIncognito <$> onOffP),
       ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
@@ -3726,6 +3726,18 @@ chatCommandP =
         <|> ("week" $> Just (7 * 86400))
         <|> ("month" $> Just (30 * 86400))
         <|> ("off" $> Nothing)
+    timedMessagesEnabledP =
+      ( optional "yes" *> A.space
+          *> ("30s" $> TMEEnableSetTTL 30)
+          <|> ("5min" $> TMEEnableSetTTL 300)
+          <|> ("1h" $> TMEEnableSetTTL 3600)
+          <|> ("8h" $> TMEEnableSetTTL (8 * 3600))
+          <|> ("day" $> TMEEnableSetTTL 86400)
+          <|> ("week" $> TMEEnableSetTTL (7 * 86400))
+          <|> ("month" $> TMEEnableSetTTL (30 * 86400))
+      )
+        <|> ("yes" $> TMEEnableKeepTTL)
+        <|> ("no" $> TMEDisableKeepTTL)
     netCfgP = do
       socksProxy <- "socks=" *> ("off" $> Nothing <|> "on" $> Just defaultSocksProxy <|> Just <$> strP)
       t_ <- optional $ " timeout=" *> A.decimal
