@@ -3837,26 +3837,28 @@ updateDirectChatItemStatus db userId contactId itemId itemStatus = do
     correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
 
 updateDirectChatItem :: forall d. MsgDirectionI d => DB.Connection -> UserId -> Int64 -> ChatItemId -> CIContent d -> Bool -> Maybe MessageId -> ExceptT StoreError IO (ChatItem 'CTDirect d)
-updateDirectChatItem db userId contactId itemId newContent itemLive msgId_ = do
+updateDirectChatItem db userId contactId itemId newContent live msgId_ = do
   currentTs <- liftIO getCurrentTime
-  ci <- updateDirectChatItem_ db userId contactId itemId newContent itemLive currentTs
+  ci <- updateDirectChatItem_ db userId contactId itemId newContent live currentTs
   forM_ msgId_ $ \msgId -> liftIO $ insertChatItemMessage_ db itemId msgId currentTs
   pure ci
 
 updateDirectChatItem_ :: forall d. (MsgDirectionI d) => DB.Connection -> UserId -> Int64 -> ChatItemId -> CIContent d -> Bool -> UTCTime -> ExceptT StoreError IO (ChatItem 'CTDirect d)
-updateDirectChatItem_ db userId contactId itemId newContent itemLive currentTs = do
-  ci <- liftEither . correctDir =<< getDirectChatItem db userId contactId itemId
+updateDirectChatItem_ db userId contactId itemId newContent live currentTs = do
+  ci@ChatItem {meta = CIMeta {itemEdited, itemLive}} <- liftEither . correctDir =<< getDirectChatItem db userId contactId itemId
   let newText = ciContentToText newContent
+      edited' = itemEdited || not itemLive
+      live' = itemLive && live
   liftIO $ do
     DB.execute
       db
       [sql|
         UPDATE chat_items
-        SET item_content = ?, item_text = ?, item_deleted = 0, item_edited = 1, updated_at = ?, item_live = ?
+        SET item_content = ?, item_text = ?, item_deleted = 0, item_edited = ?, item_live = ?, updated_at = ?
         WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
       |]
-      (newContent, newText, currentTs, itemLive, userId, contactId, itemId)
-  pure ci {content = newContent, meta = (meta ci) {itemText = newText, itemEdited = True}, formattedText = parseMaybeMarkdownList newText}
+      (newContent, newText, edited', live', currentTs, userId, contactId, itemId)
+  pure ci {content = newContent, meta = (meta ci) {itemText = newText, itemEdited = edited', itemLive = live'}, formattedText = parseMaybeMarkdownList newText}
   where
     correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
     correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
@@ -3965,21 +3967,23 @@ getDirectChatItemIdByText db userId contactId msgDir quotedMsg =
       (userId, contactId, msgDir, quotedMsg <> "%")
 
 updateGroupChatItem :: forall d. MsgDirectionI d => DB.Connection -> User -> Int64 -> ChatItemId -> CIContent d -> Bool -> MessageId -> ExceptT StoreError IO (ChatItem 'CTGroup d)
-updateGroupChatItem db user@User {userId} groupId itemId newContent itemLive msgId = do
-  ci <- liftEither . correctDir =<< getGroupChatItem db user groupId itemId
+updateGroupChatItem db user@User {userId} groupId itemId newContent live msgId = do
+  ci@ChatItem {meta = CIMeta {itemEdited, itemLive}} <- liftEither . correctDir =<< getGroupChatItem db user groupId itemId
   currentTs <- liftIO getCurrentTime
   let newText = ciContentToText newContent
+      edited' = itemEdited || not live
+      live' = itemLive && live
   liftIO $ do
     DB.execute
       db
       [sql|
         UPDATE chat_items
-        SET item_content = ?, item_text = ?, item_deleted = 0, item_edited = 1, updated_at = ?, item_live = ?
+        SET item_content = ?, item_text = ?, item_deleted = 0, item_edited = ?, item_live = ?, updated_at = ?
         WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
       |]
-      (newContent, newText, currentTs, itemLive, userId, groupId, itemId)
+      (newContent, newText, edited', live', currentTs, userId, groupId, itemId)
     insertChatItemMessage_ db itemId msgId currentTs
-  pure ci {content = newContent, meta = (meta ci) {itemText = newText, itemEdited = True}, formattedText = parseMaybeMarkdownList newText}
+  pure ci {content = newContent, meta = (meta ci) {itemText = newText, itemEdited = edited', itemLive = live'}, formattedText = parseMaybeMarkdownList newText}
   where
     correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
     correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
