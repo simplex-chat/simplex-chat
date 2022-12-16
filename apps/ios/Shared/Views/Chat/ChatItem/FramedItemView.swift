@@ -32,8 +32,8 @@ struct FramedItemView: View {
             VStack(alignment: .leading, spacing: 0) {
                 if chatItem.meta.itemDeleted {
                     framedItemHeader(icon: "trash", caption: Text("marked deleted").italic())
-                } else if chatItem.meta.itemLive == true {
-                    framedItemHeader(icon: "ellipsis", caption: Text("LIVE"))
+                } else if chatItem.meta.itemLive {
+                    framedItemHeader(caption: Text("LIVE"))
                 }
                 
                 if let qi = chatItem.quotedItem {
@@ -75,7 +75,7 @@ struct FramedItemView: View {
     }
     
     @ViewBuilder private func framedMsgContentView() -> some View {
-        if chatItem.formattedText == nil && chatItem.file == nil && chatItem.meta.itemLive != true && isShortEmoji(chatItem.content.text) {
+        if chatItem.formattedText == nil && chatItem.file == nil && !chatItem.meta.itemLive && isShortEmoji(chatItem.content.text) {
             VStack {
                 emojiText(chatItem.content.text)
                 Text("")
@@ -130,12 +130,14 @@ struct FramedItemView: View {
         )
     }
 
-    @ViewBuilder func framedItemHeader(icon: String, caption: Text) -> some View {
+    @ViewBuilder func framedItemHeader(icon: String? = nil, caption: Text) -> some View {
         let v = HStack(spacing: 6) {
-            Image(systemName: icon)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 14, height: 14)
+            if let icon = icon {
+                Image(systemName: icon)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 14, height: 14)
+            }
             caption
                 .font(.caption)
                 .lineLimit(1)
@@ -228,10 +230,7 @@ struct FramedItemView: View {
             text: ci.text,
             formattedText: ci.formattedText,
             sender: showMember ? ci.memberDisplayName : nil,
-            metaText: ci.timestampText,
-            itemLive: ci.meta.itemLive == true,
-            typing: true,
-            edited: ci.meta.itemEdited,
+            meta: ci.meta,
             rightToLeft: rtl
         )
             .multilineTextAlignment(rtl ? .trailing : .leading)

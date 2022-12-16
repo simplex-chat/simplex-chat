@@ -322,6 +322,10 @@ struct ComposeView: View {
             if let fileName = composeState.voiceMessageRecordingFileName {
                 cancelVoiceMessageRecording(fileName)
             }
+            if composeState.liveMessage != nil {
+                sendMessage()
+                resetLinkPreview()
+            }
         }
         .onChange(of: chatModel.stopPreviousRecPlay) { _ in
             if !startingRecording {

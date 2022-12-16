@@ -1640,6 +1640,7 @@ public struct ChatItem: Identifiable, Decodable {
                 updatedAt: .now,
                 itemDeleted: false,
                 itemEdited: false,
+                itemLive: false,
                 editable: false
             ),
             content: .rcvDeleted(deleteMode: .cidmBroadcast),
@@ -1667,19 +1668,21 @@ public enum CIDirection: Decodable {
     }
 }
 
-public struct CIMeta: Decodable {
+public struct CIMeta: Decodable, Equatable {
     var itemId: Int64
     var itemTs: Date
     var itemText: String
     public var itemStatus: CIStatus
     var createdAt: Date
-    var updatedAt: Date
+    public var updatedAt: Date
     public var itemDeleted: Bool
     public var itemEdited: Bool
-    public var itemLive: Bool?
+    public var itemLive: Bool
     public var editable: Bool
 
-    var timestampText: Text { get { formatTimestampText(itemTs) } }
+    public var timestampText: Text { get { formatTimestampText(itemTs) } }
+
+    public var recent: Bool { updatedAt + 10 > .now }
 
     public static func getSample(_ id: Int64, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, _ itemDeleted: Bool = false, _ itemEdited: Bool = false, _ itemLive: Bool = false, _ editable: Bool = true) -> CIMeta {
         CIMeta(
@@ -1707,7 +1710,7 @@ public func formatTimestampText(_ date: Date) -> Text {
     return Text(date, format: recent ? msgTimeFormat : msgDateFormat)
 }
 
-public enum CIStatus: Decodable {
+public enum CIStatus: Decodable, Equatable {
     case sndNew
     case sndSent
     case sndErrorAuth

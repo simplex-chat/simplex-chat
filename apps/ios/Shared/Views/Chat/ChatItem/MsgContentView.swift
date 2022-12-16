@@ -28,19 +28,16 @@ struct MsgContentView: View {
     var text: String
     var formattedText: [FormattedText]? = nil
     var sender: String? = nil
-    var metaText: Text? = nil
-    var itemLive = false
-    var typing: Bool = false
-    var edited = false
+    var meta: CIMeta? = nil
     var rightToLeft = false
     @State private var typingIdx = 0
     @State private var timer: Timer?
 
     var body: some View {
-        if itemLive {
+        if meta?.itemLive == true {
             msgContentView()
             .onAppear(perform: showTyping)
-            .onChange(of: typing) { _ in showTyping() }
+            .onChange(of: meta) { _ in showTyping() }
             .onDisappear { timer?.invalidate() }
         } else {
             msgContentView()
@@ -48,25 +45,34 @@ struct MsgContentView: View {
     }
 
     private func showTyping() {
-        if typing {
+        if meta?.recent == true {
+            if typingIdx == 0 { typingIdx = 1 }
             timer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { _ in
-                typingIdx += 1
-                if typingIdx == typingIndicators.count { typingIdx = 1 }
+                if meta?.recent == true {
+                    typingIdx += 1
+                    if typingIdx == typingIndicators.count { typingIdx = 1 }
+                } else {
+                    stopTyping()
+                }
             }
         } else {
-            timer?.invalidate()
-            typingIdx = 0
-            timer = nil
+            stopTyping()
         }
+    }
+
+    private func stopTyping() {
+        timer?.invalidate()
+        typingIdx = 0
+        timer = nil
     }
 
     private func msgContentView() -> Text {
         var v = messageText(text, formattedText, sender)
-        if itemLive {
-            v = v + typingIndicator()
-        }
-        if let mt = metaText {
-            v = v + reserveSpaceForMeta(mt, edited)
+        if let meta = meta {
+            if meta.itemLive {
+                v = v + typingIndicator()
+            }
+            v = v + reserveSpaceForMeta(meta.timestampText, meta.itemEdited)
         }
         return v
     }
@@ -78,9 +84,9 @@ struct MsgContentView: View {
             .foregroundColor(.secondary)
     }
 
-    private func reserveSpaceForMeta(_ meta: Text, _ edited: Bool) -> Text {
+    private func reserveSpaceForMeta(_ mt: Text, _ edited: Bool) -> Text {
         let reserve = rightToLeft ? "\n" : edited ? "          " : "      "
-        return (Text(reserve) + meta)
+        return (Text(reserve) + mt)
             .font(.caption)
             .foregroundColor(.clear)
     }
@@ -155,7 +161,7 @@ struct MsgContentView_Previews: PreviewProvider {
             text: chatItem.text,
             formattedText: chatItem.formattedText,
             sender: chatItem.memberDisplayName,
-            metaText: chatItem.timestampText
+            meta: chatItem.meta
         )
     }
 }

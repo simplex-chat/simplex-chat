@@ -109,12 +109,10 @@ public enum ChatCommand {
             case .apiGetChats: return "/_get chats pcc=on"
             case let .apiGetChat(type, id, pagination, search): return "/_get chat \(ref(type, id)) \(pagination.cmdString)" +
                 (search == "" ? "" : " search=\(search)")
-            case let .apiSendMessage(type, id, file, quotedItemId, mc, _):
+            case let .apiSendMessage(type, id, file, quotedItemId, mc, live):
                 let msg = encodeJSON(ComposedMessage(filePath: file, quotedItemId: quotedItemId, msgContent: mc))
-                return "/_send \(ref(type, id)) json \(msg)"
-//                return "/_send \(ref(type, id)) live=\(onOff(live)) json \(msg)"
-            case let .apiUpdateChatItem(type, id, itemId, mc, _): return "/_update item \(ref(type, id)) \(itemId) \(mc.cmdString)"
-//            case let .apiUpdateChatItem(type, id, itemId, mc, live): return "/_update item \(ref(type, id)) \(itemId) live=\(onOff(live)) \(mc.cmdString)"
+                return "/_send \(ref(type, id)) live=\(onOff(live)) json \(msg)"
+            case let .apiUpdateChatItem(type, id, itemId, mc, live): return "/_update item \(ref(type, id)) \(itemId) live=\(onOff(live)) \(mc.cmdString)"
             case let .apiDeleteChatItem(type, id, itemId, mode): return "/_delete item \(ref(type, id)) \(itemId) \(mode.rawValue)"
             case .apiGetNtfToken: return "/_ntf get "
             case let .apiRegisterToken(token, notificationMode): return "/_ntf register \(token.cmdString) \(notificationMode.rawValue)"
