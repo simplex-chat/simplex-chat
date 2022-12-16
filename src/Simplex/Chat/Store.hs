@@ -3971,7 +3971,7 @@ updateGroupChatItem db user@User {userId} groupId itemId newContent live msgId =
   ci@ChatItem {meta = CIMeta {itemEdited, itemLive}} <- liftEither . correctDir =<< getGroupChatItem db user groupId itemId
   currentTs <- liftIO getCurrentTime
   let newText = ciContentToText newContent
-      edited' = itemEdited || not live
+      edited' = itemEdited || not itemLive
       live' = itemLive && live
   liftIO $ do
     DB.execute
