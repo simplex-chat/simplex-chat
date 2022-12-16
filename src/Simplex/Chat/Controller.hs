@@ -267,6 +267,9 @@ data ChatCommand
   | SetUserFeature AChatFeature FeatureAllowed
   | SetContactFeature AChatFeature ContactName (Maybe FeatureAllowed)
   | SetGroupFeature AGroupFeature GroupName GroupFeatureEnabled
+  | SetUserTimedMessagesFeature Bool
+  | SetContactTimedMessagesFeature ContactName (Maybe (Maybe Int))
+  | SetGroupTimedMessagesFeature GroupName (Maybe Int)
   | QuitChat
   | ShowVersion
   | DebugLocks

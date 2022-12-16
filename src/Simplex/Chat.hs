@@ -1176,6 +1176,9 @@ processChatCommand = \case
   SetGroupFeature (AGF f) gName enabled ->
     updateGroupProfileByName gName $ \p ->
       p {groupPreferences = Just . setGroupPreference f enabled $ groupPreferences p}
+  SetUserTimedMessagesFeature onOff -> pure CRCmdOk
+  SetContactTimedMessagesFeature cName ttl__ -> pure CRCmdOk
+  SetGroupTimedMessagesFeature gName ttl_ -> pure CRCmdOk
   QuitChat -> liftIO exitSuccess
   ShowVersion -> pure $ CRVersionInfo versionNumber
   DebugLocks -> do
@@ -3650,6 +3653,9 @@ chatCommandP =
       "/set delete @" *> (SetContactFeature (ACF SCFFullDelete) <$> displayName <*> optional (A.space *> strP)),
       "/set delete " *> (SetUserFeature (ACF SCFFullDelete) <$> strP),
       "/set direct #" *> (SetGroupFeature (AGF SGFDirectMessages) <$> displayName <*> (A.space *> strP)),
+      "/set disappear #" *> (SetGroupTimedMessagesFeature <$> displayName <*> (A.space *> timedTTLOffP)),
+      "/set disappear @" *> (SetContactTimedMessagesFeature <$> displayName <*> optional (A.space *> timedTTLOffP)),
+      "/set disappear " *> (SetUserTimedMessagesFeature <$> onOffP),
       "/incognito " *> (SetIncognito <$> onOffP),
       ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
       ("/version" <|> "/v") $> ShowVersion,
@@ -3711,6 +3717,15 @@ chatCommandP =
         <|> ("week" $> Just (7 * 86400))
         <|> ("month" $> Just (30 * 86400))
         <|> ("none" $> Nothing)
+    timedTTLOffP =
+      ("30s" $> Just 30)
+        <|> ("5min" $> Just 300)
+        <|> ("1h" $> Just 3600)
+        <|> ("8h" $> Just (8 * 3600))
+        <|> ("day" $> Just 86400)
+        <|> ("week" $> Just (7 * 86400))
+        <|> ("month" $> Just (30 * 86400))
+        <|> ("off" $> Nothing)
     netCfgP = do
       socksProxy <- "socks=" *> ("off" $> Nothing <|> "on" $> Just defaultSocksProxy <|> Just <$> strP)
       t_ <- optional $ " timeout=" *> A.decimal
