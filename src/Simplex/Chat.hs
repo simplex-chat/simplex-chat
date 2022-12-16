@@ -458,9 +458,8 @@ processChatCommand = \case
         CChatItem SMDSnd ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive}, content = ciContent} -> do
           case (ciContent, itemSharedMsgId) of
             (CISndMsgContent _, Just itemSharedMId) -> do
-              let live' = itemLive && live
-              (SndMessage {msgId}, _) <- sendDirectContactMessage ct (XMsgUpdate itemSharedMId mc (ciTimedToTTL itemTimed) (justTrue live'))
-              updCi <- withStore $ \db -> updateDirectChatItem db userId contactId itemId (CISndMsgContent mc) live' $ Just msgId
+              (SndMessage {msgId}, _) <- sendDirectContactMessage ct (XMsgUpdate itemSharedMId mc (ciTimedToTTL itemTimed) (justTrue $ itemLive && live))
+              updCi <- withStore $ \db -> updateDirectChatItem db userId contactId itemId (CISndMsgContent mc) live $ Just msgId
               setActive $ ActiveC c
               pure . CRChatItemUpdated $ AChatItem SCTDirect SMDSnd (DirectChat ct) updCi
             _ -> throwChatError CEInvalidChatItemUpdate
@@ -473,9 +472,8 @@ processChatCommand = \case
         CChatItem SMDSnd ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive}, content = ciContent} -> do
           case (ciContent, itemSharedMsgId) of
             (CISndMsgContent _, Just itemSharedMId) -> do
-              let live' = itemLive && live
-              SndMessage {msgId} <- sendGroupMessage gInfo ms (XMsgUpdate itemSharedMId mc (ciTimedToTTL itemTimed) (justTrue live'))
-              updCi <- withStore $ \db -> updateGroupChatItem db user groupId itemId (CISndMsgContent mc) live' msgId
+              SndMessage {msgId} <- sendGroupMessage gInfo ms (XMsgUpdate itemSharedMId mc (ciTimedToTTL itemTimed) (justTrue $ itemLive && live))
+              updCi <- withStore $ \db -> updateGroupChatItem db user groupId itemId (CISndMsgContent mc) live msgId
               setActive $ ActiveG gName
               pure . CRChatItemUpdated $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) updCi
             _ -> throwChatError CEInvalidChatItemUpdate
@@ -2454,9 +2452,9 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
       where
         live = fromMaybe False live_
         updateRcvChatItem = do
-          CChatItem msgDir ChatItem {meta = CIMeta {itemId, itemLive}} <- withStore $ \db -> getDirectChatItemBySharedMsgId db userId contactId sharedMsgId
+          CChatItem msgDir ChatItem {meta = CIMeta {itemId}} <- withStore $ \db -> getDirectChatItemBySharedMsgId db userId contactId sharedMsgId
           case msgDir of
-            SMDRcv -> updateDirectChatItemView userId ct itemId (ACIContent SMDRcv $ CIRcvMsgContent mc) (live && itemLive) $ Just msgId
+            SMDRcv -> updateDirectChatItemView userId ct itemId (ACIContent SMDRcv $ CIRcvMsgContent mc) live $ Just msgId
             SMDSnd -> messageError "x.msg.update: contact attempted invalid message update"
 
     messageDelete :: Contact -> SharedMsgId -> RcvMessage -> MsgMeta -> m ()
@@ -2513,12 +2511,12 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
       where
         live = fromMaybe False live_
         updateRcvChatItem = do
-          CChatItem msgDir ChatItem {chatDir, meta = CIMeta {itemId, itemLive}} <- withStore $ \db -> getGroupChatItemBySharedMsgId db user groupId groupMemberId sharedMsgId
+          CChatItem msgDir ChatItem {chatDir, meta = CIMeta {itemId}} <- withStore $ \db -> getGroupChatItemBySharedMsgId db user groupId groupMemberId sharedMsgId
           case (msgDir, chatDir) of
             (SMDRcv, CIGroupRcv m') ->
               if sameMemberId memberId m'
                 then do
-                  updCi <- withStore $ \db -> updateGroupChatItem db user groupId itemId (CIRcvMsgContent mc) (live && itemLive) msgId
+                  updCi <- withStore $ \db -> updateGroupChatItem db user groupId itemId (CIRcvMsgContent mc) live msgId
                   toView . CRChatItemUpdated $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) updCi
                   setActive $ ActiveG g
                 else messageError "x.msg.update: group member attempted to update a message of another member" -- shouldn't happen now that query includes group member id
