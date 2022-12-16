@@ -1668,8 +1668,8 @@ public enum CIDirection: Decodable {
     }
 }
 
-public struct CIMeta: Decodable, Equatable {
-    var itemId: Int64
+public struct CIMeta: Decodable {
+    public var itemId: Int64
     var itemTs: Date
     var itemText: String
     public var itemStatus: CIStatus
@@ -1677,12 +1677,12 @@ public struct CIMeta: Decodable, Equatable {
     public var updatedAt: Date
     public var itemDeleted: Bool
     public var itemEdited: Bool
-    public var itemLive: Bool
+    public var itemLive: Bool?
     public var editable: Bool
 
     public var timestampText: Text { get { formatTimestampText(itemTs) } }
-
     public var recent: Bool { updatedAt + 10 > .now }
+    public var isLive: Bool { itemLive == true }
 
     public static func getSample(_ id: Int64, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, _ itemDeleted: Bool = false, _ itemEdited: Bool = false, _ itemLive: Bool = false, _ editable: Bool = true) -> CIMeta {
         CIMeta(
@@ -1710,7 +1710,7 @@ public func formatTimestampText(_ date: Date) -> Text {
     return Text(date, format: recent ? msgTimeFormat : msgDateFormat)
 }
 
-public enum CIStatus: Decodable, Equatable {
+public enum CIStatus: Decodable {
     case sndNew
     case sndSent
     case sndErrorAuth

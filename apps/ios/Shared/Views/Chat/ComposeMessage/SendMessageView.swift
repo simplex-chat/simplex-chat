@@ -97,13 +97,13 @@ struct SendMessageView: View {
                         finishVoiceMessageRecordingButton()
                     } else {
                         let v = sendMessageButton()
-                        if composeState.liveMessage == nil, let send = sendLiveMessage, let update = updateLiveMessage {
+                        if composeState.liveMessage == nil,
+                           !composeState.voicePreview && !composeState.editing,
+                           let send = sendLiveMessage,
+                           let update = updateLiveMessage {
                             v.contextMenu{
                                 Button {
-                                    switch composeState.preview {
-                                    case .noPreview: startLiveMessage(send: send, update: update)
-                                    default: ()
-                                    }
+                                    startLiveMessage(send: send, update: update)
                                 } label: {
                                     Label("Send live message", systemImage: "ellipsis.circle")
                                 }

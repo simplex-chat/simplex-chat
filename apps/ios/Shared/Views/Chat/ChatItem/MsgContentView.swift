@@ -11,9 +11,9 @@ import SimpleXChat
 
 private let uiLinkColor = UIColor(red: 0, green: 0.533, blue: 1, alpha: 1)
 
+private let noTyping = Text("   ")
+
 private let typingIndicators: [Text] = [
-    Text("   "),
-    (typing() + typing() + typing()),
     (typing(.black) + typing() + typing()),
     (typing(.bold) + typing(.black) + typing()),
     (typing() + typing(.bold) + typing(.black)),
@@ -34,26 +34,21 @@ struct MsgContentView: View {
     @State private var timer: Timer?
 
     var body: some View {
-        if meta?.itemLive == true {
+        if meta?.isLive == true {
             msgContentView()
-            .onAppear(perform: showTyping)
-            .onChange(of: meta) { _ in showTyping() }
-            .onDisappear { timer?.invalidate() }
+            .onAppear { switchTyping() }
+            .onDisappear(perform: stopTyping)
+            .onChange(of: meta?.isLive, perform: switchTyping)
+            .onChange(of: meta?.recent, perform: switchTyping)
         } else {
             msgContentView()
         }
     }
 
-    private func showTyping() {
-        if meta?.recent == true {
-            if typingIdx == 0 { typingIdx = 1 }
-            timer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { _ in
-                if meta?.recent == true {
-                    typingIdx += 1
-                    if typingIdx == typingIndicators.count { typingIdx = 1 }
-                } else {
-                    stopTyping()
-                }
+    private func switchTyping(_: Bool? = nil) {
+        if let meta = meta, meta.isLive && meta.recent {
+            timer = timer ?? Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { _ in
+                typingIdx = (typingIdx + 1) % typingIndicators.count
             }
         } else {
             stopTyping()
@@ -62,23 +57,22 @@ struct MsgContentView: View {
 
     private func stopTyping() {
         timer?.invalidate()
-        typingIdx = 0
         timer = nil
     }
 
     private func msgContentView() -> Text {
         var v = messageText(text, formattedText, sender)
-        if let meta = meta {
-            if meta.itemLive {
-                v = v + typingIndicator()
+        if let mt = meta {
+            if mt.isLive {
+                v = v + typingIndicator(mt.recent)
             }
-            v = v + reserveSpaceForMeta(meta.timestampText, meta.itemEdited)
+            v = v + reserveSpaceForMeta(mt.timestampText, mt.itemEdited)
         }
         return v
     }
 
-    private func typingIndicator() -> Text {
-        typingIndicators[typingIdx]
+    private func typingIndicator(_ recent: Bool) -> Text {
+        return (recent ? typingIndicators[typingIdx] : noTyping)
             .font(.body.monospaced())
             .kerning(-2)
             .foregroundColor(.secondary)

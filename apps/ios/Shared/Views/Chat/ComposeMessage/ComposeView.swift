@@ -345,26 +345,22 @@ struct ComposeView: View {
     }
 
     private func sendLiveMessage() async {
-        let cInfo = chat.chatInfo
         let typedMsg = composeState.message
         let sentMsg = truncateToWords(typedMsg)
         if composeState.liveMessage == nil,
-           let ci = await apiSendMessage(type: cInfo.chatType, id: cInfo.apiId, file: nil, quotedItemId: nil, msg: .text(sentMsg), live: true) {
+           let ci = await sendMessageAsync(sentMsg, live: true) {
             await MainActor.run {
-                chatModel.addChatItem(cInfo, ci)
                 composeState = composeState.copy(liveMessage: LiveMessage(chatItem: ci, typedMsg: typedMsg, sentMsg: sentMsg))
             }
         }
     }
 
     private func updateLiveMessage() async {
-        let cInfo = chat.chatInfo
         let typedMsg = composeState.message
         if let liveMessage = composeState.liveMessage {
             if let sentMsg = liveMessageToSend(liveMessage, typedMsg),
-               let ci = try? await apiUpdateChatItem(type: cInfo.chatType, id: cInfo.apiId, itemId: liveMessage.chatItem.id, msg: .text(sentMsg), live: true) {
+               let ci = await sendMessageAsync(sentMsg, live: true) {
                 await MainActor.run {
-                    _ = chatModel.upsertChatItem(cInfo, ci)
                     composeState = composeState.copy(liveMessage: LiveMessage(chatItem: ci, typedMsg: typedMsg, sentMsg: sentMsg))
                 }
             } else if liveMessage.typedMsg != typedMsg {
@@ -459,49 +455,55 @@ struct ComposeView: View {
         logger.debug("ChatView sendMessage")
         Task {
             logger.debug("ChatView sendMessage: in Task")
-            if case let .editingItem(ci) = composeState.contextItem {
-                await updateMessage(ci)
-            } else if let liveMessage = composeState.liveMessage {
-                await updateMessage(liveMessage.chatItem)
-            } else {
-                await sending()
-                var quoted: Int64? = nil
-                if case let .quotedItem(chatItem: quotedItem) = composeState.contextItem {
-                    quoted = quotedItem.id
-                }
+            _ = await sendMessageAsync(nil, live: false)
+        }
+    }
 
-                switch (composeState.preview) {
-                case .noPreview:
-                    await send(.text(composeState.message), quoted: quoted)
-                case .linkPreview:
-                    await send(checkLinkPreview(), quoted: quoted)
-                case let .imagePreviews(imagePreviews: images):
-                    var text = composeState.message
-                    var sent = false
-                    for i in 0..<min(chosenImages.count, images.count) {
-                        if i > 0 { _ = try? await Task.sleep(nanoseconds: 100_000000) }
-                        if let savedFile = saveImage(chosenImages[i]) {
-                            await send(.image(text: text, image: images[i]), quoted: quoted, file: savedFile)
-                            text = ""
-                            quoted = nil
-                            sent = true
-                        }
+    private func sendMessageAsync(_ text: String?, live: Bool) async -> ChatItem? {
+        var sent: ChatItem?
+        let msgText = text ?? composeState.message
+        if !live { await sending() }
+        if case let .editingItem(ci) = composeState.contextItem {
+            sent = await updateMessage(ci, live: live)
+        } else if let liveMessage = composeState.liveMessage {
+            sent = await updateMessage(liveMessage.chatItem, live: live)
+        } else {
+            var quoted: Int64? = nil
+            if case let .quotedItem(chatItem: quotedItem) = composeState.contextItem {
+                quoted = quotedItem.id
+            }
+
+            switch (composeState.preview) {
+            case .noPreview:
+                sent = await send(.text(msgText), quoted: quoted, live: live)
+            case .linkPreview:
+                sent = await send(checkLinkPreview(), quoted: quoted, live: live)
+            case let .imagePreviews(imagePreviews: images):
+                let last = min(chosenImages.count, images.count) - 1
+                for i in 0..<last {
+                    if let savedFile = saveImage(chosenImages[i]) {
+                        _ = await send(.image(text: "", image: images[i]), quoted: nil, file: savedFile)
                     }
-                    if !sent {
-                        await send(.text(composeState.message), quoted: quoted)
-                    }
-                case let .voicePreview(recordingFileName, duration):
-                    stopPlayback.toggle()
-                    await send(.voice(text: composeState.message, duration: duration), quoted: quoted, file: recordingFileName)
-                case .filePreview:
-                    if let fileURL = chosenFile,
-                       let savedFile = saveFileFromURL(fileURL) {
-                        await send(.file(composeState.message), quoted: quoted, file: savedFile)
-                    }
+                    _ = try? await Task.sleep(nanoseconds: 100_000000)
+                }
+                if let savedFile = saveImage(chosenImages[last]) {
+                    sent = await send(.image(text: msgText, image: images[last]), quoted: quoted, file: savedFile, live: live)
+                }
+                if sent == nil {
+                    sent = await send(.text(msgText), quoted: quoted, live: live)
+                }
+            case let .voicePreview(recordingFileName, duration):
+                stopPlayback.toggle()
+                sent = await send(.voice(text: msgText, duration: duration), quoted: quoted, file: recordingFileName)
+            case .filePreview:
+                if let fileURL = chosenFile,
+                   let savedFile = saveFileFromURL(fileURL) {
+                    sent = await send(.file(msgText), quoted: quoted, file: savedFile, live: live)
                 }
             }
-            await MainActor.run { clearState() }
         }
+        await MainActor.run { clearState(live: live) }
+        return sent
 
         func sending() async {
             await MainActor.run { composeState.disabled = true }
@@ -510,46 +512,61 @@ struct ComposeView: View {
             }
         }
 
-        func updateMessage(_ ei: ChatItem) async {
+        func updateMessage(_ ei: ChatItem, live: Bool) async -> ChatItem? {
             if let oldMsgContent = ei.content.msgContent {
                 do {
-                    await sending()
                     let mc = updateMsgContent(oldMsgContent)
                     let chatItem = try await apiUpdateChatItem(
                         type: chat.chatInfo.chatType,
                         id: chat.chatInfo.apiId,
                         itemId: ei.id,
-                        msg: mc
+                        msg: mc,
+                        live: live
                     )
                     await MainActor.run {
-                        clearState()
-                        let _ = self.chatModel.upsertChatItem(self.chat.chatInfo, chatItem)
+                        _ = self.chatModel.upsertChatItem(self.chat.chatInfo, chatItem)
                     }
+                    return chatItem
                 } catch {
                     logger.error("ChatView.sendMessage error: \(error.localizedDescription)")
-                    await MainActor.run {
-                        composeState.disabled = false
-                        composeState.inProgress = false
-                    }
                     AlertManager.shared.showAlertMsg(title: "Error updating message", message: "Error: \(responseError(error))")
                 }
-            } else {
-                await MainActor.run { clearState() }
+            }
+            return nil
+        }
+
+        func updateMsgContent(_ msgContent: MsgContent) -> MsgContent {
+            switch msgContent {
+            case .text:
+                return checkLinkPreview()
+            case .link:
+                return checkLinkPreview()
+            case .image(_, let image):
+                return .image(text: msgText, image: image)
+            case .voice(_, let duration):
+                return .voice(text: msgText, duration: duration)
+            case .file:
+                return .file(msgText)
+            case .unknown(let type, _):
+                return .unknown(type: type, text: msgText)
             }
         }
 
-        func send(_ mc: MsgContent, quoted: Int64?, file: String? = nil) async {
+        func send(_ mc: MsgContent, quoted: Int64?, file: String? = nil, live: Bool = false) async -> ChatItem? {
             if let chatItem = await apiSendMessage(
                 type: chat.chatInfo.chatType,
                 id: chat.chatInfo.apiId,
                 file: file,
                 quotedItemId: quoted,
-                msg: mc
+                msg: mc,
+                live: live
             ) {
                 await MainActor.run {
                     chatModel.addChatItem(chat.chatInfo, chatItem)
                 }
+                return chatItem
             }
+            return nil
         }
     }
 
@@ -641,34 +658,19 @@ struct ComposeView: View {
         clearState()
     }
 
-    private func clearState() {
-        composeState = ComposeState()
-        linkUrl = nil
-        prevLinkUrl = nil
-        pendingLinkUrl = nil
-        cancelledLinks = []
+    private func clearState(live: Bool = false) {
+        if live {
+            composeState.disabled = false
+            composeState.inProgress = false
+        } else {
+            composeState = ComposeState()
+            resetLinkPreview()
+        }
         chosenImages = []
         chosenFile = nil
         audioRecorder = nil
         voiceMessageRecordingTime = nil
         startingRecording = false
-    }
-
-    private func updateMsgContent(_ msgContent: MsgContent) -> MsgContent {
-        switch msgContent {
-        case .text:
-            return checkLinkPreview()
-        case .link:
-            return checkLinkPreview()
-        case .image(_, let image):
-            return .image(text: composeState.message, image: image)
-        case .voice(_, let duration):
-            return .voice(text: composeState.message, duration: duration)
-        case .file:
-            return .file(composeState.message)
-        case .unknown(let type, _):
-            return .unknown(type: type, text: composeState.message)
-        }
     }
 
     private func showLinkPreview(_ s: String) {

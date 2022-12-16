@@ -21,7 +21,7 @@ struct ChatItemView: View {
         let ci = chatItem
         if chatItem.meta.itemDeleted && !revealed {
             MarkedDeletedItemView(chatItem: chatItem, showMember: showMember)
-        } else if ci.quotedItem == nil && !ci.meta.itemDeleted && !ci.meta.itemLive {
+        } else if ci.quotedItem == nil && !ci.meta.itemDeleted && !ci.meta.isLive {
             if let mc = ci.content.msgContent, mc.isText && isShortEmoji(ci.content.text) {
                 EmojiItemView(chatItem: ci)
             } else if ci.content.text.isEmpty, case let .voice(_, duration) = ci.content.msgContent {
