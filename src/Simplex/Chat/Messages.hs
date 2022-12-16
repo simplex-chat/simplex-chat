@@ -305,11 +305,10 @@ ciTimedToTTL timed_ = timed_ >>= \CITimed {ttl} -> Just ttl
 
 contactCITimedTTL :: Contact -> Maybe Int
 contactCITimedTTL Contact {mergedPreferences = ContactUserPreferences {timedMessages = ContactUserPreference {enabled, userPreference}}}
-  | forUser enabled && forContact enabled = case userPreference of
-    CUPContact TimedMessagesPreference {ttl = Just t} -> Just t
-    CUPUser TimedMessagesPreference {ttl = Just t} -> Just t
-    _ -> Nothing
+  | forUser enabled && forContact enabled = ttl
   | otherwise = Nothing
+  where
+    TimedMessagesPreference {ttl} = preference (userPreference :: ContactUserPref TimedMessagesPreference)
 
 groupCITimedTTL :: GroupInfo -> Maybe Int
 groupCITimedTTL GroupInfo {fullGroupPreferences = FullGroupPreferences {timedMessages = TimedMessagesGroupPreference {enable, ttl}}}

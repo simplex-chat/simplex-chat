@@ -231,10 +231,10 @@ public struct FeatureEnabled: Decodable {
         self.forContact = forContact
     }
 
-    public static func enabled(user: Preference, contact: Preference) -> FeatureEnabled {
+    public static func enabled(asymmetric: Bool, user: Preference, contact: Preference) -> FeatureEnabled {
         switch (user.allow, contact.allow) {
-        case (.always, .no): return FeatureEnabled(forUser: false, forContact: true)
-        case (.no, .always): return FeatureEnabled(forUser: true, forContact: false)
+        case (.always, .no): return FeatureEnabled(forUser: false, forContact: asymmetric)
+        case (.no, .always): return FeatureEnabled(forUser: asymmetric, forContact: false)
         case (_, .no): return FeatureEnabled(forUser: false, forContact: false)
         case (.no, _): return FeatureEnabled(forUser: false, forContact: false)
         default: return FeatureEnabled(forUser: true, forContact: true)
@@ -277,6 +277,13 @@ public enum ChatFeature: String, Decodable, Feature {
     public var values: [ChatFeature] { [.fullDelete, .voice] }
 
     public var id: Self { self }
+
+    public var asymmetric: Bool {
+        switch self {
+        case .timedMessages: return false
+        default: return true
+        }
+    }
 
     public var text: String {
         switch self {
