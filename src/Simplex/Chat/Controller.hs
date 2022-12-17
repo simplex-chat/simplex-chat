@@ -255,6 +255,7 @@ data ChatCommand
   | ShowGroupLink GroupName
   | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: ByteString, message :: ByteString}
   | LastMessages (Maybe ChatName) Int (Maybe String)
+  | LastChatItemId (Maybe ChatName) Int
   | SendFile ChatName FilePath
   | SendImage ChatName FilePath
   | ForwardFile ChatName FileTransferId
@@ -285,6 +286,7 @@ data ChatResponse
   | CRApiChats {chats :: [AChat]}
   | CRApiChat {chat :: AChat}
   | CRLastMessages {chatItems :: [AChatItem]}
+  | CRLastChatItemId (Maybe ChatItemId)
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
   | CRUserSMPServers {smpServers :: NonEmpty ServerCfg, presetSMPServers :: NonEmpty SMPServerWithAuth}
   | CRSmpTestResult {smpTestFailure :: Maybe SMPTestFailure}
