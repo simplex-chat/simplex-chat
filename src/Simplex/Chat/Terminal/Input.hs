@@ -1,24 +1,29 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 
 module Simplex.Chat.Terminal.Input where
 
+import Control.Concurrent (forkFinally, mkWeakThreadId, threadDelay)
 import Control.Monad.Except
 import Control.Monad.Reader
+import Data.Functor (($>))
 import Data.List (dropWhileEnd)
+import Data.Maybe (isNothing)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
-import Data.Time.Clock (getCurrentTime)
 import Simplex.Chat
 import Simplex.Chat.Controller
+import Simplex.Chat.Messages
 import Simplex.Chat.Styled
 import Simplex.Chat.Terminal.Output
-import Simplex.Chat.View
-import Simplex.Messaging.Util (safeDecodeUtf8)
+import Simplex.Messaging.Util (safeDecodeUtf8, whenM, (<$$>))
 import System.Exit (exitSuccess)
 import System.Terminal hiding (insertChars)
 import UnliftIO.STM
@@ -40,42 +45,133 @@ runInputLoop ct cc = forever $ do
   case r of
     CRChatCmdError _ -> when (isMessage cmd) $ echo s
     _ -> pure ()
-  let testV = testView $ config cc
-  user <- readTVarIO $ currentUser cc
-  ts <- getCurrentTime
-  printToTerminal ct $ responseToView user testV False ts r
+  -- let testV = testView $ config cc
+  -- user <- readTVarIO $ currentUser cc
+  -- ts <- getCurrentTime
+  -- printToTerminal ct $ responseToView user testV False ts r
+  printRespToTerminal ct cc False r
+  startLiveMessage cmd r
   where
     echo s = printToTerminal ct [plain s]
     isMessage = \case
       Right SendMessage {} -> True
+      Right SendLiveMessage {} -> True
       Right SendFile {} -> True
       Right SendMessageQuote {} -> True
       Right SendGroupMessageQuote {} -> True
       Right SendMessageBroadcast {} -> True
       _ -> False
+    startLiveMessage :: Either a ChatCommand -> ChatResponse -> IO ()
+    startLiveMessage (Right (SendLiveMessage chatName msg)) (CRNewChatItem (AChatItem _ SMDSnd _ ChatItem {meta = CIMeta {itemId}})) = do
+      whenM (isNothing <$> readTVarIO (liveMessageState ct)) $ do
+        tId <- mkWeakThreadId =<< runLiveMessage `forkFinally` const (atomically $ writeTVar (liveMessageState ct) Nothing)
+        let msgStr = T.unpack $ safeDecodeUtf8 msg
+        atomically $ writeTVar (liveMessageState ct) (Just $ LiveMessage chatName itemId msgStr msgStr tId)
+      where
+        runLiveMessage :: IO ()
+        runLiveMessage = do
+          threadDelay 3000000
+          TerminalState {inputString = s} <- readTVarIO $ termState ct
+          atomically (liveMessageToSend s <$$> readTVar (liveMessageState ct))
+            >>= mapM_ (uncurry (updateLiveMessage s) >=> const runLiveMessage)
+        liveMessageToSend typedMsg' lm@LiveMessage {sentMsg, typedMsg} =
+          (lm,) $
+            if typedMsg' /= typedMsg
+              then let s = truncateToWords typedMsg' in toMaybe (s /= sentMsg) s
+              else toMaybe (typedMsg /= sentMsg) typedMsg
+        toMaybe cond a = if cond then Just a else Nothing
+        updateLiveMessage typedMsg lm = \case
+          Just sentMsg ->
+            sendUpdatedLiveMessage cc sentMsg lm True >>= \case
+              CRChatItemUpdated {} -> setLiveMessage lm {sentMsg, typedMsg}
+              _ -> do
+                -- TODO print error
+                setLiveMessage lm {typedMsg}
+          _ -> setLiveMessage lm {typedMsg}
+        setLiveMessage :: LiveMessage -> IO ()
+        setLiveMessage = atomically . writeTVar (liveMessageState ct) . Just
+        truncateToWords s = s
+    startLiveMessage _ _ = pure ()
+
+sendUpdatedLiveMessage :: ChatController -> String -> LiveMessage -> Bool -> IO ChatResponse
+sendUpdatedLiveMessage cc sentMsg LiveMessage {chatName, chatItemId} live = do
+  let bs = encodeUtf8 $ T.pack sentMsg
+      cmd = UpdateLiveMessage chatName chatItemId live bs
+  either CRChatCmdError id <$> runExceptT (processChatCommand cmd) `runReaderT` cc
+
+-- let typedMsg = composeState.message
+-- if let liveMessage = composeState.liveMessage {
+--     if let sentMsg = liveMessageToSend(liveMessage, typedMsg),
+--        let ci = await sendMessageAsync(sentMsg, live: true) {
+--         await MainActor.run {
+--             composeState = composeState.copy(liveMessage: LiveMessage(chatItem: ci, typedMsg: typedMsg, sentMsg: sentMsg))
+--         }
+--     } else if liveMessage.typedMsg != typedMsg {
+--         await MainActor.run {
+--             var lm = liveMessage
+--             lm.typedMsg = typedMsg
+--             composeState = composeState.copy(liveMessage: lm)
+--         }
+--     }
+-- }
+--
+--
+-- private func liveMessageToSend(_ liveMessage: LiveMessage, _ typedMsg: String) -> String? {
+--     if liveMessage.typedMsg != typedMsg {
+--         let s = truncateToWords(typedMsg)
+--         return s == liveMessage.sentMsg ? nil : s
+--     }
+--     return liveMessage.changed
+--     ? liveMessage.typedMsg
+--     : nil
+-- }
+--
+--
+-- private func truncateToWords(_ s: String) -> String {
+--     if let i = s.lastIndex(where: { !alphaNumeric($0) }) {
+--         let s1 = s[...i]
+--         if let j = s1.lastIndex(where: alphaNumeric), i < s1.endIndex {
+--             return String(s1[...j])
+--         }
+--         return String(s1)
+--     }
+--     return ""
+
+--     func alphaNumeric(_ c: Character) -> Bool {
+--         c.isLetter || c.isNumber
+--     }
+-- }
 
 runTerminalInput :: ChatTerminal -> ChatController -> IO ()
 runTerminalInput ct cc = withChatTerm ct $ do
   updateInput ct
   receiveFromTTY cc ct
 
-receiveFromTTY :: MonadTerminal m => ChatController -> ChatTerminal -> m ()
-receiveFromTTY ChatController {inputQ, activeTo} ct@ChatTerminal {termSize, termState} =
+receiveFromTTY :: forall m. MonadTerminal m => ChatController -> ChatTerminal -> m ()
+receiveFromTTY cc@ChatController {inputQ, activeTo} ct@ChatTerminal {termSize, termState, liveMessageState} =
   forever $ getKey >>= processKey >> withTermLock ct (updateInput ct)
   where
-    processKey :: MonadTerminal m => (Key, Modifiers) -> m ()
+    processKey :: (Key, Modifiers) -> m ()
     processKey = \case
-      (EnterKey, _) -> submitInput
+      (EnterKey, _) ->
+        atomically submitInput >>= mapM_ (liftIO . uncurry endLiveMessage)
       key -> atomically $ do
         ac <- readTVar activeTo
         modifyTVar termState $ updateTermState ac (width termSize) key
 
-    submitInput :: MonadTerminal m => m ()
-    submitInput = atomically $ do
+    endLiveMessage :: String -> LiveMessage -> IO ()
+    endLiveMessage sentMsg lm =
+      sendUpdatedLiveMessage cc sentMsg lm False
+        >>= printRespToTerminal ct cc False
+
+    submitInput :: STM (Maybe (String, LiveMessage))
+    submitInput = do
       ts <- readTVar termState
       let s = inputString ts
-      writeTVar termState $ ts {inputString = "", inputPosition = 0, previousInput = s}
-      writeTBQueue inputQ s
+      writeTVar termState $ ts {inputString = "", inputPosition = 0, previousInput = s, inputPrompt = "> "}
+      readTVar liveMessageState >>= \case
+        Just lm -> writeTVar liveMessageState Nothing $> Just (s, lm)
+        _ -> writeTBQueue inputQ s $> Nothing
 
 updateTermState :: ActiveTo -> Int -> (Key, Modifiers) -> TerminalState -> TerminalState
 updateTermState ac tw (key, ms) ts@TerminalState {inputString = s, inputPosition = p} = case key of

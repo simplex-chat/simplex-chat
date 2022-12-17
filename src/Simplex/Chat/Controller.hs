@@ -234,11 +234,12 @@ data ChatCommand
   | AcceptContact ContactName
   | RejectContact ContactName
   | SendMessage ChatName ByteString
+  | SendLiveMessage ChatName ByteString
   | SendMessageQuote {contactName :: ContactName, msgDir :: AMsgDirection, quotedMsg :: ByteString, message :: ByteString}
   | SendMessageBroadcast ByteString
-  | -- | StartLiveMessage ChatName ByteString
-    DeleteMessage ChatName ByteString
+  | DeleteMessage ChatName ByteString
   | EditMessage {chatName :: ChatName, editedMsg :: ByteString, message :: ByteString}
+  | UpdateLiveMessage {chatName :: ChatName, chatItemId :: ChatItemId, liveMessage :: Bool, message :: ByteString}
   | NewGroup GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
   | JoinGroup GroupName
