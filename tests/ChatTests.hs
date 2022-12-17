@@ -136,12 +136,12 @@ chatTests = do
     it "set connection alias" testSetConnectionAlias
   describe "preferences" $ do
     it "set contact preferences" testSetContactPrefs
-    it "update group preferences" testUpdateGroupPrefs
+    fit "update group preferences" testUpdateGroupPrefs
     it "allow full deletion to contact" testAllowFullDeletionContact
-    it "allow full deletion to group" testAllowFullDeletionGroup
+    fit "allow full deletion to group" testAllowFullDeletionGroup
     it "prohibit direct messages to group members" testProhibitDirectMessages
-    it "enable timed messages with contact" testEnableTimedMessagesContact
-    it "enable timed messages in group" testEnableTimedMessagesGroup
+    fit "enable timed messages with contact" testEnableTimedMessagesContact
+    fit "enable timed messages in group" testEnableTimedMessagesGroup
   describe "SMP servers" $ do
     it "get and set SMP servers" testGetSetSMPServers
     it "test SMP server connection" testTestSMPServerConnection
@@ -3571,11 +3571,11 @@ testEnableTimedMessagesContact =
       alice <## "Disappearing messages: enabled (you allow: yes, contact allows: yes)"
       alice <##> bob
       threadDelay 900000
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled"), (1, "hi"), (0, "hey")])
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled"), (0, "hi"), (1, "hey")])
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled, after 1 second(s)"), (1, "hi"), (0, "hey")])
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled, after 1 second(s)"), (0, "hi"), (1, "hey")])
       threadDelay 200000
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled")])
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled")])
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled, after 1 second(s)")])
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled, after 1 second(s)")])
 
 testEnableTimedMessagesGroup :: IO ()
 testEnableTimedMessagesGroup =
@@ -4924,7 +4924,7 @@ groupFeatures :: [(Int, String)]
 groupFeatures = map (\(a, _, _) -> a) groupFeatures''
 
 groupFeatures'' :: [((Int, String), Maybe (Int, String), Maybe String)]
-groupFeatures'' = [((0, "Disappearing messages: off"), Nothing, Nothing), ((0, "Direct messages: on"), Nothing, Nothing), ((0, "Full deletion: off"), Nothing, Nothing), ((0, "Voice messages: on"), Nothing, Nothing)]
+groupFeatures'' = [((0, "Disappearing messages: off, after one day"), Nothing, Nothing), ((0, "Direct messages: on"), Nothing, Nothing), ((0, "Full deletion: off"), Nothing, Nothing), ((0, "Voice messages: on"), Nothing, Nothing)]
 
 itemId :: Int -> String
 itemId i = show $ length chatFeatures + i
