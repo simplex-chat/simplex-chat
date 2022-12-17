@@ -21,34 +21,24 @@ struct NativeTextEditor: UIViewRepresentable {
         field.allowsEditingTextAttributes = true
         field.text = text
         field.font = font
-        if alignment == .leading {
-            field.textAlignment = NSTextAlignment.left
-        } else {
-            field.textAlignment = NSTextAlignment.right
-        }
+        field.textAlignment = alignment == .leading ? .left : .right
+        field.autocapitalizationType = .sentences
         field.setOnTextChangedListener { newText, image in
             text = newText
             if let image = image {
                 onImageAdded(image)
             }
         }
-        field.setOnFocusChangedListener { isFocused in
-            focused = isFocused
-        }
+        field.setOnFocusChangedListener { focused = $0 }
         field.delegate = field
-        field.textContainerInset = UIEdgeInsets(top: 8, left: 10, bottom: 8, right: 10)
+        field.textContainerInset = UIEdgeInsets(top: 8, left: 5, bottom: 6, right: 4)
         return field
     }
     
     func updateUIView(_ field: UITextView, context: Context) {
         field.text = text
         field.font = font
-
-        if alignment == .leading {
-            field.textAlignment = NSTextAlignment.left
-        } else {
-            field.textAlignment = NSTextAlignment.right
-        }
+        field.textAlignment = alignment == .leading ? .left : .right
     }
 }
 
@@ -66,14 +56,18 @@ private class CustomUITextField: UITextView, UITextViewDelegate {
     
     func textViewDidChange(_ textView: UITextView) {
         var image: UIImage? = nil
-        textView.attributedText.enumerateAttribute(NSAttributedString.Key.attachment, in: NSRange(location: 0, length: textView.attributedText.length), options: [], using: {(value, range, _) -> Void in
-            if let attachment = (value as? NSTextAttachment)?.image {
-                image = attachment
-                let newText = NSMutableAttributedString(attributedString: textView.attributedText)
-                newText.replaceCharacters(in: range, with: "")
-                textView.attributedText = newText
+        textView.attributedText.enumerateAttribute(
+            NSAttributedString.Key.attachment,
+            in: NSRange(location: 0, length: textView.attributedText.length),
+            options: [],
+            using: { value, range, _ in
+                if let attachment = (value as? NSTextAttachment)?.image {
+                    image = attachment
+                    let newText = NSMutableAttributedString(attributedString: textView.attributedText)
+                    newText.replaceCharacters(in: range, with: "")
+                    textView.attributedText = newText
+                }
             }
-        }
         )
         onTextChanged(textView.text, image)
     }
@@ -88,7 +82,6 @@ private class CustomUITextField: UITextView, UITextViewDelegate {
 }
 
 struct NativeTextEditor_Previews: PreviewProvider{
-    
     static var previews: some View {
         @FocusState var keyboardVisible: Bool
         return NativeTextEditor(

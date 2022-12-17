@@ -46,9 +46,12 @@ struct SendMessageView: View {
                             .lineLimit(10)
                             .font(teFont)
                             .multilineTextAlignment(alignment)
+// put text on top (after NativeTextEditor) and set color to precisely align it on changes
+//                            .foregroundColor(.red)
                             .foregroundColor(.clear)
                             .padding(.horizontal, 10)
-                            .padding(.vertical, 8)
+                            .padding(.top, 8)
+                            .padding(.bottom, 6)
                             .matchedGeometryEffect(id: "te", in: namespace)
                             .background(GeometryReader(content: updateHeight))
 
@@ -60,8 +63,8 @@ struct SendMessageView: View {
                             alignment: alignment,
                             onImageAdded: onImageAdded
                         )
+                        .allowsTightening(false)
                         .frame(height: teHeight)
-                        
                     }
                 }
 
@@ -200,17 +203,17 @@ struct SendMessageView: View {
     private func updateHeight(_ g: GeometryProxy) -> Color {
         DispatchQueue.main.async {
             teHeight = min(max(g.frame(in: .local).size.height, minHeight), maxHeight)
-            teFont = isShortEmoji(composeState.message)
-            ? composeState.message.count < 4
-            ? largeEmojiFont
-            : mediumEmojiFont
-            : .body
-            
-            teUiFont = isShortEmoji(composeState.message)
-            ? composeState.message.count < 4
-            ? largeEmojiUiFont
-            : mediumEmojiUiFont
-            : UIFont.preferredFont(forTextStyle: .body)
+            let msg = composeState.message
+            if !isShortEmoji(msg) {
+                teFont = .body
+                teUiFont = UIFont.preferredFont(forTextStyle: .body)
+            } else if msg.count < 4 {
+                teFont = largeEmojiFont
+                teUiFont = largeEmojiUIFont
+            } else {
+                teFont = mediumEmojiFont
+                teUiFont = mediumEmojiUIFont
+            }
         }
         return Color.clear
     }

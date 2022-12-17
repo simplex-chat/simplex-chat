@@ -28,6 +28,6 @@ func isShortEmoji(_ str: String) -> Bool {
 }
 
 let largeEmojiFont = Font.custom("Emoji", size: 48, relativeTo: .largeTitle)
-let largeEmojiUiFont: UIFont = UIFont(name: "Emoji", size: 48) ?? UIFont.systemFont(ofSize: 48)
+let largeEmojiUIFont: UIFont = UIFont(name: "Emoji", size: 48) ?? UIFont.systemFont(ofSize: 48)
 let mediumEmojiFont = Font.custom("Emoji", size: 36, relativeTo: .largeTitle)
-let mediumEmojiUiFont: UIFont = UIFont(name: "Emoji", size: 36) ?? UIFont.systemFont(ofSize: 36)
+let mediumEmojiUIFont: UIFont = UIFont(name: "Emoji", size: 36) ?? UIFont.systemFont(ofSize: 36)
