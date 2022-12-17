@@ -80,6 +80,7 @@ responseToView user_ testView ts = \case
   CRGroupMemberCode g m code -> viewGroupMemberCode g m code testView
   CRNewChatItem (AChatItem _ _ chat item) -> unmuted chat item $ viewChatItem chat item False ts
   CRLastMessages chatItems -> concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True ts) chatItems
+  CRLastChatItemId itemId -> [plain $ maybe "no item" show itemId]
   CRChatItemStatusUpdated _ -> []
   CRChatItemUpdated (AChatItem _ _ chat item) -> unmuted chat item $ viewItemUpdate chat item ts
   CRChatItemDeleted (AChatItem _ _ chat deletedItem) toItem byUser timed -> unmuted chat deletedItem $ viewItemDelete chat deletedItem (isJust toItem) byUser timed ts

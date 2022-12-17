@@ -37,7 +37,7 @@ import Data.List.NonEmpty (NonEmpty, nonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe, isJust, isNothing, mapMaybe)
+import Data.Maybe (fromMaybe, isJust, isNothing, listToMaybe, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time (NominalDiffTime, addUTCTime)
@@ -1113,6 +1113,11 @@ processChatCommand = \case
     CRLastMessages . aChatItems . chat <$> processChatCommand (APIGetChat chatRef (CPLast count) search)
   LastMessages Nothing count search -> withUser $ \user -> withStore $ \db ->
     CRLastMessages <$> getAllChatItems db user (CPLast count) search
+  LastChatItemId (Just chatName) index -> withUser $ \user -> do
+    chatRef <- getChatRef user chatName
+    CRLastChatItemId . fmap aChatItemId . listToMaybe . aChatItems . chat <$> processChatCommand (APIGetChat chatRef (CPLast $ index + 1) Nothing)
+  LastChatItemId Nothing index -> withUser $ \user -> withStore $ \db ->
+    CRLastChatItemId . fmap aChatItemId . listToMaybe <$> getAllChatItems db user (CPLast $ index + 1) Nothing
   SendFile chatName f -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     processChatCommand . APISendMessage chatRef False $ ComposedMessage (Just f) Nothing (MCFile "")
@@ -3636,6 +3641,7 @@ chatCommandP =
       "/feed " *> (SendMessageBroadcast <$> A.takeByteString),
       ("/tail" <|> "/t") *> (LastMessages <$> optional (A.space *> chatNameP) <*> msgCountP <*> pure Nothing),
       ("/search" <|> "/?") *> (LastMessages <$> optional (A.space *> chatNameP) <*> msgCountP <*> (Just <$> (A.space *> stringP))),
+      "/last_item_id" *> (LastChatItemId <$> optional (A.space *> chatNameP) <*> (A.space *> A.decimal <|> pure 0)),
       ("/file " <|> "/f ") *> (SendFile <$> chatNameP' <* A.space <*> filePath),
       ("/image " <|> "/img ") *> (SendImage <$> chatNameP' <* A.space <*> filePath),
       ("/fforward " <|> "/ff ") *> (ForwardFile <$> chatNameP' <* A.space <*> A.decimal),
