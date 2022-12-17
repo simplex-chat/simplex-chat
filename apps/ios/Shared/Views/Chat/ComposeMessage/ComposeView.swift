@@ -141,6 +141,15 @@ struct ComposeState {
         default: return false
         }
     }
+
+    var attachmentDisabled: Bool {
+        if editing || liveMessage != nil { return true }
+        switch preview {
+        case .noPreview: return false
+        case .linkPreview: return false
+        default: return true
+        }
+    }
 }
 
 func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
@@ -203,7 +212,7 @@ struct ComposeView: View {
                     Image(systemName: "paperclip")
                         .resizable()
                 }
-                .disabled(composeState.editing || !(composeState.noPreview || composeState.linkPreview != nil))
+                .disabled(composeState.attachmentDisabled)
                 .frame(width: 25, height: 25)
                 .padding(.bottom, 12)
                 .padding(.leading, 12)
