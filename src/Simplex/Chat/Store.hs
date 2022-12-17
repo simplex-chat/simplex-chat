@@ -3197,8 +3197,8 @@ createNewChatItem_ db User {userId} chatDirection msgId_ sharedMsgId ciContent q
   forM_ msgId_ $ \msgId -> insertChatItemMessage_ db ciId msgId createdAt
   pure ciId
   where
-    itemRow :: (SMsgDirection d, UTCTime, CIContent d, Text, CIStatus d, Maybe SharedMsgId) :. (UTCTime, UTCTime, Maybe Int, Maybe UTCTime, Bool)
-    itemRow = (msgDirection @d, itemTs, ciContent, ciContentToText ciContent, ciCreateStatus ciContent, sharedMsgId) :. (createdAt, createdAt, timedTTL, timedDeleteAt, live)
+    itemRow :: (SMsgDirection d, UTCTime, CIContent d, Text, CIStatus d, Maybe SharedMsgId) :. (UTCTime, UTCTime, Maybe Int, Maybe UTCTime, Maybe Bool)
+    itemRow = (msgDirection @d, itemTs, ciContent, ciContentToText ciContent, ciCreateStatus ciContent, sharedMsgId) :. (createdAt, createdAt, timedTTL, timedDeleteAt, justTrue live)
       where
         (timedTTL, timedDeleteAt) = case timed of
           Just CITimed {ttl, deleteAt} -> (Just ttl, deleteAt)
@@ -3847,8 +3847,8 @@ updateDirectChatItem_ :: forall d. (MsgDirectionI d) => DB.Connection -> UserId 
 updateDirectChatItem_ db userId contactId itemId newContent live currentTs = do
   ci@ChatItem {meta = CIMeta {itemEdited, itemLive}} <- liftEither . correctDir =<< getDirectChatItem db userId contactId itemId
   let newText = ciContentToText newContent
-      edited' = itemEdited || not live
-      live' = itemLive && live
+      edited' = itemEdited || (itemLive /= Just True)
+      live' = (live &&) <$> itemLive
   liftIO $ do
     DB.execute
       db
@@ -3971,8 +3971,8 @@ updateGroupChatItem db user@User {userId} groupId itemId newContent live msgId =
   ci@ChatItem {meta = CIMeta {itemEdited, itemLive}} <- liftEither . correctDir =<< getGroupChatItem db user groupId itemId
   currentTs <- liftIO getCurrentTime
   let newText = ciContentToText newContent
-      edited' = itemEdited || not live
-      live' = itemLive && live
+      edited' = itemEdited || (itemLive /= Just True)
+      live' = (live &&) <$> itemLive
   liftIO $ do
     DB.execute
       db
@@ -4315,7 +4315,7 @@ toDirectChatItem tz currentTs (((itemId, itemTs, itemContent, itemText, itemStat
       CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, formattedText = parseMaybeMarkdownList itemText, quotedItem = toDirectQuote quoteRow, file}
     badItem = Left $ SEBadChatItem itemId
     ciMeta :: CIContent d -> CIStatus d -> CIMeta d
-    ciMeta content status = mkCIMeta itemId content itemText status sharedMsgId itemDeleted (fromMaybe False itemEdited) ciTimed (fromMaybe False itemLive) tz currentTs itemTs createdAt updatedAt
+    ciMeta content status = mkCIMeta itemId content itemText status sharedMsgId itemDeleted (fromMaybe False itemEdited) ciTimed itemLive tz currentTs itemTs createdAt updatedAt
     ciTimed :: Maybe CITimed
     ciTimed =
       case (timedTTL, timedDeleteAt) of
@@ -4364,7 +4364,7 @@ toGroupChatItem tz currentTs userContactId (((itemId, itemTs, itemContent, itemT
       CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, formattedText = parseMaybeMarkdownList itemText, quotedItem = toGroupQuote quoteRow quotedMember_, file}
     badItem = Left $ SEBadChatItem itemId
     ciMeta :: CIContent d -> CIStatus d -> CIMeta d
-    ciMeta content status = mkCIMeta itemId content itemText status sharedMsgId itemDeleted (fromMaybe False itemEdited) ciTimed (fromMaybe False itemLive) tz currentTs itemTs createdAt updatedAt
+    ciMeta content status = mkCIMeta itemId content itemText status sharedMsgId itemDeleted (fromMaybe False itemEdited) ciTimed itemLive tz currentTs itemTs createdAt updatedAt
     ciTimed :: Maybe CITimed
     ciTimed =
       case (timedTTL, timedDeleteAt) of

@@ -264,7 +264,7 @@ data CIMeta (d :: MsgDirection) = CIMeta
     itemDeleted :: Bool,
     itemEdited :: Bool,
     itemTimed :: Maybe CITimed,
-    itemLive :: Bool,
+    itemLive :: Maybe Bool,
     editable :: Bool,
     localItemTs :: ZonedTime,
     createdAt :: UTCTime,
@@ -272,7 +272,7 @@ data CIMeta (d :: MsgDirection) = CIMeta
   }
   deriving (Show, Generic)
 
-mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Bool -> Bool -> Maybe CITimed -> Bool -> TimeZone -> UTCTime -> ChatItemTs -> UTCTime -> UTCTime -> CIMeta d
+mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Bool -> Bool -> Maybe CITimed -> Maybe Bool -> TimeZone -> UTCTime -> ChatItemTs -> UTCTime -> UTCTime -> CIMeta d
 mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemEdited itemTimed itemLive tz currentTs itemTs createdAt updatedAt =
   let localItemTs = utcToZonedTime tz itemTs
       editable = case itemContent of
