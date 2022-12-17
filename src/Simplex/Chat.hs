@@ -1181,14 +1181,11 @@ processChatCommand = \case
     updateProfile user p
   SetContactTimedMessagesFeature cName timedMessagesEnabled_ -> withUser $ \user -> do
     ct@Contact {userPreferences = userPreferences@Preferences {timedMessages}} <- withStore $ \db -> getContactByName db user cName
-    let currentTTL = case timedMessages of
-          Nothing -> Nothing
-          Just TimedMessagesPreference {ttl} -> ttl
-        pref_ = case timedMessagesEnabled_ of
-          Nothing -> Nothing
-          Just (TMEEnableSetTTL ttl) -> Just $ TimedMessagesPreference FAYes (Just ttl)
-          Just TMEEnableKeepTTL -> Just $ TimedMessagesPreference FAYes currentTTL
-          Just TMEDisableKeepTTL -> Just $ TimedMessagesPreference FANo currentTTL
+    let currentTTL = join . forM timedMessages $ \TimedMessagesPreference {ttl} -> ttl
+        pref_ = join . forM timedMessagesEnabled_ $ \case
+          TMEEnableSetTTL ttl -> Just $ TimedMessagesPreference FAYes (Just ttl)
+          TMEEnableKeepTTL -> Just $ TimedMessagesPreference FAYes currentTTL
+          TMEDisableKeepTTL -> Just $ TimedMessagesPreference FANo currentTTL
         prefs' = setTimedMessagesPreference pref_ $ Just userPreferences
     updateContactPrefs user ct prefs'
   SetGroupTimedMessagesFeature gName ttl_ -> do
