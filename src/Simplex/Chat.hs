@@ -1327,7 +1327,7 @@ processChatCommand = \case
       unless (sameGroupProfileInfo p p') $ do
         ci <- saveSndChatItem user cd msg (CISndGroupEvent $ SGEGroupUpdated p')
         toView . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat g') ci
-      createGroupFeatureChangedItems user cd CISndGroupFeature p p'
+      createGroupFeatureChangedItems user cd CISndGroupFeature g g'
       pure $ CRGroupUpdated g g' Nothing
     updateGroupProfileByName :: GroupName -> (GroupProfile -> GroupProfile) -> m ChatResponse
     updateGroupProfileByName gName update = withUser $ \user -> do
@@ -2743,16 +2743,27 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
 
     createFeatureEnabledItems :: Contact -> m ()
     createFeatureEnabledItems ct@Contact {mergedPreferences} =
-      forM_ allChatFeatures $ \(ACF f) -> do
-        let ContactUserPreference {enabled} = getContactUserPreference f mergedPreferences
-        createInternalChatItem user (CDDirectRcv ct) (CIRcvChatFeature (chatFeature f) enabled) Nothing
+      forM_ allChatFeatures $ \(ACF f) ->
+        case chatFeature f of
+          CFTimedMessages -> do
+            let ContactUserPreference {enabled, userPreference} = timedMessages (mergedPreferences :: ContactUserPreferences)
+                TimedMessagesPreference {ttl} = preference (userPreference :: ContactUserPref TimedMessagesPreference)
+            createInternalChatItem user (CDDirectRcv ct) (CIRcvChatFeature (chatFeature f) enabled ttl) Nothing
+          _ -> do
+            let ContactUserPreference {enabled} = getContactUserPreference f mergedPreferences
+            createInternalChatItem user (CDDirectRcv ct) (CIRcvChatFeature (chatFeature f) enabled Nothing) Nothing
 
     createGroupFeatureItems :: GroupInfo -> GroupMember -> m ()
     createGroupFeatureItems g@GroupInfo {groupProfile} m = do
       let prefs = mergeGroupPreferences $ groupPreferences groupProfile
-      forM_ allGroupFeatures $ \(AGF f) -> do
-        let p = getGroupPreference f prefs
-        createInternalChatItem user (CDGroupRcv g m) (CIRcvGroupFeature (toGroupFeature f) (toGroupPreference p)) Nothing
+      forM_ allGroupFeatures $ \(AGF f) ->
+        case toGroupFeature f of
+          GFTimedMessages -> do
+            let p@TimedMessagesGroupPreference {ttl} = timedMessages (prefs :: FullGroupPreferences)
+            createInternalChatItem user (CDGroupRcv g m) (CIRcvGroupFeature (toGroupFeature f) (toGroupPreference p) (Just ttl)) Nothing
+          _ -> do
+            let p = getGroupPreference f prefs
+            createInternalChatItem user (CDGroupRcv g m) (CIRcvGroupFeature (toGroupFeature f) (toGroupPreference p) Nothing) Nothing
 
     xInfoProbe :: Contact -> Probe -> m ()
     xInfoProbe c2 probe =
@@ -3055,7 +3066,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
         unless (sameGroupProfileInfo p p') $ do
           ci <- saveRcvChatItem user cd msg msgMeta (CIRcvGroupEvent $ RGEGroupUpdated p')
           groupMsgToView g' m ci msgMeta
-        createGroupFeatureChangedItems user cd CIRcvGroupFeature p p'
+        createGroupFeatureChangedItems user cd CIRcvGroupFeature g g'
 
 sendDirectFileInline :: ChatMonad m => Contact -> FileTransferMeta -> SharedMsgId -> m ()
 sendDirectFileInline ct ft sharedMsgId = do
@@ -3368,21 +3379,37 @@ userProfileToSend user@User {profile = p} incognitoProfile ct =
       userPrefs = maybe (preferences' user) (const Nothing) incognitoProfile
    in (p' :: Profile) {preferences = Just . toChatPrefs $ mergePreferences (userPreferences <$> ct) userPrefs}
 
-createFeatureChangedItems :: (MsgDirectionI d, ChatMonad m) => User -> Contact -> Contact -> (Contact -> ChatDirection 'CTDirect d) -> (ChatFeature -> PrefEnabled -> CIContent d) -> m ()
+createFeatureChangedItems :: (MsgDirectionI d, ChatMonad m) => User -> Contact -> Contact -> (Contact -> ChatDirection 'CTDirect d) -> (ChatFeature -> PrefEnabled -> Maybe Int -> CIContent d) -> m ()
 createFeatureChangedItems user Contact {mergedPreferences = cups} ct'@Contact {mergedPreferences = cups'} chatDir ciContent =
-  forM_ allChatFeatures $ \(ACF f) -> do
-    let ContactUserPreference {enabled} = getContactUserPreference f cups
-        ContactUserPreference {enabled = enabled'} = getContactUserPreference f cups'
-    unless (enabled == enabled') $
-      createInternalChatItem user (chatDir ct') (ciContent (chatFeature f) enabled') Nothing
+  forM_ allChatFeatures $ \(ACF f) ->
+    case chatFeature f of
+      CFTimedMessages -> do
+        let ContactUserPreference {enabled, userPreference} = timedMessages (cups :: ContactUserPreferences)
+            TimedMessagesPreference {ttl} = preference (userPreference :: ContactUserPref TimedMessagesPreference)
+            ContactUserPreference {enabled = enabled', userPreference = userPreference'} = timedMessages (cups' :: ContactUserPreferences)
+            TimedMessagesPreference {ttl = ttl'} = preference (userPreference' :: ContactUserPref TimedMessagesPreference)
+        when (enabled /= enabled' || (enabled == enabled' && forUser enabled' && ttl /= ttl')) $
+          createInternalChatItem user (chatDir ct') (ciContent (chatFeature f) enabled' ttl') Nothing
+      _ -> do
+        let ContactUserPreference {enabled} = getContactUserPreference f cups
+            ContactUserPreference {enabled = enabled'} = getContactUserPreference f cups'
+        unless (enabled == enabled') $
+          createInternalChatItem user (chatDir ct') (ciContent (chatFeature f) enabled' Nothing) Nothing
 
-createGroupFeatureChangedItems :: (MsgDirectionI d, ChatMonad m) => User -> ChatDirection 'CTGroup d -> (GroupFeature -> GroupPreference -> CIContent d) -> GroupProfile -> GroupProfile -> m ()
-createGroupFeatureChangedItems user cd ciContent p p' =
-  forM_ allGroupFeatures $ \(AGF f) -> do
-    let pref = getGroupPreference f $ groupPreferences p
-        pref' = getGroupPreference f $ groupPreferences p'
-    unless (pref == pref') $
-      createInternalChatItem user cd (ciContent (toGroupFeature f) (toGroupPreference pref')) Nothing
+createGroupFeatureChangedItems :: (MsgDirectionI d, ChatMonad m) => User -> ChatDirection 'CTGroup d -> (GroupFeature -> GroupPreference -> Maybe Int -> CIContent d) -> GroupInfo -> GroupInfo -> m ()
+createGroupFeatureChangedItems user cd ciContent GroupInfo {fullGroupPreferences = gps} GroupInfo {fullGroupPreferences = gps'} =
+  forM_ allGroupFeatures $ \(AGF f) ->
+    case toGroupFeature f of
+      GFTimedMessages -> do
+        let TimedMessagesGroupPreference {enable, ttl} = timedMessages (gps :: FullGroupPreferences)
+        let pref'@TimedMessagesGroupPreference {enable = enable', ttl = ttl'} = timedMessages (gps :: FullGroupPreferences)
+        when (enable /= enable' || (enable == enable' && enable' == FEOn && ttl /= ttl')) $
+          createInternalChatItem user cd (ciContent (toGroupFeature f) (toGroupPreference pref') (Just ttl')) Nothing
+      _ -> do
+        let pref = getGroupPreference f gps
+            pref' = getGroupPreference f gps'
+        unless (pref == pref') $
+          createInternalChatItem user cd (ciContent (toGroupFeature f) (toGroupPreference pref') Nothing) Nothing
 
 sameGroupProfileInfo :: GroupProfile -> GroupProfile -> Bool
 sameGroupProfileInfo p p' = p {groupPreferences = Nothing} == p' {groupPreferences = Nothing}
