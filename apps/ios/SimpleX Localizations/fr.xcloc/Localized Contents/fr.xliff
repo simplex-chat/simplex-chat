@@ -54,7 +54,7 @@
       </trans-unit>
       <trans-unit id="%@ is connected!" xml:space="preserve" approved="no">
         <source>%@ is connected!</source>
-        <target state="translated">%@ est connecté !</target>
+        <target state="translated">%@ est connecté·e !</target>
         <note>notification title</note>
       </trans-unit>
       <trans-unit id="%@ wants to connect!" xml:space="preserve" approved="no">
@@ -625,7 +625,7 @@
       </trans-unit>
       <trans-unit id="Connection request sent!" xml:space="preserve" approved="no">
         <source>Connection request sent!</source>
-        <target state="translated">Demande de connexion envoyée !</target>
+        <target state="translated">Demande de connexion envoyée !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection timeout" xml:space="preserve" approved="no">
@@ -640,7 +640,7 @@
       </trans-unit>
       <trans-unit id="Contact and all messages will be deleted - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Contact and all messages will be deleted - this cannot be undone!</source>
-        <target state="translated">Le contact et tous les messages seront supprimés - impossible de revenir en arrière !</target>
+        <target state="translated">Le contact et tous les messages seront supprimés - impossible de revenir en arrière !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact hidden:" xml:space="preserve" approved="no">
@@ -655,7 +655,7 @@
       </trans-unit>
       <trans-unit id="Contact is not connected yet!" xml:space="preserve" approved="no">
         <source>Contact is not connected yet!</source>
-        <target state="translated">Le contact n'est pas encore connecté!</target>
+        <target state="translated">Le contact n'est pas encore connecté !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact name" xml:space="preserve" approved="no">
@@ -868,7 +868,7 @@
       </trans-unit>
       <trans-unit id="Delete contact?" xml:space="preserve" approved="no">
         <source>Delete contact?</source>
-        <target state="translated">Supprimer le contact ?</target>
+        <target state="translated">Supprimer le contact ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete database" xml:space="preserve" approved="no">
@@ -953,7 +953,7 @@
       </trans-unit>
       <trans-unit id="Delete pending connection?" xml:space="preserve" approved="no">
         <source>Delete pending connection?</source>
-        <target state="translated">Supprimer la connexion en attente ?</target>
+        <target state="translated">Supprimer la connexion en attente ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete queue" xml:space="preserve" approved="no">
@@ -1690,7 +1690,7 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
       </trans-unit>
       <trans-unit id="Large file!" xml:space="preserve" approved="no">
         <source>Large file!</source>
-        <target state="translated">Fichier trop lourd !</target>
+        <target state="translated">Fichier trop lourd !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Leave" xml:space="preserve" approved="no">
@@ -2485,7 +2485,7 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
       </trans-unit>
       <trans-unit id="Show QR code" xml:space="preserve" approved="no">
         <source>Show QR code</source>
-        <target state="translated">Montrer le code QR</target>
+        <target state="translated">Afficher le code QR</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve" approved="no">
@@ -2580,7 +2580,7 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
       </trans-unit>
       <trans-unit id="Stop chat?" xml:space="preserve" approved="no">
         <source>Stop chat?</source>
-        <target state="translated">Arrêter le chat ?</target>
+        <target state="translated">Arrêter le chat ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Support SimpleX Chat" xml:space="preserve" approved="no">
@@ -2680,12 +2680,12 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
       </trans-unit>
       <trans-unit id="The connection you accepted will be cancelled!" xml:space="preserve" approved="no">
         <source>The connection you accepted will be cancelled!</source>
-        <target state="translated">La connexion que vous avez acceptée sera annulée !</target>
+        <target state="translated">La connexion que vous avez acceptée sera annulée !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The contact you shared this link with will NOT be able to connect!" xml:space="preserve" approved="no">
         <source>The contact you shared this link with will NOT be able to connect!</source>
-        <target state="translated">Le contact avec lequel vous avez partagé ce lien NE pourra PAS se connecter !</target>
+        <target state="translated">Le contact avec lequel vous avez partagé ce lien NE pourra PAS se connecter !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The created archive is available via app Settings / Database / Old database archive." xml:space="preserve" approved="no">
@@ -2964,7 +2964,7 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
       </trans-unit>
       <trans-unit id="Voice messages prohibited!" xml:space="preserve" approved="no">
         <source>Voice messages prohibited!</source>
-        <target state="translated">Messages vocaux interdits !</target>
+        <target state="translated">Messages vocaux interdits !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Voice message…" xml:space="preserve" approved="no">
@@ -3139,17 +3139,17 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
       </trans-unit>
       <trans-unit id="You will be connected to group when the group host's device is online, please wait or check later!" xml:space="preserve" approved="no">
         <source>You will be connected to group when the group host's device is online, please wait or check later!</source>
-        <target state="translated">Vous serez connecté.e au groupe lorsque l'appareil de l'hôte du groupe sera en ligne, veuillez attendre ou vérifier plus tard !</target>
+        <target state="translated">Vous serez connecté·e au groupe lorsque l'appareil de l'hôte sera en ligne, veuillez attendre ou vérifier plus tard !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will be connected when your connection request is accepted, please wait or check later!" xml:space="preserve" approved="no">
         <source>You will be connected when your connection request is accepted, please wait or check later!</source>
-        <target state="translated">Vous serez connecté·e lorsque votre demande de connexion sera acceptée, veuillez attendre ou vérifier plus tard !</target>
+        <target state="translated">Vous serez connecté·e lorsque votre demande de connexion sera acceptée, veuillez attendre ou vérifier plus tard !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will be connected when your contact's device is online, please wait or check later!" xml:space="preserve" approved="no">
         <source>You will be connected when your contact's device is online, please wait or check later!</source>
-        <target state="translated">Vous serez connecté·e lorsque l'appareil de votre contact sera en ligne, veuillez attendre ou vérifier plus tard !</target>
+        <target state="translated">Vous serez connecté·e lorsque l'appareil de votre contact sera en ligne, veuillez attendre ou vérifier plus tard !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will be required to authenticate when you start or resume the app after 30 seconds in background." xml:space="preserve" approved="no">
@@ -3799,7 +3799,7 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
       </trans-unit>
       <trans-unit id="wants to connect to you!" xml:space="preserve" approved="no">
         <source>wants to connect to you!</source>
-        <target state="translated">veut établir une connexion !</target>
+        <target state="translated">veut établir une connexion !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="yes" xml:space="preserve" approved="no">
