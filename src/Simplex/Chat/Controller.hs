@@ -4,6 +4,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StrictData #-}
@@ -267,6 +268,9 @@ data ChatCommand
   | SetUserFeature AChatFeature FeatureAllowed
   | SetContactFeature AChatFeature ContactName (Maybe FeatureAllowed)
   | SetGroupFeature AGroupFeature GroupName GroupFeatureEnabled
+  | SetUserTimedMessages Bool
+  | SetContactTimedMessages ContactName (Maybe TimedMessagesEnabled)
+  | SetGroupTimedMessages GroupName (Maybe Int)
   | QuitChat
   | ShowVersion
   | DebugLocks
@@ -511,6 +515,18 @@ data ServerAddress = ServerAddress
   deriving (Show, Generic)
 
 instance ToJSON ServerAddress where toEncoding = J.genericToEncoding J.defaultOptions
+
+data TimedMessagesEnabled
+  = TMEEnableSetTTL Int
+  | TMEEnableKeepTTL
+  | TMEDisableKeepTTL
+  deriving (Show)
+
+tmeToPref :: Maybe Int -> TimedMessagesEnabled -> TimedMessagesPreference
+tmeToPref currentTTL tme = uncurry TimedMessagesPreference $ case tme of
+  TMEEnableSetTTL ttl -> (FAYes, Just ttl)
+  TMEEnableKeepTTL -> (FAYes, currentTTL)
+  TMEDisableKeepTTL -> (FANo, currentTTL)
 
 data ChatError
   = ChatError {errorType :: ChatErrorType}

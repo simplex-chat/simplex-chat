@@ -4181,7 +4181,7 @@ updateDirectChatItemsRead db userId contactId itemsRange_ = do
           UPDATE chat_items SET item_status = ?, updated_at = ?
           WHERE user_id = ? AND contact_id = ? AND chat_item_id >= ? AND chat_item_id <= ? AND item_status = ?
         |]
-        (userId, CISRcvRead, currentTs, contactId, fromItemId, toItemId, CISRcvNew)
+        (CISRcvRead, currentTs, userId, contactId, fromItemId, toItemId, CISRcvNew)
     _ ->
       DB.execute
         db
@@ -4189,7 +4189,7 @@ updateDirectChatItemsRead db userId contactId itemsRange_ = do
           UPDATE chat_items SET item_status = ?, updated_at = ?
           WHERE user_id = ? AND contact_id = ? AND item_status = ?
         |]
-        (userId, CISRcvRead, currentTs, contactId, CISRcvNew)
+        (CISRcvRead, currentTs, userId, contactId, CISRcvNew)
 
 getDirectUnreadTimedItems :: DB.Connection -> User -> ContactId -> Maybe (ChatItemId, ChatItemId) -> IO [(ChatItemId, Int)]
 getDirectUnreadTimedItems db User {userId} contactId itemsRange_ = case itemsRange_ of
@@ -4230,7 +4230,7 @@ updateGroupChatItemsRead db userId groupId itemsRange_ = do
           UPDATE chat_items SET item_status = ?, updated_at = ?
           WHERE user_id = ? AND group_id = ? AND chat_item_id >= ? AND chat_item_id <= ? AND item_status = ?
         |]
-        (userId, CISRcvRead, currentTs, groupId, fromItemId, toItemId, CISRcvNew)
+        (CISRcvRead, currentTs, userId, groupId, fromItemId, toItemId, CISRcvNew)
     _ ->
       DB.execute
         db
@@ -4238,7 +4238,7 @@ updateGroupChatItemsRead db userId groupId itemsRange_ = do
           UPDATE chat_items SET item_status = ?, updated_at = ?
           WHERE user_id = ? AND group_id = ? AND item_status = ?
         |]
-        (userId, CISRcvRead, currentTs, groupId, CISRcvNew)
+        (CISRcvRead, currentTs, userId, groupId, CISRcvNew)
 
 getGroupUnreadTimedItems :: DB.Connection -> User -> GroupId -> Maybe (ChatItemId, ChatItemId) -> IO [(ChatItemId, Int)]
 getGroupUnreadTimedItems db User {userId} groupId itemsRange_ = case itemsRange_ of
