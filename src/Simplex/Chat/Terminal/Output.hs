@@ -76,7 +76,7 @@ withTermLock ChatTerminal {termLock} action = do
   atomically $ putTMVar termLock ()
 
 runTerminalOutput :: ChatTerminal -> ChatController -> IO ()
-runTerminalOutput ct cc@ChatController {currentUser, outputQ, config = ChatConfig {testView}} = do
+runTerminalOutput ct cc@ChatController {currentUser, outputQ, config = ChatConfig {testView}, showLiveItems} = do
   forever $ do
     (_, r) <- atomically $ readTBQueue outputQ
     case r of
@@ -84,8 +84,9 @@ runTerminalOutput ct cc@ChatController {currentUser, outputQ, config = ChatConfi
       CRChatItemUpdated ci -> markChatItemRead ci
       _ -> pure ()
     user <- readTVarIO currentUser
+    liveItems <- readTVarIO showLiveItems
     ts <- getCurrentTime
-    printToTerminal ct $ responseToView user testView ts r
+    printToTerminal ct $ responseToView user testView liveItems ts r
   where
     markChatItemRead :: AChatItem -> IO ()
     markChatItemRead (AChatItem _ _ chat item@ChatItem {meta = CIMeta {itemStatus}}) =

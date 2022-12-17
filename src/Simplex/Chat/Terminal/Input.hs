@@ -43,7 +43,7 @@ runInputLoop ct cc = forever $ do
   let testV = testView $ config cc
   user <- readTVarIO $ currentUser cc
   ts <- getCurrentTime
-  printToTerminal ct $ responseToView user testV ts r
+  printToTerminal ct $ responseToView user testV False ts r
   where
     echo s = printToTerminal ct [plain s]
     isMessage = \case

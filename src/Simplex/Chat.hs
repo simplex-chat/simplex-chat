@@ -158,7 +158,8 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   expireCIs <- newTVarIO False
   cleanupManagerAsync <- newTVarIO Nothing
   timedItemThreads <- atomically TM.empty
-  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, incognitoMode, filesFolder, expireCIsAsync, expireCIs, cleanupManagerAsync, timedItemThreads}
+  showLiveItems <- newTVarIO False
+  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, incognitoMode, filesFolder, expireCIsAsync, expireCIs, cleanupManagerAsync, timedItemThreads, showLiveItems}
   where
     configServers :: InitialAgentServers
     configServers =
@@ -1110,14 +1111,21 @@ processChatCommand = \case
     processChatCommand . APISendMessage (ChatRef CTGroup groupId) False $ ComposedMessage Nothing (Just quotedItemId) mc
   LastMessages (Just chatName) count search -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
-    CRLastMessages . aChatItems . chat <$> processChatCommand (APIGetChat chatRef (CPLast count) search)
+    CRChatItems . aChatItems . chat <$> processChatCommand (APIGetChat chatRef (CPLast count) search)
   LastMessages Nothing count search -> withUser $ \user -> withStore $ \db ->
-    CRLastMessages <$> getAllChatItems db user (CPLast count) search
+    CRChatItems <$> getAllChatItems db user (CPLast count) search
   LastChatItemId (Just chatName) index -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
-    CRLastChatItemId . fmap aChatItemId . listToMaybe . aChatItems . chat <$> processChatCommand (APIGetChat chatRef (CPLast $ index + 1) Nothing)
+    CRChatItemId . fmap aChatItemId . listToMaybe . aChatItems . chat <$> processChatCommand (APIGetChat chatRef (CPLast $ index + 1) Nothing)
   LastChatItemId Nothing index -> withUser $ \user -> withStore $ \db ->
-    CRLastChatItemId . fmap aChatItemId . listToMaybe <$> getAllChatItems db user (CPLast $ index + 1) Nothing
+    CRChatItemId . fmap aChatItemId . listToMaybe <$> getAllChatItems db user (CPLast $ index + 1) Nothing
+  ShowChatItem (Just itemId) -> withUser $ \user -> withStore $ \db ->
+    CRChatItems . (: []) <$> getAChatItem db user itemId
+  ShowChatItem Nothing -> withUser $ \user -> withStore $ \db ->
+    CRChatItems <$> getAllChatItems db user (CPLast 1) Nothing
+  ShowLiveItems on -> withUser $ \_ -> do
+    asks showLiveItems >>= atomically . (`writeTVar` on)
+    pure CRCmdOk
   SendFile chatName f -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     processChatCommand . APISendMessage chatRef False $ ComposedMessage (Just f) Nothing (MCFile "")
@@ -3642,6 +3650,8 @@ chatCommandP =
       ("/tail" <|> "/t") *> (LastMessages <$> optional (A.space *> chatNameP) <*> msgCountP <*> pure Nothing),
       ("/search" <|> "/?") *> (LastMessages <$> optional (A.space *> chatNameP) <*> msgCountP <*> (Just <$> (A.space *> stringP))),
       "/last_item_id" *> (LastChatItemId <$> optional (A.space *> chatNameP) <*> (A.space *> A.decimal <|> pure 0)),
+      "/show" *> (ShowLiveItems <$> (A.space *> onOffP <|> pure True)),
+      "/show " *> (ShowChatItem . Just <$> A.decimal),
       ("/file " <|> "/f ") *> (SendFile <$> chatNameP' <* A.space <*> filePath),
       ("/image " <|> "/img ") *> (SendImage <$> chatNameP' <* A.space <*> filePath),
       ("/fforward " <|> "/ff ") *> (ForwardFile <$> chatNameP' <* A.space <*> A.decimal),

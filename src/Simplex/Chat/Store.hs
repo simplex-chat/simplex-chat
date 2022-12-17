@@ -189,6 +189,7 @@ module Simplex.Chat.Store
     getDirectChat,
     getGroupChat,
     getAllChatItems,
+    getAChatItem,
     getChatItemIdByAgentMsgId,
     getDirectChatItem,
     getDirectChatItemBySharedMsgId,
@@ -4142,6 +4143,18 @@ getChatItemByGroupId db user@User {userId} groupId = do
         |]
         (userId, groupId)
   getAChatItem_ db user itemId chatRef
+
+getAChatItem :: DB.Connection -> User -> ChatItemId -> ExceptT StoreError IO AChatItem
+getAChatItem db user@User {userId} itemId = do
+  chatRef <-
+    ExceptT . firstRow' toChatRef (SEChatItemNotFound itemId) $
+      DB.query db "SELECT contact_id, group_id FROM chat_items WHERE user_id = ? AND chat_item_id = ?" (userId, itemId)
+  getAChatItem_ db user itemId chatRef
+  where
+    toChatRef = \case
+      (Just contactId, Nothing) -> Right $ ChatRef CTDirect contactId
+      (Nothing, Just groupId) -> Right $ ChatRef CTGroup groupId
+      (_, _) -> Left $ SEBadChatItem itemId
 
 getAChatItem_ :: DB.Connection -> User -> ChatItemId -> ChatRef -> ExceptT StoreError IO AChatItem
 getAChatItem_ db user@User {userId} itemId = \case

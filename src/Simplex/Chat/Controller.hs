@@ -126,7 +126,8 @@ data ChatController = ChatController
     expireCIsAsync :: TVar (Maybe (Async ())),
     expireCIs :: TVar Bool,
     cleanupManagerAsync :: TVar (Maybe (Async ())),
-    timedItemThreads :: TMap (ChatRef, ChatItemId) (TVar (Maybe (Weak ThreadId)))
+    timedItemThreads :: TMap (ChatRef, ChatItemId) (TVar (Maybe (Weak ThreadId))),
+    showLiveItems :: TVar Bool
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown | HSMessages | HSSettings
@@ -235,7 +236,8 @@ data ChatCommand
   | SendMessage ChatName ByteString
   | SendMessageQuote {contactName :: ContactName, msgDir :: AMsgDirection, quotedMsg :: ByteString, message :: ByteString}
   | SendMessageBroadcast ByteString
-  | DeleteMessage ChatName ByteString
+  | -- | StartLiveMessage ChatName ByteString
+    DeleteMessage ChatName ByteString
   | EditMessage {chatName :: ChatName, editedMsg :: ByteString, message :: ByteString}
   | NewGroup GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
@@ -256,6 +258,8 @@ data ChatCommand
   | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: ByteString, message :: ByteString}
   | LastMessages (Maybe ChatName) Int (Maybe String)
   | LastChatItemId (Maybe ChatName) Int
+  | ShowChatItem (Maybe ChatItemId)
+  | ShowLiveItems Bool
   | SendFile ChatName FilePath
   | SendImage ChatName FilePath
   | ForwardFile ChatName FileTransferId
@@ -285,8 +289,8 @@ data ChatResponse
   | CRChatSuspended
   | CRApiChats {chats :: [AChat]}
   | CRApiChat {chat :: AChat}
-  | CRLastMessages {chatItems :: [AChatItem]}
-  | CRLastChatItemId (Maybe ChatItemId)
+  | CRChatItems {chatItems :: [AChatItem]}
+  | CRChatItemId (Maybe ChatItemId)
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
   | CRUserSMPServers {smpServers :: NonEmpty ServerCfg, presetSMPServers :: NonEmpty SMPServerWithAuth}
   | CRSmpTestResult {smpTestFailure :: Maybe SMPTestFailure}
