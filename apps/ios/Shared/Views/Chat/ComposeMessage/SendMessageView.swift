@@ -203,17 +203,11 @@ struct SendMessageView: View {
     private func updateHeight(_ g: GeometryProxy) -> Color {
         DispatchQueue.main.async {
             teHeight = min(max(g.frame(in: .local).size.height, minHeight), maxHeight)
-            let msg = composeState.message
-            if !isShortEmoji(msg) {
-                teFont = .body
-                teUiFont = UIFont.preferredFont(forTextStyle: .body)
-            } else if msg.count < 4 {
-                teFont = largeEmojiFont
-                teUiFont = largeEmojiUIFont
-            } else {
-                teFont = mediumEmojiFont
-                teUiFont = mediumEmojiUIFont
-            }
+            (teFont, teUiFont) = isShortEmoji(composeState.message)
+                                    ? composeState.message.count < 4
+                                        ? (largeEmojiFont, largeEmojiUIFont)
+                                        : (mediumEmojiFont, mediumEmojiUIFont)
+                                    : (.body, UIFont.preferredFont(forTextStyle: .body))
         }
         return Color.clear
     }
