@@ -136,12 +136,12 @@ chatTests = do
     it "set connection alias" testSetConnectionAlias
   describe "preferences" $ do
     it "set contact preferences" testSetContactPrefs
-    fit "update group preferences" testUpdateGroupPrefs
+    it "update group preferences" testUpdateGroupPrefs
     it "allow full deletion to contact" testAllowFullDeletionContact
-    fit "allow full deletion to group" testAllowFullDeletionGroup
+    it "allow full deletion to group" testAllowFullDeletionGroup
     it "prohibit direct messages to group members" testProhibitDirectMessages
-    fit "enable timed messages with contact" testEnableTimedMessagesContact
-    fit "enable timed messages in group" testEnableTimedMessagesGroup
+    it "enable timed messages with contact" testEnableTimedMessagesContact
+    it "enable timed messages in group" testEnableTimedMessagesGroup
   describe "SMP servers" $ do
     it "get and set SMP servers" testGetSetSMPServers
     it "test SMP server connection" testTestSMPServerConnection
@@ -3604,11 +3604,11 @@ testEnableTimedMessagesGroup =
       alice #> "#team hi"
       bob <# "#team alice> hi"
       threadDelay 900000
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Disappearing messages: on"), (1, "hi")])
-      bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Disappearing messages: on"), (0, "hi")])
+      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Disappearing messages: on, after 1 second(s)"), (1, "hi")])
+      bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Disappearing messages: on, after 1 second(s)"), (0, "hi")])
       threadDelay 200000
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Disappearing messages: on")])
-      bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Disappearing messages: on")])
+      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Disappearing messages: on, after 1 second(s)")])
+      bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Disappearing messages: on, after 1 second(s)")])
 
 testGetSetSMPServers :: IO ()
 testGetSetSMPServers =
