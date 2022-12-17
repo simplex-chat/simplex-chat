@@ -804,11 +804,13 @@ viewPrefsUpdated ps ps'
       where
         pref pss = getPreference f $ mergePreferences pss Nothing
 
-viewPreference :: FeatureI f => FeaturePreference f -> StyledString
-viewPreference p = case getField @"allow" p of
-  FAAlways -> "always"
-  FAYes -> "yes"
-  FANo -> "no"
+viewPreference :: forall f. (FeatureI f) => FeaturePreference f -> StyledString
+viewPreference p =
+  let allowed = case getField @"allow" p of
+        FAAlways -> "always"
+        FAYes -> "yes"
+        FANo -> "no"
+   in plain $ allowed <> maybe "" (", " <>) (featureIntValueText (prefFeature @f) (prefIntValue p))
 
 viewCountactUserPref :: FeatureI f => ContactUserPref (FeaturePreference f) -> StyledString
 viewCountactUserPref = \case
@@ -838,9 +840,12 @@ viewGroupUpdated
           prefs = mapMaybe viewPref allGroupFeatures
           viewPref (AGF f)
             | pref gps == pref gps' = Nothing
-            | otherwise = Just $ plain (groupFeatureToText $ toGroupFeature f) <> " enabled: " <> plain (groupPrefToText $ pref gps')
+            | otherwise = Just $ plain (groupFeatureToText $ toGroupFeature f) <> " enabled: " <> viewGroupPreference (pref gps')
             where
               pref = getGroupPreference f . mergeGroupPreferences
+
+viewGroupPreference :: forall f. (GroupFeatureI f) => GroupFeaturePreference f -> StyledString
+viewGroupPreference p = plain $ groupPrefToText p <> maybe "" (", " <>) (groupFeatureIntValueText (groupPrefFeature @f) (groupPrefIntValue p))
 
 viewGroupProfile :: GroupInfo -> [StyledString]
 viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {description, image, groupPreferences = gps}} =
@@ -849,7 +854,7 @@ viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {description, image, g
     <> maybe [] ((bold' "description:" :) . map plain . T.lines) description
     <> (bold' "group preferences:" : map viewPref allGroupFeatures)
   where
-    viewPref (AGF f) = plain (groupFeatureToText $ toGroupFeature f) <> " enabled: " <> plain (groupPrefToText $ pref gps)
+    viewPref (AGF f) = plain (groupFeatureToText $ toGroupFeature f) <> " enabled: " <> viewGroupPreference (pref gps)
       where
         pref = getGroupPreference f . mergeGroupPreferences
 
