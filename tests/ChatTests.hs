@@ -140,6 +140,8 @@ chatTests = do
     it "allow full deletion to contact" testAllowFullDeletionContact
     it "allow full deletion to group" testAllowFullDeletionGroup
     it "prohibit direct messages to group members" testProhibitDirectMessages
+    it "enable timed messages with contact" testEnableTimedMessagesContact
+    it "enable timed messages in group" testEnableTimedMessagesGroup
   describe "SMP servers" $ do
     it "get and set SMP servers" testGetSetSMPServers
     it "test SMP server connection" testTestSMPServerConnection
@@ -3550,6 +3552,52 @@ testProhibitDirectMessages =
       cc <## "alice updated group #team:"
       cc <## "updated group preferences:"
       cc <## "Direct messages enabled: off"
+
+testEnableTimedMessagesContact :: IO ()
+testEnableTimedMessagesContact =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice ##> "/_set prefs @2 {\"timedMessages\": {\"allow\": \"yes\", \"ttl\": 1}}"
+      alice <## "you updated preferences for bob:"
+      alice <## "Disappearing messages: off (you allow: yes, contact allows: no)"
+      bob <## "alice updated preferences for you:"
+      bob <## "Disappearing messages: off (you allow: default (no), contact allows: yes)"
+      -- TODO bob ##> "/set disappear @alice yes"
+      bob ##> "/_set prefs @2 {\"timedMessages\": {\"allow\": \"yes\", \"ttl\": 1}}"
+      bob <## "you updated preferences for alice:"
+      bob <## "Disappearing messages: enabled (you allow: yes, contact allows: yes)"
+      alice <## "bob updated preferences for you:"
+      alice <## "Disappearing messages: enabled (you allow: yes, contact allows: yes)"
+      alice <##> bob
+      threadDelay 900000
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled"), (1, "hi"), (0, "hey")])
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled"), (0, "hi"), (1, "hey")])
+      threadDelay 200000
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled")])
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled")])
+
+testEnableTimedMessagesGroup :: IO ()
+testEnableTimedMessagesGroup =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      threadDelay 1000000
+      alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"timedMessages\": {\"enable\": \"on\", \"ttl\": 1}, \"directMessages\": {\"enable\": \"on\"}}}"
+      alice <## "updated group preferences:"
+      alice <## "Disappearing messages enabled: on"
+      bob <## "alice updated group #team:"
+      bob <## "updated group preferences:"
+      bob <## "Disappearing messages enabled: on"
+      threadDelay 1000000
+      alice #> "#team hi"
+      bob <# "#team alice> hi"
+      threadDelay 900000
+      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Disappearing messages: on"), (1, "hi")])
+      bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Disappearing messages: on"), (0, "hi")])
+      threadDelay 200000
+      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Disappearing messages: on")])
+      bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Disappearing messages: on")])
 
 testGetSetSMPServers :: IO ()
 testGetSetSMPServers =

@@ -341,7 +341,7 @@ processChatCommand = \case
         msgTimed ct = case contactCITimedTTL ct of
           Just ttl -> do
             ts <- liftIO getCurrentTime
-            let deleteAt = addUTCTime (toEnum ttl) ts
+            let deleteAt = addUTCTime (realToFrac ttl) ts
             pure . Just $ CITimed ttl (Just deleteAt)
           Nothing -> pure Nothing
         prepareMsg :: Maybe FileInvitation -> Maybe CITimed -> m (MsgContainer, Maybe (CIQuote 'CTDirect))
@@ -394,7 +394,7 @@ processChatCommand = \case
         msgTimed gInfo = case groupCITimedTTL gInfo of
           Just ttl -> do
             ts <- liftIO getCurrentTime
-            let deleteAt = addUTCTime (toEnum ttl) ts
+            let deleteAt = addUTCTime (realToFrac ttl) ts
             pure . Just $ CITimed ttl (Just deleteAt)
           Nothing -> pure Nothing
         sendGroupFileInline :: [GroupMember] -> SharedMsgId -> FileTransferMeta -> m ()
@@ -513,7 +513,7 @@ processChatCommand = \case
       timedItems <- withStore' $ \db -> getDirectUnreadTimedItems db user chatId fromToIds
       ts <- liftIO getCurrentTime
       forM_ timedItems $ \(itemId, ttl) -> do
-        let deleteAt = addUTCTime (toEnum ttl) ts
+        let deleteAt = addUTCTime (realToFrac ttl) ts
         withStore' $ \db -> setDirectChatItemDeleteAt db user chatId itemId deleteAt
         when (ttl <= cleanupManagerInterval) $ startTimedItemThread user (ChatRef CTDirect chatId, itemId) deleteAt
       withStore' $ \db -> updateDirectChatItemsRead db userId chatId fromToIds
@@ -522,7 +522,7 @@ processChatCommand = \case
       timedItems <- withStore' $ \db -> getGroupUnreadTimedItems db user chatId fromToIds
       ts <- liftIO getCurrentTime
       forM_ timedItems $ \(itemId, ttl) -> do
-        let deleteAt = addUTCTime (toEnum ttl) ts
+        let deleteAt = addUTCTime (realToFrac ttl) ts
         withStore' $ \db -> setGroupChatItemDeleteAt db user chatId itemId deleteAt
         when (ttl <= cleanupManagerInterval) $ startTimedItemThread user (ChatRef CTGroup chatId, itemId) deleteAt
       withStore' $ \db -> updateGroupChatItemsRead db userId chatId fromToIds
@@ -1174,6 +1174,21 @@ processChatCommand = \case
   SetGroupFeature (AGF f) gName enabled ->
     updateGroupProfileByName gName $ \p ->
       p {groupPreferences = Just . setGroupPreference f enabled $ groupPreferences p}
+  SetUserTimedMessages onOff -> withUser $ \user@User {profile} -> do
+    let allowed = if onOff then FAYes else FANo
+        pref = TimedMessagesPreference allowed Nothing
+        p = (fromLocalProfile profile :: Profile) {preferences = Just . setPreference' SCFTimedMessages (Just pref) $ preferences' user}
+    updateProfile user p
+  SetContactTimedMessages cName timedMessagesEnabled_ -> withUser $ \user -> do
+    ct@Contact {userPreferences = userPreferences@Preferences {timedMessages}} <- withStore $ \db -> getContactByName db user cName
+    let currentTTL = timedMessages >>= \TimedMessagesPreference {ttl} -> ttl
+        pref_ = tmeToPref currentTTL <$> timedMessagesEnabled_
+        prefs' = setPreference' SCFTimedMessages pref_ $ Just userPreferences
+    updateContactPrefs user ct prefs'
+  SetGroupTimedMessages gName ttl_ -> do
+    let pref = uncurry TimedMessagesGroupPreference $ maybe (FEOff, 86400) (FEOn,) ttl_
+    updateGroupProfileByName gName $ \p ->
+      p {groupPreferences = Just . setGroupPreference' SGFTimedMessages pref $ groupPreferences p}
   QuitChat -> liftIO exitSuccess
   ShowVersion -> pure $ CRVersionInfo versionNumber
   DebugLocks -> do
@@ -1710,7 +1725,7 @@ cleanupManager user = do
   where
     cleanupTimedItems = do
       ts <- liftIO getCurrentTime
-      let startTimedThreadCutoff = addUTCTime (toEnum cleanupManagerInterval) ts
+      let startTimedThreadCutoff = addUTCTime (realToFrac cleanupManagerInterval) ts
       timedItems <- withStore' $ \db -> getTimedItems db user startTimedThreadCutoff
       forM_ timedItems $ uncurry (startTimedItemThread user)
 
@@ -1719,7 +1734,7 @@ startTimedItemThread user itemRef deleteAt = do
   itemThreads <- asks timedItemThreads
   threadTVar_ <- atomically $ do
     exists <- TM.member itemRef itemThreads
-    if exists
+    if not exists
       then do
         threadTVar <- newTVar Nothing
         TM.insert itemRef threadTVar itemThreads
@@ -3648,6 +3663,9 @@ chatCommandP =
       "/set delete @" *> (SetContactFeature (ACF SCFFullDelete) <$> displayName <*> optional (A.space *> strP)),
       "/set delete " *> (SetUserFeature (ACF SCFFullDelete) <$> strP),
       "/set direct #" *> (SetGroupFeature (AGF SGFDirectMessages) <$> displayName <*> (A.space *> strP)),
+      "/set disappear #" *> (SetGroupTimedMessages <$> displayName <*> (A.space *> timedTTLOffP)),
+      "/set disappear @" *> (SetContactTimedMessages <$> displayName <*> optional (A.space *> timedMessagesEnabledP)),
+      "/set disappear " *> (SetUserTimedMessages <$> onOffP),
       "/incognito " *> (SetIncognito <$> onOffP),
       ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
       ("/version" <|> "/v") $> ShowVersion,
@@ -3709,6 +3727,19 @@ chatCommandP =
         <|> ("week" $> Just (7 * 86400))
         <|> ("month" $> Just (30 * 86400))
         <|> ("none" $> Nothing)
+    timedTTLP =
+      ("30s" $> 30)
+        <|> ("5min" $> 300)
+        <|> ("1h" $> 3600)
+        <|> ("8h" $> (8 * 3600))
+        <|> ("day" $> 86400)
+        <|> ("week" $> (7 * 86400))
+        <|> ("month" $> (30 * 86400))
+    timedTTLOffP = (Just <$> timedTTLP) <|> ("off" $> Nothing)
+    timedMessagesEnabledP =
+      optional "yes" *> A.space *> (TMEEnableSetTTL <$> timedTTLP)
+        <|> ("yes" $> TMEEnableKeepTTL)
+        <|> ("no" $> TMEDisableKeepTTL)
     netCfgP = do
       socksProxy <- "socks=" *> ("off" $> Nothing <|> "on" $> Just defaultSocksProxy <|> Just <$> strP)
       t_ <- optional $ " timeout=" *> A.decimal
