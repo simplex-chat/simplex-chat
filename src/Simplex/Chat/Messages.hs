@@ -245,6 +245,9 @@ aChatItems (AChat ct Chat {chatInfo, chatItems}) = map aChatItem chatItems
   where
     aChatItem (CChatItem md ci) = AChatItem ct md chatInfo ci
 
+aChatItemId :: AChatItem -> Int64
+aChatItemId (AChatItem _ _ _ ci) = chatItemId' ci
+
 updateFileStatus :: forall c d. ChatItem c d -> CIFileStatus d -> ChatItem c d
 updateFileStatus ci@ChatItem {file} status = case file of
   Just f -> ci {file = Just (f :: CIFile d) {fileStatus = status}}
@@ -264,7 +267,7 @@ data CIMeta (d :: MsgDirection) = CIMeta
     itemDeleted :: Bool,
     itemEdited :: Bool,
     itemTimed :: Maybe CITimed,
-    itemLive :: Bool,
+    itemLive :: Maybe Bool,
     editable :: Bool,
     localItemTs :: ZonedTime,
     createdAt :: UTCTime,
@@ -272,7 +275,7 @@ data CIMeta (d :: MsgDirection) = CIMeta
   }
   deriving (Show, Generic)
 
-mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Bool -> Bool -> Maybe CITimed -> Bool -> TimeZone -> UTCTime -> ChatItemTs -> UTCTime -> UTCTime -> CIMeta d
+mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Bool -> Bool -> Maybe CITimed -> Maybe Bool -> TimeZone -> UTCTime -> ChatItemTs -> UTCTime -> UTCTime -> CIMeta d
 mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemEdited itemTimed itemLive tz currentTs itemTs createdAt updatedAt =
   let localItemTs = utcToZonedTime tz itemTs
       editable = case itemContent of

@@ -31,7 +31,9 @@ struct FramedItemView: View {
         let v = ZStack(alignment: .bottomTrailing) {
             VStack(alignment: .leading, spacing: 0) {
                 if chatItem.meta.itemDeleted {
-                    ciDeletedView()
+                    framedItemHeader(icon: "trash", caption: Text("marked deleted").italic())
+                } else if chatItem.meta.isLive {
+                    framedItemHeader(caption: Text("LIVE"))
                 }
                 
                 if let qi = chatItem.quotedItem {
@@ -73,7 +75,7 @@ struct FramedItemView: View {
     }
     
     @ViewBuilder private func framedMsgContentView() -> some View {
-        if chatItem.formattedText == nil && chatItem.file == nil && isShortEmoji(chatItem.content.text) {
+        if chatItem.formattedText == nil && chatItem.file == nil && !chatItem.meta.isLive && isShortEmoji(chatItem.content.text) {
             VStack {
                 emojiText(chatItem.content.text)
                 Text("")
@@ -88,7 +90,7 @@ struct FramedItemView: View {
             case let .image(text, image):
                 CIImageView(chatItem: chatItem, image: image, maxWidth: maxWidth, imgWidth: $imgWidth, scrollProxy: scrollProxy)
                     .overlay(DetermineWidth())
-                if text == "" {
+                if text == "" && !chatItem.meta.isLive {
                     Color.clear
                         .frame(width: 0, height: 0)
                         .preference(
@@ -127,32 +129,33 @@ struct FramedItemView: View {
             message: err
         )
     }
-    
-    @ViewBuilder private func ciDeletedView() -> some View {
+
+    @ViewBuilder func framedItemHeader(icon: String? = nil, caption: Text) -> some View {
         let v = HStack(spacing: 6) {
-            Image(systemName: "trash")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 14, height: 14)
-            Text("marked deleted")
+            if let icon = icon {
+                Image(systemName: icon)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 14, height: 14)
+            }
+            caption
                 .font(.caption)
-                .italic()
                 .lineLimit(1)
         }
-            .foregroundColor(.secondary)
-            .padding(.horizontal, 12)
-            .padding(.top, 6)
-            .padding(.bottom, chatItem.quotedItem == nil ? 6 : 0) // TODO think how to regroup
-            .overlay(DetermineWidth())
-            .frame(minWidth: msgWidth, alignment: .leading)
-            .background(chatItemFrameContextColor(chatItem, colorScheme))
+        .foregroundColor(.secondary)
+        .padding(.horizontal, 12)
+        .padding(.top, 6)
+        .padding(.bottom, chatItem.quotedItem == nil ? 6 : 0) // TODO think how to regroup
+        .overlay(DetermineWidth())
+        .frame(minWidth: msgWidth, alignment: .leading)
+        .background(chatItemFrameContextColor(chatItem, colorScheme))
         if let imgWidth = imgWidth, imgWidth < maxWidth {
             v.frame(maxWidth: imgWidth, alignment: .leading)
         } else {
             v
         }
     }
-    
+
     @ViewBuilder private func ciQuoteView(_ qi: CIQuote) -> some View {
         let v = ZStack(alignment: .topTrailing) {
             switch (qi.content) {
@@ -222,21 +225,21 @@ struct FramedItemView: View {
     }
     
     @ViewBuilder private func ciMsgContentView(_ ci: ChatItem, _ showMember: Bool = false) -> some View {
-        let rtl = isRightToLeft(chatItem.text)
+        let text = ci.meta.isLive ? ci.content.msgContent?.text ?? ci.text : ci.text
+        let rtl = isRightToLeft(text)
         let v = MsgContentView(
-            text: ci.text,
-            formattedText: ci.formattedText,
+            text: text,
+            formattedText: text == "" ? [] : ci.formattedText,
             sender: showMember ? ci.memberDisplayName : nil,
-            metaText: ci.timestampText,
-            edited: ci.meta.itemEdited,
+            meta: ci.meta,
             rightToLeft: rtl
         )
-            .multilineTextAlignment(rtl ? .trailing : .leading)
-            .padding(.vertical, 6)
-            .padding(.horizontal, 12)
-            .overlay(DetermineWidth())
-            .frame(minWidth: 0, alignment: .leading)
-            .textSelection(.enabled)
+        .multilineTextAlignment(rtl ? .trailing : .leading)
+        .padding(.vertical, 6)
+        .padding(.horizontal, 12)
+        .overlay(DetermineWidth())
+        .frame(minWidth: 0, alignment: .leading)
+        .textSelection(.enabled)
         
         if let imgWidth = imgWidth, imgWidth < maxWidth {
             v.frame(maxWidth: imgWidth, alignment: .leading)
@@ -248,7 +251,7 @@ struct FramedItemView: View {
     @ViewBuilder private func ciFileView(_ ci: ChatItem, _ text: String) -> some View {
         CIFileView(file: chatItem.file, edited: chatItem.meta.itemEdited)
             .overlay(DetermineWidth())
-        if text != "" {
+        if text != "" || ci.meta.isLive {
             ciMsgContentView (chatItem, showMember)
         }
     }
@@ -270,7 +273,7 @@ private struct MetaColorPreferenceKey: PreferenceKey {
 
 func onlyImage(_ ci: ChatItem) -> Bool {
     if case let .image(text, _) = ci.content.msgContent {
-        return !ci.meta.itemDeleted && ci.quotedItem == nil && text == ""
+        return !ci.meta.itemDeleted && !ci.meta.isLive && ci.quotedItem == nil && text == ""
     }
     return false
 }

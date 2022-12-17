@@ -12,6 +12,8 @@ import SimpleXChat
 struct SendMessageView: View {
     @Binding var composeState: ComposeState
     var sendMessage: () -> Void
+    var sendLiveMessage: (() async -> Void)? = nil
+    var updateLiveMessage: (() async -> Void)? = nil
     var showVoiceMessageButton: Bool = true
     var voiceMessageAllowed: Bool = true
     var showEnableVoiceMessagesAlert: ChatInfo.ShowEnableVoiceMessagesAlert = .other
@@ -25,8 +27,11 @@ struct SendMessageView: View {
     @State private var teHeight: CGFloat = 42
     @State private var teFont: Font = .body
     @State private var teUiFont: UIFont = UIFont.preferredFont(forTextStyle: .body)
+    @State private var sendButtonSize: CGFloat = 29
+    @State private var sendButtonOpacity: CGFloat = 1
     var maxHeight: CGFloat = 360
     var minHeight: CGFloat = 37
+    @AppStorage(DEFAULT_LIVE_MESSAGE_ALERT_SHOWN) private var liveMessageAlertShown = false
 
     var body: some View {
         ZStack {
@@ -75,25 +80,45 @@ struct SendMessageView: View {
                         .padding([.bottom, .trailing], 3)
                 } else {
                     let vmrs = composeState.voiceMessageRecordingState
-                    if showVoiceMessageButton,
-                       composeState.message.isEmpty,
-                       !composeState.editing,
-                       (composeState.noPreview && vmrs == .noRecording)
-                        || (vmrs == .recording && holdingVMR) {
-                        if voiceMessageAllowed {
-                            RecordVoiceMessageButton(
-                                startVoiceMessageRecording: startVoiceMessageRecording,
-                                finishVoiceMessageRecording: finishVoiceMessageRecording,
-                                holdingVMR: $holdingVMR,
-                                disabled: composeState.disabled
-                            )
-                        } else {
-                            voiceMessageNotAllowedButton()
+                    if showVoiceMessageButton
+                       && composeState.message.isEmpty
+                       && !composeState.editing
+                       && composeState.liveMessage == nil
+                       && ((composeState.noPreview && vmrs == .noRecording)
+                           || (vmrs == .recording && holdingVMR)) {
+                        HStack {
+                            if voiceMessageAllowed {
+                                RecordVoiceMessageButton(
+                                    startVoiceMessageRecording: startVoiceMessageRecording,
+                                    finishVoiceMessageRecording: finishVoiceMessageRecording,
+                                    holdingVMR: $holdingVMR,
+                                    disabled: composeState.disabled
+                                )
+                            } else {
+                                voiceMessageNotAllowedButton()
+                            }
+                            if let send = sendLiveMessage, let update = updateLiveMessage {
+                                startLiveMessageButton(send: send, update: update)
+                            }
                         }
                     } else if vmrs == .recording && !holdingVMR {
                         finishVoiceMessageRecordingButton()
                     } else {
-                        sendMessageButton()
+                        let v = sendMessageButton()
+                        if composeState.liveMessage == nil,
+                           !composeState.voicePreview && !composeState.editing,
+                           let send = sendLiveMessage,
+                           let update = updateLiveMessage {
+                            v.contextMenu{
+                                Button {
+                                    startLiveMessage(send: send, update: update)
+                                } label: {
+                                    Label("Send live message", systemImage: "ellipsis.circle")
+                                }
+                            }
+                        } else {
+                            v
+                        }
                     }
                 }
             }
@@ -106,10 +131,14 @@ struct SendMessageView: View {
     }
 
     private func sendMessageButton() -> some View {
-        Button(action: { sendMessage() }) {
-            Image(systemName: composeState.editing ? "checkmark.circle.fill" : "arrow.up.circle.fill")
+        Button(action: sendMessage) {
+            Image(systemName: composeState.editing || composeState.liveMessage != nil
+                                ? "checkmark.circle.fill"
+                                : "arrow.up.circle.fill")
                 .resizable()
                 .foregroundColor(.accentColor)
+                .frame(width: sendButtonSize, height: sendButtonSize)
+                .opacity(sendButtonOpacity)
         }
         .disabled(
             !composeState.sendEnabled ||
@@ -154,7 +183,7 @@ struct SendMessageView: View {
     }
 
     private func voiceMessageNotAllowedButton() -> some View {
-        Button(action: {
+        Button {
             switch showEnableVoiceMessagesAlert {
             case .userEnable:
                 AlertManager.shared.showAlert(Alert(
@@ -181,13 +210,71 @@ struct SendMessageView: View {
                     message: "Please check yours and your contact preferences."
                 )
             }
-        }) {
+        } label: {
             Image(systemName: "mic")
                 .foregroundColor(.secondary)
         }
         .disabled(composeState.disabled)
         .frame(width: 29, height: 29)
         .padding([.bottom, .trailing], 4)
+    }
+
+    private func startLiveMessageButton(send:  @escaping () async -> Void, update: @escaping () async -> Void) -> some View {
+        return Button {
+            switch composeState.preview {
+            case .noPreview: startLiveMessage(send: send, update: update)
+            default: ()
+            }
+        } label: {
+            ZStack {
+                Image(systemName: "ellipsis.circle.fill")
+                    .resizable()
+                    .foregroundColor(.accentColor)
+            }
+        }
+        .frame(width: 29, height: 29)
+        .padding([.bottom, .horizontal], 4)
+    }
+
+    private func startLiveMessage(send:  @escaping () async -> Void, update: @escaping () async -> Void) {
+        if liveMessageAlertShown {
+            start()
+        } else {
+            AlertManager.shared.showAlert(Alert(
+                title: Text("Live message!"),
+                message: Text("Send a live message - it will update for the recipient(s) as you type it"),
+                primaryButton: .default(Text("Send")) {
+                    liveMessageAlertShown = true
+                    start()
+                },
+                secondaryButton: .cancel()
+            ))
+        }
+
+        func start() {
+            Task {
+                await send()
+                await MainActor.run { run() }
+            }
+        }
+
+        @Sendable func run() {
+            Timer.scheduledTimer(withTimeInterval: 0.75, repeats: true) { t in
+                withAnimation(.easeInOut(duration: 0.7)) {
+                    sendButtonSize = sendButtonSize == 29 ? 26 : 29
+                    sendButtonOpacity = sendButtonOpacity == 1 ? 0.75 : 1
+                }
+                if composeState.liveMessage == nil {
+                    t.invalidate()
+                    sendButtonSize = 29
+                    sendButtonOpacity = 1
+                }
+            }
+            Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { t in
+                if composeState.liveMessage == nil { t.invalidate() }
+                Task { await update() }
+            }
+        }
     }
 
     private func finishVoiceMessageRecordingButton() -> some View {

@@ -37,7 +37,7 @@ import Data.List.NonEmpty (NonEmpty, nonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe, isJust, isNothing, mapMaybe)
+import Data.Maybe (fromMaybe, isJust, isNothing, listToMaybe, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time (NominalDiffTime, addUTCTime)
@@ -458,7 +458,7 @@ processChatCommand = \case
         CChatItem SMDSnd ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive}, content = ciContent} -> do
           case (ciContent, itemSharedMsgId) of
             (CISndMsgContent _, Just itemSharedMId) -> do
-              (SndMessage {msgId}, _) <- sendDirectContactMessage ct (XMsgUpdate itemSharedMId mc (ciTimedToTTL itemTimed) (justTrue $ itemLive && live))
+              (SndMessage {msgId}, _) <- sendDirectContactMessage ct (XMsgUpdate itemSharedMId mc (ciTimedToTTL itemTimed) (justTrue . (live &&) =<< itemLive))
               updCi <- withStore $ \db -> updateDirectChatItem db userId contactId itemId (CISndMsgContent mc) live $ Just msgId
               setActive $ ActiveC c
               pure . CRChatItemUpdated $ AChatItem SCTDirect SMDSnd (DirectChat ct) updCi
@@ -472,7 +472,7 @@ processChatCommand = \case
         CChatItem SMDSnd ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive}, content = ciContent} -> do
           case (ciContent, itemSharedMsgId) of
             (CISndMsgContent _, Just itemSharedMId) -> do
-              SndMessage {msgId} <- sendGroupMessage gInfo ms (XMsgUpdate itemSharedMId mc (ciTimedToTTL itemTimed) (justTrue $ itemLive && live))
+              SndMessage {msgId} <- sendGroupMessage gInfo ms (XMsgUpdate itemSharedMId mc (ciTimedToTTL itemTimed) (justTrue . (live &&) =<< itemLive))
               updCi <- withStore $ \db -> updateGroupChatItem db user groupId itemId (CISndMsgContent mc) live msgId
               setActive $ ActiveG gName
               pure . CRChatItemUpdated $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) updCi
@@ -1113,6 +1113,11 @@ processChatCommand = \case
     CRLastMessages . aChatItems . chat <$> processChatCommand (APIGetChat chatRef (CPLast count) search)
   LastMessages Nothing count search -> withUser $ \user -> withStore $ \db ->
     CRLastMessages <$> getAllChatItems db user (CPLast count) search
+  LastChatItemId (Just chatName) index -> withUser $ \user -> do
+    chatRef <- getChatRef user chatName
+    CRLastChatItemId . fmap aChatItemId . listToMaybe . aChatItems . chat <$> processChatCommand (APIGetChat chatRef (CPLast $ index + 1) Nothing)
+  LastChatItemId Nothing index -> withUser $ \user -> withStore $ \db ->
+    CRLastChatItemId . fmap aChatItemId . listToMaybe <$> getAllChatItems db user (CPLast $ index + 1) Nothing
   SendFile chatName f -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     processChatCommand . APISendMessage chatRef False $ ComposedMessage (Just f) Nothing (MCFile "")
@@ -1429,8 +1434,8 @@ updateCallItemStatus userId ct Call {chatItemId} receivedStatus msgId_ = do
   forM_ aciContent_ $ \aciContent -> updateDirectChatItemView userId ct chatItemId aciContent False msgId_
 
 updateDirectChatItemView :: ChatMonad m => UserId -> Contact -> ChatItemId -> ACIContent -> Bool -> Maybe MessageId -> m ()
-updateDirectChatItemView userId ct@Contact {contactId} chatItemId (ACIContent msgDir ciContent) itemLive msgId_ = do
-  updCi <- withStore $ \db -> updateDirectChatItem db userId contactId chatItemId ciContent itemLive msgId_
+updateDirectChatItemView userId ct@Contact {contactId} chatItemId (ACIContent msgDir ciContent) live msgId_ = do
+  updCi <- withStore $ \db -> updateDirectChatItem db userId contactId chatItemId ciContent live msgId_
   toView . CRChatItemUpdated $ AChatItem SCTDirect msgDir (DirectChat ct) updCi
 
 callStatusItemContent :: ChatMonad m => UserId -> Contact -> ChatItemId -> WebRTCCallStatus -> m (Maybe ACIContent)
@@ -3287,29 +3292,29 @@ saveSndChatItem :: ChatMonad m => User -> ChatDirection c 'MDSnd -> SndMessage -
 saveSndChatItem user cd msg content = saveSndChatItem' user cd msg content Nothing Nothing Nothing False
 
 saveSndChatItem' :: ChatMonad m => User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> Maybe (CIFile 'MDSnd) -> Maybe (CIQuote c) -> Maybe CITimed -> Bool -> m (ChatItem c 'MDSnd)
-saveSndChatItem' user cd msg@SndMessage {sharedMsgId} content ciFile quotedItem itemTimed itemLive = do
+saveSndChatItem' user cd msg@SndMessage {sharedMsgId} content ciFile quotedItem itemTimed live = do
   createdAt <- liftIO getCurrentTime
-  ciId <- withStore' $ \db -> createNewSndChatItem db user cd msg content quotedItem itemTimed itemLive createdAt
+  ciId <- withStore' $ \db -> createNewSndChatItem db user cd msg content quotedItem itemTimed live createdAt
   forM_ ciFile $ \CIFile {fileId} -> withStore' $ \db -> updateFileTransferChatItemId db fileId ciId
-  liftIO $ mkChatItem cd ciId content ciFile quotedItem (Just sharedMsgId) itemTimed itemLive createdAt createdAt
+  liftIO $ mkChatItem cd ciId content ciFile quotedItem (Just sharedMsgId) itemTimed live createdAt createdAt
 
 saveRcvChatItem :: ChatMonad m => User -> ChatDirection c 'MDRcv -> RcvMessage -> MsgMeta -> CIContent 'MDRcv -> m (ChatItem c 'MDRcv)
 saveRcvChatItem user cd msg@RcvMessage {sharedMsgId_} msgMeta content =
   saveRcvChatItem' user cd msg sharedMsgId_ msgMeta content Nothing Nothing False
 
 saveRcvChatItem' :: ChatMonad m => User -> ChatDirection c 'MDRcv -> RcvMessage -> Maybe SharedMsgId -> MsgMeta -> CIContent 'MDRcv -> Maybe (CIFile 'MDRcv) -> Maybe CITimed -> Bool -> m (ChatItem c 'MDRcv)
-saveRcvChatItem' user cd msg sharedMsgId_ MsgMeta {broker = (_, brokerTs)} content ciFile itemTimed itemLive = do
+saveRcvChatItem' user cd msg sharedMsgId_ MsgMeta {broker = (_, brokerTs)} content ciFile itemTimed live = do
   createdAt <- liftIO getCurrentTime
-  (ciId, quotedItem) <- withStore' $ \db -> createNewRcvChatItem db user cd msg sharedMsgId_ content itemTimed itemLive brokerTs createdAt
+  (ciId, quotedItem) <- withStore' $ \db -> createNewRcvChatItem db user cd msg sharedMsgId_ content itemTimed live brokerTs createdAt
   forM_ ciFile $ \CIFile {fileId} -> withStore' $ \db -> updateFileTransferChatItemId db fileId ciId
-  liftIO $ mkChatItem cd ciId content ciFile quotedItem sharedMsgId_ itemTimed itemLive brokerTs createdAt
+  liftIO $ mkChatItem cd ciId content ciFile quotedItem sharedMsgId_ itemTimed live brokerTs createdAt
 
 mkChatItem :: ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CITimed -> Bool -> ChatItemTs -> UTCTime -> IO (ChatItem c d)
-mkChatItem cd ciId content file quotedItem sharedMsgId itemTimed itemLive itemTs currentTs = do
+mkChatItem cd ciId content file quotedItem sharedMsgId itemTimed live itemTs currentTs = do
   tz <- getCurrentTimeZone
   let itemText = ciContentToText content
       itemStatus = ciCreateStatus content
-      meta = mkCIMeta ciId content itemText itemStatus sharedMsgId False False itemTimed itemLive tz currentTs itemTs currentTs currentTs
+      meta = mkCIMeta ciId content itemText itemStatus sharedMsgId False False itemTimed (justTrue live) tz currentTs itemTs currentTs currentTs
   pure ChatItem {chatDir = toCIDirection cd, meta, content, formattedText = parseMaybeMarkdownList itemText, quotedItem, file}
 
 deleteDirectCI :: ChatMonad m => User -> Contact -> CChatItem 'CTDirect -> Bool -> Bool -> m ChatResponse
@@ -3663,6 +3668,7 @@ chatCommandP =
       "/feed " *> (SendMessageBroadcast <$> A.takeByteString),
       ("/tail" <|> "/t") *> (LastMessages <$> optional (A.space *> chatNameP) <*> msgCountP <*> pure Nothing),
       ("/search" <|> "/?") *> (LastMessages <$> optional (A.space *> chatNameP) <*> msgCountP <*> (Just <$> (A.space *> stringP))),
+      "/last_item_id" *> (LastChatItemId <$> optional (A.space *> chatNameP) <*> (A.space *> A.decimal <|> pure 0)),
       ("/file " <|> "/f ") *> (SendFile <$> chatNameP' <* A.space <*> filePath),
       ("/image " <|> "/img ") *> (SendImage <$> chatNameP' <* A.space <*> filePath),
       ("/fforward " <|> "/ff ") *> (ForwardFile <$> chatNameP' <* A.space <*> A.decimal),

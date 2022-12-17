@@ -21,7 +21,7 @@ struct ChatItemView: View {
         let ci = chatItem
         if chatItem.meta.itemDeleted && !revealed {
             MarkedDeletedItemView(chatItem: chatItem, showMember: showMember)
-        } else if ci.quotedItem == nil && !ci.meta.itemDeleted {
+        } else if ci.quotedItem == nil && !ci.meta.itemDeleted && !ci.meta.isLive {
             if let mc = ci.content.msgContent, mc.isText && isShortEmoji(ci.content.text) {
                 EmojiItemView(chatItem: ci)
             } else if ci.content.text.isEmpty, case let .voice(_, duration) = ci.content.msgContent {
@@ -102,7 +102,8 @@ struct ChatItemView_Previews: PreviewProvider {
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂🙂"), revealed: Binding.constant(false))
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getDeletedContentSample(), revealed: Binding.constant(false))
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent, true, false), revealed: Binding.constant(false))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent, true, false), revealed: Binding.constant(true))
+            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(1, .directSnd, .now, "🙂", .sndSent, false, false, true), revealed: Binding.constant(true))
+            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent, false, false, true), revealed: Binding.constant(true))
         }
         .previewLayout(.fixed(width: 360, height: 70))
     }

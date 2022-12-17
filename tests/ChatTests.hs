@@ -533,6 +533,7 @@ testGroupShared alice bob cath checkMessages = do
     ]
   when checkMessages $ threadDelay 1000000 -- for deterministic order of messages and "connected" events
   alice #> "#team hello"
+  msgItem1 <- lastItemId alice
   concurrently_
     (bob <# "#team alice> hello")
     (cath <# "#team alice> hello")
@@ -546,8 +547,9 @@ testGroupShared alice bob cath checkMessages = do
   concurrently_
     (alice <# "#team cath> hey team")
     (bob <# "#team cath> hey team")
+  msgItem2 <- lastItemId alice
   bob <##> cath
-  when checkMessages getReadChats
+  when checkMessages $ getReadChats msgItem1 msgItem2
   -- list groups
   alice ##> "/gs"
   alice <## "#team"
@@ -604,14 +606,14 @@ testGroupShared alice bob cath checkMessages = do
   cath #$> ("/clear #team", id, "#team: all messages are removed locally ONLY")
   cath #$> ("/_get chat #1 count=100", chat, [])
   where
-    getReadChats :: IO ()
-    getReadChats = do
+    getReadChats :: String -> String -> IO ()
+    getReadChats msgItem1 msgItem2 = do
       alice @@@ [("#team", "hey team"), ("@cath", "sent invitation to join group team as admin"), ("@bob", "sent invitation to join group team as admin")]
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (0, "connected"), (1, "hello"), (0, "hi there"), (0, "hey team")])
       -- "before" and "after" define a chat item id across all chats,
       -- so we take into account group event items as well as sent group invitations in direct chats
-      alice #$> ("/_get chat #1 after=" <> groupItemId 2 5 <> " count=100", chat, [(0, "hi there"), (0, "hey team")])
-      alice #$> ("/_get chat #1 before=" <> groupItemId 2 7 <> " count=100", chat, [(0, "connected"), (0, "connected"), (1, "hello"), (0, "hi there")])
+      alice #$> ("/_get chat #1 after=" <> msgItem1 <> " count=100", chat, [(0, "hi there"), (0, "hey team")])
+      alice #$> ("/_get chat #1 before=" <> msgItem2 <> " count=100", chat, [(0, "connected"), (0, "connected"), (1, "hello"), (0, "hi there")])
       alice #$> ("/_get chat #1 count=100 search=team", chat, [(0, "hey team")])
       bob @@@ [("@cath", "hey"), ("#team", "hey team"), ("@alice", "received invitation to join group team as admin")]
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "added cath (Catherine)"), (0, "connected"), (0, "hello"), (1, "hi there"), (0, "hey team")])
@@ -1219,7 +1221,8 @@ testGroupMessageUpdate =
         (bob <# "#team alice> hello!")
         (cath <# "#team alice> hello!")
 
-      alice #$> ("/_update item #1 " <> groupItemId 2 5 <> " text hey 👋", id, "message updated")
+      msgItemId1 <- lastItemId alice
+      alice #$> ("/_update item #1 " <> msgItemId1 <> " text hey 👋", id, "message updated")
       concurrently_
         (bob <# "#team alice> [edited] hey 👋")
         (cath <# "#team alice> [edited] hey 👋")
@@ -1247,12 +1250,13 @@ testGroupMessageUpdate =
       bob #$> ("/_get chat #1 count=2", chat', [((0, "hey 👋"), Nothing), ((1, "hi alice"), Just (0, "hey 👋"))])
       cath #$> ("/_get chat #1 count=2", chat', [((0, "hey 👋"), Nothing), ((0, "hi alice"), Just (0, "hey 👋"))])
 
-      alice #$> ("/_update item #1 " <> groupItemId 2 5 <> " text greetings 🤝", id, "message updated")
+      alice #$> ("/_update item #1 " <> msgItemId1 <> " text greetings 🤝", id, "message updated")
       concurrently_
         (bob <# "#team alice> [edited] greetings 🤝")
         (cath <# "#team alice> [edited] greetings 🤝")
 
-      alice #$> ("/_update item #1 " <> groupItemId 2 6 <> " text updating bob's message", id, "cannot update this item")
+      msgItemId2 <- lastItemId alice
+      alice #$> ("/_update item #1 " <> msgItemId2 <> " text updating bob's message", id, "cannot update this item")
 
       threadDelay 1000000
       cath `send` "> #team @alice (greetings) greetings!"
@@ -1284,8 +1288,8 @@ testGroupMessageDelete =
         (bob <# "#team alice> hello!")
         (cath <# "#team alice> hello!")
 
-      -- alice: deletes msg id 5
-      alice #$> ("/_delete item #1 " <> groupItemId 2 5 <> " internal", id, "message deleted")
+      msgItemId1 <- lastItemId alice
+      alice #$> ("/_delete item #1 " <> msgItemId1 <> " internal", id, "message deleted")
 
       alice #$> ("/_get chat #1 count=1", chat, [(0, "connected")])
       bob #$> ("/_get chat #1 count=1", chat, [(0, "hello!")])
@@ -1310,15 +1314,16 @@ testGroupMessageDelete =
       bob #$> ("/_get chat #1 count=2", chat', [((0, "hello!"), Nothing), ((1, "hi alic"), Just (0, "hello!"))])
       cath #$> ("/_get chat #1 count=2", chat', [((0, "hello!"), Nothing), ((0, "hi alic"), Just (0, "hello!"))])
 
-      -- alice: deletes msg id 5
-      alice #$> ("/_delete item #1 " <> groupItemId 2 5 <> " internal", id, "message deleted")
+      msgItemId2 <- lastItemId alice
+      alice #$> ("/_delete item #1 " <> msgItemId2 <> " internal", id, "message deleted")
 
       alice #$> ("/_get chat #1 count=1", chat', [((0, "connected"), Nothing)])
       bob #$> ("/_get chat #1 count=2", chat', [((0, "hello!"), Nothing), ((1, "hi alic"), Just (0, "hello!"))])
       cath #$> ("/_get chat #1 count=2", chat', [((0, "hello!"), Nothing), ((0, "hi alic"), Just (0, "hello!"))])
 
       -- alice: msg id 5
-      bob #$> ("/_update item #1 " <> groupItemId 2 7 <> " text hi alice", id, "message updated")
+      msgItemId3 <- lastItemId bob
+      bob #$> ("/_update item #1 " <> msgItemId3 <> " text hi alice", id, "message updated")
       concurrently_
         (alice <# "#team bob> [edited] hi alice")
         ( do
@@ -1337,13 +1342,16 @@ testGroupMessageDelete =
         (alice <# "#team cath> how are you?")
         (bob <# "#team cath> how are you?")
 
-      cath #$> ("/_delete item #1 " <> groupItemId 2 7 <> " broadcast", id, "message marked deleted")
+      msgItemId4 <- lastItemId cath
+      cath #$> ("/_delete item #1 " <> msgItemId4 <> " broadcast", id, "message marked deleted")
       concurrently_
         (alice <# "#team cath> [marked deleted] how are you?")
         (bob <# "#team cath> [marked deleted] how are you?")
 
-      alice #$> ("/_delete item #1 " <> groupItemId 2 5 <> " broadcast", id, "cannot delete this item")
-      alice #$> ("/_delete item #1 " <> groupItemId 2 5 <> " internal", id, "message deleted")
+      alice ##> "/last_item_id 1"
+      msgItemId6 <- getTermLine alice
+      alice #$> ("/_delete item #1 " <> msgItemId6 <> " broadcast", id, "cannot delete this item")
+      alice #$> ("/_delete item #1 " <> msgItemId6 <> " internal", id, "message deleted")
 
       alice #$> ("/_get chat #1 count=1", chat', [((0, "how are you? [marked deleted]"), Nothing)])
       bob #$> ("/_get chat #1 count=3", chat', [((0, "hello!"), Nothing), ((1, "hi alice"), Just (0, "hello!")), ((0, "how are you? [marked deleted]"), Nothing)])
@@ -2425,7 +2433,8 @@ testGroupSendImageWithTextAndQuote =
         (alice <# "#team bob> hi team")
         (cath <# "#team bob> hi team")
       threadDelay 1000000
-      alice ##> ("/_send #1 json {\"filePath\": \"./tests/fixtures/test.jpg\", \"quotedItemId\": " <> groupItemId 2 5 <> ", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}")
+      msgItemId <- lastItemId alice
+      alice ##> ("/_send #1 json {\"filePath\": \"./tests/fixtures/test.jpg\", \"quotedItemId\": " <> msgItemId <> ", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}")
       alice <# "#team > bob hi team"
       alice <## "      hey bob"
       alice <# "/f #team ./tests/fixtures/test.jpg"
@@ -3483,6 +3492,8 @@ testAllowFullDeletionGroup =
       bob <# "#team alice> hi"
       threadDelay 1000000
       bob #> "#team hey"
+      bob ##> "/last_item_id #team"
+      msgItemId <- getTermLine bob
       alice <# "#team bob> hey"
       alice ##> "/set delete #team on"
       alice <## "updated group preferences:"
@@ -3492,7 +3503,7 @@ testAllowFullDeletionGroup =
       bob <## "Full deletion enabled: on"
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "hi"), (0, "hey"), (1, "Full deletion: on")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "hi"), (1, "hey"), (0, "Full deletion: on")])
-      bob #$> ("/_delete item #1 " <> groupItemId' 2 1 <> " broadcast", id, "message deleted")
+      bob #$> ("/_delete item #1 " <> msgItemId <> " broadcast", id, "message deleted")
       alice <# "#team bob> [deleted] hey"
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "hi"), (1, "Full deletion: on")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "hi"), (0, "Full deletion: on")])
@@ -4929,12 +4940,6 @@ groupFeatures'' = [((0, "Disappearing messages: off, after one day"), Nothing, N
 itemId :: Int -> String
 itemId i = show $ length chatFeatures + i
 
-groupItemId :: Int -> Int -> String
-groupItemId n i = show $ length chatFeatures * n + i
-
-groupItemId' :: Int -> Int -> String
-groupItemId' n i = show $ length chatFeatures * n + length groupFeatures + i
-
 (@@@) :: TestCC -> [(String, String)] -> Expectation
 (@@@) = getChats . map $ \(ldn, msg, _) -> (ldn, msg)
 
@@ -5069,3 +5074,8 @@ getContactProfiles cc = do
     Just user -> do
       profiles <- withTransaction (chatStore $ chatController cc) $ \db -> getUserContactProfiles db user
       pure $ map (\Profile {displayName} -> displayName) profiles
+
+lastItemId :: TestCC -> IO String
+lastItemId cc = do
+  cc ##> "/last_item_id"
+  getTermLine cc
