@@ -533,8 +533,7 @@ testGroupShared alice bob cath checkMessages = do
     ]
   when checkMessages $ threadDelay 1000000 -- for deterministic order of messages and "connected" events
   alice #> "#team hello"
-  alice ##> "/last_item_id"
-  msgItem1 <- getTermLine alice
+  msgItem1 <- lastItemId alice
   concurrently_
     (bob <# "#team alice> hello")
     (cath <# "#team alice> hello")
@@ -548,8 +547,7 @@ testGroupShared alice bob cath checkMessages = do
   concurrently_
     (alice <# "#team cath> hey team")
     (bob <# "#team cath> hey team")
-  alice ##> "/last_item_id"
-  msgItem2 <- getTermLine alice
+  msgItem2 <- lastItemId alice
   bob <##> cath
   when checkMessages $ getReadChats msgItem1 msgItem2
   -- list groups
@@ -1223,8 +1221,7 @@ testGroupMessageUpdate =
         (bob <# "#team alice> hello!")
         (cath <# "#team alice> hello!")
 
-      alice ##> "/last_item_id"
-      msgItemId1 <- getTermLine alice
+      msgItemId1 <- lastItemId alice
       alice #$> ("/_update item #1 " <> msgItemId1 <> " text hey 👋", id, "message updated")
       concurrently_
         (bob <# "#team alice> [edited] hey 👋")
@@ -1258,8 +1255,7 @@ testGroupMessageUpdate =
         (bob <# "#team alice> [edited] greetings 🤝")
         (cath <# "#team alice> [edited] greetings 🤝")
 
-      alice ##> "/last_item_id"
-      msgItemId2 <- getTermLine alice
+      msgItemId2 <- lastItemId alice
       alice #$> ("/_update item #1 " <> msgItemId2 <> " text updating bob's message", id, "cannot update this item")
 
       threadDelay 1000000
@@ -1292,8 +1288,7 @@ testGroupMessageDelete =
         (bob <# "#team alice> hello!")
         (cath <# "#team alice> hello!")
 
-      alice ##> "/last_item_id"
-      msgItemId1 <- getTermLine alice
+      msgItemId1 <- lastItemId alice
       alice #$> ("/_delete item #1 " <> msgItemId1 <> " internal", id, "message deleted")
 
       alice #$> ("/_get chat #1 count=1", chat, [(0, "connected")])
@@ -1319,8 +1314,7 @@ testGroupMessageDelete =
       bob #$> ("/_get chat #1 count=2", chat', [((0, "hello!"), Nothing), ((1, "hi alic"), Just (0, "hello!"))])
       cath #$> ("/_get chat #1 count=2", chat', [((0, "hello!"), Nothing), ((0, "hi alic"), Just (0, "hello!"))])
 
-      alice ##> "/last_item_id"
-      msgItemId2 <- getTermLine alice
+      msgItemId2 <- lastItemId alice
       alice #$> ("/_delete item #1 " <> msgItemId2 <> " internal", id, "message deleted")
 
       alice #$> ("/_get chat #1 count=1", chat', [((0, "connected"), Nothing)])
@@ -1328,8 +1322,7 @@ testGroupMessageDelete =
       cath #$> ("/_get chat #1 count=2", chat', [((0, "hello!"), Nothing), ((0, "hi alic"), Just (0, "hello!"))])
 
       -- alice: msg id 5
-      bob ##> "/last_item_id"
-      msgItemId3 <- getTermLine bob
+      msgItemId3 <- lastItemId bob
       bob #$> ("/_update item #1 " <> msgItemId3 <> " text hi alice", id, "message updated")
       concurrently_
         (alice <# "#team bob> [edited] hi alice")
@@ -1349,8 +1342,7 @@ testGroupMessageDelete =
         (alice <# "#team cath> how are you?")
         (bob <# "#team cath> how are you?")
 
-      cath ##> "/last_item_id"
-      msgItemId4 <- getTermLine cath
+      msgItemId4 <- lastItemId cath
       cath #$> ("/_delete item #1 " <> msgItemId4 <> " broadcast", id, "message marked deleted")
       concurrently_
         (alice <# "#team cath> [marked deleted] how are you?")
@@ -2441,8 +2433,7 @@ testGroupSendImageWithTextAndQuote =
         (alice <# "#team bob> hi team")
         (cath <# "#team bob> hi team")
       threadDelay 1000000
-      alice ##> "/last_item_id"
-      msgItemId <- getTermLine alice
+      msgItemId <- lastItemId alice
       alice ##> ("/_send #1 json {\"filePath\": \"./tests/fixtures/test.jpg\", \"quotedItemId\": " <> msgItemId <> ", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}")
       alice <# "#team > bob hi team"
       alice <## "      hey bob"
@@ -5083,3 +5074,8 @@ getContactProfiles cc = do
     Just user -> do
       profiles <- withTransaction (chatStore $ chatController cc) $ \db -> getUserContactProfiles db user
       pure $ map (\Profile {displayName} -> displayName) profiles
+
+lastItemId :: TestCC -> IO String
+lastItemId cc = do
+  cc ##> "/last_item_id"
+  getTermLine cc
