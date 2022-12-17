@@ -357,11 +357,6 @@ setPreference_ f pref_ prefs =
     SCFFullDelete -> prefs {fullDelete = pref_}
     SCFVoice -> prefs {voice = pref_}
 
-setTimedMessagesPreference :: Maybe TimedMessagesPreference -> Maybe Preferences -> Preferences
-setTimedMessagesPreference pref_ prefs_ = prefs {timedMessages = pref_}
-  where
-    prefs = toChatPrefs $ mergePreferences Nothing prefs_
-
 -- collection of optional chat preferences for the user and the contact
 data Preferences = Preferences
   { timedMessages :: Maybe TimedMessagesPreference,
@@ -486,16 +481,24 @@ instance FromField GroupPreferences where
   fromField = fromTextField_ decodeJSON
 
 setGroupPreference :: forall f. GroupFeatureI f => SGroupFeature f -> GroupFeatureEnabled -> Maybe GroupPreferences -> GroupPreferences
-setGroupPreference f enable prefs_ =
+setGroupPreference f enable prefs_ = setGroupPreference_ f pref prefs
+  where
+    prefs = mergeGroupPreferences prefs_
+    pref :: GroupFeaturePreference f
+    pref = setField @"enable" (getGroupPreference f prefs) enable
+
+setGroupPreference' :: SGroupFeature f -> GroupFeaturePreference f -> Maybe GroupPreferences -> GroupPreferences
+setGroupPreference' f pref prefs_ = setGroupPreference_ f pref prefs
+  where
+    prefs = mergeGroupPreferences prefs_
+
+setGroupPreference_ :: SGroupFeature f -> GroupFeaturePreference f -> FullGroupPreferences -> GroupPreferences
+setGroupPreference_ f pref prefs =
   toGroupPreferences $ case f of
     SGFTimedMessages -> prefs {timedMessages = pref}
     SGFDirectMessages -> prefs {directMessages = pref}
     SGFVoice -> prefs {voice = pref}
     SGFFullDelete -> prefs {fullDelete = pref}
-  where
-    prefs = mergeGroupPreferences prefs_
-    pref :: GroupFeaturePreference f
-    pref = setField @"enable" (getGroupPreference f prefs) enable
 
 setGroupTimedMessagesPreference :: TimedMessagesGroupPreference -> Maybe GroupPreferences -> GroupPreferences
 setGroupTimedMessagesPreference pref prefs_ =

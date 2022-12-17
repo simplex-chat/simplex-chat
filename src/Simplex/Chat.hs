@@ -1186,9 +1186,9 @@ processChatCommand = \case
         prefs' = setPreference' SCFTimedMessages pref_ $ Just userPreferences
     updateContactPrefs user ct prefs'
   SetGroupTimedMessages gName ttl_ -> do
-    let pref = maybe (TimedMessagesGroupPreference FEOff 86400) (TimedMessagesGroupPreference FEOn) ttl_
+    let pref = uncurry TimedMessagesGroupPreference $ maybe (FEOff, 86400) (FEOn,) ttl_
     updateGroupProfileByName gName $ \p ->
-      p {groupPreferences = Just . setGroupTimedMessagesPreference pref $ groupPreferences p}
+      p {groupPreferences = Just . setGroupPreference' SGFTimedMessages pref $ groupPreferences p}
   QuitChat -> liftIO exitSuccess
   ShowVersion -> pure $ CRVersionInfo versionNumber
   DebugLocks -> do
