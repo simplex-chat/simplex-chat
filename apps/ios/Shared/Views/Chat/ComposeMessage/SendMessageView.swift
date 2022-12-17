@@ -18,11 +18,13 @@ struct SendMessageView: View {
     var startVoiceMessageRecording: (() -> Void)? = nil
     var finishVoiceMessageRecording: (() -> Void)? = nil
     var allowVoiceMessagesToContact: (() -> Void)? = nil
+    var onImageAdded: (UIImage) -> Void
     @State private var holdingVMR = false
     @Namespace var namespace
     @FocusState.Binding var keyboardVisible: Bool
     @State private var teHeight: CGFloat = 42
     @State private var teFont: Font = .body
+    @State private var teUiFont: UIFont = UIFont.preferredFont(forTextStyle: .body)
     var maxHeight: CGFloat = 360
     var minHeight: CGFloat = 37
 
@@ -44,19 +46,25 @@ struct SendMessageView: View {
                             .lineLimit(10)
                             .font(teFont)
                             .multilineTextAlignment(alignment)
+// put text on top (after NativeTextEditor) and set color to precisely align it on changes
+//                            .foregroundColor(.red)
                             .foregroundColor(.clear)
                             .padding(.horizontal, 10)
-                            .padding(.vertical, 8)
+                            .padding(.top, 8)
+                            .padding(.bottom, 6)
                             .matchedGeometryEffect(id: "te", in: namespace)
                             .background(GeometryReader(content: updateHeight))
-                        TextEditor(text: $composeState.message)
-                            .focused($keyboardVisible)
-                            .font(teFont)
-                            .textInputAutocapitalization(.sentences)
-                            .multilineTextAlignment(alignment)
-                            .padding(.horizontal, 5)
-                            .allowsTightening(false)
-                            .frame(height: teHeight)
+
+                        NativeTextEditor(
+                            text: $composeState.message,
+                            height: teHeight,
+                            font: teUiFont,
+                            focused: $keyboardVisible,
+                            alignment: alignment,
+                            onImageAdded: onImageAdded
+                        )
+                        .allowsTightening(false)
+                        .frame(height: teHeight)
                     }
                 }
 
@@ -195,11 +203,11 @@ struct SendMessageView: View {
     private func updateHeight(_ g: GeometryProxy) -> Color {
         DispatchQueue.main.async {
             teHeight = min(max(g.frame(in: .local).size.height, minHeight), maxHeight)
-            teFont = isShortEmoji(composeState.message)
-            ? composeState.message.count < 4
-            ? largeEmojiFont
-            : mediumEmojiFont
-            : .body
+            (teFont, teUiFont) = isShortEmoji(composeState.message)
+                                    ? composeState.message.count < 4
+                                        ? (largeEmojiFont, largeEmojiUIFont)
+                                        : (mediumEmojiFont, mediumEmojiUIFont)
+                                    : (.body, UIFont.preferredFont(forTextStyle: .body))
         }
         return Color.clear
     }
@@ -220,6 +228,7 @@ struct SendMessageView_Previews: PreviewProvider {
                 SendMessageView(
                     composeState: $composeStateNew,
                     sendMessage: {},
+                    onImageAdded: { _ in },
                     keyboardVisible: $keyboardVisible
                 )
             }
@@ -229,6 +238,7 @@ struct SendMessageView_Previews: PreviewProvider {
                 SendMessageView(
                     composeState: $composeStateEditing,
                     sendMessage: {},
+                    onImageAdded: { _ in },
                     keyboardVisible: $keyboardVisible
                 )
             }
