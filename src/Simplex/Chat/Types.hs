@@ -338,16 +338,24 @@ instance PreferenceI FullPreferences where
   {-# INLINE getPreference #-}
 
 setPreference :: forall f. FeatureI f => SChatFeature f -> Maybe FeatureAllowed -> Maybe Preferences -> Preferences
-setPreference f allow_ prefs_ =
-  let pref = setAllow <$> allow_
-   in case f of
-        SCFTimedMessages -> prefs {timedMessages = pref}
-        SCFFullDelete -> prefs {fullDelete = pref}
-        SCFVoice -> prefs {voice = pref}
+setPreference f allow_ prefs_ = setPreference_ f pref prefs
   where
+    pref = setAllow <$> allow_
     setAllow :: FeatureAllowed -> FeaturePreference f
     setAllow = setField @"allow" (getPreference f prefs)
     prefs = toChatPrefs $ mergePreferences Nothing prefs_
+
+setPreference' :: SChatFeature f -> Maybe (FeaturePreference f) -> Maybe Preferences -> Preferences
+setPreference' f pref_ prefs_ = setPreference_ f pref_ prefs
+  where
+    prefs = toChatPrefs $ mergePreferences Nothing prefs_
+
+setPreference_ :: SChatFeature f -> Maybe (FeaturePreference f) -> Preferences -> Preferences
+setPreference_ f pref_ prefs =
+  case f of
+    SCFTimedMessages -> prefs {timedMessages = pref_}
+    SCFFullDelete -> prefs {fullDelete = pref_}
+    SCFVoice -> prefs {voice = pref_}
 
 setTimedMessagesPreference :: Maybe TimedMessagesPreference -> Maybe Preferences -> Preferences
 setTimedMessagesPreference pref_ prefs_ = prefs {timedMessages = pref_}

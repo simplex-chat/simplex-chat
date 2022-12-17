@@ -4,6 +4,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StrictData #-}
@@ -520,6 +521,12 @@ data TimedMessagesEnabled
   | TMEEnableKeepTTL
   | TMEDisableKeepTTL
   deriving (Show)
+
+tmeToPref :: Maybe Int -> TimedMessagesEnabled -> TimedMessagesPreference
+tmeToPref currentTTL tme = uncurry TimedMessagesPreference $ case tme of
+  TMEEnableSetTTL ttl -> (FAYes, Just ttl)
+  TMEEnableKeepTTL -> (FAYes, currentTTL)
+  TMEDisableKeepTTL -> (FANo, currentTTL)
 
 data ChatError
   = ChatError {errorType :: ChatErrorType}

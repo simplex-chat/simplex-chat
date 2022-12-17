@@ -1177,16 +1177,13 @@ processChatCommand = \case
   SetUserTimedMessages onOff -> withUser $ \user@User {profile} -> do
     let allowed = if onOff then FAYes else FANo
         pref = TimedMessagesPreference allowed Nothing
-        p = (fromLocalProfile profile :: Profile) {preferences = Just . setTimedMessagesPreference (Just pref) $ preferences' user}
+        p = (fromLocalProfile profile :: Profile) {preferences = Just . setPreference' SCFTimedMessages (Just pref) $ preferences' user}
     updateProfile user p
   SetContactTimedMessages cName timedMessagesEnabled_ -> withUser $ \user -> do
     ct@Contact {userPreferences = userPreferences@Preferences {timedMessages}} <- withStore $ \db -> getContactByName db user cName
-    let currentTTL = join . forM timedMessages $ \TimedMessagesPreference {ttl} -> ttl
-        pref_ = join . forM timedMessagesEnabled_ $ \case
-          TMEEnableSetTTL ttl -> Just $ TimedMessagesPreference FAYes (Just ttl)
-          TMEEnableKeepTTL -> Just $ TimedMessagesPreference FAYes currentTTL
-          TMEDisableKeepTTL -> Just $ TimedMessagesPreference FANo currentTTL
-        prefs' = setTimedMessagesPreference pref_ $ Just userPreferences
+    let currentTTL = timedMessages >>= \TimedMessagesPreference {ttl} -> ttl
+        pref_ = tmeToPref currentTTL <$> timedMessagesEnabled_
+        prefs' = setPreference' SCFTimedMessages pref_ $ Just userPreferences
     updateContactPrefs user ct prefs'
   SetGroupTimedMessages gName ttl_ -> do
     let pref = maybe (TimedMessagesGroupPreference FEOff 86400) (TimedMessagesGroupPreference FEOn) ttl_
@@ -3730,25 +3727,17 @@ chatCommandP =
         <|> ("week" $> Just (7 * 86400))
         <|> ("month" $> Just (30 * 86400))
         <|> ("none" $> Nothing)
-    timedTTLOffP =
-      ("30s" $> Just 30)
-        <|> ("5min" $> Just 300)
-        <|> ("1h" $> Just 3600)
-        <|> ("8h" $> Just (8 * 3600))
-        <|> ("day" $> Just 86400)
-        <|> ("week" $> Just (7 * 86400))
-        <|> ("month" $> Just (30 * 86400))
-        <|> ("off" $> Nothing)
+    timedTTLP =
+      ("30s" $> 30)
+        <|> ("5min" $> 300)
+        <|> ("1h" $> 3600)
+        <|> ("8h" $> (8 * 3600))
+        <|> ("day" $> 86400)
+        <|> ("week" $> (7 * 86400))
+        <|> ("month" $> (30 * 86400))
+    timedTTLOffP = (Just <$> timedTTLP) <|> ("off" $> Nothing)
     timedMessagesEnabledP =
-      ( optional "yes" *> A.space
-          *> ("30s" $> TMEEnableSetTTL 30)
-          <|> ("5min" $> TMEEnableSetTTL 300)
-          <|> ("1h" $> TMEEnableSetTTL 3600)
-          <|> ("8h" $> TMEEnableSetTTL (8 * 3600))
-          <|> ("day" $> TMEEnableSetTTL 86400)
-          <|> ("week" $> TMEEnableSetTTL (7 * 86400))
-          <|> ("month" $> TMEEnableSetTTL (30 * 86400))
-      )
+      optional "yes" *> A.space *> (TMEEnableSetTTL <$> timedTTLP)
         <|> ("yes" $> TMEEnableKeepTTL)
         <|> ("no" $> TMEDisableKeepTTL)
     netCfgP = do
