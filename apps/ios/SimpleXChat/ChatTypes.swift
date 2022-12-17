@@ -312,11 +312,11 @@ public enum ChatFeature: String, Decodable, Feature {
     public func allowDescription(_ allowed: FeatureAllowed) -> LocalizedStringKey {
         switch self {
         case .timedMessages:
-             switch allowed {
-             case .always: return "Allow your contacts to send disappearing messages."
-             case .yes: return "Allow disappearing messages only if your contact allows it to you."
-             case .no: return "Prohibit sending disappearing messages."
-             }
+            switch allowed {
+            case .always: return "Allow your contacts to send disappearing messages."
+            case .yes: return "Allow disappearing messages only if your contact allows it to you."
+            case .no: return "Prohibit sending disappearing messages."
+            }
         case .fullDelete:
             switch allowed {
             case .always: return "Allow your contacts to irreversibly delete sent messages."
@@ -335,13 +335,13 @@ public enum ChatFeature: String, Decodable, Feature {
     public func enabledDescription(_ enabled: FeatureEnabled) -> LocalizedStringKey {
         switch self {
         case .timedMessages:
-             return enabled.forUser && enabled.forContact
-                     ? "Both you and your contact can send disappearing messages."
-                     : enabled.forUser
-                     ? "Only you can send disappearing messages."
-                     : enabled.forContact
-                     ? "Only your contact can send disappearing messages."
-                     : "Disappearing messages are prohibited in this chat."
+            return enabled.forUser && enabled.forContact
+                    ? "Both you and your contact can send disappearing messages."
+                    : enabled.forUser
+                    ? "Only you can send disappearing messages."
+                    : enabled.forContact
+                    ? "Only your contact can send disappearing messages."
+                    : "Disappearing messages are prohibited in this chat."
         case .fullDelete:
             return enabled.forUser && enabled.forContact
                     ? "Both you and your contact can irreversibly delete sent messages."
@@ -1547,10 +1547,10 @@ public struct ChatItem: Identifiable, Decodable {
         }
     }
 
-    public static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, file: CIFile? = nil, _ itemDeleted: Bool = false, _ itemEdited: Bool = false, _ editable: Bool = true) -> ChatItem {
+    public static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, file: CIFile? = nil, _ itemDeleted: Bool = false, _ itemEdited: Bool = false, _ itemLive: Bool = false, _ editable: Bool = true) -> ChatItem {
         ChatItem(
             chatDir: dir,
-            meta: CIMeta.getSample(id, ts, text, status, itemDeleted, itemEdited, editable),
+            meta: CIMeta.getSample(id, ts, text, status, itemDeleted, itemEdited, itemLive, editable),
             content: .sndMsgContent(msgContent: .text(text)),
             quotedItem: quotedItem,
             file: file
@@ -1640,6 +1640,7 @@ public struct ChatItem: Identifiable, Decodable {
                 updatedAt: .now,
                 itemDeleted: false,
                 itemEdited: false,
+                itemLive: false,
                 editable: false
             ),
             content: .rcvDeleted(deleteMode: .cidmBroadcast),
@@ -1668,19 +1669,22 @@ public enum CIDirection: Decodable {
 }
 
 public struct CIMeta: Decodable {
-    var itemId: Int64
+    public var itemId: Int64
     var itemTs: Date
     var itemText: String
     public var itemStatus: CIStatus
     var createdAt: Date
-    var updatedAt: Date
+    public var updatedAt: Date
     public var itemDeleted: Bool
     public var itemEdited: Bool
+    public var itemLive: Bool?
     public var editable: Bool
 
-    var timestampText: Text { get { formatTimestampText(itemTs) } }
+    public var timestampText: Text { get { formatTimestampText(itemTs) } }
+    public var recent: Bool { updatedAt + 10 > .now }
+    public var isLive: Bool { itemLive == true }
 
-    public static func getSample(_ id: Int64, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, _ itemDeleted: Bool = false, _ itemEdited: Bool = false, _ editable: Bool = true) -> CIMeta {
+    public static func getSample(_ id: Int64, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, _ itemDeleted: Bool = false, _ itemEdited: Bool = false, _ itemLive: Bool = false, _ editable: Bool = true) -> CIMeta {
         CIMeta(
             itemId: id,
             itemTs: ts,
@@ -1690,6 +1694,7 @@ public struct CIMeta: Decodable {
             updatedAt: ts,
             itemDeleted: itemDeleted,
             itemEdited: itemEdited,
+            itemLive: itemLive,
             editable: editable
         )
     }

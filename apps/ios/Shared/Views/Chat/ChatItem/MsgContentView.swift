@@ -11,26 +11,76 @@ import SimpleXChat
 
 private let uiLinkColor = UIColor(red: 0, green: 0.533, blue: 1, alpha: 1)
 
+private let noTyping = Text("   ")
+
+private let typingIndicators: [Text] = [
+    (typing(.black) + typing() + typing()),
+    (typing(.bold) + typing(.black) + typing()),
+    (typing() + typing(.bold) + typing(.black)),
+    (typing() + typing() + typing(.bold))
+]
+
+private func typing(_ w: Font.Weight = .light) -> Text {
+    Text(".").fontWeight(w)
+}
+
 struct MsgContentView: View {
     var text: String
     var formattedText: [FormattedText]? = nil
     var sender: String? = nil
-    var metaText: Text? = nil
-    var edited = false
+    var meta: CIMeta? = nil
     var rightToLeft = false
+    @State private var typingIdx = 0
+    @State private var timer: Timer?
 
     var body: some View {
-        let v = messageText(text, formattedText, sender)
-        if let mt = metaText {
-            return v + reserveSpaceForMeta(mt, edited)
+        if meta?.isLive == true {
+            msgContentView()
+            .onAppear { switchTyping() }
+            .onDisappear(perform: stopTyping)
+            .onChange(of: meta?.isLive, perform: switchTyping)
+            .onChange(of: meta?.recent, perform: switchTyping)
         } else {
-            return v
+            msgContentView()
         }
     }
-    
-    private func reserveSpaceForMeta(_ meta: Text, _ edited: Bool) -> Text {
+
+    private func switchTyping(_: Bool? = nil) {
+        if let meta = meta, meta.isLive && meta.recent {
+            timer = timer ?? Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { _ in
+                typingIdx = (typingIdx + 1) % typingIndicators.count
+            }
+        } else {
+            stopTyping()
+        }
+    }
+
+    private func stopTyping() {
+        timer?.invalidate()
+        timer = nil
+    }
+
+    private func msgContentView() -> Text {
+        var v = messageText(text, formattedText, sender)
+        if let mt = meta {
+            if mt.isLive {
+                v = v + typingIndicator(mt.recent)
+            }
+            v = v + reserveSpaceForMeta(mt.timestampText, mt.itemEdited)
+        }
+        return v
+    }
+
+    private func typingIndicator(_ recent: Bool) -> Text {
+        return (recent ? typingIndicators[typingIdx] : noTyping)
+            .font(.body.monospaced())
+            .kerning(-2)
+            .foregroundColor(.secondary)
+    }
+
+    private func reserveSpaceForMeta(_ mt: Text, _ edited: Bool) -> Text {
         let reserve = rightToLeft ? "\n" : edited ? "          " : "      "
-        return (Text(reserve) + meta)
+        return (Text(reserve) + mt)
             .font(.caption)
             .foregroundColor(.clear)
     }
@@ -105,7 +155,7 @@ struct MsgContentView_Previews: PreviewProvider {
             text: chatItem.text,
             formattedText: chatItem.formattedText,
             sender: chatItem.memberDisplayName,
-            metaText: chatItem.timestampText
+            meta: chatItem.meta
         )
     }
 }
