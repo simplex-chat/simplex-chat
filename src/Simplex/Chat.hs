@@ -1174,12 +1174,12 @@ processChatCommand = \case
   SetGroupFeature (AGF f) gName enabled ->
     updateGroupProfileByName gName $ \p ->
       p {groupPreferences = Just . setGroupPreference f enabled $ groupPreferences p}
-  SetUserTimedMessagesFeature onOff -> withUser $ \user@User {profile} -> do
+  SetUserTimedMessages onOff -> withUser $ \user@User {profile} -> do
     let allowed = if onOff then FAYes else FANo
         pref = TimedMessagesPreference allowed Nothing
         p = (fromLocalProfile profile :: Profile) {preferences = Just . setTimedMessagesPreference (Just pref) $ preferences' user}
     updateProfile user p
-  SetContactTimedMessagesFeature cName timedMessagesEnabled_ -> withUser $ \user -> do
+  SetContactTimedMessages cName timedMessagesEnabled_ -> withUser $ \user -> do
     ct@Contact {userPreferences = userPreferences@Preferences {timedMessages}} <- withStore $ \db -> getContactByName db user cName
     let currentTTL = join . forM timedMessages $ \TimedMessagesPreference {ttl} -> ttl
         pref_ = join . forM timedMessagesEnabled_ $ \case
@@ -1188,7 +1188,7 @@ processChatCommand = \case
           TMEDisableKeepTTL -> Just $ TimedMessagesPreference FANo currentTTL
         prefs' = setTimedMessagesPreference pref_ $ Just userPreferences
     updateContactPrefs user ct prefs'
-  SetGroupTimedMessagesFeature gName ttl_ -> do
+  SetGroupTimedMessages gName ttl_ -> do
     let pref = maybe (TimedMessagesGroupPreference FEOff 86400) (TimedMessagesGroupPreference FEOn) ttl_
     updateGroupProfileByName gName $ \p ->
       p {groupPreferences = Just . setGroupTimedMessagesPreference pref $ groupPreferences p}
@@ -3666,9 +3666,9 @@ chatCommandP =
       "/set delete @" *> (SetContactFeature (ACF SCFFullDelete) <$> displayName <*> optional (A.space *> strP)),
       "/set delete " *> (SetUserFeature (ACF SCFFullDelete) <$> strP),
       "/set direct #" *> (SetGroupFeature (AGF SGFDirectMessages) <$> displayName <*> (A.space *> strP)),
-      "/set disappear #" *> (SetGroupTimedMessagesFeature <$> displayName <*> (A.space *> timedTTLOffP)),
-      "/set disappear @" *> (SetContactTimedMessagesFeature <$> displayName <*> optional (A.space *> timedMessagesEnabledP)),
-      "/set disappear " *> (SetUserTimedMessagesFeature <$> onOffP),
+      "/set disappear #" *> (SetGroupTimedMessages <$> displayName <*> (A.space *> timedTTLOffP)),
+      "/set disappear @" *> (SetContactTimedMessages <$> displayName <*> optional (A.space *> timedMessagesEnabledP)),
+      "/set disappear " *> (SetUserTimedMessages <$> onOffP),
       "/incognito " *> (SetIncognito <$> onOffP),
       ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
       ("/version" <|> "/v") $> ShowVersion,
