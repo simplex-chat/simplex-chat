@@ -2761,14 +2761,9 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
     createGroupFeatureItems :: GroupInfo -> GroupMember -> m ()
     createGroupFeatureItems g@GroupInfo {groupProfile} m = do
       let prefs = mergeGroupPreferences $ groupPreferences groupProfile
-      forM_ allGroupFeatures $ \(AGF f) ->
-        case toGroupFeature f of
-          GFTimedMessages -> do
-            let p@TimedMessagesGroupPreference {ttl} = timedMessages (prefs :: FullGroupPreferences)
-            createInternalChatItem user (CDGroupRcv g m) (CIRcvGroupFeature (toGroupFeature f) (toGroupPreference p) (Just ttl)) Nothing
-          _ -> do
-            let p = getGroupPreference f prefs
-            createInternalChatItem user (CDGroupRcv g m) (CIRcvGroupFeature (toGroupFeature f) (toGroupPreference p) Nothing) Nothing
+      forM_ allGroupFeatures $ \(AGF f) -> do
+        let p = getGroupPreference f prefs
+        createInternalChatItem user (CDGroupRcv g m) (CIRcvGroupFeature (toGroupFeature f) (toGroupPreference p) (groupPrefIntValue p)) Nothing
 
     xInfoProbe :: Contact -> Probe -> m ()
     xInfoProbe c2 probe =
