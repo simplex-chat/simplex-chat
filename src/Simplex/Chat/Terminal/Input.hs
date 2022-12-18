@@ -116,22 +116,6 @@ sendUpdatedLiveMessage cc sentMsg LiveMessage {chatName, chatItemId} live = do
       cmd = UpdateLiveMessage chatName chatItemId live bs
   either CRChatCmdError id <$> runExceptT (processChatCommand cmd) `runReaderT` cc
 
---
--- private func truncateToWords(_ s: String) -> String {
---     if let i = s.lastIndex(where: { !alphaNumeric($0) }) {
---         let s1 = s[...i]
---         if let j = s1.lastIndex(where: alphaNumeric), i < s1.endIndex {
---             return String(s1[...j])
---         }
---         return String(s1)
---     }
---     return ""
-
---     func alphaNumeric(_ c: Character) -> Bool {
---         c.isLetter || c.isNumber
---     }
--- }
-
 runTerminalInput :: ChatTerminal -> ChatController -> IO ()
 runTerminalInput ct cc = withChatTerm ct $ do
   updateInput ct
