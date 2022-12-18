@@ -1450,14 +1450,8 @@ sealed class MsgContent {
   @Serializable(with = MsgContentSerializer::class) class MCFile(override val text: String): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCUnknown(val type: String? = null, override val text: String, val json: JsonElement): MsgContent()
 
-  val cmdString: String get() = when (this) {
-    is MCText -> "text $text"
-    is MCLink -> "json ${json.encodeToString(this)}"
-    is MCImage -> "json ${json.encodeToString(this)}"
-    is MCVoice-> "json ${json.encodeToString(this)}"
-    is MCFile -> "json ${json.encodeToString(this)}"
-    is MCUnknown -> "json $json"
-  }
+  val cmdString: String get() =
+    if (this is MCUnknown) "json $json" else "json ${json.encodeToString(this)}"
 }
 
 @Serializable
