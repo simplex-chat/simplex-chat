@@ -276,7 +276,7 @@ viewChatItem chat ChatItem {chatDir, meta = meta@CIMeta {itemDeleted}, content, 
   withItemDeleted <$> case chat of
     DirectChat c -> case chatDir of
       CIDirectSnd -> case content of
-        CISndMsgContent mc -> withSndFile to $ sndMsg to quote mc
+        CISndMsgContent mc -> hideLive meta $ withSndFile to $ sndMsg to quote mc
         CISndGroupEvent {} -> showSndItemProhibited to
         _ -> showSndItem to
         where
@@ -292,7 +292,7 @@ viewChatItem chat ChatItem {chatDir, meta = meta@CIMeta {itemDeleted}, content, 
         quote = maybe [] (directQuote chatDir) quotedItem
     GroupChat g -> case chatDir of
       CIGroupSnd -> case content of
-        CISndMsgContent mc -> withSndFile to $ sndMsg to quote mc
+        CISndMsgContent mc -> hideLive meta $ withSndFile to $ sndMsg to quote mc
         CISndGroupInvitation {} -> showSndItemProhibited to
         _ -> showSndItem to
         where
@@ -337,9 +337,7 @@ viewItemUpdate chat ChatItem {chatDir, meta = meta@CIMeta {itemEdited, itemLive}
       where
         from = if itemEdited then ttyFromContactEdited c else ttyFromContact c
     CIDirectSnd -> case content of
-      CISndMsgContent mc
-        | itemLive == Just True -> []
-        | otherwise -> viewSentMessage to quote mc ts meta
+      CISndMsgContent mc -> hideLive meta $ viewSentMessage to quote mc ts meta
       _ -> []
       where
         to = if itemEdited then ttyToContactEdited' c else ttyToContact' c
@@ -354,15 +352,17 @@ viewItemUpdate chat ChatItem {chatDir, meta = meta@CIMeta {itemEdited, itemLive}
       where
         from = if itemEdited then ttyFromGroupEdited g m else ttyFromGroup g m
     CIGroupSnd -> case content of
-      CISndMsgContent mc
-        | itemLive == Just True -> []
-        | otherwise -> viewSentMessage to quote mc ts meta
+      CISndMsgContent mc -> hideLive meta $ viewSentMessage to quote mc ts meta
       _ -> []
       where
         to = if itemEdited then ttyToGroupEdited g else ttyToGroup g
     where
       quote = maybe [] (groupQuote g) quotedItem
   _ -> []
+
+hideLive :: CIMeta d -> [StyledString] -> [StyledString]
+hideLive CIMeta {itemLive = Just True} _ = []
+hideLive _ s = s
 
 viewItemDelete :: ChatInfo c -> ChatItem c d -> Bool -> Bool -> Bool -> CurrentTime -> [StyledString]
 viewItemDelete chat ChatItem {chatDir, meta, content = deletedContent} markedDeleted byUser timed ts
@@ -933,7 +933,7 @@ viewSentMessage to quote mc ts meta@CIMeta {itemEdited, itemDeleted, itemLive} =
       | itemEdited || itemDeleted = ""
       | otherwise = case itemLive of
         Just True -> ttyTo "[LIVE started] "
-        Just False -> ttyTo "[LIVE ended] "
+        Just False -> ttyTo "[LIVE] "
         _ -> ""
 
 viewSentBroadcast :: MsgContent -> Int -> CurrentTime -> ZonedTime -> [StyledString]

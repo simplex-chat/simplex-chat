@@ -77,11 +77,13 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
           TerminalState {inputString = s} <- readTVarIO termState
           readTVarIO liveMessageState
             >>= mapM_ (\lm -> updateLiveMessage s lm >> runLiveMessage int)
-        blinkLivePrompt = threadDelay 1000000 >> updateLivePrompt
+        blinkLivePrompt = readTVarIO liveMessageState >>= mapM_ updateLivePrompt
           where
-            updateLivePrompt =
-              whenM (isJust <$> atomically (readTVar liveMessageState >>= mapM updatePrompt)) $
-                updateInputView ct >> blinkLivePrompt
+            updateLivePrompt lm = do
+              atomically $ updatePrompt lm
+              updateInputView ct
+              threadDelay 1000000
+              blinkLivePrompt
             updatePrompt lm = do
               writeTVar liveMessageState $ Just lm {livePrompt = not $ livePrompt lm}
               modifyTVar termState (\ts -> ts {inputPrompt = liveInputPrompt lm})
@@ -124,7 +126,7 @@ receiveFromTTY cc@ChatController {inputQ, activeTo} ct@ChatTerminal {termSize, t
     processKey = \case
       (EnterKey, ms) ->
         when (ms == mempty || ms == altKey) $
-          atomically (submitInput ms)
+          atomically (readTVar termState >>= submitInput ms)
             >>= mapM_ (uncurry endLiveMessage)
       key -> atomically $ do
         ac <- readTVar activeTo
@@ -141,28 +143,30 @@ receiveFromTTY cc@ChatController {inputQ, activeTo} ct@ChatTerminal {termSize, t
       where
         kill sel = deRefWeak (sel lm) >>= mapM_ killThread
 
-    submitInput :: Modifiers -> STM (Maybe (String, LiveMessage))
-    submitInput ms = do
-      ts <- readTVar termState
+    submitInput :: Modifiers -> TerminalState -> STM (Maybe (String, LiveMessage))
+    submitInput ms ts = do
       let s = inputString ts
-      readTVar liveMessageState >>= \case
-        Just lm@LiveMessage {chatName} -> do
-          setTermState ts $ chatNameStr chatName <> " " <> s
-          when (ms == altKey) $
+      lm_ <- readTVar liveMessageState
+      case lm_ of
+        Just LiveMessage {chatName}
+          | ms == altKey -> do
+            writeTVar termState ts' {previousInput}
             writeTBQueue inputQ $ "/live " <> chatNameStr chatName
-          pure $ Just (s, lm)
-        _ -> do
-          if ms == altKey
-            then when (isSend s) $ submit ts s ("/live " <> s)
-            else submit ts s s
-          pure Nothing
+          | otherwise ->
+            writeTVar termState ts' {inputPrompt = "> ", previousInput}
+          where
+            previousInput = chatNameStr chatName <> " " <> s
+        _
+          | ms == altKey -> when (isSend s) $ do
+            writeTVar termState ts' {previousInput = s}
+            writeTBQueue inputQ $ "/live " <> s
+          | otherwise -> do
+            writeTVar termState ts' {inputPrompt = "> ", previousInput = s}
+            writeTBQueue inputQ s
+      pure $ (s,) <$> lm_
       where
         isSend s = length s > 1 && (head s == '@' || head s == '#')
-        submit ts s s' = do
-          setTermState ts s
-          writeTBQueue inputQ s'
-        setTermState ts previousInput =
-          writeTVar termState $ ts {inputString = "", inputPosition = 0, previousInput, inputPrompt = "> "}
+        ts' = ts {inputString = "", inputPosition = 0}
 
 updateTermState :: ActiveTo -> Bool -> Int -> (Key, Modifiers) -> TerminalState -> TerminalState
 updateTermState ac live tw (key, ms) ts@TerminalState {inputString = s, inputPosition = p} = case key of
