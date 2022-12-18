@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -12,6 +13,7 @@ module Simplex.Chat.Terminal.Input where
 import Control.Concurrent (forkFinally, forkIO, killThread, mkWeakThreadId, threadDelay)
 import Control.Monad.Except
 import Control.Monad.Reader
+import Data.Char (isAlphaNum)
 import Data.List (dropWhileEnd)
 import Data.Maybe (isJust, isNothing)
 import qualified Data.Text as T
@@ -100,7 +102,12 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
           _ -> setLiveMessage lm {typedMsg}
         setLiveMessage :: LiveMessage -> IO ()
         setLiveMessage = atomically . writeTVar liveMessageState . Just
-        truncateToWords s = s
+        truncateToWords s = go s "" ""
+          where
+            go "" acc _ = acc
+            go (c : cs) acc word
+              | isAlphaNum c = go cs acc (word <> [c])
+              | otherwise = go cs (acc <> word <> [c]) ""
     startLiveMessage _ _ = pure ()
 
 sendUpdatedLiveMessage :: ChatController -> String -> LiveMessage -> Bool -> IO ChatResponse
