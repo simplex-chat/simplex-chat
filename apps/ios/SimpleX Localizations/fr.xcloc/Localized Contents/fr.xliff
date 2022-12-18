@@ -838,7 +838,7 @@
       </trans-unit>
       <trans-unit id="Delete address?" xml:space="preserve" approved="no">
         <source>Delete address?</source>
-        <target state="translated">Supprimer l'adresse ?</target>
+        <target state="translated">Supprimer l'adresse ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete archive" xml:space="preserve" approved="no">
@@ -1018,7 +1018,7 @@
       </trans-unit>
       <trans-unit id="Display name:" xml:space="preserve" approved="no">
         <source>Display name:</source>
-        <target state="translated">Nom affiché :</target>
+        <target state="translated">Nom affiché :</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Do NOT use SimpleX for emergency calls." xml:space="preserve" approved="no">
@@ -1368,7 +1368,7 @@
       </trans-unit>
       <trans-unit id="Full name:" xml:space="preserve" approved="no">
         <source>Full name:</source>
-        <target state="translated">Nom complet :</target>
+        <target state="translated">Nom complet :</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group display name" xml:space="preserve" approved="no">
@@ -1610,7 +1610,7 @@
       </trans-unit>
       <trans-unit id="Invalid server address!" xml:space="preserve" approved="no">
         <source>Invalid server address!</source>
-        <target state="translated">Adresse de serveur invalide !</target>
+        <target state="translated">Adresse de serveur invalide !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invitation expired!" xml:space="preserve" approved="no">
@@ -2165,7 +2165,7 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
       </trans-unit>
       <trans-unit id="Read more in our GitHub repository." xml:space="preserve" approved="no">
         <source>Read more in our GitHub repository.</source>
-        <target state="translated">Plus d'informations dans notre GitHub.</target>
+        <target state="translated">Plus d'informations sur notre GitHub.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." xml:space="preserve" approved="no">
@@ -2345,7 +2345,7 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
       </trans-unit>
       <trans-unit id="Save preferences?" xml:space="preserve" approved="no">
         <source>Save preferences?</source>
-        <target state="translated">Sauvegarder les préférences ?</target>
+        <target state="translated">Sauvegarder les préférences ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save servers" xml:space="preserve" approved="no">
@@ -2430,7 +2430,7 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
       </trans-unit>
       <trans-unit id="Server test failed!" xml:space="preserve" approved="no">
         <source>Server test failed!</source>
-        <target state="translated">Échec du test du serveur !</target>
+        <target state="translated">Échec du test du serveur !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Servers" xml:space="preserve" approved="no">
@@ -2879,7 +2879,7 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
       </trans-unit>
       <trans-unit id="Update .onion hosts setting?" xml:space="preserve" approved="no">
         <source>Update .onion hosts setting?</source>
-        <target state="translated">Mettre à jour le paramètre des hôtes .onion ?</target>
+        <target state="translated">Mettre à jour le paramètre des hôtes .onion ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Update database passphrase" xml:space="preserve" approved="no">
@@ -3079,7 +3079,7 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
       </trans-unit>
       <trans-unit id="You can use markdown to format messages:" xml:space="preserve" approved="no">
         <source>You can use markdown to format messages:</source>
-        <target state="translated">Vous pouvez utiliser le format markdown pour mettre en forme les messages :</target>
+        <target state="translated">Vous pouvez utiliser le format markdown pour mettre en forme les messages :</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." xml:space="preserve" approved="no">
