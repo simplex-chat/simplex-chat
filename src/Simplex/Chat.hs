@@ -3652,7 +3652,7 @@ chatCommandP =
       ("/connect " <|> "/c ") *> (Connect <$> ((Just <$> strP) <|> A.takeByteString $> Nothing)),
       ("/connect" <|> "/c") $> AddContact,
       SendMessage <$> chatNameP <* A.space <*> A.takeByteString,
-      "/live " *> (SendLiveMessage <$> chatNameP <* A.space <*> A.takeByteString),
+      "/live " *> (SendLiveMessage <$> chatNameP <*> (A.space *> A.takeByteString <|> pure "")),
       (">@" <|> "> @") *> sendMsgQuote (AMsgDirection SMDRcv),
       (">>@" <|> ">> @") *> sendMsgQuote (AMsgDirection SMDSnd),
       ("\\ " <|> "\\") *> (DeleteMessage <$> chatNameP <* A.space <*> A.takeByteString),

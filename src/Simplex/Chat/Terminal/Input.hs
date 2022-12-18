@@ -15,7 +15,7 @@ import Control.Monad.Except
 import Control.Monad.Reader
 import Data.Functor (($>))
 import Data.List (dropWhileEnd)
-import Data.Maybe (isNothing)
+import Data.Maybe (isJust, isNothing)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat
@@ -45,10 +45,6 @@ runInputLoop ct cc = forever $ do
   case r of
     CRChatCmdError _ -> when (isMessage cmd) $ echo s
     _ -> pure ()
-  -- let testV = testView $ config cc
-  -- user <- readTVarIO $ currentUser cc
-  -- ts <- getCurrentTime
-  -- printToTerminal ct $ responseToView user testV False ts r
   printRespToTerminal ct cc False r
   startLiveMessage cmd r
   where
@@ -65,8 +61,10 @@ runInputLoop ct cc = forever $ do
     startLiveMessage (Right (SendLiveMessage chatName msg)) (CRNewChatItem (AChatItem _ SMDSnd _ ChatItem {meta = CIMeta {itemId}})) = do
       whenM (isNothing <$> readTVarIO (liveMessageState ct)) $ do
         tId <- mkWeakThreadId =<< runLiveMessage `forkFinally` const (atomically $ writeTVar (liveMessageState ct) Nothing)
-        let msgStr = T.unpack $ safeDecodeUtf8 msg
-        atomically $ writeTVar (liveMessageState ct) (Just $ LiveMessage chatName itemId msgStr msgStr tId)
+        let s = T.unpack $ safeDecodeUtf8 msg
+        atomically $ do
+          writeTVar (liveMessageState ct) (Just $ LiveMessage chatName itemId s s tId)
+          modifyTVar (termState ct) $ \ts -> ts {inputString = s, inputPosition = length s, inputPrompt = "> " <> chatNameStr chatName <> " "}
       where
         runLiveMessage :: IO ()
         runLiveMessage = do
@@ -157,7 +155,8 @@ receiveFromTTY cc@ChatController {inputQ, activeTo} ct@ChatTerminal {termSize, t
         atomically submitInput >>= mapM_ (liftIO . uncurry endLiveMessage)
       key -> atomically $ do
         ac <- readTVar activeTo
-        modifyTVar termState $ updateTermState ac (width termSize) key
+        live <- isJust <$> readTVar liveMessageState
+        modifyTVar termState $ updateTermState ac live (width termSize) key
 
     endLiveMessage :: String -> LiveMessage -> IO ()
     endLiveMessage sentMsg lm =
@@ -168,13 +167,19 @@ receiveFromTTY cc@ChatController {inputQ, activeTo} ct@ChatTerminal {termSize, t
     submitInput = do
       ts <- readTVar termState
       let s = inputString ts
-      writeTVar termState $ ts {inputString = "", inputPosition = 0, previousInput = s, inputPrompt = "> "}
       readTVar liveMessageState >>= \case
-        Just lm -> writeTVar liveMessageState Nothing $> Just (s, lm)
-        _ -> writeTBQueue inputQ s $> Nothing
+        Just lm@LiveMessage {chatName} -> do
+          prevInput ts $ chatNameStr chatName <> " " <> s
+          writeTVar liveMessageState Nothing $> Just (s, lm)
+        _ -> do
+          prevInput ts s
+          writeTBQueue inputQ s $> Nothing
+      where
+        prevInput ts previousInput =
+          writeTVar termState $ ts {inputString = "", inputPosition = 0, previousInput, inputPrompt = "> "}
 
-updateTermState :: ActiveTo -> Int -> (Key, Modifiers) -> TerminalState -> TerminalState
-updateTermState ac tw (key, ms) ts@TerminalState {inputString = s, inputPosition = p} = case key of
+updateTermState :: ActiveTo -> Bool -> Int -> (Key, Modifiers) -> TerminalState -> TerminalState
+updateTermState ac live tw (key, ms) ts@TerminalState {inputString = s, inputPosition = p} = case key of
   CharKey c
     | ms == mempty || ms == shiftKey -> insertCharsWithContact [c]
     | ms == altKey && c == 'b' -> setPosition prevWordPos
@@ -198,6 +203,7 @@ updateTermState ac tw (key, ms) ts@TerminalState {inputString = s, inputPosition
   _ -> ts
   where
     insertCharsWithContact cs
+      | live = insertChars cs
       | null s && cs /= "@" && cs /= "#" && cs /= "/" && cs /= ">" && cs /= "\\" && cs /= "!" =
         insertChars $ contactPrefix <> cs
       | (s == ">" || s == "\\" || s == "!") && cs == " " =
