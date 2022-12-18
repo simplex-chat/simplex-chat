@@ -2,7 +2,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -14,7 +13,7 @@ import Control.Concurrent (forkFinally, forkIO, killThread, mkWeakThreadId, thre
 import Control.Monad.Except
 import Control.Monad.Reader
 import Data.Char (isAlphaNum)
-import Data.List (dropWhileEnd)
+import Data.List (dropWhileEnd, foldl')
 import Data.Maybe (isJust, isNothing)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -24,7 +23,7 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Messages
 import Simplex.Chat.Styled
 import Simplex.Chat.Terminal.Output
-import Simplex.Messaging.Util (safeDecodeUtf8, whenM, (<$$>))
+import Simplex.Messaging.Util (safeDecodeUtf8, whenM)
 import System.Exit (exitSuccess)
 import System.Terminal hiding (insertChars)
 import UnliftIO.STM
@@ -76,8 +75,8 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
         runLiveMessage int = do
           threadDelay int
           TerminalState {inputString = s} <- readTVarIO termState
-          atomically (liveMessageToSend s <$$> readTVar liveMessageState)
-            >>= mapM_ (uncurry (updateLiveMessage s) >=> const (runLiveMessage int))
+          readTVarIO liveMessageState
+            >>= mapM_ (\lm -> updateLiveMessage s lm >> runLiveMessage int)
         blinkLivePrompt = threadDelay 1000000 >> updateLivePrompt
           where
             updateLivePrompt =
@@ -86,13 +85,10 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
             updatePrompt lm = do
               writeTVar liveMessageState $ Just lm {livePrompt = not $ livePrompt lm}
               modifyTVar termState (\ts -> ts {inputPrompt = liveInputPrompt lm})
-        liveMessageToSend typedMsg' lm@LiveMessage {sentMsg, typedMsg} =
-          (lm,) $
-            if typedMsg' /= typedMsg
-              then let s = truncateToWords typedMsg' in toMaybe (s /= sentMsg) s
-              else toMaybe (typedMsg /= sentMsg) typedMsg
-        toMaybe cond a = if cond then Just a else Nothing
-        updateLiveMessage typedMsg lm = \case
+        liveMessageToSend t LiveMessage {sentMsg, typedMsg} =
+          let s = if t /= typedMsg then truncateToWords t else t
+           in if s /= sentMsg then Just s else Nothing
+        updateLiveMessage typedMsg lm = case liveMessageToSend typedMsg lm of
           Just sentMsg ->
             sendUpdatedLiveMessage cc sentMsg lm True >>= \case
               CRChatItemUpdated {} -> setLiveMessage lm {sentMsg, typedMsg}
@@ -102,12 +98,11 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
           _ -> setLiveMessage lm {typedMsg}
         setLiveMessage :: LiveMessage -> IO ()
         setLiveMessage = atomically . writeTVar liveMessageState . Just
-        truncateToWords s = go s "" ""
+        truncateToWords = fst . foldl' acc ("", "")
           where
-            go "" acc _ = acc
-            go (c : cs) acc word
-              | isAlphaNum c = go cs acc (word <> [c])
-              | otherwise = go cs (acc <> word <> [c]) ""
+            acc (s, w) c
+              | isAlphaNum c = (s, c : w)
+              | otherwise = (s <> reverse (c : w), "")
     startLiveMessage _ _ = pure ()
 
 sendUpdatedLiveMessage :: ChatController -> String -> LiveMessage -> Bool -> IO ChatResponse
