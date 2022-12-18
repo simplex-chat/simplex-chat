@@ -43,9 +43,11 @@ data TerminalState = TerminalState
 data LiveMessage = LiveMessage
   { chatName :: ChatName,
     chatItemId :: ChatItemId,
+    livePrompt :: Bool,
     sentMsg :: String,
     typedMsg :: String,
-    thread :: Weak ThreadId
+    liveThreadId :: Weak ThreadId,
+    promptThreadId :: Weak ThreadId
   }
 
 class Terminal t => WithTerminal t where
@@ -121,6 +123,9 @@ printToTerminal ct s =
     withTermLock ct $ do
       printMessage ct s
       updateInput ct
+
+updateInputView :: ChatTerminal -> IO ()
+updateInputView ct = withChatTerm ct $ withTermLock ct $ updateInput ct
 
 updateInput :: forall m. MonadTerminal m => ChatTerminal -> m ()
 updateInput ChatTerminal {termSize = Size {height, width}, termState, nextMessageRow} = do

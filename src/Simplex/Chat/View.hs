@@ -932,8 +932,8 @@ viewSentMessage to quote mc ts meta@CIMeta {itemEdited, itemDeleted, itemLive} =
     live
       | itemEdited || itemDeleted = ""
       | otherwise = case itemLive of
-        Just True -> ttyFrom "[LIVE started] "
-        Just False -> ttyFrom "[LIVE ended] "
+        Just True -> ttyTo "[LIVE started] "
+        Just False -> ttyTo "[LIVE ended] "
         _ -> ""
 
 viewSentBroadcast :: MsgContent -> Int -> CurrentTime -> ZonedTime -> [StyledString]
