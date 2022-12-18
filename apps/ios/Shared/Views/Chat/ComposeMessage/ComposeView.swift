@@ -33,8 +33,6 @@ struct LiveMessage {
     var chatItem: ChatItem
     var typedMsg: String
     var sentMsg: String
-
-    var changed: Bool { typedMsg != sentMsg }
 }
 
 struct ComposeState {
@@ -383,29 +381,23 @@ struct ComposeView: View {
         }
     }
 
-    private func liveMessageToSend(_ liveMessage: LiveMessage, _ typedMsg: String) -> String? {
-        if liveMessage.typedMsg != typedMsg {
-            let s = truncateToWords(typedMsg)
-            return s == liveMessage.sentMsg ? nil : s
-        }
-        return liveMessage.changed
-        ? liveMessage.typedMsg
-        : nil
+    private func liveMessageToSend(_ lm: LiveMessage, _ t: String) -> String? {
+        let s = t != lm.typedMsg ? truncateToWords(t) : t
+        return s != lm.sentMsg ? s : nil
     }
 
     private func truncateToWords(_ s: String) -> String {
-        if let i = s.lastIndex(where: { !alphaNumeric($0) }) {
-            let s1 = s[...i]
-            if let j = s1.lastIndex(where: alphaNumeric), i < s1.endIndex {
-                return String(s1[...j])
+        var acc = ""
+        var word = ""
+        for c in s {
+            if c.isLetter || c.isNumber {
+                word = word + String(c)
+            } else {
+                acc = acc + word + String(c)
+                word = ""
             }
-            return String(s1)
         }
-        return ""
-
-        func alphaNumeric(_ c: Character) -> Bool {
-            c.isLetter || c.isNumber
-        }
+        return acc
     }
 
     @ViewBuilder func previewView() -> some View {
@@ -578,6 +570,21 @@ struct ComposeView: View {
             }
             return nil
         }
+
+        func checkLinkPreview() -> MsgContent {
+            switch (composeState.preview) {
+            case let .linkPreview(linkPreview: linkPreview):
+                if let url = parseMessage(msgText),
+                   let linkPreview = linkPreview,
+                   url == linkPreview.uri {
+                    return .link(text: msgText, preview: linkPreview)
+                } else {
+                    return .text(msgText)
+                }
+            default:
+                return .text(msgText)
+            }
+        }
     }
 
     private func startVoiceMessageRecording() async {
@@ -741,21 +748,6 @@ struct ComposeView: View {
         prevLinkUrl = nil
         pendingLinkUrl = nil
         cancelledLinks = []
-    }
-
-    private func checkLinkPreview() -> MsgContent {
-        switch (composeState.preview) {
-        case let .linkPreview(linkPreview: linkPreview):
-            if let url = parseMessage(composeState.message),
-               let linkPreview = linkPreview,
-               url == linkPreview.uri {
-                return .link(text: composeState.message, preview: linkPreview)
-            } else {
-                return .text(composeState.message)
-            }
-        default:
-            return .text(composeState.message)
-        }
     }
 }
 

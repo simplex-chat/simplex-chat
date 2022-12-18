@@ -226,11 +226,9 @@ struct SendMessageView: View {
             default: ()
             }
         } label: {
-            ZStack {
-                Image(systemName: "ellipsis.circle.fill")
-                    .resizable()
-                    .foregroundColor(.accentColor)
-            }
+            Image(systemName: "ellipsis.circle.fill")
+                .resizable()
+                .foregroundColor(.accentColor)
         }
         .frame(width: 29, height: 29)
         .padding([.bottom, .horizontal], 4)
