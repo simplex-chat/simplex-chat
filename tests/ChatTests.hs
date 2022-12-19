@@ -1583,7 +1583,7 @@ testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile 
   where
     groupInfo alice = do
       alice <## "group preferences:"
-      alice <## "Disappearing messages enabled: off, after 1 day"
+      alice <## "Disappearing messages enabled: off"
       alice <## "Direct messages enabled: on"
       alice <## "Full deletion enabled: off"
       alice <## "Voice messages enabled: on"

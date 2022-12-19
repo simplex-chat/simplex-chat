@@ -713,7 +713,7 @@ groupPrefToText' p = groupPrefToText_ (getField @"enable" p) (groupPrefParam p)
 groupPrefToText_ :: GroupFeatureEnabled -> Maybe Int -> Text
 groupPrefToText_ enabled param = do
   let enabledText = safeDecodeUtf8 . strEncode $ enabled
-      paramText = maybe "" (\n -> ", after " <> timedTTLText n) param
+      paramText = if enabled == FEOn then maybe "" (\n -> ", after " <> timedTTLText n) param else ""
    in enabledText <> paramText
 
 timedTTLText :: Int -> Text
@@ -863,7 +863,9 @@ prefEnabled asymmetric user contact = case (getField @"allow" user, getField @"a
   _ -> PrefEnabled True True
 
 prefToText :: PrefEnabled -> Maybe Int -> Text
-prefToText enabled param = prefEnabledToText enabled <> prefParamText param
+prefToText enabled param =
+  let paramText = if enabled == PrefEnabled True True then prefParamText param else ""
+   in prefEnabledToText enabled <> paramText
 
 prefParamText :: Maybe Int -> Text
 prefParamText = maybe "" (\n -> ", after " <> timedTTLText n)
@@ -877,11 +879,13 @@ prefEnabledToText = \case
 
 prefToText' :: FeatureI f => FeaturePreference f -> Text
 prefToText' p =
-  let allowed = case getField @"allow" p of
+  let allowed = getField @"allow" p
+      allowedText = case getField @"allow" p of
         FAAlways -> "always"
         FAYes -> "yes"
         FANo -> "no"
-   in allowed <> prefParamText (prefParam p)
+      paramText = if allowed == FAAlways || allowed == FAYes then prefParamText (prefParam p) else ""
+   in allowedText <> paramText
 
 featureState :: FeatureI f => ContactUserPreference (FeaturePreference f) -> (PrefEnabled, Maybe Int)
 featureState ContactUserPreference {enabled, userPreference} =
