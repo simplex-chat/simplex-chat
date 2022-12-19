@@ -790,14 +790,12 @@ ciContentToText = \case
   CISndGroupEvent event -> sndGroupEventToText event
   CIRcvConnEvent event -> rcvConnEventToText event
   CISndConnEvent event -> sndConnEventToText event
-  CIRcvChatFeature feature enabled param -> chatFeatureToText feature <> ": " <> prefEnabledToText enabled <> featureInt feature param
-  CISndChatFeature feature enabled param -> chatFeatureToText feature <> ": " <> prefEnabledToText enabled <> featureInt feature param
+  CIRcvChatFeature feature enabled param -> chatFeatureToText feature <> ": " <> prefToText enabled param
+  CISndChatFeature feature enabled param -> chatFeatureToText feature <> ": " <> prefToText enabled param
   CIRcvGroupFeature feature pref param -> groupFeatureToText feature <> ": " <> groupPrefToText pref param
   CISndGroupFeature feature pref param -> groupFeatureToText feature <> ": " <> groupPrefToText pref param
   CIRcvChatFeatureRejected feature -> chatFeatureToText feature <> ": received, prohibited"
   CIRcvGroupFeatureRejected feature -> groupFeatureToText feature <> ": received, prohibited"
-  where
-    featureInt feature param = maybe "" (", " <>) (featureIntValueText feature param)
 
 msgIntegrityError :: MsgErrorType -> Text
 msgIntegrityError = \case
@@ -812,11 +810,6 @@ msgDirToDeletedContent_ :: SMsgDirection d -> CIDeleteMode -> CIContent d
 msgDirToDeletedContent_ msgDir mode = case msgDir of
   SMDRcv -> CIRcvDeleted mode
   SMDSnd -> CISndDeleted mode
-
-featureIntValueText :: ChatFeature -> Maybe Int -> Maybe Text
-featureIntValueText feature param = case (feature, param) of
-  (CFTimedMessages, Just ttl) -> Just $ "after " <> timedTTLText ttl
-  _ -> Nothing
 
 -- platform independent
 instance ToField (CIContent d) where

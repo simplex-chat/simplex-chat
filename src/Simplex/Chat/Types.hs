@@ -861,12 +861,26 @@ prefEnabled asymmetric user contact = case (getField @"allow" user, getField @"a
   (FANo, _) -> PrefEnabled False False
   _ -> PrefEnabled True True
 
+prefToText :: PrefEnabled -> Maybe Int -> Text
+prefToText enabled param = prefEnabledToText enabled <> prefParamText param
+
+prefParamText :: Maybe Int -> Text
+prefParamText = maybe "" (\n -> ", after " <> timedTTLText n)
+
 prefEnabledToText :: PrefEnabled -> Text
 prefEnabledToText = \case
   PrefEnabled True True -> "enabled"
   PrefEnabled False False -> "off"
   PrefEnabled {forUser = True, forContact = False} -> "enabled for you"
   PrefEnabled {forUser = False, forContact = True} -> "enabled for contact"
+
+prefToText' :: FeatureI f => FeaturePreference f -> Text
+prefToText' p =
+  let allowed = case getField @"allow" p of
+        FAAlways -> "always"
+        FAYes -> "yes"
+        FANo -> "no"
+   in allowed <> prefParamText (prefParam p)
 
 featureState :: FeatureI f => ContactUserPreference (FeaturePreference f) -> (PrefEnabled, Maybe Int)
 featureState ContactUserPreference {enabled, userPreference} =

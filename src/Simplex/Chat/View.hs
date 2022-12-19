@@ -26,7 +26,6 @@ import Data.Time.Clock (DiffTime, UTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import Data.Time.LocalTime (ZonedTime (..), localDay, localTimeOfDay, timeOfDayToTime, utcToZonedTime)
 import GHC.Generics (Generic)
-import GHC.Records.Compat
 import qualified Network.HTTP.Types as Q
 import Numeric (showFFloat)
 import Simplex.Chat (maxImageSize)
@@ -785,7 +784,7 @@ viewContactPreferences user ct ct' cups =
 viewContactPref :: FullPreferences -> FullPreferences -> Maybe Preferences -> ContactUserPreferences -> AChatFeature -> Maybe StyledString
 viewContactPref userPrefs userPrefs' ctPrefs cups (ACF f)
   | userPref == userPref' && ctPref == contactPreference = Nothing
-  | otherwise = Just $ plain (chatFeatureToText $ chatFeature f) <> ": " <> plain (prefEnabledToText enabled) <> " (you allow: " <> viewCountactUserPref userPreference <> ", contact allows: " <> viewPreference contactPreference <> ")"
+  | otherwise = Just $ viewFeatureText f <> ": " <> plain (prefEnabledToText enabled) <> " (you allow: " <> viewCountactUserPref userPreference <> ", contact allows: " <> viewPreference contactPreference <> ")"
   where
     userPref = getPreference f userPrefs
     userPref' = getPreference f userPrefs'
@@ -800,17 +799,15 @@ viewPrefsUpdated ps ps'
     prefs = mapMaybe viewPref allChatFeatures
     viewPref (ACF f)
       | pref ps == pref ps' = Nothing
-      | otherwise = Just $ plain (chatFeatureToText $ chatFeature f) <> " allowed: " <> viewPreference (pref ps')
+      | otherwise = Just $ viewFeatureText f <> " allowed: " <> viewPreference (pref ps')
       where
         pref pss = getPreference f $ mergePreferences pss Nothing
 
-viewPreference :: forall f. (FeatureI f) => FeaturePreference f -> StyledString
-viewPreference p =
-  let allowed = case getField @"allow" p of
-        FAAlways -> "always"
-        FAYes -> "yes"
-        FANo -> "no"
-   in plain $ allowed <> maybe "" (", " <>) (featureIntValueText (prefFeature @f) (prefParam p))
+viewFeatureText :: SChatFeature f -> StyledString
+viewFeatureText f = plain . chatFeatureToText $ chatFeature f
+
+viewPreference :: FeatureI f => FeaturePreference f -> StyledString
+viewPreference p = plain $ prefToText' p
 
 viewCountactUserPref :: FeatureI f => ContactUserPref (FeaturePreference f) -> StyledString
 viewCountactUserPref = \case
@@ -840,9 +837,15 @@ viewGroupUpdated
           prefs = mapMaybe viewPref allGroupFeatures
           viewPref (AGF f)
             | pref gps == pref gps' = Nothing
-            | otherwise = Just $ plain (groupFeatureToText $ toGroupFeature f) <> " enabled: " <> plain (groupPrefToText' $ pref gps')
+            | otherwise = Just $ viewGroupFeatureText f <> " enabled: " <> viewGroupPreference (pref gps')
             where
               pref = getGroupPreference f . mergeGroupPreferences
+
+viewGroupFeatureText :: SGroupFeature f -> StyledString
+viewGroupFeatureText f = plain . groupFeatureToText $ toGroupFeature f
+
+viewGroupPreference :: GroupFeatureI f => GroupFeaturePreference f -> StyledString
+viewGroupPreference p = plain $ groupPrefToText' p
 
 viewGroupProfile :: GroupInfo -> [StyledString]
 viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {description, image, groupPreferences = gps}} =
@@ -851,7 +854,7 @@ viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {description, image, g
     <> maybe [] ((bold' "description:" :) . map plain . T.lines) description
     <> (bold' "group preferences:" : map viewPref allGroupFeatures)
   where
-    viewPref (AGF f) = plain (groupFeatureToText $ toGroupFeature f) <> " enabled: " <> plain (groupPrefToText' $ pref gps)
+    viewPref (AGF f) = viewGroupFeatureText f <> " enabled: " <> viewGroupPreference (pref gps)
       where
         pref = getGroupPreference f . mergeGroupPreferences
 
