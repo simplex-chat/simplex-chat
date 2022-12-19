@@ -717,19 +717,25 @@ groupPrefToText_ enabled param = do
    in enabledText <> paramText
 
 timedTTLText :: Int -> Text
+timedTTLText 0 = "0 sec"
 timedTTLText ttl = do
-  let (m', s) = ttl `divMod` 60
-      (h', m) = m' `divMod` 60
-      (d, h) = h' `divMod` 24
-  T.pack $
-    if d <= 30
-      then unwords $ [ds d | d > 0] <> [hs h | h > 0] <> [ms m | m > 0] <> [ss s | s > 0]
-      else show ttl <> " second(s)"
+  let (m', s) = ttl `quotRem` 60
+      (h', m) = m' `quotRem` 60
+      (d', h) = h' `quotRem` 24
+      (mm, d) = d' `quotRem` 30
+  T.pack . unwords $
+    [mms mm | mm /= 0] <> [ds d | d /= 0] <> [hs h | h /= 0] <> [ms m | m /= 0] <> [ss s | s /= 0]
   where
-    ss s = show s <> "s"
-    ms m = show m <> "m"
-    hs h = show h <> "h"
-    ds d = show d <> "d"
+    ss s = show s <> " sec"
+    ms m = show m <> " min"
+    hs 1 = "1 hour"
+    hs h = show h <> " hours"
+    ds 1 = "1 day"
+    ds 7 = "1 week"
+    ds 14 = "2 weeks"
+    ds d = show d <> " days"
+    mms 1 = "1 month"
+    mms mm = show mm <> " months"
 
 toGroupPreference :: GroupFeatureI f => GroupFeaturePreference f -> GroupPreference
 toGroupPreference p = GroupPreference {enable = getField @"enable" p}
