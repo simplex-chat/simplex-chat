@@ -2487,7 +2487,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
         updateRcvChatItem = do
           CChatItem msgDir ChatItem {meta = CIMeta {itemId}} <- withStore $ \db -> getDirectChatItemBySharedMsgId db userId contactId sharedMsgId
           case msgDir of
-            SMDRcv -> updateDirectChatItemView userId ct itemId (ACIContent SMDRcv $ content) live $ Just msgId
+            SMDRcv -> updateDirectChatItemView userId ct itemId (ACIContent SMDRcv content) live $ Just msgId
             SMDSnd -> messageError "x.msg.update: contact attempted invalid message update"
 
     messageDelete :: Contact -> SharedMsgId -> RcvMessage -> MsgMeta -> m ()
