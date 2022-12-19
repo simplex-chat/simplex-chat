@@ -615,7 +615,6 @@ instance ToJSON VoicePreference where toEncoding = J.genericToEncoding J.default
 class (Eq (FeaturePreference f), HasField "allow" (FeaturePreference f) FeatureAllowed) => FeatureI f where
   type FeaturePreference (f :: ChatFeature) = p | p -> f
   prefParam :: FeaturePreference f -> Maybe Int
-  prefFeature :: ChatFeature
 
 instance HasField "allow" TimedMessagesPreference FeatureAllowed where
   hasField p = (\allow -> p {allow}, allow (p :: TimedMessagesPreference))
@@ -629,17 +628,14 @@ instance HasField "allow" VoicePreference FeatureAllowed where
 instance FeatureI 'CFTimedMessages where
   type FeaturePreference 'CFTimedMessages = TimedMessagesPreference
   prefParam TimedMessagesPreference {ttl} = ttl
-  prefFeature = CFTimedMessages
 
 instance FeatureI 'CFFullDelete where
   type FeaturePreference 'CFFullDelete = FullDeletePreference
   prefParam _ = Nothing
-  prefFeature = CFFullDelete
 
 instance FeatureI 'CFVoice where
   type FeaturePreference 'CFVoice = VoicePreference
   prefParam _ = Nothing
-  prefFeature = CFVoice
 
 data GroupPreference = GroupPreference
   {enable :: GroupFeatureEnabled}
@@ -676,7 +672,6 @@ instance ToJSON VoiceGroupPreference where toEncoding = J.genericToEncoding J.de
 class (Eq (GroupFeaturePreference f), HasField "enable" (GroupFeaturePreference f) GroupFeatureEnabled) => GroupFeatureI f where
   type GroupFeaturePreference (f :: GroupFeature) = p | p -> f
   groupPrefParam :: GroupFeaturePreference f -> Maybe Int
-  groupPrefFeature :: GroupFeature
 
 instance HasField "enable" GroupPreference GroupFeatureEnabled where
   hasField p = (\enable -> p {enable}, enable (p :: GroupPreference))
@@ -696,22 +691,18 @@ instance HasField "enable" VoiceGroupPreference GroupFeatureEnabled where
 instance GroupFeatureI 'GFTimedMessages where
   type GroupFeaturePreference 'GFTimedMessages = TimedMessagesGroupPreference
   groupPrefParam TimedMessagesGroupPreference {ttl} = Just ttl
-  groupPrefFeature = GFTimedMessages
 
 instance GroupFeatureI 'GFDirectMessages where
   type GroupFeaturePreference 'GFDirectMessages = DirectMessagesGroupPreference
   groupPrefParam _ = Nothing
-  groupPrefFeature = GFDirectMessages
 
 instance GroupFeatureI 'GFFullDelete where
   type GroupFeaturePreference 'GFFullDelete = FullDeleteGroupPreference
   groupPrefParam _ = Nothing
-  groupPrefFeature = GFFullDelete
 
 instance GroupFeatureI 'GFVoice where
   type GroupFeaturePreference 'GFVoice = VoiceGroupPreference
   groupPrefParam _ = Nothing
-  groupPrefFeature = GFVoice
 
 groupPrefToText :: HasField "enable" p GroupFeatureEnabled => p -> Maybe Int -> Text
 groupPrefToText p = groupPrefToText_ $ getField @"enable" p
