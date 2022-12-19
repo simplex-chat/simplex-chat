@@ -4,6 +4,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StrictData #-}
@@ -125,7 +126,8 @@ data ChatController = ChatController
     expireCIsAsync :: TVar (Maybe (Async ())),
     expireCIs :: TVar Bool,
     cleanupManagerAsync :: TVar (Maybe (Async ())),
-    timedItemThreads :: TMap (ChatRef, ChatItemId) (TVar (Maybe (Weak ThreadId)))
+    timedItemThreads :: TMap (ChatRef, ChatItemId) (TVar (Maybe (Weak ThreadId))),
+    showLiveItems :: TVar Bool
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown | HSMessages | HSSettings
@@ -232,10 +234,12 @@ data ChatCommand
   | AcceptContact ContactName
   | RejectContact ContactName
   | SendMessage ChatName ByteString
+  | SendLiveMessage ChatName ByteString
   | SendMessageQuote {contactName :: ContactName, msgDir :: AMsgDirection, quotedMsg :: ByteString, message :: ByteString}
   | SendMessageBroadcast ByteString
   | DeleteMessage ChatName ByteString
   | EditMessage {chatName :: ChatName, editedMsg :: ByteString, message :: ByteString}
+  | UpdateLiveMessage {chatName :: ChatName, chatItemId :: ChatItemId, liveMessage :: Bool, message :: ByteString}
   | NewGroup GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
   | JoinGroup GroupName
@@ -254,6 +258,9 @@ data ChatCommand
   | ShowGroupLink GroupName
   | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: ByteString, message :: ByteString}
   | LastMessages (Maybe ChatName) Int (Maybe String)
+  | LastChatItemId (Maybe ChatName) Int
+  | ShowChatItem (Maybe ChatItemId)
+  | ShowLiveItems Bool
   | SendFile ChatName FilePath
   | SendImage ChatName FilePath
   | ForwardFile ChatName FileTransferId
@@ -267,6 +274,9 @@ data ChatCommand
   | SetUserFeature AChatFeature FeatureAllowed
   | SetContactFeature AChatFeature ContactName (Maybe FeatureAllowed)
   | SetGroupFeature AGroupFeature GroupName GroupFeatureEnabled
+  | SetUserTimedMessages Bool
+  | SetContactTimedMessages ContactName (Maybe TimedMessagesEnabled)
+  | SetGroupTimedMessages GroupName (Maybe Int)
   | QuitChat
   | ShowVersion
   | DebugLocks
@@ -280,7 +290,8 @@ data ChatResponse
   | CRChatSuspended
   | CRApiChats {chats :: [AChat]}
   | CRApiChat {chat :: AChat}
-  | CRLastMessages {chatItems :: [AChatItem]}
+  | CRChatItems {chatItems :: [AChatItem]}
+  | CRChatItemId (Maybe ChatItemId)
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
   | CRUserSMPServers {smpServers :: NonEmpty ServerCfg, presetSMPServers :: NonEmpty SMPServerWithAuth}
   | CRSmpTestResult {smpTestFailure :: Maybe SMPTestFailure}
@@ -298,7 +309,6 @@ data ChatResponse
   | CRChatItemUpdated {chatItem :: AChatItem}
   | CRChatItemDeleted {deletedChatItem :: AChatItem, toChatItem :: Maybe AChatItem, byUser :: Bool, timed :: Bool}
   | CRChatItemDeletedNotFound {contact :: Contact, sharedMsgId :: SharedMsgId}
-  | CRChatRead
   | CRBroadcastSent MsgContent Int ZonedTime
   | CRMsgIntegrityError {msgError :: MsgErrorType}
   | CRCmdAccepted {corr :: CorrId}
@@ -512,6 +522,18 @@ data ServerAddress = ServerAddress
   deriving (Show, Generic)
 
 instance ToJSON ServerAddress where toEncoding = J.genericToEncoding J.defaultOptions
+
+data TimedMessagesEnabled
+  = TMEEnableSetTTL Int
+  | TMEEnableKeepTTL
+  | TMEDisableKeepTTL
+  deriving (Show)
+
+tmeToPref :: Maybe Int -> TimedMessagesEnabled -> TimedMessagesPreference
+tmeToPref currentTTL tme = uncurry TimedMessagesPreference $ case tme of
+  TMEEnableSetTTL ttl -> (FAYes, Just ttl)
+  TMEEnableKeepTTL -> (FAYes, currentTTL)
+  TMEDisableKeepTTL -> (FANo, currentTTL)
 
 data ChatError
   = ChatError {errorType :: ChatErrorType}

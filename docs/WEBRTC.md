@@ -88,3 +88,54 @@ turn:username:password@turn.example.com:5349
 ```
 
 This is it - you now can make audio and video calls via your own server, without sharing any data with our servers (other than the key excange with your contact in E2E encrypted messages).
+
+## Troubleshoot
+
+- **Determine if server is available**:
+
+  Run this command in your terminal:
+
+  ```sh
+  ping <your_ip_or_domain>
+  ```
+
+  If packets being transmitted, server is up!
+
+- **Determine if ports are open**:
+
+  Run this command in your terminal:
+
+  ```sh
+  nc -zvw10 <your_ip_or_domain> 443 5349
+  ```
+
+  You should see:
+
+  ```
+  Connection to <your_ip_or_domain> 443 port [tcp/https] succeeded!
+  Connection to <your_ip_or_domain> 5349 port [tcp/*] succeeded!
+  ```
+
+- **Test STUN/TURN connectivity:**
+
+  1. Go to [IceTest](https://icetest.info/).
+
+  2. In **Build up ICE Server List** section, add:
+
+     <img src="./stun_1.png">
+
+     - `STUN: stun:<your_ip_or_domain>:<port>` and hit `Add STUN`
+     - `TURN: turn:<your_ip_or_domain>:<port>`, `Username: <your_login>`, `Credential: <your_pass>` and hit `Add TURN`
+
+     Where `<port>` is 443 or 5349.
+
+  3. You should see your servers in **ICE server list** section. If everything is set up correctly, hit `Start test`:
+
+     <img src="./stun_2.png">
+
+  4. In **Results** section, you should see something like this:
+
+     <img src="./stun_3.png">
+
+     If results show `srflx` and `relay` candidates, everything is set up correctly!
+

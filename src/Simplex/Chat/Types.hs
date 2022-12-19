@@ -339,16 +339,24 @@ instance PreferenceI FullPreferences where
   {-# INLINE getPreference #-}
 
 setPreference :: forall f. FeatureI f => SChatFeature f -> Maybe FeatureAllowed -> Maybe Preferences -> Preferences
-setPreference f allow_ prefs_ =
-  let pref = setAllow <$> allow_
-   in case f of
-        SCFTimedMessages -> prefs {timedMessages = pref}
-        SCFFullDelete -> prefs {fullDelete = pref}
-        SCFVoice -> prefs {voice = pref}
+setPreference f allow_ prefs_ = setPreference_ f pref prefs
   where
+    pref = setAllow <$> allow_
     setAllow :: FeatureAllowed -> FeaturePreference f
     setAllow = setField @"allow" (getPreference f prefs)
     prefs = toChatPrefs $ mergePreferences Nothing prefs_
+
+setPreference' :: SChatFeature f -> Maybe (FeaturePreference f) -> Maybe Preferences -> Preferences
+setPreference' f pref_ prefs_ = setPreference_ f pref_ prefs
+  where
+    prefs = toChatPrefs $ mergePreferences Nothing prefs_
+
+setPreference_ :: SChatFeature f -> Maybe (FeaturePreference f) -> Preferences -> Preferences
+setPreference_ f pref_ prefs =
+  case f of
+    SCFTimedMessages -> prefs {timedMessages = pref_}
+    SCFFullDelete -> prefs {fullDelete = pref_}
+    SCFVoice -> prefs {voice = pref_}
 
 -- collection of optional chat preferences for the user and the contact
 data Preferences = Preferences
@@ -474,16 +482,30 @@ instance FromField GroupPreferences where
   fromField = fromTextField_ decodeJSON
 
 setGroupPreference :: forall f. GroupFeatureI f => SGroupFeature f -> GroupFeatureEnabled -> Maybe GroupPreferences -> GroupPreferences
-setGroupPreference f enable prefs_ =
+setGroupPreference f enable prefs_ = setGroupPreference_ f pref prefs
+  where
+    prefs = mergeGroupPreferences prefs_
+    pref :: GroupFeaturePreference f
+    pref = setField @"enable" (getGroupPreference f prefs) enable
+
+setGroupPreference' :: SGroupFeature f -> GroupFeaturePreference f -> Maybe GroupPreferences -> GroupPreferences
+setGroupPreference' f pref prefs_ = setGroupPreference_ f pref prefs
+  where
+    prefs = mergeGroupPreferences prefs_
+
+setGroupPreference_ :: SGroupFeature f -> GroupFeaturePreference f -> FullGroupPreferences -> GroupPreferences
+setGroupPreference_ f pref prefs =
   toGroupPreferences $ case f of
     SGFTimedMessages -> prefs {timedMessages = pref}
     SGFDirectMessages -> prefs {directMessages = pref}
     SGFVoice -> prefs {voice = pref}
     SGFFullDelete -> prefs {fullDelete = pref}
+
+setGroupTimedMessagesPreference :: TimedMessagesGroupPreference -> Maybe GroupPreferences -> GroupPreferences
+setGroupTimedMessagesPreference pref prefs_ =
+  toGroupPreferences $ prefs {timedMessages = pref}
   where
     prefs = mergeGroupPreferences prefs_
-    pref :: GroupFeaturePreference f
-    pref = setField @"enable" (getGroupPreference f prefs) enable
 
 -- full collection of chat preferences defined in the app - it is used to ensure we include all preferences and to simplify processing
 -- if some of the preferences are not defined in Preferences, defaults from defaultChatPrefs are used here.
@@ -593,6 +615,7 @@ instance ToJSON VoicePreference where toEncoding = J.genericToEncoding J.default
 
 class (Eq (FeaturePreference f), HasField "allow" (FeaturePreference f) FeatureAllowed) => FeatureI f where
   type FeaturePreference (f :: ChatFeature) = p | p -> f
+  prefParam :: FeaturePreference f -> Maybe Int
 
 instance HasField "allow" TimedMessagesPreference FeatureAllowed where
   hasField p = (\allow -> p {allow}, allow (p :: TimedMessagesPreference))
@@ -605,12 +628,15 @@ instance HasField "allow" VoicePreference FeatureAllowed where
 
 instance FeatureI 'CFTimedMessages where
   type FeaturePreference 'CFTimedMessages = TimedMessagesPreference
+  prefParam TimedMessagesPreference {ttl} = ttl
 
 instance FeatureI 'CFFullDelete where
   type FeaturePreference 'CFFullDelete = FullDeletePreference
+  prefParam _ = Nothing
 
 instance FeatureI 'CFVoice where
   type FeaturePreference 'CFVoice = VoicePreference
+  prefParam _ = Nothing
 
 data GroupPreference = GroupPreference
   {enable :: GroupFeatureEnabled}
@@ -646,6 +672,7 @@ instance ToJSON VoiceGroupPreference where toEncoding = J.genericToEncoding J.de
 
 class (Eq (GroupFeaturePreference f), HasField "enable" (GroupFeaturePreference f) GroupFeatureEnabled) => GroupFeatureI f where
   type GroupFeaturePreference (f :: GroupFeature) = p | p -> f
+  groupPrefParam :: GroupFeaturePreference f -> Maybe Int
 
 instance HasField "enable" GroupPreference GroupFeatureEnabled where
   hasField p = (\enable -> p {enable}, enable (p :: GroupPreference))
@@ -664,18 +691,52 @@ instance HasField "enable" VoiceGroupPreference GroupFeatureEnabled where
 
 instance GroupFeatureI 'GFTimedMessages where
   type GroupFeaturePreference 'GFTimedMessages = TimedMessagesGroupPreference
+  groupPrefParam TimedMessagesGroupPreference {ttl} = Just ttl
 
 instance GroupFeatureI 'GFDirectMessages where
   type GroupFeaturePreference 'GFDirectMessages = DirectMessagesGroupPreference
+  groupPrefParam _ = Nothing
 
 instance GroupFeatureI 'GFFullDelete where
   type GroupFeaturePreference 'GFFullDelete = FullDeleteGroupPreference
+  groupPrefParam _ = Nothing
 
 instance GroupFeatureI 'GFVoice where
   type GroupFeaturePreference 'GFVoice = VoiceGroupPreference
+  groupPrefParam _ = Nothing
 
-groupPrefToText :: HasField "enable" p GroupFeatureEnabled => p -> Text
-groupPrefToText = safeDecodeUtf8 . strEncode . getField @"enable"
+groupPrefToText :: HasField "enable" p GroupFeatureEnabled => p -> Maybe Int -> Text
+groupPrefToText p = groupPrefToText_ $ getField @"enable" p
+
+groupPrefToText' :: GroupFeatureI f => GroupFeaturePreference f -> Text
+groupPrefToText' p = groupPrefToText_ (getField @"enable" p) (groupPrefParam p)
+
+groupPrefToText_ :: GroupFeatureEnabled -> Maybe Int -> Text
+groupPrefToText_ enabled param = do
+  let enabledText = safeDecodeUtf8 . strEncode $ enabled
+      paramText = if enabled == FEOn then maybe "" (\n -> ", after " <> timedTTLText n) param else ""
+   in enabledText <> paramText
+
+timedTTLText :: Int -> Text
+timedTTLText 0 = "0 sec"
+timedTTLText ttl = do
+  let (m', s) = ttl `quotRem` 60
+      (h', m) = m' `quotRem` 60
+      (d', h) = h' `quotRem` 24
+      (mm, d) = d' `quotRem` 30
+  T.pack . unwords $
+    [mms mm | mm /= 0] <> [ds d | d /= 0] <> [hs h | h /= 0] <> [ms m | m /= 0] <> [ss s | s /= 0]
+  where
+    ss s = show s <> " sec"
+    ms m = show m <> " min"
+    hs 1 = "1 hour"
+    hs h = show h <> " hours"
+    ds 1 = "1 day"
+    ds 7 = "1 week"
+    ds 14 = "2 weeks"
+    ds d = show d <> " days"
+    mms 1 = "1 month"
+    mms mm = show mm <> " months"
 
 toGroupPreference :: GroupFeatureI f => GroupFeaturePreference f -> GroupPreference
 toGroupPreference p = GroupPreference {enable = getField @"enable" p}
@@ -733,6 +794,12 @@ instance ToJSON GroupFeatureEnabled where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
+groupFeatureState :: GroupFeatureI f => GroupFeaturePreference f -> (GroupFeatureEnabled, Maybe Int)
+groupFeatureState p =
+  let enable = getField @"enable" p
+      param = if enable == FEOn then groupPrefParam p else Nothing
+   in (enable, param)
+
 mergePreferences :: Maybe Preferences -> Maybe Preferences -> FullPreferences
 mergePreferences contactPrefs userPreferences =
   FullPreferences
@@ -788,13 +855,21 @@ instance ToJSON PrefEnabled where
   toJSON = J.genericToJSON J.defaultOptions
   toEncoding = J.genericToEncoding J.defaultOptions
 
-prefEnabled :: FeatureI f => FeaturePreference f -> FeaturePreference f -> PrefEnabled
-prefEnabled user contact = case (getField @"allow" user, getField @"allow" contact) of
-  (FAAlways, FANo) -> PrefEnabled {forUser = False, forContact = True}
-  (FANo, FAAlways) -> PrefEnabled {forUser = True, forContact = False}
+prefEnabled :: FeatureI f => Bool -> FeaturePreference f -> FeaturePreference f -> PrefEnabled
+prefEnabled asymmetric user contact = case (getField @"allow" user, getField @"allow" contact) of
+  (FAAlways, FANo) -> PrefEnabled {forUser = False, forContact = asymmetric}
+  (FANo, FAAlways) -> PrefEnabled {forUser = asymmetric, forContact = False}
   (_, FANo) -> PrefEnabled False False
   (FANo, _) -> PrefEnabled False False
   _ -> PrefEnabled True True
+
+prefToText :: PrefEnabled -> Maybe Int -> Text
+prefToText enabled param =
+  let paramText = if enabled == PrefEnabled True True then prefParamText param else ""
+   in prefEnabledToText enabled <> paramText
+
+prefParamText :: Maybe Int -> Text
+prefParamText = maybe "" (\n -> ", after " <> timedTTLText n)
 
 prefEnabledToText :: PrefEnabled -> Text
 prefEnabledToText = \case
@@ -802,6 +877,21 @@ prefEnabledToText = \case
   PrefEnabled False False -> "off"
   PrefEnabled {forUser = True, forContact = False} -> "enabled for you"
   PrefEnabled {forUser = False, forContact = True} -> "enabled for contact"
+
+prefToText' :: FeatureI f => FeaturePreference f -> Text
+prefToText' p =
+  let allowed = getField @"allow" p
+      allowedText = case getField @"allow" p of
+        FAAlways -> "always"
+        FAYes -> "yes"
+        FANo -> "no"
+      paramText = if allowed == FAAlways || allowed == FAYes then prefParamText (prefParam p) else ""
+   in allowedText <> paramText
+
+featureState :: FeatureI f => ContactUserPreference (FeaturePreference f) -> (PrefEnabled, Maybe Int)
+featureState ContactUserPreference {enabled, userPreference} =
+  let param = if forUser enabled then prefParam $ preference userPreference else Nothing
+   in (enabled, param)
 
 updateMergedPreferences :: User -> Contact -> Contact
 updateMergedPreferences user ct =
@@ -820,12 +910,14 @@ contactUserPreferences user userPreferences contactPreferences connectedIncognit
     pref :: FeatureI f => SChatFeature f -> ContactUserPreference (FeaturePreference f)
     pref f =
       ContactUserPreference
-        { enabled = prefEnabled userPref ctPref,
+        { enabled = prefEnabled (asymmetric f) userPref ctPref,
           -- incognito contact cannot have default user preference used
           userPreference = if connectedIncognito then CUPContact ctUserPref else maybe (CUPUser userPref) CUPContact ctUserPref_,
           contactPreference = ctPref
         }
       where
+        asymmetric SCFTimedMessages = False
+        asymmetric _ = True
         ctUserPref = getPreference f userPreferences
         ctUserPref_ = chatPrefSel f userPreferences
         userPref = getPreference f ctUserPrefs

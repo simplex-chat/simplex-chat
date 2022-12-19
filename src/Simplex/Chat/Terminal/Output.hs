@@ -1,3 +1,4 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
@@ -7,15 +8,18 @@
 
 module Simplex.Chat.Terminal.Output where
 
+import Control.Concurrent (ThreadId)
 import Control.Monad.Catch (MonadMask)
-import Control.Monad.IO.Unlift
+import Control.Monad.Except
 import Control.Monad.Reader
 import Data.Time.Clock (getCurrentTime)
+import Simplex.Chat (processChatCommand)
 import Simplex.Chat.Controller
 import Simplex.Chat.Messages hiding (NewChatItem (..))
 import Simplex.Chat.Styled
 import Simplex.Chat.View
 import System.Console.ANSI.Types
+import System.Mem.Weak (Weak)
 import System.Terminal
 import System.Terminal.Internal (LocalTerminal, Terminal, VirtualTerminal)
 import UnliftIO.STM
@@ -24,6 +28,7 @@ data ChatTerminal = ChatTerminal
   { termDevice :: TerminalDevice,
     termState :: TVar TerminalState,
     termSize :: Size,
+    liveMessageState :: TVar (Maybe LiveMessage),
     nextMessageRow :: TVar Int,
     termLock :: TMVar ()
   }
@@ -33,6 +38,16 @@ data TerminalState = TerminalState
     inputString :: String,
     inputPosition :: Int,
     previousInput :: String
+  }
+
+data LiveMessage = LiveMessage
+  { chatName :: ChatName,
+    chatItemId :: ChatItemId,
+    livePrompt :: Bool,
+    sentMsg :: String,
+    typedMsg :: String,
+    liveThreadId :: Weak ThreadId,
+    promptThreadId :: Weak ThreadId
   }
 
 class Terminal t => WithTerminal t where
@@ -54,10 +69,11 @@ newChatTerminal t = do
   termSize <- withTerm t . runTerminalT $ getWindowSize
   let lastRow = height termSize - 1
   termState <- newTVarIO mkTermState
+  liveMessageState <- newTVarIO Nothing
   termLock <- newTMVarIO ()
   nextMessageRow <- newTVarIO lastRow
   -- threadDelay 500000 -- this delay is the same as timeout in getTerminalSize
-  return ChatTerminal {termDevice = TerminalDevice t, termState, termSize, nextMessageRow, termLock}
+  return ChatTerminal {termDevice = TerminalDevice t, termState, termSize, liveMessageState, nextMessageRow, termLock}
 
 mkTermState :: TerminalState
 mkTermState =
@@ -75,26 +91,31 @@ withTermLock ChatTerminal {termLock} action = do
   atomically $ putTMVar termLock ()
 
 runTerminalOutput :: ChatTerminal -> ChatController -> IO ()
-runTerminalOutput ct ChatController {currentUser, inputQ, outputQ, config = ChatConfig {testView}} = do
+runTerminalOutput ct cc@ChatController {outputQ, showLiveItems} = do
   forever $ do
     (_, r) <- atomically $ readTBQueue outputQ
     case r of
       CRNewChatItem ci -> markChatItemRead ci
       CRChatItemUpdated ci -> markChatItemRead ci
       _ -> pure ()
-    user <- readTVarIO currentUser
-    ts <- getCurrentTime
-    printToTerminal ct $ responseToView user testView ts r
+    liveItems <- readTVarIO showLiveItems
+    printRespToTerminal ct cc liveItems r
   where
     markChatItemRead :: AChatItem -> IO ()
     markChatItemRead (AChatItem _ _ chat item@ChatItem {meta = CIMeta {itemStatus}}) =
       case (muted chat item, itemStatus) of
         (False, CISRcvNew) -> do
           let itemId = chatItemId' item
-              chatRef = serializeChatRef $ chatInfoToRef chat
-              cmd = "/_read chat " <> chatRef <> " from=" <> show itemId <> " to=" <> show itemId
-          atomically $ writeTBQueue inputQ cmd
+              chatRef = chatInfoToRef chat
+          void $ runReaderT (runExceptT $ processChatCommand (APIChatRead chatRef (Just (itemId, itemId)))) cc
         _ -> pure ()
+
+printRespToTerminal :: ChatTerminal -> ChatController -> Bool -> ChatResponse -> IO ()
+printRespToTerminal ct cc liveItems r = do
+  let testV = testView $ config cc
+  user <- readTVarIO $ currentUser cc
+  ts <- getCurrentTime
+  printToTerminal ct $ responseToView user testV liveItems ts r
 
 printToTerminal :: ChatTerminal -> [StyledString] -> IO ()
 printToTerminal ct s =
@@ -102,6 +123,9 @@ printToTerminal ct s =
     withTermLock ct $ do
       printMessage ct s
       updateInput ct
+
+updateInputView :: ChatTerminal -> IO ()
+updateInputView ct = withChatTerm ct $ withTermLock ct $ updateInput ct
 
 updateInput :: forall m. MonadTerminal m => ChatTerminal -> m ()
 updateInput ChatTerminal {termSize = Size {height, width}, termState, nextMessageRow} = do
