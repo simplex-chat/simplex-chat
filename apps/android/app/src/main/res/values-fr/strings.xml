@@ -711,4 +711,14 @@
     <string name="group_member_status_left">a quitté</string>
     <string name="group_member_status_group_deleted">groupe supprimé</string>
     <string name="group_member_status_invited">invité·e</string>
+    <string name="group_member_status_introduced">connexion (introduite)</string>
+    <string name="group_member_status_intro_invitation">connexion (introduite par invitation)</string>
+    <string name="group_member_status_accepted">connexion (acceptée)</string>
+    <string name="group_member_status_announced">connexion (annoncée)</string>
+    <string name="group_member_status_connected">connecté</string>
+    <string name="group_member_status_complete">complet</string>
+    <string name="group_member_status_creator">créateur</string>
+    <string name="group_member_status_connecting">connexion</string>
+    <string name="no_contacts_to_add">Aucun contact à ajouter</string>
+    <string name="new_member_role">Nouveau rôle</string>
 </resources>
