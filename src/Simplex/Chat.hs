@@ -2749,9 +2749,8 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
     createFeatureEnabledItems :: Contact -> m ()
     createFeatureEnabledItems ct@Contact {mergedPreferences} =
       forM_ allChatFeatures $ \(ACF f) -> do
-        let cup@ContactUserPreference {enabled} = getContactUserPreference f mergedPreferences
-            int' = cupIntValue cup
-        createInternalChatItem user (CDDirectRcv ct) (CIRcvChatFeature (chatFeature f) enabled int') Nothing
+        let state = featureState $ getContactUserPreference f mergedPreferences
+        createInternalChatItem user (CDDirectRcv ct) (uncurry (CIRcvChatFeature $ chatFeature f) state) Nothing
 
     createGroupFeatureItems :: GroupInfo -> GroupMember -> m ()
     createGroupFeatureItems g@GroupInfo {groupProfile} m = do
@@ -3377,10 +3376,10 @@ userProfileToSend user@User {profile = p} incognitoProfile ct =
 createFeatureChangedItems :: (MsgDirectionI d, ChatMonad m) => User -> Contact -> Contact -> (Contact -> ChatDirection 'CTDirect d) -> (ChatFeature -> PrefEnabled -> Maybe Int -> CIContent d) -> m ()
 createFeatureChangedItems user Contact {mergedPreferences = cups} ct'@Contact {mergedPreferences = cups'} chatDir ciContent =
   forM_ allChatFeatures $ \(ACF f) -> do
-    let prefChangedVal = prefChangedValue $ getContactUserPreference f cups
-        prefChangedVal'@(enabled', int') = prefChangedValue $ getContactUserPreference f cups'
-    unless (prefChangedVal == prefChangedVal') $
-      createInternalChatItem user (chatDir ct') (ciContent (chatFeature f) enabled' int') Nothing
+    let state = featureState $ getContactUserPreference f cups
+        state' = featureState $ getContactUserPreference f cups'
+    when (state /= state') $
+      createInternalChatItem user (chatDir ct') (uncurry (ciContent $ chatFeature f) state') Nothing
 
 createGroupFeatureChangedItems :: (MsgDirectionI d, ChatMonad m) => User -> ChatDirection 'CTGroup d -> (GroupFeature -> GroupPreference -> Maybe Int -> CIContent d) -> GroupInfo -> GroupInfo -> m ()
 createGroupFeatureChangedItems user cd ciContent GroupInfo {fullGroupPreferences = gps} GroupInfo {fullGroupPreferences = gps'} =

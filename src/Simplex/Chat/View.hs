@@ -810,7 +810,7 @@ viewPreference p =
         FAAlways -> "always"
         FAYes -> "yes"
         FANo -> "no"
-   in plain $ allowed <> maybe "" (", " <>) (featureIntValueText (prefFeature @f) (prefIntValue p))
+   in plain $ allowed <> maybe "" (", " <>) (featureIntValueText (prefFeature @f) (prefParam p))
 
 viewCountactUserPref :: FeatureI f => ContactUserPref (FeaturePreference f) -> StyledString
 viewCountactUserPref = \case

@@ -614,7 +614,7 @@ instance ToJSON VoicePreference where toEncoding = J.genericToEncoding J.default
 
 class (Eq (FeaturePreference f), HasField "allow" (FeaturePreference f) FeatureAllowed) => FeatureI f where
   type FeaturePreference (f :: ChatFeature) = p | p -> f
-  prefIntValue :: FeaturePreference f -> Maybe Int
+  prefParam :: FeaturePreference f -> Maybe Int
   prefFeature :: ChatFeature
 
 instance HasField "allow" TimedMessagesPreference FeatureAllowed where
@@ -628,17 +628,17 @@ instance HasField "allow" VoicePreference FeatureAllowed where
 
 instance FeatureI 'CFTimedMessages where
   type FeaturePreference 'CFTimedMessages = TimedMessagesPreference
-  prefIntValue TimedMessagesPreference {ttl} = ttl
+  prefParam TimedMessagesPreference {ttl} = ttl
   prefFeature = CFTimedMessages
 
 instance FeatureI 'CFFullDelete where
   type FeaturePreference 'CFFullDelete = FullDeletePreference
-  prefIntValue _ = Nothing
+  prefParam _ = Nothing
   prefFeature = CFFullDelete
 
 instance FeatureI 'CFVoice where
   type FeaturePreference 'CFVoice = VoicePreference
-  prefIntValue _ = Nothing
+  prefParam _ = Nothing
   prefFeature = CFVoice
 
 data GroupPreference = GroupPreference
@@ -848,13 +848,10 @@ prefEnabledToText = \case
   PrefEnabled {forUser = True, forContact = False} -> "enabled for you"
   PrefEnabled {forUser = False, forContact = True} -> "enabled for contact"
 
-prefChangedValue :: FeatureI f => ContactUserPreference (FeaturePreference f) -> (PrefEnabled, Maybe Int)
-prefChangedValue cup@ContactUserPreference {enabled} =
-  let int = if forUser enabled then cupIntValue cup else Nothing
-   in (enabled, int)
-
-cupIntValue :: FeatureI f => ContactUserPreference (FeaturePreference f) -> Maybe Int
-cupIntValue ContactUserPreference {userPreference} = prefIntValue $ preference userPreference
+featureState :: FeatureI f => ContactUserPreference (FeaturePreference f) -> (PrefEnabled, Maybe Int)
+featureState ContactUserPreference {enabled, userPreference} =
+  let param = if forUser enabled then prefParam $ preference userPreference else Nothing
+   in (enabled, param)
 
 updateMergedPreferences :: User -> Contact -> Contact
 updateMergedPreferences user ct =
