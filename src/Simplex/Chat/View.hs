@@ -263,10 +263,7 @@ muted chat ChatItem {chatDir} = case (chat, chatDir) of
   _ -> False
 
 viewGroupSubscribed :: GroupInfo -> [StyledString]
-viewGroupSubscribed g@GroupInfo {membership} =
-  [incognito <> ttyFullGroup g <> ": connected to server(s)"]
-  where
-    incognito = if memberIncognito membership then incognitoPrefix else ""
+viewGroupSubscribed g = [membershipIncognito g <> ttyFullGroup g <> ": connected to server(s)"]
 
 showSMPServer :: SMPServer -> String
 showSMPServer = B.unpack . strEncode . host
@@ -279,7 +276,7 @@ viewChatItem chat ChatItem {chatDir, meta = meta@CIMeta {itemDeleted}, content, 
   withItemDeleted <$> case chat of
     DirectChat c -> case chatDir of
       CIDirectSnd -> case content of
-        CISndMsgContent mc -> withSndFile to $ sndMsg to quote mc
+        CISndMsgContent mc -> hideLive meta $ withSndFile to $ sndMsg to quote mc
         CISndGroupEvent {} -> showSndItemProhibited to
         _ -> showSndItem to
         where
@@ -290,12 +287,12 @@ viewChatItem chat ChatItem {chatDir, meta = meta@CIMeta {itemDeleted}, content, 
         CIRcvGroupEvent {} -> showRcvItemProhibited from
         _ -> showRcvItem from
         where
-          from = ttyFromContact' c
+          from = ttyFromContact c
       where
         quote = maybe [] (directQuote chatDir) quotedItem
     GroupChat g -> case chatDir of
       CIGroupSnd -> case content of
-        CISndMsgContent mc -> withSndFile to $ sndMsg to quote mc
+        CISndMsgContent mc -> hideLive meta $ withSndFile to $ sndMsg to quote mc
         CISndGroupInvitation {} -> showSndItemProhibited to
         _ -> showSndItem to
         where
@@ -306,7 +303,7 @@ viewChatItem chat ChatItem {chatDir, meta = meta@CIMeta {itemDeleted}, content, 
         CIRcvGroupInvitation {} -> showRcvItemProhibited from
         _ -> showRcvItem from
         where
-          from = ttyFromGroup' g m
+          from = ttyFromGroup g m
       where
         quote = maybe [] (groupQuote g) quotedItem
     _ -> []
@@ -331,7 +328,7 @@ viewChatItem chat ChatItem {chatDir, meta = meta@CIMeta {itemDeleted}, content, 
 
 viewItemUpdate :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> CurrentTime -> [StyledString]
 viewItemUpdate chat ChatItem {chatDir, meta = meta@CIMeta {itemEdited, itemLive}, content, quotedItem} liveItems ts = case chat of
-  DirectChat Contact {localDisplayName = c} -> case chatDir of
+  DirectChat c -> case chatDir of
     CIDirectRcv -> case content of
       CIRcvMsgContent mc
         | itemLive == Just True && not liveItems -> []
@@ -339,30 +336,44 @@ viewItemUpdate chat ChatItem {chatDir, meta = meta@CIMeta {itemEdited, itemLive}
       _ -> []
       where
         from = if itemEdited then ttyFromContactEdited c else ttyFromContact c
-        quote = maybe [] (directQuote chatDir) quotedItem
-    CIDirectSnd -> ["message updated"]
+    CIDirectSnd -> case content of
+      CISndMsgContent mc -> hideLive meta $ viewSentMessage to quote mc ts meta
+      _ -> []
+      where
+        to = if itemEdited then ttyToContactEdited' c else ttyToContact' c
+    where
+      quote = maybe [] (directQuote chatDir) quotedItem
   GroupChat g -> case chatDir of
-    CIGroupRcv GroupMember {localDisplayName = m} -> case content of
+    CIGroupRcv m -> case content of
       CIRcvMsgContent mc
         | itemLive == Just True && not liveItems -> []
         | otherwise -> viewReceivedUpdatedMessage from quote mc ts meta
       _ -> []
       where
         from = if itemEdited then ttyFromGroupEdited g m else ttyFromGroup g m
-        quote = maybe [] (groupQuote g) quotedItem
-    CIGroupSnd -> ["message updated"]
+    CIGroupSnd -> case content of
+      CISndMsgContent mc -> hideLive meta $ viewSentMessage to quote mc ts meta
+      _ -> []
+      where
+        to = if itemEdited then ttyToGroupEdited g else ttyToGroup g
+    where
+      quote = maybe [] (groupQuote g) quotedItem
   _ -> []
+
+hideLive :: CIMeta d -> [StyledString] -> [StyledString]
+hideLive CIMeta {itemLive = Just True} _ = []
+hideLive _ s = s
 
 viewItemDelete :: ChatInfo c -> ChatItem c d -> Bool -> Bool -> Bool -> CurrentTime -> [StyledString]
 viewItemDelete chat ChatItem {chatDir, meta, content = deletedContent} markedDeleted byUser timed ts
   | timed = []
   | byUser = if markedDeleted then ["message marked deleted"] else ["message deleted"]
   | otherwise = case chat of
-    DirectChat Contact {localDisplayName = c} -> case (chatDir, deletedContent) of
+    DirectChat c -> case (chatDir, deletedContent) of
       (CIDirectRcv, CIRcvMsgContent mc) -> viewReceivedMessage (ttyFromContactDeleted c markedDeleted) [] mc ts meta
       _ -> prohibited
     GroupChat g -> case (chatDir, deletedContent) of
-      (CIGroupRcv GroupMember {localDisplayName = m}, CIRcvMsgContent mc) -> viewReceivedMessage (ttyFromGroupDeleted g m markedDeleted) [] mc ts meta
+      (CIGroupRcv m, CIRcvMsgContent mc) -> viewReceivedMessage (ttyFromGroupDeleted g m markedDeleted) [] mc ts meta
       _ -> prohibited
     _ -> prohibited
   where
@@ -431,8 +442,7 @@ viewChatCleared (AChatInfo _ chatInfo) = case chatInfo of
 viewContactsList :: [Contact] -> [StyledString]
 viewContactsList =
   let ldn = T.toLower . (localDisplayName :: Contact -> ContactName)
-      incognito ct = if contactConnIncognito ct then incognitoPrefix else ""
-   in map (\ct -> incognito ct <> ttyFullContact ct <> muted' ct <> alias ct) . sortOn ldn
+   in map (\ct -> ctIncognito ct <> ttyFullContact ct <> muted' ct <> alias ct) . sortOn ldn
   where
     muted' Contact {chatSettings, localDisplayName = ldn}
       | enableNtfs chatSettings = ""
@@ -567,8 +577,7 @@ viewGroupMembers :: Group -> [StyledString]
 viewGroupMembers (Group GroupInfo {membership} members) = map groupMember . filter (not . removedOrLeft) $ membership : members
   where
     removedOrLeft m = let s = memberStatus m in s == GSMemRemoved || s == GSMemLeft
-    groupMember m = incognito m <> ttyFullMember m <> ": " <> role m <> ", " <> category m <> status m
-    incognito m = if memberIncognito m then incognitoPrefix else ""
+    groupMember m = memIncognito m <> ttyFullMember m <> ": " <> role m <> ", " <> category m <> status m
     role m = plain . strEncode $ memberRole (m :: GroupMember)
     category m = case memberCategory m of
       GCUserMember -> "you, "
@@ -607,9 +616,8 @@ viewGroupsList gs = map groupSS $ sortOn ldn_ gs
     groupSS g@GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membership, chatSettings} =
       case memberStatus membership of
         GSMemInvited -> groupInvitation' g
-        s -> incognito <> ttyGroup ldn <> optFullName ldn fullName <> viewMemberStatus s
+        s -> membershipIncognito g <> ttyGroup ldn <> optFullName ldn fullName <> viewMemberStatus s
       where
-        incognito = if memberIncognito membership then incognitoPrefix else ""
         viewMemberStatus = \case
           GSMemRemoved -> delete "you are removed"
           GSMemLeft -> delete "you left"
@@ -918,9 +926,15 @@ ttyMsgTime ts t =
    in styleTime $ formatTime defaultTimeLocale fmt localTime
 
 viewSentMessage :: StyledString -> [StyledString] -> MsgContent -> CurrentTime -> CIMeta d -> [StyledString]
-viewSentMessage to quote mc ts = sentWithTime_ ts (prependFirst to $ quote <> prependFirst indent (ttyMsgContent mc))
+viewSentMessage to quote mc ts meta@CIMeta {itemEdited, itemDeleted, itemLive} = sentWithTime_ ts (prependFirst to $ quote <> prependFirst (indent <> live) (ttyMsgContent mc)) meta
   where
     indent = if null quote then "" else "      "
+    live
+      | itemEdited || itemDeleted = ""
+      | otherwise = case itemLive of
+        Just True -> ttyTo "[LIVE started] "
+        Just False -> ttyTo "[LIVE] "
+        _ -> ""
 
 viewSentBroadcast :: MsgContent -> Int -> CurrentTime -> ZonedTime -> [StyledString]
 viewSentBroadcast mc n ts t = prependFirst (highlight' "/feed" <> " (" <> sShow n <> ") " <> ttyMsgTime ts t <> " ") (ttyMsgContent mc)
@@ -1229,22 +1243,13 @@ ttyFullName :: ContactName -> Text -> StyledString
 ttyFullName c fullName = ttyContact c <> optFullName c fullName
 
 ttyToContact :: ContactName -> StyledString
-ttyToContact c = styled (colored Cyan) $ "@" <> c <> " "
-
-ttyFromContact :: ContactName -> StyledString
-ttyFromContact c = ttyFrom $ c <> "> "
-
-ttyFromContactEdited :: ContactName -> StyledString
-ttyFromContactEdited c = ttyFrom $ c <> "> [edited] "
-
-ttyFromContactDeleted :: ContactName -> Bool -> StyledString
-ttyFromContactDeleted c markedDeleted
-  | markedDeleted = ttyFrom $ c <> "> [marked deleted] "
-  | otherwise = ttyFrom $ c <> "> [deleted] "
+ttyToContact c = ttyTo $ "@" <> c <> " "
 
 ttyToContact' :: Contact -> StyledString
-ttyToContact' Contact {localDisplayName = c, activeConn = Connection {customUserProfileId}} =
-  maybe "" (const incognitoPrefix) customUserProfileId <> ttyToContact c
+ttyToContact' ct@Contact {localDisplayName = c} = ctIncognito ct <> ttyToContact c
+
+ttyToContactEdited' :: Contact -> StyledString
+ttyToContactEdited' ct@Contact {localDisplayName = c} = ctIncognito ct <> ttyTo ("@" <> c <> " [edited] ")
 
 ttyQuotedContact :: Contact -> StyledString
 ttyQuotedContact Contact {localDisplayName = c} = ttyFrom $ c <> ">"
@@ -1253,9 +1258,17 @@ ttyQuotedMember :: Maybe GroupMember -> StyledString
 ttyQuotedMember (Just GroupMember {localDisplayName = c}) = "> " <> ttyFrom c
 ttyQuotedMember _ = "> " <> ttyFrom "?"
 
-ttyFromContact' :: Contact -> StyledString
-ttyFromContact' Contact {localDisplayName = c, activeConn = Connection {customUserProfileId}} =
-  maybe "" (const incognitoPrefix) customUserProfileId <> ttyFromContact c
+ttyFromContact :: Contact -> StyledString
+ttyFromContact ct@Contact {localDisplayName = c} = ctIncognito ct <> ttyFrom (c <> "> ")
+
+ttyFromContactEdited :: Contact -> StyledString
+ttyFromContactEdited ct@Contact {localDisplayName = c} = ctIncognito ct <> ttyFrom (c <> "> [edited] ")
+
+ttyFromContactDeleted :: Contact -> Bool -> StyledString
+ttyFromContactDeleted ct@Contact {localDisplayName = c} markedDeleted =
+  ctIncognito ct <> ttyFrom (c <> "> " <> deleted)
+  where
+    deleted = if markedDeleted then "[marked deleted] " else "[deleted] "
 
 ttyGroup :: GroupName -> StyledString
 ttyGroup g = styled (colored Blue) $ "#" <> g
@@ -1272,33 +1285,50 @@ ttyFullGroup :: GroupInfo -> StyledString
 ttyFullGroup GroupInfo {localDisplayName = g, groupProfile = GroupProfile {fullName}} =
   ttyGroup g <> optFullName g fullName
 
-ttyFromGroup :: GroupInfo -> ContactName -> StyledString
-ttyFromGroup GroupInfo {localDisplayName = g} c = ttyFrom $ "#" <> g <> " " <> c <> "> "
+ttyFromGroup :: GroupInfo -> GroupMember -> StyledString
+ttyFromGroup g m = membershipIncognito g <> ttyFrom (fromGroup_ g m)
 
-ttyFromGroupEdited :: GroupInfo -> ContactName -> StyledString
-ttyFromGroupEdited GroupInfo {localDisplayName = g} c = ttyFrom $ "#" <> g <> " " <> c <> "> [edited] "
+ttyFromGroupEdited :: GroupInfo -> GroupMember -> StyledString
+ttyFromGroupEdited g m = membershipIncognito g <> ttyFrom (fromGroup_ g m <> "[edited] ")
 
-ttyFromGroupDeleted :: GroupInfo -> ContactName -> Bool -> StyledString
-ttyFromGroupDeleted GroupInfo {localDisplayName = g} c markedDeleted
-  | markedDeleted = ttyFrom $ "#" <> g <> " " <> c <> "> [marked deleted] "
-  | otherwise = ttyFrom $ "#" <> g <> " " <> c <> "> [deleted] "
+ttyFromGroupDeleted :: GroupInfo -> GroupMember -> Bool -> StyledString
+ttyFromGroupDeleted g m markedDeleted =
+  membershipIncognito g <> ttyFrom (fromGroup_ g m <> deleted)
+  where
+    deleted = if markedDeleted then "[marked deleted] " else "[deleted] "
+
+fromGroup_ :: GroupInfo -> GroupMember -> Text
+fromGroup_ GroupInfo {localDisplayName = g} GroupMember {localDisplayName = m} =
+  "#" <> g <> " " <> m <> "> "
 
 ttyFrom :: Text -> StyledString
 ttyFrom = styled $ colored Yellow
 
-ttyFromGroup' :: GroupInfo -> GroupMember -> StyledString
-ttyFromGroup' g@GroupInfo {membership} GroupMember {localDisplayName = m} =
-  (if memberIncognito membership then incognitoPrefix else "") <> ttyFromGroup g m
+ttyTo :: Text -> StyledString
+ttyTo = styled $ colored Cyan
 
 ttyToGroup :: GroupInfo -> StyledString
-ttyToGroup GroupInfo {localDisplayName = g, membership} =
-  (if memberIncognito membership then incognitoPrefix else "") <> styled (colored Cyan) ("#" <> g <> " ")
+ttyToGroup g@GroupInfo {localDisplayName = n} =
+  membershipIncognito g <> ttyTo ("#" <> n <> " ")
+
+ttyToGroupEdited :: GroupInfo -> StyledString
+ttyToGroupEdited g@GroupInfo {localDisplayName = n} =
+  membershipIncognito g <> ttyTo ("#" <> n <> " [edited] ")
 
 ttyFilePath :: FilePath -> StyledString
 ttyFilePath = plain
 
 optFullName :: ContactName -> Text -> StyledString
 optFullName localDisplayName fullName = plain $ optionalFullName localDisplayName fullName
+
+ctIncognito :: Contact -> StyledString
+ctIncognito ct = if contactConnIncognito ct then incognitoPrefix else ""
+
+membershipIncognito :: GroupInfo -> StyledString
+membershipIncognito = memIncognito . membership
+
+memIncognito :: GroupMember -> StyledString
+memIncognito m = if memberIncognito m then incognitoPrefix else ""
 
 incognitoPrefix :: StyledString
 incognitoPrefix = styleIncognito' "i "

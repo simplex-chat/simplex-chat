@@ -3967,8 +3967,8 @@ getDirectChatItemIdByText db userId contactId msgDir quotedMsg =
       |]
       (userId, contactId, msgDir, quotedMsg <> "%")
 
-updateGroupChatItem :: forall d. MsgDirectionI d => DB.Connection -> User -> Int64 -> ChatItemId -> CIContent d -> Bool -> MessageId -> ExceptT StoreError IO (ChatItem 'CTGroup d)
-updateGroupChatItem db user@User {userId} groupId itemId newContent live msgId = do
+updateGroupChatItem :: forall d. MsgDirectionI d => DB.Connection -> User -> Int64 -> ChatItemId -> CIContent d -> Bool -> Maybe MessageId -> ExceptT StoreError IO (ChatItem 'CTGroup d)
+updateGroupChatItem db user@User {userId} groupId itemId newContent live msgId_ = do
   ci@ChatItem {meta = CIMeta {itemEdited, itemLive}} <- liftEither . correctDir =<< getGroupChatItem db user groupId itemId
   currentTs <- liftIO getCurrentTime
   let newText = ciContentToText newContent
@@ -3983,7 +3983,7 @@ updateGroupChatItem db user@User {userId} groupId itemId newContent live msgId =
         WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
       |]
       (newContent, newText, edited', live', currentTs, userId, groupId, itemId)
-    insertChatItemMessage_ db itemId msgId currentTs
+    forM_ msgId_ $ \msgId -> insertChatItemMessage_ db itemId msgId currentTs
   pure ci {content = newContent, meta = (meta ci) {itemText = newText, itemEdited = edited', itemLive = live'}, formattedText = parseMaybeMarkdownList newText}
   where
     correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
