@@ -713,8 +713,28 @@ instance GroupFeatureI 'GFVoice where
   groupPrefParam _ = Nothing
   groupPrefFeature = GFVoice
 
-groupPrefToText :: HasField "enable" p GroupFeatureEnabled => p -> Text
-groupPrefToText = safeDecodeUtf8 . strEncode . getField @"enable"
+groupPrefToText :: HasField "enable" p GroupFeatureEnabled => p -> Maybe Int -> Text
+groupPrefToText p = groupPrefToText_ $ getField @"enable" p
+
+groupPrefToText' :: GroupFeatureI f => GroupFeaturePreference f -> Text
+groupPrefToText' p = groupPrefToText_ (getField @"enable" p) (groupPrefParam p)
+
+groupPrefToText_ :: GroupFeatureEnabled -> Maybe Int -> Text
+groupPrefToText_ enabled param = do
+  let enabledText = safeDecodeUtf8 . strEncode $ enabled
+      paramText = maybe "" (\n -> ", after " <> timedTTLText n) param
+   in enabledText <> paramText
+
+timedTTLText :: Int -> Text
+timedTTLText ttl
+  | ttl == 30 = "30 seconds"
+  | ttl == 300 = "5 minutes"
+  | ttl == 3600 = "one hour"
+  | ttl == 8 * 3600 = "8 hours"
+  | ttl == 86400 = "one day"
+  | ttl == 7 * 86400 = "one week"
+  | ttl == 30 * 86400 = "one month"
+  | otherwise = (T.pack . show $ ttl) <> " second(s)"
 
 toGroupPreference :: GroupFeatureI f => GroupFeaturePreference f -> GroupPreference
 toGroupPreference p = GroupPreference {enable = getField @"enable" p}

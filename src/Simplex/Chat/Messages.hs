@@ -790,15 +790,14 @@ ciContentToText = \case
   CISndGroupEvent event -> sndGroupEventToText event
   CIRcvConnEvent event -> rcvConnEventToText event
   CISndConnEvent event -> sndConnEventToText event
-  CIRcvChatFeature feature enabled int_ -> chatFeatureToText feature <> ": " <> prefEnabledToText enabled <> featureInt feature int_
-  CISndChatFeature feature enabled int_ -> chatFeatureToText feature <> ": " <> prefEnabledToText enabled <> featureInt feature int_
-  CIRcvGroupFeature feature pref int_ -> groupFeatureToText feature <> ": " <> groupPrefToText pref <> groupFeatureInt feature int_
-  CISndGroupFeature feature pref int_ -> groupFeatureToText feature <> ": " <> groupPrefToText pref <> groupFeatureInt feature int_
+  CIRcvChatFeature feature enabled param -> chatFeatureToText feature <> ": " <> prefEnabledToText enabled <> featureInt feature param
+  CISndChatFeature feature enabled param -> chatFeatureToText feature <> ": " <> prefEnabledToText enabled <> featureInt feature param
+  CIRcvGroupFeature feature pref param -> groupFeatureToText feature <> ": " <> groupPrefToText pref param
+  CISndGroupFeature feature pref param -> groupFeatureToText feature <> ": " <> groupPrefToText pref param
   CIRcvChatFeatureRejected feature -> chatFeatureToText feature <> ": received, prohibited"
   CIRcvGroupFeatureRejected feature -> groupFeatureToText feature <> ": received, prohibited"
   where
-    featureInt feature int_ = maybe "" (", " <>) (featureIntValueText feature int_)
-    groupFeatureInt feature int_ = maybe "" (", " <>) (groupFeatureIntValueText feature int_)
+    featureInt feature param = maybe "" (", " <>) (featureIntValueText feature param)
 
 msgIntegrityError :: MsgErrorType -> Text
 msgIntegrityError = \case
@@ -815,25 +814,9 @@ msgDirToDeletedContent_ msgDir mode = case msgDir of
   SMDSnd -> CISndDeleted mode
 
 featureIntValueText :: ChatFeature -> Maybe Int -> Maybe Text
-featureIntValueText feature int_ = case (feature, int_) of
+featureIntValueText feature param = case (feature, param) of
   (CFTimedMessages, Just ttl) -> Just $ "after " <> timedTTLText ttl
   _ -> Nothing
-
-groupFeatureIntValueText :: GroupFeature -> Maybe Int -> Maybe Text
-groupFeatureIntValueText feature int_ = case (feature, int_) of
-  (GFTimedMessages, Just ttl) -> Just $ "after " <> timedTTLText ttl
-  _ -> Nothing
-
-timedTTLText :: Int -> Text
-timedTTLText ttl
-  | ttl == 30 = "30 seconds"
-  | ttl == 300 = "5 minutes"
-  | ttl == 3600 = "one hour"
-  | ttl == 8 * 3600 = "8 hours"
-  | ttl == 86400 = "one day"
-  | ttl == 7 * 86400 = "one week"
-  | ttl == 30 * 86400 = "one month"
-  | otherwise = (T.pack . show $ ttl) <> " second(s)"
 
 -- platform independent
 instance ToField (CIContent d) where

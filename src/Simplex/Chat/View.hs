@@ -840,12 +840,9 @@ viewGroupUpdated
           prefs = mapMaybe viewPref allGroupFeatures
           viewPref (AGF f)
             | pref gps == pref gps' = Nothing
-            | otherwise = Just $ plain (groupFeatureToText $ toGroupFeature f) <> " enabled: " <> viewGroupPreference (pref gps')
+            | otherwise = Just $ plain (groupFeatureToText $ toGroupFeature f) <> " enabled: " <> plain (groupPrefToText' $ pref gps')
             where
               pref = getGroupPreference f . mergeGroupPreferences
-
-viewGroupPreference :: forall f. (GroupFeatureI f) => GroupFeaturePreference f -> StyledString
-viewGroupPreference p = plain $ groupPrefToText p <> maybe "" (", " <>) (groupFeatureIntValueText (groupPrefFeature @f) (groupPrefParam p))
 
 viewGroupProfile :: GroupInfo -> [StyledString]
 viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {description, image, groupPreferences = gps}} =
@@ -854,7 +851,7 @@ viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {description, image, g
     <> maybe [] ((bold' "description:" :) . map plain . T.lines) description
     <> (bold' "group preferences:" : map viewPref allGroupFeatures)
   where
-    viewPref (AGF f) = plain (groupFeatureToText $ toGroupFeature f) <> " enabled: " <> viewGroupPreference (pref gps)
+    viewPref (AGF f) = plain (groupFeatureToText $ toGroupFeature f) <> " enabled: " <> plain (groupPrefToText' $ pref gps)
       where
         pref = getGroupPreference f . mergeGroupPreferences
 
