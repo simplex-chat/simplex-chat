@@ -123,15 +123,21 @@ receiveFromTTY cc@ChatController {inputQ, activeTo} ct@ChatTerminal {termSize, t
   forever $ getKey >>= liftIO . processKey >> withTermLock ct (updateInput ct)
   where
     processKey :: (Key, Modifiers) -> IO ()
-    processKey = \case
-      (EnterKey, ms) ->
-        when (ms == mempty || ms == altKey) $
-          atomically (readTVar termState >>= submitInput ms)
-            >>= mapM_ (uncurry endLiveMessage)
-      key -> atomically $ do
-        ac <- readTVar activeTo
-        live <- isJust <$> readTVar liveMessageState
-        modifyTVar termState $ updateTermState ac live (width termSize) key
+    processKey key = case key of
+      (EnterKey, ms)
+        | ms == mempty || ms == altKey -> submit ms
+        | otherwise -> pure ()
+      (CharKey c, ms)
+        | (c == 'l' || c == 'L') && ms == ctrlKey -> submit altKey
+        | otherwise -> update key
+      _ -> update key
+    submit ms =
+      atomically (readTVar termState >>= submitInput ms)
+        >>= mapM_ (uncurry endLiveMessage)
+    update key = atomically $ do
+      ac <- readTVar activeTo
+      live <- isJust <$> readTVar liveMessageState
+      modifyTVar termState $ updateTermState ac live (width termSize) key
 
     endLiveMessage :: String -> LiveMessage -> IO ()
     endLiveMessage sentMsg lm = do
