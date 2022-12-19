@@ -3390,18 +3390,11 @@ createFeatureChangedItems user Contact {mergedPreferences = cups} ct'@Contact {m
 createGroupFeatureChangedItems :: (MsgDirectionI d, ChatMonad m) => User -> ChatDirection 'CTGroup d -> (GroupFeature -> GroupPreference -> Maybe Int -> CIContent d) -> GroupInfo -> GroupInfo -> m ()
 createGroupFeatureChangedItems user cd ciContent GroupInfo {fullGroupPreferences = gps} GroupInfo {fullGroupPreferences = gps'} =
   forM_ allGroupFeatures $ \(AGF f) -> do
-    let feature = toGroupFeature f
-    case feature of
-      GFTimedMessages -> do
-        let TimedMessagesGroupPreference {enable, ttl} = timedMessages (gps :: FullGroupPreferences)
-        let pref'@TimedMessagesGroupPreference {enable = enable', ttl = ttl'} = timedMessages (gps' :: FullGroupPreferences)
-        when (enable /= enable' || (enable == enable' && enable' == FEOn && ttl /= ttl')) $
-          createInternalChatItem user cd (ciContent feature (toGroupPreference pref') (Just ttl')) Nothing
-      _ -> do
-        let pref = getGroupPreference f gps
-            pref' = getGroupPreference f gps'
-        unless (pref == pref') $
-          createInternalChatItem user cd (ciContent feature (toGroupPreference pref') Nothing) Nothing
+    let prefChangedVal = groupPrefChangedValue $ getGroupPreference f gps
+        pref' = getGroupPreference f gps'
+        prefChangedVal'@(_, int') = groupPrefChangedValue pref'
+    unless (prefChangedVal == prefChangedVal') $
+      createInternalChatItem user cd (ciContent (toGroupFeature f) (toGroupPreference pref') int') Nothing
 
 sameGroupProfileInfo :: GroupProfile -> GroupProfile -> Bool
 sameGroupProfileInfo p p' = p {groupPreferences = Nothing} == p' {groupPreferences = Nothing}

@@ -772,6 +772,12 @@ instance ToJSON GroupFeatureEnabled where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
+groupPrefChangedValue :: GroupFeatureI f => GroupFeaturePreference f -> (GroupFeatureEnabled, Maybe Int)
+groupPrefChangedValue p =
+  let enable = getField @"enable" p
+      int = if enable == FEOn then groupPrefIntValue p else Nothing
+   in (enable, int)
+
 mergePreferences :: Maybe Preferences -> Maybe Preferences -> FullPreferences
 mergePreferences contactPrefs userPreferences =
   FullPreferences
