@@ -9,7 +9,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
@@ -723,12 +722,9 @@ timedTTLText ttl = do
       (h', m) = m' `divMod` 60
       (d, h) = h' `divMod` 24
   T.pack $
-    if
-        | m' < 1 -> ss s
-        | h' < 1 -> unwords $ [ms m] <> [ss s | s > 0]
-        | d < 1 -> unwords $ [hs h] <> [ms m | m > 0] <> [ss s | s > 0]
-        | d <= 30 -> unwords $ [ds d] <> [hs h | h > 0] <> [ms m | m > 0] <> [ss s | s > 0]
-        | otherwise -> show ttl <> " second(s)"
+    if d <= 30
+      then unwords $ [ds d | d > 0] <> [hs h | h > 0] <> [ms m | m > 0] <> [ss s | s > 0]
+      else show ttl <> " second(s)"
   where
     ss s = show s <> "s"
     ms m = show m <> "m"
