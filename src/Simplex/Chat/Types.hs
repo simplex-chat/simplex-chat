@@ -614,6 +614,7 @@ instance ToJSON VoicePreference where toEncoding = J.genericToEncoding J.default
 
 class (Eq (FeaturePreference f), HasField "allow" (FeaturePreference f) FeatureAllowed) => FeatureI f where
   type FeaturePreference (f :: ChatFeature) = p | p -> f
+  prefParam :: FeaturePreference f -> Maybe Int
 
 instance HasField "allow" TimedMessagesPreference FeatureAllowed where
   hasField p = (\allow -> p {allow}, allow (p :: TimedMessagesPreference))
@@ -626,12 +627,15 @@ instance HasField "allow" VoicePreference FeatureAllowed where
 
 instance FeatureI 'CFTimedMessages where
   type FeaturePreference 'CFTimedMessages = TimedMessagesPreference
+  prefParam TimedMessagesPreference {ttl} = ttl
 
 instance FeatureI 'CFFullDelete where
   type FeaturePreference 'CFFullDelete = FullDeletePreference
+  prefParam _ = Nothing
 
 instance FeatureI 'CFVoice where
   type FeaturePreference 'CFVoice = VoicePreference
+  prefParam _ = Nothing
 
 data GroupPreference = GroupPreference
   {enable :: GroupFeatureEnabled}
@@ -667,6 +671,7 @@ instance ToJSON VoiceGroupPreference where toEncoding = J.genericToEncoding J.de
 
 class (Eq (GroupFeaturePreference f), HasField "enable" (GroupFeaturePreference f) GroupFeatureEnabled) => GroupFeatureI f where
   type GroupFeaturePreference (f :: GroupFeature) = p | p -> f
+  groupPrefParam :: GroupFeaturePreference f -> Maybe Int
 
 instance HasField "enable" GroupPreference GroupFeatureEnabled where
   hasField p = (\enable -> p {enable}, enable (p :: GroupPreference))
@@ -685,18 +690,52 @@ instance HasField "enable" VoiceGroupPreference GroupFeatureEnabled where
 
 instance GroupFeatureI 'GFTimedMessages where
   type GroupFeaturePreference 'GFTimedMessages = TimedMessagesGroupPreference
+  groupPrefParam TimedMessagesGroupPreference {ttl} = Just ttl
 
 instance GroupFeatureI 'GFDirectMessages where
   type GroupFeaturePreference 'GFDirectMessages = DirectMessagesGroupPreference
+  groupPrefParam _ = Nothing
 
 instance GroupFeatureI 'GFFullDelete where
   type GroupFeaturePreference 'GFFullDelete = FullDeleteGroupPreference
+  groupPrefParam _ = Nothing
 
 instance GroupFeatureI 'GFVoice where
   type GroupFeaturePreference 'GFVoice = VoiceGroupPreference
+  groupPrefParam _ = Nothing
 
-groupPrefToText :: HasField "enable" p GroupFeatureEnabled => p -> Text
-groupPrefToText = safeDecodeUtf8 . strEncode . getField @"enable"
+groupPrefToText :: HasField "enable" p GroupFeatureEnabled => p -> Maybe Int -> Text
+groupPrefToText p = groupPrefToText_ $ getField @"enable" p
+
+groupPrefToText' :: GroupFeatureI f => GroupFeaturePreference f -> Text
+groupPrefToText' p = groupPrefToText_ (getField @"enable" p) (groupPrefParam p)
+
+groupPrefToText_ :: GroupFeatureEnabled -> Maybe Int -> Text
+groupPrefToText_ enabled param = do
+  let enabledText = safeDecodeUtf8 . strEncode $ enabled
+      paramText = if enabled == FEOn then maybe "" (\n -> ", after " <> timedTTLText n) param else ""
+   in enabledText <> paramText
+
+timedTTLText :: Int -> Text
+timedTTLText 0 = "0 sec"
+timedTTLText ttl = do
+  let (m', s) = ttl `quotRem` 60
+      (h', m) = m' `quotRem` 60
+      (d', h) = h' `quotRem` 24
+      (mm, d) = d' `quotRem` 30
+  T.pack . unwords $
+    [mms mm | mm /= 0] <> [ds d | d /= 0] <> [hs h | h /= 0] <> [ms m | m /= 0] <> [ss s | s /= 0]
+  where
+    ss s = show s <> " sec"
+    ms m = show m <> " min"
+    hs 1 = "1 hour"
+    hs h = show h <> " hours"
+    ds 1 = "1 day"
+    ds 7 = "1 week"
+    ds 14 = "2 weeks"
+    ds d = show d <> " days"
+    mms 1 = "1 month"
+    mms mm = show mm <> " months"
 
 toGroupPreference :: GroupFeatureI f => GroupFeaturePreference f -> GroupPreference
 toGroupPreference p = GroupPreference {enable = getField @"enable" p}
@@ -753,6 +792,12 @@ instance FromJSON GroupFeatureEnabled where
 instance ToJSON GroupFeatureEnabled where
   toJSON = strToJSON
   toEncoding = strToJEncoding
+
+groupFeatureState :: GroupFeatureI f => GroupFeaturePreference f -> (GroupFeatureEnabled, Maybe Int)
+groupFeatureState p =
+  let enable = getField @"enable" p
+      param = if enable == FEOn then groupPrefParam p else Nothing
+   in (enable, param)
 
 mergePreferences :: Maybe Preferences -> Maybe Preferences -> FullPreferences
 mergePreferences contactPrefs userPreferences =
@@ -817,12 +862,35 @@ prefEnabled asymmetric user contact = case (getField @"allow" user, getField @"a
   (FANo, _) -> PrefEnabled False False
   _ -> PrefEnabled True True
 
+prefToText :: PrefEnabled -> Maybe Int -> Text
+prefToText enabled param =
+  let paramText = if enabled == PrefEnabled True True then prefParamText param else ""
+   in prefEnabledToText enabled <> paramText
+
+prefParamText :: Maybe Int -> Text
+prefParamText = maybe "" (\n -> ", after " <> timedTTLText n)
+
 prefEnabledToText :: PrefEnabled -> Text
 prefEnabledToText = \case
   PrefEnabled True True -> "enabled"
   PrefEnabled False False -> "off"
   PrefEnabled {forUser = True, forContact = False} -> "enabled for you"
   PrefEnabled {forUser = False, forContact = True} -> "enabled for contact"
+
+prefToText' :: FeatureI f => FeaturePreference f -> Text
+prefToText' p =
+  let allowed = getField @"allow" p
+      allowedText = case getField @"allow" p of
+        FAAlways -> "always"
+        FAYes -> "yes"
+        FANo -> "no"
+      paramText = if allowed == FAAlways || allowed == FAYes then prefParamText (prefParam p) else ""
+   in allowedText <> paramText
+
+featureState :: FeatureI f => ContactUserPreference (FeaturePreference f) -> (PrefEnabled, Maybe Int)
+featureState ContactUserPreference {enabled, userPreference} =
+  let param = if forUser enabled then prefParam $ preference userPreference else Nothing
+   in (enabled, param)
 
 updateMergedPreferences :: User -> Contact -> Contact
 updateMergedPreferences user ct =
