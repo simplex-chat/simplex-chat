@@ -3593,10 +3593,10 @@ testEnableTimedMessagesContact =
       alice <## "bob updated preferences for you:"
       alice <## "Disappearing messages: enabled (you allow: yes, contact allows: yes)"
       alice <##> bob
-      threadDelay 900000
+      threadDelay 500000
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled"), (1, "hi"), (0, "hey")])
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled"), (0, "hi"), (1, "hey")])
-      threadDelay 200000
+      threadDelay 1000000
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled")])
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled")])
 
@@ -3615,10 +3615,10 @@ testEnableTimedMessagesGroup =
       threadDelay 1000000
       alice #> "#team hi"
       bob <# "#team alice> hi"
-      threadDelay 900000
+      threadDelay 500000
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Disappearing messages: on"), (1, "hi")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Disappearing messages: on"), (0, "hi")])
-      threadDelay 200000
+      threadDelay 1000000
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Disappearing messages: on")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Disappearing messages: on")])
 
