@@ -123,15 +123,22 @@ receiveFromTTY cc@ChatController {inputQ, activeTo} ct@ChatTerminal {termSize, t
   forever $ getKey >>= liftIO . processKey >> withTermLock ct (updateInput ct)
   where
     processKey :: (Key, Modifiers) -> IO ()
-    processKey = \case
-      (EnterKey, ms) ->
-        when (ms == mempty || ms == altKey) $
-          atomically (readTVar termState >>= submitInput ms)
-            >>= mapM_ (uncurry endLiveMessage)
-      key -> atomically $ do
-        ac <- readTVar activeTo
-        live <- isJust <$> readTVar liveMessageState
-        modifyTVar termState $ updateTermState ac live (width termSize) key
+    processKey key = case key of
+      (EnterKey, ms)
+        | ms == mempty -> submit False
+        | ms == altKey -> submit True
+        | otherwise -> pure ()
+      (CharKey c, ms)
+        | (c == 'l' || c == 'L') && ms == ctrlKey -> submit True
+        | otherwise -> update key
+      _ -> update key
+    submit live =
+      atomically (readTVar termState >>= submitInput live)
+        >>= mapM_ (uncurry endLiveMessage)
+    update key = atomically $ do
+      ac <- readTVar activeTo
+      live <- isJust <$> readTVar liveMessageState
+      modifyTVar termState $ updateTermState ac live (width termSize) key
 
     endLiveMessage :: String -> LiveMessage -> IO ()
     endLiveMessage sentMsg lm = do
@@ -143,13 +150,13 @@ receiveFromTTY cc@ChatController {inputQ, activeTo} ct@ChatTerminal {termSize, t
       where
         kill sel = deRefWeak (sel lm) >>= mapM_ killThread
 
-    submitInput :: Modifiers -> TerminalState -> STM (Maybe (String, LiveMessage))
-    submitInput ms ts = do
+    submitInput :: Bool -> TerminalState -> STM (Maybe (String, LiveMessage))
+    submitInput live ts = do
       let s = inputString ts
       lm_ <- readTVar liveMessageState
       case lm_ of
         Just LiveMessage {chatName}
-          | ms == altKey -> do
+          | live -> do
             writeTVar termState ts' {previousInput}
             writeTBQueue inputQ $ "/live " <> chatNameStr chatName
           | otherwise ->
@@ -157,7 +164,7 @@ receiveFromTTY cc@ChatController {inputQ, activeTo} ct@ChatTerminal {termSize, t
           where
             previousInput = chatNameStr chatName <> " " <> s
         _
-          | ms == altKey -> when (isSend s) $ do
+          | live -> when (isSend s) $ do
             writeTVar termState ts' {previousInput = s}
             writeTBQueue inputQ $ "/live " <> s
           | otherwise -> do
