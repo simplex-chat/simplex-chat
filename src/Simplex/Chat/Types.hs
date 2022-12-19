@@ -786,8 +786,8 @@ instance ToJSON GroupFeatureEnabled where
 groupFeatureState :: GroupFeatureI f => GroupFeaturePreference f -> (GroupFeatureEnabled, Maybe Int)
 groupFeatureState p =
   let enable = getField @"enable" p
-      int = if enable == FEOn then groupPrefParam p else Nothing
-   in (enable, int)
+      param = if enable == FEOn then groupPrefParam p else Nothing
+   in (enable, param)
 
 mergePreferences :: Maybe Preferences -> Maybe Preferences -> FullPreferences
 mergePreferences contactPrefs userPreferences =
