@@ -189,6 +189,7 @@ module Simplex.Chat.Store
     getDirectChat,
     getGroupChat,
     getAllChatItems,
+    getAChatItem,
     getChatItemIdByAgentMsgId,
     getDirectChatItem,
     getDirectChatItemBySharedMsgId,
@@ -3966,8 +3967,8 @@ getDirectChatItemIdByText db userId contactId msgDir quotedMsg =
       |]
       (userId, contactId, msgDir, quotedMsg <> "%")
 
-updateGroupChatItem :: forall d. MsgDirectionI d => DB.Connection -> User -> Int64 -> ChatItemId -> CIContent d -> Bool -> MessageId -> ExceptT StoreError IO (ChatItem 'CTGroup d)
-updateGroupChatItem db user@User {userId} groupId itemId newContent live msgId = do
+updateGroupChatItem :: forall d. MsgDirectionI d => DB.Connection -> User -> Int64 -> ChatItemId -> CIContent d -> Bool -> Maybe MessageId -> ExceptT StoreError IO (ChatItem 'CTGroup d)
+updateGroupChatItem db user@User {userId} groupId itemId newContent live msgId_ = do
   ci@ChatItem {meta = CIMeta {itemEdited, itemLive}} <- liftEither . correctDir =<< getGroupChatItem db user groupId itemId
   currentTs <- liftIO getCurrentTime
   let newText = ciContentToText newContent
@@ -3982,7 +3983,7 @@ updateGroupChatItem db user@User {userId} groupId itemId newContent live msgId =
         WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
       |]
       (newContent, newText, edited', live', currentTs, userId, groupId, itemId)
-    insertChatItemMessage_ db itemId msgId currentTs
+    forM_ msgId_ $ \msgId -> insertChatItemMessage_ db itemId msgId currentTs
   pure ci {content = newContent, meta = (meta ci) {itemText = newText, itemEdited = edited', itemLive = live'}, formattedText = parseMaybeMarkdownList newText}
   where
     correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
@@ -4142,6 +4143,18 @@ getChatItemByGroupId db user@User {userId} groupId = do
         |]
         (userId, groupId)
   getAChatItem_ db user itemId chatRef
+
+getAChatItem :: DB.Connection -> User -> ChatItemId -> ExceptT StoreError IO AChatItem
+getAChatItem db user@User {userId} itemId = do
+  chatRef <-
+    ExceptT . firstRow' toChatRef (SEChatItemNotFound itemId) $
+      DB.query db "SELECT contact_id, group_id FROM chat_items WHERE user_id = ? AND chat_item_id = ?" (userId, itemId)
+  getAChatItem_ db user itemId chatRef
+  where
+    toChatRef = \case
+      (Just contactId, Nothing) -> Right $ ChatRef CTDirect contactId
+      (Nothing, Just groupId) -> Right $ ChatRef CTGroup groupId
+      (_, _) -> Left $ SEBadChatItem itemId
 
 getAChatItem_ :: DB.Connection -> User -> ChatItemId -> ChatRef -> ExceptT StoreError IO AChatItem
 getAChatItem_ db user@User {userId} itemId = \case
