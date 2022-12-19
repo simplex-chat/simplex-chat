@@ -1915,10 +1915,7 @@ public enum MsgContent {
     }
 
     var cmdString: String {
-        switch self {
-        case let .text(text): return "text \(text)"
-        default: return "json \(encodeJSON(self))"
-        }
+        "json \(encodeJSON(self))"
     }
 
     enum CodingKeys: String, CodingKey {

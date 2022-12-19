@@ -377,7 +377,8 @@ testDirectMessageUpdate =
       alice #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((1, "hello 🙂"), Nothing), ((0, "hi alice"), Just (1, "hello 🙂"))])
       bob #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((0, "hello 🙂"), Nothing), ((1, "hi alice"), Just (0, "hello 🙂"))])
 
-      alice #$> ("/_update item @2 " <> itemId 1 <> " text hey 👋", id, "message updated")
+      alice ##> ("/_update item @2 " <> itemId 1 <> " text hey 👋")
+      alice <# "@bob [edited] hey 👋"
       bob <# "alice> [edited] hey 👋"
 
       alice #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((1, "hey 👋"), Nothing), ((0, "hi alice"), Just (1, "hello 🙂"))])
@@ -393,7 +394,8 @@ testDirectMessageUpdate =
       alice #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((1, "hey 👋"), Nothing), ((0, "hi alice"), Just (1, "hello 🙂")), ((0, "hey alice"), Just (1, "hey 👋"))])
       bob #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((0, "hey 👋"), Nothing), ((1, "hi alice"), Just (0, "hello 🙂")), ((1, "hey alice"), Just (0, "hey 👋"))])
 
-      alice #$> ("/_update item @2 " <> itemId 1 <> " text greetings 🤝", id, "message updated")
+      alice ##> ("/_update item @2 " <> itemId 1 <> " text greetings 🤝")
+      alice <# "@bob [edited] greetings 🤝"
       bob <# "alice> [edited] greetings 🤝"
 
       alice #$> ("/_update item @2 " <> itemId 2 <> " text updating bob's message", id, "cannot update this item")
@@ -401,11 +403,15 @@ testDirectMessageUpdate =
       alice #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((1, "greetings 🤝"), Nothing), ((0, "hi alice"), Just (1, "hello 🙂")), ((0, "hey alice"), Just (1, "hey 👋"))])
       bob #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((0, "greetings 🤝"), Nothing), ((1, "hi alice"), Just (0, "hello 🙂")), ((1, "hey alice"), Just (0, "hey 👋"))])
 
-      bob #$> ("/_update item @2 " <> itemId 2 <> " text hey Alice", id, "message updated")
+      bob ##> ("/_update item @2 " <> itemId 2 <> " text hey Alice")
+      bob <# "@alice [edited] > hello 🙂"
+      bob <## "      hey Alice"
       alice <# "bob> [edited] > hello 🙂"
       alice <## "      hey Alice"
 
-      bob #$> ("/_update item @2 " <> itemId 3 <> " text greetings Alice", id, "message updated")
+      bob ##> ("/_update item @2 " <> itemId 3 <> " text greetings Alice")
+      bob <# "@alice [edited] > hey 👋"
+      bob <## "      greetings Alice"
       alice <# "bob> [edited] > hey 👋"
       alice <## "      greetings Alice"
 
@@ -437,7 +443,9 @@ testDirectMessageDelete =
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures)
 
       -- alice: msg id 1
-      bob #$> ("/_update item @2 " <> itemId 2 <> " text hey alice", id, "message updated")
+      bob ##> ("/_update item @2 " <> itemId 2 <> " text hey alice")
+      bob <# "@alice [edited] > hello 🙂"
+      bob <## "      hey alice"
       alice <# "bob> [edited] hey alice"
       alice @@@ [("@bob", "hey alice")]
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hey alice")])
@@ -1222,7 +1230,8 @@ testGroupMessageUpdate =
         (cath <# "#team alice> hello!")
 
       msgItemId1 <- lastItemId alice
-      alice #$> ("/_update item #1 " <> msgItemId1 <> " text hey 👋", id, "message updated")
+      alice ##> ("/_update item #1 " <> msgItemId1 <> " text hey 👋")
+      alice <# "#team [edited] hey 👋"
       concurrently_
         (bob <# "#team alice> [edited] hey 👋")
         (cath <# "#team alice> [edited] hey 👋")
@@ -1250,7 +1259,8 @@ testGroupMessageUpdate =
       bob #$> ("/_get chat #1 count=2", chat', [((0, "hey 👋"), Nothing), ((1, "hi alice"), Just (0, "hey 👋"))])
       cath #$> ("/_get chat #1 count=2", chat', [((0, "hey 👋"), Nothing), ((0, "hi alice"), Just (0, "hey 👋"))])
 
-      alice #$> ("/_update item #1 " <> msgItemId1 <> " text greetings 🤝", id, "message updated")
+      alice ##> ("/_update item #1 " <> msgItemId1 <> " text greetings 🤝")
+      alice <# "#team [edited] greetings 🤝"
       concurrently_
         (bob <# "#team alice> [edited] greetings 🤝")
         (cath <# "#team alice> [edited] greetings 🤝")
@@ -1323,7 +1333,9 @@ testGroupMessageDelete =
 
       -- alice: msg id 5
       msgItemId3 <- lastItemId bob
-      bob #$> ("/_update item #1 " <> msgItemId3 <> " text hi alice", id, "message updated")
+      bob ##> ("/_update item #1 " <> msgItemId3 <> " text hi alice")
+      bob <# "#team [edited] > alice hello!"
+      bob <## "      hi alice"
       concurrently_
         (alice <# "#team bob> [edited] hi alice")
         ( do
@@ -3581,10 +3593,10 @@ testEnableTimedMessagesContact =
       alice <## "bob updated preferences for you:"
       alice <## "Disappearing messages: enabled (you allow: yes, after 1s, contact allows: yes, after 1s)"
       alice <##> bob
-      threadDelay 900000
+      threadDelay 500000
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled, after 1s"), (1, "hi"), (0, "hey")])
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled, after 1s"), (0, "hi"), (1, "hey")])
-      threadDelay 200000
+      threadDelay 1000000
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled, after 1s")])
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled, after 1s")])
 
@@ -3603,10 +3615,10 @@ testEnableTimedMessagesGroup =
       threadDelay 1000000
       alice #> "#team hi"
       bob <# "#team alice> hi"
-      threadDelay 900000
+      threadDelay 500000
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Disappearing messages: on, after 1s"), (1, "hi")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Disappearing messages: on, after 1s"), (0, "hi")])
-      threadDelay 200000
+      threadDelay 1000000
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Disappearing messages: on, after 1s")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Disappearing messages: on, after 1s")])
 
@@ -3993,24 +4005,17 @@ testNegotiateCall =
     bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: accepted")])
     alice <## "bob accepted your WebRTC video call (e2e encrypted)"
     repeatM_ 3 $ getTermLine alice
-    alice <## "message updated" -- call chat item updated
     alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "outgoing call: accepted")])
     -- alice confirms call by sending WebRTC answer
     alice ##> ("/_call answer @2 " <> serialize testWebRTCSession)
-    alice
-      <### [ "ok",
-             "message updated"
-           ]
+    alice <## "ok"
     alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "outgoing call: connecting...")])
     bob <## "alice continued the WebRTC call"
     repeatM_ 3 $ getTermLine bob
     bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: connecting...")])
     -- participants can update calls as connected
     alice ##> "/_call status @2 connected"
-    alice
-      <### [ "ok",
-             "message updated"
-           ]
+    alice <## "ok"
     alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "outgoing call: in progress (00:00)")])
     bob ##> "/_call status @2 connected"
     bob <## "ok"
@@ -4020,7 +4025,6 @@ testNegotiateCall =
     bob <## "ok"
     bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: ended (00:00)")])
     alice <## "call with bob ended"
-    alice <## "message updated"
     alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "outgoing call: ended (00:00)")])
 
 testMaintenanceMode :: IO ()
