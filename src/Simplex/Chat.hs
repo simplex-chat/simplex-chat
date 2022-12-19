@@ -2748,15 +2748,10 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
 
     createFeatureEnabledItems :: Contact -> m ()
     createFeatureEnabledItems ct@Contact {mergedPreferences} =
-      forM_ allChatFeatures $ \(ACF f) ->
-        case chatFeature f of
-          CFTimedMessages -> do
-            let ContactUserPreference {enabled, userPreference} = timedMessages (mergedPreferences :: ContactUserPreferences)
-                TimedMessagesPreference {ttl} = preference (userPreference :: ContactUserPref TimedMessagesPreference)
-            createInternalChatItem user (CDDirectRcv ct) (CIRcvChatFeature (chatFeature f) enabled ttl) Nothing
-          _ -> do
-            let ContactUserPreference {enabled} = getContactUserPreference f mergedPreferences
-            createInternalChatItem user (CDDirectRcv ct) (CIRcvChatFeature (chatFeature f) enabled Nothing) Nothing
+      forM_ allChatFeatures $ \(ACF f) -> do
+        let cup@ContactUserPreference {enabled} = getContactUserPreference f mergedPreferences
+            int' = cupIntValue cup
+        createInternalChatItem user (CDDirectRcv ct) (CIRcvChatFeature (chatFeature f) enabled int') Nothing
 
     createGroupFeatureItems :: GroupInfo -> GroupMember -> m ()
     createGroupFeatureItems g@GroupInfo {groupProfile} m = do

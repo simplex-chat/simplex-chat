@@ -849,10 +849,12 @@ prefEnabledToText = \case
   PrefEnabled {forUser = False, forContact = True} -> "enabled for contact"
 
 prefChangedValue :: FeatureI f => ContactUserPreference (FeaturePreference f) -> (PrefEnabled, Maybe Int)
-prefChangedValue ContactUserPreference {enabled, userPreference} =
-  let p = preference userPreference
-      int = if forUser enabled then prefIntValue p else Nothing
+prefChangedValue cup@ContactUserPreference {enabled} =
+  let int = if forUser enabled then cupIntValue cup else Nothing
    in (enabled, int)
+
+cupIntValue :: FeatureI f => ContactUserPreference (FeaturePreference f) -> Maybe Int
+cupIntValue ContactUserPreference {userPreference} = prefIntValue $ preference userPreference
 
 updateMergedPreferences :: User -> Contact -> Contact
 updateMergedPreferences user ct =
