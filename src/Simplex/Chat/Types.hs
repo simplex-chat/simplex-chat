@@ -9,6 +9,8 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# HLINT ignore "Use newtype instead of data" #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
@@ -19,8 +21,6 @@
 {-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-
-{-# HLINT ignore "Use newtype instead of data" #-}
 
 module Simplex.Chat.Types where
 
@@ -717,15 +717,22 @@ groupPrefToText_ enabled param = do
    in enabledText <> paramText
 
 timedTTLText :: Int -> Text
-timedTTLText ttl
-  | ttl == 30 = "30 seconds"
-  | ttl == 300 = "5 minutes"
-  | ttl == 3600 = "one hour"
-  | ttl == 8 * 3600 = "8 hours"
-  | ttl == 86400 = "one day"
-  | ttl == 7 * 86400 = "one week"
-  | ttl == 30 * 86400 = "one month"
-  | otherwise = (T.pack . show $ ttl) <> " second(s)"
+timedTTLText ttl = do
+  let (m', s) = ttl `divMod` 60
+      (h', m) = m' `divMod` 60
+      (d, h) = h' `divMod` 24
+  T.pack $
+    if
+        | m' < 1 -> ss s
+        | h' < 1 -> unwords $ [ms m] <> [ss s | s > 0]
+        | d < 1 -> unwords $ [hs h] <> [ms m | m > 0] <> [ss s | s > 0]
+        | d <= 30 -> unwords $ [ds d] <> [hs h | h > 0] <> [ms m | m > 0] <> [ss s | s > 0]
+        | otherwise -> show ttl <> " second(s)"
+  where
+    ss s = show s <> "s"
+    ms m = show m <> "m"
+    hs h = show h <> "h"
+    ds d = show d <> "d"
 
 toGroupPreference :: GroupFeatureI f => GroupFeaturePreference f -> GroupPreference
 toGroupPreference p = GroupPreference {enable = getField @"enable" p}
