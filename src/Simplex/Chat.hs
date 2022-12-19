@@ -2753,11 +2753,11 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
         createInternalChatItem user (CDDirectRcv ct) (uncurry (CIRcvChatFeature $ chatFeature f) state) Nothing
 
     createGroupFeatureItems :: GroupInfo -> GroupMember -> m ()
-    createGroupFeatureItems g@GroupInfo {groupProfile} m = do
-      let prefs = mergeGroupPreferences $ groupPreferences groupProfile
+    createGroupFeatureItems g@GroupInfo {fullGroupPreferences} m =
       forM_ allGroupFeatures $ \(AGF f) -> do
-        let p = getGroupPreference f prefs
-        createInternalChatItem user (CDGroupRcv g m) (CIRcvGroupFeature (toGroupFeature f) (toGroupPreference p) (groupPrefIntValue p)) Nothing
+        let p = getGroupPreference f fullGroupPreferences
+            (_, param) = groupFeatureState p
+        createInternalChatItem user (CDGroupRcv g m) (CIRcvGroupFeature (toGroupFeature f) (toGroupPreference p) param) Nothing
 
     xInfoProbe :: Contact -> Probe -> m ()
     xInfoProbe c2 probe =
@@ -3384,10 +3384,10 @@ createFeatureChangedItems user Contact {mergedPreferences = cups} ct'@Contact {m
 createGroupFeatureChangedItems :: (MsgDirectionI d, ChatMonad m) => User -> ChatDirection 'CTGroup d -> (GroupFeature -> GroupPreference -> Maybe Int -> CIContent d) -> GroupInfo -> GroupInfo -> m ()
 createGroupFeatureChangedItems user cd ciContent GroupInfo {fullGroupPreferences = gps} GroupInfo {fullGroupPreferences = gps'} =
   forM_ allGroupFeatures $ \(AGF f) -> do
-    let prefChangedVal = groupPrefChangedValue $ getGroupPreference f gps
+    let state = groupFeatureState $ getGroupPreference f gps
         pref' = getGroupPreference f gps'
-        prefChangedVal'@(_, int') = groupPrefChangedValue pref'
-    unless (prefChangedVal == prefChangedVal') $
+        state'@(_, int') = groupFeatureState pref'
+    when (state /= state') $
       createInternalChatItem user cd (ciContent (toGroupFeature f) (toGroupPreference pref') int') Nothing
 
 sameGroupProfileInfo :: GroupProfile -> GroupProfile -> Bool

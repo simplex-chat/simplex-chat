@@ -845,7 +845,7 @@ viewGroupUpdated
               pref = getGroupPreference f . mergeGroupPreferences
 
 viewGroupPreference :: forall f. (GroupFeatureI f) => GroupFeaturePreference f -> StyledString
-viewGroupPreference p = plain $ groupPrefToText p <> maybe "" (", " <>) (groupFeatureIntValueText (groupPrefFeature @f) (groupPrefIntValue p))
+viewGroupPreference p = plain $ groupPrefToText p <> maybe "" (", " <>) (groupFeatureIntValueText (groupPrefFeature @f) (groupPrefParam p))
 
 viewGroupProfile :: GroupInfo -> [StyledString]
 viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {description, image, groupPreferences = gps}} =

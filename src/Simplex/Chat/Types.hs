@@ -675,7 +675,7 @@ instance ToJSON VoiceGroupPreference where toEncoding = J.genericToEncoding J.de
 
 class (Eq (GroupFeaturePreference f), HasField "enable" (GroupFeaturePreference f) GroupFeatureEnabled) => GroupFeatureI f where
   type GroupFeaturePreference (f :: GroupFeature) = p | p -> f
-  groupPrefIntValue :: GroupFeaturePreference f -> Maybe Int
+  groupPrefParam :: GroupFeaturePreference f -> Maybe Int
   groupPrefFeature :: GroupFeature
 
 instance HasField "enable" GroupPreference GroupFeatureEnabled where
@@ -695,22 +695,22 @@ instance HasField "enable" VoiceGroupPreference GroupFeatureEnabled where
 
 instance GroupFeatureI 'GFTimedMessages where
   type GroupFeaturePreference 'GFTimedMessages = TimedMessagesGroupPreference
-  groupPrefIntValue TimedMessagesGroupPreference {ttl} = Just ttl
+  groupPrefParam TimedMessagesGroupPreference {ttl} = Just ttl
   groupPrefFeature = GFTimedMessages
 
 instance GroupFeatureI 'GFDirectMessages where
   type GroupFeaturePreference 'GFDirectMessages = DirectMessagesGroupPreference
-  groupPrefIntValue _ = Nothing
+  groupPrefParam _ = Nothing
   groupPrefFeature = GFDirectMessages
 
 instance GroupFeatureI 'GFFullDelete where
   type GroupFeaturePreference 'GFFullDelete = FullDeleteGroupPreference
-  groupPrefIntValue _ = Nothing
+  groupPrefParam _ = Nothing
   groupPrefFeature = GFFullDelete
 
 instance GroupFeatureI 'GFVoice where
   type GroupFeaturePreference 'GFVoice = VoiceGroupPreference
-  groupPrefIntValue _ = Nothing
+  groupPrefParam _ = Nothing
   groupPrefFeature = GFVoice
 
 groupPrefToText :: HasField "enable" p GroupFeatureEnabled => p -> Text
@@ -772,10 +772,10 @@ instance ToJSON GroupFeatureEnabled where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-groupPrefChangedValue :: GroupFeatureI f => GroupFeaturePreference f -> (GroupFeatureEnabled, Maybe Int)
-groupPrefChangedValue p =
+groupFeatureState :: GroupFeatureI f => GroupFeaturePreference f -> (GroupFeatureEnabled, Maybe Int)
+groupFeatureState p =
   let enable = getField @"enable" p
-      int = if enable == FEOn then groupPrefIntValue p else Nothing
+      int = if enable == FEOn then groupPrefParam p else Nothing
    in (enable, int)
 
 mergePreferences :: Maybe Preferences -> Maybe Preferences -> FullPreferences
