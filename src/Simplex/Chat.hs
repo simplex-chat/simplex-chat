@@ -2806,7 +2806,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
               c' <- liftIO $ setContactConfirmPrefPending db user c False
               updateContactProfile db user c' p'
             contactChangedTTL = do
-              let userPrefs' = setUserPref rcvTTL
+              let userPrefs' = setContactUserPref rcvTTL
               withStore $ \db -> do
                 c' <- liftIO $ updateContactUserPreferences db user c userPrefs'
                 c'' <- liftIO $ setContactConfirmPrefPending db user c' True
@@ -2815,15 +2815,19 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
               let rcvTimedMessages' = rcvTimedMessages >>= \rcvTM -> Just (rcvTM :: TimedMessagesPreference) {ttl = ctTTL}
                   rcvPrefs' = rcvPrefs_ >>= \rcvPrefs -> Just (rcvPrefs :: Preferences) {timedMessages = rcvTimedMessages'}
                   p'' = (p' :: Profile) {preferences = rcvPrefs'}
-                  userPrefs' = setUserPref ctTTL
+                  userPrefs' = setContactUserPref ctTTL
               withStore $ \db -> do
                 c' <- liftIO $ updateContactUserPreferences db user c userPrefs'
                 c'' <- liftIO $ setContactConfirmPrefPending db user c' False
                 updateContactProfile db user c'' p''
-            setUserPref ttl_ =
-              let userTimedMessages' = case userTimedMessages of
+            setContactUserPref ttl_ =
+              let userDefault = getPreference SCFTimedMessages (fullPreferences user)
+                  userDefaultTTL = prefParam userDefault
+                  userTimedMessages' = case userTimedMessages of
                     Just userTM -> Just (userTM :: TimedMessagesPreference) {ttl = ttl_}
-                    _ -> ttl_ $> ((getPreference SCFTimedMessages (fullPreferences user) :: TimedMessagesPreference) {ttl = ttl_})
+                    _
+                      | ttl_ /= userDefaultTTL -> Just (userDefault :: TimedMessagesPreference) {ttl = ttl_}
+                      | otherwise -> Nothing
                in (userPrefs :: Preferences) {timedMessages = userTimedMessages'}
 
     createFeatureEnabledItems :: Contact -> m ()
