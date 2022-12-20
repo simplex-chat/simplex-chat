@@ -2763,6 +2763,15 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
       c' <- withStore $ \db -> updateContactProfile db user c p'
       toView $ CRContactUpdated c c'
       when (directOrUsed c) $ createFeatureChangedItems user c c' CDDirectRcv CIRcvChatFeature
+      where
+        ttlChanged = do
+          let LocalProfile {preferences = ctPrefs_} = p
+              Contact {userPreferences = userPrefs} = c
+              Profile {preferences = rcvPrefs_} = p'
+              ctTTL = ctPrefs_ >>= \Preferences {timedMessages} -> timedMessages >>= \TimedMessagesPreference {ttl} -> ttl
+              userTTL = timedMessages (userPrefs :: Preferences) >>= \TimedMessagesPreference {ttl} -> ttl
+              rcvTTL = rcvPrefs_ >>= \Preferences {timedMessages} -> timedMessages >>= \TimedMessagesPreference {ttl} -> ttl
+          False
 
     createFeatureEnabledItems :: Contact -> m ()
     createFeatureEnabledItems ct@Contact {mergedPreferences} =

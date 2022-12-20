@@ -41,6 +41,7 @@ module Simplex.Chat.Store
     getContactIdByName,
     updateUserProfile,
     updateContactProfile,
+    setContactUnconfirmedTtlChange,
     updateContactUserPreferences,
     updateContactAlias,
     updateContactConnectionAlias,
@@ -691,6 +692,13 @@ updateContactProfile db user@User {userId} c p'
     Profile {displayName = newName, preferences} = p'
     profile = toLocalProfile profileId p' localAlias
     mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
+
+setContactUnconfirmedTtlChange :: DB.Connection -> User -> Contact -> Bool -> IO ()
+setContactUnconfirmedTtlChange db User {userId} Contact {contactId} unconfirmedTtlChange =
+  DB.execute
+    db
+    "UPDATE contacts SET unconfirmed_ttl_change = ? WHERE user_id = ? AND contact_id = ?"
+    (unconfirmedTtlChange, userId, contactId)
 
 updateContactUserPreferences :: DB.Connection -> User -> Contact -> Preferences -> IO Contact
 updateContactUserPreferences db user@User {userId} c@Contact {contactId, activeConn} userPreferences = do
