@@ -106,6 +106,7 @@ fun SendMsgView(
                 RecordVoiceView(recState)
             }
             if (sendLiveMessage != null && updateLiveMessage != null) {
+              Spacer(Modifier.width(10.dp))
               StartLiveMessageButton {
                 if (composeState.value.preview is ComposePreview.NoPreview) {
                   startLiveMessage(scope, sendLiveMessage, updateLiveMessage, sendButtonSize, sendButtonAlpha, composeState, liveMessageAlertShown)
