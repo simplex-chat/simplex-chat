@@ -2790,43 +2790,41 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
       toView $ CRContactUpdated c c'
       when (directOrUsed c) $ createFeatureChangedItems user c c' CDDirectRcv CIRcvChatFeature
       where
-        updateContactProfileAndUserPrefs = do
-          let LocalProfile {preferences = ctPrefs_} = p
-              ctTTL = ctPrefs_ >>= \Preferences {timedMessages} -> timedMessages >>= \TimedMessagesPreference {ttl} -> ttl
-              Contact {userPreferences = userPrefs@Preferences {timedMessages = userTimedMessages}} = c
-              userTTL = userTimedMessages >>= \TimedMessagesPreference {ttl} -> ttl
-              Profile {preferences = rcvPrefs_} = p'
-              rcvTimedMessages = rcvPrefs_ >>= \Preferences {timedMessages} -> timedMessages
-              rcvTTL = rcvTimedMessages >>= \TimedMessagesPreference {ttl} -> ttl
-          if
-              | userTTL == ctTTL && userTTL /= rcvTTL -> do
-                let userPrefs' = setUserPref userPrefs userTimedMessages rcvTTL
-                withStore $ \db -> do
-                  c' <- liftIO $ updateContactUserPreferences db user c userPrefs'
-                  c'' <- liftIO $ setContactConfirmPrefPending db user c' True
-                  updateContactProfile db user c'' p'
-              | userTTL /= ctTTL && userTTL == rcvTTL -> simpleProfileUpdate
-              | userTTL /= ctTTL && userTTL /= rcvTTL -> do
-                let rcvTimedMessages' = rcvTimedMessages >>= \rcvTM -> Just (rcvTM :: TimedMessagesPreference) {ttl = ctTTL}
-                    rcvPrefs' = rcvPrefs_ >>= \rcvPrefs -> Just (rcvPrefs :: Preferences) {timedMessages = rcvTimedMessages'}
-                    p'' = (p' :: Profile) {preferences = rcvPrefs'}
-                    userPrefs' = setUserPref userPrefs userTimedMessages ctTTL
-                withStore $ \db -> do
-                  c' <- liftIO $ updateContactUserPreferences db user c userPrefs'
-                  c'' <- liftIO $ setContactConfirmPrefPending db user c' False
-                  updateContactProfile db user c'' p''
-              | otherwise -> simpleProfileUpdate
+        updateContactProfileAndUserPrefs
+          | userTTL == rcvTTL = simpleProfileUpdate
+          | userTTL == ctTTL = contactChangedTTL
+          | otherwise = rollbackTTL
           where
-            setUserPref userPrefs userTimedMessages ttl =
-              let userTimedMessages' = case userTimedMessages of
-                    Nothing ->
-                      let User {fullPreferences = FullPreferences {timedMessages = TimedMessagesPreference {allow = userDefault}}} = user
-                       in TimedMessagesPreference {allow = userDefault, ttl = ttl}
-                    Just userTM -> (userTM :: TimedMessagesPreference) {ttl = ttl}
-               in (userPrefs :: Preferences) {timedMessages = Just userTimedMessages'}
+            LocalProfile {preferences = ctPrefs_} = p
+            ctTTL = ctPrefs_ >>= \Preferences {timedMessages} -> timedMessages >>= \TimedMessagesPreference {ttl} -> ttl
+            Contact {userPreferences = userPrefs@Preferences {timedMessages = userTimedMessages}} = c
+            userTTL = userTimedMessages >>= \TimedMessagesPreference {ttl} -> ttl
+            Profile {preferences = rcvPrefs_} = p'
+            rcvTimedMessages = rcvPrefs_ >>= \Preferences {timedMessages} -> timedMessages
+            rcvTTL = rcvTimedMessages >>= \TimedMessagesPreference {ttl} -> ttl
             simpleProfileUpdate = withStore $ \db -> do
               c' <- liftIO $ setContactConfirmPrefPending db user c False
               updateContactProfile db user c' p'
+            contactChangedTTL = do
+              let userPrefs' = setUserPref rcvTTL
+              withStore $ \db -> do
+                c' <- liftIO $ updateContactUserPreferences db user c userPrefs'
+                c'' <- liftIO $ setContactConfirmPrefPending db user c' True
+                updateContactProfile db user c'' p'
+            rollbackTTL = do
+              let rcvTimedMessages' = rcvTimedMessages >>= \rcvTM -> Just (rcvTM :: TimedMessagesPreference) {ttl = ctTTL}
+                  rcvPrefs' = rcvPrefs_ >>= \rcvPrefs -> Just (rcvPrefs :: Preferences) {timedMessages = rcvTimedMessages'}
+                  p'' = (p' :: Profile) {preferences = rcvPrefs'}
+                  userPrefs' = setUserPref ctTTL
+              withStore $ \db -> do
+                c' <- liftIO $ updateContactUserPreferences db user c userPrefs'
+                c'' <- liftIO $ setContactConfirmPrefPending db user c' False
+                updateContactProfile db user c'' p''
+            setUserPref ttl_ =
+              let userTimedMessages' = case userTimedMessages of
+                    Just userTM -> Just (userTM :: TimedMessagesPreference) {ttl = ttl_}
+                    _ -> ttl_ $> ((getPreference SCFTimedMessages (fullPreferences user) :: TimedMessagesPreference) {ttl = ttl_})
+               in (userPrefs :: Preferences) {timedMessages = userTimedMessages'}
 
     createFeatureEnabledItems :: Contact -> m ()
     createFeatureEnabledItems ct@Contact {mergedPreferences} =
