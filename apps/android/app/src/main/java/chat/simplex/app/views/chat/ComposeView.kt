@@ -445,7 +445,7 @@ fun ComposeView(
             }
             if (file != null) {
               files.add(file)
-              msgs.add(MsgContent.MCImage(if (msgs.isEmpty()) msgText else "", preview.images[index]))
+              msgs.add(MsgContent.MCImage(if (chosenContent.value.lastIndex == index) msgText else "", preview.images[index]))
             }
           }
         }
