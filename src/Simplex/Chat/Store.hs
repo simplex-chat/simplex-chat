@@ -3840,12 +3840,9 @@ updateDirectChatItemStatus db user@User {userId} contactId itemId itemStatus = d
     correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
 
 updateDirectChatItem :: forall d. (MsgDirectionI d) => DB.Connection -> User -> Int64 -> ChatItemId -> CIContent d -> Bool -> Maybe MessageId -> ExceptT StoreError IO (ChatItem 'CTDirect d)
-updateDirectChatItem db user@User {userId} contactId itemId newContent live msgId_ = do
+updateDirectChatItem db user contactId itemId newContent live msgId_ = do
   ci <- liftEither . correctDir =<< getDirectChatItem db user contactId itemId
-  currentTs <- liftIO getCurrentTime
-  let ci' = updatedChatItem ci newContent live currentTs
-  liftIO $ updateDirectChatItem_ db userId contactId ci' msgId_
-  pure ci'
+  liftIO $ updateDirectChatItem' db user contactId ci newContent live msgId_
   where
     correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
     correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
