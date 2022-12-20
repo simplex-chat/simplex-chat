@@ -21,6 +21,8 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
 import java.io.File
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 /*
  * Without this annotation an animation from ChatList to ChatView has 1 frame per the whole animation. Don't delete it
@@ -1228,8 +1230,10 @@ data class ChatItem (
           itemText = generalGetString(R.string.deleted_description),
           itemStatus = CIStatus.RcvRead(),
           createdAt = Clock.System.now(),
+          updatedAt = Clock.System.now(),
           itemDeleted = false,
           itemEdited = false,
+          itemLive = false,
           editable = false
         ),
         content = CIContent.RcvDeleted(deleteMode = CIDeleteMode.cidmBroadcast),
@@ -1261,16 +1265,20 @@ data class CIMeta (
   val itemText: String,
   val itemStatus: CIStatus,
   val createdAt: Instant,
+  val updatedAt: Instant,
   val itemDeleted: Boolean,
   val itemEdited: Boolean,
+  val itemLive: Boolean?,
   val editable: Boolean
 ) {
   val timestampText: String get() = getTimestampText(itemTs)
+  val recent: Boolean get() = updatedAt + 10.toDuration(DurationUnit.SECONDS) > Clock.System.now()
+  val isLive: Boolean get() = itemLive == true
 
   companion object {
     fun getSample(
       id: Long, ts: Instant, text: String, status: CIStatus = CIStatus.SndNew(),
-      itemDeleted: Boolean = false, itemEdited: Boolean = false, editable: Boolean = true
+      itemDeleted: Boolean = false, itemEdited: Boolean = false, itemLive: Boolean = false, editable: Boolean = true
     ): CIMeta =
       CIMeta(
         itemId = id,
@@ -1278,8 +1286,10 @@ data class CIMeta (
         itemText = text,
         itemStatus = status,
         createdAt = ts,
+        updatedAt = ts,
         itemDeleted = itemDeleted,
         itemEdited = itemEdited,
+        itemLive = itemLive,
         editable = editable
       )
   }

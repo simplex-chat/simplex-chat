@@ -70,6 +70,7 @@ library
       Simplex.Chat.Migrations.M20221211_group_description
       Simplex.Chat.Migrations.M20221212_chat_items_timed
       Simplex.Chat.Migrations.M20221214_live_message
+      Simplex.Chat.Migrations.M20221216_contacts_confirm_pref_pending
       Simplex.Chat.Mobile
       Simplex.Chat.Options
       Simplex.Chat.ProfileGenerator

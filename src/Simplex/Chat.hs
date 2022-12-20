@@ -1296,23 +1296,38 @@ processChatCommand = \case
             <$> withStore' (`getUserContacts` user)
         withChatLock "updateProfile" . procCmd $ do
           forM_ contacts $ \ct -> do
-            let mergedProfile = userProfileToSend user' Nothing $ Just ct
-                ct' = updateMergedPreferences user' ct
-            void (sendDirectContactMessage ct $ XInfo mergedProfile) `catchError` (toView . CRChatError)
-            when (directOrUsed ct) $ createFeatureChangedItems user' ct ct' CDDirectSnd CISndChatFeature
+            let ct' = updateMergedPreferences user' ct
+            (ct'', mergedProfile) <- sendConfirmProfile user user' ct ct'
+            sendProfileUpdate ct'' mergedProfile
+            when (directOrUsed ct'') $ createFeatureChangedItems user' ct ct'' CDDirectSnd CISndChatFeature
           pure $ CRUserProfileUpdated (fromLocalProfile p) p'
     updateContactPrefs :: User -> Contact -> Preferences -> m ChatResponse
-    updateContactPrefs user@User {userId} ct@Contact {activeConn = Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
+    updateContactPrefs user ct@Contact {userPreferences = contactUserPrefs} contactUserPrefs'
       | contactUserPrefs == contactUserPrefs' = pure $ CRContactPrefsUpdated ct ct
       | otherwise = do
         assertDirectAllowed user MDSnd ct XInfo_
         ct' <- withStore' $ \db -> updateContactUserPreferences db user ct contactUserPrefs'
-        incognitoProfile <- forM customUserProfileId $ \profileId -> withStore $ \db -> getProfileById db userId profileId
-        let p' = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct')
         withChatLock "updateProfile" . procCmd $ do
-          void (sendDirectContactMessage ct' $ XInfo p') `catchError` (toView . CRChatError)
-          when (directOrUsed ct) $ createFeatureChangedItems user ct ct' CDDirectSnd CISndChatFeature
-          pure $ CRContactPrefsUpdated ct ct'
+          (ct'', mergedProfile) <- sendConfirmProfile user user ct ct'
+          sendProfileUpdate ct'' mergedProfile
+          when (directOrUsed ct'') $ createFeatureChangedItems user ct ct'' CDDirectSnd CISndChatFeature
+          pure $ CRContactPrefsUpdated ct ct''
+    sendConfirmProfile :: User -> User -> Contact -> Contact -> m (Contact, Profile)
+    sendConfirmProfile user user'@User {userId} ct ct'@Contact {activeConn = Connection {customUserProfileId}, confirmPrefPending} = do
+      incognitoProfile <- forM customUserProfileId $ \profileId -> withStore $ \db -> getProfileById db userId profileId
+      let mergedProfile = userProfileToSend user' (fromLocalProfile <$> incognitoProfile) (Just ct')
+          mergedTTL = prefParam $ getPreference SCFTimedMessages (preferences (mergedProfile :: Profile))
+      ct'' <-
+        if confirmPrefPending
+          then do
+            let confirmProfile = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct)
+                confirmTTL = prefParam $ getPreference SCFTimedMessages (preferences (confirmProfile :: Profile))
+            when (confirmTTL /= mergedTTL) $ sendProfileUpdate ct' confirmProfile
+            withStore' $ \db -> setContactConfirmPrefPending db user ct' False
+          else pure ct'
+      pure (ct'', mergedProfile)
+    sendProfileUpdate :: Contact -> Profile -> m ()
+    sendProfileUpdate ct p = void (sendDirectContactMessage ct $ XInfo p) `catchError` (toView . CRChatError)
     runUpdateGroupProfile :: User -> Group -> GroupProfile -> m ChatResponse
     runUpdateGroupProfile user (Group g@GroupInfo {groupProfile = p} ms) p' = do
       let s = memberStatus $ membership g
@@ -2771,9 +2786,49 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
 
     xInfo :: Contact -> Profile -> m ()
     xInfo c@Contact {profile = p} p' = unless (fromLocalProfile p == p') $ do
-      c' <- withStore $ \db -> updateContactProfile db user c p'
+      c' <- updateContactProfileAndUserPrefs
       toView $ CRContactUpdated c c'
       when (directOrUsed c) $ createFeatureChangedItems user c c' CDDirectRcv CIRcvChatFeature
+      where
+        updateContactProfileAndUserPrefs
+          | userTTL == rcvTTL = simpleProfileUpdate
+          | userTTL == ctTTL = contactChangedTTL
+          | otherwise = rollbackTTL
+          where
+            LocalProfile {preferences = ctPrefs_} = p
+            ctTTL = ctPrefs_ >>= \Preferences {timedMessages} -> timedMessages >>= \TimedMessagesPreference {ttl} -> ttl
+            Contact {userPreferences = userPrefs@Preferences {timedMessages = userTimedMessages}} = c
+            userTTL = userTimedMessages >>= \TimedMessagesPreference {ttl} -> ttl
+            Profile {preferences = rcvPrefs_} = p'
+            rcvTimedMessages = rcvPrefs_ >>= \Preferences {timedMessages} -> timedMessages
+            rcvTTL = rcvTimedMessages >>= \TimedMessagesPreference {ttl} -> ttl
+            simpleProfileUpdate = withStore $ \db -> do
+              c' <- liftIO $ setContactConfirmPrefPending db user c False
+              updateContactProfile db user c' p'
+            contactChangedTTL = do
+              let userPrefs' = setContactUserPref rcvTTL
+              withStore $ \db -> do
+                c' <- liftIO $ updateContactUserPreferences db user c userPrefs'
+                c'' <- liftIO $ setContactConfirmPrefPending db user c' True
+                updateContactProfile db user c'' p'
+            rollbackTTL = do
+              let rcvTimedMessages' = rcvTimedMessages >>= \rcvTM -> Just (rcvTM :: TimedMessagesPreference) {ttl = ctTTL}
+                  rcvPrefs' = rcvPrefs_ >>= \rcvPrefs -> Just (rcvPrefs :: Preferences) {timedMessages = rcvTimedMessages'}
+                  p'' = (p' :: Profile) {preferences = rcvPrefs'}
+                  userPrefs' = setContactUserPref ctTTL
+              withStore $ \db -> do
+                c' <- liftIO $ updateContactUserPreferences db user c userPrefs'
+                c'' <- liftIO $ setContactConfirmPrefPending db user c' False
+                updateContactProfile db user c'' p''
+            setContactUserPref ttl_ =
+              let userDefault = getPreference SCFTimedMessages (fullPreferences user)
+                  userDefaultTTL = prefParam userDefault
+                  userTimedMessages' = case userTimedMessages of
+                    Just userTM -> Just (userTM :: TimedMessagesPreference) {ttl = ttl_}
+                    _
+                      | ttl_ /= userDefaultTTL -> Just (userDefault :: TimedMessagesPreference) {ttl = ttl_}
+                      | otherwise -> Nothing
+               in (userPrefs :: Preferences) {timedMessages = userTimedMessages'}
 
     createFeatureEnabledItems :: Contact -> m ()
     createFeatureEnabledItems ct@Contact {mergedPreferences} =

@@ -176,7 +176,7 @@ fun ChatItemView(
         if (cItem.meta.itemDeleted && !revealed.value) {
           MarkedDeletedItemView(cItem, showMember = showMember)
           MarkedDeletedItemDropdownMenu()
-        } else if (cItem.quotedItem == null && !cItem.meta.itemDeleted) {
+        } else if (cItem.quotedItem == null && !cItem.meta.itemDeleted && !cItem.meta.isLive) {
           if (mc is MsgContent.MCText && isShortEmoji(cItem.content.text)) {
             EmojiItemView(cItem)
             MsgContentItemDropdownMenu()
