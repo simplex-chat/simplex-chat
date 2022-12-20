@@ -203,6 +203,7 @@ module Simplex.Chat.Store
     updateDirectChatItemStatus,
     updateDirectCIFileStatus,
     updateDirectChatItem,
+    updateDirectChatItem',
     deleteDirectChatItem,
     markDirectChatItemDeleted,
     updateGroupChatItem,
@@ -3189,7 +3190,7 @@ createNewChatItem_ db User {userId} chatDirection msgId_ sharedMsgId ciContent q
         -- user and IDs
         user_id, created_by_msg_id, contact_id, group_id, group_member_id,
         -- meta
-        item_sent, item_ts, item_content, item_text, item_status, shared_msg_id, created_at, updated_at, timed_ttl, timed_delete_at, item_live,
+        item_sent, item_ts, item_content, item_text, item_status, shared_msg_id, created_at, updated_at, item_live, timed_ttl, timed_delete_at,
         -- quote
         quoted_shared_msg_id, quoted_sent_at, quoted_content, quoted_sent, quoted_member_id
       ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
@@ -3199,18 +3200,18 @@ createNewChatItem_ db User {userId} chatDirection msgId_ sharedMsgId ciContent q
   forM_ msgId_ $ \msgId -> insertChatItemMessage_ db ciId msgId createdAt
   pure ciId
   where
-    itemRow :: (SMsgDirection d, UTCTime, CIContent d, Text, CIStatus d, Maybe SharedMsgId) :. (UTCTime, UTCTime, Maybe Int, Maybe UTCTime, Maybe Bool)
-    itemRow = (msgDirection @d, itemTs, ciContent, ciContentToText ciContent, ciCreateStatus ciContent, sharedMsgId) :. (createdAt, createdAt, timedTTL, timedDeleteAt, justTrue live)
-      where
-        (timedTTL, timedDeleteAt) = case timed of
-          Just CITimed {ttl, deleteAt} -> (Just ttl, deleteAt)
-          Nothing -> (Nothing, Nothing)
+    itemRow :: (SMsgDirection d, UTCTime, CIContent d, Text, CIStatus d, Maybe SharedMsgId) :. (UTCTime, UTCTime, Maybe Bool) :. (Maybe Int, Maybe UTCTime)
+    itemRow = (msgDirection @d, itemTs, ciContent, ciContentToText ciContent, ciCreateStatus ciContent, sharedMsgId) :. (createdAt, createdAt, justTrue live) :. ciTimedRow timed
     idsRow :: (Maybe Int64, Maybe Int64, Maybe Int64)
     idsRow = case chatDirection of
       CDDirectRcv Contact {contactId} -> (Just contactId, Nothing, Nothing)
       CDDirectSnd Contact {contactId} -> (Just contactId, Nothing, Nothing)
       CDGroupRcv GroupInfo {groupId} GroupMember {groupMemberId} -> (Nothing, Just groupId, Just groupMemberId)
       CDGroupSnd GroupInfo {groupId} -> (Nothing, Just groupId, Nothing)
+
+ciTimedRow :: Maybe CITimed -> (Maybe Int, Maybe UTCTime)
+ciTimedRow (Just CITimed {ttl, deleteAt}) = (Just ttl, deleteAt)
+ciTimedRow _ = (Nothing, Nothing)
 
 insertChatItemMessage_ :: DB.Connection -> ChatItemId -> MessageId -> UTCTime -> IO ()
 insertChatItemMessage_ db ciId msgId ts = DB.execute db "INSERT INTO chat_item_messages (chat_item_id, message_id, created_at, updated_at) VALUES (?,?,?,?)" (ciId, msgId, ts, ts)
@@ -3828,9 +3829,9 @@ getChatItemIdByAgentMsgId db connId msgId =
       |]
       (connId, msgId)
 
-updateDirectChatItemStatus :: forall d. MsgDirectionI d => DB.Connection -> UserId -> Int64 -> ChatItemId -> CIStatus d -> ExceptT StoreError IO (ChatItem 'CTDirect d)
-updateDirectChatItemStatus db userId contactId itemId itemStatus = do
-  ci <- liftEither . correctDir =<< getDirectChatItem db userId contactId itemId
+updateDirectChatItemStatus :: forall d. MsgDirectionI d => DB.Connection -> User -> Int64 -> ChatItemId -> CIStatus d -> ExceptT StoreError IO (ChatItem 'CTDirect d)
+updateDirectChatItemStatus db user@User {userId} contactId itemId itemStatus = do
+  ci <- liftEither . correctDir =<< getDirectChatItem db user contactId itemId
   currentTs <- liftIO getCurrentTime
   liftIO $ DB.execute db "UPDATE chat_items SET item_status = ?, updated_at = ? WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?" (itemStatus, currentTs, userId, contactId, itemId)
   pure ci {meta = (meta ci) {itemStatus}}
@@ -3838,41 +3839,49 @@ updateDirectChatItemStatus db userId contactId itemId itemStatus = do
     correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
     correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
 
-updateDirectChatItem :: forall d. MsgDirectionI d => DB.Connection -> UserId -> Int64 -> ChatItemId -> CIContent d -> Bool -> Maybe MessageId -> ExceptT StoreError IO (ChatItem 'CTDirect d)
-updateDirectChatItem db userId contactId itemId newContent live msgId_ = do
-  currentTs <- liftIO getCurrentTime
-  ci <- updateDirectChatItem_ db userId contactId itemId newContent live currentTs
-  forM_ msgId_ $ \msgId -> liftIO $ insertChatItemMessage_ db itemId msgId currentTs
-  pure ci
-
-updateDirectChatItem_ :: forall d. (MsgDirectionI d) => DB.Connection -> UserId -> Int64 -> ChatItemId -> CIContent d -> Bool -> UTCTime -> ExceptT StoreError IO (ChatItem 'CTDirect d)
-updateDirectChatItem_ db userId contactId itemId newContent live currentTs = do
-  ci@ChatItem {meta = meta@CIMeta {itemEdited, itemTimed, itemLive}} <- liftEither . correctDir =<< getDirectChatItem db userId contactId itemId
-  let newText = ciContentToText newContent
-      edited' = itemEdited || (itemLive /= Just True)
-      live' = (live &&) <$> itemLive
-      delAt' = ciLiveDeleteAt meta live currentTs
-      timed' = (\timed -> timed {deleteAt = delAt'}) <$> itemTimed
-  liftIO $ do
-    DB.execute
-      db
-      [sql|
-        UPDATE chat_items
-        SET item_content = ?, item_text = ?, item_deleted = 0, item_edited = ?, timed_delete_at = ?, item_live = ?, updated_at = ?
-        WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
-      |]
-      (newContent, newText, edited', delAt', live', currentTs, userId, contactId, itemId)
-  pure ci {content = newContent, meta = meta {itemText = newText, itemEdited = edited', itemTimed = timed', itemLive = live'}, formattedText = parseMaybeMarkdownList newText}
+updateDirectChatItem :: forall d. (MsgDirectionI d) => DB.Connection -> User -> Int64 -> ChatItemId -> CIContent d -> Bool -> Maybe MessageId -> ExceptT StoreError IO (ChatItem 'CTDirect d)
+updateDirectChatItem db user contactId itemId newContent live msgId_ = do
+  ci <- liftEither . correctDir =<< getDirectChatItem db user contactId itemId
+  liftIO $ updateDirectChatItem' db user contactId ci newContent live msgId_
   where
     correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
     correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
 
--- the condition to enable the timed deletion when the item that was live is updated
-ciLiveDeleteAt :: CIMeta d -> Bool -> UTCTime -> Maybe UTCTime
-ciLiveDeleteAt CIMeta {itemTimed, itemStatus = CISRcvNew} _live _ = itemTimed >>= deleteAt
-ciLiveDeleteAt CIMeta {itemTimed = Just CITimed {ttl, deleteAt = Nothing}, itemLive = Just True} False currentTs =
-  Just $ addUTCTime (realToFrac ttl) currentTs
-ciLiveDeleteAt CIMeta {itemTimed} _ _ = itemTimed >>= deleteAt
+updateDirectChatItem' :: forall d. (MsgDirectionI d) => DB.Connection -> User -> Int64 -> ChatItem 'CTDirect d -> CIContent d -> Bool -> Maybe MessageId -> IO (ChatItem 'CTDirect d)
+updateDirectChatItem' db User {userId} contactId ci newContent live msgId_ = do
+  currentTs <- liftIO getCurrentTime
+  let ci' = updatedChatItem ci newContent live currentTs
+  liftIO $ updateDirectChatItem_ db userId contactId ci' msgId_
+  pure ci'
+
+updatedChatItem :: ChatItem c d -> CIContent d -> Bool -> UTCTime -> ChatItem c d
+updatedChatItem ci@ChatItem {meta = meta@CIMeta {itemStatus, itemEdited, itemTimed, itemLive}} newContent live currentTs =
+  let newText = ciContentToText newContent
+      edited' = itemEdited || (itemLive /= Just True)
+      live' = (live &&) <$> itemLive
+      timed' = case (itemStatus, itemTimed, itemLive, live) of
+        (CISRcvNew, _, _, _) -> itemTimed
+        (_, Just CITimed {ttl, deleteAt = Nothing}, Just True, False) ->
+          -- timed item, sent or read, not set for deletion, was live, now not live
+          let deleteAt' = addUTCTime (realToFrac ttl) currentTs
+           in Just CITimed {ttl, deleteAt = Just deleteAt'}
+        _ -> itemTimed
+   in ci {content = newContent, meta = meta {itemText = newText, itemEdited = edited', itemTimed = timed', itemLive = live'}, formattedText = parseMaybeMarkdownList newText}
+
+-- this function assumes that direct item with correct chat direction already exists,
+-- it should be checked before calling it
+updateDirectChatItem_ :: forall d. MsgDirectionI d => DB.Connection -> UserId -> Int64 -> ChatItem 'CTDirect d -> Maybe MessageId -> IO ()
+updateDirectChatItem_ db userId contactId ChatItem {meta, content} msgId_ = do
+  let CIMeta {itemId, itemText, itemStatus, itemDeleted, itemEdited, itemTimed, itemLive, updatedAt} = meta
+  DB.execute
+    db
+    [sql|
+      UPDATE chat_items
+      SET item_content = ?, item_text = ?, item_status = ?, item_deleted = ?, item_edited = ?, item_live = ?, updated_at = ?, timed_ttl = ?, timed_delete_at = ?
+      WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
+    |]
+    ((content, itemText, itemStatus, itemDeleted, itemEdited, itemLive, updatedAt) :. ciTimedRow itemTimed :. (userId, contactId, itemId))
+  forM_ msgId_ $ \msgId -> liftIO $ insertChatItemMessage_ db itemId msgId updatedAt
 
 deleteDirectChatItem :: DB.Connection -> User -> Contact -> CChatItem 'CTDirect -> IO ()
 deleteDirectChatItem db User {userId} Contact {contactId} (CChatItem _ ci) = do
@@ -3915,15 +3924,15 @@ markDirectChatItemDeleted db User {userId} ct@Contact {contactId} (CChatItem msg
     (currentTs, userId, contactId, itemId)
   pure $ AChatItem SCTDirect msgDir (DirectChat ct) (ci {meta = (meta ci) {itemDeleted = True, editable = False}})
 
-getDirectChatItemBySharedMsgId :: DB.Connection -> UserId -> ContactId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTDirect)
-getDirectChatItemBySharedMsgId db userId contactId sharedMsgId = do
+getDirectChatItemBySharedMsgId :: DB.Connection -> User -> ContactId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTDirect)
+getDirectChatItemBySharedMsgId db user@User {userId} contactId sharedMsgId = do
   itemId <- getDirectChatItemIdBySharedMsgId_ db userId contactId sharedMsgId
-  getDirectChatItem db userId contactId itemId
+  getDirectChatItem db user contactId itemId
 
-getDirectChatItemByAgentMsgId :: DB.Connection -> UserId -> ContactId -> Int64 -> AgentMsgId -> IO (Maybe (CChatItem 'CTDirect))
-getDirectChatItemByAgentMsgId db userId contactId connId msgId = do
+getDirectChatItemByAgentMsgId :: DB.Connection -> User -> ContactId -> Int64 -> AgentMsgId -> IO (Maybe (CChatItem 'CTDirect))
+getDirectChatItemByAgentMsgId db user contactId connId msgId = do
   itemId_ <- getChatItemIdByAgentMsgId db connId msgId
-  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getDirectChatItem db userId contactId) itemId_
+  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getDirectChatItem db user contactId) itemId_
 
 getDirectChatItemIdBySharedMsgId_ :: DB.Connection -> UserId -> Int64 -> SharedMsgId -> ExceptT StoreError IO Int64
 getDirectChatItemIdBySharedMsgId_ db userId contactId sharedMsgId =
@@ -3939,8 +3948,8 @@ getDirectChatItemIdBySharedMsgId_ db userId contactId sharedMsgId =
       |]
       (userId, contactId, sharedMsgId)
 
-getDirectChatItem :: DB.Connection -> UserId -> Int64 -> ChatItemId -> ExceptT StoreError IO (CChatItem 'CTDirect)
-getDirectChatItem db userId contactId itemId = ExceptT $ do
+getDirectChatItem :: DB.Connection -> User -> Int64 -> ChatItemId -> ExceptT StoreError IO (CChatItem 'CTDirect)
+getDirectChatItem db User {userId} contactId itemId = ExceptT $ do
   tz <- getCurrentTimeZone
   currentTs <- getCurrentTime
   join <$> firstRow (toDirectChatItem tz currentTs) (SEChatItemNotFound itemId) getItem
@@ -3977,29 +3986,27 @@ getDirectChatItemIdByText db userId contactId msgDir quotedMsg =
       |]
       (userId, contactId, msgDir, quotedMsg <> "%")
 
-updateGroupChatItem :: forall d. MsgDirectionI d => DB.Connection -> User -> Int64 -> ChatItemId -> CIContent d -> Bool -> Maybe MessageId -> ExceptT StoreError IO (ChatItem 'CTGroup d)
-updateGroupChatItem db user@User {userId} groupId itemId newContent live msgId_ = do
-  ci@ChatItem {meta = meta@CIMeta {itemEdited, itemTimed, itemLive}} <- liftEither . correctDir =<< getGroupChatItem db user groupId itemId
+updateGroupChatItem :: forall d. MsgDirectionI d => DB.Connection -> User -> Int64 -> ChatItem 'CTGroup d -> CIContent d -> Bool -> Maybe MessageId -> IO (ChatItem 'CTGroup d)
+updateGroupChatItem db user groupId ci newContent live msgId_ = do
   currentTs <- liftIO getCurrentTime
-  let newText = ciContentToText newContent
-      edited' = itemEdited || (itemLive /= Just True)
-      live' = (live &&) <$> itemLive
-      delAt' = ciLiveDeleteAt meta live currentTs
-      timed' = (\timed -> timed {deleteAt = delAt'}) <$> itemTimed
-  liftIO $ do
-    DB.execute
-      db
-      [sql|
-        UPDATE chat_items
-        SET item_content = ?, item_text = ?, item_deleted = 0, item_edited = ?, timed_delete_at = ?, item_live = ?, updated_at = ?
-        WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
-      |]
-      (newContent, newText, edited', delAt', live', currentTs, userId, groupId, itemId)
-    forM_ msgId_ $ \msgId -> insertChatItemMessage_ db itemId msgId currentTs
-  pure ci {content = newContent, meta = meta {itemText = newText, itemEdited = edited', itemTimed = timed', itemLive = live'}, formattedText = parseMaybeMarkdownList newText}
-  where
-    correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
-    correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
+  let ci' = updatedChatItem ci newContent live currentTs
+  liftIO $ updateGroupChatItem_ db user groupId ci' msgId_
+  pure ci'
+
+-- this function assumes that the group item with correct chat direction already exists,
+-- it should be checked before calling it
+updateGroupChatItem_ :: forall d. MsgDirectionI d => DB.Connection -> User -> Int64 -> ChatItem 'CTGroup d -> Maybe MessageId -> IO ()
+updateGroupChatItem_ db User {userId} groupId ChatItem {content, meta} msgId_ = do
+  let CIMeta {itemId, itemText, itemStatus, itemDeleted, itemEdited, itemTimed, itemLive, updatedAt} = meta
+  DB.execute
+    db
+    [sql|
+      UPDATE chat_items
+      SET item_content = ?, item_text = ?, item_status = ?, item_deleted = ?, item_deleted = 0, item_edited = ?, item_live = ?, updated_at = ?, timed_ttl = ?, timed_delete_at = ?
+      WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
+    |]
+    ((content, itemText, itemStatus, itemDeleted, itemEdited, itemLive, updatedAt) :. ciTimedRow itemTimed :. (userId, groupId, itemId))
+  forM_ msgId_ $ \msgId -> insertChatItemMessage_ db itemId msgId updatedAt
 
 deleteGroupChatItem :: DB.Connection -> User -> GroupInfo -> CChatItem 'CTGroup -> IO ()
 deleteGroupChatItem db User {userId} GroupInfo {groupId} (CChatItem _ ci) = do
@@ -4169,10 +4176,10 @@ getAChatItem db user@User {userId} itemId = do
       (_, _) -> Left $ SEBadChatItem itemId
 
 getAChatItem_ :: DB.Connection -> User -> ChatItemId -> ChatRef -> ExceptT StoreError IO AChatItem
-getAChatItem_ db user@User {userId} itemId = \case
+getAChatItem_ db user itemId = \case
   ChatRef CTDirect contactId -> do
     ct <- getContact db user contactId
-    (CChatItem msgDir ci) <- getDirectChatItem db userId contactId itemId
+    (CChatItem msgDir ci) <- getDirectChatItem db user contactId itemId
     pure $ AChatItem SCTDirect msgDir (DirectChat ct) ci
   ChatRef CTGroup groupId -> do
     gInfo <- getGroupInfo db user groupId
@@ -4195,8 +4202,8 @@ toChatItemRef = \case
   (itemId, Nothing, Just groupId) -> Right (itemId, ChatRef CTGroup groupId)
   (itemId, _, _) -> Left $ SEBadChatItem itemId
 
-updateDirectChatItemsRead :: DB.Connection -> UserId -> ContactId -> Maybe (ChatItemId, ChatItemId) -> IO ()
-updateDirectChatItemsRead db userId contactId itemsRange_ = do
+updateDirectChatItemsRead :: DB.Connection -> User -> ContactId -> Maybe (ChatItemId, ChatItemId) -> IO ()
+updateDirectChatItemsRead db User {userId} contactId itemsRange_ = do
   currentTs <- getCurrentTime
   case itemsRange_ of
     Just (fromItemId, toItemId) ->
