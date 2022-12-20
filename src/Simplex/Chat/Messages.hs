@@ -174,6 +174,9 @@ chatItemTs (CChatItem _ ci) = chatItemTs' ci
 chatItemTs' :: ChatItem c d -> UTCTime
 chatItemTs' ChatItem {meta = CIMeta {itemTs}} = itemTs
 
+chatItemTimed :: ChatItem c d -> Maybe CITimed
+chatItemTimed ChatItem {meta = CIMeta {itemTimed}} = itemTimed
+
 data ChatDirection (c :: ChatType) (d :: MsgDirection) where
   CDDirectSnd :: Contact -> ChatDirection 'CTDirect 'MDSnd
   CDDirectRcv :: Contact -> ChatDirection 'CTDirect 'MDRcv
@@ -303,25 +306,29 @@ data CITimed = CITimed
 
 instance ToJSON CITimed where toEncoding = J.genericToEncoding J.defaultOptions
 
-ciTimedToTTL :: Maybe CITimed -> Maybe Int
-ciTimedToTTL timed_ = timed_ >>= \CITimed {ttl} -> Just ttl
+ttl' :: CITimed -> Int
+ttl' CITimed {ttl} = ttl
 
-contactCITimedTTL :: Contact -> Maybe Int
-contactCITimedTTL Contact {mergedPreferences = ContactUserPreferences {timedMessages = ContactUserPreference {enabled, userPreference}}}
+contactTimedTTL :: Contact -> Maybe Int
+contactTimedTTL Contact {mergedPreferences = ContactUserPreferences {timedMessages = ContactUserPreference {enabled, userPreference}}}
   | forUser enabled && forContact enabled = ttl
   | otherwise = Nothing
   where
     TimedMessagesPreference {ttl} = preference (userPreference :: ContactUserPref TimedMessagesPreference)
 
-groupCITimedTTL :: GroupInfo -> Maybe Int
-groupCITimedTTL GroupInfo {fullGroupPreferences = FullGroupPreferences {timedMessages = TimedMessagesGroupPreference {enable, ttl}}}
+groupTimedTTL :: GroupInfo -> Maybe Int
+groupTimedTTL GroupInfo {fullGroupPreferences = FullGroupPreferences {timedMessages = TimedMessagesGroupPreference {enable, ttl}}}
   | enable == FEOn = Just ttl
   | otherwise = Nothing
 
-rcvMsgCITimed :: Maybe Int -> Maybe Int -> Maybe CITimed
-rcvMsgCITimed chatTTL itemTTL = case (chatTTL, itemTTL) of
-  (Just _, Just ttl) -> Just $ CITimed ttl Nothing
-  _ -> Nothing
+rcvContactCITimed :: Contact -> Maybe Int -> Maybe CITimed
+rcvContactCITimed = rcvCITimed_ . contactTimedTTL
+
+rcvGroupCITimed :: GroupInfo -> Maybe Int -> Maybe CITimed
+rcvGroupCITimed = rcvCITimed_ . groupTimedTTL
+
+rcvCITimed_ :: Maybe Int -> Maybe Int -> Maybe CITimed
+rcvCITimed_ chatTTL itemTTL = (`CITimed` Nothing) <$> (chatTTL >> itemTTL)
 
 data CIQuote (c :: ChatType) = CIQuote
   { chatDir :: CIQDirection c,
