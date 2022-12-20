@@ -3190,7 +3190,7 @@ createNewChatItem_ db User {userId} chatDirection msgId_ sharedMsgId ciContent q
         -- user and IDs
         user_id, created_by_msg_id, contact_id, group_id, group_member_id,
         -- meta
-        item_sent, item_ts, item_content, item_text, item_status, shared_msg_id, created_at, updated_at, timed_ttl, timed_delete_at, item_live,
+        item_sent, item_ts, item_content, item_text, item_status, shared_msg_id, created_at, updated_at, item_live, timed_ttl, timed_delete_at,
         -- quote
         quoted_shared_msg_id, quoted_sent_at, quoted_content, quoted_sent, quoted_member_id
       ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
@@ -3200,18 +3200,18 @@ createNewChatItem_ db User {userId} chatDirection msgId_ sharedMsgId ciContent q
   forM_ msgId_ $ \msgId -> insertChatItemMessage_ db ciId msgId createdAt
   pure ciId
   where
-    itemRow :: (SMsgDirection d, UTCTime, CIContent d, Text, CIStatus d, Maybe SharedMsgId) :. (UTCTime, UTCTime, Maybe Int, Maybe UTCTime, Maybe Bool)
-    itemRow = (msgDirection @d, itemTs, ciContent, ciContentToText ciContent, ciCreateStatus ciContent, sharedMsgId) :. (createdAt, createdAt, timedTTL, timedDeleteAt, justTrue live)
-      where
-        (timedTTL, timedDeleteAt) = case timed of
-          Just CITimed {ttl, deleteAt} -> (Just ttl, deleteAt)
-          Nothing -> (Nothing, Nothing)
+    itemRow :: (SMsgDirection d, UTCTime, CIContent d, Text, CIStatus d, Maybe SharedMsgId) :. (UTCTime, UTCTime, Maybe Bool) :. (Maybe Int, Maybe UTCTime)
+    itemRow = (msgDirection @d, itemTs, ciContent, ciContentToText ciContent, ciCreateStatus ciContent, sharedMsgId) :. (createdAt, createdAt, justTrue live) :. ciTimedRow timed
     idsRow :: (Maybe Int64, Maybe Int64, Maybe Int64)
     idsRow = case chatDirection of
       CDDirectRcv Contact {contactId} -> (Just contactId, Nothing, Nothing)
       CDDirectSnd Contact {contactId} -> (Just contactId, Nothing, Nothing)
       CDGroupRcv GroupInfo {groupId} GroupMember {groupMemberId} -> (Nothing, Just groupId, Just groupMemberId)
       CDGroupSnd GroupInfo {groupId} -> (Nothing, Just groupId, Nothing)
+
+ciTimedRow :: Maybe CITimed -> (Maybe Int, Maybe UTCTime)
+ciTimedRow (Just CITimed {ttl, deleteAt}) = (Just ttl, deleteAt)
+ciTimedRow _ = (Nothing, Nothing)
 
 insertChatItemMessage_ :: DB.Connection -> ChatItemId -> MessageId -> UTCTime -> IO ()
 insertChatItemMessage_ db ciId msgId ts = DB.execute db "INSERT INTO chat_item_messages (chat_item_id, message_id, created_at, updated_at) VALUES (?,?,?,?)" (ciId, msgId, ts, ts)
@@ -3855,12 +3855,17 @@ updateDirectChatItem' db User {userId} contactId ci newContent live msgId_ = do
   pure ci'
 
 updatedChatItem :: ChatItem c d -> CIContent d -> Bool -> UTCTime -> ChatItem c d
-updatedChatItem ci@ChatItem {meta = meta@CIMeta {itemEdited, itemTimed, itemLive}} newContent live currentTs =
+updatedChatItem ci@ChatItem {meta = meta@CIMeta {itemStatus, itemEdited, itemTimed, itemLive}} newContent live currentTs =
   let newText = ciContentToText newContent
       edited' = itemEdited || (itemLive /= Just True)
       live' = (live &&) <$> itemLive
-      delAt' = ciLiveDeleteAt meta live currentTs
-      timed' = (\timed -> timed {deleteAt = delAt'}) <$> itemTimed
+      timed' = case (itemStatus, itemTimed, itemLive, live) of
+        (CISRcvNew, _, _, _) -> itemTimed
+        (_, Just CITimed {ttl, deleteAt = Nothing}, Just True, False) ->
+          -- timed item, sent or read, not set for deletion, was live, now not live
+          let deleteAt' = addUTCTime (realToFrac ttl) currentTs
+           in Just CITimed {ttl, deleteAt = Just deleteAt'}
+        _ -> itemTimed
    in ci {content = newContent, meta = meta {itemText = newText, itemEdited = edited', itemTimed = timed', itemLive = live'}, formattedText = parseMaybeMarkdownList newText}
 
 -- this function assumes that direct item with correct chat direction already exists,
@@ -3872,18 +3877,11 @@ updateDirectChatItem_ db userId contactId ChatItem {meta, content} msgId_ = do
     db
     [sql|
       UPDATE chat_items
-      SET item_content = ?, item_text = ?, item_status = ?, item_deleted = ?, item_edited = ?, timed_delete_at = ?, item_live = ?, updated_at = ?
+      SET item_content = ?, item_text = ?, item_status = ?, item_deleted = ?, item_edited = ?, item_live = ?, updated_at = ?, timed_ttl = ?, timed_delete_at = ?
       WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
     |]
-    ((content, itemText, itemStatus, itemDeleted, itemEdited, itemTimed >>= deleteAt, itemLive, updatedAt) :. (userId, contactId, itemId))
+    ((content, itemText, itemStatus, itemDeleted, itemEdited, itemLive, updatedAt) :. ciTimedRow itemTimed :. (userId, contactId, itemId))
   forM_ msgId_ $ \msgId -> liftIO $ insertChatItemMessage_ db itemId msgId updatedAt
-
--- the condition to enable the timed deletion when the item that was live is updated
-ciLiveDeleteAt :: CIMeta d -> Bool -> UTCTime -> Maybe UTCTime
-ciLiveDeleteAt CIMeta {itemTimed, itemStatus = CISRcvNew} _live _ = itemTimed >>= deleteAt
-ciLiveDeleteAt CIMeta {itemTimed = Just CITimed {ttl, deleteAt = Nothing}, itemLive = Just True} False currentTs =
-  Just $ addUTCTime (realToFrac ttl) currentTs
-ciLiveDeleteAt CIMeta {itemTimed} _ _ = itemTimed >>= deleteAt
 
 deleteDirectChatItem :: DB.Connection -> User -> Contact -> CChatItem 'CTDirect -> IO ()
 deleteDirectChatItem db User {userId} Contact {contactId} (CChatItem _ ci) = do
@@ -4004,10 +4002,10 @@ updateGroupChatItem_ db User {userId} groupId ChatItem {content, meta} msgId_ = 
     db
     [sql|
       UPDATE chat_items
-      SET item_content = ?, item_text = ?, item_status = ?, item_deleted = ?, item_deleted = 0, item_edited = ?, timed_delete_at = ?, item_live = ?, updated_at = ?
+      SET item_content = ?, item_text = ?, item_status = ?, item_deleted = ?, item_deleted = 0, item_edited = ?, item_live = ?, updated_at = ?, timed_ttl = ?, timed_delete_at = ?
       WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
     |]
-    ((content, itemText, itemStatus, itemDeleted, itemEdited, itemTimed >>= deleteAt, itemLive, updatedAt) :. (userId, groupId, itemId))
+    ((content, itemText, itemStatus, itemDeleted, itemEdited, itemLive, updatedAt) :. ciTimedRow itemTimed :. (userId, groupId, itemId))
   forM_ msgId_ $ \msgId -> insertChatItemMessage_ db itemId msgId updatedAt
 
 deleteGroupChatItem :: DB.Connection -> User -> GroupInfo -> CChatItem 'CTGroup -> IO ()
