@@ -207,7 +207,6 @@ module Simplex.Chat.Store
     deleteDirectChatItem,
     markDirectChatItemDeleted,
     updateGroupChatItem,
-    updateGroupChatItem',
     deleteGroupChatItem,
     markGroupChatItemDeleted,
     updateDirectChatItemsRead,
@@ -3859,9 +3858,8 @@ updateDirectChatItem' db User {userId} contactId ci newContent live msgId_ = do
   pure ci'
 
 updatedChatItem :: ChatItem c d -> CIContent d -> Bool -> UTCTime -> ChatItem c d
-updatedChatItem ci newContent live currentTs =
-  let ChatItem {meta = meta@CIMeta {itemEdited, itemTimed, itemLive}} = ci
-      newText = ciContentToText newContent
+updatedChatItem ci@ChatItem {meta = meta@CIMeta {itemEdited, itemTimed, itemLive}} newContent live currentTs =
+  let newText = ciContentToText newContent
       edited' = itemEdited || (itemLive /= Just True)
       live' = (live &&) <$> itemLive
       delAt' = ciLiveDeleteAt meta live currentTs
@@ -3993,19 +3991,8 @@ getDirectChatItemIdByText db userId contactId msgDir quotedMsg =
       |]
       (userId, contactId, msgDir, quotedMsg <> "%")
 
-updateGroupChatItem :: forall d. MsgDirectionI d => DB.Connection -> User -> Int64 -> ChatItemId -> CIContent d -> Bool -> Maybe MessageId -> ExceptT StoreError IO (ChatItem 'CTGroup d)
-updateGroupChatItem db user groupId itemId newContent live msgId_ = do
-  ci <- liftEither . correctDir =<< getGroupChatItem db user groupId itemId
-  currentTs <- liftIO getCurrentTime
-  let ci' = updatedChatItem ci newContent live currentTs
-  liftIO $ updateGroupChatItem_ db user groupId ci' msgId_
-  pure ci'
-  where
-    correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
-    correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
-
-updateGroupChatItem' :: forall d. MsgDirectionI d => DB.Connection -> User -> Int64 -> ChatItem 'CTGroup d -> CIContent d -> Bool -> Maybe MessageId -> IO (ChatItem 'CTGroup d)
-updateGroupChatItem' db user groupId ci newContent live msgId_ = do
+updateGroupChatItem :: forall d. MsgDirectionI d => DB.Connection -> User -> Int64 -> ChatItem 'CTGroup d -> CIContent d -> Bool -> Maybe MessageId -> IO (ChatItem 'CTGroup d)
+updateGroupChatItem db user groupId ci newContent live msgId_ = do
   currentTs <- liftIO getCurrentTime
   let ci' = updatedChatItem ci newContent live currentTs
   liftIO $ updateGroupChatItem_ db user groupId ci' msgId_

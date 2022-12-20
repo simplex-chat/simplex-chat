@@ -457,7 +457,7 @@ processChatCommand = \case
           case (ciContent, itemSharedMsgId) of
             (CISndMsgContent _, Just itemSharedMId) -> do
               SndMessage {msgId} <- sendGroupMessage gInfo ms (XMsgUpdate itemSharedMId mc (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive))
-              ci' <- withStore' $ \db -> updateGroupChatItem' db user groupId ci (CISndMsgContent mc) live $ Just msgId
+              ci' <- withStore' $ \db -> updateGroupChatItem db user groupId ci (CISndMsgContent mc) live $ Just msgId
               startUpdatedTimedItemThread user (ChatRef CTGroup groupId) ci ci'
               setActive $ ActiveG gName
               pure . CRChatItemUpdated $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci'
@@ -2548,7 +2548,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
             -- Chat item and update message which created it will have different sharedMsgId in this case...
             let timed_ = rcvGroupCITimed gInfo ttl_
             ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg (Just sharedMsgId) msgMeta content Nothing timed_ live
-            ci' <- withStore' $ \db -> updateGroupChatItem' db user groupId ci content live Nothing
+            ci' <- withStore' $ \db -> updateGroupChatItem db user groupId ci content live Nothing
             toView . CRChatItemUpdated $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci'
             setActive $ ActiveG g
           _ -> throwError e
@@ -2561,7 +2561,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
             (SMDRcv, CIGroupRcv m') ->
               if sameMemberId memberId m'
                 then do
-                  ci' <- withStore' $ \db -> updateGroupChatItem' db user groupId ci content live $ Just msgId
+                  ci' <- withStore' $ \db -> updateGroupChatItem db user groupId ci content live $ Just msgId
                   toView . CRChatItemUpdated $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci'
                   setActive $ ActiveG g
                   startUpdatedTimedItemThread user (ChatRef CTGroup groupId) ci ci'
