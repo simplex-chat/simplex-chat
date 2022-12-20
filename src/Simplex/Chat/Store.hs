@@ -41,6 +41,7 @@ module Simplex.Chat.Store
     getContactIdByName,
     updateUserProfile,
     updateContactProfile,
+    setContactConfirmPrefPending,
     updateContactUserPreferences,
     updateContactAlias,
     updateContactConnectionAlias,
@@ -320,6 +321,7 @@ import Simplex.Chat.Migrations.M20221210_idxs
 import Simplex.Chat.Migrations.M20221211_group_description
 import Simplex.Chat.Migrations.M20221212_chat_items_timed
 import Simplex.Chat.Migrations.M20221214_live_message
+import Simplex.Chat.Migrations.M20221216_contacts_confirm_pref_pending
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..))
@@ -375,7 +377,8 @@ schemaMigrations =
     ("20221210_idxs", m20221210_idxs),
     ("20221211_group_description", m20221211_group_description),
     ("20221212_chat_items_timed", m20221212_chat_items_timed),
-    ("20221214_live_message", m20221214_live_message)
+    ("20221214_live_message", m20221214_live_message),
+    ("20221216_contacts_confirm_pref_pending", m20221216_contacts_confirm_pref_pending)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -483,7 +486,7 @@ getConnReqContactXContactId db user@User {userId} cReqHash = do
           [sql|
             SELECT
               -- Contact
-              ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.local_alias, ct.contact_used, ct.enable_ntfs, cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at,
+              ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.local_alias, ct.contact_used, ct.enable_ntfs, cp.preferences, ct.user_preferences, ct.confirm_pref_pending, ct.created_at, ct.updated_at,
               -- Connection
               c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
               c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at
@@ -572,7 +575,7 @@ createDirectContact db user@User {userId} activeConn@Connection {connId, localAl
   let profile = toLocalProfile profileId p localAlias
       userPreferences = emptyChatPrefs
       mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
-  pure $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt, updatedAt = createdAt}
+  pure $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, confirmPrefPending = False, createdAt, updatedAt = createdAt}
 
 createContact_ :: DB.Connection -> UserId -> Int64 -> Profile -> LocalAlias -> Maybe Int64 -> UTCTime -> ExceptT StoreError IO (Text, ContactId, ProfileId)
 createContact_ db userId connId Profile {displayName, fullName, image, preferences} localAlias viaGroup currentTs =
@@ -692,6 +695,14 @@ updateContactProfile db user@User {userId} c p'
     profile = toLocalProfile profileId p' localAlias
     mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
 
+setContactConfirmPrefPending :: DB.Connection -> User -> Contact -> Bool -> IO Contact
+setContactConfirmPrefPending db User {userId} ct@Contact {contactId} confirmPrefPending = do
+  DB.execute
+    db
+    "UPDATE contacts SET confirm_pref_pending = ? WHERE user_id = ? AND contact_id = ?"
+    (confirmPrefPending, userId, contactId)
+  pure ct {confirmPrefPending}
+
 updateContactUserPreferences :: DB.Connection -> User -> Contact -> Preferences -> IO Contact
 updateContactUserPreferences db user@User {userId} c@Contact {contactId, activeConn} userPreferences = do
   updatedAt <- getCurrentTime
@@ -776,24 +787,24 @@ updateContact_ db userId contactId displayName newName updatedAt = do
     (newName, updatedAt, userId, contactId)
   DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (displayName, userId)
 
-type ContactRow = (ContactId, ProfileId, ContactName, Maybe Int64, ContactName, Text, Maybe ImageData, LocalAlias, Bool, Maybe Bool) :. (Maybe Preferences, Preferences, UTCTime, UTCTime)
+type ContactRow = (ContactId, ProfileId, ContactName, Maybe Int64, ContactName, Text, Maybe ImageData, LocalAlias, Bool, Maybe Bool) :. (Maybe Preferences, Preferences, Bool, UTCTime, UTCTime)
 
 toContact :: User -> ContactRow :. ConnectionRow -> Contact
-toContact user (((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, localAlias, contactUsed, enableNtfs_) :. (preferences, userPreferences, createdAt, updatedAt)) :. connRow) =
+toContact user (((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, localAlias, contactUsed, enableNtfs_) :. (preferences, userPreferences, confirmPrefPending, createdAt, updatedAt)) :. connRow) =
   let profile = LocalProfile {profileId, displayName, fullName, image, preferences, localAlias}
       activeConn = toConnection connRow
       chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_}
       mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
-   in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt}
+   in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, confirmPrefPending, createdAt, updatedAt}
 
 toContactOrError :: User -> ContactRow :. MaybeConnectionRow -> Either StoreError Contact
-toContactOrError user (((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, localAlias, contactUsed, enableNtfs_) :. (preferences, userPreferences, createdAt, updatedAt)) :. connRow) =
+toContactOrError user (((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, localAlias, contactUsed, enableNtfs_) :. (preferences, userPreferences, confirmPrefPending, createdAt, updatedAt)) :. connRow) =
   let profile = LocalProfile {profileId, displayName, fullName, image, preferences, localAlias}
       chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_}
    in case toMaybeConnection connRow of
         Just activeConn ->
           let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
-           in Right Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt}
+           in Right Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, confirmPrefPending, createdAt, updatedAt}
         _ -> Left $ SEContactNotReady localDisplayName
 
 getContactByName :: DB.Connection -> User -> ContactName -> ExceptT StoreError IO Contact
@@ -1092,7 +1103,7 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId Profi
           [sql|
             SELECT
               -- Contact
-              ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.local_alias, ct.contact_used, ct.enable_ntfs, cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at,
+              ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.local_alias, ct.contact_used, ct.enable_ntfs, cp.preferences, ct.user_preferences, ct.confirm_pref_pending, ct.created_at, ct.updated_at,
               -- Connection
               c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
               c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at
@@ -1219,7 +1230,7 @@ createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}
   contactId <- insertedRowId db
   activeConn <- createConnection_ db userId ConnContact (Just contactId) agentConnId Nothing (Just userContactLinkId) customUserProfileId 0 createdAt
   let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
-  pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile "", activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = createdAt, updatedAt = createdAt}
+  pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile "", activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, confirmPrefPending = False, createdAt = createdAt, updatedAt = createdAt}
 
 getLiveSndFileTransfers :: DB.Connection -> User -> IO [SndFileTransfer]
 getLiveSndFileTransfers db User {userId} = do
@@ -1502,18 +1513,18 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
         <$> DB.query
           db
           [sql|
-            SELECT c.contact_profile_id, c.local_display_name, p.display_name, p.full_name, p.image, p.local_alias, c.via_group, c.contact_used, c.enable_ntfs, p.preferences, c.user_preferences, c.created_at, c.updated_at
+            SELECT c.contact_profile_id, c.local_display_name, p.display_name, p.full_name, p.image, p.local_alias, c.via_group, c.contact_used, c.enable_ntfs, p.preferences, c.user_preferences, c.confirm_pref_pending, c.created_at, c.updated_at
             FROM contacts c
             JOIN contact_profiles p ON c.contact_profile_id = p.contact_profile_id
             WHERE c.user_id = ? AND c.contact_id = ?
           |]
           (userId, contactId)
-    toContact' :: Int64 -> Connection -> [(ProfileId, ContactName, Text, Text, Maybe ImageData, LocalAlias, Maybe Int64, Bool, Maybe Bool) :. (Maybe Preferences, Preferences, UTCTime, UTCTime)] -> Either StoreError Contact
-    toContact' contactId activeConn [(profileId, localDisplayName, displayName, fullName, image, localAlias, viaGroup, contactUsed, enableNtfs_) :. (preferences, userPreferences, createdAt, updatedAt)] =
+    toContact' :: Int64 -> Connection -> [(ProfileId, ContactName, Text, Text, Maybe ImageData, LocalAlias, Maybe Int64, Bool, Maybe Bool) :. (Maybe Preferences, Preferences, Bool, UTCTime, UTCTime)] -> Either StoreError Contact
+    toContact' contactId activeConn [(profileId, localDisplayName, displayName, fullName, image, localAlias, viaGroup, contactUsed, enableNtfs_) :. (preferences, userPreferences, confirmPrefPending, createdAt, updatedAt)] =
       let profile = LocalProfile {profileId, displayName, fullName, image, preferences, localAlias}
           chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_}
           mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
-       in Right Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt}
+       in Right Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, confirmPrefPending, createdAt, updatedAt}
     toContact' _ _ _ = Left $ SEInternalError "referenced contact not found"
     getGroupAndMember_ :: Int64 -> Connection -> ExceptT StoreError IO (GroupInfo, GroupMember)
     getGroupAndMember_ groupMemberId c = ExceptT $ do
@@ -2070,7 +2081,7 @@ getContactViaMember db user@User {userId} GroupMember {groupMemberId} =
       [sql|
         SELECT
           -- Contact
-          ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.local_alias, ct.contact_used, ct.enable_ntfs, cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at,
+          ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.local_alias, ct.contact_used, ct.enable_ntfs, cp.preferences, ct.user_preferences, ct.confirm_pref_pending, ct.created_at, ct.updated_at,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
           c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at
@@ -2408,7 +2419,7 @@ getViaGroupContact db user@User {userId} GroupMember {groupMemberId} =
       db
       [sql|
         SELECT
-          ct.contact_id, ct.contact_profile_id, ct.local_display_name, p.display_name, p.full_name, p.image, p.local_alias, ct.via_group, ct.contact_used, ct.enable_ntfs, p.preferences, ct.user_preferences, ct.created_at, ct.updated_at,
+          ct.contact_id, ct.contact_profile_id, ct.local_display_name, p.display_name, p.full_name, p.image, p.local_alias, ct.via_group, ct.contact_used, ct.enable_ntfs, p.preferences, ct.user_preferences, ct.confirm_pref_pending, ct.created_at, ct.updated_at,
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
           c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at
         FROM contacts ct
@@ -2424,13 +2435,13 @@ getViaGroupContact db user@User {userId} GroupMember {groupMemberId} =
       |]
       (userId, groupMemberId)
   where
-    toContact' :: ((ContactId, ProfileId, ContactName, Text, Text, Maybe ImageData, LocalAlias, Maybe Int64, Bool, Maybe Bool) :. (Maybe Preferences, Preferences, UTCTime, UTCTime)) :. ConnectionRow -> Contact
-    toContact' (((contactId, profileId, localDisplayName, displayName, fullName, image, localAlias, viaGroup, contactUsed, enableNtfs_) :. (preferences, userPreferences, createdAt, updatedAt)) :. connRow) =
+    toContact' :: ((ContactId, ProfileId, ContactName, Text, Text, Maybe ImageData, LocalAlias, Maybe Int64, Bool, Maybe Bool) :. (Maybe Preferences, Preferences, Bool, UTCTime, UTCTime)) :. ConnectionRow -> Contact
+    toContact' (((contactId, profileId, localDisplayName, displayName, fullName, image, localAlias, viaGroup, contactUsed, enableNtfs_) :. (preferences, userPreferences, confirmPrefPending, createdAt, updatedAt)) :. connRow) =
       let profile = LocalProfile {profileId, displayName, fullName, image, preferences, localAlias}
           chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_}
           activeConn = toConnection connRow
           mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
-       in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt}
+       in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, confirmPrefPending, createdAt, updatedAt}
 
 createSndDirectFileTransfer :: DB.Connection -> UserId -> Contact -> FilePath -> FileInvitation -> Maybe ConnId -> Integer -> IO FileTransferMeta
 createSndDirectFileTransfer db userId Contact {contactId} filePath FileInvitation {fileName, fileSize, fileInline} acId_ chunkSize = do
@@ -3301,7 +3312,7 @@ getDirectChatPreviews_ db user@User {userId} = do
       [sql|
         SELECT
           -- Contact
-          ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.local_alias, ct.contact_used, ct.enable_ntfs, cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at,
+          ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.local_alias, ct.contact_used, ct.enable_ntfs, cp.preferences, ct.user_preferences, ct.confirm_pref_pending, ct.created_at, ct.updated_at,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
           c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at,
@@ -3623,7 +3634,7 @@ getContact db user@User {userId} contactId =
       [sql|
         SELECT
           -- Contact
-          ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.local_alias, ct.contact_used, ct.enable_ntfs, cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at,
+          ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.local_alias, ct.contact_used, ct.enable_ntfs, cp.preferences, ct.user_preferences, ct.confirm_pref_pending, ct.created_at, ct.updated_at,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
           c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at
