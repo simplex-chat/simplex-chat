@@ -209,7 +209,8 @@ public func saveFileFromURL(_ url: URL) -> String? {
 
 public func saveImage(_ uiImage: UIImage) -> String? {
     if let imageDataResized = resizeImageToDataSize(uiImage, maxDataSize: MAX_IMAGE_SIZE) {
-        let fileName = generateNewFileName("IMG", "jpg")
+        let ext = uiImage.isPng() ? "png" : "jpg"
+        let fileName = generateNewFileName("IMG", ext)
         return saveFile(imageDataResized, fileName)
     }
     return nil
@@ -286,13 +287,14 @@ public func cropToSquare(_ image: UIImage) -> UIImage {
 
 func resizeImageToDataSize(_ image: UIImage, maxDataSize: Int64) -> Data? {
     var img = image
-    var data = img.jpegData(compressionQuality: 0.85)
+    let usePng = image.isPng()
+    var data = usePng ? img.pngData() : img.jpegData(compressionQuality: 0.85)
     var dataSize = data?.count ?? 0
     while dataSize != 0 && dataSize > maxDataSize {
         let ratio = sqrt(Double(dataSize) / Double(maxDataSize))
         let clippedRatio = min(ratio, 2.0)
         img = reduceSize(img, ratio: clippedRatio)
-        data = img.jpegData(compressionQuality: 0.85)
+        data = usePng ? img.pngData() : img.jpegData(compressionQuality: 0.85)
         dataSize = data?.count ?? 0
     }
     logger.debug("resizeImageToDataSize final \(dataSize)")
@@ -315,8 +317,9 @@ public func resizeImageToStrSize(_ image: UIImage, maxDataSize: Int64) -> String
 }
 
 func compressImageStr(_ image: UIImage, _ compressionQuality: CGFloat = 0.85) -> String? {
-    if let data = image.jpegData(compressionQuality: compressionQuality) {
-        return "data:image/jpg;base64,\(data.base64EncodedString())"
+    let ext = image.isPng() ? "png" : "jpg"
+    if let data = image.isPng() ? image.pngData() : image.jpegData(compressionQuality: compressionQuality) {
+        return "data:image/\(ext);base64,\(data.base64EncodedString())"
     }
     return nil
 }
@@ -330,8 +333,14 @@ private func reduceSize(_ image: UIImage, ratio: CGFloat) -> UIImage {
 private func resizeImage(_ image: UIImage, newBounds: CGRect, drawIn: CGRect) -> UIImage {
     let format = UIGraphicsImageRendererFormat()
     format.scale = 1.0
-    format.opaque = true
+    format.opaque = !image.isPng()
     return UIGraphicsImageRenderer(bounds: newBounds, format: format).image { _ in
         image.draw(in: drawIn)
+    }
+}
+
+extension UIImage {
+    func isPng() -> Bool {
+        return cgImage?.alphaInfo.rawValue == 1
     }
 }
