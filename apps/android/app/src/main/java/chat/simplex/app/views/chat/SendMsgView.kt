@@ -397,7 +397,7 @@ private fun SendTextButton(
       tint = Color.White,
       modifier = Modifier
         .size(sizeDp.value.dp)
-        .padding(3.dp)
+        .padding(4.dp)
         .alpha(alpha.value)
         .clip(CircleShape)
         .background(backgroundColor)
@@ -426,9 +426,10 @@ private fun StartLiveMessageButton(onClick: () -> Unit) {
       tint = Color.White,
       modifier = Modifier
         .size(36.dp)
-        .padding(3.dp)
+        .padding(4.dp)
         .clip(CircleShape)
         .background(MaterialTheme.colors.primary)
+        .padding(1.dp)
     )
   }
 }
