@@ -20,16 +20,12 @@ struct CIMetaView: View {
                     statusImage("pencil", metaColor, 9)
                 }
 
-                switch chatItem.meta.itemStatus {
-                case .sndSent:
-                    statusImage("checkmark", metaColor)
-                case .sndErrorAuth:
-                    statusImage("multiply", .red)
-                case .sndError:
-                    statusImage("exclamationmark.triangle.fill", .yellow)
-                case .rcvNew:
-                    statusImage("circlebadge.fill", Color.accentColor)
-                default: EmptyView()
+                if chatItem.meta.disappearing {
+                    statusImage("timer", metaColor)
+                }
+
+                if let (icon, color) = chatItem.meta.statusIcon(metaColor) {
+                    statusImage(icon, color)
                 }
             }
 

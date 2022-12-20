@@ -66,7 +66,7 @@ struct MsgContentView: View {
             if mt.isLive {
                 v = v + typingIndicator(mt.recent)
             }
-            v = v + reserveSpaceForMeta(mt.timestampText, mt.itemEdited)
+            v = v + reserveSpaceForMeta(mt)
         }
         return v
     }
@@ -78,11 +78,14 @@ struct MsgContentView: View {
             .foregroundColor(.secondary)
     }
 
-    private func reserveSpaceForMeta(_ mt: Text, _ edited: Bool) -> Text {
-        let reserve = rightToLeft ? "\n" : edited ? "          " : "      "
-        return (Text(reserve) + mt)
-            .font(.caption)
+    private func reserveSpaceForMeta(_ mt: CIMeta) -> Text {
+        let reserve = rightToLeft ? "\n" : "  " + icon(mt.itemEdited) + icon(mt.disappearing) + icon(mt.statusIcon() != nil)
+        return (Text(reserve).font(.caption.monospaced()) + mt.timestampText.font(.caption))
             .foregroundColor(.clear)
+
+        func icon(_ present: Bool) -> String {
+            (present ? "  " : "")
+        }
     }
 }
 

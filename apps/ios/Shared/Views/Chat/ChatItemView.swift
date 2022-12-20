@@ -62,10 +62,10 @@ struct ChatItemContentView<Content: View>: View {
         case .sndGroupEvent: eventItemView()
         case .rcvConnEvent: eventItemView()
         case .sndConnEvent: eventItemView()
-        case let .rcvChatFeature(feature, enabled): chatFeatureView(feature, enabled.iconColor)
-        case let .sndChatFeature(feature, enabled): chatFeatureView(feature, enabled.iconColor)
-        case let .rcvGroupFeature(feature, preference): chatFeatureView(feature, preference.enable.iconColor)
-        case let .sndGroupFeature(feature, preference): chatFeatureView(feature, preference.enable.iconColor)
+        case let .rcvChatFeature(feature, enabled, param): chatFeatureView(feature, enabled.iconColor, param)
+        case let .sndChatFeature(feature, enabled, param): chatFeatureView(feature, enabled.iconColor, param)
+        case let .rcvGroupFeature(feature, preference, param): chatFeatureView(feature, preference.enable.iconColor, param)
+        case let .sndGroupFeature(feature, preference, param): chatFeatureView(feature, preference.enable.iconColor, param)
         case let .rcvChatFeatureRejected(feature): chatFeatureView(feature, .red)
         case let .rcvGroupFeatureRejected(feature): chatFeatureView(feature, .red)
         }
@@ -87,7 +87,7 @@ struct ChatItemContentView<Content: View>: View {
         CIEventView(chatItem: chatItem)
     }
 
-    private func chatFeatureView(_ feature: Feature, _ iconColor: Color) -> some View {
+    private func chatFeatureView(_ feature: Feature, _ iconColor: Color, _ param: Int? = nil) -> some View {
         CIChatFeatureView(chatItem: chatItem, feature: feature, iconColor: iconColor)
     }
 }
@@ -111,7 +111,7 @@ struct ChatItemView_Previews: PreviewProvider {
 
 struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
     static var previews: some View {
-        let ciFeatureContent = CIContent.rcvChatFeature(feature: .fullDelete, enabled: FeatureEnabled(forUser: false, forContact: false))
+        let ciFeatureContent = CIContent.rcvChatFeature(feature: .fullDelete, enabled: FeatureEnabled(forUser: false, forContact: false), param: nil)
         Group{
             ChatItemView(
                 chatInfo: ChatInfo.sampleData.direct,

@@ -125,35 +125,39 @@ extension NamedChat {
 public typealias ChatId = String
 
 public struct FullPreferences: Decodable, Equatable {
-    public var timedMessages: Preference
-    public var fullDelete: Preference
-    public var voice: Preference
+    public var timedMessages: TimedMessagesPreference
+    public var fullDelete: SimplePreference
+    public var voice: SimplePreference
 
-    public init(timedMessages: Preference, fullDelete: Preference, voice: Preference) {
+    public init(timedMessages: TimedMessagesPreference, fullDelete: SimplePreference, voice: SimplePreference) {
         self.timedMessages = timedMessages
         self.fullDelete = fullDelete
         self.voice = voice
     }
 
     public static let sampleData = FullPreferences(
-        timedMessages:  Preference(allow: .no),
-        fullDelete: Preference(allow: .no),
-        voice: Preference(allow: .yes)
+        timedMessages:  TimedMessagesPreference(allow: .no),
+        fullDelete: SimplePreference(allow: .no),
+        voice: SimplePreference(allow: .yes)
     )
 }
 
 public struct Preferences: Codable {
-    public var timedMessages: Preference?
-    public var fullDelete: Preference?
-    public var voice: Preference?
+    public var timedMessages: TimedMessagesPreference?
+    public var fullDelete: SimplePreference?
+    public var voice: SimplePreference?
 
-    public init(timedMessages: Preference?, fullDelete: Preference?, voice: Preference?) {
+    public init(timedMessages: TimedMessagesPreference?, fullDelete: SimplePreference?, voice: SimplePreference?) {
         self.timedMessages = timedMessages
         self.fullDelete = fullDelete
         self.voice = voice
     }
 
-    public static let sampleData = Preferences(timedMessages: Preference(allow: .no), fullDelete: Preference(allow: .no), voice: Preference(allow: .yes))
+    public static let sampleData = Preferences(
+        timedMessages: TimedMessagesPreference(allow: .no),
+        fullDelete: SimplePreference(allow: .no),
+        voice: SimplePreference(allow: .yes)
+    )
 }
 
 public func fullPreferencesToPreferences(_ fullPreferences: FullPreferences) -> Preferences {
@@ -172,7 +176,11 @@ public func contactUserPreferencesToPreferences(_ contactUserPreferences: Contac
     )
 }
 
-public struct Preference: Codable, Equatable {
+public protocol Preference: Codable, Equatable {
+    var allow: FeatureAllowed { get set }
+}
+
+public struct SimplePreference: Preference {
     public var allow: FeatureAllowed
 
     public init(allow: FeatureAllowed) {
@@ -180,42 +188,82 @@ public struct Preference: Codable, Equatable {
     }
 }
 
-public struct ContactUserPreferences: Decodable {
-    public var timedMessages: ContactUserPreference
-    public var fullDelete: ContactUserPreference
-    public var voice: ContactUserPreference
+public struct TimedMessagesPreference: Preference {
+    public var allow: FeatureAllowed
+    public var ttl: Int?
 
-    public init(timedMessages: ContactUserPreference, fullDelete: ContactUserPreference, voice: ContactUserPreference) {
+    public init(allow: FeatureAllowed, ttl: Int? = nil) {
+        self.allow = allow
+        self.ttl = ttl
+    }
+
+    public static var ttlValues: [Int?] {
+        [30, 300, 3600, 8 * 3600, 86400, 7 * 86400, 30 * 86400]
+    }
+
+    public static func ttlText(_ ttl: Int?) -> String {
+        guard let ttl = ttl else { return "off" }
+        if ttl == 0 { return "0 sec" }
+        let (m_, s) = divMod(ttl, by: 60)
+        let (h_, m) = divMod(m_, by: 60)
+        let (d_, h) = divMod(h_, by: 24)
+        let (mm, d) = divMod(d_, by: 30)
+        return maybe(mm, mm == 1 ? "1 month" : "\(mm) months")
+            + maybe(d, d == 1 ? "1 day" : d == 7 ? "1 week" : d == 14 ? "2 weeks" : "\(d) days")
+            + maybe(h, h == 1 ? "1 hour" : "\(h) hours")
+            + maybe(m, "\(m) min")
+            + maybe (s, "\(s) sec")
+    }
+
+    static func divMod(_ n: Int, by d: Int) -> (Int, Int) {
+        (n / d, n % d)
+    }
+
+    static func maybe(_ n: Int, _ s: String) -> String {
+        n == 0 ? "" : s
+    }
+}
+
+public struct ContactUserPreferences: Decodable {
+    public var timedMessages: ContactUserPreference<TimedMessagesPreference>
+    public var fullDelete: ContactUserPreference<SimplePreference>
+    public var voice: ContactUserPreference<SimplePreference>
+
+    public init(
+        timedMessages: ContactUserPreference<TimedMessagesPreference>,
+        fullDelete: ContactUserPreference<SimplePreference>,
+        voice: ContactUserPreference<SimplePreference>
+    ) {
         self.timedMessages = timedMessages
         self.fullDelete = fullDelete
         self.voice = voice
     }
 
     public static let sampleData = ContactUserPreferences(
-        timedMessages: ContactUserPreference(
+        timedMessages: ContactUserPreference<TimedMessagesPreference>(
             enabled: FeatureEnabled(forUser: false, forContact: false),
-            userPreference: .user(preference: Preference(allow: .no)),
-            contactPreference: Preference(allow: .no)
+            userPreference: ContactUserPref<TimedMessagesPreference>.user(preference: TimedMessagesPreference(allow: .no)),
+            contactPreference: TimedMessagesPreference(allow: .no)
         ),
-        fullDelete: ContactUserPreference(
+        fullDelete: ContactUserPreference<SimplePreference>(
             enabled: FeatureEnabled(forUser: false, forContact: false),
-            userPreference: .user(preference: Preference(allow: .no)),
-            contactPreference: Preference(allow: .no)
+            userPreference: ContactUserPref<SimplePreference>.user(preference: SimplePreference(allow: .no)),
+            contactPreference: SimplePreference(allow: .no)
         ),
-        voice: ContactUserPreference(
+        voice: ContactUserPreference<SimplePreference>(
             enabled: FeatureEnabled(forUser: true, forContact: true),
-            userPreference: .user(preference: Preference(allow: .yes)),
-            contactPreference: Preference(allow: .yes)
+            userPreference: ContactUserPref<SimplePreference>.user(preference: SimplePreference(allow: .yes)),
+            contactPreference: SimplePreference(allow: .yes)
         )
     )
 }
 
-public struct ContactUserPreference: Decodable {
+public struct ContactUserPreference<P: Preference>: Decodable {
     public var enabled: FeatureEnabled
-    public var userPreference: ContactUserPref
-    public var contactPreference: Preference
+    public var userPreference: ContactUserPref<P>
+    public var contactPreference: P
 
-    public init(enabled: FeatureEnabled, userPreference: ContactUserPref, contactPreference: Preference) {
+    public init(enabled: FeatureEnabled, userPreference: ContactUserPref<P>, contactPreference: P) {
         self.enabled = enabled
         self.userPreference = userPreference
         self.contactPreference = contactPreference
@@ -231,7 +279,7 @@ public struct FeatureEnabled: Decodable {
         self.forContact = forContact
     }
 
-    public static func enabled(asymmetric: Bool, user: Preference, contact: Preference) -> FeatureEnabled {
+    public static func enabled(asymmetric: Bool, user: any Preference, contact: any Preference) -> FeatureEnabled {
         switch (user.allow, contact.allow) {
         case (.always, .no): return FeatureEnabled(forUser: false, forContact: asymmetric)
         case (.no, .always): return FeatureEnabled(forUser: asymmetric, forContact: false)
@@ -253,20 +301,29 @@ public struct FeatureEnabled: Decodable {
     }
 }
 
-public enum ContactUserPref: Decodable {
-    case contact(preference: Preference) // contact override is set
-    case user(preference: Preference) // global user default is used
+public enum ContactUserPref<P: Preference>: Decodable {
+    case contact(preference: P) // contact override is set
+    case user(preference: P) // global user default is used
 
-    public var preference: Preference {
+    public var preference: P {
         switch self {
         case let .contact(preference): return preference
         case let .user(preference): return preference
+        }
+    }
+
+    var contactOverride: P? {
+        switch self {
+        case let .contact(preference): return preference
+        case .user: return nil
         }
     }
 }
 
 public protocol Feature {
     var iconFilled: String { get }
+    var hasParam: Bool { get }
+    var text: String { get }
 }
 
 public enum ChatFeature: String, Decodable, Feature {
@@ -282,6 +339,13 @@ public enum ChatFeature: String, Decodable, Feature {
         switch self {
         case .timedMessages: return false
         default: return true
+        }
+    }
+
+    public var hasParam: Bool {
+        switch self {
+        case .timedMessages: return true
+        default: return false
         }
     }
 
@@ -371,6 +435,13 @@ public enum GroupFeature: String, Decodable, Feature {
     public var values: [GroupFeature] { [.directMessages, .fullDelete, .voice] }
 
     public var id: Self { self }
+
+    public var hasParam: Bool {
+        switch self {
+        case .timedMessages: return true
+        default: return false
+        }
+    }
 
     public var text: String {
         switch self {
@@ -482,32 +553,38 @@ public enum ContactFeatureAllowed: Identifiable, Hashable {
 }
 
 public struct ContactFeaturesAllowed: Equatable {
-    public var timedMessages: ContactFeatureAllowed
+    public var timedMessagesAllowed: Bool
+    public var timedMessagesTTL: Int?
     public var fullDelete: ContactFeatureAllowed
     public var voice: ContactFeatureAllowed
 
-    public init(timedMessages: ContactFeatureAllowed, fullDelete: ContactFeatureAllowed, voice: ContactFeatureAllowed) {
-        self.timedMessages = timedMessages
+    public init(timedMessagesAllowed: Bool, timedMessagesTTL: Int?, fullDelete: ContactFeatureAllowed, voice: ContactFeatureAllowed) {
+        self.timedMessagesAllowed = timedMessagesAllowed
+        self.timedMessagesTTL = timedMessagesTTL
         self.fullDelete = fullDelete
         self.voice = voice
     }
 
     public static let sampleData = ContactFeaturesAllowed(
-        timedMessages: ContactFeatureAllowed.userDefault(.no),
+        timedMessagesAllowed: false,
+        timedMessagesTTL: nil,
         fullDelete: ContactFeatureAllowed.userDefault(.no),
         voice: ContactFeatureAllowed.userDefault(.yes)
     )
 }
 
 public func contactUserPrefsToFeaturesAllowed(_ contactUserPreferences: ContactUserPreferences) -> ContactFeaturesAllowed {
-    ContactFeaturesAllowed(
-        timedMessages: contactUserPrefToFeatureAllowed(contactUserPreferences.timedMessages),
+    let pref = contactUserPreferences.timedMessages.userPreference
+    let allow = pref.contactOverride?.allow
+    return ContactFeaturesAllowed(
+        timedMessagesAllowed: allow == .yes || allow == .always,
+        timedMessagesTTL: pref.preference.ttl,
         fullDelete: contactUserPrefToFeatureAllowed(contactUserPreferences.fullDelete),
         voice: contactUserPrefToFeatureAllowed(contactUserPreferences.voice)
     )
 }
 
-public func contactUserPrefToFeatureAllowed(_ contactUserPreference: ContactUserPreference) -> ContactFeatureAllowed {
+public func contactUserPrefToFeatureAllowed(_ contactUserPreference: ContactUserPreference<SimplePreference>) -> ContactFeatureAllowed {
     switch contactUserPreference.userPreference {
     case let .user(preference): return .userDefault(preference.allow)
     case let .contact(preference):
@@ -521,18 +598,18 @@ public func contactUserPrefToFeatureAllowed(_ contactUserPreference: ContactUser
 
 public func contactFeaturesAllowedToPrefs(_ contactFeaturesAllowed: ContactFeaturesAllowed) -> Preferences {
     Preferences(
-        timedMessages: contactFeatureAllowedToPref(contactFeaturesAllowed.timedMessages),
+        timedMessages: TimedMessagesPreference(allow: contactFeaturesAllowed.timedMessagesAllowed ? .yes : .no, ttl: contactFeaturesAllowed.timedMessagesTTL),
         fullDelete: contactFeatureAllowedToPref(contactFeaturesAllowed.fullDelete),
         voice: contactFeatureAllowedToPref(contactFeaturesAllowed.voice)
     )
 }
 
-public func contactFeatureAllowedToPref(_ contactFeatureAllowed: ContactFeatureAllowed) -> Preference? {
+public func contactFeatureAllowedToPref(_ contactFeatureAllowed: ContactFeatureAllowed) -> SimplePreference? {
     switch contactFeatureAllowed {
     case .userDefault: return nil
-    case .always: return Preference(allow: .always)
-    case .yes: return Preference(allow: .yes)
-    case .no: return Preference(allow: .no)
+    case .always: return SimplePreference(allow: .always)
+    case .yes: return SimplePreference(allow: .yes)
+    case .no: return SimplePreference(allow: .no)
     }
 }
 
@@ -555,12 +632,12 @@ public enum FeatureAllowed: String, Codable, Identifiable {
 }
 
 public struct FullGroupPreferences: Decodable, Equatable {
-    public var timedMessages: GroupPreference
+    public var timedMessages: TimedMessagesGroupPreference
     public var directMessages: GroupPreference
     public var fullDelete: GroupPreference
     public var voice: GroupPreference
 
-    public init(timedMessages:  GroupPreference, directMessages: GroupPreference, fullDelete: GroupPreference, voice: GroupPreference) {
+    public init(timedMessages:  TimedMessagesGroupPreference, directMessages: GroupPreference, fullDelete: GroupPreference, voice: GroupPreference) {
         self.timedMessages = timedMessages
         self.directMessages = directMessages
         self.fullDelete = fullDelete
@@ -568,7 +645,7 @@ public struct FullGroupPreferences: Decodable, Equatable {
     }
 
     public static let sampleData = FullGroupPreferences(
-        timedMessages: GroupPreference(enable: .off),
+        timedMessages: TimedMessagesGroupPreference(enable: .off),
         directMessages: GroupPreference(enable: .off),
         fullDelete: GroupPreference(enable: .off),
         voice: GroupPreference(enable: .on)
@@ -576,12 +653,12 @@ public struct FullGroupPreferences: Decodable, Equatable {
 }
 
 public struct GroupPreferences: Codable {
-    public var timedMessages: GroupPreference?
+    public var timedMessages: TimedMessagesGroupPreference?
     public var directMessages: GroupPreference?
     public var fullDelete: GroupPreference?
     public var voice: GroupPreference?
 
-    public init(timedMessages: GroupPreference?, directMessages: GroupPreference?, fullDelete: GroupPreference?, voice: GroupPreference?) {
+    public init(timedMessages: TimedMessagesGroupPreference?, directMessages: GroupPreference?, fullDelete: GroupPreference?, voice: GroupPreference?) {
         self.timedMessages = timedMessages
         self.directMessages = directMessages
         self.fullDelete = fullDelete
@@ -589,7 +666,7 @@ public struct GroupPreferences: Codable {
     }
 
     public static let sampleData = GroupPreferences(
-        timedMessages: GroupPreference(enable: .off),
+        timedMessages: TimedMessagesGroupPreference(enable: .off),
         directMessages: GroupPreference(enable: .off),
         fullDelete: GroupPreference(enable: .off),
         voice: GroupPreference(enable: .on)
@@ -614,6 +691,20 @@ public struct GroupPreference: Codable, Equatable {
 
     public init(enable: GroupFeatureEnabled) {
         self.enable = enable
+    }
+}
+
+public struct TimedMessagesGroupPreference: Codable, Equatable {
+    public var enable: GroupFeatureEnabled
+    public var ttl: Int?
+
+    public var on: Bool {
+        enable == .on
+    }
+
+    public init(enable: GroupFeatureEnabled, ttl: Int? = nil) {
+        self.enable = enable
+        self.ttl = ttl
     }
 }
 
@@ -1476,10 +1567,7 @@ public struct ChatItem: Identifiable, Decodable {
         }
     }
 
-    public var isRcvNew: Bool {
-        if case .rcvNew = meta.itemStatus { return true }
-        return false
-    }
+    public var isRcvNew: Bool { meta.isRcvNew }
 
     public var isDeletedContent: Bool {
         switch content {
@@ -1618,7 +1706,7 @@ public struct ChatItem: Identifiable, Decodable {
     }
 
     public static func getChatFeatureSample(_ feature: ChatFeature, _ enabled: FeatureEnabled) -> ChatItem {
-        let content = CIContent.rcvChatFeature(feature: feature, enabled: enabled)
+        let content = CIContent.rcvChatFeature(feature: feature, enabled: enabled, param: nil)
         return ChatItem(
             chatDir: .directRcv,
             meta: CIMeta.getSample(1, .now, content.text, .rcvRead, false, false, false),
@@ -1677,12 +1765,29 @@ public struct CIMeta: Decodable {
     public var updatedAt: Date
     public var itemDeleted: Bool
     public var itemEdited: Bool
+    public var itemTimed: CITimed?
     public var itemLive: Bool?
     public var editable: Bool
 
     public var timestampText: Text { get { formatTimestampText(itemTs) } }
     public var recent: Bool { updatedAt + 10 > .now }
     public var isLive: Bool { itemLive == true }
+    public var disappearing: Bool { !isRcvNew && itemTimed?.deleteAt != nil }
+
+    public var isRcvNew: Bool {
+        if case .rcvNew = itemStatus { return true }
+        return false
+    }
+
+    public func statusIcon(_ metaColor: Color = .secondary) -> (String, Color)? {
+        switch itemStatus {
+        case .sndSent: return ("checkmark", metaColor)
+        case .sndErrorAuth: return ("multiply", .red)
+        case .sndError: return ("exclamationmark.triangle.fill", .yellow)
+        case .rcvNew: return ("circlebadge.fill", Color.accentColor)
+        default: return nil
+        }
+    }
 
     public static func getSample(_ id: Int64, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, _ itemDeleted: Bool = false, _ itemEdited: Bool = false, _ itemLive: Bool = false, _ editable: Bool = true) -> CIMeta {
         CIMeta(
@@ -1698,6 +1803,11 @@ public struct CIMeta: Decodable {
             editable: editable
         )
     }
+}
+
+public struct CITimed: Decodable {
+    public var ttl: Int
+    public var deleteAt: Date?
 }
 
 let msgTimeFormat = Date.FormatStyle.dateTime.hour().minute()
@@ -1753,10 +1863,10 @@ public enum CIContent: Decodable, ItemContent {
     case sndGroupEvent(sndGroupEvent: SndGroupEvent)
     case rcvConnEvent(rcvConnEvent: RcvConnEvent)
     case sndConnEvent(sndConnEvent: SndConnEvent)
-    case rcvChatFeature(feature: ChatFeature, enabled: FeatureEnabled)
-    case sndChatFeature(feature: ChatFeature, enabled: FeatureEnabled)
-    case rcvGroupFeature(groupFeature: GroupFeature, preference: GroupPreference)
-    case sndGroupFeature(groupFeature: GroupFeature, preference: GroupPreference)
+    case rcvChatFeature(feature: ChatFeature, enabled: FeatureEnabled, param: Int?)
+    case sndChatFeature(feature: ChatFeature, enabled: FeatureEnabled, param: Int?)
+    case rcvGroupFeature(groupFeature: GroupFeature, preference: GroupPreference, param: Int?)
+    case sndGroupFeature(groupFeature: GroupFeature, preference: GroupPreference, param: Int?)
     case rcvChatFeatureRejected(feature: ChatFeature)
     case rcvGroupFeatureRejected(groupFeature: GroupFeature)
 
@@ -1776,14 +1886,20 @@ public enum CIContent: Decodable, ItemContent {
             case let .sndGroupEvent(sndGroupEvent): return sndGroupEvent.text
             case let .rcvConnEvent(rcvConnEvent): return rcvConnEvent.text
             case let .sndConnEvent(sndConnEvent): return sndConnEvent.text
-            case let .rcvChatFeature(feature, enabled): return "\(feature.text): \(enabled.text)"
-            case let .sndChatFeature(feature, enabled): return "\(feature.text): \(enabled.text)"
-            case let .rcvGroupFeature(feature, preference): return "\(feature.text): \(preference.enable.text)"
-            case let .sndGroupFeature(feature, preference): return "\(feature.text): \(preference.enable.text)"
+            case let .rcvChatFeature(feature, enabled, param): return CIContent.featureText(feature, enabled.text, param)
+            case let .sndChatFeature(feature, enabled, param): return CIContent.featureText(feature, enabled.text, param)
+            case let .rcvGroupFeature(feature, preference, param): return CIContent.featureText(feature, preference.enable.text, param)
+            case let .sndGroupFeature(feature, preference, param): return CIContent.featureText(feature, preference.enable.text, param)
             case let .rcvChatFeatureRejected(feature): return String.localizedStringWithFormat("%@: received, prohibited", feature.text)
             case let .rcvGroupFeatureRejected(groupFeature): return String.localizedStringWithFormat("%@: received, prohibited", groupFeature.text)
             }
         }
+    }
+
+    static func featureText(_ feature: Feature, _ value: String, _ param: Int?) -> String {
+        feature.hasParam && param != nil
+        ? "\(feature.text): \(TimedMessagesPreference.ttlText(param))"
+        : "\(feature.text): \(value)"
     }
 
     public var msgContent: MsgContent? {
