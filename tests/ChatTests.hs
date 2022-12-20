@@ -3587,7 +3587,7 @@ testEnableTimedMessagesContact =
       alice <## "you updated preferences for bob:"
       alice <## "Disappearing messages: off (you allow: yes, after 1 sec, contact allows: no)"
       bob <## "alice updated preferences for you:"
-      bob <## "Disappearing messages: off (you allow: default (no), contact allows: yes, after 1 sec)"
+      bob <## "Disappearing messages: off (you allow: no, contact allows: yes, after 1 sec)"
       -- TODO bob ##> "/set disappear @alice yes"
       bob ##> "/_set prefs @2 {\"timedMessages\": {\"allow\": \"yes\", \"ttl\": 1}}"
       bob <## "you updated preferences for alice:"

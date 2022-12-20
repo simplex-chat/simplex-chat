@@ -694,12 +694,13 @@ updateContactProfile db user@User {userId} c p'
     profile = toLocalProfile profileId p' localAlias
     mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
 
-setContactConfirmPrefPending :: DB.Connection -> User -> Contact -> Bool -> IO ()
-setContactConfirmPrefPending db User {userId} Contact {contactId} confirmPrefPending =
+setContactConfirmPrefPending :: DB.Connection -> User -> Contact -> Bool -> IO Contact
+setContactConfirmPrefPending db User {userId} ct@Contact {contactId} confirmPrefPending = do
   DB.execute
     db
     "UPDATE contacts SET confirm_pref_pending = ? WHERE user_id = ? AND contact_id = ?"
     (confirmPrefPending, userId, contactId)
+  pure $ ct {confirmPrefPending}
 
 updateContactUserPreferences :: DB.Connection -> User -> Contact -> Preferences -> IO Contact
 updateContactUserPreferences db user@User {userId} c@Contact {contactId, activeConn} userPreferences = do

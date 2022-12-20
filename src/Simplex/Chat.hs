@@ -2771,18 +2771,50 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
 
     xInfo :: Contact -> Profile -> m ()
     xInfo c@Contact {profile = p} p' = unless (fromLocalProfile p == p') $ do
-      c' <- withStore $ \db -> updateContactProfile db user c p'
+      let (p'', userPrefs_, confirmPrefPendingFlag) = ttlChangeEffects
+      c' <- withStore $ \db -> do
+        c' <- case userPrefs_ of
+          Nothing -> pure c
+          Just userPrefs -> liftIO $ updateContactUserPreferences db user c userPrefs
+        c'' <- liftIO $ setContactConfirmPrefPending db user c' confirmPrefPendingFlag
+        updateContactProfile db user c'' p''
       toView $ CRContactUpdated c c'
       when (directOrUsed c) $ createFeatureChangedItems user c c' CDDirectRcv CIRcvChatFeature
       where
-        ttlChanged = do
+        ttlChangeEffects = do
           let LocalProfile {preferences = ctPrefs_} = p
-              Contact {userPreferences = userPrefs} = c
+              Contact {userPreferences = userPrefs@Preferences {timedMessages = userTimedMessages}} = c
               Profile {preferences = rcvPrefs_} = p'
               ctTTL = ctPrefs_ >>= \Preferences {timedMessages} -> timedMessages >>= \TimedMessagesPreference {ttl} -> ttl
-              userTTL = timedMessages (userPrefs :: Preferences) >>= \TimedMessagesPreference {ttl} -> ttl
-              rcvTTL = rcvPrefs_ >>= \Preferences {timedMessages} -> timedMessages >>= \TimedMessagesPreference {ttl} -> ttl
-          False
+              userTTL = userTimedMessages >>= \TimedMessagesPreference {ttl} -> ttl
+              rcvTimedMessages = rcvPrefs_ >>= \Preferences {timedMessages} -> timedMessages
+              rcvTTL = rcvTimedMessages >>= \TimedMessagesPreference {ttl} -> ttl
+          if
+              | userTTL == ctTTL && userTTL /= rcvTTL ->
+                let -- set user preference override ttl to received preference ttl
+                    userPrefs' = setUserPref userPrefs userTimedMessages rcvTTL
+                 in (p', Just userPrefs', True)
+              | userTTL /= ctTTL && userTTL == rcvTTL ->
+                -- pref change was confirmed - perform regular update
+                (p', Nothing, False)
+              | userTTL /= ctTTL && userTTL /= rcvTTL -> -- && ctTTL /= rcvTTL ?
+                let -- don't update contact preference - instead keep existing contact preference ttl
+                    rcvTimedMessages' = rcvTimedMessages >>= \rcvTM -> Just (rcvTM :: TimedMessagesPreference) {ttl = ctTTL}
+                    rcvPrefs' = rcvPrefs_ >>= \rcvPrefs -> Just (rcvPrefs :: Preferences) {timedMessages = rcvTimedMessages'}
+                    p'' = (p' :: Profile) {preferences = rcvPrefs'}
+                    -- reset user preference override ttl to contact preference ttl
+                    userPrefs' = setUserPref userPrefs userTimedMessages ctTTL
+                 in (p'', Just userPrefs', False)
+              | otherwise ->
+                (p', Nothing, False)
+          where
+            setUserPref userPrefs userTimedMessages ttl =
+              let userTimedMessages' = case userTimedMessages of
+                    Nothing ->
+                      let User {fullPreferences = FullPreferences {timedMessages = TimedMessagesPreference {allow = userDefault}}} = user
+                       in TimedMessagesPreference {allow = userDefault, ttl = ttl}
+                    Just userTM -> (userTM :: TimedMessagesPreference) {ttl = ttl}
+               in (userPrefs :: Preferences) {timedMessages = Just userTimedMessages'}
 
     createFeatureEnabledItems :: Contact -> m ()
     createFeatureEnabledItems ct@Contact {mergedPreferences} =
