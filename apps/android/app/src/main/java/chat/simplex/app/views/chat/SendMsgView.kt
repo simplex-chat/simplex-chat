@@ -10,6 +10,7 @@ import android.text.InputType
 import android.view.ViewGroup
 import android.view.inputmethod.*
 import android.widget.EditText
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -18,17 +19,21 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.*
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.graphics.drawable.DrawableCompat
 import androidx.core.view.inputmethod.EditorInfoCompat
@@ -39,6 +44,7 @@ import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.views.chat.item.ItemAction
 import chat.simplex.app.views.helpers.*
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import kotlinx.coroutines.*
@@ -49,10 +55,13 @@ fun SendMsgView(
   showVoiceRecordIcon: Boolean,
   recState: MutableState<RecordingState>,
   isDirectChat: Boolean,
+  liveMessageAlertShown: SharedPreference<Boolean>,
   needToAllowVoiceToContact: Boolean,
   allowedVoiceByPrefs: Boolean,
   allowVoiceToContact: () -> Unit,
   sendMessage: () -> Unit,
+  sendLiveMessage: ( suspend () -> Unit)? = null,
+  updateLiveMessage: (suspend () -> Unit)? = null,
   onMessageChange: (String) -> Unit,
   textStyle: MutableState<TextStyle>
 ) {
@@ -60,35 +69,80 @@ fun SendMsgView(
     val cs = composeState.value
     val showProgress = cs.inProgress && (cs.preview is ComposePreview.ImagePreview  || cs.preview is ComposePreview.FilePreview)
     val showVoiceButton = cs.message.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
-        (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started)
+        cs.liveMessage == null && (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started)
     NativeKeyboard(composeState, textStyle, onMessageChange)
     // Disable clicks on text field
     if (cs.preview is ComposePreview.VoicePreview) {
       Box(Modifier.matchParentSize().clickable(enabled = false, onClick = { }))
     }
     Box(Modifier.align(Alignment.BottomEnd)) {
+      val sendButtonSize = remember { Animatable(36f) }
+      val sendButtonAlpha = remember { Animatable(1f) }
       val permissionsState = rememberMultiplePermissionsState(listOf(Manifest.permission.RECORD_AUDIO))
+      val scope = rememberCoroutineScope()
+      LaunchedEffect(Unit) {
+        // Making LiveMessage alive when screen orientation was changed
+        if (cs.liveMessage != null && sendLiveMessage != null && updateLiveMessage != null) {
+          startLiveMessage(scope, sendLiveMessage, updateLiveMessage, sendButtonSize, sendButtonAlpha, composeState, liveMessageAlertShown)
+        }
+      }
       when {
         showProgress -> ProgressIndicator()
-        showVoiceButton -> when {
-          needToAllowVoiceToContact || !allowedVoiceByPrefs -> {
-            DisallowedVoiceButton {
-              if (needToAllowVoiceToContact) {
-                showNeedToAllowVoiceAlert(allowVoiceToContact)
-              } else {
-                showDisabledVoiceAlert(isDirectChat)
+        showVoiceButton -> {
+          Row(verticalAlignment = Alignment.CenterVertically) {
+            val stopRecOnNextClick = remember { mutableStateOf(false) }
+            when {
+              needToAllowVoiceToContact || !allowedVoiceByPrefs -> {
+                DisallowedVoiceButton {
+                  if (needToAllowVoiceToContact) {
+                    showNeedToAllowVoiceAlert(allowVoiceToContact)
+                  } else {
+                    showDisabledVoiceAlert(isDirectChat)
+                  }
+                }
+              }
+              !permissionsState.allPermissionsGranted ->
+                VoiceButtonWithoutPermission { permissionsState.launchMultiplePermissionRequest() }
+              else ->
+                RecordVoiceView(recState, stopRecOnNextClick)
+            }
+            if (sendLiveMessage != null && updateLiveMessage != null && (cs.preview !is ComposePreview.VoicePreview || !stopRecOnNextClick.value)) {
+              Spacer(Modifier.width(10.dp))
+              StartLiveMessageButton {
+                if (composeState.value.preview is ComposePreview.NoPreview) {
+                  startLiveMessage(scope, sendLiveMessage, updateLiveMessage, sendButtonSize, sendButtonAlpha, composeState, liveMessageAlertShown)
+                }
               }
             }
           }
-          !permissionsState.allPermissionsGranted ->
-            VoiceButtonWithoutPermission { permissionsState.launchMultiplePermissionRequest() }
-          else ->
-            RecordVoiceView(recState)
         }
         else -> {
-          val icon = if (cs.editing) Icons.Filled.Check else Icons.Outlined.ArrowUpward
+          val icon = if (cs.editing || cs.liveMessage != null) Icons.Filled.Check else Icons.Outlined.ArrowUpward
           val color = if (cs.sendEnabled()) MaterialTheme.colors.primary else HighOrLowlight
-          SendTextButton(icon, color, cs.sendEnabled(), sendMessage)
+          if (composeState.value.liveMessage == null &&
+            cs.preview !is ComposePreview.VoicePreview && !cs.editing &&
+            sendLiveMessage != null && updateLiveMessage != null
+          ) {
+            var showDropdown by rememberSaveable { mutableStateOf(false) }
+            SendTextButton(icon, color, sendButtonSize, sendButtonAlpha, cs.sendEnabled(), sendMessage) { showDropdown = true }
+
+            DropdownMenu(
+              expanded = showDropdown,
+              onDismissRequest = { showDropdown = false },
+              Modifier.width(220.dp),
+            ) {
+              ItemAction(
+                generalGetString(R.string.send_live_message),
+                Icons.Filled.MoreHoriz,
+                onClick = {
+                  startLiveMessage(scope, sendLiveMessage, updateLiveMessage, sendButtonSize, sendButtonAlpha, composeState, liveMessageAlertShown)
+                  showDropdown = false
+                }
+              )
+            }
+          } else {
+            SendTextButton(icon, color, sendButtonSize, sendButtonAlpha, cs.sendEnabled(), sendMessage)
+          }
         }
       }
     }
@@ -188,7 +242,7 @@ private fun NativeKeyboard(
 }
 
 @Composable
-private fun RecordVoiceView(recState: MutableState<RecordingState>) {
+private fun RecordVoiceView(recState: MutableState<RecordingState>, stopRecOnNextClick: MutableState<Boolean>) {
   val rec: Recorder = remember { RecorderNative(MAX_VOICE_SIZE_FOR_SENDING) }
   DisposableEffect(Unit) { onDispose { rec.stop() } }
   val stopRecordingAndAddAudio: () -> Unit = {
@@ -196,11 +250,10 @@ private fun RecordVoiceView(recState: MutableState<RecordingState>) {
       recState.value = RecordingState.Finished(it, rec.stop())
     }
   }
-  var stopRecOnNextClick by remember { mutableStateOf(false) }
-  if (stopRecOnNextClick) {
+  if (stopRecOnNextClick.value) {
     LaunchedEffect(recState.value) {
       if (recState.value is RecordingState.NotStarted) {
-        stopRecOnNextClick = false
+        stopRecOnNextClick.value = false
       }
     }
     // Lock orientation to current orientation because screen rotation will break the recording
@@ -223,11 +276,11 @@ private fun RecordVoiceView(recState: MutableState<RecordingState>) {
     val interactionSource = interactionSourceWithTapDetection(
       onPress = { if (recState.value is RecordingState.NotStarted) startRecording() },
       onClick = {
-        if (stopRecOnNextClick) {
+        if (stopRecOnNextClick.value) {
           stopRecordingAndAddAudio()
         } else {
           // tapped and didn't hold a finger
-          stopRecOnNextClick = true
+          stopRecOnNextClick.value = true
         }
       },
       onCancel = stopRecordingAndAddAudio,
@@ -316,18 +369,119 @@ private fun ProgressIndicator() {
 }
 
 @Composable
-private fun SendTextButton(icon: ImageVector, backgroundColor: Color, enabled: Boolean, sendMessage: () -> Unit) {
-  IconButton(sendMessage, Modifier.size(36.dp), enabled = enabled) {
+private fun SendTextButton(
+  icon: ImageVector,
+  backgroundColor: Color,
+  sizeDp: Animatable<Float, AnimationVector1D>,
+  alpha: Animatable<Float, AnimationVector1D>,
+  enabled: Boolean,
+  sendMessage: () -> Unit,
+  onLongClick: (() -> Unit)? = null
+) {
+  val interactionSource = remember { MutableInteractionSource() }
+  Box(
+    modifier = Modifier.requiredSize(36.dp)
+      .combinedClickable(
+        onClick = sendMessage,
+        onLongClick = onLongClick,
+        enabled = enabled,
+        role = Role.Button,
+        interactionSource = interactionSource,
+        indication = rememberRipple(bounded = false, radius = 24.dp)
+      ),
+    contentAlignment = Alignment.Center
+  ) {
     Icon(
       icon,
+      stringResource(R.string.icon_descr_send_message),
+      tint = Color.White,
+      modifier = Modifier
+        .size(sizeDp.value.dp)
+        .padding(4.dp)
+        .alpha(alpha.value)
+        .clip(CircleShape)
+        .background(backgroundColor)
+        .padding(3.dp)
+    )
+  }
+}
+
+@Composable
+private fun StartLiveMessageButton(onClick: () -> Unit) {
+  val interactionSource = remember { MutableInteractionSource() }
+  Box(
+    modifier = Modifier.requiredSize(36.dp)
+      .clickable(
+        onClick = onClick,
+        enabled = true,
+        role = Role.Button,
+        interactionSource = interactionSource,
+        indication = rememberRipple(bounded = false, radius = 24.dp)
+      ),
+    contentAlignment = Alignment.Center
+  ) {
+    Icon(
+      Icons.Filled.MoreHoriz,
       stringResource(R.string.icon_descr_send_message),
       tint = Color.White,
       modifier = Modifier
         .size(36.dp)
         .padding(4.dp)
         .clip(CircleShape)
-        .background(backgroundColor)
+        .background(MaterialTheme.colors.primary)
+        .padding(1.dp)
     )
+  }
+}
+
+private fun startLiveMessage(
+  scope: CoroutineScope,
+  send: suspend () -> Unit,
+  update: suspend () -> Unit,
+  sendButtonSize: Animatable<Float, AnimationVector1D>,
+  sendButtonAlpha: Animatable<Float, AnimationVector1D>,
+  composeState: MutableState<ComposeState>,
+  liveMessageAlertShown: SharedPreference<Boolean>
+) {
+  fun run() {
+    scope.launch {
+      while (composeState.value.liveMessage != null) {
+        sendButtonSize.animateTo(if (sendButtonSize.value == 36f) 32f else 36f, tween(700, 50))
+      }
+      sendButtonSize.snapTo(36f)
+    }
+    scope.launch {
+      while (composeState.value.liveMessage != null) {
+        sendButtonAlpha.animateTo(if (sendButtonAlpha.value == 1f) 0.75f else 1f, tween(700, 50))
+      }
+      sendButtonAlpha.snapTo(1f)
+    }
+    scope.launch {
+      while (composeState.value.liveMessage != null) {
+        delay(3000)
+        update()
+      }
+    }
+  }
+
+  fun start() = withBGApi {
+    if (composeState.value.liveMessage == null) {
+      send()
+    }
+    run()
+  }
+
+  if (liveMessageAlertShown.state.value) {
+    start()
+  } else {
+    AlertManager.shared.showAlertDialog(
+      title = generalGetString(R.string.live_message),
+      text = generalGetString(R.string.send_live_message_desc),
+      confirmText = generalGetString(R.string.send_verb),
+      onConfirm = {
+        liveMessageAlertShown.set(true)
+        start()
+      })
   }
 }
 
@@ -369,6 +523,7 @@ fun PreviewSendMsgView() {
       showVoiceRecordIcon = false,
       recState = mutableStateOf(RecordingState.NotStarted),
       isDirectChat = true,
+      liveMessageAlertShown = SharedPreference(get = { true }, set = { }),
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
       allowVoiceToContact = {},
@@ -396,6 +551,7 @@ fun PreviewSendMsgViewEditing() {
       showVoiceRecordIcon = false,
       recState = mutableStateOf(RecordingState.NotStarted),
       isDirectChat = true,
+      liveMessageAlertShown = SharedPreference(get = { true }, set = { }),
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
       allowVoiceToContact = {},
@@ -423,6 +579,7 @@ fun PreviewSendMsgViewInProgress() {
       showVoiceRecordIcon = false,
       recState = mutableStateOf(RecordingState.NotStarted),
       isDirectChat = true,
+      liveMessageAlertShown = SharedPreference(get = { true }, set = { }),
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
       allowVoiceToContact = {},

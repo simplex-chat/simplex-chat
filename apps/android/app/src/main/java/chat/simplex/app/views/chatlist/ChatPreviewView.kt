@@ -97,7 +97,6 @@ fun ChatPreviewView(chat: Chat, chatModelIncognito: Boolean, currentUserProfileD
         sender = if (cInfo is ChatInfo.Group && !ci.chatDir.sent) ci.memberDisplayName else null,
         linkMode = linkMode,
         senderBold = true,
-        metaText = null,
         maxLines = 2,
         overflow = TextOverflow.Ellipsis,
         style = MaterialTheme.typography.body1.copy(color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight, lineHeight = 22.sp),

@@ -135,7 +135,21 @@ fun TerminalLayout(
       topBar = { CloseSheetBar(close) },
       bottomBar = {
         Box(Modifier.padding(horizontal = 8.dp)) {
-          SendMsgView(composeState, false, mutableStateOf(RecordingState.NotStarted), false, false, false, {}, sendCommand, ::onMessageChange, textStyle)
+          SendMsgView(
+            composeState = composeState,
+            showVoiceRecordIcon = false,
+            recState = mutableStateOf(RecordingState.NotStarted),
+            isDirectChat = false,
+            liveMessageAlertShown = SharedPreference(get = { false }, set = {}),
+            needToAllowVoiceToContact = false,
+            allowedVoiceByPrefs = false,
+            allowVoiceToContact = {},
+            sendMessage = sendCommand,
+            sendLiveMessage = null,
+            updateLiveMessage = null,
+            ::onMessageChange,
+            textStyle
+          )
         }
       },
       modifier = Modifier.navigationBarsWithImePadding()
