@@ -261,11 +261,12 @@ import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (sortBy, sortOn)
 import Data.List.NonEmpty (NonEmpty)
-import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, listToMaybe)
+import Data.Maybe (fromMaybe, isJust, isNothing, listToMaybe, mapMaybe)
 import Data.Ord (Down (..))
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
+import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Data.Time.LocalTime (TimeZone, getCurrentTimeZone)
 import Data.Type.Equality
@@ -3846,23 +3847,32 @@ updateDirectChatItem db userId contactId itemId newContent live msgId_ = do
 
 updateDirectChatItem_ :: forall d. (MsgDirectionI d) => DB.Connection -> UserId -> Int64 -> ChatItemId -> CIContent d -> Bool -> UTCTime -> ExceptT StoreError IO (ChatItem 'CTDirect d)
 updateDirectChatItem_ db userId contactId itemId newContent live currentTs = do
-  ci@ChatItem {meta = CIMeta {itemEdited, itemLive}} <- liftEither . correctDir =<< getDirectChatItem db userId contactId itemId
+  ci@ChatItem {meta = meta@CIMeta {itemEdited, itemTimed, itemLive}} <- liftEither . correctDir =<< getDirectChatItem db userId contactId itemId
   let newText = ciContentToText newContent
       edited' = itemEdited || (itemLive /= Just True)
       live' = (live &&) <$> itemLive
+      delAt' = ciLiveDeleteAt meta live currentTs
+      timed' = (\timed -> timed {deleteAt = delAt'}) <$> itemTimed
   liftIO $ do
     DB.execute
       db
       [sql|
         UPDATE chat_items
-        SET item_content = ?, item_text = ?, item_deleted = 0, item_edited = ?, item_live = ?, updated_at = ?
+        SET item_content = ?, item_text = ?, item_deleted = 0, item_edited = ?, timed_delete_at = ?, item_live = ?, updated_at = ?
         WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
       |]
-      (newContent, newText, edited', live', currentTs, userId, contactId, itemId)
-  pure ci {content = newContent, meta = (meta ci) {itemText = newText, itemEdited = edited', itemLive = live'}, formattedText = parseMaybeMarkdownList newText}
+      (newContent, newText, edited', delAt', live', currentTs, userId, contactId, itemId)
+  pure ci {content = newContent, meta = meta {itemText = newText, itemEdited = edited', itemTimed = timed', itemLive = live'}, formattedText = parseMaybeMarkdownList newText}
   where
     correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
     correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
+
+-- the condition to enable the timed deletion when the item that was live is updated
+ciLiveDeleteAt :: CIMeta d -> Bool -> UTCTime -> Maybe UTCTime
+ciLiveDeleteAt CIMeta {itemTimed, itemStatus = CISRcvNew} _live _ = itemTimed >>= deleteAt
+ciLiveDeleteAt CIMeta {itemTimed = Just CITimed {ttl, deleteAt = Nothing}, itemLive = Just True} False currentTs =
+  Just $ addUTCTime (realToFrac ttl) currentTs
+ciLiveDeleteAt CIMeta {itemTimed} _ _ = itemTimed >>= deleteAt
 
 deleteDirectChatItem :: DB.Connection -> User -> Contact -> CChatItem 'CTDirect -> IO ()
 deleteDirectChatItem db User {userId} Contact {contactId} (CChatItem _ ci) = do
@@ -3969,22 +3979,24 @@ getDirectChatItemIdByText db userId contactId msgDir quotedMsg =
 
 updateGroupChatItem :: forall d. MsgDirectionI d => DB.Connection -> User -> Int64 -> ChatItemId -> CIContent d -> Bool -> Maybe MessageId -> ExceptT StoreError IO (ChatItem 'CTGroup d)
 updateGroupChatItem db user@User {userId} groupId itemId newContent live msgId_ = do
-  ci@ChatItem {meta = CIMeta {itemEdited, itemLive}} <- liftEither . correctDir =<< getGroupChatItem db user groupId itemId
+  ci@ChatItem {meta = meta@CIMeta {itemEdited, itemTimed, itemLive}} <- liftEither . correctDir =<< getGroupChatItem db user groupId itemId
   currentTs <- liftIO getCurrentTime
   let newText = ciContentToText newContent
       edited' = itemEdited || (itemLive /= Just True)
       live' = (live &&) <$> itemLive
+      delAt' = ciLiveDeleteAt meta live currentTs
+      timed' = (\timed -> timed {deleteAt = delAt'}) <$> itemTimed
   liftIO $ do
     DB.execute
       db
       [sql|
         UPDATE chat_items
-        SET item_content = ?, item_text = ?, item_deleted = 0, item_edited = ?, item_live = ?, updated_at = ?
+        SET item_content = ?, item_text = ?, item_deleted = 0, item_edited = ?, timed_delete_at = ?, item_live = ?, updated_at = ?
         WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
       |]
-      (newContent, newText, edited', live', currentTs, userId, groupId, itemId)
+      (newContent, newText, edited', delAt', live', currentTs, userId, groupId, itemId)
     forM_ msgId_ $ \msgId -> insertChatItemMessage_ db itemId msgId currentTs
-  pure ci {content = newContent, meta = (meta ci) {itemText = newText, itemEdited = edited', itemLive = live'}, formattedText = parseMaybeMarkdownList newText}
+  pure ci {content = newContent, meta = meta {itemText = newText, itemEdited = edited', itemTimed = timed', itemLive = live'}, formattedText = parseMaybeMarkdownList newText}
   where
     correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
     correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
@@ -4212,9 +4224,13 @@ getDirectUnreadTimedItems db User {userId} contactId itemsRange_ = case itemsRan
       [sql|
         SELECT chat_item_id, timed_ttl
         FROM chat_items
-        WHERE user_id = ? AND contact_id = ? AND chat_item_id >= ? AND chat_item_id <= ? AND item_status = ? AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
+        WHERE user_id = ? AND contact_id = ?
+          AND chat_item_id >= ? AND chat_item_id <= ?
+          AND item_status = ?
+          AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
+          AND (item_live IS NULL OR item_live = ?)
       |]
-      (userId, contactId, fromItemId, toItemId, CISRcvNew)
+      (userId, contactId, fromItemId, toItemId, CISRcvNew, False)
   _ ->
     DB.query
       db
@@ -4261,9 +4277,13 @@ getGroupUnreadTimedItems db User {userId} groupId itemsRange_ = case itemsRange_
       [sql|
         SELECT chat_item_id, timed_ttl
         FROM chat_items
-        WHERE user_id = ? AND group_id = ? AND chat_item_id >= ? AND chat_item_id <= ? AND item_status = ? AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
+        WHERE user_id = ? AND group_id = ?
+          AND chat_item_id >= ? AND chat_item_id <= ?
+          AND item_status = ?
+          AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
+          AND (item_live IS NULL OR item_live = ?)
       |]
-      (userId, groupId, fromItemId, toItemId, CISRcvNew)
+      (userId, groupId, fromItemId, toItemId, CISRcvNew, False)
   _ ->
     DB.query
       db
@@ -4330,10 +4350,7 @@ toDirectChatItem tz currentTs (((itemId, itemTs, itemContent, itemText, itemStat
     ciMeta :: CIContent d -> CIStatus d -> CIMeta d
     ciMeta content status = mkCIMeta itemId content itemText status sharedMsgId itemDeleted (fromMaybe False itemEdited) ciTimed itemLive tz currentTs itemTs createdAt updatedAt
     ciTimed :: Maybe CITimed
-    ciTimed =
-      case (timedTTL, timedDeleteAt) of
-        (Just ttl, deleteAt) -> Just CITimed {ttl, deleteAt}
-        _ -> Nothing
+    ciTimed = timedTTL >>= \ttl -> Just CITimed {ttl, deleteAt = timedDeleteAt}
 
 toDirectChatItemList :: TimeZone -> UTCTime -> MaybeChatItemRow :. QuoteRow -> [CChatItem 'CTDirect]
 toDirectChatItemList tz currentTs (((Just itemId, Just itemTs, Just itemContent, Just itemText, Just itemStatus, sharedMsgId, Just itemDeleted, itemEdited, Just createdAt, Just updatedAt) :. (timedTTL, timedDeleteAt, itemLive) :. fileRow) :. quoteRow) =
@@ -4379,10 +4396,7 @@ toGroupChatItem tz currentTs userContactId (((itemId, itemTs, itemContent, itemT
     ciMeta :: CIContent d -> CIStatus d -> CIMeta d
     ciMeta content status = mkCIMeta itemId content itemText status sharedMsgId itemDeleted (fromMaybe False itemEdited) ciTimed itemLive tz currentTs itemTs createdAt updatedAt
     ciTimed :: Maybe CITimed
-    ciTimed =
-      case (timedTTL, timedDeleteAt) of
-        (Just ttl, deleteAt) -> Just CITimed {ttl, deleteAt}
-        _ -> Nothing
+    ciTimed = timedTTL >>= \ttl -> Just CITimed {ttl, deleteAt = timedDeleteAt}
 
 toGroupChatItemList :: TimeZone -> UTCTime -> Int64 -> MaybeGroupChatItemRow -> [CChatItem 'CTGroup]
 toGroupChatItemList tz currentTs userContactId (((Just itemId, Just itemTs, Just itemContent, Just itemText, Just itemStatus, sharedMsgId, Just itemDeleted, itemEdited, Just createdAt, Just updatedAt) :. (timedTTL, timedDeleteAt, itemLive) :. fileRow) :. memberRow_ :. quoteRow :. quotedMemberRow_) =
@@ -4585,7 +4599,7 @@ getXGrpMemIntroContGroup db User {userId} GroupMember {groupMemberId} = do
 
 getTimedItems :: DB.Connection -> User -> UTCTime -> IO [((ChatRef, ChatItemId), UTCTime)]
 getTimedItems db User {userId} startTimedThreadCutoff =
-  catMaybes . map toCIRefDeleteAt
+  mapMaybe toCIRefDeleteAt
     <$> DB.query
       db
       [sql|

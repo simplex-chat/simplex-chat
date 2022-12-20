@@ -3432,8 +3432,8 @@ testUpdateGroupPrefs =
     \alice bob -> do
       createGroup2 "team" alice bob
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected")])
+      threadDelay 500000
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected")])
-      threadDelay 1000000
       alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"on\"}, \"directMessages\": {\"enable\": \"on\"}}}"
       alice <## "updated group preferences:"
       alice <## "Full deletion enabled: on"
@@ -3441,8 +3441,8 @@ testUpdateGroupPrefs =
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
       bob <## "Full deletion enabled: on"
+      threadDelay 500000
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Full deletion: on")])
-      threadDelay 1000000
       alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"off\"}, \"directMessages\": {\"enable\": \"on\"}}}"
       alice <## "updated group preferences:"
       alice <## "Full deletion enabled: off"
@@ -3452,8 +3452,8 @@ testUpdateGroupPrefs =
       bob <## "updated group preferences:"
       bob <## "Full deletion enabled: off"
       bob <## "Voice messages enabled: off"
+      threadDelay 500000
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Full deletion: on"), (0, "Full deletion: off"), (0, "Voice messages: off")])
-      threadDelay 1000000
       -- alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"on\"}}}"
       alice ##> "/set voice #team on"
       alice <## "updated group preferences:"
@@ -3462,17 +3462,19 @@ testUpdateGroupPrefs =
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
       bob <## "Voice messages enabled: on"
+      threadDelay 500000
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Full deletion: on"), (0, "Full deletion: off"), (0, "Voice messages: off"), (0, "Voice messages: on")])
-      threadDelay 1000000
+      threadDelay 500000
       alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"on\"}, \"directMessages\": {\"enable\": \"on\"}}}"
       -- no update
+      threadDelay 500000
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on")])
-      threadDelay 1000000
       alice #> "#team hey"
       bob <# "#team alice> hey"
-      threadDelay 1000000
+      threadDelay 500000
       bob #> "#team hi"
       alice <# "#team bob> hi"
+      threadDelay 500000
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on"), (1, "hey"), (0, "hi")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Full deletion: on"), (0, "Full deletion: off"), (0, "Voice messages: off"), (0, "Voice messages: on"), (0, "hey"), (1, "hi")])
 
