@@ -1324,7 +1324,7 @@ processChatCommand = \case
     processConfirmPrefPending :: User -> Contact -> Profile -> Profile -> m ()
     processConfirmPrefPending user ct confirmPrefProfile oldProfile = do
       when ttlChanged $ sendProfileUpdate ct confirmPrefProfile
-      void $ withStore' $ \db -> setContactConfirmPrefPending db user ct False
+      withStore' $ \db -> setContactConfirmPrefPending db user ct False
       where
         ttlChanged = profileTTL confirmPrefProfile /= profileTTL oldProfile
         profileTTL Profile {preferences} = preferences >>= \Preferences {timedMessages} -> timedMessages >>= \TimedMessagesPreference {ttl} -> ttl
@@ -2788,10 +2788,10 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
     xInfo c@Contact {profile = p} p' = unless (fromLocalProfile p == p') $ do
       let (p'', userPrefs_, confirmPrefPendingFlag) = ttlChangeEffects
       c' <- withStore $ \db -> do
-        c' <- case userPrefs_ of
+        c'' <- case userPrefs_ of
           Nothing -> pure c
           Just userPrefs -> liftIO $ updateContactUserPreferences db user c userPrefs
-        c'' <- liftIO $ setContactConfirmPrefPending db user c' confirmPrefPendingFlag
+        liftIO $ setContactConfirmPrefPending db user c'' confirmPrefPendingFlag
         updateContactProfile db user c'' p''
       toView $ CRContactUpdated c c'
       when (directOrUsed c) $ createFeatureChangedItems user c c' CDDirectRcv CIRcvChatFeature
