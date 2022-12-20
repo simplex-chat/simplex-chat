@@ -393,7 +393,7 @@ private fun SendTextButton(
     Icon(
       icon,
       stringResource(R.string.icon_descr_send_message),
-      tint = MaterialTheme.colors.background,
+      tint = Color.White,
       modifier = Modifier
         .size(sizeDp.value.dp)
         .padding(3.dp)
@@ -422,7 +422,7 @@ private fun StartLiveMessageButton(onClick: () -> Unit) {
     Icon(
       Icons.Filled.MoreHoriz,
       stringResource(R.string.icon_descr_send_message),
-      tint = MaterialTheme.colors.background,
+      tint = Color.White,
       modifier = Modifier
         .size(36.dp)
         .padding(3.dp)
