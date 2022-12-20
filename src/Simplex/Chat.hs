@@ -1317,13 +1317,13 @@ processChatCommand = \case
       when confirmPrefPending $ do
         let confirmPrefProfile = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct)
             ttlChanged = profileTTL confirmPrefProfile /= profileTTL mergedProfile
-        when ttlChanged $ sendProfileUpdate ct' confirmPrefProfile
+        when ttlChanged $ sendProfileUpdate confirmPrefProfile
         withStore' $ \db -> setContactConfirmPrefPending db user ct False
-      sendProfileUpdate ct' mergedProfile
+      sendProfileUpdate mergedProfile
       pure ct' {confirmPrefPending = False}
       where
-        sendProfileUpdate :: Contact -> Profile -> m ()
-        sendProfileUpdate contact profile = void (sendDirectContactMessage contact $ XInfo profile) `catchError` (toView . CRChatError)
+        sendProfileUpdate :: Profile -> m ()
+        sendProfileUpdate p = void (sendDirectContactMessage ct' $ XInfo p) `catchError` (toView . CRChatError)
         profileTTL :: Profile -> Maybe Int
         profileTTL Profile {preferences} = preferences >>= \Preferences {timedMessages} -> timedMessages >>= \TimedMessagesPreference {ttl} -> ttl
     runUpdateGroupProfile :: User -> Group -> GroupProfile -> m ChatResponse
