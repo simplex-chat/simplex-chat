@@ -1317,12 +1317,15 @@ processChatCommand = \case
       incognitoProfile <- forM customUserProfileId $ \profileId -> withStore $ \db -> getProfileById db userId profileId
       let mergedProfile = userProfileToSend user' (fromLocalProfile <$> incognitoProfile) (Just ct')
           mergedTTL = prefParam $ getPreference SCFTimedMessages (preferences (mergedProfile :: Profile))
-      when confirmPrefPending $ do
-        let confirmProfile = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct)
-            confirmTTL = prefParam $ getPreference SCFTimedMessages (preferences (confirmProfile :: Profile))
-        when (confirmTTL /= mergedTTL) $ sendProfileUpdate ct' confirmProfile
-        withStore' $ \db -> setContactConfirmPrefPending db user ct False
-      pure (ct' {confirmPrefPending = False}, mergedProfile)
+      ct'' <-
+        if confirmPrefPending
+          then do
+            let confirmProfile = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct)
+                confirmTTL = prefParam $ getPreference SCFTimedMessages (preferences (confirmProfile :: Profile))
+            when (confirmTTL /= mergedTTL) $ sendProfileUpdate ct' confirmProfile
+            withStore' $ \db -> setContactConfirmPrefPending db user ct' False
+          else pure ct'
+      pure (ct'', mergedProfile)
     sendProfileUpdate :: Contact -> Profile -> m ()
     sendProfileUpdate ct p = void (sendDirectContactMessage ct $ XInfo p) `catchError` (toView . CRChatError)
     runUpdateGroupProfile :: User -> Group -> GroupProfile -> m ChatResponse
@@ -2783,42 +2786,36 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
 
     xInfo :: Contact -> Profile -> m ()
     xInfo c@Contact {profile = p} p' = unless (fromLocalProfile p == p') $ do
-      let (p'', userPrefs_, confirmPrefPendingFlag) = ttlChangeEffects
-      c' <- withStore $ \db -> do
-        c'' <- case userPrefs_ of
-          Nothing -> pure c
-          Just userPrefs -> liftIO $ updateContactUserPreferences db user c userPrefs
-        liftIO $ setContactConfirmPrefPending db user c'' confirmPrefPendingFlag
-        updateContactProfile db user c'' p''
+      c' <- updateContactProfileAndUserPrefs
       toView $ CRContactUpdated c c'
       when (directOrUsed c) $ createFeatureChangedItems user c c' CDDirectRcv CIRcvChatFeature
       where
-        ttlChangeEffects = do
+        updateContactProfileAndUserPrefs = do
           let LocalProfile {preferences = ctPrefs_} = p
-              Contact {userPreferences = userPrefs@Preferences {timedMessages = userTimedMessages}} = c
-              Profile {preferences = rcvPrefs_} = p'
               ctTTL = ctPrefs_ >>= \Preferences {timedMessages} -> timedMessages >>= \TimedMessagesPreference {ttl} -> ttl
+              Contact {userPreferences = userPrefs@Preferences {timedMessages = userTimedMessages}} = c
               userTTL = userTimedMessages >>= \TimedMessagesPreference {ttl} -> ttl
+              Profile {preferences = rcvPrefs_} = p'
               rcvTimedMessages = rcvPrefs_ >>= \Preferences {timedMessages} -> timedMessages
               rcvTTL = rcvTimedMessages >>= \TimedMessagesPreference {ttl} -> ttl
           if
-              | userTTL == ctTTL && userTTL /= rcvTTL ->
-                let -- set user preference override ttl to received preference ttl
-                    userPrefs' = setUserPref userPrefs userTimedMessages rcvTTL
-                 in (p', Just userPrefs', True)
-              | userTTL /= ctTTL && userTTL == rcvTTL ->
-                -- pref change was confirmed - perform regular update
-                (p', Nothing, False)
-              | userTTL /= ctTTL && userTTL /= rcvTTL -> -- && ctTTL /= rcvTTL ?
-                let -- don't update contact preference - instead keep existing contact preference ttl
-                    rcvTimedMessages' = rcvTimedMessages >>= \rcvTM -> Just (rcvTM :: TimedMessagesPreference) {ttl = ctTTL}
+              | userTTL == ctTTL && userTTL /= rcvTTL -> do
+                let userPrefs' = setUserPref userPrefs userTimedMessages rcvTTL
+                withStore $ \db -> do
+                  c' <- liftIO $ updateContactUserPreferences db user c userPrefs'
+                  c'' <- liftIO $ setContactConfirmPrefPending db user c' True
+                  updateContactProfile db user c'' p'
+              | userTTL /= ctTTL && userTTL == rcvTTL -> simpleProfileUpdate
+              | userTTL /= ctTTL && userTTL /= rcvTTL -> do
+                let rcvTimedMessages' = rcvTimedMessages >>= \rcvTM -> Just (rcvTM :: TimedMessagesPreference) {ttl = ctTTL}
                     rcvPrefs' = rcvPrefs_ >>= \rcvPrefs -> Just (rcvPrefs :: Preferences) {timedMessages = rcvTimedMessages'}
                     p'' = (p' :: Profile) {preferences = rcvPrefs'}
-                    -- reset user preference override ttl to contact preference ttl
                     userPrefs' = setUserPref userPrefs userTimedMessages ctTTL
-                 in (p'', Just userPrefs', False)
-              | otherwise ->
-                (p', Nothing, False)
+                withStore $ \db -> do
+                  c' <- liftIO $ updateContactUserPreferences db user c userPrefs'
+                  c'' <- liftIO $ setContactConfirmPrefPending db user c' False
+                  updateContactProfile db user c'' p''
+              | otherwise -> simpleProfileUpdate
           where
             setUserPref userPrefs userTimedMessages ttl =
               let userTimedMessages' = case userTimedMessages of
@@ -2827,6 +2824,9 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
                        in TimedMessagesPreference {allow = userDefault, ttl = ttl}
                     Just userTM -> (userTM :: TimedMessagesPreference) {ttl = ttl}
                in (userPrefs :: Preferences) {timedMessages = Just userTimedMessages'}
+            simpleProfileUpdate = withStore $ \db -> do
+              c' <- liftIO $ setContactConfirmPrefPending db user c False
+              updateContactProfile db user c' p'
 
     createFeatureEnabledItems :: Contact -> m ()
     createFeatureEnabledItems ct@Contact {mergedPreferences} =
