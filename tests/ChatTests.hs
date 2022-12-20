@@ -3471,7 +3471,7 @@ testUpdateGroupPrefs =
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on")])
       alice #> "#team hey"
       bob <# "#team alice> hey"
-      threadDelay 500000
+      threadDelay 750000
       bob #> "#team hi"
       alice <# "#team bob> hi"
       threadDelay 500000
