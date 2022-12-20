@@ -27,6 +27,7 @@
   <string name="sender_you_pronoun">you</string>
   <string name="unknown_message_format">unknown message format</string>
   <string name="invalid_message_format">invalid message format</string>
+  <string name="live">LIVE</string>
 
   <!-- PendingContactConnection - ChatModel.kt -->
   <string name="connection_local_display_name">connection <xliff:g id="connection ID" example="1">%1$d</xliff:g></string>
@@ -264,6 +265,10 @@
   <string name="voice_messages_prohibited">Voice messages prohibited!</string>
   <string name="ask_your_contact_to_enable_voice">Please ask your contact to enable sending voice messages.</string>
   <string name="only_group_owners_can_enable_voice">Only group owners can enable voice messages.</string>
+  <string name="send_live_message">Send live message</string>
+  <string name="live_message">Live message!</string>
+  <string name="send_live_message_desc">Send a live message - it will update for the recipient(s) as you type it</string>
+  <string name="send_verb">Send</string>
 
   <!-- General Actions / Responses -->
   <string name="back">Back</string>

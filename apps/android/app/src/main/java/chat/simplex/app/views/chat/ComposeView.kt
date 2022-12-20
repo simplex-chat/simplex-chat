@@ -3,6 +3,7 @@ package chat.simplex.app.views.chat
 import ComposeVoiceView
 import ComposeFileView
 import android.Manifest
+import android.app.Activity
 import android.content.*
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -64,15 +65,24 @@ sealed class ComposeContextItem {
 }
 
 @Serializable
+data class LiveMessage(
+  val chatItem: ChatItem,
+  val typedMsg: String,
+  val sentMsg: String
+)
+
+@Serializable
 data class ComposeState(
   val message: String = "",
+  val liveMessage: LiveMessage? = null,
   val preview: ComposePreview = ComposePreview.NoPreview,
   val contextItem: ComposeContextItem = ComposeContextItem.NoContextItem,
   val inProgress: Boolean = false,
   val useLinkPreviews: Boolean
 ) {
-  constructor(editingItem: ChatItem, useLinkPreviews: Boolean): this(
+  constructor(editingItem: ChatItem, liveMessage: LiveMessage? = null, useLinkPreviews: Boolean): this(
     editingItem.content.text,
+    liveMessage,
     chatItemPreview(editingItem),
     ComposeContextItem.EditingItem(editingItem),
     useLinkPreviews = useLinkPreviews
@@ -90,7 +100,7 @@ data class ComposeState(
         is ComposePreview.ImagePreview -> true
         is ComposePreview.VoicePreview -> true
         is ComposePreview.FilePreview -> true
-        else -> message.isNotEmpty()
+        else -> message.isNotEmpty() || liveMessage != null
       }
       hasContent && !inProgress
     }
@@ -108,6 +118,16 @@ data class ComposeState(
         is ComposePreview.CLinkPreview -> preview.linkPreview
         else -> null
       }
+
+  val attachmentDisabled: Boolean
+    get() {
+      if (editing || liveMessage != null) return true
+      return when (preview) {
+        ComposePreview.NoPreview -> false
+        is ComposePreview.CLinkPreview -> false
+        else -> true
+      }
+    }
 
   companion object {
     fun saver(): Saver<MutableState<ComposeState>, *> = Saver(
@@ -321,130 +341,157 @@ fun ComposeView(
     cancelledLinks.clear()
   }
 
-  fun checkLinkPreview(): MsgContent {
-    val cs = composeState.value
-    return when (val composePreview = cs.preview) {
-      is ComposePreview.CLinkPreview -> {
-        val url = parseMessage(cs.message)
-        val lp = composePreview.linkPreview
-        if (lp != null && url == lp.uri) {
-          MsgContent.MCLink(cs.message, preview = lp)
-        } else {
-          MsgContent.MCText(cs.message)
-        }
-      }
-      else -> MsgContent.MCText(cs.message)
+  fun clearState(live: Boolean = false) {
+    if (live) {
+      composeState.value = composeState.value.copy(inProgress = false)
+    } else {
+      composeState.value = ComposeState(useLinkPreviews = useLinkPreviews)
+      resetLinkPreview()
     }
-  }
-
-  fun updateMsgContent(msgContent: MsgContent): MsgContent {
-    val cs = composeState.value
-    return when (msgContent) {
-      is MsgContent.MCText -> checkLinkPreview()
-      is MsgContent.MCLink -> checkLinkPreview()
-      is MsgContent.MCImage -> MsgContent.MCImage(cs.message, image = msgContent.image)
-      is MsgContent.MCVoice -> MsgContent.MCVoice(cs.message, duration = msgContent.duration)
-      is MsgContent.MCFile -> MsgContent.MCFile(cs.message)
-      is MsgContent.MCUnknown -> MsgContent.MCUnknown(type = msgContent.type, text = cs.message, json = msgContent.json)
-    }
-  }
-
-  fun clearState() {
-    composeState.value = ComposeState(useLinkPreviews = useLinkPreviews)
     recState.value = RecordingState.NotStarted
     textStyle.value = smallFont
     chosenContent.value = emptyList()
     chosenAudio.value = null
     chosenFile.value = null
-    linkUrl.value = null
-    prevLinkUrl.value = null
-    pendingLinkUrl.value = null
-    cancelledLinks.clear()
+  }
+
+  suspend fun send(cInfo: ChatInfo, mc: MsgContent, quoted: Long?, file: String? = null, live: Boolean = false): ChatItem? {
+    val aChatItem = chatModel.controller.apiSendMessage(
+      type = cInfo.chatType,
+      id = cInfo.apiId,
+      file = file,
+      quotedItemId = quoted,
+      mc = mc,
+      live = live
+    )
+    if (aChatItem != null) chatModel.addChatItem(cInfo, aChatItem.chatItem)
+    return aChatItem?.chatItem
+  }
+
+
+
+  suspend fun sendMessageAsync(text: String?, live: Boolean): ChatItem? {
+    val cInfo = chat.chatInfo
+    val cs = composeState.value
+    var sent: ChatItem?
+    val msgText = text ?: cs.message
+
+    fun sending() {
+      composeState.value = composeState.value.copy(inProgress = true)
+    }
+
+    fun checkLinkPreview(): MsgContent {
+      return when (val composePreview = cs.preview) {
+        is ComposePreview.CLinkPreview -> {
+          val url = parseMessage(msgText)
+          val lp = composePreview.linkPreview
+          if (lp != null && url == lp.uri) {
+            MsgContent.MCLink(msgText, preview = lp)
+          } else {
+            MsgContent.MCText(msgText)
+          }
+        }
+        else -> MsgContent.MCText(msgText)
+      }
+    }
+
+    fun updateMsgContent(msgContent: MsgContent): MsgContent {
+      return when (msgContent) {
+        is MsgContent.MCText -> checkLinkPreview()
+        is MsgContent.MCLink -> checkLinkPreview()
+        is MsgContent.MCImage -> MsgContent.MCImage(msgText, image = msgContent.image)
+        is MsgContent.MCVoice -> MsgContent.MCVoice(msgText, duration = msgContent.duration)
+        is MsgContent.MCFile -> MsgContent.MCFile(msgText)
+        is MsgContent.MCUnknown -> MsgContent.MCUnknown(type = msgContent.type, text = msgText, json = msgContent.json)
+      }
+    }
+
+    suspend fun updateMessage(ei: ChatItem, cInfo: ChatInfo, live: Boolean): ChatItem? {
+      val oldMsgContent = ei.content.msgContent
+      if (oldMsgContent != null) {
+        val updatedItem = chatModel.controller.apiUpdateChatItem(
+          type = cInfo.chatType,
+          id = cInfo.apiId,
+          itemId = ei.meta.itemId,
+          mc = updateMsgContent(oldMsgContent),
+          live = live
+        )
+        if (updatedItem != null) chatModel.upsertChatItem(cInfo, updatedItem.chatItem)
+        return updatedItem?.chatItem
+      }
+      return null
+    }
+
+    if (!live) {
+      sending()
+    }
+
+    if (cs.contextItem is ComposeContextItem.EditingItem) {
+      val ei = cs.contextItem.chatItem
+      sent = updateMessage(ei, cInfo, live)
+    } else if (cs.liveMessage != null) {
+      sent = updateMessage(cs.liveMessage.chatItem, cInfo, live)
+    } else {
+      val msgs: ArrayList<MsgContent> = ArrayList()
+      val files: ArrayList<String> = ArrayList()
+      when (val preview = cs.preview) {
+        ComposePreview.NoPreview -> msgs.add(MsgContent.MCText(msgText))
+        is ComposePreview.CLinkPreview -> msgs.add(checkLinkPreview())
+        is ComposePreview.ImagePreview -> {
+          chosenContent.value.forEachIndexed { index, it ->
+            val file = when (it) {
+              is UploadContent.SimpleImage -> saveImage(context, it.uri)
+              is UploadContent.AnimatedImage -> saveAnimImage(context, it.uri)
+            }
+            if (file != null) {
+              files.add(file)
+              msgs.add(MsgContent.MCImage(if (msgs.isEmpty()) msgText else "", preview.images[index]))
+            }
+          }
+        }
+        is ComposePreview.VoicePreview -> {
+          val chosenAudioVal = chosenAudio.value
+          if (chosenAudioVal != null) {
+            val file = chosenAudioVal.first.toFile().name
+            files.add((file))
+            chatModel.filesToDelete.remove(chosenAudioVal.first.toFile())
+            AudioPlayer.stop(chosenAudioVal.first.toFile().absolutePath)
+            msgs.add(MsgContent.MCVoice(if (msgs.isEmpty()) msgText else "", chosenAudioVal.second / 1000))
+          }
+        }
+        is ComposePreview.FilePreview -> {
+          val chosenFileVal = chosenFile.value
+          if (chosenFileVal != null) {
+            val file = saveFileFromUri(context, chosenFileVal)
+            if (file != null) {
+              files.add((file))
+              msgs.add(MsgContent.MCFile(if (msgs.isEmpty()) msgText else ""))
+            }
+          }
+        }
+      }
+      val quotedItemId: Long? = when (cs.contextItem) {
+        is ComposeContextItem.QuotedItem -> cs.contextItem.chatItem.id
+        else -> null
+      }
+      sent = null
+      msgs.forEachIndexed { index, content ->
+        if (index > 0) delay(100)
+        sent = send(cInfo, content, if (index == 0) quotedItemId else null, files.getOrNull(index),
+          if (content !is MsgContent.MCVoice && index == msgs.lastIndex) live else false
+        )
+      }
+      if (sent == null && chosenContent.value.isNotEmpty()) {
+        sent = send(cInfo, MsgContent.MCText(msgText), quotedItemId, null, live)
+      }
+    }
+    clearState(live)
+    return sent
   }
 
   fun sendMessage() {
-    composeState.value = composeState.value.copy(inProgress = true)
-    val cInfo = chat.chatInfo
-    val cs = composeState.value
-    when (val contextItem = cs.contextItem) {
-      is ComposeContextItem.EditingItem -> {
-        val ei = contextItem.chatItem
-        val oldMsgContent = ei.content.msgContent
-        if (oldMsgContent != null) {
-          withApi {
-            val updatedItem = chatModel.controller.apiUpdateChatItem(
-              type = cInfo.chatType,
-              id = cInfo.apiId,
-              itemId = ei.meta.itemId,
-              mc = updateMsgContent(oldMsgContent)
-            )
-            if (updatedItem != null) chatModel.upsertChatItem(cInfo, updatedItem.chatItem)
-            clearState()
-          }
-        }
-      }
-      else -> {
-        val msgs: ArrayList<MsgContent> = ArrayList()
-        val files: ArrayList<String> = ArrayList()
-        when (val preview = cs.preview) {
-          ComposePreview.NoPreview -> msgs.add(MsgContent.MCText(cs.message))
-          is ComposePreview.CLinkPreview -> msgs.add(checkLinkPreview())
-          is ComposePreview.ImagePreview -> {
-            chosenContent.value.forEachIndexed { index, it ->
-              val file = when (it) {
-                is UploadContent.SimpleImage -> saveImage(context, it.uri)
-                is UploadContent.AnimatedImage -> saveAnimImage(context, it.uri)
-              }
-              if (file != null) {
-                files.add(file)
-                msgs.add(MsgContent.MCImage(if (msgs.isEmpty()) cs.message else "", preview.images[index]))
-              }
-            }
-          }
-          is ComposePreview.VoicePreview -> {
-            val chosenAudioVal = chosenAudio.value
-            if (chosenAudioVal != null) {
-              val file = chosenAudioVal.first.toFile().name
-              files.add((file))
-              chatModel.filesToDelete.remove(chosenAudioVal.first.toFile())
-              AudioPlayer.stop(chosenAudioVal.first.toFile().absolutePath)
-              msgs.add(MsgContent.MCVoice(if (msgs.isEmpty()) cs.message else "", chosenAudioVal.second / 1000))
-            }
-          }
-          is ComposePreview.FilePreview -> {
-            val chosenFileVal = chosenFile.value
-            if (chosenFileVal != null) {
-              val file = saveFileFromUri(context, chosenFileVal)
-              if (file != null) {
-                files.add((file))
-                msgs.add(MsgContent.MCFile(if (msgs.isEmpty()) cs.message else ""))
-              }
-            }
-          }
-        }
-        val quotedItemId: Long? = when (contextItem) {
-          is ComposeContextItem.QuotedItem -> contextItem.chatItem.id
-          else -> null
-        }
-        if (msgs.isNotEmpty()) {
-          withApi {
-            msgs.forEachIndexed { index, content ->
-              if (index > 0) delay(100)
-              val aChatItem = chatModel.controller.apiSendMessage(
-                type = cInfo.chatType,
-                id = cInfo.apiId,
-                file = files.getOrNull(index),
-                quotedItemId = if (index == 0) quotedItemId else null,
-                mc = content
-              )
-              if (aChatItem != null) chatModel.addChatItem(cInfo, aChatItem.chatItem)
-            }
-            clearState()
-          }
-        } else {
-          clearState()
-        }
-      }
+    withBGApi {
+      sendMessageAsync(null, false)
     }
   }
 
@@ -510,6 +557,52 @@ fun ComposeView(
     chosenFile.value = null
   }
 
+  fun truncateToWords(s: String): String {
+    var acc = ""
+    val word = StringBuilder()
+    for (c in s) {
+      if (c.isLetter() || c.isDigit()) {
+        word.append(c)
+      } else {
+        acc = acc + word.toString() + c
+        word.clear()
+      }
+    }
+    return acc
+  }
+
+  suspend fun sendLiveMessage() {
+    val typedMsg = composeState.value.message
+    val sentMsg = truncateToWords(typedMsg)
+    if (composeState.value.liveMessage == null) {
+      val ci = sendMessageAsync(sentMsg, live = true)
+      if (ci != null) {
+        composeState.value = composeState.value.copy(liveMessage = LiveMessage(ci, typedMsg = typedMsg, sentMsg = sentMsg))
+      }
+    }
+  }
+
+  fun liveMessageToSend(lm: LiveMessage, t: String): String? {
+    val s = if (t != lm.typedMsg) truncateToWords(t) else t
+    return if (s != lm.sentMsg) s else null
+  }
+
+  suspend fun updateLiveMessage() {
+    val typedMsg = composeState.value.message
+    val liveMessage = composeState.value.liveMessage
+    if (liveMessage != null) {
+      val sentMsg = liveMessageToSend(liveMessage, typedMsg)
+      if (sentMsg != null) {
+        val ci = sendMessageAsync(sentMsg, live = true)
+        if (ci != null) {
+          composeState.value = composeState.value.copy(liveMessage = LiveMessage(ci, typedMsg = typedMsg, sentMsg = sentMsg))
+        }
+      } else if (liveMessage.typedMsg != typedMsg) {
+        composeState.value = composeState.value.copy(liveMessage = liveMessage.copy(typedMsg = typedMsg))
+      }
+    }
+  }
+
   @Composable
   fun previewView() {
     when (val preview = composeState.value.preview) {
@@ -572,13 +665,11 @@ fun ComposeView(
       modifier = Modifier.padding(end = 8.dp),
       verticalAlignment = Alignment.Bottom,
     ) {
-      val attachEnabled = !composeState.value.editing &&
-          (composeState.value.preview is ComposePreview.NoPreview || composeState.value.preview is ComposePreview.CLinkPreview)
-      IconButton(showChooseAttachment, enabled = attachEnabled) {
+      IconButton(showChooseAttachment, enabled = !composeState.value.attachmentDisabled) {
         Icon(
           Icons.Filled.AttachFile,
           contentDescription = stringResource(R.string.attach),
-          tint = if (attachEnabled) MaterialTheme.colors.primary else HighOrLowlight,
+          tint = if (!composeState.value.attachmentDisabled) MaterialTheme.colors.primary else HighOrLowlight,
           modifier = Modifier
             .size(28.dp)
             .clip(CircleShape)
@@ -609,11 +700,23 @@ fun ComposeView(
           }
       }
 
+      val activity = LocalContext.current as Activity
+      DisposableEffect(Unit) {
+        val orientation = activity.resources.configuration.orientation
+        onDispose {
+          if (orientation == activity.resources.configuration.orientation && composeState.value.liveMessage != null) {
+            sendMessage()
+            resetLinkPreview()
+          }
+        }
+      }
+
       SendMsgView(
         composeState,
         showVoiceRecordIcon = true,
         recState,
         chat.chatInfo is ChatInfo.Direct,
+        liveMessageAlertShown = chatModel.controller.appPrefs.liveMessageAlertShown,
         needToAllowVoiceToContact,
         allowedVoiceByPrefs,
         allowVoiceToContact = ::allowVoiceToContact,
@@ -621,8 +724,10 @@ fun ComposeView(
           sendMessage()
           resetLinkPreview()
         },
-        ::onMessageChange,
-        textStyle
+        sendLiveMessage = ::sendLiveMessage,
+        updateLiveMessage = ::updateLiveMessage,
+        onMessageChange = ::onMessageChange,
+        textStyle = textStyle
       )
     }
   }

@@ -14,6 +14,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.*
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.res.stringResource
@@ -67,7 +68,7 @@ fun FramedItemView(
   }
 
   @Composable
-  fun ciDeletedView() {
+  fun FramedItemHeader(caption: String, italic: Boolean, icon: ImageVector? = null) {
     Row(
       Modifier
         .background(if (sent) SentQuoteColorLight else ReceivedQuoteColorLight)
@@ -78,15 +79,19 @@ fun FramedItemView(
         .padding(bottom = if (ci.quotedItem == null) 6.dp else 0.dp),
       horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-      Icon(
-        Icons.Outlined.Delete,
-        stringResource(R.string.marked_deleted_description),
-        Modifier.size(18.dp),
-        tint = if (isInDarkTheme()) FileDark else FileLight
-      )
+      if (icon != null) {
+        Icon(
+          icon,
+          caption,
+          Modifier.size(18.dp),
+          tint = if (isInDarkTheme()) FileDark else FileLight
+        )
+      }
       Text(
         buildAnnotatedString {
-          withStyle(SpanStyle(fontSize = 12.sp, fontStyle = FontStyle.Italic, color = HighOrLowlight)) { append(generalGetString(R.string.marked_deleted_description)) }
+          withStyle(SpanStyle(fontSize = 12.sp, fontStyle = if (italic) FontStyle.Italic else FontStyle.Normal, color = HighOrLowlight)) {
+            append(caption)
+          }
         },
         style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
       )
@@ -138,12 +143,12 @@ fun FramedItemView(
   @Composable
   fun ciFileView(ci: ChatItem, text: String) {
     CIFileView(ci.file, ci.meta.itemEdited, receiveFile)
-    if (text != "") {
+    if (text != "" || ci.meta.isLive) {
       CIMarkdownText(ci, showMember, linkMode = linkMode, uriHandler)
     }
   }
 
-  val transparentBackground = (ci.content.msgContent is MsgContent.MCImage) && ci.content.text.isEmpty() && ci.quotedItem == null
+  val transparentBackground = (ci.content.msgContent is MsgContent.MCImage) && !ci.meta.isLive && ci.content.text.isEmpty() && ci.quotedItem == null
 
   Box(Modifier
     .clip(RoundedCornerShape(18.dp))
@@ -158,9 +163,13 @@ fun FramedItemView(
     Box(contentAlignment = Alignment.BottomEnd) {
       Column(Modifier.width(IntrinsicSize.Max)) {
         PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID) {
-          if (ci.meta.itemDeleted) { ciDeletedView() }
+          if (ci.meta.itemDeleted) {
+            FramedItemHeader(stringResource(R.string.marked_deleted_description), true, Icons.Outlined.Delete)
+          } else if (ci.meta.isLive) {
+            FramedItemHeader(stringResource(R.string.live), false)
+          }
           ci.quotedItem?.let { ciQuoteView(it) }
-          if (ci.file == null && ci.formattedText == null && isShortEmoji(ci.content.text)) {
+          if (ci.file == null && ci.formattedText == null && !ci.meta.isLive && isShortEmoji(ci.content.text)) {
             Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
               Column(
                 Modifier
@@ -176,7 +185,7 @@ fun FramedItemView(
             when (val mc = ci.content.msgContent) {
               is MsgContent.MCImage -> {
                 CIImageView(image = mc.image, file = ci.file, imageProvider ?: return@PriorityLayout, showMenu, receiveFile)
-                if (mc.text == "") {
+                if (mc.text == "" && !ci.meta.isLive) {
                   metaColor = Color.White
                 } else {
                   CIMarkdownText(ci, showMember, linkMode, uriHandler)
@@ -220,9 +229,10 @@ fun CIMarkdownText(
   onLinkLongClick: (link: String) -> Unit = {}
 ) {
   Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
+    val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
     MarkdownText(
-      ci.content.text, ci.formattedText, if (showMember) ci.memberDisplayName else null,
-      metaText = ci.timestampText, edited = ci.meta.itemEdited, linkMode = linkMode,
+      text, if (text.isEmpty()) emptyList() else ci.formattedText, if (showMember) ci.memberDisplayName else null,
+      meta = ci.meta, linkMode = linkMode,
       uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick
     )
   }
