@@ -108,7 +108,7 @@ data Contact = Contact
     chatSettings :: ChatSettings,
     userPreferences :: Preferences,
     mergedPreferences :: ContactUserPreferences,
-    unconfirmedTTLChange :: Bool,
+    confirmPrefPending :: Bool,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
