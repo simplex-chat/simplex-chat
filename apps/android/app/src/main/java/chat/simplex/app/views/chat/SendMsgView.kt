@@ -90,6 +90,7 @@ fun SendMsgView(
         showProgress -> ProgressIndicator()
         showVoiceButton -> {
           Row(verticalAlignment = Alignment.CenterVertically) {
+            val stopRecOnNextClick = remember { mutableStateOf(false) }
             when {
               needToAllowVoiceToContact || !allowedVoiceByPrefs -> {
                 DisallowedVoiceButton {
@@ -103,9 +104,9 @@ fun SendMsgView(
               !permissionsState.allPermissionsGranted ->
                 VoiceButtonWithoutPermission { permissionsState.launchMultiplePermissionRequest() }
               else ->
-                RecordVoiceView(recState)
+                RecordVoiceView(recState, stopRecOnNextClick)
             }
-            if (sendLiveMessage != null && updateLiveMessage != null) {
+            if (sendLiveMessage != null && updateLiveMessage != null && (cs.preview !is ComposePreview.VoicePreview || !stopRecOnNextClick.value)) {
               Spacer(Modifier.width(10.dp))
               StartLiveMessageButton {
                 if (composeState.value.preview is ComposePreview.NoPreview) {
@@ -241,7 +242,7 @@ private fun NativeKeyboard(
 }
 
 @Composable
-private fun RecordVoiceView(recState: MutableState<RecordingState>) {
+private fun RecordVoiceView(recState: MutableState<RecordingState>, stopRecOnNextClick: MutableState<Boolean>) {
   val rec: Recorder = remember { RecorderNative(MAX_VOICE_SIZE_FOR_SENDING) }
   DisposableEffect(Unit) { onDispose { rec.stop() } }
   val stopRecordingAndAddAudio: () -> Unit = {
@@ -249,11 +250,10 @@ private fun RecordVoiceView(recState: MutableState<RecordingState>) {
       recState.value = RecordingState.Finished(it, rec.stop())
     }
   }
-  var stopRecOnNextClick by remember { mutableStateOf(false) }
-  if (stopRecOnNextClick) {
+  if (stopRecOnNextClick.value) {
     LaunchedEffect(recState.value) {
       if (recState.value is RecordingState.NotStarted) {
-        stopRecOnNextClick = false
+        stopRecOnNextClick.value = false
       }
     }
     // Lock orientation to current orientation because screen rotation will break the recording
@@ -276,11 +276,11 @@ private fun RecordVoiceView(recState: MutableState<RecordingState>) {
     val interactionSource = interactionSourceWithTapDetection(
       onPress = { if (recState.value is RecordingState.NotStarted) startRecording() },
       onClick = {
-        if (stopRecOnNextClick) {
+        if (stopRecOnNextClick.value) {
           stopRecordingAndAddAudio()
         } else {
           // tapped and didn't hold a finger
-          stopRecOnNextClick = true
+          stopRecOnNextClick.value = true
         }
       },
       onCancel = stopRecordingAndAddAudio,
