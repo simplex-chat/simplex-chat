@@ -1297,8 +1297,9 @@ processChatCommand = \case
         withChatLock "updateProfile" . procCmd $ do
           forM_ contacts $ \ct -> do
             let ct' = updateMergedPreferences user' ct
-            ct'' <- confirmUpdateProfile user user' ct ct'
-            when (directOrUsed ct'') $ createFeatureChangedItems user' ct ct' CDDirectSnd CISndChatFeature
+            (ct'', mergedProfile) <- sendConfirmProfile user user' ct ct'
+            sendProfileUpdate ct'' mergedProfile
+            when (directOrUsed ct'') $ createFeatureChangedItems user' ct ct'' CDDirectSnd CISndChatFeature
           pure $ CRUserProfileUpdated (fromLocalProfile p) p'
     updateContactPrefs :: User -> Contact -> Preferences -> m ChatResponse
     updateContactPrefs user ct@Contact {userPreferences = contactUserPrefs} contactUserPrefs'
@@ -1307,25 +1308,23 @@ processChatCommand = \case
         assertDirectAllowed user MDSnd ct XInfo_
         ct' <- withStore' $ \db -> updateContactUserPreferences db user ct contactUserPrefs'
         withChatLock "updateProfile" . procCmd $ do
-          ct'' <- confirmUpdateProfile user user ct ct'
+          (ct'', mergedProfile) <- sendConfirmProfile user user ct ct'
+          sendProfileUpdate ct'' mergedProfile
           when (directOrUsed ct'') $ createFeatureChangedItems user ct ct'' CDDirectSnd CISndChatFeature
           pure $ CRContactPrefsUpdated ct ct''
-    confirmUpdateProfile :: User -> User -> Contact -> Contact -> m Contact
-    confirmUpdateProfile user user'@User {userId} ct ct'@Contact {activeConn = Connection {customUserProfileId}, confirmPrefPending} = do
+    sendConfirmProfile :: User -> User -> Contact -> Contact -> m (Contact, Profile)
+    sendConfirmProfile user user'@User {userId} ct ct'@Contact {activeConn = Connection {customUserProfileId}, confirmPrefPending} = do
       incognitoProfile <- forM customUserProfileId $ \profileId -> withStore $ \db -> getProfileById db userId profileId
       let mergedProfile = userProfileToSend user' (fromLocalProfile <$> incognitoProfile) (Just ct')
+          mergedTTL = prefParam $ getPreference SCFTimedMessages (preferences (mergedProfile :: Profile))
       when confirmPrefPending $ do
-        let confirmPrefProfile = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct)
-            ttlChanged = profileTTL confirmPrefProfile /= profileTTL mergedProfile
-        when ttlChanged $ sendProfileUpdate confirmPrefProfile
+        let confirmProfile = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct)
+            confirmTTL = prefParam $ getPreference SCFTimedMessages (preferences (confirmProfile :: Profile))
+        when (confirmTTL /= mergedTTL) $ sendProfileUpdate ct' confirmProfile
         withStore' $ \db -> setContactConfirmPrefPending db user ct False
-      sendProfileUpdate mergedProfile
-      pure ct' {confirmPrefPending = False}
-      where
-        sendProfileUpdate :: Profile -> m ()
-        sendProfileUpdate p = void (sendDirectContactMessage ct' $ XInfo p) `catchError` (toView . CRChatError)
-        profileTTL :: Profile -> Maybe Int
-        profileTTL Profile {preferences} = preferences >>= \Preferences {timedMessages} -> timedMessages >>= \TimedMessagesPreference {ttl} -> ttl
+      pure (ct' {confirmPrefPending = False}, mergedProfile)
+    sendProfileUpdate :: Contact -> Profile -> m ()
+    sendProfileUpdate ct p = void (sendDirectContactMessage ct $ XInfo p) `catchError` (toView . CRChatError)
     runUpdateGroupProfile :: User -> Group -> GroupProfile -> m ChatResponse
     runUpdateGroupProfile user (Group g@GroupInfo {groupProfile = p} ms) p' = do
       let s = memberStatus $ membership g
