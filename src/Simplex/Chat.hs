@@ -3723,9 +3723,9 @@ chatCommandP =
       "/set delete @" *> (SetContactFeature (ACF SCFFullDelete) <$> displayName <*> optional (A.space *> strP)),
       "/set delete " *> (SetUserFeature (ACF SCFFullDelete) <$> strP),
       "/set direct #" *> (SetGroupFeature (AGF SGFDirectMessages) <$> displayName <*> (A.space *> strP)),
-      "/set disappear #" *> (SetGroupTimedMessages <$> displayName <*> (A.space *> timedTTLOffP)),
+      "/set disappear #" *> (SetGroupTimedMessages <$> displayName <*> (A.space *> timedTTLOnOffP)),
       "/set disappear @" *> (SetContactTimedMessages <$> displayName <*> optional (A.space *> timedMessagesEnabledP)),
-      "/set disappear " *> (SetUserTimedMessages <$> onOffP),
+      "/set disappear " *> (SetUserTimedMessages <$> (("yes" $> True) <|> ("no" $> False))),
       "/incognito " *> (SetIncognito <$> onOffP),
       ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
       ("/version" <|> "/v") $> ShowVersion,
@@ -3795,9 +3795,11 @@ chatCommandP =
         <|> ("day" $> 86400)
         <|> ("week" $> (7 * 86400))
         <|> ("month" $> (30 * 86400))
-    timedTTLOffP = (Just <$> timedTTLP) <|> ("off" $> Nothing)
+    timedTTLOnOffP =
+      optional ("on" *> A.space) *> (Just <$> timedTTLP)
+        <|> ("off" $> Nothing)
     timedMessagesEnabledP =
-      optional "yes" *> A.space *> (TMEEnableSetTTL <$> timedTTLP)
+      optional ("yes" *> A.space) *> (TMEEnableSetTTL <$> timedTTLP)
         <|> ("yes" $> TMEEnableKeepTTL)
         <|> ("no" $> TMEDisableKeepTTL)
     netCfgP = do
