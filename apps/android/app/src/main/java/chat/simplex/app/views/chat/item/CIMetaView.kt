@@ -3,6 +3,7 @@ package chat.simplex.app.views.chat.item
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.runtime.Composable
@@ -41,23 +42,40 @@ private fun CIMetaText(meta: CIMeta, chatTTL: Int?, color: Color) {
   }
   if (meta.disappearing) {
     StatusIconText(Icons.Outlined.Timer, color)
-    Spacer(Modifier.width(3.dp))
     val ttl = meta.itemTimed?.ttl
     if (ttl != chatTTL) {
-      Text(TimedMessagesPreference.shortTtlText(ttl), color = color)
-      Spacer(Modifier.width(3.dp))
+      Text(TimedMessagesPreference.shortTtlText(ttl), color = color, fontSize = 13.sp)
     }
+    Spacer(Modifier.width(4.dp))
   }
   val statusIcon = meta.statusIcon(MaterialTheme.colors.primary, color)
   if (statusIcon != null) {
     val (icon, statusColor) = statusIcon
     StatusIconText(icon, statusColor)
-    Spacer(Modifier.width(3.dp))
+    Spacer(Modifier.width(4.dp))
   } else if (!meta.disappearing) {
-    /*StatusIconText(Icons.Filled.MarkChatUnread, Color.Unspecified)
-    Spacer(Modifier.width(3.dp))*/
+    StatusIconText(Icons.Filled.Circle, Color.Transparent)
+    Spacer(Modifier.width(4.dp))
   }
-  Text(meta.timestampText, color = color, fontSize = 14.sp)
+  Text(meta.timestampText, color = color, fontSize = 13.sp)
+}
+
+fun reserveSpaceForMeta(meta: CIMeta, chatTTL: Int?): String {
+  var res = ""
+  var repeats = 0
+  if (meta.itemEdited) repeats++
+  if (meta.itemTimed != null) {
+    repeats++
+    val ttl = meta.itemTimed?.ttl
+    if (ttl != chatTTL) {
+      res += TimedMessagesPreference.shortTtlText(ttl)
+    }
+  }
+  if (meta.itemStatus !is CIStatus.RcvRead && meta.itemStatus !is CIStatus.RcvNew) repeats++
+  repeat(repeats) {
+    res += "    "
+  }
+  return res + meta.timestampText
 }
 
 @Composable

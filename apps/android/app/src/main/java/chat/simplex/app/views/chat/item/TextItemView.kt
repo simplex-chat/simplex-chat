@@ -70,6 +70,7 @@ fun MarkdownText (
   formattedText: List<FormattedText>? = null,
   sender: String? = null,
   meta: CIMeta? = null,
+  chatTTL: Int? = null,
   style: TextStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onSurface, lineHeight = 22.sp),
   maxLines: Int = Int.MAX_VALUE,
   overflow: TextOverflow = TextOverflow.Clip,
@@ -85,15 +86,7 @@ fun MarkdownText (
   val reserve = if (textLayoutDirection != LocalLayoutDirection.current && meta != null) {
     "\n"
   } else if (meta != null) {
-    var res = ""
-    var repeats = 0
-    if (meta.itemEdited) repeats++
-    if (meta.itemTimed != null) repeats++
-    if (meta.itemStatus !is CIStatus.RcvRead && meta.itemStatus !is CIStatus.RcvNew) repeats++
-    repeat(repeats) {
-      res += "    "
-    }
-    res
+    reserveSpaceForMeta(meta, chatTTL)
   } else {
     "    "
   }
@@ -143,7 +136,7 @@ fun MarkdownText (
         if (meta?.isLive == true) {
           append(typingIndicator(meta.recent, typingIdx))
         }
-        if (meta != null) withStyle(reserveTimestampStyle) { append(reserve + meta.timestampText) }
+        if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
       Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow)
     } else {
@@ -175,7 +168,7 @@ fun MarkdownText (
         // With RTL language set globally links looks bad sometimes, better to add a new line to bo sure everything looks good
         /*if (metaText != null && hasLinks && LocalLayoutDirection.current == LayoutDirection.Rtl)
           withStyle(reserveTimestampStyle) { append("\n" + metaText) }
-        else */if (meta != null) withStyle(reserveTimestampStyle) { append(reserve + meta.timestampText) }
+        else */if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
       if (hasLinks && uriHandler != null) {
         ClickableText(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow,
