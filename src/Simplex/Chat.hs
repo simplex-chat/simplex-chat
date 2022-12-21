@@ -1287,6 +1287,7 @@ processChatCommand = \case
     updateProfile user@User {profile = p} p'
       | p' == fromLocalProfile p = pure CRUserProfileNoChange
       | otherwise = do
+        -- read contacts before user update to correctly merge preferences
         -- [incognito] filter out contacts with whom user has incognito connections
         contacts <-
           filter (\ct -> isReady ct && not (contactConnIncognito ct))
