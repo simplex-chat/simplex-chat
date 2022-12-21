@@ -215,6 +215,20 @@ public struct TimedMessagesPreference: Preference {
             + maybe (s, "\(s) sec")
     }
 
+    public static func shortTtlText(_ ttl: Int?) -> String {
+        guard let ttl = ttl else { return "off" }
+        let m = ttl / 60
+        if m == 0 { return "\(ttl)s" }
+        let h = m / 60
+        if h == 0 { return "\(m)m" }
+        let d = h / 24
+        if d == 0 { return "\(h)h" }
+        let mm = d / 30
+        if mm > 0 { return "\(mm)mth" }
+        let w = d / 7
+        return w == 0 || d % 7 != 0 ? "\(d)d" : "\(w)w"
+    }
+
     static func divMod(_ n: Int, by d: Int) -> (Int, Int) {
         (n / d, n % d)
     }
@@ -878,6 +892,19 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
         case let .direct(contact): return contact.mergedPreferences.fullDelete.enabled.forUser
         case let .group(groupInfo): return groupInfo.fullGroupPreferences.fullDelete.on
         default: return false
+        }
+    }
+
+    public var timedMessagesTTL: Int? {
+        switch self {
+        case let .direct(contact):
+            let pref = contact.mergedPreferences.timedMessages
+            return pref.enabled.forUser ? pref.userPreference.preference.ttl : nil
+        case let .group(groupInfo):
+            let pref = groupInfo.fullGroupPreferences.timedMessages
+            return pref.on ? pref.ttl : nil
+        default:
+            return nil
         }
     }
 

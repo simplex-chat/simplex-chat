@@ -106,6 +106,7 @@ struct ChatItemView_Previews: PreviewProvider {
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent, false, false, true), revealed: Binding.constant(true))
         }
         .previewLayout(.fixed(width: 360, height: 70))
+        .environmentObject(Chat.sampleData)
     }
 }
 
@@ -159,5 +160,6 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
             )
         }
         .previewLayout(.fixed(width: 360, height: 70))
+        .environmentObject(Chat.sampleData)
     }
 }

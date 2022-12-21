@@ -72,5 +72,6 @@ struct FramedCIVoiceView_Previews: PreviewProvider {
                 .environmentObject(ChatModel())
         }
         .previewLayout(.fixed(width: 360, height: 360))
+        .environmentObject(Chat.sampleData)
     }
 }
