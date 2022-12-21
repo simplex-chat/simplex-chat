@@ -338,17 +338,15 @@ instance PreferenceI FullPreferences where
   {-# INLINE getPreference #-}
 
 setPreference :: forall f. FeatureI f => SChatFeature f -> Maybe FeatureAllowed -> Maybe Preferences -> Preferences
-setPreference f allow_ prefs_ = setPreference_ f pref prefs
+setPreference f allow_ prefs_ = setPreference_ f pref $ fromMaybe emptyChatPrefs prefs_
   where
     pref = setAllow <$> allow_
     setAllow :: FeatureAllowed -> FeaturePreference f
     setAllow = setField @"allow" (getPreference f prefs)
-    prefs = toChatPrefs $ mergePreferences Nothing prefs_
+    prefs = mergePreferences Nothing prefs_
 
 setPreference' :: SChatFeature f -> Maybe (FeaturePreference f) -> Maybe Preferences -> Preferences
-setPreference' f pref_ prefs_ = setPreference_ f pref_ prefs
-  where
-    prefs = toChatPrefs $ mergePreferences Nothing prefs_
+setPreference' f pref_ prefs_ = setPreference_ f pref_ $ fromMaybe emptyChatPrefs prefs_
 
 setPreference_ :: SChatFeature f -> Maybe (FeaturePreference f) -> Preferences -> Preferences
 setPreference_ f pref_ prefs =

@@ -1284,22 +1284,24 @@ processChatCommand = \case
       | chunks <= sendChunks && chunks * n <= totalSendChunks && isVoice mc = Just IFMSent
       | otherwise = Just IFMOffer
     updateProfile :: User -> Profile -> m ChatResponse
-    updateProfile user@User {profile = p@LocalProfile {profileId, localAlias}} p'@Profile {displayName}
+    updateProfile user@User {profile = p} p'
       | p' == fromLocalProfile p = pure CRUserProfileNoChange
       | otherwise = do
-        withStore $ \db -> updateUserProfile db user p'
-        let user' = (user :: User) {localDisplayName = displayName, profile = toLocalProfile profileId p' localAlias}
-        asks currentUser >>= atomically . (`writeTVar` Just user')
+        -- read contacts before user update to correctly merge preferences
         -- [incognito] filter out contacts with whom user has incognito connections
         contacts <-
           filter (\ct -> isReady ct && not (contactConnIncognito ct))
             <$> withStore' (`getUserContacts` user)
+        user' <- withStore $ \db -> updateUserProfile db user p'
+        asks currentUser >>= atomically . (`writeTVar` Just user')
         withChatLock "updateProfile" . procCmd $ do
           forM_ contacts $ \ct -> do
-            let mergedProfile = userProfileToSend user' Nothing $ Just ct
+            let mergedProfile = userProfileToSend user Nothing $ Just ct
                 ct' = updateMergedPreferences user' ct
-            void (sendDirectContactMessage ct $ XInfo mergedProfile) `catchError` (toView . CRChatError)
-            when (directOrUsed ct) $ createFeatureChangedItems user' ct ct' CDDirectSnd CISndChatFeature
+                mergedProfile' = userProfileToSend user' Nothing $ Just ct'
+            when (mergedProfile' /= mergedProfile) $ do
+              void (sendDirectContactMessage ct' $ XInfo mergedProfile') `catchError` (toView . CRChatError)
+              when (directOrUsed ct') $ createFeatureChangedItems user' ct ct' CDDirectSnd CISndChatFeature
           pure $ CRUserProfileUpdated (fromLocalProfile p) p'
     updateContactPrefs :: User -> Contact -> Preferences -> m ChatResponse
     updateContactPrefs user@User {userId} ct@Contact {activeConn = Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
@@ -1308,11 +1310,13 @@ processChatCommand = \case
         assertDirectAllowed user MDSnd ct XInfo_
         ct' <- withStore' $ \db -> updateContactUserPreferences db user ct contactUserPrefs'
         incognitoProfile <- forM customUserProfileId $ \profileId -> withStore $ \db -> getProfileById db userId profileId
-        let p' = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct')
-        withChatLock "updateProfile" . procCmd $ do
-          void (sendDirectContactMessage ct' $ XInfo p') `catchError` (toView . CRChatError)
-          when (directOrUsed ct) $ createFeatureChangedItems user ct ct' CDDirectSnd CISndChatFeature
-          pure $ CRContactPrefsUpdated ct ct'
+        let mergedProfile = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct)
+            mergedProfile' = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct')
+        when (mergedProfile' /= mergedProfile) $
+          withChatLock "updateProfile" $ do
+            void (sendDirectContactMessage ct' $ XInfo mergedProfile') `catchError` (toView . CRChatError)
+            when (directOrUsed ct') $ createFeatureChangedItems user ct ct' CDDirectSnd CISndChatFeature
+        pure $ CRContactPrefsUpdated ct ct'
     runUpdateGroupProfile :: User -> Group -> GroupProfile -> m ChatResponse
     runUpdateGroupProfile user (Group g@GroupInfo {groupProfile = p} ms) p' = do
       let s = memberStatus $ membership g
@@ -2771,9 +2775,28 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
 
     xInfo :: Contact -> Profile -> m ()
     xInfo c@Contact {profile = p} p' = unless (fromLocalProfile p == p') $ do
-      c' <- withStore $ \db -> updateContactProfile db user c p'
+      c' <- withStore $ \db ->
+        if userTTL == rcvTTL
+          then updateContactProfile db user c p'
+          else do
+            c' <- liftIO $ updateContactUserPreferences db user c ctUserPrefs'
+            updateContactProfile db user c' p'
+      when (directOrUsed c') $ createFeatureChangedItems user c c' CDDirectRcv CIRcvChatFeature
       toView $ CRContactUpdated c c'
-      when (directOrUsed c) $ createFeatureChangedItems user c c' CDDirectRcv CIRcvChatFeature
+      where
+        Contact {userPreferences = ctUserPrefs@Preferences {timedMessages = ctUserTMPref}} = c
+        userTTL = prefParam $ getPreference SCFTimedMessages ctUserPrefs
+        Profile {preferences = rcvPrefs_} = p'
+        rcvTTL = prefParam $ getPreference SCFTimedMessages rcvPrefs_
+        ctUserPrefs' =
+          let userDefault = getPreference SCFTimedMessages (fullPreferences user)
+              userDefaultTTL = prefParam userDefault
+              ctUserTMPref' = case ctUserTMPref of
+                Just userTM -> Just (userTM :: TimedMessagesPreference) {ttl = rcvTTL}
+                _
+                  | rcvTTL /= userDefaultTTL -> Just (userDefault :: TimedMessagesPreference) {ttl = rcvTTL}
+                  | otherwise -> Nothing
+           in setPreference_ SCFTimedMessages ctUserTMPref' ctUserPrefs
 
     createFeatureEnabledItems :: Contact -> m ()
     createFeatureEnabledItems ct@Contact {mergedPreferences} =
@@ -3702,9 +3725,9 @@ chatCommandP =
       "/set delete @" *> (SetContactFeature (ACF SCFFullDelete) <$> displayName <*> optional (A.space *> strP)),
       "/set delete " *> (SetUserFeature (ACF SCFFullDelete) <$> strP),
       "/set direct #" *> (SetGroupFeature (AGF SGFDirectMessages) <$> displayName <*> (A.space *> strP)),
-      "/set disappear #" *> (SetGroupTimedMessages <$> displayName <*> (A.space *> timedTTLOffP)),
+      "/set disappear #" *> (SetGroupTimedMessages <$> displayName <*> (A.space *> timedTTLOnOffP)),
       "/set disappear @" *> (SetContactTimedMessages <$> displayName <*> optional (A.space *> timedMessagesEnabledP)),
-      "/set disappear " *> (SetUserTimedMessages <$> onOffP),
+      "/set disappear " *> (SetUserTimedMessages <$> (("yes" $> True) <|> ("no" $> False))),
       "/incognito " *> (SetIncognito <$> onOffP),
       ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
       ("/version" <|> "/v") $> ShowVersion,
@@ -3774,9 +3797,11 @@ chatCommandP =
         <|> ("day" $> 86400)
         <|> ("week" $> (7 * 86400))
         <|> ("month" $> (30 * 86400))
-    timedTTLOffP = (Just <$> timedTTLP) <|> ("off" $> Nothing)
+    timedTTLOnOffP =
+      optional ("on" *> A.space) *> (Just <$> timedTTLP)
+        <|> ("off" $> Nothing)
     timedMessagesEnabledP =
-      optional "yes" *> A.space *> (TMEEnableSetTTL <$> timedTTLP)
+      optional ("yes" *> A.space) *> (TMEEnableSetTTL <$> timedTTLP)
         <|> ("yes" $> TMEEnableKeepTTL)
         <|> ("no" $> TMEDisableKeepTTL)
     netCfgP = do

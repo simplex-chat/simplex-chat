@@ -588,7 +588,7 @@ createContact_ db userId connId Profile {displayName, fullName, image, preferenc
       (profileId, ldn, userId, viaGroup, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, currentTs, connId)
-    pure . Right $ (ldn, contactId, profileId)
+    pure $ Right (ldn, contactId, profileId)
 
 deleteContactConnectionsAndFiles :: DB.Connection -> UserId -> Contact -> IO ()
 deleteContactConnectionsAndFiles db userId Contact {contactId} = do
@@ -660,10 +660,11 @@ deleteContactProfile_ db userId contactId =
     |]
     (userId, contactId)
 
-updateUserProfile :: DB.Connection -> User -> Profile -> ExceptT StoreError IO ()
-updateUserProfile db User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName}} p'@Profile {displayName = newName}
-  | displayName == newName =
+updateUserProfile :: DB.Connection -> User -> Profile -> ExceptT StoreError IO User
+updateUserProfile db user p'
+  | displayName == newName = do
     liftIO $ updateContactProfile_ db userId profileId p'
+    pure user {profile, fullPreferences}
   | otherwise =
     checkConstraint SEDuplicateName . liftIO $ do
       currentTs <- getCurrentTime
@@ -674,18 +675,24 @@ updateUserProfile db User {userId, userContactId, localDisplayName, profile = Lo
         (newName, newName, userId, currentTs, currentTs)
       updateContactProfile_' db userId profileId p' currentTs
       updateContact_ db userId userContactId localDisplayName newName currentTs
+      pure user {localDisplayName = newName, profile, fullPreferences}
+  where
+    User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, localAlias}} = user
+    Profile {displayName = newName, preferences} = p'
+    profile = toLocalProfile profileId p' localAlias
+    fullPreferences = mergePreferences Nothing preferences
 
 updateContactProfile :: DB.Connection -> User -> Contact -> Profile -> ExceptT StoreError IO Contact
 updateContactProfile db user@User {userId} c p'
   | displayName == newName = do
     liftIO $ updateContactProfile_ db userId profileId p'
-    pure $ c {profile, mergedPreferences}
+    pure c {profile, mergedPreferences}
   | otherwise =
     ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
       currentTs <- getCurrentTime
       updateContactProfile_' db userId profileId p' currentTs
       updateContact_ db userId contactId localDisplayName ldn currentTs
-      pure . Right $ c {localDisplayName = ldn, profile, mergedPreferences}
+      pure $ Right c {localDisplayName = ldn, profile, mergedPreferences}
   where
     Contact {contactId, localDisplayName, profile = LocalProfile {profileId, displayName, localAlias}, activeConn, userPreferences} = c
     Profile {displayName = newName, preferences} = p'
@@ -3748,13 +3755,14 @@ updateGroupProfile :: DB.Connection -> User -> GroupInfo -> GroupProfile -> Exce
 updateGroupProfile db User {userId} g@GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName}} p'@GroupProfile {displayName = newName, fullName, description, image, groupPreferences}
   | displayName == newName = liftIO $ do
     currentTs <- getCurrentTime
-    updateGroupProfile_ currentTs $> (g :: GroupInfo) {groupProfile = p', fullGroupPreferences}
+    updateGroupProfile_ currentTs
+    pure (g :: GroupInfo) {groupProfile = p', fullGroupPreferences}
   | otherwise =
     ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
       currentTs <- getCurrentTime
       updateGroupProfile_ currentTs
       updateGroup_ ldn currentTs
-      pure . Right $ (g :: GroupInfo) {localDisplayName = ldn, groupProfile = p', fullGroupPreferences}
+      pure $ Right (g :: GroupInfo) {localDisplayName = ldn, groupProfile = p', fullGroupPreferences}
   where
     fullGroupPreferences = mergeGroupPreferences groupPreferences
     updateGroupProfile_ currentTs =
