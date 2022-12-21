@@ -2770,31 +2770,30 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
 
     xInfo :: Contact -> Profile -> m ()
     xInfo c@Contact {profile = p} p' = unless (fromLocalProfile p == p') $ do
-      c' <- updateContactProfileAndUserPrefs
+      c' <-
+        if userTTL == rcvTTL
+          then withStore $ \db -> updateContactProfile db user c p'
+          else do
+            let ctUserPrefs' = setRсvTTL
+            withStore $ \db -> do
+              c' <- liftIO $ updateContactUserPreferences db user c ctUserPrefs'
+              updateContactProfile db user c' p'
       when (directOrUsed c') $ createFeatureChangedItems user c c' CDDirectRcv CIRcvChatFeature
       toView $ CRContactUpdated c c'
       where
-        updateContactProfileAndUserPrefs =
-          if userTTL == rcvTTL
-            then withStore $ \db -> updateContactProfile db user c p'
-            else do
-              let userPrefs' = setContactUserPref rcvTTL
-              withStore $ \db -> do
-                c' <- liftIO $ updateContactUserPreferences db user c userPrefs'
-                updateContactProfile db user c' p'
-        Contact {userPreferences = userPrefs@Preferences {timedMessages = userTimedMessages}} = c
-        userTTL = userTimedMessages >>= \TimedMessagesPreference {ttl} -> ttl
+        Contact {userPreferences = ctUserPrefs@Preferences {timedMessages = ctUserTMPref}} = c
+        userTTL = prefParam $ getPreference SCFTimedMessages ctUserPrefs
         Profile {preferences = rcvPrefs_} = p'
-        rcvTTL = rcvPrefs_ >>= \Preferences {timedMessages} -> timedMessages >>= \TimedMessagesPreference {ttl} -> ttl
-        setContactUserPref ttl_ =
+        rcvTTL = prefParam $ getPreference SCFTimedMessages rcvPrefs_
+        setRсvTTL =
           let userDefault = getPreference SCFTimedMessages (fullPreferences user)
               userDefaultTTL = prefParam userDefault
-              userTimedMessages' = case userTimedMessages of
-                Just userTM -> Just (userTM :: TimedMessagesPreference) {ttl = ttl_}
+              ctUserTMPref' = case ctUserTMPref of
+                Just userTM -> Just (userTM :: TimedMessagesPreference) {ttl = rcvTTL}
                 _
-                  | ttl_ /= userDefaultTTL -> Just (userDefault :: TimedMessagesPreference) {ttl = ttl_}
+                  | rcvTTL /= userDefaultTTL -> Just (userDefault :: TimedMessagesPreference) {ttl = rcvTTL}
                   | otherwise -> Nothing
-           in (userPrefs :: Preferences) {timedMessages = userTimedMessages'}
+           in (ctUserPrefs :: Preferences) {timedMessages = ctUserTMPref'}
 
     createFeatureEnabledItems :: Contact -> m ()
     createFeatureEnabledItems ct@Contact {mergedPreferences} =
