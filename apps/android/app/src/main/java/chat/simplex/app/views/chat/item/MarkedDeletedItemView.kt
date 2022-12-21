@@ -20,7 +20,7 @@ import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.generalGetString
 
 @Composable
-fun MarkedDeletedItemView(ci: ChatItem, showMember: Boolean = false) {
+fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, showMember: Boolean = false) {
   Surface(
     shape = RoundedCornerShape(18.dp),
     color = if (ci.chatDir.sent) SentColorLight else ReceivedColorLight,
@@ -37,7 +37,7 @@ fun MarkedDeletedItemView(ci: ChatItem, showMember: Boolean = false) {
         style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
         modifier = Modifier.padding(end = 8.dp)
       )
-      CIMetaView(ci)
+      CIMetaView(ci, timedMessagesTTL)
     }
   }
 }
@@ -51,7 +51,8 @@ fun MarkedDeletedItemView(ci: ChatItem, showMember: Boolean = false) {
 fun PreviewMarkedDeletedItemView() {
   SimpleXTheme {
     DeletedItemView(
-      ChatItem.getSampleData(itemDeleted = true)
+      ChatItem.getSampleData(itemDeleted = true),
+      null
     )
   }
 }

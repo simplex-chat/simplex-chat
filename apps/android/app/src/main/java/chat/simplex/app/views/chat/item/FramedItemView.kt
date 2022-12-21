@@ -192,7 +192,7 @@ fun FramedItemView(
                 }
               }
               is MsgContent.MCVoice -> {
-                CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = true, ci, longClick = { onLinkLongClick("") })
+                CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = true, ci, timedMessagesTTL = chatInfo.timedMessagesTTL, longClick = { onLinkLongClick("") })
                 if (mc.text != "") {
                   CIMarkdownText(ci, showMember, linkMode, uriHandler)
                 }
@@ -214,7 +214,7 @@ fun FramedItemView(
         }
       }
       Box(Modifier.padding(bottom = 6.dp, end = 12.dp)) {
-        CIMetaView(ci, metaColor)
+        CIMetaView(ci, chatInfo.timedMessagesTTL, metaColor)
       }
     }
   }

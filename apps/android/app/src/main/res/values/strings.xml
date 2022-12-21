@@ -1038,5 +1038,21 @@
   <string name="message_deletion_prohibited_in_chat">Irreversible message deletion is prohibited in this group.</string>
   <string name="group_members_can_send_voice">Group members can send voice messages.</string>
   <string name="voice_messages_are_prohibited">Voice messages are prohibited in this group.</string>
-
+  <string name="delete_after">Delete after</string>
+  <string name="ttl_sec">%d sec</string>
+  <string name="ttl_s">%ds</string>
+  <string name="ttl_min">%d min</string>
+  <string name="ttl_month">%d month</string>
+  <string name="ttl_months">%d months</string>
+  <string name="ttl_m">%dm</string>
+  <string name="ttl_mth">%dmth</string>
+  <string name="ttl_hour">%d hour</string>
+  <string name="ttl_hours">%d hours</string>
+  <string name="ttl_h">%dh</string>
+  <string name="ttl_day">%d day</string>
+  <string name="ttl_days">%d days</string>
+  <string name="ttl_d">%dd</string>
+  <string name="ttl_week">%d week</string>
+  <string name="ttl_weeks">%d weeks</string>
+  <string name="ttl_w">%dw</string>
 </resources>

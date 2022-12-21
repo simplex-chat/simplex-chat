@@ -18,7 +18,9 @@ import androidx.compose.ui.res.stringResource
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
+import chat.simplex.app.views.chat.TimedMessagesTTLPicker
 import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.usersettings.PreferenceToggleWithIcon
 
 @Composable
 fun GroupPreferencesView(m: ChatModel, chatId: String, close: () -> Unit,) {
@@ -74,18 +76,30 @@ private fun GroupPreferencesLayout(
     horizontalAlignment = Alignment.Start,
   ) {
     AppBarTitle(stringResource(R.string.group_preferences))
+    val timedMessages = remember(preferences) { mutableStateOf(preferences.timedMessages.enable) }
+    val onTTLUpdated = { ttl: Int? ->
+      applyPrefs(preferences.copy(timedMessages = preferences.timedMessages.copy(ttl = ttl ?: 86400)))
+    }
+    FeatureSection(GroupFeature.TimedMessages, timedMessages, groupInfo, preferences, onTTLUpdated) { enable ->
+      if (enable == GroupFeatureEnabled.ON) {
+         applyPrefs(preferences.copy(timedMessages = TimedMessagesGroupPreference(enable = enable, ttl = preferences.timedMessages.ttl ?: 86400)))
+      } else {
+        applyPrefs(preferences.copy(timedMessages = TimedMessagesGroupPreference(enable = enable, ttl = currentPreferences.timedMessages.ttl)))
+      }
+    }
+    SectionSpacer()
     val allowDirectMessages = remember(preferences) { mutableStateOf(preferences.directMessages.enable) }
-    FeatureSection(GroupFeature.DirectMessages, allowDirectMessages, groupInfo) {
+    FeatureSection(GroupFeature.DirectMessages, allowDirectMessages, groupInfo, preferences, onTTLUpdated) {
       applyPrefs(preferences.copy(directMessages = GroupPreference(enable = it)))
     }
     SectionSpacer()
     val allowFullDeletion = remember(preferences) { mutableStateOf(preferences.fullDelete.enable) }
-    FeatureSection(GroupFeature.FullDelete, allowFullDeletion, groupInfo) {
+    FeatureSection(GroupFeature.FullDelete, allowFullDeletion, groupInfo, preferences, onTTLUpdated) {
       applyPrefs(preferences.copy(fullDelete = GroupPreference(enable = it)))
     }
     SectionSpacer()
     val allowVoice = remember(preferences) { mutableStateOf(preferences.voice.enable) }
-    FeatureSection(GroupFeature.Voice, allowVoice, groupInfo) {
+    FeatureSection(GroupFeature.Voice, allowVoice, groupInfo, preferences, onTTLUpdated) {
       applyPrefs(preferences.copy(voice = GroupPreference(enable = it)))
     }
     if (groupInfo.canEdit) {
@@ -100,21 +114,34 @@ private fun GroupPreferencesLayout(
 }
 
 @Composable
-private fun FeatureSection(feature: GroupFeature, enableFeature: State<GroupFeatureEnabled>, groupInfo: GroupInfo, onSelected: (GroupFeatureEnabled) -> Unit) {
+private fun FeatureSection(
+  feature: GroupFeature,
+  enableFeature: State<GroupFeatureEnabled>,
+  groupInfo: GroupInfo,
+  preferences: FullGroupPreferences,
+  onTTLUpdated: (Int?) -> Unit,
+  onSelected: (GroupFeatureEnabled) -> Unit
+) {
   SectionView {
     val on = enableFeature.value == GroupFeatureEnabled.ON
     val icon = if (on) feature.iconFilled else feature.icon
     val iconTint = if (on) SimplexGreen else HighOrLowlight
+    val timedOn = feature == GroupFeature.TimedMessages && enableFeature.value == GroupFeatureEnabled.ON
     if (groupInfo.canEdit) {
       SectionItemView {
-        ExposedDropDownSettingRow(
+        PreferenceToggleWithIcon(
           feature.text,
-          GroupFeatureEnabled.values().map { it to it.text },
-          enableFeature,
-          icon = icon,
-          iconTint = iconTint,
-          onSelected = onSelected
-        )
+          icon,
+          iconTint,
+          enableFeature.value == GroupFeatureEnabled.ON,
+        ) { checked ->
+          onSelected(if (checked) GroupFeatureEnabled.ON else GroupFeatureEnabled.OFF)
+        }
+      }
+      if (timedOn) {
+        SectionDivider()
+        val ttl = rememberSaveable(preferences.timedMessages) { mutableStateOf(preferences.timedMessages.ttl) }
+        TimedMessagesTTLPicker(ttl, onTTLUpdated)
       }
     } else {
       InfoRow(
@@ -123,6 +150,10 @@ private fun FeatureSection(feature: GroupFeature, enableFeature: State<GroupFeat
         icon = icon,
         iconTint = iconTint,
       )
+      if (timedOn) {
+        SectionDivider()
+        InfoRow(generalGetString(R.string.delete_after), TimedMessagesPreference.ttlText(preferences.timedMessages.ttl))
+      }
     }
   }
   SectionTextFooter(feature.enableDescription(enableFeature.value, groupInfo.canEdit))

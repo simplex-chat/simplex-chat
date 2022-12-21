@@ -82,10 +82,20 @@ fun MarkdownText (
   val textLayoutDirection = remember (text) {
     if (BidiFormatter.getInstance().isRtl(text.subSequence(0, kotlin.math.min(50, text.length)))) LayoutDirection.Rtl else LayoutDirection.Ltr
   }
-  val reserve = when {
-    textLayoutDirection != LocalLayoutDirection.current && meta != null -> "\n"
-    meta?.itemEdited == true -> "        "
-    else -> "    "
+  val reserve = if (textLayoutDirection != LocalLayoutDirection.current && meta != null) {
+    "\n"
+  } else if (meta != null) {
+    var res = ""
+    var repeats = 0
+    if (meta.itemEdited) repeats++
+    if (meta.itemTimed != null) repeats++
+    if (meta.itemStatus !is CIStatus.RcvRead && meta.itemStatus !is CIStatus.RcvNew) repeats++
+    repeat(repeats) {
+      res += "    "
+    }
+    res
+  } else {
+    "    "
   }
   val scope = rememberCoroutineScope()
   CompositionLocalProvider(
