@@ -25,6 +25,7 @@ private func typing(_ w: Font.Weight = .light) -> Text {
 }
 
 struct MsgContentView: View {
+    @EnvironmentObject var chat: Chat
     var text: String
     var formattedText: [FormattedText]? = nil
     var sender: String? = nil
@@ -66,7 +67,7 @@ struct MsgContentView: View {
             if mt.isLive {
                 v = v + typingIndicator(mt.recent)
             }
-            v = v + reserveSpaceForMeta(mt.timestampText, mt.itemEdited)
+            v = v + reserveSpaceForMeta(mt)
         }
         return v
     }
@@ -78,10 +79,8 @@ struct MsgContentView: View {
             .foregroundColor(.secondary)
     }
 
-    private func reserveSpaceForMeta(_ mt: Text, _ edited: Bool) -> Text {
-        let reserve = rightToLeft ? "\n" : edited ? "          " : "      "
-        return (Text(reserve) + mt)
-            .font(.caption)
+    private func reserveSpaceForMeta(_ mt: CIMeta) -> Text {
+        (rightToLeft ? Text("\n") : Text("   ")) + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL)
             .foregroundColor(.clear)
     }
 }
@@ -157,5 +156,6 @@ struct MsgContentView_Previews: PreviewProvider {
             sender: chatItem.memberDisplayName,
             meta: chatItem.meta
         )
+        .environmentObject(Chat.sampleData)
     }
 }

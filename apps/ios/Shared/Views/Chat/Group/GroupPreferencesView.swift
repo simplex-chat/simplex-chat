@@ -22,6 +22,7 @@ struct GroupPreferencesView: View {
         let saveText: LocalizedStringKey = creatingGroup ? "Save" : "Save and notify group members"
         VStack {
             List {
+                featureSection(.timedMessages, $preferences.timedMessages.enable)
                 featureSection(.fullDelete, $preferences.fullDelete.enable)
                 featureSection(.directMessages, $preferences.directMessages.enable)
                 featureSection(.voice, $preferences.voice.enable)
@@ -33,6 +34,15 @@ struct GroupPreferencesView: View {
                     }
                     .disabled(currentPreferences == preferences)
                 }
+            }
+        }
+        .onChange(of: preferences.timedMessages.enable) { enable in
+            if enable == .on {
+                if preferences.timedMessages.ttl == nil {
+                    preferences.timedMessages.ttl = 86400
+                }
+            } else {
+                preferences.timedMessages.ttl = currentPreferences.timedMessages.ttl
             }
         }
         .modifier(BackButton {
@@ -55,19 +65,24 @@ struct GroupPreferencesView: View {
         Section {
             let color: Color = enableFeature.wrappedValue == .on ? .green : .secondary
             let icon = enableFeature.wrappedValue == .on ? feature.iconFilled : feature.icon
-            if (groupInfo.canEdit) {
+            let timedOn = feature == .timedMessages && enableFeature.wrappedValue == .on
+            if groupInfo.canEdit {
+                let enable = Binding(
+                    get: { enableFeature.wrappedValue == .on },
+                    set: { on, _ in enableFeature.wrappedValue = on ? .on : .off }
+                )
                 settingsRow(icon, color: color) {
-                    Picker(feature.text, selection: enableFeature) {
-                        ForEach(GroupFeatureEnabled.values) { enable in
-                            Text(enable.text)
-                        }
-                    }
-                    .frame(height: 36)
+                    Toggle(feature.text, isOn: enable)
                 }
-            }
-            else {
+                if timedOn {
+                    timedMessagesTTLPicker($preferences.timedMessages.ttl)
+                }
+            } else {
                 settingsRow(icon, color: color) {
                     infoRow(feature.text, enableFeature.wrappedValue.text)
+                }
+                if timedOn {
+                    infoRow("Delete after", TimedMessagesPreference.ttlText(preferences.timedMessages.ttl))
                 }
             }
         } footer: {

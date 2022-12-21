@@ -396,7 +396,6 @@ struct ChatView: View {
                         .frame(width: memberImageSize, height: memberImageSize)
                 }
                 ChatItemWithMenu(
-                    chat: chat,
                     ci: ci,
                     showMember: showMember,
                     maxWidth: maxWidth,
@@ -405,13 +404,14 @@ struct ChatView: View {
                     deletingItem: $deletingItem,
                     composeState: $composeState,
                     showDeleteMessage: $showDeleteMessage
-                ).padding(.leading, 8)
+                )
+                .padding(.leading, 8)
+                .environmentObject(chat)
             }
             .padding(.trailing)
             .padding(.leading, 12)
         } else {
             ChatItemWithMenu(
-                chat: chat,
                 ci: ci,
                 maxWidth: maxWidth,
                 scrollProxy: scrollProxy,
@@ -419,12 +419,14 @@ struct ChatView: View {
                 deletingItem: $deletingItem,
                 composeState: $composeState,
                 showDeleteMessage: $showDeleteMessage
-            ).padding(.horizontal)
+            )
+            .padding(.horizontal)
+            .environmentObject(chat)
         }
     }
     
     private struct ChatItemWithMenu: View {
-        var chat: Chat
+        @EnvironmentObject var chat: Chat
         var ci: ChatItem
         var showMember: Bool = false
         var maxWidth: CGFloat

@@ -642,7 +642,7 @@ struct ComposeView: View {
             Task {
                 do {
                     var prefs = contactUserPreferencesToPreferences(contact.mergedPreferences)
-                    prefs.voice = Preference(allow: .yes)
+                    prefs.voice = SimplePreference(allow: .yes)
                     if let toContact = try await apiSetContactPrefs(contactId: contact.contactId, preferences: prefs) {
                         await MainActor.run {
                             chatModel.updateContact(toContact)

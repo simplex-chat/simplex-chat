@@ -161,5 +161,6 @@ struct CIFileView_Previews: PreviewProvider {
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: fileChatItemWtFile, revealed: Binding.constant(false))
         }
         .previewLayout(.fixed(width: 360, height: 360))
+        .environmentObject(Chat.sampleData)
     }
 }

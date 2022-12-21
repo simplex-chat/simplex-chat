@@ -15,7 +15,6 @@ private let sentQuoteColorLight = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, 
 private let sentQuoteColorDark = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.09)
 
 struct FramedItemView: View {
-    @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme
     var chatInfo: ChatInfo
     var chatItem: ChatItem
@@ -40,7 +39,7 @@ struct FramedItemView: View {
                     ciQuoteView(qi)
                         .onTapGesture {
                             if let proxy = scrollProxy,
-                               let ci = m.reversedChatItems.first(where: { $0.id == qi.itemId }) {
+                               let ci = ChatModel.shared.reversedChatItems.first(where: { $0.id == qi.itemId }) {
                                 withAnimation {
                                     proxy.scrollTo(ci.viewId, anchor: .bottom)
                                 }

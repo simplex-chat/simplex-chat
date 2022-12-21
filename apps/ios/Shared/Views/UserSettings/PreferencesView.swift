@@ -18,6 +18,7 @@ struct PreferencesView: View {
     var body: some View {
         VStack {
             List {
+                timedMessagesFeatureSection($preferences.timedMessages.allow)
                 featureSection(.fullDelete, $preferences.fullDelete.allow)
                 featureSection(.voice, $preferences.voice.allow)
 
@@ -40,10 +41,27 @@ struct PreferencesView: View {
                 }
                 .frame(height: 36)
             }
-        } footer: {
-            Text(feature.allowDescription(allowFeature.wrappedValue))
-                .frame(height: 36, alignment: .topLeading)
         }
+        footer: { featureFooter(feature, allowFeature) }
+
+    }
+
+    private func timedMessagesFeatureSection(_ allowFeature: Binding<FeatureAllowed>) -> some View {
+        Section {
+            let allow = Binding(
+                get: { allowFeature.wrappedValue == .always || allowFeature.wrappedValue == .yes },
+                set: { yes, _ in allowFeature.wrappedValue = yes ? .yes : .no }
+            )
+            settingsRow(ChatFeature.timedMessages.icon) {
+                Toggle(ChatFeature.timedMessages.text, isOn: allow)
+            }
+        }
+        footer: { featureFooter(.timedMessages, allowFeature) }
+    }
+
+    private func featureFooter(_ feature: ChatFeature, _ allowFeature: Binding<FeatureAllowed>) -> some View {
+        Text(ChatFeature.timedMessages.allowDescription(allowFeature.wrappedValue))
+            .frame(height: 36, alignment: .topLeading)
     }
 
     private func savePreferences() {

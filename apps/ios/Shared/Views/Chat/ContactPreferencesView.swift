@@ -22,6 +22,7 @@ struct ContactPreferencesView: View {
 
         VStack {
             List {
+                timedMessagesFeatureSection()
                 featureSection(.fullDelete, user.fullPreferences.fullDelete.allow, contact.mergedPreferences.fullDelete, $featuresAllowed.fullDelete)
                 featureSection(.voice, user.fullPreferences.voice.allow, contact.mergedPreferences.voice, $featuresAllowed.voice)
 
@@ -48,10 +49,10 @@ struct ContactPreferencesView: View {
         }
     }
 
-    private func featureSection(_ feature: ChatFeature, _ userDefault: FeatureAllowed, _ pref: ContactUserPreference, _ allowFeature: Binding<ContactFeatureAllowed>) -> some View {
+    private func featureSection(_ feature: ChatFeature, _ userDefault: FeatureAllowed, _ pref: ContactUserPreference<SimplePreference>, _ allowFeature: Binding<ContactFeatureAllowed>) -> some View {
         let enabled = FeatureEnabled.enabled(
             asymmetric: feature.asymmetric,
-            user: Preference(allow: allowFeature.wrappedValue.allowed),
+            user: SimplePreference(allow: allowFeature.wrappedValue.allowed),
             contact: pref.contactPreference
         )
         return Section {
@@ -62,16 +63,51 @@ struct ContactPreferencesView: View {
             }
             .frame(height: 36)
             infoRow("Contact allows", pref.contactPreference.allow.text)
-        } header: {
-            HStack {
-                Image(systemName: "\(feature.icon).fill")
-                    .foregroundColor(enabled.forUser ? .green : enabled.forContact ? .yellow : .red)
-                Text(feature.text)
-            }
-        } footer: {
-            Text(feature.enabledDescription(enabled))
-            .frame(height: 36, alignment: .topLeading)
         }
+        header: { featureHeader(feature, enabled) }
+        footer: { featureFooter(feature, enabled) }
+    }
+
+    private func timedMessagesFeatureSection() -> some View {
+        let pref = contact.mergedPreferences.timedMessages
+        let enabled = FeatureEnabled.enabled(
+            asymmetric: ChatFeature.timedMessages.asymmetric,
+            user: TimedMessagesPreference(allow: featuresAllowed.timedMessagesAllowed ? .yes : .no),
+            contact: pref.contactPreference
+        )
+        return Section {
+            Toggle("You allow", isOn: $featuresAllowed.timedMessagesAllowed)
+                .onChange(of: featuresAllowed.timedMessagesAllowed) { allow in
+                    if allow {
+                        if featuresAllowed.timedMessagesTTL == nil {
+                            featuresAllowed.timedMessagesTTL = 86400
+                        }
+                    } else {
+                        featuresAllowed.timedMessagesTTL = currentFeaturesAllowed.timedMessagesTTL
+                    }
+                }
+            infoRow("Contact allows", pref.contactPreference.allow.text)
+            if featuresAllowed.timedMessagesAllowed {
+                timedMessagesTTLPicker($featuresAllowed.timedMessagesTTL)
+            } else if pref.contactPreference.allow == .yes || pref.contactPreference.allow == .always {
+                infoRow("Delete after", TimedMessagesPreference.ttlText(pref.contactPreference.ttl))
+            }
+        }
+        header: { featureHeader(.timedMessages, enabled) }
+        footer: { featureFooter(.timedMessages, enabled) }
+    }
+
+    private func featureHeader(_ feature: ChatFeature, _ enabled: FeatureEnabled) -> some View {
+        HStack {
+            Image(systemName: feature.iconFilled)
+                .foregroundColor(enabled.forUser ? .green : enabled.forContact ? .yellow : .red)
+            Text(feature.text)
+        }
+    }
+
+    private func featureFooter(_ feature: ChatFeature, _ enabled: FeatureEnabled) -> some View {
+        Text(feature.enabledDescription(enabled))
+        .frame(height: 36, alignment: .topLeading)
     }
 
     private func savePreferences() {
@@ -90,6 +126,18 @@ struct ContactPreferencesView: View {
             }
         }
     }
+}
+
+func timedMessagesTTLPicker(_ selection: Binding<Int?>) -> some View {
+    Picker("Delete after", selection: selection) {
+        let selectedTTL = selection.wrappedValue
+        let ttlValues = TimedMessagesPreference.ttlValues
+        let values = ttlValues + (ttlValues.contains(selectedTTL) ? [] : [selectedTTL])
+        ForEach(values, id: \.self) { ttl in
+            Text(TimedMessagesPreference.ttlText(ttl))
+        }
+    }
+    .frame(height: 36)
 }
 
 struct ContactPreferencesView_Previews: PreviewProvider {

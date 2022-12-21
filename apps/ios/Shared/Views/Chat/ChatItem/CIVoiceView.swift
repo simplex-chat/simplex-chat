@@ -231,16 +231,12 @@ struct CIVoiceView_Previews: PreviewProvider {
                 playbackState: .playing,
                 playbackTime: TimeInterval(20)
             )
-            .environmentObject(ChatModel())
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: sentVoiceMessage, revealed: Binding.constant(false))
-                .environmentObject(ChatModel())
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample(), revealed: Binding.constant(false))
-                .environmentObject(ChatModel())
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample(fileStatus: .rcvTransfer), revealed: Binding.constant(false))
-                .environmentObject(ChatModel())
             ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: voiceMessageWtFile, revealed: Binding.constant(false))
-                .environmentObject(ChatModel())
         }
         .previewLayout(.fixed(width: 360, height: 360))
+        .environmentObject(Chat.sampleData)
     }
 }
