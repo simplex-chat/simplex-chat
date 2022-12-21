@@ -2795,7 +2795,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
                 _
                   | rcvTTL /= userDefaultTTL -> Just (userDefault :: TimedMessagesPreference) {ttl = rcvTTL}
                   | otherwise -> Nothing
-           in (ctUserPrefs :: Preferences) {timedMessages = ctUserTMPref'}
+           in setPreference_ SCFTimedMessages ctUserTMPref' ctUserPrefs
 
     createFeatureEnabledItems :: Contact -> m ()
     createFeatureEnabledItems ct@Contact {mergedPreferences} =
