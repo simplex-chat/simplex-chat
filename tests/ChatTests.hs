@@ -3596,11 +3596,11 @@ testEnableTimedMessagesContact =
       alice <## "Disappearing messages: enabled (you allow: yes, after 1 sec, contact allows: yes, after 1 sec)"
       alice <##> bob
       threadDelay 500000
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled, after 1 sec"), (1, "hi"), (0, "hey")])
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled, after 1 sec"), (0, "hi"), (1, "hey")])
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "offered Disappearing messages (1 sec)"), (0, "Disappearing messages: enabled, after 1 sec"), (1, "hi"), (0, "hey")])
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "allow Disappearing messages (1 sec)?"), (1, "Disappearing messages: enabled, after 1 sec"), (0, "hi"), (1, "hey")])
       threadDelay 1000000
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled, after 1 sec")])
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled, after 1 sec")])
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "offered Disappearing messages (1 sec)"), (0, "Disappearing messages: enabled, after 1 sec")])
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "allow Disappearing messages (1 sec)?"), (1, "Disappearing messages: enabled, after 1 sec")])
       -- turn off, messages are not disappearing
       bob ##> "/set disappear @alice no"
       bob <## "you updated preferences for alice:"
@@ -3609,8 +3609,8 @@ testEnableTimedMessagesContact =
       alice <## "Disappearing messages: off (you allow: yes, after 1 sec, contact allows: no)"
       alice <##> bob
       threadDelay 1500000
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled, after 1 sec"), (0, "Disappearing messages: off"), (1, "hi"), (0, "hey")])
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled, after 1 sec"), (1, "Disappearing messages: off"), (0, "hi"), (1, "hey")])
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "offered Disappearing messages (1 sec)"), (0, "Disappearing messages: enabled, after 1 sec"), (0, "Disappearing messages: off"), (1, "hi"), (0, "hey")])
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "allow Disappearing messages (1 sec)?"), (1, "Disappearing messages: enabled, after 1 sec"), (1, "Disappearing messages: off"), (0, "hi"), (1, "hey")])
       -- test api
       bob ##> "/set disappear @alice yes 30s"
       bob <## "you updated preferences for alice:"

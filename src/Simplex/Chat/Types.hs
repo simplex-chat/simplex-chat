@@ -868,6 +868,12 @@ prefToText enabled param =
 prefParamText :: Maybe Int -> Text
 prefParamText = maybe "" (\n -> ", after " <> timedTTLText n)
 
+featureParamText :: ChatFeature -> Maybe Int -> Text
+featureParamText feature param =
+  chatFeatureToText feature <> case feature of
+    CFTimedMessages -> " (" <> maybe "off" timedTTLText param <> ")"
+    _ -> ""
+
 prefEnabledToText :: PrefEnabled -> Text
 prefEnabledToText = \case
   PrefEnabled True True -> "enabled"
