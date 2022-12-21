@@ -289,10 +289,7 @@ final class ChatModel: ObservableObject {
     private func markCurrentChatRead(fromIndex i: Int = 0) {
         var j = i
         while j < reversedChatItems.count {
-            if case .rcvNew = reversedChatItems[j].meta.itemStatus {
-                reversedChatItems[j].meta.itemStatus = .rcvRead
-                reversedChatItems[j].viewTimestamp = .now
-            }
+            markChatItemRead_(j)
             j += 1
         }
     }
@@ -347,9 +344,19 @@ final class ChatModel: ObservableObject {
         // update preview
         decreaseUnreadCounter(cInfo)
         // update current chat
-        if chatId == cInfo.id, let j = reversedChatItems.firstIndex(where: { $0.id == cItem.id }) {
-            reversedChatItems[j].meta.itemStatus = .rcvRead
-            reversedChatItems[j].viewTimestamp = .now
+        if chatId == cInfo.id, let i = reversedChatItems.firstIndex(where: { $0.id == cItem.id }) {
+            markChatItemRead_(i)
+        }
+    }
+
+    private func markChatItemRead_(_ i: Int) {
+        let meta = reversedChatItems[i].meta
+        if case .rcvNew = meta.itemStatus {
+            reversedChatItems[i].meta.itemStatus = .rcvRead
+            reversedChatItems[i].viewTimestamp = .now
+            if meta.itemLive != true, let ttl = meta.itemTimed?.ttl {
+                reversedChatItems[i].meta.itemTimed?.deleteAt = .now + TimeInterval(ttl)
+            }
         }
     }
 
