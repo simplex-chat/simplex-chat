@@ -2776,11 +2776,8 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
       where
         updateContactProfileAndUserPrefs =
           if userTTL == rcvTTL
-            then do
-              liftIO . print $ "111111111111111111111111 userTTL=" <> show userTTL <> " rcvTTL=" <> show rcvTTL
-              withStore $ \db -> updateContactProfile db user c p'
+            then withStore $ \db -> updateContactProfile db user c p'
             else do
-              liftIO . print $ "222222222222222222222222 userTTL=" <> show userTTL <> " rcvTTL=" <> show rcvTTL
               let userPrefs' = setContactUserPref rcvTTL
               withStore $ \db -> do
                 c' <- liftIO $ updateContactUserPreferences db user c userPrefs'
