@@ -2771,9 +2771,35 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
 
     xInfo :: Contact -> Profile -> m ()
     xInfo c@Contact {profile = p} p' = unless (fromLocalProfile p == p') $ do
-      c' <- withStore $ \db -> updateContactProfile db user c p'
+      c' <- updateContactProfileAndUserPrefs
       toView $ CRContactUpdated c c'
       when (directOrUsed c) $ createFeatureChangedItems user c c' CDDirectRcv CIRcvChatFeature
+      where
+        updateContactProfileAndUserPrefs
+          | userTTL == rcvTTL = simpleProfileUpdate
+          | otherwise = contactChangedTTL
+          where
+            Contact {userPreferences = userPrefs@Preferences {timedMessages = userTimedMessages}} = c
+            userTTL = userTimedMessages >>= \TimedMessagesPreference {ttl} -> ttl
+            Profile {preferences = rcvPrefs_} = p'
+            rcvTimedMessages = rcvPrefs_ >>= \Preferences {timedMessages} -> timedMessages
+            rcvTTL = rcvTimedMessages >>= \TimedMessagesPreference {ttl} -> ttl
+            simpleProfileUpdate = withStore $ \db -> do
+              updateContactProfile db user c p'
+            contactChangedTTL = do
+              let userPrefs' = setContactUserPref rcvTTL
+              withStore $ \db -> do
+                c' <- liftIO $ updateContactUserPreferences db user c userPrefs'
+                updateContactProfile db user c' p'
+            setContactUserPref ttl_ =
+              let userDefault = getPreference SCFTimedMessages (fullPreferences user)
+                  userDefaultTTL = prefParam userDefault
+                  userTimedMessages' = case userTimedMessages of
+                    Just userTM -> Just (userTM :: TimedMessagesPreference) {ttl = ttl_}
+                    _
+                      | ttl_ /= userDefaultTTL -> Just (userDefault :: TimedMessagesPreference) {ttl = ttl_}
+                      | otherwise -> Nothing
+               in (userPrefs :: Preferences) {timedMessages = userTimedMessages'}
 
     createFeatureEnabledItems :: Contact -> m ()
     createFeatureEnabledItems ct@Contact {mergedPreferences} =
