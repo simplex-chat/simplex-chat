@@ -68,26 +68,6 @@ private fun StatusIconText(icon: ImageVector, color: Color) {
   Icon(icon, null, Modifier.height(12.dp), tint = color)
 }
 
-
-@Composable
-fun CIStatusView(status: CIStatus, metaColor: Color = HighOrLowlight) {
-  when (status) {
-    is CIStatus.SndSent -> {
-      Icon(Icons.Filled.Check, stringResource(R.string.icon_descr_sent_msg_status_sent), Modifier.height(12.dp), tint = metaColor)
-    }
-    is CIStatus.SndErrorAuth -> {
-      Icon(Icons.Filled.Close,  stringResource(R.string.icon_descr_sent_msg_status_unauthorized_send), Modifier.height(12.dp), tint = Color.Red)
-    }
-    is CIStatus.SndError -> {
-      Icon(Icons.Filled.WarningAmber, stringResource(R.string.icon_descr_sent_msg_status_send_failed), Modifier.height(12.dp), tint = WarningYellow)
-    }
-    is CIStatus.RcvNew -> {
-      Icon(Icons.Filled.Circle, stringResource(R.string.icon_descr_received_msg_status_unread), Modifier.height(12.dp), tint = MaterialTheme.colors.primary)
-    }
-    else -> {}
-  }
-}
-
 @Preview
 @Composable
 fun PreviewCIMetaView() {
