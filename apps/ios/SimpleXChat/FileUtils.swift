@@ -341,6 +341,7 @@ private func resizeImage(_ image: UIImage, newBounds: CGRect, drawIn: CGRect) ->
 
 extension UIImage {
     func isPng() -> Bool {
-        return cgImage?.alphaInfo.rawValue == 1
+        let alpha = cgImage?.alphaInfo
+        return alpha == .first || alpha == .last || alpha == .premultipliedFirst || alpha == .premultipliedLast || alpha == .alphaOnly
     }
 }
