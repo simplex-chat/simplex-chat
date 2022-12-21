@@ -34,6 +34,7 @@ fun CIVoiceView(
   sent: Boolean,
   hasText: Boolean,
   ci: ChatItem,
+  timedMessagesTTL: Int?,
   longClick: () -> Unit,
 ) {
   Row(
@@ -63,7 +64,7 @@ fun CIVoiceView(
           durationText(time / 1000)
         }
       }
-      VoiceLayout(file, ci, text, audioPlaying, progress, duration, brokenAudio, sent, hasText, play, pause, longClick)
+      VoiceLayout(file, ci, text, audioPlaying, progress, duration, brokenAudio, sent, hasText, timedMessagesTTL, play, pause, longClick)
     } else {
       VoiceMsgIndicator(null, false, sent, hasText, null, null, false, {}, {}, longClick)
       val metaReserve = if (edited)
@@ -86,6 +87,7 @@ private fun VoiceLayout(
   brokenAudio: Boolean,
   sent: Boolean,
   hasText: Boolean,
+  timedMessagesTTL: Int?,
   play: () -> Unit,
   pause: () -> Unit,
   longClick: () -> Unit
@@ -105,7 +107,7 @@ private fun VoiceLayout(
         Column {
           VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick)
           Box(Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp)) {
-            CIMetaView(ci)
+            CIMetaView(ci, timedMessagesTTL)
           }
         }
       }
@@ -115,7 +117,7 @@ private fun VoiceLayout(
         Column {
           VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick)
           Box(Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp)) {
-            CIMetaView(ci)
+            CIMetaView(ci, timedMessagesTTL)
           }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {

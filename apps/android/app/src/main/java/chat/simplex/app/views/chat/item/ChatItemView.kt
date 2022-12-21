@@ -174,14 +174,14 @@ fun ChatItemView(
       fun ContentItem() {
         val mc = cItem.content.msgContent
         if (cItem.meta.itemDeleted && !revealed.value) {
-          MarkedDeletedItemView(cItem, showMember = showMember)
+          MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, showMember = showMember)
           MarkedDeletedItemDropdownMenu()
         } else if (cItem.quotedItem == null && !cItem.meta.itemDeleted && !cItem.meta.isLive) {
           if (mc is MsgContent.MCText && isShortEmoji(cItem.content.text)) {
-            EmojiItemView(cItem)
+            EmojiItemView(cItem, cInfo.timedMessagesTTL)
             MsgContentItemDropdownMenu()
           } else if (mc is MsgContent.MCVoice && cItem.content.text.isEmpty()) {
-            CIVoiceView(mc.duration, cItem.file, cItem.meta.itemEdited, cItem.chatDir.sent, hasText = false, cItem, longClick = { onLinkLongClick("") })
+            CIVoiceView(mc.duration, cItem.file, cItem.meta.itemEdited, cItem.chatDir.sent, hasText = false, cItem, cInfo.timedMessagesTTL, longClick = { onLinkLongClick("") })
             MsgContentItemDropdownMenu()
           } else {
             framedItemView()
@@ -194,7 +194,7 @@ fun ChatItemView(
       }
 
       @Composable fun DeletedItem() {
-        DeletedItemView(cItem, showMember = showMember)
+        DeletedItemView(cItem, cInfo.timedMessagesTTL, showMember = showMember)
         DropdownMenu(
           expanded = showMenu.value,
           onDismissRequest = { showMenu.value = false },
@@ -215,7 +215,7 @@ fun ChatItemView(
         is CIContent.RcvDeleted -> DeletedItem()
         is CIContent.SndCall -> CallItem(c.status, c.duration)
         is CIContent.RcvCall -> CallItem(c.status, c.duration)
-        is CIContent.RcvIntegrityError -> IntegrityErrorItemView(cItem, showMember = showMember)
+        is CIContent.RcvIntegrityError -> IntegrityErrorItemView(cItem, cInfo.timedMessagesTTL, showMember = showMember)
         is CIContent.RcvGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito)
         is CIContent.SndGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito)
         is CIContent.RcvGroupEventContent -> CIEventView(cItem)

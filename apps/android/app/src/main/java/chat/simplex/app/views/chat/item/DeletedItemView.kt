@@ -18,7 +18,7 @@ import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 
 @Composable
-fun DeletedItemView(ci: ChatItem, showMember: Boolean = false) {
+fun DeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, showMember: Boolean = false) {
   Surface(
     shape = RoundedCornerShape(18.dp),
     color = ReceivedColorLight,
@@ -35,7 +35,7 @@ fun DeletedItemView(ci: ChatItem, showMember: Boolean = false) {
         style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
         modifier = Modifier.padding(end = 8.dp)
       )
-      CIMetaView(ci)
+      CIMetaView(ci, timedMessagesTTL)
     }
   }
 }
@@ -49,7 +49,8 @@ fun DeletedItemView(ci: ChatItem, showMember: Boolean = false) {
 fun PreviewDeletedItemView() {
   SimpleXTheme {
     DeletedItemView(
-      ChatItem.getDeletedContentSampleData()
+      ChatItem.getDeletedContentSampleData(),
+      null
     )
   }
 }

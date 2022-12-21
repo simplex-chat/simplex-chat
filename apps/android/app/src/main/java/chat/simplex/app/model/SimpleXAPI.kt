@@ -2016,39 +2016,101 @@ data class ChatSettings(
 
 @Serializable
 data class FullChatPreferences(
-  val fullDelete: ChatPreference,
-  val voice: ChatPreference,
+  val timedMessages: TimedMessagesPreference,
+  val fullDelete: SimpleChatPreference,
+  val voice: SimpleChatPreference,
 ) {
   fun toPreferences(): ChatPreferences = ChatPreferences(fullDelete = fullDelete, voice = voice)
 
   companion object {
-    val sampleData = FullChatPreferences(fullDelete = ChatPreference(allow = FeatureAllowed.NO), voice = ChatPreference(allow = FeatureAllowed.YES))
-  }
-}
-
-@Serializable
-data class ChatPreferences(
-  val timedMessages: ChatPreference? = null,
-  val fullDelete: ChatPreference? = null,
-  val voice: ChatPreference? = null,
-) {
-  companion object {
-    val sampleData = ChatPreferences(
-      timedMessages = ChatPreference(allow = FeatureAllowed.NO),
-      fullDelete = ChatPreference(allow = FeatureAllowed.NO),
-      voice = ChatPreference(allow = FeatureAllowed.YES)
+    val sampleData = FullChatPreferences(
+      timedMessages = TimedMessagesPreference(allow = FeatureAllowed.NO),
+      fullDelete = SimpleChatPreference(allow = FeatureAllowed.NO),
+      voice = SimpleChatPreference(allow = FeatureAllowed.YES)
     )
   }
 }
 
 @Serializable
-data class ChatPreference(
+data class ChatPreferences(
+  val timedMessages: TimedMessagesPreference? = null,
+  val fullDelete: SimpleChatPreference? = null,
+  val voice: SimpleChatPreference? = null,
+) {
+  companion object {
+    val sampleData = ChatPreferences(
+      timedMessages = TimedMessagesPreference(allow = FeatureAllowed.NO),
+      fullDelete = SimpleChatPreference(allow = FeatureAllowed.NO),
+      voice = SimpleChatPreference(allow = FeatureAllowed.YES)
+    )
+  }
+}
+
+interface ChatPreference {
   val allow: FeatureAllowed
-)
+}
+
+@Serializable
+data class SimpleChatPreference(
+  override val allow: FeatureAllowed
+): ChatPreference
+
+@Serializable
+class TimedMessagesPreference(
+  override val allow: FeatureAllowed,
+  val ttl: Int? = null
+): ChatPreference {
+  companion object {
+    val ttlValues: List<Int?>
+      get() = listOf(30, 300, 3600, 8 * 3600, 86400, 7 * 86400, 30 * 86400)
+
+    fun ttlText(ttl: Int?): String {
+      ttl ?: return generalGetString(R.string.feature_off)
+      if (ttl == 0) return  String.format(generalGetString(R.string.ttl_sec), 0)
+      val (m_, s) = divMod(ttl, 60)
+      val (h_, m) = divMod(m_, 60)
+      val (d_, h) = divMod(h_, 24)
+      val (mm, d) = divMod(d_, 30)
+      return maybe(mm, if (mm == 1) String.format(generalGetString(R.string.ttl_month), 1) else String.format(generalGetString(R.string.ttl_months), mm)) +
+          maybe(d, if (d == 1) String.format(generalGetString(R.string.ttl_day), 1) else if (d == 7) String.format(generalGetString(R.string.ttl_week), 1) else if (d == 14) String.format(generalGetString(R.string.ttl_weeks), 2) else String.format(generalGetString(R.string.ttl_days), d)) +
+          maybe(h, if (h == 1) String.format(generalGetString(R.string.ttl_hour), 1) else String.format(generalGetString(R.string.ttl_hours), h)) +
+          maybe(m, String.format(generalGetString(R.string.ttl_min), m)) +
+          maybe(s, String.format(generalGetString(R.string.ttl_sec), s))
+    }
+
+    fun shortTtlText(ttl: Int?): String {
+      ttl ?: return generalGetString(R.string.feature_off)
+      val m = ttl / 60
+      if (m == 0) {
+        return String.format(generalGetString(R.string.ttl_s), ttl)
+      }
+      val h = m / 60
+      if (h == 0) {
+        return String.format(generalGetString(R.string.ttl_m), m)
+      }
+      val d = h / 24
+      if (d == 0) {
+        return String.format(generalGetString(R.string.ttl_h), h)
+      }
+      val mm = d / 30
+      if (mm > 0) {
+        return String.format(generalGetString(R.string.ttl_mth), mm)
+      }
+      val w = d / 7
+      return if (w == 0 || d % 7 != 0) String.format(generalGetString(R.string.ttl_d), d) else String.format(generalGetString(R.string.ttl_w), w)
+    }
+
+    fun divMod(n: Int, d: Int): Pair<Int, Int> =
+      n / d to n % d
+
+    fun maybe(n: Int, s: String): String =
+      if (n == 0) "" else s
+  }
+}
 
 @Serializable
 data class ContactUserPreferences(
-  val timedMessages: ContactUserPreference,
+  val timedMessages: ContactUserPreferenceTimed,
   val fullDelete: ContactUserPreference,
   val voice: ContactUserPreference,
 ) {
@@ -2060,30 +2122,37 @@ data class ContactUserPreferences(
 
   companion object {
     val sampleData = ContactUserPreferences(
-      timedMessages = ContactUserPreference(
+      timedMessages = ContactUserPreferenceTimed(
         enabled = FeatureEnabled(forUser = false, forContact = false),
-        userPreference = ContactUserPref.User(preference = ChatPreference(allow = FeatureAllowed.NO)),
-        contactPreference = ChatPreference(allow = FeatureAllowed.NO)
+        userPreference = ContactUserPrefTimed.User(preference = TimedMessagesPreference(allow = FeatureAllowed.NO)),
+        contactPreference = TimedMessagesPreference(allow = FeatureAllowed.NO)
       ),
       fullDelete = ContactUserPreference(
         enabled = FeatureEnabled(forUser = false, forContact = false),
-        userPreference = ContactUserPref.User(preference = ChatPreference(allow = FeatureAllowed.NO)),
-        contactPreference = ChatPreference(allow = FeatureAllowed.NO)
+        userPreference = ContactUserPref.User(preference = SimpleChatPreference(allow = FeatureAllowed.NO)),
+        contactPreference = SimpleChatPreference(allow = FeatureAllowed.NO)
       ),
       voice = ContactUserPreference(
         enabled = FeatureEnabled(forUser = true, forContact = true),
-        userPreference = ContactUserPref.User(preference = ChatPreference(allow = FeatureAllowed.YES)),
-        contactPreference = ChatPreference(allow = FeatureAllowed.YES)
+        userPreference = ContactUserPref.User(preference = SimpleChatPreference(allow = FeatureAllowed.YES)),
+        contactPreference = SimpleChatPreference(allow = FeatureAllowed.YES)
       )
     )
   }
 }
 
 @Serializable
-data class ContactUserPreference(
+data class ContactUserPreference (
   val enabled: FeatureEnabled,
   val userPreference: ContactUserPref,
-  val contactPreference: ChatPreference,
+  val contactPreference: SimpleChatPreference,
+)
+
+@Serializable
+data class ContactUserPreferenceTimed (
+  val enabled: FeatureEnabled,
+  val userPreference: ContactUserPrefTimed,
+  val contactPreference: TimedMessagesPreference,
 )
 
 @Serializable
@@ -2116,22 +2185,49 @@ data class FeatureEnabled(
 
 @Serializable
 sealed class ContactUserPref {
-  abstract val pref: ChatPreference
+  abstract val pref: SimpleChatPreference
 
   // contact override is set
-  @Serializable @SerialName("contact") data class Contact(val preference: ChatPreference): ContactUserPref() {
+  @Serializable @SerialName("contact") data class Contact(val preference: SimpleChatPreference): ContactUserPref() {
     override val pref get() = preference
   }
   // global user default is used
-  @Serializable @SerialName("user") data class User(val preference: ChatPreference): ContactUserPref() {
+  @Serializable @SerialName("user") data class User(val preference: SimpleChatPreference): ContactUserPref() {
     override val pref get() = preference
   }
+
+  val contactOverride: SimpleChatPreference?
+    get() = when(this) {
+      is Contact -> pref
+      is User -> null
+    }
+}
+
+@Serializable
+sealed class ContactUserPrefTimed {
+  abstract val pref: TimedMessagesPreference
+
+  // contact override is set
+  @Serializable @SerialName("contact") data class Contact(val preference: TimedMessagesPreference): ContactUserPrefTimed() {
+    override val pref get() = preference
+  }
+  // global user default is used
+  @Serializable @SerialName("user") data class User(val preference: TimedMessagesPreference): ContactUserPrefTimed() {
+    override val pref get() = preference
+  }
+
+  val contactOverride: TimedMessagesPreference?
+    get() = when(this) {
+      is Contact -> pref
+      is User -> null
+    }
 }
 
 interface Feature {
 //  val icon: ImageVector
   val text: String
   val iconFilled: ImageVector
+  val hasParam: Boolean
 }
 
 @Serializable
@@ -2144,6 +2240,11 @@ enum class ChatFeature: Feature {
     TimedMessages -> false
     else -> true
   }
+
+  override val hasParam: Boolean get() = when(this) {
+      TimedMessages -> true
+      else -> false
+    }
 
   override val text: String
     get() = when(this) {
@@ -2214,6 +2315,11 @@ enum class GroupFeature: Feature {
   @SerialName("directMessages") DirectMessages,
   @SerialName("fullDelete") FullDelete,
   @SerialName("voice") Voice;
+
+  override val hasParam: Boolean get() = when(this) {
+    TimedMessages -> true
+    else -> false
+  }
 
   override val text: String
     get() = when(this) {
@@ -2310,25 +2416,31 @@ sealed class ContactFeatureAllowed {
 
 @Serializable
 data class ContactFeaturesAllowed(
-  val timedMessages: ContactFeatureAllowed,
+  val timedMessagesAllowed: Boolean,
+  val timedMessagesTTL: Int?,
   val fullDelete: ContactFeatureAllowed,
   val voice: ContactFeatureAllowed
 ) {
   companion object {
     val sampleData = ContactFeaturesAllowed(
-      timedMessages = ContactFeatureAllowed.UserDefault(FeatureAllowed.NO),
+      timedMessagesAllowed = false,
+      timedMessagesTTL = null,
       fullDelete = ContactFeatureAllowed.UserDefault(FeatureAllowed.NO),
       voice = ContactFeatureAllowed.UserDefault(FeatureAllowed.YES)
     )
   }
 }
 
-fun contactUserPrefsToFeaturesAllowed(contactUserPreferences: ContactUserPreferences): ContactFeaturesAllowed =
-  ContactFeaturesAllowed(
-    timedMessages = contactUserPrefToFeatureAllowed(contactUserPreferences.timedMessages),
+fun contactUserPrefsToFeaturesAllowed(contactUserPreferences: ContactUserPreferences): ContactFeaturesAllowed {
+  val pref = contactUserPreferences.timedMessages.userPreference
+  val allow = pref.contactOverride?.allow
+  return ContactFeaturesAllowed(
+    timedMessagesAllowed = allow == FeatureAllowed.YES || allow == FeatureAllowed.ALWAYS,
+    timedMessagesTTL = pref.pref.ttl,
     fullDelete = contactUserPrefToFeatureAllowed(contactUserPreferences.fullDelete),
     voice = contactUserPrefToFeatureAllowed(contactUserPreferences.voice)
   )
+}
 
 fun contactUserPrefToFeatureAllowed(contactUserPreference: ContactUserPreference): ContactFeatureAllowed =
   when (val pref = contactUserPreference.userPreference) {
@@ -2342,17 +2454,17 @@ fun contactUserPrefToFeatureAllowed(contactUserPreference: ContactUserPreference
 
 fun contactFeaturesAllowedToPrefs(contactFeaturesAllowed: ContactFeaturesAllowed): ChatPreferences =
   ChatPreferences(
-    timedMessages = contactFeatureAllowedToPref(contactFeaturesAllowed.timedMessages),
+    timedMessages = TimedMessagesPreference(if (contactFeaturesAllowed.timedMessagesAllowed) FeatureAllowed.YES else FeatureAllowed.NO, contactFeaturesAllowed.timedMessagesTTL),
     fullDelete = contactFeatureAllowedToPref(contactFeaturesAllowed.fullDelete),
     voice = contactFeatureAllowedToPref(contactFeaturesAllowed.voice)
   )
 
-fun contactFeatureAllowedToPref(contactFeatureAllowed: ContactFeatureAllowed): ChatPreference? =
+fun contactFeatureAllowedToPref(contactFeatureAllowed: ContactFeatureAllowed): SimpleChatPreference? =
   when(contactFeatureAllowed) {
     is ContactFeatureAllowed.UserDefault -> null
-    is ContactFeatureAllowed.Always -> ChatPreference(allow = FeatureAllowed.ALWAYS)
-    is ContactFeatureAllowed.Yes -> ChatPreference(allow = FeatureAllowed.YES)
-    is ContactFeatureAllowed.No -> ChatPreference(allow = FeatureAllowed.NO)
+    is ContactFeatureAllowed.Always -> SimpleChatPreference(allow = FeatureAllowed.ALWAYS)
+    is ContactFeatureAllowed.Yes -> SimpleChatPreference(allow = FeatureAllowed.YES)
+    is ContactFeatureAllowed.No -> SimpleChatPreference(allow = FeatureAllowed.NO)
   }
 
 @Serializable
@@ -2371,7 +2483,7 @@ enum class FeatureAllowed {
 
 @Serializable
 data class FullGroupPreferences(
-  val timedMessages: GroupPreference,
+  val timedMessages: TimedMessagesGroupPreference,
   val directMessages: GroupPreference,
   val fullDelete: GroupPreference,
   val voice: GroupPreference
@@ -2381,7 +2493,7 @@ data class FullGroupPreferences(
 
   companion object {
     val sampleData = FullGroupPreferences(
-      timedMessages = GroupPreference(GroupFeatureEnabled.OFF),
+      timedMessages = TimedMessagesGroupPreference(GroupFeatureEnabled.OFF),
       directMessages = GroupPreference(GroupFeatureEnabled.OFF),
       fullDelete = GroupPreference(GroupFeatureEnabled.OFF),
       voice = GroupPreference(GroupFeatureEnabled.ON)
@@ -2391,14 +2503,14 @@ data class FullGroupPreferences(
 
 @Serializable
 data class GroupPreferences(
-  val timedMessages: GroupPreference?,
+  val timedMessages: TimedMessagesGroupPreference?,
   val directMessages: GroupPreference?,
   val fullDelete: GroupPreference?,
   val voice: GroupPreference?
 ) {
   companion object {
     val sampleData = GroupPreferences(
-      timedMessages = GroupPreference(GroupFeatureEnabled.OFF),
+      timedMessages = TimedMessagesGroupPreference(GroupFeatureEnabled.OFF),
       directMessages = GroupPreference(GroupFeatureEnabled.OFF),
       fullDelete = GroupPreference(GroupFeatureEnabled.OFF),
       voice = GroupPreference(GroupFeatureEnabled.ON)
@@ -2409,6 +2521,14 @@ data class GroupPreferences(
 @Serializable
 data class GroupPreference(
   val enable: GroupFeatureEnabled
+) {
+  val on: Boolean get() = enable == GroupFeatureEnabled.ON
+}
+
+@Serializable
+data class TimedMessagesGroupPreference(
+  val enable: GroupFeatureEnabled,
+  val ttl: Int? = null
 ) {
   val on: Boolean get() = enable == GroupFeatureEnabled.ON
 }

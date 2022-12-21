@@ -3,62 +3,84 @@ package chat.simplex.app.views.chat.item
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Circle
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
-import chat.simplex.app.ui.theme.WarningYellow
 import kotlinx.datetime.Clock
 
 @Composable
-fun CIMetaView(chatItem: ChatItem, metaColor: Color = HighOrLowlight) {
-  Row(verticalAlignment = Alignment.CenterVertically) {
-    if (!chatItem.isDeletedContent) {
-      if (chatItem.meta.itemEdited) {
-        Icon(
-          Icons.Filled.Edit,
-          modifier = Modifier.height(12.dp).padding(end = 1.dp),
-          contentDescription = stringResource(R.string.icon_descr_edited),
-          tint = metaColor,
-        )
-      }
-      CIStatusView(chatItem.meta.itemStatus, metaColor)
+fun CIMetaView(chatItem: ChatItem, timedMessagesTTL: Int?, metaColor: Color = HighOrLowlight) {
+  Row(Modifier.padding(start = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+    if (chatItem.isDeletedContent) {
+      Text(
+        chatItem.timestampText,
+        color = metaColor,
+        fontSize = 14.sp,
+        modifier = Modifier.padding(start = 3.dp)
+      )
+    } else {
+      CIMetaText(chatItem.meta, timedMessagesTTL, metaColor)
     }
-    Text(
-      chatItem.timestampText,
-      color = metaColor,
-      fontSize = 14.sp,
-      modifier = Modifier.padding(start = 3.dp)
-    )
   }
 }
 
+@Composable
+private fun CIMetaText(meta: CIMeta, chatTTL: Int?, color: Color) {
+  if (meta.itemEdited) {
+    StatusIconText(Icons.Outlined.Edit, color)
+    Spacer(Modifier.width(3.dp))
+  }
+  if (meta.disappearing) {
+    StatusIconText(Icons.Outlined.Timer, color)
+    val ttl = meta.itemTimed?.ttl
+    if (ttl != chatTTL) {
+      Text(TimedMessagesPreference.shortTtlText(ttl), color = color, fontSize = 13.sp)
+    }
+    Spacer(Modifier.width(4.dp))
+  }
+  val statusIcon = meta.statusIcon(MaterialTheme.colors.primary, color)
+  if (statusIcon != null) {
+    val (icon, statusColor) = statusIcon
+    StatusIconText(icon, statusColor)
+    Spacer(Modifier.width(4.dp))
+  } else if (!meta.disappearing) {
+    StatusIconText(Icons.Filled.Circle, Color.Transparent)
+    Spacer(Modifier.width(4.dp))
+  }
+  Text(meta.timestampText, color = color, fontSize = 13.sp)
+}
+
+fun reserveSpaceForMeta(meta: CIMeta, chatTTL: Int?): String {
+  var res = ""
+  var repeats = 0
+  if (meta.itemEdited) repeats++
+  if (meta.itemTimed != null) {
+    repeats++
+    val ttl = meta.itemTimed?.ttl
+    if (ttl != chatTTL) {
+      res += TimedMessagesPreference.shortTtlText(ttl)
+    }
+  }
+  if (meta.itemStatus !is CIStatus.RcvRead && meta.itemStatus !is CIStatus.RcvNew) repeats++
+  repeat(repeats) {
+    res += "    "
+  }
+  return res + meta.timestampText
+}
 
 @Composable
-fun CIStatusView(status: CIStatus, metaColor: Color = HighOrLowlight) {
-  when (status) {
-    is CIStatus.SndSent -> {
-      Icon(Icons.Filled.Check, stringResource(R.string.icon_descr_sent_msg_status_sent), Modifier.height(12.dp), tint = metaColor)
-    }
-    is CIStatus.SndErrorAuth -> {
-      Icon(Icons.Filled.Close,  stringResource(R.string.icon_descr_sent_msg_status_unauthorized_send), Modifier.height(12.dp), tint = Color.Red)
-    }
-    is CIStatus.SndError -> {
-      Icon(Icons.Filled.WarningAmber, stringResource(R.string.icon_descr_sent_msg_status_send_failed), Modifier.height(12.dp), tint = WarningYellow)
-    }
-    is CIStatus.RcvNew -> {
-      Icon(Icons.Filled.Circle, stringResource(R.string.icon_descr_received_msg_status_unread), Modifier.height(12.dp), tint = MaterialTheme.colors.primary)
-    }
-    else -> {}
-  }
+private fun StatusIconText(icon: ImageVector, color: Color) {
+  Icon(icon, null, Modifier.height(12.dp), tint = color)
 }
 
 @Preview
@@ -67,7 +89,8 @@ fun PreviewCIMetaView() {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
       1, CIDirection.DirectSnd(), Clock.System.now(), "hello"
-    )
+    ),
+    null
   )
 }
 
@@ -78,7 +101,8 @@ fun PreviewCIMetaViewUnread() {
     chatItem = ChatItem.getSampleData(
       1, CIDirection.DirectSnd(), Clock.System.now(), "hello",
       status = CIStatus.RcvNew()
-    )
+    ),
+    null
   )
 }
 
@@ -89,7 +113,8 @@ fun PreviewCIMetaViewSendFailed() {
     chatItem = ChatItem.getSampleData(
       1, CIDirection.DirectSnd(), Clock.System.now(), "hello",
       status = CIStatus.SndError("CMD SYNTAX")
-    )
+    ),
+    null
   )
 }
 
@@ -99,7 +124,8 @@ fun PreviewCIMetaViewSendNoAuth() {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
       1, CIDirection.DirectSnd(), Clock.System.now(), "hello", status = CIStatus.SndErrorAuth()
-    )
+    ),
+    null
   )
 }
 
@@ -109,7 +135,8 @@ fun PreviewCIMetaViewSendSent() {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
       1, CIDirection.DirectSnd(), Clock.System.now(), "hello", status = CIStatus.SndSent()
-    )
+    ),
+    null
   )
 }
 
@@ -120,7 +147,8 @@ fun PreviewCIMetaViewEdited() {
     chatItem = ChatItem.getSampleData(
       1, CIDirection.DirectSnd(), Clock.System.now(), "hello",
       itemEdited = true
-    )
+    ),
+    null
   )
 }
 
@@ -132,7 +160,8 @@ fun PreviewCIMetaViewEditedUnread() {
       1, CIDirection.DirectRcv(), Clock.System.now(), "hello",
       itemEdited = true,
       status=CIStatus.RcvNew()
-    )
+    ),
+    null
   )
 }
 
@@ -144,7 +173,8 @@ fun PreviewCIMetaViewEditedSent() {
       1, CIDirection.DirectSnd(), Clock.System.now(), "hello",
       itemEdited = true,
       status=CIStatus.SndSent()
-    )
+    ),
+    null
   )
 }
 
@@ -152,6 +182,7 @@ fun PreviewCIMetaViewEditedSent() {
 @Composable
 fun PreviewCIMetaViewDeletedContent() {
   CIMetaView(
-    chatItem = ChatItem.getDeletedContentSampleData()
+    chatItem = ChatItem.getDeletedContentSampleData(),
+    null
   )
 }

@@ -41,7 +41,6 @@ import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.views.chat.item.*
 import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
@@ -517,7 +516,7 @@ fun ComposeView(
 
   fun allowVoiceToContact() {
     val contact = (chat.chatInfo as ChatInfo.Direct?)?.contact ?: return
-    val prefs = contact.mergedPreferences.toPreferences().copy(voice = ChatPreference(allow = FeatureAllowed.YES))
+    val prefs = contact.mergedPreferences.toPreferences().copy(voice = SimpleChatPreference(allow = FeatureAllowed.YES))
     withApi {
       val toContact = chatModel.controller.apiSetContactPrefs(contact.contactId, prefs)
       if (toContact != null) {
