@@ -1295,10 +1295,12 @@ processChatCommand = \case
         asks currentUser >>= atomically . (`writeTVar` Just user')
         withChatLock "updateProfile" . procCmd $ do
           forM_ contacts $ \ct -> do
-            let ct' = updateMergedPreferences user' ct
-                mergedProfile = userProfileToSend user' Nothing $ Just ct'
-            void (sendDirectContactMessage ct' $ XInfo mergedProfile) `catchError` (toView . CRChatError)
-            when (directOrUsed ct') $ createFeatureChangedItems user' ct ct' CDDirectSnd CISndChatFeature
+            let mergedProfile = userProfileToSend user Nothing $ Just ct
+                ct' = updateMergedPreferences user' ct
+                mergedProfile' = userProfileToSend user' Nothing $ Just ct'
+            when (mergedProfile' /= mergedProfile) $ do
+              void (sendDirectContactMessage ct' $ XInfo mergedProfile') `catchError` (toView . CRChatError)
+              when (directOrUsed ct') $ createFeatureChangedItems user' ct ct' CDDirectSnd CISndChatFeature
           pure $ CRUserProfileUpdated (fromLocalProfile p) p'
     updateContactPrefs :: User -> Contact -> Preferences -> m ChatResponse
     updateContactPrefs user@User {userId} ct@Contact {activeConn = Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
@@ -1307,11 +1309,13 @@ processChatCommand = \case
         assertDirectAllowed user MDSnd ct XInfo_
         ct' <- withStore' $ \db -> updateContactUserPreferences db user ct contactUserPrefs'
         incognitoProfile <- forM customUserProfileId $ \profileId -> withStore $ \db -> getProfileById db userId profileId
-        let p' = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct')
-        withChatLock "updateProfile" . procCmd $ do
-          void (sendDirectContactMessage ct' $ XInfo p') `catchError` (toView . CRChatError)
-          when (directOrUsed ct') $ createFeatureChangedItems user ct ct' CDDirectSnd CISndChatFeature
-          pure $ CRContactPrefsUpdated ct ct'
+        let mergedProfile = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct)
+            mergedProfile' = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct')
+        when (mergedProfile' /= mergedProfile) $
+          withChatLock "updateProfile" $ do
+            void (sendDirectContactMessage ct' $ XInfo mergedProfile') `catchError` (toView . CRChatError)
+            when (directOrUsed ct') $ createFeatureChangedItems user ct ct' CDDirectSnd CISndChatFeature
+        pure $ CRContactPrefsUpdated ct ct'
     runUpdateGroupProfile :: User -> Group -> GroupProfile -> m ChatResponse
     runUpdateGroupProfile user (Group g@GroupInfo {groupProfile = p} ms) p' = do
       let s = memberStatus $ membership g
@@ -2770,14 +2774,12 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
 
     xInfo :: Contact -> Profile -> m ()
     xInfo c@Contact {profile = p} p' = unless (fromLocalProfile p == p') $ do
-      c' <-
+      c' <- withStore $ \db ->
         if userTTL == rcvTTL
-          then withStore $ \db -> updateContactProfile db user c p'
+          then updateContactProfile db user c p'
           else do
-            let ctUserPrefs' = setRсvTTL
-            withStore $ \db -> do
-              c' <- liftIO $ updateContactUserPreferences db user c ctUserPrefs'
-              updateContactProfile db user c' p'
+            c' <- liftIO $ updateContactUserPreferences db user c ctUserPrefs'
+            updateContactProfile db user c' p'
       when (directOrUsed c') $ createFeatureChangedItems user c c' CDDirectRcv CIRcvChatFeature
       toView $ CRContactUpdated c c'
       where
@@ -2785,7 +2787,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
         userTTL = prefParam $ getPreference SCFTimedMessages ctUserPrefs
         Profile {preferences = rcvPrefs_} = p'
         rcvTTL = prefParam $ getPreference SCFTimedMessages rcvPrefs_
-        setRсvTTL =
+        ctUserPrefs' =
           let userDefault = getPreference SCFTimedMessages (fullPreferences user)
               userDefaultTTL = prefParam userDefault
               ctUserTMPref' = case ctUserTMPref of
