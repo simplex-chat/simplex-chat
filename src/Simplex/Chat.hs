@@ -1287,12 +1287,12 @@ processChatCommand = \case
     updateProfile user@User {profile = p} p'
       | p' == fromLocalProfile p = pure CRUserProfileNoChange
       | otherwise = do
-        user' <- withStore $ \db -> updateUserProfile db user p'
-        asks currentUser >>= atomically . (`writeTVar` Just user')
         -- [incognito] filter out contacts with whom user has incognito connections
         contacts <-
           filter (\ct -> isReady ct && not (contactConnIncognito ct))
             <$> withStore' (`getUserContacts` user)
+        user' <- withStore $ \db -> updateUserProfile db user p'
+        asks currentUser >>= atomically . (`writeTVar` Just user')
         withChatLock "updateProfile" . procCmd $ do
           forM_ contacts $ \ct -> do
             let ct' = updateMergedPreferences user' ct
