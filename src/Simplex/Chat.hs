@@ -1284,16 +1284,15 @@ processChatCommand = \case
       | chunks <= sendChunks && chunks * n <= totalSendChunks && isVoice mc = Just IFMSent
       | otherwise = Just IFMOffer
     updateProfile :: User -> Profile -> m ChatResponse
-    updateProfile user@User {profile = p@LocalProfile {profileId, localAlias}} p'@Profile {displayName}
+    updateProfile user@User {profile = p} p'
       | p' == fromLocalProfile p = pure CRUserProfileNoChange
       | otherwise = do
-        withStore $ \db -> updateUserProfile db user p'
-        let user' = (user :: User) {localDisplayName = displayName, profile = toLocalProfile profileId p' localAlias}
+        user' <- withStore $ \db -> updateUserProfile db user p'
         asks currentUser >>= atomically . (`writeTVar` Just user')
         -- [incognito] filter out contacts with whom user has incognito connections
         contacts <-
           filter (\ct -> isReady ct && not (contactConnIncognito ct))
-            <$> withStore' (`getUserContacts` user')
+            <$> withStore' (`getUserContacts` user)
         withChatLock "updateProfile" . procCmd $ do
           forM_ contacts $ \ct -> do
             let ct' = updateMergedPreferences user' ct
@@ -2772,13 +2771,16 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
     xInfo :: Contact -> Profile -> m ()
     xInfo c@Contact {profile = p} p' = unless (fromLocalProfile p == p') $ do
       c' <- updateContactProfileAndUserPrefs
-      toView $ CRContactUpdated c c'
       when (directOrUsed c') $ createFeatureChangedItems user c c' CDDirectRcv CIRcvChatFeature
+      toView $ CRContactUpdated c c'
       where
         updateContactProfileAndUserPrefs =
           if userTTL == rcvTTL
-            then withStore $ \db -> updateContactProfile db user c p'
+            then do
+              liftIO . print $ "111111111111111111111111 userTTL=" <> show userTTL <> " rcvTTL=" <> show rcvTTL
+              withStore $ \db -> updateContactProfile db user c p'
             else do
+              liftIO . print $ "222222222222222222222222 userTTL=" <> show userTTL <> " rcvTTL=" <> show rcvTTL
               let userPrefs' = setContactUserPref rcvTTL
               withStore $ \db -> do
                 c' <- liftIO $ updateContactUserPreferences db user c userPrefs'
