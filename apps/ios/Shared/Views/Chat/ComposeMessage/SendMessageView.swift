@@ -104,21 +104,7 @@ struct SendMessageView: View {
                     } else if vmrs == .recording && !holdingVMR {
                         finishVoiceMessageRecordingButton()
                     } else {
-                        let v = sendMessageButton()
-                        if composeState.liveMessage == nil,
-                           !composeState.voicePreview && !composeState.editing,
-                           let send = sendLiveMessage,
-                           let update = updateLiveMessage {
-                            v.contextMenu{
-                                Button {
-                                    startLiveMessage(send: send, update: update)
-                                } label: {
-                                    Label("Send live message", systemImage: "ellipsis.circle")
-                                }
-                            }
-                        } else {
-                            v
-                        }
+                        sendMessageButton()
                     }
                 }
             }
@@ -130,8 +116,8 @@ struct SendMessageView: View {
         .padding(.vertical, 8)
     }
 
-    private func sendMessageButton() -> some View {
-        Button(action: sendMessage) {
+    @ViewBuilder private func sendMessageButton() -> some View {
+        let v = Button(action: sendMessage) {
             Image(systemName: composeState.editing || composeState.liveMessage != nil
                                 ? "checkmark.circle.fill"
                                 : "arrow.up.circle.fill")
@@ -146,7 +132,22 @@ struct SendMessageView: View {
             (!voiceMessageAllowed && composeState.voicePreview)
         )
         .frame(width: 29, height: 29)
-        .padding([.bottom, .trailing], 4)
+
+        if composeState.liveMessage == nil,
+           !composeState.voicePreview && !composeState.editing,
+           let send = sendLiveMessage,
+           let update = updateLiveMessage {
+            v.contextMenu{
+                Button {
+                    startLiveMessage(send: send, update: update)
+                } label: {
+                    Label("Send live message", systemImage: "ellipsis.circle")
+                }
+            }
+            .padding([.bottom, .trailing], 4)
+        } else {
+            v.padding([.bottom, .trailing], 4)
+        }
     }
 
     private struct RecordVoiceMessageButton: View {
