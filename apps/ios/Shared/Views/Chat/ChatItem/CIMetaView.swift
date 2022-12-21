@@ -21,14 +21,6 @@ struct CIMetaView: View {
             ciMetaText(chatItem.meta, chatTTL: chat.chatInfo.timedMessagesTTL, color: metaColor)
         }
     }
-
-    private func statusImage(_ icon: String, _ color: Color, _ maxHeight: CGFloat = 8) -> some View {
-        Image(systemName: icon)
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .foregroundColor(color)
-            .frame(maxHeight: maxHeight)
-    }
 }
 
 func ciMetaText(_ meta: CIMeta, chatTTL: Int?, color: Color = .clear) -> Text {
