@@ -1293,13 +1293,13 @@ processChatCommand = \case
         -- [incognito] filter out contacts with whom user has incognito connections
         contacts <-
           filter (\ct -> isReady ct && not (contactConnIncognito ct))
-            <$> withStore' (`getUserContacts` user)
+            <$> withStore' (`getUserContacts` user')
         withChatLock "updateProfile" . procCmd $ do
           forM_ contacts $ \ct -> do
-            let mergedProfile = userProfileToSend user' Nothing $ Just ct
-                ct' = updateMergedPreferences user' ct
-            void (sendDirectContactMessage ct $ XInfo mergedProfile) `catchError` (toView . CRChatError)
-            when (directOrUsed ct) $ createFeatureChangedItems user' ct ct' CDDirectSnd CISndChatFeature
+            let ct' = updateMergedPreferences user' ct
+                mergedProfile = userProfileToSend user' Nothing $ Just ct'
+            void (sendDirectContactMessage ct' $ XInfo mergedProfile) `catchError` (toView . CRChatError)
+            when (directOrUsed ct') $ createFeatureChangedItems user' ct ct' CDDirectSnd CISndChatFeature
           pure $ CRUserProfileUpdated (fromLocalProfile p) p'
     updateContactPrefs :: User -> Contact -> Preferences -> m ChatResponse
     updateContactPrefs user@User {userId} ct@Contact {activeConn = Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
@@ -1311,7 +1311,7 @@ processChatCommand = \case
         let p' = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct')
         withChatLock "updateProfile" . procCmd $ do
           void (sendDirectContactMessage ct' $ XInfo p') `catchError` (toView . CRChatError)
-          when (directOrUsed ct) $ createFeatureChangedItems user ct ct' CDDirectSnd CISndChatFeature
+          when (directOrUsed ct') $ createFeatureChangedItems user ct ct' CDDirectSnd CISndChatFeature
           pure $ CRContactPrefsUpdated ct ct'
     runUpdateGroupProfile :: User -> Group -> GroupProfile -> m ChatResponse
     runUpdateGroupProfile user (Group g@GroupInfo {groupProfile = p} ms) p' = do
@@ -2773,7 +2773,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
     xInfo c@Contact {profile = p} p' = unless (fromLocalProfile p == p') $ do
       c' <- updateContactProfileAndUserPrefs
       toView $ CRContactUpdated c c'
-      when (directOrUsed c) $ createFeatureChangedItems user c c' CDDirectRcv CIRcvChatFeature
+      when (directOrUsed c') $ createFeatureChangedItems user c c' CDDirectRcv CIRcvChatFeature
       where
         updateContactProfileAndUserPrefs =
           if userTTL == rcvTTL
