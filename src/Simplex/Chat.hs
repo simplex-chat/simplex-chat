@@ -1739,8 +1739,7 @@ cleanupManager :: forall m. ChatMonad m => User -> m ()
 cleanupManager user = do
   forever $ do
     flip catchError (toView . CRChatError) $ do
-      agentStarted <- asks agentAsync
-      atomically $ readTVar agentStarted >>= \a -> unless (isJust a) retry
+      waitChatStarted
       cleanupTimedItems
     threadDelay $ cleanupManagerInterval * 1000000
   where
@@ -1775,6 +1774,7 @@ deleteTimedItem :: ChatMonad m => User -> (ChatRef, ChatItemId) -> UTCTime -> m 
 deleteTimedItem user (ChatRef cType chatId, itemId) deleteAt = do
   ts <- liftIO getCurrentTime
   threadDelay $ diffInMicros deleteAt ts
+  waitChatStarted
   case cType of
     CTDirect -> do
       (ct, ci) <- withStore $ \db -> (,) <$> getContact db user chatId <*> getDirectChatItem db user chatId itemId
@@ -3554,6 +3554,11 @@ withUser action = withUser' $ \user ->
 
 chatStarted :: ChatMonad m => m Bool
 chatStarted = fmap isJust . readTVarIO =<< asks agentAsync
+
+waitChatStarted :: ChatMonad m => m ()
+waitChatStarted = do
+  agentStarted <- asks agentAsync
+  atomically $ readTVar agentStarted >>= \a -> unless (isJust a) retry
 
 withAgent :: ChatMonad m => (AgentClient -> ExceptT AgentErrorType m a) -> m a
 withAgent action =
