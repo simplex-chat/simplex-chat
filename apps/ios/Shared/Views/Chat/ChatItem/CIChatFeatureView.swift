@@ -19,6 +19,7 @@ struct CIChatFeatureView: View {
         HStack(alignment: .bottom, spacing: 4) {
             Image(systemName: icon ?? feature.iconFilled)
                 .foregroundColor(iconColor)
+                .scaleEffect(feature.iconScale)
             chatEventText(chatItem)
         }
         .padding(.leading, 6)

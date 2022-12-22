@@ -153,6 +153,22 @@ public struct Preferences: Codable {
         self.voice = voice
     }
 
+    func copy(timedMessages: TimedMessagesPreference? = nil, fullDelete: SimplePreference? = nil, voice: SimplePreference? = nil) -> Preferences {
+        Preferences(
+            timedMessages: timedMessages ?? self.timedMessages,
+            fullDelete: fullDelete ?? self.fullDelete,
+            voice: voice ?? self.voice
+        )
+    }
+
+    public func setAllowed(_ feature: ChatFeature, allowed: FeatureAllowed = .yes) -> Preferences {
+        switch feature {
+        case .timedMessages: return copy(timedMessages: TimedMessagesPreference(allow: allowed, ttl: timedMessages?.ttl))
+        case .fullDelete: return copy(fullDelete: SimplePreference(allow: allowed))
+        case .voice: return copy(voice: SimplePreference(allow: allowed))
+        }
+    }
+
     public static let sampleData = Preferences(
         timedMessages: TimedMessagesPreference(allow: .no),
         fullDelete: SimplePreference(allow: .no),
@@ -256,7 +272,7 @@ public struct ContactUserPreferences: Decodable {
     public static let sampleData = ContactUserPreferences(
         timedMessages: ContactUserPreference<TimedMessagesPreference>(
             enabled: FeatureEnabled(forUser: false, forContact: false),
-            userPreference: ContactUserPref<TimedMessagesPreference>.user(preference: TimedMessagesPreference(allow: .no)),
+            userPreference: ContactUserPref<TimedMessagesPreference>.user(preference: TimedMessagesPreference(allow: .yes)),
             contactPreference: TimedMessagesPreference(allow: .no)
         ),
         fullDelete: ContactUserPreference<SimplePreference>(
@@ -337,6 +353,7 @@ public enum ContactUserPref<P: Preference>: Decodable {
 public protocol Feature {
     var icon: String { get }
     var iconFilled: String { get }
+    var iconScale: CGFloat { get }
     var hasParam: Bool { get }
     var text: String { get }
 }
@@ -374,7 +391,7 @@ public enum ChatFeature: String, Decodable, Feature {
 
     public var icon: String {
         switch self {
-        case .timedMessages: return "timer"
+        case .timedMessages: return "stopwatch"
         case .fullDelete: return "trash.slash"
         case .voice: return "mic"
         }
@@ -382,9 +399,16 @@ public enum ChatFeature: String, Decodable, Feature {
 
     public var iconFilled: String {
         switch self {
-        case .timedMessages: return "timer"
+        case .timedMessages: return "stopwatch.fill"
         case .fullDelete: return "trash.slash.fill"
         case .voice: return "mic.fill"
+        }
+    }
+
+    public var iconScale: CGFloat {
+        switch self {
+        case .timedMessages: return 0.9
+        default: return 1
         }
     }
 
@@ -482,6 +506,13 @@ public enum GroupFeature: String, Decodable, Feature {
         case .directMessages: return "arrow.left.and.right.circle.fill"
         case .fullDelete: return "trash.slash.fill"
         case .voice: return "mic.fill"
+        }
+    }
+
+    public var iconScale: CGFloat {
+        switch self {
+        case .timedMessages: return 0.9
+        default: return 1
         }
     }
 
@@ -880,18 +911,23 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
         }
     }
 
-    public var voiceMessageAllowed: Bool {
+    // this works for features that are common for contacts and groups
+    public func featureEnabled(_ feature: ChatFeature) -> Bool {
         switch self {
-        case let .direct(contact): return contact.mergedPreferences.voice.enabled.forUser
-        case let .group(groupInfo): return groupInfo.fullGroupPreferences.voice.on
-        default: return false
-        }
-    }
-
-    public var fullDeletionAllowed: Bool {
-        switch self {
-        case let .direct(contact): return contact.mergedPreferences.fullDelete.enabled.forUser
-        case let .group(groupInfo): return groupInfo.fullGroupPreferences.fullDelete.on
+        case let .direct(contact):
+            let cups = contact.mergedPreferences
+            switch feature {
+            case .timedMessages: return cups.timedMessages.enabled.forUser
+            case .fullDelete: return cups.fullDelete.enabled.forUser
+            case .voice: return cups.voice.enabled.forUser
+            }
+        case let .group(groupInfo):
+            let prefs = groupInfo.fullGroupPreferences
+            switch feature {
+            case .timedMessages: return prefs.timedMessages.on
+            case .fullDelete: return prefs.fullDelete.on
+            case .voice: return prefs.voice.on
+            }
         default: return false
         }
     }
@@ -1027,6 +1063,22 @@ public struct Contact: Identifiable, Decodable, NamedChat {
 
     public var contactConnIncognito: Bool {
         activeConn.customUserProfileId != nil
+    }
+
+    public func allowsFeature(_ feature: ChatFeature) -> Bool {
+        switch feature {
+        case .timedMessages: return mergedPreferences.timedMessages.contactPreference.allow != .no
+        case .fullDelete: return mergedPreferences.fullDelete.contactPreference.allow != .no
+        case .voice: return mergedPreferences.voice.contactPreference.allow != .no
+        }
+    }
+
+    public func userAllowsFeature(_ feature: ChatFeature) -> Bool {
+        switch feature {
+        case .timedMessages: return mergedPreferences.timedMessages.userPreference.preference.allow != .no
+        case .fullDelete: return mergedPreferences.fullDelete.userPreference.preference.allow != .no
+        case .voice: return mergedPreferences.voice.userPreference.preference.allow != .no
+        }
     }
 
     public static let sampleData = Contact(
@@ -1638,8 +1690,8 @@ public struct ChatItem: Identifiable, Decodable {
         case .sndConnEvent: return showNtfDir
         case .rcvChatFeature: return false
         case .sndChatFeature: return showNtfDir
-        case .rcvFeatureOffer: return false
-        case .sndFeatureOffer: return showNtfDir
+        case .rcvChatPreference: return false
+        case .sndChatPreference: return showNtfDir
         case .rcvGroupFeature: return false
         case .sndGroupFeature: return showNtfDir
         case .rcvChatFeatureRejected: return showNtfDir
@@ -1895,8 +1947,8 @@ public enum CIContent: Decodable, ItemContent {
     case sndConnEvent(sndConnEvent: SndConnEvent)
     case rcvChatFeature(feature: ChatFeature, enabled: FeatureEnabled, param: Int?)
     case sndChatFeature(feature: ChatFeature, enabled: FeatureEnabled, param: Int?)
-    case rcvFeatureOffer(feature: ChatFeature, param: Int?)
-    case sndFeatureOffer(feature: ChatFeature, param: Int?)
+    case rcvChatPreference(feature: ChatFeature, allowed: FeatureAllowed, param: Int?)
+    case sndChatPreference(feature: ChatFeature, allowed: FeatureAllowed, param: Int?)
     case rcvGroupFeature(groupFeature: GroupFeature, preference: GroupPreference, param: Int?)
     case sndGroupFeature(groupFeature: GroupFeature, preference: GroupPreference, param: Int?)
     case rcvChatFeatureRejected(feature: ChatFeature)
@@ -1920,8 +1972,8 @@ public enum CIContent: Decodable, ItemContent {
             case let .sndConnEvent(sndConnEvent): return sndConnEvent.text
             case let .rcvChatFeature(feature, enabled, param): return CIContent.featureText(feature, enabled.text, param)
             case let .sndChatFeature(feature, enabled, param): return CIContent.featureText(feature, enabled.text, param)
-            case let .rcvFeatureOffer(feature, param): return "allow \(CIContent.featureOfferText(feature, param))?"
-            case let .sndFeatureOffer(feature, param): return "offered \(CIContent.featureOfferText(feature, param))"
+            case let .rcvChatPreference(feature, allowed, param): return CIContent.preferenceText(feature, allowed, param)
+            case let .sndChatPreference(feature, allowed, param): return CIContent.preferenceText(feature, allowed, param)
             case let .rcvGroupFeature(feature, preference, param): return CIContent.featureText(feature, preference.enable.text, param)
             case let .sndGroupFeature(feature, preference, param): return CIContent.featureText(feature, preference.enable.text, param)
             case let .rcvChatFeatureRejected(feature): return String.localizedStringWithFormat("%@: received, prohibited", feature.text)
@@ -1930,14 +1982,18 @@ public enum CIContent: Decodable, ItemContent {
         }
     }
 
-    static func featureText(_ feature: Feature, _ value: String, _ param: Int?) -> String {
+    static func featureText(_ feature: Feature, _ enabled: String, _ param: Int?) -> String {
         feature.hasParam && param != nil
         ? "\(feature.text): \(TimedMessagesPreference.ttlText(param))"
-        : "\(feature.text): \(value)"
+        : "\(feature.text): \(enabled)"
     }
 
-    public static func featureOfferText(_ feature: Feature, _ param: Int?) -> String {
-        feature.text + (feature.hasParam ? " (\(TimedMessagesPreference.ttlText(param)))" : "")
+    public static func preferenceText(_ feature: Feature, _ allowed: FeatureAllowed, _ param: Int?) -> String {
+        allowed != .no && feature.hasParam && param != nil
+        ? "offered \(feature.text): \(TimedMessagesPreference.ttlText(param))"
+        : allowed != .no
+        ? "offered \(feature.text)"
+        : "cancelled \(feature.text)"
     }
 
     public var msgContent: MsgContent? {

@@ -222,15 +222,15 @@ struct ComposeView: View {
                     },
                     sendLiveMessage: sendLiveMessage,
                     updateLiveMessage: updateLiveMessage,
-                    voiceMessageAllowed: chat.chatInfo.voiceMessageAllowed,
+                    voiceMessageAllowed: { chat.chatInfo.featureEnabled(.voice) },
                     showEnableVoiceMessagesAlert: chat.chatInfo.showEnableVoiceMessagesAlert,
                     startVoiceMessageRecording: {
                         Task {
                             await startVoiceMessageRecording()
                         }
                     },
-                    finishVoiceMessageRecording: { finishVoiceMessageRecording() },
-                    allowVoiceMessagesToContact: { allowVoiceMessagesToContact() },
+                    finishVoiceMessageRecording: finishVoiceMessageRecording,
+                    allowVoiceMessagesToContact: allowVoiceMessagesToContact,
                     onImageAdded: { image in chosenImages = [image] },
                     keyboardVisible: $keyboardVisible
                 )
@@ -344,7 +344,7 @@ struct ComposeView: View {
                 startingRecording = false
             }
         }
-        .onChange(of: chat.chatInfo.voiceMessageAllowed) { vmAllowed in
+        .onChange(of: chat.chatInfo.featureEnabled(.voice)) { vmAllowed in
             if !vmAllowed && composeState.voicePreview,
                let fileName = composeState.voiceMessageRecordingFileName {
                 cancelVoiceMessageRecording(fileName)
@@ -639,19 +639,7 @@ struct ComposeView: View {
 
     private func allowVoiceMessagesToContact() {
         if case let .direct(contact) = chat.chatInfo {
-            Task {
-                do {
-                    var prefs = contactUserPreferencesToPreferences(contact.mergedPreferences)
-                    prefs.voice = SimplePreference(allow: .yes)
-                    if let toContact = try await apiSetContactPrefs(contactId: contact.contactId, preferences: prefs) {
-                        await MainActor.run {
-                            chatModel.updateContact(toContact)
-                        }
-                    }
-                } catch {
-                    logger.error("ComposeView allowVoiceMessagesToContact, apiSetContactPrefs error: \(responseError(error))")
-                }
-            }
+            allowFeatureToContact(contact, .voice)
         }
     }
 

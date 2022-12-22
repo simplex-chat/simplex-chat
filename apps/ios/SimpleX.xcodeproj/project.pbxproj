@@ -49,7 +49,7 @@
 		5C5F2B7027EBC704006A9D5F /* ProfileImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C5F2B6F27EBC704006A9D5F /* ProfileImage.swift */; };
 		5C6AD81327A834E300348BD7 /* NewChatButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C6AD81227A834E300348BD7 /* NewChatButton.swift */; };
 		5C6BA667289BD954009B8ECC /* DismissSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C6BA666289BD954009B8ECC /* DismissSheets.swift */; };
-		5C7031162953C97F00150A12 /* CIFeatureOfferView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C7031152953C97F00150A12 /* CIFeatureOfferView.swift */; };
+		5C7031162953C97F00150A12 /* CIFeaturePreferenceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C7031152953C97F00150A12 /* CIFeaturePreferenceView.swift */; };
 		5C7505A227B65FDB00BE3227 /* CIMetaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C7505A127B65FDB00BE3227 /* CIMetaView.swift */; };
 		5C7505A527B679EE00BE3227 /* NavLinkPlain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C7505A427B679EE00BE3227 /* NavLinkPlain.swift */; };
 		5C7505A827B6D34800BE3227 /* ChatInfoToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C7505A727B6D34800BE3227 /* ChatInfoToolbar.swift */; };
@@ -261,7 +261,7 @@
 		5C5F2B6F27EBC704006A9D5F /* ProfileImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileImage.swift; sourceTree = "<group>"; };
 		5C6AD81227A834E300348BD7 /* NewChatButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewChatButton.swift; sourceTree = "<group>"; };
 		5C6BA666289BD954009B8ECC /* DismissSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DismissSheets.swift; sourceTree = "<group>"; };
-		5C7031152953C97F00150A12 /* CIFeatureOfferView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIFeatureOfferView.swift; sourceTree = "<group>"; };
+		5C7031152953C97F00150A12 /* CIFeaturePreferenceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIFeaturePreferenceView.swift; sourceTree = "<group>"; };
 		5C7505A127B65FDB00BE3227 /* CIMetaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIMetaView.swift; sourceTree = "<group>"; };
 		5C7505A427B679EE00BE3227 /* NavLinkPlain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavLinkPlain.swift; sourceTree = "<group>"; };
 		5C7505A727B6D34800BE3227 /* ChatInfoToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatInfoToolbar.swift; sourceTree = "<group>"; };
@@ -690,7 +690,7 @@
 				64E972062881BB22008DBC02 /* CIGroupInvitationView.swift */,
 				6440C9FF288857A10062C672 /* CIEventView.swift */,
 				5C58BCD5292BEBE600AF9E4F /* CIChatFeatureView.swift */,
-				5C7031152953C97F00150A12 /* CIFeatureOfferView.swift */,
+				5C7031152953C97F00150A12 /* CIFeaturePreferenceView.swift */,
 				644EFFE1292D089800525D5B /* FramedCIVoiceView.swift */,
 				644EFFE32937BE9700525D5B /* MarkedDeletedItemView.swift */,
 			);
@@ -1040,7 +1040,7 @@
 				5C9C2DA7289957AE00CC63B1 /* AdvancedNetworkSettings.swift in Sources */,
 				5CADE79A29211BB900072E13 /* PreferencesView.swift in Sources */,
 				644EFFE42937BE9700525D5B /* MarkedDeletedItemView.swift in Sources */,
-				5C7031162953C97F00150A12 /* CIFeatureOfferView.swift in Sources */,
+				5C7031162953C97F00150A12 /* CIFeaturePreferenceView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
