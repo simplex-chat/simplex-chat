@@ -2056,7 +2056,7 @@ data class SimpleChatPreference(
 ): ChatPreference
 
 @Serializable
-class TimedMessagesPreference(
+data class TimedMessagesPreference(
   override val allow: FeatureAllowed,
   val ttl: Int? = null
 ): ChatPreference {
