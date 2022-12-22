@@ -796,7 +796,7 @@ viewContactPreferences user ct ct' cups =
 viewContactPref :: FullPreferences -> FullPreferences -> Maybe Preferences -> ContactUserPreferences -> AChatFeature -> Maybe StyledString
 viewContactPref userPrefs userPrefs' ctPrefs cups (ACF f)
   | userPref == userPref' && ctPref == contactPreference = Nothing
-  | otherwise = Just $ viewFeatureText f <> ": " <> plain (prefEnabledToText enabled) <> " (you allow: " <> viewCountactUserPref userPreference <> ", contact allows: " <> viewPreference contactPreference <> ")"
+  | otherwise = Just . plain $ chatFeatureNameText' f <> ": " <> prefEnabledToText enabled <> " (you allow: " <> countactUserPrefText userPreference <> ", contact allows: " <> preferenceText contactPreference <> ")"
   where
     userPref = getPreference f userPrefs
     userPref' = getPreference f userPrefs'
@@ -811,20 +811,14 @@ viewPrefsUpdated ps ps'
     prefs = mapMaybe viewPref allChatFeatures
     viewPref (ACF f)
       | pref ps == pref ps' = Nothing
-      | otherwise = Just $ viewFeatureText f <> " allowed: " <> viewPreference (pref ps')
+      | otherwise = Just . plain $ chatFeatureNameText' f <> " allowed: " <> preferenceText (pref ps')
       where
         pref pss = getPreference f $ mergePreferences pss Nothing
 
-viewFeatureText :: SChatFeature f -> StyledString
-viewFeatureText f = plain . chatFeatureToText $ chatFeature f
-
-viewPreference :: FeatureI f => FeaturePreference f -> StyledString
-viewPreference p = plain $ prefToText' p
-
-viewCountactUserPref :: FeatureI f => ContactUserPref (FeaturePreference f) -> StyledString
-viewCountactUserPref = \case
-  CUPUser p -> "default (" <> viewPreference p <> ")"
-  CUPContact p -> viewPreference p
+countactUserPrefText :: FeatureI f => ContactUserPref (FeaturePreference f) -> Text
+countactUserPrefText cup = case cup of
+  CUPUser p -> "default (" <> preferenceText p <> ")"
+  CUPContact p -> preferenceText p
 
 viewGroupUpdated :: GroupInfo -> GroupInfo -> Maybe GroupMember -> [StyledString]
 viewGroupUpdated
@@ -849,15 +843,9 @@ viewGroupUpdated
           prefs = mapMaybe viewPref allGroupFeatures
           viewPref (AGF f)
             | pref gps == pref gps' = Nothing
-            | otherwise = Just $ viewGroupFeatureText f <> " enabled: " <> viewGroupPreference (pref gps')
+            | otherwise = Just . plain $ groupPreferenceText (pref gps')
             where
               pref = getGroupPreference f . mergeGroupPreferences
-
-viewGroupFeatureText :: SGroupFeature f -> StyledString
-viewGroupFeatureText f = plain . groupFeatureToText $ toGroupFeature f
-
-viewGroupPreference :: GroupFeatureI f => GroupFeaturePreference f -> StyledString
-viewGroupPreference p = plain $ groupPrefToText' p
 
 viewGroupProfile :: GroupInfo -> [StyledString]
 viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {description, image, groupPreferences = gps}} =
@@ -866,7 +854,7 @@ viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {description, image, g
     <> maybe [] ((bold' "description:" :) . map plain . T.lines) description
     <> (bold' "group preferences:" : map viewPref allGroupFeatures)
   where
-    viewPref (AGF f) = viewGroupFeatureText f <> " enabled: " <> viewGroupPreference (pref gps)
+    viewPref (AGF f) = plain $ groupPreferenceText (pref gps)
       where
         pref = getGroupPreference f . mergeGroupPreferences
 

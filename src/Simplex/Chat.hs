@@ -304,7 +304,7 @@ processChatCommand = \case
       assertDirectAllowed user MDSnd ct XMsgNew_
       unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
       if isVoice mc && not (featureAllowed SCFVoice forUser ct)
-        then pure $ chatCmdError $ "feature not allowed " <> T.unpack (chatFeatureToText CFVoice)
+        then pure $ chatCmdError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFVoice)
         else do
           (fileInvitation_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer ct
           timed_ <- sndContactCITimed live ct
@@ -357,7 +357,7 @@ processChatCommand = \case
       Group gInfo@GroupInfo {groupId, membership, localDisplayName = gName} ms <- withStore $ \db -> getGroup db user chatId
       unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
       if isVoice mc && not (groupFeatureAllowed SGFVoice gInfo)
-        then pure $ chatCmdError $ "feature not allowed " <> T.unpack (groupFeatureToText GFVoice)
+        then pure $ chatCmdError $ "feature not allowed " <> T.unpack (groupFeatureNameText GFVoice)
         else do
           (fileInvitation_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer gInfo (length $ filter memberCurrent ms)
           timed_ <- sndGroupCITimed live gInfo
@@ -1305,7 +1305,7 @@ processChatCommand = \case
                 mergedProfile' = userProfileToSend user' Nothing $ Just ct'
             when (mergedProfile' /= mergedProfile) $ do
               void (sendDirectContactMessage ct' $ XInfo mergedProfile') `catchError` (toView . CRChatError)
-              when (directOrUsed ct') $ createFeatureChangedItems user' ct ct' CDDirectSnd CISndChatFeature
+              when (directOrUsed ct') $ createSndFeatureItems user' ct ct'
           pure $ CRUserProfileUpdated (fromLocalProfile p) p'
     updateContactPrefs :: User -> Contact -> Preferences -> m ChatResponse
     updateContactPrefs user@User {userId} ct@Contact {activeConn = Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
@@ -1319,7 +1319,7 @@ processChatCommand = \case
         when (mergedProfile' /= mergedProfile) $
           withChatLock "updateProfile" $ do
             void (sendDirectContactMessage ct' $ XInfo mergedProfile') `catchError` (toView . CRChatError)
-            when (directOrUsed ct') $ createFeatureChangedItems user ct ct' CDDirectSnd CISndChatFeature
+            when (directOrUsed ct') $ createSndFeatureItems user ct ct'
         pure $ CRContactPrefsUpdated ct ct'
     runUpdateGroupProfile :: User -> Group -> GroupProfile -> m ChatResponse
     runUpdateGroupProfile user (Group g@GroupInfo {groupProfile = p} ms) p' = do
@@ -2789,7 +2789,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
           else do
             c' <- liftIO $ updateContactUserPreferences db user c ctUserPrefs'
             updateContactProfile db user c' p'
-      when (directOrUsed c') $ createFeatureChangedItems user c c' CDDirectRcv CIRcvChatFeature
+      when (directOrUsed c') $ createRcvFeatureItems user c c'
       toView $ CRContactUpdated c c'
       where
         Contact {userPreferences = ctUserPrefs@Preferences {timedMessages = ctUserTMPref}} = c
@@ -3439,13 +3439,47 @@ userProfileToSend user@User {profile = p} incognitoProfile ct =
       userPrefs = maybe (preferences' user) (const Nothing) incognitoProfile
    in (p' :: Profile) {preferences = Just . toChatPrefs $ mergePreferences (userPreferences <$> ct) userPrefs}
 
-createFeatureChangedItems :: (MsgDirectionI d, ChatMonad m) => User -> Contact -> Contact -> (Contact -> ChatDirection 'CTDirect d) -> (ChatFeature -> PrefEnabled -> Maybe Int -> CIContent d) -> m ()
-createFeatureChangedItems user Contact {mergedPreferences = cups} ct'@Contact {mergedPreferences = cups'} chatDir ciContent =
-  forM_ allChatFeatures $ \(ACF f) -> do
-    let state = featureState $ getContactUserPreference f cups
-        state' = featureState $ getContactUserPreference f cups'
-    when (state /= state') $
-      createInternalChatItem user (chatDir ct') (uncurry (ciContent $ chatFeature f) state') Nothing
+createRcvFeatureItems :: forall m. ChatMonad m => User -> Contact -> Contact -> m ()
+createRcvFeatureItems user ct ct' =
+  createFeatureItems user ct ct' CDDirectRcv CIRcvChatFeature CIRcvChatPreference contactPreference
+
+createSndFeatureItems :: forall m. ChatMonad m => User -> Contact -> Contact -> m ()
+createSndFeatureItems user ct ct' =
+  createFeatureItems user ct ct' CDDirectSnd CISndChatFeature CISndChatPreference getPref
+  where
+    getPref = (preference :: ContactUserPref (FeaturePreference f) -> FeaturePreference f) . userPreference
+
+type FeatureContent a d = ChatFeature -> a -> Maybe Int -> CIContent d
+
+createFeatureItems ::
+  forall d m.
+  (MsgDirectionI d, ChatMonad m) =>
+  User ->
+  Contact ->
+  Contact ->
+  (Contact -> ChatDirection 'CTDirect d) ->
+  FeatureContent PrefEnabled d ->
+  FeatureContent FeatureAllowed d ->
+  (forall f. ContactUserPreference (FeaturePreference f) -> FeaturePreference f) ->
+  m ()
+createFeatureItems user Contact {mergedPreferences = cups} ct'@Contact {mergedPreferences = cups'} chatDir ciFeature ciOffer getPref =
+  forM_ allChatFeatures $ \(ACF f) -> createItem f
+  where
+    createItem :: forall f. FeatureI f => SChatFeature f -> m ()
+    createItem f
+      | state /= state' = create ciFeature state'
+      | prefState /= prefState' = create ciOffer prefState'
+      | otherwise = pure ()
+      where
+        create :: FeatureContent a d -> (a, Maybe Int) -> m ()
+        create ci (s, param) = createInternalChatItem user (chatDir ct') (ci f' s param) Nothing
+        f' = chatFeature f
+        state = featureState cup
+        state' = featureState cup'
+        prefState = preferenceState $ getPref cup
+        prefState' = preferenceState $ getPref cup'
+        cup = getContactUserPreference f cups
+        cup' = getContactUserPreference f cups'
 
 createGroupFeatureChangedItems :: (MsgDirectionI d, ChatMonad m) => User -> ChatDirection 'CTGroup d -> (GroupFeature -> GroupPreference -> Maybe Int -> CIContent d) -> GroupInfo -> GroupInfo -> m ()
 createGroupFeatureChangedItems user cd ciContent GroupInfo {fullGroupPreferences = gps} GroupInfo {fullGroupPreferences = gps'} =
