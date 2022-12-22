@@ -408,8 +408,7 @@ interface SomeChat {
   val sendMsgEnabled: Boolean
   val ntfsEnabled: Boolean
   val incognito: Boolean
-  val voiceMessageAllowed: Boolean
-  val fullDeletionAllowed: Boolean
+  fun featureEnabled(feature: ChatFeature): Boolean
   val timedMessagesTTL: Int?
   val createdAt: Instant
   val updatedAt: Instant
@@ -472,8 +471,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val sendMsgEnabled get() = contact.sendMsgEnabled
     override val ntfsEnabled get() = contact.ntfsEnabled
     override val incognito get() = contact.incognito
-    override val voiceMessageAllowed get() = contact.voiceMessageAllowed
-    override val fullDeletionAllowed get() = contact.fullDeletionAllowed
+    override fun featureEnabled(feature: ChatFeature) = contact.featureEnabled(feature)
     override val timedMessagesTTL: Int? get() = contact.timedMessagesTTL
     override val createdAt get() = contact.createdAt
     override val updatedAt get() = contact.updatedAt
@@ -497,8 +495,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val sendMsgEnabled get() = groupInfo.sendMsgEnabled
     override val ntfsEnabled get() = groupInfo.ntfsEnabled
     override val incognito get() = groupInfo.incognito
-    override val voiceMessageAllowed get() = groupInfo.voiceMessageAllowed
-    override val fullDeletionAllowed get() = groupInfo.fullDeletionAllowed
+    override fun featureEnabled(feature: ChatFeature) = groupInfo.featureEnabled(feature)
     override val timedMessagesTTL: Int? get() = groupInfo.timedMessagesTTL
     override val createdAt get() = groupInfo.createdAt
     override val updatedAt get() = groupInfo.updatedAt
@@ -522,8 +519,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val sendMsgEnabled get() = contactRequest.sendMsgEnabled
     override val ntfsEnabled get() = contactRequest.ntfsEnabled
     override val incognito get() = contactRequest.incognito
-    override val voiceMessageAllowed get() = contactRequest.voiceMessageAllowed
-    override val fullDeletionAllowed get() = contactRequest.fullDeletionAllowed
+    override fun featureEnabled(feature: ChatFeature) = contactRequest.featureEnabled(feature)
     override val timedMessagesTTL: Int? get() = contactRequest.timedMessagesTTL
     override val createdAt get() = contactRequest.createdAt
     override val updatedAt get() = contactRequest.updatedAt
@@ -547,8 +543,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val sendMsgEnabled get() = contactConnection.sendMsgEnabled
     override val ntfsEnabled get() = contactConnection.incognito
     override val incognito get() = contactConnection.incognito
-    override val voiceMessageAllowed get() = contactConnection.voiceMessageAllowed
-    override val fullDeletionAllowed get() = contactConnection.fullDeletionAllowed
+    override fun featureEnabled(feature: ChatFeature) = contactConnection.featureEnabled(feature)
     override val timedMessagesTTL: Int? get() = contactConnection.timedMessagesTTL
     override val createdAt get() = contactConnection.createdAt
     override val updatedAt get() = contactConnection.updatedAt
@@ -585,8 +580,11 @@ data class Contact(
   override val sendMsgEnabled get() = true
   override val ntfsEnabled get() = chatSettings.enableNtfs
   override val incognito get() = contactConnIncognito
-  override val voiceMessageAllowed get() = mergedPreferences.voice.enabled.forUser
-  override val fullDeletionAllowed get() = mergedPreferences.fullDelete.enabled.forUser
+  override fun featureEnabled(feature: ChatFeature) = when (feature) {
+    ChatFeature.TimedMessages -> mergedPreferences.timedMessages.enabled.forUser
+    ChatFeature.FullDelete -> mergedPreferences.fullDelete.enabled.forUser
+    ChatFeature.Voice -> mergedPreferences.voice.enabled.forUser
+  }
   override val timedMessagesTTL: Int? get() = with(mergedPreferences.timedMessages) { if (enabled.forUser) userPreference.pref.ttl else null }
   override val displayName get() = localAlias.ifEmpty { profile.displayName }
   override val fullName get() = profile.fullName
@@ -599,6 +597,18 @@ data class Contact(
 
   val contactConnIncognito =
     activeConn.customUserProfileId != null
+
+  fun allowsFeature(feature: ChatFeature): Boolean = when (feature) {
+    ChatFeature.TimedMessages -> mergedPreferences.timedMessages.contactPreference.allow != FeatureAllowed.NO
+    ChatFeature.FullDelete -> mergedPreferences.fullDelete.contactPreference.allow != FeatureAllowed.NO
+    ChatFeature.Voice -> mergedPreferences.voice.contactPreference.allow != FeatureAllowed.NO
+  }
+
+  fun userAllowsFeature(feature: ChatFeature): Boolean = when (feature) {
+    ChatFeature.TimedMessages -> mergedPreferences.timedMessages.userPreference.pref.allow != FeatureAllowed.NO
+    ChatFeature.FullDelete -> mergedPreferences.fullDelete.userPreference.pref.allow != FeatureAllowed.NO
+    ChatFeature.Voice -> mergedPreferences.voice.userPreference.pref.allow != FeatureAllowed.NO
+  }
 
   companion object {
     val sampleData = Contact(
@@ -720,8 +730,11 @@ data class GroupInfo (
   override val sendMsgEnabled get() = membership.memberActive
   override val ntfsEnabled get() = chatSettings.enableNtfs
   override val incognito get() = membership.memberIncognito
-  override val voiceMessageAllowed get() = fullGroupPreferences.voice.on
-  override val fullDeletionAllowed get() = fullGroupPreferences.fullDelete.on
+  override fun featureEnabled(feature: ChatFeature) = when (feature) {
+    ChatFeature.TimedMessages -> fullGroupPreferences.timedMessages.on
+    ChatFeature.FullDelete -> fullGroupPreferences.fullDelete.on
+    ChatFeature.Voice -> fullGroupPreferences.fullDelete.on
+  }
   override val timedMessagesTTL: Int? get() = with(fullGroupPreferences.timedMessages) { if (on) ttl else null }
   override val displayName get() = groupProfile.displayName
   override val fullName get() = groupProfile.fullName
@@ -968,8 +981,7 @@ class UserContactRequest (
   override val sendMsgEnabled get() = false
   override val ntfsEnabled get() = false
   override val incognito get() = false
-  override val voiceMessageAllowed get() = false
-  override val fullDeletionAllowed get() = false
+  override fun featureEnabled(feature: ChatFeature) = false
   override val timedMessagesTTL: Int? get() = null
   override val displayName get() = profile.displayName
   override val fullName get() = profile.fullName
@@ -1007,8 +1019,7 @@ class PendingContactConnection(
   override val sendMsgEnabled get() = false
   override val ntfsEnabled get() = false
   override val incognito get() = customUserProfileId != null
-  override val voiceMessageAllowed get() = false
-  override val fullDeletionAllowed get() = false
+  override fun featureEnabled(feature: ChatFeature) = false
   override val timedMessagesTTL: Int? get() = null
   override val localDisplayName get() = String.format(generalGetString(R.string.connection_local_display_name), pccConnId)
   override val displayName: String get() {
@@ -1150,6 +1161,8 @@ data class ChatItem (
       is CIContent.SndConnEventContent -> showNtfDir
       is CIContent.RcvChatFeature -> false
       is CIContent.SndChatFeature -> showNtfDir
+      is CIContent.RcvChatPreference -> false
+      is CIContent.SndChatPreference -> showNtfDir
       is CIContent.RcvGroupFeature -> false
       is CIContent.SndGroupFeature -> showNtfDir
       is CIContent.RcvChatFeatureRejected -> showNtfDir
@@ -1385,6 +1398,8 @@ sealed class CIContent: ItemContent {
   @Serializable @SerialName("sndConnEvent") class SndConnEventContent(val sndConnEvent: SndConnEvent): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvChatFeature") class RcvChatFeature(val feature: ChatFeature, val enabled: FeatureEnabled, val param: Int? = null): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("sndChatFeature") class SndChatFeature(val feature: ChatFeature, val enabled: FeatureEnabled, val param: Int? = null): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvChatPreference") class RcvChatPreference(val feature: ChatFeature, val allowed: FeatureAllowed, val param: Int? = null): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("sndChatPreference") class SndChatPreference(val feature: ChatFeature, val allowed: FeatureAllowed, val param: Int? = null): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvGroupFeature") class RcvGroupFeature(val groupFeature: GroupFeature, val preference: GroupPreference, val param: Int? = null): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("sndGroupFeature") class SndGroupFeature(val groupFeature: GroupFeature, val preference: GroupPreference, val param: Int? = null): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvChatFeatureRejected") class RcvChatFeatureRejected(val feature: ChatFeature): CIContent() { override val msgContent: MsgContent? get() = null }
@@ -1406,6 +1421,8 @@ sealed class CIContent: ItemContent {
       is SndConnEventContent -> sndConnEvent.text
       is RcvChatFeature -> featureText(feature, enabled.text, param)
       is SndChatFeature -> featureText(feature, enabled.text, param)
+      is RcvChatPreference -> preferenceText(feature, allowed, param)
+      is SndChatPreference -> preferenceText(feature, allowed, param)
       is RcvGroupFeature -> featureText(groupFeature, preference.enable.text, param)
       is SndGroupFeature -> featureText(groupFeature, preference.enable.text, param)
       is RcvChatFeatureRejected -> "${feature.text}: ${generalGetString(R.string.feature_received_prohibited)}"
@@ -1413,12 +1430,21 @@ sealed class CIContent: ItemContent {
     }
 
   companion object {
-    fun featureText(feature: Feature, value: String, param: Int?): String =
+    fun featureText(feature: Feature, enabled: String, param: Int?): String =
       if (feature.hasParam && param != null) {
         "${feature.text}: ${TimedMessagesPreference.ttlText(param)}"
       } else {
-        "${feature.text}: $value"
+        "${feature.text}: $enabled"
       }
+
+    fun preferenceText(feature: Feature, allowed: FeatureAllowed, param: Int?): String = when {
+      allowed != FeatureAllowed.NO && feature.hasParam && param != null ->
+        "offered ${feature.text}: ${TimedMessagesPreference.ttlText(param)}"
+      allowed != FeatureAllowed.NO ->
+        "offered ${feature.text}"
+      else ->
+        "cancelled ${feature.text}"
+    }
   }
 }
 

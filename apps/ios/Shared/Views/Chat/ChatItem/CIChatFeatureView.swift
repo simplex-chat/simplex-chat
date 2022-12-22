@@ -12,12 +12,14 @@ import SimpleXChat
 struct CIChatFeatureView: View {
     var chatItem: ChatItem
     var feature: Feature
+    var icon: String? = nil
     var iconColor: Color
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 4) {
-            Image(systemName: feature.iconFilled)
+            Image(systemName: icon ?? feature.iconFilled)
                 .foregroundColor(iconColor)
+                .scaleEffect(feature.iconScale)
             chatEventText(chatItem)
         }
         .padding(.leading, 6)

@@ -226,6 +226,11 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
           chatModel.callManager.acceptIncomingCall(invitation = invitation)
         }
       },
+      acceptFeature = { contact, feature ->
+        withApi {
+          chatModel.controller.allowFeatureToContact(contact, feature)
+        }
+      },
       addMembers = { groupInfo ->
         hideKeyboard(view)
         withApi {
@@ -282,6 +287,7 @@ fun ChatLayout(
   joinGroup: (Long) -> Unit,
   startCall: (CallMediaType) -> Unit,
   acceptCall: (Contact) -> Unit,
+  acceptFeature: (Contact, ChatFeature) -> Unit,
   addMembers: (GroupInfo) -> Unit,
   markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
   changeNtfsState: (Boolean, currentValue: MutableState<Boolean>) -> Unit,
@@ -322,7 +328,7 @@ fun ChatLayout(
             ChatItemsList(
               chat, unreadCount, composeState, chatItems, searchValue,
               useLinkPreviews, linkMode, chatModelIncognito, showMemberInfo, loadPrevMessages, deleteMessage,
-              receiveFile, joinGroup, acceptCall, markRead, setFloatingButton, onComposed,
+              receiveFile, joinGroup, acceptCall, acceptFeature, markRead, setFloatingButton, onComposed,
             )
           }
         }
@@ -497,6 +503,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   receiveFile: (Long) -> Unit,
   joinGroup: (Long) -> Unit,
   acceptCall: (Contact) -> Unit,
+  acceptFeature: (Contact, ChatFeature) -> Unit,
   markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
   setFloatingButton: (@Composable () -> Unit) -> Unit,
   onComposed: () -> Unit,
@@ -602,11 +609,11 @@ fun BoxWithConstraintsScope.ChatItemsList(
               } else {
                 Spacer(Modifier.size(42.dp))
               }
-              ChatItemView(chat.chatInfo, cItem, composeState, provider, showMember = showMember, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall, scrollToItem = scrollToItem)
+              ChatItemView(chat.chatInfo, cItem, composeState, provider, showMember = showMember, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, scrollToItem = scrollToItem)
             }
           } else {
             Box(Modifier.padding(start = 104.dp, end = 12.dp).then(swipeableModifier)) {
-              ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall, scrollToItem = scrollToItem)
+              ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, scrollToItem = scrollToItem)
             }
           }
         } else { // direct message
@@ -617,7 +624,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
               end = if (sent) 12.dp else 76.dp,
             ).then(swipeableModifier)
           ) {
-            ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = joinGroup, acceptCall = acceptCall, scrollToItem = scrollToItem)
+            ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, scrollToItem = scrollToItem)
           }
         }
 
@@ -1019,6 +1026,7 @@ fun PreviewChatLayout() {
       joinGroup = {},
       startCall = {},
       acceptCall = { _ -> },
+      acceptFeature = { _, _ -> },
       addMembers = { _ -> },
       markRead = { _, _ -> },
       changeNtfsState = { _, _ -> },
@@ -1077,6 +1085,7 @@ fun PreviewGroupChatLayout() {
       joinGroup = {},
       startCall = {},
       acceptCall = { _ -> },
+      acceptFeature = { _, _ -> },
       addMembers = { _ -> },
       markRead = { _, _ -> },
       changeNtfsState = { _, _ -> },
