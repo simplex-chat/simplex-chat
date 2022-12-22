@@ -179,8 +179,6 @@ module Simplex.Chat.Store
     getPendingGroupMessages,
     deletePendingGroupMessage,
     updateChatTs,
-    -- updateContactChatTs,
-    -- updateGroupChatTs,
     createNewSndChatItem,
     createNewRcvChatItem,
     createNewChatItemNoMsg,
@@ -3142,20 +3140,6 @@ updateChatTs db User {userId} chatDirection chatTs = case toChatInfo chatDirecti
       "UPDATE groups SET chat_ts = ? WHERE user_id = ? AND group_id = ?"
       (chatTs, userId, groupId)
   _ -> pure ()
-
--- updateContactChatTs :: DB.Connection -> User -> Contact -> UTCTime -> IO ()
--- updateContactChatTs db User {userId} Contact {contactId} chatTs =
---   DB.execute
---     db
---     "UPDATE contacts SET chat_ts = ? WHERE user_id = ? AND contact_id = ?"
---     (chatTs, userId, contactId)
-
--- updateGroupChatTs :: DB.Connection -> User -> GroupInfo -> UTCTime -> IO ()
--- updateGroupChatTs db User {userId} GroupInfo {groupId} chatTs =
---   DB.execute
---     db
---     "UPDATE groups SET chat_ts = ? WHERE user_id = ? AND group_id = ?"
---     (chatTs, userId, groupId)
 
 createNewSndChatItem :: DB.Connection -> User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> Maybe (CIQuote c) -> Maybe CITimed -> Bool -> UTCTime -> IO ChatItemId
 createNewSndChatItem db user chatDirection SndMessage {msgId, sharedMsgId} ciContent quotedItem timed live createdAt =
