@@ -3333,8 +3333,11 @@ getChatPreviews db user withPCC = do
   pure $ sortOn (Down . ts) (directChats <> groupChats <> cReqChats <> connChats)
   where
     ts :: AChat -> UTCTime
-    ts (AChat _ Chat {chatInfo, chatItems = ci : _}) = max (chatItemTs ci) (chatInfoUpdatedAt chatInfo)
-    ts (AChat _ Chat {chatInfo}) = chatInfoUpdatedAt chatInfo
+    ts (AChat _ Chat {chatInfo, chatItems}) = case chatInfoChatTs chatInfo of
+      Just chatTs -> chatTs
+      Nothing -> case chatItems of
+        ci : _ -> max (chatItemTs ci) (chatInfoUpdatedAt chatInfo)
+        _ -> chatInfoUpdatedAt chatInfo
 
 getDirectChatPreviews_ :: DB.Connection -> User -> IO [AChat]
 getDirectChatPreviews_ db user@User {userId} = do

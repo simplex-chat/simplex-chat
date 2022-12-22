@@ -69,6 +69,12 @@ data ChatInfo (c :: ChatType) where
 
 deriving instance Show (ChatInfo c)
 
+chatInfoChatTs :: ChatInfo c -> Maybe UTCTime
+chatInfoChatTs = \case
+  DirectChat Contact {chatTs} -> chatTs
+  GroupChat GroupInfo {chatTs} -> chatTs
+  _ -> Nothing
+
 chatInfoUpdatedAt :: ChatInfo c -> UTCTime
 chatInfoUpdatedAt = \case
   DirectChat Contact {updatedAt} -> updatedAt
