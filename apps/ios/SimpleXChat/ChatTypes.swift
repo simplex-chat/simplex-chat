@@ -335,6 +335,7 @@ public enum ContactUserPref<P: Preference>: Decodable {
 }
 
 public protocol Feature {
+    var icon: String { get }
     var iconFilled: String { get }
     var hasParam: Bool { get }
     var text: String { get }
@@ -1637,6 +1638,8 @@ public struct ChatItem: Identifiable, Decodable {
         case .sndConnEvent: return showNtfDir
         case .rcvChatFeature: return false
         case .sndChatFeature: return showNtfDir
+        case .rcvFeatureOffer: return false
+        case .sndFeatureOffer: return showNtfDir
         case .rcvGroupFeature: return false
         case .sndGroupFeature: return showNtfDir
         case .rcvChatFeatureRejected: return showNtfDir
@@ -1892,6 +1895,8 @@ public enum CIContent: Decodable, ItemContent {
     case sndConnEvent(sndConnEvent: SndConnEvent)
     case rcvChatFeature(feature: ChatFeature, enabled: FeatureEnabled, param: Int?)
     case sndChatFeature(feature: ChatFeature, enabled: FeatureEnabled, param: Int?)
+    case rcvFeatureOffer(feature: ChatFeature, param: Int?)
+    case sndFeatureOffer(feature: ChatFeature, param: Int?)
     case rcvGroupFeature(groupFeature: GroupFeature, preference: GroupPreference, param: Int?)
     case sndGroupFeature(groupFeature: GroupFeature, preference: GroupPreference, param: Int?)
     case rcvChatFeatureRejected(feature: ChatFeature)
@@ -1915,6 +1920,8 @@ public enum CIContent: Decodable, ItemContent {
             case let .sndConnEvent(sndConnEvent): return sndConnEvent.text
             case let .rcvChatFeature(feature, enabled, param): return CIContent.featureText(feature, enabled.text, param)
             case let .sndChatFeature(feature, enabled, param): return CIContent.featureText(feature, enabled.text, param)
+            case let .rcvFeatureOffer(feature, param): return "allow \(CIContent.featureOfferText(feature, param))?"
+            case let .sndFeatureOffer(feature, param): return "offered \(CIContent.featureOfferText(feature, param))"
             case let .rcvGroupFeature(feature, preference, param): return CIContent.featureText(feature, preference.enable.text, param)
             case let .sndGroupFeature(feature, preference, param): return CIContent.featureText(feature, preference.enable.text, param)
             case let .rcvChatFeatureRejected(feature): return String.localizedStringWithFormat("%@: received, prohibited", feature.text)
@@ -1927,6 +1934,10 @@ public enum CIContent: Decodable, ItemContent {
         feature.hasParam && param != nil
         ? "\(feature.text): \(TimedMessagesPreference.ttlText(param))"
         : "\(feature.text): \(value)"
+    }
+
+    public static func featureOfferText(_ feature: Feature, _ param: Int?) -> String {
+        feature.text + (feature.hasParam ? " (\(TimedMessagesPreference.ttlText(param)))" : "")
     }
 
     public var msgContent: MsgContent? {
