@@ -14,7 +14,6 @@
 module Simplex.Chat where
 
 import Control.Applicative (optional, (<|>))
-import Control.Arrow ((&&&))
 import Control.Concurrent.STM (retry, stateTVar)
 import Control.Logger.Simple
 import Control.Monad.Except
@@ -46,7 +45,6 @@ import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDiffTimeToS
 import Data.Time.Clock.System (SystemTime, systemToUTCTime)
 import Data.Time.LocalTime (getCurrentTimeZone, getZonedTime)
 import qualified Database.SQLite.Simple as DB
-import GHC.Records.Compat
 import Simplex.Chat.Archive
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
@@ -306,7 +304,7 @@ processChatCommand = \case
       assertDirectAllowed user MDSnd ct XMsgNew_
       unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
       if isVoice mc && not (featureAllowed SCFVoice forUser ct)
-        then pure $ chatCmdError $ "feature not allowed " <> T.unpack (chatFeatureToText CFVoice)
+        then pure $ chatCmdError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFVoice)
         else do
           (fileInvitation_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer ct
           timed_ <- sndContactCITimed live ct
@@ -359,7 +357,7 @@ processChatCommand = \case
       Group gInfo@GroupInfo {groupId, membership, localDisplayName = gName} ms <- withStore $ \db -> getGroup db user chatId
       unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
       if isVoice mc && not (groupFeatureAllowed SGFVoice gInfo)
-        then pure $ chatCmdError $ "feature not allowed " <> T.unpack (groupFeatureToText GFVoice)
+        then pure $ chatCmdError $ "feature not allowed " <> T.unpack (groupFeatureNameText GFVoice)
         else do
           (fileInvitation_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer gInfo (length $ filter memberCurrent ms)
           timed_ <- sndGroupCITimed live gInfo
@@ -3429,13 +3427,15 @@ userProfileToSend user@User {profile = p} incognitoProfile ct =
 
 createRcvFeatureItems :: forall m. ChatMonad m => User -> Contact -> Contact -> m ()
 createRcvFeatureItems user ct ct' =
-  createFeatureItems user ct ct' CDDirectRcv CIRcvChatFeature CIRcvFeatureOffer contactPreference
+  createFeatureItems user ct ct' CDDirectRcv CIRcvChatFeature CIRcvChatPreference contactPreference
 
 createSndFeatureItems :: forall m. ChatMonad m => User -> Contact -> Contact -> m ()
 createSndFeatureItems user ct ct' =
-  createFeatureItems user ct ct' CDDirectSnd CISndChatFeature CISndFeatureOffer getPref
+  createFeatureItems user ct ct' CDDirectSnd CISndChatFeature CISndChatPreference getPref
   where
     getPref = (preference :: ContactUserPref (FeaturePreference f) -> FeaturePreference f) . userPreference
+
+type FeatureContent a d = ChatFeature -> a -> Maybe Int -> CIContent d
 
 createFeatureItems ::
   forall d m.
@@ -3444,8 +3444,8 @@ createFeatureItems ::
   Contact ->
   Contact ->
   (Contact -> ChatDirection 'CTDirect d) ->
-  (ChatFeature -> PrefEnabled -> Maybe Int -> CIContent d) ->
-  (ChatFeature -> Maybe Int -> CIContent d) ->
+  FeatureContent PrefEnabled d ->
+  FeatureContent FeatureAllowed d ->
   (forall f. ContactUserPreference (FeaturePreference f) -> FeaturePreference f) ->
   m ()
 createFeatureItems user Contact {mergedPreferences = cups} ct'@Contact {mergedPreferences = cups'} chatDir ciFeature ciOffer getPref =
@@ -3453,20 +3453,19 @@ createFeatureItems user Contact {mergedPreferences = cups} ct'@Contact {mergedPr
   where
     createItem :: forall f. FeatureI f => SChatFeature f -> m ()
     createItem f
-      | state /= state' = create $ uncurry (ciFeature f') state'
-      | offer = create $ ciOffer f' param'
+      | state /= state' = create ciFeature state'
+      | prefState /= prefState' = create ciOffer prefState'
       | otherwise = pure ()
       where
-        create content = createInternalChatItem user (chatDir ct') content Nothing
+        create :: FeatureContent a d -> (a, Maybe Int) -> m ()
+        create ci (s, param) = createInternalChatItem user (chatDir ct') (ci f' s param) Nothing
         f' = chatFeature f
         state = featureState cup
         state' = featureState cup'
-        offer = (allow' == FAYes || allow' == FAAlways) && (allow == FANo || param /= param')
+        prefState = preferenceState $ getPref cup
+        prefState' = preferenceState $ getPref cup'
         cup = getContactUserPreference f cups
         cup' = getContactUserPreference f cups'
-        (allow, param) = allowParam $ getPref cup
-        (allow', param') = allowParam $ getPref cup'
-        allowParam = getField @"allow" &&& prefParam
 
 createGroupFeatureChangedItems :: (MsgDirectionI d, ChatMonad m) => User -> ChatDirection 'CTGroup d -> (GroupFeature -> GroupPreference -> Maybe Int -> CIContent d) -> GroupInfo -> GroupInfo -> m ()
 createGroupFeatureChangedItems user cd ciContent GroupInfo {fullGroupPreferences = gps} GroupInfo {fullGroupPreferences = gps'} =
