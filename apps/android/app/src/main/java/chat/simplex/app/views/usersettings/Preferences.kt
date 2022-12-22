@@ -71,7 +71,7 @@ private fun PreferencesLayout(
     AppBarTitle(stringResource(R.string.your_preferences))
     val timedMessages = remember(preferences) { mutableStateOf(preferences.timedMessages.allow) }
     TimedMessagesFeatureSection(timedMessages) {
-      applyPrefs(preferences.copy(timedMessages = preferences.timedMessages.copy(allow = if (it) FeatureAllowed.YES else FeatureAllowed.NO)))
+      applyPrefs(preferences.copy(timedMessages = TimedMessagesPreference(allow = if (it) FeatureAllowed.YES else FeatureAllowed.NO)))
     }
     SectionSpacer()
     val allowFullDeletion = remember(preferences) { mutableStateOf(preferences.fullDelete.allow) }
