@@ -167,13 +167,13 @@ module Simplex.Chat.Store
     getFileTransferMeta,
     getSndFileTransfer,
     getContactFileInfo,
-    getContactMaxItemTs,
+    getContactMaxItemTs, -- TODO delete
     deleteContactCIs,
-    updateContactTs,
+    updateContactTs, -- TODO delete
     getGroupFileInfo,
-    getGroupMaxItemTs,
+    getGroupMaxItemTs, -- TODO delete
     deleteGroupCIs,
-    updateGroupTs,
+    updateGroupTs, -- TODO delete
     createNewSndMessage,
     createSndMsgDelivery,
     createNewMessageAndRcvMsgDelivery,
@@ -234,10 +234,10 @@ module Simplex.Chat.Store
     setChatItemTTL,
     getContactExpiredFileInfo,
     deleteContactExpiredCIs,
-    getContactCICount,
+    getContactCICount, -- TODO delete
     getGroupExpiredFileInfo,
     deleteGroupExpiredCIs,
-    getGroupCICount,
+    getGroupCICount, -- TODO delete
     getPendingContactConnection,
     deletePendingContactConnection,
     updateContactSettings,
@@ -3013,7 +3013,7 @@ updateGroupTs :: DB.Connection -> User -> GroupInfo -> UTCTime -> IO ()
 updateGroupTs db User {userId} GroupInfo {groupId} updatedAt =
   DB.execute
     db
-    "UPDATE groups SET updated_at = ? WHERE user_id = ? AND group_id = ?"
+    "UPDATE groups SET chat_ts = ? WHERE user_id = ? AND group_id = ?"
     (updatedAt, userId, groupId)
 
 createNewSndMessage :: MsgEncodingI e => DB.Connection -> TVar ChaChaDRG -> ConnOrGroupId -> (SharedMsgId -> NewMessage e) -> ExceptT StoreError IO SndMessage
