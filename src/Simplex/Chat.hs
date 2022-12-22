@@ -578,9 +578,11 @@ processChatCommand = \case
     CTDirect -> do
       ct <- withStore $ \db -> getContact db user chatId
       filesInfo <- withStore' $ \db -> getContactFileInfo db user ct
+      -- TODO delete
       maxItemTs_ <- withStore' $ \db -> getContactMaxItemTs db user ct
       forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
       withStore' $ \db -> deleteContactCIs db user ct
+      -- TODO delete
       ct' <- case maxItemTs_ of
         Just ts -> do
           withStore' $ \db -> updateContactTs db user ct ts
@@ -590,11 +592,13 @@ processChatCommand = \case
     CTGroup -> do
       gInfo <- withStore $ \db -> getGroupInfo db user chatId
       filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
+      -- TODO delete
       maxItemTs_ <- withStore' $ \db -> getGroupMaxItemTs db user gInfo
       forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
       withStore' $ \db -> deleteGroupCIs db user gInfo
       membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db user gInfo
       forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
+      -- TODO delete
       gInfo' <- case maxItemTs_ of
         Just ts -> do
           withStore' $ \db -> updateGroupTs db user gInfo ts
@@ -1809,9 +1813,11 @@ expireChatItems user ttl sync = do
     processContact :: UTCTime -> Contact -> m ()
     processContact expirationDate ct = do
       filesInfo <- withStore' $ \db -> getContactExpiredFileInfo db user ct expirationDate
+      -- TODO delete
       maxItemTs_ <- withStore' $ \db -> getContactMaxItemTs db user ct
       forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
       withStore' $ \db -> deleteContactExpiredCIs db user ct expirationDate
+      -- TODO delete
       withStore' $ \db -> do
         ciCount_ <- getContactCICount db user ct
         case (maxItemTs_, ciCount_) of
@@ -1820,11 +1826,13 @@ expireChatItems user ttl sync = do
     processGroup :: UTCTime -> UTCTime -> GroupInfo -> m ()
     processGroup expirationDate createdAtCutoff gInfo = do
       filesInfo <- withStore' $ \db -> getGroupExpiredFileInfo db user gInfo expirationDate createdAtCutoff
+      -- TODO delete
       maxItemTs_ <- withStore' $ \db -> getGroupMaxItemTs db user gInfo
       forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
       withStore' $ \db -> deleteGroupExpiredCIs db user gInfo expirationDate createdAtCutoff
       membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db user gInfo
       forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
+      -- TODO delete
       withStore' $ \db -> do
         ciCount_ <- getGroupCICount db user gInfo
         case (maxItemTs_, ciCount_) of

@@ -2958,6 +2958,7 @@ getContactFileInfo db User {userId} Contact {contactId} =
 toFileInfo :: (Int64, Maybe ACIFileStatus, Maybe FilePath) -> CIFileInfo
 toFileInfo (fileId, fileStatus, filePath) = CIFileInfo {fileId, fileStatus, filePath}
 
+-- TODO delete
 getContactMaxItemTs :: DB.Connection -> User -> Contact -> IO (Maybe UTCTime)
 getContactMaxItemTs db User {userId} Contact {contactId} =
   fmap join . maybeFirstRow fromOnly $
@@ -2975,11 +2976,12 @@ getContactConnIds_ db User {userId} Contact {contactId} =
   map fromOnly
     <$> DB.query db "SELECT connection_id FROM connections WHERE user_id = ? AND contact_id = ?" (userId, contactId)
 
+-- TODO delete
 updateContactTs :: DB.Connection -> User -> Contact -> UTCTime -> IO ()
 updateContactTs db User {userId} Contact {contactId} updatedAt =
   DB.execute
     db
-    "UPDATE contacts SET updated_at = ? WHERE user_id = ? AND contact_id = ?"
+    "UPDATE contacts SET chat_ts = ? WHERE user_id = ? AND contact_id = ?"
     (updatedAt, userId, contactId)
 
 getGroupFileInfo :: DB.Connection -> User -> GroupInfo -> IO [CIFileInfo]
@@ -2995,6 +2997,7 @@ getGroupFileInfo db User {userId} GroupInfo {groupId} =
       |]
       (userId, groupId)
 
+-- TODO delete
 getGroupMaxItemTs :: DB.Connection -> User -> GroupInfo -> IO (Maybe UTCTime)
 getGroupMaxItemTs db User {userId} GroupInfo {groupId} =
   fmap join . maybeFirstRow fromOnly $
@@ -3005,6 +3008,7 @@ deleteGroupCIs db User {userId} GroupInfo {groupId} = do
   DB.execute db "DELETE FROM messages WHERE group_id = ?" (Only groupId)
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
 
+-- TODO delete
 updateGroupTs :: DB.Connection -> User -> GroupInfo -> UTCTime -> IO ()
 updateGroupTs db User {userId} GroupInfo {groupId} updatedAt =
   DB.execute
@@ -4697,6 +4701,7 @@ deleteContactExpiredCIs db user@User {userId} ct@Contact {contactId} expirationD
     DB.execute db "DELETE FROM messages WHERE connection_id = ? AND created_at <= ?" (connId, expirationDate)
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ? AND created_at <= ?" (userId, contactId, expirationDate)
 
+-- TODO delete
 getContactCICount :: DB.Connection -> User -> Contact -> IO (Maybe Int64)
 getContactCICount db User {userId} Contact {contactId} =
   fmap join . maybeFirstRow fromOnly $
@@ -4720,6 +4725,7 @@ deleteGroupExpiredCIs db User {userId} GroupInfo {groupId} expirationDate create
   DB.execute db "DELETE FROM messages WHERE group_id = ? AND created_at <= ?" (groupId, min expirationDate createdAtCutoff)
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ? AND item_ts <= ? AND created_at <= ?" (userId, groupId, expirationDate, createdAtCutoff)
 
+-- TODO delete
 getGroupCICount :: DB.Connection -> User -> GroupInfo -> IO (Maybe Int64)
 getGroupCICount db User {userId} GroupInfo {groupId} =
   fmap join . maybeFirstRow fromOnly $
