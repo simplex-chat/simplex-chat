@@ -69,6 +69,12 @@ data ChatInfo (c :: ChatType) where
 
 deriving instance Show (ChatInfo c)
 
+chatInfoChatTs :: ChatInfo c -> Maybe UTCTime
+chatInfoChatTs = \case
+  DirectChat Contact {chatTs} -> chatTs
+  GroupChat GroupInfo {chatTs} -> chatTs
+  _ -> Nothing
+
 chatInfoUpdatedAt :: ChatInfo c -> UTCTime
 chatInfoUpdatedAt = \case
   DirectChat Contact {updatedAt} -> updatedAt
@@ -627,27 +633,36 @@ data CIContent (d :: MsgDirection) where
 
 deriving instance Show (CIContent d)
 
-ciCreateStatus :: CIContent d -> CIStatus d
-ciCreateStatus = \case
-  CISndMsgContent _ -> ciStatusNew
-  CIRcvMsgContent _ -> ciStatusNew
-  CISndDeleted _ -> ciStatusNew
-  CIRcvDeleted _ -> ciStatusNew
-  CISndCall {} -> ciStatusNew
-  CIRcvCall {} -> ciStatusNew
-  CIRcvIntegrityError _ -> ciStatusNew
-  CIRcvGroupInvitation {} -> ciStatusNew
-  CISndGroupInvitation {} -> ciStatusNew
-  CIRcvGroupEvent rge -> rgeCreateStatus rge
-  CISndGroupEvent _ -> ciStatusNew
-  CIRcvConnEvent _ -> ciStatusNew
-  CISndConnEvent _ -> ciStatusNew
-  CIRcvChatFeature {} -> CISRcvRead
-  CISndChatFeature {} -> ciStatusNew
-  CIRcvGroupFeature {} -> CISRcvRead
-  CISndGroupFeature {} -> ciStatusNew
-  CIRcvChatFeatureRejected _ -> ciStatusNew
-  CIRcvGroupFeatureRejected _ -> ciStatusNew
+ciRequiresAttention :: forall d. MsgDirectionI d => CIContent d -> Bool
+ciRequiresAttention content = case msgDirection @d of
+  SMDSnd -> True
+  SMDRcv -> case content of
+    CIRcvMsgContent _ -> True
+    CIRcvDeleted _ -> True
+    CIRcvCall {} -> True
+    CIRcvIntegrityError _ -> True
+    CIRcvGroupInvitation {} -> True
+    CIRcvGroupEvent rge -> case rge of
+      RGEMemberAdded {} -> False
+      RGEMemberConnected -> False
+      RGEMemberLeft -> False
+      RGEMemberRole {} -> False
+      RGEUserRole _ -> True
+      RGEMemberDeleted {} -> False
+      RGEUserDeleted -> True
+      RGEGroupDeleted -> True
+      RGEGroupUpdated _ -> False
+      RGEInvitedViaGroupLink -> False
+    CIRcvConnEvent _ -> True
+    CIRcvChatFeature {} -> False
+    CIRcvGroupFeature {} -> False
+    CIRcvChatFeatureRejected _ -> True
+    CIRcvGroupFeatureRejected _ -> True
+
+ciCreateStatus :: forall d. MsgDirectionI d => CIContent d -> CIStatus d
+ciCreateStatus content = case msgDirection @d of
+  SMDSnd -> ciStatusNew
+  SMDRcv -> if ciRequiresAttention content then ciStatusNew else CISRcvRead
 
 data RcvGroupEvent
   = RGEMemberAdded {groupMemberId :: GroupMemberId, profile :: Profile} -- CRJoinedGroupMemberConnecting
@@ -680,19 +695,6 @@ instance FromJSON DBRcvGroupEvent where
 instance ToJSON DBRcvGroupEvent where
   toJSON (RGE v) = J.genericToJSON (singleFieldJSON $ dropPrefix "RGE") v
   toEncoding (RGE v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "RGE") v
-
-rgeCreateStatus :: RcvGroupEvent -> CIStatus 'MDRcv
-rgeCreateStatus = \case
-  RGEMemberAdded {} -> CISRcvRead
-  RGEMemberConnected -> CISRcvRead
-  RGEMemberLeft -> CISRcvRead
-  RGEMemberRole {} -> CISRcvRead
-  RGEUserRole _ -> ciStatusNew
-  RGEMemberDeleted {} -> CISRcvRead
-  RGEUserDeleted -> ciStatusNew
-  RGEGroupDeleted -> ciStatusNew
-  RGEGroupUpdated _ -> CISRcvRead
-  RGEInvitedViaGroupLink -> CISRcvRead
 
 data SndGroupEvent
   = SGEMemberRole {groupMemberId :: GroupMemberId, profile :: Profile, role :: GroupMemberRole}
