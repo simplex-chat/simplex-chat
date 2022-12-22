@@ -64,6 +64,10 @@ struct ChatItemContentView<Content: View>: View {
         case .sndConnEvent: eventItemView()
         case let .rcvChatFeature(feature, enabled, _): chatFeatureView(feature, enabled.iconColor)
         case let .sndChatFeature(feature, enabled, _): chatFeatureView(feature, enabled.iconColor)
+        case let .rcvChatPreference(feature, allowed, param):
+            CIFeaturePreferenceView(chatItem: chatItem, feature: feature, allowed: allowed, param: param)
+        case let .sndChatPreference(feature, _, _):
+            CIChatFeatureView(chatItem: chatItem, feature: feature, icon: feature.icon, iconColor: .secondary)
         case let .rcvGroupFeature(feature, preference, _): chatFeatureView(feature, preference.enable.iconColor)
         case let .sndGroupFeature(feature, preference, _): chatFeatureView(feature, preference.enable.iconColor)
         case let .rcvChatFeatureRejected(feature): chatFeatureView(feature, .red)

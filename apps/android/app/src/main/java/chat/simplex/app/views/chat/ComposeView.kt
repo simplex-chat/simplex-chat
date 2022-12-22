@@ -516,12 +516,8 @@ fun ComposeView(
 
   fun allowVoiceToContact() {
     val contact = (chat.chatInfo as ChatInfo.Direct?)?.contact ?: return
-    val prefs = contact.mergedPreferences.toPreferences().copy(voice = SimpleChatPreference(allow = FeatureAllowed.YES))
     withApi {
-      val toContact = chatModel.controller.apiSetContactPrefs(contact.contactId, prefs)
-      if (toContact != null) {
-        chatModel.updateContact(toContact)
-      }
+      chatModel.controller.allowFeatureToContact(contact, ChatFeature.Voice)
     }
   }
 
@@ -674,7 +670,7 @@ fun ComposeView(
             .clip(CircleShape)
         )
       }
-      val allowedVoiceByPrefs = remember(chat.chatInfo) { chat.chatInfo.voiceMessageAllowed }
+      val allowedVoiceByPrefs = remember(chat.chatInfo) { chat.chatInfo.featureEnabled(ChatFeature.Voice) }
       LaunchedEffect(allowedVoiceByPrefs) {
         if (!allowedVoiceByPrefs && chosenAudio.value != null) {
           // Voice was disabled right when this user records it, just cancel it
