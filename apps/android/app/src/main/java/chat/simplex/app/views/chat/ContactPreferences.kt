@@ -21,7 +21,6 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.PreferenceToggle
-import chat.simplex.app.views.usersettings.PreferenceToggleWithIcon
 
 @Composable
 fun ContactPreferencesView(
