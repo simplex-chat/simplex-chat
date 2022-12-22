@@ -633,42 +633,36 @@ data CIContent (d :: MsgDirection) where
 
 deriving instance Show (CIContent d)
 
-ciNotifying :: CIContent d -> Bool
-ciNotifying = \case
-  CISndMsgContent _ -> True
-  CIRcvMsgContent _ -> True
-  CISndDeleted _ -> True
-  CIRcvDeleted _ -> True
-  CISndCall {} -> True
-  CIRcvCall {} -> True
-  CIRcvIntegrityError _ -> True
-  CIRcvGroupInvitation {} -> True
-  CISndGroupInvitation {} -> True
-  CIRcvGroupEvent rge -> case rge of
-    RGEMemberAdded {} -> False
-    RGEMemberConnected -> False
-    RGEMemberLeft -> False
-    RGEMemberRole {} -> False
-    RGEUserRole _ -> True
-    RGEMemberDeleted {} -> False
-    RGEUserDeleted -> True
-    RGEGroupDeleted -> True
-    RGEGroupUpdated _ -> False
-    RGEInvitedViaGroupLink -> False
-  CISndGroupEvent _ -> True
-  CIRcvConnEvent _ -> True
-  CISndConnEvent _ -> True
-  CIRcvChatFeature {} -> False
-  CISndChatFeature {} -> True
-  CIRcvGroupFeature {} -> False
-  CISndGroupFeature {} -> True
-  CIRcvChatFeatureRejected _ -> True
-  CIRcvGroupFeatureRejected _ -> True
+ciRequiresAttention :: forall d. MsgDirectionI d => CIContent d -> Bool
+ciRequiresAttention content = case msgDirection @d of
+  SMDSnd -> True
+  SMDRcv -> case content of
+    CIRcvMsgContent _ -> True
+    CIRcvDeleted _ -> True
+    CIRcvCall {} -> True
+    CIRcvIntegrityError _ -> True
+    CIRcvGroupInvitation {} -> True
+    CIRcvGroupEvent rge -> case rge of
+      RGEMemberAdded {} -> False
+      RGEMemberConnected -> False
+      RGEMemberLeft -> False
+      RGEMemberRole {} -> False
+      RGEUserRole _ -> True
+      RGEMemberDeleted {} -> False
+      RGEUserDeleted -> True
+      RGEGroupDeleted -> True
+      RGEGroupUpdated _ -> False
+      RGEInvitedViaGroupLink -> False
+    CIRcvConnEvent _ -> True
+    CIRcvChatFeature {} -> False
+    CIRcvGroupFeature {} -> False
+    CIRcvChatFeatureRejected _ -> True
+    CIRcvGroupFeatureRejected _ -> True
 
 ciCreateStatus :: forall d. MsgDirectionI d => CIContent d -> CIStatus d
 ciCreateStatus content = case msgDirection @d of
   SMDSnd -> ciStatusNew
-  SMDRcv -> if ciNotifying content then ciStatusNew else CISRcvRead
+  SMDRcv -> if ciRequiresAttention content then ciStatusNew else CISRcvRead
 
 data RcvGroupEvent
   = RGEMemberAdded {groupMemberId :: GroupMemberId, profile :: Profile} -- CRJoinedGroupMemberConnecting
