@@ -813,8 +813,8 @@ ciContentToText = \case
   CISndConnEvent event -> sndConnEventToText event
   CIRcvChatFeature feature enabled param -> chatFeatureToText feature <> ": " <> prefToText enabled param
   CISndChatFeature feature enabled param -> chatFeatureToText feature <> ": " <> prefToText enabled param
-  CIRcvFeatureOffer feature param -> "allow " <> featureParamText feature param <> "?"
-  CISndFeatureOffer feature param -> "offered " <> featureParamText feature param
+  CIRcvFeatureOffer feature param -> "offered " <> featureParamText feature param
+  CISndFeatureOffer feature param -> "you offered " <> featureParamText feature param
   CIRcvGroupFeature feature pref param -> groupFeatureToText feature <> ": " <> groupPrefToText pref param
   CISndGroupFeature feature pref param -> groupFeatureToText feature <> ": " <> groupPrefToText pref param
   CIRcvChatFeatureRejected feature -> chatFeatureToText feature <> ": received, prohibited"
