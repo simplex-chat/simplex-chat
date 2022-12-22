@@ -222,7 +222,7 @@ struct ComposeView: View {
                     },
                     sendLiveMessage: sendLiveMessage,
                     updateLiveMessage: updateLiveMessage,
-                    voiceMessageAllowed: { chat.chatInfo.featureEnabled(.voice) },
+                    voiceMessageAllowed: chat.chatInfo.featureEnabled(.voice),
                     showEnableVoiceMessagesAlert: chat.chatInfo.showEnableVoiceMessagesAlert,
                     startVoiceMessageRecording: {
                         Task {
