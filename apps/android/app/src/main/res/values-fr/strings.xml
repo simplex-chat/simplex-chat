@@ -721,4 +721,55 @@
     <string name="group_member_status_connecting">connexion</string>
     <string name="no_contacts_to_add">Aucun contact à ajouter</string>
     <string name="new_member_role">Nouveau rôle</string>
+    <string name="delete_group_question">Supprimer le groupe \?</string>
+    <string name="group_link">Lien du groupe</string>
+    <string name="button_create_group_link">Créer un lien</string>
+    <string name="button_edit_group_profile">Modifier le profil du groupe</string>
+    <string name="remove_member_confirmation">Supprimer</string>
+    <string name="member_info_section_title_member">MEMBRE</string>
+    <string name="live_message">Message dynamique !</string>
+    <string name="send_live_message">Envoyer un message dynamique</string>
+    <string name="send_live_message_desc">Envoyez un message dynamique - il sera mis à jour pour le⸱s destinataire⸱s au fur et à mesure que vous le tapez</string>
+    <string name="send_verb">Envoyer</string>
+    <string name="member_role_will_be_changed_with_invitation">Le rôle sera changé pour «%s». Le membre va recevoir une nouvelle invitation.</string>
+    <string name="live">DYNAMIQUE</string>
+    <string name="button_add_members">Inviter des membres</string>
+    <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Vous pouvez partager un lien ou un code QR - n\'importe qui pourra rejoindre le groupe. Vous ne perdrez pas les membres du groupe si vous le supprimez par la suite.</string>
+    <string name="info_row_local_name">Nom local</string>
+    <string name="create_group_link">Créer un lien de groupe</string>
+    <string name="error_deleting_link_for_group">Erreur lors de la suppression du lien du groupe</string>
+    <string name="error_creating_link_for_group">Erreur lors de la création du lien du groupe</string>
+    <string name="only_group_owners_can_change_prefs">Seuls les propriétaires du groupe peuvent modifier les préférences du groupe.</string>
+    <string name="section_title_for_console">POUR TERMINAL</string>
+    <string name="change_member_role_question">Changer le rôle du groupe \?</string>
+    <string name="member_role_will_be_changed_with_notification">Le rôle sera changé pour «%s». Les membres du groupe seront notifiés.</string>
+    <string name="icon_descr_contact_checked">Contact vérifié⸱e</string>
+    <string name="clear_contacts_selection_button">Effacer</string>
+    <string name="num_contacts_selected"><xliff:g id="num_contacts">%1$s</xliff:g> contact·s sélectionné·e·s</string>
+    <string name="skip_inviting_button">Passer l’invitation de membres</string>
+    <string name="select_contacts">Sélectionnez des contacts</string>
+    <string name="no_contacts_selected">Aucun contact sélectionné</string>
+    <string name="group_info_section_title_num_members"><xliff:g id="num_members">%1$s</xliff:g> MEMBRES</string>
+    <string name="group_info_member_you">vous : <xliff:g id="group_info_you">%1$s</xliff:g></string>
+    <string name="button_delete_group">Supprimer le groupe</string>
+    <string name="delete_group_for_all_members_cannot_undo_warning">Le groupe va être supprimé pour tout les membres - impossible de revenir en arrière !</string>
+    <string name="delete_group_for_self_cannot_undo_warning">Le groupe va être supprimé pour vous - impossible de revenir en arrière !</string>
+    <string name="button_leave_group">Quitter le groupe</string>
+    <string name="delete_link_question">Supprimer le lien \?</string>
+    <string name="delete_link">Supprimer le lien</string>
+    <string name="all_group_members_will_remain_connected">Tous les membres du groupe resteront connectés.</string>
+    <string name="icon_descr_expand_role">Étendre la sélection de rôle</string>
+    <string name="invite_to_group_button">Inviter au groupe</string>
+    <string name="invite_prohibited">Impossible d\'inviter le contact !</string>
+    <string name="invite_prohibited_description">Vous essayez d\'inviter un contact avec lequel vous avez partagé un profil incognito à rejoindre le groupe dans lequel vous utilisez votre profil principal</string>
+    <string name="info_row_database_id">ID de base de données</string>
+    <string name="button_remove_member">Retirer le membre</string>
+    <string name="button_send_direct_message">Envoi de message direct</string>
+    <string name="member_will_be_removed_from_group_cannot_be_undone">Ce membre sera retiré du groupe - impossible de revenir en arrière !</string>
+    <string name="role_in_group">Rôle</string>
+    <string name="change_role">Changer le rôle</string>
+    <string name="change_verb">Changer</string>
+    <string name="switch_verb">Échanger</string>
+    <string name="error_removing_member">Erreur lors de la suppression d\'un membre</string>
+    <string name="error_changing_role">Erreur lors du changement de rôle</string>
 </resources>
