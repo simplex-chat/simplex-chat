@@ -20,6 +20,8 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.usersettings.PreferenceToggle
+import chat.simplex.app.views.usersettings.PreferenceToggleWithIcon
 
 @Composable
 fun ContactPreferencesView(
@@ -85,6 +87,14 @@ private fun ContactPreferencesLayout(
     horizontalAlignment = Alignment.Start,
   ) {
     AppBarTitle(stringResource(R.string.contact_preferences))
+    val timedMessages: MutableState<Boolean> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.timedMessagesAllowed) }
+    val onTTLUpdated = { ttl: Int? ->
+      applyPrefs(featuresAllowed.copy(timedMessagesTTL = ttl ?: 86400))
+    }
+    TimedMessagesFeatureSection(featuresAllowed, contact.mergedPreferences.timedMessages, timedMessages, onTTLUpdated) { allowed, ttl ->
+      applyPrefs(featuresAllowed.copy(timedMessagesAllowed = allowed, timedMessagesTTL = ttl ?: currentFeaturesAllowed.timedMessagesTTL))
+    }
+    SectionSpacer()
     val allowFullDeletion: MutableState<ContactFeatureAllowed> = remember(featuresAllowed) { mutableStateOf(featuresAllowed.fullDelete) }
     FeatureSection(ChatFeature.FullDelete, user.fullPreferences.fullDelete.allow, contact.mergedPreferences.fullDelete, allowFullDeletion) {
       applyPrefs(featuresAllowed.copy(fullDelete = it))
@@ -113,7 +123,7 @@ private fun FeatureSection(
 ) {
   val enabled = FeatureEnabled.enabled(
     feature.asymmetric,
-    user = ChatPreference(allow = allowFeature.value.allowed),
+    user = SimpleChatPreference(allow = allowFeature.value.allowed),
     contact = pref.contactPreference
   )
 
@@ -142,6 +152,50 @@ private fun FeatureSection(
 }
 
 @Composable
+private fun TimedMessagesFeatureSection(
+  featuresAllowed: ContactFeaturesAllowed,
+  pref: ContactUserPreferenceTimed,
+  allowFeature: State<Boolean>,
+  onTTLUpdated: (Int?) -> Unit,
+  onSelected: (Boolean, Int?) -> Unit
+) {
+  val enabled = FeatureEnabled.enabled(
+    ChatFeature.TimedMessages.asymmetric,
+    user = TimedMessagesPreference(allow = if (allowFeature.value) FeatureAllowed.YES else FeatureAllowed.NO),
+    contact = pref.contactPreference
+  )
+
+  SectionView(
+    ChatFeature.TimedMessages.text.uppercase(),
+    icon = ChatFeature.TimedMessages.iconFilled,
+    iconTint = if (enabled.forUser) SimplexGreen else if (enabled.forContact) WarningYellow else Color.Red,
+    leadingIcon = true,
+  ) {
+    SectionItemView {
+      PreferenceToggle(
+        generalGetString(R.string.chat_preferences_you_allow),
+        checked = allowFeature.value,
+      ) { allow ->
+        onSelected(allow, if (allow) featuresAllowed.timedMessagesTTL ?: 86400 else null)
+      }
+    }
+    SectionDivider()
+    InfoRow(
+      generalGetString(R.string.chat_preferences_contact_allows),
+      pref.contactPreference.allow.text
+    )
+    SectionDivider()
+    if (featuresAllowed.timedMessagesAllowed) {
+      val ttl = rememberSaveable(featuresAllowed.timedMessagesTTL) { mutableStateOf(featuresAllowed.timedMessagesTTL) }
+      TimedMessagesTTLPicker(ttl, onTTLUpdated)
+    } else if (pref.contactPreference.allow == FeatureAllowed.YES || pref.contactPreference.allow == FeatureAllowed.ALWAYS) {
+      InfoRow(generalGetString(R.string.delete_after), TimedMessagesPreference.ttlText(pref.contactPreference.ttl))
+    }
+  }
+  SectionTextFooter(ChatFeature.TimedMessages.enabledDescription(enabled))
+}
+
+@Composable
 private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Boolean) {
   SectionView {
     SectionItemView(reset, disabled = disabled) {
@@ -151,6 +205,20 @@ private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Bool
     SectionItemView(save, disabled = disabled) {
       Text(stringResource(R.string.save_and_notify_contact), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
     }
+  }
+}
+
+@Composable
+fun TimedMessagesTTLPicker(selection: MutableState<Int?>, onSelected: (Int?) -> Unit) {
+  val ttlValues = TimedMessagesPreference.ttlValues
+  val values = ttlValues + if (ttlValues.contains(selection.value)) listOf() else listOf(selection.value)
+  SectionItemView {
+    ExposedDropDownSettingRow(
+      generalGetString(R.string.delete_after),
+      values.map { it to TimedMessagesPreference.ttlText(it) },
+      selection,
+      onSelected = onSelected
+    )
   }
 }
 

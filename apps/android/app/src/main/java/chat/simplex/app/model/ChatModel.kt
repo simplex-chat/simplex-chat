@@ -2,8 +2,13 @@ package chat.simplex.app.model
 
 import android.net.Uri
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
@@ -21,8 +26,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
 import java.io.File
-import kotlin.time.DurationUnit
-import kotlin.time.toDuration
+import kotlin.time.*
 
 /*
  * Without this annotation an animation from ChatList to ChatView has 1 frame per the whole animation. Don't delete it
@@ -278,7 +282,13 @@ class ChatModel(val controller: ChatController) {
       while (i < chatItems.count()) {
         val item = chatItems[i]
         if (item.meta.itemStatus is CIStatus.RcvNew && (range == null || (range.from <= item.id && item.id <= range.to))) {
-          chatItems[i] = item.withStatus(CIStatus.RcvRead())
+          val newItem = item.withStatus(CIStatus.RcvRead())
+          chatItems[i] = newItem
+          if (newItem.meta.itemLive != true && newItem.meta.itemTimed?.ttl != null) {
+            chatItems[i] = newItem.copy(meta = newItem.meta.copy(itemTimed = newItem.meta.itemTimed.copy(
+              deleteAt = Clock.System.now() + newItem.meta.itemTimed.ttl.toDuration(DurationUnit.SECONDS)))
+            )
+          }
           markedRead++
         }
         i += 1
@@ -400,6 +410,7 @@ interface SomeChat {
   val incognito: Boolean
   val voiceMessageAllowed: Boolean
   val fullDeletionAllowed: Boolean
+  val timedMessagesTTL: Int?
   val createdAt: Instant
   val updatedAt: Instant
 }
@@ -463,6 +474,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val incognito get() = contact.incognito
     override val voiceMessageAllowed get() = contact.voiceMessageAllowed
     override val fullDeletionAllowed get() = contact.fullDeletionAllowed
+    override val timedMessagesTTL: Int? get() = contact.timedMessagesTTL
     override val createdAt get() = contact.createdAt
     override val updatedAt get() = contact.updatedAt
     override val displayName get() = contact.displayName
@@ -487,6 +499,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val incognito get() = groupInfo.incognito
     override val voiceMessageAllowed get() = groupInfo.voiceMessageAllowed
     override val fullDeletionAllowed get() = groupInfo.fullDeletionAllowed
+    override val timedMessagesTTL: Int? get() = groupInfo.timedMessagesTTL
     override val createdAt get() = groupInfo.createdAt
     override val updatedAt get() = groupInfo.updatedAt
     override val displayName get() = groupInfo.displayName
@@ -511,6 +524,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val incognito get() = contactRequest.incognito
     override val voiceMessageAllowed get() = contactRequest.voiceMessageAllowed
     override val fullDeletionAllowed get() = contactRequest.fullDeletionAllowed
+    override val timedMessagesTTL: Int? get() = contactRequest.timedMessagesTTL
     override val createdAt get() = contactRequest.createdAt
     override val updatedAt get() = contactRequest.updatedAt
     override val displayName get() = contactRequest.displayName
@@ -535,6 +549,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val incognito get() = contactConnection.incognito
     override val voiceMessageAllowed get() = contactConnection.voiceMessageAllowed
     override val fullDeletionAllowed get() = contactConnection.fullDeletionAllowed
+    override val timedMessagesTTL: Int? get() = contactConnection.timedMessagesTTL
     override val createdAt get() = contactConnection.createdAt
     override val updatedAt get() = contactConnection.updatedAt
     override val displayName get() = contactConnection.displayName
@@ -572,6 +587,7 @@ data class Contact(
   override val incognito get() = contactConnIncognito
   override val voiceMessageAllowed get() = mergedPreferences.voice.enabled.forUser
   override val fullDeletionAllowed get() = mergedPreferences.fullDelete.enabled.forUser
+  override val timedMessagesTTL: Int? get() = with(mergedPreferences.timedMessages) { if (enabled.forUser) userPreference.pref.ttl else null }
   override val displayName get() = localAlias.ifEmpty { profile.displayName }
   override val fullName get() = profile.fullName
   override val image get() = profile.image
@@ -706,6 +722,7 @@ data class GroupInfo (
   override val incognito get() = membership.memberIncognito
   override val voiceMessageAllowed get() = fullGroupPreferences.voice.on
   override val fullDeletionAllowed get() = fullGroupPreferences.fullDelete.on
+  override val timedMessagesTTL: Int? get() = with(fullGroupPreferences.timedMessages) { if (on) ttl else null }
   override val displayName get() = groupProfile.displayName
   override val fullName get() = groupProfile.fullName
   override val image get() = groupProfile.image
@@ -953,6 +970,7 @@ class UserContactRequest (
   override val incognito get() = false
   override val voiceMessageAllowed get() = false
   override val fullDeletionAllowed get() = false
+  override val timedMessagesTTL: Int? get() = null
   override val displayName get() = profile.displayName
   override val fullName get() = profile.fullName
   override val image get() = profile.image
@@ -991,6 +1009,7 @@ class PendingContactConnection(
   override val incognito get() = customUserProfileId != null
   override val voiceMessageAllowed get() = false
   override val fullDeletionAllowed get() = false
+  override val timedMessagesTTL: Int? get() = null
   override val localDisplayName get() = String.format(generalGetString(R.string.connection_local_display_name), pccConnId)
   override val displayName: String get() {
     if (localAlias.isNotEmpty()) return localAlias
@@ -1088,7 +1107,7 @@ data class ChatItem (
     }
   }
 
-  val isRcvNew: Boolean get() = meta.itemStatus is CIStatus.RcvNew
+  val isRcvNew: Boolean get() = meta.isRcvNew
 
   val memberDisplayName: String? get() =
     if (chatDir is CIDirection.GroupRcv) chatDir.groupMember.displayName
@@ -1150,11 +1169,12 @@ data class ChatItem (
       file: CIFile? = null,
       itemDeleted: Boolean = false,
       itemEdited: Boolean = false,
+      itemTimed: CITimed? = null,
       editable: Boolean = true
     ) =
       ChatItem(
         chatDir = dir,
-        meta = CIMeta.getSample(id, ts, text, status, itemDeleted, itemEdited, editable),
+        meta = CIMeta.getSample(id, ts, text, status, itemDeleted, itemEdited, null, editable),
         content = CIContent.SndMsgContent(msgContent = MsgContent.MCText(text)),
         quotedItem = quotedItem,
         file = file
@@ -1209,7 +1229,7 @@ data class ChatItem (
       )
 
     fun getChatFeatureSample(feature: ChatFeature, enabled: FeatureEnabled): ChatItem {
-      val content = CIContent.RcvChatFeature(feature = feature, enabled = enabled)
+      val content = CIContent.RcvChatFeature(feature = feature, enabled = enabled, param = null)
       return ChatItem(
         chatDir = CIDirection.DirectRcv(),
         meta = CIMeta.getSample(1, Clock.System.now(), content.text, CIStatus.RcvRead(), itemDeleted = false, itemEdited = false, editable = false),
@@ -1233,6 +1253,7 @@ data class ChatItem (
           updatedAt = Clock.System.now(),
           itemDeleted = false,
           itemEdited = false,
+          itemTimed = null,
           itemLive = false,
           editable = false
         ),
@@ -1268,17 +1289,30 @@ data class CIMeta (
   val updatedAt: Instant,
   val itemDeleted: Boolean,
   val itemEdited: Boolean,
+  val itemTimed: CITimed?,
   val itemLive: Boolean?,
   val editable: Boolean
 ) {
   val timestampText: String get() = getTimestampText(itemTs)
   val recent: Boolean get() = updatedAt + 10.toDuration(DurationUnit.SECONDS) > Clock.System.now()
   val isLive: Boolean get() = itemLive == true
+  val disappearing: Boolean get() = !isRcvNew && itemTimed?.deleteAt != null
+
+  val isRcvNew: Boolean get() = itemStatus is CIStatus.RcvNew
+
+  fun statusIcon(primaryColor: Color, metaColor: Color = HighOrLowlight): Pair<ImageVector, Color>? =
+    when (itemStatus) {
+      is CIStatus.SndSent -> Icons.Filled.Check to metaColor
+      is CIStatus.SndErrorAuth -> Icons.Filled.Close to Color.Red
+      is CIStatus.SndError -> Icons.Filled.WarningAmber to WarningYellow
+      is CIStatus.RcvNew -> Icons.Filled.Circle to primaryColor
+      else -> null
+    }
 
   companion object {
     fun getSample(
       id: Long, ts: Instant, text: String, status: CIStatus = CIStatus.SndNew(),
-      itemDeleted: Boolean = false, itemEdited: Boolean = false, itemLive: Boolean = false, editable: Boolean = true
+      itemDeleted: Boolean = false, itemEdited: Boolean = false, itemTimed: CITimed? = null, itemLive: Boolean = false, editable: Boolean = true
     ): CIMeta =
       CIMeta(
         itemId = id,
@@ -1289,11 +1323,18 @@ data class CIMeta (
         updatedAt = ts,
         itemDeleted = itemDeleted,
         itemEdited = itemEdited,
+        itemTimed = itemTimed,
         itemLive = itemLive,
         editable = editable
       )
   }
 }
+
+@Serializable
+data class CITimed(
+  val ttl: Int,
+  val deleteAt: Instant?
+)
 
 fun getTimestampText(t: Instant): String {
   val tz = TimeZone.currentSystemDefault()
@@ -1342,10 +1383,10 @@ sealed class CIContent: ItemContent {
   @Serializable @SerialName("sndGroupEvent") class SndGroupEventContent(val sndGroupEvent: SndGroupEvent): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvConnEvent") class RcvConnEventContent(val rcvConnEvent: RcvConnEvent): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("sndConnEvent") class SndConnEventContent(val sndConnEvent: SndConnEvent): CIContent() { override val msgContent: MsgContent? get() = null }
-  @Serializable @SerialName("rcvChatFeature") class RcvChatFeature(val feature: ChatFeature, val enabled: FeatureEnabled): CIContent() { override val msgContent: MsgContent? get() = null }
-  @Serializable @SerialName("sndChatFeature") class SndChatFeature(val feature: ChatFeature, val enabled: FeatureEnabled): CIContent() { override val msgContent: MsgContent? get() = null }
-  @Serializable @SerialName("rcvGroupFeature") class RcvGroupFeature(val groupFeature: GroupFeature, val preference: GroupPreference): CIContent() { override val msgContent: MsgContent? get() = null }
-  @Serializable @SerialName("sndGroupFeature") class SndGroupFeature(val groupFeature: GroupFeature, val preference: GroupPreference): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvChatFeature") class RcvChatFeature(val feature: ChatFeature, val enabled: FeatureEnabled, val param: Int? = null): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("sndChatFeature") class SndChatFeature(val feature: ChatFeature, val enabled: FeatureEnabled, val param: Int? = null): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvGroupFeature") class RcvGroupFeature(val groupFeature: GroupFeature, val preference: GroupPreference, val param: Int? = null): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("sndGroupFeature") class SndGroupFeature(val groupFeature: GroupFeature, val preference: GroupPreference, val param: Int? = null): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvChatFeatureRejected") class RcvChatFeatureRejected(val feature: ChatFeature): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvGroupFeatureRejected") class RcvGroupFeatureRejected(val groupFeature: GroupFeature): CIContent() { override val msgContent: MsgContent? get() = null }
 
@@ -1363,13 +1404,22 @@ sealed class CIContent: ItemContent {
       is SndGroupEventContent -> sndGroupEvent.text
       is RcvConnEventContent -> rcvConnEvent.text
       is SndConnEventContent -> sndConnEvent.text
-      is RcvChatFeature -> "${feature.text}: ${enabled.text}"
-      is SndChatFeature -> "${feature.text}: ${enabled.text}"
-      is RcvGroupFeature -> "${groupFeature.text}: ${preference.enable.text}"
-      is SndGroupFeature -> "${groupFeature.text}: ${preference.enable.text}"
+      is RcvChatFeature -> featureText(feature, enabled.text, param)
+      is SndChatFeature -> featureText(feature, enabled.text, param)
+      is RcvGroupFeature -> featureText(groupFeature, preference.enable.text, param)
+      is SndGroupFeature -> featureText(groupFeature, preference.enable.text, param)
       is RcvChatFeatureRejected -> "${feature.text}: ${generalGetString(R.string.feature_received_prohibited)}"
       is RcvGroupFeatureRejected -> "${groupFeature.text}: ${generalGetString(R.string.feature_received_prohibited)}"
     }
+
+  companion object {
+    fun featureText(feature: Feature, value: String, param: Int?): String =
+      if (feature.hasParam && param != null) {
+        "${feature.text}: ${TimedMessagesPreference.ttlText(param)}"
+      } else {
+        "${feature.text}: $value"
+      }
+  }
 }
 
 @Serializable

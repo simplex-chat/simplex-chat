@@ -62,10 +62,10 @@ struct ChatItemContentView<Content: View>: View {
         case .sndGroupEvent: eventItemView()
         case .rcvConnEvent: eventItemView()
         case .sndConnEvent: eventItemView()
-        case let .rcvChatFeature(feature, enabled, param): chatFeatureView(feature, enabled.iconColor, param)
-        case let .sndChatFeature(feature, enabled, param): chatFeatureView(feature, enabled.iconColor, param)
-        case let .rcvGroupFeature(feature, preference, param): chatFeatureView(feature, preference.enable.iconColor, param)
-        case let .sndGroupFeature(feature, preference, param): chatFeatureView(feature, preference.enable.iconColor, param)
+        case let .rcvChatFeature(feature, enabled, _): chatFeatureView(feature, enabled.iconColor)
+        case let .sndChatFeature(feature, enabled, _): chatFeatureView(feature, enabled.iconColor)
+        case let .rcvGroupFeature(feature, preference, _): chatFeatureView(feature, preference.enable.iconColor)
+        case let .sndGroupFeature(feature, preference, _): chatFeatureView(feature, preference.enable.iconColor)
         case let .rcvChatFeatureRejected(feature): chatFeatureView(feature, .red)
         case let .rcvGroupFeatureRejected(feature): chatFeatureView(feature, .red)
         }
@@ -87,7 +87,7 @@ struct ChatItemContentView<Content: View>: View {
         CIEventView(chatItem: chatItem)
     }
 
-    private func chatFeatureView(_ feature: Feature, _ iconColor: Color, _ param: Int? = nil) -> some View {
+    private func chatFeatureView(_ feature: Feature, _ iconColor: Color) -> some View {
         CIChatFeatureView(chatItem: chatItem, feature: feature, iconColor: iconColor)
     }
 }

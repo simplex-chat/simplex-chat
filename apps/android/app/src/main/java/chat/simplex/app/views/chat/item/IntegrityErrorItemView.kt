@@ -22,7 +22,7 @@ import chat.simplex.app.views.helpers.AlertManager
 import chat.simplex.app.views.helpers.generalGetString
 
 @Composable
-fun IntegrityErrorItemView(ci: ChatItem, showMember: Boolean = false) {
+fun IntegrityErrorItemView(ci: ChatItem, timedMessagesTTL: Int?, showMember: Boolean = false) {
   Surface(
     Modifier.clickable(onClick = {
       AlertManager.shared.showAlertMsg(
@@ -45,7 +45,7 @@ fun IntegrityErrorItemView(ci: ChatItem, showMember: Boolean = false) {
         style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
         modifier = Modifier.padding(end = 8.dp)
       )
-      CIMetaView(ci)
+      CIMetaView(ci, timedMessagesTTL)
     }
   }
 }
@@ -59,7 +59,8 @@ fun IntegrityErrorItemView(ci: ChatItem, showMember: Boolean = false) {
 fun IntegrityErrorItemViewPreview() {
   SimpleXTheme {
     IntegrityErrorItemView(
-      ChatItem.getDeletedContentSampleData()
+      ChatItem.getDeletedContentSampleData(),
+      null
     )
   }
 }

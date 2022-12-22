@@ -48,6 +48,7 @@ fun FramedItemView(
   scrollToItem: (Long) -> Unit = {},
 ) {
   val sent = ci.chatDir.sent
+  val chatTTL = chatInfo.timedMessagesTTL
 
   fun membership(): GroupMember? {
     return if (chatInfo is ChatInfo.Group) chatInfo.groupInfo.membership else null
@@ -144,7 +145,7 @@ fun FramedItemView(
   fun ciFileView(ci: ChatItem, text: String) {
     CIFileView(ci.file, ci.meta.itemEdited, receiveFile)
     if (text != "" || ci.meta.isLive) {
-      CIMarkdownText(ci, showMember, linkMode = linkMode, uriHandler)
+      CIMarkdownText(ci, chatTTL, showMember, linkMode = linkMode, uriHandler)
     }
   }
 
@@ -188,33 +189,33 @@ fun FramedItemView(
                 if (mc.text == "" && !ci.meta.isLive) {
                   metaColor = Color.White
                 } else {
-                  CIMarkdownText(ci, showMember, linkMode, uriHandler)
+                  CIMarkdownText(ci, chatTTL, showMember, linkMode, uriHandler)
                 }
               }
               is MsgContent.MCVoice -> {
-                CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = true, ci, longClick = { onLinkLongClick("") })
+                CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = true, ci, timedMessagesTTL = chatTTL, longClick = { onLinkLongClick("") })
                 if (mc.text != "") {
-                  CIMarkdownText(ci, showMember, linkMode, uriHandler)
+                  CIMarkdownText(ci, chatTTL, showMember, linkMode, uriHandler)
                 }
               }
               is MsgContent.MCFile -> ciFileView(ci, mc.text)
               is MsgContent.MCUnknown ->
                 if (ci.file == null) {
-                  CIMarkdownText(ci, showMember, linkMode, uriHandler, onLinkLongClick)
+                  CIMarkdownText(ci, chatTTL, showMember, linkMode, uriHandler, onLinkLongClick)
                 } else {
                   ciFileView(ci, mc.text)
                 }
               is MsgContent.MCLink -> {
                 ChatItemLinkView(mc.preview)
-                CIMarkdownText(ci, showMember, linkMode, uriHandler, onLinkLongClick)
+                CIMarkdownText(ci, chatTTL, showMember, linkMode, uriHandler, onLinkLongClick)
               }
-              else -> CIMarkdownText(ci, showMember, linkMode, uriHandler, onLinkLongClick)
+              else -> CIMarkdownText(ci, chatTTL, showMember, linkMode, uriHandler, onLinkLongClick)
             }
           }
         }
       }
       Box(Modifier.padding(bottom = 6.dp, end = 12.dp)) {
-        CIMetaView(ci, metaColor)
+        CIMetaView(ci, chatTTL, metaColor)
       }
     }
   }
@@ -223,6 +224,7 @@ fun FramedItemView(
 @Composable
 fun CIMarkdownText(
   ci: ChatItem,
+  chatTTL: Int?,
   showMember: Boolean,
   linkMode: SimplexLinkMode,
   uriHandler: UriHandler?,
@@ -232,7 +234,7 @@ fun CIMarkdownText(
     val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
     MarkdownText(
       text, if (text.isEmpty()) emptyList() else ci.formattedText, if (showMember) ci.memberDisplayName else null,
-      meta = ci.meta, linkMode = linkMode,
+      meta = ci.meta, chatTTL = chatTTL, linkMode = linkMode,
       uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick
     )
   }

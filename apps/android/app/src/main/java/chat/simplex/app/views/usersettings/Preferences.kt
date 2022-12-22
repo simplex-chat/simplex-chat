@@ -69,14 +69,19 @@ private fun PreferencesLayout(
     horizontalAlignment = Alignment.Start,
   ) {
     AppBarTitle(stringResource(R.string.your_preferences))
+    val timedMessages = remember(preferences) { mutableStateOf(preferences.timedMessages.allow) }
+    TimedMessagesFeatureSection(timedMessages) {
+      applyPrefs(preferences.copy(timedMessages = TimedMessagesPreference(allow = if (it) FeatureAllowed.YES else FeatureAllowed.NO)))
+    }
+    SectionSpacer()
     val allowFullDeletion = remember(preferences) { mutableStateOf(preferences.fullDelete.allow) }
     FeatureSection(ChatFeature.FullDelete, allowFullDeletion) {
-      applyPrefs(preferences.copy(fullDelete = ChatPreference(allow = it)))
+      applyPrefs(preferences.copy(fullDelete = SimpleChatPreference(allow = it)))
     }
     SectionSpacer()
     val allowVoice = remember(preferences) { mutableStateOf(preferences.voice.allow) }
     FeatureSection(ChatFeature.Voice, allowVoice) {
-      applyPrefs(preferences.copy(voice = ChatPreference(allow = it)))
+      applyPrefs(preferences.copy(voice = SimpleChatPreference(allow = it)))
     }
     SectionSpacer()
     ResetSaveButtons(
@@ -101,6 +106,22 @@ private fun FeatureSection(feature: ChatFeature, allowFeature: State<FeatureAllo
     }
   }
   SectionTextFooter(feature.allowDescription(allowFeature.value))
+}
+
+@Composable
+private fun TimedMessagesFeatureSection(allowFeature: State<FeatureAllowed>, onSelected: (Boolean) -> Unit) {
+  SectionView {
+    SectionItemView {
+      PreferenceToggleWithIcon(
+        ChatFeature.TimedMessages.text,
+        ChatFeature.TimedMessages.icon,
+        HighOrLowlight,
+        allowFeature.value == FeatureAllowed.ALWAYS || allowFeature.value == FeatureAllowed.YES,
+        onSelected
+      )
+    }
+  }
+  SectionTextFooter(ChatFeature.TimedMessages.allowDescription(allowFeature.value))
 }
 
 @Composable
