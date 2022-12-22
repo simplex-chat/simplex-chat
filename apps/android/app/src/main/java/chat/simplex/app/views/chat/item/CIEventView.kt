@@ -43,7 +43,7 @@ fun CIEventView(ci: ChatItem) {
   }
 }
 
-private fun withChatEventStyle(builder: AnnotatedString.Builder, text: String) {
+fun withChatEventStyle(builder: AnnotatedString.Builder, text: String) {
   return builder.withStyle(SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Light, color = HighOrLowlight)) { append(text) }
 }
 
