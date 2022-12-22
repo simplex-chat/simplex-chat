@@ -136,6 +136,7 @@ chatTests = do
     it "set connection alias" testSetConnectionAlias
   describe "preferences" $ do
     it "set contact preferences" testSetContactPrefs
+    it "feature offers" testFeatureOffers
     it "update group preferences" testUpdateGroupPrefs
     it "allow full deletion to contact" testAllowFullDeletionContact
     it "allow full deletion to group" testAllowFullDeletionGroup
@@ -3426,6 +3427,25 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     bob <## "alice updated preferences for you:"
     bob <## "Voice messages: off (you allow: default (yes), contact allows: no)"
     bob #$> ("/_get chat @2 count=100", chat, startFeatures <> [(0, "Voice messages: enabled for you"), (1, "voice message (00:10)"), (0, "Voice messages: off"), (1, "Voice messages: enabled"), (0, "Voice messages: off")])
+
+testFeatureOffers :: IO ()
+testFeatureOffers = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    connectUsers alice bob
+    alice ##> "/set delete @bob yes"
+    alice <## "you updated preferences for bob:"
+    alice <## "Full deletion: off (you allow: yes, contact allows: no)"
+    alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "you offered Full deletion")])
+    bob <## "alice updated preferences for you:"
+    bob <## "Full deletion: off (you allow: default (no), contact allows: yes)"
+    bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "offered Full deletion")])
+    alice ##> "/set delete @bob no"
+    alice <## "you updated preferences for bob:"
+    alice <## "Full deletion: off (you allow: no, contact allows: no)"
+    alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "you offered Full deletion"), (1, "you cancelled Full deletion")])
+    bob <## "alice updated preferences for you:"
+    bob <## "Full deletion: off (you allow: default (no), contact allows: no)"
+    bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "offered Full deletion"), (0, "cancelled Full deletion")])
 
 testUpdateGroupPrefs :: IO ()
 testUpdateGroupPrefs =
