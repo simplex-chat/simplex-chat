@@ -2028,7 +2028,7 @@ data class FullChatPreferences(
   val fullDelete: SimpleChatPreference,
   val voice: SimpleChatPreference,
 ) {
-  fun toPreferences(): ChatPreferences = ChatPreferences(fullDelete = fullDelete, voice = voice)
+  fun toPreferences(): ChatPreferences = ChatPreferences(timedMessages = timedMessages, fullDelete = fullDelete, voice = voice)
 
   companion object {
     val sampleData = FullChatPreferences(
@@ -2041,9 +2041,9 @@ data class FullChatPreferences(
 
 @Serializable
 data class ChatPreferences(
-  val timedMessages: TimedMessagesPreference? = null,
-  val fullDelete: SimpleChatPreference? = null,
-  val voice: SimpleChatPreference? = null,
+  val timedMessages: TimedMessagesPreference?,
+  val fullDelete: SimpleChatPreference?,
+  val voice: SimpleChatPreference?,
 ) {
   fun setAllowed(feature: ChatFeature, allowed: FeatureAllowed = FeatureAllowed.YES): ChatPreferences =
     when (feature) {
