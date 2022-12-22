@@ -167,9 +167,13 @@ module Simplex.Chat.Store
     getFileTransferMeta,
     getSndFileTransfer,
     getContactFileInfo,
+    getContactMaxItemTs,
     deleteContactCIs,
+    updateContactTs,
     getGroupFileInfo,
+    getGroupMaxItemTs,
     deleteGroupCIs,
+    updateGroupTs,
     createNewSndMessage,
     createSndMsgDelivery,
     createNewMessageAndRcvMsgDelivery,
@@ -230,8 +234,10 @@ module Simplex.Chat.Store
     setChatItemTTL,
     getContactExpiredFileInfo,
     deleteContactExpiredCIs,
+    getContactCICount,
     getGroupExpiredFileInfo,
     deleteGroupExpiredCIs,
+    getGroupCICount,
     getPendingContactConnection,
     deletePendingContactConnection,
     updateContactSettings,
@@ -2952,6 +2958,11 @@ getContactFileInfo db User {userId} Contact {contactId} =
 toFileInfo :: (Int64, Maybe ACIFileStatus, Maybe FilePath) -> CIFileInfo
 toFileInfo (fileId, fileStatus, filePath) = CIFileInfo {fileId, fileStatus, filePath}
 
+getContactMaxItemTs :: DB.Connection -> User -> Contact -> IO (Maybe UTCTime)
+getContactMaxItemTs db User {userId} Contact {contactId} =
+  fmap join . maybeFirstRow fromOnly $
+    DB.query db "SELECT MAX(item_ts) FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+
 deleteContactCIs :: DB.Connection -> User -> Contact -> IO ()
 deleteContactCIs db user@User {userId} ct@Contact {contactId} = do
   connIds <- getContactConnIds_ db user ct
@@ -2963,6 +2974,13 @@ getContactConnIds_ :: DB.Connection -> User -> Contact -> IO [Int64]
 getContactConnIds_ db User {userId} Contact {contactId} =
   map fromOnly
     <$> DB.query db "SELECT connection_id FROM connections WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+
+updateContactTs :: DB.Connection -> User -> Contact -> UTCTime -> IO ()
+updateContactTs db User {userId} Contact {contactId} updatedAt =
+  DB.execute
+    db
+    "UPDATE contacts SET updated_at = ? WHERE user_id = ? AND contact_id = ?"
+    (updatedAt, userId, contactId)
 
 getGroupFileInfo :: DB.Connection -> User -> GroupInfo -> IO [CIFileInfo]
 getGroupFileInfo db User {userId} GroupInfo {groupId} =
@@ -2977,10 +2995,22 @@ getGroupFileInfo db User {userId} GroupInfo {groupId} =
       |]
       (userId, groupId)
 
+getGroupMaxItemTs :: DB.Connection -> User -> GroupInfo -> IO (Maybe UTCTime)
+getGroupMaxItemTs db User {userId} GroupInfo {groupId} =
+  fmap join . maybeFirstRow fromOnly $
+    DB.query db "SELECT MAX(item_ts) FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
+
 deleteGroupCIs :: DB.Connection -> User -> GroupInfo -> IO ()
 deleteGroupCIs db User {userId} GroupInfo {groupId} = do
   DB.execute db "DELETE FROM messages WHERE group_id = ?" (Only groupId)
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
+
+updateGroupTs :: DB.Connection -> User -> GroupInfo -> UTCTime -> IO ()
+updateGroupTs db User {userId} GroupInfo {groupId} updatedAt =
+  DB.execute
+    db
+    "UPDATE groups SET updated_at = ? WHERE user_id = ? AND group_id = ?"
+    (updatedAt, userId, groupId)
 
 createNewSndMessage :: MsgEncodingI e => DB.Connection -> TVar ChaChaDRG -> ConnOrGroupId -> (SharedMsgId -> NewMessage e) -> ExceptT StoreError IO SndMessage
 createNewSndMessage db gVar connOrGroupId mkMessage =
@@ -4667,6 +4697,11 @@ deleteContactExpiredCIs db user@User {userId} ct@Contact {contactId} expirationD
     DB.execute db "DELETE FROM messages WHERE connection_id = ? AND created_at <= ?" (connId, expirationDate)
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ? AND created_at <= ?" (userId, contactId, expirationDate)
 
+getContactCICount :: DB.Connection -> User -> Contact -> IO (Maybe Int64)
+getContactCICount db User {userId} Contact {contactId} =
+  fmap join . maybeFirstRow fromOnly $
+    DB.query db "SELECT COUNT(1) FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+
 getGroupExpiredFileInfo :: DB.Connection -> User -> GroupInfo -> UTCTime -> UTCTime -> IO [CIFileInfo]
 getGroupExpiredFileInfo db User {userId} GroupInfo {groupId} expirationDate createdAtCutoff =
   map toFileInfo
@@ -4684,6 +4719,11 @@ deleteGroupExpiredCIs :: DB.Connection -> User -> GroupInfo -> UTCTime -> UTCTim
 deleteGroupExpiredCIs db User {userId} GroupInfo {groupId} expirationDate createdAtCutoff = do
   DB.execute db "DELETE FROM messages WHERE group_id = ? AND created_at <= ?" (groupId, min expirationDate createdAtCutoff)
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ? AND item_ts <= ? AND created_at <= ?" (userId, groupId, expirationDate, createdAtCutoff)
+
+getGroupCICount :: DB.Connection -> User -> GroupInfo -> IO (Maybe Int64)
+getGroupCICount db User {userId} GroupInfo {groupId} =
+  fmap join . maybeFirstRow fromOnly $
+    DB.query db "SELECT COUNT(1) FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
 
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.
 -- This function should be called inside transaction.

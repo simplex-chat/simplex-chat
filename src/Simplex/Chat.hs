@@ -578,17 +578,29 @@ processChatCommand = \case
     CTDirect -> do
       ct <- withStore $ \db -> getContact db user chatId
       filesInfo <- withStore' $ \db -> getContactFileInfo db user ct
+      maxItemTs_ <- withStore' $ \db -> getContactMaxItemTs db user ct
       forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
       withStore' $ \db -> deleteContactCIs db user ct
-      pure $ CRChatCleared (AChatInfo SCTDirect $ DirectChat ct)
+      ct' <- case maxItemTs_ of
+        Just ts -> do
+          withStore' $ \db -> updateContactTs db user ct ts
+          pure (ct :: Contact) {updatedAt = ts}
+        _ -> pure ct
+      pure $ CRChatCleared (AChatInfo SCTDirect (DirectChat ct'))
     CTGroup -> do
       gInfo <- withStore $ \db -> getGroupInfo db user chatId
       filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
+      maxItemTs_ <- withStore' $ \db -> getGroupMaxItemTs db user gInfo
       forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
       withStore' $ \db -> deleteGroupCIs db user gInfo
       membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db user gInfo
       forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
-      pure $ CRChatCleared (AChatInfo SCTGroup $ GroupChat gInfo)
+      gInfo' <- case maxItemTs_ of
+        Just ts -> do
+          withStore' $ \db -> updateGroupTs db user gInfo ts
+          pure (gInfo :: GroupInfo) {updatedAt = ts}
+        _ -> pure gInfo
+      pure $ CRChatCleared (AChatInfo SCTGroup (GroupChat gInfo'))
     CTContactConnection -> pure $ chatCmdError "not supported"
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIAcceptContact connReqId -> withUser $ \user@User {userId} -> withChatLock "acceptContact" $ do
@@ -1797,15 +1809,27 @@ expireChatItems user ttl sync = do
     processContact :: UTCTime -> Contact -> m ()
     processContact expirationDate ct = do
       filesInfo <- withStore' $ \db -> getContactExpiredFileInfo db user ct expirationDate
+      maxItemTs_ <- withStore' $ \db -> getContactMaxItemTs db user ct
       forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
       withStore' $ \db -> deleteContactExpiredCIs db user ct expirationDate
+      withStore' $ \db -> do
+        ciCount_ <- getContactCICount db user ct
+        case (maxItemTs_, ciCount_) of
+          (Just ts, Just count) -> when (count == 0) $ updateContactTs db user ct ts
+          _ -> pure ()
     processGroup :: UTCTime -> UTCTime -> GroupInfo -> m ()
     processGroup expirationDate createdAtCutoff gInfo = do
       filesInfo <- withStore' $ \db -> getGroupExpiredFileInfo db user gInfo expirationDate createdAtCutoff
+      maxItemTs_ <- withStore' $ \db -> getGroupMaxItemTs db user gInfo
       forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
       withStore' $ \db -> deleteGroupExpiredCIs db user gInfo expirationDate createdAtCutoff
       membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db user gInfo
       forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
+      withStore' $ \db -> do
+        ciCount_ <- getGroupCICount db user gInfo
+        case (maxItemTs_, ciCount_) of
+          (Just ts, Just count) -> when (count == 0) $ updateGroupTs db user gInfo ts
+          _ -> pure ()
 
 processAgentMessage :: forall m. ChatMonad m => Maybe User -> ConnId -> ACorrId -> ACommand 'Agent -> m ()
 processAgentMessage Nothing _ _ _ = throwChatError CENoActiveUser
