@@ -182,6 +182,9 @@ module Simplex.Chat.Store
     createPendingGroupMessage,
     getPendingGroupMessages,
     deletePendingGroupMessage,
+    updateChatTs,
+    -- updateContactChatTs,
+    -- updateGroupChatTs,
     createNewSndChatItem,
     createNewRcvChatItem,
     createNewChatItemNoMsg,
@@ -2861,9 +2864,8 @@ deleteRcvFileChunks :: DB.Connection -> RcvFileTransfer -> IO ()
 deleteRcvFileChunks db RcvFileTransfer {fileId} =
   DB.execute db "DELETE FROM rcv_file_chunks WHERE file_id = ?" (Only fileId)
 
-updateFileTransferChatItemId :: DB.Connection -> FileTransferId -> ChatItemId -> IO ()
-updateFileTransferChatItemId db fileId ciId = do
-  currentTs <- getCurrentTime
+updateFileTransferChatItemId :: DB.Connection -> FileTransferId -> ChatItemId -> UTCTime -> IO ()
+updateFileTransferChatItemId db fileId ciId currentTs =
   DB.execute db "UPDATE files SET chat_item_id = ?, updated_at = ? WHERE file_id = ?" (ciId, currentTs, fileId)
 
 getFileTransferProgress :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO (FileTransfer, [Integer])
@@ -3156,6 +3158,34 @@ deletePendingGroupMessage db groupMemberId messageId =
   DB.execute db "DELETE FROM pending_group_messages WHERE group_member_id = ? AND message_id = ?" (groupMemberId, messageId)
 
 type NewQuoteRow = (Maybe SharedMsgId, Maybe UTCTime, Maybe MsgContent, Maybe Bool, Maybe MemberId)
+
+updateChatTs :: DB.Connection -> User -> ChatDirection c d -> UTCTime -> IO ()
+updateChatTs db User {userId} chatDirection chatTs = case toChatInfo chatDirection of
+  DirectChat Contact {contactId} ->
+    DB.execute
+      db
+      "UPDATE contacts SET chat_ts = ? WHERE user_id = ? AND contact_id = ?"
+      (chatTs, userId, contactId)
+  GroupChat GroupInfo {groupId} ->
+    DB.execute
+      db
+      "UPDATE groups SET chat_ts = ? WHERE user_id = ? AND group_id = ?"
+      (chatTs, userId, groupId)
+  _ -> pure ()
+
+-- updateContactChatTs :: DB.Connection -> User -> Contact -> UTCTime -> IO ()
+-- updateContactChatTs db User {userId} Contact {contactId} chatTs =
+--   DB.execute
+--     db
+--     "UPDATE contacts SET chat_ts = ? WHERE user_id = ? AND contact_id = ?"
+--     (chatTs, userId, contactId)
+
+-- updateGroupChatTs :: DB.Connection -> User -> GroupInfo -> UTCTime -> IO ()
+-- updateGroupChatTs db User {userId} GroupInfo {groupId} chatTs =
+--   DB.execute
+--     db
+--     "UPDATE groups SET chat_ts = ? WHERE user_id = ? AND group_id = ?"
+--     (chatTs, userId, groupId)
 
 createNewSndChatItem :: DB.Connection -> User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> Maybe (CIQuote c) -> Maybe CITimed -> Bool -> UTCTime -> IO ChatItemId
 createNewSndChatItem db user chatDirection SndMessage {msgId, sharedMsgId} ciContent quotedItem timed live createdAt =

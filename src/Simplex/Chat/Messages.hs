@@ -627,27 +627,42 @@ data CIContent (d :: MsgDirection) where
 
 deriving instance Show (CIContent d)
 
-ciCreateStatus :: CIContent d -> CIStatus d
-ciCreateStatus = \case
-  CISndMsgContent _ -> ciStatusNew
-  CIRcvMsgContent _ -> ciStatusNew
-  CISndDeleted _ -> ciStatusNew
-  CIRcvDeleted _ -> ciStatusNew
-  CISndCall {} -> ciStatusNew
-  CIRcvCall {} -> ciStatusNew
-  CIRcvIntegrityError _ -> ciStatusNew
-  CIRcvGroupInvitation {} -> ciStatusNew
-  CISndGroupInvitation {} -> ciStatusNew
-  CIRcvGroupEvent rge -> rgeCreateStatus rge
-  CISndGroupEvent _ -> ciStatusNew
-  CIRcvConnEvent _ -> ciStatusNew
-  CISndConnEvent _ -> ciStatusNew
-  CIRcvChatFeature {} -> CISRcvRead
-  CISndChatFeature {} -> ciStatusNew
-  CIRcvGroupFeature {} -> CISRcvRead
-  CISndGroupFeature {} -> ciStatusNew
-  CIRcvChatFeatureRejected _ -> ciStatusNew
-  CIRcvGroupFeatureRejected _ -> ciStatusNew
+ciNotifying :: CIContent d -> Bool
+ciNotifying = \case
+  CISndMsgContent _ -> True
+  CIRcvMsgContent _ -> True
+  CISndDeleted _ -> True
+  CIRcvDeleted _ -> True
+  CISndCall {} -> True
+  CIRcvCall {} -> True
+  CIRcvIntegrityError _ -> True
+  CIRcvGroupInvitation {} -> True
+  CISndGroupInvitation {} -> True
+  CIRcvGroupEvent rge -> case rge of
+    RGEMemberAdded {} -> False
+    RGEMemberConnected -> False
+    RGEMemberLeft -> False
+    RGEMemberRole {} -> False
+    RGEUserRole _ -> True
+    RGEMemberDeleted {} -> False
+    RGEUserDeleted -> True
+    RGEGroupDeleted -> True
+    RGEGroupUpdated _ -> False
+    RGEInvitedViaGroupLink -> False
+  CISndGroupEvent _ -> True
+  CIRcvConnEvent _ -> True
+  CISndConnEvent _ -> True
+  CIRcvChatFeature {} -> False
+  CISndChatFeature {} -> True
+  CIRcvGroupFeature {} -> False
+  CISndGroupFeature {} -> True
+  CIRcvChatFeatureRejected _ -> True
+  CIRcvGroupFeatureRejected _ -> True
+
+ciCreateStatus :: forall d. MsgDirectionI d => CIContent d -> CIStatus d
+ciCreateStatus content = case msgDirection @d of
+  SMDSnd -> ciStatusNew
+  SMDRcv -> if ciNotifying content then ciStatusNew else CISRcvRead
 
 data RcvGroupEvent
   = RGEMemberAdded {groupMemberId :: GroupMemberId, profile :: Profile} -- CRJoinedGroupMemberConnecting
@@ -680,19 +695,6 @@ instance FromJSON DBRcvGroupEvent where
 instance ToJSON DBRcvGroupEvent where
   toJSON (RGE v) = J.genericToJSON (singleFieldJSON $ dropPrefix "RGE") v
   toEncoding (RGE v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "RGE") v
-
-rgeCreateStatus :: RcvGroupEvent -> CIStatus 'MDRcv
-rgeCreateStatus = \case
-  RGEMemberAdded {} -> CISRcvRead
-  RGEMemberConnected -> CISRcvRead
-  RGEMemberLeft -> CISRcvRead
-  RGEMemberRole {} -> CISRcvRead
-  RGEUserRole _ -> ciStatusNew
-  RGEMemberDeleted {} -> CISRcvRead
-  RGEUserDeleted -> ciStatusNew
-  RGEGroupDeleted -> ciStatusNew
-  RGEGroupUpdated _ -> CISRcvRead
-  RGEInvitedViaGroupLink -> CISRcvRead
 
 data SndGroupEvent
   = SGEMemberRole {groupMemberId :: GroupMemberId, profile :: Profile, role :: GroupMemberRole}
