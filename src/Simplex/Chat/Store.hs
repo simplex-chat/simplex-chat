@@ -334,7 +334,6 @@ import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), Pro
 import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8)
 import UnliftIO.STM
-import Simplex.Chat.Util (diffInMillis)
 
 schemaMigrations :: [(String, Query)]
 schemaMigrations =
@@ -3317,10 +3316,10 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
 
 getChatPreviews :: DB.Connection -> User -> Bool -> IO [AChat]
 getChatPreviews db user withPCC = do
-  directChats <- timeItIO "getDirectChatPreviews_" $ getDirectChatPreviews_ db user
-  groupChats <- timeItIO "getGroupChatPreviews_" $ getGroupChatPreviews_ db user
-  cReqChats <- timeItIO "getContactRequestChatPreviews_" $ getContactRequestChatPreviews_ db user
-  connChats <- timeItIO "getContactConnectionChatPreviews_" $ getContactConnectionChatPreviews_ db user withPCC
+  directChats <- getDirectChatPreviews_ db user
+  groupChats <- getGroupChatPreviews_ db user
+  cReqChats <- getContactRequestChatPreviews_ db user
+  connChats <- getContactConnectionChatPreviews_ db user withPCC
   pure $ sortOn (Down . ts) (directChats <> groupChats <> cReqChats <> connChats)
   where
     ts :: AChat -> UTCTime
@@ -4842,12 +4841,3 @@ data StoreError
 instance ToJSON StoreError where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "SE"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "SE"
-
-timeItIO :: String -> IO a -> IO a
-timeItIO s action = do
-  t1 <- getCurrentTime
-  a <- action
-  t2 <- getCurrentTime
-  let diff = diffInMillis t2 t1
-  print $ show diff <> " ms - " <> s
-  pure a

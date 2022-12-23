@@ -3,7 +3,6 @@
 module Simplex.Chat.Util
   ( diffInMicros,
     diffInSeconds,
-    diffInMillis,
   )
 where
 
@@ -13,9 +12,6 @@ import Data.Time.Clock (UTCTime, diffUTCTime)
 
 diffInSeconds :: UTCTime -> UTCTime -> Int
 diffInSeconds a b = (`div` 1000000_000000) $ diffInPicos a b
-
-diffInMillis :: UTCTime -> UTCTime -> Int
-diffInMillis a b = (`div` 1_000_000_000) . fromInteger . fromPico . nominalDiffTimeToSeconds $ diffUTCTime a b
 
 diffInMicros :: UTCTime -> UTCTime -> Int
 diffInMicros a b = (`div` 1000000) $ diffInPicos a b
