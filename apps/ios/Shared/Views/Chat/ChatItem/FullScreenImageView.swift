@@ -78,13 +78,13 @@ struct FullScreenImageView: View {
     private func imageView(_ img: UIImage) -> some View {
         ZStack {
             Color.black
-            if img.imageData != nil {
-                SwiftyGif(image: image)
-                        .scaledToFit()
-            } else {
+            if img.imageData == nil {
                 Image(uiImage: img)
                     .resizable()
                     .scaledToFit()
+            } else {
+                SwiftyGif(image: img)
+                        .scaledToFit()
             }
         }
     }
