@@ -80,8 +80,7 @@ struct MsgContentView: View {
     }
 
     private func reserveSpaceForMeta(_ mt: CIMeta) -> Text {
-        (rightToLeft ? Text("\n") : Text("   ")) + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL)
-            .foregroundColor(.clear)
+        (rightToLeft ? Text("\n") : Text("   ")) + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, transparent: true)
     }
 }
 

@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
+import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.ComposeContextItem
 import chat.simplex.app.views.chat.ComposeState
@@ -42,6 +43,7 @@ fun ChatItemView(
   joinGroup: (Long) -> Unit,
   acceptCall: (Contact) -> Unit,
   scrollToItem: (Long) -> Unit,
+  acceptFeature: (Contact, ChatFeature) -> Unit
 ) {
   val context = LocalContext.current
   val uriHandler = LocalUriHandler.current
@@ -49,7 +51,7 @@ fun ChatItemView(
   val alignment = if (sent) Alignment.CenterEnd else Alignment.CenterStart
   val showMenu = remember { mutableStateOf(false) }
   val revealed = remember { mutableStateOf(false) }
-  val fullDeleteAllowed = remember(cInfo) { cInfo.fullDeletionAllowed }
+  val fullDeleteAllowed = remember(cInfo) { cInfo.featureEnabled(ChatFeature.FullDelete) }
   val saveFileLauncher = rememberSaveFileLauncher(cxt = context, ciFile = cItem.file)
   val onLinkLongClick = { _: String -> showMenu.value = true }
 
@@ -224,6 +226,11 @@ fun ChatItemView(
         is CIContent.SndConnEventContent -> CIEventView(cItem)
         is CIContent.RcvChatFeature -> CIChatFeatureView(cItem, c.feature, c.enabled.iconColor)
         is CIContent.SndChatFeature -> CIChatFeatureView(cItem, c.feature, c.enabled.iconColor)
+        is CIContent.RcvChatPreference -> {
+          val ct = if (cInfo is ChatInfo.Direct) cInfo.contact else null
+          CIFeaturePreferenceView(cItem, ct, c.feature, c.allowed, acceptFeature)
+        }
+        is CIContent.SndChatPreference -> CIChatFeatureView(cItem, c.feature, HighOrLowlight, icon = c.feature.icon,)
         is CIContent.RcvGroupFeature -> CIChatFeatureView(cItem, c.groupFeature, c.preference.enable.iconColor)
         is CIContent.SndGroupFeature -> CIChatFeatureView(cItem, c.groupFeature, c.preference.enable.iconColor)
         is CIContent.RcvChatFeatureRejected -> CIChatFeatureView(cItem, c.feature, Color.Red)
@@ -319,6 +326,7 @@ fun PreviewChatItemView() {
       joinGroup = {},
       acceptCall = { _ -> },
       scrollToItem = {},
+      acceptFeature = { _, _ -> }
     )
   }
 }
@@ -338,6 +346,7 @@ fun PreviewChatItemViewDeletedContent() {
       joinGroup = {},
       acceptCall = { _ -> },
       scrollToItem = {},
+      acceptFeature = { _, _ -> }
     )
   }
 }

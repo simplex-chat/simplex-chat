@@ -598,7 +598,7 @@ struct ChatView: View {
         }
         
         private var broadcastDeleteButtonText: LocalizedStringKey {
-            chat.chatInfo.fullDeletionAllowed ? "Delete for everyone" : "Mark deleted for everyone"
+            chat.chatInfo.featureEnabled(.fullDelete) ? "Delete for everyone" : "Mark deleted for everyone"
         }
     }
     

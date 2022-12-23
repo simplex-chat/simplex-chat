@@ -985,6 +985,14 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     }
   }
 
+  suspend fun allowFeatureToContact(contact: Contact, feature: ChatFeature) {
+    val prefs = contact.mergedPreferences.toPreferences().setAllowed(feature)
+    val toContact = apiSetContactPrefs(contact.contactId, prefs)
+    if (toContact != null) {
+      chatModel.updateContact(toContact)
+    }
+  }
+
   private fun networkErrorAlert(r: CR): Boolean {
     return when {
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
@@ -2020,7 +2028,7 @@ data class FullChatPreferences(
   val fullDelete: SimpleChatPreference,
   val voice: SimpleChatPreference,
 ) {
-  fun toPreferences(): ChatPreferences = ChatPreferences(fullDelete = fullDelete, voice = voice)
+  fun toPreferences(): ChatPreferences = ChatPreferences(timedMessages = timedMessages, fullDelete = fullDelete, voice = voice)
 
   companion object {
     val sampleData = FullChatPreferences(
@@ -2033,10 +2041,17 @@ data class FullChatPreferences(
 
 @Serializable
 data class ChatPreferences(
-  val timedMessages: TimedMessagesPreference? = null,
-  val fullDelete: SimpleChatPreference? = null,
-  val voice: SimpleChatPreference? = null,
+  val timedMessages: TimedMessagesPreference?,
+  val fullDelete: SimpleChatPreference?,
+  val voice: SimpleChatPreference?,
 ) {
+  fun setAllowed(feature: ChatFeature, allowed: FeatureAllowed = FeatureAllowed.YES): ChatPreferences =
+    when (feature) {
+      ChatFeature.TimedMessages -> this.copy(timedMessages = TimedMessagesPreference(allow = allowed, ttl = this.timedMessages?.ttl))
+      ChatFeature.FullDelete -> this.copy(fullDelete = SimpleChatPreference(allow = allowed))
+      ChatFeature.Voice -> this.copy(voice = SimpleChatPreference(allow = allowed))
+    }
+
   companion object {
     val sampleData = ChatPreferences(
       timedMessages = TimedMessagesPreference(allow = FeatureAllowed.NO),
@@ -2056,7 +2071,7 @@ data class SimpleChatPreference(
 ): ChatPreference
 
 @Serializable
-class TimedMessagesPreference(
+data class TimedMessagesPreference(
   override val allow: FeatureAllowed,
   val ttl: Int? = null
 ): ChatPreference {

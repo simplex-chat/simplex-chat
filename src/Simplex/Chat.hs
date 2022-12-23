@@ -304,7 +304,7 @@ processChatCommand = \case
       assertDirectAllowed user MDSnd ct XMsgNew_
       unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
       if isVoice mc && not (featureAllowed SCFVoice forUser ct)
-        then pure $ chatCmdError $ "feature not allowed " <> T.unpack (chatFeatureToText CFVoice)
+        then pure $ chatCmdError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFVoice)
         else do
           (fileInvitation_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer ct
           timed_ <- sndContactCITimed live ct
@@ -357,7 +357,7 @@ processChatCommand = \case
       Group gInfo@GroupInfo {groupId, membership, localDisplayName = gName} ms <- withStore $ \db -> getGroup db user chatId
       unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
       if isVoice mc && not (groupFeatureAllowed SGFVoice gInfo)
-        then pure $ chatCmdError $ "feature not allowed " <> T.unpack (groupFeatureToText GFVoice)
+        then pure $ chatCmdError $ "feature not allowed " <> T.unpack (groupFeatureNameText GFVoice)
         else do
           (fileInvitation_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer gInfo (length $ filter memberCurrent ms)
           timed_ <- sndGroupCITimed live gInfo
@@ -578,9 +578,11 @@ processChatCommand = \case
     CTDirect -> do
       ct <- withStore $ \db -> getContact db user chatId
       filesInfo <- withStore' $ \db -> getContactFileInfo db user ct
+      -- TODO delete
       maxItemTs_ <- withStore' $ \db -> getContactMaxItemTs db user ct
       forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
       withStore' $ \db -> deleteContactCIs db user ct
+      -- TODO delete
       ct' <- case maxItemTs_ of
         Just ts -> do
           withStore' $ \db -> updateContactTs db user ct ts
@@ -590,11 +592,13 @@ processChatCommand = \case
     CTGroup -> do
       gInfo <- withStore $ \db -> getGroupInfo db user chatId
       filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
+      -- TODO delete
       maxItemTs_ <- withStore' $ \db -> getGroupMaxItemTs db user gInfo
       forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
       withStore' $ \db -> deleteGroupCIs db user gInfo
       membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db user gInfo
       forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
+      -- TODO delete
       gInfo' <- case maxItemTs_ of
         Just ts -> do
           withStore' $ \db -> updateGroupTs db user gInfo ts
@@ -1301,7 +1305,7 @@ processChatCommand = \case
                 mergedProfile' = userProfileToSend user' Nothing $ Just ct'
             when (mergedProfile' /= mergedProfile) $ do
               void (sendDirectContactMessage ct' $ XInfo mergedProfile') `catchError` (toView . CRChatError)
-              when (directOrUsed ct') $ createFeatureChangedItems user' ct ct' CDDirectSnd CISndChatFeature
+              when (directOrUsed ct') $ createSndFeatureItems user' ct ct'
           pure $ CRUserProfileUpdated (fromLocalProfile p) p'
     updateContactPrefs :: User -> Contact -> Preferences -> m ChatResponse
     updateContactPrefs user@User {userId} ct@Contact {activeConn = Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
@@ -1315,7 +1319,7 @@ processChatCommand = \case
         when (mergedProfile' /= mergedProfile) $
           withChatLock "updateProfile" $ do
             void (sendDirectContactMessage ct' $ XInfo mergedProfile') `catchError` (toView . CRChatError)
-            when (directOrUsed ct') $ createFeatureChangedItems user ct ct' CDDirectSnd CISndChatFeature
+            when (directOrUsed ct') $ createSndFeatureItems user ct ct'
         pure $ CRContactPrefsUpdated ct ct'
     runUpdateGroupProfile :: User -> Group -> GroupProfile -> m ChatResponse
     runUpdateGroupProfile user (Group g@GroupInfo {groupProfile = p} ms) p' = do
@@ -1735,8 +1739,7 @@ cleanupManager :: forall m. ChatMonad m => User -> m ()
 cleanupManager user = do
   forever $ do
     flip catchError (toView . CRChatError) $ do
-      agentStarted <- asks agentAsync
-      atomically $ readTVar agentStarted >>= \a -> unless (isJust a) retry
+      waitChatStarted
       cleanupTimedItems
     threadDelay $ cleanupManagerInterval * 1000000
   where
@@ -1771,6 +1774,7 @@ deleteTimedItem :: ChatMonad m => User -> (ChatRef, ChatItemId) -> UTCTime -> m 
 deleteTimedItem user (ChatRef cType chatId, itemId) deleteAt = do
   ts <- liftIO getCurrentTime
   threadDelay $ diffInMicros deleteAt ts
+  waitChatStarted
   case cType of
     CTDirect -> do
       (ct, ci) <- withStore $ \db -> (,) <$> getContact db user chatId <*> getDirectChatItem db user chatId itemId
@@ -1809,9 +1813,11 @@ expireChatItems user ttl sync = do
     processContact :: UTCTime -> Contact -> m ()
     processContact expirationDate ct = do
       filesInfo <- withStore' $ \db -> getContactExpiredFileInfo db user ct expirationDate
+      -- TODO delete
       maxItemTs_ <- withStore' $ \db -> getContactMaxItemTs db user ct
       forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
       withStore' $ \db -> deleteContactExpiredCIs db user ct expirationDate
+      -- TODO delete
       withStore' $ \db -> do
         ciCount_ <- getContactCICount db user ct
         case (maxItemTs_, ciCount_) of
@@ -1820,11 +1826,13 @@ expireChatItems user ttl sync = do
     processGroup :: UTCTime -> UTCTime -> GroupInfo -> m ()
     processGroup expirationDate createdAtCutoff gInfo = do
       filesInfo <- withStore' $ \db -> getGroupExpiredFileInfo db user gInfo expirationDate createdAtCutoff
+      -- TODO delete
       maxItemTs_ <- withStore' $ \db -> getGroupMaxItemTs db user gInfo
       forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
       withStore' $ \db -> deleteGroupExpiredCIs db user gInfo expirationDate createdAtCutoff
       membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db user gInfo
       forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
+      -- TODO delete
       withStore' $ \db -> do
         ciCount_ <- getGroupCICount db user gInfo
         case (maxItemTs_, ciCount_) of
@@ -2781,7 +2789,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
           else do
             c' <- liftIO $ updateContactUserPreferences db user c ctUserPrefs'
             updateContactProfile db user c' p'
-      when (directOrUsed c') $ createFeatureChangedItems user c c' CDDirectRcv CIRcvChatFeature
+      when (directOrUsed c') $ createRcvFeatureItems user c c'
       toView $ CRContactUpdated c c'
       where
         Contact {userPreferences = ctUserPrefs@Preferences {timedMessages = ctUserTMPref}} = c
@@ -3335,8 +3343,11 @@ saveSndChatItem user cd msg content = saveSndChatItem' user cd msg content Nothi
 saveSndChatItem' :: ChatMonad m => User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> Maybe (CIFile 'MDSnd) -> Maybe (CIQuote c) -> Maybe CITimed -> Bool -> m (ChatItem c 'MDSnd)
 saveSndChatItem' user cd msg@SndMessage {sharedMsgId} content ciFile quotedItem itemTimed live = do
   createdAt <- liftIO getCurrentTime
-  ciId <- withStore' $ \db -> createNewSndChatItem db user cd msg content quotedItem itemTimed live createdAt
-  forM_ ciFile $ \CIFile {fileId} -> withStore' $ \db -> updateFileTransferChatItemId db fileId ciId
+  ciId <- withStore' $ \db -> do
+    when (ciRequiresAttention content) $ updateChatTs db user cd createdAt
+    ciId <- createNewSndChatItem db user cd msg content quotedItem itemTimed live createdAt
+    forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
+    pure ciId
   liftIO $ mkChatItem cd ciId content ciFile quotedItem (Just sharedMsgId) itemTimed live createdAt createdAt
 
 saveRcvChatItem :: ChatMonad m => User -> ChatDirection c 'MDRcv -> RcvMessage -> MsgMeta -> CIContent 'MDRcv -> m (ChatItem c 'MDRcv)
@@ -3346,11 +3357,14 @@ saveRcvChatItem user cd msg@RcvMessage {sharedMsgId_} msgMeta content =
 saveRcvChatItem' :: ChatMonad m => User -> ChatDirection c 'MDRcv -> RcvMessage -> Maybe SharedMsgId -> MsgMeta -> CIContent 'MDRcv -> Maybe (CIFile 'MDRcv) -> Maybe CITimed -> Bool -> m (ChatItem c 'MDRcv)
 saveRcvChatItem' user cd msg sharedMsgId_ MsgMeta {broker = (_, brokerTs)} content ciFile itemTimed live = do
   createdAt <- liftIO getCurrentTime
-  (ciId, quotedItem) <- withStore' $ \db -> createNewRcvChatItem db user cd msg sharedMsgId_ content itemTimed live brokerTs createdAt
-  forM_ ciFile $ \CIFile {fileId} -> withStore' $ \db -> updateFileTransferChatItemId db fileId ciId
+  (ciId, quotedItem) <- withStore' $ \db -> do
+    when (ciRequiresAttention content) $ updateChatTs db user cd createdAt
+    (ciId, quotedItem) <- createNewRcvChatItem db user cd msg sharedMsgId_ content itemTimed live brokerTs createdAt
+    forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
+    pure (ciId, quotedItem)
   liftIO $ mkChatItem cd ciId content ciFile quotedItem sharedMsgId_ itemTimed live brokerTs createdAt
 
-mkChatItem :: ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CITimed -> Bool -> ChatItemTs -> UTCTime -> IO (ChatItem c d)
+mkChatItem :: forall c d. MsgDirectionI d => ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CITimed -> Bool -> ChatItemTs -> UTCTime -> IO (ChatItem c d)
 mkChatItem cd ciId content file quotedItem sharedMsgId itemTimed live itemTs currentTs = do
   tz <- getCurrentTimeZone
   let itemText = ciContentToText content
@@ -3425,13 +3439,47 @@ userProfileToSend user@User {profile = p} incognitoProfile ct =
       userPrefs = maybe (preferences' user) (const Nothing) incognitoProfile
    in (p' :: Profile) {preferences = Just . toChatPrefs $ mergePreferences (userPreferences <$> ct) userPrefs}
 
-createFeatureChangedItems :: (MsgDirectionI d, ChatMonad m) => User -> Contact -> Contact -> (Contact -> ChatDirection 'CTDirect d) -> (ChatFeature -> PrefEnabled -> Maybe Int -> CIContent d) -> m ()
-createFeatureChangedItems user Contact {mergedPreferences = cups} ct'@Contact {mergedPreferences = cups'} chatDir ciContent =
-  forM_ allChatFeatures $ \(ACF f) -> do
-    let state = featureState $ getContactUserPreference f cups
-        state' = featureState $ getContactUserPreference f cups'
-    when (state /= state') $
-      createInternalChatItem user (chatDir ct') (uncurry (ciContent $ chatFeature f) state') Nothing
+createRcvFeatureItems :: forall m. ChatMonad m => User -> Contact -> Contact -> m ()
+createRcvFeatureItems user ct ct' =
+  createFeatureItems user ct ct' CDDirectRcv CIRcvChatFeature CIRcvChatPreference contactPreference
+
+createSndFeatureItems :: forall m. ChatMonad m => User -> Contact -> Contact -> m ()
+createSndFeatureItems user ct ct' =
+  createFeatureItems user ct ct' CDDirectSnd CISndChatFeature CISndChatPreference getPref
+  where
+    getPref = (preference :: ContactUserPref (FeaturePreference f) -> FeaturePreference f) . userPreference
+
+type FeatureContent a d = ChatFeature -> a -> Maybe Int -> CIContent d
+
+createFeatureItems ::
+  forall d m.
+  (MsgDirectionI d, ChatMonad m) =>
+  User ->
+  Contact ->
+  Contact ->
+  (Contact -> ChatDirection 'CTDirect d) ->
+  FeatureContent PrefEnabled d ->
+  FeatureContent FeatureAllowed d ->
+  (forall f. ContactUserPreference (FeaturePreference f) -> FeaturePreference f) ->
+  m ()
+createFeatureItems user Contact {mergedPreferences = cups} ct'@Contact {mergedPreferences = cups'} chatDir ciFeature ciOffer getPref =
+  forM_ allChatFeatures $ \(ACF f) -> createItem f
+  where
+    createItem :: forall f. FeatureI f => SChatFeature f -> m ()
+    createItem f
+      | state /= state' = create ciFeature state'
+      | prefState /= prefState' = create ciOffer prefState'
+      | otherwise = pure ()
+      where
+        create :: FeatureContent a d -> (a, Maybe Int) -> m ()
+        create ci (s, param) = createInternalChatItem user (chatDir ct') (ci f' s param) Nothing
+        f' = chatFeature f
+        state = featureState cup
+        state' = featureState cup'
+        prefState = preferenceState $ getPref cup
+        prefState' = preferenceState $ getPref cup'
+        cup = getContactUserPreference f cups
+        cup' = getContactUserPreference f cups'
 
 createGroupFeatureChangedItems :: (MsgDirectionI d, ChatMonad m) => User -> ChatDirection 'CTGroup d -> (GroupFeature -> GroupPreference -> Maybe Int -> CIContent d) -> GroupInfo -> GroupInfo -> m ()
 createGroupFeatureChangedItems user cd ciContent GroupInfo {fullGroupPreferences = gps} GroupInfo {fullGroupPreferences = gps'} =
@@ -3449,7 +3497,9 @@ createInternalChatItem :: forall c d m. (ChatTypeI c, MsgDirectionI d, ChatMonad
 createInternalChatItem user cd content itemTs_ = do
   createdAt <- liftIO getCurrentTime
   let itemTs = fromMaybe createdAt itemTs_
-  ciId <- withStore' $ \db -> createNewChatItemNoMsg db user cd content itemTs createdAt
+  ciId <- withStore' $ \db -> do
+    when (ciRequiresAttention content) $ updateChatTs db user cd createdAt
+    createNewChatItemNoMsg db user cd content itemTs createdAt
   ci <- liftIO $ mkChatItem cd ciId content Nothing Nothing Nothing Nothing False itemTs createdAt
   toView $ CRNewChatItem $ AChatItem (chatTypeI @c) (msgDirection @d) (toChatInfo cd) ci
 
@@ -3538,6 +3588,11 @@ withUser action = withUser' $ \user ->
 
 chatStarted :: ChatMonad m => m Bool
 chatStarted = fmap isJust . readTVarIO =<< asks agentAsync
+
+waitChatStarted :: ChatMonad m => m ()
+waitChatStarted = do
+  agentStarted <- asks agentAsync
+  atomically $ readTVar agentStarted >>= \a -> unless (isJust a) retry
 
 withAgent :: ChatMonad m => (AgentClient -> ExceptT AgentErrorType m a) -> m a
 withAgent action =

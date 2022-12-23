@@ -136,6 +136,7 @@ chatTests = do
     it "set connection alias" testSetConnectionAlias
   describe "preferences" $ do
     it "set contact preferences" testSetContactPrefs
+    it "feature offers" testFeatureOffers
     it "update group preferences" testUpdateGroupPrefs
     it "allow full deletion to contact" testAllowFullDeletionContact
     it "allow full deletion to group" testAllowFullDeletionGroup
@@ -1584,10 +1585,10 @@ testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile 
   where
     groupInfo alice = do
       alice <## "group preferences:"
-      alice <## "Disappearing messages enabled: off"
-      alice <## "Direct messages enabled: on"
-      alice <## "Full deletion enabled: off"
-      alice <## "Voice messages enabled: on"
+      alice <## "Disappearing messages: off"
+      alice <## "Direct messages: on"
+      alice <## "Full deletion: off"
+      alice <## "Voice messages: on"
     bobAddedDan cc = do
       cc <## "#team: bob added dan (Daniel) to the group (connecting...)"
       cc <## "#team: new member dan is connected"
@@ -3427,6 +3428,25 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     bob <## "Voice messages: off (you allow: default (yes), contact allows: no)"
     bob #$> ("/_get chat @2 count=100", chat, startFeatures <> [(0, "Voice messages: enabled for you"), (1, "voice message (00:10)"), (0, "Voice messages: off"), (1, "Voice messages: enabled"), (0, "Voice messages: off")])
 
+testFeatureOffers :: IO ()
+testFeatureOffers = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    connectUsers alice bob
+    alice ##> "/set delete @bob yes"
+    alice <## "you updated preferences for bob:"
+    alice <## "Full deletion: off (you allow: yes, contact allows: no)"
+    alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "you offered Full deletion")])
+    bob <## "alice updated preferences for you:"
+    bob <## "Full deletion: off (you allow: default (no), contact allows: yes)"
+    bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "offered Full deletion")])
+    alice ##> "/set delete @bob no"
+    alice <## "you updated preferences for bob:"
+    alice <## "Full deletion: off (you allow: no, contact allows: no)"
+    alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "you offered Full deletion"), (1, "you cancelled Full deletion")])
+    bob <## "alice updated preferences for you:"
+    bob <## "Full deletion: off (you allow: default (no), contact allows: no)"
+    bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "offered Full deletion"), (0, "cancelled Full deletion")])
+
 testUpdateGroupPrefs :: IO ()
 testUpdateGroupPrefs =
   testChat2 aliceProfile bobProfile $
@@ -3437,32 +3457,32 @@ testUpdateGroupPrefs =
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected")])
       alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"on\"}, \"directMessages\": {\"enable\": \"on\"}}}"
       alice <## "updated group preferences:"
-      alice <## "Full deletion enabled: on"
+      alice <## "Full deletion: on"
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Full deletion: on")])
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
-      bob <## "Full deletion enabled: on"
+      bob <## "Full deletion: on"
       threadDelay 500000
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Full deletion: on")])
       alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"off\"}, \"directMessages\": {\"enable\": \"on\"}}}"
       alice <## "updated group preferences:"
-      alice <## "Full deletion enabled: off"
-      alice <## "Voice messages enabled: off"
+      alice <## "Full deletion: off"
+      alice <## "Voice messages: off"
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off")])
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
-      bob <## "Full deletion enabled: off"
-      bob <## "Voice messages enabled: off"
+      bob <## "Full deletion: off"
+      bob <## "Voice messages: off"
       threadDelay 500000
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Full deletion: on"), (0, "Full deletion: off"), (0, "Voice messages: off")])
       -- alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"on\"}}}"
       alice ##> "/set voice #team on"
       alice <## "updated group preferences:"
-      alice <## "Voice messages enabled: on"
+      alice <## "Voice messages: on"
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on")])
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
-      bob <## "Voice messages enabled: on"
+      bob <## "Voice messages: on"
       threadDelay 500000
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Full deletion: on"), (0, "Full deletion: off"), (0, "Voice messages: off"), (0, "Voice messages: on")])
       threadDelay 500000
@@ -3512,10 +3532,10 @@ testAllowFullDeletionGroup =
       alice <# "#team bob> hey"
       alice ##> "/set delete #team on"
       alice <## "updated group preferences:"
-      alice <## "Full deletion enabled: on"
+      alice <## "Full deletion: on"
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
-      bob <## "Full deletion enabled: on"
+      bob <## "Full deletion: on"
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "hi"), (0, "hey"), (1, "Full deletion: on")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "hi"), (1, "hey"), (0, "Full deletion: on")])
       bob #$> ("/_delete item #1 " <> msgItemId <> " broadcast", id, "message deleted")
@@ -3530,7 +3550,7 @@ testProhibitDirectMessages =
     threadDelay 1000000
     alice ##> "/set direct #team off"
     alice <## "updated group preferences:"
-    alice <## "Direct messages enabled: off"
+    alice <## "Direct messages: off"
     directProhibited bob
     directProhibited cath
     threadDelay 1000000
@@ -3577,7 +3597,7 @@ testProhibitDirectMessages =
     directProhibited cc = do
       cc <## "alice updated group #team:"
       cc <## "updated group preferences:"
-      cc <## "Direct messages enabled: off"
+      cc <## "Direct messages: off"
 
 testEnableTimedMessagesContact :: IO ()
 testEnableTimedMessagesContact =
@@ -3586,42 +3606,42 @@ testEnableTimedMessagesContact =
       connectUsers alice bob
       alice ##> "/_set prefs @2 {\"timedMessages\": {\"allow\": \"yes\", \"ttl\": 1}}"
       alice <## "you updated preferences for bob:"
-      alice <## "Disappearing messages: off (you allow: yes, after 1 sec, contact allows: no)"
+      alice <## "Disappearing messages: off (you allow: yes (1 sec), contact allows: no)"
       bob <## "alice updated preferences for you:"
-      bob <## "Disappearing messages: off (you allow: no, contact allows: yes, after 1 sec)"
+      bob <## "Disappearing messages: off (you allow: no, contact allows: yes (1 sec))"
       bob ##> "/set disappear @alice yes"
       bob <## "you updated preferences for alice:"
-      bob <## "Disappearing messages: enabled (you allow: yes, after 1 sec, contact allows: yes, after 1 sec)"
+      bob <## "Disappearing messages: enabled (you allow: yes (1 sec), contact allows: yes (1 sec))"
       alice <## "bob updated preferences for you:"
-      alice <## "Disappearing messages: enabled (you allow: yes, after 1 sec, contact allows: yes, after 1 sec)"
+      alice <## "Disappearing messages: enabled (you allow: yes (1 sec), contact allows: yes (1 sec))"
       alice <##> bob
       threadDelay 500000
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled, after 1 sec"), (1, "hi"), (0, "hey")])
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled, after 1 sec"), (0, "hi"), (1, "hey")])
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "you offered Disappearing messages (1 sec)"), (0, "Disappearing messages: enabled (1 sec)"), (1, "hi"), (0, "hey")])
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "offered Disappearing messages (1 sec)"), (1, "Disappearing messages: enabled (1 sec)"), (0, "hi"), (1, "hey")])
       threadDelay 1000000
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled, after 1 sec")])
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled, after 1 sec")])
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "you offered Disappearing messages (1 sec)"), (0, "Disappearing messages: enabled (1 sec)")])
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "offered Disappearing messages (1 sec)"), (1, "Disappearing messages: enabled (1 sec)")])
       -- turn off, messages are not disappearing
       bob ##> "/set disappear @alice no"
       bob <## "you updated preferences for alice:"
-      bob <## "Disappearing messages: off (you allow: no, contact allows: yes, after 1 sec)"
+      bob <## "Disappearing messages: off (you allow: no, contact allows: yes (1 sec))"
       alice <## "bob updated preferences for you:"
-      alice <## "Disappearing messages: off (you allow: yes, after 1 sec, contact allows: no)"
+      alice <## "Disappearing messages: off (you allow: yes (1 sec), contact allows: no)"
       alice <##> bob
       threadDelay 1500000
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled, after 1 sec"), (0, "Disappearing messages: off"), (1, "hi"), (0, "hey")])
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled, after 1 sec"), (1, "Disappearing messages: off"), (0, "hi"), (1, "hey")])
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "you offered Disappearing messages (1 sec)"), (0, "Disappearing messages: enabled (1 sec)"), (0, "Disappearing messages: off"), (1, "hi"), (0, "hey")])
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "offered Disappearing messages (1 sec)"), (1, "Disappearing messages: enabled (1 sec)"), (1, "Disappearing messages: off"), (0, "hi"), (1, "hey")])
       -- test api
       bob ##> "/set disappear @alice yes 30s"
       bob <## "you updated preferences for alice:"
-      bob <## "Disappearing messages: enabled (you allow: yes, after 30 sec, contact allows: yes, after 1 sec)"
+      bob <## "Disappearing messages: enabled (you allow: yes (30 sec), contact allows: yes (1 sec))"
       alice <## "bob updated preferences for you:"
-      alice <## "Disappearing messages: enabled (you allow: yes, after 30 sec, contact allows: yes, after 30 sec)"
+      alice <## "Disappearing messages: enabled (you allow: yes (30 sec), contact allows: yes (30 sec))"
       bob ##> "/set disappear @alice week" -- "yes" is optional
       bob <## "you updated preferences for alice:"
-      bob <## "Disappearing messages: enabled (you allow: yes, after 1 week, contact allows: yes, after 1 sec)"
+      bob <## "Disappearing messages: enabled (you allow: yes (1 week), contact allows: yes (1 sec))"
       alice <## "bob updated preferences for you:"
-      alice <## "Disappearing messages: enabled (you allow: yes, after 1 week, contact allows: yes, after 1 week)"
+      alice <## "Disappearing messages: enabled (you allow: yes (1 week), contact allows: yes (1 week))"
 
 testEnableTimedMessagesGroup :: IO ()
 testEnableTimedMessagesGroup =
@@ -3631,45 +3651,45 @@ testEnableTimedMessagesGroup =
       threadDelay 1000000
       alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"team\", \"groupPreferences\": {\"timedMessages\": {\"enable\": \"on\", \"ttl\": 1}, \"directMessages\": {\"enable\": \"on\"}}}"
       alice <## "updated group preferences:"
-      alice <## "Disappearing messages enabled: on, after 1 sec"
+      alice <## "Disappearing messages: on (1 sec)"
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
-      bob <## "Disappearing messages enabled: on, after 1 sec"
+      bob <## "Disappearing messages: on (1 sec)"
       threadDelay 1000000
       alice #> "#team hi"
       bob <# "#team alice> hi"
       threadDelay 500000
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Disappearing messages: on, after 1 sec"), (1, "hi")])
-      bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Disappearing messages: on, after 1 sec"), (0, "hi")])
+      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Disappearing messages: on (1 sec)"), (1, "hi")])
+      bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Disappearing messages: on (1 sec)"), (0, "hi")])
       threadDelay 1000000
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Disappearing messages: on, after 1 sec")])
-      bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Disappearing messages: on, after 1 sec")])
+      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Disappearing messages: on (1 sec)")])
+      bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Disappearing messages: on (1 sec)")])
       -- turn off, messages are not disappearing
       alice ##> "/set disappear #team off"
       alice <## "updated group preferences:"
-      alice <## "Disappearing messages enabled: off"
+      alice <## "Disappearing messages: off"
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
-      bob <## "Disappearing messages enabled: off"
+      bob <## "Disappearing messages: off"
       threadDelay 1000000
       alice #> "#team hey"
       bob <# "#team alice> hey"
       threadDelay 1500000
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Disappearing messages: on, after 1 sec"), (1, "Disappearing messages: off"), (1, "hey")])
-      bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Disappearing messages: on, after 1 sec"), (0, "Disappearing messages: off"), (0, "hey")])
+      alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Disappearing messages: on (1 sec)"), (1, "Disappearing messages: off"), (1, "hey")])
+      bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Disappearing messages: on (1 sec)"), (0, "Disappearing messages: off"), (0, "hey")])
       -- test api
       alice ##> "/set disappear #team on 30s"
       alice <## "updated group preferences:"
-      alice <## "Disappearing messages enabled: on, after 30 sec"
+      alice <## "Disappearing messages: on (30 sec)"
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
-      bob <## "Disappearing messages enabled: on, after 30 sec"
+      bob <## "Disappearing messages: on (30 sec)"
       alice ##> "/set disappear #team week" -- "on" is optional
       alice <## "updated group preferences:"
-      alice <## "Disappearing messages enabled: on, after 1 week"
+      alice <## "Disappearing messages: on (1 week)"
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
-      bob <## "Disappearing messages enabled: on, after 1 week"
+      bob <## "Disappearing messages: on (1 week)"
 
 testTimedMessagesEnabledGlobally :: IO ()
 testTimedMessagesEnabledGlobally =
@@ -3681,16 +3701,16 @@ testTimedMessagesEnabledGlobally =
       connectUsers alice bob
       bob ##> "/_set prefs @2 {\"timedMessages\": {\"allow\": \"yes\", \"ttl\": 1}}"
       bob <## "you updated preferences for alice:"
-      bob <## "Disappearing messages: enabled (you allow: yes, after 1 sec, contact allows: yes)"
+      bob <## "Disappearing messages: enabled (you allow: yes (1 sec), contact allows: yes)"
       alice <## "bob updated preferences for you:"
-      alice <## "Disappearing messages: enabled (you allow: yes, after 1 sec, contact allows: yes, after 1 sec)"
+      alice <## "Disappearing messages: enabled (you allow: yes (1 sec), contact allows: yes (1 sec))"
       alice <##> bob
       threadDelay 500000
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled, after 1 sec"), (1, "hi"), (0, "hey")])
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled, after 1 sec"), (0, "hi"), (1, "hey")])
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled (1 sec)"), (1, "hi"), (0, "hey")])
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled (1 sec)"), (0, "hi"), (1, "hey")])
       threadDelay 1000000
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled, after 1 sec")])
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled, after 1 sec")])
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled (1 sec)")])
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled (1 sec)")])
 
 testGetSetSMPServers :: IO ()
 testGetSetSMPServers =
