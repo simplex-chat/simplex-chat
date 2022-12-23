@@ -9,11 +9,14 @@
 import Foundation
 import SwiftUI
 import OSLog
+import SwiftyGif
 
 let logger = Logger()
 
 // maximum image file size to be auto-accepted
 public let MAX_IMAGE_SIZE: Int64 = 236700
+
+public let MAX_IMAGE_SIZE_AUTO_RCV: Int64 = MAX_IMAGE_SIZE * 2
 
 public let MAX_FILE_SIZE: Int64 = 8000000
 
@@ -182,8 +185,17 @@ public func getLoadedFilePath(_ file: CIFile?) -> String? {
 }
 
 public func getLoadedImage(_ file: CIFile?) -> UIImage? {
-    if let filePath = getLoadedFilePath(file) {
-        return UIImage(contentsOfFile: filePath)
+    let loadedFilePath = getLoadedFilePath(file)
+    if let loadedFilePath = loadedFilePath, let fileName = file?.filePath {
+        let filePath = getAppFilePath(fileName)
+        do {
+            let data = try Data(contentsOf: filePath)
+            let img = UIImage(data: data)
+            try img?.setGifFromData(data, levelOfIntegrity: 1.0)
+            return img
+        } catch {
+            return UIImage(contentsOfFile: loadedFilePath)
+        }
     }
     return nil
 }
@@ -214,6 +226,12 @@ public func saveImage(_ uiImage: UIImage) -> String? {
         return saveFile(imageDataResized, fileName)
     }
     return nil
+}
+
+public func saveAnimImage(_ image: UIImage) -> String? {
+    let fileName = generateNewFileName("IMG", "gif")
+    guard let imageData = image.imageData else { return nil }
+    return saveFile(imageData, fileName)
 }
 
 public func generateNewFileName(_ prefix: String, _ ext: String) -> String {

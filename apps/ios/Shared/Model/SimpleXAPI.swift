@@ -1006,7 +1006,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
             m.addChatItem(cInfo, cItem)
             if let file = cItem.file,
                let mc = cItem.content.msgContent,
-               file.fileSize <= MAX_IMAGE_SIZE {
+               file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV {
                 let acceptImages = UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_ACCEPT_IMAGES)
                 if (mc.isImage && acceptImages)
                     || (mc.isVoice && ((file.fileSize > MAX_VOICE_MESSAGE_SIZE_INLINE_SEND && acceptImages) || cInfo.chatType == .group)) {

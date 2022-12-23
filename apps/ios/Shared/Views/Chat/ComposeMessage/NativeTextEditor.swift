@@ -7,6 +7,9 @@
 //
 
 import SwiftUI
+import SwiftyGif
+import SimpleXChat
+import PhotosUI
 
 struct NativeTextEditor: UIViewRepresentable {
     @Binding var text: String
@@ -14,7 +17,7 @@ struct NativeTextEditor: UIViewRepresentable {
     let font: UIFont
     @FocusState.Binding var focused: Bool
     let alignment: TextAlignment
-    let onImageAdded: (UIImage) -> Void
+    let onImagesAdded: ([UploadContent]) -> Void
     
     func makeUIView(context: Context) -> UITextView {
         let field = CustomUITextField()
@@ -23,10 +26,10 @@ struct NativeTextEditor: UIViewRepresentable {
         field.font = font
         field.textAlignment = alignment == .leading ? .left : .right
         field.autocapitalizationType = .sentences
-        field.setOnTextChangedListener { newText, image in
+        field.setOnTextChangedListener { newText, images in
             text = newText
-            if let image = image {
-                onImageAdded(image)
+            if !images.isEmpty {
+                onImagesAdded(images)
             }
         }
         field.setOnFocusChangedListener { focused = $0 }
@@ -43,33 +46,85 @@ struct NativeTextEditor: UIViewRepresentable {
 }
 
 private class CustomUITextField: UITextView, UITextViewDelegate {
-    var onTextChanged: (String, UIImage?) -> Void = { newText, image in }
+    var onTextChanged: (String, [UploadContent]) -> Void = { newText, image in }
     var onFocusChanged: (Bool) -> Void = { focused in }
     
-    func setOnTextChangedListener(onTextChanged: @escaping (String, UIImage?) -> Void) {
+    func setOnTextChangedListener(onTextChanged: @escaping (String, [UploadContent]) -> Void) {
         self.onTextChanged = onTextChanged
     }
     
     func setOnFocusChangedListener(onFocusChanged: @escaping (Bool) -> Void) {
         self.onFocusChanged = onFocusChanged
     }
-    
+
+    func textView(_ textView: UITextView, editMenuForTextIn range: NSRange, suggestedActions: [UIMenuElement]) -> UIMenu? {
+        if !UIPasteboard.general.hasImages { return UIMenu(children: suggestedActions)}
+        return UIMenu(children: suggestedActions.map { elem in
+            if let elem = elem as? UIMenu {
+                var actions = elem.children
+                // Replacing Paste action since it allows to paste animated images too
+                let pasteIndex = elem.children.firstIndex { elem in elem.debugDescription.contains("Action: paste:")}
+                if let pasteIndex = pasteIndex {
+                    let paste = actions[pasteIndex]
+                    actions.remove(at: pasteIndex)
+                    let newPaste = UIAction(title: paste.title, image: paste.image) { action in
+                        var images: [UploadContent] = []
+                        var totalImages = 0
+                        var processed = 0
+                        UIPasteboard.general.itemProviders.forEach { p in
+                            if p.hasItemConformingToTypeIdentifier(UTType.data.identifier) {
+                                totalImages += 1
+                                p.loadFileRepresentation(forTypeIdentifier: UTType.data.identifier) { url, error in
+                                    processed += 1
+                                    if let url = url, let image = UploadContent.loadFromURL(url: url) {
+                                        images.append(image)
+                                        DispatchQueue.main.sync {
+                                            self.onTextChanged(textView.text, images)
+                                        }
+                                    }
+                                    // No images were added, just paste a text then
+                                    if processed == totalImages && images.isEmpty {
+                                        textView.paste(UIPasteboard.general.string)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    actions.insert(newPaste, at: 0)
+                }
+                return UIMenu(title: elem.title, subtitle: elem.subtitle, image: elem.image, identifier: elem.identifier, options: elem.options, children: actions)
+            } else {
+                return elem
+            }
+        })
+    }
+
     func textViewDidChange(_ textView: UITextView) {
-        var image: UIImage? = nil
+        var images: [UploadContent] = []
+        var rangeDiff = 0
+        let newAttributedText = NSMutableAttributedString(attributedString: textView.attributedText)
         textView.attributedText.enumerateAttribute(
             NSAttributedString.Key.attachment,
             in: NSRange(location: 0, length: textView.attributedText.length),
             options: [],
             using: { value, range, _ in
-                if let attachment = (value as? NSTextAttachment)?.image {
-                    image = attachment
-                    let newText = NSMutableAttributedString(attributedString: textView.attributedText)
-                    newText.replaceCharacters(in: range, with: "")
-                    textView.attributedText = newText
+                if let attachment = (value as? NSTextAttachment)?.fileWrapper?.regularFileContents {
+                    do {
+                        images.append(.animatedImage(image: try UIImage(gifData: attachment)))
+                    } catch {
+                        if let img = (value as? NSTextAttachment)?.image {
+                            images.append(.simpleImage(image: img))
+                        }
+                    }
+                    newAttributedText.replaceCharacters(in: NSMakeRange(range.location - rangeDiff, range.length), with: "")
+                    rangeDiff += range.length
                 }
             }
         )
-        onTextChanged(textView.text, image)
+        if textView.attributedText != newAttributedText {
+            textView.attributedText = newAttributedText
+        }
+        onTextChanged(textView.text, images)
     }
     
     func textViewDidBeginEditing(_ textView: UITextView) {
@@ -90,7 +145,7 @@ struct NativeTextEditor_Previews: PreviewProvider{
             font: UIFont.preferredFont(forTextStyle: .body),
             focused: $keyboardVisible,
             alignment: TextAlignment.leading,
-            onImageAdded: { _ in }
+            onImagesAdded: { _ in }
         )
     }
 }

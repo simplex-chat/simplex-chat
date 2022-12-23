@@ -20,7 +20,7 @@ struct SendMessageView: View {
     var startVoiceMessageRecording: (() -> Void)? = nil
     var finishVoiceMessageRecording: (() -> Void)? = nil
     var allowVoiceMessagesToContact: (() -> Void)? = nil
-    var onImageAdded: (UIImage) -> Void
+    var onImagesAdded: ([UploadContent]) -> Void
     @State private var holdingVMR = false
     @Namespace var namespace
     @FocusState.Binding var keyboardVisible: Bool
@@ -66,7 +66,7 @@ struct SendMessageView: View {
                             font: teUiFont,
                             focused: $keyboardVisible,
                             alignment: alignment,
-                            onImageAdded: onImageAdded
+                            onImagesAdded: onImagesAdded
                         )
                         .allowsTightening(false)
                         .frame(height: teHeight)
@@ -314,7 +314,7 @@ struct SendMessageView_Previews: PreviewProvider {
                 SendMessageView(
                     composeState: $composeStateNew,
                     sendMessage: {},
-                    onImageAdded: { _ in },
+                    onImagesAdded: { _ in },
                     keyboardVisible: $keyboardVisible
                 )
             }
@@ -324,7 +324,7 @@ struct SendMessageView_Previews: PreviewProvider {
                 SendMessageView(
                     composeState: $composeStateEditing,
                     sendMessage: {},
-                    onImageAdded: { _ in },
+                    onImagesAdded: { _ in },
                     keyboardVisible: $keyboardVisible
                 )
             }

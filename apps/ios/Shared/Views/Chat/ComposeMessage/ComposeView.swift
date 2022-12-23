@@ -8,6 +8,8 @@
 
 import SwiftUI
 import SimpleXChat
+import SwiftyGif
+import PhotosUI
 
 enum ComposePreview {
     case noPreview
@@ -169,6 +171,37 @@ func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
     return chatItemPreview
 }
 
+enum UploadContent: Equatable {
+    case simpleImage(image: UIImage)
+    case animatedImage(image: UIImage)
+
+    var uiImage: UIImage {
+        switch self {
+        case let .simpleImage(image): return image
+        case let .animatedImage(image): return image
+        }
+    }
+
+    static func loadFromURL(url: URL) -> UploadContent? {
+        do {
+            let data = try Data(contentsOf: url)
+            if let image = UIImage(data: data) {
+                try image.setGifFromData(data, levelOfIntegrity: 1.0)
+                logger.log("UploadContent: added animated image")
+                return .animatedImage(image: image)
+            } else { return nil }
+        } catch {
+            do {
+                if let image = try UIImage(data: Data(contentsOf: url)) {
+                    logger.log("UploadContent: added simple image")
+                    return .simpleImage(image: image)
+                }
+            } catch {}
+        }
+        return nil
+    }
+}
+
 struct ComposeView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var chat: Chat
@@ -183,7 +216,7 @@ struct ComposeView: View {
     @State private var showChooseSource = false
     @State private var showImagePicker = false
     @State private var showTakePhoto = false
-    @State var chosenImages: [UIImage] = []
+    @State var chosenImages: [UploadContent] = []
     @State private var showFileImporter = false
     @State var chosenFile: URL? = nil
 
@@ -231,7 +264,7 @@ struct ComposeView: View {
                     },
                     finishVoiceMessageRecording: finishVoiceMessageRecording,
                     allowVoiceMessagesToContact: allowVoiceMessagesToContact,
-                    onImageAdded: { image in chosenImages = [image] },
+                    onImagesAdded: { images in if !images.isEmpty { chosenImages = images }},
                     keyboardVisible: $keyboardVisible
                 )
                 .padding(.trailing, 12)
@@ -256,7 +289,15 @@ struct ComposeView: View {
             }
             if UIPasteboard.general.hasImages {
                 Button("Paste image") {
-                    chosenImages = imageList(UIPasteboard.general.image)
+                    UIPasteboard.general.itemProviders.forEach { p in
+                        if p.hasItemConformingToTypeIdentifier(UTType.data.identifier) {
+                            p.loadFileRepresentation(forTypeIdentifier: UTType.data.identifier) { url, error in
+                                if let url = url, let image = UploadContent.loadFromURL(url: url) {
+                                    chosenImages.append(image)
+                                }
+                            }
+                        }
+                    }
                 }
             }
             Button("Choose file") {
@@ -283,7 +324,7 @@ struct ComposeView: View {
             Task {
                 var imgs: [String] = []
                 for image in images {
-                    if let img = resizeImageToStrSize(image, maxDataSize: 14000) {
+                    if let img = resizeImageToStrSize(image.uiImage, maxDataSize: 14000) {
                         imgs.append(img)
                         await MainActor.run {
                             composeState = composeState.copy(preview: .imagePreviews(imagePreviews: imgs))
@@ -483,12 +524,12 @@ struct ComposeView: View {
             case let .imagePreviews(imagePreviews: images):
                 let last = min(chosenImages.count, images.count) - 1
                 for i in 0..<last {
-                    if let savedFile = saveImage(chosenImages[i]) {
+                    if let savedFile = saveAnyImage(chosenImages[i]) {
                         _ = await send(.image(text: "", image: images[i]), quoted: nil, file: savedFile)
                     }
                     _ = try? await Task.sleep(nanoseconds: 100_000000)
                 }
-                if let savedFile = saveImage(chosenImages[last]) {
+                if let savedFile = saveAnyImage(chosenImages[last]) {
                     sent = await send(.image(text: msgText, image: images[last]), quoted: quoted, file: savedFile, live: live)
                 }
                 if sent == nil {
@@ -583,6 +624,13 @@ struct ComposeView: View {
                 }
             default:
                 return .text(msgText)
+            }
+        }
+
+        func saveAnyImage(_ img: UploadContent) -> String? {
+            switch img {
+            case let .simpleImage(image): return saveImage(image)
+            case let .animatedImage(image): return saveAnimImage(image)
             }
         }
     }
