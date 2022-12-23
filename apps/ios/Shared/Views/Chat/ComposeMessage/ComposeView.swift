@@ -524,22 +524,12 @@ struct ComposeView: View {
             case let .imagePreviews(imagePreviews: images):
                 let last = min(chosenImages.count, images.count) - 1
                 for i in 0..<last {
-                    let savedFile: String?
-                    switch chosenImages[i] {
-                    case let .simpleImage(image): savedFile = saveImage(image)
-                    case let .animatedImage(image): savedFile = saveAnimImage(image)
-                    }
-                    if savedFile != nil {
+                    if let savedFile = saveAnyImage(chosenImages[i]) {
                         _ = await send(.image(text: "", image: images[i]), quoted: nil, file: savedFile)
                     }
                     _ = try? await Task.sleep(nanoseconds: 100_000000)
                 }
-                let savedFile: String?
-                switch chosenImages[last] {
-                case let .simpleImage(image): savedFile = saveImage(image)
-                case let .animatedImage(image): savedFile = saveAnimImage(image)
-                }
-                if savedFile != nil {
+                if let savedFile = saveAnyImage(chosenImages[last]) {
                     sent = await send(.image(text: msgText, image: images[last]), quoted: quoted, file: savedFile, live: live)
                 }
                 if sent == nil {
@@ -634,6 +624,13 @@ struct ComposeView: View {
                 }
             default:
                 return .text(msgText)
+            }
+        }
+
+        func saveAnyImage(_ img: UploadContent) -> String? {
+            switch img {
+            case let .simpleImage(image): return saveImage(image)
+            case let .animatedImage(image): return saveAnimImage(image)
             }
         }
     }
