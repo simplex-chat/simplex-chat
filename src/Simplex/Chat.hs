@@ -884,8 +884,17 @@ processChatCommand = \case
       forM_ conns $ \conn -> deleteAgentConnectionAsync user conn `catchError` \_ -> pure ()
       withStore' (`deleteUserAddress` user)
       pure CRUserContactLinkDeleted
-  ShowMyAddress -> withUser $ \User {userId} ->
+  ShowMyAddress -> withUser' $ \user@User {userId} ->
+    -- timeItM "getUserContacts" $ withStore_ user getUserContacts
+    -- timeItM "getUserContactLinks" $ withStore_ user getUserContactLinks
+    -- timeItM "getUserGroups" $ withStore_ user getUserGroups
+    -- timeItM "getLiveSndFileTransfers" $ withStore_ user getLiveSndFileTransfers
+    -- timeItM "getLiveRcvFileTransfers" $ withStore_ user getLiveRcvFileTransfers
+    -- timeItM "getPendingContactConnections" $ withStore_ user getPendingContactConnections
     CRUserContactLink <$> withStore (`getUserAddress` userId)
+  -- where
+  --   withStore_ :: User -> (DB.Connection -> User -> IO [a]) -> m [a]
+  --   withStore_ user a = withStore' (`a` user) `catchError` \_ -> pure []
   AddressAutoAccept autoAccept_ -> withUser $ \User {userId} -> do
     CRUserContactLinkUpdated <$> withStore (\db -> updateUserAddressAutoAccept db userId autoAccept_)
   AcceptContact cName -> withUser $ \User {userId} -> do
