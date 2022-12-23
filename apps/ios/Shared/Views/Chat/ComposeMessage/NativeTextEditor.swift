@@ -78,7 +78,9 @@ private class CustomUITextField: UITextView, UITextViewDelegate {
                                     processed += 1
                                     if let url = url, let image = UploadContent.loadFromURL(url: url) {
                                         images.append(image)
-                                        self.onTextChanged(textView.text, images)
+                                        DispatchQueue.main.sync {
+                                            self.onTextChanged(textView.text, images)
+                                        }
                                     }
                                     // No images were added, just paste a text then
                                     if processed == totalImages && images.isEmpty {

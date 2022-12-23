@@ -122,7 +122,13 @@ struct CameraImageListPicker: View {
 
     var body: some View {
         CameraImagePicker(image: $image)
-            .onChange(of: image) { images = $0 != nil ? [UploadContent.simpleImage(image: $0!)] : [] }
+            .onChange(of: image) { img in
+                if let img = img {
+                    images = [UploadContent.simpleImage(image: img)]
+                } else {
+                    images = []
+                }
+            }
     }
 }
 
