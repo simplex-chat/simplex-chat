@@ -15,7 +15,7 @@ struct SendMessageView: View {
     var sendLiveMessage: (() async -> Void)? = nil
     var updateLiveMessage: (() async -> Void)? = nil
     var showVoiceMessageButton: Bool = true
-    var voiceMessageAllowed: Bool = true
+    var voiceMessageAllowed: () -> Bool = { true }
     var showEnableVoiceMessagesAlert: ChatInfo.ShowEnableVoiceMessagesAlert = .other
     var startVoiceMessageRecording: (() -> Void)? = nil
     var finishVoiceMessageRecording: (() -> Void)? = nil
@@ -87,7 +87,7 @@ struct SendMessageView: View {
                        && ((composeState.noPreview && vmrs == .noRecording)
                            || (vmrs == .recording && holdingVMR)) {
                         HStack {
-                            if voiceMessageAllowed {
+                            if voiceMessageAllowed() {
                                 RecordVoiceMessageButton(
                                     startVoiceMessageRecording: startVoiceMessageRecording,
                                     finishVoiceMessageRecording: finishVoiceMessageRecording,
@@ -129,7 +129,7 @@ struct SendMessageView: View {
         .disabled(
             !composeState.sendEnabled ||
             composeState.disabled ||
-            (!voiceMessageAllowed && composeState.voicePreview)
+            (!voiceMessageAllowed() && composeState.voicePreview)
         )
         .frame(width: 29, height: 29)
 
