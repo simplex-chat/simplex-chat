@@ -732,7 +732,7 @@
     <string name="send_live_message_desc">Envoyez un message dynamique - il sera mis à jour pour le⸱s destinataire⸱s au fur et à mesure que vous le tapez</string>
     <string name="send_verb">Envoyer</string>
     <string name="member_role_will_be_changed_with_invitation">Le rôle sera changé pour «%s». Le membre va recevoir une nouvelle invitation.</string>
-    <string name="live">DYNAMIQUE</string>
+    <string name="live">LIVE</string>
     <string name="button_add_members">Inviter des membres</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Vous pouvez partager un lien ou un code QR - n\'importe qui pourra rejoindre le groupe. Vous ne perdrez pas les membres du groupe si vous le supprimez par la suite.</string>
     <string name="info_row_local_name">Nom local</string>
