@@ -58,10 +58,16 @@ struct CIImageView: View {
         let w = img.size.width > img.size.height ? .infinity : maxWidth * 0.75
         DispatchQueue.main.async { imgWidth = w }
         return ZStack(alignment: .topTrailing) {
-            Image(uiImage: img)
-                .resizable()
-                .scaledToFit()
-                .frame(maxWidth: w)
+            if img.imageData != nil {
+                SwiftyGif(image: img)
+                        .scaledToFit()
+                        .frame(maxWidth: w)
+            } else {
+                Image(uiImage: img)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: w)
+            }
             loadingIndicator()
         }
     }

@@ -87,7 +87,7 @@ struct TerminalView: View {
                     composeState: $composeState,
                     sendMessage: sendMessage,
                     showVoiceMessageButton: false,
-                    onImageAdded: { _ in },
+                    onImagesAdded: { _ in },
                     keyboardVisible: $keyboardVisible
                 )
                 .padding(.horizontal, 12)
