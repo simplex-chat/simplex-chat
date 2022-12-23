@@ -1661,9 +1661,9 @@
         <target>Входящий видеозвонок</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Incorrect security code!" xml:space="preserve">
+      <trans-unit id="Incorrect security code!" xml:space="preserve" approved="no">
         <source>Incorrect security code!</source>
-        <target>Неправильный код шифрования!</target>
+        <target state="translated">Неправильный код безопасности!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" xml:space="preserve">
@@ -2478,9 +2478,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Сканировать код</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Scan security code from your contact's app." xml:space="preserve">
+      <trans-unit id="Scan security code from your contact's app." xml:space="preserve" approved="no">
         <source>Scan security code from your contact's app.</source>
-        <target>Сканируйте код шифрования из приложения контакта.</target>
+        <target state="translated">Сканируйте код безопасности из приложения контакта.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Scan server QR code" xml:space="preserve">
@@ -2498,9 +2498,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Защита очереди</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Security code" xml:space="preserve">
+      <trans-unit id="Security code" xml:space="preserve" approved="no">
         <source>Security code</source>
-        <target>Код шифрования</target>
+        <target state="translated">Код безопасности</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send" xml:space="preserve" approved="no">
@@ -2935,9 +2935,9 @@ You will be prompted to complete authentication before this feature is enabled.<
         <target>Для поддержки мгновенный доставки уведомлений данные чата должны быть перемещены.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To verify end-to-end encryption with your contact compare (or scan) the code on your devices." xml:space="preserve">
+      <trans-unit id="To verify end-to-end encryption with your contact compare (or scan) the code on your devices." xml:space="preserve" approved="no">
         <source>To verify end-to-end encryption with your contact compare (or scan) the code on your devices.</source>
-        <target>Чтобы подтвердить end-to-end шифрование с вашим контактом сравните (или сканируйте) код на ваших устройствах.</target>
+        <target state="translated">Чтобы подтвердить end-to-end шифрование с вашим контактом сравните (или сканируйте) код безопасности на ваших устройствах.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Transfer images faster" xml:space="preserve">
@@ -3082,9 +3082,9 @@ To connect, please ask your contact to create another connection link and check 
         <target>Используются серверы, предоставленные SimpleX Chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Verify security code" xml:space="preserve">
+      <trans-unit id="Verify security code" xml:space="preserve" approved="no">
         <source>Verify security code</source>
-        <target>Подтвердить код шифрования</target>
+        <target state="translated">Подтвердить код безопасности</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Via browser" xml:space="preserve">
@@ -3097,9 +3097,9 @@ To connect, please ask your contact to create another connection link and check 
         <target>Видеозвонок</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="View security code" xml:space="preserve">
+      <trans-unit id="View security code" xml:space="preserve" approved="no">
         <source>View security code</source>
-        <target>Показать код шифрования</target>
+        <target state="translated">Показать код безопасности</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Voice messages" xml:space="preserve">
