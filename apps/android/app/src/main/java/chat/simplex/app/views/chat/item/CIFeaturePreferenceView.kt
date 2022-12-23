@@ -21,6 +21,7 @@ import chat.simplex.app.TAG
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleButton
+import chat.simplex.app.views.helpers.generalGetString
 
 @Composable
 fun CIFeaturePreferenceView(
@@ -37,12 +38,11 @@ fun CIFeaturePreferenceView(
   ) {
     Icon(feature.icon, feature.text, Modifier.size(18.dp), tint = HighOrLowlight)
     if (contact != null && allowed != FeatureAllowed.NO && contact.allowsFeature(feature) && !contact.userAllowsFeature(feature)) {
-      val acceptStr = stringResource(R.string.accept) + "  "
       val acceptStyle = SpanStyle(color = MaterialTheme.colors.primary, fontSize = 12.sp)
       val annotatedText = buildAnnotatedString {
         withStyle(chatEventStyle) { append(chatItem.content.text + "  ") }
         withAnnotation(tag = "Accept", annotation = "Accept") {
-          withStyle(acceptStyle) { append(acceptStr) }
+          withStyle(acceptStyle) { append(generalGetString(R.string.accept) + "  ") }
         }
         withStyle(chatEventStyle) { append(chatItem.timestampText) }
       }
