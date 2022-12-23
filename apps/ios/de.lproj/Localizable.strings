@@ -5,6 +5,9 @@
 " " = " ";
 
 /* No comment provided by engineer. */
+"   " = "   ";
+
+/* No comment provided by engineer. */
 " (" = " (";
 
 /* No comment provided by engineer. */
@@ -21,6 +24,9 @@
 
 /* No comment provided by engineer. */
 "!1 colored!" = "!1 farbig!";
+
+/* No comment provided by engineer. */
+"." = ".";
 
 /* No comment provided by engineer. */
 "(" = "(";
@@ -459,6 +465,9 @@
 "connecting…" = "Verbinde…";
 
 /* No comment provided by engineer. */
+"Connection" = "Verbindung";
+
+/* No comment provided by engineer. */
 "Connection error" = "Verbindungsfehler";
 
 /* No comment provided by engineer. */
@@ -478,6 +487,9 @@
 
 /* connection information */
 "connection:%@" = "Verbindung:%@";
+
+/* No comment provided by engineer. */
+"Contact allows" = "Der Kontakt erlaubt";
 
 /* No comment provided by engineer. */
 "Contact already exists" = "Der Kontakt ist bereits vorhanden";
@@ -565,6 +577,9 @@
 
 /* No comment provided by engineer. */
 "Database error" = "Datenbankfehler";
+
+/* No comment provided by engineer. */
+"Database ID" = "Datenbank-ID";
 
 /* No comment provided by engineer. */
 "Database is encrypted using a random passphrase, you can change it." = "Die Datenbank wird mit einem zufälligen Passwort verschlüsselt, Sie können es ändern.";
@@ -963,6 +978,9 @@
 "Full name:" = "Vollständiger Name:";
 
 /* No comment provided by engineer. */
+"Group" = "Gruppe";
+
+/* No comment provided by engineer. */
 "group deleted" = "Gruppe gelöscht";
 
 /* No comment provided by engineer. */
@@ -1213,6 +1231,9 @@
 
 /* No comment provided by engineer. */
 "LIVE" = "LIVE";
+
+/* No comment provided by engineer. */
+"Local name" = "Lokaler Name";
 
 /* No comment provided by engineer. */
 "Make a private connection" = "Stellen Sie eine private Verbindung her";
@@ -1619,6 +1640,9 @@
 
 /* No comment provided by engineer. */
 "Revert" = "Zurückkehren";
+
+/* No comment provided by engineer. */
+"Role" = "Rolle";
 
 /* No comment provided by engineer. */
 "Run chat" = "Chat starten";
@@ -2282,6 +2306,9 @@
 
 /* No comment provided by engineer. */
 "Your profile, contacts and delivered messages are stored on your device." = "Ihr Profil, Ihre Kontakte und zugestellten Nachrichten werden auf Ihrem Gerät gespeichert.";
+
+/* No comment provided by engineer. */
+"Your random profile" = "Ihr Zufallsprofil";
 
 /* No comment provided by engineer. */
 "Your server" = "Ihr Server";

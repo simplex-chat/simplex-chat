@@ -103,6 +103,21 @@
 /* notification title */
 "%@ wants to connect!" = "%@ хочет соединиться!";
 
+/* message ttl */
+"%d days" = "%d дней";
+
+/* message ttl */
+"%d hours" = "%d ч.";
+
+/* message ttl */
+"%d min" = "%d мин";
+
+/* message ttl */
+"%d months" = "%d мес.";
+
+/* message ttl */
+"%d sec" = "%d сек";
+
 /* integrity error chat item */
 "%d skipped message(s)" = "%d пропущенных сообщение(й)";
 
@@ -125,7 +140,25 @@
 "%lld second(s)" = "%lld секунд";
 
 /* No comment provided by engineer. */
+"%lldd" = "%lldд";
+
+/* No comment provided by engineer. */
+"%lldh" = "%lldч";
+
+/* No comment provided by engineer. */
 "%lldk" = "%lldk";
+
+/* No comment provided by engineer. */
+"%lldm" = "%lldм";
+
+/* No comment provided by engineer. */
+"%lldmth" = "%lldмес";
+
+/* No comment provided by engineer. */
+"%llds" = "%lldс";
+
+/* No comment provided by engineer. */
+"%lldw" = "%lldнед";
 
 /* No comment provided by engineer. */
 "`a + b`" = "\\`a + b`";
@@ -137,10 +170,16 @@
 "1 day" = "1 день";
 
 /* message ttl */
+"1 hour" = "1 час";
+
+/* message ttl */
 "1 month" = "1 месяц";
 
 /* message ttl */
 "1 week" = "1 неделю";
+
+/* message ttl */
+"2 weeks" = "2 недели";
 
 /* No comment provided by engineer. */
 "6" = "6";
@@ -486,6 +525,9 @@
 "connecting…" = "соединяется…";
 
 /* No comment provided by engineer. */
+"Connection" = "Соединение";
+
+/* No comment provided by engineer. */
 "Connection error" = "Ошибка соединения";
 
 /* No comment provided by engineer. */
@@ -505,6 +547,9 @@
 
 /* connection information */
 "connection:%@" = "connection:%@";
+
+/* No comment provided by engineer. */
+"Contact allows" = "Контакт разрешает";
 
 /* No comment provided by engineer. */
 "Contact already exists" = "Существующий контакт";
@@ -595,6 +640,9 @@
 
 /* No comment provided by engineer. */
 "Database error" = "Ошибка базы данных";
+
+/* No comment provided by engineer. */
+"Database ID" = "ID базы данных";
 
 /* No comment provided by engineer. */
 "Database is encrypted using a random passphrase, you can change it." = "База данных зашифрована случайным паролем, вы можете его поменять.";
@@ -1005,6 +1053,9 @@
 "Full name:" = "Полное имя:";
 
 /* No comment provided by engineer. */
+"Group" = "Группа";
+
+/* No comment provided by engineer. */
 "group deleted" = "группа удалена";
 
 /* No comment provided by engineer. */
@@ -1264,6 +1315,9 @@
 
 /* No comment provided by engineer. */
 "Live message!" = "Живое сообщение!";
+
+/* No comment provided by engineer. */
+"Local name" = "Локальное имя";
 
 /* No comment provided by engineer. */
 "Make a private connection" = "Добавьте контакт";
@@ -1682,6 +1736,9 @@
 
 /* No comment provided by engineer. */
 "Revert" = "Отменить изменения";
+
+/* No comment provided by engineer. */
+"Role" = "Роль";
 
 /* No comment provided by engineer. */
 "Run chat" = "Запустить chat";
@@ -2372,6 +2429,9 @@
 
 /* No comment provided by engineer. */
 "Your profile, contacts and delivered messages are stored on your device." = "Ваш профиль, контакты и доставленные сообщения хранятся на вашем устройстве.";
+
+/* No comment provided by engineer. */
+"Your random profile" = "Случайный профиль";
 
 /* No comment provided by engineer. */
 "Your server" = "Ваш сервер";
