@@ -224,14 +224,30 @@ public struct TimedMessagesPreference: Preference {
         let (h_, m) = divMod(m_, by: 60)
         let (d_, h) = divMod(h_, by: 24)
         let (mm, d) = divMod(d_, by: 30)
-        return maybe(mm, mm == 1 ? "1 month" : "\(mm) months")
-            + maybe(d, d == 1 ? "1 day" : d == 7 ? "1 week" : d == 14 ? "2 weeks" : "\(d) days")
-            + maybe(h, h == 1 ? "1 hour" : "\(h) hours")
-            + maybe(m, "\(m) min")
-            + maybe (s, "\(s) sec")
+        return maybe(mm,
+                     mm == 1
+                     ? NSLocalizedString("1 month", comment: "message ttl")
+                     : String.localizedStringWithFormat(NSLocalizedString("%d months", comment: "message ttl"), mm)
+                    )
+            + maybe(d,
+                    d == 1
+                    ? NSLocalizedString("1 day", comment: "message ttl")
+                    : d == 7
+                    ? NSLocalizedString("1 week", comment: "message ttl")
+                    : d == 14
+                    ? NSLocalizedString("2 weeks", comment: "message ttl")
+                    : String.localizedStringWithFormat(NSLocalizedString("%d days", comment: "message ttl"), d)
+                    )
+            + maybe(h,
+                    h == 1
+                    ? NSLocalizedString("1 hour", comment: "message ttl")
+                    : String.localizedStringWithFormat(NSLocalizedString("%d hours", comment: "message ttl"), h)
+                    )
+            + maybe(m, String.localizedStringWithFormat(NSLocalizedString("%d min", comment: "message ttl"), m))
+            + maybe (s, String.localizedStringWithFormat(NSLocalizedString("%d sec", comment: "message ttl"), s))
     }
 
-    public static func shortTtlText(_ ttl: Int?) -> String {
+    public static func shortTtlText(_ ttl: Int?) -> LocalizedStringKey {
         guard let ttl = ttl else { return "off" }
         let m = ttl / 60
         if m == 0 { return "\(ttl)s" }

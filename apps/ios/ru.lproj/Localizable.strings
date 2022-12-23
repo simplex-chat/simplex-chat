@@ -5,6 +5,9 @@
 " " = " ";
 
 /* No comment provided by engineer. */
+"   " = "   ";
+
+/* No comment provided by engineer. */
 " (" = " (";
 
 /* No comment provided by engineer. */
@@ -21,6 +24,9 @@
 
 /* No comment provided by engineer. */
 "!1 colored!" = "!1 цвет!";
+
+/* No comment provided by engineer. */
+"." = ".";
 
 /* No comment provided by engineer. */
 "(" = "(";
@@ -127,13 +133,13 @@
 /* No comment provided by engineer. */
 "~strike~" = "\\~зачеркнуть~";
 
-/* No comment provided by engineer. */
+/* message ttl */
 "1 day" = "1 день";
 
-/* No comment provided by engineer. */
+/* message ttl */
 "1 month" = "1 месяц";
 
-/* No comment provided by engineer. */
+/* message ttl */
 "1 week" = "1 неделю";
 
 /* No comment provided by engineer. */
@@ -207,10 +213,16 @@
 "Allow" = "Разрешить";
 
 /* No comment provided by engineer. */
+"Allow disappearing messages only if your contact allows it to you." = "Разрешить исчезающие сообщения, только если ваш контакт разрешает их вам.";
+
+/* No comment provided by engineer. */
 "Allow irreversible message deletion only if your contact allows it to you." = "Разрешить необратимое удаление сообщений, только если ваш контакт разрешает это вам.";
 
 /* No comment provided by engineer. */
 "Allow sending direct messages to members." = "Разрешить посылать прямые сообщения членам группы.";
+
+/* No comment provided by engineer. */
+"Allow sending disappearing messages." = "Разрешить посылать исчезающие сообщения.";
 
 /* No comment provided by engineer. */
 "Allow to irreversibly delete sent messages." = "Разрешить необратимо удалять отправленные сообщения.";
@@ -226,6 +238,9 @@
 
 /* No comment provided by engineer. */
 "Allow your contacts to irreversibly delete sent messages." = "Разрешить вашим контактам необратимо удалять отправленные сообщения.";
+
+/* No comment provided by engineer. */
+"Allow your contacts to send disappearing messages." = "Разрешить вашим контактам отправлять исчезающие сообщения.";
 
 /* No comment provided by engineer. */
 "Allow your contacts to send voice messages." = "Разрешить вашим контактам отправлять голосовые сообщения.";
@@ -280,6 +295,9 @@
 
 /* No comment provided by engineer. */
 "Both you and your contact can irreversibly delete sent messages." = "Вы и ваш контакт можете необратимо удалять отправленные сообщения.";
+
+/* No comment provided by engineer. */
+"Both you and your contact can send disappearing messages." = "Вы и ваш контакт можете отправлять исчезающие сообщения.";
 
 /* No comment provided by engineer. */
 "Both you and your contact can send voice messages." = "Вы и ваш контакт можете отправлять голосовые сообщения.";
@@ -531,6 +549,9 @@
 "Create address" = "Создать адрес";
 
 /* No comment provided by engineer. */
+"Create group link" = "Создать ссылку группы";
+
+/* No comment provided by engineer. */
 "Create link" = "Создать ссылку";
 
 /* No comment provided by engineer. */
@@ -616,6 +637,9 @@
 
 /* No comment provided by engineer. */
 "Delete address?" = "Удалить адрес?";
+
+/* No comment provided by engineer. */
+"Delete after" = "Удалять через";
 
 /* No comment provided by engineer. */
 "Delete archive" = "Удалить архив";
@@ -727,6 +751,15 @@
 
 /* authentication reason */
 "Disable SimpleX Lock" = "Отключить блокировку SimpleX";
+
+/* chat feature */
+"Disappearing messages" = "Исчезающие сообщения";
+
+/* No comment provided by engineer. */
+"Disappearing messages are prohibited in this chat." = "Исчезающие сообщения запрещены в этом чате.";
+
+/* No comment provided by engineer. */
+"Disappearing messages are prohibited in this group." = "Исчезающие сообщения запрещены в этой группе.";
 
 /* server test step */
 "Disconnect" = "Разрыв соединения";
@@ -1002,6 +1035,9 @@
 "Group members can send direct messages." = "Члены группы могут посылать прямые сообщения.";
 
 /* No comment provided by engineer. */
+"Group members can send disappearing messages." = "Члены группы могут посылать исчезающие сообщения.";
+
+/* No comment provided by engineer. */
 "Group members can send voice messages." = "Члены группы могут отправлять голосовые сообщения.";
 
 /* notification */
@@ -1116,7 +1152,7 @@
 "Incoming video call" = "Входящий видеозвонок";
 
 /* No comment provided by engineer. */
-"Incorrect security code!" = "Неправильный код шифрования!";
+"Incorrect security code!" = "Неправильный код безопасности!";
 
 /* connection level description */
 "indirect (%d)" = "непрямое (%d)";
@@ -1222,6 +1258,12 @@
 
 /* No comment provided by engineer. */
 "Limitations" = "Ограничения";
+
+/* No comment provided by engineer. */
+"LIVE" = "LIVE";
+
+/* No comment provided by engineer. */
+"Live message!" = "Живое сообщение!";
 
 /* No comment provided by engineer. */
 "Make a private connection" = "Добавьте контакт";
@@ -1414,10 +1456,16 @@
 "Only you can irreversibly delete messages (your contact can mark them for deletion)." = "Только вы можете необратимо удалять сообщения (ваш контакт может помечать их на удаление).";
 
 /* No comment provided by engineer. */
+"Only you can send disappearing messages." = "Только вы можете отправлять исчезающие сообщения.";
+
+/* No comment provided by engineer. */
 "Only you can send voice messages." = "Только вы можете отправлять голосовые сообщения.";
 
 /* No comment provided by engineer. */
 "Only your contact can irreversibly delete messages (you can mark them for deletion)." = "Только ваш контакт может необратимо удалять сообщения (вы можете помечать их на удаление).";
+
+/* No comment provided by engineer. */
+"Only your contact can send disappearing messages." = "Только ваш контакт может отправлять исчезающие сообщения.";
 
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Только ваш контакт может отправлять голосовые сообщения.";
@@ -1517,6 +1565,9 @@
 
 /* No comment provided by engineer. */
 "Prohibit sending direct messages to members." = "Запретить посылать прямые сообщения членам группы.";
+
+/* No comment provided by engineer. */
+"Prohibit sending disappearing messages." = "Запретить посылать исчезающие сообщения.";
 
 /* No comment provided by engineer. */
 "Prohibit sending voice messages." = "Запретить отправлять голосовые сообщений.";
@@ -1675,7 +1726,7 @@
 "Scan QR code" = "Сканировать QR код";
 
 /* No comment provided by engineer. */
-"Scan security code from your contact's app." = "Сканируйте код шифрования из приложения контакта.";
+"Scan security code from your contact's app." = "Сканируйте код безопасности из приложения контакта.";
 
 /* No comment provided by engineer. */
 "Scan server QR code" = "Сканировать QR код сервера";
@@ -1693,13 +1744,22 @@
 "Secure queue" = "Защита очереди";
 
 /* No comment provided by engineer. */
-"Security code" = "Код шифрования";
+"Security code" = "Код безопасности";
+
+/* No comment provided by engineer. */
+"Send" = "Отправить";
+
+/* No comment provided by engineer. */
+"Send a live message - it will update for the recipient(s) as you type it" = "Отправить живое сообщение — оно будет обновляться для получателей по мере того, как вы его вводите";
 
 /* No comment provided by engineer. */
 "Send direct message" = "Отправить сообщение";
 
 /* No comment provided by engineer. */
 "Send link previews" = "Отправлять картинки ссылок";
+
+/* No comment provided by engineer. */
+"Send live message" = "Отправить живое сообщение";
 
 /* No comment provided by engineer. */
 "Send notifications" = "Отправлять уведомления";
@@ -1957,7 +2017,7 @@
 "To support instant push notifications the chat database has to be migrated." = "Для поддержки мгновенный доставки уведомлений данные чата должны быть перемещены.";
 
 /* No comment provided by engineer. */
-"To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "Чтобы подтвердить end-to-end шифрование с вашим контактом сравните (или сканируйте) код на ваших устройствах.";
+"To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "Чтобы подтвердить end-to-end шифрование с вашим контактом сравните (или сканируйте) код безопасности на ваших устройствах.";
 
 /* No comment provided by engineer. */
 "Transfer images faster" = "Передавать изображения быстрее";
@@ -2053,7 +2113,7 @@
 "v%@ (%@)" = "v%@ (%@)";
 
 /* No comment provided by engineer. */
-"Verify security code" = "Подтвердить код шифрования";
+"Verify security code" = "Подтвердить код безопасности";
 
 /* No comment provided by engineer. */
 "Via browser" = "В браузере";
@@ -2077,7 +2137,7 @@
 "video call (not e2e encrypted)" = "видеозвонок (не e2e зашифрованный)";
 
 /* No comment provided by engineer. */
-"View security code" = "Показать код шифрования";
+"View security code" = "Показать код безопасности";
 
 /* No comment provided by engineer. */
 "Voice message…" = "Голосовое сообщение…";

@@ -74,6 +74,26 @@
         <target>%@ will sich mit Ihnen verbinden!</target>
         <note>notification title</note>
       </trans-unit>
+      <trans-unit id="%d days" xml:space="preserve">
+        <source>%d days</source>
+        <note>message ttl</note>
+      </trans-unit>
+      <trans-unit id="%d hours" xml:space="preserve">
+        <source>%d hours</source>
+        <note>message ttl</note>
+      </trans-unit>
+      <trans-unit id="%d min" xml:space="preserve">
+        <source>%d min</source>
+        <note>message ttl</note>
+      </trans-unit>
+      <trans-unit id="%d months" xml:space="preserve">
+        <source>%d months</source>
+        <note>message ttl</note>
+      </trans-unit>
+      <trans-unit id="%d sec" xml:space="preserve">
+        <source>%d sec</source>
+        <note>message ttl</note>
+      </trans-unit>
       <trans-unit id="%d skipped message(s)" xml:space="preserve">
         <source>%d skipped message(s)</source>
         <target>%d übersprungene Nachricht(en)</target>
@@ -109,9 +129,33 @@
         <target>%lld Sekunde(n)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="%lldd" xml:space="preserve">
+        <source>%lldd</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%lldh" xml:space="preserve">
+        <source>%lldh</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="%lldk" xml:space="preserve">
         <source>%lldk</source>
         <target>%lldk</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%lldm" xml:space="preserve">
+        <source>%lldm</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%lldmth" xml:space="preserve">
+        <source>%lldmth</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%llds" xml:space="preserve">
+        <source>%llds</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%lldw" xml:space="preserve">
+        <source>%lldw</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="(" xml:space="preserve">
@@ -196,17 +240,25 @@
       <trans-unit id="1 day" xml:space="preserve">
         <source>1 day</source>
         <target>täglich</target>
-        <note>No comment provided by engineer.</note>
+        <note>message ttl</note>
+      </trans-unit>
+      <trans-unit id="1 hour" xml:space="preserve">
+        <source>1 hour</source>
+        <note>message ttl</note>
       </trans-unit>
       <trans-unit id="1 month" xml:space="preserve">
         <source>1 month</source>
         <target>monatlich</target>
-        <note>No comment provided by engineer.</note>
+        <note>message ttl</note>
       </trans-unit>
       <trans-unit id="1 week" xml:space="preserve">
         <source>1 week</source>
         <target>wöchentlich</target>
-        <note>No comment provided by engineer.</note>
+        <note>message ttl</note>
+      </trans-unit>
+      <trans-unit id="2 weeks" xml:space="preserve">
+        <source>2 weeks</source>
+        <note>message ttl</note>
       </trans-unit>
       <trans-unit id="6" xml:space="preserve">
         <source>6</source>
@@ -1752,9 +1804,9 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>Schlüsselbundfehler</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="LIVE" xml:space="preserve" approved="no">
+      <trans-unit id="LIVE" xml:space="preserve">
         <source>LIVE</source>
-        <target state="translated">LIVE</target>
+        <target>LIVE</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Large file!" xml:space="preserve">

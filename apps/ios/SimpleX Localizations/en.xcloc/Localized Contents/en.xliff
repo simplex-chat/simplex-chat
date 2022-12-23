@@ -77,6 +77,31 @@
         <target>%@ wants to connect!</target>
         <note>notification title</note>
       </trans-unit>
+      <trans-unit id="%d days" xml:space="preserve">
+        <source>%d days</source>
+        <target>%d days</target>
+        <note>message ttl</note>
+      </trans-unit>
+      <trans-unit id="%d hours" xml:space="preserve">
+        <source>%d hours</source>
+        <target>%d hours</target>
+        <note>message ttl</note>
+      </trans-unit>
+      <trans-unit id="%d min" xml:space="preserve">
+        <source>%d min</source>
+        <target>%d min</target>
+        <note>message ttl</note>
+      </trans-unit>
+      <trans-unit id="%d months" xml:space="preserve">
+        <source>%d months</source>
+        <target>%d months</target>
+        <note>message ttl</note>
+      </trans-unit>
+      <trans-unit id="%d sec" xml:space="preserve">
+        <source>%d sec</source>
+        <target>%d sec</target>
+        <note>message ttl</note>
+      </trans-unit>
       <trans-unit id="%d skipped message(s)" xml:space="preserve">
         <source>%d skipped message(s)</source>
         <target>%d skipped message(s)</target>
@@ -112,9 +137,39 @@
         <target>%lld second(s)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="%lldd" xml:space="preserve">
+        <source>%lldd</source>
+        <target>%lldd</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%lldh" xml:space="preserve">
+        <source>%lldh</source>
+        <target>%lldh</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="%lldk" xml:space="preserve">
         <source>%lldk</source>
         <target>%lldk</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%lldm" xml:space="preserve">
+        <source>%lldm</source>
+        <target>%lldm</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%lldmth" xml:space="preserve">
+        <source>%lldmth</source>
+        <target>%lldmth</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%llds" xml:space="preserve">
+        <source>%llds</source>
+        <target>%llds</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%lldw" xml:space="preserve">
+        <source>%lldw</source>
+        <target>%lldw</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="(" xml:space="preserve">
@@ -200,17 +255,27 @@
       <trans-unit id="1 day" xml:space="preserve">
         <source>1 day</source>
         <target>1 day</target>
-        <note>No comment provided by engineer.</note>
+        <note>message ttl</note>
+      </trans-unit>
+      <trans-unit id="1 hour" xml:space="preserve">
+        <source>1 hour</source>
+        <target>1 hour</target>
+        <note>message ttl</note>
       </trans-unit>
       <trans-unit id="1 month" xml:space="preserve">
         <source>1 month</source>
         <target>1 month</target>
-        <note>No comment provided by engineer.</note>
+        <note>message ttl</note>
       </trans-unit>
       <trans-unit id="1 week" xml:space="preserve">
         <source>1 week</source>
         <target>1 week</target>
-        <note>No comment provided by engineer.</note>
+        <note>message ttl</note>
+      </trans-unit>
+      <trans-unit id="2 weeks" xml:space="preserve">
+        <source>2 weeks</source>
+        <target>2 weeks</target>
+        <note>message ttl</note>
       </trans-unit>
       <trans-unit id="6" xml:space="preserve">
         <source>6</source>
