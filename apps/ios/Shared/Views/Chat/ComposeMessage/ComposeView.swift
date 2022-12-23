@@ -180,9 +180,11 @@ extension UploadContent {
     static func loadFromURL(url: URL) -> UploadContent? {
         do {
             let data = try Data(contentsOf: url)
-            let image = try UIImage(gifData: data)
-            logger.log("UploadContent: added animated image")
-            return .animatedImage(image: image)
+            if let image = UIImage(data: data) {
+                try image.setGifFromData(data, levelOfIntegrity: 1.0)
+                logger.log("UploadContent: added animated image")
+                return .animatedImage(image: image)
+            } else { return nil }
         } catch {
             do {
                 if let image = try UIImage(data: Data(contentsOf: url)) {
@@ -320,7 +322,7 @@ struct ComposeView: View {
                     let img: UIImage?
                     switch image {
                     case let .simpleImage(image): img = image
-                    case let .animatedImage(image): img = UIImage(data: image.imageData!)
+                    case let .animatedImage(image): img = image
                     }
                     if let img = img, let img = resizeImageToStrSize(img, maxDataSize: 14000) {
                         imgs.append(img)

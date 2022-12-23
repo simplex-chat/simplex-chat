@@ -190,7 +190,9 @@ public func getLoadedImage(_ file: CIFile?) -> UIImage? {
         let filePath = getAppFilePath(fileName)
         do {
             let data = try Data(contentsOf: filePath)
-            return try UIImage(gifData: data)
+            let img = UIImage(data: data)
+            try img?.setGifFromData(data, levelOfIntegrity: 1.0)
+            return img
         } catch {
             return UIImage(contentsOfFile: loadedFilePath)
         }

@@ -55,13 +55,14 @@ struct CIImageView: View {
     }
 
     private func imageView(_ img: UIImage) -> some View {
-        let w = img.size.width > img.size.height ? .infinity : maxWidth * 0.75
+        let w = img.size.width > img.size.height && img.imageData == nil ? .infinity : maxWidth * 0.75
         DispatchQueue.main.async { imgWidth = w }
         return ZStack(alignment: .topTrailing) {
             if img.imageData != nil {
+                let adjustedWidth = min(img.size.width, w)
                 SwiftyGif(image: img)
+                        .frame(width: adjustedWidth, height: img.size.height / (img.size.width / adjustedWidth))
                         .scaledToFit()
-                        .frame(maxWidth: w)
             } else {
                 Image(uiImage: img)
                         .resizable()
