@@ -175,6 +175,13 @@ enum AnyImage: Equatable {
     case simpleImage(image: UIImage)
     case animatedImage(image: UIImage)
 
+    var uiImage: UIImage {
+        switch self {
+        case let .simpleImage(image): return image
+        case let .animatedImage(image): return image
+        }
+    }
+
     static func loadFromURL(url: URL) -> AnyImage? {
         do {
             let data = try Data(contentsOf: url)
@@ -317,12 +324,7 @@ struct ComposeView: View {
             Task {
                 var imgs: [String] = []
                 for image in images {
-                    let img: UIImage?
-                    switch image {
-                    case let .simpleImage(image): img = image
-                    case let .animatedImage(image): img = image
-                    }
-                    if let img = img, let img = resizeImageToStrSize(img, maxDataSize: 14000) {
+                    if let img = resizeImageToStrSize(image.uiImage, maxDataSize: 14000) {
                         imgs.append(img)
                         await MainActor.run {
                             composeState = composeState.copy(preview: .imagePreviews(imagePreviews: imgs))

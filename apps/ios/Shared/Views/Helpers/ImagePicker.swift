@@ -18,9 +18,9 @@ struct LibraryImagePicker: View {
 
     var body: some View {
         LibraryImageListPicker(images: $images, selectionLimit: 1, didFinishPicking: didFinishPicking)
-            .onChange(of: images) {
-                if case let .simpleImage(image: img) = $0.first {
-                    image = img
+            .onChange(of: images) { _ in
+                if let img = images.first {
+                    image = img.uiImage
                 }
             }
     }
