@@ -4017,6 +4017,106 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
         <target state="translated">LIVE</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="%d min" xml:space="preserve" approved="no">
+        <source>%d min</source>
+        <target state="translated">%d min</target>
+        <note>message ttl</note>
+      </trans-unit>
+      <trans-unit id="%d months" xml:space="preserve" approved="no">
+        <source>%d months</source>
+        <target state="translated">%d mois</target>
+        <note>message ttl</note>
+      </trans-unit>
+      <trans-unit id="%d sec" xml:space="preserve" approved="no">
+        <source>%d sec</source>
+        <target state="translated">%d sec</target>
+        <note>message ttl</note>
+      </trans-unit>
+      <trans-unit id="%lldd" xml:space="preserve" approved="no">
+        <source>%lldd</source>
+        <target state="translated">%lldj</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%lldh" xml:space="preserve" approved="no">
+        <source>%lldh</source>
+        <target state="translated">%lldh</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%lldm" xml:space="preserve" approved="no">
+        <source>%lldm</source>
+        <target state="translated">%lldm</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%lldmth" xml:space="preserve" approved="no">
+        <source>%lldmth</source>
+        <target state="translated">%lldmois</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%llds" xml:space="preserve" approved="no">
+        <source>%llds</source>
+        <target state="translated">%llds</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%lldw" xml:space="preserve" approved="no">
+        <source>%lldw</source>
+        <target state="translated">%lldsmn</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="1 hour" xml:space="preserve" approved="no">
+        <source>1 hour</source>
+        <target state="translated">1 heure</target>
+        <note>message ttl</note>
+      </trans-unit>
+      <trans-unit id="Contact allows" xml:space="preserve" approved="no">
+        <source>Contact allows</source>
+        <target state="translated">Votre contact autorise</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Database ID" xml:space="preserve" approved="no">
+        <source>Database ID</source>
+        <target state="translated">ID de base de données</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Group" xml:space="preserve" approved="no">
+        <source>Group</source>
+        <target state="translated">Groupe</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Local name" xml:space="preserve" approved="no">
+        <source>Local name</source>
+        <target state="translated">Nom local</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Role" xml:space="preserve" approved="no">
+        <source>Role</source>
+        <target state="translated">Rôle</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your random profile" xml:space="preserve" approved="no">
+        <source>Your random profile</source>
+        <target state="translated">Votre profil aléatoire</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%d days" xml:space="preserve" approved="no">
+        <source>%d days</source>
+        <target state="translated">%d jours</target>
+        <note>message ttl</note>
+      </trans-unit>
+      <trans-unit id="%d hours" xml:space="preserve" approved="no">
+        <source>%d hours</source>
+        <target state="translated">%d heures</target>
+        <note>message ttl</note>
+      </trans-unit>
+      <trans-unit id="2 weeks" xml:space="preserve" approved="no">
+        <source>2 weeks</source>
+        <target state="translated">2 semaines</target>
+        <note>message ttl</note>
+      </trans-unit>
+      <trans-unit id="Connection" xml:space="preserve" approved="no">
+        <source>Connection</source>
+        <target state="translated">Connexion</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
     </body>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="fr" datatype="plaintext">

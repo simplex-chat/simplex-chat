@@ -17,8 +17,9 @@
         <target> </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="   " xml:space="preserve">
+      <trans-unit id="   " xml:space="preserve" approved="no">
         <source>   </source>
+        <target state="translated">   </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id=" (" xml:space="preserve">
@@ -233,8 +234,9 @@
         <target>, </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="." xml:space="preserve">
+      <trans-unit id="." xml:space="preserve" approved="no">
         <source>.</source>
+        <target state="translated">.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="1 day" xml:space="preserve">
@@ -696,8 +698,9 @@
         <target>Mit dem Server verbinden… (Fehler: %@)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connection" xml:space="preserve">
+      <trans-unit id="Connection" xml:space="preserve" approved="no">
         <source>Connection</source>
+        <target state="translated">Verbindung</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection error" xml:space="preserve">
@@ -725,8 +728,9 @@
         <target>Verbindungszeitüberschreitung</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Contact allows" xml:space="preserve">
+      <trans-unit id="Contact allows" xml:space="preserve" approved="no">
         <source>Contact allows</source>
+        <target state="translated">Der Kontakt erlaubt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact already exists" xml:space="preserve">
@@ -843,8 +847,9 @@
         <target>Daten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database ID" xml:space="preserve">
+      <trans-unit id="Database ID" xml:space="preserve" approved="no">
         <source>Database ID</source>
+        <target state="translated">Datenbank-ID</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database encrypted!" xml:space="preserve">
@@ -1491,8 +1496,9 @@
         <target>Vollständiger Name:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group" xml:space="preserve">
+      <trans-unit id="Group" xml:space="preserve" approved="no">
         <source>Group</source>
+        <target state="translated">Gruppe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group display name" xml:space="preserve">
@@ -1859,8 +1865,9 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <source>Live message!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Local name" xml:space="preserve">
+      <trans-unit id="Local name" xml:space="preserve" approved="no">
         <source>Local name</source>
+        <target state="translated">Lokaler Name</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Make a private connection" xml:space="preserve">
@@ -2454,8 +2461,9 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>Zurückkehren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Role" xml:space="preserve">
+      <trans-unit id="Role" xml:space="preserve" approved="no">
         <source>Role</source>
+        <target state="translated">Rolle</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Run chat" xml:space="preserve">
@@ -3482,8 +3490,9 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>Ihr Profil, Ihre Kontakte und zugestellten Nachrichten werden auf Ihrem Gerät gespeichert.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your random profile" xml:space="preserve">
+      <trans-unit id="Your random profile" xml:space="preserve" approved="no">
         <source>Your random profile</source>
+        <target state="translated">Ihr Zufallsprofil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your server" xml:space="preserve">
