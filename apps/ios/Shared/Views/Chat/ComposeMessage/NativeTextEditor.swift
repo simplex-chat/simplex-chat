@@ -108,10 +108,7 @@ private class CustomUITextField: UITextView, UITextViewDelegate {
             using: { value, range, _ in
                 if let attachment = (value as? NSTextAttachment)?.fileWrapper?.regularFileContents {
                     do {
-                        _ = try UIImage(gifData: attachment)
-                        if let path = saveAnimImage(attachment) {
-                            images.append(.animatedImage(path: path))
-                        }
+                        images.append(.animatedImage(image: try UIImage(gifData: attachment)))
                     } catch {
                         if let img = (value as? NSTextAttachment)?.image {
                             images.append(.simpleImage(image: img))

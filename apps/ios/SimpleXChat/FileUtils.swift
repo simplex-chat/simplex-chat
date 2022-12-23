@@ -226,9 +226,10 @@ public func saveImage(_ uiImage: UIImage) -> String? {
     return nil
 }
 
-public func saveAnimImage(_ data: Data) -> String? {
+public func saveAnimImage(_ image: UIImage) -> String? {
     let fileName = generateNewFileName("IMG", "gif")
-    return saveFile(data, fileName)
+    guard let imageData = image.imageData else { return nil }
+    return saveFile(imageData, fileName)
 }
 
 public func generateNewFileName(_ prefix: String, _ ext: String) -> String {

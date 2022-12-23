@@ -173,18 +173,16 @@ func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
 
 enum UploadContent: Equatable {
     case simpleImage(image: UIImage)
-    case animatedImage(path: String)
+    case animatedImage(image: UIImage)
 }
 
 extension UploadContent {
     static func loadFromURL(url: URL) -> UploadContent? {
         do {
             let data = try Data(contentsOf: url)
-            _ = try UIImage(gifData: data)
-            if let path = saveAnimImage(data) {
-                logger.log("UploadContent: added animated image")
-                return .animatedImage(path: path)
-            }
+            let image = try UIImage(gifData: data)
+            logger.log("UploadContent: added animated image")
+            return .animatedImage(image: image)
         } catch {
             do {
                 if let image = try UIImage(data: Data(contentsOf: url)) {
@@ -322,7 +320,7 @@ struct ComposeView: View {
                     let img: UIImage?
                     switch image {
                     case let .simpleImage(image): img = image
-                    case let .animatedImage(path): img = UIImage(contentsOfFile: getAppFilePath(path).path)
+                    case let .animatedImage(image): img = UIImage(data: image.imageData!)
                     }
                     if let img = img, let img = resizeImageToStrSize(img, maxDataSize: 14000) {
                         imgs.append(img)
@@ -527,7 +525,7 @@ struct ComposeView: View {
                     let savedFile: String?
                     switch chosenImages[i] {
                     case let .simpleImage(image): savedFile = saveImage(image)
-                    case let .animatedImage(path): savedFile = path
+                    case let .animatedImage(image): savedFile = saveAnimImage(image)
                     }
                     if savedFile != nil {
                         _ = await send(.image(text: "", image: images[i]), quoted: nil, file: savedFile)
@@ -537,7 +535,7 @@ struct ComposeView: View {
                 let savedFile: String?
                 switch chosenImages[last] {
                 case let .simpleImage(image): savedFile = saveImage(image)
-                case let .animatedImage(path): savedFile = path
+                case let .animatedImage(image): savedFile = saveAnimImage(image)
                 }
                 if savedFile != nil {
                     sent = await send(.image(text: msgText, image: images[last]), quoted: quoted, file: savedFile, live: live)
