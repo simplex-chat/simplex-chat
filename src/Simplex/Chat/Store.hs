@@ -1238,7 +1238,7 @@ createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}
 
 getLiveSndFileTransfers :: DB.Connection -> User -> IO [SndFileTransfer]
 getLiveSndFileTransfers db User {userId} = do
-  cutOffTs <- addUTCTime (- week) <$> getCurrentTime
+  cutoffTs <- addUTCTime (- week) <$> getCurrentTime
   fileIds :: [Int64] <-
     map fromOnly
       <$> DB.query
@@ -1250,7 +1250,7 @@ getLiveSndFileTransfers db User {userId} = do
           WHERE f.user_id = ? AND s.file_status IN (?, ?, ?) AND s.file_inline IS NULL
             AND created_at > ?
         |]
-        (userId, FSNew, FSAccepted, FSConnected, cutOffTs)
+        (userId, FSNew, FSAccepted, FSConnected, cutoffTs)
   concatMap (filter liveTransfer) . rights <$> mapM (getSndFileTransfers_ db userId) fileIds
   where
     liveTransfer :: SndFileTransfer -> Bool
@@ -1258,7 +1258,7 @@ getLiveSndFileTransfers db User {userId} = do
 
 getLiveRcvFileTransfers :: DB.Connection -> User -> IO [RcvFileTransfer]
 getLiveRcvFileTransfers db user@User {userId} = do
-  cutOffTs <- addUTCTime (- week) <$> getCurrentTime
+  cutoffTs <- addUTCTime (- week) <$> getCurrentTime
   fileIds :: [Int64] <-
     map fromOnly
       <$> DB.query
@@ -1270,7 +1270,7 @@ getLiveRcvFileTransfers db user@User {userId} = do
           WHERE f.user_id = ? AND r.file_status IN (?, ?) AND r.rcv_file_inline IS NULL
             AND created_at > ?
         |]
-        (userId, FSAccepted, FSConnected, cutOffTs)
+        (userId, FSAccepted, FSConnected, cutoffTs)
   rights <$> mapM (runExceptT . getRcvFileTransfer db user) fileIds
 
 getPendingSndChunks :: DB.Connection -> Int64 -> Int64 -> IO [Integer]
