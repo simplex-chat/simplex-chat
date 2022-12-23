@@ -35,6 +35,7 @@ fun CIMetaView(chatItem: ChatItem, timedMessagesTTL: Int?, metaColor: Color = Hi
 }
 
 @Composable
+// changing this function requires updating reserveSpaceForMeta
 private fun CIMetaText(meta: CIMeta, chatTTL: Int?, color: Color) {
   if (meta.itemEdited) {
     StatusIconText(Icons.Outlined.Edit, color)
@@ -60,20 +61,20 @@ private fun CIMetaText(meta: CIMeta, chatTTL: Int?, color: Color) {
   Text(meta.timestampText, color = color, fontSize = 13.sp)
 }
 
+// the conditions in this function should match CIMetaText
 fun reserveSpaceForMeta(meta: CIMeta, chatTTL: Int?): String {
+  val iconSpace = "    "
   var res = ""
-  var repeats = 0
-  if (meta.itemEdited) repeats++
+  if (meta.itemEdited) res += iconSpace
   if (meta.itemTimed != null) {
-    repeats++
+    res += iconSpace
     val ttl = meta.itemTimed?.ttl
     if (ttl != chatTTL) {
       res += TimedMessagesPreference.shortTtlText(ttl)
     }
   }
-  if (meta.itemStatus !is CIStatus.RcvRead && meta.itemStatus !is CIStatus.RcvNew) repeats++
-  repeat(repeats) {
-    res += "    "
+  if (meta.statusIcon(HighOrLowlight) != null || !meta.disappearing) {
+    res += iconSpace
   }
   return res + meta.timestampText
 }
