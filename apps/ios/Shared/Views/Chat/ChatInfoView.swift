@@ -9,9 +9,18 @@
 import SwiftUI
 import SimpleXChat
 
-func infoRow<S>(_ title: S, _ value: String) -> some View where S: StringProtocol {
+func infoRow(_ title: LocalizedStringKey, _ value: String) -> some View {
     HStack {
         Text(title)
+        Spacer()
+        Text(value)
+            .foregroundStyle(.secondary)
+    }
+}
+
+func infoRow(_ title: Text, _ value: String) -> some View {
+    HStack {
+        title
         Spacer()
         Text(value)
             .foregroundStyle(.secondary)

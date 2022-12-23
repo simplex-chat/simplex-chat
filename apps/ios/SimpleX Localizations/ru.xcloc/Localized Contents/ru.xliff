@@ -705,6 +705,10 @@
         <target>Устанавливается соединение с сервером… (ошибка: %@)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Connection" xml:space="preserve">
+        <source>Connection</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Connection error" xml:space="preserve">
         <source>Connection error</source>
         <target>Ошибка соединения</target>
@@ -728,6 +732,10 @@
       <trans-unit id="Connection timeout" xml:space="preserve">
         <source>Connection timeout</source>
         <target>Превышено время соединения</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Contact allows" xml:space="preserve">
+        <source>Contact allows</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact already exists" xml:space="preserve">
@@ -843,6 +851,10 @@
       <trans-unit id="Data" xml:space="preserve">
         <source>Data</source>
         <target>Данные</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Database ID" xml:space="preserve">
+        <source>Database ID</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database encrypted!" xml:space="preserve">
@@ -1493,6 +1505,10 @@
         <target>Полное имя:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Group" xml:space="preserve">
+        <source>Group</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Group display name" xml:space="preserve">
         <source>Group display name</source>
         <target>Имя группы</target>
@@ -1858,6 +1874,10 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="Live message!" xml:space="preserve">
         <source>Live message!</source>
         <target>Живое сообщение!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Local name" xml:space="preserve">
+        <source>Local name</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Make a private connection" xml:space="preserve">
@@ -2453,6 +2473,10 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="Revert" xml:space="preserve">
         <source>Revert</source>
         <target>Отменить изменения</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Role" xml:space="preserve">
+        <source>Role</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Run chat" xml:space="preserve">
@@ -3486,6 +3510,10 @@ SimpleX серверы не могут получить доступ к ваше
       <trans-unit id="Your profile, contacts and delivered messages are stored on your device." xml:space="preserve">
         <source>Your profile, contacts and delivered messages are stored on your device.</source>
         <target>Ваш профиль, контакты и доставленные сообщения хранятся на вашем устройстве.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your random profile" xml:space="preserve">
+        <source>Your random profile</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your server" xml:space="preserve">

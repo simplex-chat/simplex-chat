@@ -696,6 +696,10 @@
         <target>Mit dem Server verbinden… (Fehler: %@)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Connection" xml:space="preserve">
+        <source>Connection</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Connection error" xml:space="preserve">
         <source>Connection error</source>
         <target>Verbindungsfehler</target>
@@ -719,6 +723,10 @@
       <trans-unit id="Connection timeout" xml:space="preserve">
         <source>Connection timeout</source>
         <target>Verbindungszeitüberschreitung</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Contact allows" xml:space="preserve">
+        <source>Contact allows</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact already exists" xml:space="preserve">
@@ -833,6 +841,10 @@
       <trans-unit id="Data" xml:space="preserve">
         <source>Data</source>
         <target>Daten</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Database ID" xml:space="preserve">
+        <source>Database ID</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database encrypted!" xml:space="preserve">
@@ -1479,6 +1491,10 @@
         <target>Vollständiger Name:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Group" xml:space="preserve">
+        <source>Group</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Group display name" xml:space="preserve">
         <source>Group display name</source>
         <target>Anzeigename der Gruppe</target>
@@ -1841,6 +1857,10 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       </trans-unit>
       <trans-unit id="Live message!" xml:space="preserve">
         <source>Live message!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Local name" xml:space="preserve">
+        <source>Local name</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Make a private connection" xml:space="preserve">
@@ -2432,6 +2452,10 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       <trans-unit id="Revert" xml:space="preserve">
         <source>Revert</source>
         <target>Zurückkehren</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Role" xml:space="preserve">
+        <source>Role</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Run chat" xml:space="preserve">
@@ -3456,6 +3480,10 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
       <trans-unit id="Your profile, contacts and delivered messages are stored on your device." xml:space="preserve">
         <source>Your profile, contacts and delivered messages are stored on your device.</source>
         <target>Ihr Profil, Ihre Kontakte und zugestellten Nachrichten werden auf Ihrem Gerät gespeichert.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your random profile" xml:space="preserve">
+        <source>Your random profile</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your server" xml:space="preserve">

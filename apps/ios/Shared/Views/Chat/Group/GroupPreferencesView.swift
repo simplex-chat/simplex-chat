@@ -79,7 +79,7 @@ struct GroupPreferencesView: View {
                 }
             } else {
                 settingsRow(icon, color: color) {
-                    infoRow(feature.text, enableFeature.wrappedValue.text)
+                    infoRow(Text(feature.text), enableFeature.wrappedValue.text)
                 }
                 if timedOn {
                     infoRow("Delete after", TimedMessagesPreference.ttlText(preferences.timedMessages.ttl))
