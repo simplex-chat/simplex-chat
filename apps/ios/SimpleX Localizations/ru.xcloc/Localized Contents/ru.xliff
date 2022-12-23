@@ -17,6 +17,10 @@
         <target> </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="   " xml:space="preserve">
+        <source>   </source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id=" (" xml:space="preserve">
         <source> (</source>
         <target> (</target>
@@ -187,6 +191,10 @@
         <target>, </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="." xml:space="preserve">
+        <source>.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="1 day" xml:space="preserve">
         <source>1 day</source>
         <target>1 день</target>
@@ -308,6 +316,10 @@
         <target>Разрешить</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Allow disappearing messages only if your contact allows it to you." xml:space="preserve">
+        <source>Allow disappearing messages only if your contact allows it to you.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Allow irreversible message deletion only if your contact allows it to you." xml:space="preserve">
         <source>Allow irreversible message deletion only if your contact allows it to you.</source>
         <target>Разрешить необратимое удаление сообщений, только если ваш контакт разрешает это вам.</target>
@@ -316,6 +328,10 @@
       <trans-unit id="Allow sending direct messages to members." xml:space="preserve">
         <source>Allow sending direct messages to members.</source>
         <target>Разрешить посылать прямые сообщения членам группы.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Allow sending disappearing messages." xml:space="preserve">
+        <source>Allow sending disappearing messages.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow to irreversibly delete sent messages." xml:space="preserve">
@@ -341,6 +357,10 @@
       <trans-unit id="Allow your contacts to irreversibly delete sent messages." xml:space="preserve">
         <source>Allow your contacts to irreversibly delete sent messages.</source>
         <target>Разрешить вашим контактам необратимо удалять отправленные сообщения.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Allow your contacts to send disappearing messages." xml:space="preserve">
+        <source>Allow your contacts to send disappearing messages.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow your contacts to send voice messages." xml:space="preserve">
@@ -406,6 +426,10 @@
       <trans-unit id="Both you and your contact can irreversibly delete sent messages." xml:space="preserve">
         <source>Both you and your contact can irreversibly delete sent messages.</source>
         <target>Вы и ваш контакт можете необратимо удалять отправленные сообщения.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Both you and your contact can send disappearing messages." xml:space="preserve">
+        <source>Both you and your contact can send disappearing messages.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can send voice messages." xml:space="preserve">
@@ -860,6 +884,10 @@
         <target>Удалить адрес?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Delete after" xml:space="preserve">
+        <source>Delete after</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Delete archive" xml:space="preserve">
         <source>Delete archive</source>
         <target>Удалить архив</target>
@@ -1024,6 +1052,18 @@
         <source>Disable SimpleX Lock</source>
         <target>Отключить блокировку SimpleX</target>
         <note>authentication reason</note>
+      </trans-unit>
+      <trans-unit id="Disappearing messages" xml:space="preserve">
+        <source>Disappearing messages</source>
+        <note>chat feature</note>
+      </trans-unit>
+      <trans-unit id="Disappearing messages are prohibited in this chat." xml:space="preserve">
+        <source>Disappearing messages are prohibited in this chat.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Disappearing messages are prohibited in this group." xml:space="preserve">
+        <source>Disappearing messages are prohibited in this group.</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disconnect" xml:space="preserve">
         <source>Disconnect</source>
@@ -1435,6 +1475,10 @@
         <target>Члены группы могут посылать прямые сообщения.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Group members can send disappearing messages." xml:space="preserve">
+        <source>Group members can send disappearing messages.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Group members can send voice messages." xml:space="preserve">
         <source>Group members can send voice messages.</source>
         <target>Члены группы могут отправлять голосовые сообщения.</target>
@@ -1712,6 +1756,10 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Ошибка Keychain</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="LIVE" xml:space="preserve">
+        <source>LIVE</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Large file!" xml:space="preserve">
         <source>Large file!</source>
         <target>Большой файл!</target>
@@ -1740,6 +1788,10 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="Limitations" xml:space="preserve">
         <source>Limitations</source>
         <target>Ограничения</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Live message!" xml:space="preserve">
+        <source>Live message!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Make a private connection" xml:space="preserve">
@@ -2002,6 +2054,10 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Только вы можете необратимо удалять сообщения (ваш контакт может помечать их на удаление).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Only you can send disappearing messages." xml:space="preserve">
+        <source>Only you can send disappearing messages.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Only you can send voice messages." xml:space="preserve">
         <source>Only you can send voice messages.</source>
         <target>Только вы можете отправлять голосовые сообщения.</target>
@@ -2010,6 +2066,10 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="Only your contact can irreversibly delete messages (you can mark them for deletion)." xml:space="preserve">
         <source>Only your contact can irreversibly delete messages (you can mark them for deletion).</source>
         <target>Только ваш контакт может необратимо удалять сообщения (вы можете помечать их на удаление).</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Only your contact can send disappearing messages." xml:space="preserve">
+        <source>Only your contact can send disappearing messages.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only your contact can send voice messages." xml:space="preserve">
@@ -2160,6 +2220,10 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="Prohibit sending direct messages to members." xml:space="preserve">
         <source>Prohibit sending direct messages to members.</source>
         <target>Запретить посылать прямые сообщения членам группы.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Prohibit sending disappearing messages." xml:space="preserve">
+        <source>Prohibit sending disappearing messages.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit sending voice messages." xml:space="preserve">
@@ -2422,6 +2486,14 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Код шифрования</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Send" xml:space="preserve">
+        <source>Send</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Send a live message - it will update for the recipient(s) as you type it" xml:space="preserve">
+        <source>Send a live message - it will update for the recipient(s) as you type it</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Send direct message" xml:space="preserve">
         <source>Send direct message</source>
         <target>Отправить сообщение</target>
@@ -2430,6 +2502,10 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="Send link previews" xml:space="preserve">
         <source>Send link previews</source>
         <target>Отправлять картинки ссылок</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Send live message" xml:space="preserve">
+        <source>Send live message</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send notifications" xml:space="preserve">

@@ -17,6 +17,11 @@
         <target> </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="   " xml:space="preserve">
+        <source>   </source>
+        <target>   </target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id=" (" xml:space="preserve">
         <source> (</source>
         <target> (</target>
@@ -187,6 +192,11 @@
         <target>, </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="." xml:space="preserve">
+        <source>.</source>
+        <target>.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="1 day" xml:space="preserve">
         <source>1 day</source>
         <target>1 day</target>
@@ -308,6 +318,11 @@
         <target>Allow</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Allow disappearing messages only if your contact allows it to you." xml:space="preserve">
+        <source>Allow disappearing messages only if your contact allows it to you.</source>
+        <target>Allow disappearing messages only if your contact allows it to you.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Allow irreversible message deletion only if your contact allows it to you." xml:space="preserve">
         <source>Allow irreversible message deletion only if your contact allows it to you.</source>
         <target>Allow irreversible message deletion only if your contact allows it to you.</target>
@@ -316,6 +331,11 @@
       <trans-unit id="Allow sending direct messages to members." xml:space="preserve">
         <source>Allow sending direct messages to members.</source>
         <target>Allow sending direct messages to members.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Allow sending disappearing messages." xml:space="preserve">
+        <source>Allow sending disappearing messages.</source>
+        <target>Allow sending disappearing messages.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow to irreversibly delete sent messages." xml:space="preserve">
@@ -341,6 +361,11 @@
       <trans-unit id="Allow your contacts to irreversibly delete sent messages." xml:space="preserve">
         <source>Allow your contacts to irreversibly delete sent messages.</source>
         <target>Allow your contacts to irreversibly delete sent messages.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Allow your contacts to send disappearing messages." xml:space="preserve">
+        <source>Allow your contacts to send disappearing messages.</source>
+        <target>Allow your contacts to send disappearing messages.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow your contacts to send voice messages." xml:space="preserve">
@@ -406,6 +431,11 @@
       <trans-unit id="Both you and your contact can irreversibly delete sent messages." xml:space="preserve">
         <source>Both you and your contact can irreversibly delete sent messages.</source>
         <target>Both you and your contact can irreversibly delete sent messages.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Both you and your contact can send disappearing messages." xml:space="preserve">
+        <source>Both you and your contact can send disappearing messages.</source>
+        <target>Both you and your contact can send disappearing messages.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can send voice messages." xml:space="preserve">
@@ -861,6 +891,11 @@
         <target>Delete address?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Delete after" xml:space="preserve">
+        <source>Delete after</source>
+        <target>Delete after</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Delete archive" xml:space="preserve">
         <source>Delete archive</source>
         <target>Delete archive</target>
@@ -1025,6 +1060,21 @@
         <source>Disable SimpleX Lock</source>
         <target>Disable SimpleX Lock</target>
         <note>authentication reason</note>
+      </trans-unit>
+      <trans-unit id="Disappearing messages" xml:space="preserve">
+        <source>Disappearing messages</source>
+        <target>Disappearing messages</target>
+        <note>chat feature</note>
+      </trans-unit>
+      <trans-unit id="Disappearing messages are prohibited in this chat." xml:space="preserve">
+        <source>Disappearing messages are prohibited in this chat.</source>
+        <target>Disappearing messages are prohibited in this chat.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Disappearing messages are prohibited in this group." xml:space="preserve">
+        <source>Disappearing messages are prohibited in this group.</source>
+        <target>Disappearing messages are prohibited in this group.</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disconnect" xml:space="preserve">
         <source>Disconnect</source>
@@ -1436,6 +1486,11 @@
         <target>Group members can send direct messages.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Group members can send disappearing messages." xml:space="preserve">
+        <source>Group members can send disappearing messages.</source>
+        <target>Group members can send disappearing messages.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Group members can send voice messages." xml:space="preserve">
         <source>Group members can send voice messages.</source>
         <target>Group members can send voice messages.</target>
@@ -1713,6 +1768,11 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>Keychain error</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="LIVE" xml:space="preserve">
+        <source>LIVE</source>
+        <target>LIVE</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Large file!" xml:space="preserve">
         <source>Large file!</source>
         <target>Large file!</target>
@@ -1741,6 +1801,11 @@ We will be adding server redundancy to prevent lost messages.</target>
       <trans-unit id="Limitations" xml:space="preserve">
         <source>Limitations</source>
         <target>Limitations</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Live message!" xml:space="preserve">
+        <source>Live message!</source>
+        <target>Live message!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Make a private connection" xml:space="preserve">
@@ -2003,6 +2068,11 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>Only you can irreversibly delete messages (your contact can mark them for deletion).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Only you can send disappearing messages." xml:space="preserve">
+        <source>Only you can send disappearing messages.</source>
+        <target>Only you can send disappearing messages.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Only you can send voice messages." xml:space="preserve">
         <source>Only you can send voice messages.</source>
         <target>Only you can send voice messages.</target>
@@ -2011,6 +2081,11 @@ We will be adding server redundancy to prevent lost messages.</target>
       <trans-unit id="Only your contact can irreversibly delete messages (you can mark them for deletion)." xml:space="preserve">
         <source>Only your contact can irreversibly delete messages (you can mark them for deletion).</source>
         <target>Only your contact can irreversibly delete messages (you can mark them for deletion).</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Only your contact can send disappearing messages." xml:space="preserve">
+        <source>Only your contact can send disappearing messages.</source>
+        <target>Only your contact can send disappearing messages.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only your contact can send voice messages." xml:space="preserve">
@@ -2161,6 +2236,11 @@ We will be adding server redundancy to prevent lost messages.</target>
       <trans-unit id="Prohibit sending direct messages to members." xml:space="preserve">
         <source>Prohibit sending direct messages to members.</source>
         <target>Prohibit sending direct messages to members.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Prohibit sending disappearing messages." xml:space="preserve">
+        <source>Prohibit sending disappearing messages.</source>
+        <target>Prohibit sending disappearing messages.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit sending voice messages." xml:space="preserve">
@@ -2423,6 +2503,16 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>Security code</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Send" xml:space="preserve">
+        <source>Send</source>
+        <target>Send</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Send a live message - it will update for the recipient(s) as you type it" xml:space="preserve">
+        <source>Send a live message - it will update for the recipient(s) as you type it</source>
+        <target>Send a live message - it will update for the recipient(s) as you type it</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Send direct message" xml:space="preserve">
         <source>Send direct message</source>
         <target>Send direct message</target>
@@ -2431,6 +2521,11 @@ We will be adding server redundancy to prevent lost messages.</target>
       <trans-unit id="Send link previews" xml:space="preserve">
         <source>Send link previews</source>
         <target>Send link previews</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Send live message" xml:space="preserve">
+        <source>Send live message</source>
+        <target>Send live message</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send notifications" xml:space="preserve">
