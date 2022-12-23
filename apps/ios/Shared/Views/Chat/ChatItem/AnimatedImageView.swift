@@ -22,6 +22,7 @@ class AnimatedImageView: UIView {
         self.init()
         self.image = image
         imageView = UIImageView(gifImage: image)
+        imageView!.contentMode = .scaleAspectFit
         self.addSubview(imageView!)
     }
 
@@ -34,7 +35,7 @@ class AnimatedImageView: UIView {
         if let subview = self.subviews.first as? UIImageView {
             if image.imageData != subview.gifImage?.imageData {
                 imageView = UIImageView(gifImage: image)
-                imageView!.contentMode = .scaleAspectFill
+                imageView!.contentMode = .scaleAspectFit
                 self.addSubview(imageView!)
                 subview.removeFromSuperview()
             }
