@@ -121,13 +121,13 @@
 /* No comment provided by engineer. */
 "~strike~" = "\\~durchstreichen~";
 
-/* No comment provided by engineer. */
+/* message ttl */
 "1 day" = "täglich";
 
-/* No comment provided by engineer. */
+/* message ttl */
 "1 month" = "monatlich";
 
-/* No comment provided by engineer. */
+/* message ttl */
 "1 week" = "wöchentlich";
 
 /* No comment provided by engineer. */
@@ -1210,6 +1210,9 @@
 
 /* No comment provided by engineer. */
 "Limitations" = "Einschränkungen";
+
+/* No comment provided by engineer. */
+"LIVE" = "LIVE";
 
 /* No comment provided by engineer. */
 "Make a private connection" = "Stellen Sie eine private Verbindung her";
