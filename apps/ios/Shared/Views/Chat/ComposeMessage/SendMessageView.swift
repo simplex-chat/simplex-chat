@@ -20,7 +20,7 @@ struct SendMessageView: View {
     var startVoiceMessageRecording: (() -> Void)? = nil
     var finishVoiceMessageRecording: (() -> Void)? = nil
     var allowVoiceMessagesToContact: (() -> Void)? = nil
-    var onImagesAdded: ([UploadContent]) -> Void
+    var onImagesAdded: ([AnyImage]) -> Void
     @State private var holdingVMR = false
     @Namespace var namespace
     @FocusState.Binding var keyboardVisible: Bool

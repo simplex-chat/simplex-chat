@@ -17,7 +17,7 @@ struct NativeTextEditor: UIViewRepresentable {
     let font: UIFont
     @FocusState.Binding var focused: Bool
     let alignment: TextAlignment
-    let onImagesAdded: ([UploadContent]) -> Void
+    let onImagesAdded: ([AnyImage]) -> Void
     
     func makeUIView(context: Context) -> UITextView {
         let field = CustomUITextField()
@@ -46,10 +46,10 @@ struct NativeTextEditor: UIViewRepresentable {
 }
 
 private class CustomUITextField: UITextView, UITextViewDelegate {
-    var onTextChanged: (String, [UploadContent]) -> Void = { newText, image in }
+    var onTextChanged: (String, [AnyImage]) -> Void = { newText, image in }
     var onFocusChanged: (Bool) -> Void = { focused in }
     
-    func setOnTextChangedListener(onTextChanged: @escaping (String, [UploadContent]) -> Void) {
+    func setOnTextChangedListener(onTextChanged: @escaping (String, [AnyImage]) -> Void) {
         self.onTextChanged = onTextChanged
     }
     
@@ -68,7 +68,7 @@ private class CustomUITextField: UITextView, UITextViewDelegate {
                     let paste = actions[pasteIndex]
                     actions.remove(at: pasteIndex)
                     let newPaste = UIAction(title: paste.title, image: paste.image) { action in
-                        var images: [UploadContent] = []
+                        var images: [AnyImage] = []
                         var totalImages = 0
                         var processed = 0
                         UIPasteboard.general.itemProviders.forEach { p in
@@ -76,7 +76,7 @@ private class CustomUITextField: UITextView, UITextViewDelegate {
                                 totalImages += 1
                                 p.loadFileRepresentation(forTypeIdentifier: UTType.data.identifier) { url, error in
                                     processed += 1
-                                    if let url = url, let image = UploadContent.loadFromURL(url: url) {
+                                    if let url = url, let image = AnyImage.loadFromURL(url: url) {
                                         images.append(image)
                                         DispatchQueue.main.sync {
                                             self.onTextChanged(textView.text, images)
@@ -100,7 +100,7 @@ private class CustomUITextField: UITextView, UITextViewDelegate {
     }
 
     func textViewDidChange(_ textView: UITextView) {
-        var images: [UploadContent] = []
+        var images: [AnyImage] = []
         var rangeDiff = 0
         let newAttributedText = NSMutableAttributedString(attributedString: textView.attributedText)
         textView.attributedText.enumerateAttribute(
