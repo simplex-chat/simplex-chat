@@ -171,7 +171,7 @@ func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
     return chatItemPreview
 }
 
-enum AnyImage: Equatable {
+enum UploadContent: Equatable {
     case simpleImage(image: UIImage)
     case animatedImage(image: UIImage)
 
@@ -182,7 +182,7 @@ enum AnyImage: Equatable {
         }
     }
 
-    static func loadFromURL(url: URL) -> AnyImage? {
+    static func loadFromURL(url: URL) -> UploadContent? {
         do {
             let data = try Data(contentsOf: url)
             if let image = UIImage(data: data) {
@@ -216,7 +216,7 @@ struct ComposeView: View {
     @State private var showChooseSource = false
     @State private var showImagePicker = false
     @State private var showTakePhoto = false
-    @State var chosenImages: [AnyImage] = []
+    @State var chosenImages: [UploadContent] = []
     @State private var showFileImporter = false
     @State var chosenFile: URL? = nil
 
@@ -292,7 +292,7 @@ struct ComposeView: View {
                     UIPasteboard.general.itemProviders.forEach { p in
                         if p.hasItemConformingToTypeIdentifier(UTType.data.identifier) {
                             p.loadFileRepresentation(forTypeIdentifier: UTType.data.identifier) { url, error in
-                                if let url = url, let image = AnyImage.loadFromURL(url: url) {
+                                if let url = url, let image = UploadContent.loadFromURL(url: url) {
                                     chosenImages.append(image)
                                 }
                             }
@@ -627,7 +627,7 @@ struct ComposeView: View {
             }
         }
 
-        func saveAnyImage(_ img: AnyImage) -> String? {
+        func saveAnyImage(_ img: UploadContent) -> String? {
             switch img {
             case let .simpleImage(image): return saveImage(image)
             case let .animatedImage(image): return saveAnimImage(image)

@@ -14,7 +14,7 @@ import SimpleXChat
 struct LibraryImagePicker: View {
     @Binding var image: UIImage?
     var didFinishPicking: (_ didSelectItems: Bool) -> Void
-    @State var images: [AnyImage] = []
+    @State var images: [UploadContent] = []
 
     var body: some View {
         LibraryImageListPicker(images: $images, selectionLimit: 1, didFinishPicking: didFinishPicking)
@@ -28,14 +28,14 @@ struct LibraryImagePicker: View {
 
 struct LibraryImageListPicker: UIViewControllerRepresentable {
     typealias UIViewControllerType = PHPickerViewController
-    @Binding var images: [AnyImage]
+    @Binding var images: [UploadContent]
     var selectionLimit: Int
     var didFinishPicking: (_ didSelectItems: Bool) -> Void
 
     class Coordinator: PHPickerViewControllerDelegate {
         let parent: LibraryImageListPicker
         let dispatchQueue = DispatchQueue(label: "chat.simplex.app.LibraryImageListPicker")
-        var images: [AnyImage] = []
+        var images: [UploadContent] = []
         var imageCount: Int = 0
 
         init(_ parent: LibraryImageListPicker) {
@@ -84,7 +84,7 @@ struct LibraryImageListPicker: UIViewControllerRepresentable {
             } else if let image = object as? UIImage {
                 images.append(.simpleImage(image: image))
                 logger.log("LibraryImageListPicker: added image")
-            } else if let url = object as? URL, let image = AnyImage.loadFromURL(url: url) {
+            } else if let url = object as? URL, let image = UploadContent.loadFromURL(url: url) {
                 images.append(image)
             }
             dispatchQueue.sync {
@@ -117,14 +117,14 @@ struct LibraryImageListPicker: UIViewControllerRepresentable {
 }
 
 struct CameraImageListPicker: View {
-    @Binding var images: [AnyImage]
+    @Binding var images: [UploadContent]
     @State var image: UIImage?
 
     var body: some View {
         CameraImagePicker(image: $image)
             .onChange(of: image) { img in
                 if let img = img {
-                    images = [AnyImage.simpleImage(image: img)]
+                    images = [UploadContent.simpleImage(image: img)]
                 } else {
                     images = []
                 }
