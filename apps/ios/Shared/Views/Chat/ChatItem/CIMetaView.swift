@@ -23,7 +23,7 @@ struct CIMetaView: View {
     }
 }
 
-func ciMetaText(_ meta: CIMeta, chatTTL: Int?, color: Color = .clear) -> Text {
+func ciMetaText(_ meta: CIMeta, chatTTL: Int?, color: Color = .clear, transparent: Bool = false) -> Text {
     var r = Text("")
     if meta.itemEdited {
         r = r + statusIconText("pencil", color)
@@ -36,8 +36,8 @@ func ciMetaText(_ meta: CIMeta, chatTTL: Int?, color: Color = .clear) -> Text {
         }
         r = r + Text(" ")
     }
-    if let (icon, color) = meta.statusIcon(color) {
-        r = r + statusIconText(icon, color) + Text(" ")
+    if let (icon, statusColor) = meta.statusIcon(color) {
+        r = r + statusIconText(icon, transparent ? .clear : statusColor) + Text(" ")
     } else if !meta.disappearing {
         r = r + statusIconText("circlebadge.fill", .clear) + Text(" ")
     }
