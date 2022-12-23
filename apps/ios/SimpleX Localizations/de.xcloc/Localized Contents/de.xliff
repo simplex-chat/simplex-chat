@@ -1752,8 +1752,9 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>Schlüsselbundfehler</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="LIVE" xml:space="preserve">
+      <trans-unit id="LIVE" xml:space="preserve" approved="no">
         <source>LIVE</source>
+        <target state="translated">LIVE</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Large file!" xml:space="preserve">
