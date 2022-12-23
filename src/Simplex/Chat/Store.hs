@@ -322,8 +322,10 @@ import Simplex.Chat.Migrations.M20221211_group_description
 import Simplex.Chat.Migrations.M20221212_chat_items_timed
 import Simplex.Chat.Migrations.M20221214_live_message
 import Simplex.Chat.Migrations.M20221222_chat_ts
+import Simplex.Chat.Migrations.M20221223_idx_chat_items_item_status
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
+import Simplex.Chat.Util (week)
 import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..))
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, firstRow, firstRow', maybeFirstRow, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
@@ -378,7 +380,8 @@ schemaMigrations =
     ("20221211_group_description", m20221211_group_description),
     ("20221212_chat_items_timed", m20221212_chat_items_timed),
     ("20221214_live_message", m20221214_live_message),
-    ("20221222_chat_ts", m20221222_chat_ts)
+    ("20221222_chat_ts", m20221222_chat_ts),
+    ("20221223_idx_chat_items_item_status", m20221223_idx_chat_items_item_status)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -1235,6 +1238,7 @@ createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}
 
 getLiveSndFileTransfers :: DB.Connection -> User -> IO [SndFileTransfer]
 getLiveSndFileTransfers db User {userId} = do
+  cutoffTs <- addUTCTime (- week) <$> getCurrentTime
   fileIds :: [Int64] <-
     map fromOnly
       <$> DB.query
@@ -1242,10 +1246,11 @@ getLiveSndFileTransfers db User {userId} = do
         [sql|
           SELECT DISTINCT f.file_id
           FROM files f
-          JOIN snd_files s
+          JOIN snd_files s USING (file_id)
           WHERE f.user_id = ? AND s.file_status IN (?, ?, ?) AND s.file_inline IS NULL
+            AND created_at > ?
         |]
-        (userId, FSNew, FSAccepted, FSConnected)
+        (userId, FSNew, FSAccepted, FSConnected, cutoffTs)
   concatMap (filter liveTransfer) . rights <$> mapM (getSndFileTransfers_ db userId) fileIds
   where
     liveTransfer :: SndFileTransfer -> Bool
@@ -1253,6 +1258,7 @@ getLiveSndFileTransfers db User {userId} = do
 
 getLiveRcvFileTransfers :: DB.Connection -> User -> IO [RcvFileTransfer]
 getLiveRcvFileTransfers db user@User {userId} = do
+  cutoffTs <- addUTCTime (- week) <$> getCurrentTime
   fileIds :: [Int64] <-
     map fromOnly
       <$> DB.query
@@ -1260,10 +1266,11 @@ getLiveRcvFileTransfers db user@User {userId} = do
         [sql|
           SELECT f.file_id
           FROM files f
-          JOIN rcv_files r
+          JOIN rcv_files r USING (file_id)
           WHERE f.user_id = ? AND r.file_status IN (?, ?) AND r.rcv_file_inline IS NULL
+            AND created_at > ?
         |]
-        (userId, FSAccepted, FSConnected)
+        (userId, FSAccepted, FSConnected, cutoffTs)
   rights <$> mapM (runExceptT . getRcvFileTransfer db user) fileIds
 
 getPendingSndChunks :: DB.Connection -> Int64 -> Int64 -> IO [Integer]
