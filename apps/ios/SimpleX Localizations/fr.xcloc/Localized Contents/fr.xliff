@@ -4012,6 +4012,11 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
         <target state="translated">Envoyez un message dynamique - il sera mis à jour pour le⸱s destinataire⸱s au fur et à mesure que vous le tapez</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="LIVE" xml:space="preserve" approved="no">
+        <source>LIVE</source>
+        <target state="translated">LIVE</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
     </body>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="fr" datatype="plaintext">
