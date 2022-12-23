@@ -226,7 +226,10 @@ fun ChatItemView(
         is CIContent.SndConnEventContent -> CIEventView(cItem)
         is CIContent.RcvChatFeature -> CIChatFeatureView(cItem, c.feature, c.enabled.iconColor)
         is CIContent.SndChatFeature -> CIChatFeatureView(cItem, c.feature, c.enabled.iconColor)
-        is CIContent.RcvChatPreference -> CIFeaturePreferenceView(cItem, cInfo, c.feature, c.allowed, acceptFeature)
+        is CIContent.RcvChatPreference -> {
+          val ct = if (cInfo is ChatInfo.Direct) cInfo.contact else null
+          CIFeaturePreferenceView(cItem, ct, c.feature, c.allowed, acceptFeature)
+        }
         is CIContent.SndChatPreference -> CIChatFeatureView(cItem, c.feature, HighOrLowlight, icon = c.feature.icon,)
         is CIContent.RcvGroupFeature -> CIChatFeatureView(cItem, c.groupFeature, c.preference.enable.iconColor)
         is CIContent.SndGroupFeature -> CIChatFeatureView(cItem, c.groupFeature, c.preference.enable.iconColor)

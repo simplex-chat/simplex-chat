@@ -23,7 +23,7 @@ fun CIChatFeatureView(
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(4.dp)
   ) {
-    Icon(icon ?: feature.iconFilled, feature.text, Modifier.size(15.dp), tint = iconColor)
+    Icon(icon ?: feature.iconFilled, feature.text, Modifier.size(18.dp), tint = iconColor)
     Text(
       chatEventText(chatItem),
       Modifier,

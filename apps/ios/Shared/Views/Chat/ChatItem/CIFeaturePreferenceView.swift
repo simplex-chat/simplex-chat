@@ -17,27 +17,38 @@ struct CIFeaturePreferenceView: View {
     var param: Int?
 
     var body: some View {
-        HStack(alignment: .bottom, spacing: 4) {
+        HStack(alignment: .center, spacing: 4) {
             Image(systemName: feature.icon)
                 .foregroundColor(.secondary)
                 .scaleEffect(feature.iconScale)
-            Text(CIContent.preferenceText(feature, allowed, param))
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .fontWeight(.light)
             if let ct = chat.chatInfo.contact,
                allowed != .no && ct.allowsFeature(feature) && !ct.userAllowsFeature(feature) {
-                Button("Accept") { allowFeatureToContact(ct, feature) }
-                .font(.caption)
+                featurePreferenceView(accept: true)
+                    .onTapGesture {
+                        allowFeatureToContact(ct, feature)
+                    }
+            } else {
+                featurePreferenceView()
             }
-            chatItem.timestampText
-                .font(.caption)
-                .foregroundColor(Color.secondary)
-                .fontWeight(.light)
         }
         .padding(.leading, 6)
         .padding(.bottom, 6)
         .textSelection(.disabled)
+    }
+
+    private func featurePreferenceView(accept: Bool = false) -> some View {
+        var r = Text(CIContent.preferenceText(feature, allowed, param) + "  ")
+                .fontWeight(.light)
+                .foregroundColor(.secondary)
+        if accept {
+            r = r + Text("Accept" + "  ")
+                .fontWeight(.medium)
+                .foregroundColor(.accentColor)
+        }
+        r = r + chatItem.timestampText
+                .fontWeight(.light)
+                .foregroundColor(.secondary)
+        return r.font(.caption)
     }
 }
 

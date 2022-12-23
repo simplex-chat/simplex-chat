@@ -32,7 +32,7 @@ fun CIEventView(ci: ChatItem) {
       if (memberDisplayName != null) {
         chatEventTextView(
           buildAnnotatedString {
-            withChatEventStyle(this, memberDisplayName)
+            withStyle(chatEventStyle) { append(memberDisplayName) }
             append(" ")
           }.plus(chatEventText(ci))
         )
@@ -43,15 +43,11 @@ fun CIEventView(ci: ChatItem) {
   }
 }
 
-fun withChatEventStyle(builder: AnnotatedString.Builder, text: String) {
-  return builder.withStyle(SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Light, color = HighOrLowlight)) { append(text) }
-}
+val chatEventStyle = SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Light, color = HighOrLowlight)
 
 fun chatEventText(ci: ChatItem): AnnotatedString =
   buildAnnotatedString {
-    withChatEventStyle(this, ci.content.text)
-    append(" ")
-    withChatEventStyle(this, ci.timestampText)
+    withStyle(chatEventStyle) { append(ci.content.text + "  " + ci.timestampText) }
   }
 
 @Preview(showBackground = true)
