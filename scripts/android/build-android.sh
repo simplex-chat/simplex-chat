@@ -24,7 +24,7 @@ nix_install() {
 }
 
 nix_setup() {
-  printf "sandbox = true\nmax-jobs = auto\nexperimental-features = nix-command flakes\nextra-substituters = https://cache.zw3rk.com\ntrusted-public-keys = loony-tools:pr9m4BkM/5/eSTZlkQyRt57Jz7OMBxNSUiMC4FkcNfk=" > "$tmp/nix.conf"
+  printf "sandbox = true\nmax-jobs = auto\nexperimental-features = nix-command flakes\n" > "$tmp/nix.conf"
   export NIX_CONF_DIR="$tmp/"
 }
 
