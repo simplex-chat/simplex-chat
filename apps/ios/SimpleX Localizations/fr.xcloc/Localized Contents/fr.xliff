@@ -5,10 +5,10 @@
       <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="14.0" build-num="14A309"/>
     </header>
     <body>
-      <trans-unit id="&#10;" xml:space="preserve" approved="no">
+      <trans-unit id="&#10;" xml:space="preserve" approved="yes">
         <source>
 </source>
-        <target state="translated">
+        <target state="final">
 </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
