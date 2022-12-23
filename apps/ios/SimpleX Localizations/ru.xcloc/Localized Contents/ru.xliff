@@ -77,29 +77,29 @@
         <target>%@ хочет соединиться!</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="%d days" xml:space="preserve" approved="no">
+      <trans-unit id="%d days" xml:space="preserve">
         <source>%d days</source>
-        <target state="translated">%d дней</target>
+        <target>%d дней</target>
         <note>message ttl</note>
       </trans-unit>
-      <trans-unit id="%d hours" xml:space="preserve" approved="no">
+      <trans-unit id="%d hours" xml:space="preserve">
         <source>%d hours</source>
-        <target state="translated">%d ч.</target>
+        <target>%d ч.</target>
         <note>message ttl</note>
       </trans-unit>
-      <trans-unit id="%d min" xml:space="preserve" approved="no">
+      <trans-unit id="%d min" xml:space="preserve">
         <source>%d min</source>
-        <target state="translated">%d мин</target>
+        <target>%d мин</target>
         <note>message ttl</note>
       </trans-unit>
-      <trans-unit id="%d months" xml:space="preserve" approved="no">
+      <trans-unit id="%d months" xml:space="preserve">
         <source>%d months</source>
-        <target state="translated">%d мес.</target>
+        <target>%d мес.</target>
         <note>message ttl</note>
       </trans-unit>
-      <trans-unit id="%d sec" xml:space="preserve" approved="no">
+      <trans-unit id="%d sec" xml:space="preserve">
         <source>%d sec</source>
-        <target state="translated">%d сек</target>
+        <target>%d сек</target>
         <note>message ttl</note>
       </trans-unit>
       <trans-unit id="%d skipped message(s)" xml:space="preserve">
@@ -137,14 +137,14 @@
         <target>%lld секунд</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lldd" xml:space="preserve" approved="no">
+      <trans-unit id="%lldd" xml:space="preserve">
         <source>%lldd</source>
-        <target state="translated">%lldд</target>
+        <target>%lldд</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lldh" xml:space="preserve" approved="no">
+      <trans-unit id="%lldh" xml:space="preserve">
         <source>%lldh</source>
-        <target state="translated">%lldч</target>
+        <target>%lldч</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lldk" xml:space="preserve">
@@ -152,24 +152,24 @@
         <target>%lldk</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lldm" xml:space="preserve" approved="no">
+      <trans-unit id="%lldm" xml:space="preserve">
         <source>%lldm</source>
-        <target state="translated">%lldм</target>
+        <target>%lldм</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lldmth" xml:space="preserve" approved="no">
+      <trans-unit id="%lldmth" xml:space="preserve">
         <source>%lldmth</source>
-        <target state="translated">%lldмес</target>
+        <target>%lldмес</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%llds" xml:space="preserve" approved="no">
+      <trans-unit id="%llds" xml:space="preserve">
         <source>%llds</source>
-        <target state="translated">%lldс</target>
+        <target>%lldс</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lldw" xml:space="preserve" approved="no">
+      <trans-unit id="%lldw" xml:space="preserve">
         <source>%lldw</source>
-        <target state="translated">%lldнед</target>
+        <target>%lldнед</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="(" xml:space="preserve">
@@ -257,9 +257,9 @@
         <target>1 день</target>
         <note>message ttl</note>
       </trans-unit>
-      <trans-unit id="1 hour" xml:space="preserve" approved="no">
+      <trans-unit id="1 hour" xml:space="preserve">
         <source>1 hour</source>
-        <target state="translated">1 час</target>
+        <target>1 час</target>
         <note>message ttl</note>
       </trans-unit>
       <trans-unit id="1 month" xml:space="preserve">
@@ -272,9 +272,9 @@
         <target>1 неделю</target>
         <note>message ttl</note>
       </trans-unit>
-      <trans-unit id="2 weeks" xml:space="preserve" approved="no">
+      <trans-unit id="2 weeks" xml:space="preserve">
         <source>2 weeks</source>
-        <target state="translated">2 недели</target>
+        <target>2 недели</target>
         <note>message ttl</note>
       </trans-unit>
       <trans-unit id="6" xml:space="preserve">
@@ -718,9 +718,9 @@
         <target>Устанавливается соединение с сервером… (ошибка: %@)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connection" xml:space="preserve" approved="no">
+      <trans-unit id="Connection" xml:space="preserve">
         <source>Connection</source>
-        <target state="translated">Соединение</target>
+        <target>Соединение</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection error" xml:space="preserve">
@@ -748,9 +748,9 @@
         <target>Превышено время соединения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Contact allows" xml:space="preserve" approved="no">
+      <trans-unit id="Contact allows" xml:space="preserve">
         <source>Contact allows</source>
-        <target state="translated">Контакт разрешает</target>
+        <target>Контакт разрешает</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact already exists" xml:space="preserve">
@@ -868,9 +868,9 @@
         <target>Данные</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database ID" xml:space="preserve" approved="no">
+      <trans-unit id="Database ID" xml:space="preserve">
         <source>Database ID</source>
-        <target state="translated">ID базы данных</target>
+        <target>ID базы данных</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database encrypted!" xml:space="preserve">
@@ -1521,9 +1521,9 @@
         <target>Полное имя:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group" xml:space="preserve" approved="no">
+      <trans-unit id="Group" xml:space="preserve">
         <source>Group</source>
-        <target state="translated">Группа</target>
+        <target>Группа</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group display name" xml:space="preserve">
@@ -1893,9 +1893,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Живое сообщение!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Local name" xml:space="preserve" approved="no">
+      <trans-unit id="Local name" xml:space="preserve">
         <source>Local name</source>
-        <target state="translated">Локальное имя</target>
+        <target>Локальное имя</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Make a private connection" xml:space="preserve">
@@ -2493,9 +2493,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Отменить изменения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Role" xml:space="preserve" approved="no">
+      <trans-unit id="Role" xml:space="preserve">
         <source>Role</source>
-        <target state="translated">Роль</target>
+        <target>Роль</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Run chat" xml:space="preserve">
@@ -3531,9 +3531,9 @@ SimpleX серверы не могут получить доступ к ваше
         <target>Ваш профиль, контакты и доставленные сообщения хранятся на вашем устройстве.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your random profile" xml:space="preserve" approved="no">
+      <trans-unit id="Your random profile" xml:space="preserve">
         <source>Your random profile</source>
-        <target state="translated">Случайный профиль</target>
+        <target>Случайный профиль</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your server" xml:space="preserve">
