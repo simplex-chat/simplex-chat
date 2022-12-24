@@ -509,7 +509,7 @@ public enum GroupFeature: String, Decodable, Feature {
 
     public var icon: String {
         switch self {
-        case .timedMessages: return "timer"
+        case .timedMessages: return "stopwatch"
         case .directMessages: return "arrow.left.and.right.circle"
         case .fullDelete: return "trash.slash"
         case .voice: return "mic"
@@ -518,7 +518,7 @@ public enum GroupFeature: String, Decodable, Feature {
 
     public var iconFilled: String {
         switch self {
-        case .timedMessages: return "timer"
+        case .timedMessages: return "stopwatch.fill"
         case .directMessages: return "arrow.left.and.right.circle.fill"
         case .fullDelete: return "trash.slash.fill"
         case .voice: return "mic.fill"
