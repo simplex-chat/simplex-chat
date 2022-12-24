@@ -39,6 +39,7 @@ let DEFAULT_ACCENT_COLOR_BLUE = "accentColorBlue"
 let DEFAULT_USER_INTERFACE_STYLE = "userInterfaceStyle"
 let DEFAULT_CONNECT_VIA_LINK_TAB = "connectViaLinkTab"
 let DEFAULT_LIVE_MESSAGE_ALERT_SHOWN = "liveMessageAlertShown"
+let DEFAULT_WHATS_NEW_VERSION = "defaultWhatsNewVersion"
 
 let appDefaults: [String: Any] = [
     DEFAULT_SHOW_LA_NOTICE: false,
@@ -194,19 +195,26 @@ struct SettingsView: View {
                         settingsRow("questionmark") { Text("How to use it") }
                     }
                     NavigationLink {
+                        WhatsNewView()
+                            .navigationBarTitleDisplayMode(.inline)
+                    } label: {
+                        settingsRow("plus") { Text("What's new") }
+                    }
+                    NavigationLink {
                         SimpleXInfo(onboarding: false)
                             .navigationBarTitle("", displayMode: .inline)
                             .frame(maxHeight: .infinity, alignment: .top)
                     } label: {
                         settingsRow("info") { Text("About SimpleX Chat") }
                     }
-                    NavigationLink {
-                        MarkdownHelp()
-                            .navigationTitle("How to use markdown")
-                            .frame(maxHeight: .infinity, alignment: .top)
-                    } label: {
-                        settingsRow("textformat") { Text("Markdown in messages") }
-                    }
+//                    NavigationLink {
+//                        MarkdownHelp()
+//                            .padding()
+//                            .navigationTitle("How to use markdown")
+//                            .frame(maxHeight: .infinity, alignment: .top)
+//                    } label: {
+//                        settingsRow("textformat") { Text("Markdown in messages") }
+//                    }
                     settingsRow("number") {
                         Button("Send questions and ideas") {
                             showSettings = false

@@ -14,6 +14,10 @@ struct ChatHelp: View {
     @State private var showAddChat = false
 
     var body: some View {
+        ScrollView { chatHelp() }
+    }
+
+    func chatHelp() -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Thank you for installing SimpleX Chat!")
 
@@ -42,6 +46,15 @@ struct ChatHelp: View {
                 Text("**Create link / QR code** for your contact to use.")
                 Text("**Paste received link** or open it in the browser and tap **Open in mobile app**.")
                 Text("**Scan QR code**: to connect to your contact in person or via video call.")
+            }
+            .padding(.top, 24)
+
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Markdown in messages")
+                    .font(.title2)
+                    .fontWeight(.bold)
+
+                MarkdownHelp()
             }
             .padding(.top, 24)
         }
