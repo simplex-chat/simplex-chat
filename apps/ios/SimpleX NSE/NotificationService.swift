@@ -218,7 +218,7 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, UNMutableNotification
         var cItem = aChatItem.chatItem
         if case .image = cItem.content.msgContent {
            if let file = cItem.file,
-              file.fileSize <= MAX_IMAGE_SIZE,
+              file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV,
               privacyAcceptImagesGroupDefault.get() {
                let inline = privacyTransferImagesInlineGroupDefault.get()
                cItem = apiReceiveFile(fileId: file.fileId, inline: inline)?.chatItem ?? cItem

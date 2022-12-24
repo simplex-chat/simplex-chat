@@ -100,6 +100,7 @@
 		5CB924E127A867BA00ACCCDD /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924E027A867BA00ACCCDD /* UserProfile.swift */; };
 		5CB924E427A8683A00ACCCDD /* UserAddress.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924E327A8683A00ACCCDD /* UserAddress.swift */; };
 		5CB9250D27A9432000ACCCDD /* ChatListNavLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB9250C27A9432000ACCCDD /* ChatListNavLink.swift */; };
+		5CBD285A295711D700EC2CF4 /* ImageUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CBD2859295711D700EC2CF4 /* ImageUtils.swift */; };
 		5CBE6C12294487F7002D9531 /* VerifyCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CBE6C11294487F7002D9531 /* VerifyCodeView.swift */; };
 		5CBE6C142944CC12002D9531 /* ScanCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CBE6C132944CC12002D9531 /* ScanCodeView.swift */; };
 		5CC1C99227A6C7F5000D9FF6 /* QRCode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC1C99127A6C7F5000D9FF6 /* QRCode.swift */; };
@@ -159,7 +160,6 @@
 		64F1CC3B28B39D8600CD1FB1 /* IncognitoHelp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1CC3A28B39D8600CD1FB1 /* IncognitoHelp.swift */; };
 		D72A9088294BD7A70047C86D /* NativeTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D72A9087294BD7A70047C86D /* NativeTextEditor.swift */; };
 		D77B92DC2952372200A5A1CC /* SwiftyGif in Frameworks */ = {isa = PBXBuildFile; productRef = D77B92DB2952372200A5A1CC /* SwiftyGif */; };
-		D77B92DE29523E1700A5A1CC /* SwiftyGif in Frameworks */ = {isa = PBXBuildFile; productRef = D77B92DD29523E1700A5A1CC /* SwiftyGif */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -324,6 +324,7 @@
 		5CBD285629565CAE00EC2CF4 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/Localizable.strings; sourceTree = "<group>"; };
 		5CBD285729565D2600EC2CF4 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = "fr.lproj/SimpleX--iOS--InfoPlist.strings"; sourceTree = "<group>"; };
 		5CBD285829565D2600EC2CF4 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		5CBD2859295711D700EC2CF4 /* ImageUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageUtils.swift; sourceTree = "<group>"; };
 		5CBE6C11294487F7002D9531 /* VerifyCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerifyCodeView.swift; sourceTree = "<group>"; };
 		5CBE6C132944CC12002D9531 /* ScanCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanCodeView.swift; sourceTree = "<group>"; };
 		5CC1C99127A6C7F5000D9FF6 /* QRCode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRCode.swift; sourceTree = "<group>"; };
@@ -417,7 +418,6 @@
 			files = (
 				5C70311F2955080A00150A12 /* libHSsimplex-chat-4.4.0-AHPp9UIBWT5C2IlT3cD6QO.a in Frameworks */,
 				5CE2BA93284534B000EC33A6 /* libiconv.tbd in Frameworks */,
-				D77B92DE29523E1700A5A1CC /* SwiftyGif in Frameworks */,
 				5CE2BA94284534BB00EC33A6 /* libz.tbd in Frameworks */,
 				5C70311D2955080A00150A12 /* libgmp.a in Frameworks */,
 				5C70311E2955080A00150A12 /* libffi.a in Frameworks */,
@@ -509,6 +509,7 @@
 				5CB346E42868AA7F001FD2EF /* SuspendChat.swift */,
 				5CB346E82869E8BA001FD2EF /* PushEnvironment.swift */,
 				5C93293E2928E0FD0090FFF9 /* AudioRecPlay.swift */,
+				5CBD2859295711D700EC2CF4 /* ImageUtils.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -839,7 +840,6 @@
 			);
 			name = SimpleXChat;
 			packageProductDependencies = (
-				D77B92DD29523E1700A5A1CC /* SwiftyGif */,
 			);
 			productName = SimpleXChat;
 			productReference = 5CE2BA682845308900EC33A6 /* SimpleXChat.framework */;
@@ -960,6 +960,7 @@
 				6432857C2925443C00FBE5C8 /* GroupPreferencesView.swift in Sources */,
 				5C93293129239BED0090FFF9 /* SMPServerView.swift in Sources */,
 				5C9CC7AD28C55D7800BEF955 /* DatabaseEncryptionView.swift in Sources */,
+				5CBD285A295711D700EC2CF4 /* ImageUtils.swift in Sources */,
 				5CE4407927ADB701007B033A /* EmojiItemView.swift in Sources */,
 				5C3F1D562842B68D00EC8A82 /* IntegrityErrorItemView.swift in Sources */,
 				5C029EAA283942EA004A9677 /* CallController.swift in Sources */,
@@ -1641,11 +1642,6 @@
 			productName = CodeScanner;
 		};
 		D77B92DB2952372200A5A1CC /* SwiftyGif */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = D77B92DA2952372200A5A1CC /* XCRemoteSwiftPackageReference "SwiftyGif" */;
-			productName = SwiftyGif;
-		};
-		D77B92DD29523E1700A5A1CC /* SwiftyGif */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = D77B92DA2952372200A5A1CC /* XCRemoteSwiftPackageReference "SwiftyGif" */;
 			productName = SwiftyGif;
