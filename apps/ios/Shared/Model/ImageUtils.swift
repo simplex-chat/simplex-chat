@@ -1,5 +1,5 @@
 //
-//  Utils.swift
+//  ImageUtils.swift
 //  SimpleX (iOS)
 //
 //  Created by Evgeny on 24/12/2022.
