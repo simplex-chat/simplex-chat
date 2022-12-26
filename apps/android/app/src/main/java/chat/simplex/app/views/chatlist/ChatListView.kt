@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
+import chat.simplex.app.connectIfOpenedViaUri
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
@@ -43,6 +44,13 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
   }
   LaunchedEffect(chatModel.clearOverlays.value) {
     if (chatModel.clearOverlays.value && newChatSheetState.value.isVisible()) hideNewChatSheet(false)
+  }
+  LaunchedEffect(chatModel.appOpenUrl.value) {
+    val url = chatModel.appOpenUrl.value
+    if (url != null) {
+      chatModel.appOpenUrl.value = null
+      connectIfOpenedViaUri(url, chatModel)
+    }
   }
   var searchInList by rememberSaveable { mutableStateOf("") }
   val scaffoldState = rememberScaffoldState()

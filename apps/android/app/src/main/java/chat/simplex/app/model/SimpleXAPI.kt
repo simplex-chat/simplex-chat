@@ -264,10 +264,6 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         chatModel.onboardingStage.value = OnboardingStage.OnboardingComplete
         chatModel.controller.appPrefs.chatLastStart.set(Clock.System.now())
         chatModel.chatRunning.value = true
-        chatModel.appOpenUrl.value?.let {
-          chatModel.appOpenUrl.value = null
-          connectIfOpenedViaUri(it, chatModel)
-        }
         startReceiver()
         Log.d(TAG, "startChat: started")
       } else {

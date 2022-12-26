@@ -42,7 +42,6 @@ import chat.simplex.app.views.newchat.*
 import chat.simplex.app.views.onboarding.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 
 class MainActivity: FragmentActivity() {
@@ -479,7 +478,6 @@ fun processExternalIntent(intent: Intent?, chatModel: ChatModel) {
 fun connectIfOpenedViaUri(uri: Uri, chatModel: ChatModel) {
   Log.d(TAG, "connectIfOpenedViaUri: opened via link")
   if (chatModel.currentUser.value == null) {
-    // TODO open from chat list view
     chatModel.appOpenUrl.value = uri
   } else {
     withUriAction(uri) { linkType ->
