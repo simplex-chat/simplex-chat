@@ -34,6 +34,7 @@ data ChatOpts = ChatOpts
     chatCmd :: String,
     chatCmdDelay :: Int,
     chatServerPort :: Maybe String,
+    optFilesFolder :: Maybe FilePath,
     allowInstantFiles :: Bool,
     maintenance :: Bool
   }
@@ -127,9 +128,16 @@ chatOpts appDir defaultDbFileName = do
           <> help "Run chat server on specified port"
           <> value Nothing
       )
+  optFilesFolder <-
+    optional $
+      strOption
+        ( long "files-folder"
+            <> metavar "FOLDER"
+            <> help "Folder to use for sent and received files"
+      )
   allowInstantFiles <-
     switch
-      ( long "--allow-instant-files"
+      ( long "allow-instant-files"
           <> short 'f'
           <> help "Send and receive instant files without acceptance"
       )
@@ -151,6 +159,7 @@ chatOpts appDir defaultDbFileName = do
         chatCmd,
         chatCmdDelay,
         chatServerPort,
+        optFilesFolder,
         allowInstantFiles,
         maintenance
       }
