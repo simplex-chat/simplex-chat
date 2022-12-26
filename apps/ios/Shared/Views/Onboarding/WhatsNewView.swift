@@ -107,6 +107,7 @@ func shouldShowWhatsNew() -> Bool {
 struct WhatsNewView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @State var currentVersion = versionDescriptions.count - 1
+    @State var currentVersionNav = versionDescriptions.count - 1
     var viaSettings = false
 
     var body: some View {
@@ -157,9 +158,10 @@ struct WhatsNewView: View {
 
     private func pagination() -> some View {
         HStack {
-            if currentVersion > 0 {
-                let prev = currentVersion - 1
-                Button() {
+            if currentVersionNav > 0 {
+                let prev = currentVersionNav - 1
+                Button {
+                    currentVersionNav = prev
                     withAnimation { currentVersion = prev }
                 } label: {
                     HStack {
@@ -169,9 +171,10 @@ struct WhatsNewView: View {
                 }
             }
             Spacer()
-            if currentVersion < versionDescriptions.count - 1 {
-                let next = currentVersion + 1
-                Button() {
+            if currentVersionNav < versionDescriptions.count - 1 {
+                let next = currentVersionNav + 1
+                Button {
+                    currentVersionNav = next
                     withAnimation { currentVersion = next }
                 } label: {
                     HStack {
