@@ -280,6 +280,8 @@ data ChatCommand
   | QuitChat
   | ShowVersion
   | DebugLocks
+  | GetAgentStats
+  | ResetAgentStats
   deriving (Show)
 
 data ChatResponse
@@ -411,6 +413,7 @@ data ChatResponse
   | CRContactConnectionDeleted {connection :: PendingContactConnection}
   | CRSQLResult {rows :: [Text]}
   | CRDebugLocks {chatLockName :: Maybe String, agentLocks :: AgentLocks}
+  | CRAgentStats {agentStats :: [[String]]}
   | CRMessageError {severity :: Text, errorMessage :: Text}
   | CRChatCmdError {chatError :: ChatError}
   | CRChatError {chatError :: ChatError}
