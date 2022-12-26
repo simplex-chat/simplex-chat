@@ -132,6 +132,8 @@ class AppPreferences(val context: Context) {
   val currentTheme = mkStrPreference(SHARED_PREFS_CURRENT_THEME, DefaultTheme.SYSTEM.name)
   val primaryColor = mkIntPreference(SHARED_PREFS_PRIMARY_COLOR, LightColorPalette.primary.toArgb())
 
+  val whatsNewVersion = mkStrPreference(SHARED_PREFS_WHATS_NEW_VERSION, null)
+
   private fun mkIntPreference(prefName: String, default: Int) =
     SharedPreference(
       get = fun() = sharedPreferences.getInt(prefName, default),
@@ -223,6 +225,7 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_ENCRYPTION_STARTED_AT = "EncryptionStartedAt"
     private const val SHARED_PREFS_CURRENT_THEME = "CurrentTheme"
     private const val SHARED_PREFS_PRIMARY_COLOR = "PrimaryColor"
+    private const val SHARED_PREFS_WHATS_NEW_VERSION = "WhatsNewVersion"
   }
 }
 

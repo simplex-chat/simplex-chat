@@ -26,8 +26,11 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.NewChatSheet
+import chat.simplex.app.views.onboarding.WhatsNewView
+import chat.simplex.app.views.onboarding.shouldShowWhatsNew
 import chat.simplex.app.views.usersettings.SettingsView
 import chat.simplex.app.views.usersettings.simplexTeamUri
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
@@ -40,6 +43,12 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
   val hideNewChatSheet: (animated: Boolean) -> Unit = { animated ->
     if (animated) newChatSheetState.value = NewChatSheetState.HIDING
     else newChatSheetState.value = NewChatSheetState.GONE
+  }
+  LaunchedEffect(Unit) {
+    if (shouldShowWhatsNew(chatModel)) {
+      delay(1000L)
+      ModalManager.shared.showCustomModal { close -> WhatsNewView(close = close) }
+    }
   }
   LaunchedEffect(chatModel.clearOverlays.value) {
     if (chatModel.clearOverlays.value && newChatSheetState.value.isVisible()) hideNewChatSheet(false)
