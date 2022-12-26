@@ -195,7 +195,7 @@ struct SettingsView: View {
                         settingsRow("questionmark") { Text("How to use it") }
                     }
                     NavigationLink {
-                        WhatsNewView()
+                        WhatsNewView(viaSettings: true)
                             .navigationBarTitleDisplayMode(.inline)
                     } label: {
                         settingsRow("plus") { Text("What's new") }

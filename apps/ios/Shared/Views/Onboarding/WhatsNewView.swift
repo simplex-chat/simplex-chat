@@ -105,7 +105,9 @@ func shouldShowWhatsNew() -> Bool {
 }
 
 struct WhatsNewView: View {
+    @Environment(\.dismiss) var dismiss: DismissAction
     @State var currentVersion = versionDescriptions.count - 1
+    var viaSettings = false
 
     var body: some View {
         VStack {
@@ -120,6 +122,15 @@ struct WhatsNewView: View {
                             .padding(.vertical)
                         ForEach(v.features, id: \.icon) { f in
                             featureDescription(f.icon, f.title, f.description)
+                        }
+                        if !viaSettings {
+                            Spacer()
+                            Button("Ok") {
+                                dismiss()
+                            }
+                            .font(.title3)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            Spacer()
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
