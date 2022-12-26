@@ -466,15 +466,17 @@ struct ChatView: View {
                 }
                 menu.append(shareUIAction())
                 menu.append(copyUIAction())
+                if let filePath = getLoadedFilePath(ci.file) {
                     if case .image = ci.content.msgContent, let image = getLoadedImage(ci.file) {
-                        if image.imageData != nil, let filePath = getLoadedFilePath(ci.file) {
+                        if image.imageData != nil {
                             menu.append(saveFileAction(filePath))
                         } else {
                             menu.append(saveImageAction(image))
                         }
-                    } else if case .file = ci.content.msgContent, let filePath = getLoadedFilePath(ci.file) {
+                    } else {
                         menu.append(saveFileAction(filePath))
                     }
+                }
                 if ci.meta.editable && !mc.isVoice {
                     menu.append(editAction())
                 }
