@@ -19,6 +19,7 @@ struct ContentView: View {
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = true
     @AppStorage(DEFAULT_NOTIFICATION_ALERT_SHOWN) private var notificationAlertShown = false
+    @State private var showWhatsNew = false
 
     var body: some View {
         ZStack {
@@ -61,8 +62,15 @@ struct ContentView: View {
                 if (!prefLANoticeShown && prefShowLANotice) {
                     prefLANoticeShown = true
                     alertManager.showAlert(laNoticeAlert())
+                } else if !chatModel.showCallView && CallController.shared.activeCallInvitation == nil {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        showWhatsNew = shouldShowWhatsNew()
+                    }
                 }
                 prefShowLANotice = true
+            }
+            .sheet(isPresented: $showWhatsNew) {
+                WhatsNewView()
             }
             if chatModel.showCallView, let call = chatModel.activeCall {
                 ActiveCallView(call: call)

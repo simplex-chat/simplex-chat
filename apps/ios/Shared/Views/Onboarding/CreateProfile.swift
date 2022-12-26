@@ -75,6 +75,7 @@ struct CreateProfile: View {
         }
         .onAppear() {
             focusDisplayName = true
+            setLastVersionDefault()
         }
         .padding()
     }
