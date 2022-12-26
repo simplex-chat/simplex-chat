@@ -57,6 +57,7 @@ import Simplex.Chat.Store
 import Simplex.Chat.Types
 import Simplex.Chat.Util (diffInMicros, diffInSeconds)
 import Simplex.Messaging.Agent as Agent
+import Simplex.Messaging.Agent.Client (AgentStatsKey (..))
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), AgentDatabase (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
@@ -134,7 +135,7 @@ createChatDatabase filePrefix key yesToMigrations = do
   pure ChatDatabase {chatStore, agentStore}
 
 newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> IO ChatController
-newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agentConfig = aCfg, tbqSize, defaultServers, inlineFiles} ChatOpts {smpServers, networkConfig, logConnections, logServerHosts, allowInstantFiles} sendToast = do
+newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agentConfig = aCfg, tbqSize, defaultServers, inlineFiles} ChatOpts {smpServers, networkConfig, logConnections, logServerHosts, optFilesFolder, allowInstantFiles} sendToast = do
   let inlineFiles' = if allowInstantFiles then inlineFiles else inlineFiles {sendChunks = 0, receiveInstant = False}
       config = cfg {subscriptionEvents = logConnections, hostEvents = logServerHosts, defaultServers = configServers, inlineFiles = inlineFiles'}
       sendNotification = fromMaybe (const $ pure ()) sendToast
@@ -151,7 +152,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   sndFiles <- newTVarIO M.empty
   rcvFiles <- newTVarIO M.empty
   currentCalls <- atomically TM.empty
-  filesFolder <- newTVarIO Nothing
+  filesFolder <- newTVarIO optFilesFolder
   incognitoMode <- newTVarIO False
   chatStoreChanged <- newTVarIO False
   expireCIsAsync <- newTVarIO Nothing
@@ -1198,6 +1199,11 @@ processChatCommand = \case
     chatLockName <- atomically . tryReadTMVar =<< asks chatLock
     agentLocks <- withAgent debugAgentLocks
     pure CRDebugLocks {chatLockName, agentLocks}
+  GetAgentStats -> CRAgentStats . map stat <$> withAgent getAgentStats
+    where
+      stat (AgentStatsKey {host, clientTs, cmd, res}, count) =
+        map B.unpack [host, clientTs, cmd, res, bshow count]
+  ResetAgentStats -> CRCmdOk <$ withAgent resetAgentStats
   where
     withChatLock name action = asks chatLock >>= \l -> withLock l name action
     -- below code would make command responses asynchronous where they can be slow
@@ -3786,7 +3792,9 @@ chatCommandP =
       "/incognito " *> (SetIncognito <$> onOffP),
       ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
       ("/version" <|> "/v") $> ShowVersion,
-      "/debug locks" $> DebugLocks
+      "/debug locks" $> DebugLocks,
+      "/get stats" $> GetAgentStats,
+      "/reset stats" $> ResetAgentStats
     ]
   where
     choice = A.choice . map (\p -> p <* A.takeWhile (== ' ') <* A.endOfInput)
