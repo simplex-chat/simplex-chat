@@ -30,7 +30,7 @@ fun CloseSheetBar(close: () -> Unit) {
 @Composable
 fun AppBarTitle(title: String, withPadding: Boolean = true) {
   val padding = if (withPadding)
-    PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING )
+    PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING)
   else
     PaddingValues(bottom = DEFAULT_PADDING)
   Text(

@@ -34,6 +34,7 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.CreateLinkTab
 import chat.simplex.app.views.newchat.CreateLinkView
 import chat.simplex.app.views.onboarding.SimpleXInfo
+import chat.simplex.app.views.onboarding.WhatsNewView
 
 @Composable
 fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
@@ -138,9 +139,9 @@ fun SettingsLayout(
       SectionView(stringResource(R.string.settings_section_title_help)) {
         SettingsActionItem(Icons.Outlined.HelpOutline, stringResource(R.string.how_to_use_simplex_chat), showModal { HelpView(userDisplayName) }, disabled = stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.Info, stringResource(R.string.about_simplex_chat), showModal { SimpleXInfo(it, onboarding = false) })
+        SettingsActionItem(Icons.Outlined.Add, stringResource(R.string.whats_new), showCustomModal { _, close -> WhatsNewView(viaSettings = true, close) }, disabled = stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.TextFormat, stringResource(R.string.markdown_in_messages), showModal { MarkdownHelpView() })
+        SettingsActionItem(Icons.Outlined.Info, stringResource(R.string.about_simplex_chat), showModal { SimpleXInfo(it, onboarding = false) })
         SectionDivider()
         SettingsActionItem(Icons.Outlined.Tag, stringResource(R.string.chat_with_the_founder), { uriHandler.openUri(simplexTeamUri) }, textColor = MaterialTheme.colors.primary, disabled = stopped)
         SectionDivider()
@@ -488,7 +489,7 @@ fun PreviewSettingsLayout() {
       setPerformLA = {},
       showModal = { {} },
       showSettingsModal = { {} },
-      showCustomModal = { {}},
+      showCustomModal = { {} },
       showTerminal = {},
 //      showVideoChatPrototype = {}
     )

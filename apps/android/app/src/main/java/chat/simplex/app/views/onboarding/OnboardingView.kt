@@ -35,6 +35,9 @@ fun CreateProfile(chatModel: ChatModel) {
         .padding(20.dp)
     ) {
       CreateProfilePanel(chatModel)
+      LaunchedEffect(Unit) {
+        setLastVersionDefault(chatModel)
+      }
       if (savedKeyboardState != keyboardState) {
         LaunchedEffect(keyboardState) {
           scope.launch {

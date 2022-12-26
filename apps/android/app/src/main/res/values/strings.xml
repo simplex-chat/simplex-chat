@@ -1055,4 +1055,28 @@
   <string name="ttl_week">%d week</string>
   <string name="ttl_weeks">%d weeks</string>
   <string name="ttl_w">%dw</string>
+
+  <!-- WhatsNewView.kt -->
+  <string name="whats_new">What\'s new</string>
+  <string name="new_in_version">New in %s</string>
+  <string name="v4_2_security_assessment">Security assessment</string>
+  <string name="v4_2_security_assessment_desc">SimpleX Chat security was audited by Trail of Bits.</string>
+  <string name="v4_2_group_links">Group links</string>
+  <string name="v4_2_group_links_desc">Admins can create the links to join groups.</string>
+  <string name="v4_2_auto_accept_contact_requests">Auto-accept contact requests</string>
+  <string name="v4_2_auto_accept_contact_requests_desc">With optional welcome message.</string>
+  <string name="v4_3_voice_messages">Voice messages</string>
+  <string name="v4_3_voice_messages_desc">Max 40 seconds, received instantly.</string>
+  <string name="v4_3_irreversible_message_deletion">Irreversible message deletion</string>
+  <string name="v4_3_irreversible_message_deletion_desc">Your contacts can allow full message deletion.</string>
+  <string name="v4_3_improved_server_configuration">Improved server configuration</string>
+  <string name="v4_3_improved_server_configuration_desc">Add servers by scanning QR codes.</string>
+  <string name="v4_3_improved_privacy_and_security">Improved privacy and security</string>
+  <string name="v4_3_improved_privacy_and_security_desc">Hide app screen in the recent apps.</string>
+  <string name="v4_4_disappearing_messages">Disappearing messages</string>
+  <string name="v4_4_disappearing_messages_desc">Sent messages will be deleted after set time.</string>
+  <string name="v4_4_live_messages">Live messages</string>
+  <string name="v4_4_live_messages_desc">Recipients see updates as you type them.</string>
+  <string name="v4_4_verify_connection_security">Verify connection security</string>
+  <string name="v4_4_verify_connection_security_desc">Compare security codes with your contacts.</string>
 </resources>
