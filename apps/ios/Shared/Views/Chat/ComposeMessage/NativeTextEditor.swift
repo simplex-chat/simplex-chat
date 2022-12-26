@@ -21,7 +21,6 @@ struct NativeTextEditor: UIViewRepresentable {
     
     func makeUIView(context: Context) -> UITextView {
         let field = CustomUITextField()
-        field.allowsEditingTextAttributes = true
         field.text = text
         field.font = font
         field.textAlignment = alignment == .leading ? .left : .right

@@ -14,7 +14,6 @@ struct GroupChatInfoView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @ObservedObject var chat: Chat
     @State var groupInfo: GroupInfo
-    @State var selectedMember: Int64? = nil
     @ObservedObject private var alertManager = AlertManager.shared
     @State private var alert: GroupChatInfoViewAlert? = nil
     @State private var groupLink: String?
@@ -66,22 +65,16 @@ struct GroupChatInfoView: View {
                     }
                     memberView(groupInfo.membership, user: true)
                     ForEach(members) { member in
-                        NavLinkPlain(
-                            tag: member.groupMemberId,
-                            selection: $selectedMember,
-                            label: { memberView(member) }
-                        )
+                        ZStack {
+                            NavigationLink {
+                                memberInfoView(member.groupMemberId)
+                            } label: {
+                                EmptyView()
+                            }
+                            .opacity(0)
+                            memberView(member)
+                        }
                     }
-                    .background(
-                        NavigationLink(
-                            destination: memberInfoView(selectedMember),
-                            isActive: Binding(
-                                get: { selectedMember != nil },
-                                set: { _, _ in selectedMember = nil }
-                            )
-                        ) { EmptyView() }
-                        .opacity(0)
-                    )
                 }
 
                 Section {

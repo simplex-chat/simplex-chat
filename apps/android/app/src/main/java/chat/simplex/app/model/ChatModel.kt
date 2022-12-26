@@ -733,7 +733,7 @@ data class GroupInfo (
   override fun featureEnabled(feature: ChatFeature) = when (feature) {
     ChatFeature.TimedMessages -> fullGroupPreferences.timedMessages.on
     ChatFeature.FullDelete -> fullGroupPreferences.fullDelete.on
-    ChatFeature.Voice -> fullGroupPreferences.fullDelete.on
+    ChatFeature.Voice -> fullGroupPreferences.voice.on
   }
   override val timedMessagesTTL: Int? get() = with(fullGroupPreferences.timedMessages) { if (on) ttl else null }
   override val displayName get() = groupProfile.displayName
