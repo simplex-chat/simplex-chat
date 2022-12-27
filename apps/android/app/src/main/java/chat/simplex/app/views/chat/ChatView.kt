@@ -227,8 +227,13 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
         }
       },
       acceptFeature = { contact, feature ->
+        val prefs = contact.mergedPreferences.toPreferences()
         withApi {
-          chatModel.controller.allowFeatureToContact(contact, feature)
+          if (feature == ChatFeature.TimedMessages && prefs.timedMessages?.ttl == null) {
+            chatModel.controller.allowFeatureToContact(contact, feature, param = 86400)
+          } else {
+            chatModel.controller.allowFeatureToContact(contact, feature)
+          }
         }
       },
       addMembers = { groupInfo ->
