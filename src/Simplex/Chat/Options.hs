@@ -84,6 +84,11 @@ chatOpts appDir defaultDbFileName = do
           <> help "TCP timeout, seconds (default: 5/10 without/with SOCKS5 proxy)"
           <> value 0
       )
+  logTLSErrors <-
+    switch
+      ( long "log-tls-errors"
+          <> help "Log TLS errors"
+      )
   logConnections <-
     switch
       ( long "connections"
@@ -152,7 +157,7 @@ chatOpts appDir defaultDbFileName = do
       { dbFilePrefix,
         dbKey,
         smpServers,
-        networkConfig = fullNetworkConfig socksProxy $ useTcpTimeout socksProxy t,
+        networkConfig = fullNetworkConfig socksProxy (useTcpTimeout socksProxy t) logTLSErrors,
         logConnections,
         logServerHosts,
         logAgent,
@@ -167,10 +172,10 @@ chatOpts appDir defaultDbFileName = do
     useTcpTimeout p t = 1000000 * if t > 0 then t else maybe 5 (const 10) p
     defaultDbFilePath = combine appDir defaultDbFileName
 
-fullNetworkConfig :: Maybe SocksProxy -> Int -> NetworkConfig
-fullNetworkConfig socksProxy tcpTimeout =
+fullNetworkConfig :: Maybe SocksProxy -> Int -> Bool -> NetworkConfig
+fullNetworkConfig socksProxy tcpTimeout logTLSErrors =
   let tcpConnectTimeout = (tcpTimeout * 3) `div` 2
-   in defaultNetworkConfig {socksProxy, tcpTimeout, tcpConnectTimeout}
+   in defaultNetworkConfig {socksProxy, tcpTimeout, tcpConnectTimeout, logTLSErrors}
 
 parseSMPServers :: ReadM [SMPServerWithAuth]
 parseSMPServers = eitherReader $ parseAll smpServersP . B.pack

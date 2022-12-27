@@ -3870,8 +3870,9 @@ chatCommandP =
     netCfgP = do
       socksProxy <- "socks=" *> ("off" $> Nothing <|> "on" $> Just defaultSocksProxy <|> Just <$> strP)
       t_ <- optional $ " timeout=" *> A.decimal
+      logErrors <- " log=" *> onOffP <|> pure False
       let tcpTimeout = 1000000 * fromMaybe (maybe 5 (const 10) socksProxy) t_
-      pure $ fullNetworkConfig socksProxy tcpTimeout
+      pure $ fullNetworkConfig socksProxy tcpTimeout logErrors
     dbKeyP = nonEmptyKey <$?> strP
     nonEmptyKey k@(DBEncryptionKey s) = if null s then Left "empty key" else Right k
     autoAcceptP =

@@ -287,7 +287,8 @@ serverCfg =
       logStatsStartTime = 0,
       serverStatsLogFile = "tests/smp-server-stats.daily.log",
       serverStatsBackupFile = Nothing,
-      smpServerVRange = supportedSMPServerVRange
+      smpServerVRange = supportedSMPServerVRange,
+      logTLSErrors = True
     }
 
 withSmpServer :: IO a -> IO a
