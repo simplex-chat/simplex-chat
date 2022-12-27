@@ -141,7 +141,7 @@ struct SendMessageView: View {
                 Button {
                     startLiveMessage(send: send, update: update)
                 } label: {
-                    Label("Send live message", systemImage: "ellipsis.circle")
+                    Label("Send live message", systemImage: "bolt.fill")
                 }
             }
             .padding([.bottom, .trailing], 4)
@@ -227,9 +227,11 @@ struct SendMessageView: View {
             default: ()
             }
         } label: {
-            Image(systemName: "ellipsis.circle.fill")
+            Image(systemName: "bolt.fill")
                 .resizable()
+                .scaledToFit()
                 .foregroundColor(.accentColor)
+                .frame(width: 20, height: 20)
         }
         .frame(width: 29, height: 29)
         .padding([.bottom, .horizontal], 4)

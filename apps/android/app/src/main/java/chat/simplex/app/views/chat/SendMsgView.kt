@@ -133,7 +133,7 @@ fun SendMsgView(
             ) {
               ItemAction(
                 generalGetString(R.string.send_live_message),
-                Icons.Filled.MoreHoriz,
+                Icons.Filled.Bolt,
                 onClick = {
                   startLiveMessage(scope, sendLiveMessage, updateLiveMessage, sendButtonSize, sendButtonAlpha, composeState, liveMessageAlertShown)
                   showDropdown = false
@@ -312,7 +312,7 @@ private fun VoiceButtonWithoutPermission(onClick: () -> Unit) {
       stringResource(R.string.icon_descr_record_voice_message),
       tint = MaterialTheme.colors.primary,
       modifier = Modifier
-        .size(36.dp)
+        .size(34.dp)
         .padding(4.dp)
     )
   }
@@ -357,7 +357,7 @@ private fun RecordVoiceButton(interactionSource: MutableInteractionSource) {
       stringResource(R.string.icon_descr_record_voice_message),
       tint = MaterialTheme.colors.primary,
       modifier = Modifier
-        .size(36.dp)
+        .size(34.dp)
         .padding(4.dp)
     )
   }
@@ -421,15 +421,12 @@ private fun StartLiveMessageButton(onClick: () -> Unit) {
     contentAlignment = Alignment.Center
   ) {
     Icon(
-      Icons.Filled.MoreHoriz,
+      Icons.Filled.Bolt,
       stringResource(R.string.icon_descr_send_message),
-      tint = Color.White,
+      tint = MaterialTheme.colors.primary,
       modifier = Modifier
         .size(36.dp)
         .padding(4.dp)
-        .clip(CircleShape)
-        .background(MaterialTheme.colors.primary)
-        .padding(1.dp)
     )
   }
 }
