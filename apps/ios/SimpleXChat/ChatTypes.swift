@@ -244,7 +244,7 @@ public struct TimedMessagesPreference: Preference {
                     : String.localizedStringWithFormat(NSLocalizedString("%d hours", comment: "message ttl"), h)
                     )
             + maybe(m, String.localizedStringWithFormat(NSLocalizedString("%d min", comment: "message ttl"), m))
-            + maybe (s, String.localizedStringWithFormat(NSLocalizedString("%d sec", comment: "message ttl"), s))
+            + maybe(s, String.localizedStringWithFormat(NSLocalizedString("%d sec", comment: "message ttl"), s))
     }
 
     public static func shortTtlText(_ ttl: Int?) -> LocalizedStringKey {

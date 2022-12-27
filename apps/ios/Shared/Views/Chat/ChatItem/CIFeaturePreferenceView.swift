@@ -44,7 +44,7 @@ struct CIFeaturePreferenceView: View {
         .textSelection(.disabled)
     }
 
-    private func featurePreferenceView(acceptText: LocalizedStringKey? = "") -> some View {
+    private func featurePreferenceView(acceptText: LocalizedStringKey? = nil) -> some View {
         var r = Text(CIContent.preferenceText(feature, allowed, param) + "  ")
             .fontWeight(.light)
             .foregroundColor(.secondary)
