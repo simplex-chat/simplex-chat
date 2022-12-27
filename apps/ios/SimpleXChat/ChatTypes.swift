@@ -161,9 +161,9 @@ public struct Preferences: Codable {
         )
     }
 
-    public func setAllowed(_ feature: ChatFeature, allowed: FeatureAllowed = .yes) -> Preferences {
+    public func setAllowed(_ feature: ChatFeature, allowed: FeatureAllowed = .yes, param: Int? = nil) -> Preferences {
         switch feature {
-        case .timedMessages: return copy(timedMessages: TimedMessagesPreference(allow: allowed, ttl: timedMessages?.ttl))
+        case .timedMessages: return copy(timedMessages: TimedMessagesPreference(allow: allowed, ttl: param ?? timedMessages?.ttl))
         case .fullDelete: return copy(fullDelete: SimplePreference(allow: allowed))
         case .voice: return copy(voice: SimplePreference(allow: allowed))
         }
