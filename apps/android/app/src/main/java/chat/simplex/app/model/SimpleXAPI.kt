@@ -984,8 +984,8 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     }
   }
 
-  suspend fun allowFeatureToContact(contact: Contact, feature: ChatFeature) {
-    val prefs = contact.mergedPreferences.toPreferences().setAllowed(feature)
+  suspend fun allowFeatureToContact(contact: Contact, feature: ChatFeature, param: Int? = null) {
+    val prefs = contact.mergedPreferences.toPreferences().setAllowed(feature, param = param)
     val toContact = apiSetContactPrefs(contact.contactId, prefs)
     if (toContact != null) {
       chatModel.updateContact(toContact)
@@ -2044,9 +2044,9 @@ data class ChatPreferences(
   val fullDelete: SimpleChatPreference?,
   val voice: SimpleChatPreference?,
 ) {
-  fun setAllowed(feature: ChatFeature, allowed: FeatureAllowed = FeatureAllowed.YES): ChatPreferences =
+  fun setAllowed(feature: ChatFeature, allowed: FeatureAllowed = FeatureAllowed.YES, param: Int? = null): ChatPreferences =
     when (feature) {
-      ChatFeature.TimedMessages -> this.copy(timedMessages = TimedMessagesPreference(allow = allowed, ttl = this.timedMessages?.ttl))
+      ChatFeature.TimedMessages -> this.copy(timedMessages = TimedMessagesPreference(allow = allowed, ttl = param ?: this.timedMessages?.ttl))
       ChatFeature.FullDelete -> this.copy(fullDelete = SimpleChatPreference(allow = allowed))
       ChatFeature.Voice -> this.copy(voice = SimpleChatPreference(allow = allowed))
     }

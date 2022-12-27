@@ -161,9 +161,9 @@ public struct Preferences: Codable {
         )
     }
 
-    public func setAllowed(_ feature: ChatFeature, allowed: FeatureAllowed = .yes) -> Preferences {
+    public func setAllowed(_ feature: ChatFeature, allowed: FeatureAllowed = .yes, param: Int? = nil) -> Preferences {
         switch feature {
-        case .timedMessages: return copy(timedMessages: TimedMessagesPreference(allow: allowed, ttl: timedMessages?.ttl))
+        case .timedMessages: return copy(timedMessages: TimedMessagesPreference(allow: allowed, ttl: param ?? timedMessages?.ttl))
         case .fullDelete: return copy(fullDelete: SimplePreference(allow: allowed))
         case .voice: return copy(voice: SimplePreference(allow: allowed))
         }
@@ -244,7 +244,7 @@ public struct TimedMessagesPreference: Preference {
                     : String.localizedStringWithFormat(NSLocalizedString("%d hours", comment: "message ttl"), h)
                     )
             + maybe(m, String.localizedStringWithFormat(NSLocalizedString("%d min", comment: "message ttl"), m))
-            + maybe (s, String.localizedStringWithFormat(NSLocalizedString("%d sec", comment: "message ttl"), s))
+            + maybe(s, String.localizedStringWithFormat(NSLocalizedString("%d sec", comment: "message ttl"), s))
     }
 
     public static func shortTtlText(_ ttl: Int?) -> LocalizedStringKey {
@@ -1999,7 +1999,7 @@ public enum CIContent: Decodable, ItemContent {
     }
 
     static func featureText(_ feature: Feature, _ enabled: String, _ param: Int?) -> String {
-        feature.hasParam && param != nil
+        feature.hasParam
         ? "\(feature.text): \(TimedMessagesPreference.ttlText(param))"
         : "\(feature.text): \(enabled)"
     }

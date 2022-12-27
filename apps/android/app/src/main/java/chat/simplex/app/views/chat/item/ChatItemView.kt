@@ -43,7 +43,7 @@ fun ChatItemView(
   joinGroup: (Long) -> Unit,
   acceptCall: (Contact) -> Unit,
   scrollToItem: (Long) -> Unit,
-  acceptFeature: (Contact, ChatFeature) -> Unit
+  acceptFeature: (Contact, ChatFeature, Int?) -> Unit
 ) {
   val context = LocalContext.current
   val uriHandler = LocalUriHandler.current
@@ -326,7 +326,7 @@ fun PreviewChatItemView() {
       joinGroup = {},
       acceptCall = { _ -> },
       scrollToItem = {},
-      acceptFeature = { _, _ -> }
+      acceptFeature = { _, _, _ -> }
     )
   }
 }
@@ -346,7 +346,7 @@ fun PreviewChatItemViewDeletedContent() {
       joinGroup = {},
       acceptCall = { _ -> },
       scrollToItem = {},
-      acceptFeature = { _, _ -> }
+      acceptFeature = { _, _, _ -> }
     )
   }
 }

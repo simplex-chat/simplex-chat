@@ -23,9 +23,10 @@ struct CIFeaturePreferenceView: View {
                 .scaleEffect(feature.iconScale)
             if let ct = chat.chatInfo.contact,
                allowed != .no && ct.allowsFeature(feature) && !ct.userAllowsFeature(feature) {
-                featurePreferenceView(accept: true)
+                let setParam = feature == .timedMessages && ct.mergedPreferences.timedMessages.userPreference.preference.ttl == nil
+                featurePreferenceView(acceptText: setParam ? "Set 1 day" : "Accept")
                     .onTapGesture {
-                        allowFeatureToContact(ct, feature)
+                        allowFeatureToContact(ct, feature, param: setParam ? 86400 : nil)
                     }
             } else {
                 featurePreferenceView()
@@ -36,26 +37,28 @@ struct CIFeaturePreferenceView: View {
         .textSelection(.disabled)
     }
 
-    private func featurePreferenceView(accept: Bool = false) -> some View {
+    private func featurePreferenceView(acceptText: LocalizedStringKey? = nil) -> some View {
         var r = Text(CIContent.preferenceText(feature, allowed, param) + "  ")
-                .fontWeight(.light)
-                .foregroundColor(.secondary)
-        if accept {
-            r = r + Text("Accept" + "  ")
+            .fontWeight(.light)
+            .foregroundColor(.secondary)
+        if let acceptText {
+            r = r
+            + Text(acceptText)
                 .fontWeight(.medium)
                 .foregroundColor(.accentColor)
+            + Text("  ")
         }
         r = r + chatItem.timestampText
-                .fontWeight(.light)
-                .foregroundColor(.secondary)
+            .fontWeight(.light)
+            .foregroundColor(.secondary)
         return r.font(.caption)
     }
 }
 
-func allowFeatureToContact(_ contact: Contact, _ feature: ChatFeature) {
+func allowFeatureToContact(_ contact: Contact, _ feature: ChatFeature, param: Int? = nil) {
     Task {
         do {
-            let prefs = contactUserPreferencesToPreferences(contact.mergedPreferences).setAllowed(feature)
+            let prefs = contactUserPreferencesToPreferences(contact.mergedPreferences).setAllowed(feature, param: param)
             if let toContact = try await apiSetContactPrefs(contactId: contact.contactId, preferences: prefs) {
                 await MainActor.run {
                     ChatModel.shared.updateContact(toContact)

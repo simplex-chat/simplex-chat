@@ -1001,6 +1001,8 @@
   <string name="feature_enabled_for_contact">enabled for contact</string>
   <string name="feature_off">off</string>
   <string name="feature_received_prohibited">received, prohibited</string>
+  <string name="accept_feature">Accept</string>
+  <string name="accept_feature_set_1_day">Set 1 day</string>
   <string name="allow_your_contacts_to_send_disappearing_messages">Allow your contacts to send disappearing messages.</string>
   <string name="allow_disappearing_messages_only_if">Allow disappearing messages only if your contact allows them.</string>
   <string name="prohibit_sending_disappearing_messages">Prohibit sending disappearing messages.</string>
