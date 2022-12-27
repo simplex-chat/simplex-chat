@@ -1951,7 +1951,8 @@ data class NetCfg(
   val tcpConnectTimeout: Long, // microseconds
   val tcpTimeout: Long, // microseconds
   val tcpKeepAlive: KeepAliveOpts?,
-  val smpPingInterval: Long // microseconds
+  val smpPingInterval: Long, // microseconds
+  val logTLSErrors: Boolean = false
 ) {
   val useSocksProxy: Boolean get() = socksProxy != null
   val enableKeepAlive: Boolean get() = tcpKeepAlive != null

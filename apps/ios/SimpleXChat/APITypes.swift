@@ -809,13 +809,15 @@ public struct NetCfg: Codable, Equatable {
     public var tcpTimeout: Int // microseconds
     public var tcpKeepAlive: KeepAliveOpts?
     public var smpPingInterval: Int // microseconds
+    public var logTLSErrors: Bool
 
     public static let defaults: NetCfg = NetCfg(
         socksProxy: nil,
         tcpConnectTimeout: 10_000_000,
         tcpTimeout: 7_000_000,
         tcpKeepAlive: KeepAliveOpts.defaults,
-        smpPingInterval: 600_000_000
+        smpPingInterval: 600_000_000,
+        logTLSErrors: false
     )
 
     public static let proxyDefaults: NetCfg = NetCfg(
@@ -823,7 +825,8 @@ public struct NetCfg: Codable, Equatable {
         tcpConnectTimeout: 20_000_000,
         tcpTimeout: 15_000_000,
         tcpKeepAlive: KeepAliveOpts.defaults,
-        smpPingInterval: 600_000_000
+        smpPingInterval: 600_000_000,
+        logTLSErrors: false
     )
 
     public var enableKeepAlive: Bool { tcpKeepAlive != nil }
