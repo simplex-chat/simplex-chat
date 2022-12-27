@@ -228,7 +228,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
       },
       acceptFeature = { contact, feature, param ->
         withApi {
-            chatModel.controller.allowFeatureToContact(contact, feature, param)
+          chatModel.controller.allowFeatureToContact(contact, feature, param)
         }
       },
       addMembers = { groupInfo ->
