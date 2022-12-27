@@ -152,9 +152,9 @@
         <target>%lldk</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lldm" xml:space="preserve">
+      <trans-unit id="%lldm" xml:space="preserve" approved="no">
         <source>%lldm</source>
-        <target>%lldm</target>
+        <target state="translated">%lldmn</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lldmth" xml:space="preserve">
