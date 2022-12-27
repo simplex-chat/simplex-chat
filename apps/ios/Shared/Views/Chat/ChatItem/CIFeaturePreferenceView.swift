@@ -23,18 +23,11 @@ struct CIFeaturePreferenceView: View {
                 .scaleEffect(feature.iconScale)
             if let ct = chat.chatInfo.contact,
                allowed != .no && ct.allowsFeature(feature) && !ct.userAllowsFeature(feature) {
-                let prefs = contactUserPreferencesToPreferences(ct.mergedPreferences)
-                if feature == .timedMessages && prefs.timedMessages?.ttl == nil {
-                    featurePreferenceView(acceptText: "Set 1 day")
-                        .onTapGesture {
-                            allowFeatureToContact(ct, feature, param: 86400)
-                        }
-                } else {
-                    featurePreferenceView(acceptText: "Accept")
-                        .onTapGesture {
-                            allowFeatureToContact(ct, feature)
-                        }
-                }
+                let setParam = feature == .timedMessages && ct.mergedPreferences.timedMessages.userPreference.preference.ttl == nil
+                featurePreferenceView(acceptText: setParam ? "Set 1 day" : "Accept")
+                    .onTapGesture {
+                        allowFeatureToContact(ct, feature, param: setParam ? 86400 : nil)
+                    }
             } else {
                 featurePreferenceView()
             }

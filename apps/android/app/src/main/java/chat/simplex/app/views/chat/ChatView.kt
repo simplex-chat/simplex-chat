@@ -226,14 +226,9 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
           chatModel.callManager.acceptIncomingCall(invitation = invitation)
         }
       },
-      acceptFeature = { contact, feature ->
-        val prefs = contact.mergedPreferences.toPreferences()
+      acceptFeature = { contact, feature, param ->
         withApi {
-          if (feature == ChatFeature.TimedMessages && prefs.timedMessages?.ttl == null) {
-            chatModel.controller.allowFeatureToContact(contact, feature, param = 86400)
-          } else {
-            chatModel.controller.allowFeatureToContact(contact, feature)
-          }
+            chatModel.controller.allowFeatureToContact(contact, feature, param)
         }
       },
       addMembers = { groupInfo ->
@@ -292,7 +287,7 @@ fun ChatLayout(
   joinGroup: (Long) -> Unit,
   startCall: (CallMediaType) -> Unit,
   acceptCall: (Contact) -> Unit,
-  acceptFeature: (Contact, ChatFeature) -> Unit,
+  acceptFeature: (Contact, ChatFeature, Int?) -> Unit,
   addMembers: (GroupInfo) -> Unit,
   markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
   changeNtfsState: (Boolean, currentValue: MutableState<Boolean>) -> Unit,
@@ -508,7 +503,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   receiveFile: (Long) -> Unit,
   joinGroup: (Long) -> Unit,
   acceptCall: (Contact) -> Unit,
-  acceptFeature: (Contact, ChatFeature) -> Unit,
+  acceptFeature: (Contact, ChatFeature, Int?) -> Unit,
   markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
   setFloatingButton: (@Composable () -> Unit) -> Unit,
   onComposed: () -> Unit,
@@ -1031,7 +1026,7 @@ fun PreviewChatLayout() {
       joinGroup = {},
       startCall = {},
       acceptCall = { _ -> },
-      acceptFeature = { _, _ -> },
+      acceptFeature = { _, _, _ -> },
       addMembers = { _ -> },
       markRead = { _, _ -> },
       changeNtfsState = { _, _ -> },
@@ -1090,7 +1085,7 @@ fun PreviewGroupChatLayout() {
       joinGroup = {},
       startCall = {},
       acceptCall = { _ -> },
-      acceptFeature = { _, _ -> },
+      acceptFeature = { _, _, _ -> },
       addMembers = { _ -> },
       markRead = { _, _ -> },
       changeNtfsState = { _, _ -> },

@@ -20,7 +20,7 @@ fun CIFeaturePreferenceView(
   contact: Contact?,
   feature: ChatFeature,
   allowed: FeatureAllowed,
-  acceptFeature: (Contact, ChatFeature) -> Unit
+  acceptFeature: (Contact, ChatFeature, Int?) -> Unit
 ) {
   Row(
     Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
@@ -30,8 +30,9 @@ fun CIFeaturePreferenceView(
     Icon(feature.icon, feature.text, Modifier.size(18.dp), tint = HighOrLowlight)
     if (contact != null && allowed != FeatureAllowed.NO && contact.allowsFeature(feature) && !contact.userAllowsFeature(feature)) {
       val acceptStyle = SpanStyle(color = MaterialTheme.colors.primary, fontSize = 12.sp)
-      val prefs = contact.mergedPreferences.toPreferences()
-      val acceptTextId = if (feature == ChatFeature.TimedMessages && prefs.timedMessages?.ttl == null) R.string.accept_feature_set_1_day else R.string.accept_feature
+      val setParam = feature == ChatFeature.TimedMessages && contact.mergedPreferences.timedMessages.userPreference.pref.ttl == null
+      val acceptTextId = if (setParam) R.string.accept_feature_set_1_day else R.string.accept_feature
+      val param = if (setParam) 86400 else null
       val annotatedText = buildAnnotatedString {
         withStyle(chatEventStyle) { append(chatItem.content.text + "  ") }
         withAnnotation(tag = "Accept", annotation = "Accept") {
@@ -42,7 +43,7 @@ fun CIFeaturePreferenceView(
       fun accept(offset: Int): Boolean = annotatedText.getStringAnnotations(tag = "Accept", start = offset, end = offset).isNotEmpty()
       ClickableText(
         annotatedText,
-        onClick = { if (accept(it)) { acceptFeature(contact, feature) } },
+        onClick = { if (accept(it)) { acceptFeature(contact, feature, param) } },
         shouldConsumeEvent = ::accept
       )
     } else {
