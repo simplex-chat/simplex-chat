@@ -1999,7 +1999,7 @@ public enum CIContent: Decodable, ItemContent {
     }
 
     static func featureText(_ feature: Feature, _ enabled: String, _ param: Int?) -> String {
-        feature.hasParam && param != nil
+        feature.hasParam
         ? "\(feature.text): \(TimedMessagesPreference.ttlText(param))"
         : "\(feature.text): \(enabled)"
     }

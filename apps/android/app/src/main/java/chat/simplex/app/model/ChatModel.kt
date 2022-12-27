@@ -1431,7 +1431,7 @@ sealed class CIContent: ItemContent {
 
   companion object {
     fun featureText(feature: Feature, enabled: String, param: Int?): String =
-      if (feature.hasParam && param != null) {
+      if (feature.hasParam) {
         "${feature.text}: ${TimedMessagesPreference.ttlText(param)}"
       } else {
         "${feature.text}: $enabled"
