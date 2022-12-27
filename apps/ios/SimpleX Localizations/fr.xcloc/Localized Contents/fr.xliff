@@ -348,6 +348,10 @@
         <target>Ajouter des serveurs prédéfinis</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Add servers by scanning QR codes." xml:space="preserve">
+        <source>Add servers by scanning QR codes.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Add server…" xml:space="preserve">
         <source>Add server…</source>
         <target>Ajouter un serveur…</target>
@@ -356,6 +360,10 @@
       <trans-unit id="Add to another device" xml:space="preserve">
         <source>Add to another device</source>
         <target>Ajouter à un autre appareil</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Admins can create the links to join groups." xml:space="preserve">
+        <source>Admins can create the links to join groups.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Advanced network settings" xml:space="preserve">
@@ -476,6 +484,10 @@
       <trans-unit id="Authentication unavailable" xml:space="preserve">
         <source>Authentication unavailable</source>
         <target>Authentification indisponible</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Auto-accept contact requests" xml:space="preserve">
+        <source>Auto-accept contact requests</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Auto-accept images" xml:space="preserve">
@@ -656,6 +668,10 @@
       <trans-unit id="Colors" xml:space="preserve">
         <source>Colors</source>
         <target>Couleurs</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Compare security codes with your contacts." xml:space="preserve">
+        <source>Compare security codes with your contacts.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Configure ICE servers" xml:space="preserve">
@@ -1521,6 +1537,10 @@
         <target>Nom complet :</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="GIFs and stickers" xml:space="preserve">
+        <source>GIFs and stickers</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Group" xml:space="preserve">
         <source>Group</source>
         <target>Groupe</target>
@@ -1559,6 +1579,10 @@
       <trans-unit id="Group link" xml:space="preserve">
         <source>Group link</source>
         <target>Lien du groupe</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Group links" xml:space="preserve">
+        <source>Group links</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group members can irreversibly delete sent messages." xml:space="preserve">
@@ -1626,6 +1650,10 @@
         <target>Cacher</target>
         <note>chat item action</note>
       </trans-unit>
+      <trans-unit id="Hide app screen in the recent apps." xml:space="preserve">
+        <source>Hide app screen in the recent apps.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="How SimpleX works" xml:space="preserve">
         <source>How SimpleX works</source>
         <target>Comment SimpleX fonctionne</target>
@@ -1644,11 +1672,6 @@
       <trans-unit id="How to use it" xml:space="preserve">
         <source>How to use it</source>
         <target>Comment l'utiliser</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="How to use markdown" xml:space="preserve">
-        <source>How to use markdown</source>
-        <target>Comment utiliser markdown</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How to use your servers" xml:space="preserve">
@@ -1709,6 +1732,14 @@
       <trans-unit id="Import database" xml:space="preserve">
         <source>Import database</source>
         <target>Importer la base de données</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Improved privacy and security" xml:space="preserve">
+        <source>Improved privacy and security</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Improved server configuration" xml:space="preserve">
+        <source>Improved server configuration</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incognito" xml:space="preserve">
@@ -1791,6 +1822,10 @@
       <trans-unit id="Invite to group" xml:space="preserve">
         <source>Invite to group</source>
         <target>Inviter au groupe</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Irreversible message deletion" xml:space="preserve">
+        <source>Irreversible message deletion</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Irreversible message deletion is prohibited in this chat." xml:space="preserve">
@@ -1893,6 +1928,10 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Message dynamique !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Live messages" xml:space="preserve">
+        <source>Live messages</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Local name" xml:space="preserve">
         <source>Local name</source>
         <target>Nom local</target>
@@ -1936,6 +1975,10 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
       <trans-unit id="Markdown in messages" xml:space="preserve">
         <source>Markdown in messages</source>
         <target>Markdown dans les messages</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Max 30 seconds, received instantly." xml:space="preserve">
+        <source>Max 30 seconds, received instantly.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member" xml:space="preserve">
@@ -2036,6 +2079,10 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
       <trans-unit id="New database archive" xml:space="preserve">
         <source>New database archive</source>
         <target>Nouvelle archive de base de données</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="New in %@" xml:space="preserve">
+        <source>New in %@</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New member role" xml:space="preserve">
@@ -2383,6 +2430,10 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Réception via</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Recipients see updates as you type them." xml:space="preserve">
+        <source>Recipients see updates as you type them.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Reject" xml:space="preserve">
         <source>Reject</source>
         <target>Rejeter</target>
@@ -2593,6 +2644,10 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>File d'attente sécurisée</target>
         <note>server test step</note>
       </trans-unit>
+      <trans-unit id="Security assessment" xml:space="preserve">
+        <source>Security assessment</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Security code" xml:space="preserve">
         <source>Security code</source>
         <target>Code de sécurité</target>
@@ -2638,6 +2693,10 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Envoyez vos questions et idées</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Send them from gallery or custom keyboards." xml:space="preserve">
+        <source>Send them from gallery or custom keyboards.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Sender cancelled file transfer." xml:space="preserve">
         <source>Sender cancelled file transfer.</source>
         <target>L'expéditeur a annulé le transfert de fichiers.</target>
@@ -2657,6 +2716,10 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <source>Sent file event</source>
         <target>Événement de fichier envoyé</target>
         <note>notification</note>
+      </trans-unit>
+      <trans-unit id="Sent messages will be deleted after set time." xml:space="preserve">
+        <source>Sent messages will be deleted after set time.</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve">
         <source>Server requires authorization to create queues, check password</source>
@@ -2726,6 +2789,10 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
       <trans-unit id="Show preview" xml:space="preserve">
         <source>Show preview</source>
         <target>Montrer l'aperçu</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX Chat security was [audited by Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html)." xml:space="preserve">
+        <source>SimpleX Chat security was [audited by Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html).</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX Lock" xml:space="preserve">
@@ -3177,6 +3244,10 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
         <target>Utilisation des serveurs SimpleX Chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Verify connection security" xml:space="preserve">
+        <source>Verify connection security</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Verify security code" xml:space="preserve">
         <source>Verify security code</source>
         <target>Vérifier le code de sécurité</target>
@@ -3247,6 +3318,10 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
         <target>Message de bienvenue</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="What's new" xml:space="preserve">
+        <source>What's new</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="When available" xml:space="preserve">
         <source>When available</source>
         <target>Quand disponible</target>
@@ -3255,6 +3330,10 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
       <trans-unit id="When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." xml:space="preserve">
         <source>When you share an incognito profile with somebody, this profile will be used for the groups they invite you to.</source>
         <target>Lorsque vous partagez un profil incognito avec quelqu'un, ce profil sera utilisé pour les groupes auxquels il vous invite.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="With optional welcome message." xml:space="preserve">
+        <source>With optional welcome message.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Wrong database passphrase" xml:space="preserve">
@@ -3497,6 +3576,10 @@ Vous pouvez annuler la connexion et supprimer le contact (et réessayer plus tar
       <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve">
         <source>Your contact sent a file that is larger than currently supported maximum size (%@).</source>
         <target>Votre contact a envoyé un fichier plus grand que la taille maximale supportée actuellement(%@).</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your contacts can allow full message deletion." xml:space="preserve">
+        <source>Your contacts can allow full message deletion.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your current chat database will be DELETED and REPLACED with the imported one." xml:space="preserve">
