@@ -21,7 +21,7 @@
     <string name="error_joining_group">Erreur lors de la liaison avec le groupe</string>
     <string name="sender_cancelled_file_transfer">L\'expéditeur a annulé le transfert de fichiers.</string>
     <string name="deleted_description">supprimé</string>
-    <string name="marked_deleted_description">marquer comme supprimé</string>
+    <string name="marked_deleted_description">supprimé</string>
     <string name="unknown_message_format">format de message inconnu</string>
     <string name="display_name_connecting">connexion…</string>
     <string name="description_you_shared_one_time_link_incognito">vous avez partagé un lien unique en incognito</string>
@@ -335,7 +335,7 @@
     <string name="smp_servers">Serveurs SMP</string>
     <string name="smp_servers_test_servers">Tester les serveurs</string>
     <string name="smp_servers_save">Sauvegarder les serveurs</string>
-    <string name="smp_servers_scan_qr">Scanner le code QR du serveur</string>
+    <string name="smp_servers_scan_qr">Scanner un code QR de serveur</string>
     <string name="smp_servers_use_server">Utiliser ce serveur</string>
     <string name="smp_servers_use_server_for_new_conn">Utiliser pour les nouvelles connexions</string>
     <string name="smp_servers_add_to_another_device">Ajouter à un autre appareil</string>
@@ -359,7 +359,7 @@
     <string name="network_use_onion_hosts_prefer_desc">Les hôtes .onion seront utilisés lorsqu\'ils sont disponibles.</string>
     <string name="appearance_settings">Apparence</string>
     <string name="create_address">Créer une adresse</string>
-    <string name="you_can_share_your_address_anybody_will_be_able_to_connect">Vous pouvez partager votre adresse sous forme de lien ou de code QR - n\'importe qui pourra se connecter à vous. Vous ne perdrez pas vos contacts si vous les supprimez par la suite.</string>
+    <string name="you_can_share_your_address_anybody_will_be_able_to_connect">Vous pouvez partager votre adresse sous forme de lien ou de code QR - n\'importe qui pourra se connecter à vous. Vous ne perdrez pas vos contacts si vous la supprimez par la suite.</string>
     <string name="your_chat_profile">Votre profil de chat</string>
     <string name="edit_image">Modifier l\'image</string>
     <string name="save_and_notify_contacts">Sauvegarder et notifier les contacts</string>
@@ -380,7 +380,7 @@
     <string name="callstate_received_answer">réponse reçu…</string>
     <string name="callstate_received_confirmation">confimation reçu…</string>
     <string name="callstate_connecting">connexion…</string>
-    <string name="opensource_protocol_and_code_anybody_can_run_servers">Protocole et code open-source – tout le monde peut faire fonctionner les serveurs.</string>
+    <string name="opensource_protocol_and_code_anybody_can_run_servers">Protocole et code open-source – n\'importe qui peut heberger un serveur.</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Pour protéger la vie privée, au lieu d\'ID d\'utilisateur utilisés par toutes les autres plateformes, <xliff:g id="appName">SimpleX</xliff:g> possède des identifiants pour les files d\'attente de messages, distincts pour chacun de vos contacts.</string>
     <string name="read_more_in_github">Plus d\'informations sur notre GitHub.</string>
     <string name="paste_the_link_you_received">Coller le lien reçu</string>
