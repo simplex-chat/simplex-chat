@@ -1845,7 +1845,7 @@ expireChatItems user ttl sync = do
           (Just ts, Just count) -> when (count == 0) $ updateGroupTs db user gInfo ts
           _ -> pure ()
 
-processAgentMessage :: forall m. ChatMonad m => Maybe User -> ConnId -> ACorrId -> ACommand 'Agent -> m ()
+processAgentMessage :: forall m. ChatMonad m => Maybe User -> ACorrId -> ConnId -> ACommand 'Agent -> m ()
 processAgentMessage Nothing _ _ _ = throwChatError CENoActiveUser
 processAgentMessage (Just User {userId}) _ "" agentMessage = case agentMessage of
   CONNECT p h -> hostEvent $ CRHostConnected p h
