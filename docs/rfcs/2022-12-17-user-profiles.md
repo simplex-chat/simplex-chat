@@ -89,9 +89,11 @@ data UserChatResponse = UserChatResponse
 
 - when changing active user reset `activeTo`?
 
-- in `newChatController` when creating smpAgent - `getSMPServers` have to get servers for all users, or depending on allUsers flag in StartChat
+- in `newChatController` when creating smpAgent - `getSMPServers` have to get servers for all users, or depending on allUsers flag in StartChat; // drop known_servers table?
 
 - `AgentConfig` should depend on network configuration per user?
+
+- double check other state
 
 ### Storage
 

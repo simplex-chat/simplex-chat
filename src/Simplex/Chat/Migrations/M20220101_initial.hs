@@ -79,7 +79,7 @@ CREATE TABLE received_probes (
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE
 );
 
-CREATE TABLE known_servers( -- drop?
+CREATE TABLE known_servers(
   server_id INTEGER PRIMARY KEY,
   host TEXT NOT NULL,
   port TEXT NOT NULL,
