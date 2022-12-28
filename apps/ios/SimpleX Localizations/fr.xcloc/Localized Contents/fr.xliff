@@ -2258,9 +2258,9 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Ouvrir la console du chat</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Open-source protocol and code – anybody can run the servers." xml:space="preserve">
+      <trans-unit id="Open-source protocol and code – anybody can run the servers." xml:space="preserve" approved="no">
         <source>Open-source protocol and code – anybody can run the servers.</source>
-        <target>Protocole et code open-source – tout le monde peut faire fonctionner les serveurs.</target>
+        <target state="translated">Protocole et code open-source – n'importe qui peut heberger un serveur.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." xml:space="preserve">
@@ -2643,9 +2643,9 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Scannez le code de sécurité depuis l'application de votre contact.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Scan server QR code" xml:space="preserve">
+      <trans-unit id="Scan server QR code" xml:space="preserve" approved="no">
         <source>Scan server QR code</source>
-        <target>Scanner le code QR du serveur</target>
+        <target state="translated">Scanner un code QR de serveur</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Search" xml:space="preserve">
@@ -3417,9 +3417,9 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
         <target>Vous pouvez partager un lien ou un code QR - n'importe qui pourra rejoindre le groupe. Vous ne perdrez pas les membres du groupe si vous le supprimez par la suite.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it." xml:space="preserve">
+      <trans-unit id="You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it." xml:space="preserve" approved="no">
         <source>You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it.</source>
-        <target>Vous pouvez partager votre adresse sous forme de lien ou de code QR - n'importe qui pourra se connecter à vous. Vous ne perdrez pas vos contacts si vous les supprimez par la suite.</target>
+        <target state="translated">Vous pouvez partager votre adresse sous forme de lien ou de code QR - n'importe qui pourra se connecter à vous. Vous ne perdrez pas vos contacts si vous la supprimez par la suite.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can start chat via app Settings / Database or by restarting the app" xml:space="preserve">
@@ -3981,9 +3981,9 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
         <target>a quitté</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="marked deleted" xml:space="preserve">
+      <trans-unit id="marked deleted" xml:space="preserve" approved="no">
         <source>marked deleted</source>
-        <target>marquer comme supprimé</target>
+        <target state="translated">supprimé</target>
         <note>marked deleted chat item preview text</note>
       </trans-unit>
       <trans-unit id="member" xml:space="preserve">
