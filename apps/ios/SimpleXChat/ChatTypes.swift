@@ -1036,6 +1036,44 @@ public struct ChatData: Decodable, Identifiable {
     public var chatStats: ChatStats
 
     public var id: ChatId { get { chatInfo.id } }
+
+    public static func badJSONChatData() -> ChatData {
+        ChatData(
+            chatInfo: .direct(
+                contact: Contact(
+                    contactId: -1,
+                    localDisplayName: "bad JSON chat data",
+                    profile: LocalProfile(
+                        profileId: -1,
+                        displayName: "bad JSON chat data",
+                        fullName: "",
+                        preferences: Preferences.sampleData,
+                        localAlias: ""
+                    ),
+                    activeConn: Connection(
+                        connId: -1,
+                        connStatus: .ready,
+                        connLevel: 0,
+                        viaGroupLink: false
+                    ),
+                    contactUsed: true,
+                    chatSettings: ChatSettings.defaults,
+                    userPreferences: Preferences.sampleData,
+                    mergedPreferences: ContactUserPreferences.sampleData,
+                    createdAt: .now,
+                    updatedAt: .now
+                )
+            ),
+            chatItems: [],
+            chatStats: ChatStats()
+        )
+    }
+}
+
+public struct ChatDataJSON: Decodable {
+    public var chatInfo: ChatInfo
+    public var chatItems: [String]
+    public var chatStats: ChatStats
 }
 
 public struct ChatStats: Decodable {
@@ -1830,6 +1868,27 @@ public struct ChatItem: Identifiable, Decodable {
                 editable: false
             ),
             content: .rcvDeleted(deleteMode: .cidmBroadcast),
+            quotedItem: nil,
+            file: nil
+        )
+    }
+
+    public static func badJSONItem() -> ChatItem {
+        ChatItem(
+            chatDir: CIDirection.directSnd,
+            meta: CIMeta(
+                itemId: -1,
+                itemTs: .now,
+                itemText: "bad JSON chat item",
+                itemStatus: .sndNew,
+                createdAt: .now,
+                updatedAt: .now,
+                itemDeleted: false,
+                itemEdited: false,
+                itemLive: false,
+                editable: false
+            ),
+            content: .sndMsgContent(msgContent: .text("bad JSON chat item")), // TODO special type
             quotedItem: nil,
             file: nil
         )

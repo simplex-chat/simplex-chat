@@ -130,8 +130,34 @@ public func chatResponse(_ s: String) -> ChatResponse {
     var type: String?
     var json: String?
     if let j = try? JSONSerialization.jsonObject(with: d) as? NSDictionary {
-        if let j1 = j["resp"] as? NSDictionary, j1.count == 1 {
-            type = j1.allKeys[0] as? String
+        if let jResp = j["resp"] as? NSDictionary, jResp.count == 1 {
+            type = jResp.allKeys[0] as? String
+            if type == "apiChats" {
+                if let jChats = jResp["chats"] as? NSArray {
+                    var chats: [ChatData] = []
+                    for jChat in jChats {
+                        do {
+                            let chatDataJSON = try jsonDecoder.decode(ChatDataJSON.self, from: JSONSerialization.data(withJSONObject: jChat))
+                            var chatItems: [ChatItem] = []
+                            for chatItemJSON in chatDataJSON.chatItems {
+                                do {
+                                    let chatItem = try jsonDecoder.decode(ChatItem.self, from: chatItemJSON.data(using: .utf8)!)
+                                    chatItems.append(chatItem)
+                                } catch {
+                                    chatItems.append(ChatItem.badJSONItem()) // TODO pass original JSON
+                                }
+                            }
+                            let chatData = ChatData(chatInfo: chatDataJSON.chatInfo, chatItems: chatItems, chatStats: chatDataJSON.chatStats)
+                            chats.append(chatData)
+                        } catch {
+                            chats.append(ChatData.badJSONChatData())
+                        }
+                    }
+                    return .apiChats(chats: chats)
+                }
+            }
+            if type == "apiChat" {
+            }
         }
         json = prettyJSON(j)
     }
