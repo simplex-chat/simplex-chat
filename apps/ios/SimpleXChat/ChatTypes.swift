@@ -1364,15 +1364,17 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
 }
 
 public struct GroupProfile: Codable, NamedChat {
-    public init(displayName: String, fullName: String, image: String? = nil, groupPreferences: GroupPreferences? = nil) {
+    public init(displayName: String, fullName: String, description: String? = nil, image: String? = nil, groupPreferences: GroupPreferences? = nil) {
         self.displayName = displayName
         self.fullName = fullName
+        self.description = description
         self.image = image
         self.groupPreferences = groupPreferences
     }
 
     public var displayName: String
     public var fullName: String
+    public var description: String?
     public var image: String?
     public var groupPreferences: GroupPreferences?
     public var localAlias: String { "" }
