@@ -56,6 +56,15 @@ Separate transport connections with the same servers not shared between profiles
 
 - events need to have information for which user they happened
 
+  ```haskell
+  data UserChatResponse = UserChatResponse
+    { user :: User,
+      chatResponse :: ChatResponse
+    }
+  ```
+
+- replace ChatResponse with UserChatResponse in APIResponse, toView, etc.
+
 - in `agentSubscriber` don't get currentUser from controller, instead either:
 
   - get user from database by agent connection id
@@ -67,13 +76,6 @@ Separate transport connections with the same servers not shared between profiles
 - interactions via notifications - prohibit for simplicity? or change APIs to allow specifying User?
 
 - changes to chat model are applied only for current user
-
-```haskell
-data UserChatResponse = UserChatResponse
-  { user :: User,
-    chatResponse :: ChatResponse
-  }
-```
 
 ### ChatController
 
