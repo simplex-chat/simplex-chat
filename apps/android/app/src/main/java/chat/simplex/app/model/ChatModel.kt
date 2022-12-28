@@ -769,6 +769,7 @@ data class GroupInfo (
 data class GroupProfile (
   override val displayName: String,
   override val fullName: String,
+  val description: String? = null,
   override val image: String? = null,
   override val localAlias: String = "",
   val groupPreferences: GroupPreferences? = null
