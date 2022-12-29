@@ -17,6 +17,10 @@
         <target> </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="  " xml:space="preserve">
+        <source>  </source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="   " xml:space="preserve">
         <source>   </source>
         <target>   </target>
@@ -2736,6 +2740,10 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Serveurs</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Set 1 day" xml:space="preserve">
+        <source>Set 1 day</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Set contact name…" xml:space="preserve">
         <source>Set contact name…</source>
         <target>Définir le nom du contact…</target>
@@ -3918,6 +3926,18 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
         <source>indirect (%d)</source>
         <target>indirect (%d)</target>
         <note>connection level description</note>
+      </trans-unit>
+      <trans-unit id="invalid chat" xml:space="preserve">
+        <source>invalid chat</source>
+        <note>invalid chat data</note>
+      </trans-unit>
+      <trans-unit id="invalid chat data" xml:space="preserve">
+        <source>invalid chat data</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="invalid data" xml:space="preserve">
+        <source>invalid data</source>
+        <note>invalid chat item</note>
       </trans-unit>
       <trans-unit id="invitation to group %@" xml:space="preserve">
         <source>invitation to group %@</source>
