@@ -33,8 +33,9 @@ import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.*
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.nullable
+import kotlinx.serialization.json.*
 import java.util.Date
 
 typealias ChatCtrl = Long
@@ -2581,8 +2582,29 @@ class APIResponse(val resp: CR, val corr: String? = null) {
         try {
           Log.d(TAG, e.localizedMessage ?: "")
           val data = json.parseToJsonElement(str).jsonObject
+          val resp = data["resp"]!!.jsonObject
+          val type = resp["type"]?.jsonPrimitive?.content ?: "invalid"
+          try {
+            if (type == "apiChats") {
+              val chats: List<Chat> = resp["chats"]!!.jsonArray.map {
+                parseChatData(it)
+              }
+              return APIResponse(
+                resp = CR.ApiChats(chats),
+                corr = data["corr"]?.toString()
+              )
+            } else if (type == "apiChat") {
+              val chat = parseChatData(resp["chat"]!!)
+              return APIResponse(
+                resp = CR.ApiChat(chat),
+                corr = data["corr"]?.toString()
+              )
+            }
+          } catch (e: Exception) {
+            Log.e(TAG, "Error while parsing chat(s): " + e.stackTraceToString())
+          }
           APIResponse(
-            resp = CR.Response(data["resp"]!!.jsonObject["type"]?.toString() ?: "invalid", json.encodeToString(data)),
+            resp = CR.Response(type, json.encodeToString(data)),
             corr = data["corr"]?.toString()
           )
         } catch(e: Exception) {
@@ -2592,6 +2614,19 @@ class APIResponse(val resp: CR, val corr: String? = null) {
     }
   }
 }
+
+private fun parseChatData(chat: JsonElement): Chat {
+  val chatInfo: ChatInfo = decodeObject(ChatInfo.serializer(), chat.jsonObject["chatInfo"])
+    ?: ChatInfo.InvalidJSON(json.encodeToString(chat.jsonObject["chatInfo"]))
+  val chatStats = decodeObject(Chat.ChatStats.serializer(), chat.jsonObject["chatStats"])!!
+  val chatItems: List<ChatItem> = chat.jsonObject["chatItems"]!!.jsonArray.map {
+    decodeObject(ChatItem.serializer(), it) ?: ChatItem.invalidJSON(json.encodeToString(it))
+  }
+ return Chat(chatInfo, chatItems, chatStats)
+}
+
+private fun <T> decodeObject(deserializer: DeserializationStrategy<T>, obj: JsonElement?): T? =
+  runCatching { json.decodeFromJsonElement(deserializer, obj!!) }.getOrNull()
 
 // ChatResponse
 @Serializable

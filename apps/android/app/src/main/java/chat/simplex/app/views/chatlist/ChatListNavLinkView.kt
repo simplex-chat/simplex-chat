@@ -11,15 +11,20 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.*
 import chat.simplex.app.views.chat.group.deleteGroupDialog
 import chat.simplex.app.views.chat.group.leaveGroupDialog
+import chat.simplex.app.views.chat.item.InvalidJSONView
 import chat.simplex.app.views.chat.item.ItemAction
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.ContactConnectionInfoView
@@ -72,6 +77,18 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
           }
         },
         dropdownMenuItems = { ContactConnectionMenuItems(chat.chatInfo, chatModel, showMenu) },
+        showMenu,
+        stopped
+      )
+    is ChatInfo.InvalidJSON ->
+      ChatListNavLinkLayout(
+        chatLinkPreview = {
+          InvalidDataView()
+        },
+        click = {
+          ModalManager.shared.showModal(true) { InvalidJSONView(chat.chatInfo.json) }
+        },
+        dropdownMenuItems = null,
         showMenu,
         stopped
       )
@@ -318,6 +335,29 @@ fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: 
     },
     color = Color.Red
   )
+}
+
+@Composable
+private fun InvalidDataView() {
+  Row {
+    ProfileImage(72.dp, null, Icons.Filled.AccountCircle, HighOrLowlight)
+    Column(
+      modifier = Modifier
+        .padding(horizontal = 8.dp)
+        .weight(1F)
+    ) {
+      Text(
+        stringResource(R.string.invalid_data),
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        style = MaterialTheme.typography.h3,
+        fontWeight = FontWeight.Bold,
+        color = Color.Red
+      )
+      val height = with(LocalDensity.current) { 46.sp.toDp() }
+      Spacer(Modifier.height(height))
+    }
+  }
 }
 
 fun markChatRead(c: Chat, chatModel: ChatModel) {

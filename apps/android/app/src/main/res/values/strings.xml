@@ -28,6 +28,8 @@
   <string name="unknown_message_format">unknown message format</string>
   <string name="invalid_message_format">invalid message format</string>
   <string name="live">LIVE</string>
+  <string name="invalid_chat">invalid chat</string>
+  <string name="invalid_data">invalid data</string>
 
   <!-- PendingContactConnection - ChatModel.kt -->
   <string name="connection_local_display_name">connection <xliff:g id="connection ID" example="1">%1$d</xliff:g></string>
