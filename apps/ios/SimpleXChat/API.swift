@@ -154,20 +154,6 @@ public func chatResponse(_ s: String) -> ChatResponse {
                                 }
                             }
                             let chatData = ChatData(chatInfo: chatInfo, chatItems: chatItems, chatStats: chatStats)
-
-//                            print("########################## 1")
-//                            let chatDataJSON = try jsonDecoder.decode(ChatDataJSON.self, from: JSONSerialization.data(withJSONObject: jChat))
-//                            print("########################## 2")
-//                            var chatItems: [ChatItem] = []
-//                            for chatItemJSON in chatDataJSON.chatItems {
-//                                do {
-//                                    let chatItem = try jsonDecoder.decode(ChatItem.self, from: chatItemJSON.data(using: .utf8)!)
-//                                    chatItems.append(chatItem)
-//                                } catch {
-//                                    chatItems.append(ChatItem.badJSONItem()) // TODO pass original JSON
-//                                }
-//                            }
-//                            let chatData = ChatData(chatInfo: chatDataJSON.chatInfo, chatItems: chatItems, chatStats: chatDataJSON.chatStats)
                             chats.append(chatData)
                         } catch {
                             chats.append(ChatData.badJSONChatData())
@@ -177,6 +163,24 @@ public func chatResponse(_ s: String) -> ChatResponse {
                 }
             }
             if type == "apiChat" {
+                if let jApiChat = jResp["apiChat"] as? NSDictionary,
+                   let jChat = jApiChat["chats"] as? NSDictionary,
+                   let jChatInfo = jChat["chatInfo"] as? NSDictionary,
+                   let chatInfo = try? jsonDecoder.decode(ChatInfo.self, from: JSONSerialization.data(withJSONObject: jChatInfo)),
+                   let jChatStats = jChat["chatStats"] as? NSDictionary,
+                   let chatStats = try? jsonDecoder.decode(ChatStats.self, from: JSONSerialization.data(withJSONObject: jChatStats)),
+                   let jChatItems = jChat["chatItems"] as? NSArray {
+                    var chatItems: [ChatItem] = []
+                    for jChatItem in jChatItems {
+                        do {
+                            let chatItem = try jsonDecoder.decode(ChatItem.self, from: JSONSerialization.data(withJSONObject: jChatItem))
+                            chatItems.append(chatItem)
+                        } catch {
+                            chatItems.append(ChatItem.badJSONItem()) // TODO pass original JSON
+                        }
+                    }
+                    let chatData = ChatData(chatInfo: chatInfo, chatItems: chatItems, chatStats: chatStats)
+                }
             }
         }
         json = prettyJSON(j)

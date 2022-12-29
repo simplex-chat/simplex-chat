@@ -1070,12 +1070,6 @@ public struct ChatData: Decodable, Identifiable {
     }
 }
 
-public struct ChatDataJSON: Decodable {
-    public var chatInfo: ChatInfo
-    public var chatItems: [String]
-    public var chatStats: ChatStats
-}
-
 public struct ChatStats: Decodable {
     public init(unreadCount: Int = 0, minUnreadItemId: Int64 = 0, unreadChat: Bool = false) {
         self.unreadCount = unreadCount
