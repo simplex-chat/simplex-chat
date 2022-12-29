@@ -117,28 +117,64 @@ private func fromCString(_ c: UnsafeMutablePointer<CChar>) -> String {
 
 public func chatResponse(_ s: String) -> ChatResponse {
     let d = s.data(using: .utf8)!
-// TODO is there a way to do it without copying the data? e.g:
-//    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
-//    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
+    // TODO is there a way to do it without copying the data? e.g:
+    //    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
+    //    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
     do {
         let r = try jsonDecoder.decode(APIResponse.self, from: d)
         return r.resp
     } catch {
         logger.error("chatResponse jsonDecoder.decode error: \(error.localizedDescription)")
     }
-
+    
     var type: String?
     var json: String?
     if let j = try? JSONSerialization.jsonObject(with: d) as? NSDictionary {
-        if let j1 = j["resp"] as? NSDictionary, j1.count == 1 {
-            type = j1.allKeys[0] as? String
+        if let jResp = j["resp"] as? NSDictionary, jResp.count == 1 {
+            type = jResp.allKeys[0] as? String
+            if type == "apiChats" {
+                if let jApiChats = jResp["apiChats"] as? NSDictionary,
+                   let jChats = jApiChats["chats"] as? NSArray {
+                    let chats = jChats.map { jChat in
+                        if let chatData = try? parseChatData(jChat) {
+                            return chatData
+                        }
+                        return ChatData.invalidJSON(prettyJSON(jChat) ?? "")
+                    }
+                    return .apiChats(chats: chats)
+                }
+            } else if type == "apiChat" {
+                if let jApiChat = jResp["apiChat"] as? NSDictionary,
+                   let jChat = jApiChat["chat"] as? NSDictionary,
+                   let chat = try? parseChatData(jChat) {
+                    return .apiChat(chat: chat)
+                }
+            }
         }
         json = prettyJSON(j)
     }
     return ChatResponse.response(type: type ?? "invalid", json: json ?? s)
 }
 
-func prettyJSON(_ obj: NSDictionary) -> String? {
+func parseChatData(_ jChat: Any) throws -> ChatData {
+    let jChatDict = jChat as! NSDictionary
+    let chatInfo: ChatInfo = try decodeObject(jChatDict["chatInfo"]!)
+    let chatStats: ChatStats = try decodeObject(jChatDict["chatStats"]!)
+    let jChatItems = jChatDict["chatItems"] as! NSArray
+    let chatItems = jChatItems.map { jCI in
+        if let ci: ChatItem = try? decodeObject(jCI) {
+            return ci
+        }
+        return ChatItem.invalidJSON(prettyJSON(jCI) ?? "")
+    }
+    return ChatData(chatInfo: chatInfo, chatItems: chatItems, chatStats: chatStats)
+}
+
+func decodeObject<T: Decodable>(_ obj: Any) throws -> T {
+    try jsonDecoder.decode(T.self, from: JSONSerialization.data(withJSONObject: obj))
+}
+
+func prettyJSON(_ obj: Any) -> String? {
     if let d = try? JSONSerialization.data(withJSONObject: obj, options: .prettyPrinted) {
         return String(decoding: d, as: UTF8.self)
     }
