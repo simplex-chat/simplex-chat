@@ -4,8 +4,6 @@ import android.net.Uri
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material.icons.outlined.Close
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -26,6 +24,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
 import java.io.File
+import kotlin.random.Random
 import kotlin.time.*
 
 /*
@@ -555,6 +554,30 @@ sealed class ChatInfo: SomeChat, NamedChat {
     companion object {
       fun getSampleData(status: ConnStatus = ConnStatus.New, viaContactUri: Boolean = false): ContactConnection =
         ContactConnection(PendingContactConnection.getSampleData(status, viaContactUri))
+    }
+  }
+
+  @Serializable @SerialName("invalidJSON")
+  class InvalidJSON(val json: String): ChatInfo() {
+    override val chatType get() = ChatType.Direct
+    override val localDisplayName get() = invalidChatName
+    override val id get() = ""
+    override val apiId get() = 0L
+    override val ready get() = false
+    override val sendMsgEnabled get() = false
+    override val ntfsEnabled get() = false
+    override val incognito get() = false
+    override fun featureEnabled(feature: ChatFeature) = false
+    override val timedMessagesTTL: Int? get() = null
+    override val createdAt get() = Clock.System.now()
+    override val updatedAt get() = Clock.System.now()
+    override val displayName get() = invalidChatName
+    override val fullName get() = invalidChatName
+    override val image get() = null
+    override val localAlias get() = ""
+
+    companion object {
+      private val invalidChatName = generalGetString(R.string.invalid_chat)
     }
   }
 }
@@ -1168,6 +1191,7 @@ data class ChatItem (
       is CIContent.SndGroupFeature -> showNtfDir
       is CIContent.RcvChatFeatureRejected -> showNtfDir
       is CIContent.RcvGroupFeatureRejected -> showNtfDir
+      is CIContent.InvalidJSON -> false
     }
 
   fun withStatus(status: CIStatus): ChatItem = this.copy(meta = meta.copy(itemStatus = status))
@@ -1275,6 +1299,15 @@ data class ChatItem (
         quotedItem = null,
         file = null
       )
+
+    fun invalidJSON(json: String): ChatItem =
+      ChatItem(
+        chatDir = CIDirection.DirectSnd(),
+        meta = CIMeta.invalidJSON(),
+        content = CIContent.InvalidJSON(json),
+        quotedItem = null,
+        file = null
+      )
   }
 }
 
@@ -1341,6 +1374,22 @@ data class CIMeta (
         itemLive = itemLive,
         editable = editable
       )
+
+    fun invalidJSON(): CIMeta =
+      CIMeta(
+        // itemId can not be the same for different items, otherwise ChatView will crash
+        itemId = Random.nextLong(-1000000L, -1000L),
+        itemTs = Clock.System.now(),
+        itemText = "invalid JSON",
+        itemStatus = CIStatus.SndNew(),
+        createdAt = Clock.System.now(),
+        updatedAt = Clock.System.now(),
+        itemDeleted = false,
+        itemEdited = false,
+        itemTimed = null,
+        itemLive = false,
+        editable = false
+      )
   }
 }
 
@@ -1405,6 +1454,7 @@ sealed class CIContent: ItemContent {
   @Serializable @SerialName("sndGroupFeature") class SndGroupFeature(val groupFeature: GroupFeature, val preference: GroupPreference, val param: Int? = null): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvChatFeatureRejected") class RcvChatFeatureRejected(val feature: ChatFeature): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvGroupFeatureRejected") class RcvGroupFeatureRejected(val groupFeature: GroupFeature): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("invalidJSON") data class InvalidJSON(val json: String): CIContent() { override val msgContent: MsgContent? get() = null }
 
   override val text: String get() = when (this) {
       is SndMsgContent -> msgContent.text
@@ -1428,6 +1478,7 @@ sealed class CIContent: ItemContent {
       is SndGroupFeature -> featureText(groupFeature, preference.enable.text, param)
       is RcvChatFeatureRejected -> "${feature.text}: ${generalGetString(R.string.feature_received_prohibited)}"
       is RcvGroupFeatureRejected -> "${groupFeature.text}: ${generalGetString(R.string.feature_received_prohibited)}"
+      is InvalidJSON -> "invalid data"
     }
 
   companion object {
