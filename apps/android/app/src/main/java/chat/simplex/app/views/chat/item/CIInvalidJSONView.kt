@@ -6,7 +6,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.IosShare
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -35,7 +35,7 @@ fun InvalidJSONView(json: String) {
     Spacer(Modifier.height(DEFAULT_PADDING))
     SectionView {
       val context = LocalContext.current
-      SettingsActionItem(Icons.Outlined.IosShare, generalGetString(R.string.share_verb), click = {
+      SettingsActionItem(Icons.Outlined.Share, generalGetString(R.string.share_verb), click = {
         shareText(context, json)
       })
     }
