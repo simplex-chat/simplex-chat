@@ -133,7 +133,8 @@ public func chatResponse(_ s: String) -> ChatResponse {
         if let jResp = j["resp"] as? NSDictionary, jResp.count == 1 {
             type = jResp.allKeys[0] as? String
             if type == "apiChats" {
-                if let jChats = jResp["chats"] as? NSArray {
+                if let jApiChats = jResp["apiChats"] as? NSDictionary,
+                   let jChats = jApiChats["chats"] as? NSArray {
                     var chats: [ChatData] = []
                     for jChat in jChats {
                         do {
