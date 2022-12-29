@@ -139,7 +139,7 @@ public func chatResponse(_ s: String) -> ChatResponse {
                         if let chatData = try? parseChatData(jChat) {
                             return chatData
                         }
-                        return ChatData.badJSONChatData()
+                        return ChatData.invalidJSON(prettyJSON(jChat) ?? "")
                     }
                     return .apiChats(chats: chats)
                 }
@@ -165,7 +165,7 @@ func parseChatData(_ jChat: Any) throws -> ChatData {
         if let ci: ChatItem = try? decodeObject(jCI) {
             return ci
         }
-        return ChatItem.badJSONItem() // TODO pass original JSON
+        return ChatItem.invalidJSON(prettyJSON(jCI) ?? "")
     }
     return ChatData(chatInfo: chatInfo, chatItems: chatItems, chatStats: chatStats)
 }
@@ -174,7 +174,7 @@ func decodeObject<T: Decodable>(_ obj: Any) throws -> T {
     try jsonDecoder.decode(T.self, from: JSONSerialization.data(withJSONObject: obj))
 }
 
-func prettyJSON(_ obj: NSDictionary) -> String? {
+func prettyJSON(_ obj: Any) -> String? {
     if let d = try? JSONSerialization.data(withJSONObject: obj, options: .prettyPrinted) {
         return String(decoding: d, as: UTF8.self)
     }

@@ -72,6 +72,7 @@ struct ChatItemContentView<Content: View>: View {
         case let .sndGroupFeature(feature, preference, _): chatFeatureView(feature, preference.enable.iconColor)
         case let .rcvChatFeatureRejected(feature): chatFeatureView(feature, .red)
         case let .rcvGroupFeatureRejected(feature): chatFeatureView(feature, .red)
+        case let .invalidJSON(json): CIInvalidJSONView(json: json)
         }
     }
 

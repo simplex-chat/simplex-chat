@@ -798,6 +798,9 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
     case group(groupInfo: GroupInfo)
     case contactRequest(contactRequest: UserContactRequest)
     case contactConnection(contactConnection: PendingContactConnection)
+    case invalidJSON(json: String)
+
+    private static let invalidChatName = NSLocalizedString("invalid chat", comment: "invalid chat data")
 
     public var localDisplayName: String {
         get {
@@ -806,6 +809,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
             case let .group(groupInfo): return groupInfo.localDisplayName
             case let .contactRequest(contactRequest): return contactRequest.localDisplayName
             case let .contactConnection(contactConnection): return contactConnection.localDisplayName
+            case .invalidJSON: return ChatInfo.invalidChatName
             }
         }
     }
@@ -817,6 +821,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
             case let .group(groupInfo): return groupInfo.displayName
             case let .contactRequest(contactRequest): return contactRequest.displayName
             case let .contactConnection(contactConnection): return contactConnection.displayName
+            case .invalidJSON: return ChatInfo.invalidChatName
             }
         }
     }
@@ -828,6 +833,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
             case let .group(groupInfo): return groupInfo.fullName
             case let .contactRequest(contactRequest): return contactRequest.fullName
             case let .contactConnection(contactConnection): return contactConnection.fullName
+            case .invalidJSON: return ChatInfo.invalidChatName
             }
         }
     }
@@ -839,6 +845,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
             case let .group(groupInfo): return groupInfo.image
             case let .contactRequest(contactRequest): return contactRequest.image
             case let .contactConnection(contactConnection): return contactConnection.image
+            case .invalidJSON: return nil
             }
         }
     }
@@ -850,6 +857,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
             case let .group(groupInfo): return groupInfo.localAlias
             case let .contactRequest(contactRequest): return contactRequest.localAlias
             case let .contactConnection(contactConnection): return contactConnection.localAlias
+            case .invalidJSON: return ""
             }
         }
     }
@@ -861,6 +869,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
             case let .group(groupInfo): return groupInfo.id
             case let .contactRequest(contactRequest): return contactRequest.id
             case let .contactConnection(contactConnection): return contactConnection.id
+            case .invalidJSON: return ""
             }
         }
     }
@@ -872,6 +881,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
             case .group: return .group
             case .contactRequest: return .contactRequest
             case .contactConnection: return .contactConnection
+            case .invalidJSON: return .direct
             }
         }
     }
@@ -883,6 +893,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
             case let .group(groupInfo): return groupInfo.apiId
             case let .contactRequest(contactRequest): return contactRequest.apiId
             case let .contactConnection(contactConnection): return contactConnection.apiId
+            case .invalidJSON: return 0
             }
         }
     }
@@ -894,6 +905,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
             case let .group(groupInfo): return groupInfo.ready
             case let .contactRequest(contactRequest): return contactRequest.ready
             case let .contactConnection(contactConnection): return contactConnection.ready
+            case .invalidJSON: return false
             }
         }
     }
@@ -905,6 +917,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
             case let .group(groupInfo): return groupInfo.sendMsgEnabled
             case let .contactRequest(contactRequest): return contactRequest.sendMsgEnabled
             case let .contactConnection(contactConnection): return contactConnection.sendMsgEnabled
+            case .invalidJSON: return false
             }
         }
     }
@@ -916,6 +929,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
             case let .group(groupInfo): return groupInfo.membership.memberIncognito
             case .contactRequest: return false
             case let .contactConnection(contactConnection): return contactConnection.incognito
+            case .invalidJSON: return false
             }
         }
     }
@@ -1003,6 +1017,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
         case let .group(groupInfo): return groupInfo.createdAt
         case let .contactRequest(contactRequest): return contactRequest.createdAt
         case let .contactConnection(contactConnection): return contactConnection.createdAt
+        case .invalidJSON: return .now
         }
     }
 
@@ -1012,6 +1027,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
         case let .group(groupInfo): return groupInfo.updatedAt
         case let .contactRequest(contactRequest): return contactRequest.updatedAt
         case let .contactConnection(contactConnection): return contactConnection.updatedAt
+        case .invalidJSON: return .now
         }
     }
 
@@ -1037,33 +1053,9 @@ public struct ChatData: Decodable, Identifiable {
 
     public var id: ChatId { get { chatInfo.id } }
 
-    public static func badJSONChatData() -> ChatData {
+    public static func invalidJSON(_ json: String) -> ChatData {
         ChatData(
-            chatInfo: .direct(
-                contact: Contact(
-                    contactId: -1,
-                    localDisplayName: "bad JSON chat data",
-                    profile: LocalProfile(
-                        profileId: -1,
-                        displayName: "bad JSON chat data",
-                        fullName: "",
-                        preferences: Preferences.sampleData,
-                        localAlias: ""
-                    ),
-                    activeConn: Connection(
-                        connId: -1,
-                        connStatus: .ready,
-                        connLevel: 0,
-                        viaGroupLink: false
-                    ),
-                    contactUsed: true,
-                    chatSettings: ChatSettings.defaults,
-                    userPreferences: Preferences.sampleData,
-                    mergedPreferences: ContactUserPreferences.sampleData,
-                    createdAt: .now,
-                    updatedAt: .now
-                )
-            ),
+            chatInfo: .invalidJSON(json: json),
             chatItems: [],
             chatStats: ChatStats()
         )
@@ -1744,6 +1736,7 @@ public struct ChatItem: Identifiable, Decodable {
         case .sndGroupFeature: return showNtfDir
         case .rcvChatFeatureRejected: return showNtfDir
         case .rcvGroupFeatureRejected: return showNtfDir
+        case .invalidJSON: return false
         }
     }
 
@@ -1867,22 +1860,11 @@ public struct ChatItem: Identifiable, Decodable {
         )
     }
 
-    public static func badJSONItem() -> ChatItem {
+    public static func invalidJSON(_ json: String) -> ChatItem {
         ChatItem(
             chatDir: CIDirection.directSnd,
-            meta: CIMeta(
-                itemId: -1,
-                itemTs: .now,
-                itemText: "bad JSON chat item",
-                itemStatus: .sndNew,
-                createdAt: .now,
-                updatedAt: .now,
-                itemDeleted: false,
-                itemEdited: false,
-                itemLive: false,
-                editable: false
-            ),
-            content: .sndMsgContent(msgContent: .text("bad JSON chat item")), // TODO special type
+            meta: CIMeta.invalidJSON,
+            content: .invalidJSON(json: json),
             quotedItem: nil,
             file: nil
         )
@@ -1954,6 +1936,21 @@ public struct CIMeta: Decodable {
             editable: editable
         )
     }
+
+    public static var invalidJSON: CIMeta {
+        CIMeta(
+            itemId: 0,
+            itemTs: .now,
+            itemText: "invalid JSON",
+            itemStatus: .sndNew,
+            createdAt: .now,
+            updatedAt: .now,
+            itemDeleted: false,
+            itemEdited: false,
+            itemLive: false,
+            editable: false
+        )
+    }
 }
 
 public struct CITimed: Decodable {
@@ -2022,6 +2019,7 @@ public enum CIContent: Decodable, ItemContent {
     case sndGroupFeature(groupFeature: GroupFeature, preference: GroupPreference, param: Int?)
     case rcvChatFeatureRejected(feature: ChatFeature)
     case rcvGroupFeatureRejected(groupFeature: GroupFeature)
+    case invalidJSON(json: String)
 
     public var text: String {
         get {
@@ -2047,6 +2045,7 @@ public enum CIContent: Decodable, ItemContent {
             case let .sndGroupFeature(feature, preference, param): return CIContent.featureText(feature, preference.enable.text, param)
             case let .rcvChatFeatureRejected(feature): return String.localizedStringWithFormat("%@: received, prohibited", feature.text)
             case let .rcvGroupFeatureRejected(groupFeature): return String.localizedStringWithFormat("%@: received, prohibited", groupFeature.text)
+            case .invalidJSON: return NSLocalizedString("invalid data", comment: "invalid chat item")
             }
         }
     }

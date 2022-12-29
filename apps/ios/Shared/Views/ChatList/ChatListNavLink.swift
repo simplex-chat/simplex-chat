@@ -31,6 +31,7 @@ struct ChatListNavLink: View {
     @State private var showContactRequestDialog = false
     @State private var showJoinGroupDialog = false
     @State private var showContactConnectionInfo = false
+    @State private var showInvalidJSON = false
 
     var body: some View {
         switch chat.chatInfo {
@@ -42,6 +43,8 @@ struct ChatListNavLink: View {
             contactRequestNavLink(cReq)
         case let .contactConnection(cConn):
             contactConnectionNavLink(cConn)
+        case let .invalidJSON(json):
+            invalidJSONPreview(json)
         }
     }
 
@@ -334,6 +337,17 @@ struct ChatListNavLink: View {
                 logger.error("ChatListNavLink.removePendingContact apiDeleteChat error: \(responseError(error))")
             }
         }
+    }
+
+    private func invalidJSONPreview(_ json: String) -> some View {
+        Text("invalid chat data")
+            .foregroundColor(.red)
+            .padding(4)
+            .frame(height: rowHeights[dynamicTypeSize])
+            .onTapGesture { showInvalidJSON = true }
+            .sheet(isPresented: $showInvalidJSON) {
+                invalidJSONView(json)
+            }
     }
 }
 
