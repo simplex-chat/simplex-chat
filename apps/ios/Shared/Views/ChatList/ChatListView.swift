@@ -14,7 +14,6 @@ struct ChatListView: View {
     // not really used in this view
     @State private var showSettings = false
     @State private var searchText = ""
-    @State private var selectedChat: ChatId?
     @State private var showAddChat = false
 
     var body: some View {
@@ -42,7 +41,6 @@ struct ChatListView: View {
             }
         }
         .onChange(of: chatModel.chatId) { _ in
-            selectedChat = chatModel.chatId
             if chatModel.chatId == nil, let chatId = chatModel.chatToTop {
                 chatModel.chatToTop = nil
                 chatModel.popChat(chatId)
@@ -79,10 +77,10 @@ struct ChatListView: View {
         }
         .background(
             NavigationLink(
-                destination: chatView(selectedChat),
+                destination: chatView(),
                 isActive: Binding(
-                    get: { selectedChat != nil },
-                    set: { _, _ in selectedChat = nil }
+                    get: { chatModel.chatId != nil },
+                    set: { _, _ in chatModel.chatId = nil }
                 )
             ) { EmptyView() }
         )
@@ -131,8 +129,8 @@ struct ChatListView: View {
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
-    @ViewBuilder private func chatView(_ chatId: ChatId?) -> some View {
-        if let chatId = chatId, let chat = chatModel.getChat(chatId) {
+    @ViewBuilder private func chatView() -> some View {
+        if let chatId = chatModel.chatId, let chat = chatModel.getChat(chatId) {
             ChatView(chat: chat).onAppear {
                 loadChat(chat: chat)
             }
