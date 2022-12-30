@@ -15,7 +15,7 @@ private let memberImageSize: CGFloat = 34
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
-    @ObservedObject var chat: Chat
+    @State @ObservedObject var chat: Chat
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
@@ -253,9 +253,10 @@ struct ChatView: View {
                     loadChat(chat: chat, search: searchText)
                 }
                 .onChange(of: chatModel.chatId) { _ in
-                    if let chatId = chatModel.chatId, let chat = chatModel.getChat(chatId) {
+                    if let chatId = chatModel.chatId, let c = chatModel.getChat(chatId) {
+                        chat = c
                         showChatInfoSheet = false
-                        loadChat(chat: chat)
+                        loadChat(chat: c)
                         DispatchQueue.main.async {
                             scrollToBottom(proxy)
                         }
