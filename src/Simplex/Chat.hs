@@ -55,7 +55,7 @@ import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store
 import Simplex.Chat.Types
-import Simplex.Chat.Util (diffInMicros, diffInSeconds)
+import Simplex.Chat.Util (diffInMicros, diffInMillis, diffInSeconds)
 import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Client (AgentStatsKey (..))
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), AgentDatabase (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
@@ -527,7 +527,7 @@ processChatCommand = \case
         liftIO $ updateGroupUnreadChat db user groupInfo unreadChat
       pure CRCmdOk
     _ -> pure $ chatCmdError "not supported"
-  APIDeleteChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
+  APIDeleteChat (ChatRef cType chatId) -> withUser' $ \user@User {userId} -> case cType of
     CTDirect -> do
       ct@Contact {localDisplayName} <- withStore $ \db -> getContact db user chatId
       filesInfo <- withStore' $ \db -> getContactFileInfo db user ct
@@ -547,33 +547,34 @@ processChatCommand = \case
       withStore' $ \db -> deletePendingContactConnection db userId chatId
       pure $ CRContactConnectionDeleted conn
     CTGroup -> do
-      Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user chatId
-      let canDelete = memberRole (membership :: GroupMember) == GROwner || not (memberCurrent membership)
-      unless canDelete $ throwChatError CEGroupUserRole
-      filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
-      withChatLock "deleteChat group" . procCmd $ do
-        forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
-        when (memberActive membership) . void $ sendGroupMessage gInfo members XGrpDel
-        deleteGroupLink' user gInfo `catchError` \_ -> pure ()
-        forM_ members $ deleteMemberConnection user
-        -- functions below are called in separate transactions to prevent crashes on android
-        -- (possibly, race condition on integrity check?)
-        withStore' $ \db -> deleteGroupConnectionsAndFiles db user gInfo members
-        withStore' $ \db -> deleteGroupItemsAndMembers db user gInfo members
-        withStore' $ \db -> deleteGroup db user gInfo
-        let contactIds = mapMaybe memberContactId members
-        forM_ contactIds $ \ctId ->
-          deleteUnusedContact ctId `catchError` (toView . CRChatError)
-        pure $ CRGroupDeletedUser gInfo
+      timeItM "APIChatDeleteChat CTGroup" $ do
+        Group gInfo@GroupInfo {membership} members <- timeItM "getGroup" $ withStore $ \db -> getGroup db user chatId
+        let canDelete = memberRole (membership :: GroupMember) == GROwner || not (memberCurrent membership)
+        unless canDelete $ throwChatError CEGroupUserRole
+        filesInfo <- timeItM "getGroupFileInfo" $ withStore' $ \db -> getGroupFileInfo db user gInfo
+        withChatLock "deleteChat group" . procCmd $ do
+          timeItM "forM_ filesInfo deleteFile" $ forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
+          when (memberActive membership) . void $ timeItM "sendGroupMessage" $ sendGroupMessage gInfo members XGrpDel
+          timeItM "deleteGroupLink'" $ deleteGroupLink' user gInfo `catchError` \_ -> pure ()
+          timeItM "forM_ members deleteMemberConnection" $ forM_ members $ deleteMemberConnection user
+          -- functions below are called in separate transactions to prevent crashes on android
+          -- (possibly, race condition on integrity check?)
+          timeItM "deleteGroupConnectionsAndFiles" $ withStore' $ \db -> deleteGroupConnectionsAndFiles db user gInfo members
+          timeItM "deleteGroupItemsAndMembers" $ withStore' $ \db -> deleteGroupItemsAndMembers db user gInfo members
+          timeItM "deleteGroup" $ withStore' $ \db -> deleteGroup db user gInfo
+          let contactIds = mapMaybe memberContactId members
+          timeItM "forM_ contactIds deleteUnusedContact" $ forM_ contactIds $ \ctId ->
+            timeItM ("contactId " <> show ctId <> ": deleteUnusedContact") $ deleteUnusedContact ctId `catchError` (toView . CRChatError)
+          pure $ CRGroupDeletedUser gInfo
       where
         deleteUnusedContact contactId = do
-          ct <- withStore $ \db -> getContact db user contactId
+          ct <- timeItM ("contactId " <> show contactId <> ": getContact") $ withStore $ \db -> getContact db user contactId
           unless (directOrUsed ct) $ do
-            ctGroupId <- withStore' $ \db -> checkContactHasGroups db user ct
+            ctGroupId <- timeItM ("contactId " <> show contactId <> ": checkContactHasGroups") $ withStore' $ \db -> checkContactHasGroups db user ct
             when (isNothing ctGroupId) $ do
-              conns <- withStore $ \db -> getContactConnections db userId ct
-              forM_ conns $ \conn -> deleteAgentConnectionAsync user conn `catchError` \_ -> pure ()
-              withStore' $ \db -> deleteContactWithoutGroups db user ct
+              conns <- timeItM ("contactId " <> show contactId <> ": getContactConnections") $ withStore $ \db -> getContactConnections db userId ct
+              timeItM ("contactId " <> show contactId <> ": forM_ conns deleteAgentConnectionAsync") $ forM_ conns $ \conn -> deleteAgentConnectionAsync user conn `catchError` \_ -> pure ()
+              timeItM ("contactId " <> show contactId <> ": deleteContactWithoutGroups") $ withStore' $ \db -> deleteContactWithoutGroups db user ct
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIClearChat (ChatRef cType chatId) -> withUser $ \user -> case cType of
     CTDirect -> do
@@ -1026,7 +1027,7 @@ processChatCommand = \case
               -- undeleted "member connected" chat item will prevent deletion of member record
               deleteOrUpdateMemberRecord user m
           pure $ CRUserDeletedMember gInfo m {memberStatus = GSMemRemoved}
-  APILeaveGroup groupId -> withUser $ \user@User {userId} -> do
+  APILeaveGroup groupId -> withUser' $ \user@User {userId} -> do
     Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user groupId
     withChatLock "leaveGroup" . procCmd $ do
       msg <- sendGroupMessage gInfo members XGrpLeave
@@ -3886,3 +3887,12 @@ chatCommandP =
 adminContactReq :: ConnReqContact
 adminContactReq =
   either error id $ strDecode "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D"
+
+timeItM :: ChatMonad m => String -> m a -> m a
+timeItM s action = do
+  t1 <- liftIO getCurrentTime
+  a <- action
+  t2 <- liftIO getCurrentTime
+  let diff = diffInMillis t2 t1
+  liftIO . print $ show diff <> " ms - " <> s
+  pure a

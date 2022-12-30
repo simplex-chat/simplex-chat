@@ -463,3 +463,8 @@ CREATE INDEX idx_chat_items_group_member_id ON chat_items(group_member_id);
 CREATE INDEX idx_chat_items_contact_id ON chat_items(contact_id);
 CREATE INDEX idx_chat_items_timed_delete_at ON chat_items(timed_delete_at);
 CREATE INDEX idx_chat_items_item_status ON chat_items(item_status);
+CREATE INDEX idx_connections_group_member ON connections(
+  user_id,
+  group_member_id
+);
+CREATE INDEX idx_commands_connection_id ON commands(connection_id);

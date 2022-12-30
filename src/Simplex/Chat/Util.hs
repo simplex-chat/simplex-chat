@@ -4,12 +4,16 @@ module Simplex.Chat.Util
   ( diffInMicros,
     diffInSeconds,
     week,
+    diffInMillis
   )
 where
 
 import Data.Fixed (Fixed (MkFixed), Pico)
 import Data.Time (NominalDiffTime, nominalDiffTimeToSeconds)
 import Data.Time.Clock (UTCTime, diffUTCTime)
+
+diffInMillis :: UTCTime -> UTCTime -> Int
+diffInMillis a b = (`div` 1000000000) . fromInteger . fromPico . nominalDiffTimeToSeconds $ diffUTCTime a b
 
 diffInSeconds :: UTCTime -> UTCTime -> Int
 diffInSeconds a b = (`div` 1000000_000000) $ diffInPicos a b
