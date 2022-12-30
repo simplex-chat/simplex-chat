@@ -916,4 +916,6 @@
     <string name="v4_2_security_assessment_desc">La sécurité de SimpleX Chat a été auditée par Trail of Bits.</string>
     <string name="v4_3_improved_server_configuration">Configuration de serveur améliorée</string>
     <string name="v4_3_improved_server_configuration_desc">Ajoutez des serveurs en scannant des codes QR.</string>
+    <string name="invalid_data">données invalides</string>
+    <string name="invalid_chat">chat invalide</string>
 </resources>
