@@ -906,4 +906,5 @@
     <string name="group_members_can_send_voice">Gruppenmitglieder können Sprachnachrichten senden.</string>
     <string name="voice_messages_are_prohibited">In dieser Gruppe sind Sprachnachrichten untersagt.</string>
     <string name="live">LIVE</string>
+    <string name="view_security_code">Schauen Sie sich den Sicherheitscode an</string>
 </resources>
