@@ -5,6 +5,9 @@
 " " = " ";
 
 /* No comment provided by engineer. */
+"  " = "  ";
+
+/* No comment provided by engineer. */
 "   " = "   ";
 
 /* No comment provided by engineer. */
@@ -149,7 +152,7 @@
 "%lldk" = "%lldk";
 
 /* No comment provided by engineer. */
-"%lldm" = "%lldm";
+"%lldm" = "%lldmn";
 
 /* No comment provided by engineer. */
 "%lldmth" = "%lldmois";
@@ -231,10 +234,16 @@
 "Add server…" = "Ajouter un serveur…";
 
 /* No comment provided by engineer. */
+"Add servers by scanning QR codes." = "Ajoutez des serveurs en scannant des codes QR.";
+
+/* No comment provided by engineer. */
 "Add to another device" = "Ajouter à un autre appareil";
 
 /* member role */
 "admin" = "admin";
+
+/* No comment provided by engineer. */
+"Admins can create the links to join groups." = "Les admins peuvent créer les liens qui permettent de rejoindre les groupes.";
 
 /* No comment provided by engineer. */
 "Advanced network settings" = "Paramètres réseau avancés";
@@ -313,6 +322,9 @@
 
 /* No comment provided by engineer. */
 "Authentication unavailable" = "Authentification indisponible";
+
+/* No comment provided by engineer. */
+"Auto-accept contact requests" = "Demandes de contact auto-acceptées";
 
 /* No comment provided by engineer. */
 "Auto-accept images" = "Images auto-acceptées";
@@ -457,6 +469,9 @@
 
 /* No comment provided by engineer. */
 "Colors" = "Couleurs";
+
+/* No comment provided by engineer. */
+"Compare security codes with your contacts." = "Comparez les codes de sécurité avec vos contacts.";
 
 /* No comment provided by engineer. */
 "complete" = "complet";
@@ -1053,6 +1068,9 @@
 "Full name:" = "Nom complet :";
 
 /* No comment provided by engineer. */
+"GIFs and stickers" = "GIFs et stickers";
+
+/* No comment provided by engineer. */
 "Group" = "Groupe";
 
 /* No comment provided by engineer. */
@@ -1078,6 +1096,9 @@
 
 /* No comment provided by engineer. */
 "Group link" = "Lien du groupe";
+
+/* No comment provided by engineer. */
+"Group links" = "Liens de groupe";
 
 /* No comment provided by engineer. */
 "Group members can irreversibly delete sent messages." = "Les membres du groupe peuvent supprimer de manière irréversible les messages envoyés.";
@@ -1120,6 +1141,9 @@
 
 /* chat item action */
 "Hide" = "Cacher";
+
+/* No comment provided by engineer. */
+"Hide app screen in the recent apps." = "Masquer l'écran de l'app dans les apps récentes.";
 
 /* No comment provided by engineer. */
 "How it works" = "Comment ça fonctionne";
@@ -1170,6 +1194,12 @@
 "Import database" = "Importer la base de données";
 
 /* No comment provided by engineer. */
+"Improved privacy and security" = "Une meilleure sécurité et protection de la vie privée";
+
+/* No comment provided by engineer. */
+"Improved server configuration" = "Configuration de serveur améliorée";
+
+/* No comment provided by engineer. */
 "Incognito" = "Incognito";
 
 /* No comment provided by engineer. */
@@ -1214,8 +1244,17 @@
 /* No comment provided by engineer. */
 "Instantly" = "Instantanément";
 
+/* invalid chat data */
+"invalid chat" = "chat invalide";
+
+/* No comment provided by engineer. */
+"invalid chat data" = "données de chat invalides";
+
 /* No comment provided by engineer. */
 "Invalid connection link" = "Lien de connection invalide";
+
+/* invalid chat item */
+"invalid data" = "données invalides";
 
 /* No comment provided by engineer. */
 "Invalid server address!" = "Adresse de serveur invalide !";
@@ -1249,6 +1288,9 @@
 
 /* No comment provided by engineer. */
 "iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications." = "La keychain d'iOS sera utilisée pour stocker en toute sécurité la phrase secrète après le redémarrage de l'app ou la modification de la phrase secrète - il permettra de recevoir les notifications push.";
+
+/* No comment provided by engineer. */
+"Irreversible message deletion" = "Suppression irréversible des messages";
 
 /* No comment provided by engineer. */
 "Irreversible message deletion is prohibited in this chat." = "La suppression irréversible de message est interdite dans ce chat.";
@@ -1314,6 +1356,9 @@
 "Live message!" = "Message dynamique !";
 
 /* No comment provided by engineer. */
+"Live messages" = "Messages dynamiques";
+
+/* No comment provided by engineer. */
 "Local name" = "Nom local";
 
 /* No comment provided by engineer. */
@@ -1341,7 +1386,10 @@
 "Markdown in messages" = "Markdown dans les messages";
 
 /* marked deleted chat item preview text */
-"marked deleted" = "marquer comme supprimé";
+"marked deleted" = "supprimé";
+
+/* No comment provided by engineer. */
+"Max 30 seconds, received instantly." = "Max 30 secondes, réception immédiate.";
 
 /* member role */
 "member" = "membre";
@@ -1417,6 +1465,9 @@
 
 /* No comment provided by engineer. */
 "New database archive" = "Nouvelle archive de base de données";
+
+/* No comment provided by engineer. */
+"New in %@" = "Nouveau en %@";
 
 /* No comment provided by engineer. */
 "New member role" = "Nouveau rôle";
@@ -1531,7 +1582,7 @@
 "Open Settings" = "Ouvrir les Paramètres";
 
 /* No comment provided by engineer. */
-"Open-source protocol and code – anybody can run the servers." = "Protocole et code open-source – tout le monde peut faire fonctionner les serveurs.";
+"Open-source protocol and code – anybody can run the servers." = "Protocole et code open-source – n'importe qui peut heberger un serveur.";
 
 /* No comment provided by engineer. */
 "Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." = "Ouvrir le lien dans le navigateur peut réduire la confidentialité et la sécurité de la connexion. Les liens SimpleX non fiables seront en rouge.";
@@ -1655,6 +1706,9 @@
 
 /* No comment provided by engineer. */
 "Receiving via" = "Réception via";
+
+/* No comment provided by engineer. */
+"Recipients see updates as you type them." = "Les destinataires voient les mises à jour au fur et à mesure que vous les tapez.";
 
 /* reject incoming call via notification */
 "Reject" = "Rejeter";
@@ -1783,7 +1837,7 @@
 "Scan security code from your contact's app." = "Scannez le code de sécurité depuis l'application de votre contact.";
 
 /* No comment provided by engineer. */
-"Scan server QR code" = "Scanner le code QR du serveur";
+"Scan server QR code" = "Scanner un code QR de serveur";
 
 /* No comment provided by engineer. */
 "Search" = "Chercher";
@@ -1796,6 +1850,9 @@
 
 /* server test step */
 "Secure queue" = "File d'attente sécurisée";
+
+/* No comment provided by engineer. */
+"Security assessment" = "Évaluation de sécurité";
 
 /* No comment provided by engineer. */
 "Security code" = "Code de sécurité";
@@ -1825,6 +1882,9 @@
 "Send questions and ideas" = "Envoyez vos questions et idées";
 
 /* No comment provided by engineer. */
+"Send them from gallery or custom keyboards." = "Envoyez-les depuis la phototèque ou des claviers personnalisés.";
+
+/* No comment provided by engineer. */
 "Sender cancelled file transfer." = "L'expéditeur a annulé le transfert de fichiers.";
 
 /* No comment provided by engineer. */
@@ -1836,6 +1896,9 @@
 /* notification */
 "Sent file event" = "Événement de fichier envoyé";
 
+/* No comment provided by engineer. */
+"Sent messages will be deleted after set time." = "Les messages envoyés seront supprimés après une durée déterminée.";
+
 /* server test error */
 "Server requires authorization to create queues, check password" = "Le serveur requiert une autorisation pour créer des files d'attente, vérifiez le mot de passe";
 
@@ -1844,6 +1907,9 @@
 
 /* No comment provided by engineer. */
 "Servers" = "Serveurs";
+
+/* No comment provided by engineer. */
+"Set 1 day" = "Définir 1 jour";
 
 /* No comment provided by engineer. */
 "Set contact name…" = "Définir le nom du contact…";
@@ -1877,6 +1943,9 @@
 
 /* No comment provided by engineer. */
 "Show QR code" = "Afficher le code QR";
+
+/* No comment provided by engineer. */
+"SimpleX Chat security was [audited by Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html)." = "La sécurité de SimpleX Chat a été [auditée par Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html).";
 
 /* simplex link type */
 "SimpleX contact address" = "Adresse de contact SimpleX";
@@ -2167,6 +2236,9 @@
 "v%@ (%@)" = "v%@ (%@)";
 
 /* No comment provided by engineer. */
+"Verify connection security" = "Vérifier la sécurité de la connexion";
+
+/* No comment provided by engineer. */
 "Verify security code" = "Vérifier le code de sécurité";
 
 /* No comment provided by engineer. */
@@ -2233,10 +2305,16 @@
 "Welcome message" = "Message de bienvenue";
 
 /* No comment provided by engineer. */
+"What's new" = "Quoi de neuf ?";
+
+/* No comment provided by engineer. */
 "When available" = "Quand disponible";
 
 /* No comment provided by engineer. */
 "When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." = "Lorsque vous partagez un profil incognito avec quelqu'un, ce profil sera utilisé pour les groupes auxquels il vous invite.";
+
+/* No comment provided by engineer. */
+"With optional welcome message." = "Avec message de bienvenue facultatif.";
 
 /* No comment provided by engineer. */
 "Wrong database passphrase" = "Mauvaise phrase secrète pour la base de données";
@@ -2281,7 +2359,7 @@
 "You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." = "Vous pouvez partager un lien ou un code QR - n'importe qui pourra rejoindre le groupe. Vous ne perdrez pas les membres du groupe si vous le supprimez par la suite.";
 
 /* No comment provided by engineer. */
-"You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it." = "Vous pouvez partager votre adresse sous forme de lien ou de code QR - n'importe qui pourra se connecter à vous. Vous ne perdrez pas vos contacts si vous les supprimez par la suite.";
+"You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it." = "Vous pouvez partager votre adresse sous forme de lien ou de code QR - n'importe qui pourra se connecter à vous. Vous ne perdrez pas vos contacts si vous la supprimez par la suite.";
 
 /* No comment provided by engineer. */
 "You can start chat via app Settings / Database or by restarting the app" = "Vous pouvez lancer le chat via Paramètres / Base de données ou en redémarrant l'app";
@@ -2405,6 +2483,9 @@
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Votre contact a envoyé un fichier plus grand que la taille maximale supportée actuellement(%@).";
+
+/* No comment provided by engineer. */
+"Your contacts can allow full message deletion." = "Vos contacts peuvent autoriser la suppression complète des messages.";
 
 /* No comment provided by engineer. */
 "Your current chat database will be DELETED and REPLACED with the imported one." = "Votre base de données de chat actuelle va être SUPPRIMEE et REMPLACEE par celle importée.";
