@@ -59,7 +59,7 @@ struct ContentView: View {
                     onAuthorized: { notificationAlertShown = false }
                 )
                 // Local Authentication notice is to be shown on next start after onboarding is complete
-                if (!prefLANoticeShown && prefShowLANotice) {
+                if (!prefLANoticeShown && prefShowLANotice && !chatModel.chats.isEmpty) {
                     prefLANoticeShown = true
                     alertManager.showAlert(laNoticeAlert())
                 } else if !chatModel.showCallView && CallController.shared.activeCallInvitation == nil {
