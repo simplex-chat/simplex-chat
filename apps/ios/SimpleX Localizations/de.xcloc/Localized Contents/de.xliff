@@ -17,8 +17,9 @@
         <target> </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="  " xml:space="preserve">
+      <trans-unit id="  " xml:space="preserve" approved="no">
         <source>  </source>
+        <target state="translated">  </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="   " xml:space="preserve">
@@ -248,8 +249,9 @@
         <target>täglich</target>
         <note>message ttl</note>
       </trans-unit>
-      <trans-unit id="1 hour" xml:space="preserve">
+      <trans-unit id="1 hour" xml:space="preserve" approved="no">
         <source>1 hour</source>
+        <target state="translated">1 Stunde</target>
         <note>message ttl</note>
       </trans-unit>
       <trans-unit id="1 month" xml:space="preserve">
@@ -262,8 +264,9 @@
         <target>wöchentlich</target>
         <note>message ttl</note>
       </trans-unit>
-      <trans-unit id="2 weeks" xml:space="preserve">
+      <trans-unit id="2 weeks" xml:space="preserve" approved="no">
         <source>2 weeks</source>
+        <target state="translated">2 Wochen</target>
         <note>message ttl</note>
       </trans-unit>
       <trans-unit id="6" xml:space="preserve">
@@ -3231,8 +3234,9 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>Videoanruf</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="View security code" xml:space="preserve">
+      <trans-unit id="View security code" xml:space="preserve" approved="no">
         <source>View security code</source>
+        <target state="translated">Schauen Sie sich den Sicherheitscode an</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Voice messages" xml:space="preserve">
