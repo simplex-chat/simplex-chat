@@ -17,6 +17,11 @@
         <target> </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="  " xml:space="preserve">
+        <source>  </source>
+        <target>  </target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="   " xml:space="preserve">
         <source>   </source>
         <target>   </target>
@@ -2753,6 +2758,11 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>Servers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Set 1 day" xml:space="preserve">
+        <source>Set 1 day</source>
+        <target>Set 1 day</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Set contact name…" xml:space="preserve">
         <source>Set contact name…</source>
         <target>Set contact name…</target>
@@ -3940,6 +3950,21 @@ SimpleX servers cannot see your profile.</target>
         <source>indirect (%d)</source>
         <target>indirect (%d)</target>
         <note>connection level description</note>
+      </trans-unit>
+      <trans-unit id="invalid chat" xml:space="preserve">
+        <source>invalid chat</source>
+        <target>invalid chat</target>
+        <note>invalid chat data</note>
+      </trans-unit>
+      <trans-unit id="invalid chat data" xml:space="preserve">
+        <source>invalid chat data</source>
+        <target>invalid chat data</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="invalid data" xml:space="preserve">
+        <source>invalid data</source>
+        <target>invalid data</target>
+        <note>invalid chat item</note>
       </trans-unit>
       <trans-unit id="invitation to group %@" xml:space="preserve">
         <source>invitation to group %@</source>

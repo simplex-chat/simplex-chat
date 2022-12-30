@@ -17,6 +17,11 @@
         <target> </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="  " xml:space="preserve" approved="no">
+        <source>  </source>
+        <target state="translated">  </target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="   " xml:space="preserve">
         <source>   </source>
         <target>   </target>
@@ -244,8 +249,9 @@
         <target>täglich</target>
         <note>message ttl</note>
       </trans-unit>
-      <trans-unit id="1 hour" xml:space="preserve">
+      <trans-unit id="1 hour" xml:space="preserve" approved="no">
         <source>1 hour</source>
+        <target state="translated">1 Stunde</target>
         <note>message ttl</note>
       </trans-unit>
       <trans-unit id="1 month" xml:space="preserve">
@@ -258,8 +264,9 @@
         <target>wöchentlich</target>
         <note>message ttl</note>
       </trans-unit>
-      <trans-unit id="2 weeks" xml:space="preserve">
+      <trans-unit id="2 weeks" xml:space="preserve" approved="no">
         <source>2 weeks</source>
+        <target state="translated">2 Wochen</target>
         <note>message ttl</note>
       </trans-unit>
       <trans-unit id="6" xml:space="preserve">
@@ -2698,6 +2705,10 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>Server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Set 1 day" xml:space="preserve">
+        <source>Set 1 day</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Set contact name…" xml:space="preserve">
         <source>Set contact name…</source>
         <target>Kontaktname festlegen…</target>
@@ -3223,8 +3234,9 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>Videoanruf</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="View security code" xml:space="preserve">
+      <trans-unit id="View security code" xml:space="preserve" approved="no">
         <source>View security code</source>
+        <target state="translated">Schauen Sie sich den Sicherheitscode an</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Voice messages" xml:space="preserve">
@@ -3877,6 +3889,18 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <source>indirect (%d)</source>
         <target>indirekt (%d)</target>
         <note>connection level description</note>
+      </trans-unit>
+      <trans-unit id="invalid chat" xml:space="preserve">
+        <source>invalid chat</source>
+        <note>invalid chat data</note>
+      </trans-unit>
+      <trans-unit id="invalid chat data" xml:space="preserve">
+        <source>invalid chat data</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="invalid data" xml:space="preserve">
+        <source>invalid data</source>
+        <note>invalid chat item</note>
       </trans-unit>
       <trans-unit id="invitation to group %@" xml:space="preserve">
         <source>invitation to group %@</source>
