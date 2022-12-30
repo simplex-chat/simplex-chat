@@ -3951,16 +3951,19 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
         <target>indirect (%d)</target>
         <note>connection level description</note>
       </trans-unit>
-      <trans-unit id="invalid chat" xml:space="preserve">
+      <trans-unit id="invalid chat" xml:space="preserve" approved="no">
         <source>invalid chat</source>
+        <target state="translated">chat invalide</target>
         <note>invalid chat data</note>
       </trans-unit>
-      <trans-unit id="invalid chat data" xml:space="preserve">
+      <trans-unit id="invalid chat data" xml:space="preserve" approved="no">
         <source>invalid chat data</source>
+        <target state="translated">données de chat invalides</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="invalid data" xml:space="preserve">
+      <trans-unit id="invalid data" xml:space="preserve" approved="no">
         <source>invalid data</source>
+        <target state="translated">données invalides</target>
         <note>invalid chat item</note>
       </trans-unit>
       <trans-unit id="invitation to group %@" xml:space="preserve">
