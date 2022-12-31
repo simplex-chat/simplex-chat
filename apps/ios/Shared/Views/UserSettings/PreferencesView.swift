@@ -60,7 +60,7 @@ struct PreferencesView: View {
     }
 
     private func featureFooter(_ feature: ChatFeature, _ allowFeature: Binding<FeatureAllowed>) -> some View {
-        Text(ChatFeature.timedMessages.allowDescription(allowFeature.wrappedValue))
+        Text(feature.allowDescription(allowFeature.wrappedValue))
             .frame(height: 36, alignment: .topLeading)
     }
 
