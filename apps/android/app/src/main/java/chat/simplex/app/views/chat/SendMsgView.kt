@@ -454,9 +454,10 @@ private fun startLiveMessage(
       sendButtonAlpha.snapTo(1f)
     }
     scope.launch {
+      delay(3000)
       while (composeState.value.liveMessage != null) {
-        delay(3000)
         update()
+        delay(3000)
       }
     }
   }

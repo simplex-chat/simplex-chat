@@ -421,15 +421,17 @@ fun ComposeView(
       return null
     }
 
+    val liveMessage = cs.liveMessage
     if (!live) {
+      if (liveMessage != null) composeState.value = cs.copy(liveMessage = null)
       sending()
     }
 
     if (cs.contextItem is ComposeContextItem.EditingItem) {
       val ei = cs.contextItem.chatItem
       sent = updateMessage(ei, cInfo, live)
-    } else if (cs.liveMessage != null) {
-      sent = updateMessage(cs.liveMessage.chatItem, cInfo, live)
+    } else if (liveMessage != null) {
+      sent = updateMessage(liveMessage.chatItem, cInfo, live)
     } else {
       val msgs: ArrayList<MsgContent> = ArrayList()
       val files: ArrayList<String> = ArrayList()

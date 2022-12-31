@@ -505,10 +505,14 @@ struct ComposeView: View {
     private func sendMessageAsync(_ text: String?, live: Bool) async -> ChatItem? {
         var sent: ChatItem?
         let msgText = text ?? composeState.message
-        if !live { await sending() }
+        let liveMessage = composeState.liveMessage
+        if !live {
+            if liveMessage != nil { composeState = composeState.copy(liveMessage: nil) }
+            await sending()
+        }
         if case let .editingItem(ci) = composeState.contextItem {
             sent = await updateMessage(ci, live: live)
-        } else if let liveMessage = composeState.liveMessage {
+        } else if let liveMessage = liveMessage {
             sent = await updateMessage(liveMessage.chatItem, live: live)
         } else {
             var quoted: Int64? = nil
