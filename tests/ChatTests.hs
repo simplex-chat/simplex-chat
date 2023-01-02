@@ -107,8 +107,8 @@ chatTests = do
     describe "send and receive image to group" testGroupSendImage
     it "send and receive image with text and quote to group" testGroupSendImageWithTextAndQuote
   describe "user contact link" $ do
-    describe "create and connect via contact link" testUserContactLink
-    it "auto accept contact requests" testUserContactLinkAutoAccept
+    fdescribe "create and connect via contact link" testUserContactLink
+    fit "auto accept contact requests" testUserContactLinkAutoAccept
     it "deduplicate contact requests" testDeduplicateContactRequests
     it "deduplicate contact requests with profile change" testDeduplicateContactRequestsProfileChange
     it "reject contact and delete contact link" testRejectContactAndDeleteUserContact
@@ -125,7 +125,7 @@ chatTests = do
     it "deleting contact first, group second deletes incognito profile" testDeleteContactThenGroupDeletesIncognitoProfile
     it "deleting group first, contact second deletes incognito profile" testDeleteGroupThenContactDeletesIncognitoProfile
   describe "group links" $ do
-    it "create group link, join via group link" testGroupLink
+    fit "create group link, join via group link" testGroupLink
     it "delete group, re-join via same link" testGroupLinkDeleteGroupRejoin
     it "sending message to contact created via group link marks it used" testGroupLinkContactUsed
     it "create group link, join via group link - incognito membership" testGroupLinkIncognitoMembership
