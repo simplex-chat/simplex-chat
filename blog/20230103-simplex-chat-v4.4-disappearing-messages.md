@@ -2,8 +2,8 @@
 layout: layouts/article.html
 title: "SimpleX Chat v4.4 released – with disappearing messages, live messages, connection security verification and French language!"
 date: 2023-01-03
-# image: images/20221206-voice.png
-# imageBottom: true
+image: images/20230103-disappearing1.png
+imageBottom: true
 preview: Disappearing messages, live messages and connection security verification.
 # previewBody: blog_previews/20221206.html
 permalink: "/blog/20230103-simplex-chat-v4.4-disappearing-messages.html"
@@ -15,12 +15,12 @@ permalink: "/blog/20230103-simplex-chat-v4.4-disappearing-messages.html"
 
 ## What's new in v4.4
 
-- [disappearing messages](#disappearing-messagesd).
+- [disappearing messages](#disappearing-messages).
 - ["live" messages](#live-messages).
 - [connection security verification](#connection-security-verification).
 - [animated images and stickers](#animated-images-and-stickers) – now on iOS too.
 
-Also, we added French language translations of the interface, thanks to the help from users' community!
+Also, we added [French language interface](#french-language-interface), thanks to the users' community and Weblate!
 
 ### Disappearing messages
 
@@ -54,9 +54,15 @@ Regardless how connection is established, verifying the connection proves the se
 
 ### Animated images and stickers
 
-<img src="./images/20230103-stickers1.png" width="288"> &nbsp;&nbsp; <img src="./images/20230103-stickers2.png" width="288">
+<img src="./images/20230103-stickers1.png" width="288"> &nbsp;&nbsp; <img src="./images/20230103-stickers2.png" width="303">
 
 Android app supported GIFs and stickers for some time, now you can view and send them from iOS app as well, e.g. using GIPHY keyboard - you no longer need to choose between privacy and stickers. Just bear in mind, that third party keyboards can be insecure, so you should not be using them for typing sensitive information.
+
+### French language interface
+
+Thanks to our users' community and to [Weblate](https://weblate.org/en-gb/) kindly providing a free hosting plan for SimpleX Chat translations we can now support more languages in the interface – this version adds French.
+
+Please get in touch if you want to translate the interface into your language!
 
 ## SimpleX platform
 
@@ -66,7 +72,7 @@ Some links to answer the most common questions:
 
 [What are the risks to have identifiers assigned to the users](./20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md#why-having-users-identifiers-is-bad-for-the-users).
 
-[Technical details and limitations](./20220723-simplex-chat-v3.1-tor-groups-efficiency.md#privacy-technical-details-and-limitations).
+[What makes SimpleX private](https://simplex.chat/#privacy).
 
 [How SimpleX is different from Session, Matrix, Signal, etc.](https://github.com/simplex-chat/simplex-chat/blob/stable/README.md#frequently-asked-questions).
 
