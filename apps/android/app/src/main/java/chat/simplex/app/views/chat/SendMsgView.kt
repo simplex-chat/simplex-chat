@@ -6,8 +6,10 @@ import android.app.Activity
 import android.content.Context
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
+import android.os.Build
 import android.text.InputType
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.view.inputmethod.*
 import android.widget.EditText
 import androidx.compose.animation.core.*
@@ -35,6 +37,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat.getSystemService
 import androidx.core.graphics.drawable.DrawableCompat
 import androidx.core.view.inputmethod.EditorInfoCompat
 import androidx.core.view.inputmethod.InputConnectionCompat
@@ -323,7 +326,9 @@ private fun LockToCurrentOrientationUntilDispose() {
   val context = LocalContext.current
   DisposableEffect(Unit) {
     val activity = context as Activity
-    activity.requestedOrientation = when (activity.display?.rotation) {
+    val manager = context.getSystemService(Activity.WINDOW_SERVICE) as WindowManager
+    val rotation = if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) manager.defaultDisplay.rotation else activity.display?.rotation
+    activity.requestedOrientation = when (rotation) {
       android.view.Surface.ROTATION_90 -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
       android.view.Surface.ROTATION_180 -> ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT
       android.view.Surface.ROTATION_270 -> ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
@@ -519,7 +524,7 @@ fun PreviewSendMsgView() {
     SendMsgView(
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       showVoiceRecordIcon = false,
-      recState = mutableStateOf(RecordingState.NotStarted),
+      recState = remember { mutableStateOf(RecordingState.NotStarted) },
       isDirectChat = true,
       liveMessageAlertShown = SharedPreference(get = { true }, set = { }),
       needToAllowVoiceToContact = false,
@@ -547,7 +552,7 @@ fun PreviewSendMsgViewEditing() {
     SendMsgView(
       composeState = remember { mutableStateOf(composeStateEditing) },
       showVoiceRecordIcon = false,
-      recState = mutableStateOf(RecordingState.NotStarted),
+      recState =  remember { mutableStateOf(RecordingState.NotStarted) },
       isDirectChat = true,
       liveMessageAlertShown = SharedPreference(get = { true }, set = { }),
       needToAllowVoiceToContact = false,
@@ -575,7 +580,7 @@ fun PreviewSendMsgViewInProgress() {
     SendMsgView(
       composeState = remember { mutableStateOf(composeStateInProgress) },
       showVoiceRecordIcon = false,
-      recState = mutableStateOf(RecordingState.NotStarted),
+      recState = remember { mutableStateOf(RecordingState.NotStarted) },
       isDirectChat = true,
       liveMessageAlertShown = SharedPreference(get = { true }, set = { }),
       needToAllowVoiceToContact = false,
