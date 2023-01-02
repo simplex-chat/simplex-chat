@@ -4,8 +4,7 @@ title: "SimpleX Chat v4.4 released – with disappearing messages, live messages
 date: 2023-01-03
 image: images/20230103-disappearing1.png
 imageBottom: true
-preview: Disappearing messages, live messages and connection security verification.
-# previewBody: blog_previews/20221206.html
+previewBody: blog_previews/20230103.html
 permalink: "/blog/20230103-simplex-chat-v4.4-disappearing-messages.html"
 ---
 
@@ -72,11 +71,11 @@ Some links to answer the most common questions:
 
 [What are the risks to have identifiers assigned to the users](./20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md#why-having-users-identifiers-is-bad-for-the-users).
 
-[What makes SimpleX private](https://simplex.chat/#privacy).
+[Technical details and limitations](https://github.com/simplex-chat/simplex-chat#privacy-technical-details-and-limitations).
 
 [How SimpleX is different from Session, Matrix, Signal, etc.](https://github.com/simplex-chat/simplex-chat/blob/stable/README.md#frequently-asked-questions).
 
-Please also see the information on our [new website](https://simplex.chat) - it also answers all these questions.
+Please also see our [website](https://simplex.chat).
 
 ## Help us with donations
 
