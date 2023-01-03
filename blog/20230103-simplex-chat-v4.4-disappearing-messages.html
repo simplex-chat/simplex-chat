@@ -12,7 +12,7 @@
     <meta property="og:type" content="article" />
     <meta property="og:title" content="SimpleX Chat v4.4 released – with disappearing messages, live messages, connection security verification and French language!" />
     
-      <meta property="og:image" content="https://simplex.chat/img/share_simplex.png" />
+      <meta property="og:image" content="https://simplex.chat/blog/images/20230103-disappearing1.png" />
     
     <meta name="twitter:card" content="summary" />
     <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico" />
@@ -224,7 +224,59 @@ window.addEventListener('scroll',changeHeaderBg);
     <section id="article" class="container mb-[75px] bg-white dark:bg-[#17203D] px-5">
       <div class="py-6 md:p-[60px]"><h1 id="simplex-chat-v44-released-with-disappearing-messages-live-messages-connection-security-verification-and-french-language" tabindex="-1">SimpleX Chat v4.4 released – with disappearing messages, live messages, connection security verification and French language!</h1>
 <p><strong>Published:</strong> Jan 3, 2023</p>
-<p>TODO this is a placholder to create link for release announcement</p>
+<h2 id="whats-new-in-v44" tabindex="-1">What's new in v4.4</h2>
+<ul>
+<li><a href="#disappearing-messages">disappearing messages</a>.</li>
+<li><a href="#live-messages">&quot;live&quot; messages</a>.</li>
+<li><a href="#connection-security-verification">connection security verification</a>.</li>
+<li><a href="#animated-images-and-stickers">animated images and stickers</a> – now on iOS too.</li>
+</ul>
+<p>Also, we added <a href="#french-language-interface">French language interface</a>, thanks to the users' community and Weblate!</p>
+<h3 id="disappearing-messages" tabindex="-1">Disappearing messages</h3>
+<p><img src="./images/20230103-disappearing1.png" width="288">    <img src="./images/20230103-disappearing2.png" width="288"></p>
+<p>It is now possible to send the messages that will be deleted from both sender and recipient device after set time – for the sender from the time they were sent, and for the recipient - from the time they were read.</p>
+<p>Unlike in most other messengers, it requires agreement of both sides, not just the sender decision. I <a href="20221206-simplex-chat-v4.3-voice-messages.html#irreversible-message-deletion">wrote previously</a> why we believe it is wrong to allow the senders to delete their messages without recipient consent, and the same logic applies here – if you want to send the message that will disappear after some time, your contact should be ok with that too.</p>
+<p>In group conversations disappearing messages can be enabled by the group owners, by default they are disabled.</p>
+<h3 id="live-messages" tabindex="-1">&quot;Live&quot; messages</h3>
+<img src="./images/20230103-live.png" width="288">
+<p>Pressing &quot;bolt&quot; button before you start typing the message will start a &quot;live&quot; message. Now, as you type it, it will be updated for all recipients every several seconds, including only complete words. To finish the message you need to press &quot;checkmark&quot; button.</p>
+<p>You can also start a live message after you started typing or after you chose the image – long-press send button and then press &quot;Send live message&quot;.</p>
+<h3 id="connection-security-verification" tabindex="-1">Connection security verification</h3>
+<img src="./images/20230103-verification.png" width="288">
+<p>SimpleX Chat design prevents the possibility of messaging servers substituting the key during the initial connection (man-in-the-middle attack) by requiring that the invitation link is passed via another channel. I wrote more about how MITM attack works in <a href="https://www.poberezkin.com/posts/2022-12-07-why-privacy-needs-to-be-redefined.html">this post</a>. But this other channel, however unlikely, could still have been compromised by an attacker to replace the invitation link you sent. That is the reason why we recommend sharing QR code in a video call – this is very complex for an attacker to replace it in this case.</p>
+<p>This new feature allows you to verify, via yet another channel, that the connection is secure and the keys were not replaced. You can either scan the security code from your contact's app, or compare codes visually, or even read it in a voice call – if your and your contact's app have the same security code for each other then the connection is secure.</p>
+<p>If you are sending direct messages to some group members then it might also be important to verify security of these connections, as in this case the invitations were exchanged via the member who added you or another member, and if this member's client was modified, they could have replaced the keys and the addresses, and intercept the entire conversation.</p>
+<p>Regardless how connection is established, verifying the connection proves its security. Technically, this security code is the hash of associated data used in the end-to-end encryption, which in turn is taken by combining public keys from the initial key exchange.</p>
+<h3 id="animated-images-and-stickers" tabindex="-1">Animated images and stickers</h3>
+<p><img src="./images/20230103-stickers1.png" width="288">    <img src="./images/20230103-stickers2.png" width="303"></p>
+<p>Android app supported GIFs and stickers for some time, now you can view and send them from iOS app as well, e.g. using GIPHY keyboard - you no longer need to choose between privacy and stickers. Just bear in mind, that third party keyboards can be insecure, so you should not be using them for typing sensitive information.</p>
+<h3 id="french-language-interface" tabindex="-1">French language interface</h3>
+<p>Thanks to our users' community and to <a href="https://weblate.org/en-gb/">Weblate</a> kindly providing a free hosting plan for SimpleX Chat translations we can now support more languages in the interface – this version adds French.</p>
+<p>Please get in touch if you want to translate the interface into your language!</p>
+<h2 id="simplex-platform" tabindex="-1">SimpleX platform</h2>
+<p>Some links to answer the most common questions:</p>
+<p><a href="20220511-simplex-chat-v2-images-files.html#the-first-messaging-platform-without-user-identifiers">How can SimpleX deliver messages without user identifiers</a>.</p>
+<p><a href="20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.html#why-having-users-identifiers-is-bad-for-the-users">What are the risks to have identifiers assigned to the users</a>.</p>
+<p><a href="https://github.com/simplex-chat/simplex-chat#privacy-technical-details-and-limitations">Technical details and limitations</a>.</p>
+<p><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/README.md#frequently-asked-questions">How SimpleX is different from Session, Matrix, Signal, etc.</a>.</p>
+<p>Please also see our <a href="https://simplex.chat">website</a>.</p>
+<h2 id="help-us-with-donations" tabindex="-1">Help us with donations</h2>
+<p>Huge thank you to everybody who donated to SimpleX Chat!</p>
+<p>We are prioritizing users privacy and security - it would be impossible without your support.</p>
+<p>Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, - so anybody can build the future implementations of the clients and the servers. We are building SimpleX platform based on the same principles as email and web, but much more private and secure.</p>
+<p>Your donations help us raise more funds – any amount, even the price of the cup of coffee, makes a big difference for us.</p>
+<p>It is possible to donate via:</p>
+<ul>
+<li><a href="https://github.com/sponsors/simplex-chat">GitHub</a> - it is commission-free for us.</li>
+<li><a href="https://opencollective.com/simplex-chat">OpenCollective</a> - it charges a commission, and also accepts donations in crypto-currencies.</li>
+<li>Monero address: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt - Bitcoin address: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG</li>
+<li>BCH address: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG</li>
+<li>Ethereum address: 0x83fd788f7241a2be61780ea9dc72d2151e6843e2</li>
+<li>please let us know, via GitHub issue or chat, if you want to create a donation in some other cryptocurrency - we will add the address to the list.</li>
+</ul>
+<p>Thank you,</p>
+<p>Evgeny</p>
+<p>SimpleX Chat founder</p>
 </div>
     </section>
 
