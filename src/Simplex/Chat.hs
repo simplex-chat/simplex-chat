@@ -267,11 +267,9 @@ processChatCommand = \case
     pure CRCmdOk
   SetActiveUser uName -> withUserName uName APISetActiveUser
   APIDeleteUser _userId -> do
-    -- check not the only user
+    -- prohibit to delete active user
     -- withStore' $ \db -> deleteUser db userId
     -- ? other cleanup
-    -- set active user to first/arbitrary user?
-    -- unset if current user
     pure CRCmdOk
   DeleteUser uName -> withUserName uName APIDeleteUser
   StartChat subConns enableExpireCIs -> withUser' $ \user ->
