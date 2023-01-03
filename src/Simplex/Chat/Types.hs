@@ -216,6 +216,8 @@ instance ToJSON ConnReqUriHash where
 
 data ContactOrRequest = CORContact Contact | CORRequest UserContactRequest
 
+type UserName = Text
+
 type ContactName = Text
 
 type GroupName = Text

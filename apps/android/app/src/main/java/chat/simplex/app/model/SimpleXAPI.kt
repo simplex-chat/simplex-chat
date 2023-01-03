@@ -1611,7 +1611,7 @@ sealed class CC {
   val cmdString: String get() = when (this) {
     is Console -> cmd
     is ShowActiveUser -> "/u"
-    is CreateActiveUser -> "/u ${profile.displayName} ${profile.fullName}"
+    is CreateActiveUser -> "/create user ${profile.displayName} ${profile.fullName}"
     is StartChat -> "/_start subscribe=on expire=${onOff(expire)}"
     is ApiStopChat -> "/_stop"
     is SetFilesFolder -> "/_files_folder $filesFolder"

@@ -59,6 +59,7 @@ serializeChatResponse user_ ts = unlines . map unStyle . responseToView user_ Fa
 responseToView :: Maybe User -> Bool -> Bool -> CurrentTime -> ChatResponse -> [StyledString]
 responseToView user_ testView liveItems ts = \case
   CRActiveUser User {profile} -> viewUserProfile $ fromLocalProfile profile
+  CRUsersList users -> viewUsersList users
   CRChatStarted -> ["chat started"]
   CRChatRunning -> ["chat is running"]
   CRChatStopped -> ["chat stopped"]
@@ -255,6 +256,13 @@ responseToView user_ testView liveItems ts = \case
     unmuted chat chatItem s
       | muted chat chatItem = []
       | otherwise = s
+
+viewUsersList :: [User] -> [StyledString]
+viewUsersList =
+  let ldn = T.toLower . (localDisplayName :: User -> ContactName)
+   in map (\user@User {profile = LocalProfile {displayName, fullName}} -> ttyFullName displayName fullName <> active user) . sortOn ldn
+  where
+    active User {activeUser} = if activeUser then highlight' " (active)" else ""
 
 muted :: ChatInfo c -> ChatItem c d -> Bool
 muted chat ChatItem {chatDir} = case (chat, chatDir) of
@@ -1179,6 +1187,7 @@ viewChatError = \case
   -- e -> ["chat error: " <> sShow e]
   ChatErrorStore err -> case err of
     SEDuplicateName -> ["this display name is already used by user, contact or group"]
+    SEUserNotFoundByName u -> ["no user " <> ttyContact u]
     SEContactNotFoundByName c -> ["no contact " <> ttyContact c]
     SEContactNotReady c -> ["contact " <> ttyContact c <> " is not active yet"]
     SEGroupNotFoundByName g -> ["no group " <> ttyGroup g]

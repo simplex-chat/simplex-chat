@@ -253,10 +253,27 @@ processChatCommand = \case
   ShowActiveUser -> withUser' $ pure . CRActiveUser
   CreateActiveUser p -> do
     u <- asks currentUser
-    whenM (isJust <$> readTVarIO u) $ throwChatError CEActiveUserExists
+    -- whenM (isJust <$> readTVarIO u) $ throwChatError CEActiveUserExists
     user <- withStore $ \db -> createUser db p True
     atomically . writeTVar u $ Just user
     pure $ CRActiveUser user
+  ListUsers -> do
+    users <- withStore' $ \db -> getUsers db
+    pure $ CRUsersList users
+  APISetActiveUser userId -> do
+    u <- asks currentUser
+    user <- withStore $ \db -> getSetActiveUser db userId
+    atomically . writeTVar u $ Just user
+    pure CRCmdOk
+  SetActiveUser uName -> withUserName uName APISetActiveUser
+  APIDeleteUser _userId -> do
+    -- check not the only user
+    -- withStore' $ \db -> deleteUser db userId
+    -- ? other cleanup
+    -- set active user to first/arbitrary user?
+    -- unset if current user
+    pure CRCmdOk
+  DeleteUser uName -> withUserName uName APIDeleteUser
   StartChat subConns enableExpireCIs -> withUser' $ \user ->
     asks agentAsync >>= readTVarIO >>= \case
       Just _ -> pure CRChatRunning
@@ -1233,6 +1250,8 @@ processChatCommand = \case
     withStoreChanged a = checkChatStopped $ a >> setStoreChanged $> CRCmdOk
     checkStoreNotChanged :: m ChatResponse -> m ChatResponse
     checkStoreNotChanged = ifM (asks chatStoreChanged >>= readTVarIO) (throwChatError CEChatStoreChanged)
+    withUserName :: UserName -> (UserId -> ChatCommand) -> m ChatResponse
+    withUserName uName cmd = withStore (`getUserIdByName` uName) >>= processChatCommand . cmd
     withContactName :: ContactName -> (ContactId -> ChatCommand) -> m ChatResponse
     withContactName cName cmd = withUser $ \user ->
       withStore (\db -> getContactIdByName db user cName) >>= processChatCommand . cmd
@@ -3538,7 +3557,7 @@ getCreateActiveUser st = do
             Right user -> pure user
     selectUser :: [User] -> IO User
     selectUser [user] = do
-      withTransaction st (`setActiveUser` userId user)
+      withTransaction st (`setActiveUser` userId (user :: User))
       pure user
     selectUser users = do
       putStrLn "Select user profile:"
@@ -3553,7 +3572,7 @@ getCreateActiveUser st = do
               | n <= 0 || n > length users -> putStrLn "invalid user number" >> loop
               | otherwise -> do
                 let user = users !! (n - 1)
-                withTransaction st (`setActiveUser` userId user)
+                withTransaction st (`setActiveUser` userId (user :: User))
                 pure user
     userStr :: User -> String
     userStr User {localDisplayName, profile = LocalProfile {fullName}} =
@@ -3626,7 +3645,12 @@ chatCommandP =
   choice
     [ "/mute " *> ((`ShowMessages` False) <$> chatNameP'),
       "/unmute " *> ((`ShowMessages` True) <$> chatNameP'),
-      ("/user " <|> "/u ") *> (CreateActiveUser <$> userProfile),
+      "/create user " *> (CreateActiveUser <$> userProfile),
+      "/users" $> ListUsers,
+      "/_user " *> (APISetActiveUser <$> A.decimal),
+      ("/user " <|> "/u ") *> (SetActiveUser <$> displayName),
+      "/_delete user " *> (APIDeleteUser <$> A.decimal),
+      "/delete user " *> (DeleteUser <$> displayName),
       ("/user" <|> "/u") $> ShowActiveUser,
       "/_start subscribe=" *> (StartChat <$> onOffP <* " expire=" <*> onOffP),
       "/_start" $> StartChat True True,

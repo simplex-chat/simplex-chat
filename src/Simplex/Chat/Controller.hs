@@ -140,6 +140,11 @@ instance ToJSON HelpSection where
 data ChatCommand
   = ShowActiveUser
   | CreateActiveUser Profile
+  | ListUsers
+  | APISetActiveUser UserId
+  | SetActiveUser UserName
+  | APIDeleteUser UserId
+  | DeleteUser UserName
   | StartChat {subscribeConnections :: Bool, enableExpireChatItems :: Bool}
   | APIStopChat
   | APIActivateChat
@@ -286,6 +291,7 @@ data ChatCommand
 
 data ChatResponse
   = CRActiveUser {user :: User}
+  | CRUsersList {users :: [User]}
   | CRChatStarted
   | CRChatRunning
   | CRChatStopped
