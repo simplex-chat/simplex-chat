@@ -27,7 +27,7 @@ Also, we added [French language interface](#french-language-interface), thanks t
 
 It is now possible to send the messages that will be deleted from both sender and recipient device after set time – for the sender from the time they were sent, and for the recipient - from the time they were read.
 
-Unlike in most other messengers, it requires agreement of both sides, not just the sender decision. I wrote previously why we believe it is wrong to allow the senders to delete their messages without recipient consent, and the same logic applies here – if you want to send the message that will disappear after some time, your contact should be ok with that too.
+Unlike in most other messengers, it requires agreement of both sides, not just the sender decision. I [wrote previously](./20221206-simplex-chat-v4.3-voice-messages.md#irreversible-message-deletion) why we believe it is wrong to allow the senders to delete their messages without recipient consent, and the same logic applies here – if you want to send the message that will disappear after some time, your contact should be ok with that too.
 
 In group conversations disappearing messages can be enabled by the group owners, by default they are disabled.
 
@@ -35,21 +35,21 @@ In group conversations disappearing messages can be enabled by the group owners,
 
 <img src="./images/20230103-live.png" width="288">
 
-Pressing "bolt" before you start typing the message will start a "live" message. Now, as you type it, it will be updated for all recipients every several seconds, including only complete words. To finish the message you need to press "checkmark" button.
+Pressing "bolt" button before you start typing the message will start a "live" message. Now, as you type it, it will be updated for all recipients every several seconds, including only complete words. To finish the message you need to press "checkmark" button.
 
-You can also start a live message after you started typing or after you chose the image – long-press send button and then press "send live message".
+You can also start a live message after you started typing or after you chose the image – long-press send button and then press "Send live message".
 
 ### Connection security verification
 
 <img src="./images/20230103-verification.png" width="288">
 
-SimpleX Chat designs solves the possibility of messaging servers substituting the key during the initial connection (man-in-the-middle attack) by requiring that the invitation link is passed via any other channel. I wrote more about how man-in-the-middle attack works in this post. But this other channel, however unlikely, could still have been compromised by an attacker to replace the invitation you shared. That is the reason why we recommend connecting by sharing QR code in a video call – this is very complex to replace QR code during a video call.
+SimpleX Chat design solves the possibility of messaging servers substituting the key during the initial connection (man-in-the-middle attack) by requiring that the invitation link is passed via another channel. I wrote more about how MITM attack works in [this post](https://www.poberezkin.com/posts/2022-12-07-why-privacy-needs-to-be-redefined.html). But this other channel, however unlikely, could still have been compromised by an attacker to replace the invitation link you sent. That is the reason why we recommend sharing QR code in a video call – this is very complex for an attacker to replace it in this case.
 
-This new feature allows you to verify, via year another channel, that the connection is secure and the keys were not replaced. You can either scan the security code from your contact's app, or compare codes visually, or even read it in a voice call – if your and your contact's app have the same security code for each other then the connection is secure.
+This new feature allows you to verify, via yet another channel, that the connection is secure and the keys were not replaced. You can either scan the security code from your contact's app, or compare codes visually, or even read it in a voice call – if your and your contact's app have the same security code for each other then the connection is secure.
 
 If you are sending direct messages to some group members then it might also be important to verify security of these connections, as in this case the invitations were exchanged via the member who added you or another member, and if this member's client was modified, they could have replaced the keys and the addresses, and intercept the entire conversation.
 
-Regardless how connection is established, verifying the connection proves the security of your connection. Technically, this security code is the hash of associated data used in end-to-end encryption, which in turn is taken by combining public keys from the initial key exchange.
+Regardless how connection is established, verifying the connection proves its security. Technically, this security code is the hash of associated data used in the end-to-end encryption, which in turn is taken by combining public keys from the initial key exchange.
 
 ### Animated images and stickers
 
