@@ -231,10 +231,10 @@ Join via the app to share what's going on and ask any questions!
 
 We would love to have you join the development! You can contribute to SimpleX Chat with:
 
-- developing features - please connect to us via chat so we can help you get started.
-- writing a tutorial or recipes about hosting servers, chat bot automations, etc.
-- translate UI to some language - we are currently setting up the UI to simplify it, please get in touch and let us know if you would be able to support and update the translations.
+- translate UI to your language - we are using [Weblate](https://hosted.weblate.org/projects/simplex-chat/) to translate the interface, please get in touch if you want to contribute!
 - translate website homepage - there is a lot of content we would like to share, it would help to bring the new users.
+- writing a tutorial or recipes about hosting servers, chat bot automations, etc.
+- developing features - please connect to us via chat so we can help you get started.
 
 ## Help us with donations
 

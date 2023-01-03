@@ -1,6 +1,6 @@
 # Blog
 
-Jan 3, 2023 [SimpleX Chat v4.4 released]
+Jan 3, 2023 [SimpleX Chat v4.4 released](./20230103-simplex-chat-v4.4-disappearing-messages.md)
 
 - disappearing messages.
 - "live" messages.
@@ -9,7 +9,7 @@ Jan 3, 2023 [SimpleX Chat v4.4 released]
 
 Also, we added [French language interface](#french-language-interface), thanks to our users and Weblate!
 
-Dec 6, 2022 [SimpleX Chat reviews and v4.3 released]
+Dec 6, 2022 [SimpleX Chat reviews and v4.3 released](./20221206-simplex-chat-v4.3-voice-messages.md)
 
 November reviews:
 
