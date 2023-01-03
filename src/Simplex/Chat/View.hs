@@ -53,11 +53,11 @@ import System.Console.ANSI.Types
 
 type CurrentTime = UTCTime
 
-serializeChatResponse :: Maybe User -> CurrentTime -> UserChatResponse -> String
+serializeChatResponse :: Maybe User -> CurrentTime -> ChatResponse -> String
 serializeChatResponse user_ ts = unlines . map unStyle . responseToView user_ False False ts
 
-responseToView :: Maybe User -> Bool -> Bool -> CurrentTime -> UserChatResponse -> [StyledString]
-responseToView user_ testView liveItems ts UCR {user = responseUser, chatResponse} = case chatResponse of
+responseToView :: Maybe User -> Bool -> Bool -> CurrentTime -> ChatResponse -> [StyledString]
+responseToView user_ testView liveItems ts = \case
   CRActiveUser User {profile} -> viewUserProfile $ fromLocalProfile profile
   CRUsersList users -> viewUsersList users
   CRChatStarted -> ["chat started"]
@@ -1138,7 +1138,6 @@ viewChatError :: ChatError -> [StyledString]
 viewChatError = \case
   ChatError err -> case err of
     CENoActiveUser -> ["error: active user is required"]
-    CENoConnectionUser agentConnId -> ["error: connection has no user, conn id: " <> sShow agentConnId]
     CEActiveUserExists -> ["error: active user already exists"]
     CEChatNotStarted -> ["error: chat not started"]
     CEChatNotStopped -> ["error: chat not stopped"]
