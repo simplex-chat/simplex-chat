@@ -18,6 +18,15 @@ func infoRow(_ title: LocalizedStringKey, _ value: String) -> some View {
     }
 }
 
+func infoRow(_ title: Text, _ value: String) -> some View {
+    HStack {
+        title
+        Spacer()
+        Text(value)
+            .foregroundStyle(.secondary)
+    }
+}
+
 func localizedInfoRow(_ title: LocalizedStringKey, _ value: LocalizedStringKey) -> some View {
     HStack {
         Text(title)
@@ -53,10 +62,11 @@ struct ChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
     @ObservedObject var chat: Chat
-    var contact: Contact
+    @State var contact: Contact
     @Binding var connectionStats: ConnectionStats?
-    var customUserProfile: Profile?
+    @Binding var customUserProfile: Profile?
     @State var localAlias: String
+    @Binding var connectionCode: String?
     @FocusState private var aliasTextFieldFocused: Bool
     @State private var alert: ChatInfoViewAlert? = nil
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
@@ -89,7 +99,9 @@ struct ChatInfoView: View {
                         aliasTextFieldFocused = false
                     }
 
-                localAliasTextEdit()
+                Group {
+                    localAliasTextEdit()
+                }
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
 
@@ -99,15 +111,18 @@ struct ChatInfoView: View {
                     }
                 }
 
+                Section {
+                    if let code = connectionCode { verifyCodeButton(code) }
+                    contactPreferencesButton()
+                }
+
                 Section("Servers") {
                     networkStatusRow()
                         .onTapGesture {
                             alert = .networkStatusAlert
                         }
-                    if developerTools {
-                        Button("Change receiving address (BETA)") {
-                            alert = .switchAddressAlert
-                        }
+                    Button("Change receiving address") {
+                        alert = .switchAddressAlert
                     }
                     if let connStats = connectionStats {
                         smpServers("Receiving via", connStats.rcvServers)
@@ -141,17 +156,23 @@ struct ChatInfoView: View {
         }
     }
 
-    func contactInfoHeader() -> some View {
+    private func contactInfoHeader() -> some View {
         VStack {
             let cInfo = chat.chatInfo
             ChatInfoImage(chat: chat, color: Color(uiColor: .tertiarySystemFill))
                 .frame(width: 192, height: 192)
                 .padding(.top, 12)
                 .padding()
-            Text(contact.profile.displayName)
-                .font(.largeTitle)
-                .lineLimit(1)
-                .padding(.bottom, 2)
+            HStack {
+                if contact.verified {
+                    Image(systemName: "checkmark.shield")
+                        .foregroundColor(.secondary)
+                }
+                Text(contact.profile.displayName)
+                    .font(.largeTitle)
+                    .lineLimit(1)
+                    .padding(.bottom, 2)
+            }
             if cInfo.fullName != "" && cInfo.fullName != cInfo.displayName && cInfo.fullName != contact.profile.displayName {
                 Text(cInfo.fullName)
                     .font(.title2)
@@ -161,7 +182,7 @@ struct ChatInfoView: View {
         .frame(maxWidth: .infinity, alignment: .center)
     }
 
-    func localAliasTextEdit() -> some View {
+    private func localAliasTextEdit() -> some View {
         TextField("Set contact name…", text: $localAlias)
             .disableAutocorrection(true)
             .focused($aliasTextFieldFocused)
@@ -192,7 +213,50 @@ struct ChatInfoView: View {
         }
     }
 
-    func networkStatusRow() -> some View {
+    private func verifyCodeButton(_ code: String) -> some View {
+        NavigationLink {
+            VerifyCodeView(
+                displayName: contact.displayName,
+                connectionCode: code,
+                connectionVerified: contact.verified,
+                verify: { code in
+                    if let r = apiVerifyContact(chat.chatInfo.apiId, connectionCode: code) {
+                        let (verified, existingCode) = r
+                        contact.activeConn.connectionCode = verified ? SecurityCode(securityCode: existingCode, verifiedAt: .now) : nil
+                        connectionCode = existingCode
+                        DispatchQueue.main.async {
+                            chat.chatInfo = .direct(contact: contact)
+                        }
+                        return r
+                    }
+                    return nil
+                }
+            )
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Security code")
+        } label: {
+            Label(
+                contact.verified ? "View security code" : "Verify security code",
+                systemImage: contact.verified ? "checkmark.shield" : "shield"
+            )
+        }
+    }
+
+    private func contactPreferencesButton() -> some View {
+        NavigationLink {
+            ContactPreferencesView(
+                contact: $contact,
+                featuresAllowed: contactUserPrefsToFeaturesAllowed(contact.mergedPreferences),
+                currentFeaturesAllowed: contactUserPrefsToFeaturesAllowed(contact.mergedPreferences)
+            )
+            .navigationBarTitle("Contact preferences")
+            .navigationBarTitleDisplayMode(.large)
+        } label: {
+            Label("Contact preferences", systemImage: "switch.2")
+        }
+    }
+
+    private func networkStatusRow() -> some View {
         HStack {
             Text("Network status")
             Image(systemName: "info.circle")
@@ -205,14 +269,14 @@ struct ChatInfoView: View {
         }
     }
 
-    func serverImage() -> some View {
+    private func serverImage() -> some View {
         let status = chat.serverInfo.networkStatus
         return Image(systemName: status.imageName)
             .foregroundColor(status == .connected ? .green : .secondary)
             .font(.system(size: 12))
     }
 
-    func deleteContactButton() -> some View {
+    private func deleteContactButton() -> some View {
         Button(role: .destructive) {
             alert = .deleteContactAlert
         } label: {
@@ -221,7 +285,7 @@ struct ChatInfoView: View {
         }
     }
 
-    func clearChatButton() -> some View {
+    private func clearChatButton() -> some View {
         Button() {
             alert = .clearChatAlert
         } label: {
@@ -307,7 +371,9 @@ struct ChatInfoView_Previews: PreviewProvider {
             chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []),
             contact: Contact.sampleData,
             connectionStats: Binding.constant(nil),
-            localAlias: ""
+            customUserProfile: Binding.constant(nil),
+            localAlias: "",
+            connectionCode: Binding.constant(nil)
         )
     }
 }

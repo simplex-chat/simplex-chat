@@ -8,11 +8,14 @@
 
 import SwiftUI
 import SimpleXChat
+import SwiftyGif
+import PhotosUI
 
 enum ComposePreview {
     case noPreview
     case linkPreview(linkPreview: LinkPreview?)
     case imagePreviews(imagePreviews: [String])
+    case voicePreview(recordingFileName: String, duration: Int)
     case filePreview(fileName: String)
 }
 
@@ -22,77 +25,129 @@ enum ComposeContextItem {
     case editingItem(chatItem: ChatItem)
 }
 
+enum VoiceMessageRecordingState {
+    case noRecording
+    case recording
+    case finished
+}
+
+struct LiveMessage {
+    var chatItem: ChatItem
+    var typedMsg: String
+    var sentMsg: String
+}
+
 struct ComposeState {
     var message: String
+    var liveMessage: LiveMessage? = nil
     var preview: ComposePreview
     var contextItem: ComposeContextItem
+    var voiceMessageRecordingState: VoiceMessageRecordingState
     var inProgress = false
     var disabled = false
     var useLinkPreviews: Bool = UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
 
     init(
         message: String = "",
+        liveMessage: LiveMessage? = nil,
         preview: ComposePreview = .noPreview,
-        contextItem: ComposeContextItem = .noContextItem
+        contextItem: ComposeContextItem = .noContextItem,
+        voiceMessageRecordingState: VoiceMessageRecordingState = .noRecording
     ) {
         self.message = message
+        self.liveMessage = liveMessage
         self.preview = preview
         self.contextItem = contextItem
+        self.voiceMessageRecordingState = voiceMessageRecordingState
     }
 
     init(editingItem: ChatItem) {
         self.message = editingItem.content.text
         self.preview = chatItemPreview(chatItem: editingItem)
         self.contextItem = .editingItem(chatItem: editingItem)
+        if let emc = editingItem.content.msgContent,
+           case .voice = emc {
+            self.voiceMessageRecordingState = .finished
+        } else {
+            self.voiceMessageRecordingState = .noRecording
+        }
     }
 
     func copy(
         message: String? = nil,
+        liveMessage: LiveMessage? = nil,
         preview: ComposePreview? = nil,
-        contextItem: ComposeContextItem? = nil
+        contextItem: ComposeContextItem? = nil,
+        voiceMessageRecordingState: VoiceMessageRecordingState? = nil
     ) -> ComposeState {
         ComposeState(
             message: message ?? self.message,
+            liveMessage: liveMessage ?? self.liveMessage,
             preview: preview ?? self.preview,
-            contextItem: contextItem ?? self.contextItem
+            contextItem: contextItem ?? self.contextItem,
+            voiceMessageRecordingState: voiceMessageRecordingState ?? self.voiceMessageRecordingState
         )
     }
 
-    func editing() -> Bool {
+    var editing: Bool {
         switch contextItem {
         case .editingItem: return true
         default: return false
         }
     }
 
-    func sendEnabled() -> Bool {
+    var sendEnabled: Bool {
         switch preview {
-        case .imagePreviews:
-            return true
-        case .filePreview:
-            return true
-        default:
-            return !message.isEmpty
+        case .imagePreviews: return true
+        case .voicePreview: return voiceMessageRecordingState == .finished
+        case .filePreview: return true
+        default: return !message.isEmpty || liveMessage != nil
         }
     }
 
-    func linkPreviewAllowed() -> Bool {
+    var linkPreviewAllowed: Bool {
         switch preview {
-        case .imagePreviews:
-            return false
-        case .filePreview:
-            return false
-        default:
-            return useLinkPreviews
+        case .imagePreviews: return false
+        case .voicePreview: return false
+        case .filePreview: return false
+        default: return useLinkPreviews
         }
     }
 
-    func linkPreview() -> LinkPreview? {
+    var linkPreview: LinkPreview? {
         switch preview {
-        case let .linkPreview(linkPreview):
-            return linkPreview
-        default:
-            return nil
+        case let .linkPreview(linkPreview): return linkPreview
+        default: return nil
+        }
+    }
+
+    var voiceMessageRecordingFileName: String? {
+        switch preview {
+        case let .voicePreview(recordingFileName: recordingFileName, _): return recordingFileName
+        default: return nil
+        }
+    }
+
+    var noPreview: Bool {
+        switch preview {
+        case .noPreview: return true
+        default: return false
+        }
+    }
+
+    var voicePreview: Bool {
+        switch preview {
+        case .voicePreview: return true
+        default: return false
+        }
+    }
+
+    var attachmentDisabled: Bool {
+        if editing || liveMessage != nil { return true }
+        switch preview {
+        case .noPreview: return false
+        case .linkPreview: return false
+        default: return true
         }
     }
 }
@@ -104,8 +159,10 @@ func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
         chatItemPreview = .noPreview
     case let .link(_, preview: preview):
         chatItemPreview = .linkPreview(linkPreview: preview)
-    case let .image(_, image: image):
+    case let .image(_, image):
         chatItemPreview = .imagePreviews(imagePreviews: [image])
+    case let .voice(_, duration):
+        chatItemPreview = .voicePreview(recordingFileName: chatItem.file?.fileName ?? "", duration: duration)
     case .file:
         chatItemPreview = .filePreview(fileName: chatItem.file?.fileName ?? "")
     default:
@@ -114,9 +171,40 @@ func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
     return chatItemPreview
 }
 
+enum UploadContent: Equatable {
+    case simpleImage(image: UIImage)
+    case animatedImage(image: UIImage)
+
+    var uiImage: UIImage {
+        switch self {
+        case let .simpleImage(image): return image
+        case let .animatedImage(image): return image
+        }
+    }
+
+    static func loadFromURL(url: URL) -> UploadContent? {
+        do {
+            let data = try Data(contentsOf: url)
+            if let image = UIImage(data: data) {
+                try image.setGifFromData(data, levelOfIntegrity: 1.0)
+                logger.log("UploadContent: added animated image")
+                return .animatedImage(image: image)
+            } else { return nil }
+        } catch {
+            do {
+                if let image = try UIImage(data: Data(contentsOf: url)) {
+                    logger.log("UploadContent: added simple image")
+                    return .simpleImage(image: image)
+                }
+            } catch {}
+        }
+        return nil
+    }
+}
+
 struct ComposeView: View {
     @EnvironmentObject var chatModel: ChatModel
-    let chat: Chat
+    @ObservedObject var chat: Chat
     @Binding var composeState: ComposeState
     @FocusState.Binding var keyboardVisible: Bool
 
@@ -128,15 +216,24 @@ struct ComposeView: View {
     @State private var showChooseSource = false
     @State private var showImagePicker = false
     @State private var showTakePhoto = false
-    @State var chosenImages: [UIImage] = []
+    @State var chosenImages: [UploadContent] = []
     @State private var showFileImporter = false
     @State var chosenFile: URL? = nil
-    
+
+    @State private var audioRecorder: AudioRecorder?
+    @State private var voiceMessageRecordingTime: TimeInterval?
+    @State private var startingRecording: Bool = false
+    // for some reason voice message preview playback occasionally
+    // fails to stop on ComposeVoiceView.playbackMode().onDisappear,
+    // this is a workaround to fire an explicit event in certain cases
+    @State private var stopPlayback: Bool = false
+
     var body: some View {
         VStack(spacing: 0) {
             contextItemView()
-            switch (composeState.editing(), composeState.preview) {
+            switch (composeState.editing, composeState.preview) {
                 case (true, .filePreview): EmptyView()
+                case (true, .voicePreview): EmptyView() // ? we may allow playback when editing is allowed
                 default: previewView()
             }
             HStack (alignment: .bottom) {
@@ -146,7 +243,7 @@ struct ComposeView: View {
                     Image(systemName: "paperclip")
                         .resizable()
                 }
-                .disabled(composeState.editing())
+                .disabled(composeState.attachmentDisabled)
                 .frame(width: 25, height: 25)
                 .padding(.bottom, 12)
                 .padding(.leading, 12)
@@ -156,6 +253,18 @@ struct ComposeView: View {
                         sendMessage()
                         resetLinkPreview()
                     },
+                    sendLiveMessage: sendLiveMessage,
+                    updateLiveMessage: updateLiveMessage,
+                    voiceMessageAllowed: chat.chatInfo.featureEnabled(.voice),
+                    showEnableVoiceMessagesAlert: chat.chatInfo.showEnableVoiceMessagesAlert,
+                    startVoiceMessageRecording: {
+                        Task {
+                            await startVoiceMessageRecording()
+                        }
+                    },
+                    finishVoiceMessageRecording: finishVoiceMessageRecording,
+                    allowVoiceMessagesToContact: allowVoiceMessagesToContact,
+                    onImagesAdded: { images in if !images.isEmpty { chosenImages = images }},
                     keyboardVisible: $keyboardVisible
                 )
                 .padding(.trailing, 12)
@@ -163,7 +272,7 @@ struct ComposeView: View {
             }
         }
         .onChange(of: composeState.message) { _ in
-            if composeState.linkPreviewAllowed() {
+            if composeState.linkPreviewAllowed {
                 if composeState.message.count > 0 {
                     showLinkPreview(composeState.message)
                 } else {
@@ -180,7 +289,15 @@ struct ComposeView: View {
             }
             if UIPasteboard.general.hasImages {
                 Button("Paste image") {
-                    chosenImages = imageList(UIPasteboard.general.image)
+                    UIPasteboard.general.itemProviders.forEach { p in
+                        if p.hasItemConformingToTypeIdentifier(UTType.data.identifier) {
+                            p.loadFileRepresentation(forTypeIdentifier: UTType.data.identifier) { url, error in
+                                if let url = url, let image = UploadContent.loadFromURL(url: url) {
+                                    chosenImages.append(image)
+                                }
+                            }
+                        }
+                    }
                 }
             }
             Button("Choose file") {
@@ -207,7 +324,7 @@ struct ComposeView: View {
             Task {
                 var imgs: [String] = []
                 for image in images {
-                    if let img = resizeImageToStrSize(image, maxDataSize: 14000) {
+                    if let img = resizeImageToStrSize(image.uiImage, maxDataSize: 14000) {
                         imgs.append(img)
                         await MainActor.run {
                             composeState = composeState.copy(preview: .imagePreviews(imagePreviews: imgs))
@@ -235,11 +352,11 @@ struct ComposeView: View {
                     }
                     fileURL.stopAccessingSecurityScopedResource()
                     if let fileSize = fileSize,
-                       fileSize <= maxFileSize {
+                       fileSize <= MAX_FILE_SIZE {
                         chosenFile = fileURL
                         composeState = composeState.copy(preview: .filePreview(fileName: fileURL.lastPathComponent))
                     } else {
-                        let prettyMaxFileSize = ByteCountFormatter().string(fromByteCount: maxFileSize)
+                        let prettyMaxFileSize = ByteCountFormatter().string(fromByteCount: MAX_FILE_SIZE)
                         AlertManager.shared.showAlertMsg(
                             title: "Large file!",
                             message: "Currently maximum supported file size is \(prettyMaxFileSize)."
@@ -250,6 +367,78 @@ struct ComposeView: View {
                 }
             }
         }
+        .onDisappear {
+            if let fileName = composeState.voiceMessageRecordingFileName {
+                cancelVoiceMessageRecording(fileName)
+            }
+            if composeState.liveMessage != nil {
+                sendMessage()
+                resetLinkPreview()
+            }
+        }
+        .onChange(of: chatModel.stopPreviousRecPlay) { _ in
+            if !startingRecording {
+                if composeState.voiceMessageRecordingState == .recording {
+                    finishVoiceMessageRecording()
+                }
+            } else {
+                startingRecording = false
+            }
+        }
+        .onChange(of: chat.chatInfo.featureEnabled(.voice)) { vmAllowed in
+            if !vmAllowed && composeState.voicePreview,
+               let fileName = composeState.voiceMessageRecordingFileName {
+                cancelVoiceMessageRecording(fileName)
+            }
+        }
+    }
+
+    private func sendLiveMessage() async {
+        let typedMsg = composeState.message
+        let sentMsg = truncateToWords(typedMsg)
+        if composeState.liveMessage == nil,
+           let ci = await sendMessageAsync(sentMsg, live: true) {
+            await MainActor.run {
+                composeState = composeState.copy(liveMessage: LiveMessage(chatItem: ci, typedMsg: typedMsg, sentMsg: sentMsg))
+            }
+        }
+    }
+
+    private func updateLiveMessage() async {
+        let typedMsg = composeState.message
+        if let liveMessage = composeState.liveMessage {
+            if let sentMsg = liveMessageToSend(liveMessage, typedMsg),
+               let ci = await sendMessageAsync(sentMsg, live: true) {
+                await MainActor.run {
+                    composeState = composeState.copy(liveMessage: LiveMessage(chatItem: ci, typedMsg: typedMsg, sentMsg: sentMsg))
+                }
+            } else if liveMessage.typedMsg != typedMsg {
+                await MainActor.run {
+                    var lm = liveMessage
+                    lm.typedMsg = typedMsg
+                    composeState = composeState.copy(liveMessage: lm)
+                }
+            }
+        }
+    }
+
+    private func liveMessageToSend(_ lm: LiveMessage, _ t: String) -> String? {
+        let s = t != lm.typedMsg ? truncateToWords(t) : t
+        return s != lm.sentMsg ? s : nil
+    }
+
+    private func truncateToWords(_ s: String) -> String {
+        var acc = ""
+        var word = ""
+        for c in s {
+            if c.isLetter || c.isNumber {
+                word = word + String(c)
+            } else {
+                acc = acc + word + String(c)
+                word = ""
+            }
+        }
+        return acc
     }
 
     @ViewBuilder func previewView() -> some View {
@@ -265,7 +454,16 @@ struct ComposeView: View {
                     composeState = composeState.copy(preview: .noPreview)
                     chosenImages = []
                 },
-                cancelEnabled: !composeState.editing())
+                cancelEnabled: !composeState.editing)
+        case let .voicePreview(recordingFileName, _):
+            ComposeVoiceView(
+                recordingFileName: recordingFileName,
+                recordingTime: $voiceMessageRecordingTime,
+                recordingState: $composeState.voiceMessageRecordingState,
+                cancelVoiceMessage: { cancelVoiceMessageRecording($0) },
+                cancelEnabled: !composeState.editing,
+                stopPlayback: $stopPlayback
+            )
         case let .filePreview(fileName: fileName):
             ComposeFileView(
                 fileName: fileName,
@@ -273,7 +471,7 @@ struct ComposeView: View {
                     composeState = composeState.copy(preview: .noPreview)
                     chosenFile = nil
                 },
-                cancelEnabled: !composeState.editing())
+                cancelEnabled: !composeState.editing)
         }
     }
 
@@ -300,69 +498,59 @@ struct ComposeView: View {
         logger.debug("ChatView sendMessage")
         Task {
             logger.debug("ChatView sendMessage: in Task")
-            switch composeState.contextItem {
-            case let .editingItem(chatItem: ei):
-                if let oldMsgContent = ei.content.msgContent {
-                    do {
-                        await sending()
-                        let mc = updateMsgContent(oldMsgContent)
-                        let chatItem = try await apiUpdateChatItem(
-                            type: chat.chatInfo.chatType,
-                            id: chat.chatInfo.apiId,
-                            itemId: ei.id,
-                            msg: mc
-                        )
-                        await MainActor.run {
-                            clearState()
-                            let _ = self.chatModel.upsertChatItem(self.chat.chatInfo, chatItem)
-                        }
-                    } catch {
-                        logger.error("ChatView.sendMessage error: \(error.localizedDescription)")
-                        await MainActor.run {
-                            composeState.disabled = false
-                            composeState.inProgress = false
-                        }
-                        AlertManager.shared.showAlertMsg(title: "Error updating message", message: "Error: \(responseError(error))")
-                    }
-                } else {
-                    await MainActor.run { clearState() }
-                }
-            default:
-                await sending()
-                var quoted: Int64? = nil
-                if case let .quotedItem(chatItem: quotedItem) = composeState.contextItem {
-                    quoted = quotedItem.id
-                }
+            _ = await sendMessageAsync(nil, live: false)
+        }
+    }
 
-                switch (composeState.preview) {
-                case .noPreview:
-                    await send(.text(composeState.message), quoted: quoted)
-                case .linkPreview:
-                    await send(checkLinkPreview(), quoted: quoted)
-                case let .imagePreviews(imagePreviews: images):
-                    var text = composeState.message
-                    var sent = false
-                    for i in 0..<min(chosenImages.count, images.count) {
-                        if i > 0 { _ = try? await Task.sleep(nanoseconds: 100_000000) }
-                        if let savedFile = saveImage(chosenImages[i]) {
-                            await send(.image(text: text, image: images[i]), quoted: quoted, file: savedFile)
-                            text = ""
-                            quoted = nil
-                            sent = true
-                        }
+    private func sendMessageAsync(_ text: String?, live: Bool) async -> ChatItem? {
+        var sent: ChatItem?
+        let msgText = text ?? composeState.message
+        let liveMessage = composeState.liveMessage
+        if !live {
+            if liveMessage != nil { composeState = composeState.copy(liveMessage: nil) }
+            await sending()
+        }
+        if case let .editingItem(ci) = composeState.contextItem {
+            sent = await updateMessage(ci, live: live)
+        } else if let liveMessage = liveMessage {
+            sent = await updateMessage(liveMessage.chatItem, live: live)
+        } else {
+            var quoted: Int64? = nil
+            if case let .quotedItem(chatItem: quotedItem) = composeState.contextItem {
+                quoted = quotedItem.id
+            }
+
+            switch (composeState.preview) {
+            case .noPreview:
+                sent = await send(.text(msgText), quoted: quoted, live: live)
+            case .linkPreview:
+                sent = await send(checkLinkPreview(), quoted: quoted, live: live)
+            case let .imagePreviews(imagePreviews: images):
+                let last = min(chosenImages.count, images.count) - 1
+                for i in 0..<last {
+                    if let savedFile = saveAnyImage(chosenImages[i]) {
+                        _ = await send(.image(text: "", image: images[i]), quoted: nil, file: savedFile)
                     }
-                    if !sent {
-                        await send(.text(composeState.message), quoted: quoted)
-                    }
-                case .filePreview:
-                    if let fileURL = chosenFile,
-                       let savedFile = saveFileFromURL(fileURL) {
-                        await send(.file(composeState.message), quoted: quoted, file: savedFile)
-                    }
+                    _ = try? await Task.sleep(nanoseconds: 100_000000)
+                }
+                if let savedFile = saveAnyImage(chosenImages[last]) {
+                    sent = await send(.image(text: msgText, image: images[last]), quoted: quoted, file: savedFile, live: live)
+                }
+                if sent == nil {
+                    sent = await send(.text(msgText), quoted: quoted, live: live)
+                }
+            case let .voicePreview(recordingFileName, duration):
+                stopPlayback.toggle()
+                sent = await send(.voice(text: msgText, duration: duration), quoted: quoted, file: recordingFileName)
+            case .filePreview:
+                if let fileURL = chosenFile,
+                   let savedFile = saveFileFromURL(fileURL) {
+                    sent = await send(.file(msgText), quoted: quoted, file: savedFile, live: live)
                 }
             }
-            await MainActor.run { clearState() }
         }
+        await MainActor.run { clearState(live: live) }
+        return sent
 
         func sending() async {
             await MainActor.run { composeState.disabled = true }
@@ -371,51 +559,182 @@ struct ComposeView: View {
             }
         }
 
-        func send(_ mc: MsgContent, quoted: Int64?, file: String? = nil) async {
+        func updateMessage(_ ei: ChatItem, live: Bool) async -> ChatItem? {
+            if let oldMsgContent = ei.content.msgContent {
+                do {
+                    let mc = updateMsgContent(oldMsgContent)
+                    let chatItem = try await apiUpdateChatItem(
+                        type: chat.chatInfo.chatType,
+                        id: chat.chatInfo.apiId,
+                        itemId: ei.id,
+                        msg: mc,
+                        live: live
+                    )
+                    await MainActor.run {
+                        _ = self.chatModel.upsertChatItem(self.chat.chatInfo, chatItem)
+                    }
+                    return chatItem
+                } catch {
+                    logger.error("ChatView.sendMessage error: \(error.localizedDescription)")
+                    AlertManager.shared.showAlertMsg(title: "Error updating message", message: "Error: \(responseError(error))")
+                }
+            }
+            return nil
+        }
+
+        func updateMsgContent(_ msgContent: MsgContent) -> MsgContent {
+            switch msgContent {
+            case .text:
+                return checkLinkPreview()
+            case .link:
+                return checkLinkPreview()
+            case .image(_, let image):
+                return .image(text: msgText, image: image)
+            case .voice(_, let duration):
+                return .voice(text: msgText, duration: duration)
+            case .file:
+                return .file(msgText)
+            case .unknown(let type, _):
+                return .unknown(type: type, text: msgText)
+            }
+        }
+
+        func send(_ mc: MsgContent, quoted: Int64?, file: String? = nil, live: Bool = false) async -> ChatItem? {
             if let chatItem = await apiSendMessage(
                 type: chat.chatInfo.chatType,
                 id: chat.chatInfo.apiId,
                 file: file,
                 quotedItemId: quoted,
-                msg: mc
+                msg: mc,
+                live: live
             ) {
                 await MainActor.run {
                     chatModel.addChatItem(chat.chatInfo, chatItem)
                 }
+                return chatItem
+            }
+            return nil
+        }
+
+        func checkLinkPreview() -> MsgContent {
+            switch (composeState.preview) {
+            case let .linkPreview(linkPreview: linkPreview):
+                if let url = parseMessage(msgText),
+                   let linkPreview = linkPreview,
+                   url == linkPreview.uri {
+                    return .link(text: msgText, preview: linkPreview)
+                } else {
+                    return .text(msgText)
+                }
+            default:
+                return .text(msgText)
+            }
+        }
+
+        func saveAnyImage(_ img: UploadContent) -> String? {
+            switch img {
+            case let .simpleImage(image): return saveImage(image)
+            case let .animatedImage(image): return saveAnimImage(image)
             }
         }
     }
 
-    private func clearState() {
-        composeState = ComposeState()
-        linkUrl = nil
-        prevLinkUrl = nil
-        pendingLinkUrl = nil
-        cancelledLinks = []
-        chosenImages = []
-        chosenFile = nil
+    private func startVoiceMessageRecording() async {
+        startingRecording = true
+        chatModel.stopPreviousRecPlay.toggle()
+        let fileName = generateNewFileName("voice", "m4a")
+        audioRecorder = AudioRecorder(
+            onTimer: { voiceMessageRecordingTime = $0 },
+            onFinishRecording: {
+                updateComposeVMRFinished()
+                if let fileSize = fileSize(getAppFilePath(fileName)) {
+                    logger.debug("onFinishRecording recording file size = \(fileSize)")
+                }
+            }
+        )
+        if let recStartError = await audioRecorder?.start(fileName: fileName) {
+            switch recStartError {
+            case .permission:
+                AlertManager.shared.showAlert(Alert(
+                    title: Text("No permission to record voice message"),
+                    message: Text("To record voice message please grant permission to use Microphone."),
+                    primaryButton: .default(Text("Open Settings")) {
+                        DispatchQueue.main.async {
+                            UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!, options: [:], completionHandler: nil)
+                        }
+                    },
+                    secondaryButton: .cancel()
+                ))
+            case let .error(error):
+                AlertManager.shared.showAlertMsg(
+                    title: "Unable to record voice message",
+                    message: "Error: \(error)"
+                )
+            }
+        } else {
+            composeState = composeState.copy(
+                preview: .voicePreview(recordingFileName: fileName, duration: 0),
+                voiceMessageRecordingState: .recording
+            )
+        }
     }
 
-    private func updateMsgContent(_ msgContent: MsgContent) -> MsgContent {
-        switch msgContent {
-        case .text:
-            return checkLinkPreview()
-        case .link:
-            return checkLinkPreview()
-        case .image(_, let image):
-            return .image(text: composeState.message, image: image)
-        case .file:
-            return .file(composeState.message)
-        case .unknown(let type, _):
-            return .unknown(type: type, text: composeState.message)
+    private func finishVoiceMessageRecording() {
+        audioRecorder?.stop()
+        audioRecorder = nil
+        updateComposeVMRFinished()
+        if let fileName = composeState.voiceMessageRecordingFileName,
+           let fileSize = fileSize(getAppFilePath(fileName)) {
+            logger.debug("finishVoiceMessageRecording recording file size = \(fileSize)")
         }
+    }
+
+    private func allowVoiceMessagesToContact() {
+        if case let .direct(contact) = chat.chatInfo {
+            allowFeatureToContact(contact, .voice)
+        }
+    }
+
+    // ? maybe we shouldn't have duration in ComposePreview.voicePreview
+    private func updateComposeVMRFinished() {
+        var preview = composeState.preview
+        if let recordingFileName = composeState.voiceMessageRecordingFileName,
+           let recordingTime = voiceMessageRecordingTime {
+            preview = .voicePreview(recordingFileName: recordingFileName, duration: Int(recordingTime.rounded()))
+        }
+        composeState = composeState.copy(
+            preview: preview,
+            voiceMessageRecordingState: .finished
+        )
+    }
+
+    private func cancelVoiceMessageRecording(_ fileName: String) {
+        stopPlayback.toggle()
+        audioRecorder?.stop()
+        removeFile(fileName)
+        clearState()
+    }
+
+    private func clearState(live: Bool = false) {
+        if live {
+            composeState.disabled = false
+            composeState.inProgress = false
+        } else {
+            composeState = ComposeState()
+            resetLinkPreview()
+        }
+        chosenImages = []
+        chosenFile = nil
+        audioRecorder = nil
+        voiceMessageRecordingTime = nil
+        startingRecording = false
     }
 
     private func showLinkPreview(_ s: String) {
         prevLinkUrl = linkUrl
         linkUrl = parseMessage(s)
         if let url = linkUrl {
-            if url != composeState.linkPreview()?.uri && url != pendingLinkUrl {
+            if url != composeState.linkPreview?.uri && url != pendingLinkUrl {
                 pendingLinkUrl = url
                 if prevLinkUrl == url {
                     loadLinkPreview(url)
@@ -444,7 +763,7 @@ struct ComposeView: View {
     }
 
     private func cancelLinkPreview() {
-        if let uri = composeState.linkPreview()?.uri.absoluteString {
+        if let uri = composeState.linkPreview?.uri.absoluteString {
             cancelledLinks.insert(uri)
         }
         pendingLinkUrl = nil
@@ -470,21 +789,6 @@ struct ComposeView: View {
         pendingLinkUrl = nil
         cancelledLinks = []
     }
-
-    private func checkLinkPreview() -> MsgContent {
-        switch (composeState.preview) {
-        case let .linkPreview(linkPreview: linkPreview):
-            if let url = parseMessage(composeState.message),
-               let linkPreview = linkPreview,
-               url == linkPreview.uri {
-                return .link(text: composeState.message, preview: linkPreview)
-            } else {
-                return .text(composeState.message)
-            }
-        default:
-            return .text(composeState.message)
-        }
-    }
 }
 
 struct ComposeView_Previews: PreviewProvider {
@@ -499,11 +803,13 @@ struct ComposeView_Previews: PreviewProvider {
                 composeState: $composeState,
                 keyboardVisible: $keyboardVisible
             )
+            .environmentObject(ChatModel())
             ComposeView(
                 chat: chat,
                 composeState: $composeState,
                 keyboardVisible: $keyboardVisible
             )
+            .environmentObject(ChatModel())
         }
     }
 }

@@ -84,6 +84,7 @@ fun DatabaseView(
       chatArchiveTime,
       chatLastStart,
       chatDbDeleted.value,
+      m.controller.appPrefs.privacyFullBackup,
       appFilesCountAndSize,
       chatItemTTL,
       startChat = { startChat(m, runChat, chatLastStart, m.chatDbChanged) },
@@ -126,12 +127,13 @@ fun DatabaseLayout(
   chatDbChanged: Boolean,
   useKeyChain: Boolean,
   chatDbEncrypted: Boolean?,
-  initialRandomDBPassphrase: Preference<Boolean>,
+  initialRandomDBPassphrase: SharedPreference<Boolean>,
   importArchiveLauncher: ManagedActivityResultLauncher<String, Uri?>,
   chatArchiveName: MutableState<String?>,
   chatArchiveTime: MutableState<Instant?>,
   chatLastStart: MutableState<Instant?>,
   chatDbDeleted: Boolean,
+  privacyFullBackup: SharedPreference<Boolean>,
   appFilesCountAndSize: MutableState<Pair<Int, Long>>,
   chatItemTTL: MutableState<ChatItemTTL>,
   startChat: () -> Unit,
@@ -164,6 +166,8 @@ fun DatabaseLayout(
         iconColor = if (unencrypted) WarningOrange else HighOrLowlight,
         disabled = operationsDisabled
       )
+      SectionDivider()
+      SettingsPreferenceItem(Icons.Outlined.Backup, stringResource(R.string.full_backup), privacyFullBackup)
       SectionDivider()
       SettingsActionItem(
         Icons.Outlined.IosShare,
@@ -409,7 +413,7 @@ private fun stopChat(m: ChatModel, runChat: MutableState<Boolean>, context: Cont
       m.controller.apiStopChat()
       runChat.value = false
       m.chatRunning.value = false
-      SimplexService.stop(context)
+      SimplexService.safeStopService(context)
       MessagesFetcherWorker.cancelAll()
     } catch (e: Error) {
       runChat.value = true
@@ -683,12 +687,13 @@ fun PreviewDatabaseLayout() {
       chatDbChanged = false,
       useKeyChain = false,
       chatDbEncrypted = false,
-      initialRandomDBPassphrase = Preference({ true }, {}),
+      initialRandomDBPassphrase = SharedPreference({ true }, {}),
       importArchiveLauncher = rememberGetContentLauncher {},
       chatArchiveName = remember { mutableStateOf("dummy_archive") },
       chatArchiveTime = remember { mutableStateOf(Clock.System.now()) },
       chatLastStart = remember { mutableStateOf(Clock.System.now()) },
       chatDbDeleted = false,
+      privacyFullBackup = SharedPreference({ true }, {}),
       appFilesCountAndSize = remember { mutableStateOf(0 to 0L) },
       chatItemTTL = remember { mutableStateOf(ChatItemTTL.None) },
       startChat = {},

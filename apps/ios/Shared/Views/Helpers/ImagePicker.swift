@@ -8,28 +8,34 @@
 
 import SwiftUI
 import PhotosUI
+import SwiftyGif
+import SimpleXChat
 
 struct LibraryImagePicker: View {
     @Binding var image: UIImage?
     var didFinishPicking: (_ didSelectItems: Bool) -> Void
-    @State var images: [UIImage] = []
+    @State var images: [UploadContent] = []
 
     var body: some View {
         LibraryImageListPicker(images: $images, selectionLimit: 1, didFinishPicking: didFinishPicking)
-            .onChange(of: images) { image = $0.first }
+            .onChange(of: images) { _ in
+                if let img = images.first {
+                    image = img.uiImage
+                }
+            }
     }
 }
 
 struct LibraryImageListPicker: UIViewControllerRepresentable {
     typealias UIViewControllerType = PHPickerViewController
-    @Binding var images: [UIImage]
+    @Binding var images: [UploadContent]
     var selectionLimit: Int
     var didFinishPicking: (_ didSelectItems: Bool) -> Void
 
     class Coordinator: PHPickerViewControllerDelegate {
         let parent: LibraryImageListPicker
         let dispatchQueue = DispatchQueue(label: "chat.simplex.app.LibraryImageListPicker")
-        var images: [UIImage] = []
+        var images: [UploadContent] = []
         var imageCount: Int = 0
 
         init(_ parent: LibraryImageListPicker) {
@@ -48,7 +54,11 @@ struct LibraryImageListPicker: UIViewControllerRepresentable {
             for result in results {
                 logger.log("LibraryImageListPicker result")
                 let p = result.itemProvider
-                if p.canLoadObject(ofClass: UIImage.self) {
+                if p.hasItemConformingToTypeIdentifier(UTType.data.identifier) {
+                    p.loadFileRepresentation(forTypeIdentifier: UTType.data.identifier) { url, error in
+                        self.loadImage(object: url, error: error)
+                    }
+                } else if p.canLoadObject(ofClass: UIImage.self) {
                     p.loadObject(ofClass: UIImage.self)  { image, error in
                         DispatchQueue.main.async {
                             self.loadImage(object: image, error: error)
@@ -72,8 +82,10 @@ struct LibraryImageListPicker: UIViewControllerRepresentable {
             if let error = error {
                 logger.error("LibraryImageListPicker: couldn't load image with error: \(error.localizedDescription)")
             } else if let image = object as? UIImage {
-                images.append(image)
+                images.append(.simpleImage(image: image))
                 logger.log("LibraryImageListPicker: added image")
+            } else if let url = object as? URL, let image = UploadContent.loadFromURL(url: url) {
+                images.append(image)
             }
             dispatchQueue.sync {
                 self.imageCount -= 1
@@ -105,20 +117,18 @@ struct LibraryImageListPicker: UIViewControllerRepresentable {
 }
 
 struct CameraImageListPicker: View {
-    @Binding var images: [UIImage]
+    @Binding var images: [UploadContent]
     @State var image: UIImage?
 
     var body: some View {
         CameraImagePicker(image: $image)
-            .onChange(of: image) { images = imageList($0) }
-    }
-}
-
-func imageList(_ img: UIImage?) -> [UIImage] {
-    if let img = img {
-        return [img]
-    } else {
-        return []
+            .onChange(of: image) { img in
+                if let img = img {
+                    images = [UploadContent.simpleImage(image: img)]
+                } else {
+                    images = []
+                }
+            }
     }
 }
 

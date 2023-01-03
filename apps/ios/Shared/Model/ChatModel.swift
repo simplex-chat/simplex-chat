@@ -31,7 +31,8 @@ final class ChatModel: ObservableObject {
     // items in the terminal view
     @Published var terminalItems: [TerminalItem] = []
     @Published var userAddress: UserContactLink?
-    @Published var userSMPServers: [String]?
+    @Published var userSMPServers: [ServerCfg]?
+    @Published var presetSMPServers: [String]?
     @Published var chatItemTTL: ChatItemTTL = .none
     @Published var appOpenUrl: URL?
     @Published var deviceToken: DeviceToken?
@@ -51,6 +52,8 @@ final class ChatModel: ObservableObject {
     @Published var showCallView = false
     // currently showing QR code
     @Published var connReqInv: String?
+    // audio recording and playback
+    @Published var stopPreviousRecPlay: Bool = false // value is not taken into account, only the fact it switches
     var callWebView: WKWebView?
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
@@ -98,7 +101,7 @@ final class ChatModel: ObservableObject {
     }
 
     func updateContact(_ contact: Contact) {
-        updateChat(.direct(contact: contact), addMissing: !contact.isIndirectContact && !contact.viaGroupLink)
+        updateChat(.direct(contact: contact), addMissing: contact.directOrUsed)
     }
 
     func updateGroup(_ groupInfo: GroupInfo) {
@@ -219,8 +222,10 @@ final class ChatModel: ObservableObject {
             withAnimation(.default) {
                 self.reversedChatItems[i] = cItem
                 self.reversedChatItems[i].viewTimestamp = .now
+                // on some occasions the confirmation of message being accepted by the server (tick)
+                // arrives earlier than the response from API, and item remains without tick
                 if case .sndNew = cItem.meta.itemStatus {
-                    self.reversedChatItems[i].meta = ci.meta
+                    self.reversedChatItems[i].meta.itemStatus = ci.meta.itemStatus
                 }
             }
             return false
@@ -231,16 +236,19 @@ final class ChatModel: ObservableObject {
     }
     
     func removeChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
+        if cItem.isRcvNew {
+            decreaseUnreadCounter(cInfo)
+        }
         // update previews
         if let chat = getChat(cInfo.id) {
             if let pItem = chat.chatItems.last, pItem.id == cItem.id {
-                chat.chatItems = [cItem]
+                chat.chatItems = [ChatItem.deletedItemDummy()]
             }
         }
         // remove from current chat
         if chatId == cInfo.id {
             if let i = reversedChatItems.firstIndex(where: { $0.id == cItem.id }) {
-                if reversedChatItems[i].isRcvNew() == true {
+                if reversedChatItems[i].isRcvNew {
                     NtfManager.shared.decNtfBadgeCount()
                 }
                 _ = withAnimation {
@@ -281,10 +289,7 @@ final class ChatModel: ObservableObject {
     private func markCurrentChatRead(fromIndex i: Int = 0) {
         var j = i
         while j < reversedChatItems.count {
-            if case .rcvNew = reversedChatItems[j].meta.itemStatus {
-                reversedChatItems[j].meta.itemStatus = .rcvRead
-                reversedChatItems[j].viewTimestamp = .now
-            }
+            markChatItemRead_(j)
             j += 1
         }
     }
@@ -337,13 +342,27 @@ final class ChatModel: ObservableObject {
 
     func markChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) {
         // update preview
+        decreaseUnreadCounter(cInfo)
+        // update current chat
+        if chatId == cInfo.id, let i = reversedChatItems.firstIndex(where: { $0.id == cItem.id }) {
+            markChatItemRead_(i)
+        }
+    }
+
+    private func markChatItemRead_(_ i: Int) {
+        let meta = reversedChatItems[i].meta
+        if case .rcvNew = meta.itemStatus {
+            reversedChatItems[i].meta.itemStatus = .rcvRead
+            reversedChatItems[i].viewTimestamp = .now
+            if meta.itemLive != true, let ttl = meta.itemTimed?.ttl {
+                reversedChatItems[i].meta.itemTimed?.deleteAt = .now + TimeInterval(ttl)
+            }
+        }
+    }
+
+    func decreaseUnreadCounter(_ cInfo: ChatInfo) {
         if let i = getChatIndex(cInfo.id) {
             chats[i].chatStats.unreadCount = chats[i].chatStats.unreadCount - 1
-        }
-        // update current chat
-        if chatId == cInfo.id, let j = reversedChatItems.firstIndex(where: { $0.id == cItem.id }) {
-            reversedChatItems[j].meta.itemStatus = .rcvRead
-            reversedChatItems[j].viewTimestamp = .now
         }
     }
 
@@ -413,7 +432,7 @@ final class ChatModel: ObservableObject {
         var unreadBelow = 0
         while i < reversedChatItems.count - 1 && !itemsInView.contains(reversedChatItems[i].viewId) {
             totalBelow += 1
-            if reversedChatItems[i].isRcvNew() {
+            if reversedChatItems[i].isRcvNew {
                 unreadBelow += 1
             }
             i += 1
@@ -501,4 +520,6 @@ final class Chat: ObservableObject, Identifiable {
     var id: ChatId { get { chatInfo.id } }
 
     var viewId: String { get { "\(chatInfo.id) \(created.timeIntervalSince1970)" } }
+
+    public static var sampleData: Chat = Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [])
 }

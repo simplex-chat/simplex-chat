@@ -12,7 +12,7 @@
     - [Using Haskell stack](#using-haskell-stack)
 - [Usage](#usage)
   - [Running the chat client](#running-the-chat-client)
-  - [Access messaging servers via Tor (BETA)](#access-messaging-servers-via-tor-beta)
+  - [Access messaging servers via Tor](#access-messaging-servers-via-tor-beta)
   - [How to use SimpleX chat](#how-to-use-simplex-chat)
   - [Groups](#groups)
   - [Sending files](#sending-files)
@@ -85,29 +85,37 @@ move <binary> %APPDATA%/local/bin/simplex-chat.exe
 On Linux, you can build the chat executable using [docker build with custom output](https://docs.docker.com/engine/reference/commandline/build/#custom-build-outputs):
 
 ```shell
-$ git clone git@github.com:simplex-chat/simplex-chat.git
-$ cd simplex-chat
-$ git checkout stable
-$ DOCKER_BUILDKIT=1 docker build --output ~/.local/bin .
+git clone git@github.com:simplex-chat/simplex-chat.git
+cd simplex-chat
+git checkout stable
+DOCKER_BUILDKIT=1 docker build --output ~/.local/bin .
 ```
 
-> **Please note:** If you encounter `` version `GLIBC_2.28' not found `` error, rebuild it with `haskell:8.10.4-stretch` base image (change it in your local [Dockerfile](Dockerfile)).
+> **Please note:** If you encounter `` version `GLIBC_2.28' not found `` error, rebuild it with `haskell:8.10.7-stretch` base image (change it in your local [Dockerfile](Dockerfile)).
 
-#### Using Haskell stack
+#### In any OS
 
-Install [Haskell stack](https://docs.haskellstack.org/en/stable/README/):
+1. Install [Haskell GHCup](https://www.haskell.org/ghcup/), GHC 8.10.7 and cabal:
 
 ```shell
-curl -sSL https://get.haskellstack.org/ | sh
+curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
 ```
 
-and build the project:
+2. Build the project:
 
 ```shell
-$ git clone git@github.com:simplex-chat/simplex-chat.git
-$ cd simplex-chat
-$ git checkout stable
-$ stack install
+git clone git@github.com:simplex-chat/simplex-chat.git
+cd simplex-chat
+git checkout stable
+# on Linux
+apt-get update && apt-get install -y build-essential libgmp3-dev zlib1g-dev
+cp scripts/cabal.project.local.linux cabal.project.local
+# or on MacOS:
+# brew install openssl@1.1
+# cp scripts/cabal.project.local.mac cabal.project.local
+# you may need to amend cabal.project.local to point to the actual openssl location
+cabal update
+cabal install
 ```
 
 ## Usage
@@ -140,7 +148,7 @@ You can still talk to people using default or any other server - it only affects
 
 Run `simplex-chat -h` to see all available options.
 
-### Access messaging servers via Tor (BETA)
+### Access messaging servers via Tor
 
 Install Tor and run it as SOCKS5 proxy on port 9050, e.g. on Mac you can:
 

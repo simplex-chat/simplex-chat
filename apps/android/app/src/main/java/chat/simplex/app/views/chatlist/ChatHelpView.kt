@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.annotatedStringResource
+import chat.simplex.app.views.usersettings.MarkdownHelpView
 import chat.simplex.app.views.usersettings.simplexTeamUri
 
 val bold = SpanStyle(fontWeight = FontWeight.Bold)
@@ -75,6 +76,15 @@ fun ChatHelpView(addContact: (() -> Unit)? = null) {
       Text(stringResource(R.string.if_you_received_simplex_invitation_link_you_can_open_in_browser), lineHeight = 22.sp)
       Text(annotatedStringResource(R.string.desktop_scan_QR_code_from_app_via_scan_QR_code), lineHeight = 22.sp)
       Text(annotatedStringResource(R.string.mobile_tap_open_in_mobile_app_then_tap_connect_in_app), lineHeight = 22.sp)
+    }
+
+    Column(
+      Modifier.padding(vertical = 24.dp),
+      horizontalAlignment = Alignment.Start,
+      verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+      Text(stringResource(R.string.markdown_in_messages), style = MaterialTheme.typography.h2)
+      MarkdownHelpView()
     }
   }
 }

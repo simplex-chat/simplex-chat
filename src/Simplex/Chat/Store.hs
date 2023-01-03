@@ -35,6 +35,7 @@ module Simplex.Chat.Store
     createDirectContact,
     deleteContactConnectionsAndFiles,
     deleteContact,
+    deleteContactWithoutGroups,
     getContactByName,
     getContact,
     getContactIdByName,
@@ -46,7 +47,9 @@ module Simplex.Chat.Store
     updateContactUsed,
     updateContactUnreadChat,
     updateGroupUnreadChat,
+    setConnectionVerified,
     getUserContacts,
+    getUserContactProfiles,
     createUserContactLink,
     getUserAddressConnections,
     getUserContactLinks,
@@ -84,6 +87,7 @@ module Simplex.Chat.Store
     getGroupMemberIdByName,
     getGroupInfoByName,
     getGroupMember,
+    getGroupMemberById,
     getGroupMembers,
     getGroupMembersForExpiration,
     deleteGroupConnectionsAndFiles,
@@ -91,6 +95,8 @@ module Simplex.Chat.Store
     deleteGroup,
     getUserGroups,
     getUserGroupDetails,
+    getContactGroupPreferences,
+    checkContactHasGroups,
     getGroupInvitation,
     createNewContactMember,
     createNewContactMemberAsync,
@@ -148,6 +154,7 @@ module Simplex.Chat.Store
     createRcvGroupFileTransfer,
     getRcvFileTransfer,
     acceptRcvFileTransfer,
+    getContactByFileId,
     acceptRcvInlineFT,
     startRcvInlineFT,
     updateRcvFileStatus,
@@ -160,13 +167,13 @@ module Simplex.Chat.Store
     getFileTransferMeta,
     getSndFileTransfer,
     getContactFileInfo,
-    getContactMaxItemTs,
+    getContactMaxItemTs, -- TODO delete
     deleteContactCIs,
-    updateContactTs,
+    updateContactTs, -- TODO delete
     getGroupFileInfo,
-    getGroupMaxItemTs,
+    getGroupMaxItemTs, -- TODO delete
     deleteGroupCIs,
-    updateGroupTs,
+    updateGroupTs, -- TODO delete
     createNewSndMessage,
     createSndMsgDelivery,
     createNewMessageAndRcvMsgDelivery,
@@ -175,6 +182,7 @@ module Simplex.Chat.Store
     createPendingGroupMessage,
     getPendingGroupMessages,
     deletePendingGroupMessage,
+    updateChatTs,
     createNewSndChatItem,
     createNewRcvChatItem,
     createNewChatItemNoMsg,
@@ -182,6 +190,7 @@ module Simplex.Chat.Store
     getDirectChat,
     getGroupChat,
     getAllChatItems,
+    getAChatItem,
     getChatItemIdByAgentMsgId,
     getDirectChatItem,
     getDirectChatItemBySharedMsgId,
@@ -195,13 +204,18 @@ module Simplex.Chat.Store
     updateDirectChatItemStatus,
     updateDirectCIFileStatus,
     updateDirectChatItem,
-    deleteDirectChatItemLocal,
-    deleteDirectChatItemRcvBroadcast,
+    updateDirectChatItem',
+    deleteDirectChatItem,
+    markDirectChatItemDeleted,
     updateGroupChatItem,
-    deleteGroupChatItemLocal,
-    deleteGroupChatItemRcvBroadcast,
+    deleteGroupChatItem,
+    markGroupChatItemDeleted,
     updateDirectChatItemsRead,
+    getDirectUnreadTimedItems,
+    setDirectChatItemDeleteAt,
     updateGroupChatItemsRead,
+    getGroupUnreadTimedItems,
+    setGroupChatItemDeleteAt,
     getSMPServers,
     overwriteSMPServers,
     createCall,
@@ -215,14 +229,15 @@ module Simplex.Chat.Store
     setConnConnReqInv,
     getXGrpMemIntroContDirect,
     getXGrpMemIntroContGroup,
+    getTimedItems,
     getChatItemTTL,
     setChatItemTTL,
     getContactExpiredFileInfo,
     deleteContactExpiredCIs,
-    getContactCICount,
+    getContactCICount, -- TODO delete
     getGroupExpiredFileInfo,
     deleteGroupExpiredCIs,
-    getGroupCICount,
+    getGroupCICount, -- TODO delete
     getPendingContactConnection,
     deletePendingContactConnection,
     updateContactSettings,
@@ -248,10 +263,12 @@ import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (sortBy, sortOn)
 import Data.List.NonEmpty (NonEmpty)
-import Data.Maybe (fromMaybe, isJust, isNothing, listToMaybe)
+import Data.Maybe (fromMaybe, isJust, isNothing, listToMaybe, mapMaybe)
 import Data.Ord (Down (..))
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
+import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Data.Time.LocalTime (TimeZone, getCurrentTimeZone)
 import Data.Type.Equality
@@ -295,16 +312,29 @@ import Simplex.Chat.Migrations.M20221021_auto_accept__group_links
 import Simplex.Chat.Migrations.M20221024_contact_used
 import Simplex.Chat.Migrations.M20221025_chat_settings
 import Simplex.Chat.Migrations.M20221029_group_link_id
+import Simplex.Chat.Migrations.M20221112_server_password
+import Simplex.Chat.Migrations.M20221115_server_cfg
+import Simplex.Chat.Migrations.M20221129_delete_group_feature_items
+import Simplex.Chat.Migrations.M20221130_delete_item_deleted
+import Simplex.Chat.Migrations.M20221209_verified_connection
+import Simplex.Chat.Migrations.M20221210_idxs
+import Simplex.Chat.Migrations.M20221211_group_description
+import Simplex.Chat.Migrations.M20221212_chat_items_timed
+import Simplex.Chat.Migrations.M20221214_live_message
+import Simplex.Chat.Migrations.M20221222_chat_ts
+import Simplex.Chat.Migrations.M20221223_idx_chat_items_item_status
+import Simplex.Chat.Migrations.M20221230_idxs
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
+import Simplex.Chat.Util (week)
 import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..))
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, firstRow, firstRow', maybeFirstRow, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
-import Simplex.Messaging.Protocol (ProtocolServer (..), SMPServer, pattern SMPServer)
+import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), pattern SMPServer)
 import Simplex.Messaging.Transport.Client (TransportHost)
-import Simplex.Messaging.Util (eitherToMaybe)
+import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8)
 import UnliftIO.STM
 
 schemaMigrations :: [(String, Query)]
@@ -341,7 +371,19 @@ schemaMigrations =
     ("20221021_auto_accept__group_links", m20221021_auto_accept__group_links),
     ("20221024_contact_used", m20221024_contact_used),
     ("20221025_chat_settings", m20221025_chat_settings),
-    ("20221029_group_link_id", m20221029_group_link_id)
+    ("20221029_group_link_id", m20221029_group_link_id),
+    ("20221112_server_password", m20221112_server_password),
+    ("20221115_server_cfg", m20221115_server_cfg),
+    ("20221129_delete_group_feature_items", m20221129_delete_group_feature_items),
+    ("20221130_delete_item_deleted", m20221130_delete_item_deleted),
+    ("20221209_verified_connection", m20221209_verified_connection),
+    ("20221210_idxs", m20221210_idxs),
+    ("20221211_group_description", m20221211_group_description),
+    ("20221212_chat_items_timed", m20221212_chat_items_timed),
+    ("20221214_live_message", m20221214_live_message),
+    ("20221222_chat_ts", m20221222_chat_ts),
+    ("20221223_idx_chat_items_item_status", m20221223_idx_chat_items_item_status),
+    ("20221230_idxs", m20221230_idxs)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -411,7 +453,7 @@ getUsers db =
 toUser :: (UserId, ContactId, ProfileId, Bool, ContactName, Text, Maybe ImageData, Maybe Preferences) -> User
 toUser (userId, userContactId, profileId, activeUser, displayName, fullName, image, userPreferences) =
   let profile = LocalProfile {profileId, displayName, fullName, image, preferences = userPreferences, localAlias = ""}
-   in User {userId, userContactId, localDisplayName = displayName, profile, activeUser}
+   in User {userId, userContactId, localDisplayName = displayName, profile, activeUser, fullPreferences = mergePreferences Nothing userPreferences}
 
 setActiveUser :: DB.Connection -> UserId -> IO ()
 setActiveUser db userId = do
@@ -435,24 +477,25 @@ createConnReqConnection db userId acId cReqHash xContactId incognitoProfile grou
   pccConnId <- insertedRowId db
   pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = True, viaUserContactLink = Nothing, groupLinkId, customUserProfileId, connReqInv = Nothing, localAlias = "", createdAt, updatedAt = createdAt}
 
-getConnReqContactXContactId :: DB.Connection -> UserId -> ConnReqUriHash -> IO (Maybe Contact, Maybe XContactId)
-getConnReqContactXContactId db userId cReqHash = do
+getConnReqContactXContactId :: DB.Connection -> User -> ConnReqUriHash -> IO (Maybe Contact, Maybe XContactId)
+getConnReqContactXContactId db user@User {userId} cReqHash = do
   getContact' >>= \case
     c@(Just _) -> pure (c, Nothing)
     Nothing -> (Nothing,) <$> getXContactId
   where
     getContact' :: IO (Maybe Contact)
     getContact' =
-      maybeFirstRow toContact $
+      maybeFirstRow (toContact user) $
         DB.query
           db
           [sql|
             SELECT
               -- Contact
-              ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.local_alias, ct.contact_used, ct.enable_ntfs, cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at,
+              ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.local_alias, ct.contact_used, ct.enable_ntfs,
+              cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts,
               -- Connection
               c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
-              c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
+              c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at
             FROM contacts ct
             JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
             JOIN connections c ON c.contact_id = ct.contact_id
@@ -527,18 +570,21 @@ createConnection_ db userId connType entityId acId viaContact viaUserContactLink
         :. (ent ConnContact, ent ConnMember, ent ConnSndFile, ent ConnRcvFile, ent ConnUserContact, currentTs, currentTs)
     )
   connId <- insertedRowId db
-  pure Connection {connId, agentConnId = AgentConnId acId, connType, entityId, viaContact, viaUserContactLink, viaGroupLink, groupLinkId = Nothing, customUserProfileId, connLevel, connStatus = ConnNew, localAlias = "", createdAt = currentTs}
+  pure Connection {connId, agentConnId = AgentConnId acId, connType, entityId, viaContact, viaUserContactLink, viaGroupLink, groupLinkId = Nothing, customUserProfileId, connLevel, connStatus = ConnNew, localAlias = "", createdAt = currentTs, connectionCode = Nothing}
   where
     ent ct = if connType == ct then entityId else Nothing
 
-createDirectContact :: DB.Connection -> UserId -> Connection -> Profile -> ExceptT StoreError IO Contact
-createDirectContact db userId activeConn@Connection {connId, localAlias} profile = do
+createDirectContact :: DB.Connection -> User -> Connection -> Profile -> ExceptT StoreError IO Contact
+createDirectContact db user@User {userId} activeConn@Connection {connId, localAlias} p@Profile {preferences} = do
   createdAt <- liftIO getCurrentTime
-  (localDisplayName, contactId, profileId) <- createContact_ db userId connId profile localAlias Nothing createdAt
-  pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile localAlias, activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences = emptyChatPrefs, createdAt, updatedAt = createdAt}
+  (localDisplayName, contactId, profileId) <- createContact_ db userId connId p localAlias Nothing createdAt (Just createdAt)
+  let profile = toLocalProfile profileId p localAlias
+      userPreferences = emptyChatPrefs
+      mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
+  pure $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt, updatedAt = createdAt, chatTs = Just createdAt}
 
-createContact_ :: DB.Connection -> UserId -> Int64 -> Profile -> LocalAlias -> Maybe Int64 -> UTCTime -> ExceptT StoreError IO (Text, ContactId, ProfileId)
-createContact_ db userId connId Profile {displayName, fullName, image, preferences} localAlias viaGroup currentTs =
+createContact_ :: DB.Connection -> UserId -> Int64 -> Profile -> LocalAlias -> Maybe Int64 -> UTCTime -> Maybe UTCTime -> ExceptT StoreError IO (Text, ContactId, ProfileId)
+createContact_ db userId connId Profile {displayName, fullName, image, preferences} localAlias viaGroup currentTs chatTs =
   ExceptT . withLocalDisplayName db userId displayName $ \ldn -> do
     DB.execute
       db
@@ -547,11 +593,11 @@ createContact_ db userId connId Profile {displayName, fullName, image, preferenc
     profileId <- insertedRowId db
     DB.execute
       db
-      "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, via_group, created_at, updated_at) VALUES (?,?,?,?,?,?)"
-      (profileId, ldn, userId, viaGroup, currentTs, currentTs)
+      "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, via_group, created_at, updated_at, chat_ts) VALUES (?,?,?,?,?,?,?)"
+      (profileId, ldn, userId, viaGroup, currentTs, currentTs, chatTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, currentTs, connId)
-    pure . Right $ (ldn, contactId, profileId)
+    pure $ Right (ldn, contactId, profileId)
 
 deleteContactConnectionsAndFiles :: DB.Connection -> UserId -> Contact -> IO ()
 deleteContactConnectionsAndFiles db userId Contact {contactId} = do
@@ -579,6 +625,15 @@ deleteContact db user@User {userId} Contact {contactId, localDisplayName, active
     else do
       currentTs <- getCurrentTime
       DB.execute db "UPDATE group_members SET contact_id = NULL, updated_at = ? WHERE user_id = ? AND contact_id = ?" (currentTs, userId, contactId)
+  DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+  forM_ customUserProfileId $ \profileId -> deleteUnusedIncognitoProfileById_ db user profileId
+
+-- should only be used if contact is not member of any groups
+deleteContactWithoutGroups :: DB.Connection -> User -> Contact -> IO ()
+deleteContactWithoutGroups db user@User {userId} Contact {contactId, localDisplayName, activeConn = Connection {customUserProfileId}} = do
+  DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+  deleteContactProfile_ db userId contactId
+  DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
   DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
   forM_ customUserProfileId $ \profileId -> deleteUnusedIncognitoProfileById_ db user profileId
 
@@ -614,10 +669,11 @@ deleteContactProfile_ db userId contactId =
     |]
     (userId, contactId)
 
-updateUserProfile :: DB.Connection -> User -> Profile -> ExceptT StoreError IO ()
-updateUserProfile db User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName}} p'@Profile {displayName = newName}
-  | displayName == newName =
+updateUserProfile :: DB.Connection -> User -> Profile -> ExceptT StoreError IO User
+updateUserProfile db user p'
+  | displayName == newName = do
     liftIO $ updateContactProfile_ db userId profileId p'
+    pure user {profile, fullPreferences}
   | otherwise =
     checkConstraint SEDuplicateName . liftIO $ do
       currentTs <- getCurrentTime
@@ -628,25 +684,39 @@ updateUserProfile db User {userId, userContactId, localDisplayName, profile = Lo
         (newName, newName, userId, currentTs, currentTs)
       updateContactProfile_' db userId profileId p' currentTs
       updateContact_ db userId userContactId localDisplayName newName currentTs
+      pure user {localDisplayName = newName, profile, fullPreferences}
+  where
+    User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, localAlias}} = user
+    Profile {displayName = newName, preferences} = p'
+    profile = toLocalProfile profileId p' localAlias
+    fullPreferences = mergePreferences Nothing preferences
 
-updateContactProfile :: DB.Connection -> UserId -> Contact -> Profile -> ExceptT StoreError IO Contact
-updateContactProfile db userId c@Contact {contactId, localDisplayName, profile = LocalProfile {profileId, displayName, localAlias}} p'@Profile {displayName = newName}
-  | displayName == newName =
-    liftIO $ updateContactProfile_ db userId profileId p' $> (c :: Contact) {profile = toLocalProfile profileId p' localAlias}
+updateContactProfile :: DB.Connection -> User -> Contact -> Profile -> ExceptT StoreError IO Contact
+updateContactProfile db user@User {userId} c p'
+  | displayName == newName = do
+    liftIO $ updateContactProfile_ db userId profileId p'
+    pure c {profile, mergedPreferences}
   | otherwise =
     ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
       currentTs <- getCurrentTime
       updateContactProfile_' db userId profileId p' currentTs
       updateContact_ db userId contactId localDisplayName ldn currentTs
-      pure . Right $ (c :: Contact) {localDisplayName = ldn, profile = toLocalProfile profileId p' localAlias}
+      pure $ Right c {localDisplayName = ldn, profile, mergedPreferences}
+  where
+    Contact {contactId, localDisplayName, profile = LocalProfile {profileId, displayName, localAlias}, activeConn, userPreferences} = c
+    Profile {displayName = newName, preferences} = p'
+    profile = toLocalProfile profileId p' localAlias
+    mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
 
-updateContactUserPreferences :: DB.Connection -> UserId -> Int64 -> Preferences -> IO ()
-updateContactUserPreferences db userId contactId userPreferences = do
+updateContactUserPreferences :: DB.Connection -> User -> Contact -> Preferences -> IO Contact
+updateContactUserPreferences db user@User {userId} c@Contact {contactId, activeConn} userPreferences = do
   updatedAt <- getCurrentTime
   DB.execute
     db
     "UPDATE contacts SET user_preferences = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?"
     (userPreferences, updatedAt, userId, contactId)
+  let mergedPreferences = contactUserPreferences user userPreferences (preferences' c) $ connIncognito activeConn
+  pure $ c {mergedPreferences, userPreferences}
 
 updateContactAlias :: DB.Connection -> UserId -> Contact -> LocalAlias -> IO Contact
 updateContactAlias db userId c@Contact {profile = lp@LocalProfile {profileId}} localAlias = do
@@ -689,6 +759,11 @@ updateGroupUnreadChat db User {userId} GroupInfo {groupId} unreadChat = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE groups SET unread_chat = ?, updated_at = ? WHERE user_id = ? AND group_id = ?" (unreadChat, updatedAt, userId, groupId)
 
+setConnectionVerified :: DB.Connection -> User -> Int64 -> Maybe Text -> IO ()
+setConnectionVerified db User {userId} connId code = do
+  updatedAt <- getCurrentTime
+  DB.execute db "UPDATE connections SET security_code = ?, security_code_verified_at = ?, updated_at = ? WHERE user_id = ? AND connection_id = ?" (code, code $> updatedAt, updatedAt, userId, connId)
+
 updateContactProfile_ :: DB.Connection -> UserId -> ProfileId -> Profile -> IO ()
 updateContactProfile_ db userId profileId profile = do
   currentTs <- getCurrentTime
@@ -717,35 +792,51 @@ updateContact_ db userId contactId displayName newName updatedAt = do
     (newName, updatedAt, userId, contactId)
   DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (displayName, userId)
 
-type ContactRow = (ContactId, ProfileId, ContactName, Maybe Int64, ContactName, Text, Maybe ImageData, LocalAlias, Bool, Maybe Bool) :. (Maybe Preferences, Preferences, UTCTime, UTCTime)
+type ContactRow = (ContactId, ProfileId, ContactName, Maybe Int64, ContactName, Text, Maybe ImageData, LocalAlias, Bool, Maybe Bool) :. (Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime)
 
-toContact :: ContactRow :. ConnectionRow -> Contact
-toContact (((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, localAlias, contactUsed, enableNtfs_) :. (preferences, userPreferences, createdAt, updatedAt)) :. connRow) =
+toContact :: User -> ContactRow :. ConnectionRow -> Contact
+toContact user (((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, localAlias, contactUsed, enableNtfs_) :. (preferences, userPreferences, createdAt, updatedAt, chatTs)) :. connRow) =
   let profile = LocalProfile {profileId, displayName, fullName, image, preferences, localAlias}
       activeConn = toConnection connRow
       chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_}
-   in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, createdAt, updatedAt}
+      mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
+   in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs}
 
-toContactOrError :: ContactRow :. MaybeConnectionRow -> Either StoreError Contact
-toContactOrError (((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, localAlias, contactUsed, enableNtfs_) :. (preferences, userPreferences, createdAt, updatedAt)) :. connRow) =
+toContactOrError :: User -> ContactRow :. MaybeConnectionRow -> Either StoreError Contact
+toContactOrError user (((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, localAlias, contactUsed, enableNtfs_) :. (preferences, userPreferences, createdAt, updatedAt, chatTs)) :. connRow) =
   let profile = LocalProfile {profileId, displayName, fullName, image, preferences, localAlias}
       chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_}
    in case toMaybeConnection connRow of
         Just activeConn ->
-          Right Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, createdAt, updatedAt}
+          let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
+           in Right Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs}
         _ -> Left $ SEContactNotReady localDisplayName
 
--- TODO return the last connection that is ready, not any last connection
--- requires updating connection status
 getContactByName :: DB.Connection -> User -> ContactName -> ExceptT StoreError IO Contact
-getContactByName db user@User {userId} localDisplayName = do
+getContactByName db user localDisplayName = do
   cId <- getContactIdByName db user localDisplayName
-  getContact db userId cId
+  getContact db user cId
 
 getUserContacts :: DB.Connection -> User -> IO [Contact]
-getUserContacts db User {userId} = do
+getUserContacts db user@User {userId} = do
   contactIds <- map fromOnly <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ?" (Only userId)
-  rights <$> mapM (runExceptT . getContact db userId) contactIds
+  rights <$> mapM (runExceptT . getContact db user) contactIds
+
+-- only used in tests
+getUserContactProfiles :: DB.Connection -> User -> IO [Profile]
+getUserContactProfiles db User {userId} =
+  map toContactProfile
+    <$> DB.query
+      db
+      [sql|
+        SELECT display_name, full_name, image, preferences
+        FROM contact_profiles
+        WHERE user_id = ?
+      |]
+      (Only userId)
+  where
+    toContactProfile :: (ContactName, Text, Maybe ImageData, Maybe Preferences) -> (Profile)
+    toContactProfile (displayName, fullName, image, preferences) = Profile {displayName, fullName, image, preferences}
 
 createUserContactLink :: DB.Connection -> UserId -> ConnId -> ConnReqContact -> ExceptT StoreError IO ()
 createUserContactLink db userId agentConnId cReq =
@@ -770,7 +861,7 @@ getUserAddressConnections db User {userId} = do
           db
           [sql|
             SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-              c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
+              c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at
             FROM connections c
             JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id
             WHERE c.user_id = ? AND uc.user_id = ? AND uc.local_display_name = '' AND uc.group_id IS NULL
@@ -784,7 +875,7 @@ getUserContactLinks db User {userId} =
       db
       [sql|
         SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at,
+          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at,
           uc.user_contact_link_id, uc.conn_req_contact, uc.group_id
         FROM connections c
         JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id
@@ -917,7 +1008,7 @@ getGroupLinkConnection db User {userId} groupInfo@GroupInfo {groupId} =
       db
       [sql|
         SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
+          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at
         FROM connections c
         JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id
         WHERE c.user_id = ? AND uc.user_id = ? AND uc.group_id = ?
@@ -974,8 +1065,8 @@ getGroupLinkId db User {userId} GroupInfo {groupId} =
   fmap join . maybeFirstRow fromOnly $
     DB.query db "SELECT group_link_id FROM user_contact_links WHERE user_id = ? AND group_id = ? LIMIT 1" (userId, groupId)
 
-createOrUpdateContactRequest :: DB.Connection -> UserId -> Int64 -> InvitationId -> Profile -> Maybe XContactId -> ExceptT StoreError IO ContactOrRequest
-createOrUpdateContactRequest db userId userContactLinkId invId Profile {displayName, fullName, image, preferences} xContactId_ =
+createOrUpdateContactRequest :: DB.Connection -> User -> Int64 -> InvitationId -> Profile -> Maybe XContactId -> ExceptT StoreError IO ContactOrRequest
+createOrUpdateContactRequest db user@User {userId} userContactLinkId invId Profile {displayName, fullName, image, preferences} xContactId_ =
   liftIO (maybeM getContact' xContactId_) >>= \case
     Just contact -> pure $ CORContact contact
     Nothing -> CORRequest <$> createOrUpdate_
@@ -1011,16 +1102,17 @@ createOrUpdateContactRequest db userId userContactLinkId invId Profile {displayN
           insertedRowId db
     getContact' :: XContactId -> IO (Maybe Contact)
     getContact' xContactId =
-      maybeFirstRow toContact $
+      maybeFirstRow (toContact user) $
         DB.query
           db
           [sql|
             SELECT
               -- Contact
-              ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.local_alias, ct.contact_used, ct.enable_ntfs, cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at,
+              ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.local_alias, ct.contact_used, ct.enable_ntfs,
+              cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts,
               -- Connection
               c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
-              c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
+              c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at
             FROM contacts ct
             JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
             LEFT JOIN connections c ON c.contact_id = ct.contact_id
@@ -1130,23 +1222,25 @@ deleteContactRequest db userId contactRequestId = do
   DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?" (userId, contactRequestId)
 
 createAcceptedContact :: DB.Connection -> User -> ConnId -> ContactName -> ProfileId -> Profile -> Int64 -> Maybe XContactId -> Maybe IncognitoProfile -> IO Contact
-createAcceptedContact db User {userId, profile = LocalProfile {preferences}} agentConnId localDisplayName profileId profile userContactLinkId xContactId incognitoProfile = do
+createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}} agentConnId localDisplayName profileId profile userContactLinkId xContactId incognitoProfile = do
   DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
   createdAt <- getCurrentTime
   customUserProfileId <- forM incognitoProfile $ \case
     NewIncognito p -> createIncognitoProfile_ db userId createdAt p
     ExistingIncognito LocalProfile {profileId = pId} -> pure pId
-  let contactUserPrefs = fromMaybe emptyChatPrefs $ incognitoProfile >> preferences
+  let userPreferences = fromMaybe emptyChatPrefs $ incognitoProfile >> preferences
   DB.execute
     db
-    "INSERT INTO contacts (user_id, local_display_name, contact_profile_id, enable_ntfs, user_preferences, created_at, updated_at, xcontact_id) VALUES (?,?,?,?,?,?,?,?)"
-    (userId, localDisplayName, profileId, True, contactUserPrefs, createdAt, createdAt, xContactId)
+    "INSERT INTO contacts (user_id, local_display_name, contact_profile_id, enable_ntfs, user_preferences, created_at, updated_at, chat_ts, xcontact_id) VALUES (?,?,?,?,?,?,?,?,?)"
+    (userId, localDisplayName, profileId, True, userPreferences, createdAt, createdAt, createdAt, xContactId)
   contactId <- insertedRowId db
   activeConn <- createConnection_ db userId ConnContact (Just contactId) agentConnId Nothing (Just userContactLinkId) customUserProfileId 0 createdAt
-  pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile "", activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences = contactUserPrefs, createdAt = createdAt, updatedAt = createdAt}
+  let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
+  pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile "", activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = createdAt, updatedAt = createdAt, chatTs = Just createdAt}
 
 getLiveSndFileTransfers :: DB.Connection -> User -> IO [SndFileTransfer]
 getLiveSndFileTransfers db User {userId} = do
+  cutoffTs <- addUTCTime (- week) <$> getCurrentTime
   fileIds :: [Int64] <-
     map fromOnly
       <$> DB.query
@@ -1154,10 +1248,11 @@ getLiveSndFileTransfers db User {userId} = do
         [sql|
           SELECT DISTINCT f.file_id
           FROM files f
-          JOIN snd_files s
+          JOIN snd_files s USING (file_id)
           WHERE f.user_id = ? AND s.file_status IN (?, ?, ?) AND s.file_inline IS NULL
+            AND created_at > ?
         |]
-        (userId, FSNew, FSAccepted, FSConnected)
+        (userId, FSNew, FSAccepted, FSConnected, cutoffTs)
   concatMap (filter liveTransfer) . rights <$> mapM (getSndFileTransfers_ db userId) fileIds
   where
     liveTransfer :: SndFileTransfer -> Bool
@@ -1165,6 +1260,7 @@ getLiveSndFileTransfers db User {userId} = do
 
 getLiveRcvFileTransfers :: DB.Connection -> User -> IO [RcvFileTransfer]
 getLiveRcvFileTransfers db user@User {userId} = do
+  cutoffTs <- addUTCTime (- week) <$> getCurrentTime
   fileIds :: [Int64] <-
     map fromOnly
       <$> DB.query
@@ -1172,10 +1268,11 @@ getLiveRcvFileTransfers db user@User {userId} = do
         [sql|
           SELECT f.file_id
           FROM files f
-          JOIN rcv_files r
+          JOIN rcv_files r USING (file_id)
           WHERE f.user_id = ? AND r.file_status IN (?, ?) AND r.rcv_file_inline IS NULL
+            AND created_at > ?
         |]
-        (userId, FSAccepted, FSConnected)
+        (userId, FSAccepted, FSConnected, cutoffTs)
   rights <$> mapM (runExceptT . getRcvFileTransfer db user) fileIds
 
 getPendingSndChunks :: DB.Connection -> Int64 -> Int64 -> IO [Integer]
@@ -1214,7 +1311,7 @@ getContactConnections db userId Contact {contactId} =
         db
         [sql|
           SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-            c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
+            c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at
           FROM connections c
           JOIN contacts ct ON ct.contact_id = c.contact_id
           WHERE c.user_id = ? AND ct.user_id = ? AND ct.contact_id = ?
@@ -1225,14 +1322,15 @@ getContactConnections db userId Contact {contactId} =
 
 type EntityIdsRow = (Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64)
 
-type ConnectionRow = (Int64, ConnId, Int, Maybe Int64, Maybe Int64, Bool, Maybe GroupLinkId, Maybe Int64, ConnStatus, ConnType, LocalAlias) :. EntityIdsRow :. Only UTCTime
+type ConnectionRow = (Int64, ConnId, Int, Maybe Int64, Maybe Int64, Bool, Maybe GroupLinkId, Maybe Int64, ConnStatus, ConnType, LocalAlias) :. EntityIdsRow :. (UTCTime, Maybe Text, Maybe UTCTime)
 
-type MaybeConnectionRow = (Maybe Int64, Maybe ConnId, Maybe Int, Maybe Int64, Maybe Int64, Maybe Bool, Maybe GroupLinkId, Maybe Int64, Maybe ConnStatus, Maybe ConnType, Maybe LocalAlias) :. EntityIdsRow :. Only (Maybe UTCTime)
+type MaybeConnectionRow = (Maybe Int64, Maybe ConnId, Maybe Int, Maybe Int64, Maybe Int64, Maybe Bool, Maybe GroupLinkId, Maybe Int64, Maybe ConnStatus, Maybe ConnType, Maybe LocalAlias) :. EntityIdsRow :. (Maybe UTCTime, Maybe Text, Maybe UTCTime)
 
 toConnection :: ConnectionRow -> Connection
-toConnection ((connId, acId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. Only createdAt) =
+toConnection ((connId, acId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (createdAt, code_, verifiedAt_)) =
   let entityId = entityId_ connType
-   in Connection {connId, agentConnId = AgentConnId acId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, localAlias, entityId, createdAt}
+      connectionCode = SecurityCode <$> code_ <*> verifiedAt_
+   in Connection {connId, agentConnId = AgentConnId acId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, localAlias, entityId, connectionCode, createdAt}
   where
     entityId_ :: ConnType -> Maybe Int64
     entityId_ ConnContact = contactId
@@ -1242,12 +1340,12 @@ toConnection ((connId, acId, connLevel, viaContact, viaUserContactLink, viaGroup
     entityId_ ConnUserContact = userContactLinkId
 
 toMaybeConnection :: MaybeConnectionRow -> Maybe Connection
-toMaybeConnection ((Just connId, Just agentConnId, Just connLevel, viaContact, viaUserContactLink, Just viaGroupLink, groupLinkId, customUserProfileId, Just connStatus, Just connType, Just localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. Only (Just createdAt)) =
-  Just $ toConnection ((connId, agentConnId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. Only createdAt)
+toMaybeConnection ((Just connId, Just agentConnId, Just connLevel, viaContact, viaUserContactLink, Just viaGroupLink, groupLinkId, customUserProfileId, Just connStatus, Just connType, Just localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (Just createdAt, code_, verifiedAt_)) =
+  Just $ toConnection ((connId, agentConnId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (createdAt, code_, verifiedAt_))
 toMaybeConnection _ = Nothing
 
-getMatchingContacts :: DB.Connection -> UserId -> Contact -> IO [Contact]
-getMatchingContacts db userId Contact {contactId, profile = LocalProfile {displayName, fullName, image}} = do
+getMatchingContacts :: DB.Connection -> User -> Contact -> IO [Contact]
+getMatchingContacts db user@User {userId} Contact {contactId, profile = LocalProfile {displayName, fullName, image}} = do
   contactIds <-
     map fromOnly
       <$> DB.query
@@ -1261,7 +1359,7 @@ getMatchingContacts db userId Contact {contactId, profile = LocalProfile {displa
             AND ((p.image IS NULL AND ? IS NULL) OR p.image = ?)
         |]
         (userId, contactId, displayName, fullName, image, image)
-  rights <$> mapM (runExceptT . getContact db userId) contactIds
+  rights <$> mapM (runExceptT . getContact db user) contactIds
 
 createSentProbe :: DB.Connection -> TVar ChaChaDRG -> UserId -> Contact -> ExceptT StoreError IO (Probe, Int64)
 createSentProbe db gVar userId _to@Contact {contactId} =
@@ -1288,8 +1386,8 @@ deleteSentProbe db userId probeId =
     "DELETE FROM sent_probes WHERE user_id = ? AND sent_probe_id = ?"
     (userId, probeId)
 
-matchReceivedProbe :: DB.Connection -> UserId -> Contact -> Probe -> IO (Maybe Contact)
-matchReceivedProbe db userId _from@Contact {contactId} (Probe probe) = do
+matchReceivedProbe :: DB.Connection -> User -> Contact -> Probe -> IO (Maybe Contact)
+matchReceivedProbe db user@User {userId} _from@Contact {contactId} (Probe probe) = do
   let probeHash = C.sha256Hash probe
   contactIds <-
     map fromOnly
@@ -1309,10 +1407,10 @@ matchReceivedProbe db userId _from@Contact {contactId} (Probe probe) = do
     (contactId, probe, probeHash, userId, currentTs, currentTs)
   case contactIds of
     [] -> pure Nothing
-    cId : _ -> eitherToMaybe <$> runExceptT (getContact db userId cId)
+    cId : _ -> eitherToMaybe <$> runExceptT (getContact db user cId)
 
-matchReceivedProbeHash :: DB.Connection -> UserId -> Contact -> ProbeHash -> IO (Maybe (Contact, Probe))
-matchReceivedProbeHash db userId _from@Contact {contactId} (ProbeHash probeHash) = do
+matchReceivedProbeHash :: DB.Connection -> User -> Contact -> ProbeHash -> IO (Maybe (Contact, Probe))
+matchReceivedProbeHash db user@User {userId} _from@Contact {contactId} (ProbeHash probeHash) = do
   namesAndProbes <-
     DB.query
       db
@@ -1332,10 +1430,10 @@ matchReceivedProbeHash db userId _from@Contact {contactId} (ProbeHash probeHash)
     [] -> pure Nothing
     (cId, probe) : _ ->
       either (const Nothing) (Just . (,Probe probe))
-        <$> runExceptT (getContact db userId cId)
+        <$> runExceptT (getContact db user cId)
 
-matchSentProbe :: DB.Connection -> UserId -> Contact -> Probe -> IO (Maybe Contact)
-matchSentProbe db userId _from@Contact {contactId} (Probe probe) = do
+matchSentProbe :: DB.Connection -> User -> Contact -> Probe -> IO (Maybe Contact)
+matchSentProbe db user@User {userId} _from@Contact {contactId} (Probe probe) = do
   contactIds <-
     map fromOnly
       <$> DB.query
@@ -1350,7 +1448,7 @@ matchSentProbe db userId _from@Contact {contactId} (Probe probe) = do
         (userId, probe, contactId)
   case contactIds of
     [] -> pure Nothing
-    cId : _ -> eitherToMaybe <$> runExceptT (getContact db userId cId)
+    cId : _ -> eitherToMaybe <$> runExceptT (getContact db user cId)
 
 mergeContactRecords :: DB.Connection -> UserId -> Contact -> Contact -> IO ()
 mergeContactRecords db userId Contact {contactId = toContactId} Contact {contactId = fromContactId, localDisplayName} = do
@@ -1414,7 +1512,7 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
           db
           [sql|
             SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, custom_user_profile_id,
-              conn_status, conn_type, local_alias, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id, created_at
+              conn_status, conn_type, local_alias, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id, created_at, security_code, security_code_verified_at
             FROM connections
             WHERE user_id = ? AND agent_conn_id = ?
           |]
@@ -1425,17 +1523,20 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
         <$> DB.query
           db
           [sql|
-            SELECT c.contact_profile_id, c.local_display_name, p.display_name, p.full_name, p.image, p.local_alias, c.via_group, c.contact_used, c.enable_ntfs, p.preferences, c.user_preferences, c.created_at, c.updated_at
+            SELECT
+              c.contact_profile_id, c.local_display_name, p.display_name, p.full_name, p.image, p.local_alias, c.via_group, c.contact_used, c.enable_ntfs,
+              p.preferences, c.user_preferences, c.created_at, c.updated_at, c.chat_ts
             FROM contacts c
             JOIN contact_profiles p ON c.contact_profile_id = p.contact_profile_id
             WHERE c.user_id = ? AND c.contact_id = ?
           |]
           (userId, contactId)
-    toContact' :: Int64 -> Connection -> [(ProfileId, ContactName, Text, Text, Maybe ImageData, LocalAlias, Maybe Int64, Bool, Maybe Bool) :. (Maybe Preferences, Preferences, UTCTime, UTCTime)] -> Either StoreError Contact
-    toContact' contactId activeConn [(profileId, localDisplayName, displayName, fullName, image, localAlias, viaGroup, contactUsed, enableNtfs_) :. (preferences, userPreferences, createdAt, updatedAt)] =
+    toContact' :: Int64 -> Connection -> [(ProfileId, ContactName, Text, Text, Maybe ImageData, LocalAlias, Maybe Int64, Bool, Maybe Bool) :. (Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime)] -> Either StoreError Contact
+    toContact' contactId activeConn [(profileId, localDisplayName, displayName, fullName, image, localAlias, viaGroup, contactUsed, enableNtfs_) :. (preferences, userPreferences, createdAt, updatedAt, chatTs)] =
       let profile = LocalProfile {profileId, displayName, fullName, image, preferences, localAlias}
           chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_}
-       in Right $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, createdAt, updatedAt}
+          mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
+       in Right Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs}
     toContact' _ _ _ = Left $ SEInternalError "referenced contact not found"
     getGroupAndMember_ :: Int64 -> Connection -> ExceptT StoreError IO (GroupInfo, GroupMember)
     getGroupAndMember_ groupMemberId c = ExceptT $ do
@@ -1445,7 +1546,7 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
           [sql|
             SELECT
               -- GroupInfo
-              g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at,
+              g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at, g.chat_ts,
               -- GroupInfo {membership}
               mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
               mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -1511,7 +1612,7 @@ getConnectionById db User {userId} connId = ExceptT $ do
       db
       [sql|
         SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, custom_user_profile_id,
-          conn_status, conn_type, local_alias, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id, created_at
+          conn_status, conn_type, local_alias, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id, created_at, security_code, security_code_verified_at
         FROM connections
         WHERE user_id = ? AND connection_id = ?
       |]
@@ -1546,7 +1647,7 @@ getGroupAndMember db User {userId, userContactId} groupMemberId =
       [sql|
         SELECT
           -- GroupInfo
-          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at,
+          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at, g.chat_ts,
           -- GroupInfo {membership}
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -1556,7 +1657,7 @@ getGroupAndMember db User {userId, userContactId} groupMemberId =
           m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
           m.invited_by, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.local_alias, p.preferences,
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
+          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at
         FROM group_members m
         JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
         JOIN groups g ON g.group_id = m.group_id
@@ -1586,24 +1687,25 @@ updateConnectionStatus db Connection {connId} connStatus = do
 -- | creates completely new group with a single member - the current user
 createNewGroup :: DB.Connection -> TVar ChaChaDRG -> User -> GroupProfile -> ExceptT StoreError IO GroupInfo
 createNewGroup db gVar user@User {userId} groupProfile = ExceptT $ do
-  let GroupProfile {displayName, fullName, image, groupPreferences} = groupProfile
+  let GroupProfile {displayName, fullName, description, image, groupPreferences} = groupProfile
+      fullGroupPreferences = mergeGroupPreferences groupPreferences
   currentTs <- getCurrentTime
   withLocalDisplayName db userId displayName $ \ldn -> runExceptT $ do
     groupId <- liftIO $ do
       DB.execute
         db
-        "INSERT INTO group_profiles (display_name, full_name, image, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
-        (displayName, fullName, image, userId, groupPreferences, currentTs, currentTs)
+        "INSERT INTO group_profiles (display_name, full_name, description, image, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
+        (displayName, fullName, description, image, userId, groupPreferences, currentTs, currentTs)
       profileId <- insertedRowId db
       DB.execute
         db
-        "INSERT INTO groups (local_display_name, user_id, group_profile_id, enable_ntfs, created_at, updated_at) VALUES (?,?,?,?,?,?)"
-        (ldn, userId, profileId, True, currentTs, currentTs)
+        "INSERT INTO groups (local_display_name, user_id, group_profile_id, enable_ntfs, created_at, updated_at, chat_ts) VALUES (?,?,?,?,?,?,?)"
+        (ldn, userId, profileId, True, currentTs, currentTs, currentTs)
       insertedRowId db
     memberId <- liftIO $ encodedRandomBytes gVar 12
     membership <- createContactMemberInv_ db user groupId user (MemberIdRole (MemberId memberId) GROwner) GCUserMember GSMemCreator IBUser Nothing currentTs
     let chatSettings = ChatSettings {enableNtfs = True}
-    pure GroupInfo {groupId, localDisplayName = ldn, groupProfile, membership, hostConnCustomUserProfileId = Nothing, chatSettings, createdAt = currentTs, updatedAt = currentTs}
+    pure GroupInfo {groupId, localDisplayName = ldn, groupProfile, fullGroupPreferences, membership, hostConnCustomUserProfileId = Nothing, chatSettings, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs}
 
 -- | creates a new group record for the group the current user was invited to, or returns an existing one
 createGroupInvitation :: DB.Connection -> User -> Contact -> GroupInvitation -> Maybe ProfileId -> ExceptT StoreError IO (GroupInfo, GroupMemberId)
@@ -1629,25 +1731,26 @@ createGroupInvitation db user@User {userId} contact@Contact {contactId, activeCo
         DB.query db "SELECT group_id FROM groups WHERE inv_queue_info = ? AND user_id = ? LIMIT 1" (connRequest, userId)
     createGroupInvitation_ :: ExceptT StoreError IO (GroupInfo, GroupMemberId)
     createGroupInvitation_ = do
-      let GroupProfile {displayName, fullName, image, groupPreferences} = groupProfile
+      let GroupProfile {displayName, fullName, description, image, groupPreferences} = groupProfile
+          fullGroupPreferences = mergeGroupPreferences groupPreferences
       ExceptT $
         withLocalDisplayName db userId displayName $ \localDisplayName -> runExceptT $ do
           currentTs <- liftIO getCurrentTime
           groupId <- liftIO $ do
             DB.execute
               db
-              "INSERT INTO group_profiles (display_name, full_name, image, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
-              (displayName, fullName, image, userId, groupPreferences, currentTs, currentTs)
+              "INSERT INTO group_profiles (display_name, full_name, description, image, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
+              (displayName, fullName, description, image, userId, groupPreferences, currentTs, currentTs)
             profileId <- insertedRowId db
             DB.execute
               db
-              "INSERT INTO groups (group_profile_id, local_display_name, inv_queue_info, host_conn_custom_user_profile_id, user_id, enable_ntfs, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
-              (profileId, localDisplayName, connRequest, customUserProfileId, userId, True, currentTs, currentTs)
+              "INSERT INTO groups (group_profile_id, local_display_name, inv_queue_info, host_conn_custom_user_profile_id, user_id, enable_ntfs, created_at, updated_at, chat_ts) VALUES (?,?,?,?,?,?,?,?,?)"
+              (profileId, localDisplayName, connRequest, customUserProfileId, userId, True, currentTs, currentTs, currentTs)
             insertedRowId db
           GroupMember {groupMemberId} <- createContactMemberInv_ db user groupId contact fromMember GCHostMember GSMemInvited IBUnknown Nothing currentTs
           membership <- createContactMemberInv_ db user groupId user invitedMember GCUserMember GSMemInvited (IBContact contactId) incognitoProfileId currentTs
           let chatSettings = ChatSettings {enableNtfs = True}
-          pure (GroupInfo {groupId, localDisplayName, groupProfile, membership, hostConnCustomUserProfileId = customUserProfileId, chatSettings, createdAt = currentTs, updatedAt = currentTs}, groupMemberId)
+          pure (GroupInfo {groupId, localDisplayName, groupProfile, fullGroupPreferences, membership, hostConnCustomUserProfileId = customUserProfileId, chatSettings, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs}, groupMemberId)
 
 getHostMemberId_ :: DB.Connection -> User -> GroupId -> ExceptT StoreError IO GroupMemberId
 getHostMemberId_ db User {userId} groupId =
@@ -1732,7 +1835,9 @@ deleteGroupItemsAndMembers db user@User {userId} GroupInfo {groupId} members = d
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
   void $ runExceptT cleanupHostGroupLinkConn_ -- to allow repeat connection via the same group link if one was used
   DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_id = ?" (userId, groupId)
-  forM_ members $ \m -> cleanupMemberContactAndProfile_ db user m
+  forM_ members $ \m@GroupMember {memberProfile = LocalProfile {profileId}} -> do
+    cleanupMemberProfileAndName_ db user m
+    when (memberIncognito m) $ deleteUnusedIncognitoProfileById_ db user profileId
   where
     cleanupHostGroupLinkConn_ = do
       hostId <- getHostMemberId_ db user groupId
@@ -1750,10 +1855,11 @@ deleteGroupItemsAndMembers db user@User {userId} GroupInfo {groupId} members = d
           (userId, userId, hostId)
 
 deleteGroup :: DB.Connection -> User -> GroupInfo -> IO ()
-deleteGroup db User {userId} GroupInfo {groupId, localDisplayName} = do
+deleteGroup db user@User {userId} GroupInfo {groupId, localDisplayName, membership = membership@GroupMember {memberProfile = LocalProfile {profileId}}} = do
   deleteGroupProfile_ db userId groupId
   DB.execute db "DELETE FROM groups WHERE user_id = ? AND group_id = ?" (userId, groupId)
   DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
+  when (memberIncognito membership) $ deleteUnusedIncognitoProfileById_ db user profileId
 
 deleteGroupProfile_ :: DB.Connection -> UserId -> GroupId -> IO ()
 deleteGroupProfile_ db userId groupId =
@@ -1780,7 +1886,7 @@ getUserGroupDetails db User {userId, userContactId} =
     <$> DB.query
       db
       [sql|
-        SELECT g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at,
+        SELECT g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at, g.chat_ts,
           mu.group_member_id, g.group_id, mu.member_id, mu.member_role, mu.member_category, mu.member_status,
           mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id, pu.display_name, pu.full_name, pu.image, pu.local_alias, pu.preferences
         FROM groups g
@@ -1791,61 +1897,78 @@ getUserGroupDetails db User {userId, userContactId} =
       |]
       (userId, userContactId)
 
+getContactGroupPreferences :: DB.Connection -> User -> Contact -> IO [FullGroupPreferences]
+getContactGroupPreferences db User {userId} Contact {contactId} = do
+  map (mergeGroupPreferences . fromOnly)
+    <$> DB.query
+      db
+      [sql|
+        SELECT gp.preferences
+        FROM groups g
+        JOIN group_profiles gp USING (group_profile_id)
+        JOIN group_members m USING (group_id)
+        WHERE g.user_id = ? AND m.contact_id = ?
+      |]
+      (userId, contactId)
+
+checkContactHasGroups :: DB.Connection -> User -> Contact -> IO (Maybe GroupId)
+checkContactHasGroups db User {userId} Contact {contactId} =
+  maybeFirstRow fromOnly $ DB.query db "SELECT group_id FROM group_members WHERE user_id = ? AND contact_id = ? LIMIT 1" (userId, contactId)
+
 getGroupInfoByName :: DB.Connection -> User -> GroupName -> ExceptT StoreError IO GroupInfo
 getGroupInfoByName db user gName = do
   gId <- getGroupIdByName db user gName
   getGroupInfo db user gId
 
-type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe ImageData, Maybe ProfileId, Maybe Bool, Maybe GroupPreferences, UTCTime, UTCTime) :. GroupMemberRow
+type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Maybe ImageData, Maybe ProfileId, Maybe Bool, Maybe GroupPreferences, UTCTime, UTCTime, Maybe UTCTime) :. GroupMemberRow
 
 toGroupInfo :: Int64 -> GroupInfoRow -> GroupInfo
-toGroupInfo userContactId ((groupId, localDisplayName, displayName, fullName, image, hostConnCustomUserProfileId, enableNtfs_, groupPreferences, createdAt, updatedAt) :. userMemberRow) =
+toGroupInfo userContactId ((groupId, localDisplayName, displayName, fullName, description, image, hostConnCustomUserProfileId, enableNtfs_, groupPreferences, createdAt, updatedAt, chatTs) :. userMemberRow) =
   let membership = toGroupMember userContactId userMemberRow
       chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_}
-   in GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, fullName, image, groupPreferences}, membership, hostConnCustomUserProfileId, chatSettings, createdAt, updatedAt}
+      fullGroupPreferences = mergeGroupPreferences groupPreferences
+      groupProfile = GroupProfile {displayName, fullName, description, image, groupPreferences}
+   in GroupInfo {groupId, localDisplayName, groupProfile, fullGroupPreferences, membership, hostConnCustomUserProfileId, chatSettings, createdAt, updatedAt, chatTs}
+
+groupMemberQuery :: Query
+groupMemberQuery =
+  [sql|
+    SELECT
+      m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
+      m.invited_by, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.local_alias, p.preferences,
+      c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
+      c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at
+    FROM group_members m
+    JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
+    LEFT JOIN connections c ON c.connection_id = (
+      SELECT max(cc.connection_id)
+      FROM connections cc
+      where cc.group_member_id = m.group_member_id
+    )
+  |]
 
 getGroupMember :: DB.Connection -> User -> GroupId -> GroupMemberId -> ExceptT StoreError IO GroupMember
 getGroupMember db user@User {userId} groupId groupMemberId =
-  ExceptT . firstRow (toContactMember user) (SEGroupMemberNotFound {groupId, groupMemberId}) $
+  ExceptT . firstRow (toContactMember user) (SEGroupMemberNotFound groupMemberId) $
     DB.query
       db
-      [sql|
-        SELECT
-          m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
-          m.invited_by, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.local_alias, p.preferences,
-          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
-        FROM group_members m
-        JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
-        LEFT JOIN connections c ON c.connection_id = (
-          SELECT max(cc.connection_id)
-          FROM connections cc
-          where cc.group_member_id = m.group_member_id
-        )
-        WHERE m.group_id = ? AND m.group_member_id = ? AND m.user_id = ?
-      |]
+      (groupMemberQuery <> " WHERE m.group_id = ? AND m.group_member_id = ? AND m.user_id = ?")
       (groupId, groupMemberId, userId)
+
+getGroupMemberById :: DB.Connection -> User -> GroupMemberId -> ExceptT StoreError IO GroupMember
+getGroupMemberById db user@User {userId} groupMemberId =
+  ExceptT . firstRow (toContactMember user) (SEGroupMemberNotFound groupMemberId) $
+    DB.query
+      db
+      (groupMemberQuery <> " WHERE m.group_member_id = ? AND m.user_id = ?")
+      (groupMemberId, userId)
 
 getGroupMembers :: DB.Connection -> User -> GroupInfo -> IO [GroupMember]
 getGroupMembers db user@User {userId, userContactId} GroupInfo {groupId} = do
   map (toContactMember user)
     <$> DB.query
       db
-      [sql|
-        SELECT
-          m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
-          m.invited_by, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.local_alias, p.preferences,
-          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
-        FROM group_members m
-        JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
-        LEFT JOIN connections c ON c.connection_id = (
-          SELECT max(cc.connection_id)
-          FROM connections cc
-          where cc.group_member_id = m.group_member_id
-        )
-        WHERE m.group_id = ? AND m.user_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)
-      |]
+      (groupMemberQuery <> " WHERE m.group_id = ? AND m.user_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)")
       (groupId, userId, userContactId)
 
 getGroupMembersForExpiration :: DB.Connection -> User -> GroupInfo -> IO [GroupMember]
@@ -1853,25 +1976,15 @@ getGroupMembersForExpiration db user@User {userId, userContactId} GroupInfo {gro
   map (toContactMember user)
     <$> DB.query
       db
-      [sql|
-        SELECT
-          m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
-          m.invited_by, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.local_alias,
-          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
-        FROM group_members m
-        JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
-        LEFT JOIN connections c ON c.connection_id = (
-          SELECT max(cc.connection_id)
-          FROM connections cc
-          where cc.group_member_id = m.group_member_id
-        )
-        WHERE m.group_id = ? AND m.user_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)
-          AND m.member_status IN (?, ?, ?)
-          AND m.group_member_id NOT IN (
-            SELECT DISTINCT group_member_id FROM chat_items
-          )
-      |]
+      ( groupMemberQuery
+          <> [sql|
+                WHERE m.group_id = ? AND m.user_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)
+                  AND m.member_status IN (?, ?, ?)
+                  AND m.group_member_id NOT IN (
+                    SELECT DISTINCT group_member_id FROM chat_items
+                  )
+              |]
+      )
       (groupId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
 
 toContactMember :: User -> (GroupMemberRow :. MaybeConnectionRow) -> GroupMember
@@ -1973,17 +2086,18 @@ createNewContactMemberAsync db gVar user@User {userId, userContactId} groupId Co
         )
 
 getContactViaMember :: DB.Connection -> User -> GroupMember -> IO (Maybe Contact)
-getContactViaMember db User {userId} GroupMember {groupMemberId} =
-  maybeFirstRow toContact $
+getContactViaMember db user@User {userId} GroupMember {groupMemberId} =
+  maybeFirstRow (toContact user) $
     DB.query
       db
       [sql|
         SELECT
           -- Contact
-          ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.local_alias, ct.contact_used, ct.enable_ntfs, cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at,
+          ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.local_alias, ct.contact_used, ct.enable_ntfs,
+          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
-          c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
+          c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at
         FROM contacts ct
         JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id
         JOIN connections c ON c.connection_id = (
@@ -2088,27 +2202,22 @@ checkGroupMemberHasItems db User {userId} GroupMember {groupMemberId, groupId} =
   maybeFirstRow fromOnly $ DB.query db "SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ? AND group_member_id = ? LIMIT 1" (userId, groupId, groupMemberId)
 
 deleteGroupMember :: DB.Connection -> User -> GroupMember -> IO ()
-deleteGroupMember db user@User {userId} m@GroupMember {groupMemberId, groupId} = do
+deleteGroupMember db user@User {userId} m@GroupMember {groupMemberId, groupId, memberProfile = LocalProfile {profileId}} = do
   deleteGroupMemberConnection db user m
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ? AND group_member_id = ?" (userId, groupId, groupMemberId)
   DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId)
-  cleanupMemberContactAndProfile_ db user m
+  cleanupMemberProfileAndName_ db user m
+  when (memberIncognito m) $ deleteUnusedIncognitoProfileById_ db user profileId
 
--- it's important this function is used in transaction after the actual group_members record is deleted, see checkIncognitoProfileInUse_
-cleanupMemberContactAndProfile_ :: DB.Connection -> User -> GroupMember -> IO ()
-cleanupMemberContactAndProfile_ db user@User {userId} m@GroupMember {groupMemberId, localDisplayName, memberContactId, memberContactProfileId, memberProfile = LocalProfile {profileId}} =
-  case memberContactId of
-    Just contactId ->
-      runExceptT (getContact db userId contactId) >>= \case
-        Right ct@Contact {activeConn = Connection {connLevel, viaGroupLink}, contactUsed} ->
-          unless ((connLevel == 0 && not viaGroupLink) || contactUsed) $ deleteContact db user ct
-        _ -> pure ()
-    Nothing -> do
-      sameProfileMember :: (Maybe GroupMemberId) <- maybeFirstRow fromOnly $ DB.query db "SELECT group_member_id FROM group_members WHERE user_id = ? AND contact_profile_id = ? AND group_member_id != ? LIMIT 1" (userId, memberContactProfileId, groupMemberId)
-      unless (isJust sameProfileMember) $ do
-        DB.execute db "DELETE FROM contact_profiles WHERE user_id = ? AND contact_profile_id = ?" (userId, memberContactProfileId)
-        DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
-      when (memberIncognito m) $ deleteUnusedIncognitoProfileById_ db user profileId
+cleanupMemberProfileAndName_ :: DB.Connection -> User -> GroupMember -> IO ()
+cleanupMemberProfileAndName_ db User {userId} GroupMember {groupMemberId, memberContactId, memberContactProfileId, localDisplayName} =
+  -- check record has no memberContactId (contact_id) - it means contact has been deleted and doesn't use profile & ldn
+  when (isNothing memberContactId) $ do
+    -- check other group member records don't use profile & ldn
+    sameProfileMember :: (Maybe GroupMemberId) <- maybeFirstRow fromOnly $ DB.query db "SELECT group_member_id FROM group_members WHERE user_id = ? AND contact_profile_id = ? AND group_member_id != ? LIMIT 1" (userId, memberContactProfileId, groupMemberId)
+    when (isNothing sameProfileMember) $ do
+      DB.execute db "DELETE FROM contact_profiles WHERE user_id = ? AND contact_profile_id = ?" (userId, memberContactProfileId)
+      DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
 
 deleteGroupMemberConnection :: DB.Connection -> User -> GroupMember -> IO ()
 deleteGroupMemberConnection db User {userId} GroupMember {groupMemberId} =
@@ -2219,7 +2328,7 @@ createIntroReMember db user@User {userId} gInfo@GroupInfo {groupId} _host@GroupM
   currentTs <- liftIO getCurrentTime
   Connection {connId = directConnId} <- liftIO $ createConnection_ db userId ConnContact Nothing directAgentConnId memberContactId Nothing customUserProfileId cLevel currentTs
   liftIO $ setCommandConnId db user directCmdId directConnId
-  (localDisplayName, contactId, memProfileId) <- createContact_ db userId directConnId memberProfile "" (Just groupId) currentTs
+  (localDisplayName, contactId, memProfileId) <- createContact_ db userId directConnId memberProfile "" (Just groupId) currentTs Nothing
   liftIO $ do
     let newMember =
           NewGroupMember
@@ -2283,7 +2392,7 @@ getViaGroupMember db User {userId, userContactId} Contact {contactId} =
       [sql|
         SELECT
           -- GroupInfo
-          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at,
+          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at, g.chat_ts,
           -- GroupInfo {membership}
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -2293,7 +2402,7 @@ getViaGroupMember db User {userId, userContactId} Contact {contactId} =
           m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
           m.invited_by, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.local_alias, p.preferences,
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
+          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at
         FROM group_members m
         JOIN contacts ct ON ct.contact_id = m.contact_id
         JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
@@ -2317,15 +2426,16 @@ getViaGroupMember db User {userId, userContactId} Contact {contactId} =
        in (groupInfo, (member :: GroupMember) {activeConn = toMaybeConnection connRow})
 
 getViaGroupContact :: DB.Connection -> User -> GroupMember -> IO (Maybe Contact)
-getViaGroupContact db User {userId} GroupMember {groupMemberId} =
+getViaGroupContact db user@User {userId} GroupMember {groupMemberId} =
   maybeFirstRow toContact' $
     DB.query
       db
       [sql|
         SELECT
-          ct.contact_id, ct.contact_profile_id, ct.local_display_name, p.display_name, p.full_name, p.image, p.local_alias, ct.via_group, ct.contact_used, ct.enable_ntfs, p.preferences, ct.user_preferences, ct.created_at, ct.updated_at,
+          ct.contact_id, ct.contact_profile_id, ct.local_display_name, p.display_name, p.full_name, p.image, p.local_alias, ct.via_group, ct.contact_used, ct.enable_ntfs,
+          p.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts,
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
+          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at
         FROM contacts ct
         JOIN contact_profiles p ON ct.contact_profile_id = p.contact_profile_id
         JOIN connections c ON c.connection_id = (
@@ -2339,12 +2449,13 @@ getViaGroupContact db User {userId} GroupMember {groupMemberId} =
       |]
       (userId, groupMemberId)
   where
-    toContact' :: ((ContactId, ProfileId, ContactName, Text, Text, Maybe ImageData, LocalAlias, Maybe Int64, Bool, Maybe Bool) :. (Maybe Preferences, Preferences, UTCTime, UTCTime)) :. ConnectionRow -> Contact
-    toContact' (((contactId, profileId, localDisplayName, displayName, fullName, image, localAlias, viaGroup, contactUsed, enableNtfs_) :. (preferences, userPreferences, createdAt, updatedAt)) :. connRow) =
+    toContact' :: ((ContactId, ProfileId, ContactName, Text, Text, Maybe ImageData, LocalAlias, Maybe Int64, Bool, Maybe Bool) :. (Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime)) :. ConnectionRow -> Contact
+    toContact' (((contactId, profileId, localDisplayName, displayName, fullName, image, localAlias, viaGroup, contactUsed, enableNtfs_) :. (preferences, userPreferences, createdAt, updatedAt, chatTs)) :. connRow) =
       let profile = LocalProfile {profileId, displayName, fullName, image, preferences, localAlias}
           chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_}
           activeConn = toConnection connRow
-       in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, createdAt, updatedAt}
+          mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
+       in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs}
 
 createSndDirectFileTransfer :: DB.Connection -> UserId -> Contact -> FilePath -> FileInvitation -> Maybe ConnId -> Integer -> IO FileTransferMeta
 createSndDirectFileTransfer db userId Contact {contactId} filePath FileInvitation {fileName, fileSize, fileInline} acId_ chunkSize = do
@@ -2656,7 +2767,7 @@ getRcvFileTransfer db user@User {userId} fileId = do
         rfi_ = \case
           (Just filePath, Just connId, Just agentConnId, _, _, _, _) -> pure $ Just RcvFileInfo {filePath, connId, agentConnId}
           (Just filePath, Nothing, Nothing, Just contactId, _, _, True) -> do
-            Contact {activeConn = Connection {connId, agentConnId}} <- getContact db userId contactId
+            Contact {activeConn = Connection {connId, agentConnId}} <- getContact db user contactId
             pure $ Just RcvFileInfo {filePath, connId, agentConnId}
           (Just filePath, Nothing, Nothing, _, Just groupId, Just groupMemberId, True) -> do
             getGroupMember db user groupId groupMemberId >>= \case
@@ -2666,15 +2777,26 @@ getRcvFileTransfer db user@User {userId} fileId = do
           _ -> pure Nothing
         cancelled = fromMaybe False cancelled_
 
-acceptRcvFileTransfer :: DB.Connection -> User -> Int64 -> ConnId -> ConnStatus -> FilePath -> ExceptT StoreError IO AChatItem
-acceptRcvFileTransfer db user@User {userId} fileId agentConnId connStatus filePath = ExceptT $ do
+acceptRcvFileTransfer :: DB.Connection -> User -> Int64 -> (CommandId, ConnId) -> ConnStatus -> FilePath -> ExceptT StoreError IO AChatItem
+acceptRcvFileTransfer db user@User {userId} fileId (cmdId, acId) connStatus filePath = ExceptT $ do
   currentTs <- getCurrentTime
   acceptRcvFT_ db user fileId filePath currentTs
   DB.execute
     db
     "INSERT INTO connections (agent_conn_id, conn_status, conn_type, rcv_file_id, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
-    (agentConnId, connStatus, ConnRcvFile, fileId, userId, currentTs, currentTs)
+    (acId, connStatus, ConnRcvFile, fileId, userId, currentTs, currentTs)
+  connId <- insertedRowId db
+  setCommandConnId db user cmdId connId
   runExceptT $ getChatItemByFileId db user fileId
+
+getContactByFileId :: DB.Connection -> User -> FileTransferId -> ExceptT StoreError IO Contact
+getContactByFileId db user@User {userId} fileId = do
+  cId <- getContactIdByFileId
+  getContact db user cId
+  where
+    getContactIdByFileId =
+      ExceptT . firstRow fromOnly (SEContactNotFoundByFileId fileId) $
+        DB.query db "SELECT contact_id FROM files WHERE user_id = ? AND file_id = ?" (userId, fileId)
 
 acceptRcvInlineFT :: DB.Connection -> User -> Int64 -> FilePath -> ExceptT StoreError IO AChatItem
 acceptRcvInlineFT db user fileId filePath = do
@@ -2749,9 +2871,8 @@ deleteRcvFileChunks :: DB.Connection -> RcvFileTransfer -> IO ()
 deleteRcvFileChunks db RcvFileTransfer {fileId} =
   DB.execute db "DELETE FROM rcv_file_chunks WHERE file_id = ?" (Only fileId)
 
-updateFileTransferChatItemId :: DB.Connection -> FileTransferId -> ChatItemId -> IO ()
-updateFileTransferChatItemId db fileId ciId = do
-  currentTs <- getCurrentTime
+updateFileTransferChatItemId :: DB.Connection -> FileTransferId -> ChatItemId -> UTCTime -> IO ()
+updateFileTransferChatItemId db fileId ciId currentTs =
   DB.execute db "UPDATE files SET chat_item_id = ?, updated_at = ? WHERE file_id = ?" (ciId, currentTs, fileId)
 
 getFileTransferProgress :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO (FileTransfer, [Integer])
@@ -2846,6 +2967,7 @@ getContactFileInfo db User {userId} Contact {contactId} =
 toFileInfo :: (Int64, Maybe ACIFileStatus, Maybe FilePath) -> CIFileInfo
 toFileInfo (fileId, fileStatus, filePath) = CIFileInfo {fileId, fileStatus, filePath}
 
+-- TODO delete
 getContactMaxItemTs :: DB.Connection -> User -> Contact -> IO (Maybe UTCTime)
 getContactMaxItemTs db User {userId} Contact {contactId} =
   fmap join . maybeFirstRow fromOnly $
@@ -2863,11 +2985,12 @@ getContactConnIds_ db User {userId} Contact {contactId} =
   map fromOnly
     <$> DB.query db "SELECT connection_id FROM connections WHERE user_id = ? AND contact_id = ?" (userId, contactId)
 
+-- TODO delete
 updateContactTs :: DB.Connection -> User -> Contact -> UTCTime -> IO ()
 updateContactTs db User {userId} Contact {contactId} updatedAt =
   DB.execute
     db
-    "UPDATE contacts SET updated_at = ? WHERE user_id = ? AND contact_id = ?"
+    "UPDATE contacts SET chat_ts = ? WHERE user_id = ? AND contact_id = ?"
     (updatedAt, userId, contactId)
 
 getGroupFileInfo :: DB.Connection -> User -> GroupInfo -> IO [CIFileInfo]
@@ -2883,6 +3006,7 @@ getGroupFileInfo db User {userId} GroupInfo {groupId} =
       |]
       (userId, groupId)
 
+-- TODO delete
 getGroupMaxItemTs :: DB.Connection -> User -> GroupInfo -> IO (Maybe UTCTime)
 getGroupMaxItemTs db User {userId} GroupInfo {groupId} =
   fmap join . maybeFirstRow fromOnly $
@@ -2893,11 +3017,12 @@ deleteGroupCIs db User {userId} GroupInfo {groupId} = do
   DB.execute db "DELETE FROM messages WHERE group_id = ?" (Only groupId)
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
 
+-- TODO delete
 updateGroupTs :: DB.Connection -> User -> GroupInfo -> UTCTime -> IO ()
 updateGroupTs db User {userId} GroupInfo {groupId} updatedAt =
   DB.execute
     db
-    "UPDATE groups SET updated_at = ? WHERE user_id = ? AND group_id = ?"
+    "UPDATE groups SET chat_ts = ? WHERE user_id = ? AND group_id = ?"
     (updatedAt, userId, groupId)
 
 createNewSndMessage :: MsgEncodingI e => DB.Connection -> TVar ChaChaDRG -> ConnOrGroupId -> (SharedMsgId -> NewMessage e) -> ExceptT StoreError IO SndMessage
@@ -3045,9 +3170,23 @@ deletePendingGroupMessage db groupMemberId messageId =
 
 type NewQuoteRow = (Maybe SharedMsgId, Maybe UTCTime, Maybe MsgContent, Maybe Bool, Maybe MemberId)
 
-createNewSndChatItem :: DB.Connection -> User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> Maybe (CIQuote c) -> UTCTime -> IO ChatItemId
-createNewSndChatItem db user chatDirection SndMessage {msgId, sharedMsgId} ciContent quotedItem createdAt =
-  createNewChatItem_ db user chatDirection createdByMsgId (Just sharedMsgId) ciContent quoteRow createdAt createdAt
+updateChatTs :: DB.Connection -> User -> ChatDirection c d -> UTCTime -> IO ()
+updateChatTs db User {userId} chatDirection chatTs = case toChatInfo chatDirection of
+  DirectChat Contact {contactId} ->
+    DB.execute
+      db
+      "UPDATE contacts SET chat_ts = ? WHERE user_id = ? AND contact_id = ?"
+      (chatTs, userId, contactId)
+  GroupChat GroupInfo {groupId} ->
+    DB.execute
+      db
+      "UPDATE groups SET chat_ts = ? WHERE user_id = ? AND group_id = ?"
+      (chatTs, userId, groupId)
+  _ -> pure ()
+
+createNewSndChatItem :: DB.Connection -> User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> Maybe (CIQuote c) -> Maybe CITimed -> Bool -> UTCTime -> IO ChatItemId
+createNewSndChatItem db user chatDirection SndMessage {msgId, sharedMsgId} ciContent quotedItem timed live createdAt =
+  createNewChatItem_ db user chatDirection createdByMsgId (Just sharedMsgId) ciContent quoteRow timed live createdAt createdAt
   where
     createdByMsgId = if msgId == 0 then Nothing else Just msgId
     quoteRow :: NewQuoteRow
@@ -3061,9 +3200,9 @@ createNewSndChatItem db user chatDirection SndMessage {msgId, sharedMsgId} ciCon
           CIQGroupRcv (Just GroupMember {memberId}) -> (Just False, Just memberId)
           CIQGroupRcv Nothing -> (Just False, Nothing)
 
-createNewRcvChatItem :: DB.Connection -> User -> ChatDirection c 'MDRcv -> RcvMessage -> Maybe SharedMsgId -> CIContent 'MDRcv -> UTCTime -> UTCTime -> IO (ChatItemId, Maybe (CIQuote c))
-createNewRcvChatItem db user chatDirection RcvMessage {msgId, chatMsgEvent} sharedMsgId_ ciContent itemTs createdAt = do
-  ciId <- createNewChatItem_ db user chatDirection (Just msgId) sharedMsgId_ ciContent quoteRow itemTs createdAt
+createNewRcvChatItem :: DB.Connection -> User -> ChatDirection c 'MDRcv -> RcvMessage -> Maybe SharedMsgId -> CIContent 'MDRcv -> Maybe CITimed -> Bool -> UTCTime -> UTCTime -> IO (ChatItemId, Maybe (CIQuote c))
+createNewRcvChatItem db user chatDirection RcvMessage {msgId, chatMsgEvent} sharedMsgId_ ciContent timed live itemTs createdAt = do
+  ciId <- createNewChatItem_ db user chatDirection (Just msgId) sharedMsgId_ ciContent quoteRow timed live itemTs createdAt
   quotedItem <- mapM (getChatItemQuote_ db user chatDirection) quotedMsg
   pure (ciId, quotedItem)
   where
@@ -3079,13 +3218,13 @@ createNewRcvChatItem db user chatDirection RcvMessage {msgId, chatMsgEvent} shar
 
 createNewChatItemNoMsg :: forall c d. MsgDirectionI d => DB.Connection -> User -> ChatDirection c d -> CIContent d -> UTCTime -> UTCTime -> IO ChatItemId
 createNewChatItemNoMsg db user chatDirection ciContent =
-  createNewChatItem_ db user chatDirection Nothing Nothing ciContent quoteRow
+  createNewChatItem_ db user chatDirection Nothing Nothing ciContent quoteRow Nothing False
   where
     quoteRow :: NewQuoteRow
     quoteRow = (Nothing, Nothing, Nothing, Nothing, Nothing)
 
-createNewChatItem_ :: forall c d. MsgDirectionI d => DB.Connection -> User -> ChatDirection c d -> Maybe MessageId -> Maybe SharedMsgId -> CIContent d -> NewQuoteRow -> UTCTime -> UTCTime -> IO ChatItemId
-createNewChatItem_ db User {userId} chatDirection msgId_ sharedMsgId ciContent quoteRow itemTs createdAt = do
+createNewChatItem_ :: forall c d. MsgDirectionI d => DB.Connection -> User -> ChatDirection c d -> Maybe MessageId -> Maybe SharedMsgId -> CIContent d -> NewQuoteRow -> Maybe CITimed -> Bool -> UTCTime -> UTCTime -> IO ChatItemId
+createNewChatItem_ db User {userId} chatDirection msgId_ sharedMsgId ciContent quoteRow timed live itemTs createdAt = do
   DB.execute
     db
     [sql|
@@ -3093,24 +3232,28 @@ createNewChatItem_ db User {userId} chatDirection msgId_ sharedMsgId ciContent q
         -- user and IDs
         user_id, created_by_msg_id, contact_id, group_id, group_member_id,
         -- meta
-        item_sent, item_ts, item_content, item_text, item_status, shared_msg_id, created_at, updated_at,
+        item_sent, item_ts, item_content, item_text, item_status, shared_msg_id, created_at, updated_at, item_live, timed_ttl, timed_delete_at,
         -- quote
         quoted_shared_msg_id, quoted_sent_at, quoted_content, quoted_sent, quoted_member_id
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     |]
     ((userId, msgId_) :. idsRow :. itemRow :. quoteRow)
   ciId <- insertedRowId db
   forM_ msgId_ $ \msgId -> insertChatItemMessage_ db ciId msgId createdAt
   pure ciId
   where
-    itemRow :: (SMsgDirection d, UTCTime, CIContent d, Text, CIStatus d, Maybe SharedMsgId, UTCTime, UTCTime)
-    itemRow = (msgDirection @d, itemTs, ciContent, ciContentToText ciContent, ciStatusNew @d, sharedMsgId, createdAt, createdAt)
+    itemRow :: (SMsgDirection d, UTCTime, CIContent d, Text, CIStatus d, Maybe SharedMsgId) :. (UTCTime, UTCTime, Maybe Bool) :. (Maybe Int, Maybe UTCTime)
+    itemRow = (msgDirection @d, itemTs, ciContent, ciContentToText ciContent, ciCreateStatus ciContent, sharedMsgId) :. (createdAt, createdAt, justTrue live) :. ciTimedRow timed
     idsRow :: (Maybe Int64, Maybe Int64, Maybe Int64)
     idsRow = case chatDirection of
       CDDirectRcv Contact {contactId} -> (Just contactId, Nothing, Nothing)
       CDDirectSnd Contact {contactId} -> (Just contactId, Nothing, Nothing)
       CDGroupRcv GroupInfo {groupId} GroupMember {groupMemberId} -> (Nothing, Just groupId, Just groupMemberId)
       CDGroupSnd GroupInfo {groupId} -> (Nothing, Just groupId, Nothing)
+
+ciTimedRow :: Maybe CITimed -> (Maybe Int, Maybe UTCTime)
+ciTimedRow (Just CITimed {ttl, deleteAt}) = (Just ttl, deleteAt)
+ciTimedRow _ = (Nothing, Nothing)
 
 insertChatItemMessage_ :: DB.Connection -> ChatItemId -> MessageId -> UTCTime -> IO ()
 insertChatItemMessage_ db ciId msgId ts = DB.execute db "INSERT INTO chat_item_messages (chat_item_id, message_id, created_at, updated_at) VALUES (?,?,?,?)" (ciId, msgId, ts, ts)
@@ -3187,11 +3330,14 @@ getChatPreviews db user withPCC = do
   pure $ sortOn (Down . ts) (directChats <> groupChats <> cReqChats <> connChats)
   where
     ts :: AChat -> UTCTime
-    ts (AChat _ Chat {chatInfo, chatItems = ci : _}) = max (chatItemTs ci) (chatInfoUpdatedAt chatInfo)
-    ts (AChat _ Chat {chatInfo}) = chatInfoUpdatedAt chatInfo
+    ts (AChat _ Chat {chatInfo, chatItems}) = case chatInfoChatTs chatInfo of
+      Just chatTs -> chatTs
+      Nothing -> case chatItems of
+        ci : _ -> max (chatItemTs ci) (chatInfoUpdatedAt chatInfo)
+        _ -> chatInfoUpdatedAt chatInfo
 
 getDirectChatPreviews_ :: DB.Connection -> User -> IO [AChat]
-getDirectChatPreviews_ db User {userId} = do
+getDirectChatPreviews_ db user@User {userId} = do
   tz <- getCurrentTimeZone
   currentTs <- getCurrentTime
   map (toDirectChatPreview tz currentTs)
@@ -3200,14 +3346,15 @@ getDirectChatPreviews_ db User {userId} = do
       [sql|
         SELECT
           -- Contact
-          ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.local_alias, ct.contact_used, ct.enable_ntfs, cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at,
+          ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.local_alias, ct.contact_used, ct.enable_ntfs,
+          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
-          c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at,
+          c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at,
           -- ChatStats
           COALESCE(ChatStats.UnreadCount, 0), COALESCE(ChatStats.MinUnread, 0), ct.unread_chat,
           -- ChatItem
-          i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_edited, i.created_at, i.updated_at,
+          i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_edited, i.created_at, i.updated_at, i.timed_ttl, i.timed_delete_at, i.item_live,
           -- CIFile
           f.file_id, f.file_name, f.file_size, f.file_path, f.ci_file_status,
           -- DirectQuote
@@ -3218,7 +3365,6 @@ getDirectChatPreviews_ db User {userId} = do
         LEFT JOIN (
           SELECT contact_id, MAX(chat_item_id) AS MaxId
           FROM chat_items
-          WHERE item_deleted != 1
           GROUP BY contact_id
         ) MaxIds ON MaxIds.contact_id = ct.contact_id
         LEFT JOIN chat_items i ON i.contact_id = MaxIds.contact_id
@@ -3227,7 +3373,7 @@ getDirectChatPreviews_ db User {userId} = do
         LEFT JOIN (
           SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
           FROM chat_items
-          WHERE item_status = ? AND item_deleted != 1
+          WHERE item_status = ?
           GROUP BY contact_id
         ) ChatStats ON ChatStats.contact_id = ct.contact_id
         LEFT JOIN chat_items ri ON ri.shared_msg_id = i.quoted_shared_msg_id AND ri.contact_id = i.contact_id
@@ -3250,7 +3396,7 @@ getDirectChatPreviews_ db User {userId} = do
   where
     toDirectChatPreview :: TimeZone -> UTCTime -> ContactRow :. ConnectionRow :. ChatStatsRow :. MaybeChatItemRow :. QuoteRow -> AChat
     toDirectChatPreview tz currentTs (contactRow :. connRow :. statsRow :. ciRow_) =
-      let contact = toContact $ contactRow :. connRow
+      let contact = toContact user $ contactRow :. connRow
           ci_ = toDirectChatItemList tz currentTs ciRow_
           stats = toChatStats statsRow
        in AChat SCTDirect $ Chat (DirectChat contact) ci_ stats
@@ -3265,7 +3411,7 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
       [sql|
         SELECT
           -- GroupInfo
-          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at,
+          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at, g.chat_ts,
           -- GroupMember - membership
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -3273,7 +3419,7 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
           -- ChatStats
           COALESCE(ChatStats.UnreadCount, 0), COALESCE(ChatStats.MinUnread, 0), g.unread_chat,
           -- ChatItem
-          i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_edited, i.created_at, i.updated_at,
+          i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_edited, i.created_at, i.updated_at, i.timed_ttl, i.timed_delete_at, i.item_live,
           -- CIFile
           f.file_id, f.file_name, f.file_size, f.file_path, f.ci_file_status,
           -- Maybe GroupMember - sender
@@ -3293,7 +3439,6 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
         LEFT JOIN (
           SELECT group_id, MAX(chat_item_id) AS MaxId
           FROM chat_items
-          WHERE item_deleted != 1
           GROUP BY group_id
         ) MaxIds ON MaxIds.group_id = g.group_id
         LEFT JOIN chat_items i ON i.group_id = MaxIds.group_id
@@ -3302,7 +3447,7 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
         LEFT JOIN (
           SELECT group_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
           FROM chat_items
-          WHERE item_status = ? AND item_deleted != 1
+          WHERE item_status = ?
           GROUP BY group_id
         ) ChatStats ON ChatStats.group_id = g.group_id
         LEFT JOIN group_members m ON m.group_member_id = i.group_member_id
@@ -3417,8 +3562,8 @@ getDirectChat db user contactId pagination search_ = do
     CPBefore beforeId count -> getDirectChatBefore_ db user contactId beforeId count search
 
 getDirectChatLast_ :: DB.Connection -> User -> Int64 -> Int -> String -> ExceptT StoreError IO (Chat 'CTDirect)
-getDirectChatLast_ db User {userId} contactId count search = do
-  contact <- getContact db userId contactId
+getDirectChatLast_ db user@User {userId} contactId count search = do
+  contact <- getContact db user contactId
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   chatItems <- ExceptT getDirectChatItemsLast_
   pure $ Chat (DirectChat contact) (reverse chatItems) stats
@@ -3433,23 +3578,23 @@ getDirectChatLast_ db User {userId} contactId count search = do
           [sql|
             SELECT
               -- ChatItem
-              i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_edited, i.created_at, i.updated_at,
+              i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_edited, i.created_at, i.updated_at, i.timed_ttl, i.timed_delete_at, i.item_live,
               -- CIFile
               f.file_id, f.file_name, f.file_size, f.file_path, f.ci_file_status,
               -- DirectQuote
               ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent
             FROM chat_items i
             LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
-            LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
-            WHERE i.user_id = ? AND i.contact_id = ? AND i.item_deleted != 1 AND i.item_text LIKE '%' || ? || '%'
+            LEFT JOIN chat_items ri ON ri.shared_msg_id = i.quoted_shared_msg_id AND ri.contact_id = i.contact_id
+            WHERE i.user_id = ? AND i.contact_id = ? AND i.item_text LIKE '%' || ? || '%'
             ORDER BY i.chat_item_id DESC
             LIMIT ?
           |]
           (userId, contactId, search, count)
 
 getDirectChatAfter_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTDirect)
-getDirectChatAfter_ db User {userId} contactId afterChatItemId count search = do
-  contact <- getContact db userId contactId
+getDirectChatAfter_ db user@User {userId} contactId afterChatItemId count search = do
+  contact <- getContact db user contactId
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   chatItems <- ExceptT getDirectChatItemsAfter_
   pure $ Chat (DirectChat contact) chatItems stats
@@ -3464,15 +3609,15 @@ getDirectChatAfter_ db User {userId} contactId afterChatItemId count search = do
           [sql|
             SELECT
               -- ChatItem
-              i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_edited, i.created_at, i.updated_at,
+              i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_edited, i.created_at, i.updated_at, i.timed_ttl, i.timed_delete_at, i.item_live,
               -- CIFile
               f.file_id, f.file_name, f.file_size, f.file_path, f.ci_file_status,
               -- DirectQuote
               ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent
             FROM chat_items i
             LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
-            LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
-            WHERE i.user_id = ? AND i.contact_id = ? AND i.item_deleted != 1 AND i.item_text LIKE '%' || ? || '%'
+            LEFT JOIN chat_items ri ON ri.shared_msg_id = i.quoted_shared_msg_id AND ri.contact_id = i.contact_id
+            WHERE i.user_id = ? AND i.contact_id = ? AND i.item_text LIKE '%' || ? || '%'
               AND i.chat_item_id > ?
             ORDER BY i.chat_item_id ASC
             LIMIT ?
@@ -3480,8 +3625,8 @@ getDirectChatAfter_ db User {userId} contactId afterChatItemId count search = do
           (userId, contactId, search, afterChatItemId, count)
 
 getDirectChatBefore_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTDirect)
-getDirectChatBefore_ db User {userId} contactId beforeChatItemId count search = do
-  contact <- getContact db userId contactId
+getDirectChatBefore_ db user@User {userId} contactId beforeChatItemId count search = do
+  contact <- getContact db user contactId
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   chatItems <- ExceptT getDirectChatItemsBefore_
   pure $ Chat (DirectChat contact) (reverse chatItems) stats
@@ -3496,15 +3641,15 @@ getDirectChatBefore_ db User {userId} contactId beforeChatItemId count search = 
           [sql|
             SELECT
               -- ChatItem
-              i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_edited, i.created_at, i.updated_at,
+              i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_edited, i.created_at, i.updated_at, i.timed_ttl, i.timed_delete_at, i.item_live,
               -- CIFile
               f.file_id, f.file_name, f.file_size, f.file_path, f.ci_file_status,
               -- DirectQuote
               ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent
             FROM chat_items i
             LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
-            LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
-            WHERE i.user_id = ? AND i.contact_id = ? AND i.item_deleted != 1 AND i.item_text LIKE '%' || ? || '%'
+            LEFT JOIN chat_items ri ON ri.shared_msg_id = i.quoted_shared_msg_id AND ri.contact_id = i.contact_id
+            WHERE i.user_id = ? AND i.contact_id = ? AND i.item_text LIKE '%' || ? || '%'
               AND i.chat_item_id < ?
             ORDER BY i.chat_item_id DESC
             LIMIT ?
@@ -3516,18 +3661,19 @@ getContactIdByName db User {userId} cName =
   ExceptT . firstRow fromOnly (SEContactNotFoundByName cName) $
     DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND local_display_name = ?" (userId, cName)
 
-getContact :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO Contact
-getContact db userId contactId =
-  ExceptT . fmap join . firstRow toContactOrError (SEContactNotFound contactId) $
+getContact :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO Contact
+getContact db user@User {userId} contactId =
+  ExceptT . fmap join . firstRow (toContactOrError user) (SEContactNotFound contactId) $
     DB.query
       db
       [sql|
         SELECT
           -- Contact
-          ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.local_alias, ct.contact_used, ct.enable_ntfs, cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at,
+          ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.local_alias, ct.contact_used, ct.enable_ntfs,
+          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
-          c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
+          c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at
         FROM contacts ct
         JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
         LEFT JOIN connections c ON c.contact_id = ct.contact_id
@@ -3570,7 +3716,7 @@ getGroupChatLast_ db user@User {userId} groupId count search = do
           [sql|
             SELECT chat_item_id
             FROM chat_items
-            WHERE user_id = ? AND group_id = ? AND item_deleted != 1 AND item_text LIKE '%' || ? || '%'
+            WHERE user_id = ? AND group_id = ? AND item_text LIKE '%' || ? || '%'
             ORDER BY item_ts DESC, chat_item_id DESC
             LIMIT ?
           |]
@@ -3593,7 +3739,7 @@ getGroupChatAfter_ db user@User {userId} groupId afterChatItemId count search = 
           [sql|
             SELECT chat_item_id
             FROM chat_items
-            WHERE user_id = ? AND group_id = ? AND item_deleted != 1 AND item_text LIKE '%' || ? || '%'
+            WHERE user_id = ? AND group_id = ? AND item_text LIKE '%' || ? || '%'
               AND (item_ts > ? OR (item_ts = ? AND chat_item_id > ?))
             ORDER BY item_ts ASC, chat_item_id ASC
             LIMIT ?
@@ -3617,7 +3763,7 @@ getGroupChatBefore_ db user@User {userId} groupId beforeChatItemId count search 
           [sql|
             SELECT chat_item_id
             FROM chat_items
-            WHERE user_id = ? AND group_id = ? AND item_deleted != 1 AND item_text LIKE '%' || ? || '%'
+            WHERE user_id = ? AND group_id = ? AND item_text LIKE '%' || ? || '%'
               AND (item_ts < ? OR (item_ts = ? AND chat_item_id < ?))
             ORDER BY item_ts DESC, chat_item_id DESC
             LIMIT ?
@@ -3632,7 +3778,7 @@ getGroupInfo db User {userId, userContactId} groupId =
       [sql|
         SELECT
           -- GroupInfo
-          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at,
+          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image, g.host_conn_custom_user_profile_id, g.enable_ntfs, gp.preferences, g.created_at, g.updated_at, g.chat_ts,
           -- GroupMember - membership
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -3646,30 +3792,32 @@ getGroupInfo db User {userId, userContactId} groupId =
       (groupId, userId, userContactId)
 
 updateGroupProfile :: DB.Connection -> User -> GroupInfo -> GroupProfile -> ExceptT StoreError IO GroupInfo
-updateGroupProfile db User {userId} g@GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, groupPreferences}} p'@GroupProfile {displayName = newName, fullName, image}
+updateGroupProfile db User {userId} g@GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName}} p'@GroupProfile {displayName = newName, fullName, description, image, groupPreferences}
   | displayName == newName = liftIO $ do
     currentTs <- getCurrentTime
-    updateGroupProfile_ currentTs $> (g :: GroupInfo) {groupProfile = p'}
+    updateGroupProfile_ currentTs
+    pure (g :: GroupInfo) {groupProfile = p', fullGroupPreferences}
   | otherwise =
     ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
       currentTs <- getCurrentTime
       updateGroupProfile_ currentTs
       updateGroup_ ldn currentTs
-      pure . Right $ (g :: GroupInfo) {localDisplayName = ldn, groupProfile = p'}
+      pure $ Right (g :: GroupInfo) {localDisplayName = ldn, groupProfile = p', fullGroupPreferences}
   where
+    fullGroupPreferences = mergeGroupPreferences groupPreferences
     updateGroupProfile_ currentTs =
       DB.execute
         db
         [sql|
           UPDATE group_profiles
-          SET display_name = ?, full_name = ?, image = ?, preferences = ?, updated_at = ?
+          SET display_name = ?, full_name = ?, description = ?, image = ?, preferences = ?, updated_at = ?
           WHERE group_profile_id IN (
             SELECT group_profile_id
             FROM groups
             WHERE user_id = ? AND group_id = ?
           )
         |]
-        (newName, fullName, image, groupPreferences, currentTs, userId, groupId)
+        (newName, fullName, description, image, groupPreferences, currentTs, userId, groupId)
     updateGroup_ ldn currentTs = do
       DB.execute
         db
@@ -3677,15 +3825,16 @@ updateGroupProfile db User {userId} g@GroupInfo {groupId, localDisplayName, grou
         (ldn, currentTs, userId, groupId)
       DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (localDisplayName, userId)
 
-getAllChatItems :: DB.Connection -> User -> ChatPagination -> ExceptT StoreError IO [AChatItem]
-getAllChatItems db user pagination = do
+getAllChatItems :: DB.Connection -> User -> ChatPagination -> Maybe String -> ExceptT StoreError IO [AChatItem]
+getAllChatItems db user pagination search_ = do
+  let search = fromMaybe "" search_
   case pagination of
-    CPLast count -> getAllChatItemsLast_ db user count
+    CPLast count -> getAllChatItemsLast_ db user count search
     CPAfter _afterId _count -> throwError $ SEInternalError "not implemented"
     CPBefore _beforeId _count -> throwError $ SEInternalError "not implemented"
 
-getAllChatItemsLast_ :: DB.Connection -> User -> Int -> ExceptT StoreError IO [AChatItem]
-getAllChatItemsLast_ db user@User {userId} count = do
+getAllChatItemsLast_ :: DB.Connection -> User -> Int -> String -> ExceptT StoreError IO [AChatItem]
+getAllChatItemsLast_ db user@User {userId} count search = do
   itemRefs <-
     liftIO $
       reverse . rights . map toChatItemRef
@@ -3694,11 +3843,11 @@ getAllChatItemsLast_ db user@User {userId} count = do
           [sql|
             SELECT chat_item_id, contact_id, group_id
             FROM chat_items
-            WHERE user_id = ?
+            WHERE user_id = ? AND item_text LIKE '%' || ? || '%'
             ORDER BY item_ts DESC, chat_item_id DESC
             LIMIT ?
           |]
-          (userId, count)
+          (userId, search, count)
   mapM (uncurry $ getAChatItem_ db user) itemRefs
 
 getGroupIdByName :: DB.Connection -> User -> GroupName -> ExceptT StoreError IO GroupId
@@ -3728,9 +3877,9 @@ getChatItemIdByAgentMsgId db connId msgId =
       |]
       (connId, msgId)
 
-updateDirectChatItemStatus :: forall d. MsgDirectionI d => DB.Connection -> UserId -> Int64 -> ChatItemId -> CIStatus d -> ExceptT StoreError IO (ChatItem 'CTDirect d)
-updateDirectChatItemStatus db userId contactId itemId itemStatus = do
-  ci <- liftEither . correctDir =<< getDirectChatItem db userId contactId itemId
+updateDirectChatItemStatus :: forall d. MsgDirectionI d => DB.Connection -> User -> Int64 -> ChatItemId -> CIStatus d -> ExceptT StoreError IO (ChatItem 'CTDirect d)
+updateDirectChatItemStatus db user@User {userId} contactId itemId itemStatus = do
+  ci <- liftEither . correctDir =<< getDirectChatItem db user contactId itemId
   currentTs <- liftIO getCurrentTime
   liftIO $ DB.execute db "UPDATE chat_items SET item_status = ?, updated_at = ? WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?" (itemStatus, currentTs, userId, contactId, itemId)
   pure ci {meta = (meta ci) {itemStatus}}
@@ -3738,49 +3887,61 @@ updateDirectChatItemStatus db userId contactId itemId itemStatus = do
     correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
     correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
 
-updateDirectChatItem :: forall d. MsgDirectionI d => DB.Connection -> UserId -> Int64 -> ChatItemId -> CIContent d -> Maybe MessageId -> ExceptT StoreError IO (ChatItem 'CTDirect d)
-updateDirectChatItem db userId contactId itemId newContent msgId_ = do
-  currentTs <- liftIO getCurrentTime
-  ci <- updateDirectChatItem_ db userId contactId itemId newContent currentTs
-  forM_ msgId_ $ \msgId -> liftIO $ insertChatItemMessage_ db itemId msgId currentTs
-  pure ci
-
-updateDirectChatItem_ :: forall d. (MsgDirectionI d) => DB.Connection -> UserId -> Int64 -> ChatItemId -> CIContent d -> UTCTime -> ExceptT StoreError IO (ChatItem 'CTDirect d)
-updateDirectChatItem_ db userId contactId itemId newContent currentTs = do
-  ci <- liftEither . correctDir =<< getDirectChatItem db userId contactId itemId
-  let newText = ciContentToText newContent
-  liftIO $ do
-    DB.execute
-      db
-      [sql|
-        UPDATE chat_items
-        SET item_content = ?, item_text = ?, item_deleted = 0, item_edited = 1, updated_at = ?
-        WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
-      |]
-      (newContent, newText, currentTs, userId, contactId, itemId)
-  pure ci {content = newContent, meta = (meta ci) {itemText = newText, itemEdited = True}, formattedText = parseMaybeMarkdownList newText}
+updateDirectChatItem :: forall d. (MsgDirectionI d) => DB.Connection -> User -> Int64 -> ChatItemId -> CIContent d -> Bool -> Maybe MessageId -> ExceptT StoreError IO (ChatItem 'CTDirect d)
+updateDirectChatItem db user contactId itemId newContent live msgId_ = do
+  ci <- liftEither . correctDir =<< getDirectChatItem db user contactId itemId
+  liftIO $ updateDirectChatItem' db user contactId ci newContent live msgId_
   where
     correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
     correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
 
-deleteDirectChatItemLocal :: DB.Connection -> UserId -> Contact -> ChatItemId -> CIDeleteMode -> ExceptT StoreError IO AChatItem
-deleteDirectChatItemLocal db userId ct itemId mode = do
-  liftIO $ deleteChatItemMessages_ db itemId
-  deleteDirectChatItem_ db userId ct itemId mode
+updateDirectChatItem' :: forall d. (MsgDirectionI d) => DB.Connection -> User -> Int64 -> ChatItem 'CTDirect d -> CIContent d -> Bool -> Maybe MessageId -> IO (ChatItem 'CTDirect d)
+updateDirectChatItem' db User {userId} contactId ci newContent live msgId_ = do
+  currentTs <- liftIO getCurrentTime
+  let ci' = updatedChatItem ci newContent live currentTs
+  liftIO $ updateDirectChatItem_ db userId contactId ci' msgId_
+  pure ci'
 
-deleteDirectChatItem_ :: DB.Connection -> UserId -> Contact -> ChatItemId -> CIDeleteMode -> ExceptT StoreError IO AChatItem
-deleteDirectChatItem_ db userId ct@Contact {contactId} itemId mode = do
-  (CChatItem msgDir ci) <- getDirectChatItem db userId contactId itemId
-  let toContent = msgDirToDeletedContent_ msgDir mode
-  liftIO $ do
-    DB.execute
-      db
-      [sql|
-        DELETE FROM chat_items
-        WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
-      |]
-      (userId, contactId, itemId)
-  pure $ AChatItem SCTDirect msgDir (DirectChat ct) (ci {content = toContent, meta = (meta ci) {itemText = ciDeleteModeToText mode, itemDeleted = True}, formattedText = Nothing})
+updatedChatItem :: ChatItem c d -> CIContent d -> Bool -> UTCTime -> ChatItem c d
+updatedChatItem ci@ChatItem {meta = meta@CIMeta {itemStatus, itemEdited, itemTimed, itemLive}} newContent live currentTs =
+  let newText = ciContentToText newContent
+      edited' = itemEdited || (itemLive /= Just True)
+      live' = (live &&) <$> itemLive
+      timed' = case (itemStatus, itemTimed, itemLive, live) of
+        (CISRcvNew, _, _, _) -> itemTimed
+        (_, Just CITimed {ttl, deleteAt = Nothing}, Just True, False) ->
+          -- timed item, sent or read, not set for deletion, was live, now not live
+          let deleteAt' = addUTCTime (realToFrac ttl) currentTs
+           in Just CITimed {ttl, deleteAt = Just deleteAt'}
+        _ -> itemTimed
+   in ci {content = newContent, meta = meta {itemText = newText, itemEdited = edited', itemTimed = timed', itemLive = live'}, formattedText = parseMaybeMarkdownList newText}
+
+-- this function assumes that direct item with correct chat direction already exists,
+-- it should be checked before calling it
+updateDirectChatItem_ :: forall d. MsgDirectionI d => DB.Connection -> UserId -> Int64 -> ChatItem 'CTDirect d -> Maybe MessageId -> IO ()
+updateDirectChatItem_ db userId contactId ChatItem {meta, content} msgId_ = do
+  let CIMeta {itemId, itemText, itemStatus, itemDeleted, itemEdited, itemTimed, itemLive, updatedAt} = meta
+  DB.execute
+    db
+    [sql|
+      UPDATE chat_items
+      SET item_content = ?, item_text = ?, item_status = ?, item_deleted = ?, item_edited = ?, item_live = ?, updated_at = ?, timed_ttl = ?, timed_delete_at = ?
+      WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
+    |]
+    ((content, itemText, itemStatus, itemDeleted, itemEdited, itemLive, updatedAt) :. ciTimedRow itemTimed :. (userId, contactId, itemId))
+  forM_ msgId_ $ \msgId -> liftIO $ insertChatItemMessage_ db itemId msgId updatedAt
+
+deleteDirectChatItem :: DB.Connection -> User -> Contact -> CChatItem 'CTDirect -> IO ()
+deleteDirectChatItem db User {userId} Contact {contactId} (CChatItem _ ci) = do
+  let itemId = chatItemId' ci
+  deleteChatItemMessages_ db itemId
+  DB.execute
+    db
+    [sql|
+      DELETE FROM chat_items
+      WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
+    |]
+    (userId, contactId, itemId)
 
 deleteChatItemMessages_ :: DB.Connection -> ChatItemId -> IO ()
 deleteChatItemMessages_ db itemId =
@@ -3796,37 +3957,30 @@ deleteChatItemMessages_ db itemId =
     |]
     (Only itemId)
 
-deleteDirectChatItemRcvBroadcast :: DB.Connection -> UserId -> Contact -> ChatItemId -> MessageId -> ExceptT StoreError IO AChatItem
-deleteDirectChatItemRcvBroadcast db userId ct itemId msgId = do
+markDirectChatItemDeleted :: DB.Connection -> User -> Contact -> CChatItem 'CTDirect -> MessageId -> IO AChatItem
+markDirectChatItemDeleted db User {userId} ct@Contact {contactId} (CChatItem msgDir ci) msgId = do
   currentTs <- liftIO getCurrentTime
-  liftIO $ insertChatItemMessage_ db itemId msgId currentTs
-  updateDirectChatItemRcvDeleted_ db userId ct itemId currentTs
+  let itemId = chatItemId' ci
+  insertChatItemMessage_ db itemId msgId currentTs
+  DB.execute
+    db
+    [sql|
+      UPDATE chat_items
+      SET item_deleted = 1, updated_at = ?
+      WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
+    |]
+    (currentTs, userId, contactId, itemId)
+  pure $ AChatItem SCTDirect msgDir (DirectChat ct) (ci {meta = (meta ci) {itemDeleted = True, editable = False}})
 
-updateDirectChatItemRcvDeleted_ :: DB.Connection -> UserId -> Contact -> ChatItemId -> UTCTime -> ExceptT StoreError IO AChatItem
-updateDirectChatItemRcvDeleted_ db userId ct@Contact {contactId} itemId currentTs = do
-  (CChatItem msgDir ci) <- getDirectChatItem db userId contactId itemId
-  let toContent = msgDirToDeletedContent_ msgDir CIDMBroadcast
-      toText = ciDeleteModeToText CIDMBroadcast
-  liftIO $ do
-    DB.execute
-      db
-      [sql|
-        UPDATE chat_items
-        SET item_content = ?, item_text = ?, updated_at = ?
-        WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
-      |]
-      (toContent, toText, currentTs, userId, contactId, itemId)
-  pure $ AChatItem SCTDirect msgDir (DirectChat ct) (ci {content = toContent, meta = (meta ci) {itemText = toText}, formattedText = Nothing})
-
-getDirectChatItemBySharedMsgId :: DB.Connection -> UserId -> ContactId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTDirect)
-getDirectChatItemBySharedMsgId db userId contactId sharedMsgId = do
+getDirectChatItemBySharedMsgId :: DB.Connection -> User -> ContactId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTDirect)
+getDirectChatItemBySharedMsgId db user@User {userId} contactId sharedMsgId = do
   itemId <- getDirectChatItemIdBySharedMsgId_ db userId contactId sharedMsgId
-  getDirectChatItem db userId contactId itemId
+  getDirectChatItem db user contactId itemId
 
-getDirectChatItemByAgentMsgId :: DB.Connection -> UserId -> ContactId -> Int64 -> AgentMsgId -> IO (Maybe (CChatItem 'CTDirect))
-getDirectChatItemByAgentMsgId db userId contactId connId msgId = do
+getDirectChatItemByAgentMsgId :: DB.Connection -> User -> ContactId -> Int64 -> AgentMsgId -> IO (Maybe (CChatItem 'CTDirect))
+getDirectChatItemByAgentMsgId db user contactId connId msgId = do
   itemId_ <- getChatItemIdByAgentMsgId db connId msgId
-  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getDirectChatItem db userId contactId) itemId_
+  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getDirectChatItem db user contactId) itemId_
 
 getDirectChatItemIdBySharedMsgId_ :: DB.Connection -> UserId -> Int64 -> SharedMsgId -> ExceptT StoreError IO Int64
 getDirectChatItemIdBySharedMsgId_ db userId contactId sharedMsgId =
@@ -3842,8 +3996,8 @@ getDirectChatItemIdBySharedMsgId_ db userId contactId sharedMsgId =
       |]
       (userId, contactId, sharedMsgId)
 
-getDirectChatItem :: DB.Connection -> UserId -> Int64 -> ChatItemId -> ExceptT StoreError IO (CChatItem 'CTDirect)
-getDirectChatItem db userId contactId itemId = ExceptT $ do
+getDirectChatItem :: DB.Connection -> User -> Int64 -> ChatItemId -> ExceptT StoreError IO (CChatItem 'CTDirect)
+getDirectChatItem db User {userId} contactId itemId = ExceptT $ do
   tz <- getCurrentTimeZone
   currentTs <- getCurrentTime
   join <$> firstRow (toDirectChatItem tz currentTs) (SEChatItemNotFound itemId) getItem
@@ -3854,14 +4008,14 @@ getDirectChatItem db userId contactId itemId = ExceptT $ do
         [sql|
           SELECT
             -- ChatItem
-            i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_edited, i.created_at, i.updated_at,
+            i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_edited, i.created_at, i.updated_at, i.timed_ttl, i.timed_delete_at, i.item_live,
             -- CIFile
             f.file_id, f.file_name, f.file_size, f.file_path, f.ci_file_status,
             -- DirectQuote
             ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent
           FROM chat_items i
           LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
-          LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
+          LEFT JOIN chat_items ri ON ri.shared_msg_id = i.quoted_shared_msg_id AND ri.contact_id = i.contact_id
           WHERE i.user_id = ? AND i.contact_id = ? AND i.chat_item_id = ?
         |]
         (userId, contactId, itemId)
@@ -3880,66 +4034,54 @@ getDirectChatItemIdByText db userId contactId msgDir quotedMsg =
       |]
       (userId, contactId, msgDir, quotedMsg <> "%")
 
-updateGroupChatItem :: forall d. MsgDirectionI d => DB.Connection -> User -> Int64 -> ChatItemId -> CIContent d -> MessageId -> ExceptT StoreError IO (ChatItem 'CTGroup d)
-updateGroupChatItem db user@User {userId} groupId itemId newContent msgId = do
-  ci <- liftEither . correctDir =<< getGroupChatItem db user groupId itemId
+updateGroupChatItem :: forall d. MsgDirectionI d => DB.Connection -> User -> Int64 -> ChatItem 'CTGroup d -> CIContent d -> Bool -> Maybe MessageId -> IO (ChatItem 'CTGroup d)
+updateGroupChatItem db user groupId ci newContent live msgId_ = do
   currentTs <- liftIO getCurrentTime
-  let newText = ciContentToText newContent
-  liftIO $ do
-    DB.execute
-      db
-      [sql|
-        UPDATE chat_items
-        SET item_content = ?, item_text = ?, item_deleted = 0, item_edited = 1, updated_at = ?
-        WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
-      |]
-      (newContent, newText, currentTs, userId, groupId, itemId)
-    insertChatItemMessage_ db itemId msgId currentTs
-  pure ci {content = newContent, meta = (meta ci) {itemText = newText, itemEdited = True}, formattedText = parseMaybeMarkdownList newText}
-  where
-    correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
-    correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
+  let ci' = updatedChatItem ci newContent live currentTs
+  liftIO $ updateGroupChatItem_ db user groupId ci' msgId_
+  pure ci'
 
-deleteGroupChatItemLocal :: DB.Connection -> User -> GroupInfo -> ChatItemId -> CIDeleteMode -> ExceptT StoreError IO AChatItem
-deleteGroupChatItemLocal db user gInfo itemId mode = do
-  liftIO $ deleteChatItemMessages_ db itemId
-  deleteGroupChatItem_ db user gInfo itemId mode
+-- this function assumes that the group item with correct chat direction already exists,
+-- it should be checked before calling it
+updateGroupChatItem_ :: forall d. MsgDirectionI d => DB.Connection -> User -> Int64 -> ChatItem 'CTGroup d -> Maybe MessageId -> IO ()
+updateGroupChatItem_ db User {userId} groupId ChatItem {content, meta} msgId_ = do
+  let CIMeta {itemId, itemText, itemStatus, itemDeleted, itemEdited, itemTimed, itemLive, updatedAt} = meta
+  DB.execute
+    db
+    [sql|
+      UPDATE chat_items
+      SET item_content = ?, item_text = ?, item_status = ?, item_deleted = ?, item_deleted = 0, item_edited = ?, item_live = ?, updated_at = ?, timed_ttl = ?, timed_delete_at = ?
+      WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
+    |]
+    ((content, itemText, itemStatus, itemDeleted, itemEdited, itemLive, updatedAt) :. ciTimedRow itemTimed :. (userId, groupId, itemId))
+  forM_ msgId_ $ \msgId -> insertChatItemMessage_ db itemId msgId updatedAt
 
-deleteGroupChatItem_ :: DB.Connection -> User -> GroupInfo -> ChatItemId -> CIDeleteMode -> ExceptT StoreError IO AChatItem
-deleteGroupChatItem_ db user@User {userId} gInfo@GroupInfo {groupId} itemId mode = do
-  (CChatItem msgDir ci) <- getGroupChatItem db user groupId itemId
-  let toContent = msgDirToDeletedContent_ msgDir mode
-  liftIO $ do
-    DB.execute
-      db
-      [sql|
-        DELETE FROM chat_items
-        WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
-      |]
-      (userId, groupId, itemId)
-  pure $ AChatItem SCTGroup msgDir (GroupChat gInfo) (ci {content = toContent, meta = (meta ci) {itemText = ciDeleteModeToText mode, itemDeleted = True}, formattedText = Nothing})
+deleteGroupChatItem :: DB.Connection -> User -> GroupInfo -> CChatItem 'CTGroup -> IO ()
+deleteGroupChatItem db User {userId} GroupInfo {groupId} (CChatItem _ ci) = do
+  let itemId = chatItemId' ci
+  deleteChatItemMessages_ db itemId
+  DB.execute
+    db
+    [sql|
+      DELETE FROM chat_items
+      WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
+    |]
+    (userId, groupId, itemId)
 
-deleteGroupChatItemRcvBroadcast :: DB.Connection -> User -> GroupInfo -> ChatItemId -> MessageId -> ExceptT StoreError IO AChatItem
-deleteGroupChatItemRcvBroadcast db user gInfo itemId msgId = do
+markGroupChatItemDeleted :: DB.Connection -> User -> GroupInfo -> CChatItem 'CTGroup -> MessageId -> IO AChatItem
+markGroupChatItemDeleted db User {userId} gInfo@GroupInfo {groupId} (CChatItem msgDir ci) msgId = do
   currentTs <- liftIO getCurrentTime
-  liftIO $ insertChatItemMessage_ db itemId msgId currentTs
-  updateGroupChatItemRcvDeleted_ db user gInfo itemId currentTs
-
-updateGroupChatItemRcvDeleted_ :: DB.Connection -> User -> GroupInfo -> ChatItemId -> UTCTime -> ExceptT StoreError IO AChatItem
-updateGroupChatItemRcvDeleted_ db user@User {userId} gInfo@GroupInfo {groupId} itemId currentTs = do
-  (CChatItem msgDir ci) <- getGroupChatItem db user groupId itemId
-  let toContent = msgDirToDeletedContent_ msgDir CIDMBroadcast
-      toText = ciDeleteModeToText CIDMBroadcast
-  liftIO $ do
-    DB.execute
-      db
-      [sql|
-        UPDATE chat_items
-        SET item_content = ?, item_text = ?, updated_at = ?
-        WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
-      |]
-      (toContent, toText, currentTs, userId, groupId, itemId)
-  pure $ AChatItem SCTGroup msgDir (GroupChat gInfo) (ci {content = toContent, meta = (meta ci) {itemText = toText}, formattedText = Nothing})
+  let itemId = chatItemId' ci
+  insertChatItemMessage_ db itemId msgId currentTs
+  DB.execute
+    db
+    [sql|
+      UPDATE chat_items
+      SET item_deleted = 1, updated_at = ?
+      WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
+    |]
+    (currentTs, userId, groupId, itemId)
+  pure $ AChatItem SCTGroup msgDir (GroupChat gInfo) (ci {meta = (meta ci) {itemDeleted = True, editable = False}})
 
 getGroupChatItemBySharedMsgId :: DB.Connection -> User -> GroupId -> GroupMemberId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTGroup)
 getGroupChatItemBySharedMsgId db user@User {userId} groupId groupMemberId sharedMsgId = do
@@ -3969,7 +4111,7 @@ getGroupChatItem db User {userId, userContactId} groupId itemId = ExceptT $ do
         [sql|
           SELECT
             -- ChatItem
-            i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_edited, i.created_at, i.updated_at,
+            i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_edited, i.created_at, i.updated_at, i.timed_ttl, i.timed_delete_at, i.item_live,
             -- CIFile
             f.file_id, f.file_name, f.file_size, f.file_path, f.ci_file_status,
             -- GroupMember
@@ -3986,7 +4128,7 @@ getGroupChatItem db User {userId, userContactId} groupId itemId = ExceptT $ do
           LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
           LEFT JOIN group_members m ON m.group_member_id = i.group_member_id
           LEFT JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
-          LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
+          LEFT JOIN chat_items ri ON ri.shared_msg_id = i.quoted_shared_msg_id AND ri.group_id = i.group_id
           LEFT JOIN group_members rm ON rm.group_member_id = ri.group_member_id
           LEFT JOIN contact_profiles rp ON rp.contact_profile_id = COALESCE(rm.member_profile_id, rm.contact_profile_id)
           WHERE i.user_id = ? AND i.group_id = ? AND i.chat_item_id = ?
@@ -4069,11 +4211,23 @@ getChatItemByGroupId db user@User {userId} groupId = do
         (userId, groupId)
   getAChatItem_ db user itemId chatRef
 
+getAChatItem :: DB.Connection -> User -> ChatItemId -> ExceptT StoreError IO AChatItem
+getAChatItem db user@User {userId} itemId = do
+  chatRef <-
+    ExceptT . firstRow' toChatRef (SEChatItemNotFound itemId) $
+      DB.query db "SELECT contact_id, group_id FROM chat_items WHERE user_id = ? AND chat_item_id = ?" (userId, itemId)
+  getAChatItem_ db user itemId chatRef
+  where
+    toChatRef = \case
+      (Just contactId, Nothing) -> Right $ ChatRef CTDirect contactId
+      (Nothing, Just groupId) -> Right $ ChatRef CTGroup groupId
+      (_, _) -> Left $ SEBadChatItem itemId
+
 getAChatItem_ :: DB.Connection -> User -> ChatItemId -> ChatRef -> ExceptT StoreError IO AChatItem
-getAChatItem_ db user@User {userId} itemId = \case
+getAChatItem_ db user itemId = \case
   ChatRef CTDirect contactId -> do
-    ct <- getContact db userId contactId
-    (CChatItem msgDir ci) <- getDirectChatItem db userId contactId itemId
+    ct <- getContact db user contactId
+    (CChatItem msgDir ci) <- getDirectChatItem db user contactId itemId
     pure $ AChatItem SCTDirect msgDir (DirectChat ct) ci
   ChatRef CTGroup groupId -> do
     gInfo <- getGroupInfo db user groupId
@@ -4096,8 +4250,8 @@ toChatItemRef = \case
   (itemId, Nothing, Just groupId) -> Right (itemId, ChatRef CTGroup groupId)
   (itemId, _, _) -> Left $ SEBadChatItem itemId
 
-updateDirectChatItemsRead :: DB.Connection -> Int64 -> Maybe (ChatItemId, ChatItemId) -> IO ()
-updateDirectChatItemsRead db contactId itemsRange_ = do
+updateDirectChatItemsRead :: DB.Connection -> User -> ContactId -> Maybe (ChatItemId, ChatItemId) -> IO ()
+updateDirectChatItemsRead db User {userId} contactId itemsRange_ = do
   currentTs <- getCurrentTime
   case itemsRange_ of
     Just (fromItemId, toItemId) ->
@@ -4105,20 +4259,52 @@ updateDirectChatItemsRead db contactId itemsRange_ = do
         db
         [sql|
           UPDATE chat_items SET item_status = ?, updated_at = ?
-          WHERE contact_id = ? AND chat_item_id >= ? AND chat_item_id <= ? AND item_status = ?
+          WHERE user_id = ? AND contact_id = ? AND chat_item_id >= ? AND chat_item_id <= ? AND item_status = ?
         |]
-        (CISRcvRead, currentTs, contactId, fromItemId, toItemId, CISRcvNew)
+        (CISRcvRead, currentTs, userId, contactId, fromItemId, toItemId, CISRcvNew)
     _ ->
       DB.execute
         db
         [sql|
           UPDATE chat_items SET item_status = ?, updated_at = ?
-          WHERE contact_id = ? AND item_status = ?
+          WHERE user_id = ? AND contact_id = ? AND item_status = ?
         |]
-        (CISRcvRead, currentTs, contactId, CISRcvNew)
+        (CISRcvRead, currentTs, userId, contactId, CISRcvNew)
 
-updateGroupChatItemsRead :: DB.Connection -> Int64 -> Maybe (ChatItemId, ChatItemId) -> IO ()
-updateGroupChatItemsRead db groupId itemsRange_ = do
+getDirectUnreadTimedItems :: DB.Connection -> User -> ContactId -> Maybe (ChatItemId, ChatItemId) -> IO [(ChatItemId, Int)]
+getDirectUnreadTimedItems db User {userId} contactId itemsRange_ = case itemsRange_ of
+  Just (fromItemId, toItemId) ->
+    DB.query
+      db
+      [sql|
+        SELECT chat_item_id, timed_ttl
+        FROM chat_items
+        WHERE user_id = ? AND contact_id = ?
+          AND chat_item_id >= ? AND chat_item_id <= ?
+          AND item_status = ?
+          AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
+          AND (item_live IS NULL OR item_live = ?)
+      |]
+      (userId, contactId, fromItemId, toItemId, CISRcvNew, False)
+  _ ->
+    DB.query
+      db
+      [sql|
+        SELECT chat_item_id, timed_ttl
+        FROM chat_items
+        WHERE user_id = ? AND contact_id = ? AND item_status = ? AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
+      |]
+      (userId, contactId, CISRcvNew)
+
+setDirectChatItemDeleteAt :: DB.Connection -> User -> ContactId -> ChatItemId -> UTCTime -> IO ()
+setDirectChatItemDeleteAt db User {userId} contactId chatItemId deleteAt =
+  DB.execute
+    db
+    "UPDATE chat_items SET timed_delete_at = ? WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?"
+    (deleteAt, userId, contactId, chatItemId)
+
+updateGroupChatItemsRead :: DB.Connection -> UserId -> GroupId -> Maybe (ChatItemId, ChatItemId) -> IO ()
+updateGroupChatItemsRead db userId groupId itemsRange_ = do
   currentTs <- getCurrentTime
   case itemsRange_ of
     Just (fromItemId, toItemId) ->
@@ -4126,17 +4312,49 @@ updateGroupChatItemsRead db groupId itemsRange_ = do
         db
         [sql|
           UPDATE chat_items SET item_status = ?, updated_at = ?
-          WHERE group_id = ? AND chat_item_id >= ? AND chat_item_id <= ? AND item_status = ?
+          WHERE user_id = ? AND group_id = ? AND chat_item_id >= ? AND chat_item_id <= ? AND item_status = ?
         |]
-        (CISRcvRead, currentTs, groupId, fromItemId, toItemId, CISRcvNew)
+        (CISRcvRead, currentTs, userId, groupId, fromItemId, toItemId, CISRcvNew)
     _ ->
       DB.execute
         db
         [sql|
           UPDATE chat_items SET item_status = ?, updated_at = ?
-          WHERE group_id = ? AND item_status = ?
+          WHERE user_id = ? AND group_id = ? AND item_status = ?
         |]
-        (CISRcvRead, currentTs, groupId, CISRcvNew)
+        (CISRcvRead, currentTs, userId, groupId, CISRcvNew)
+
+getGroupUnreadTimedItems :: DB.Connection -> User -> GroupId -> Maybe (ChatItemId, ChatItemId) -> IO [(ChatItemId, Int)]
+getGroupUnreadTimedItems db User {userId} groupId itemsRange_ = case itemsRange_ of
+  Just (fromItemId, toItemId) ->
+    DB.query
+      db
+      [sql|
+        SELECT chat_item_id, timed_ttl
+        FROM chat_items
+        WHERE user_id = ? AND group_id = ?
+          AND chat_item_id >= ? AND chat_item_id <= ?
+          AND item_status = ?
+          AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
+          AND (item_live IS NULL OR item_live = ?)
+      |]
+      (userId, groupId, fromItemId, toItemId, CISRcvNew, False)
+  _ ->
+    DB.query
+      db
+      [sql|
+        SELECT chat_item_id, timed_ttl
+        FROM chat_items
+        WHERE user_id = ? AND group_id = ? AND item_status = ? AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
+      |]
+      (userId, groupId, CISRcvNew)
+
+setGroupChatItemDeleteAt :: DB.Connection -> User -> GroupId -> ChatItemId -> UTCTime -> IO ()
+setGroupChatItemDeleteAt db User {userId} groupId chatItemId deleteAt =
+  DB.execute
+    db
+    "UPDATE chat_items SET timed_delete_at = ? WHERE user_id = ? AND group_id = ? AND chat_item_id = ?"
+    (deleteAt, userId, groupId, chatItemId)
 
 type ChatStatsRow = (Int, ChatItemId, Bool)
 
@@ -4145,9 +4363,11 @@ toChatStats (unreadCount, minUnreadItemId, unreadChat) = ChatStats {unreadCount,
 
 type MaybeCIFIleRow = (Maybe Int64, Maybe String, Maybe Integer, Maybe FilePath, Maybe ACIFileStatus)
 
-type ChatItemRow = (Int64, ChatItemTs, ACIContent, Text, ACIStatus, Maybe SharedMsgId, Bool, Maybe Bool, UTCTime, UTCTime) :. MaybeCIFIleRow
+type ChatItemModeRow = (Maybe Int, Maybe UTCTime, Maybe Bool)
 
-type MaybeChatItemRow = (Maybe Int64, Maybe ChatItemTs, Maybe ACIContent, Maybe Text, Maybe ACIStatus, Maybe SharedMsgId, Maybe Bool, Maybe Bool, Maybe UTCTime, Maybe UTCTime) :. MaybeCIFIleRow
+type ChatItemRow = (Int64, ChatItemTs, ACIContent, Text, ACIStatus, Maybe SharedMsgId, Bool, Maybe Bool, UTCTime, UTCTime) :. ChatItemModeRow :. MaybeCIFIleRow
+
+type MaybeChatItemRow = (Maybe Int64, Maybe ChatItemTs, Maybe ACIContent, Maybe Text, Maybe ACIStatus, Maybe SharedMsgId, Maybe Bool, Maybe Bool, Maybe UTCTime, Maybe UTCTime) :. ChatItemModeRow :. MaybeCIFIleRow
 
 type QuoteRow = (Maybe ChatItemId, Maybe SharedMsgId, Maybe UTCTime, Maybe MsgContent, Maybe Bool)
 
@@ -4161,7 +4381,7 @@ toQuote (quotedItemId, quotedSharedMsgId, quotedSentAt, quotedMsgContent, _) dir
   CIQuote <$> dir <*> pure quotedItemId <*> pure quotedSharedMsgId <*> quotedSentAt <*> quotedMsgContent <*> (parseMaybeMarkdownList . msgContentText <$> quotedMsgContent)
 
 toDirectChatItem :: TimeZone -> UTCTime -> ChatItemRow :. QuoteRow -> Either StoreError (CChatItem 'CTDirect)
-toDirectChatItem tz currentTs (((itemId, itemTs, itemContent, itemText, itemStatus, sharedMsgId, itemDeleted, itemEdited, createdAt, updatedAt) :. (fileId_, fileName_, fileSize_, filePath, fileStatus_)) :. quoteRow) =
+toDirectChatItem tz currentTs (((itemId, itemTs, itemContent, itemText, itemStatus, sharedMsgId, itemDeleted, itemEdited, createdAt, updatedAt) :. (timedTTL, timedDeleteAt, itemLive) :. (fileId_, fileName_, fileSize_, filePath, fileStatus_)) :. quoteRow) =
   case (itemContent, itemStatus, fileStatus_) of
     (ACIContent SMDSnd ciContent, ACIStatus SMDSnd ciStatus, Just (AFS SMDSnd fileStatus)) ->
       Right $ cItem SMDSnd CIDirectSnd ciStatus ciContent (maybeCIFile fileStatus)
@@ -4183,11 +4403,13 @@ toDirectChatItem tz currentTs (((itemId, itemTs, itemContent, itemText, itemStat
       CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, formattedText = parseMaybeMarkdownList itemText, quotedItem = toDirectQuote quoteRow, file}
     badItem = Left $ SEBadChatItem itemId
     ciMeta :: CIContent d -> CIStatus d -> CIMeta d
-    ciMeta content status = mkCIMeta itemId content itemText status sharedMsgId itemDeleted (fromMaybe False itemEdited) tz currentTs itemTs createdAt updatedAt
+    ciMeta content status = mkCIMeta itemId content itemText status sharedMsgId itemDeleted (fromMaybe False itemEdited) ciTimed itemLive tz currentTs itemTs createdAt updatedAt
+    ciTimed :: Maybe CITimed
+    ciTimed = timedTTL >>= \ttl -> Just CITimed {ttl, deleteAt = timedDeleteAt}
 
 toDirectChatItemList :: TimeZone -> UTCTime -> MaybeChatItemRow :. QuoteRow -> [CChatItem 'CTDirect]
-toDirectChatItemList tz currentTs (((Just itemId, Just itemTs, Just itemContent, Just itemText, Just itemStatus, sharedMsgId, Just itemDeleted, itemEdited, Just createdAt, Just updatedAt) :. fileRow) :. quoteRow) =
-  either (const []) (: []) $ toDirectChatItem tz currentTs (((itemId, itemTs, itemContent, itemText, itemStatus, sharedMsgId, itemDeleted, itemEdited, createdAt, updatedAt) :. fileRow) :. quoteRow)
+toDirectChatItemList tz currentTs (((Just itemId, Just itemTs, Just itemContent, Just itemText, Just itemStatus, sharedMsgId, Just itemDeleted, itemEdited, Just createdAt, Just updatedAt) :. (timedTTL, timedDeleteAt, itemLive) :. fileRow) :. quoteRow) =
+  either (const []) (: []) $ toDirectChatItem tz currentTs (((itemId, itemTs, itemContent, itemText, itemStatus, sharedMsgId, itemDeleted, itemEdited, createdAt, updatedAt) :. (timedTTL, timedDeleteAt, itemLive) :. fileRow) :. quoteRow)
 toDirectChatItemList _ _ _ = []
 
 type GroupQuoteRow = QuoteRow :. MaybeGroupMemberRow
@@ -4203,7 +4425,7 @@ toGroupQuote qr@(_, _, _, _, quotedSent) quotedMember_ = toQuote qr $ direction 
     direction _ _ = Nothing
 
 toGroupChatItem :: TimeZone -> UTCTime -> Int64 -> ChatItemRow :. MaybeGroupMemberRow :. GroupQuoteRow -> Either StoreError (CChatItem 'CTGroup)
-toGroupChatItem tz currentTs userContactId (((itemId, itemTs, itemContent, itemText, itemStatus, sharedMsgId, itemDeleted, itemEdited, createdAt, updatedAt) :. (fileId_, fileName_, fileSize_, filePath, fileStatus_)) :. memberRow_ :. quoteRow :. quotedMemberRow_) = do
+toGroupChatItem tz currentTs userContactId (((itemId, itemTs, itemContent, itemText, itemStatus, sharedMsgId, itemDeleted, itemEdited, createdAt, updatedAt) :. (timedTTL, timedDeleteAt, itemLive) :. (fileId_, fileName_, fileSize_, filePath, fileStatus_)) :. memberRow_ :. quoteRow :. quotedMemberRow_) = do
   let member_ = toMaybeGroupMember userContactId memberRow_
   let quotedMember_ = toMaybeGroupMember userContactId quotedMemberRow_
   case (itemContent, itemStatus, member_, fileStatus_) of
@@ -4227,42 +4449,47 @@ toGroupChatItem tz currentTs userContactId (((itemId, itemTs, itemContent, itemT
       CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, formattedText = parseMaybeMarkdownList itemText, quotedItem = toGroupQuote quoteRow quotedMember_, file}
     badItem = Left $ SEBadChatItem itemId
     ciMeta :: CIContent d -> CIStatus d -> CIMeta d
-    ciMeta content status = mkCIMeta itemId content itemText status sharedMsgId itemDeleted (fromMaybe False itemEdited) tz currentTs itemTs createdAt updatedAt
+    ciMeta content status = mkCIMeta itemId content itemText status sharedMsgId itemDeleted (fromMaybe False itemEdited) ciTimed itemLive tz currentTs itemTs createdAt updatedAt
+    ciTimed :: Maybe CITimed
+    ciTimed = timedTTL >>= \ttl -> Just CITimed {ttl, deleteAt = timedDeleteAt}
 
 toGroupChatItemList :: TimeZone -> UTCTime -> Int64 -> MaybeGroupChatItemRow -> [CChatItem 'CTGroup]
-toGroupChatItemList tz currentTs userContactId (((Just itemId, Just itemTs, Just itemContent, Just itemText, Just itemStatus, sharedMsgId, Just itemDeleted, itemEdited, Just createdAt, Just updatedAt) :. fileRow) :. memberRow_ :. quoteRow :. quotedMemberRow_) =
-  either (const []) (: []) $ toGroupChatItem tz currentTs userContactId (((itemId, itemTs, itemContent, itemText, itemStatus, sharedMsgId, itemDeleted, itemEdited, createdAt, updatedAt) :. fileRow) :. memberRow_ :. quoteRow :. quotedMemberRow_)
+toGroupChatItemList tz currentTs userContactId (((Just itemId, Just itemTs, Just itemContent, Just itemText, Just itemStatus, sharedMsgId, Just itemDeleted, itemEdited, Just createdAt, Just updatedAt) :. (timedTTL, timedDeleteAt, itemLive) :. fileRow) :. memberRow_ :. quoteRow :. quotedMemberRow_) =
+  either (const []) (: []) $ toGroupChatItem tz currentTs userContactId (((itemId, itemTs, itemContent, itemText, itemStatus, sharedMsgId, itemDeleted, itemEdited, createdAt, updatedAt) :. (timedTTL, timedDeleteAt, itemLive) :. fileRow) :. memberRow_ :. quoteRow :. quotedMemberRow_)
 toGroupChatItemList _ _ _ _ = []
 
-getSMPServers :: DB.Connection -> User -> IO [SMPServer]
+getSMPServers :: DB.Connection -> User -> IO [ServerCfg]
 getSMPServers db User {userId} =
-  map toSmpServer
+  map toServerCfg
     <$> DB.query
       db
       [sql|
-        SELECT host, port, key_hash
+        SELECT host, port, key_hash, basic_auth, preset, tested, enabled
         FROM smp_servers
         WHERE user_id = ?;
       |]
       (Only userId)
   where
-    toSmpServer :: (NonEmpty TransportHost, String, C.KeyHash) -> SMPServer
-    toSmpServer (host, port, keyHash) = SMPServer host port keyHash
+    toServerCfg :: (NonEmpty TransportHost, String, C.KeyHash, Maybe Text, Bool, Maybe Bool, Bool) -> ServerCfg
+    toServerCfg (host, port, keyHash, auth_, preset, tested, enabled) =
+      let server = ProtoServerWithAuth (SMPServer host port keyHash) (BasicAuth . encodeUtf8 <$> auth_)
+       in ServerCfg {server, preset, tested, enabled}
 
-overwriteSMPServers :: DB.Connection -> User -> [SMPServer] -> ExceptT StoreError IO ()
-overwriteSMPServers db User {userId} smpServers =
+overwriteSMPServers :: DB.Connection -> User -> [ServerCfg] -> ExceptT StoreError IO ()
+overwriteSMPServers db User {userId} servers =
   checkConstraint SEUniqueID . ExceptT $ do
     currentTs <- getCurrentTime
     DB.execute db "DELETE FROM smp_servers WHERE user_id = ?" (Only userId)
-    forM_ smpServers $ \ProtocolServer {host, port, keyHash} ->
+    forM_ servers $ \ServerCfg {server, preset, tested, enabled} -> do
+      let ProtoServerWithAuth ProtocolServer {host, port, keyHash} auth_ = server
       DB.execute
         db
         [sql|
           INSERT INTO smp_servers
-            (host, port, key_hash, user_id, created_at, updated_at)
-          VALUES (?,?,?,?,?,?)
+            (host, port, key_hash, basic_auth, preset, tested, enabled, user_id, created_at, updated_at)
+          VALUES (?,?,?,?,?,?,?,?,?,?)
         |]
-        (host, port, keyHash, userId, currentTs, currentTs)
+        (host, port, keyHash, safeDecodeUtf8 . unBasicAuth <$> auth_, preset, tested, enabled, userId, currentTs, currentTs)
     pure $ Right ()
 
 createCall :: DB.Connection -> User -> Call -> UTCTime -> IO ()
@@ -4425,6 +4652,24 @@ getXGrpMemIntroContGroup db User {userId} GroupMember {groupMemberId} = do
       Just connReq -> Just (hostConnId, connReq)
       _ -> Nothing
 
+getTimedItems :: DB.Connection -> User -> UTCTime -> IO [((ChatRef, ChatItemId), UTCTime)]
+getTimedItems db User {userId} startTimedThreadCutoff =
+  mapMaybe toCIRefDeleteAt
+    <$> DB.query
+      db
+      [sql|
+        SELECT chat_item_id, contact_id, group_id, timed_delete_at
+        FROM chat_items
+        WHERE user_id = ? AND timed_delete_at IS NOT NULL AND timed_delete_at <= ?
+      |]
+      (userId, startTimedThreadCutoff)
+  where
+    toCIRefDeleteAt :: (ChatItemId, Maybe ContactId, Maybe GroupId, UTCTime) -> Maybe ((ChatRef, ChatItemId), UTCTime)
+    toCIRefDeleteAt = \case
+      (itemId, Just contactId, Nothing, deleteAt) -> Just ((ChatRef CTDirect contactId, itemId), deleteAt)
+      (itemId, Nothing, Just groupId, deleteAt) -> Just ((ChatRef CTGroup groupId, itemId), deleteAt)
+      _ -> Nothing
+
 getChatItemTTL :: DB.Connection -> User -> IO (Maybe Int64)
 getChatItemTTL db User {userId} =
   fmap join . maybeFirstRow fromOnly $ DB.query db "SELECT chat_item_ttl FROM settings WHERE user_id = ? LIMIT 1" (Only userId)
@@ -4465,6 +4710,7 @@ deleteContactExpiredCIs db user@User {userId} ct@Contact {contactId} expirationD
     DB.execute db "DELETE FROM messages WHERE connection_id = ? AND created_at <= ?" (connId, expirationDate)
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ? AND created_at <= ?" (userId, contactId, expirationDate)
 
+-- TODO delete
 getContactCICount :: DB.Connection -> User -> Contact -> IO (Maybe Int64)
 getContactCICount db User {userId} Contact {contactId} =
   fmap join . maybeFirstRow fromOnly $
@@ -4488,6 +4734,7 @@ deleteGroupExpiredCIs db User {userId} GroupInfo {groupId} expirationDate create
   DB.execute db "DELETE FROM messages WHERE group_id = ? AND created_at <= ?" (groupId, min expirationDate createdAtCutoff)
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ? AND item_ts <= ? AND created_at <= ?" (userId, groupId, expirationDate, createdAtCutoff)
 
+-- TODO delete
 getGroupCICount :: DB.Connection -> User -> GroupInfo -> IO (Maybe Int64)
 getGroupCICount db User {userId} GroupInfo {groupId} =
   fmap join . maybeFirstRow fromOnly $
@@ -4566,7 +4813,7 @@ data StoreError
   | SEGroupNotFound {groupId :: GroupId}
   | SEGroupNotFoundByName {groupName :: GroupName}
   | SEGroupMemberNameNotFound {groupId :: GroupId, groupMemberName :: ContactName}
-  | SEGroupMemberNotFound {groupId :: GroupId, groupMemberId :: GroupMemberId}
+  | SEGroupMemberNotFound {groupMemberId :: GroupMemberId}
   | SEGroupWithoutUser
   | SEDuplicateGroupMember
   | SEGroupAlreadyJoined
@@ -4595,6 +4842,7 @@ data StoreError
   | SEDuplicateGroupLink {groupInfo :: GroupInfo}
   | SEGroupLinkNotFound {groupInfo :: GroupInfo}
   | SEHostMemberIdNotFound {groupId :: Int64}
+  | SEContactNotFoundByFileId {fileId :: FileTransferId}
   deriving (Show, Exception, Generic)
 
 instance ToJSON StoreError where

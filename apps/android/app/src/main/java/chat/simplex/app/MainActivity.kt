@@ -3,12 +3,15 @@ package chat.simplex.app
 import android.app.Application
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Parcelable
 import android.os.SystemClock.elapsedRealtime
 import android.util.Log
+import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
@@ -19,7 +22,9 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.*
 import chat.simplex.app.model.ChatModel
@@ -36,6 +41,8 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.*
 import chat.simplex.app.views.onboarding.*
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
 
 class MainActivity: FragmentActivity() {
   companion object {
@@ -66,6 +73,13 @@ class MainActivity: FragmentActivity() {
       processNotificationIntent(intent, m)
       processIntent(intent, m)
       processExternalIntent(intent, m)
+    }
+    if (m.controller.appPrefs.privacyProtectScreen.get()) {
+      Log.d(TAG, "onCreate: set FLAG_SECURE")
+      window.setFlags(
+        WindowManager.LayoutParams.FLAG_SECURE,
+        WindowManager.LayoutParams.FLAG_SECURE
+      )
     }
     setContent {
       SimpleXTheme {
@@ -119,7 +133,15 @@ class MainActivity: FragmentActivity() {
   }
 
   override fun onBackPressed() {
-    super.onBackPressed()
+    if (
+      onBackPressedDispatcher.hasEnabledCallbacks() // Has something to do in a backstack
+      || Build.VERSION.SDK_INT >= Build.VERSION_CODES.R // Android 11 or above
+      || isTaskRoot // there are still other tasks after we reach the main (home) activity
+    ) {
+      // https://medium.com/mobile-app-development-publication/the-risk-of-android-strandhogg-security-issue-and-how-it-can-be-mitigated-80d2ddb4af06
+      super.onBackPressed()
+    }
+
     if (!onBackPressedDispatcher.hasEnabledCallbacks() && vm.chatModel.controller.appPrefs.performLA.get()) {
       // When pressed Back and there is no one wants to process the back event, clear auth state to force re-auth on launch
       clearAuthState()
@@ -317,19 +339,62 @@ fun MainPage(
           if (chatModel.showCallView.value) ActiveCallView(chatModel)
           else {
             showAdvertiseLAAlert = true
-            val stopped = chatModel.chatRunning.value == false
-            if (chatModel.chatId.value == null) {
-              if (chatModel.sharedContent.value == null)
-                ChatListView(chatModel, setPerformLA, stopped)
-              else
-                ShareListView(chatModel, stopped)
+            BoxWithConstraints {
+              var currentChatId by rememberSaveable { mutableStateOf(chatModel.chatId.value) }
+              val offset = remember { Animatable(if (chatModel.chatId.value == null) 0f else maxWidth.value) }
+              Box(
+                Modifier
+                  .graphicsLayer {
+                    translationX = -offset.value.dp.toPx()
+                  }
+              ) {
+                  val stopped = chatModel.chatRunning.value == false
+                  if (chatModel.sharedContent.value == null)
+                    ChatListView(chatModel, setPerformLA, stopped)
+                  else
+                    ShareListView(chatModel, stopped)
+              }
+              val scope = rememberCoroutineScope()
+              val onComposed: () -> Unit = {
+                scope.launch {
+                  offset.animateTo(
+                    if (chatModel.chatId.value == null) 0f else maxWidth.value,
+                    chatListAnimationSpec()
+                  )
+                  if (offset.value == 0f) {
+                    currentChatId = null
+                  }
+                }
+              }
+              LaunchedEffect(Unit) {
+                launch {
+                  snapshotFlow { chatModel.chatId.value }
+                    .distinctUntilChanged()
+                    .collect {
+                      if (it != null) currentChatId = it
+                      else onComposed()
+
+                      // Deletes files that were not sent but already stored in files directory.
+                      // Currently, it's voice records only
+                      if (it == null && chatModel.filesToDelete.isNotEmpty()) {
+                        chatModel.filesToDelete.forEach { it.delete() }
+                        chatModel.filesToDelete.clear()
+                      }
+                    }
+                }
+              }
+              Box (Modifier.graphicsLayer { translationX = maxWidth.toPx() - offset.value.dp.toPx() }) Box2@ {
+                currentChatId?.let {
+                  ChatView(it, chatModel, onComposed)
+                }
+              }
             }
-            else ChatView(chatModel)
           }
         }
       }
       onboarding == OnboardingStage.Step1_SimpleXInfo -> SimpleXInfo(chatModel, onboarding = true)
       onboarding == OnboardingStage.Step2_CreateProfile -> CreateProfile(chatModel)
+      onboarding == OnboardingStage.Step3_SetNotificationsMode -> SetNotificationsMode(chatModel)
     }
     ModalManager.shared.showInView()
     val invitation = chatModel.activeCallInvitation.value
@@ -413,7 +478,6 @@ fun processExternalIntent(intent: Intent?, chatModel: ChatModel) {
 fun connectIfOpenedViaUri(uri: Uri, chatModel: ChatModel) {
   Log.d(TAG, "connectIfOpenedViaUri: opened via link")
   if (chatModel.currentUser.value == null) {
-    // TODO open from chat list view
     chatModel.appOpenUrl.value = uri
   } else {
     withUriAction(uri) { linkType ->

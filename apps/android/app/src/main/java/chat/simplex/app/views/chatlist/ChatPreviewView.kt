@@ -6,8 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Cancel
-import androidx.compose.material.icons.filled.NotificationsOff
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -26,7 +25,7 @@ import chat.simplex.app.views.chat.item.MarkdownText
 import chat.simplex.app.views.helpers.*
 
 @Composable
-fun ChatPreviewView(chat: Chat, chatModelIncognito: Boolean, currentUserProfileDisplayName: String?, stopped: Boolean) {
+fun ChatPreviewView(chat: Chat, chatModelIncognito: Boolean, currentUserProfileDisplayName: String?, stopped: Boolean, linkMode: SimplexLinkMode) {
   val cInfo = chat.chatInfo
 
   @Composable
@@ -64,10 +63,20 @@ fun ChatPreviewView(chat: Chat, chatModelIncognito: Boolean, currentUserProfileD
   }
 
   @Composable
+  fun VerifiedIcon() {
+    Icon(Icons.Outlined.VerifiedUser, null, Modifier.size(19.dp).padding(end = 3.dp, top = 1.dp), tint = HighOrLowlight)
+  }
+
+  @Composable
   fun chatPreviewTitle() {
     when (cInfo) {
       is ChatInfo.Direct ->
-        chatPreviewTitleText(if (cInfo.ready) Color.Unspecified else HighOrLowlight)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          if (cInfo.contact.verified) {
+            VerifiedIcon()
+          }
+          chatPreviewTitleText(if (cInfo.ready) Color.Unspecified else HighOrLowlight)
+        }
       is ChatInfo.Group ->
         when (cInfo.groupInfo.membership.memberStatus) {
           GroupMemberStatus.MemInvited -> chatPreviewTitleText(if (chat.chatInfo.incognito) Indigo else MaterialTheme.colors.primary)
@@ -83,11 +92,11 @@ fun ChatPreviewView(chat: Chat, chatModelIncognito: Boolean, currentUserProfileD
     val ci = chat.chatItems.lastOrNull()
     if (ci != null) {
       MarkdownText(
-        ci.text,
-        ci.formattedText,
+        if (!ci.meta.itemDeleted) ci.text else generalGetString(R.string.marked_deleted_description),
+        if (!ci.meta.itemDeleted) ci.formattedText else null,
         sender = if (cInfo is ChatInfo.Group && !ci.chatDir.sent) ci.memberDisplayName else null,
+        linkMode = linkMode,
         senderBold = true,
-        metaText = null,
         maxLines = 2,
         overflow = TextOverflow.Ellipsis,
         style = MaterialTheme.typography.body1.copy(color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight, lineHeight = 22.sp),
@@ -232,6 +241,6 @@ fun ChatStatusImage(chat: Chat) {
 @Composable
 fun PreviewChatPreviewView() {
   SimpleXTheme {
-    ChatPreviewView(Chat.sampleData, false, "", stopped = false)
+    ChatPreviewView(Chat.sampleData, false, "", stopped = false, linkMode = SimplexLinkMode.DESCRIPTION)
   }
 }

@@ -1,20 +1,30 @@
 package chat.simplex.app.views.chat.item
 
+import android.app.Activity
+import android.content.ActivityNotFoundException
+import android.util.Log
+import androidx.annotation.IntRange
 import androidx.compose.foundation.text.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.*
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import androidx.core.text.BidiFormatter
+import chat.simplex.app.TAG
 import chat.simplex.app.model.*
+import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.views.helpers.detectGesture
+import kotlinx.coroutines.*
 
 val reserveTimestampStyle = SpanStyle(color = Color.Transparent)
 val boldFont = SpanStyle(fontWeight = FontWeight.Medium)
@@ -36,40 +46,97 @@ fun appendSender(b: AnnotatedString.Builder, sender: String?, senderBold: Boolea
   }
 }
 
+private val noTyping: AnnotatedString = AnnotatedString("   ")
+
+private val typingIndicators: List<AnnotatedString> = listOf(
+  typing(FontWeight.Black) + typing() + typing(),
+  typing(FontWeight.Bold) + typing(FontWeight.Black) + typing(),
+  typing() + typing(FontWeight.Bold) + typing(FontWeight.Black),
+  typing() + typing() + typing(FontWeight.Bold)
+)
+
+
+private fun typingIndicator(recent: Boolean, @IntRange (from = 0, to = 4) typingIdx: Int): AnnotatedString = buildAnnotatedString {
+  pushStyle(SpanStyle(color = HighOrLowlight, fontFamily = FontFamily.Monospace, letterSpacing = (-1).sp))
+  append(if (recent) typingIndicators[typingIdx] else noTyping)
+}
+
+private fun typing(w: FontWeight = FontWeight.Light): AnnotatedString =
+  AnnotatedString(".", SpanStyle(fontWeight = w))
+
 @Composable
 fun MarkdownText (
   text: String,
   formattedText: List<FormattedText>? = null,
   sender: String? = null,
-  metaText: String? = null,
-  edited: Boolean = false,
+  meta: CIMeta? = null,
+  chatTTL: Int? = null,
   style: TextStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onSurface, lineHeight = 22.sp),
   maxLines: Int = Int.MAX_VALUE,
   overflow: TextOverflow = TextOverflow.Clip,
   uriHandler: UriHandler? = null,
   senderBold: Boolean = false,
   modifier: Modifier = Modifier,
+  linkMode: SimplexLinkMode,
   onLinkLongClick: (link: String) -> Unit = {}
 ) {
   val textLayoutDirection = remember (text) {
     if (BidiFormatter.getInstance().isRtl(text.subSequence(0, kotlin.math.min(50, text.length)))) LayoutDirection.Rtl else LayoutDirection.Ltr
   }
-  val reserve = when {
-    textLayoutDirection != LocalLayoutDirection.current && metaText != null -> "\n"
-    edited -> "        "
-    else -> "    "
+  val reserve = if (textLayoutDirection != LocalLayoutDirection.current && meta != null) {
+    "\n"
+  } else if (meta != null) {
+    reserveSpaceForMeta(meta, chatTTL)
+  } else {
+    "    "
   }
+  val scope = rememberCoroutineScope()
   CompositionLocalProvider(
     LocalLayoutDirection provides if (textLayoutDirection != LocalLayoutDirection.current)
       if (LocalLayoutDirection.current == LayoutDirection.Ltr) LayoutDirection.Rtl else LayoutDirection.Ltr
     else
       LocalLayoutDirection.current
   ) {
+    var timer: Job? by remember { mutableStateOf(null) }
+    var typingIdx by rememberSaveable { mutableStateOf(0) }
+    fun stopTyping() {
+      timer?.cancel()
+      timer = null
+    }
+    fun switchTyping() {
+      if (meta != null && meta.isLive && meta.recent) {
+        timer = timer ?: scope.launch {
+          while (isActive) {
+            typingIdx = (typingIdx + 1) % typingIndicators.size
+            delay(250)
+          }
+        }
+      } else {
+        stopTyping()
+      }
+    }
+    if (meta?.isLive == true) {
+      val activity = LocalContext.current as Activity
+      LaunchedEffect(meta.recent, meta.isLive) {
+        switchTyping()
+      }
+      DisposableEffect(Unit) {
+        val orientation = activity.resources.configuration.orientation
+        onDispose {
+          if (orientation == activity.resources.configuration.orientation) {
+            stopTyping()
+          }
+        }
+      }
+    }
     if (formattedText == null) {
       val annotatedText = buildAnnotatedString {
         appendSender(this, sender, senderBold)
         append(text)
-        if (metaText != null) withStyle(reserveTimestampStyle) { append(reserve + metaText) }
+        if (meta?.isLive == true) {
+          append(typingIndicator(meta.recent, typingIdx))
+        }
+        if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
       Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow)
     } else {
@@ -79,22 +146,29 @@ fun MarkdownText (
         for (ft in formattedText) {
           if (ft.format == null) append(ft.text)
           else {
-            val link = ft.link
+            val link = ft.link(linkMode)
             if (link != null) {
               hasLinks = true
-              val ftStyle = ft.format.style
+              val ftStyle = if (ft.format is Format.SimplexLink && !ft.format.trustedUri && linkMode == SimplexLinkMode.BROWSER) {
+                SpanStyle(color = Color.Red, textDecoration = TextDecoration.Underline)
+              } else {
+                ft.format.style
+              }
               withAnnotation(tag = "URL", annotation = link) {
-                withStyle(ftStyle) { append(ft.text) }
+                withStyle(ftStyle) { append(ft.viewText(linkMode)) }
               }
             } else {
               withStyle(ft.format.style) { append(ft.text) }
             }
           }
         }
+        if (meta?.isLive == true) {
+          append(typingIndicator(meta.recent, typingIdx))
+        }
         // With RTL language set globally links looks bad sometimes, better to add a new line to bo sure everything looks good
         /*if (metaText != null && hasLinks && LocalLayoutDirection.current == LayoutDirection.Rtl)
           withStyle(reserveTimestampStyle) { append("\n" + metaText) }
-        else */if (metaText != null) withStyle(reserveTimestampStyle) { append(reserve + metaText) }
+        else */if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
       if (hasLinks && uriHandler != null) {
         ClickableText(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow,
@@ -104,7 +178,15 @@ fun MarkdownText (
           },
           onClick = { offset ->
             annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
-              .firstOrNull()?.let { annotation -> uriHandler.openUri(annotation.item) }
+              .firstOrNull()?.let { annotation ->
+                try {
+                  uriHandler.openUri(annotation.item)
+                } catch (e: ActivityNotFoundException) {
+                  // It can happen, for example, when you click on a text 0.00001 but don't have any app that can catch
+                  // `tel:` scheme in url installed on a device (no phone app or contacts, maybe)
+                  Log.e(TAG, "Open url: ${e.stackTraceToString()}")
+                }
+              }
           },
           shouldConsumeEvent = { offset ->
             annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset).any()

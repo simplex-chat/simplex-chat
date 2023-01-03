@@ -11,8 +11,7 @@ import chat.simplex.app.views.onboarding.OnboardingStage
 import chat.simplex.app.views.usersettings.NotificationsMode
 import kotlinx.coroutines.*
 import kotlinx.serialization.decodeFromString
-import java.io.BufferedReader
-import java.io.InputStreamReader
+import java.io.*
 import java.util.*
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
@@ -32,9 +31,12 @@ external fun chatSendCmd(ctrl: ChatCtrl, msg: String): String
 external fun chatRecvMsg(ctrl: ChatCtrl): String
 external fun chatRecvMsgWait(ctrl: ChatCtrl, timeout: Int): String
 external fun chatParseMarkdown(str: String): String
+external fun chatParseServer(str: String): String
 
 class SimplexApp: Application(), LifecycleEventObserver {
   lateinit var chatController: ChatController
+
+  var isAppOnForeground: Boolean = false
 
   fun initChatController(useKey: String? = null, startChat: Boolean = true) {
     val dbKey = useKey ?: DatabaseUtils.useDatabaseKey() ?: ""
@@ -95,6 +97,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
     withApi {
       when (event) {
         Lifecycle.Event.ON_START -> {
+          isAppOnForeground = true
           if (chatModel.chatRunning.value == true) {
             kotlin.runCatching {
               val chats = chatController.apiGetChats()
@@ -103,6 +106,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
           }
         }
         Lifecycle.Event.ON_RESUME -> {
+          isAppOnForeground = true
           if (chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete) {
             chatController.showBackgroundServiceNoticeIfNeeded()
           }
@@ -111,10 +115,14 @@ class SimplexApp: Application(), LifecycleEventObserver {
            * after calling [ChatController.showBackgroundServiceNoticeIfNeeded] notification mode in prefs can be changed.
            * It can happen when app was started and a user enables battery optimization while app in background
            * */
-          if (chatModel.chatRunning.value != false && appPreferences.notificationsMode.get() == NotificationsMode.SERVICE.name)
+          if (chatModel.chatRunning.value != false &&
+            chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete &&
+            appPreferences.notificationsMode.get() == NotificationsMode.SERVICE.name
+          ) {
             SimplexService.start(applicationContext)
+          }
         }
-        else -> {}
+        else -> isAppOnForeground = false
       }
     }
   }
@@ -168,7 +176,18 @@ class SimplexApp: Application(), LifecycleEventObserver {
       val s = Semaphore(0)
       thread(name="stdout/stderr pipe") {
         Log.d(TAG, "starting server")
-        val server = LocalServerSocket(socketName)
+        var server: LocalServerSocket? = null
+        for (i in 0..100) {
+          try {
+            server = LocalServerSocket(socketName + i)
+            break
+          } catch (e: IOException) {
+            Log.e(TAG, e.stackTraceToString())
+          }
+        }
+        if (server == null) {
+          throw Error("Unable to setup local server socket. Contact developers")
+        }
         Log.d(TAG, "started server")
         s.release()
         val receiver = server.accept()

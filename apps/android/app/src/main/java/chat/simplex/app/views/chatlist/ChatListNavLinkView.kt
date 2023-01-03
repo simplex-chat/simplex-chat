@@ -11,15 +11,20 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.*
 import chat.simplex.app.views.chat.group.deleteGroupDialog
 import chat.simplex.app.views.chat.group.leaveGroupDialog
+import chat.simplex.app.views.chat.item.InvalidJSONView
 import chat.simplex.app.views.chat.item.ItemAction
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.ContactConnectionInfoView
@@ -33,6 +38,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
     chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat
   }
   val stopped = chatModel.chatRunning.value == false
+  val linkMode by remember { chatModel.controller.appPrefs.simplexLinkMode.state }
   LaunchedEffect(chat.id) {
     showMenu.value = false
     delay(500L)
@@ -40,7 +46,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
   when (chat.chatInfo) {
     is ChatInfo.Direct ->
       ChatListNavLinkLayout(
-        chatLinkPreview = { ChatPreviewView(chat, chatModel.incognito.value, chatModel.currentUser.value?.profile?.displayName, stopped) },
+        chatLinkPreview = { ChatPreviewView(chat, chatModel.incognito.value, chatModel.currentUser.value?.profile?.displayName, stopped, linkMode) },
         click = { directChatAction(chat.chatInfo, chatModel) },
         dropdownMenuItems = { ContactMenuItems(chat, chatModel, showMenu, showMarkRead) },
         showMenu,
@@ -48,7 +54,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
       )
     is ChatInfo.Group ->
       ChatListNavLinkLayout(
-        chatLinkPreview = { ChatPreviewView(chat, chatModel.incognito.value, chatModel.currentUser.value?.profile?.displayName, stopped) },
+        chatLinkPreview = { ChatPreviewView(chat, chatModel.incognito.value, chatModel.currentUser.value?.profile?.displayName, stopped, linkMode) },
         click = { groupChatAction(chat.chatInfo.groupInfo, chatModel) },
         dropdownMenuItems = { GroupMenuItems(chat, chat.chatInfo.groupInfo, chatModel, showMenu, showMarkRead) },
         showMenu,
@@ -71,6 +77,18 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
           }
         },
         dropdownMenuItems = { ContactConnectionMenuItems(chat.chatInfo, chatModel, showMenu) },
+        showMenu,
+        stopped
+      )
+    is ChatInfo.InvalidJSON ->
+      ChatListNavLinkLayout(
+        chatLinkPreview = {
+          InvalidDataView()
+        },
+        click = {
+          ModalManager.shared.showModal(true) { InvalidJSONView(chat.chatInfo.json) }
+        },
+        dropdownMenuItems = null,
         showMenu,
         stopped
       )
@@ -319,6 +337,29 @@ fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: 
   )
 }
 
+@Composable
+private fun InvalidDataView() {
+  Row {
+    ProfileImage(72.dp, null, Icons.Filled.AccountCircle, HighOrLowlight)
+    Column(
+      modifier = Modifier
+        .padding(horizontal = 8.dp)
+        .weight(1F)
+    ) {
+      Text(
+        stringResource(R.string.invalid_data),
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        style = MaterialTheme.typography.h3,
+        fontWeight = FontWeight.Bold,
+        color = Color.Red
+      )
+      val height = with(LocalDensity.current) { 46.sp.toDp() }
+      Spacer(Modifier.height(height))
+    }
+  }
+}
+
 fun markChatRead(c: Chat, chatModel: ChatModel) {
   var chat = c
   withApi {
@@ -536,13 +577,11 @@ fun ChatListNavLinkLayout(
 ) {
   var modifier = Modifier.fillMaxWidth()
   if (!stopped) modifier = modifier.combinedClickable(onClick = click, onLongClick = { showMenu.value = true })
-  Surface(modifier) {
+  Box(modifier) {
     Row(
       modifier = Modifier
         .fillMaxWidth()
-        .padding(vertical = 8.dp)
-        .padding(start = 8.dp)
-        .padding(end = 12.dp),
+        .padding(start = 8.dp, top = 8.dp, end = 12.dp, bottom = 8.dp),
       verticalAlignment = Alignment.Top
     ) {
       chatLinkPreview()
@@ -588,7 +627,8 @@ fun PreviewChatListNavLinkDirect() {
           ),
           false,
           null,
-          stopped = false
+          stopped = false,
+          linkMode = SimplexLinkMode.DESCRIPTION
         )
       },
       click = {},
@@ -625,7 +665,8 @@ fun PreviewChatListNavLinkGroup() {
           ),
           false,
           null,
-          stopped = false
+          stopped = false,
+          linkMode = SimplexLinkMode.DESCRIPTION
         )
       },
       click = {},

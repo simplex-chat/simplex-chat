@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 enum class OnboardingStage {
   Step1_SimpleXInfo,
   Step2_CreateProfile,
+  Step3_SetNotificationsMode,
   OnboardingComplete
 }
 
@@ -34,6 +35,9 @@ fun CreateProfile(chatModel: ChatModel) {
         .padding(20.dp)
     ) {
       CreateProfilePanel(chatModel)
+      LaunchedEffect(Unit) {
+        setLastVersionDefault(chatModel)
+      }
       if (savedKeyboardState != keyboardState) {
         LaunchedEffect(keyboardState) {
           scope.launch {

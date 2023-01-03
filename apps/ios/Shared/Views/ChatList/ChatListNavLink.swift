@@ -31,6 +31,7 @@ struct ChatListNavLink: View {
     @State private var showContactRequestDialog = false
     @State private var showJoinGroupDialog = false
     @State private var showContactConnectionInfo = false
+    @State private var showInvalidJSON = false
 
     var body: some View {
         switch chat.chatInfo {
@@ -42,6 +43,8 @@ struct ChatListNavLink: View {
             contactRequestNavLink(cReq)
         case let .contactConnection(cConn):
             contactConnectionNavLink(cConn)
+        case let .invalidJSON(json):
+            invalidJSONPreview(json)
         }
     }
 
@@ -335,6 +338,17 @@ struct ChatListNavLink: View {
             }
         }
     }
+
+    private func invalidJSONPreview(_ json: String) -> some View {
+        Text("invalid chat data")
+            .foregroundColor(.red)
+            .padding(4)
+            .frame(height: rowHeights[dynamicTypeSize])
+            .onTapGesture { showInvalidJSON = true }
+            .sheet(isPresented: $showInvalidJSON) {
+                invalidJSONView(json)
+            }
+    }
 }
 
 func deleteContactConnectionAlert(_ contactConnection: PendingContactConnection, showError: @escaping (ErrorAlert) -> Void, success: @escaping () -> Void = {}) -> Alert {
@@ -402,10 +416,10 @@ struct ErrorAlert {
 
 func getErrorAlert(_ error: Error, _ title: LocalizedStringKey) -> ErrorAlert {
     switch error as? ChatResponse {
-    case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
-        return ErrorAlert(title: "Connection timeout", message: "Please check your network connection and try again.")
-    case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
-        return ErrorAlert(title: "Connection error", message: "Please check your network connection and try again.")
+    case let .chatCmdError(.errorAgent(.BROKER(addr, .TIMEOUT))):
+        return ErrorAlert(title: "Connection timeout", message: "Please check your network connection with \(serverHostname(addr)) and try again.")
+    case let .chatCmdError(.errorAgent(.BROKER(addr, .NETWORK))):
+        return ErrorAlert(title: "Connection error", message: "Please check your network connection with \(serverHostname(addr)) and try again.")
     default:
         return ErrorAlert(title: title, message: "Error: \(responseError(error))")
     }

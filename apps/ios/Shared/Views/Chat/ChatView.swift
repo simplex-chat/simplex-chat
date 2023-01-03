@@ -8,13 +8,14 @@
 
 import SwiftUI
 import SimpleXChat
+import SwiftyGif
 
 private let memberImageSize: CGFloat = 34
 
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
-    @ObservedObject var chat: Chat
+    @State @ObservedObject var chat: Chat
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
@@ -23,6 +24,7 @@ struct ChatView: View {
     @State private var showDeleteMessage = false
     @State private var connectionStats: ConnectionStats?
     @State private var customUserProfile: Profile?
+    @State private var connectionCode: String?
     @State private var tableView: UITableView?
     @State private var loadingItems = false
     @State private var firstPage = false
@@ -33,7 +35,6 @@ struct ChatView: View {
     @FocusState private var searchFocussed
     // opening GroupMemberInfoView on member icon
     @State private var selectedMember: GroupMember? = nil
-    @State private var memberConnectionStats: ConnectionStats?
 
     var body: some View {
         let cInfo = chat.chatInfo
@@ -48,9 +49,9 @@ struct ChatView: View {
                     floatingButtons(proxy)
                 }
             }
-
+            
             Spacer(minLength: 0)
-
+            
             ComposeView(
                 chat: chat,
                 composeState: $composeState,
@@ -90,13 +91,18 @@ struct ChatView: View {
                     Button {
                         Task {
                             do {
-                                let (stats, profile) = try await apiContactInfo(contactId: chat.chatInfo.apiId)
+                                let (stats, profile) = try await apiContactInfo(chat.chatInfo.apiId)
+                                let (ct, code) = try await apiGetContactCode(chat.chatInfo.apiId)
                                 await MainActor.run {
                                     connectionStats = stats
                                     customUserProfile = profile
+                                    connectionCode = code
+                                    if contact.activeConn.connectionCode != ct.activeConn.connectionCode {
+                                        chat.chatInfo = .direct(contact: ct)
+                                    }
                                 }
                             } catch let error {
-                                logger.error("apiContactInfo error: \(responseError(error))")
+                                logger.error("apiContactInfo or apiGetContactCode error: \(responseError(error))")
                             }
                             await MainActor.run { showChatInfoSheet = true }
                         }
@@ -106,8 +112,9 @@ struct ChatView: View {
                     .sheet(isPresented: $showChatInfoSheet, onDismiss: {
                         connectionStats = nil
                         customUserProfile = nil
+                        connectionCode = nil
                     }) {
-                        ChatInfoView(chat: chat, contact: contact, connectionStats: $connectionStats, customUserProfile: customUserProfile, localAlias: chat.chatInfo.localAlias)
+                        ChatInfoView(chat: chat, contact: contact, connectionStats: $connectionStats, customUserProfile: $customUserProfile, localAlias: chat.chatInfo.localAlias, connectionCode: $connectionCode)
                     }
                 } else if case let .group(groupInfo) = cInfo {
                     Button {
@@ -121,7 +128,7 @@ struct ChatView: View {
                     } label: {
                         ChatInfoToolbar(chat: chat)
                     }
-                    .sheet(isPresented: $showChatInfoSheet) {
+                    .appSheet(isPresented: $showChatInfoSheet) {
                         GroupChatInfoView(chat: chat, groupInfo: groupInfo)
                     }
                 }
@@ -152,7 +159,7 @@ struct ChatView: View {
                                     .onTapGesture { AlertManager.shared.showAlert(cantInviteIncognitoAlert()) }
                             } else {
                                 addMembersButton()
-                                    .sheet(isPresented: $showAddMembersSheet) {
+                                    .appSheet(isPresented: $showAddMembersSheet) {
                                         AddGroupMembersView(chat: chat, groupInfo: groupInfo)
                                     }
                             }
@@ -170,16 +177,16 @@ struct ChatView: View {
             }
         }
     }
-
+    
     private func searchToolbar() -> some View {
         HStack {
             HStack {
                 Image(systemName: "magnifyingglass")
                 TextField("Search", text: $searchText)
-                .focused($searchFocussed)
-                .foregroundColor(.primary)
-                .frame(maxWidth: .infinity)
-
+                    .focused($searchFocussed)
+                    .foregroundColor(.primary)
+                    .frame(maxWidth: .infinity)
+                
                 Button {
                     searchText = ""
                 } label: {
@@ -190,7 +197,7 @@ struct ChatView: View {
             .foregroundColor(.secondary)
             .background(Color(.secondarySystemBackground))
             .cornerRadius(10.0)
-
+            
             Button ("Cancel") {
                 searchText = ""
                 searchMode = false
@@ -204,37 +211,37 @@ struct ChatView: View {
         .padding(.horizontal)
         .padding(.vertical, 8)
     }
-
+    
     private func chatItemsList() -> some View {
         let cInfo = chat.chatInfo
         return GeometryReader { g in
             ScrollViewReader { proxy in
                 ScrollView {
                     let maxWidth =
-                        cInfo.chatType == .group
-                        ? (g.size.width - 28) * 0.84 - 42
-                        : (g.size.width - 32) * 0.84
+                    cInfo.chatType == .group
+                    ? (g.size.width - 28) * 0.84 - 42
+                    : (g.size.width - 32) * 0.84
                     LazyVStack(spacing: 5)  {
                         ForEach(chatModel.reversedChatItems, id: \.viewId) { ci in
                             chatItemView(ci, maxWidth)
-                            .scaleEffect(x: 1, y: -1, anchor: .center)
-                            .onAppear {
-                                itemsInView.insert(ci.viewId)
-                                loadChatItems(cInfo, ci, proxy)
-                                if ci.isRcvNew() {
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                                        if chatModel.chatId == cInfo.id && itemsInView.contains(ci.viewId) {
-                                            Task {
-                                                await apiMarkChatItemRead(cInfo, ci)
-                                                NtfManager.shared.decNtfBadgeCount()
+                                .scaleEffect(x: 1, y: -1, anchor: .center)
+                                .onAppear {
+                                    itemsInView.insert(ci.viewId)
+                                    loadChatItems(cInfo, ci, proxy)
+                                    if ci.isRcvNew {
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                                            if chatModel.chatId == cInfo.id && itemsInView.contains(ci.viewId) {
+                                                Task {
+                                                    await apiMarkChatItemRead(cInfo, ci)
+                                                    NtfManager.shared.decNtfBadgeCount()
+                                                }
                                             }
                                         }
                                     }
                                 }
-                            }
-                            .onDisappear {
-                                itemsInView.remove(ci.viewId)
-                            }
+                                .onDisappear {
+                                    itemsInView.remove(ci.viewId)
+                                }
                         }
                     }
                 }
@@ -246,9 +253,10 @@ struct ChatView: View {
                     loadChat(chat: chat, search: searchText)
                 }
                 .onChange(of: chatModel.chatId) { _ in
-                    if let chatId = chatModel.chatId, let chat = chatModel.getChat(chatId) {
+                    if let chatId = chatModel.chatId, let c = chatModel.getChat(chatId) {
+                        chat = c
                         showChatInfoSheet = false
-                        loadChat(chat: chat)
+                        loadChat(chat: c)
                         DispatchQueue.main.async {
                             scrollToBottom(proxy)
                         }
@@ -258,7 +266,7 @@ struct ChatView: View {
         }
         .scaleEffect(x: 1, y: -1, anchor: .center)
     }
-
+    
     private func floatingButtons(_ proxy: ScrollViewProxy) -> some View {
         let counts = chatModel.unreadChatItemCounts(itemsInView: itemsInView)
         return VStack {
@@ -300,7 +308,7 @@ struct ChatView: View {
         }
         .padding()
     }
-
+    
     private func circleButton<Content: View>(_ content: @escaping () -> Content) -> some View {
         ZStack {
             Circle()
@@ -309,7 +317,7 @@ struct ChatView: View {
             content()
         }
     }
-
+    
     private func callButton(_ contact: Contact, _ media: CallMediaType, imageName: String) -> some View {
         Button {
             CallController.shared.startCall(contact, media)
@@ -317,7 +325,7 @@ struct ChatView: View {
             Image(systemName: imageName)
         }
     }
-
+    
     private func searchButton() -> some View {
         Button {
             searchMode = true
@@ -327,7 +335,7 @@ struct ChatView: View {
             Label("Search", systemImage: "magnifyingglass")
         }
     }
-
+    
     private func addMembersButton() -> some View {
         Button {
             if case let .group(gInfo) = chat.chatInfo {
@@ -343,7 +351,7 @@ struct ChatView: View {
             Image(systemName: "person.crop.circle.badge.plus")
         }
     }
-
+    
     private func loadChatItems(_ cInfo: ChatInfo, _ ci: ChatItem, _ proxy: ScrollViewProxy) {
         if let firstItem = chatModel.reversedChatItems.last, firstItem.id == ci.id {
             if loadingItems || firstPage { return }
@@ -371,7 +379,7 @@ struct ChatView: View {
             }
         }
     }
-
+    
     @ViewBuilder private func chatItemView(_ ci: ChatItem, _ maxWidth: CGFloat) -> some View {
         if case let .groupRcv(member) = ci.chatDir,
            case let .group(groupInfo) = chat.chatInfo {
@@ -381,138 +389,222 @@ struct ChatView: View {
                 if showMember {
                     ProfileImage(imageStr: member.memberProfile.image)
                         .frame(width: memberImageSize, height: memberImageSize)
-                        .onTapGesture {
-                            Task {
-                                do {
-                                    let stats = try await apiGroupMemberInfo(member.groupId, member.groupMemberId)
-                                    await MainActor.run { memberConnectionStats = stats }
-                                } catch let error {
-                                    logger.error("apiGroupMemberInfo error: \(responseError(error))")
-                                }
-                                await MainActor.run { selectedMember = member }
-                            }
-                        }
-                        .sheet(item: $selectedMember, onDismiss: {
-                            selectedMember = nil
-                            memberConnectionStats = nil
-                        }) { _ in
-                            GroupMemberInfoView(groupInfo: groupInfo, member: $selectedMember, connectionStats: $memberConnectionStats)
+                        .onTapGesture { selectedMember = member }
+                        .appSheet(item: $selectedMember) { member in
+                            GroupMemberInfoView(groupInfo: groupInfo, member: member, navigation: true)
                         }
                 } else {
                     Rectangle().fill(.clear)
                         .frame(width: memberImageSize, height: memberImageSize)
                 }
-                chatItemWithMenu(ci, maxWidth, showMember: showMember).padding(.leading, 8)
+                ChatItemWithMenu(
+                    ci: ci,
+                    showMember: showMember,
+                    maxWidth: maxWidth,
+                    scrollProxy: scrollProxy,
+                    deleteMessage: deleteMessage,
+                    deletingItem: $deletingItem,
+                    composeState: $composeState,
+                    showDeleteMessage: $showDeleteMessage
+                )
+                .padding(.leading, 8)
+                .environmentObject(chat)
             }
             .padding(.trailing)
             .padding(.leading, 12)
         } else {
-            chatItemWithMenu(ci, maxWidth).padding(.horizontal)
+            ChatItemWithMenu(
+                ci: ci,
+                maxWidth: maxWidth,
+                scrollProxy: scrollProxy,
+                deleteMessage: deleteMessage,
+                deletingItem: $deletingItem,
+                composeState: $composeState,
+                showDeleteMessage: $showDeleteMessage
+            )
+            .padding(.horizontal)
+            .environmentObject(chat)
         }
     }
-
-    private func chatItemWithMenu(_ ci: ChatItem, _ maxWidth: CGFloat, showMember: Bool = false) -> some View {
-        let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
-        var menu: [UIAction] = []
-        if ci.isMsgContent() {
-            menu.append(contentsOf: [
-                UIAction(
-                    title: NSLocalizedString("Reply", comment: "chat item action"),
-                    image: UIImage(systemName: "arrowshape.turn.up.left")
-                ) { _ in
-                    withAnimation {
-                        if composeState.editing() {
-                            composeState = ComposeState(contextItem: .quotedItem(chatItem: ci))
-                        } else {
-                            composeState = composeState.copy(contextItem: .quotedItem(chatItem: ci))
+    
+    private struct ChatItemWithMenu: View {
+        @EnvironmentObject var chat: Chat
+        var ci: ChatItem
+        var showMember: Bool = false
+        var maxWidth: CGFloat
+        var scrollProxy: ScrollViewProxy?
+        var deleteMessage: (CIDeleteMode) -> Void
+        @Binding var deletingItem: ChatItem?
+        @Binding var composeState: ComposeState
+        @Binding var showDeleteMessage: Bool
+        
+        @State private var revealed = false
+        
+        var body: some View {
+            let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
+            
+            ChatItemView(chatInfo: chat.chatInfo, chatItem: ci, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy, revealed: $revealed)
+                .uiKitContextMenu(actions: menu())
+                .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {
+                    Button("Delete for me", role: .destructive) {
+                        deleteMessage(.cidmInternal)
+                    }
+                    if let di = deletingItem, di.meta.editable {
+                        Button(broadcastDeleteButtonText, role: .destructive) {
+                            deleteMessage(.cidmBroadcast)
                         }
                     }
-                },
-                UIAction(
-                    title: NSLocalizedString("Share", comment: "chat item action"),
-                    image: UIImage(systemName: "square.and.arrow.up")
-                ) { _ in
-                    var shareItems: [Any] = [ci.content.text]
+                }
+                .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
+                .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
+        }
+        
+        private func menu() -> [UIAction] {
+            var menu: [UIAction] = []
+            if let mc = ci.content.msgContent, !ci.meta.itemDeleted || revealed {
+                if !ci.meta.itemDeleted {
+                    menu.append(replyUIAction())
+                }
+                menu.append(shareUIAction())
+                menu.append(copyUIAction())
+                if let filePath = getLoadedFilePath(ci.file) {
                     if case .image = ci.content.msgContent, let image = getLoadedImage(ci.file) {
-                        shareItems.append(image)
-                    }
-                    showShareSheet(items: shareItems)
-                },
-                UIAction(
-                    title: NSLocalizedString("Copy", comment: "chat item action"),
-                    image: UIImage(systemName: "doc.on.doc")
-                ) { _ in
-                    if case let .image(text, _) = ci.content.msgContent,
-                       text == "",
-                       let image = getLoadedImage(ci.file) {
-                        UIPasteboard.general.image = image
-                    } else {
-                        UIPasteboard.general.string = ci.content.text
-                    }
-                }
-            ])
-            if case .image = ci.content.msgContent,
-               let image = getLoadedImage(ci.file) {
-                menu.append(
-                    UIAction(
-                        title: NSLocalizedString("Save", comment: "chat item action"),
-                        image: UIImage(systemName: "square.and.arrow.down")
-                    ) { _ in
-                        UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
-                    }
-                )
-            }
-            if ci.meta.editable {
-                menu.append(
-                    UIAction(
-                        title: NSLocalizedString("Edit", comment: "chat item action"),
-                        image: UIImage(systemName: "square.and.pencil")
-                    ) { _ in
-                        withAnimation {
-                            composeState = ComposeState(editingItem: ci)
+                        if image.imageData != nil {
+                            menu.append(saveFileAction(filePath))
+                        } else {
+                            menu.append(saveImageAction(image))
                         }
+                    } else {
+                        menu.append(saveFileAction(filePath))
                     }
-                )
+                }
+                if ci.meta.editable && !mc.isVoice {
+                    menu.append(editAction())
+                }
+                if revealed {
+                    menu.append(hideUIAction())
+                }
+                menu.append(deleteUIAction())
+            } else if ci.meta.itemDeleted {
+                menu.append(revealUIAction())
+                menu.append(deleteUIAction())
+            } else if ci.isDeletedContent {
+                menu.append(deleteUIAction())
             }
-            menu.append(
-                UIAction(
-                    title: NSLocalizedString("Delete", comment: "chat item action"),
-                    image: UIImage(systemName: "trash"),
-                    attributes: [.destructive]
-                ) { _ in
-                    showDeleteMessage = true
-                    deletingItem = ci
+            return menu
+        }
+        
+        private func replyUIAction() -> UIAction {
+            UIAction(
+                title: NSLocalizedString("Reply", comment: "chat item action"),
+                image: UIImage(systemName: "arrowshape.turn.up.left")
+            ) { _ in
+                withAnimation {
+                    if composeState.editing {
+                        composeState = ComposeState(contextItem: .quotedItem(chatItem: ci))
+                    } else {
+                        composeState = composeState.copy(contextItem: .quotedItem(chatItem: ci))
+                    }
                 }
-            )
-        } else if ci.isDeletedContent() {
-            menu.append(
-                UIAction(
-                    title: NSLocalizedString("Delete", comment: "chat item action"),
-                    image: UIImage(systemName: "trash"),
-                    attributes: [.destructive]
-                ) { _ in
-                    showDeleteMessage = true
-                    deletingItem = ci
+            }
+        }
+        
+        private func shareUIAction() -> UIAction {
+            UIAction(
+                title: NSLocalizedString("Share", comment: "chat item action"),
+                image: UIImage(systemName: "square.and.arrow.up")
+            ) { _ in
+                var shareItems: [Any] = [ci.content.text]
+                if case .image = ci.content.msgContent, let image = getLoadedImage(ci.file) {
+                    shareItems.append(image)
                 }
-            )
+                showShareSheet(items: shareItems)
+            }
+        }
+        
+        private func copyUIAction() -> UIAction {
+            UIAction(
+                title: NSLocalizedString("Copy", comment: "chat item action"),
+                image: UIImage(systemName: "doc.on.doc")
+            ) { _ in
+                if case let .image(text, _) = ci.content.msgContent,
+                   text == "",
+                   let image = getLoadedImage(ci.file) {
+                    UIPasteboard.general.image = image
+                } else {
+                    UIPasteboard.general.string = ci.content.text
+                }
+            }
+        }
+        
+        private func saveImageAction(_ image: UIImage) -> UIAction {
+            UIAction(
+                title: NSLocalizedString("Save", comment: "chat item action"),
+                image: UIImage(systemName: "square.and.arrow.down")
+            ) { _ in
+                UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+            }
+        }
+        
+        private func saveFileAction(_ filePath: String) -> UIAction {
+            UIAction(
+                title: NSLocalizedString("Save", comment: "chat item action"),
+                image: UIImage(systemName: "square.and.arrow.down")
+            ) { _ in
+                let fileURL = URL(fileURLWithPath: filePath)
+                showShareSheet(items: [fileURL])
+            }
+        }
+        
+        private func editAction() -> UIAction {
+            UIAction(
+                title: NSLocalizedString("Edit", comment: "chat item action"),
+                image: UIImage(systemName: "square.and.pencil")
+            ) { _ in
+                withAnimation {
+                    composeState = ComposeState(editingItem: ci)
+                }
+            }
         }
 
-        return ChatItemView(chatInfo: chat.chatInfo, chatItem: ci, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy)
-            .uiKitContextMenu(actions: menu)
-            .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {
-                Button("Delete for me", role: .destructive) {
-                    deleteMessage(.cidmInternal)
-                }
-                if let di = deletingItem, di.meta.editable {
-                    Button("Delete for everyone",role: .destructive) {
-                        deleteMessage(.cidmBroadcast)
-                    }
+        private func hideUIAction() -> UIAction {
+            UIAction(
+                title: NSLocalizedString("Hide", comment: "chat item action"),
+                image: UIImage(systemName: "eye.slash")
+            ) { _ in
+                withAnimation {
+                    revealed = false
                 }
             }
-            .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
-            .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
+        }
+        
+        private func deleteUIAction() -> UIAction {
+            UIAction(
+                title: NSLocalizedString("Delete", comment: "chat item action"),
+                image: UIImage(systemName: "trash"),
+                attributes: [.destructive]
+            ) { _ in
+                showDeleteMessage = true
+                deletingItem = ci
+            }
+        }
+        
+        private func revealUIAction() -> UIAction {
+            UIAction(
+                title: NSLocalizedString("Reveal", comment: "chat item action"),
+                image: UIImage(systemName: "eye")
+            ) { _ in
+                withAnimation {
+                    revealed = true
+                }
+            }
+        }
+        
+        private var broadcastDeleteButtonText: LocalizedStringKey {
+            chat.chatInfo.featureEnabled(.fullDelete) ? "Delete for everyone" : "Mark deleted for everyone"
+        }
     }
-
+    
     private func showMemberImage(_ member: GroupMember, _ prevItem: ChatItem?) -> Bool {
         switch (prevItem?.chatDir) {
         case .groupSnd: return true
@@ -520,26 +612,26 @@ struct ChatView: View {
         default: return false
         }
     }
-
+    
     private func scrollToBottom(_ proxy: ScrollViewProxy) {
         if let ci = chatModel.reversedChatItems.first {
             withAnimation { proxy.scrollTo(ci.viewId, anchor: .top) }
         }
     }
-
+    
     private func scrollUp(_ proxy: ScrollViewProxy) {
         if let ci = chatModel.topItemInView(itemsInView: itemsInView) {
             withAnimation { proxy.scrollTo(ci.viewId, anchor: .top) }
         }
     }
-
+    
     private func deleteMessage(_ mode: CIDeleteMode) {
         logger.debug("ChatView deleteMessage")
         Task {
             logger.debug("ChatView deleteMessage: in Task")
             do {
                 if let di = deletingItem {
-                    let toItem = try await apiDeleteChatItem(
+                    let (deletedItem, toItem) = try await apiDeleteChatItem(
                         type: chat.chatInfo.chatType,
                         id: chat.chatInfo.apiId,
                         itemId: di.id,
@@ -547,7 +639,11 @@ struct ChatView: View {
                     )
                     DispatchQueue.main.async {
                         deletingItem = nil
-                        let _ = chatModel.removeChatItem(chat.chatInfo, toItem)
+                        if let toItem = toItem {
+                            _ = chatModel.upsertChatItem(chat.chatInfo, toItem)
+                        } else {
+                            chatModel.removeChatItem(chat.chatInfo, deletedItem)
+                        }
                     }
                 }
             } catch {

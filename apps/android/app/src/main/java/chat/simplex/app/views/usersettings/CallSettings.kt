@@ -30,8 +30,8 @@ fun CallSettingsView(m: ChatModel,
 
 @Composable
 fun CallSettingsLayout(
-  webrtcPolicyRelay: Preference<Boolean>,
-  callOnLockScreen: Preference<CallOnLockScreen>,
+  webrtcPolicyRelay: SharedPreference<Boolean>,
+  callOnLockScreen: SharedPreference<CallOnLockScreen>,
   editIceServers: () -> Unit,
 ) {
   Column(
@@ -79,9 +79,10 @@ private fun LockscreenOpts(lockscreenOpts: State<CallOnLockScreen>, enabled: Sta
 @Composable
 fun SharedPreferenceToggle(
   text: String,
-  preference: Preference<Boolean>,
-  preferenceState: MutableState<Boolean>? = null
-) {
+  preference: SharedPreference<Boolean>,
+  preferenceState: MutableState<Boolean>? = null,
+  onChange: ((Boolean) -> Unit)? = null,
+  ) {
   val prefState = preferenceState ?: remember { mutableStateOf(preference.get()) }
   Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
     Text(text, Modifier.padding(end = 24.dp))
@@ -91,6 +92,7 @@ fun SharedPreferenceToggle(
       onCheckedChange = {
         preference.set(it)
         prefState.value = it
+        onChange?.invoke(it)
       },
       colors = SwitchDefaults.colors(
         checkedThumbColor = MaterialTheme.colors.primary,
@@ -106,7 +108,7 @@ fun SharedPreferenceToggleWithIcon(
   icon: ImageVector,
   stopped: Boolean = false,
   onClickInfo: () -> Unit,
-  preference: Preference<Boolean>,
+  preference: SharedPreference<Boolean>,
   preferenceState: MutableState<Boolean>? = null
 ) {
   val prefState = preferenceState ?: remember { mutableStateOf(preference.get()) }
@@ -135,7 +137,7 @@ fun SharedPreferenceToggleWithIcon(
 }
 
 @Composable
-fun <T>SharedPreferenceRadioButton(text: String, prefState: MutableState<T>, preference: Preference<T>, value: T) {
+fun <T>SharedPreferenceRadioButton(text: String, prefState: MutableState<T>, preference: SharedPreference<T>, value: T) {
   Row(verticalAlignment = Alignment.CenterVertically) {
     Text(text)
     val colors = RadioButtonDefaults.colors(selectedColor = MaterialTheme.colors.primary)

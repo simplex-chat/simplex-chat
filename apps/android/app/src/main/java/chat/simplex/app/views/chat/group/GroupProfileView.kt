@@ -136,7 +136,13 @@ fun GroupProfileLayout(
               if (enabled) {
                 Text(
                   stringResource(R.string.save_group_profile),
-                  modifier = Modifier.clickable { saveProfile(GroupProfile(displayName.value, fullName.value, profileImage.value)) },
+                  modifier = Modifier.clickable {
+                    saveProfile(groupProfile.copy(
+                      displayName = displayName.value,
+                      fullName = fullName.value,
+                      image = profileImage.value
+                    ))
+                  },
                   color = MaterialTheme.colors.primary
                 )
               } else {

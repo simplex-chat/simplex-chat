@@ -10,12 +10,12 @@
       }
     },
     {
-      "identity" : "swiftui-introspect",
+      "identity" : "swiftygif",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/siteline/SwiftUI-Introspect",
+      "location" : "https://github.com/kirualex/SwiftyGif",
       "state" : {
-        "revision" : "f2616860a41f9d9932da412a8978fec79c06fe24",
-        "version" : "0.1.4"
+        "branch" : "master",
+        "revision" : "5e8619335d394901379c9add5c4c1c2f420b3800"
       }
     }
   ],

@@ -14,27 +14,48 @@ struct PrivacySettings: View {
     @AppStorage(DEFAULT_PRIVACY_LINK_PREVIEWS) private var useLinkPreviews = true
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @AppStorage(GROUP_DEFAULT_PRIVACY_TRANSFER_IMAGES_INLINE, store: groupDefaults) private var transferImagesInline = false
+    @State private var simplexLinkMode = privacySimplexLinkModeDefault.get()
+    @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = true
 
     var body: some View {
         VStack {
             List {
                 Section("Device") {
                     SimplexLockSetting()
+                    settingsRow("eye.slash") {
+                        Toggle("Protect app screen", isOn: $protectScreen)
+                    }
                 }
-                Section("Chats") {
+
+                Section {
                     settingsRow("photo") {
                         Toggle("Auto-accept images", isOn: $autoAcceptImages)
                             .onChange(of: autoAcceptImages) {
                                 privacyAcceptImagesGroupDefault.set($0)
                             }
                     }
-                    if developerTools {
-                        settingsRow("photo.on.rectangle") {
-                            Toggle("Transfer images faster (BETA)", isOn: $transferImagesInline)
-                        }
+                    settingsRow("photo.on.rectangle") {
+                        Toggle("Transfer images faster", isOn: $transferImagesInline)
                     }
                     settingsRow("network") {
                         Toggle("Send link previews", isOn: $useLinkPreviews)
+                    }
+                    settingsRow("link") {
+                        Picker("SimpleX links", selection: $simplexLinkMode) {
+                            ForEach(SimpleXLinkMode.values) { mode in
+                                Text(mode.text)
+                            }
+                        }
+                    }
+                    .frame(height: 36)
+                    .onChange(of: simplexLinkMode) { mode in
+                        privacySimplexLinkModeDefault.set(mode)
+                    }
+                } header: {
+                    Text("Chats")
+                } footer: {
+                    if case .browser = simplexLinkMode {
+                        Text("Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red.")
                     }
                 }
             }

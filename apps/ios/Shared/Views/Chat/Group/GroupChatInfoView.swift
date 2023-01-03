@@ -13,14 +13,13 @@ struct GroupChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
     @ObservedObject var chat: Chat
-    var groupInfo: GroupInfo
+    @State var groupInfo: GroupInfo
     @ObservedObject private var alertManager = AlertManager.shared
     @State private var alert: GroupChatInfoViewAlert? = nil
     @State private var groupLink: String?
     @State private var showAddMembersSheet: Bool = false
-    @State private var selectedMember: GroupMember? = nil
-    @State private var showGroupProfile: Bool = false
     @State private var connectionStats: ConnectionStats?
+    @State private var connectionCode: String?
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     enum GroupChatInfoViewAlert: Identifiable {
@@ -42,6 +41,17 @@ struct GroupChatInfoView: View {
                 groupInfoHeader()
                     .listRowBackground(Color.clear)
 
+                Section {
+                    if groupInfo.canEdit {
+                        editGroupButton()
+                    }
+                    groupPreferencesButton($groupInfo)
+                } header: {
+                    Text("")
+                } footer: {
+                    Text("Only group owners can change group preferences.")
+                }
+
                 Section("\(members.count + 1) members") {
                     if groupInfo.canAddMembers {
                         groupLinkButton()
@@ -55,36 +65,19 @@ struct GroupChatInfoView: View {
                     }
                     memberView(groupInfo.membership, user: true)
                     ForEach(members) { member in
-                        Button {
-                            Task {
-                                do {
-                                    let stats = try await apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
-                                    await MainActor.run { connectionStats = stats }
-                                } catch let error {
-                                    logger.error("apiGroupMemberInfo error: \(responseError(error))")
-                                }
-                                await MainActor.run { selectedMember = member }
+                        ZStack {
+                            NavigationLink {
+                                memberInfoView(member.groupMemberId)
+                            } label: {
+                                EmptyView()
                             }
-                        } label: { memberView(member) }
+                            .opacity(0)
+                            memberView(member)
+                        }
                     }
-                }
-                .sheet(isPresented: $showAddMembersSheet) {
-                    AddGroupMembersView(chat: chat, groupInfo: groupInfo)
-                }
-                .sheet(item: $selectedMember, onDismiss: {
-                    selectedMember = nil
-                    connectionStats = nil
-                }) { _ in
-                    GroupMemberInfoView(groupInfo: groupInfo, member: $selectedMember, connectionStats: $connectionStats)
-                }
-                .sheet(isPresented: $showGroupProfile) {
-                    GroupProfileView(groupId: groupInfo.apiId, groupProfile: groupInfo.groupProfile)
                 }
 
                 Section {
-                    if groupInfo.canEdit {
-                        editGroupButton()
-                    }
                     clearChatButton()
                     if groupInfo.canDelete {
                         deleteGroupButton()
@@ -121,7 +114,7 @@ struct GroupChatInfoView: View {
         }
     }
 
-    func groupInfoHeader() -> some View {
+    private func groupInfoHeader() -> some View {
         VStack {
             let cInfo = chat.chatInfo
             ChatInfoImage(chat: chat, color: Color(uiColor: .tertiarySystemFill))
@@ -142,35 +135,32 @@ struct GroupChatInfoView: View {
     }
 
     private func addMembersButton() -> some View {
-        Button {
-            Task {
-                let groupMembers = await apiListMembers(groupInfo.groupId)
-                await MainActor.run {
-                    ChatModel.shared.groupMembers = groupMembers
-                    showAddMembersSheet = true
+        NavigationLink {
+            AddGroupMembersView(chat: chat, groupInfo: groupInfo)
+                .onAppear {
+                    ChatModel.shared.groupMembers = apiListMembersSync(groupInfo.groupId)
                 }
-            }
         } label: {
             Label("Invite members", systemImage: "plus")
         }
     }
 
-    func serverImage() -> some View {
+    private func serverImage() -> some View {
         let status = chat.serverInfo.networkStatus
         return Image(systemName: status.imageName)
             .foregroundColor(status == .connected ? .green : .secondary)
     }
 
-    func memberView(_ member: GroupMember, user: Bool = false) -> some View {
+    private func memberView(_ member: GroupMember, user: Bool = false) -> some View {
         HStack{
             ProfileImage(imageStr: member.image)
                 .frame(width: 38, height: 38)
                 .padding(.trailing, 2)
             // TODO server connection status
             VStack(alignment: .leading) {
-                Text(member.chatViewName)
+                let t = Text(member.chatViewName).foregroundColor(member.memberIncognito ? .indigo : .primary)
+                (member.verified ? memberVerifiedShield + t : t)
                     .lineLimit(1)
-                    .foregroundColor(member.memberIncognito ? .indigo : .primary)
                 let s = Text(member.memberStatus.shortText)
                 (user ? Text ("you: ") + s : s)
                     .lineLimit(1)
@@ -186,25 +176,49 @@ struct GroupChatInfoView: View {
         }
     }
 
-    private func groupLinkButton() -> some View {
-        NavigationLink {
-            GroupLinkView(groupId: groupInfo.groupId, groupLink: $groupLink)
-                .navigationBarTitleDisplayMode(.inline)
-        } label: {
-            Label("Group link", systemImage: "link")
-                .foregroundColor(.accentColor)
+    private var memberVerifiedShield: Text {
+        (Text(Image(systemName: "checkmark.shield")) + Text(" "))
+            .font(.caption)
+            .baselineOffset(2)
+            .kerning(-2)
+            .foregroundColor(.secondary)
+    }
+
+    @ViewBuilder private func memberInfoView(_ groupMemberId: Int64?) -> some View {
+        if let mId = groupMemberId, let member = chatModel.groupMembers.first(where: { $0.groupMemberId == mId }) {
+            GroupMemberInfoView(groupInfo: groupInfo, member: member)
+                .navigationBarHidden(false)
         }
     }
 
-    func editGroupButton() -> some View {
-        Button {
-            showGroupProfile = true
+    private func groupLinkButton() -> some View {
+        NavigationLink {
+            GroupLinkView(groupId: groupInfo.groupId, groupLink: $groupLink)
+                .navigationBarTitle("Group link")
+                .navigationBarTitleDisplayMode(.large)
+        } label: {
+            if groupLink == nil {
+                Label("Create group link", systemImage: "link.badge.plus")
+            } else {
+                Label("Group link", systemImage: "link")
+            }
+        }
+    }
+
+    private func editGroupButton() -> some View {
+        NavigationLink {
+            GroupProfileView(
+                groupInfo: $groupInfo,
+                groupProfile: groupInfo.groupProfile
+            )
+            .navigationBarTitle("Group profile")
+            .navigationBarTitleDisplayMode(.large)
         } label: {
             Label("Edit group profile", systemImage: "pencil")
         }
     }
 
-    func deleteGroupButton() -> some View {
+    private func deleteGroupButton() -> some View {
         Button(role: .destructive) {
             alert = .deleteGroupAlert
         } label: {
@@ -213,7 +227,7 @@ struct GroupChatInfoView: View {
         }
     }
 
-    func clearChatButton() -> some View {
+    private func clearChatButton() -> some View {
         Button() {
             alert = .clearChatAlert
         } label: {
@@ -222,7 +236,7 @@ struct GroupChatInfoView: View {
         }
     }
 
-    func leaveGroupButton() -> some View {
+    private func leaveGroupButton() -> some View {
         Button(role: .destructive) {
             alert = .leaveGroupAlert
         } label: {
@@ -284,6 +298,25 @@ struct GroupChatInfoView: View {
             },
             secondaryButton: .cancel()
         )
+    }
+}
+
+func groupPreferencesButton(_ groupInfo: Binding<GroupInfo>, _ creatingGroup: Bool = false) -> some View {
+    NavigationLink {
+        GroupPreferencesView(
+            groupInfo: groupInfo,
+            preferences: groupInfo.wrappedValue.fullGroupPreferences,
+            currentPreferences: groupInfo.wrappedValue.fullGroupPreferences,
+            creatingGroup: creatingGroup
+        )
+        .navigationBarTitle("Group preferences")
+        .navigationBarTitleDisplayMode(.large)
+    } label: {
+        if creatingGroup {
+            Text("Set group preferences")
+        } else {
+            Label("Group preferences", systemImage: "switch.2")
+        }
     }
 }
 

@@ -34,6 +34,7 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.CreateLinkTab
 import chat.simplex.app.views.newchat.CreateLinkView
 import chat.simplex.app.views.onboarding.SimpleXInfo
+import chat.simplex.app.views.onboarding.WhatsNewView
 
 @Composable
 fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
@@ -80,8 +81,8 @@ fun SettingsLayout(
   stopped: Boolean,
   encrypted: Boolean,
   incognito: MutableState<Boolean>,
-  incognitoPref: Preference<Boolean>,
-  developerTools: Preference<Boolean>,
+  incognitoPref: SharedPreference<Boolean>,
+  developerTools: SharedPreference<Boolean>,
   userDisplayName: String,
   setPerformLA: (Boolean) -> Unit,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
@@ -116,12 +117,14 @@ fun SettingsLayout(
         SectionDivider()
         SettingsActionItem(Icons.Outlined.QrCode, stringResource(R.string.your_simplex_contact_address), showModal { CreateLinkView(it, CreateLinkTab.LONG_TERM) }, disabled = stopped)
         SectionDivider()
-        DatabaseItem(encrypted, showSettingsModal { DatabaseView(it, showSettingsModal) }, stopped)
+        ChatPreferencesItem(showCustomModal)
       }
       SectionSpacer()
 
       SectionView(stringResource(R.string.settings_section_title_settings)) {
         SettingsActionItem(Icons.Outlined.Bolt, stringResource(R.string.notifications), showSettingsModal { NotificationsSettingsView(it) }, disabled = stopped)
+        SectionDivider()
+        SettingsActionItem(Icons.Outlined.WifiTethering, stringResource(R.string.network_and_servers), showSettingsModal { NetworkAndServersView(it, showModal, showSettingsModal) }, disabled = stopped)
         SectionDivider()
         SettingsActionItem(Icons.Outlined.Videocam, stringResource(R.string.settings_audio_video_calls), showSettingsModal { CallSettingsView(it, showModal) }, disabled = stopped)
         SectionDivider()
@@ -129,16 +132,16 @@ fun SettingsLayout(
         SectionDivider()
         SettingsActionItem(Icons.Outlined.LightMode, stringResource(R.string.appearance_settings), showSettingsModal { AppearanceView() }, disabled = stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.WifiTethering, stringResource(R.string.network_and_servers), showSettingsModal { NetworkAndServersView(it, showModal, showSettingsModal) }, disabled = stopped)
+        DatabaseItem(encrypted, showSettingsModal { DatabaseView(it, showSettingsModal) }, stopped)
       }
       SectionSpacer()
 
       SectionView(stringResource(R.string.settings_section_title_help)) {
         SettingsActionItem(Icons.Outlined.HelpOutline, stringResource(R.string.how_to_use_simplex_chat), showModal { HelpView(userDisplayName) }, disabled = stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.Info, stringResource(R.string.about_simplex_chat), showModal { SimpleXInfo(it, onboarding = false) })
+        SettingsActionItem(Icons.Outlined.Add, stringResource(R.string.whats_new), showCustomModal { _, close -> WhatsNewView(viaSettings = true, close) }, disabled = stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.TextFormat, stringResource(R.string.markdown_in_messages), showModal { MarkdownHelpView() })
+        SettingsActionItem(Icons.Outlined.Info, stringResource(R.string.about_simplex_chat), showModal { SimpleXInfo(it, onboarding = false) })
         SectionDivider()
         SettingsActionItem(Icons.Outlined.Tag, stringResource(R.string.chat_with_the_founder), { uriHandler.openUri(simplexTeamUri) }, textColor = MaterialTheme.colors.primary, disabled = stopped)
         SectionDivider()
@@ -175,7 +178,7 @@ fun SettingsLayout(
 
 @Composable
 fun SettingsIncognitoActionItem(
-  incognitoPref: Preference<Boolean>,
+  incognitoPref: SharedPreference<Boolean>,
   incognito: MutableState<Boolean>,
   stopped: Boolean,
   onClickInfo: () -> Unit,
@@ -235,6 +238,20 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
       }
     }
   }
+}
+
+@Composable fun ChatPreferencesItem(showCustomModal: ((@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit))) {
+  SettingsActionItem(
+    Icons.Outlined.ToggleOn,
+    stringResource(R.string.chat_preferences),
+    click = {
+      withApi {
+        showCustomModal { m, close ->
+          PreferencesView(m, m.currentUser.value ?: return@showCustomModal, close)
+        }()
+      }
+    }
+  )
 }
 
 @Composable fun ChatLockItem(performLA: MutableState<Boolean>, setPerformLA: (Boolean) -> Unit) {
@@ -365,12 +382,18 @@ fun SettingsActionItem(icon: ImageVector, text: String, click: (() -> Unit)? = n
 }
 
 @Composable
-fun SettingsPreferenceItem(icon: ImageVector, text: String, pref: Preference<Boolean>, prefState: MutableState<Boolean>? = null) {
-  SectionItemView() {
+fun SettingsPreferenceItem(
+  icon: ImageVector,
+  text: String,
+  pref: SharedPreference<Boolean>,
+  prefState: MutableState<Boolean>? = null,
+  onChange: ((Boolean) -> Unit)? = null,
+) {
+  SectionItemView {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Icon(icon, text, tint = HighOrLowlight)
       Spacer(Modifier.padding(horizontal = 4.dp))
-      SharedPreferenceToggle(text, pref, prefState)
+      SharedPreferenceToggle(text, pref, prefState, onChange)
     }
   }
 }
@@ -382,7 +405,7 @@ fun SettingsPreferenceItemWithInfo(
   text: String,
   stopped: Boolean,
   onClickInfo: () -> Unit,
-  pref: Preference<Boolean>,
+  pref: SharedPreference<Boolean>,
   prefState: MutableState<Boolean>? = null
 ) {
   SectionItemView(onClickInfo) {
@@ -395,20 +418,42 @@ fun SettingsPreferenceItemWithInfo(
 }
 
 @Composable
-fun PreferenceToggleWithIcon(
+fun PreferenceToggle(
   text: String,
-  icon: ImageVector,
-  iconColor: Color = HighOrLowlight,
   checked: Boolean,
   onChange: (Boolean) -> Unit = {},
 ) {
   Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-    Icon(
-      icon,
-      null,
-      tint = iconColor
+    Text(text)
+    Spacer(Modifier.fillMaxWidth().weight(1f))
+    Switch(
+      checked = checked,
+      onCheckedChange = onChange,
+      colors = SwitchDefaults.colors(
+        checkedThumbColor = MaterialTheme.colors.primary,
+        uncheckedThumbColor = HighOrLowlight
+      )
     )
-    Spacer(Modifier.padding(horizontal = 4.dp))
+  }
+}
+
+@Composable
+fun PreferenceToggleWithIcon(
+  text: String,
+  icon: ImageVector? = null,
+  iconColor: Color? = HighOrLowlight,
+  checked: Boolean,
+  onChange: (Boolean) -> Unit = {},
+) {
+  Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+    if (icon != null) {
+      Icon(
+        icon,
+        null,
+        tint = iconColor ?: HighOrLowlight
+      )
+      Spacer(Modifier.padding(horizontal = 4.dp))
+    }
     Text(text)
     Spacer(Modifier.fillMaxWidth().weight(1f))
     Switch(
@@ -438,13 +483,13 @@ fun PreviewSettingsLayout() {
       stopped = false,
       encrypted = false,
       incognito = remember { mutableStateOf(false) },
-      incognitoPref = Preference({ false }, {}),
-      developerTools = Preference({ false }, {}),
+      incognitoPref = SharedPreference({ false }, {}),
+      developerTools = SharedPreference({ false }, {}),
       userDisplayName = "Alice",
       setPerformLA = {},
       showModal = { {} },
       showSettingsModal = { {} },
-      showCustomModal = { {}},
+      showCustomModal = { {} },
       showTerminal = {},
 //      showVideoChatPrototype = {}
     )

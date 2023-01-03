@@ -10,30 +10,77 @@ import SwiftUI
 import SimpleXChat
 
 private let uiLinkColor = UIColor(red: 0, green: 0.533, blue: 1, alpha: 1)
-private let linkColor = Color(uiColor: uiLinkColor)
+
+private let noTyping = Text("   ")
+
+private let typingIndicators: [Text] = [
+    (typing(.black) + typing() + typing()),
+    (typing(.bold) + typing(.black) + typing()),
+    (typing() + typing(.bold) + typing(.black)),
+    (typing() + typing() + typing(.bold))
+]
+
+private func typing(_ w: Font.Weight = .light) -> Text {
+    Text(".").fontWeight(w)
+}
 
 struct MsgContentView: View {
+    @EnvironmentObject var chat: Chat
     var text: String
     var formattedText: [FormattedText]? = nil
     var sender: String? = nil
-    var metaText: Text? = nil
-    var edited = false
+    var meta: CIMeta? = nil
     var rightToLeft = false
+    @State private var typingIdx = 0
+    @State private var timer: Timer?
 
     var body: some View {
-        let v = messageText(text, formattedText, sender)
-        if let mt = metaText {
-            return v + reserveSpaceForMeta(mt, edited)
+        if meta?.isLive == true {
+            msgContentView()
+            .onAppear { switchTyping() }
+            .onDisappear(perform: stopTyping)
+            .onChange(of: meta?.isLive, perform: switchTyping)
+            .onChange(of: meta?.recent, perform: switchTyping)
         } else {
-            return v
+            msgContentView()
         }
     }
-    
-    private func reserveSpaceForMeta(_ meta: Text, _ edited: Bool) -> Text {
-        let reserve = rightToLeft ? "\n" : edited ? "          " : "      "
-        return (Text(reserve) + meta)
-            .font(.caption)
-            .foregroundColor(.clear)
+
+    private func switchTyping(_: Bool? = nil) {
+        if let meta = meta, meta.isLive && meta.recent {
+            timer = timer ?? Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { _ in
+                typingIdx = (typingIdx + 1) % typingIndicators.count
+            }
+        } else {
+            stopTyping()
+        }
+    }
+
+    private func stopTyping() {
+        timer?.invalidate()
+        timer = nil
+    }
+
+    private func msgContentView() -> Text {
+        var v = messageText(text, formattedText, sender)
+        if let mt = meta {
+            if mt.isLive {
+                v = v + typingIndicator(mt.recent)
+            }
+            v = v + reserveSpaceForMeta(mt)
+        }
+        return v
+    }
+
+    private func typingIndicator(_ recent: Bool) -> Text {
+        return (recent ? typingIndicators[typingIdx] : noTyping)
+            .font(.body.monospaced())
+            .kerning(-2)
+            .foregroundColor(.secondary)
+    }
+
+    private func reserveSpaceForMeta(_ mt: CIMeta) -> Text {
+        (rightToLeft ? Text("\n") : Text("   ")) + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, transparent: true)
     }
 }
 
@@ -70,6 +117,14 @@ private func formatText(_ ft: FormattedText, _ preview: Bool) -> Text {
         case .secret: return Text(t).foregroundColor(.clear).underline(color: .primary)
         case let .colored(color): return Text(t).foregroundColor(color.uiColor)
         case .uri: return linkText(t, t, preview, prefix: "")
+        case let .simplexLink(linkType, simplexUri, trustedUri, smpHosts):
+            switch privacySimplexLinkModeDefault.get() {
+            case .description: return linkText(simplexLinkText(linkType, smpHosts), simplexUri, preview, prefix: "")
+            case .full: return linkText(t, simplexUri, preview, prefix: "")
+            case .browser: return trustedUri
+                                    ? linkText(t, t, preview, prefix: "")
+                                    : linkText(t, t, preview, prefix: "", color: .red, uiColor: .red)
+            }
         case .email: return linkText(t, t, preview, prefix: "mailto:")
         case .phone: return linkText(t, t.replacingOccurrences(of: " ", with: ""), preview, prefix: "tel:")
         }
@@ -78,14 +133,17 @@ private func formatText(_ ft: FormattedText, _ preview: Bool) -> Text {
     }
 }
 
-private func linkText(_ s: String, _ link: String,
-                      _ preview: Bool, prefix: String) -> Text {
+private func linkText(_ s: String, _ link: String, _ preview: Bool, prefix: String, color: Color = Color(uiColor: uiLinkColor), uiColor: UIColor = uiLinkColor) -> Text {
     preview
-    ? Text(s).foregroundColor(linkColor).underline(color: linkColor)
+    ? Text(s).foregroundColor(color).underline(color: color)
     : Text(AttributedString(s, attributes: AttributeContainer([
         .link: NSURL(string: prefix + link) as Any,
-        .foregroundColor: uiLinkColor as Any
+        .foregroundColor: uiColor as Any
     ]))).underline()
+}
+
+private func simplexLinkText(_ linkType: SimplexLinkType, _ smpHosts: [String]) -> String {
+    linkType.description + " " + "(via \(smpHosts.first ?? "?"))"
 }
 
 struct MsgContentView_Previews: PreviewProvider {
@@ -95,7 +153,8 @@ struct MsgContentView_Previews: PreviewProvider {
             text: chatItem.text,
             formattedText: chatItem.formattedText,
             sender: chatItem.memberDisplayName,
-            metaText: chatItem.timestampText
+            meta: chatItem.meta
         )
+        .environmentObject(Chat.sampleData)
     }
 }

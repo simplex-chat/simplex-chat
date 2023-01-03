@@ -5,8 +5,9 @@
 [![build](https://github.com/simplex-chat/simplex-chat/actions/workflows/build.yml/badge.svg?branch=stable)](https://github.com/simplex-chat/simplex-chat/actions/workflows/build.yml)
 [![GitHub downloads](https://img.shields.io/github/downloads/simplex-chat/simplex-chat/total)](https://github.com/simplex-chat/simplex-chat/releases)
 [![GitHub release](https://img.shields.io/github/v/release/simplex-chat/simplex-chat)](https://github.com/simplex-chat/simplex-chat/releases)
-[![Follow on Twitter](https://img.shields.io/twitter/follow/SimpleXChat?style=social)](https://twitter.com/SimpleXChat)
 [![Join on Reddit](https://img.shields.io/reddit/subreddit-subscribers/SimpleXChat?style=social)](https://www.reddit.com/r/SimpleXChat)
+[![Follow on Mastodon](https://img.shields.io/mastodon/follow/108619463746856738?domain=https%3A%2F%2Fmastodon.social&style=social)](https://mastodon.social/@simplex)
+[![Follow on Twitter](https://img.shields.io/twitter/follow/SimpleXChat?style=social)](https://twitter.com/SimpleXChat)
 
 [<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apple_store.svg" alt="iOS app" height="42">](https://apps.apple.com/us/app/simplex-chat/id1605771084)
 &nbsp;
@@ -85,15 +86,15 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 Recent updates:
 
-[Nov 08, 2022. Security audit by Trail of Bits, the new website and v4.2 released](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md)
+[Jan 03, 2023. v4.4 released - with disappearing messages, "live" messages, connection security verifications, GIFs and stickers and with French interface language](./blog/20230103-simplex-chat-v4.4-disappearing-messages.md).
 
-[Sep 28, 2022. v4.0: encrypted local chat database and many other changes](./blog/20220928-simplex-chat-v4-encrypted-database.md)
+[Dec 06, 2022. November reviews and v4.3 released - with instant voice messages, irreversible deletion of sent messages and improved server configuration](./blog/20221206-simplex-chat-v4.3-voice-messages.md).
 
-[Sep 1, 2022. v3.2: incognito mode, support .onion server hostnames, setting contact names, changing color scheme, etc. Implementation audit is arranged for October!](./blog/20220901-simplex-chat-v3.2-incognito-mode.md)
+[Nov 08, 2022. Security audit by Trail of Bits, the new website and v4.2 released](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
 
-[Aug 8, 2022. v3.1: secret chat groups, access via Tor, reduced battery and traffic usage, advanced network settings, etc.](./blog/20220808-simplex-chat-v3.1-chat-groups.md)
+[Sep 28, 2022. v4.0: encrypted local chat database and many other changes](./blog/20220928-simplex-chat-v4-encrypted-database.md).
 
-[Jul 11, 2022. v3.0: instant push notifications for iOS, e2e encrypted WebRTC audio/video calls, chat database export/import, privacy and performance improvements](./blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md)
+[Sep 1, 2022. v3.2: incognito mode, support .onion server hostnames, setting contact names, changing color scheme, etc. Implementation audit is arranged for October!](./blog/20220901-simplex-chat-v3.2-incognito-mode.md).
 
 [All updates](./blog)
 
@@ -103,7 +104,7 @@ You need to share a link or scan a QR code (in person or during a video call) to
 
 The channel through which you share the link does not have to be secure - it is enough that you can confirm who sent you the message and that your SimpleX connection is established.
 
-<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/conversation.png" alt="Make a private connection" width="594" height="360">
+<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/app1.png" alt="Make a private connection" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/arrow.png" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/app2.png" alt="Conversation" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/arrow.png" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/app3.png" alt="Video call" height="360">
 
 ## :zap: Quick installation of a terminal app
 
@@ -187,21 +188,26 @@ If you are considering developing with SimpleX platform please get in touch for 
 - ✅ Chat database encryption.
 - ✅ Automatic chat history deletion.
 - ✅ Links to join groups and improve groups stability.
+- ✅ Voice messages (with recipient opt-out per contact).
+- ✅ Basic authentication for SMP servers (to authorize creating new queues).
+- ✅ View deleted messages, full message deletion by sender (with recipient opt-in per contact).
+- ✅ Block screenshots and view in recent apps.
+- ✅ Advanced server configuration.
+- ✅ Disappearing messages (with recipient opt-in per-contact).
+- ✅ "Live" messages.
+- ✅ Contact verification via a separate out-of-band channel.
+- 🏗 Multiple user profiles in the same chat database.
+- 🏗 Optionally avoid re-using the same TCP session for multiple connections.
+- 🏗 File server to optimize for efficient and private sending of large files.
 - 🏗 SMP queue redundancy and rotation (manual is supported).
-- 🏗 Voice messages (with recipient opt-out per contact).
-- 🏗 Basic authentication for SMP servers (to authorize creating new queues).
-- View deleted messages, full message deletion by sender (with recipient opt-in per contact).
-- Block screenshots and view in recent apps.
-- Optionally avoid re-using the same TCP session for multiple connections.
-- Access password/pin (with optional alternative access password).
+- 🏗 Reduced battery and traffic usage in large groups.
+- 🏗 Preserve message drafts.
+- 🏗 Support older Android OS and 32-bit CPUs.
 - Ephemeral/disappearing/OTR conversations with the existing contacts.
-- Media server to optimize sending large files to groups.
+- Access password/pin (with optional alternative access password).
 - Video messages.
 - Message delivery confirmation (with sender opt-in or opt-out per contact, TBC).
-- Multiple user profiles in the same chat database.
-- Advanced server configuration.
 - Feeds/broadcasts.
-- Unconfirmed: disappearing messages (with recipient opt-in per-contact).
 - Web widgets for custom interactivity in the chats.
 - Programmable chat automations / rules (automatic replies/forward/deletion/sending, reminders, etc.).
 - Supporting the same profile on multiple devices.
@@ -213,13 +219,11 @@ If you are considering developing with SimpleX platform please get in touch for 
 
 ## Join a user group
 
-You can join a general group with more than 100 members: [#SimpleX-Group](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FWHV0YU1sYlU7NqiEHkHDB6gxO1ofTync%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAWbebOqVYuBXaiqHcXYjEHCpYi6VzDlu6CVaijDTmsQU%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22mL-7Divb94GGmGmRBef5Dg%3D%3D%22%7D).
+You can join a general English speaking group: [#SimpleX-Group](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FcIS0gu1h0Y8pZpQkDaSz7HZGSHcKpMB9%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAKzzWAJYrVt1zdgRp4pD3FBst6eK7233DJeNElENLJRA%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%228mazMhefXoM5HxWBfZnvwQ%3D%3D%22%7D).
 
-You can also join smaller groups by countries/languages: [\#SimpleX-DE](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FmIorjTDPG24jdLKXwutS6o9hdQQRZwfQ%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEA9N0BZaECrAw3we3S1Wq4QO7NERBuPt9447immrB50wo%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22S8aISlOgkTMytSox9gAM2Q%3D%3D%22%7D) (German), [\#SimpleX-US](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FlTWmQplLEaoJyHnEL1-B3f2PtDsikcTs%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEA-hMBlsQjNxK2vaVhqW_UyAVtuoYqgYTigK4B9dJ9CGc%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22G0UtRHIn0TmPoo08h_cbTA%3D%3D%22%7D) (US/English), [\#SimpleX-France](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2F11r6XyjwVMj0WDIUMbmNDXO996M_EN_1%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAXDmc2Lrj9WQOjEcWa0DeQHF3HcYOp9b68s8M_BJ7gEk%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22EZCeSYpeIBkaQwCcpcF00w%3D%3D%22%7D), [\#SimpleX-RU](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FZSYM278L5WoZiApx3925EAjSXcsAVNVu%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEA7RJ2wfT8zdfOLyE5OtWLEAPowj-q6F2HB0ExbATw8Gk%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22fsVoklNGptt7n-droqJYUQ%3D%3D%22%7D) (Russian), [#SimpleX-NL](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FmP0LbswSbfxoVkkxiWE2NYnBCgZ9Snvj%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAVwZuSsw4Mf52EaBNdNI3RebsLm0jg65ZIkcmH9E5uy8%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22M9xIULUNZx51Wsa5Kdb0Sg%3D%3D%22%7D) (Netherlands/Dutch), [#SimpleX-IT](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FaZ_wjh6QAYHB-LjyGtp8bllkzoq880u-%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEA-_Wulzc3j16i7t77XJ5wgwxeW8_Ea8GxetMo7K4MgjI%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22QWmXdrFzIeMd2OoEPMFkBQ%3D%3D%22%7D) (Italian).
+Groups in languages other than English, that we have app interface translated into: [\#SimpleX-DE](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FkIEl7OQzcp-J6aDmjdlQbRJwqkcZE7XR%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAR16PCu02MobRmKAsjzhDWMZcWP9hS8l5AUZi-Gs8z18%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22puYPMCQt11yPUvgmI5jCiw%3D%3D%22%7D) (German speaking), [\#SimpleX-FR](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FvIHQDxTor53nwnWWTy5cHNwQQAdWN5Hw%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAPdgK1eBnETmgiqEQufbUkydKBJafoRx4iRrtrC2NAGc%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%221FyUryBPza-1ZFFE80Ekbg%3D%3D%22%7D) (French speaking), [\#SimpleX-RU](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FXZyt3hJmWsycpN7Dqve_wbrAqb6myk1R%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAMFVIoytozTEa_QXOgoZFq_oe0IwZBYKvW50trSFXzXo%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22xz05ngjA3pNIxLZ32a8Vxg%3D%3D%22%7D) (Russian speaking).
 
 You can join these groups either by opening these links in the app or by opening them in a desktop browser and scanning QR code.
-
-Let us know if you'd like to add some other countries to the list.
 
 Join via the app to share what's going on and ask any questions!
 
@@ -227,10 +231,10 @@ Join via the app to share what's going on and ask any questions!
 
 We would love to have you join the development! You can contribute to SimpleX Chat with:
 
-- developing features - please connect to us via chat so we can help you get started.
-- writing a tutorial or recipes about hosting servers, chat bot automations, etc.
-- translate UI to some language - we are currently setting up the UI to simplify it, please get in touch and let us know if you would be able to support and update the translations.
+- translate UI to your language - we are using [Weblate](https://hosted.weblate.org/projects/simplex-chat/) to translate the interface, please get in touch if you want to contribute!
 - translate website homepage - there is a lot of content we would like to share, it would help to bring the new users.
+- writing a tutorial or recipes about hosting servers, chat bot automations, etc.
+- developing features - please connect to us via chat so we can help you get started.
 
 ## Help us with donations
 
@@ -246,8 +250,10 @@ It is possible to donate via:
 
 - [GitHub](https://github.com/sponsors/simplex-chat) - it is commission-free for us.
 - [OpenCollective](https://opencollective.com/simplex-chat) - it charges a commission, and also accepts donations in crypto-currencies.
-- Monero wallet: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt
-- Bitcoin wallet: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
+- Monero address: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt
+- Bitcoin address: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
+- BCH address: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
+- Ethereum address: 0x83fd788f7241a2be61780ea9dc72d2151e6843e2
 - please let us know, via GitHub issue or chat, if you want to create a donation in some other cryptocurrency - we will add the address to the list.
 
 Thank you,

@@ -17,6 +17,9 @@ struct ContentView: View {
     @AppStorage(DEFAULT_SHOW_LA_NOTICE) private var prefShowLANotice = false
     @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
+    @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = true
+    @AppStorage(DEFAULT_NOTIFICATION_ALERT_SHOWN) private var notificationAlertShown = false
+    @State private var showWhatsNew = false
 
     var body: some View {
         ZStack {
@@ -29,7 +32,7 @@ struct ContentView: View {
             } else if let step = chatModel.onboardingStage  {
                 if case .onboardingComplete = step,
                    chatModel.currentUser != nil {
-                    mainView()
+                    mainView().privacySensitive(protectScreen)
                 } else {
                     OnboardingView(onboarding: step)
                 }
@@ -46,15 +49,28 @@ struct ContentView: View {
         ZStack(alignment: .top) {
             ChatListView()
             .onAppear {
-                NtfManager.shared.requestAuthorization(onDeny: {
-                    alertManager.showAlert(notificationAlert())
-                })
+                NtfManager.shared.requestAuthorization(
+                    onDeny: {
+                        if (!notificationAlertShown) {
+                            notificationAlertShown = true
+                            alertManager.showAlert(notificationAlert())
+                        }
+                    },
+                    onAuthorized: { notificationAlertShown = false }
+                )
                 // Local Authentication notice is to be shown on next start after onboarding is complete
-                if (!prefLANoticeShown && prefShowLANotice) {
+                if (!prefLANoticeShown && prefShowLANotice && !chatModel.chats.isEmpty) {
                     prefLANoticeShown = true
                     alertManager.showAlert(laNoticeAlert())
+                } else if !chatModel.showCallView && CallController.shared.activeCallInvitation == nil {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        showWhatsNew = shouldShowWhatsNew()
+                    }
                 }
                 prefShowLANotice = true
+            }
+            .sheet(isPresented: $showWhatsNew) {
+                WhatsNewView()
             }
             if chatModel.showCallView, let call = chatModel.activeCall {
                 ActiveCallView(call: call)
@@ -68,9 +84,9 @@ struct ContentView: View {
             userAuthorized = true
         } else {
             dismissAllSheets(animated: false) {
+                chatModel.chatId = nil
                 justAuthenticate()
             }
-            chatModel.chatId = nil
         }
     }
 
@@ -116,14 +132,14 @@ struct ContentView: View {
     func notificationAlert() -> Alert {
         Alert(
             title: Text("Notifications are disabled!"),
-             message: Text("The app can notify you when you receive messages or contact requests - please open settings to enable."),
-             primaryButton: .default(Text("Open Settings")) {
-                 DispatchQueue.main.async {
-                     UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!, options: [:], completionHandler: nil)
-                 }
-             },
-             secondaryButton: .cancel()
-         )
+            message: Text("The app can notify you when you receive messages or contact requests - please open settings to enable."),
+            primaryButton: .default(Text("Open Settings")) {
+                DispatchQueue.main.async {
+                    UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!, options: [:], completionHandler: nil)
+                }
+            },
+            secondaryButton: .cancel()
+        )
     }
 }
 

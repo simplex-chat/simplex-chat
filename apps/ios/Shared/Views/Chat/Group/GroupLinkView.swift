@@ -12,11 +12,12 @@ import SimpleXChat
 struct GroupLinkView: View {
     var groupId: Int64
     @Binding var groupLink: String?
+    @State private var creatingLink = false
     @State private var alert: GroupLinkAlert?
 
     private enum GroupLinkAlert: Identifiable {
         case deleteLink
-        case error(title: LocalizedStringKey, error: String = "")
+        case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
 
         var id: String {
             switch self {
@@ -29,10 +30,6 @@ struct GroupLinkView: View {
     var body: some View {
         ScrollView {
             VStack (alignment: .leading) {
-                Text("Group link")
-                    .font(.largeTitle)
-                    .bold()
-                    .padding(.bottom)
                 Text("You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it.")
                     .padding(.bottom)
                 if let groupLink = groupLink {
@@ -52,18 +49,17 @@ struct GroupLinkView: View {
                     }
                     .frame(maxWidth: .infinity)
                 } else {
-                    Button {
-                        Task {
-                            do {
-                                groupLink = try await apiCreateGroupLink(groupId)
-                            } catch let error {
-                                logger.error("GroupLinkView apiCreateGroupLink: \(responseError(error))")
-                                let a = getErrorAlert(error, "Error creating group link")
-                                alert = .error(title: a.title, error: "\(a.message)")
-                            }
-                        }
-                    } label: { Label("Create link", systemImage: "link.badge.plus") }
+                    Button(action: createGroupLink) {
+                        Label("Create link", systemImage: "link.badge.plus")
+                    }
                     .frame(maxWidth: .infinity)
+                    .disabled(creatingLink)
+                    .padding(.bottom)
+                    if creatingLink {
+                        ProgressView()
+                            .scaleEffect(2)
+                            .frame(maxWidth: .infinity)
+                    }
                 }
             }
             .padding()
@@ -78,9 +74,7 @@ struct GroupLinkView: View {
                             Task {
                                 do {
                                     try await apiDeleteGroupLink(groupId)
-                                    await MainActor.run {
-                                        groupLink = nil
-                                    }
+                                    await MainActor.run { groupLink = nil }
                                 } catch let error {
                                     logger.error("GroupLinkView apiDeleteGroupLink: \(responseError(error))")
                                 }
@@ -88,7 +82,32 @@ struct GroupLinkView: View {
                         }, secondaryButton: .cancel()
                     )
                 case let .error(title, error):
-                    return Alert(title: Text(title), message: Text("\(error)"))
+                    return Alert(title: Text(title), message: Text(error))
+                }
+            }
+            .onAppear {
+                if groupLink == nil && !creatingLink {
+                    createGroupLink()
+                }
+            }
+        }
+    }
+
+    private func createGroupLink() {
+        Task {
+            do {
+                creatingLink = true
+                let link = try await apiCreateGroupLink(groupId)
+                await MainActor.run {
+                    creatingLink = false
+                    groupLink = link
+                }
+            } catch let error {
+                logger.error("GroupLinkView apiCreateGroupLink: \(responseError(error))")
+                await MainActor.run {
+                    creatingLink = false
+                    let a = getErrorAlert(error, "Error creating group link")
+                    alert = .error(title: a.title, error: a.message)
                 }
             }
         }

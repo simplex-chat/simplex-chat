@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.app.ui.theme.*
@@ -24,6 +25,28 @@ fun SectionView(title: String? = null, padding: PaddingValues = PaddingValues(),
         title, color = HighOrLowlight, style = MaterialTheme.typography.body2,
         modifier = Modifier.padding(start = DEFAULT_PADDING, bottom = 5.dp), fontSize = 12.sp
       )
+    }
+    Surface(color = if (isInDarkTheme()) GroupDark else MaterialTheme.colors.background) {
+      Column(Modifier.padding(padding).fillMaxWidth()) { content() }
+    }
+  }
+}
+
+@Composable
+fun SectionView(
+  title: String,
+  icon: ImageVector,
+  iconTint: Color = HighOrLowlight,
+  leadingIcon: Boolean = false,
+  padding: PaddingValues = PaddingValues(),
+  content: (@Composable ColumnScope.() -> Unit)
+) {
+  Column {
+    val iconSize = with(LocalDensity.current) { 21.sp.toDp() }
+    Row(Modifier.padding(start = DEFAULT_PADDING, bottom = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+      if (leadingIcon) Icon(icon, null, Modifier.padding(end = 4.dp).size(iconSize), tint = iconTint)
+      Text(title, color = HighOrLowlight, style = MaterialTheme.typography.body2, fontSize = 12.sp)
+      if (!leadingIcon) Icon(icon, null, Modifier.padding(start = 4.dp).size(iconSize), tint = iconTint)
     }
     Surface(color = if (isInDarkTheme()) GroupDark else MaterialTheme.colors.background) {
       Column(Modifier.padding(padding).fillMaxWidth()) { content() }
@@ -56,7 +79,12 @@ fun <T> SectionViewSelectable(
 }
 
 @Composable
-fun SectionItemView(click: (() -> Unit)? = null, minHeight: Dp = 46.dp, disabled: Boolean = false, content: (@Composable RowScope.() -> Unit)) {
+fun SectionItemView(
+  click: (() -> Unit)? = null,
+  minHeight: Dp = 46.dp,
+  disabled: Boolean = false,
+  content: (@Composable RowScope.() -> Unit)
+) {
   val modifier = Modifier
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
@@ -158,9 +186,13 @@ fun SectionSpacer() {
 }
 
 @Composable
-fun InfoRow(title: String, value: String) {
+fun InfoRow(title: String, value: String, icon: ImageVector? = null, iconTint: Color? = null) {
   SectionItemViewSpaceBetween {
-    Text(title)
+    Row {
+      val iconSize = with(LocalDensity.current) { 21.sp.toDp() }
+      if (icon != null) Icon(icon, title, Modifier.padding(end = 8.dp).size(iconSize), tint = iconTint ?: HighOrLowlight)
+      Text(title)
+    }
     Text(value, color = HighOrLowlight)
   }
 }

@@ -201,7 +201,8 @@ public func getNetCfg() -> NetCfg {
         tcpConnectTimeout: tcpConnectTimeout,
         tcpTimeout: tcpTimeout,
         tcpKeepAlive: tcpKeepAlive,
-        smpPingInterval: smpPingInterval
+        smpPingInterval: smpPingInterval,
+        logTLSErrors: false
     )
 }
 

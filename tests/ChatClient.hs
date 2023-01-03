@@ -51,7 +51,7 @@ testOpts =
     { dbFilePrefix = undefined,
       dbKey = "",
       -- dbKey = "this is a pass-phrase to encrypt the database",
-      smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:5001"],
+      smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:5001"],
       networkConfig = defaultNetworkConfig,
       logConnections = False,
       logServerHosts = False,
@@ -59,6 +59,8 @@ testOpts =
       chatCmd = "",
       chatCmdDelay = 3,
       chatServerPort = Nothing,
+      optFilesFolder = Nothing,
+      allowInstantFiles = True,
       maintenance = False
     }
 
@@ -211,15 +213,14 @@ testChatN cfg opts ps test = withTmpFiles $ do
 (<//) cc t = timeout t (getTermLine cc) `shouldReturn` Nothing
 
 getTermLine :: TestCC -> IO String
-getTermLine = atomically . readTQueue . termQ
-
--- Use code below to echo virtual terminal
--- getTermLine :: TestCC -> IO String
--- getTermLine cc = do
---   s <- atomically . readTQueue $ termQ cc
---   name <- userName cc
---   putStrLn $ name <> ": " <> s
---   pure s
+getTermLine cc =
+  5000000 `timeout` atomically (readTQueue $ termQ cc) >>= \case
+    Just s -> do
+      -- uncomment 2 lines below to echo virtual terminal
+      -- name <- userName cc
+      -- putStrLn $ name <> ": " <> s
+      pure s
+    _ -> error "no output for 5 seconds"
 
 userName :: TestCC -> IO [Char]
 userName (TestCC ChatController {currentUser} _ _ _ _) = T.unpack . localDisplayName . fromJust <$> readTVarIO currentUser
@@ -275,6 +276,8 @@ serverCfg =
       storeLogFile = Nothing,
       storeMsgsFile = Nothing,
       allowNewQueues = True,
+      -- server password is disabled as otherwise v1 tests fail
+      newQueueBasicAuth = Nothing, -- Just "server_password",
       messageExpiration = Just defaultMessageExpiration,
       inactiveClientExpiration = Just defaultInactiveClientExpiration,
       caCertificateFile = "tests/fixtures/tls/ca.crt",
@@ -284,7 +287,8 @@ serverCfg =
       logStatsStartTime = 0,
       serverStatsLogFile = "tests/smp-server-stats.daily.log",
       serverStatsBackupFile = Nothing,
-      smpServerVRange = supportedSMPServerVRange
+      smpServerVRange = supportedSMPServerVRange,
+      logTLSErrors = True
     }
 
 withSmpServer :: IO a -> IO a

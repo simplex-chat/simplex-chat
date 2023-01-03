@@ -249,7 +249,7 @@ export class ChatClient {
     const r = await this.sendChatCommand({type: "showMyAddress"})
     switch (r.type) {
       case "userContactLink":
-        return r.connReqContact
+        return r.contactLink.connReqContact
       default:
         if (r.type === "chatCmdError" && r.chatError.type === "errorStore" && r.chatError.storeError.type === "userContactLinkNotFound") {
           return undefined

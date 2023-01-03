@@ -50,7 +50,7 @@ struct CIFileView: View {
 
     func fileSizeValid() -> Bool {
         if let file = file {
-            return file.fileSize <= maxFileSize
+            return file.fileSize <= MAX_FILE_SIZE
         }
         return false
     }
@@ -66,7 +66,7 @@ struct CIFileView: View {
                         await receiveFile(fileId: file.fileId)
                     }
                 } else {
-                    let prettyMaxFileSize = ByteCountFormatter().string(fromByteCount: maxFileSize)
+                    let prettyMaxFileSize = ByteCountFormatter().string(fromByteCount: MAX_FILE_SIZE)
                     AlertManager.shared.showAlertMsg(
                         title: "Large file!",
                         message: "Your contact sent a file that is larger than currently supported maximum size (\(prettyMaxFileSize))."
@@ -79,7 +79,7 @@ struct CIFileView: View {
                 )
             case .rcvComplete:
                 logger.debug("CIFileView fileAction - in .rcvComplete")
-                if let filePath = getLoadedFilePath(file){
+                if let filePath = getLoadedFilePath(file) {
                     let url = URL(fileURLWithPath: filePath)
                     showShareSheet(items: [url])
                 }
@@ -148,18 +148,19 @@ struct CIFileView_Previews: PreviewProvider {
             quotedItem: nil,
             file: nil
         )
-        Group{
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: sentFile)
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample())
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample(fileName: "some_long_file_name_here", fileStatus: .rcvInvitation))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvAccepted))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvTransfer))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvCancelled))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample(fileSize: 1_000_000_000, fileStatus: .rcvInvitation))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample(text: "Hello there", fileStatus: .rcvInvitation))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample(text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", fileStatus: .rcvInvitation))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: fileChatItemWtFile)
+        Group {
+            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: sentFile, revealed: Binding.constant(false))
+            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample(), revealed: Binding.constant(false))
+            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample(fileName: "some_long_file_name_here", fileStatus: .rcvInvitation), revealed: Binding.constant(false))
+            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvAccepted), revealed: Binding.constant(false))
+            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvTransfer), revealed: Binding.constant(false))
+            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvCancelled), revealed: Binding.constant(false))
+            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample(fileSize: 1_000_000_000, fileStatus: .rcvInvitation), revealed: Binding.constant(false))
+            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample(text: "Hello there", fileStatus: .rcvInvitation), revealed: Binding.constant(false))
+            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getFileMsgContentSample(text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", fileStatus: .rcvInvitation), revealed: Binding.constant(false))
+            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: fileChatItemWtFile, revealed: Binding.constant(false))
         }
         .previewLayout(.fixed(width: 360, height: 360))
+        .environmentObject(Chat.sampleData)
     }
 }

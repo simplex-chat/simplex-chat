@@ -26,6 +26,7 @@ module.exports = function (ty) {
   ty.addPassthroughCopy("src/blog/images")
   ty.addPassthroughCopy("src/images")
   ty.addPassthroughCopy("src/CNAME")
+  ty.addPassthroughCopy("src/.well-known")
 
   ty.addCollection('blogs', function (collection) {
     return collection.getFilteredByGlob('src/blog/*.md').reverse()

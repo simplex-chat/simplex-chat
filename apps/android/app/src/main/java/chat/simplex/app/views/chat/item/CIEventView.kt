@@ -18,31 +18,37 @@ import chat.simplex.app.ui.theme.SimpleXTheme
 
 @Composable
 fun CIEventView(ci: ChatItem) {
-  fun withGroupEventStyle(builder: AnnotatedString.Builder, text: String) {
-    return builder.withStyle(SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Light, color = HighOrLowlight)) { append(text) }
+  @Composable
+  fun chatEventTextView(text: AnnotatedString) {
+    Text(text, style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp))
   }
 
   Surface {
     Row(
       Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
-      verticalAlignment = Alignment.Bottom
+      verticalAlignment = Alignment.CenterVertically
     ) {
-      Text(
-        buildAnnotatedString {
-          val memberDisplayName = ci.memberDisplayName
-          if (memberDisplayName != null) {
-            withGroupEventStyle(this, memberDisplayName)
+      val memberDisplayName = ci.memberDisplayName
+      if (memberDisplayName != null) {
+        chatEventTextView(
+          buildAnnotatedString {
+            withStyle(chatEventStyle) { append(memberDisplayName) }
             append(" ")
-          }
-          withGroupEventStyle(this, ci.content.text)
-          append(" ")
-          withGroupEventStyle(this, ci.timestampText)
-        },
-        style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp)
-      )
+          }.plus(chatEventText(ci))
+        )
+      } else {
+        chatEventTextView(chatEventText(ci))
+      }
     }
   }
 }
+
+val chatEventStyle = SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Light, color = HighOrLowlight)
+
+fun chatEventText(ci: ChatItem): AnnotatedString =
+  buildAnnotatedString {
+    withStyle(chatEventStyle) { append(ci.content.text + "  " + ci.timestampText) }
+  }
 
 @Preview(showBackground = true)
 @Preview(

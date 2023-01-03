@@ -8,6 +8,7 @@
 
 import SwiftUI
 import SimpleXChat
+import SwiftyGif
 
 struct FullScreenImageView: View {
     @EnvironmentObject var m: ChatModel
@@ -77,9 +78,14 @@ struct FullScreenImageView: View {
     private func imageView(_ img: UIImage) -> some View {
         ZStack {
             Color.black
-            Image(uiImage: img)
-                .resizable()
-                .scaledToFit()
+            if img.imageData == nil {
+                Image(uiImage: img)
+                    .resizable()
+                    .scaledToFit()
+            } else {
+                SwiftyGif(image: img)
+                        .scaledToFit()
+            }
         }
     }
 
