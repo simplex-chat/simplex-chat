@@ -22,8 +22,8 @@ chatBotRepl :: String -> (String -> String) -> User -> ChatController -> IO ()
 chatBotRepl welcome answer _user cc = do
   initializeBotAddress cc
   race_ (forever $ void getLine) . forever $ do
-    (_, resp) <- atomically . readTBQueue $ outputQ cc
-    case resp of
+    (_, UCR {chatResponse}) <- atomically . readTBQueue $ outputQ cc
+    case chatResponse of
       CRContactConnected contact _ -> do
         contactConnected contact
         void $ sendMsg contact welcome

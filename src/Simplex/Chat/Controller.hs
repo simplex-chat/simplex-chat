@@ -113,7 +113,7 @@ data ChatController = ChatController
     chatStoreChanged :: TVar Bool, -- if True, chat should be fully restarted
     idsDrg :: TVar ChaChaDRG,
     inputQ :: TBQueue String,
-    outputQ :: TBQueue (Maybe CorrId, ChatResponse),
+    outputQ :: TBQueue (Maybe CorrId, UserChatResponse),
     notifyQ :: TBQueue Notification,
     sendNotification :: Notification -> IO (),
     chatLock :: Lock,
@@ -288,6 +288,19 @@ data ChatCommand
   | GetAgentStats
   | ResetAgentStats
   deriving (Show)
+
+data UserChatResponse = UCR
+  { user :: Maybe User,
+    chatResponse :: ChatResponse
+  }
+  deriving (Show, Generic)
+
+instance ToJSON UserChatResponse where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+ucr :: User -> ChatResponse -> UserChatResponse
+ucr u = UCR (Just u)
 
 data ChatResponse
   = CRActiveUser {user :: User}
@@ -557,7 +570,8 @@ instance ToJSON ChatError where
 
 data ChatErrorType
   = CENoActiveUser
-  | CEActiveUserExists
+  | CENoConnectionUser {agentConnId :: AgentConnId}
+  | CEActiveUserExists -- TODO delete
   | CEChatNotStarted
   | CEChatNotStopped
   | CEChatStoreChanged

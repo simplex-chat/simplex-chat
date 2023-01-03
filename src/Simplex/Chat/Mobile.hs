@@ -229,7 +229,7 @@ chatParseServer = LB.unpack . J.encode . toServerAddress . strDecode . B.pack
     enc :: StrEncoding a => a -> String
     enc = B.unpack . strEncode
 
-data APIResponse = APIResponse {corr :: Maybe CorrId, resp :: ChatResponse}
+data APIResponse = APIResponse {corr :: Maybe CorrId, resp :: UserChatResponse}
   deriving (Generic)
 
 instance ToJSON APIResponse where

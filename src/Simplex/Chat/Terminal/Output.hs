@@ -93,13 +93,13 @@ withTermLock ChatTerminal {termLock} action = do
 runTerminalOutput :: ChatTerminal -> ChatController -> IO ()
 runTerminalOutput ct cc@ChatController {outputQ, showLiveItems} = do
   forever $ do
-    (_, r) <- atomically $ readTBQueue outputQ
-    case r of
+    (_, resp@UCR {chatResponse}) <- atomically $ readTBQueue outputQ
+    case chatResponse of
       CRNewChatItem ci -> markChatItemRead ci
       CRChatItemUpdated ci -> markChatItemRead ci
       _ -> pure ()
     liveItems <- readTVarIO showLiveItems
-    printRespToTerminal ct cc liveItems r
+    printRespToTerminal ct cc liveItems resp
   where
     markChatItemRead :: AChatItem -> IO ()
     markChatItemRead (AChatItem _ _ chat item@ChatItem {meta = CIMeta {itemStatus}}) =
@@ -110,7 +110,7 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems} = do
           void $ runReaderT (runExceptT $ processChatCommand (APIChatRead chatRef (Just (itemId, itemId)))) cc
         _ -> pure ()
 
-printRespToTerminal :: ChatTerminal -> ChatController -> Bool -> ChatResponse -> IO ()
+printRespToTerminal :: ChatTerminal -> ChatController -> Bool -> UserChatResponse -> IO ()
 printRespToTerminal ct cc liveItems r = do
   let testV = testView $ config cc
   user <- readTVarIO $ currentUser cc
