@@ -447,7 +447,6 @@ processChatCommand = \case
       assertDirectAllowed user MDSnd ct XMsgUpdate_
       case cci of
         CChatItem SMDSnd sci@ChatItem {meta = CIMeta {itemSharedMsgId, itemStatus, itemTimed, itemLive}, content = ciContent, file, quotedItem} -> do
-          liftIO $ print sci
           ci <- case (ciContent, itemSharedMsgId, file, quotedItem, itemStatus) of
             (CISndMsgContent _, Just itemSharedMId, _, _, _) -> do
               (ci, _) <- sendUpdate sci $ XMsgUpdate itemSharedMId mc ttl_ live_
