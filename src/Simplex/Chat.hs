@@ -264,7 +264,7 @@ processChatCommand = \case
     u <- asks currentUser
     user <- withStore $ \db -> getSetActiveUser db userId
     atomically . writeTVar u $ Just user
-    pure CRCmdOk
+    pure $ CRActiveUser user
   SetActiveUser uName -> withUserName uName APISetActiveUser
   APIDeleteUser _userId -> do
     -- prohibit to delete active user
