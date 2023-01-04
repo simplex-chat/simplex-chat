@@ -281,8 +281,8 @@ processChatCommand = \case
   APIStopChat -> do
     ask >>= stopChatController
     pure CRChatStopped
-  APIActivateChat -> do
-    withUser $ \user -> restoreCalls user
+  APIActivateChat -> withUser $ \user -> do
+    restoreCalls user
     withAgent activateAgent
     setExpireCIs True
     pure $ CRCmdOk Nothing
@@ -290,8 +290,8 @@ processChatCommand = \case
     setExpireCIs False
     withAgent (`suspendAgent` t)
     pure $ CRCmdOk Nothing
-  ResubscribeAllConnections -> do
-    withUser (subscribeUserConnections Agent.resubscribeConnections)
+  ResubscribeAllConnections -> withUser $ \user -> do
+    subscribeUserConnections Agent.resubscribeConnections user
     pure $ CRCmdOk Nothing
   SetFilesFolder filesFolder' -> do
     createDirectoryIfMissing True filesFolder'
@@ -747,7 +747,9 @@ processChatCommand = \case
     pure $ CRConnectionAliasUpdated user conn'
   APIParseMarkdown text -> pure . CRApiParsedMarkdown $ parseMaybeMarkdownList text
   APIGetNtfToken -> withUser $ \_ -> crNtfToken <$> withAgent getNtfToken
-  APIRegisterToken token mode -> CRNtfTokenStatus <$> withUser (\_ -> withAgent $ \a -> registerNtfToken a token mode)
+  APIRegisterToken token mode -> withUser $ \_ -> do
+    tokenStatus <- withAgent $ \a -> registerNtfToken a token mode
+    pure $ CRNtfTokenStatus tokenStatus
   APIVerifyToken token nonce code -> withUser $ \_ -> withAgent (\a -> verifyNtfToken a token nonce code) $> CRCmdOk Nothing
   APIDeleteToken token -> withUser $ \_ -> withAgent (`deleteNtfToken` token) $> CRCmdOk Nothing
   APIGetNtfMessage nonce encNtfInfo -> withUser $ \user -> do
@@ -788,7 +790,9 @@ processChatCommand = \case
     ttl <- withStore' (`getChatItemTTL` user)
     pure $ CRChatItemTTL user ttl
   APISetNetworkConfig cfg -> withUser' $ \_ -> withAgent (`setNetworkConfig` cfg) $> CRCmdOk Nothing
-  APIGetNetworkConfig -> CRNetworkConfig <$> withUser' (\_ -> withAgent getNetworkConfig)
+  APIGetNetworkConfig -> withUser' $ \_ -> do
+    networkConfig <- withAgent getNetworkConfig
+    pure $ CRNetworkConfig networkConfig
   APISetChatSettings (ChatRef cType chatId) chatSettings -> withUser $ \user -> case cType of
     CTDirect -> do
       ct <- withStore $ \db -> do
@@ -3639,13 +3643,14 @@ notificationSubscriber = do
   ChatController {notifyQ, sendNotification} <- ask
   forever $ atomically (readTBQueue notifyQ) >>= liftIO . sendNotification
 
-withUser' :: ChatMonad m => (User -> m a) -> m a
+withUser' :: ChatMonad m => (User -> m ChatResponse) -> m ChatResponse
 withUser' action =
   asks currentUser
     >>= readTVarIO
-    >>= maybe (throwChatError CENoActiveUser) action
+    -- >>= maybe (throwChatError CENoActiveUser) action
+    >>= maybe (throwChatError CENoActiveUser) (\u -> action u `catchError` (pure . CRChatError (Just u)))
 
-withUser :: ChatMonad m => (User -> m a) -> m a
+withUser :: ChatMonad m => (User -> m ChatResponse) -> m ChatResponse
 withUser action = withUser' $ \user ->
   ifM chatStarted (action user) (throwChatError CEChatNotStarted)
 

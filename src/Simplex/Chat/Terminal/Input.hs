@@ -44,6 +44,7 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
   r <- runReaderT (execChatCommand bs) cc
   case r of
     CRChatCmdError _ _ -> when (isMessage cmd) $ echo s
+    CRChatError _ _ -> when (isMessage cmd) $ echo s
     _ -> pure ()
   printRespToTerminal ct cc False r
   startLiveMessage cmd r
