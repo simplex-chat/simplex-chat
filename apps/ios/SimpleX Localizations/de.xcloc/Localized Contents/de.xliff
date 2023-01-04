@@ -350,17 +350,17 @@
       </trans-unit>
       <trans-unit id="Add preset servers" xml:space="preserve" approved="no">
         <source>Add preset servers</source>
-        <target state="translated">Füge voreingestellte SMP-Server hinzu</target>
+        <target state="translated">Füge voreingestellte Server hinzu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add servers by scanning QR codes." xml:space="preserve" approved="no">
         <source>Add servers by scanning QR codes.</source>
-        <target state="translated">Fügen Sie SMP-Server durch Scannen der QR Codes hinzu.</target>
+        <target state="translated">Fügen Sie Server durch Scannen der QR Codes hinzu.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add server…" xml:space="preserve" approved="no">
         <source>Add server…</source>
-        <target state="translated">Füge SMP-Server hinzu…</target>
+        <target state="translated">Füge Server hinzu…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add to another device" xml:space="preserve">
@@ -640,7 +640,7 @@
       </trans-unit>
       <trans-unit id="Check server address and try again." xml:space="preserve" approved="no">
         <source>Check server address and try again.</source>
-        <target state="translated">Überprüfen Sie die SMP-Serveradresse und versuchen Sie es nochmal.</target>
+        <target state="translated">Überprüfen Sie die Serveradresse und versuchen Sie es nochmal.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Choose file" xml:space="preserve">
@@ -735,12 +735,12 @@
       </trans-unit>
       <trans-unit id="Connecting server…" xml:space="preserve" approved="no">
         <source>Connecting to server…</source>
-        <target state="translated">Mit dem SMP-Server verbinden…</target>
+        <target state="translated">Mit dem Server verbinden…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connecting server… (error: %@)" xml:space="preserve" approved="no">
         <source>Connecting to server… (error: %@)</source>
-        <target state="translated">Mit dem SMP-Server verbinden… (Fehler: %@)</target>
+        <target state="translated">Mit dem Server verbinden… (Fehler: %@)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection" xml:space="preserve">
@@ -1303,7 +1303,7 @@
       </trans-unit>
       <trans-unit id="Enter server manually" xml:space="preserve" approved="no">
         <source>Enter server manually</source>
-        <target state="translated">Geben Sie den SMP-Server manuell ein</target>
+        <target state="translated">Geben Sie den Server manuell ein</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error" xml:space="preserve">
@@ -1688,7 +1688,7 @@
       </trans-unit>
       <trans-unit id="How to use your servers" xml:space="preserve" approved="no">
         <source>How to use your servers</source>
-        <target state="translated">Wie Sie Ihre SMP-Server nutzen</target>
+        <target state="translated">Wie Sie Ihre Server nutzen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="ICE servers (one per line)" xml:space="preserve">
@@ -1753,7 +1753,7 @@
       </trans-unit>
       <trans-unit id="Improved server configuration" xml:space="preserve" approved="no">
         <source>Improved server configuration</source>
-        <target state="translated">Verbesserte SMP-Serverkonfiguration</target>
+        <target state="translated">Verbesserte Serverkonfiguration</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incognito" xml:space="preserve">
@@ -1820,7 +1820,7 @@
       </trans-unit>
       <trans-unit id="Invalid server address!" xml:space="preserve" approved="no">
         <source>Invalid server address!</source>
-        <target state="translated">Ungültige SMP-Serveradresse!</target>
+        <target state="translated">Ungültige Serveradresse!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invitation expired!" xml:space="preserve">
@@ -2355,17 +2355,17 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       </trans-unit>
       <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve" approved="no">
         <source>Possibly, certificate fingerprint in server address is incorrect</source>
-        <target state="translated">Der Fingerabdruck des Zertifikats in der SMP-Serveradresse ist wahrscheinlich ungültig</target>
+        <target state="translated">Der Fingerabdruck des Zertifikats in der Serveradresse ist wahrscheinlich ungültig</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Preset server" xml:space="preserve" approved="no">
         <source>Preset server</source>
-        <target state="translated">Voreingestellter SMP-Server</target>
+        <target state="translated">Voreingestellter Server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Preset server address" xml:space="preserve" approved="no">
         <source>Preset server address</source>
-        <target state="translated">Voreingestellte SMP-Serveradresse</target>
+        <target state="translated">Voreingestellte Serveradresse</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Privacy &amp; security" xml:space="preserve">
@@ -2625,7 +2625,7 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       </trans-unit>
       <trans-unit id="Save servers" xml:space="preserve" approved="no">
         <source>Save servers</source>
-        <target state="translated">Alle SMP-Server speichern</target>
+        <target state="translated">Alle Server speichern</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Saved WebRTC ICE servers will be removed" xml:space="preserve">
@@ -2650,7 +2650,7 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       </trans-unit>
       <trans-unit id="Scan server QR code" xml:space="preserve" approved="no">
         <source>Scan server QR code</source>
-        <target state="translated">Scannen Sie den QR-Code des SMP-Servers</target>
+        <target state="translated">Scannen Sie den QR-Code des Servers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Search" xml:space="preserve">
@@ -2745,12 +2745,12 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       </trans-unit>
       <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve" approved="no">
         <source>Server requires authorization to create queues, check password</source>
-        <target state="translated">Um Warteschlangen zu erzeugen benötigt der SMP-Server eine Authentifizierung. Bitte überprüfen Sie das Passwort</target>
+        <target state="translated">Um Warteschlangen zu erzeugen benötigt der Server eine Authentifizierung. Bitte überprüfen Sie das Passwort</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Server test failed!" xml:space="preserve" approved="no">
         <source>Server test failed!</source>
-        <target state="translated">SMP-Server Test ist fehlgeschlagen!</target>
+        <target state="translated">Server Test ist fehlgeschlagen!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Servers" xml:space="preserve">
@@ -2975,12 +2975,12 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       </trans-unit>
       <trans-unit id="Test server" xml:space="preserve" approved="no">
         <source>Test server</source>
-        <target state="translated">Teste SMP-Server</target>
+        <target state="translated">Teste Server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Test servers" xml:space="preserve" approved="no">
         <source>Test servers</source>
-        <target state="translated">Teste alle SMP-Server</target>
+        <target state="translated">Teste alle Server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tests failed!" xml:space="preserve">
@@ -3137,12 +3137,12 @@ Sie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funkt
       </trans-unit>
       <trans-unit id="Trying to connect to the server used to receive messages from this contact (error: %@)." xml:space="preserve" approved="no">
         <source>Trying to connect to the server used to receive messages from this contact (error: %@).</source>
-        <target state="translated">Beim Versuch die Verbindung mit dem SMP-Server aufzunehmen, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird, ist ein Fehler aufgetreten (Fehler: %@).</target>
+        <target state="translated">Beim Versuch die Verbindung mit dem Server aufzunehmen, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird, ist ein Fehler aufgetreten (Fehler: %@).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Trying to connect to the server used to receive messages from this contact." xml:space="preserve" approved="no">
         <source>Trying to connect to the server used to receive messages from this contact.</source>
-        <target state="translated">Versuche die Verbindung mit dem SMP-Server aufzunehmen, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird.</target>
+        <target state="translated">Versuche die Verbindung mit dem Server aufzunehmen, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Turn off" xml:space="preserve">
@@ -3259,7 +3259,7 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
       </trans-unit>
       <trans-unit id="Use server" xml:space="preserve" approved="no">
         <source>Use server</source>
-        <target state="translated">SMP-Server nutzen</target>
+        <target state="translated">Server nutzen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Using .onion hosts requires compatible VPN provider." xml:space="preserve">
@@ -3399,7 +3399,7 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
       </trans-unit>
       <trans-unit id="You are connected to the server used to receive messages from this contact." xml:space="preserve" approved="no">
         <source>You are connected to the server used to receive messages from this contact.</source>
-        <target state="translated">Sie sind mit dem SMP-Server verbunden, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird.</target>
+        <target state="translated">Sie sind mit dem Server verbunden, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are invited to group" xml:space="preserve">
@@ -3444,7 +3444,7 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
       </trans-unit>
       <trans-unit id="You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." xml:space="preserve" approved="no">
         <source>You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them.</source>
-        <target state="translated">Sie können selbst festlegen, über welche SMP-Server Sie Ihre Nachrichten **empfangen** und an Ihre Kontakte **senden** wollen.</target>
+        <target state="translated">Sie können selbst festlegen, über welche Server Sie Ihre Nachrichten **empfangen** und an Ihre Kontakte **senden** wollen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You could not be verified; please try again." xml:space="preserve">
@@ -3653,12 +3653,12 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
       </trans-unit>
       <trans-unit id="Your server" xml:space="preserve" approved="no">
         <source>Your server</source>
-        <target state="translated">Ihr SMP-Server</target>
+        <target state="translated">Ihr Server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your server address" xml:space="preserve" approved="no">
         <source>Your server address</source>
-        <target state="translated">Ihre SMP-Serveradresse</target>
+        <target state="translated">Ihre Serveradresse</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your settings" xml:space="preserve">
