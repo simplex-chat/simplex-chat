@@ -1339,7 +1339,7 @@ processChatCommand = \case
       | otherwise = Just IFMOffer
     updateProfile :: User -> Profile -> m ChatResponse
     updateProfile user@User {profile = p} p'
-      | p' == fromLocalProfile p = pure CRUserProfileNoChange
+      | p' == fromLocalProfile p = pure $ CRUserProfileNoChange user
       | otherwise = do
         -- read contacts before user update to correctly merge preferences
         -- [incognito] filter out contacts with whom user has incognito connections

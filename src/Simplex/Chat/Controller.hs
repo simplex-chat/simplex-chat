@@ -335,7 +335,7 @@ data ChatResponse
   | CRSentGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember}
   | CRFileTransferStatus User (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
   | CRUserProfile {user :: User, profile :: Profile}
-  | CRUserProfileNoChange
+  | CRUserProfileNoChange {user :: User}
   | CRVersionInfo {version :: String}
   | CRInvitation {user :: User, connReqInvitation :: ConnReqInvitation}
   | CRSentConfirmation {user :: User}

@@ -111,7 +111,7 @@ responseToView user_ testView liveItems ts = \case
       else ["invitation to join the group " <> ttyGroup' g <> " sent to " <> ttyContact' c]
   CRFileTransferStatus u ftStatus -> viewFileTransferStatus ftStatus
   CRUserProfile u p -> viewUserProfile p
-  CRUserProfileNoChange -> ["user profile did not change"]
+  CRUserProfileNoChange u -> ["user profile did not change"]
   CRVersionInfo _ -> [plain versionStr, plain updateStr]
   CRChatCmdError e -> viewChatError e
   CRInvitation u cReq -> viewConnReqInvitation cReq
