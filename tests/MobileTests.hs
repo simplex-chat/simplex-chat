@@ -25,9 +25,9 @@ noActiveUser = "{\"resp\":{\"type\":\"chatCmdError\",\"chatError\":{\"type\":\"e
 
 activeUserExists :: String
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-activeUserExists = "{\"resp\":{\"chatCmdError\":{\"chatError\":{\"error\":{\"errorType\":{\"activeUserExists\":{}}}}}}}"
+activeUserExists = "{\"resp\":{\"chatCmdError\":{\"chatError\":{\"errorStore\":{\"storeError\":{\"duplicateName\":{}}}}}}}"
 #else
-activeUserExists = "{\"resp\":{\"type\":\"chatCmdError\",\"chatError\":{\"type\":\"error\",\"errorType\":{\"type\":\"activeUserExists\"}}}}"
+activeUserExists = "{\"resp\":{\"type\":\"chatCmdError\",\"chatError\":{\"type\":\"errorStore\",\"storeError\":{\"type\":\"duplicateName\"}}}}"
 #endif
 
 activeUser :: String
@@ -85,7 +85,7 @@ testChatApiNoUser = withTmpFiles $ do
   Left (DBMErrorNotADatabase _) <- chatMigrateInit testDBPrefix "myKey"
   chatSendCmd cc "/u" `shouldReturn` noActiveUser
   chatSendCmd cc "/_start" `shouldReturn` noActiveUser
-  chatSendCmd cc "/u alice Alice" `shouldReturn` activeUser
+  chatSendCmd cc "/create user alice Alice" `shouldReturn` activeUser
   chatSendCmd cc "/_start" `shouldReturn` chatStarted
 
 testChatApi :: IO ()
@@ -98,7 +98,7 @@ testChatApi = withTmpFiles $ do
   Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix ""
   Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "anotherKey"
   chatSendCmd cc "/u" `shouldReturn` activeUser
-  chatSendCmd cc "/u alice Alice" `shouldReturn` activeUserExists
+  chatSendCmd cc "/create user alice Alice" `shouldReturn` activeUserExists
   chatSendCmd cc "/_start" `shouldReturn` chatStarted
   chatRecvMsg cc `shouldReturn` contactSubSummary
   chatRecvMsg cc `shouldReturn` userContactSubSummary

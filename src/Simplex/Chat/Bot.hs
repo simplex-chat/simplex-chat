@@ -24,10 +24,10 @@ chatBotRepl welcome answer _user cc = do
   race_ (forever $ void getLine) . forever $ do
     (_, resp) <- atomically . readTBQueue $ outputQ cc
     case resp of
-      CRContactConnected contact _ -> do
+      CRContactConnected _ contact _ -> do
         contactConnected contact
         void $ sendMsg contact welcome
-      CRNewChatItem (AChatItem _ SMDRcv (DirectChat contact) ChatItem {content}) -> do
+      CRNewChatItem _ (AChatItem _ SMDRcv (DirectChat contact) ChatItem {content}) -> do
         let msg = T.unpack $ ciContentToText content
         void . sendMsg contact $ answer msg
       _ -> pure ()
@@ -38,11 +38,11 @@ chatBotRepl welcome answer _user cc = do
 initializeBotAddress :: ChatController -> IO ()
 initializeBotAddress cc = do
   sendChatCmd cc "/show_address" >>= \case
-    CRUserContactLink UserContactLink {connReqContact} -> showBotAddress connReqContact
-    CRChatCmdError (ChatErrorStore SEUserContactLinkNotFound) -> do
+    CRUserContactLink _ UserContactLink {connReqContact} -> showBotAddress connReqContact
+    CRChatCmdError _ (ChatErrorStore SEUserContactLinkNotFound) -> do
       putStrLn "No bot address, creating..."
       sendChatCmd cc "/address" >>= \case
-        CRUserContactLinkCreated uri -> showBotAddress uri
+        CRUserContactLinkCreated _ uri -> showBotAddress uri
         _ -> putStrLn "can't create bot address" >> exitFailure
     _ -> putStrLn "unexpected response" >> exitFailure
   where

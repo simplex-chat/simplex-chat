@@ -28,6 +28,9 @@ module Simplex.Chat.Store
     createUser,
     getUsers,
     setActiveUser,
+    getSetActiveUser,
+    getUserIdByName,
+    getUserByAConnId,
     createDirectConnection,
     createConnReqConnection,
     getProfileById,
@@ -440,15 +443,16 @@ createUser db Profile {displayName, fullName, image, preferences = userPreferenc
 
 getUsers :: DB.Connection -> IO [User]
 getUsers db =
-  map toUser
-    <$> DB.query_
-      db
-      [sql|
-        SELECT u.user_id, u.contact_id, p.contact_profile_id, u.active_user, u.local_display_name, p.full_name, p.image, p.preferences
-        FROM users u
-        JOIN contacts c ON u.contact_id = c.contact_id
-        JOIN contact_profiles p ON c.contact_profile_id = p.contact_profile_id
-      |]
+  map toUser <$> DB.query_ db userQuery
+
+userQuery :: Query
+userQuery =
+  [sql|
+    SELECT u.user_id, u.contact_id, cp.contact_profile_id, u.active_user, u.local_display_name, cp.full_name, cp.image, cp.preferences
+    FROM users u
+    JOIN contacts ct ON ct.contact_id = u.contact_id
+    JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id
+  |]
 
 toUser :: (UserId, ContactId, ProfileId, Bool, ContactName, Text, Maybe ImageData, Maybe Preferences) -> User
 toUser (userId, userContactId, profileId, activeUser, displayName, fullName, image, userPreferences) =
@@ -459,6 +463,26 @@ setActiveUser :: DB.Connection -> UserId -> IO ()
 setActiveUser db userId = do
   DB.execute_ db "UPDATE users SET active_user = 0"
   DB.execute db "UPDATE users SET active_user = 1 WHERE user_id = ?" (Only userId)
+
+getSetActiveUser :: DB.Connection -> UserId -> ExceptT StoreError IO User
+getSetActiveUser db userId = do
+  liftIO $ setActiveUser db userId
+  getUser_ db userId
+
+getUser_ :: DB.Connection -> UserId -> ExceptT StoreError IO User
+getUser_ db userId =
+  ExceptT . firstRow toUser (SEUserNotFound userId) $
+    DB.query db (userQuery <> " WHERE u.user_id = ?") (Only userId)
+
+getUserIdByName :: DB.Connection -> UserName -> ExceptT StoreError IO Int64
+getUserIdByName db uName =
+  ExceptT . firstRow fromOnly (SEUserNotFoundByName uName) $
+    DB.query db "SELECT user_id FROM users WHERE local_display_name = ?" (Only uName)
+
+getUserByAConnId :: DB.Connection -> AgentConnId -> IO (Maybe User)
+getUserByAConnId db agentConnId =
+  maybeFirstRow toUser $
+    DB.query db (userQuery <> " JOIN connections c ON c.user_id = u.user_id WHERE c.agent_conn_id = ?") (Only agentConnId)
 
 createConnReqConnection :: DB.Connection -> UserId -> ConnId -> ConnReqUriHash -> XContactId -> Maybe Profile -> Maybe GroupLinkId -> IO PendingContactConnection
 createConnReqConnection db userId acId cReqHash xContactId incognitoProfile groupLinkId = do
@@ -4803,7 +4827,9 @@ randomBytes gVar = atomically . stateTVar gVar . randomBytesGenerate
 -- These error type constructors must be added to mobile apps
 data StoreError
   = SEDuplicateName
-  | SEContactNotFound {contactId :: Int64}
+  | SEUserNotFound {userId :: UserId}
+  | SEUserNotFoundByName {contactName :: ContactName}
+  | SEContactNotFound {contactId :: ContactId}
   | SEContactNotFoundByName {contactName :: ContactName}
   | SEContactNotReady {contactName :: ContactName}
   | SEDuplicateContactLink
