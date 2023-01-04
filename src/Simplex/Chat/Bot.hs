@@ -24,10 +24,10 @@ chatBotRepl welcome answer _user cc = do
   race_ (forever $ void getLine) . forever $ do
     (_, resp) <- atomically . readTBQueue $ outputQ cc
     case resp of
-      CRContactConnected contact _ -> do
+      CRContactConnected _ contact _ -> do
         contactConnected contact
         void $ sendMsg contact welcome
-      CRNewChatItem (AChatItem _ SMDRcv (DirectChat contact) ChatItem {content}) -> do
+      CRNewChatItem _ (AChatItem _ SMDRcv (DirectChat contact) ChatItem {content}) -> do
         let msg = T.unpack $ ciContentToText content
         void . sendMsg contact $ answer msg
       _ -> pure ()
