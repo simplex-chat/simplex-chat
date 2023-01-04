@@ -43,7 +43,7 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
   unless (isMessage cmd) $ echo s
   r <- runReaderT (execChatCommand bs) cc
   case r of
-    CRChatCmdError _ -> when (isMessage cmd) $ echo s
+    CRChatCmdError _ _ -> when (isMessage cmd) $ echo s
     _ -> pure ()
   printRespToTerminal ct cc False r
   startLiveMessage cmd r
@@ -111,7 +111,7 @@ sendUpdatedLiveMessage :: ChatController -> String -> LiveMessage -> Bool -> IO 
 sendUpdatedLiveMessage cc sentMsg LiveMessage {chatName, chatItemId} live = do
   let bs = encodeUtf8 $ T.pack sentMsg
       cmd = UpdateLiveMessage chatName chatItemId live bs
-  either CRChatCmdError id <$> runExceptT (processChatCommand cmd) `runReaderT` cc
+  either (CRChatCmdError Nothing) id <$> runExceptT (processChatCommand cmd) `runReaderT` cc
 
 runTerminalInput :: ChatTerminal -> ChatController -> IO ()
 runTerminalInput ct cc = withChatTerm ct $ do

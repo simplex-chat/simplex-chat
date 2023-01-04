@@ -39,7 +39,7 @@ initializeBotAddress :: ChatController -> IO ()
 initializeBotAddress cc = do
   sendChatCmd cc "/show_address" >>= \case
     CRUserContactLink _ UserContactLink {connReqContact} -> showBotAddress connReqContact
-    CRChatCmdError (ChatErrorStore SEUserContactLinkNotFound) -> do
+    CRChatCmdError _ (ChatErrorStore SEUserContactLinkNotFound) -> do
       putStrLn "No bot address, creating..."
       sendChatCmd cc "/address" >>= \case
         CRUserContactLinkCreated _ uri -> showBotAddress uri
