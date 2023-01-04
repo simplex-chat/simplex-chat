@@ -3647,7 +3647,6 @@ withUser' :: ChatMonad m => (User -> m ChatResponse) -> m ChatResponse
 withUser' action =
   asks currentUser
     >>= readTVarIO
-    -- >>= maybe (throwChatError CENoActiveUser) action
     >>= maybe (throwChatError CENoActiveUser) (\u -> action u `catchError` (pure . CRChatError (Just u)))
 
 withUser :: ChatMonad m => (User -> m ChatResponse) -> m ChatResponse
