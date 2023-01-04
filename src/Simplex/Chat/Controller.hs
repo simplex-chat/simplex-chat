@@ -415,7 +415,7 @@ data ChatResponse
   | CRNtfTokenStatus {status :: NtfTknStatus}
   | CRNtfToken {token :: DeviceToken, status :: NtfTknStatus, ntfMode :: NotificationsMode}
   | CRNtfMessages {connEntity :: Maybe ConnectionEntity, msgTs :: Maybe UTCTime, ntfMessages :: [NtfMsgInfo]}
-  | CRNewContactConnection {connection :: PendingContactConnection}
+  | CRNewContactConnection {user :: User, connection :: PendingContactConnection}
   | CRContactConnectionDeleted {connection :: PendingContactConnection}
   | CRSQLResult {rows :: [Text]}
   | CRDebugLocks {chatLockName :: Maybe String, agentLocks :: AgentLocks}

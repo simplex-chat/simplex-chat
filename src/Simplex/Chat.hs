@@ -863,13 +863,13 @@ processChatCommand = \case
   VerifyGroupMember gName mName code -> withMemberName gName mName $ \gId mId -> APIVerifyGroupMember gId mId code
   ChatHelp section -> pure $ CRChatHelp section
   Welcome -> withUser $ pure . CRWelcome
-  AddContact -> withUser $ \User {userId} -> withChatLock "addContact" . procCmd $ do
+  AddContact -> withUser $ \user@User {userId} -> withChatLock "addContact" . procCmd $ do
     -- [incognito] generate profile for connection
     incognito <- readTVarIO =<< asks incognitoMode
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     (connId, cReq) <- withAgent $ \a -> createConnection a True SCMInvitation Nothing
     conn <- withStore' $ \db -> createDirectConnection db userId connId cReq ConnNew incognitoProfile
-    toView $ CRNewContactConnection conn
+    toView $ CRNewContactConnection user conn
     pure $ CRInvitation cReq
   Connect (Just (ACR SCMInvitation cReq)) -> withUser $ \user@User {userId} -> withChatLock "connect" . procCmd $ do
     -- [incognito] generate profile to send
@@ -878,7 +878,7 @@ processChatCommand = \case
     let profileToSend = userProfileToSend user incognitoProfile Nothing
     connId <- withAgent $ \a -> joinConnection a True cReq . directMessage $ XInfo profileToSend
     conn <- withStore' $ \db -> createDirectConnection db userId connId cReq ConnJoined $ incognitoProfile $> profileToSend
-    toView $ CRNewContactConnection conn
+    toView $ CRNewContactConnection user conn
     pure CRSentConfirmation
   Connect (Just (ACR SCMContact cReq)) -> withUser $ \user ->
     -- [incognito] generate profile to send
@@ -1294,7 +1294,7 @@ processChatCommand = \case
           connId <- withAgent $ \a -> joinConnection a True cReq $ directMessage (XContact profileToSend $ Just xContactId)
           let groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
           conn <- withStore' $ \db -> createConnReqConnection db userId connId cReqHash xContactId incognitoProfile groupLinkId
-          toView $ CRNewContactConnection conn
+          toView $ CRNewContactConnection user conn
           pure $ CRSentInvitation incognitoProfile
     contactMember :: Contact -> [GroupMember] -> Maybe GroupMember
     contactMember Contact {contactId} =
