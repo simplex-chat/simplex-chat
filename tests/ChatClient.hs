@@ -196,8 +196,7 @@ withTmpFiles :: IO () -> IO ()
 withTmpFiles =
   bracket_
     (createDirectoryIfMissing False "tests/tmp")
-    -- (removePathForcibly "tests/tmp")
-    (pure ())
+    (removePathForcibly "tests/tmp")
 
 testChatN :: ChatConfig -> ChatOpts -> [Profile] -> ([TestCC] -> IO ()) -> IO ()
 testChatN cfg opts ps test = withTmpFiles $ do
@@ -218,8 +217,8 @@ getTermLine cc =
   5000000 `timeout` atomically (readTQueue $ termQ cc) >>= \case
     Just s -> do
       -- uncomment 2 lines below to echo virtual terminal
-      name <- userName cc
-      putStrLn $ name <> ": " <> s
+      -- name <- userName cc
+      -- putStrLn $ name <> ": " <> s
       pure s
     _ -> error "no output for 5 seconds"
 

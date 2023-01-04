@@ -53,7 +53,7 @@ chatTests :: Spec
 chatTests = do
   describe "direct messages" $ do
     describe "add contact and send/receive message" testAddContact
-    fit "deleting contact deletes profile" testDeleteContactDeletesProfile
+    it "deleting contact deletes profile" testDeleteContactDeletesProfile
     it "direct message quoted replies" testDirectMessageQuotedReply
     it "direct message update" testDirectMessageUpdate
     it "direct message delete" testDirectMessageDelete

@@ -1138,7 +1138,7 @@ viewChatError :: ChatError -> [StyledString]
 viewChatError = \case
   ChatError err -> case err of
     CENoActiveUser -> ["error: active user is required"]
-    CENoConnectionUser agentConnId -> ["error: connection has no user, conn id: " <> sShow agentConnId]
+    CENoConnectionUser _agentConnId -> [] -- ["error: connection has no user, conn id: " <> sShow agentConnId]
     CEActiveUserExists -> ["error: active user already exists"]
     CEChatNotStarted -> ["error: chat not started"]
     CEChatNotStopped -> ["error: chat not stopped"]
