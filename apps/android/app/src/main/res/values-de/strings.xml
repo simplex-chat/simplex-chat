@@ -13,9 +13,9 @@
     <string name="server_connected">Verbunden</string>
     <string name="server_error">Fehler</string>
     <string name="server_connecting">Verbinde</string>
-    <string name="connected_to_server_to_receive_messages_from_contact">Sie sind mit dem SMP-Server verbunden, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird.</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Beim Versuch die Verbindung mit dem SMP-Server aufzunehmen, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird, ist ein Fehler aufgetreten (Fehler: <xliff:g id="errorMsg">%1$s</xliff:g>).</string>
-    <string name="trying_to_connect_to_server_to_receive_messages">Versuche die Verbindung mit dem SMP-Server aufzunehmen, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird.</string>
+    <string name="connected_to_server_to_receive_messages_from_contact">Sie sind mit dem Server verbunden, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird.</string>
+    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Beim Versuch die Verbindung mit dem Server aufzunehmen, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird, ist ein Fehler aufgetreten (Fehler: <xliff:g id="errorMsg">%1$s</xliff:g>).</string>
+    <string name="trying_to_connect_to_server_to_receive_messages">Versuche die Verbindung mit dem Server aufzunehmen, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird.</string>
     <!-- Item Content - ChatModel.kt -->
     <string name="deleted_description">Gelöscht</string>
     <string name="marked_deleted_description">als gelöscht markiert</string>
@@ -76,8 +76,8 @@
     <string name="error_deleting_pending_contact_connection">Fehler beim Löschen der anstehenden Kontaktaufnahme</string>
     <string name="error_changing_address">Fehler beim Wechseln der Adresse</string>
     <string name="error_smp_test_failed_at_step">Der Test ist beim Schritt %s fehlgeschlagen.</string>
-    <string name="error_smp_test_server_auth">Um Warteschlangen zu erzeugen benötigt der SMP-Server eine Authentifizierung. Bitte überprüfen Sie das Passwort.</string>
-    <string name="error_smp_test_certificate">Der Fingerabdruck des Zertifikats in der SMP-Serveradresse ist wahrscheinlich ungültig.</string>
+    <string name="error_smp_test_server_auth">Um Warteschlangen zu erzeugen benötigt der Server eine Authentifizierung. Bitte überprüfen Sie das Passwort.</string>
+    <string name="error_smp_test_certificate">Der Fingerabdruck des Zertifikats in der Serveradresse ist wahrscheinlich ungültig.</string>
     <string name="smp_server_test_connect">Verbinde</string>
     <string name="smp_server_test_create_queue">Erzeuge Warteschlange</string>
     <string name="smp_server_test_secure_queue">Sichere Warteschlange</string>
@@ -356,25 +356,25 @@
     <string name="chat_lock">SimpleX Sperre</string>
     <string name="chat_console">Chat Konsole</string>
     <string name="smp_servers">SMP-Server</string>
-    <string name="smp_servers_preset_address">Voreingestellte SMP-Serveradresse</string>
-    <string name="smp_servers_preset_add">Füge voreingestellte SMP-Server hinzu</string>
-    <string name="smp_servers_add">Füge SMP-Server hinzu…</string>
-    <string name="smp_servers_test_server">Teste SMP-Server</string>
-    <string name="smp_servers_test_servers">Teste alle SMP-Server</string>
-    <string name="smp_servers_save">Alle SMP-Server speichern</string>
-    <string name="smp_servers_test_failed">SMP-Server Test ist fehlgeschlagen!</string>
-    <string name="smp_servers_test_some_failed">Einige SMP-Server haben den Test nicht bestanden:</string>
-    <string name="smp_servers_scan_qr">Scannen Sie den QR-Code des SMP-Servers</string>
-    <string name="smp_servers_enter_manually">Geben Sie den SMP-Server manuell ein</string>
-    <string name="smp_servers_preset_server">Voreingestellter SMP-Server</string>
-    <string name="smp_servers_your_server">Ihr SMP-Server</string>
-    <string name="smp_servers_your_server_address">Ihre SMP-Serveradresse</string>
-    <string name="smp_servers_use_server">SMP-Server nutzen</string>
+    <string name="smp_servers_preset_address">Voreingestellte Serveradresse</string>
+    <string name="smp_servers_preset_add">Füge voreingestellte Server hinzu</string>
+    <string name="smp_servers_add">Füge Server hinzu…</string>
+    <string name="smp_servers_test_server">Teste Server</string>
+    <string name="smp_servers_test_servers">Teste alle Server</string>
+    <string name="smp_servers_save">Alle Server speichern</string>
+    <string name="smp_servers_test_failed">Server Test ist fehlgeschlagen!</string>
+    <string name="smp_servers_test_some_failed">Einige Server haben den Test nicht bestanden:</string>
+    <string name="smp_servers_scan_qr">Scannen Sie den QR-Code des Servers</string>
+    <string name="smp_servers_enter_manually">Geben Sie den Server manuell ein</string>
+    <string name="smp_servers_preset_server">Voreingestellter Server</string>
+    <string name="smp_servers_your_server">Ihr Server</string>
+    <string name="smp_servers_your_server_address">Ihre Serveradresse</string>
+    <string name="smp_servers_use_server">Server nutzen</string>
     <string name="smp_servers_use_server_for_new_conn">Für neue Verbindungen nutzen</string>
     <string name="smp_servers_add_to_another_device">Einem anderen Gerät hinzufügen</string>
-    <string name="smp_servers_invalid_address">Ungültige SMP-Serveradresse!</string>
-    <string name="smp_servers_check_address">Überprüfen Sie die SMP-Serveradresse und versuchen Sie es nochmal.</string>
-    <string name="smp_servers_delete_server">SMP-Server löschen</string>
+    <string name="smp_servers_invalid_address">Ungültige Serveradresse!</string>
+    <string name="smp_servers_check_address">Überprüfen Sie die Serveradresse und versuchen Sie es nochmal.</string>
+    <string name="smp_servers_delete_server">Server löschen</string>
     <string name="install_simplex_chat_for_terminal">Installieren Sie <xliff:g id="appNameFull">SimpleX Chat</xliff:g> als Terminalanwendung</string>
     <string name="star_on_github">Stern auf GitHub vergeben</string>
     <string name="contribute">Unterstützen Sie uns</string>
@@ -383,7 +383,7 @@
     <string name="your_SMP_servers">Ihre SMP-Server</string>
     <string name="using_simplex_chat_servers">Verwendung von <xliff:g id="appNameFull">SimpleX Chat</xliff:g> Servern.</string>
     <string name="how_to">Anleitung</string>
-    <string name="how_to_use_your_servers">Wie Sie Ihre SMP-Server nutzen</string>
+    <string name="how_to_use_your_servers">Wie Sie Ihre Server nutzen</string>
     <string name="saved_ICE_servers_will_be_removed">Gespeicherte WebRTC ICE-Server werden entfernt.</string>
     <string name="your_ICE_servers">Ihre ICE-Server</string>
     <string name="configure_ICE_servers">ICE-Server konfigurieren</string>
@@ -489,7 +489,7 @@
     <string name="how_simplex_works">Wie <xliff:g id="appName">SimpleX</xliff:g> funktioniert</string>
     <string name="many_people_asked_how_can_it_deliver">Viele Menschen haben gefragt: <i>Wie kann <xliff:g id="appName">SimpleX</xliff:g> Nachrichten zustellen, wenn es keine Benutzerkennungen gibt?</i></string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Zum Schutz Ihrer Privatsphäre verwendet <xliff:g id="appName">SimpleX</xliff:g> an Stelle von Benutzerkennungen, die von allen anderen Plattformen verwendet werden, Kennungen für Nachrichtenwarteschlangen, die für jeden Ihrer Kontakte individuell sind.</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send">Sie können selbst festlegen, über welche SMP-Server Sie Ihre Nachrichten <b>empfangen</b> und an Ihre Kontakte <b>senden</b> wollen.</string>
+    <string name="you_control_servers_to_receive_your_contacts_to_send">Sie können selbst festlegen, über welche Server Sie Ihre Nachrichten <b>empfangen</b> und an Ihre Kontakte <b>senden</b> wollen.</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Nur die Endgeräte speichern die Benutzerprofile, Kontakte, Gruppen und Nachrichten, welche über eine <b>2-Schichten Ende-zu-Ende-Verschlüsselung</b> gesendet werden.</string>
     <string name="read_more_in_github">Erfahren Sie in unserem GitHub-Repository mehr dazu.</string>
     <string name="read_more_in_github_with_link">Erfahren Sie in unserem <font color="#0088ff">GitHub-Repository</font> mehr dazu.</string>
@@ -951,7 +951,7 @@
     <string name="prohibit_sending_disappearing_messages">Das Senden von verschwindenden Nachrichten verbieten.</string>
     <string name="disappearing_messages_are_prohibited">In dieser Gruppe sind verschwindende Nachrichten nicht erlaubt.</string>
     <string name="group_members_can_send_disappearing">Gruppenmitglieder können verschwindende Nachrichten senden.</string>
-    <string name="v4_3_improved_server_configuration_desc">Fügen Sie SMP-Server durch Scannen der QR Codes hinzu.</string>
+    <string name="v4_3_improved_server_configuration_desc">Fügen Sie Server durch Scannen der QR Codes hinzu.</string>
     <string name="v4_4_disappearing_messages">Verschwindende Nachrichten</string>
     <string name="accept_feature">Übernehmen</string>
     <string name="accept_feature_set_1_day">Einen Tag festlegen</string>
@@ -977,7 +977,7 @@
     <string name="v4_4_verify_connection_security_desc">Vergleichen Sie die Sicherheitscodes mit Ihren Kontakten.</string>
     <string name="v4_3_improved_privacy_and_security_desc">App-Bildschirm in aktuellen Anwendungen verbergen.</string>
     <string name="v4_3_improved_privacy_and_security">Verbesserte Privatsphäre und Sicherheit</string>
-    <string name="v4_3_improved_server_configuration">Verbesserte SMP-Serverkonfiguration</string>
+    <string name="v4_3_improved_server_configuration">Verbesserte Serverkonfiguration</string>
     <string name="v4_3_irreversible_message_deletion">Unwiederbringliches löschen einer Nachricht</string>
     <string name="v4_4_live_messages">Live Nachrichten</string>
     <string name="v4_3_voice_messages_desc">Max. 40 Sekunden, sofort erhalten.</string>
