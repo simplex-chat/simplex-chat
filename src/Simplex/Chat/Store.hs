@@ -186,6 +186,7 @@ module Simplex.Chat.Store
     createNewSndChatItem,
     createNewRcvChatItem,
     createNewChatItemNoMsg,
+    createEmptyLiveChatItem,
     getChatPreviews,
     getDirectChat,
     getGroupChat,
@@ -202,6 +203,7 @@ module Simplex.Chat.Store
     getChatItemByFileId,
     getChatItemByGroupId,
     updateDirectChatItemStatus,
+    updateLocalSndChatItem,
     updateDirectCIFileStatus,
     updateDirectChatItem,
     updateDirectChatItem',
@@ -3186,7 +3188,7 @@ updateChatTs db User {userId} chatDirection chatTs = case toChatInfo chatDirecti
 
 createNewSndChatItem :: DB.Connection -> User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> Maybe (CIQuote c) -> Maybe CITimed -> Bool -> UTCTime -> IO ChatItemId
 createNewSndChatItem db user chatDirection SndMessage {msgId, sharedMsgId} ciContent quotedItem timed live createdAt =
-  createNewChatItem_ db user chatDirection createdByMsgId (Just sharedMsgId) ciContent quoteRow timed live createdAt createdAt
+  createNewChatItem_ db user chatDirection createdByMsgId (Just sharedMsgId) ciContent Nothing quoteRow timed live createdAt createdAt
   where
     createdByMsgId = if msgId == 0 then Nothing else Just msgId
     quoteRow :: NewQuoteRow
@@ -3202,7 +3204,7 @@ createNewSndChatItem db user chatDirection SndMessage {msgId, sharedMsgId} ciCon
 
 createNewRcvChatItem :: DB.Connection -> User -> ChatDirection c 'MDRcv -> RcvMessage -> Maybe SharedMsgId -> CIContent 'MDRcv -> Maybe CITimed -> Bool -> UTCTime -> UTCTime -> IO (ChatItemId, Maybe (CIQuote c))
 createNewRcvChatItem db user chatDirection RcvMessage {msgId, chatMsgEvent} sharedMsgId_ ciContent timed live itemTs createdAt = do
-  ciId <- createNewChatItem_ db user chatDirection (Just msgId) sharedMsgId_ ciContent quoteRow timed live itemTs createdAt
+  ciId <- createNewChatItem_ db user chatDirection (Just msgId) sharedMsgId_ ciContent Nothing quoteRow timed live itemTs createdAt
   quotedItem <- mapM (getChatItemQuote_ db user chatDirection) quotedMsg
   pure (ciId, quotedItem)
   where
@@ -3218,13 +3220,17 @@ createNewRcvChatItem db user chatDirection RcvMessage {msgId, chatMsgEvent} shar
 
 createNewChatItemNoMsg :: forall c d. MsgDirectionI d => DB.Connection -> User -> ChatDirection c d -> CIContent d -> UTCTime -> UTCTime -> IO ChatItemId
 createNewChatItemNoMsg db user chatDirection ciContent =
-  createNewChatItem_ db user chatDirection Nothing Nothing ciContent quoteRow Nothing False
-  where
-    quoteRow :: NewQuoteRow
-    quoteRow = (Nothing, Nothing, Nothing, Nothing, Nothing)
+  createNewChatItem_ db user chatDirection Nothing Nothing ciContent Nothing emptyQuoteRow Nothing False
 
-createNewChatItem_ :: forall c d. MsgDirectionI d => DB.Connection -> User -> ChatDirection c d -> Maybe MessageId -> Maybe SharedMsgId -> CIContent d -> NewQuoteRow -> Maybe CITimed -> Bool -> UTCTime -> UTCTime -> IO ChatItemId
-createNewChatItem_ db User {userId} chatDirection msgId_ sharedMsgId ciContent quoteRow timed live itemTs createdAt = do
+emptyQuoteRow :: NewQuoteRow
+emptyQuoteRow = (Nothing, Nothing, Nothing, Nothing, Nothing)
+
+createEmptyLiveChatItem :: DB.Connection -> User -> ChatDirection c 'MDSnd -> CIContent 'MDSnd -> UTCTime -> UTCTime -> IO ChatItemId
+createEmptyLiveChatItem db user chatDirection ciContent =
+  createNewChatItem_ db user chatDirection Nothing Nothing ciContent (Just CISSndLocal) emptyQuoteRow Nothing True
+
+createNewChatItem_ :: forall c d. MsgDirectionI d => DB.Connection -> User -> ChatDirection c d -> Maybe MessageId -> Maybe SharedMsgId -> CIContent d -> Maybe (CIStatus d) -> NewQuoteRow -> Maybe CITimed -> Bool -> UTCTime -> UTCTime -> IO ChatItemId
+createNewChatItem_ db User {userId} chatDirection msgId_ sharedMsgId ciContent ciStatus_ quoteRow timed live itemTs createdAt = do
   DB.execute
     db
     [sql|
@@ -3243,7 +3249,8 @@ createNewChatItem_ db User {userId} chatDirection msgId_ sharedMsgId ciContent q
   pure ciId
   where
     itemRow :: (SMsgDirection d, UTCTime, CIContent d, Text, CIStatus d, Maybe SharedMsgId) :. (UTCTime, UTCTime, Maybe Bool) :. (Maybe Int, Maybe UTCTime)
-    itemRow = (msgDirection @d, itemTs, ciContent, ciContentToText ciContent, ciCreateStatus ciContent, sharedMsgId) :. (createdAt, createdAt, justTrue live) :. ciTimedRow timed
+    itemRow = (msgDirection @d, itemTs, ciContent, ciContentToText ciContent, ciStatus, sharedMsgId) :. (createdAt, createdAt, justTrue live) :. ciTimedRow timed
+    ciStatus = fromMaybe (ciCreateStatus ciContent) ciStatus_
     idsRow :: (Maybe Int64, Maybe Int64, Maybe Int64)
     idsRow = case chatDirection of
       CDDirectRcv Contact {contactId} -> (Just contactId, Nothing, Nothing)
@@ -3886,6 +3893,15 @@ updateDirectChatItemStatus db user@User {userId} contactId itemId itemStatus = d
   where
     correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
     correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
+
+updateLocalSndChatItem :: DB.Connection -> User -> ChatDirection c 'MDSnd -> Int64 -> SndMessage -> IO ()
+updateLocalSndChatItem db User {userId} cd itemId SndMessage {msgId, sharedMsgId} = do
+  currentTs <- liftIO getCurrentTime
+  case cd of
+    CDDirectSnd Contact {contactId} ->
+      DB.execute db "UPDATE chat_items SET created_by_msg_id = ?, shared_msg_id = ?, item_status = ?, updated_at = ? WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?" (msgId, sharedMsgId, CISSndNew, currentTs, userId, contactId, itemId)
+    CDGroupSnd GroupInfo {groupId} ->
+      DB.execute db "UPDATE chat_items SET created_by_msg_id = ?, shared_msg_id = ?, item_status = ?, updated_at = ? WHERE user_id = ? AND group_id = ? AND chat_item_id = ?" (msgId, sharedMsgId, CISSndNew, currentTs, userId, groupId, itemId)
 
 updateDirectChatItem :: forall d. (MsgDirectionI d) => DB.Connection -> User -> Int64 -> ChatItemId -> CIContent d -> Bool -> Maybe MessageId -> ExceptT StoreError IO (ChatItem 'CTDirect d)
 updateDirectChatItem db user contactId itemId newContent live msgId_ = do

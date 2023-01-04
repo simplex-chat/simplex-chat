@@ -304,9 +304,16 @@ processChatCommand = \case
       ct@Contact {contactId, localDisplayName = c, contactUsed} <- withStore $ \db -> getContact db user chatId
       assertDirectAllowed user MDSnd ct XMsgNew_
       unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
-      if isVoice mc && not (featureAllowed SCFVoice forUser ct)
-        then pure $ chatCmdError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFVoice)
-        else do
+      when (isVoice mc && not (featureAllowed SCFVoice forUser ct)) $
+        throwChatError $ CECommandError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFVoice)
+      case (mc, file_, quotedItemId_) of
+        (MCText "", Nothing, Nothing)
+          | live -> do
+            ci <- createEmptyLiveSndChatItem user (CDDirectSnd ct) (CISndMsgContent mc)
+            setActive $ ActiveC c
+            pure . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
+          | otherwise -> pure $ chatCmdError "empty text message"
+        _ -> do
           (fileInvitation_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer ct
           timed_ <- sndContactCITimed live ct
           (msgContainer, quotedItem_) <- prepareMsg fileInvitation_ timed_
@@ -439,15 +446,30 @@ processChatCommand = \case
       (ct@Contact {contactId, localDisplayName = c}, cci) <- withStore $ \db -> (,) <$> getContact db user chatId <*> getDirectChatItem db user chatId itemId
       assertDirectAllowed user MDSnd ct XMsgUpdate_
       case cci of
-        CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive}, content = ciContent} -> do
-          case (ciContent, itemSharedMsgId) of
-            (CISndMsgContent _, Just itemSharedMId) -> do
-              (SndMessage {msgId}, _) <- sendDirectContactMessage ct (XMsgUpdate itemSharedMId mc (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive))
+        CChatItem SMDSnd sci@ChatItem {meta = CIMeta {itemSharedMsgId, itemStatus, itemTimed, itemLive}, content = ciContent, file, quotedItem} -> do
+          liftIO $ print sci
+          ci <- case (ciContent, itemSharedMsgId, file, quotedItem, itemStatus) of
+            (CISndMsgContent _, Just itemSharedMId, _, _, _) -> do
+              (ci, _) <- sendUpdate sci $ XMsgUpdate itemSharedMId mc ttl_ live_
+              pure ci
+            (CISndMsgContent _, _, Nothing, Nothing, CISSndLocal) -> do
+              -- This is used to avoid sending initially empty live messages.
+              -- This case can be extended to support, e.g., scheduled messages or unsent drafts in the chat,
+              -- in which case we will need to support files and quotes
+              (ci, sndMsg) <- sendUpdate sci $ XMsgNew $ MCSimple $ ExtMsgContent mc Nothing ttl_ live_
+              withStore' $ \db -> updateLocalSndChatItem db user (CDDirectSnd ct) itemId sndMsg
+              pure ci
+            _ -> throwChatError CEInvalidChatItemUpdate
+          pure . CRChatItemUpdated $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
+          where
+            ttl_ = ttl' <$> itemTimed
+            live_ = justTrue . (live &&) =<< itemLive
+            sendUpdate ci msg = do
+              (sndMsg@SndMessage {msgId}, _) <- sendDirectContactMessage ct msg
               ci' <- withStore' $ \db -> updateDirectChatItem' db user contactId ci (CISndMsgContent mc) live $ Just msgId
               startUpdatedTimedItemThread user (ChatRef CTDirect contactId) ci ci'
               setActive $ ActiveC c
-              pure . CRChatItemUpdated $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci'
-            _ -> throwChatError CEInvalidChatItemUpdate
+              pure (ci', sndMsg)
         CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
     CTGroup -> do
       Group gInfo@GroupInfo {groupId, localDisplayName = gName, membership} ms <- withStore $ \db -> getGroup db user chatId
@@ -3354,7 +3376,7 @@ saveSndChatItem' user cd msg@SndMessage {sharedMsgId} content ciFile quotedItem 
     ciId <- createNewSndChatItem db user cd msg content quotedItem itemTimed live createdAt
     forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
     pure ciId
-  liftIO $ mkChatItem cd ciId content ciFile quotedItem (Just sharedMsgId) itemTimed live createdAt createdAt
+  liftIO $ mkChatItem cd ciId content Nothing ciFile quotedItem (Just sharedMsgId) itemTimed live createdAt createdAt
 
 saveRcvChatItem :: ChatMonad m => User -> ChatDirection c 'MDRcv -> RcvMessage -> MsgMeta -> CIContent 'MDRcv -> m (ChatItem c 'MDRcv)
 saveRcvChatItem user cd msg@RcvMessage {sharedMsgId_} msgMeta content =
@@ -3368,13 +3390,13 @@ saveRcvChatItem' user cd msg sharedMsgId_ MsgMeta {broker = (_, brokerTs)} conte
     (ciId, quotedItem) <- createNewRcvChatItem db user cd msg sharedMsgId_ content itemTimed live brokerTs createdAt
     forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
     pure (ciId, quotedItem)
-  liftIO $ mkChatItem cd ciId content ciFile quotedItem sharedMsgId_ itemTimed live brokerTs createdAt
+  liftIO $ mkChatItem cd ciId content Nothing ciFile quotedItem sharedMsgId_ itemTimed live brokerTs createdAt
 
-mkChatItem :: forall c d. MsgDirectionI d => ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CITimed -> Bool -> ChatItemTs -> UTCTime -> IO (ChatItem c d)
-mkChatItem cd ciId content file quotedItem sharedMsgId itemTimed live itemTs currentTs = do
+mkChatItem :: forall c d. MsgDirectionI d => ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIStatus d) -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CITimed -> Bool -> ChatItemTs -> UTCTime -> IO (ChatItem c d)
+mkChatItem cd ciId content status_ file quotedItem sharedMsgId itemTimed live itemTs currentTs = do
   tz <- getCurrentTimeZone
   let itemText = ciContentToText content
-      itemStatus = ciCreateStatus content
+      itemStatus = fromMaybe (ciCreateStatus content) status_
       meta = mkCIMeta ciId content itemText itemStatus sharedMsgId False False itemTimed (justTrue live) tz currentTs itemTs currentTs currentTs
   pure ChatItem {chatDir = toCIDirection cd, meta, content, formattedText = parseMaybeMarkdownList itemText, quotedItem, file}
 
@@ -3506,8 +3528,16 @@ createInternalChatItem user cd content itemTs_ = do
   ciId <- withStore' $ \db -> do
     when (ciRequiresAttention content) $ updateChatTs db user cd createdAt
     createNewChatItemNoMsg db user cd content itemTs createdAt
-  ci <- liftIO $ mkChatItem cd ciId content Nothing Nothing Nothing Nothing False itemTs createdAt
+  ci <- liftIO $ mkChatItem cd ciId content Nothing Nothing Nothing Nothing Nothing False itemTs createdAt
   toView $ CRNewChatItem $ AChatItem (chatTypeI @c) (msgDirection @d) (toChatInfo cd) ci
+
+createEmptyLiveSndChatItem :: ChatMonad m => User -> ChatDirection c 'MDSnd -> CIContent 'MDSnd -> m (ChatItem c 'MDSnd)
+createEmptyLiveSndChatItem user cd content = do
+  createdAt <- liftIO getCurrentTime
+  ciId <- withStore' $ \db -> do
+    updateChatTs db user cd createdAt
+    createEmptyLiveChatItem db user cd content createdAt createdAt
+  liftIO $ mkChatItem cd ciId content (Just CISSndLocal) Nothing Nothing Nothing Nothing True createdAt createdAt
 
 getCreateActiveUser :: SQLiteStore -> IO User
 getCreateActiveUser st = do

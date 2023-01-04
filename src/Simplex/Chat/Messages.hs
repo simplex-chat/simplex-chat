@@ -466,6 +466,7 @@ data CIFileInfo = CIFileInfo
   deriving (Show)
 
 data CIStatus (d :: MsgDirection) where
+  CISSndLocal :: CIStatus 'MDSnd
   CISSndNew :: CIStatus 'MDSnd
   CISSndSent :: CIStatus 'MDSnd
   CISSndErrorAuth :: CIStatus 'MDSnd
@@ -474,11 +475,6 @@ data CIStatus (d :: MsgDirection) where
   CISRcvRead :: CIStatus 'MDRcv
 
 deriving instance Show (CIStatus d)
-
-ciStatusNew :: forall d. MsgDirectionI d => CIStatus d
-ciStatusNew = case msgDirection @d of
-  SMDSnd -> CISSndNew
-  SMDRcv -> CISRcvNew
 
 instance ToJSON (CIStatus d) where
   toJSON = J.toJSON . jsonCIStatus
@@ -494,6 +490,7 @@ deriving instance Show ACIStatus
 
 instance MsgDirectionI d => StrEncoding (CIStatus d) where
   strEncode = \case
+    CISSndLocal -> "snd_local"
     CISSndNew -> "snd_new"
     CISSndSent -> "snd_sent"
     CISSndErrorAuth -> "snd_error_auth"
@@ -506,6 +503,7 @@ instance StrEncoding ACIStatus where
   strEncode (ACIStatus _ s) = strEncode s
   strP =
     A.takeTill (== ' ') >>= \case
+      "snd_local" -> pure $ ACIStatus SMDSnd CISSndLocal
       "snd_new" -> pure $ ACIStatus SMDSnd CISSndNew
       "snd_sent" -> pure $ ACIStatus SMDSnd CISSndSent
       "snd_error_auth" -> pure $ ACIStatus SMDSnd CISSndErrorAuth
@@ -515,7 +513,8 @@ instance StrEncoding ACIStatus where
       _ -> fail "bad status"
 
 data JSONCIStatus
-  = JCISSndNew
+  = JCISSndLocal
+  | JCISSndNew
   | JCISSndSent
   | JCISSndErrorAuth
   | JCISSndError {agentError :: String}
@@ -529,6 +528,7 @@ instance ToJSON JSONCIStatus where
 
 jsonCIStatus :: CIStatus d -> JSONCIStatus
 jsonCIStatus = \case
+  CISSndLocal -> JCISSndLocal
   CISSndNew -> JCISSndNew
   CISSndSent -> JCISSndSent
   CISSndErrorAuth -> JCISSndErrorAuth
@@ -664,8 +664,8 @@ ciRequiresAttention content = case msgDirection @d of
 
 ciCreateStatus :: forall d. MsgDirectionI d => CIContent d -> CIStatus d
 ciCreateStatus content = case msgDirection @d of
-  SMDSnd -> ciStatusNew
-  SMDRcv -> if ciRequiresAttention content then ciStatusNew else CISRcvRead
+  SMDSnd -> CISSndNew
+  SMDRcv -> if ciRequiresAttention content then CISRcvNew else CISRcvRead
 
 data RcvGroupEvent
   = RGEMemberAdded {groupMemberId :: GroupMemberId, profile :: Profile} -- CRJoinedGroupMemberConnecting

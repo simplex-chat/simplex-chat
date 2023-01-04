@@ -57,6 +57,7 @@ chatTests = do
     it "direct message quoted replies" testDirectMessageQuotedReply
     it "direct message update" testDirectMessageUpdate
     it "direct message delete" testDirectMessageDelete
+    xit "direct live message" testDirectLiveMessage
   describe "chat groups" $ do
     describe "add contacts, create group and send/receive messages" testGroup
     it "add contacts, create group and send/receive messages, check messages" testGroupCheckMessages
@@ -494,6 +495,23 @@ testDirectMessageDelete =
       bob #$> ("/_delete item @2 " <> itemId 2 <> " internal", id, "message deleted")
       bob #$> ("/_delete item @2 " <> itemId 4 <> " internal", id, "message deleted")
       bob #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((0, "hello 🙂"), Nothing), ((1, "do you receive my messages?"), Just (0, "hello 🙂"))])
+
+testDirectLiveMessage :: IO ()
+testDirectLiveMessage =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    -- non-empty live message is sent instantly
+    alice `send` "/live @bob hello"
+    bob <# "alice> [LIVE started] use /show [on/off/4] hello"
+    alice ##> ("/_update item @2 " <> itemId 1 <> " text hello there")
+    alice <# "@bob [LIVE] hello there"
+    bob <# "alice> [LIVE ended] hello there"
+    -- empty live message is not sent until updated
+    alice `send` "/live @bob"
+    (bob </)
+    alice ##> ("/_update item @2 " <> itemId 2 <> " text hello 2")
+    alice <# "@bob [LIVE] hello 2"
+    bob <# "alice> [LIVE ended] hello 2"
 
 testGroup :: Spec
 testGroup = versionTestMatrix3 runTestGroup
