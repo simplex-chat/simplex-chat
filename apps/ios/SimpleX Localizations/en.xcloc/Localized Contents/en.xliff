@@ -3746,6 +3746,11 @@ SimpleX servers cannot see your profile.</target>
         <target>calling…</target>
         <note>call status</note>
       </trans-unit>
+      <trans-unit id="cancelled %@" xml:space="preserve">
+        <source>cancelled %@</source>
+        <target>cancelled %@</target>
+        <note>feature offered item</note>
+      </trans-unit>
       <trans-unit id="changed address for you" xml:space="preserve">
         <source>changed address for you</source>
         <target>changed address for you</target>
@@ -4056,6 +4061,16 @@ SimpleX servers cannot see your profile.</target>
         <target>off</target>
         <note>enabled status
    group pref value</note>
+      </trans-unit>
+      <trans-unit id="offered %@" xml:space="preserve">
+        <source>offered %@</source>
+        <target>offered %@</target>
+        <note>feature offered item</note>
+      </trans-unit>
+      <trans-unit id="offered %@: %@" xml:space="preserve">
+        <source>offered %1$@: %2$@</source>
+        <target>offered %1$@: %2$@</target>
+        <note>feature offered item</note>
       </trans-unit>
       <trans-unit id="on" xml:space="preserve">
         <source>on</source>

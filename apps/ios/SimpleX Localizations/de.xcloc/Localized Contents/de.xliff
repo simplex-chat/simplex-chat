@@ -3746,6 +3746,10 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>Anrufen…</target>
         <note>call status</note>
       </trans-unit>
+      <trans-unit id="cancelled %@" xml:space="preserve">
+        <source>cancelled %@</source>
+        <note>feature offered item</note>
+      </trans-unit>
       <trans-unit id="changed address for you" xml:space="preserve">
         <source>changed address for you</source>
         <target>wechselte die Adresse für Sie</target>
@@ -4056,6 +4060,14 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>Aus</target>
         <note>enabled status
    group pref value</note>
+      </trans-unit>
+      <trans-unit id="offered %@" xml:space="preserve">
+        <source>offered %@</source>
+        <note>feature offered item</note>
+      </trans-unit>
+      <trans-unit id="offered %@: %@" xml:space="preserve">
+        <source>offered %1$@: %2$@</source>
+        <note>feature offered item</note>
       </trans-unit>
       <trans-unit id="on" xml:space="preserve">
         <source>on</source>
