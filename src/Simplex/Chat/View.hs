@@ -113,7 +113,6 @@ responseToView user_ testView liveItems ts = \case
   CRUserProfile u p -> viewUserProfile p
   CRUserProfileNoChange u -> ["user profile did not change"]
   CRVersionInfo _ -> [plain versionStr, plain updateStr]
-  CRChatCmdError u e -> viewChatError e
   CRInvitation u cReq -> viewConnReqInvitation cReq
   CRSentConfirmation u -> ["confirmation sent!"]
   CRSentInvitation u customUserProfile -> viewSentInvitation customUserProfile testView
@@ -219,7 +218,8 @@ responseToView user_ testView liveItems ts = \case
     ]
   CRAgentStats stats -> map (plain . intercalate ",") stats
   CRMessageError u prefix err -> [plain prefix <> ": " <> plain err]
-  CRChatError e -> viewChatError e
+  CRChatCmdError u e -> viewChatError e
+  CRChatError u e -> viewChatError e
   where
     testViewChats :: [AChat] -> [StyledString]
     testViewChats chats = [sShow $ map toChatView chats]

@@ -213,7 +213,8 @@ startChatController user subConns enableExpireCIs = do
           setExpireCIs True
         _ -> setExpireCIs True
     runExpireCIs = forever $ do
-      flip catchError (toView . CRChatError) $ do
+      -- TODO per user
+      flip catchError (toView . CRChatError (Just user)) $ do
         expire <- asks expireCIs
         atomically $ readTVar expire >>= \b -> unless b retry
         ttl <- withStore' (`getChatItemTTL` user)
@@ -585,7 +586,7 @@ processChatCommand = \case
         withStore' $ \db -> deleteGroup db user gInfo
         let contactIds = mapMaybe memberContactId members
         forM_ contactIds $ \ctId ->
-          deleteUnusedContact ctId `catchError` (toView . CRChatError)
+          deleteUnusedContact ctId `catchError` (toView . CRChatError (Just user))
         pure $ CRGroupDeletedUser user gInfo
       where
         deleteUnusedContact contactId = do
@@ -802,7 +803,7 @@ processChatCommand = \case
         liftIO $ updateGroupSettings db user chatId chatSettings
         pure ms
       forM_ (filter memberActive ms) $ \m -> forM_ (memberConnId m) $ \connId ->
-        withAgent (\a -> toggleConnectionNtfs a connId $ enableNtfs chatSettings) `catchError` (toView . CRChatError)
+        withAgent (\a -> toggleConnectionNtfs a connId $ enableNtfs chatSettings) `catchError` (toView . CRChatError (Just user))
       pure $ CRCmdOk (Just user)
     _ -> pure $ chatCmdError (Just user) "not supported"
   APIContactInfo contactId -> withUser $ \user@User {userId} -> do
@@ -937,7 +938,7 @@ processChatCommand = \case
               (sndMsg, _) <- sendDirectContactMessage ct (XMsgNew $ MCSimple (extMsgContent mc Nothing))
               saveSndChatItem user (CDDirectSnd ct) sndMsg (CISndMsgContent mc)
           )
-          `catchError` (toView . CRChatError)
+          `catchError` (toView . CRChatError (Just user))
       CRBroadcastSent user mc (length cts) <$> liftIO getZonedTime
   SendMessageQuote cName (AMsgDirection msgDir) quotedMsg msg -> withUser $ \user@User {userId} -> do
     contactId <- withStore $ \db -> getContactIdByName db user cName
@@ -1356,7 +1357,7 @@ processChatCommand = \case
                 ct' = updateMergedPreferences user' ct
                 mergedProfile' = userProfileToSend user' Nothing $ Just ct'
             when (mergedProfile' /= mergedProfile) $ do
-              void (sendDirectContactMessage ct' $ XInfo mergedProfile') `catchError` (toView . CRChatError)
+              void (sendDirectContactMessage ct' $ XInfo mergedProfile') `catchError` (toView . CRChatError (Just user))
               when (directOrUsed ct') $ createSndFeatureItems user' ct ct'
           pure $ CRUserProfileUpdated user' (fromLocalProfile p) p'
     updateContactPrefs :: User -> Contact -> Preferences -> m ChatResponse
@@ -1370,7 +1371,7 @@ processChatCommand = \case
             mergedProfile' = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct')
         when (mergedProfile' /= mergedProfile) $
           withChatLock "updateProfile" $ do
-            void (sendDirectContactMessage ct' $ XInfo mergedProfile') `catchError` (toView . CRChatError)
+            void (sendDirectContactMessage ct' $ XInfo mergedProfile') `catchError` (toView . CRChatError (Just user))
             when (directOrUsed ct') $ createSndFeatureItems user ct ct'
         pure $ CRContactPrefsUpdated user ct ct'
     runUpdateGroupProfile :: User -> Group -> GroupProfile -> m ChatResponse
@@ -1476,7 +1477,7 @@ setExpireCIs b = do
 
 deleteFile :: forall m. ChatMonad m => User -> CIFileInfo -> m ()
 deleteFile user CIFileInfo {filePath, fileId, fileStatus} =
-  (cancel' >> delete) `catchError` (toView . CRChatError)
+  (cancel' >> delete) `catchError` (toView . CRChatError (Just user))
   where
     cancel' = forM_ fileStatus $ \(AFS dir status) ->
       unless (ciFileEnded status) $
@@ -1668,7 +1669,7 @@ agentSubscriber = do
     (corrId, connId, msg) <- atomically $ readTBQueue q
     let name = "agentSubscriber connId=" <> str connId <> " corrId=" <> str corrId <> " msg=" <> str (aCommandTag msg)
     withLock l name . void . runExceptT $
-      processAgentMessage corrId connId msg `catchError` (toView . CRChatError)
+      processAgentMessage corrId connId msg `catchError` (toView . CRChatError Nothing)
   where
     str :: StrEncoding a => a -> String
     str = B.unpack . strEncode
@@ -1789,7 +1790,7 @@ cleanupManagerInterval = 1800 -- 30 minutes
 cleanupManager :: forall m. ChatMonad m => User -> m ()
 cleanupManager user = do
   forever $ do
-    flip catchError (toView . CRChatError) $ do
+    flip catchError (toView . CRChatError (Just user)) $ do
       waitChatStarted
       cleanupTimedItems
     threadDelay $ cleanupManagerInterval * 1000000
@@ -1833,7 +1834,7 @@ deleteTimedItem user (ChatRef cType chatId, itemId) deleteAt = do
     CTGroup -> do
       (gInfo, ci) <- withStore $ \db -> (,) <$> getGroupInfo db user chatId <*> getGroupChatItem db user chatId itemId
       deleteGroupCI user gInfo ci True True >>= toView
-    _ -> toView . CRChatError . ChatError $ CEInternalError "bad deleteTimedItem cType"
+    _ -> toView . CRChatError (Just user) . ChatError $ CEInternalError "bad deleteTimedItem cType"
 
 startUpdatedTimedItemThread :: ChatMonad m => User -> ChatRef -> ChatItem c d -> ChatItem c d -> m ()
 startUpdatedTimedItemThread user chatRef ci ci' =
@@ -1857,7 +1858,7 @@ expireChatItems user ttl sync = do
     loop :: TVar Bool -> [a] -> (a -> m ()) -> m ()
     loop _ [] _ = pure ()
     loop expire (a : as) process = continue expire $ do
-      process a `catchError` (toView . CRChatError)
+      process a `catchError` (toView . CRChatError (Just user))
       loop expire as process
     continue :: TVar Bool -> m () -> m ()
     continue expire = if sync then id else \a -> whenM (readTVarIO expire) $ threadDelay 100000 >> a
@@ -1893,11 +1894,11 @@ expireChatItems user ttl sync = do
 processAgentMessage :: forall m. ChatMonad m => ACorrId -> ConnId -> ACommand 'Agent -> m ()
 processAgentMessage _ "" msg =
   asks currentUser >>= readTVarIO >>= \case
-    Just user -> processAgentMessageNoConn user msg
+    Just user -> processAgentMessageNoConn user msg `catchError` (toView . CRChatError (Just user))
     _ -> throwChatError CENoActiveUser
 processAgentMessage corrId connId msg =
   withStore' (`getUserByAConnId` AgentConnId connId) >>= \case
-    Just user -> processAgentMessageConn user corrId connId msg
+    Just user -> processAgentMessageConn user corrId connId msg `catchError` (toView . CRChatError (Just user))
     _ -> throwChatError $ CENoConnectionUser (AgentConnId connId)
 
 processAgentMessageNoConn :: forall m. ChatMonad m => User -> ACommand 'Agent -> m ()
@@ -1978,9 +1979,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage =
           -- [async agent commands] continuation on receiving OK
           withCompletedCommand conn agentMsg $ \CommandData {cmdFunction, cmdId} ->
             when (cmdFunction == CFAckMessage) $ ackMsgDeliveryEvent conn cmdId
-        MERR _ err -> toView . CRChatError $ ChatErrorAgent err -- ? updateDirectChatItemStatus
+        MERR _ err -> toView $ CRChatError (Just user) (ChatErrorAgent err) -- ? updateDirectChatItemStatus
         ERR err -> do
-          toView . CRChatError $ ChatErrorAgent err
+          toView $ CRChatError (Just user) (ChatErrorAgent err)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
@@ -2094,7 +2095,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage =
             chatItem <- withStore $ \db -> updateDirectChatItemStatus db user contactId chatItemId (agentErrToItemStatus err)
             toView $ CRChatItemStatusUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
         ERR err -> do
-          toView . CRChatError $ ChatErrorAgent err
+          toView $ CRChatError (Just user) (ChatErrorAgent err)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
@@ -2239,9 +2240,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage =
         -- [async agent commands] continuation on receiving OK
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction, cmdId} ->
           when (cmdFunction == CFAckMessage) $ ackMsgDeliveryEvent conn cmdId
-      MERR _ err -> toView . CRChatError $ ChatErrorAgent err
+      MERR _ err -> toView $ CRChatError (Just user) (ChatErrorAgent err)
       ERR err -> do
-        toView . CRChatError $ ChatErrorAgent err
+        toView $ CRChatError (Just user) (ChatErrorAgent err)
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
       -- TODO add debugging output
       _ -> pure ()
@@ -2285,7 +2286,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage =
           -- [async agent commands] continuation on receiving OK
           withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         ERR err -> do
-          toView . CRChatError $ ChatErrorAgent err
+          toView $ CRChatError (Just user) (ChatErrorAgent err)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
@@ -2330,9 +2331,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage =
         OK ->
           -- [async agent commands] continuation on receiving OK
           withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-        MERR _ err -> toView . CRChatError $ ChatErrorAgent err
+        MERR _ err -> toView $ CRChatError (Just user) (ChatErrorAgent err)
         ERR err -> do
-          toView . CRChatError $ ChatErrorAgent err
+          toView $ CRChatError (Just user) (ChatErrorAgent err)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
@@ -2388,9 +2389,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage =
           XInfo p -> profileContactRequest invId p Nothing
           -- TODO show/log error, other events in contact request
           _ -> pure ()
-      MERR _ err -> toView . CRChatError $ ChatErrorAgent err
+      MERR _ err -> toView $ CRChatError (Just user) (ChatErrorAgent err)
       ERR err -> do
-        toView . CRChatError $ ChatErrorAgent err
+        toView $ CRChatError (Just user) (ChatErrorAgent err)
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
       -- TODO add debugging output
       _ -> pure ()

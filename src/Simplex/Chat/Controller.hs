@@ -422,7 +422,7 @@ data ChatResponse
   | CRAgentStats {agentStats :: [[String]]}
   | CRMessageError {user :: User, severity :: Text, errorMessage :: Text}
   | CRChatCmdError {user_ :: Maybe User, chatError :: ChatError}
-  | CRChatError {chatError :: ChatError}
+  | CRChatError {user_ :: Maybe User, chatError :: ChatError}
   deriving (Show, Generic)
 
 instance ToJSON ChatResponse where
