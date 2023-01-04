@@ -421,8 +421,8 @@ data ChatResponse
   | CRDebugLocks {chatLockName :: Maybe String, agentLocks :: AgentLocks}
   | CRAgentStats {agentStats :: [[String]]}
   | CRMessageError {user :: User, severity :: Text, errorMessage :: Text}
-  | CRChatCmdError {chatError :: ChatError}
-  | CRChatError {chatError :: ChatError} -- ? user
+  | CRChatCmdError {user_ :: Maybe User, chatError :: ChatError}
+  | CRChatError {chatError :: ChatError}
   deriving (Show, Generic)
 
 instance ToJSON ChatResponse where
@@ -634,8 +634,8 @@ throwDBError = throwError . ChatErrorDatabase
 
 type ChatMonad m = (MonadUnliftIO m, MonadReader ChatController m, MonadError ChatError m)
 
-chatCmdError :: String -> ChatResponse
-chatCmdError = CRChatCmdError . ChatError . CECommandError
+chatCmdError :: Maybe User -> String -> ChatResponse
+chatCmdError user = CRChatCmdError user . ChatError . CECommandError
 
 setActive :: (MonadUnliftIO m, MonadReader ChatController m) => ActiveTo -> m ()
 setActive to = asks activeTo >>= atomically . (`writeTVar` to)

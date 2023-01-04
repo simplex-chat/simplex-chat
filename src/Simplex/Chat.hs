@@ -237,8 +237,10 @@ stopChatController ChatController {smpAgent, agentAsync = s, expireCIs} = do
 
 execChatCommand :: (MonadUnliftIO m, MonadReader ChatController m) => ByteString -> m ChatResponse
 execChatCommand s = case parseChatCommand s of
-  Left e -> pure $ chatCmdError e
-  Right cmd -> either CRChatCmdError id <$> runExceptT (processChatCommand cmd)
+  Left e -> do
+    u <- readTVarIO =<< asks currentUser
+    pure $ chatCmdError u e
+  Right cmd -> either (CRChatCmdError Nothing) id <$> runExceptT (processChatCommand cmd)
 
 parseChatCommand :: ByteString -> Either String ChatCommand
 parseChatCommand = A.parseOnly chatCommandP . B.dropWhileEnd isSpace
@@ -316,16 +318,16 @@ processChatCommand = \case
     CTGroup -> do
       groupChat <- withStore (\db -> getGroupChat db user cId pagination search)
       pure $ CRApiChat user (AChat SCTGroup groupChat)
-    CTContactRequest -> pure $ chatCmdError "not implemented"
-    CTContactConnection -> pure $ chatCmdError "not supported"
-  APIGetChatItems _pagination -> pure $ chatCmdError "not implemented"
+    CTContactRequest -> pure $ chatCmdError (Just user) "not implemented"
+    CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
+  APIGetChatItems _pagination -> pure $ chatCmdError Nothing "not implemented"
   APISendMessage (ChatRef cType chatId) live (ComposedMessage file_ quotedItemId_ mc) -> withUser $ \user@User {userId} -> withChatLock "sendMessage" $ case cType of
     CTDirect -> do
       ct@Contact {contactId, localDisplayName = c, contactUsed} <- withStore $ \db -> getContact db user chatId
       assertDirectAllowed user MDSnd ct XMsgNew_
       unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
       if isVoice mc && not (featureAllowed SCFVoice forUser ct)
-        then pure $ chatCmdError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFVoice)
+        then pure $ chatCmdError (Just user) ("feature not allowed " <> T.unpack (chatFeatureNameText CFVoice))
         else do
           (fileInvitation_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer ct
           timed_ <- sndContactCITimed live ct
@@ -378,7 +380,7 @@ processChatCommand = \case
       Group gInfo@GroupInfo {groupId, membership, localDisplayName = gName} ms <- withStore $ \db -> getGroup db user chatId
       unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
       if isVoice mc && not (groupFeatureAllowed SGFVoice gInfo)
-        then pure $ chatCmdError $ "feature not allowed " <> T.unpack (groupFeatureNameText GFVoice)
+        then pure $ chatCmdError (Just user) ("feature not allowed " <> T.unpack (groupFeatureNameText GFVoice))
         else do
           (fileInvitation_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer gInfo (length $ filter memberCurrent ms)
           timed_ <- sndGroupCITimed live gInfo
@@ -426,8 +428,8 @@ processChatCommand = \case
             quoteData ChatItem {chatDir = CIGroupSnd, content = CISndMsgContent qmc} membership' = pure (qmc, CIQGroupSnd, True, membership')
             quoteData ChatItem {chatDir = CIGroupRcv m, content = CIRcvMsgContent qmc} _ = pure (qmc, CIQGroupRcv $ Just m, False, m)
             quoteData _ _ = throwChatError CEInvalidQuote
-    CTContactRequest -> pure $ chatCmdError "not supported"
-    CTContactConnection -> pure $ chatCmdError "not supported"
+    CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
+    CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
     where
       quoteContent :: forall d. MsgContent -> Maybe (CIFile d) -> MsgContent
       quoteContent qmc ciFile_
@@ -484,8 +486,8 @@ processChatCommand = \case
               pure $ CRChatItemUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci')
             _ -> throwChatError CEInvalidChatItemUpdate
         CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
-    CTContactRequest -> pure $ chatCmdError "not supported"
-    CTContactConnection -> pure $ chatCmdError "not supported"
+    CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
+    CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
   APIDeleteChatItem (ChatRef cType chatId) itemId mode -> withUser $ \user -> withChatLock "deleteChatItem" $ case cType of
     CTDirect -> do
       (ct@Contact {localDisplayName = c}, ci@(CChatItem msgDir ChatItem {meta = CIMeta {itemSharedMsgId}})) <- withStore $ \db -> (,) <$> getContact db user chatId <*> getDirectChatItem db user chatId itemId
@@ -512,8 +514,8 @@ processChatCommand = \case
             then deleteGroupCI user gInfo ci True False
             else markGroupCIDeleted user gInfo ci msgId True
         (CIDMBroadcast, _, _) -> throwChatError CEInvalidChatItemDelete
-    CTContactRequest -> pure $ chatCmdError "not supported"
-    CTContactConnection -> pure $ chatCmdError "not supported"
+    CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
+    CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
   APIChatRead (ChatRef cType chatId) fromToIds -> withUser $ \user@User {userId} -> case cType of
     CTDirect -> do
       timedItems <- withStore' $ \db -> getDirectUnreadTimedItems db user chatId fromToIds
@@ -533,8 +535,8 @@ processChatCommand = \case
         startProximateTimedItemThread user (ChatRef CTGroup chatId, itemId) deleteAt
       withStore' $ \db -> updateGroupChatItemsRead db userId chatId fromToIds
       pure $ CRCmdOk (Just user)
-    CTContactRequest -> pure $ chatCmdError "not supported"
-    CTContactConnection -> pure $ chatCmdError "not supported"
+    CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
+    CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
   APIChatUnread (ChatRef cType chatId) unreadChat -> withUser $ \user -> case cType of
     CTDirect -> do
       withStore $ \db -> do
@@ -546,7 +548,7 @@ processChatCommand = \case
         Group {groupInfo} <- getGroup db user chatId
         liftIO $ updateGroupUnreadChat db user groupInfo unreadChat
       pure $ CRCmdOk (Just user)
-    _ -> pure $ chatCmdError "not supported"
+    _ -> pure $ chatCmdError (Just user) "not supported"
   APIDeleteChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
     CTDirect -> do
       ct@Contact {localDisplayName} <- withStore $ \db -> getContact db user chatId
@@ -594,7 +596,7 @@ processChatCommand = \case
               conns <- withStore $ \db -> getContactConnections db userId ct
               forM_ conns $ \conn -> deleteAgentConnectionAsync user conn `catchError` \_ -> pure ()
               withStore' $ \db -> deleteContactWithoutGroups db user ct
-    CTContactRequest -> pure $ chatCmdError "not supported"
+    CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
   APIClearChat (ChatRef cType chatId) -> withUser $ \user -> case cType of
     CTDirect -> do
       ct <- withStore $ \db -> getContact db user chatId
@@ -626,8 +628,8 @@ processChatCommand = \case
           pure (gInfo :: GroupInfo) {updatedAt = ts}
         _ -> pure gInfo
       pure $ CRChatCleared user (AChatInfo SCTGroup (GroupChat gInfo'))
-    CTContactConnection -> pure $ chatCmdError "not supported"
-    CTContactRequest -> pure $ chatCmdError "not supported"
+    CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
+    CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
   APIAcceptContact connReqId -> withUser $ \user@User {userId} -> withChatLock "acceptContact" $ do
     cReq <- withStore $ \db -> getContactRequest db userId connReqId
     -- [incognito] generate profile to send, create connection with incognito profile
@@ -802,7 +804,7 @@ processChatCommand = \case
       forM_ (filter memberActive ms) $ \m -> forM_ (memberConnId m) $ \connId ->
         withAgent (\a -> toggleConnectionNtfs a connId $ enableNtfs chatSettings) `catchError` (toView . CRChatError)
       pure $ CRCmdOk (Just user)
-    _ -> pure $ chatCmdError "not supported"
+    _ -> pure $ chatCmdError (Just user) "not supported"
   APIContactInfo contactId -> withUser $ \user@User {userId} -> do
     -- [incognito] print user's incognito profile for this contact
     ct@Contact {activeConn = Connection {customUserProfileId}} <- withStore $ \db -> getContact db user contactId
