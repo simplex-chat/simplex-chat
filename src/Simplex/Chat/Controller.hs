@@ -158,7 +158,7 @@ data ChatCommand
   | APIStorageEncryption DBEncryptionConfig
   | ExecChatStoreSQL Text
   | ExecAgentStoreSQL Text
-  | APIGetChats {pendingConnections :: Bool}
+  | APIGetChats {pendingConnections :: Bool} -- UserId
   | APIGetChat ChatRef ChatPagination (Maybe String)
   | APIGetChatItems Int
   | APISendMessage {chatRef :: ChatRef, liveMessage :: Bool, composedMessage :: ComposedMessage}
@@ -177,9 +177,9 @@ data ChatCommand
   | APISendCallAnswer ContactId WebRTCSession
   | APISendCallExtraInfo ContactId WebRTCExtraInfo
   | APIEndCall ContactId
-  | APIGetCallInvitations
+  | APIGetCallInvitations -- UserId
   | APICallStatus ContactId WebRTCCallStatus
-  | APIUpdateProfile Profile
+  | APIUpdateProfile Profile -- UserId
   | APISetContactPrefs ContactId Preferences
   | APISetContactAlias ContactId LocalAlias
   | APISetConnectionAlias Int64 LocalAlias
@@ -188,7 +188,7 @@ data ChatCommand
   | APIRegisterToken DeviceToken NotificationsMode
   | APIVerifyToken DeviceToken C.CbNonce ByteString
   | APIDeleteToken DeviceToken
-  | APIGetNtfMessage {nonce :: C.CbNonce, encNtfInfo :: ByteString}
+  | APIGetNtfMessage {nonce :: C.CbNonce, encNtfInfo :: ByteString} -- UserId
   | APIAddMember GroupId ContactId GroupMemberRole
   | APIJoinGroup GroupId
   | APIMemberRole GroupId GroupMemberId GroupMemberRole
@@ -199,11 +199,11 @@ data ChatCommand
   | APICreateGroupLink GroupId
   | APIDeleteGroupLink GroupId
   | APIGetGroupLink GroupId
-  | GetUserSMPServers
-  | SetUserSMPServers SMPServersConfig
+  | GetUserSMPServers -- UserId
+  | SetUserSMPServers SMPServersConfig -- UserId
   | TestSMPServer SMPServerWithAuth
-  | APISetChatItemTTL (Maybe Int64)
-  | APIGetChatItemTTL
+  | APISetChatItemTTL (Maybe Int64) -- UserId
+  | APIGetChatItemTTL -- UserId
   | APISetNetworkConfig NetworkConfig
   | APIGetNetworkConfig
   | APISetChatSettings ChatRef ChatSettings
@@ -226,26 +226,26 @@ data ChatCommand
   | VerifyGroupMember GroupName ContactName (Maybe Text)
   | ChatHelp HelpSection
   | Welcome
-  | AddContact
-  | Connect (Maybe AConnectionRequestUri)
-  | ConnectSimplex
+  | AddContact -- UserId
+  | Connect (Maybe AConnectionRequestUri) -- UserId
+  | ConnectSimplex -- UserId
   | DeleteContact ContactName
   | ClearContact ContactName
-  | ListContacts
-  | CreateMyAddress
-  | DeleteMyAddress
-  | ShowMyAddress
-  | AddressAutoAccept (Maybe AutoAccept)
+  | ListContacts -- UserId
+  | CreateMyAddress -- UserId
+  | DeleteMyAddress -- UserId
+  | ShowMyAddress -- UserId
+  | AddressAutoAccept (Maybe AutoAccept) -- UserId
   | AcceptContact ContactName
   | RejectContact ContactName
   | SendMessage ChatName ByteString
   | SendLiveMessage ChatName ByteString
   | SendMessageQuote {contactName :: ContactName, msgDir :: AMsgDirection, quotedMsg :: ByteString, message :: ByteString}
-  | SendMessageBroadcast ByteString
+  | SendMessageBroadcast ByteString -- UserId
   | DeleteMessage ChatName ByteString
   | EditMessage {chatName :: ChatName, editedMsg :: ByteString, message :: ByteString}
   | UpdateLiveMessage {chatName :: ChatName, chatItemId :: ChatItemId, liveMessage :: Bool, message :: ByteString}
-  | NewGroup GroupProfile
+  | NewGroup GroupProfile -- UserId
   | AddMember GroupName ContactName GroupMemberRole
   | JoinGroup GroupName
   | MemberRole GroupName ContactName GroupMemberRole
@@ -254,7 +254,7 @@ data ChatCommand
   | DeleteGroup GroupName
   | ClearGroup GroupName
   | ListMembers GroupName
-  | ListGroups
+  | ListGroups -- UserId
   | UpdateGroupNames GroupName GroupProfile
   | ShowGroupProfile GroupName
   | UpdateGroupDescription GroupName (Maybe Text)
@@ -262,9 +262,9 @@ data ChatCommand
   | DeleteGroupLink GroupName
   | ShowGroupLink GroupName
   | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: ByteString, message :: ByteString}
-  | LastMessages (Maybe ChatName) Int (Maybe String)
-  | LastChatItemId (Maybe ChatName) Int
-  | ShowChatItem (Maybe ChatItemId)
+  | LastMessages (Maybe ChatName) Int (Maybe String) -- UserId
+  | LastChatItemId (Maybe ChatName) Int -- UserId
+  | ShowChatItem (Maybe ChatItemId) -- UserId
   | ShowLiveItems Bool
   | SendFile ChatName FilePath
   | SendImage ChatName FilePath
@@ -273,13 +273,13 @@ data ChatCommand
   | ReceiveFile {fileId :: FileTransferId, fileInline :: Maybe Bool, filePath :: Maybe FilePath}
   | CancelFile FileTransferId
   | FileStatus FileTransferId
-  | ShowProfile
-  | UpdateProfile ContactName Text
-  | UpdateProfileImage (Maybe ImageData)
-  | SetUserFeature AChatFeature FeatureAllowed
+  | ShowProfile -- UserId
+  | UpdateProfile ContactName Text -- UserId
+  | UpdateProfileImage (Maybe ImageData) -- UserId
+  | SetUserFeature AChatFeature FeatureAllowed -- UserId
   | SetContactFeature AChatFeature ContactName (Maybe FeatureAllowed)
   | SetGroupFeature AGroupFeature GroupName GroupFeatureEnabled
-  | SetUserTimedMessages Bool
+  | SetUserTimedMessages Bool -- UserId
   | SetContactTimedMessages ContactName (Maybe TimedMessagesEnabled)
   | SetGroupTimedMessages GroupName (Maybe Int)
   | QuitChat
