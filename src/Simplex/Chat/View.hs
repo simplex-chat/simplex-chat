@@ -69,7 +69,7 @@ responseToView user_ testView liveItems ts = \case
   CRApiParsedMarkdown ft -> [plain . bshow $ J.encode ft]
   CRUserSMPServers u smpServers _ -> viewSMPServers (L.toList smpServers) testView
   CRSmpTestResult testFailure -> viewSMPTestResult testFailure
-  CRChatItemTTL user ttl -> viewChatItemTTL ttl
+  CRChatItemTTL u ttl -> viewChatItemTTL ttl
   CRNetworkConfig cfg -> viewNetworkConfig cfg
   CRContactInfo u ct cStats customUserProfile -> viewContactInfo ct cStats customUserProfile
   CRGroupMemberInfo u g m cStats -> viewGroupMemberInfo g m cStats
