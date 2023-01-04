@@ -95,8 +95,8 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems} = do
   forever $ do
     (_, r) <- atomically $ readTBQueue outputQ
     case r of
-      CRNewChatItem ci -> markChatItemRead ci
-      CRChatItemUpdated ci -> markChatItemRead ci
+      CRNewChatItem _ ci -> markChatItemRead ci
+      CRChatItemUpdated _ ci -> markChatItemRead ci
       _ -> pure ()
     liveItems <- readTVarIO showLiveItems
     printRespToTerminal ct cc liveItems r

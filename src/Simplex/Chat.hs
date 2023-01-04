@@ -1640,12 +1640,18 @@ agentSubscriber = do
   forever $ do
     (corrId, connId, msg) <- atomically $ readTBQueue q
     let name = "agentSubscriber connId=" <> str connId <> " corrId=" <> str corrId <> " msg=" <> str (aCommandTag msg)
-    user <- runExceptT $ withStore' $ \db -> getUserByAConnId db (AgentConnId connId)
-    case user of
-      Right u ->
+    if connId == ""
+      then do
+        u <- readTVarIO =<< asks currentUser
         withLock l name . void . runExceptT $
-          processAgentMessage u corrId connId msg `catchError` (toView . CRChatError)
-      Left e -> void . runExceptT $ toView (CRChatError e)
+          processAgentMessageNoConn u msg `catchError` (toView . CRChatError)
+      else do
+        user <- runExceptT $ withStore' $ \db -> getUserByAConnId db (AgentConnId connId)
+        case user of
+          Right u ->
+            withLock l name . void . runExceptT $
+              processAgentMessageConn u corrId connId msg `catchError` (toView . CRChatError)
+          Left e -> void . runExceptT $ toView (CRChatError e)
   where
     str :: StrEncoding a => a -> String
     str = B.unpack . strEncode
@@ -1867,9 +1873,9 @@ expireChatItems user ttl sync = do
           (Just ts, Just count) -> when (count == 0) $ updateGroupTs db user gInfo ts
           _ -> pure ()
 
-processAgentMessage :: forall m. ChatMonad m => Maybe User -> ACorrId -> ConnId -> ACommand 'Agent -> m ()
-processAgentMessage Nothing _ _ _ = throwChatError CENoActiveUser
-processAgentMessage (Just user@User {userId}) _ "" agentMessage = case agentMessage of
+processAgentMessageNoConn :: forall m. ChatMonad m => Maybe User -> ACommand 'Agent -> m ()
+processAgentMessageNoConn Nothing _ = throwChatError CENoActiveUser
+processAgentMessageNoConn (Just user@User {userId}) agentMessage = case agentMessage of
   CONNECT p h -> hostEvent $ CRHostConnected p h
   DISCONNECT p h -> hostEvent $ CRHostDisconnected p h
   DOWN srv conns -> serverEvent srv conns CRContactsDisconnected "disconnected"
@@ -1882,14 +1888,17 @@ processAgentMessage (Just user@User {userId}) _ "" agentMessage = case agentMess
       cs <- withStore' $ \db -> getConnectionsContacts db userId conns
       toView $ event user srv cs
       showToast ("server " <> str) (safeDecodeUtf8 $ strEncode host)
-processAgentMessage (Just user) _ agentConnId END =
+
+processAgentMessageConn :: forall m. ChatMonad m => Maybe User -> ACorrId -> ConnId -> ACommand 'Agent -> m ()
+processAgentMessageConn Nothing _ agentConnId _ = throwChatError $ CENoConnectionUser (AgentConnId agentConnId)
+processAgentMessageConn (Just user) _ agentConnId END =
   withStore (\db -> getConnectionEntity db user $ AgentConnId agentConnId) >>= \case
     RcvDirectMsgConnection _ (Just ct@Contact {localDisplayName = c}) -> do
       toView $ CRContactAnotherClient user ct
       showToast (c <> "> ") "connected to another client"
       unsetActive $ ActiveC c
     entity -> toView $ CRSubscriptionEnd user entity
-processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
+processAgentMessageConn (Just user@User {userId}) corrId agentConnId agentMessage =
   (withStore (\db -> getConnectionEntity db user $ AgentConnId agentConnId) >>= updateConnStatus) >>= \case
     RcvDirectMsgConnection conn contact_ ->
       processDirectMessage agentMessage conn contact_
