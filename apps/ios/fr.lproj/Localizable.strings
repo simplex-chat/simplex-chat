@@ -1371,7 +1371,7 @@
 "Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." = "Assurez-vous que les adresses des serveurs WebRTC ICE sont au bon format et ne sont pas dupliquées, un par ligne.";
 
 /* No comment provided by engineer. */
-"Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" = "Beaucoup de gens ont demandé : *si SimpleX n'a pas d'identifiants d'utilisateur, comment peut-il délivrer des messages?*";
+"Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" = "Beaucoup se demandent : *si SimpleX n'a pas d'identifiants d'utilisateur, comment peut-il délivrer des messages?*";
 
 /* No comment provided by engineer. */
 "Mark deleted for everyone" = "Marquer comme supprimé pour tout le monde";
@@ -1467,7 +1467,7 @@
 "New database archive" = "Nouvelle archive de base de données";
 
 /* No comment provided by engineer. */
-"New in %@" = "Nouveau en %@";
+"New in %@" = "Nouveautés de la %@";
 
 /* No comment provided by engineer. */
 "New member role" = "Nouveau rôle";
@@ -2116,7 +2116,7 @@
 "This group no longer exists." = "Ce groupe n'existe plus.";
 
 /* No comment provided by engineer. */
-"To ask any questions and to receive updates:" = "Pour poser toute question et recevoir des mises à jour :";
+"To ask any questions and to receive updates:" = "Si vous avez des questions et que vous souhaitez des réponses :";
 
 /* No comment provided by engineer. */
 "To find the profile used for an incognito connection, tap the contact or group name on top of the chat." = "Pour trouver le profil utilisé lors d'une connexion incognito, appuyez sur le nom du contact ou du groupe en haut du chat.";
@@ -2128,7 +2128,7 @@
 "To prevent the call interruption, enable Do Not Disturb mode." = "Pour éviter l'interruption des appels, activez le mode Ne pas déranger.";
 
 /* No comment provided by engineer. */
-"To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." = "Pour protéger la vie privée, au lieu des ID utilisateurs utilisés par toutes les autres plateformes, SimpleX a des ID pour les queues de messages, distinctes pour chacun de vos contacts.";
+"To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." = "Pour protéger votre vie privée, au lieu d’IDs utilisés par toutes les autres plateformes, SimpleX a des IDs pour les queues de messages, distinctes pour chacun de vos contacts.";
 
 /* No comment provided by engineer. */
 "To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled." = "Pour protéger vos informations, activez la fonction SimpleX Lock.\nVous serez invité à confirmer l'authentification avant que cette fonction ne soit activée.";
@@ -2380,7 +2380,7 @@
 "you changed role of %@ to %@" = "vous avez modifié le rôle de %1$@ pour %2$@";
 
 /* No comment provided by engineer. */
-"You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." = "Vous contrôlez par quel·s serveur·s vous pouvez **transmettre** ainsi que par quel·s serveur·s vous pouvez **recevoir** des messages de vos contacts.";
+"You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." = "Vous contrôlez par quel·s serveur·s vous pouvez **transmettre** ainsi que par quel·s serveur·s vous pouvez **recevoir** les messages de vos contacts.";
 
 /* No comment provided by engineer. */
 "You could not be verified; please try again." = "Vous n'avez pas pu être vérifié·e ; veuillez réessayer.";
