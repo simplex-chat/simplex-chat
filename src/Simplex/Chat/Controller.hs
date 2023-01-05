@@ -551,11 +551,7 @@ instance ToJSON ChatError where
 
 data ErrorContext
   = ECtxSubscribe {agentConnId :: AgentConnId}
-  | ECtxRcvDirectMsg {connId :: Int64, contactId :: Maybe ContactId}
-  | ECtxRcvGroupMsg {connId :: Int64, groupId :: GroupId, groupMemberId :: GroupMemberId}
-  | ECtxRcvFile {connId :: Int64, fileId :: FileTransferId}
-  | ECtxSndFile {connId :: Int64, fileId :: FileTransferId}
-  | ECtxUserContact {connId :: Int64, userContactLinkId :: Int64}
+  | ECtxConnectionEntity {connEntity :: ConnectionEntity}
   deriving (Show, Generic)
 
 instance ToJSON ErrorContext where

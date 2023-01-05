@@ -1213,13 +1213,23 @@ viewChatError = \case
     e -> withCtx <> ["smp agent error: " <> sShow e]
     where
       withCtx = case ctx of
-        Just (ECtxSubscribe agentConnId) -> ["[subscription, agentConnId = " <> sShow agentConnId <> "] "]
-        Just (ECtxRcvDirectMsg connId contactId_) -> ["[rcvd direct msg, connId = " <> sShow connId <> ", contactId = " <> sShow contactId_ <> "] "]
-        Just (ECtxRcvGroupMsg connId groupId groupMemberId) -> ["[rcv group msg, connId = " <> sShow connId <> ", groupId = " <> sShow groupId <> ", groupMemberId = " <> sShow groupMemberId <> "] "]
-        Just (ECtxRcvFile connId fileId) -> ["[rcv file, connId = " <> sShow connId <> ", fileId = " <> sShow fileId <> "] "]
-        Just (ECtxSndFile connId fileId) -> ["[snd file, connId = " <> sShow connId <> ", fileId = " <> sShow fileId <> "] "]
-        Just (ECtxUserContact connId userContactLinkId) -> ["[user contact link, connId = " <> sShow connId <> ", userContactLinkId = " <> sShow userContactLinkId <> "] "]
+        Just (ECtxSubscribe agentConnId) ->
+          ["[subscription, agentConnId: " <> sShow agentConnId <> "] "]
+        Just (ECtxConnectionEntity (RcvDirectMsgConnection conn contact_)) -> case contact_ of
+          Just Contact {contactId, localDisplayName = c} ->
+            ["[" <> ttyFrom c <> ", contactId: " <> sShow contactId <> ", connId: " <> cId conn <> "] "]
+          Nothing ->
+            ["[" <> ttyFrom "rcv direct msg" <> ", connId: " <> cId conn <> "] "]
+        Just (ECtxConnectionEntity (RcvGroupMsgConnection conn g@GroupInfo {groupId} m@GroupMember {groupMemberId})) ->
+          ["[" <> ttyFrom (fromGroup_ g m) <> ", groupId: " <> sShow groupId <> ", memberId: " <> sShow groupMemberId <> ", connId: " <> cId conn <> "] "]
+        Just (ECtxConnectionEntity (RcvFileConnection conn RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}})) ->
+          ["[" <> ttyFrom ("rcv file " <> T.pack fileName) <> ", fileId: " <> sShow fileId <> ", connId: " <> cId conn <> "] "]
+        Just (ECtxConnectionEntity (SndFileConnection conn SndFileTransfer {fileId, fileName})) ->
+          ["[" <> ttyTo ("snd file " <> T.pack fileName) <> ", fileId: " <> sShow fileId <> ", connId: " <> cId conn <> "] "]
+        Just (ECtxConnectionEntity (UserContactConnection conn UserContact {userContactLinkId})) ->
+          ["[" <> ttyFrom "contact address" <> ", userContactLinkId: " <> sShow userContactLinkId <> ", connId: " <> cId conn <> "] "]
         Nothing -> []
+      cId conn = sShow (connId (conn :: Connection))
   where
     fileNotFound fileId = ["file " <> sShow fileId <> " not found"]
     sqliteError' = \case
