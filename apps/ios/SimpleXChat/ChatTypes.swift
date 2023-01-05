@@ -10,7 +10,7 @@ import Foundation
 import SwiftUI
 
 public struct User: Decodable, NamedChat {
-    var userId: Int64
+    public var userId: Int64
     var userContactId: Int64
     var localDisplayName: ContactName
     public var profile: LocalProfile

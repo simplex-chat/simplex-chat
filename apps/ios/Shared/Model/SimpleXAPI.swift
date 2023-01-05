@@ -189,7 +189,8 @@ func apiStorageEncryption(currentKey: String = "", newKey: String = "") async th
 }
 
 func apiGetChats() throws -> [ChatData] {
-    let r = chatSendCmdSync(.apiGetChats)
+    guard let userId = ChatModel.shared.currentUser?.userId else { throw RuntimeError("apiGetChats: no current user") }
+    let r = chatSendCmdSync(.apiGetChats(userId: userId))
     if case let .apiChats(chats) = r { return chats }
     throw r
 }
@@ -310,13 +311,15 @@ func apiDeleteToken(token: DeviceToken) async throws {
 }
 
 func getUserSMPServers() throws -> ([ServerCfg], [String]) {
-    let r = chatSendCmdSync(.getUserSMPServers)
+    guard let userId = ChatModel.shared.currentUser?.userId else { throw RuntimeError("getUserSMPServers: no current user") }
+    let r = chatSendCmdSync(.apiGetUserSMPServers(userId: userId))
     if case let .userSMPServers(smpServers, presetServers) = r { return (smpServers, presetServers) }
     throw r
 }
 
 func setUserSMPServers(smpServers: [ServerCfg]) async throws {
-    try await sendCommandOkResp(.setUserSMPServers(smpServers: smpServers))
+    guard let userId = ChatModel.shared.currentUser?.userId else { throw RuntimeError("setUserSMPServers: no current user") }
+    try await sendCommandOkResp(.apiSetUserSMPServers(userId: userId, smpServers: smpServers))
 }
 
 func testSMPServer(smpServer: String) async throws -> Result<(), SMPTestFailure> {
@@ -331,13 +334,15 @@ func testSMPServer(smpServer: String) async throws -> Result<(), SMPTestFailure>
 }
 
 func getChatItemTTL() throws -> ChatItemTTL {
-    let r = chatSendCmdSync(.apiGetChatItemTTL)
+    guard let userId = ChatModel.shared.currentUser?.userId else { throw RuntimeError("getChatItemTTL: no current user") }
+    let r = chatSendCmdSync(.apiGetChatItemTTL(userId: userId))
     if case let .chatItemTTL(chatItemTTL) = r { return ChatItemTTL(chatItemTTL) }
     throw r
 }
 
 func setChatItemTTL(_ chatItemTTL: ChatItemTTL) async throws {
-    try await sendCommandOkResp(.apiSetChatItemTTL(seconds: chatItemTTL.seconds))
+    guard let userId = ChatModel.shared.currentUser?.userId else { throw RuntimeError("setChatItemTTL: no current user") }
+    try await sendCommandOkResp(.apiSetChatItemTTL(userId: userId, seconds: chatItemTTL.seconds))
 }
 
 func getNetworkConfig() async throws -> NetCfg? {
@@ -403,14 +408,22 @@ func apiVerifyGroupMember(_ groupId: Int64, _ groupMemberId: Int64, connectionCo
 }
 
 func apiAddContact() async -> String? {
-    let r = await chatSendCmd(.addContact, bgTask: false)
+    guard let userId = ChatModel.shared.currentUser?.userId else {
+        logger.error("apiAddContact: no current user")
+        return nil
+    }
+    let r = await chatSendCmd(.apiAddContact(userId: userId), bgTask: false)
     if case let .invitation(connReqInvitation) = r { return connReqInvitation }
     connectionErrorAlert(r)
     return nil
 }
 
 func apiConnect(connReq: String) async -> ConnReqType? {
-    let r = await chatSendCmd(.connect(connReq: connReq))
+    guard let userId = ChatModel.shared.currentUser?.userId else {
+        logger.error("apiConnect: no current user")
+        return nil
+    }
+    let r = await chatSendCmd(.apiConnect(userId: userId, connReq: connReq))
     let am = AlertManager.shared
     switch r {
     case .sentConfirmation: return .invitation
@@ -499,13 +512,15 @@ func clearChat(_ chat: Chat) async {
 }
 
 func apiListContacts() throws -> [Contact] {
-    let r = chatSendCmdSync(.listContacts)
+    guard let userId = ChatModel.shared.currentUser?.userId else { throw RuntimeError("apiListContacts: no current user") }
+    let r = chatSendCmdSync(.apiListContacts(userId: userId))
     if case let .contactsList(contacts) = r { return contacts }
     throw r
 }
 
 func apiUpdateProfile(profile: Profile) async throws -> Profile? {
-    let r = await chatSendCmd(.apiUpdateProfile(profile: profile))
+    guard let userId = ChatModel.shared.currentUser?.userId else { throw RuntimeError("apiUpdateProfile: no current user") }
+    let r = await chatSendCmd(.apiUpdateProfile(userId: userId, profile: profile))
     switch r {
     case .userProfileNoChange: return nil
     case let .userProfileUpdated(_, toProfile): return toProfile
@@ -532,19 +547,22 @@ func apiSetConnectionAlias(connId: Int64, localAlias: String) async throws -> Pe
 }
 
 func apiCreateUserAddress() async throws -> String {
-    let r = await chatSendCmd(.createMyAddress)
+    guard let userId = ChatModel.shared.currentUser?.userId else { throw RuntimeError("apiCreateUserAddress: no current user") }
+    let r = await chatSendCmd(.apiCreateMyAddress(userId: userId))
     if case let .userContactLinkCreated(connReq) = r { return connReq }
     throw r
 }
 
 func apiDeleteUserAddress() async throws {
-    let r = await chatSendCmd(.deleteMyAddress)
+    guard let userId = ChatModel.shared.currentUser?.userId else { throw RuntimeError("apiDeleteUserAddress: no current user") }
+    let r = await chatSendCmd(.apiDeleteMyAddress(userId: userId))
     if case .userContactLinkDeleted = r { return }
     throw r
 }
 
 func apiGetUserAddress() throws -> UserContactLink? {
-    let r = chatSendCmdSync(.showMyAddress)
+    guard let userId = ChatModel.shared.currentUser?.userId else { throw RuntimeError("apiGetUserAddress: no current user") }
+    let r = chatSendCmdSync(.apiShowMyAddress(userId: userId))
     switch r {
     case let .userContactLink(contactLink): return contactLink
     case .chatCmdError(chatError: .errorStore(storeError: .userContactLinkNotFound)): return nil
@@ -553,7 +571,8 @@ func apiGetUserAddress() throws -> UserContactLink? {
 }
 
 func userAddressAutoAccept(_ autoAccept: AutoAccept?) async throws -> UserContactLink? {
-    let r = await chatSendCmd(.addressAutoAccept(autoAccept: autoAccept))
+    guard let userId = ChatModel.shared.currentUser?.userId else { throw RuntimeError("userAddressAutoAccept: no current user") }
+    let r = await chatSendCmd(.apiAddressAutoAccept(userId: userId, autoAccept: autoAccept))
     switch r {
     case let .userContactLinkUpdated(contactLink): return contactLink
     case .chatCmdError(chatError: .errorStore(storeError: .userContactLinkNotFound)): return nil
@@ -691,7 +710,8 @@ func apiEndCall(_ contact: Contact) async throws {
 }
 
 func apiGetCallInvitations() throws -> [RcvCallInvitation] {
-    let r = chatSendCmdSync(.apiGetCallInvitations)
+    guard let userId = ChatModel.shared.currentUser?.userId else { throw RuntimeError("apiGetCallInvitations: no current user") }
+    let r = chatSendCmdSync(.apiGetCallInvitations(userId: userId))
     if case let .callInvitations(invs) = r { return invs }
     throw r
 }
@@ -748,7 +768,8 @@ private func sendCommandOkResp(_ cmd: ChatCommand) async throws {
 }
 
 func apiNewGroup(_ p: GroupProfile) throws -> GroupInfo {
-    let r = chatSendCmdSync(.newGroup(groupProfile: p))
+    guard let userId = ChatModel.shared.currentUser?.userId else { throw RuntimeError("apiNewGroup: no current user") }
+    let r = chatSendCmdSync(.apiNewGroup(userId: userId, groupProfile: p))
     if case let .groupCreated(groupInfo) = r { return groupInfo }
     throw r
 }
@@ -1208,4 +1229,16 @@ func activateCall(_ callInvitation: RcvCallInvitation) {
 private struct UserResponse: Decodable {
     var user: User?
     var error: String?
+}
+
+struct RuntimeError: Error {
+    let message: String
+
+    init(_ message: String) {
+        self.message = message
+    }
+
+    public var localizedDescription: String {
+        return message
+    }
 }
