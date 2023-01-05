@@ -241,9 +241,9 @@ testAddContact :: Spec
 testAddContact = versionTestMatrix2 runTestAddContact
   where
     runTestAddContact alice bob = do
-      alice ##> "/c"
+      alice ##> "/_c 1"
       inv <- getInvitation alice
-      bob ##> ("/c " <> inv)
+      bob ##> ("/_c 1 " <> inv)
       bob <## "confirmation sent!"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
@@ -324,7 +324,7 @@ testDeleteContactDeletesProfile =
       -- alice deletes contact, profile is deleted
       alice ##> "/d bob"
       alice <## "bob: contact is deleted"
-      alice ##> "/cs"
+      alice ##> "/_contacts 1"
       (alice </)
       alice `hasContactProfiles` ["alice"]
       -- bob deletes contact, profile is deleted
@@ -1791,7 +1791,7 @@ testUpdateProfileImage =
       alice <## "profile image updated"
       alice ##> "/profile_image"
       alice <## "profile image removed"
-      alice ##> "/_profile {\"displayName\": \"alice2\", \"fullName\": \"\"}"
+      alice ##> "/_profile 1 {\"displayName\": \"alice2\", \"fullName\": \"\"}"
       alice <## "user profile is changed to alice2 (your contacts are notified)"
       bob <## "contact alice changed to alice2"
       bob <## "use @alice2 <message> to send messages"
@@ -2700,7 +2700,7 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
 testRejectContactAndDeleteUserContact :: IO ()
 testRejectContactAndDeleteUserContact = testChat3 aliceProfile bobProfile cathProfile $
   \alice bob cath -> do
-    alice ##> "/ad"
+    alice ##> "/_address 1"
     cLink <- getContactLink alice True
     bob ##> ("/c " <> cLink)
     alice <#? bob
@@ -2708,12 +2708,12 @@ testRejectContactAndDeleteUserContact = testChat3 aliceProfile bobProfile cathPr
     alice <## "bob: contact request rejected"
     (bob </)
 
-    alice ##> "/sa"
+    alice ##> "/_show_address 1"
     cLink' <- getContactLink alice False
     alice <## "auto_accept off"
     cLink' `shouldBe` cLink
 
-    alice ##> "/da"
+    alice ##> "/_delete_address 1"
     alice <## "Your chat address is deleted - accepted contacts will remain connected."
     alice <## "To create a new chat address use /ad"
 
@@ -2747,7 +2747,7 @@ testAutoReplyMessage = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     alice ##> "/ad"
     cLink <- getContactLink alice True
-    alice ##> "/auto_accept on incognito=off text hello!"
+    alice ##> "/_auto_accept 1 on incognito=off text hello!"
     alice <## "auto_accept on"
     alice <## "auto reply:"
     alice <## "hello!"
@@ -3182,7 +3182,7 @@ testCantSeeGlobalPrefsUpdateIncognito = testChat3 aliceProfile bobProfile cathPr
           cath <## "alice (Alice): contact is connected"
       ]
     alice <## "cath (Catherine): contact is connected"
-    alice ##> "/_profile {\"displayName\": \"alice\", \"fullName\": \"\", \"preferences\": {\"fullDelete\": {\"allow\": \"always\"}}}"
+    alice ##> "/_profile 1 {\"displayName\": \"alice\", \"fullName\": \"\", \"preferences\": {\"fullDelete\": {\"allow\": \"always\"}}}"
     alice <## "user full name removed (your contacts are notified)"
     alice <## "updated preferences:"
     alice <## "Full deletion allowed: always"
@@ -3353,7 +3353,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     createDirectoryIfMissing True "./tests/tmp/bob"
     copyFile "./tests/fixtures/test.txt" "./tests/tmp/alice/test.txt"
     copyFile "./tests/fixtures/test.txt" "./tests/tmp/bob/test.txt"
-    bob ##> "/_profile {\"displayName\": \"bob\", \"fullName\": \"Bob\", \"preferences\": {\"voice\": {\"allow\": \"no\"}}}"
+    bob ##> "/_profile 1 {\"displayName\": \"bob\", \"fullName\": \"Bob\", \"preferences\": {\"voice\": {\"allow\": \"no\"}}}"
     bob <## "profile image removed"
     bob <## "updated preferences:"
     bob <## "Voice messages allowed: no"
@@ -3390,7 +3390,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     alice <## "started receiving file 1 (test.txt) from bob"
     alice <## "completed receiving file 1 (test.txt) from bob"
     (bob </)
-    -- alice ##> "/_profile {\"displayName\": \"alice\", \"fullName\": \"Alice\", \"preferences\": {\"voice\": {\"allow\": \"no\"}}}"
+    -- alice ##> "/_profile 1 {\"displayName\": \"alice\", \"fullName\": \"Alice\", \"preferences\": {\"voice\": {\"allow\": \"no\"}}}"
     alice ##> "/set voice no"
     alice <## "updated preferences:"
     alice <## "Voice messages allowed: no"
@@ -3403,7 +3403,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     bob <## "Voice messages: off (you allow: default (no), contact allows: yes)"
     bob #$> ("/_get chat @2 count=100", chat, startFeatures <> [(0, "Voice messages: enabled for you"), (1, "voice message (00:10)"), (0, "Voice messages: off")])
     (bob </)
-    bob ##> "/_profile {\"displayName\": \"bob\", \"fullName\": \"\", \"preferences\": {\"voice\": {\"allow\": \"yes\"}}}"
+    bob ##> "/_profile 1 {\"displayName\": \"bob\", \"fullName\": \"\", \"preferences\": {\"voice\": {\"allow\": \"yes\"}}}"
     bob <## "user full name removed (your contacts are notified)"
     bob <## "updated preferences:"
     bob <## "Voice messages allowed: yes"
@@ -3716,7 +3716,7 @@ testGetSetSMPServers :: IO ()
 testGetSetSMPServers =
   testChat2 aliceProfile bobProfile $
     \alice _ -> do
-      alice #$> ("/smp", id, "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:5001")
+      alice #$> ("/_smp 1", id, "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:5001")
       alice #$> ("/smp smp://1234-w==@smp1.example.im", id, "ok")
       alice #$> ("/smp", id, "smp://1234-w==@smp1.example.im")
       alice #$> ("/smp smp://1234-w==:password@smp1.example.im", id, "ok")
@@ -4081,7 +4081,7 @@ testNegotiateCall =
   testChat2 aliceProfile bobProfile $ \alice bob -> do
     connectUsers alice bob
     -- just for testing db query
-    alice ##> "/_call get"
+    alice ##> "/_call get 1"
     -- alice invite bob to call
     alice ##> ("/_call invite @2 " <> serialize testCallType)
     alice <## "ok"
@@ -4308,10 +4308,10 @@ testSetChatItemTTL =
       alice <# "bob> 4"
       alice #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((1, "1"), Nothing), ((0, "2"), Nothing), ((1, ""), Just "test.jpg"), ((1, "3"), Nothing), ((0, "4"), Nothing)])
       checkActionDeletesFile "./tests/tmp/app_files/test.jpg" $
-        alice #$> ("/_ttl 2", id, "ok")
+        alice #$> ("/_ttl 1 2", id, "ok")
       alice #$> ("/_get chat @2 count=100", chat, [(1, "3"), (0, "4")]) -- when expiration is turned on, first cycle is synchronous
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "1"), (1, "2"), (0, ""), (0, "3"), (1, "4")])
-      alice #$> ("/ttl", id, "old messages are set to be deleted after: 2 second(s)")
+      alice #$> ("/_ttl 1", id, "old messages are set to be deleted after: 2 second(s)")
       alice #$> ("/ttl week", id, "ok")
       alice #$> ("/ttl", id, "old messages are set to be deleted after: one week")
       alice #$> ("/ttl none", id, "ok")
@@ -5042,7 +5042,7 @@ itemId i = show $ length chatFeatures + i
 
 getChats :: (Eq a, Show a) => ([(String, String, Maybe ConnStatus)] -> [a]) -> TestCC -> [a] -> Expectation
 getChats f cc res = do
-  cc ##> "/_get chats pcc=on"
+  cc ##> "/_get chats 1 pcc=on"
   line <- getTermLine cc
   f (read line) `shouldMatchList` res
 

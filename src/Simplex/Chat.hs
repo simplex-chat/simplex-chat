@@ -308,7 +308,8 @@ processChatCommand = \case
   APIStorageEncryption cfg -> withStoreChanged $ sqlCipherExport cfg
   ExecChatStoreSQL query -> CRSQLResult <$> withStore' (`execSQL` query)
   ExecAgentStoreSQL query -> CRSQLResult <$> withAgent (`execAgentStoreSQL` query)
-  APIGetChats withPCC -> withUser' $ \user -> do
+  APIGetChats cmdUserId withPCC -> withUser' $ \user -> do
+    checkCorrectCmdUser cmdUserId user
     chats <- withStore' $ \db -> getChatPreviews db user withPCC
     pure $ CRApiChats user chats
   APIGetChat (ChatRef cType cId) pagination search -> withUser $ \user -> case cType of
@@ -716,7 +717,8 @@ processChatCommand = \case
       (SndMessage {msgId}, _) <- sendDirectContactMessage ct (XCallEnd callId)
       updateCallItemStatus userId ct call WCSDisconnected $ Just msgId
       pure Nothing
-  APIGetCallInvitations -> withUser $ \user -> do
+  APIGetCallInvitations cmdUserId -> withUser $ \user -> do
+    checkCorrectCmdUser cmdUserId user
     calls <- asks currentCalls >>= readTVarIO
     let invs = mapMaybe callInvitation $ M.elems calls
     rcvCallInvitations <- mapM (rcvCallInvitation user) invs
@@ -731,7 +733,9 @@ processChatCommand = \case
   APICallStatus contactId receivedStatus ->
     withCurrentCall contactId $ \userId ct call ->
       updateCallItemStatus userId ct call receivedStatus Nothing $> Just call
-  APIUpdateProfile profile -> withUser (`updateProfile` profile)
+  APIUpdateProfile cmdUserId profile -> withUser $ \user -> do
+    checkCorrectCmdUser cmdUserId user
+    updateProfile user profile
   APISetContactPrefs contactId prefs' -> withUser $ \user -> do
     ct <- withStore $ \db -> getContact db user contactId
     updateContactPrefs user ct prefs'
@@ -752,26 +756,34 @@ processChatCommand = \case
     pure $ CRNtfTokenStatus tokenStatus
   APIVerifyToken token nonce code -> withUser $ \_ -> withAgent (\a -> verifyNtfToken a token nonce code) $> CRCmdOk Nothing
   APIDeleteToken token -> withUser $ \_ -> withAgent (`deleteNtfToken` token) $> CRCmdOk Nothing
-  APIGetNtfMessage nonce encNtfInfo -> withUser $ \user -> do
+  APIGetNtfMessage cmdUserId nonce encNtfInfo -> withUser $ \user -> do
+    checkCorrectCmdUser cmdUserId user
     (NotificationInfo {ntfConnId, ntfMsgMeta}, msgs) <- withAgent $ \a -> getNotificationMessage a nonce encNtfInfo
     let ntfMessages = map (\SMP.SMPMsgMeta {msgTs, msgFlags} -> NtfMsgInfo {msgTs = systemToUTCTime msgTs, msgFlags}) msgs
         msgTs' = systemToUTCTime . (SMP.msgTs :: SMP.NMsgMeta -> SystemTime) <$> ntfMsgMeta
     connEntity <- withStore (\db -> Just <$> getConnectionEntity db user (AgentConnId ntfConnId)) `catchError` \_ -> pure Nothing
     pure CRNtfMessages {user, connEntity, msgTs = msgTs', ntfMessages}
-  GetUserSMPServers -> withUser $ \user -> do
+  APIGetUserSMPServers cmdUserId -> withUser $ \user -> do
+    checkCorrectCmdUser cmdUserId user
     ChatConfig {defaultServers = InitialAgentServers {smp = defaultSMPServers}} <- asks config
     smpServers <- withStore' (`getSMPServers` user)
     let smpServers' = fromMaybe (L.map toServerCfg defaultSMPServers) $ nonEmpty smpServers
     pure $ CRUserSMPServers user smpServers' defaultSMPServers
     where
       toServerCfg server = ServerCfg {server, preset = True, tested = Nothing, enabled = True}
-  SetUserSMPServers (SMPServersConfig smpServers) -> withUser $ \user -> withChatLock "setUserSMPServers" $ do
+  GetUserSMPServers -> withUser $ \User {userId} ->
+    processChatCommand $ APIGetUserSMPServers userId
+  APISetUserSMPServers cmdUserId (SMPServersConfig smpServers) -> withUser $ \user -> withChatLock "setUserSMPServers" $ do
+    checkCorrectCmdUser cmdUserId user
     withStore $ \db -> overwriteSMPServers db user smpServers
     cfg <- asks config
     withAgent $ \a -> setSMPServers a $ activeAgentServers cfg smpServers
     pure $ CRCmdOk (Just user)
+  SetUserSMPServers smpServersConfig -> withUser $ \User {userId} ->
+    processChatCommand $ APISetUserSMPServers userId smpServersConfig
   TestSMPServer smpServer -> CRSmpTestResult <$> withAgent (`testSMPServerConnection` smpServer)
-  APISetChatItemTTL newTTL_ -> withUser' $ \user ->
+  APISetChatItemTTL cmdUserId newTTL_ -> withUser' $ \user -> do
+    checkCorrectCmdUser cmdUserId user
     checkStoreNotChanged $
       withChatLock "setChatItemTTL" $ do
         case newTTL_ of
@@ -786,9 +798,14 @@ processChatCommand = \case
             withStore' $ \db -> setChatItemTTL db user newTTL_
             whenM chatStarted $ setExpireCIs True
         pure $ CRCmdOk (Just user)
-  APIGetChatItemTTL -> withUser $ \user -> do
+  SetChatItemTTL newTTL_ -> withUser' $ \User {userId} -> do
+    processChatCommand $ APISetChatItemTTL userId newTTL_
+  APIGetChatItemTTL cmdUserId -> withUser $ \user -> do
+    checkCorrectCmdUser cmdUserId user
     ttl <- withStore' (`getChatItemTTL` user)
     pure $ CRChatItemTTL user ttl
+  GetChatItemTTL -> withUser' $ \User {userId} -> do
+    processChatCommand $ APIGetChatItemTTL userId
   APISetNetworkConfig cfg -> withUser' $ \_ -> withAgent (`setNetworkConfig` cfg) $> CRCmdOk Nothing
   APIGetNetworkConfig -> withUser' $ \_ -> do
     networkConfig <- withAgent getNetworkConfig
@@ -878,7 +895,8 @@ processChatCommand = \case
   VerifyGroupMember gName mName code -> withMemberName gName mName $ \gId mId -> APIVerifyGroupMember gId mId code
   ChatHelp section -> pure $ CRChatHelp section
   Welcome -> withUser $ pure . CRWelcome
-  AddContact -> withUser $ \user@User {userId} -> withChatLock "addContact" . procCmd $ do
+  APIAddContact cmdUserId -> withUser $ \user@User {userId} -> withChatLock "addContact" . procCmd $ do
+    checkCorrectCmdUser cmdUserId user
     -- [incognito] generate profile for connection
     incognito <- readTVarIO =<< asks incognitoMode
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
@@ -886,7 +904,10 @@ processChatCommand = \case
     conn <- withStore' $ \db -> createDirectConnection db userId connId cReq ConnNew incognitoProfile
     toView $ CRNewContactConnection user conn
     pure $ CRInvitation user cReq
-  Connect (Just (ACR SCMInvitation cReq)) -> withUser $ \user@User {userId} -> withChatLock "connect" . procCmd $ do
+  AddContact -> withUser $ \User {userId} ->
+    processChatCommand $ APIAddContact userId
+  APIConnect cmdUserId (Just (ACR SCMInvitation cReq)) -> withUser $ \user@User {userId} -> withChatLock "connect" . procCmd $ do
+    checkCorrectCmdUser cmdUserId user
     -- [incognito] generate profile to send
     incognito <- readTVarIO =<< asks incognitoMode
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
@@ -895,34 +916,52 @@ processChatCommand = \case
     conn <- withStore' $ \db -> createDirectConnection db userId connId cReq ConnJoined $ incognitoProfile $> profileToSend
     toView $ CRNewContactConnection user conn
     pure $ CRSentConfirmation user
-  Connect (Just (ACR SCMContact cReq)) -> withUser $ \user ->
+  APIConnect cmdUserId (Just (ACR SCMContact cReq)) -> withUser $ \user -> do
+    checkCorrectCmdUser cmdUserId user
     -- [incognito] generate profile to send
     connectViaContact user cReq
-  Connect Nothing -> throwChatError CEInvalidConnReq
+  APIConnect _ Nothing -> throwChatError CEInvalidConnReq
+  Connect cReqUri -> withUser $ \User {userId} ->
+    processChatCommand $ APIConnect userId cReqUri
   ConnectSimplex -> withUser $ \user ->
     -- [incognito] generate profile to send
     connectViaContact user adminContactReq
   DeleteContact cName -> withContactName cName $ APIDeleteChat . ChatRef CTDirect
   ClearContact cName -> withContactName cName $ APIClearChat . ChatRef CTDirect
-  ListContacts -> withUser $ \user -> do
+  APIListContacts cmdUserId -> withUser $ \user -> do
+    checkCorrectCmdUser cmdUserId user
     contacts <- withStore' (`getUserContacts` user)
     pure $ CRContactsList user contacts
-  CreateMyAddress -> withUser $ \user@User {userId} -> withChatLock "createMyAddress" . procCmd $ do
+  ListContacts -> withUser $ \User {userId} ->
+    processChatCommand $ APIListContacts userId
+  APICreateMyAddress cmdUserId -> withUser $ \user@User {userId} -> withChatLock "createMyAddress" . procCmd $ do
+    checkCorrectCmdUser cmdUserId user
     (connId, cReq) <- withAgent $ \a -> createConnection a True SCMContact Nothing
     withStore $ \db -> createUserContactLink db userId connId cReq
     pure $ CRUserContactLinkCreated user cReq
-  DeleteMyAddress -> withUser $ \user -> withChatLock "deleteMyAddress" $ do
+  CreateMyAddress -> withUser $ \User {userId} ->
+    processChatCommand $ APICreateMyAddress userId
+  APIDeleteMyAddress cmdUserId -> withUser $ \user -> withChatLock "deleteMyAddress" $ do
+    checkCorrectCmdUser cmdUserId user
     conns <- withStore (`getUserAddressConnections` user)
     procCmd $ do
       forM_ conns $ \conn -> deleteAgentConnectionAsync user conn `catchError` \_ -> pure ()
       withStore' (`deleteUserAddress` user)
       pure $ CRUserContactLinkDeleted user
-  ShowMyAddress -> withUser $ \user@User {userId} -> do
+  DeleteMyAddress -> withUser $ \User {userId} ->
+    processChatCommand $ APIDeleteMyAddress userId
+  APIShowMyAddress cmdUserId -> withUser $ \user@User {userId} -> do
+    checkCorrectCmdUser cmdUserId user
     contactLink <- withStore (`getUserAddress` userId)
     pure $ CRUserContactLink user contactLink
-  AddressAutoAccept autoAccept_ -> withUser $ \user@User {userId} -> do
+  ShowMyAddress -> withUser $ \User {userId} ->
+    processChatCommand $ APIShowMyAddress userId
+  APIAddressAutoAccept cmdUserId autoAccept_ -> withUser $ \user@User {userId} -> do
+    checkCorrectCmdUser cmdUserId user
     contactLink <- withStore (\db -> updateUserAddressAutoAccept db userId autoAccept_)
     pure $ CRUserContactLinkUpdated user contactLink
+  AddressAutoAccept autoAccept_ -> withUser $ \User {userId} ->
+    processChatCommand $ APIAddressAutoAccept userId autoAccept_
   AcceptContact cName -> withUser $ \User {userId} -> do
     connReqId <- withStore $ \db -> getContactRequestIdByName db userId cName
     processChatCommand $ APIAcceptContact connReqId
@@ -962,10 +1001,13 @@ processChatCommand = \case
     chatRef <- getChatRef user chatName
     let mc = MCText $ safeDecodeUtf8 msg
     processChatCommand $ APIUpdateChatItem chatRef chatItemId live mc
-  NewGroup gProfile -> withUser $ \user -> do
+  APINewGroup cmdUserId gProfile -> withUser $ \user -> do
+    checkCorrectCmdUser cmdUserId user
     gVar <- asks idsDrg
     groupInfo <- withStore (\db -> createNewGroup db gVar user gProfile)
     pure $ CRGroupCreated user groupInfo
+  NewGroup gProfile -> withUser $ \User {userId} ->
+    processChatCommand $ APINewGroup userId gProfile
   APIAddMember groupId contactId memRole -> withUser $ \user -> withChatLock "addMember" $ do
     -- TODO for large groups: no need to load all members to determine if contact is a member
     (group, contact) <- withStore $ \db -> (,) <$> getGroup db user groupId <*> getContact db user contactId
@@ -1282,6 +1324,8 @@ processChatCommand = \case
     withStoreChanged a = checkChatStopped $ a >> setStoreChanged $> CRCmdOk Nothing
     checkStoreNotChanged :: m ChatResponse -> m ChatResponse
     checkStoreNotChanged = ifM (asks chatStoreChanged >>= readTVarIO) (throwChatError CEChatStoreChanged)
+    checkCorrectCmdUser :: UserId -> User -> m ()
+    checkCorrectCmdUser cmdUserId User {userId = activeUserId} = when (cmdUserId /= activeUserId) $ throwChatError (CEDifferentActiveUser cmdUserId activeUserId)
     withUserName :: UserName -> (UserId -> ChatCommand) -> m ChatResponse
     withUserName uName cmd = withStore (`getUserIdByName` uName) >>= processChatCommand . cmd
     withContactName :: ContactName -> (ContactId -> ChatCommand) -> m ChatResponse
@@ -3710,7 +3754,7 @@ chatCommandP =
       "/db decrypt " *> (APIStorageEncryption . (`DBEncryptionConfig` "") <$> dbKeyP),
       "/sql chat " *> (ExecChatStoreSQL <$> textP),
       "/sql agent " *> (ExecAgentStoreSQL <$> textP),
-      "/_get chats" *> (APIGetChats <$> (" pcc=on" $> True <|> " pcc=off" $> False <|> pure False)),
+      "/_get chats " *> (APIGetChats <$> A.decimal <*> (" pcc=on" $> True <|> " pcc=off" $> False <|> pure False)),
       "/_get chat " *> (APIGetChat <$> chatRefP <* A.space <*> chatPaginationP <*> optional (" search=" *> stringP)),
       "/_get items count=" *> (APIGetChatItems <$> A.decimal),
       "/_send " *> (APISendMessage <$> chatRefP <*> liveMessageP <*> (" json " *> jsonP <|> " text " *> (ComposedMessage Nothing Nothing <$> mcTextP))),
@@ -3730,8 +3774,8 @@ chatCommandP =
       "/_call extra @" *> (APISendCallExtraInfo <$> A.decimal <* A.space <*> jsonP),
       "/_call end @" *> (APIEndCall <$> A.decimal),
       "/_call status @" *> (APICallStatus <$> A.decimal <* A.space <*> strP),
-      "/_call get" $> APIGetCallInvitations,
-      "/_profile " *> (APIUpdateProfile <$> jsonP),
+      "/_call get " *> (APIGetCallInvitations <$> A.decimal),
+      "/_profile " *> (APIUpdateProfile <$> A.decimal <* A.space <*> jsonP),
       "/_set alias @" *> (APISetContactAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set alias :" *> (APISetConnectionAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set prefs @" *> (APISetContactPrefs <$> A.decimal <* A.space <*> jsonP),
@@ -3740,7 +3784,7 @@ chatCommandP =
       "/_ntf register " *> (APIRegisterToken <$> strP_ <*> strP),
       "/_ntf verify " *> (APIVerifyToken <$> strP <* A.space <*> strP <* A.space <*> strP),
       "/_ntf delete " *> (APIDeleteToken <$> strP),
-      "/_ntf message " *> (APIGetNtfMessage <$> strP <* A.space <*> strP),
+      "/_ntf message " *> (APIGetNtfMessage <$> A.decimal <* A.space <*> strP <* A.space <*> strP),
       "/_add #" *> (APIAddMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_join #" *> (APIJoinGroup <$> A.decimal),
       "/_member role #" *> (APIMemberRole <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
@@ -3753,12 +3797,14 @@ chatCommandP =
       "/smp_servers" $> GetUserSMPServers,
       "/smp default" $> SetUserSMPServers (SMPServersConfig []),
       "/smp test " *> (TestSMPServer <$> strP),
-      "/_smp " *> (SetUserSMPServers <$> jsonP),
+      "/_smp " *> (APISetUserSMPServers <$> A.decimal <* A.space <*> jsonP),
       "/smp " *> (SetUserSMPServers . SMPServersConfig . map toServerCfg <$> smpServersP),
+      "/_smp " *> (APIGetUserSMPServers <$> A.decimal),
       "/smp" $> GetUserSMPServers,
-      "/_ttl " *> (APISetChatItemTTL <$> ciTTLDecimal),
-      "/ttl " *> (APISetChatItemTTL <$> ciTTL),
-      "/ttl" $> APIGetChatItemTTL,
+      "/_ttl " *> (APISetChatItemTTL <$> A.decimal <* A.space <*> ciTTLDecimal),
+      "/ttl " *> (SetChatItemTTL <$> ciTTL),
+      "/_ttl " *> (APIGetChatItemTTL <$> A.decimal),
+      "/ttl" $> GetChatItemTTL,
       "/_network " *> (APISetNetworkConfig <$> jsonP),
       ("/network " <|> "/net ") *> (APISetNetworkConfig <$> netCfgP),
       ("/network" <|> "/net") $> APIGetNetworkConfig,
@@ -3786,7 +3832,7 @@ chatCommandP =
       ("/help settings" <|> "/hs") $> ChatHelp HSSettings,
       ("/help" <|> "/h") $> ChatHelp HSMain,
       ("/group " <|> "/g ") *> char_ '#' *> (NewGroup <$> groupProfile),
-      "/_group " *> (NewGroup <$> jsonP),
+      "/_group " *> (APINewGroup <$> A.decimal <* A.space <*> jsonP),
       ("/add " <|> "/a ") *> char_ '#' *> (AddMember <$> displayName <* A.space <* char_ '@' <*> displayName <*> memberRole),
       ("/join " <|> "/j ") *> char_ '#' *> (JoinGroup <$> displayName),
       ("/member role " <|> "/mr ") *> char_ '#' *> (MemberRole <$> displayName <* A.space <* char_ '@' <*> displayName <*> memberRole),
@@ -3810,7 +3856,10 @@ chatCommandP =
       "/show link #" *> (ShowGroupLink <$> displayName),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <*> pure Nothing <*> quotedMsg <*> A.takeByteString),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <* char_ '@' <*> (Just <$> displayName) <* A.space <*> quotedMsg <*> A.takeByteString),
+      "/_contacts " *> (APIListContacts <$> A.decimal),
       ("/contacts" <|> "/cs") $> ListContacts,
+      "/_c " *> (APIConnect <$> A.decimal <* A.space <*> ((Just <$> strP) <|> A.takeByteString $> Nothing)),
+      "/_c " *> (APIAddContact <$> A.decimal),
       ("/connect " <|> "/c ") *> (Connect <$> ((Just <$> strP) <|> A.takeByteString $> Nothing)),
       ("/connect" <|> "/c") $> AddContact,
       SendMessage <$> chatNameP <* A.space <*> A.takeByteString,
@@ -3833,9 +3882,13 @@ chatCommandP =
       ("/fcancel " <|> "/fc ") *> (CancelFile <$> A.decimal),
       ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal),
       "/simplex" $> ConnectSimplex,
+      "/_address " *> (APICreateMyAddress <$> A.decimal),
       ("/address" <|> "/ad") $> CreateMyAddress,
+      "/_delete_address " *> (APIDeleteMyAddress <$> A.decimal),
       ("/delete_address" <|> "/da") $> DeleteMyAddress,
+      "/_show_address " *> (APIShowMyAddress <$> A.decimal),
       ("/show_address" <|> "/sa") $> ShowMyAddress,
+      "/_auto_accept " *> (APIAddressAutoAccept <$> A.decimal <* A.space <*> autoAcceptP),
       "/auto_accept " *> (AddressAutoAccept <$> autoAcceptP),
       ("/accept " <|> "/ac ") *> char_ '@' *> (AcceptContact <$> displayName),
       ("/reject " <|> "/rc ") *> char_ '@' *> (RejectContact <$> displayName),
