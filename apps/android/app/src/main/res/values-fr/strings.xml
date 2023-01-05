@@ -461,7 +461,7 @@
     <string name="privacy_redefined">La vie privée redéfinie</string>
     <string name="first_platform_without_user_ids">La 1ère plateforme sans aucun identifiant d\'utilisateur – privée par design.</string>
     <string name="immune_to_spam_and_abuse">Protégé du spam et des abus</string>
-    <string name="people_can_connect_only_via_links_you_share">Les gens peuvent se connecter à vous uniquement via les liens que vous partagez.</string>
+    <string name="people_can_connect_only_via_links_you_share">On ne peut se connecter à vous qu’avec les liens que vous partagez.</string>
     <string name="decentralized">Décentralisé</string>
     <string name="create_your_profile">Créez votre profil</string>
     <string name="make_private_connection">Établir une connexion privée</string>
