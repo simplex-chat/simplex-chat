@@ -540,7 +540,7 @@ tmeToPref currentTTL tme = uncurry TimedMessagesPreference $ case tme of
 
 data ChatError
   = ChatError {errorType :: ChatErrorType}
-  | ChatErrorAgent {agentError :: AgentErrorType}
+  | ChatErrorAgent {agentError :: AgentErrorType, context :: Maybe ErrorContext}
   | ChatErrorStore {storeError :: StoreError}
   | ChatErrorDatabase {databaseError :: DatabaseError}
   deriving (Show, Exception, Generic)
@@ -548,6 +548,19 @@ data ChatError
 instance ToJSON ChatError where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "Chat"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "Chat"
+
+data ErrorContext
+  = ECtxSubscribe {agentConnId :: AgentConnId}
+  | ECtxRcvDirectMsg {connId :: Int64, contactId :: Maybe ContactId}
+  | ECtxRcvGroupMsg {connId :: Int64, groupId :: GroupId, groupMemberId :: GroupMemberId}
+  | ECtxRcvFile {connId :: Int64, fileId :: FileTransferId}
+  | ECtxSndFile {connId :: Int64, fileId :: FileTransferId}
+  | ECtxUserContact {connId :: Int64, userContactLinkId :: Int64}
+  deriving (Show, Generic)
+
+instance ToJSON ErrorContext where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "ECtx"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "ECtx"
 
 data ChatErrorType
   = CENoActiveUser

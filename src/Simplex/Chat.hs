@@ -1136,8 +1136,8 @@ processChatCommand = \case
     where
       processError ft = \case
         -- TODO AChatItem in Cancelled events
-        ChatErrorAgent (SMP SMP.AUTH) -> pure $ CRRcvFileAcceptedSndCancelled ft
-        ChatErrorAgent (CONN DUPLICATE) -> pure $ CRRcvFileAcceptedSndCancelled ft
+        ChatErrorAgent (SMP SMP.AUTH) _ -> pure $ CRRcvFileAcceptedSndCancelled ft
+        ChatErrorAgent (CONN DUPLICATE) _ -> pure $ CRRcvFileAcceptedSndCancelled ft
         e -> throwError e
   CancelFile fileId -> withUser $ \user@User {userId} ->
     withChatLock "cancelFile" . procCmd $
@@ -1734,7 +1734,7 @@ subscribeUserConnections agentBatchSubscribe user = do
         addResult connId = (:) . (,err)
           where
             err = case M.lookup connId rs of
-              Just (Left e) -> Just $ ChatErrorAgent e
+              Just (Left e) -> Just $ ChatErrorAgent e (Just $ ECtxSubscribe (AgentConnId connId))
               Just _ -> Nothing
               _ -> Just . ChatError . CEAgentNoSubResult $ AgentConnId connId
 
@@ -1922,9 +1922,9 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
           -- [async agent commands] continuation on receiving OK
           withCompletedCommand conn agentMsg $ \CommandData {cmdFunction, cmdId} ->
             when (cmdFunction == CFAckMessage) $ ackMsgDeliveryEvent conn cmdId
-        MERR _ err -> toView . CRChatError $ ChatErrorAgent err -- ? updateDirectChatItemStatus
+        MERR _ err -> toView . CRChatError $ ChatErrorAgent err (Just $ ECtxRcvDirectMsg connId Nothing) -- ? updateDirectChatItemStatus
         ERR err -> do
-          toView . CRChatError $ ChatErrorAgent err
+          toView . CRChatError $ ChatErrorAgent err (Just $ ECtxRcvDirectMsg connId Nothing)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
@@ -2038,7 +2038,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
             chatItem <- withStore $ \db -> updateDirectChatItemStatus db user contactId chatItemId (agentErrToItemStatus err)
             toView $ CRChatItemStatusUpdated (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
         ERR err -> do
-          toView . CRChatError $ ChatErrorAgent err
+          toView . CRChatError $ ChatErrorAgent err (Just $ ECtxRcvDirectMsg connId $ Just contactId)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
@@ -2183,15 +2183,15 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
         -- [async agent commands] continuation on receiving OK
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction, cmdId} ->
           when (cmdFunction == CFAckMessage) $ ackMsgDeliveryEvent conn cmdId
-      MERR _ err -> toView . CRChatError $ ChatErrorAgent err
+      MERR _ err -> toView . CRChatError $ ChatErrorAgent err (Just $ ECtxRcvGroupMsg connId groupId $ groupMemberId (m :: GroupMember))
       ERR err -> do
-        toView . CRChatError $ ChatErrorAgent err
+        toView . CRChatError $ ChatErrorAgent err (Just $ ECtxRcvGroupMsg connId groupId $ groupMemberId (m :: GroupMember))
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
       -- TODO add debugging output
       _ -> pure ()
 
     processSndFileConn :: ACommand 'Agent -> Connection -> SndFileTransfer -> m ()
-    processSndFileConn agentMsg conn ft@SndFileTransfer {fileId, fileName, fileStatus} =
+    processSndFileConn agentMsg conn@Connection {connId} ft@SndFileTransfer {fileId, fileName, fileStatus} =
       case agentMsg of
         -- SMP CONF for SndFileConnection happens for direct file protocol
         -- when recipient of the file "joins" connection created by the sender
@@ -2229,13 +2229,13 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
           -- [async agent commands] continuation on receiving OK
           withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         ERR err -> do
-          toView . CRChatError $ ChatErrorAgent err
+          toView . CRChatError $ ChatErrorAgent err (Just $ ECtxSndFile connId fileId)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
 
     processRcvFileConn :: ACommand 'Agent -> Connection -> RcvFileTransfer -> m ()
-    processRcvFileConn agentMsg conn ft@RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}, grpMemberId} =
+    processRcvFileConn agentMsg conn@Connection {connId} ft@RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}, grpMemberId} =
       case agentMsg of
         INV (ACR _ cReq) ->
           withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
@@ -2274,9 +2274,9 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
         OK ->
           -- [async agent commands] continuation on receiving OK
           withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-        MERR _ err -> toView . CRChatError $ ChatErrorAgent err
+        MERR _ err -> toView . CRChatError $ ChatErrorAgent err (Just $ ECtxRcvFile connId fileId)
         ERR err -> do
-          toView . CRChatError $ ChatErrorAgent err
+          toView . CRChatError $ ChatErrorAgent err (Just $ ECtxRcvFile connId fileId)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
@@ -2324,7 +2324,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
           RcvChunkError -> badRcvFileChunk ft $ "incorrect chunk number " <> show chunkNo
 
     processUserContactRequest :: ACommand 'Agent -> Connection -> UserContact -> m ()
-    processUserContactRequest agentMsg conn UserContact {userContactLinkId} = case agentMsg of
+    processUserContactRequest agentMsg conn@Connection {connId} UserContact {userContactLinkId} = case agentMsg of
       REQ invId _ connInfo -> do
         ChatMessage {chatMsgEvent} <- parseChatMessage connInfo
         case chatMsgEvent of
@@ -2332,9 +2332,9 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage =
           XInfo p -> profileContactRequest invId p Nothing
           -- TODO show/log error, other events in contact request
           _ -> pure ()
-      MERR _ err -> toView . CRChatError $ ChatErrorAgent err
+      MERR _ err -> toView . CRChatError $ ChatErrorAgent err (Just $ ECtxUserContact connId userContactLinkId)
       ERR err -> do
-        toView . CRChatError $ ChatErrorAgent err
+        toView . CRChatError $ ChatErrorAgent err (Just $ ECtxUserContact connId userContactLinkId)
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
       -- TODO add debugging output
       _ -> pure ()
@@ -3604,7 +3604,7 @@ withAgent :: ChatMonad m => (AgentClient -> ExceptT AgentErrorType m a) -> m a
 withAgent action =
   asks smpAgent
     >>= runExceptT . action
-    >>= liftEither . first ChatErrorAgent
+    >>= liftEither . first (\e -> ChatErrorAgent e Nothing)
 
 withStore' :: ChatMonad m => (DB.Connection -> IO a) -> m a
 withStore' action = withStore $ liftIO . action

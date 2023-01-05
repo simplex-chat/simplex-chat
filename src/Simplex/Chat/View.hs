@@ -1201,15 +1201,25 @@ viewChatError = \case
     DBErrorExport e -> ["error encrypting database: " <> sqliteError' e]
     DBErrorOpen e -> ["error opening database after encryption: " <> sqliteError' e]
     e -> ["chat database error: " <> sShow e]
-  ChatErrorAgent err -> case err of
+  ChatErrorAgent err ctx -> case err of
     SMP SMP.AUTH ->
-      [ "error: connection authorization failed - this could happen if connection was deleted,\
-        \ secured with different credentials, or due to a bug - please re-create the connection"
-      ]
+      withCtx
+        <> [ "error: connection authorization failed - this could happen if connection was deleted,\
+             \ secured with different credentials, or due to a bug - please re-create the connection"
+           ]
     AGENT A_DUPLICATE -> []
     AGENT A_PROHIBITED -> []
     CONN NOT_FOUND -> []
-    e -> ["smp agent error: " <> sShow e]
+    e -> withCtx <> ["smp agent error: " <> sShow e]
+    where
+      withCtx = case ctx of
+        Just (ECtxSubscribe agentConnId) -> ["[subscription, agentConnId = " <> sShow agentConnId <> "] "]
+        Just (ECtxRcvDirectMsg connId contactId_) -> ["[rcvd direct msg, connId = " <> sShow connId <> ", contactId = " <> sShow contactId_ <> "] "]
+        Just (ECtxRcvGroupMsg connId groupId groupMemberId) -> ["[rcv group msg, connId = " <> sShow connId <> ", groupId = " <> sShow groupId <> ", groupMemberId = " <> sShow groupMemberId <> "] "]
+        Just (ECtxRcvFile connId fileId) -> ["[rcv file, connId = " <> sShow connId <> ", fileId = " <> sShow fileId <> "] "]
+        Just (ECtxSndFile connId fileId) -> ["[snd file, connId = " <> sShow connId <> ", fileId = " <> sShow fileId <> "] "]
+        Just (ECtxUserContact connId userContactLinkId) -> ["[user contact link, connId = " <> sShow connId <> ", userContactLinkId = " <> sShow userContactLinkId <> "] "]
+        Nothing -> []
   where
     fileNotFound fileId = ["file " <> sShow fileId <> " not found"]
     sqliteError' = \case
