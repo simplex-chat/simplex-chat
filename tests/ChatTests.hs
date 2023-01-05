@@ -241,9 +241,9 @@ testAddContact :: Spec
 testAddContact = versionTestMatrix2 runTestAddContact
   where
     runTestAddContact alice bob = do
-      alice ##> "/_c 1"
+      alice ##> "/_connect 1"
       inv <- getInvitation alice
-      bob ##> ("/_c 1 " <> inv)
+      bob ##> ("/_connect 1 " <> inv)
       bob <## "confirmation sent!"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
