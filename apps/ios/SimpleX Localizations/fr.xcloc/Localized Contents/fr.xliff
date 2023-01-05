@@ -1808,9 +1808,9 @@
 </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Instantly" xml:space="preserve">
+      <trans-unit id="Instantly" xml:space="preserve" approved="no">
         <source>Instantly</source>
-        <target>Instantanément</target>
+        <target state="translated">Instantané</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invalid connection link" xml:space="preserve">
@@ -2298,14 +2298,14 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Collez le lien que vous avez reçu dans le cadre ci-dessous pour vous connecter avec votre contact.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="People can connect to you only via the links you share." xml:space="preserve">
+      <trans-unit id="People can connect to you only via the links you share." xml:space="preserve" approved="no">
         <source>People can connect to you only via the links you share.</source>
-        <target>Les gens peuvent se connecter à vous uniquement via les liens que vous partagez.</target>
+        <target state="translated">On ne peut se connecter à vous qu’avec les liens que vous partagez.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Periodically" xml:space="preserve">
+      <trans-unit id="Periodically" xml:space="preserve" approved="no">
         <source>Periodically</source>
-        <target>Périodiquement</target>
+        <target state="translated">Périodique</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please ask your contact to enable sending voice messages." xml:space="preserve">
