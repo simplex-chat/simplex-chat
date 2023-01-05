@@ -158,7 +158,7 @@ data ChatCommand
   | APIStorageEncryption DBEncryptionConfig
   | ExecChatStoreSQL Text
   | ExecAgentStoreSQL Text
-  | APIGetChats {pendingConnections :: Bool} -- UserId
+  | APIGetChats {userId :: UserId, pendingConnections :: Bool}
   | APIGetChat ChatRef ChatPagination (Maybe String)
   | APIGetChatItems Int
   | APISendMessage {chatRef :: ChatRef, liveMessage :: Bool, composedMessage :: ComposedMessage}
@@ -177,9 +177,9 @@ data ChatCommand
   | APISendCallAnswer ContactId WebRTCSession
   | APISendCallExtraInfo ContactId WebRTCExtraInfo
   | APIEndCall ContactId
-  | APIGetCallInvitations -- UserId
+  | APIGetCallInvitations UserId
   | APICallStatus ContactId WebRTCCallStatus
-  | APIUpdateProfile Profile -- UserId
+  | APIUpdateProfile UserId Profile
   | APISetContactPrefs ContactId Preferences
   | APISetContactAlias ContactId LocalAlias
   | APISetConnectionAlias Int64 LocalAlias
@@ -188,7 +188,7 @@ data ChatCommand
   | APIRegisterToken DeviceToken NotificationsMode
   | APIVerifyToken DeviceToken C.CbNonce ByteString
   | APIDeleteToken DeviceToken
-  | APIGetNtfMessage {nonce :: C.CbNonce, encNtfInfo :: ByteString} -- UserId
+  | APIGetNtfMessage {userId :: UserId, nonce :: C.CbNonce, encNtfInfo :: ByteString}
   | APIAddMember GroupId ContactId GroupMemberRole
   | APIJoinGroup GroupId
   | APIMemberRole GroupId GroupMemberId GroupMemberRole
@@ -199,11 +199,15 @@ data ChatCommand
   | APICreateGroupLink GroupId
   | APIDeleteGroupLink GroupId
   | APIGetGroupLink GroupId
-  | GetUserSMPServers -- UserId
-  | SetUserSMPServers SMPServersConfig -- UserId
+  | APIGetUserSMPServers UserId
+  | GetUserSMPServers
+  | APISetUserSMPServers UserId SMPServersConfig
+  | SetUserSMPServers SMPServersConfig
   | TestSMPServer SMPServerWithAuth
-  | APISetChatItemTTL (Maybe Int64) -- UserId
-  | APIGetChatItemTTL -- UserId
+  | APISetChatItemTTL UserId (Maybe Int64)
+  | SetChatItemTTL (Maybe Int64)
+  | APIGetChatItemTTL UserId
+  | GetChatItemTTL
   | APISetNetworkConfig NetworkConfig
   | APIGetNetworkConfig
   | APISetChatSettings ChatRef ChatSettings
@@ -226,26 +230,34 @@ data ChatCommand
   | VerifyGroupMember GroupName ContactName (Maybe Text)
   | ChatHelp HelpSection
   | Welcome
-  | AddContact -- UserId
-  | Connect (Maybe AConnectionRequestUri) -- UserId
-  | ConnectSimplex -- UserId
+  | APIAddContact UserId
+  | AddContact
+  | APIConnect UserId (Maybe AConnectionRequestUri)
+  | Connect (Maybe AConnectionRequestUri)
+  | ConnectSimplex -- UserId (not used in UI)
   | DeleteContact ContactName
   | ClearContact ContactName
-  | ListContacts -- UserId
-  | CreateMyAddress -- UserId
-  | DeleteMyAddress -- UserId
-  | ShowMyAddress -- UserId
-  | AddressAutoAccept (Maybe AutoAccept) -- UserId
+  | APIListContacts UserId
+  | ListContacts
+  | APICreateMyAddress UserId
+  | CreateMyAddress
+  | APIDeleteMyAddress UserId
+  | DeleteMyAddress
+  | APIShowMyAddress UserId
+  | ShowMyAddress
+  | APIAddressAutoAccept UserId (Maybe AutoAccept)
+  | AddressAutoAccept (Maybe AutoAccept)
   | AcceptContact ContactName
   | RejectContact ContactName
   | SendMessage ChatName ByteString
   | SendLiveMessage ChatName ByteString
   | SendMessageQuote {contactName :: ContactName, msgDir :: AMsgDirection, quotedMsg :: ByteString, message :: ByteString}
-  | SendMessageBroadcast ByteString -- UserId
+  | SendMessageBroadcast ByteString -- UserId (not used in UI)
   | DeleteMessage ChatName ByteString
   | EditMessage {chatName :: ChatName, editedMsg :: ByteString, message :: ByteString}
   | UpdateLiveMessage {chatName :: ChatName, chatItemId :: ChatItemId, liveMessage :: Bool, message :: ByteString}
-  | NewGroup GroupProfile -- UserId
+  | APINewGroup UserId GroupProfile
+  | NewGroup GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
   | JoinGroup GroupName
   | MemberRole GroupName ContactName GroupMemberRole
@@ -254,7 +266,7 @@ data ChatCommand
   | DeleteGroup GroupName
   | ClearGroup GroupName
   | ListMembers GroupName
-  | ListGroups -- UserId
+  | ListGroups -- UserId (not used in UI)
   | UpdateGroupNames GroupName GroupProfile
   | ShowGroupProfile GroupName
   | UpdateGroupDescription GroupName (Maybe Text)
@@ -262,9 +274,9 @@ data ChatCommand
   | DeleteGroupLink GroupName
   | ShowGroupLink GroupName
   | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: ByteString, message :: ByteString}
-  | LastMessages (Maybe ChatName) Int (Maybe String) -- UserId
-  | LastChatItemId (Maybe ChatName) Int -- UserId
-  | ShowChatItem (Maybe ChatItemId) -- UserId
+  | LastMessages (Maybe ChatName) Int (Maybe String) -- UserId (not used in UI)
+  | LastChatItemId (Maybe ChatName) Int -- UserId (not used in UI)
+  | ShowChatItem (Maybe ChatItemId) -- UserId (not used in UI)
   | ShowLiveItems Bool
   | SendFile ChatName FilePath
   | SendImage ChatName FilePath
@@ -273,13 +285,13 @@ data ChatCommand
   | ReceiveFile {fileId :: FileTransferId, fileInline :: Maybe Bool, filePath :: Maybe FilePath}
   | CancelFile FileTransferId
   | FileStatus FileTransferId
-  | ShowProfile -- UserId
-  | UpdateProfile ContactName Text -- UserId
-  | UpdateProfileImage (Maybe ImageData) -- UserId
-  | SetUserFeature AChatFeature FeatureAllowed -- UserId
+  | ShowProfile -- UserId (not used in UI)
+  | UpdateProfile ContactName Text -- UserId (not used in UI)
+  | UpdateProfileImage (Maybe ImageData) -- UserId (not used in UI)
+  | SetUserFeature AChatFeature FeatureAllowed -- UserId (not used in UI)
   | SetContactFeature AChatFeature ContactName (Maybe FeatureAllowed)
   | SetGroupFeature AGroupFeature GroupName GroupFeatureEnabled
-  | SetUserTimedMessages Bool -- UserId
+  | SetUserTimedMessages Bool -- UserId (not used in UI)
   | SetContactTimedMessages ContactName (Maybe TimedMessagesEnabled)
   | SetGroupTimedMessages GroupName (Maybe Int)
   | QuitChat
@@ -559,6 +571,7 @@ data ChatErrorType
   = CENoActiveUser
   | CENoConnectionUser {agentConnId :: AgentConnId}
   | CEActiveUserExists -- TODO delete
+  | CEDifferentActiveUser {commandUserId :: UserId, activeUserId :: UserId}
   | CEChatNotStarted
   | CEChatNotStopped
   | CEChatStoreChanged

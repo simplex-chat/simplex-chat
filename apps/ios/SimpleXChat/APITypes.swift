@@ -25,7 +25,7 @@ public enum ChatCommand {
     case apiImportArchive(config: ArchiveConfig)
     case apiDeleteStorage
     case apiStorageEncryption(config: DBEncryptionConfig)
-    case apiGetChats
+    case apiGetChats(userId: Int64)
     case apiGetChat(type: ChatType, id: Int64, pagination: ChatPagination, search: String)
     case apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent, live: Bool)
     case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent, live: Bool)
@@ -34,8 +34,8 @@ public enum ChatCommand {
     case apiRegisterToken(token: DeviceToken, notificationMode: NotificationsMode)
     case apiVerifyToken(token: DeviceToken, nonce: String, code: String)
     case apiDeleteToken(token: DeviceToken)
-    case apiGetNtfMessage(nonce: String, encNtfInfo: String)
-    case newGroup(groupProfile: GroupProfile)
+    case apiGetNtfMessage(userId: Int64, nonce: String, encNtfInfo: String)
+    case apiNewGroup(userId: Int64, groupProfile: GroupProfile)
     case apiAddMember(groupId: Int64, contactId: Int64, memberRole: GroupMemberRole)
     case apiJoinGroup(groupId: Int64)
     case apiMemberRole(groupId: Int64, memberId: Int64, memberRole: GroupMemberRole)
@@ -46,11 +46,11 @@ public enum ChatCommand {
     case apiCreateGroupLink(groupId: Int64)
     case apiDeleteGroupLink(groupId: Int64)
     case apiGetGroupLink(groupId: Int64)
-    case getUserSMPServers
-    case setUserSMPServers(smpServers: [ServerCfg])
+    case apiGetUserSMPServers(userId: Int64)
+    case apiSetUserSMPServers(userId: Int64, smpServers: [ServerCfg])
     case testSMPServer(smpServer: String)
-    case apiSetChatItemTTL(seconds: Int64?)
-    case apiGetChatItemTTL
+    case apiSetChatItemTTL(userId: Int64, seconds: Int64?)
+    case apiGetChatItemTTL(userId: Int64)
     case apiSetNetworkConfig(networkConfig: NetCfg)
     case apiGetNetworkConfig
     case apiSetChatSettings(type: ChatType, id: Int64, chatSettings: ChatSettings)
@@ -62,19 +62,19 @@ public enum ChatCommand {
     case apiGetGroupMemberCode(groupId: Int64, groupMemberId: Int64)
     case apiVerifyContact(contactId: Int64, connectionCode: String?)
     case apiVerifyGroupMember(groupId: Int64, groupMemberId: Int64, connectionCode: String?)
-    case addContact
-    case connect(connReq: String)
+    case apiAddContact(userId: Int64)
+    case apiConnect(userId: Int64, connReq: String)
     case apiDeleteChat(type: ChatType, id: Int64)
     case apiClearChat(type: ChatType, id: Int64)
-    case listContacts
-    case apiUpdateProfile(profile: Profile)
+    case apiListContacts(userId: Int64)
+    case apiUpdateProfile(userId: Int64, profile: Profile)
     case apiSetContactPrefs(contactId: Int64, preferences: Preferences)
     case apiSetContactAlias(contactId: Int64, localAlias: String)
     case apiSetConnectionAlias(connId: Int64, localAlias: String)
-    case createMyAddress
-    case deleteMyAddress
-    case showMyAddress
-    case addressAutoAccept(autoAccept: AutoAccept?)
+    case apiCreateMyAddress(userId: Int64)
+    case apiDeleteMyAddress(userId: Int64)
+    case apiShowMyAddress(userId: Int64)
+    case apiAddressAutoAccept(userId: Int64, autoAccept: AutoAccept?)
     case apiAcceptContact(contactReqId: Int64)
     case apiRejectContact(contactReqId: Int64)
     // WebRTC calls
@@ -84,7 +84,7 @@ public enum ChatCommand {
     case apiSendCallAnswer(contact: Contact, answer: WebRTCSession)
     case apiSendCallExtraInfo(contact: Contact, extraInfo: WebRTCExtraInfo)
     case apiEndCall(contact: Contact)
-    case apiGetCallInvitations
+    case apiGetCallInvitations(userId: Int64)
     case apiCallStatus(contact: Contact, callStatus: WebRTCCallStatus)
     case apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64))
     case apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool)
@@ -106,7 +106,7 @@ public enum ChatCommand {
             case let .apiImportArchive(cfg): return "/_db import \(encodeJSON(cfg))"
             case .apiDeleteStorage: return "/_db delete"
             case let .apiStorageEncryption(cfg): return "/_db encryption \(encodeJSON(cfg))"
-            case .apiGetChats: return "/_get chats pcc=on"
+            case let .apiGetChats(userId): return "/_get chats \(userId) pcc=on"
             case let .apiGetChat(type, id, pagination, search): return "/_get chat \(ref(type, id)) \(pagination.cmdString)" +
                 (search == "" ? "" : " search=\(search)")
             case let .apiSendMessage(type, id, file, quotedItemId, mc, live):
@@ -118,8 +118,8 @@ public enum ChatCommand {
             case let .apiRegisterToken(token, notificationMode): return "/_ntf register \(token.cmdString) \(notificationMode.rawValue)"
             case let .apiVerifyToken(token, nonce, code): return "/_ntf verify \(token.cmdString) \(nonce) \(code)"
             case let .apiDeleteToken(token): return "/_ntf delete \(token.cmdString)"
-            case let .apiGetNtfMessage(nonce, encNtfInfo): return "/_ntf message \(nonce) \(encNtfInfo)"
-            case let .newGroup(groupProfile): return "/_group \(encodeJSON(groupProfile))"
+            case let .apiGetNtfMessage(userId, nonce, encNtfInfo): return "/_ntf message \(userId) \(nonce) \(encNtfInfo)"
+            case let .apiNewGroup(userId, groupProfile): return "/_group \(userId) \(encodeJSON(groupProfile))"
             case let .apiAddMember(groupId, contactId, memberRole): return "/_add #\(groupId) \(contactId) \(memberRole)"
             case let .apiJoinGroup(groupId): return "/_join #\(groupId)"
             case let .apiMemberRole(groupId, memberId, memberRole): return "/_member role #\(groupId) \(memberId) \(memberRole.rawValue)"
@@ -130,11 +130,11 @@ public enum ChatCommand {
             case let .apiCreateGroupLink(groupId): return "/_create link #\(groupId)"
             case let .apiDeleteGroupLink(groupId): return "/_delete link #\(groupId)"
             case let .apiGetGroupLink(groupId): return "/_get link #\(groupId)"
-            case .getUserSMPServers: return "/smp"
-            case let .setUserSMPServers(smpServers): return "/_smp \(smpServersStr(smpServers: smpServers))"
+            case let .apiGetUserSMPServers(userId): return "/_smp \(userId)"
+            case let .apiSetUserSMPServers(userId, smpServers): return "/_smp \(userId) \(smpServersStr(smpServers: smpServers))"
             case let .testSMPServer(smpServer): return "/smp test \(smpServer)"
-            case let .apiSetChatItemTTL(seconds): return "/_ttl \(chatItemTTLStr(seconds: seconds))"
-            case .apiGetChatItemTTL: return "/ttl"
+            case let .apiSetChatItemTTL(userId, seconds): return "/_ttl \(userId) \(chatItemTTLStr(seconds: seconds))"
+            case let .apiGetChatItemTTL(userId): return "/_ttl \(userId)"
             case let .apiSetNetworkConfig(networkConfig): return "/_network \(encodeJSON(networkConfig))"
             case .apiGetNetworkConfig: return "/network"
             case let .apiSetChatSettings(type, id, chatSettings): return "/_settings \(ref(type, id)) \(encodeJSON(chatSettings))"
@@ -148,19 +148,19 @@ public enum ChatCommand {
             case let .apiVerifyContact(contactId, .none): return "/_verify code @\(contactId)"
             case let .apiVerifyGroupMember(groupId, groupMemberId, .some(connectionCode)): return "/_verify code #\(groupId) \(groupMemberId) \(connectionCode)"
             case let .apiVerifyGroupMember(groupId, groupMemberId, .none): return "/_verify code #\(groupId) \(groupMemberId)"
-            case .addContact: return "/connect"
-            case let .connect(connReq): return "/connect \(connReq)"
+            case let .apiAddContact(userId): return "/_connect \(userId)"
+            case let .apiConnect(userId, connReq): return "/_connect \(userId) \(connReq)"
             case let .apiDeleteChat(type, id): return "/_delete \(ref(type, id))"
             case let .apiClearChat(type, id): return "/_clear chat \(ref(type, id))"
-            case .listContacts: return "/contacts"
-            case let .apiUpdateProfile(profile): return "/_profile \(encodeJSON(profile))"
+            case let .apiListContacts(userId): return "/_contacts \(userId)"
+            case let .apiUpdateProfile(userId, profile): return "/_profile \(userId) \(encodeJSON(profile))"
             case let .apiSetContactPrefs(contactId, preferences): return "/_set prefs @\(contactId) \(encodeJSON(preferences))"
             case let .apiSetContactAlias(contactId, localAlias): return "/_set alias @\(contactId) \(localAlias.trimmingCharacters(in: .whitespaces))"
             case let .apiSetConnectionAlias(connId, localAlias): return "/_set alias :\(connId) \(localAlias.trimmingCharacters(in: .whitespaces))"
-            case .createMyAddress: return "/address"
-            case .deleteMyAddress: return "/delete_address"
-            case .showMyAddress: return "/show_address"
-            case let .addressAutoAccept(autoAccept): return "/auto_accept \(AutoAccept.cmdString(autoAccept))"
+            case let .apiCreateMyAddress(userId): return "/_address \(userId)"
+            case let .apiDeleteMyAddress(userId): return "/_delete_address \(userId)"
+            case let .apiShowMyAddress(userId): return "/_show_address \(userId)"
+            case let .apiAddressAutoAccept(userId, autoAccept): return "/_auto_accept \(userId) \(AutoAccept.cmdString(autoAccept))"
             case let .apiAcceptContact(contactReqId): return "/_accept \(contactReqId)"
             case let .apiRejectContact(contactReqId): return "/_reject \(contactReqId)"
             case let .apiSendCallInvitation(contact, callType): return "/_call invite @\(contact.apiId) \(encodeJSON(callType))"
@@ -169,7 +169,7 @@ public enum ChatCommand {
             case let .apiSendCallAnswer(contact, answer): return "/_call answer @\(contact.apiId) \(encodeJSON(answer))"
             case let .apiSendCallExtraInfo(contact, extraInfo): return "/_call extra @\(contact.apiId) \(encodeJSON(extraInfo))"
             case let .apiEndCall(contact): return "/_call end @\(contact.apiId)"
-            case .apiGetCallInvitations: return "/_call get"
+            case let .apiGetCallInvitations(userId): return "/_call get \(userId)"
             case let .apiCallStatus(contact, callStatus): return "/_call status @\(contact.apiId) \(callStatus.rawValue)"
             case let .apiChatRead(type, id, itemRange: (from, to)): return "/_read chat \(ref(type, id)) from=\(from) to=\(to)"
             case let .apiChatUnread(type, id, unreadChat): return "/_unread chat \(ref(type, id)) \(onOff(unreadChat))"
@@ -204,7 +204,7 @@ public enum ChatCommand {
             case .apiVerifyToken: return "apiVerifyToken"
             case .apiDeleteToken: return "apiDeleteToken"
             case .apiGetNtfMessage: return "apiGetNtfMessage"
-            case .newGroup: return "newGroup"
+            case .apiNewGroup: return "apiNewGroup"
             case .apiAddMember: return "apiAddMember"
             case .apiJoinGroup: return "apiJoinGroup"
             case .apiMemberRole: return "apiMemberRole"
@@ -215,8 +215,8 @@ public enum ChatCommand {
             case .apiCreateGroupLink: return "apiCreateGroupLink"
             case .apiDeleteGroupLink: return "apiDeleteGroupLink"
             case .apiGetGroupLink: return "apiGetGroupLink"
-            case .getUserSMPServers: return "getUserSMPServers"
-            case .setUserSMPServers: return "setUserSMPServers"
+            case .apiGetUserSMPServers: return "apiGetUserSMPServers"
+            case .apiSetUserSMPServers: return "apiSetUserSMPServers"
             case .testSMPServer: return "testSMPServer"
             case .apiSetChatItemTTL: return "apiSetChatItemTTL"
             case .apiGetChatItemTTL: return "apiGetChatItemTTL"
@@ -231,19 +231,19 @@ public enum ChatCommand {
             case .apiGetGroupMemberCode: return "apiGetGroupMemberCode"
             case .apiVerifyContact: return "apiVerifyContact"
             case .apiVerifyGroupMember: return "apiVerifyGroupMember"
-            case .addContact: return "addContact"
-            case .connect: return "connect"
+            case .apiAddContact: return "apiAddContact"
+            case .apiConnect: return "apiConnect"
             case .apiDeleteChat: return "apiDeleteChat"
             case .apiClearChat: return "apiClearChat"
-            case .listContacts: return "listContacts"
+            case .apiListContacts: return "apiListContacts"
             case .apiUpdateProfile: return "apiUpdateProfile"
             case .apiSetContactPrefs: return "apiSetContactPrefs"
             case .apiSetContactAlias: return "apiSetContactAlias"
             case .apiSetConnectionAlias: return "apiSetConnectionAlias"
-            case .createMyAddress: return "createMyAddress"
-            case .deleteMyAddress: return "deleteMyAddress"
-            case .showMyAddress: return "showMyAddress"
-            case .addressAutoAccept: return "addressAutoAccept"
+            case .apiCreateMyAddress: return "apiCreateMyAddress"
+            case .apiDeleteMyAddress: return "apiDeleteMyAddress"
+            case .apiShowMyAddress: return "apiShowMyAddress"
+            case .apiAddressAutoAccept: return "apiAddressAutoAccept"
             case .apiAcceptContact: return "apiAcceptContact"
             case .apiRejectContact: return "apiRejectContact"
             case .apiSendCallInvitation: return "apiSendCallInvitation"

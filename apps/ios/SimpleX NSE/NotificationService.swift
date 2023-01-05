@@ -275,7 +275,11 @@ func apiSetIncognito(incognito: Bool) throws {
 }
 
 func apiGetNtfMessage(nonce: String, encNtfInfo: String) -> NtfMessages? {
-    let r = sendSimpleXCmd(.apiGetNtfMessage(nonce: nonce, encNtfInfo: encNtfInfo))
+    guard let user = apiGetActiveUser() else {
+        logger.debug("no active user")
+        return nil
+    }
+    let r = sendSimpleXCmd(.apiGetNtfMessage(userId: user.userId, nonce: nonce, encNtfInfo: encNtfInfo))
     if case let .ntfMessages(connEntity, msgTs, ntfMessages) = r {
         return NtfMessages(connEntity: connEntity, msgTs: msgTs, ntfMessages: ntfMessages)
     }
