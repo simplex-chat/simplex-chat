@@ -1688,7 +1688,7 @@ sealed class CC {
     is APISetUserSMPServers -> "/_smp $userId ${smpServersStr(smpServers)}"
     is TestSMPServer -> "/smp test $smpServer"
     is APISetChatItemTTL -> "/_ttl $userId ${chatItemTTLStr(seconds)}"
-    is APIGetChatItemTTL -> "/ttl $userId"
+    is APIGetChatItemTTL -> "/_ttl $userId"
     is APISetNetworkConfig -> "/_network ${json.encodeToString(networkConfig)}"
     is APIGetNetworkConfig -> "/network"
     is APISetChatSettings -> "/_settings ${chatRef(type, id)} ${json.encodeToString(chatSettings)}"
