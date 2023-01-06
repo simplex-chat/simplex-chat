@@ -1203,32 +1203,32 @@ viewChatError = \case
     e -> ["chat database error: " <> sShow e]
   ChatErrorAgent err ctx -> case err of
     SMP SMP.AUTH ->
-      withCtx
-        <> [ "error: connection authorization failed - this could happen if connection was deleted,\
+      [ withCtx
+          <> "error: connection authorization failed - this could happen if connection was deleted,\
              \ secured with different credentials, or due to a bug - please re-create the connection"
-           ]
+      ]
     AGENT A_DUPLICATE -> []
     AGENT A_PROHIBITED -> []
     CONN NOT_FOUND -> []
-    e -> withCtx <> ["smp agent error: " <> sShow e]
+    e -> [withCtx <> "smp agent error: " <> sShow e]
     where
       withCtx = case ctx of
         Just (ECtxSubscribe agentConnId) ->
-          ["[subscription, agentConnId: " <> sShow agentConnId <> "] "]
+          "[subscription, agentConnId: " <> sShow agentConnId <> "] "
         Just (ECtxConnectionEntity (RcvDirectMsgConnection conn contact_)) -> case contact_ of
           Just Contact {contactId, localDisplayName = c} ->
-            ["[" <> ttyFrom c <> ", contactId: " <> sShow contactId <> ", connId: " <> cId conn <> "] "]
+            "[" <> ttyFrom c <> ", contactId: " <> sShow contactId <> ", connId: " <> cId conn <> "] "
           Nothing ->
-            ["[" <> ttyFrom "rcv direct msg" <> ", connId: " <> cId conn <> "] "]
+            "[" <> ttyFrom "rcv direct msg" <> ", connId: " <> cId conn <> "] "
         Just (ECtxConnectionEntity (RcvGroupMsgConnection conn g@GroupInfo {groupId} m@GroupMember {groupMemberId})) ->
-          ["[" <> ttyFrom (fromGroup_ g m) <> ", groupId: " <> sShow groupId <> ", memberId: " <> sShow groupMemberId <> ", connId: " <> cId conn <> "] "]
+          "[" <> ttyFrom (fromGroup_ g m) <> ", groupId: " <> sShow groupId <> ", memberId: " <> sShow groupMemberId <> ", connId: " <> cId conn <> "] "
         Just (ECtxConnectionEntity (RcvFileConnection conn RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}})) ->
-          ["[" <> ttyFrom ("rcv file " <> T.pack fileName) <> ", fileId: " <> sShow fileId <> ", connId: " <> cId conn <> "] "]
+          "[" <> ttyFrom ("rcv file " <> T.pack fileName) <> ", fileId: " <> sShow fileId <> ", connId: " <> cId conn <> "] "
         Just (ECtxConnectionEntity (SndFileConnection conn SndFileTransfer {fileId, fileName})) ->
-          ["[" <> ttyTo ("snd file " <> T.pack fileName) <> ", fileId: " <> sShow fileId <> ", connId: " <> cId conn <> "] "]
+          "[" <> ttyTo ("snd file " <> T.pack fileName) <> ", fileId: " <> sShow fileId <> ", connId: " <> cId conn <> "] "
         Just (ECtxConnectionEntity (UserContactConnection conn UserContact {userContactLinkId})) ->
-          ["[" <> ttyFrom "contact address" <> ", userContactLinkId: " <> sShow userContactLinkId <> ", connId: " <> cId conn <> "] "]
-        Nothing -> []
+          "[" <> ttyFrom "contact address" <> ", userContactLinkId: " <> sShow userContactLinkId <> ", connId: " <> cId conn <> "] "
+        Nothing -> ""
       cId conn = sShow (connId (conn :: Connection))
   where
     fileNotFound fileId = ["file " <> sShow fileId <> " not found"]

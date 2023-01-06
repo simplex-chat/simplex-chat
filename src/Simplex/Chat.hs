@@ -2038,7 +2038,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage = 
           forM_ chatItemId_ $ \chatItemId -> do
             chatItem <- withStore $ \db -> updateDirectChatItemStatus db user contactId chatItemId (agentErrToItemStatus err)
             toView $ CRChatItemStatusUpdated (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
-        -- toView . CRChatError $ ChatErrorAgent err (Just $ ECtxConnectionEntity connEntity)
+          toView . CRChatError $ ChatErrorAgent err (Just $ ECtxConnectionEntity connEntity)
         ERR err -> do
           toView . CRChatError $ ChatErrorAgent err (Just $ ECtxConnectionEntity connEntity)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
