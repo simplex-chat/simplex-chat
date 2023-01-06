@@ -1023,6 +1023,7 @@ testGroupDeleteInvitedContact =
       alice ##> "@bob hey"
       alice <## "no contact bob"
       bob #> "@alice hey"
+      bob <## "[alice, contactId: 2, connId: 1] error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
       (alice </)
 
 testDeleteGroupMemberProfileKept :: IO ()
@@ -1074,6 +1075,7 @@ testDeleteGroupMemberProfileKept =
       alice ##> "@bob hey"
       alice <## "no contact bob"
       bob #> "@alice hey"
+      bob <## "[alice, contactId: 2, connId: 1] error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
       (alice </)
       -- delete group 1
       alice ##> "/d #team"
