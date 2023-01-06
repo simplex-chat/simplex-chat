@@ -1157,6 +1157,7 @@ data SndMsgDelivery = SndMsgDelivery
   { connId :: Int64,
     agentMsgId :: AgentMsgId
   }
+  deriving (Show)
 
 data RcvMsgDelivery = RcvMsgDelivery
   { connId :: Int64,
@@ -1164,6 +1165,7 @@ data RcvMsgDelivery = RcvMsgDelivery
     agentMsgMeta :: MsgMeta,
     agentAckCmdId :: CommandId
   }
+  deriving (Show)
 
 data MsgMetaJSON = MsgMetaJSON
   { integrity :: Text,
