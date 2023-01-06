@@ -911,7 +911,7 @@
     <string name="onboarding_notifications_mode_periodic_desc"><b>Gute Option für die Batterieausdauer</b>. Der Hintergrundservice überprüft alle 10 Minuten nach neuen Nachrichten. Sie können eventuell Anrufe und dringende Nachrichten verpassen.</string>
     <string name="onboarding_notifications_mode_off_desc"><b>Beste Option für die Batterieausdauer</b>. Sie empfangen Benachrichtigungen nur solange die App abläuft. Der Hintergrundservice wird nicht genutzt!</string>
     <string name="send_verb">Senden</string>
-    <string name="is_verified">%s wurde überprüft</string>
+    <string name="is_verified">%s wurde erfolgreich überprüft</string>
     <string name="clear_verification">Überprüfung zurücknehmen</string>
     <string name="onboarding_notifications_mode_off">Solange die App abläuft</string>
     <string name="onboarding_notifications_mode_subtitle">Kann später über die Einstellungen geändert werden.</string>
@@ -960,7 +960,7 @@
     <string name="send_live_message_desc">Eine Live Nachricht senden - der/die Empfänger sieht/sehen Nachrichtenaktualisierungen, während Sie sie eingeben.</string>
     <string name="send_live_message">Live Nachricht senden</string>
     <string name="verify_security_code">Sicherheitscode überprüfen</string>
-    <string name="is_not_verified">%s wurde nicht überprüft</string>
+    <string name="is_not_verified">%s wurde noch nicht überprüft</string>
     <string name="to_verify_compare">Um die Ende-zu-Ende-Verschlüsselung mit Ihrem Kontakt zu überprüfen, müssen Sie den Sicherheitscode in Ihren Apps vergleichen oder scannen.</string>
     <string name="onboarding_notifications_mode_title">Private Benachrichtigungen</string>
     <string name="use_chat">Chat verwenden</string>
