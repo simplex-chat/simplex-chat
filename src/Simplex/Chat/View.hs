@@ -1218,8 +1218,8 @@ viewChatError = \case
             "[" <> ttyFrom c <> ", contactId: " <> sShow contactId <> ", connId: " <> cId conn <> "] "
           Nothing ->
             "[" <> ttyFrom "rcv direct msg" <> ", connId: " <> cId conn <> "] "
-        Just (RcvGroupMsgConnection conn g@GroupInfo {groupId} m@GroupMember {groupMemberId}) ->
-          "[" <> ttyFrom (fromGroup_ g m) <> ", groupId: " <> sShow groupId <> ", memberId: " <> sShow groupMemberId <> ", connId: " <> cId conn <> "] "
+        Just (RcvGroupMsgConnection conn GroupInfo {groupId, localDisplayName = g} GroupMember {groupMemberId, localDisplayName = m}) ->
+          "[" <> ttyFrom ("#" <> g <> " " <> m) <> ", groupId: " <> sShow groupId <> ", memberId: " <> sShow groupMemberId <> ", connId: " <> cId conn <> "] "
         Just (RcvFileConnection conn RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}}) ->
           "[" <> ttyFrom ("rcv file " <> T.pack fileName) <> ", fileId: " <> sShow fileId <> ", connId: " <> cId conn <> "] "
         Just (SndFileConnection conn SndFileTransfer {fileId, fileName}) ->
