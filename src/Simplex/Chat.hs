@@ -1734,7 +1734,7 @@ subscribeUserConnections agentBatchSubscribe user = do
         addResult connId = (:) . (,err)
           where
             err = case M.lookup connId rs of
-              Just (Left e) -> Just $ ChatErrorAgent e (Just $ ECtxSubscribe (AgentConnId connId))
+              Just (Left e) -> Just $ ChatErrorAgent e Nothing
               Just _ -> Nothing
               _ -> Just . ChatError . CEAgentNoSubResult $ AgentConnId connId
 
@@ -1923,9 +1923,9 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage = 
           -- [async agent commands] continuation on receiving OK
           withCompletedCommand conn agentMsg $ \CommandData {cmdFunction, cmdId} ->
             when (cmdFunction == CFAckMessage) $ ackMsgDeliveryEvent conn cmdId
-        MERR _ err -> toView . CRChatError $ ChatErrorAgent err (Just $ ECtxConnectionEntity connEntity) -- ? updateDirectChatItemStatus
+        MERR _ err -> toView . CRChatError $ ChatErrorAgent err (Just connEntity) -- ? updateDirectChatItemStatus
         ERR err -> do
-          toView . CRChatError $ ChatErrorAgent err (Just $ ECtxConnectionEntity connEntity)
+          toView . CRChatError $ ChatErrorAgent err (Just connEntity)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
@@ -2038,9 +2038,9 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage = 
           forM_ chatItemId_ $ \chatItemId -> do
             chatItem <- withStore $ \db -> updateDirectChatItemStatus db user contactId chatItemId (agentErrToItemStatus err)
             toView $ CRChatItemStatusUpdated (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
-          toView . CRChatError $ ChatErrorAgent err (Just $ ECtxConnectionEntity connEntity)
+          toView . CRChatError $ ChatErrorAgent err (Just connEntity)
         ERR err -> do
-          toView . CRChatError $ ChatErrorAgent err (Just $ ECtxConnectionEntity connEntity)
+          toView . CRChatError $ ChatErrorAgent err (Just connEntity)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
@@ -2185,9 +2185,9 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage = 
         -- [async agent commands] continuation on receiving OK
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction, cmdId} ->
           when (cmdFunction == CFAckMessage) $ ackMsgDeliveryEvent conn cmdId
-      MERR _ err -> toView . CRChatError $ ChatErrorAgent err (Just $ ECtxConnectionEntity connEntity)
+      MERR _ err -> toView . CRChatError $ ChatErrorAgent err (Just connEntity)
       ERR err -> do
-        toView . CRChatError $ ChatErrorAgent err (Just $ ECtxConnectionEntity connEntity)
+        toView . CRChatError $ ChatErrorAgent err (Just connEntity)
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
       -- TODO add debugging output
       _ -> pure ()
@@ -2231,7 +2231,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage = 
           -- [async agent commands] continuation on receiving OK
           withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         ERR err -> do
-          toView . CRChatError $ ChatErrorAgent err (Just $ ECtxConnectionEntity connEntity)
+          toView . CRChatError $ ChatErrorAgent err (Just connEntity)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
@@ -2276,9 +2276,9 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage = 
         OK ->
           -- [async agent commands] continuation on receiving OK
           withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-        MERR _ err -> toView . CRChatError $ ChatErrorAgent err (Just $ ECtxConnectionEntity connEntity)
+        MERR _ err -> toView . CRChatError $ ChatErrorAgent err (Just connEntity)
         ERR err -> do
-          toView . CRChatError $ ChatErrorAgent err (Just $ ECtxConnectionEntity connEntity)
+          toView . CRChatError $ ChatErrorAgent err (Just connEntity)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
@@ -2334,9 +2334,9 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage = 
           XInfo p -> profileContactRequest invId p Nothing
           -- TODO show/log error, other events in contact request
           _ -> pure ()
-      MERR _ err -> toView . CRChatError $ ChatErrorAgent err (Just $ ECtxConnectionEntity connEntity)
+      MERR _ err -> toView . CRChatError $ ChatErrorAgent err (Just connEntity)
       ERR err -> do
-        toView . CRChatError $ ChatErrorAgent err (Just $ ECtxConnectionEntity connEntity)
+        toView . CRChatError $ ChatErrorAgent err (Just connEntity)
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
       -- TODO add debugging output
       _ -> pure ()
