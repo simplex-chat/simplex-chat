@@ -58,7 +58,7 @@ chatTests = do
     it "direct message update" testDirectMessageUpdate
     it "direct message delete" testDirectMessageDelete
     it "direct live message" testDirectLiveMessage
-    fit "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
+    it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
   describe "chat groups" $ do
     describe "add contacts, create group and send/receive messages" testGroup
     it "add contacts, create group and send/receive messages, check messages" testGroupCheckMessages
