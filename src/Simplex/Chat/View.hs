@@ -111,7 +111,7 @@ responseToView user_ testView liveItems ts = \case
   CRFileTransferStatus ftStatus -> viewFileTransferStatus ftStatus
   CRUserProfile p -> viewUserProfile p
   CRUserProfileNoChange -> ["user profile did not change"]
-  CRVersionInfo _ -> [plain versionStr, plain updateStr]
+  CRVersionInfo _ info -> [plain versionStr, viewCoreVersionInfo info, plain updateStr]
   CRChatCmdError e -> viewChatError e
   CRInvitation cReq -> viewConnReqInvitation cReq
   CRSentConfirmation -> ["confirmation sent!"]
@@ -1126,6 +1126,10 @@ data WCallCommand
 instance ToJSON WCallCommand where
   toEncoding = J.genericToEncoding . taggedObjectJSON $ dropPrefix "WCCall"
   toJSON = J.genericToJSON . taggedObjectJSON $ dropPrefix "WCCall"
+
+viewCoreVersionInfo :: CoreVersionInfo -> StyledString
+viewCoreVersionInfo CoreVersionInfo {commitHash, commitMessage, commitDate} =
+  plain $ "commit " <> commitHash <> ": " <> commitMessage <> " (" <> commitDate <> ")"
 
 viewChatError :: ChatError -> [StyledString]
 viewChatError = \case

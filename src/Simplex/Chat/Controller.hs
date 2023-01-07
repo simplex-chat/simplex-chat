@@ -8,6 +8,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StrictData #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Simplex.Chat.Controller where
 
@@ -33,6 +34,7 @@ import Data.Time (ZonedTime)
 import Data.Time.Clock (UTCTime)
 import Data.Version (showVersion)
 import GHC.Generics (Generic)
+import GitHash
 import Numeric.Natural
 import qualified Paths_simplex_chat as SC
 import Simplex.Chat.Call
@@ -60,6 +62,19 @@ import UnliftIO.STM
 
 versionNumber :: String
 versionNumber = showVersion SC.version
+
+coreVersionInfo :: CoreVersionInfo
+coreVersionInfo =
+  CoreVersionInfo
+    { commitHash = giHash gi,
+      commitDate = giCommitDate gi,
+      commitMessage = giCommitMessage gi,
+      branch = giBranch gi,
+      tag = giTag gi,
+      dirty = giDirty gi
+    }
+  where
+    gi = $$tGitInfoCwd
 
 versionStr :: String
 versionStr = "SimpleX Chat v" <> versionNumber
@@ -334,7 +349,7 @@ data ChatResponse
   | CRFileTransferStatus (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
   | CRUserProfile {profile :: Profile}
   | CRUserProfileNoChange
-  | CRVersionInfo {version :: String}
+  | CRVersionInfo {version :: String, coreVersion :: CoreVersionInfo}
   | CRInvitation {connReqInvitation :: ConnReqInvitation}
   | CRSentConfirmation
   | CRSentInvitation {customUserProfile :: Maybe Profile}
@@ -542,6 +557,18 @@ tmeToPref currentTTL tme = uncurry TimedMessagesPreference $ case tme of
   TMEEnableSetTTL ttl -> (FAYes, Just ttl)
   TMEEnableKeepTTL -> (FAYes, currentTTL)
   TMEDisableKeepTTL -> (FANo, currentTTL)
+
+data CoreVersionInfo = CoreVersionInfo
+  { commitHash :: String,
+    commitDate :: String,
+    commitMessage :: String,
+    branch :: String,
+    tag :: String,
+    dirty :: Bool
+  }
+  deriving (Show, Generic)
+
+instance ToJSON CoreVersionInfo where toEncoding = J.genericToEncoding J.defaultOptions
 
 data ChatError
   = ChatError {errorType :: ChatErrorType}
