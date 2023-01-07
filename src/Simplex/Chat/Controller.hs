@@ -418,7 +418,7 @@ data ChatResponse
   | CRSQLResult {rows :: [Text]}
   | CRDebugLocks {chatLockName :: Maybe String, agentLocks :: AgentLocks}
   | CRAgentStats {agentStats :: [[String]]}
-  | CRConnectionEntityDisabled {connectionEntity :: ConnectionEntity}
+  | CRConnectionDisabled {connectionEntity :: ConnectionEntity}
   | CRMessageError {severity :: Text, errorMessage :: Text}
   | CRChatCmdError {chatError :: ChatError}
   | CRChatError {chatError :: ChatError}

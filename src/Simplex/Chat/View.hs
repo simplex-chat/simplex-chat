@@ -217,7 +217,7 @@ responseToView user_ testView liveItems ts = \case
       plain $ "agent locks: " <> LB.unpack (J.encode agentLocks)
     ]
   CRAgentStats stats -> map (plain . intercalate ",") stats
-  CRConnectionEntityDisabled entity -> viewConnectionEntityDisabled entity
+  CRConnectionDisabled entity -> viewConnectionEntityDisabled entity
   CRMessageError prefix err -> [plain prefix <> ": " <> plain err]
   CRChatError e -> viewChatError e
   where

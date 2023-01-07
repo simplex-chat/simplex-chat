@@ -2394,7 +2394,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage = 
           let authErrCounter' = authErrCounter + 1
           withStore' $ \db -> updateConnectionAuthErrCounter db user conn authErrCounter'
           when (authErrCounter' >= authErrDisableCount) $ do
-            toView $ CRConnectionEntityDisabled connEntity
+            toView $ CRConnectionDisabled connEntity
         _ -> pure ()
 
     updateChatLock :: MsgEncodingI e => String -> ChatMsgEvent e -> m ()
