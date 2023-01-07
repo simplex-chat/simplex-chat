@@ -772,12 +772,9 @@ incConnectionAuthErrCounter :: DB.Connection -> User -> Connection -> IO Int
 incConnectionAuthErrCounter db User {userId} Connection {connId, authErrCounter} = do
   updatedAt <- getCurrentTime
   (counter_ :: Maybe Int) <- maybeFirstRow fromOnly $ DB.query db "SELECT auth_err_counter FROM connections WHERE user_id = ? AND connection_id = ?" (userId, connId)
-  case counter_ of
-    Just counter -> do
-      let counter' = counter + 1
-      DB.execute db "UPDATE connections SET auth_err_counter = ?, updated_at = ? WHERE user_id = ? AND connection_id = ?" (counter', updatedAt, userId, connId)
-      pure counter'
-    Nothing -> pure authErrCounter
+  let counter' = fromMaybe authErrCounter counter_ + 1
+  DB.execute db "UPDATE connections SET auth_err_counter = ?, updated_at = ? WHERE user_id = ? AND connection_id = ?" (counter', updatedAt, userId, connId)
+  pure counter'
 
 setConnectionAuthErrCounter :: DB.Connection -> User -> Connection -> Int -> IO ()
 setConnectionAuthErrCounter db User {userId} Connection {connId} counter = do
