@@ -1937,7 +1937,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage = 
             when (cmdFunction == CFAckMessage) $ ackMsgDeliveryEvent conn cmdId
         MERR _ err -> do
           toView . CRChatError $ ChatErrorAgent err (Just connEntity)
-          processAuthErrCounter connEntity conn err
+          incAuthErrCounter connEntity conn err
         ERR err -> do
           toView . CRChatError $ ChatErrorAgent err (Just connEntity)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
@@ -2053,7 +2053,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage = 
             chatItem <- withStore $ \db -> updateDirectChatItemStatus db user contactId chatItemId (agentErrToItemStatus err)
             toView $ CRChatItemStatusUpdated (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
           toView . CRChatError $ ChatErrorAgent err (Just connEntity)
-          processAuthErrCounter connEntity conn err
+          incAuthErrCounter connEntity conn err
         ERR err -> do
           toView . CRChatError $ ChatErrorAgent err (Just connEntity)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
@@ -2203,7 +2203,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage = 
           when (cmdFunction == CFAckMessage) $ ackMsgDeliveryEvent conn cmdId
       MERR _ err -> do
         toView . CRChatError $ ChatErrorAgent err (Just connEntity)
-        processAuthErrCounter connEntity conn err
+        incAuthErrCounter connEntity conn err
       ERR err -> do
         toView . CRChatError $ ChatErrorAgent err (Just connEntity)
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
@@ -2296,7 +2296,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage = 
           withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         MERR _ err -> do
           toView . CRChatError $ ChatErrorAgent err (Just connEntity)
-          processAuthErrCounter connEntity conn err
+          incAuthErrCounter connEntity conn err
         ERR err -> do
           toView . CRChatError $ ChatErrorAgent err (Just connEntity)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
@@ -2356,7 +2356,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage = 
           _ -> pure ()
       MERR _ err -> do
         toView . CRChatError $ ChatErrorAgent err (Just connEntity)
-        processAuthErrCounter connEntity conn err
+        incAuthErrCounter connEntity conn err
       ERR err -> do
         toView . CRChatError $ ChatErrorAgent err (Just connEntity)
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
@@ -2387,8 +2387,8 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage = 
                       showToast (localDisplayName <> "> ") "wants to connect to you"
                 _ -> pure ()
 
-    processAuthErrCounter :: ConnectionEntity -> Connection -> AgentErrorType -> m ()
-    processAuthErrCounter connEntity conn@Connection {authErrCounter} err = do
+    incAuthErrCounter :: ConnectionEntity -> Connection -> AgentErrorType -> m ()
+    incAuthErrCounter connEntity conn@Connection {authErrCounter} err = do
       case err of
         SMP SMP.AUTH -> do
           let authErrCounter' = authErrCounter + 1
