@@ -39,7 +39,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
   var isAppOnForeground: Boolean = false
 
   fun initChatController(useKey: String? = null, startChat: Boolean = true) {
-    val dbKey = useKey ?: DatabaseUtils.useDatabaseKey() ?: ""
+    val dbKey = useKey ?: DatabaseUtils.useDatabaseKey()
     val dbAbsolutePathPrefix = getFilesDirectory(SimplexApp.context)
     val migrated: Array<Any> = chatMigrateInit(dbAbsolutePathPrefix, dbKey)
     val res: DBMigrationResult = kotlin.runCatching {

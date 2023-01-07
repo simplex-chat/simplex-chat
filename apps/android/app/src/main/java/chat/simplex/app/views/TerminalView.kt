@@ -138,7 +138,7 @@ fun TerminalLayout(
           SendMsgView(
             composeState = composeState,
             showVoiceRecordIcon = false,
-            recState = mutableStateOf(RecordingState.NotStarted),
+            recState = remember { mutableStateOf(RecordingState.NotStarted) },
             isDirectChat = false,
             liveMessageAlertShown = SharedPreference(get = { false }, set = {}),
             needToAllowVoiceToContact = false,
