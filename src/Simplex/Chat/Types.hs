@@ -1603,9 +1603,16 @@ data Connection = Connection
     localAlias :: Text,
     entityId :: Maybe Int64, -- contact, group member, file ID or user contact ID
     connectionCode :: Maybe SecurityCode,
+    authErrCounter :: Int,
     createdAt :: UTCTime
   }
   deriving (Eq, Show, Generic)
+
+authErrDisableCount :: Int
+authErrDisableCount = 10
+
+connDisabled :: Connection -> Bool
+connDisabled Connection {authErrCounter} = authErrCounter >= authErrDisableCount
 
 data SecurityCode = SecurityCode {securityCode :: Text, verifiedAt :: UTCTime}
   deriving (Eq, Show, Generic)

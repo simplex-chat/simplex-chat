@@ -58,6 +58,7 @@ chatTests = do
     it "direct message update" testDirectMessageUpdate
     it "direct message delete" testDirectMessageDelete
     it "direct live message" testDirectLiveMessage
+    fit "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
   describe "chat groups" $ do
     describe "add contacts, create group and send/receive messages" testGroup
     it "add contacts, create group and send/receive messages, check messages" testGroupCheckMessages
@@ -513,6 +514,25 @@ testDirectLiveMessage =
     alice ##> ("/_update item @2 " <> itemId 2 <> " text hello 2")
     alice <# "@bob [LIVE] hello 2"
     bob <# "alice> [LIVE ended] hello 2"
+
+testRepeatAuthErrorsDisableContact :: IO ()
+testRepeatAuthErrorsDisableContact =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    alice <##> bob
+    bob ##> "/d alice"
+    bob <## "alice: contact is deleted"
+    forM_ [1 .. authErrDisableCount] $ \_ -> sendAuth alice
+    alice <## "[bob] connection is disabled, to enable: /enable bob, to delete: /d bob"
+    alice ##> "@bob hey"
+    alice <## "bob: disabled, to enable: /enable bob, to delete: /d bob"
+    alice ##> "/enable bob"
+    alice <## "ok"
+    sendAuth alice
+  where
+    sendAuth alice = do
+      alice #> "@bob hey"
+      alice <## "[bob, contactId: 2, connId: 1] error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
 
 testGroup :: Spec
 testGroup = versionTestMatrix3 runTestGroup

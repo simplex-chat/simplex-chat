@@ -73,6 +73,7 @@ library
       Simplex.Chat.Migrations.M20221222_chat_ts
       Simplex.Chat.Migrations.M20221223_idx_chat_items_item_status
       Simplex.Chat.Migrations.M20221230_idxs
+      Simplex.Chat.Migrations.M20230107_connections_auth_err_counter
       Simplex.Chat.Mobile
       Simplex.Chat.Options
       Simplex.Chat.ProfileGenerator
