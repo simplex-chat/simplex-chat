@@ -1247,12 +1247,12 @@ viewConnectionEntityDisabled entity = case entity of
 
 connEntityLabel :: ConnectionEntity -> StyledString
 connEntityLabel = \case
-  RcvDirectMsgConnection _ (Just Contact {localDisplayName = c}) -> ttyFrom c
-  RcvDirectMsgConnection _ Nothing -> ttyFrom "rcv direct msg"
-  RcvGroupMsgConnection _ GroupInfo {localDisplayName = g} GroupMember {localDisplayName = m} -> ttyFrom $ "#" <> g <> " " <> m
-  RcvFileConnection _ RcvFileTransfer {fileInvitation = FileInvitation {fileName}} -> ttyFrom $ "rcv file " <> T.pack fileName
-  SndFileConnection _ SndFileTransfer {fileName} -> ttyTo $ "snd file " <> T.pack fileName
-  UserContactConnection _ UserContact {} -> ttyFrom "contact address"
+  RcvDirectMsgConnection _ (Just Contact {localDisplayName = c}) -> plain c
+  RcvDirectMsgConnection _ Nothing -> "rcv direct msg"
+  RcvGroupMsgConnection _ GroupInfo {localDisplayName = g} GroupMember {localDisplayName = m} -> plain $ "#" <> g <> " " <> m
+  RcvFileConnection _ RcvFileTransfer {fileInvitation = FileInvitation {fileName}} -> plain $ "rcv file " <> T.pack fileName
+  SndFileConnection _ SndFileTransfer {fileName} -> plain $ "snd file " <> T.pack fileName
+  UserContactConnection _ UserContact {} -> "contact address"
 
 ttyContact :: ContactName -> StyledString
 ttyContact = styled $ colored Green

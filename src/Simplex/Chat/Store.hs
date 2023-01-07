@@ -48,7 +48,8 @@ module Simplex.Chat.Store
     updateContactUnreadChat,
     updateGroupUnreadChat,
     setConnectionVerified,
-    updateConnectionAuthErrCounter,
+    incConnectionAuthErrCounter,
+    setConnectionAuthErrCounter,
     getUserContacts,
     getUserContactProfiles,
     createUserContactLink,
@@ -767,8 +768,19 @@ setConnectionVerified db User {userId} connId code = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE connections SET security_code = ?, security_code_verified_at = ?, updated_at = ? WHERE user_id = ? AND connection_id = ?" (code, code $> updatedAt, updatedAt, userId, connId)
 
-updateConnectionAuthErrCounter :: DB.Connection -> User -> Connection -> Int -> IO ()
-updateConnectionAuthErrCounter db User {userId} Connection {connId} counter = do
+incConnectionAuthErrCounter :: DB.Connection -> User -> Connection -> IO Int
+incConnectionAuthErrCounter db User {userId} Connection {connId, authErrCounter} = do
+  updatedAt <- getCurrentTime
+  (counter_ :: Maybe Int) <- maybeFirstRow fromOnly $ DB.query db "SELECT auth_err_counter FROM connections WHERE user_id = ? AND connection_id = ?" (userId, connId)
+  case counter_ of
+    Just counter -> do
+      let counter' = counter + 1
+      DB.execute db "UPDATE connections SET auth_err_counter = ?, updated_at = ? WHERE user_id = ? AND connection_id = ?" (counter', updatedAt, userId, connId)
+      pure counter'
+    Nothing -> pure authErrCounter
+
+setConnectionAuthErrCounter :: DB.Connection -> User -> Connection -> Int -> IO ()
+setConnectionAuthErrCounter db User {userId} Connection {connId} counter = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE connections SET auth_err_counter = ?, updated_at = ? WHERE user_id = ? AND connection_id = ?" (counter, updatedAt, userId, connId)
 

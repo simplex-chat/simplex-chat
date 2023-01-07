@@ -834,13 +834,13 @@ processChatCommand = \case
       _ -> throwChatError CEGroupMemberNotActive
   APIEnableContact contactId -> withUser $ \user -> do
     Contact {activeConn} <- withStore $ \db -> getContact db user contactId
-    withStore' $ \db -> updateConnectionAuthErrCounter db user activeConn 0
+    withStore' $ \db -> setConnectionAuthErrCounter db user activeConn 0
     pure CRCmdOk
   APIEnableGroupMember gId gMemberId -> withUser $ \user -> do
     GroupMember {activeConn} <- withStore $ \db -> getGroupMember db user gId gMemberId
     case activeConn of
       Just conn -> do
-        withStore' $ \db -> updateConnectionAuthErrCounter db user conn 0
+        withStore' $ \db -> setConnectionAuthErrCounter db user conn 0
         pure CRCmdOk
       _ -> throwChatError CEGroupMemberNotActive
   ShowMessages (ChatName cType name) ntfOn -> withUser $ \user -> do
@@ -2388,11 +2388,10 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage = 
                 _ -> pure ()
 
     incAuthErrCounter :: ConnectionEntity -> Connection -> AgentErrorType -> m ()
-    incAuthErrCounter connEntity conn@Connection {authErrCounter} err = do
+    incAuthErrCounter connEntity conn err = do
       case err of
         SMP SMP.AUTH -> do
-          let authErrCounter' = authErrCounter + 1
-          withStore' $ \db -> updateConnectionAuthErrCounter db user conn authErrCounter'
+          authErrCounter' <- withStore' $ \db -> incConnectionAuthErrCounter db user conn
           when (authErrCounter' >= authErrDisableCount) $ do
             toView $ CRConnectionDisabled connEntity
         _ -> pure ()
