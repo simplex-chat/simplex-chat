@@ -377,6 +377,9 @@
 /* No comment provided by engineer. */
 "Cancel" = "Отменить";
 
+/* feature offered item */
+"cancelled %@" = "отменил(a) %@";
+
 /* No comment provided by engineer. */
 "Cannot access keychain to save database password" = "Ошибка доступа к Keychain при сохранении пароля";
 
@@ -1520,6 +1523,12 @@
 
 /* No comment provided by engineer. */
 "Off (Local)" = "Выключить (Локальные)";
+
+/* feature offered item */
+"offered %@" = "предложил(a) %@";
+
+/* feature offered item */
+"offered %@: %@" = "предложил(a) %1$@: %2$@";
 
 /* No comment provided by engineer. */
 "Ok" = "Ок";

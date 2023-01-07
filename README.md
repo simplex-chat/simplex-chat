@@ -86,13 +86,15 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 Recent updates:
 
-[Dec 06, 2022. November reviews and v4.3 released - with instant voice messages, irreversible deletion of sent messages and improved server configuration.](./blog/20221206-simplex-chat-v4.3-voice-messages.md)
+[Jan 03, 2023. v4.4 released - with disappearing messages, "live" messages, connection security verifications, GIFs and stickers and with French interface language](./blog/20230103-simplex-chat-v4.4-disappearing-messages.md).
 
-[Nov 08, 2022. Security audit by Trail of Bits, the new website and v4.2 released](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md)
+[Dec 06, 2022. November reviews and v4.3 released - with instant voice messages, irreversible deletion of sent messages and improved server configuration](./blog/20221206-simplex-chat-v4.3-voice-messages.md).
 
-[Sep 28, 2022. v4.0: encrypted local chat database and many other changes](./blog/20220928-simplex-chat-v4-encrypted-database.md)
+[Nov 08, 2022. Security audit by Trail of Bits, the new website and v4.2 released](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
 
-[Sep 1, 2022. v3.2: incognito mode, support .onion server hostnames, setting contact names, changing color scheme, etc. Implementation audit is arranged for October!](./blog/20220901-simplex-chat-v3.2-incognito-mode.md)
+[Sep 28, 2022. v4.0: encrypted local chat database and many other changes](./blog/20220928-simplex-chat-v4-encrypted-database.md).
+
+[Sep 1, 2022. v3.2: incognito mode, support .onion server hostnames, setting contact names, changing color scheme, etc. Implementation audit is arranged for October!](./blog/20220901-simplex-chat-v3.2-incognito-mode.md).
 
 [All updates](./blog)
 
@@ -191,17 +193,21 @@ If you are considering developing with SimpleX platform please get in touch for 
 - ✅ View deleted messages, full message deletion by sender (with recipient opt-in per contact).
 - ✅ Block screenshots and view in recent apps.
 - ✅ Advanced server configuration.
+- ✅ Disappearing messages (with recipient opt-in per-contact).
+- ✅ "Live" messages.
+- ✅ Contact verification via a separate out-of-band channel.
+- 🏗 Multiple user profiles in the same chat database.
+- 🏗 Optionally avoid re-using the same TCP session for multiple connections.
+- 🏗 File server to optimize for efficient and private sending of large files.
 - 🏗 SMP queue redundancy and rotation (manual is supported).
-- 🏗 Contact verification via a separate out-of-band channel.
-- 🏗 Ephemeral/disappearing/OTR conversations with the existing contacts.
-- Optionally avoid re-using the same TCP session for multiple connections.
+- 🏗 Reduced battery and traffic usage in large groups.
+- 🏗 Preserve message drafts.
+- 🏗 Support older Android OS and 32-bit CPUs.
+- Ephemeral/disappearing/OTR conversations with the existing contacts.
 - Access password/pin (with optional alternative access password).
-- Media server to optimize sending large files to groups.
 - Video messages.
 - Message delivery confirmation (with sender opt-in or opt-out per contact, TBC).
-- Multiple user profiles in the same chat database.
 - Feeds/broadcasts.
-- Unconfirmed: disappearing messages (with recipient opt-in per-contact).
 - Web widgets for custom interactivity in the chats.
 - Programmable chat automations / rules (automatic replies/forward/deletion/sending, reminders, etc.).
 - Supporting the same profile on multiple devices.
@@ -225,10 +231,10 @@ Join via the app to share what's going on and ask any questions!
 
 We would love to have you join the development! You can contribute to SimpleX Chat with:
 
-- developing features - please connect to us via chat so we can help you get started.
-- writing a tutorial or recipes about hosting servers, chat bot automations, etc.
-- translate UI to some language - we are currently setting up the UI to simplify it, please get in touch and let us know if you would be able to support and update the translations.
+- translate UI to your language - we are using [Weblate](https://hosted.weblate.org/projects/simplex-chat/) to translate the interface, please get in touch if you want to contribute!
 - translate website homepage - there is a lot of content we would like to share, it would help to bring the new users.
+- writing a tutorial or recipes about hosting servers, chat bot automations, etc.
+- developing features - please connect to us via chat so we can help you get started.
 
 ## Help us with donations
 
@@ -248,6 +254,7 @@ It is possible to donate via:
 - Bitcoin address: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
 - BCH address: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
 - Ethereum address: 0x83fd788f7241a2be61780ea9dc72d2151e6843e2
+- Solana address: 43tWFWDczgAcn4Rzwkpqg2mqwnQETSiTwznmCgA2tf1L
 - please let us know, via GitHub issue or chat, if you want to create a donation in some other cryptocurrency - we will add the address to the list.
 
 Thank you,

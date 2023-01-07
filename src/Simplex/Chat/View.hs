@@ -1201,15 +1201,33 @@ viewChatError = \case
     DBErrorExport e -> ["error encrypting database: " <> sqliteError' e]
     DBErrorOpen e -> ["error opening database after encryption: " <> sqliteError' e]
     e -> ["chat database error: " <> sShow e]
-  ChatErrorAgent err -> case err of
+  ChatErrorAgent err entity -> case err of
     SMP SMP.AUTH ->
-      [ "error: connection authorization failed - this could happen if connection was deleted,\
-        \ secured with different credentials, or due to a bug - please re-create the connection"
+      [ withConnEntity
+          <> "error: connection authorization failed - this could happen if connection was deleted,\
+             \ secured with different credentials, or due to a bug - please re-create the connection"
       ]
     AGENT A_DUPLICATE -> []
     AGENT A_PROHIBITED -> []
     CONN NOT_FOUND -> []
-    e -> ["smp agent error: " <> sShow e]
+    e -> [withConnEntity <> "smp agent error: " <> sShow e]
+    where
+      withConnEntity = case entity of
+        Just (RcvDirectMsgConnection conn contact_) -> case contact_ of
+          Just Contact {contactId, localDisplayName = c} ->
+            "[" <> ttyFrom c <> ", contactId: " <> sShow contactId <> ", connId: " <> cId conn <> "] "
+          Nothing ->
+            "[" <> ttyFrom "rcv direct msg" <> ", connId: " <> cId conn <> "] "
+        Just (RcvGroupMsgConnection conn GroupInfo {groupId, localDisplayName = g} GroupMember {groupMemberId, localDisplayName = m}) ->
+          "[" <> ttyFrom ("#" <> g <> " " <> m) <> ", groupId: " <> sShow groupId <> ", memberId: " <> sShow groupMemberId <> ", connId: " <> cId conn <> "] "
+        Just (RcvFileConnection conn RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}}) ->
+          "[" <> ttyFrom ("rcv file " <> T.pack fileName) <> ", fileId: " <> sShow fileId <> ", connId: " <> cId conn <> "] "
+        Just (SndFileConnection conn SndFileTransfer {fileId, fileName}) ->
+          "[" <> ttyTo ("snd file " <> T.pack fileName) <> ", fileId: " <> sShow fileId <> ", connId: " <> cId conn <> "] "
+        Just (UserContactConnection conn UserContact {userContactLinkId}) ->
+          "[" <> ttyFrom "contact address" <> ", userContactLinkId: " <> sShow userContactLinkId <> ", connId: " <> cId conn <> "] "
+        Nothing -> ""
+      cId conn = sShow (connId (conn :: Connection))
   where
     fileNotFound fileId = ["file " <> sShow fileId <> " not found"]
     sqliteError' = \case

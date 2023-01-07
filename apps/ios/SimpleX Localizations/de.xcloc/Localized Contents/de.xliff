@@ -144,12 +144,12 @@
       </trans-unit>
       <trans-unit id="%lldd" xml:space="preserve">
         <source>%lldd</source>
-        <target>%lldd</target>
+        <target>%lldT</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lldh" xml:space="preserve">
         <source>%lldh</source>
-        <target>%lldh</target>
+        <target>%lldH</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lldk" xml:space="preserve">
@@ -159,22 +159,22 @@
       </trans-unit>
       <trans-unit id="%lldm" xml:space="preserve">
         <source>%lldm</source>
-        <target>%lldm</target>
+        <target>%lldmin</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lldmth" xml:space="preserve">
         <source>%lldmth</source>
-        <target>%lldmth</target>
+        <target>%lldMon</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%llds" xml:space="preserve">
         <source>%llds</source>
-        <target>%llds</target>
+        <target>%lldsek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lldw" xml:space="preserve">
         <source>%lldw</source>
-        <target>%lldw</target>
+        <target>%lldW</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="(" xml:space="preserve">
@@ -405,12 +405,12 @@
       </trans-unit>
       <trans-unit id="Allow irreversible message deletion only if your contact allows it to you." xml:space="preserve">
         <source>Allow irreversible message deletion only if your contact allows it to you.</source>
-        <target>Erlauben Sie das unwiederbringliche löschen von Nachrichten nur dann, wenn es Ihnen Ihr Kontakt ebenfalls erlaubt.</target>
+        <target>Erlauben Sie das unwiederbringliche Löschen von Nachrichten nur dann, wenn es Ihnen Ihr Kontakt ebenfalls erlaubt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow sending direct messages to members." xml:space="preserve">
         <source>Allow sending direct messages to members.</source>
-        <target>Erlauben Sie das Senden von Direktnachrichten an Mitglieder</target>
+        <target>Das Senden von Direktnachrichten an Gruppenmitglieder erlauben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow sending disappearing messages." xml:space="preserve">
@@ -420,12 +420,12 @@
       </trans-unit>
       <trans-unit id="Allow to irreversibly delete sent messages." xml:space="preserve">
         <source>Allow to irreversibly delete sent messages.</source>
-        <target>Unwiederbringliches Löschen von gesendeten Nachrichten erlauben.</target>
+        <target>Unwiederbringliches löschen von gesendeten Nachrichten erlauben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow to send voice messages." xml:space="preserve">
         <source>Allow to send voice messages.</source>
-        <target>Senden von Sprachnachrichten erlauben.</target>
+        <target>Das Senden von Sprachnachrichten erlauben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow voice messages only if your contact allows them." xml:space="preserve">
@@ -670,7 +670,7 @@
       </trans-unit>
       <trans-unit id="Clear verification" xml:space="preserve">
         <source>Clear verification</source>
-        <target>Überprüfung erfolgt</target>
+        <target>Überprüfung zurücknehmen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Colors" xml:space="preserve">
@@ -1158,7 +1158,7 @@
       </trans-unit>
       <trans-unit id="Direct messages between members are prohibited in this group." xml:space="preserve">
         <source>Direct messages between members are prohibited in this group.</source>
-        <target>In dieser Gruppe sind Direktnachrichten zwischen Mitgliedern nicht möglich.</target>
+        <target>In dieser Gruppe sind Direktnachrichten zwischen Mitgliedern nicht erlaubt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disable SimpleX Lock" xml:space="preserve">
@@ -1433,7 +1433,7 @@
       </trans-unit>
       <trans-unit id="Error saving SMP servers" xml:space="preserve">
         <source>Error saving SMP servers</source>
-        <target>Fehler beim Speichern der SMP Server</target>
+        <target>Fehler beim Speichern der SMP-Server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error saving group profile" xml:space="preserve">
@@ -1613,7 +1613,7 @@
       </trans-unit>
       <trans-unit id="Group members can send voice messages." xml:space="preserve">
         <source>Group members can send voice messages.</source>
-        <target>Gruppenmitglieder können Sprachnachrichten senden.</target>
+        <target>Gruppenmitglieder können Sprachnachrichten versenden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group message:" xml:space="preserve">
@@ -1633,7 +1633,7 @@
       </trans-unit>
       <trans-unit id="Group profile is stored on members' devices, not on the servers." xml:space="preserve">
         <source>Group profile is stored on members' devices, not on the servers.</source>
-        <target>Das Gruppenprofil wird nur auf den Mitglieds-Systemen gespeichtert und nicht auf den Servern.</target>
+        <target>Das Gruppenprofil wird nur auf den Mitglieds-Systemen gespeichert und nicht auf den Servern.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group will be deleted for all members - this cannot be undone!" xml:space="preserve">
@@ -1840,17 +1840,17 @@
       </trans-unit>
       <trans-unit id="Irreversible message deletion" xml:space="preserve">
         <source>Irreversible message deletion</source>
-        <target>Unwiederbringliches Löschen einer Nachricht</target>
+        <target>Unwiederbringliches löschen einer Nachricht</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Irreversible message deletion is prohibited in this chat." xml:space="preserve">
         <source>Irreversible message deletion is prohibited in this chat.</source>
-        <target>In diesem Chat ist das unwiederbringliche Löschen von Nachrichten untersagt.</target>
+        <target>In diesem Chat ist das unwiederbringliche Löschen von Nachrichten nicht erlaubt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Irreversible message deletion is prohibited in this group." xml:space="preserve">
         <source>Irreversible message deletion is prohibited in this group.</source>
-        <target>In dieser Gruppe ist das unwiederbringliche Löschen von Nachrichten verboten.</target>
+        <target>In dieser Gruppe ist das unwiederbringliche Löschen von Nachrichten nicht erlaubt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="It allows having many anonymous connections without any shared data between them in a single chat profile." xml:space="preserve">
@@ -1965,7 +1965,7 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       </trans-unit>
       <trans-unit id="Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." xml:space="preserve">
         <source>Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated.</source>
-        <target>Stellen Sie sicher, dass die WebRTC ICE-Server Adressen das richtige Format haben, zeilenweise angeordnet und nicht kopiert sind.</target>
+        <target>Stellen Sie sicher, dass die WebRTC ICE-Server Adressen das richtige Format haben, zeilenweise angeordnet und nicht doppelt vorhanden sind.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" xml:space="preserve">
@@ -2230,7 +2230,7 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       </trans-unit>
       <trans-unit id="Only you can send voice messages." xml:space="preserve">
         <source>Only you can send voice messages.</source>
-        <target>Nur Sie können Sprachnachrichten senden.</target>
+        <target>Nur Sie können Sprachnachrichten versenden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only your contact can irreversibly delete messages (you can mark them for deletion)." xml:space="preserve">
@@ -2245,7 +2245,7 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       </trans-unit>
       <trans-unit id="Only your contact can send voice messages." xml:space="preserve">
         <source>Only your contact can send voice messages.</source>
-        <target>Nur Ihr Kontakt kann Sprachnachrichten senden.</target>
+        <target>Nur Ihr Kontakt kann Sprachnachrichten versenden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Open Settings" xml:space="preserve">
@@ -2385,12 +2385,12 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       </trans-unit>
       <trans-unit id="Prohibit irreversible message deletion." xml:space="preserve">
         <source>Prohibit irreversible message deletion.</source>
-        <target>Unwiederbringliches Löschen von Nachrichten verbieten.</target>
+        <target>Unwiederbringliches löschen von Nachrichten nicht erlauben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit sending direct messages to members." xml:space="preserve">
         <source>Prohibit sending direct messages to members.</source>
-        <target>Verbieten Sie das Senden von Direktnachrichten an Mitglieder</target>
+        <target>Das Senden von Direktnachrichten an Gruppenmitglieder nicht erlauben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit sending disappearing messages." xml:space="preserve">
@@ -2400,7 +2400,7 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       </trans-unit>
       <trans-unit id="Prohibit sending voice messages." xml:space="preserve">
         <source>Prohibit sending voice messages.</source>
-        <target>Senden von Sprachnachrichten untersagen.</target>
+        <target>Das Senden von Sprachnachrichten nicht erlauben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protect app screen" xml:space="preserve">
@@ -2625,7 +2625,7 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       </trans-unit>
       <trans-unit id="Save servers" xml:space="preserve">
         <source>Save servers</source>
-        <target>Server speichern</target>
+        <target>Alle Server speichern</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Saved WebRTC ICE servers will be removed" xml:space="preserve">
@@ -2745,7 +2745,7 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       </trans-unit>
       <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve">
         <source>Server requires authorization to create queues, check password</source>
-        <target>Um Warteschlangen zu erzeugen benötigt der Server eine Authentifizierung. Bitte überprüfen Sie das Passwort.</target>
+        <target>Um Warteschlangen zu erzeugen benötigt der Server eine Authentifizierung. Bitte überprüfen Sie das Passwort</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Server test failed!" xml:space="preserve">
@@ -3259,7 +3259,7 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
       </trans-unit>
       <trans-unit id="Use server" xml:space="preserve">
         <source>Use server</source>
-        <target>Benutze Server</target>
+        <target>Server nutzen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Using .onion hosts requires compatible VPN provider." xml:space="preserve">
@@ -3304,17 +3304,17 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
       </trans-unit>
       <trans-unit id="Voice messages are prohibited in this chat." xml:space="preserve">
         <source>Voice messages are prohibited in this chat.</source>
-        <target>In diesem Chat sind Sprachnachrichten untersagt.</target>
+        <target>In diesem Chat sind Sprachnachrichten nicht erlaubt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Voice messages are prohibited in this group." xml:space="preserve">
         <source>Voice messages are prohibited in this group.</source>
-        <target>In dieser Gruppe sind Sprachnachrichten untersagt.</target>
+        <target>In dieser Gruppe sind Sprachnachrichten nicht erlaubt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Voice messages prohibited!" xml:space="preserve">
         <source>Voice messages prohibited!</source>
-        <target>Sprachnachrichten sind untersagt!</target>
+        <target>Sprachnachrichten sind nicht erlaubt!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Voice message…" xml:space="preserve">
@@ -3746,6 +3746,10 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>Anrufen…</target>
         <note>call status</note>
       </trans-unit>
+      <trans-unit id="cancelled %@" xml:space="preserve">
+        <source>cancelled %@</source>
+        <note>feature offered item</note>
+      </trans-unit>
       <trans-unit id="changed address for you" xml:space="preserve">
         <source>changed address for you</source>
         <target>wechselte die Adresse für Sie</target>
@@ -4056,6 +4060,14 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>Aus</target>
         <note>enabled status
    group pref value</note>
+      </trans-unit>
+      <trans-unit id="offered %@" xml:space="preserve">
+        <source>offered %@</source>
+        <note>feature offered item</note>
+      </trans-unit>
+      <trans-unit id="offered %@: %@" xml:space="preserve">
+        <source>offered %1$@: %2$@</source>
+        <note>feature offered item</note>
       </trans-unit>
       <trans-unit id="on" xml:space="preserve">
         <source>on</source>

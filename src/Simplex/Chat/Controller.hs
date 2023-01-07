@@ -540,7 +540,7 @@ tmeToPref currentTTL tme = uncurry TimedMessagesPreference $ case tme of
 
 data ChatError
   = ChatError {errorType :: ChatErrorType}
-  | ChatErrorAgent {agentError :: AgentErrorType}
+  | ChatErrorAgent {agentError :: AgentErrorType, connectionEntity_ :: Maybe ConnectionEntity}
   | ChatErrorStore {storeError :: StoreError}
   | ChatErrorDatabase {databaseError :: DatabaseError}
   deriving (Show, Exception, Generic)
