@@ -210,6 +210,8 @@ data ChatCommand
   | APIGetGroupMemberCode GroupId GroupMemberId
   | APIVerifyContact ContactId (Maybe Text)
   | APIVerifyGroupMember GroupId GroupMemberId (Maybe Text)
+  | APIEnableContact ContactId
+  | APIEnableGroupMember GroupId GroupMemberId
   | ShowMessages ChatName Bool
   | ContactInfo ContactName
   | GroupMemberInfo GroupName ContactName
@@ -219,6 +221,8 @@ data ChatCommand
   | GetGroupMemberCode GroupName ContactName
   | VerifyContact ContactName (Maybe Text)
   | VerifyGroupMember GroupName ContactName (Maybe Text)
+  | EnableContact ContactName
+  | EnableGroupMember GroupName ContactName
   | ChatHelp HelpSection
   | Welcome
   | AddContact
@@ -414,6 +418,7 @@ data ChatResponse
   | CRSQLResult {rows :: [Text]}
   | CRDebugLocks {chatLockName :: Maybe String, agentLocks :: AgentLocks}
   | CRAgentStats {agentStats :: [[String]]}
+  | CRConnectionDisabled {connectionEntity :: ConnectionEntity}
   | CRMessageError {severity :: Text, errorMessage :: Text}
   | CRChatCmdError {chatError :: ChatError}
   | CRChatError {chatError :: ChatError}
@@ -558,6 +563,8 @@ data ChatErrorType
   | CEInvalidConnReq
   | CEInvalidChatMessage {message :: String}
   | CEContactNotReady {contact :: Contact}
+  | CEContactDisabled {contact :: Contact}
+  | CEConnectionDisabled {connection :: Connection}
   | CEGroupUserRole
   | CEContactIncognitoCantInvite
   | CEGroupIncognitoCantInvite

@@ -263,6 +263,7 @@ CREATE TABLE connections(
   group_link_id BLOB,
   security_code TEXT NULL,
   security_code_verified_at TEXT NULL,
+  auth_err_counter INTEGER DEFAULT 0 CHECK(auth_err_counter NOT NULL),
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE

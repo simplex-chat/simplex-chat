@@ -217,6 +217,7 @@ responseToView user_ testView liveItems ts = \case
       plain $ "agent locks: " <> LB.unpack (J.encode agentLocks)
     ]
   CRAgentStats stats -> map (plain . intercalate ",") stats
+  CRConnectionDisabled entity -> viewConnectionEntityDisabled entity
   CRMessageError prefix err -> [plain prefix <> ": " <> plain err]
   CRChatError e -> viewChatError e
   where
@@ -1137,6 +1138,8 @@ viewChatError = \case
     CEInvalidConnReq -> viewInvalidConnReq
     CEInvalidChatMessage e -> ["chat message error: " <> sShow e]
     CEContactNotReady c -> [ttyContact' c <> ": not ready"]
+    CEContactDisabled Contact {localDisplayName = c} -> [ttyContact c <> ": disabled, to enable: " <> highlight ("/enable " <> c) <> ", to delete: " <> highlight ("/d " <> c)]
+    CEConnectionDisabled _ -> []
     CEGroupDuplicateMember c -> ["contact " <> ttyContact c <> " is already in the group"]
     CEGroupDuplicateMemberId -> ["cannot add member - duplicate member ID"]
     CEGroupUserRole -> ["you have insufficient permissions for this group command"]
@@ -1201,7 +1204,7 @@ viewChatError = \case
     DBErrorExport e -> ["error encrypting database: " <> sqliteError' e]
     DBErrorOpen e -> ["error opening database after encryption: " <> sqliteError' e]
     e -> ["chat database error: " <> sShow e]
-  ChatErrorAgent err entity -> case err of
+  ChatErrorAgent err entity_ -> case err of
     SMP SMP.AUTH ->
       [ withConnEntity
           <> "error: connection authorization failed - this could happen if connection was deleted,\
@@ -1212,20 +1215,20 @@ viewChatError = \case
     CONN NOT_FOUND -> []
     e -> [withConnEntity <> "smp agent error: " <> sShow e]
     where
-      withConnEntity = case entity of
-        Just (RcvDirectMsgConnection conn contact_) -> case contact_ of
-          Just Contact {contactId, localDisplayName = c} ->
-            "[" <> ttyFrom c <> ", contactId: " <> sShow contactId <> ", connId: " <> cId conn <> "] "
+      withConnEntity = case entity_ of
+        Just entity@(RcvDirectMsgConnection conn contact_) -> case contact_ of
+          Just Contact {contactId} ->
+            "[" <> connEntityLabel entity <> ", contactId: " <> sShow contactId <> ", connId: " <> cId conn <> "] "
           Nothing ->
-            "[" <> ttyFrom "rcv direct msg" <> ", connId: " <> cId conn <> "] "
-        Just (RcvGroupMsgConnection conn GroupInfo {groupId, localDisplayName = g} GroupMember {groupMemberId, localDisplayName = m}) ->
-          "[" <> ttyFrom ("#" <> g <> " " <> m) <> ", groupId: " <> sShow groupId <> ", memberId: " <> sShow groupMemberId <> ", connId: " <> cId conn <> "] "
-        Just (RcvFileConnection conn RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}}) ->
-          "[" <> ttyFrom ("rcv file " <> T.pack fileName) <> ", fileId: " <> sShow fileId <> ", connId: " <> cId conn <> "] "
-        Just (SndFileConnection conn SndFileTransfer {fileId, fileName}) ->
-          "[" <> ttyTo ("snd file " <> T.pack fileName) <> ", fileId: " <> sShow fileId <> ", connId: " <> cId conn <> "] "
-        Just (UserContactConnection conn UserContact {userContactLinkId}) ->
-          "[" <> ttyFrom "contact address" <> ", userContactLinkId: " <> sShow userContactLinkId <> ", connId: " <> cId conn <> "] "
+            "[" <> connEntityLabel entity <> ", connId: " <> cId conn <> "] "
+        Just entity@(RcvGroupMsgConnection conn GroupInfo {groupId} GroupMember {groupMemberId}) ->
+          "[" <> connEntityLabel entity <> ", groupId: " <> sShow groupId <> ", memberId: " <> sShow groupMemberId <> ", connId: " <> cId conn <> "] "
+        Just entity@(RcvFileConnection conn RcvFileTransfer {fileId}) ->
+          "[" <> connEntityLabel entity <> ", fileId: " <> sShow fileId <> ", connId: " <> cId conn <> "] "
+        Just entity@(SndFileConnection conn SndFileTransfer {fileId}) ->
+          "[" <> connEntityLabel entity <> ", fileId: " <> sShow fileId <> ", connId: " <> cId conn <> "] "
+        Just entity@(UserContactConnection conn UserContact {userContactLinkId}) ->
+          "[" <> connEntityLabel entity <> ", userContactLinkId: " <> sShow userContactLinkId <> ", connId: " <> cId conn <> "] "
         Nothing -> ""
       cId conn = sShow (connId (conn :: Connection))
   where
@@ -1233,6 +1236,23 @@ viewChatError = \case
     sqliteError' = \case
       SQLiteErrorNotADatabase -> "wrong passphrase or invalid database file"
       SQLiteError e -> sShow e
+
+viewConnectionEntityDisabled :: ConnectionEntity -> [StyledString]
+viewConnectionEntityDisabled entity = case entity of
+  RcvDirectMsgConnection _ (Just Contact {localDisplayName = c}) -> ["[" <> entityLabel <> "] connection is disabled, to enable: " <> highlight ("/enable " <> c) <> ", to delete: " <> highlight ("/d " <> c)]
+  RcvGroupMsgConnection _ GroupInfo {localDisplayName = g} GroupMember {localDisplayName = m} -> ["[" <> entityLabel <> "] connection is disabled, to enable: " <> highlight ("/enable #" <> g <> " " <> m)]
+  _ -> ["[" <> entityLabel <> "] connection is disabled"]
+  where
+    entityLabel = connEntityLabel entity
+
+connEntityLabel :: ConnectionEntity -> StyledString
+connEntityLabel = \case
+  RcvDirectMsgConnection _ (Just Contact {localDisplayName = c}) -> plain c
+  RcvDirectMsgConnection _ Nothing -> "rcv direct msg"
+  RcvGroupMsgConnection _ GroupInfo {localDisplayName = g} GroupMember {localDisplayName = m} -> plain $ "#" <> g <> " " <> m
+  RcvFileConnection _ RcvFileTransfer {fileInvitation = FileInvitation {fileName}} -> plain $ "rcv file " <> T.pack fileName
+  SndFileConnection _ SndFileTransfer {fileName} -> plain $ "snd file " <> T.pack fileName
+  UserContactConnection _ UserContact {} -> "contact address"
 
 ttyContact :: ContactName -> StyledString
 ttyContact = styled $ colored Green
