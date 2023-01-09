@@ -37,7 +37,6 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat.getSystemService
 import androidx.core.graphics.drawable.DrawableCompat
 import androidx.core.view.inputmethod.EditorInfoCompat
 import androidx.core.view.inputmethod.InputConnectionCompat
@@ -65,7 +64,7 @@ fun SendMsgView(
   sendMessage: () -> Unit,
   sendLiveMessage: ( suspend () -> Unit)? = null,
   updateLiveMessage: (suspend () -> Unit)? = null,
-  dropLiveMessage: (() -> Unit)? = null,
+  cancelLiveMessage: (() -> Unit)? = null,
   onMessageChange: (String) -> Unit,
   textStyle: MutableState<TextStyle>
 ) {
@@ -120,14 +119,14 @@ fun SendMsgView(
             }
           }
         }
-        cs.liveMessage?.sent == false -> {
-          SendTextButton(Icons.Filled.Close, MaterialTheme.colors.primary, Animatable(36f), Animatable(1f), cs.sendEnabled(), {
-            dropLiveMessage?.invoke()
-          })
+        cs.liveMessage?.sent == false && cs.message.isEmpty() -> {
+          CancelLiveMessageButton {
+            cancelLiveMessage?.invoke()
+          }
         }
         else -> {
           val icon = if (cs.editing || cs.liveMessage != null) Icons.Filled.Check else Icons.Outlined.ArrowUpward
-          val color = if (cs.sendEnabled()) MaterialTheme.colors.primary else HighOrLowlight
+          val color = if (cs.sendEnabled() && cs.message.isNotEmpty()) MaterialTheme.colors.primary else HighOrLowlight
           if (composeState.value.liveMessage == null &&
             cs.preview !is ComposePreview.VoicePreview && !cs.editing &&
             sendLiveMessage != null && updateLiveMessage != null
@@ -150,7 +149,7 @@ fun SendMsgView(
               )
             }
           } else {
-            SendTextButton(icon, color, sendButtonSize, sendButtonAlpha, cs.sendEnabled(), sendMessage)
+            SendTextButton(icon, color, sendButtonSize, sendButtonAlpha, cs.sendEnabled() && cs.message.isNotEmpty(), sendMessage)
           }
         }
       }
@@ -377,6 +376,22 @@ private fun RecordVoiceButton(interactionSource: MutableInteractionSource) {
 @Composable
 private fun ProgressIndicator() {
   CircularProgressIndicator(Modifier.size(36.dp).padding(4.dp), color = HighOrLowlight, strokeWidth = 3.dp)
+}
+
+@Composable
+private fun CancelLiveMessageButton(
+  onClick: () -> Unit
+) {
+  IconButton(onClick, Modifier.size(36.dp)) {
+    Icon(
+      Icons.Filled.Close,
+      stringResource(R.string.icon_descr_cancel_live_message),
+      tint = MaterialTheme.colors.primary,
+      modifier = Modifier
+        .size(36.dp)
+        .padding(4.dp)
+    )
+  }
 }
 
 @Composable

@@ -41,6 +41,7 @@ import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.views.chat.item.*
 import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
@@ -701,12 +702,15 @@ fun ComposeView(
             }
           }
       }
-      LaunchedEffect(composeState.value.contextItem) {
-        val cs = composeState.value
-        if (cs.liveMessage?.sent == false) {
-          chatModel.removeLiveChatItemDummy()
-          chatModel.addLiveChatItemDummy((composeState.value.contextItem as? ComposeContextItem.QuotedItem)?.chatItem, chat.chatInfo)
-        }
+      LaunchedEffect(Unit) {
+        snapshotFlow { composeState.value.contextItem }
+          .distinctUntilChanged()
+          .collect {
+            if (composeState.value.liveMessage?.sent == false) {
+              chatModel.removeLiveChatItemDummy()
+              chatModel.addLiveChatItemDummy((it as? ComposeContextItem.QuotedItem)?.chatItem, chat.chatInfo)
+            }
+          }
       }
 
       val activity = LocalContext.current as Activity
@@ -714,7 +718,8 @@ fun ComposeView(
         val orientation = activity.resources.configuration.orientation
         onDispose {
           if (orientation == activity.resources.configuration.orientation) {
-            if (composeState.value.liveMessage?.sent == true) {
+            val cs = composeState.value
+            if (cs.liveMessage != null && (cs.message.isNotEmpty() || cs.liveMessage.sent)) {
               sendMessage()
               resetLinkPreview()
             }
@@ -738,7 +743,7 @@ fun ComposeView(
         },
         sendLiveMessage = ::sendLiveMessage,
         updateLiveMessage = ::updateLiveMessage,
-        dropLiveMessage = {
+        cancelLiveMessage = {
           composeState.value = composeState.value.copy(liveMessage = null)
           chatModel.removeLiveChatItemDummy()
         },

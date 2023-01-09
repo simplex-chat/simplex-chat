@@ -86,9 +86,6 @@ class ChatModel(val controller: ChatController) {
   val filesToDelete = mutableSetOf<File>()
   val simplexLinkMode = mutableStateOf(controller.appPrefs.simplexLinkMode.get())
 
-  // Tracks existing of dummy live chat item. Allows to skip searching the dummy item before every insert in chatItems list
-  private var hasDummyLiveChatItem = false
-
   fun updateUserProfile(profile: LocalProfile) {
     val user = currentUser.value
     if (user != null) {
@@ -183,10 +180,7 @@ class ChatModel(val controller: ChatController) {
     }
     // add to current chat
     if (chatId.value == cInfo.id) {
-      if (hasDummyLiveChatItem && (cItem.chatDir is CIDirection.DirectSnd || cItem.chatDir is CIDirection.GroupSnd)) {
-        removeLiveChatItemDummy()
-        chatItems.add(cItem)
-      } else if (hasDummyLiveChatItem) {
+      if (chatItems.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
         chatItems.add(kotlin.math.max(0, chatItems.lastIndex), cItem)
       } else {
         chatItems.add(cItem)
@@ -271,14 +265,13 @@ class ChatModel(val controller: ChatController) {
     } else null
     val cItem = ChatItem.liveChatItemDummy(chatInfo is ChatInfo.Direct, quoted)
     chatItems.add(cItem)
-    hasDummyLiveChatItem = true
     return cItem
   }
 
   fun removeLiveChatItemDummy() {
-    if (!hasDummyLiveChatItem) return
-    chatItems.removeAll { it.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID }
-    hasDummyLiveChatItem = false
+    if (chatItems.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
+      chatItems.removeLast()
+    }
   }
 
   fun markChatItemsRead(cInfo: ChatInfo, range: CC.ItemRange? = null, unreadCountAfter: Int? = null) {
