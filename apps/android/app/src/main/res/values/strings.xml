@@ -271,6 +271,7 @@
   <string name="live_message">Live message!</string>
   <string name="send_live_message_desc">Send a live message - it will update for the recipient(s) as you type it</string>
   <string name="send_verb">Send</string>
+  <string name="icon_descr_cancel_live_message">Cancel live message</string>
 
   <!-- General Actions / Responses -->
   <string name="back">Back</string>

@@ -180,7 +180,11 @@ class ChatModel(val controller: ChatController) {
     }
     // add to current chat
     if (chatId.value == cInfo.id) {
-      chatItems.add(cItem)
+      if (chatItems.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
+        chatItems.add(kotlin.math.max(0, chatItems.lastIndex), cItem)
+      } else {
+        chatItems.add(cItem)
+      }
     }
   }
 
@@ -252,6 +256,21 @@ class ChatModel(val controller: ChatController) {
     // clear current chat
     if (chatId.value == cInfo.id) {
       chatItems.clear()
+    }
+  }
+
+  fun addLiveChatItemDummy(quotedCItem: ChatItem?, chatInfo: ChatInfo): ChatItem {
+    val quoted = if (quotedCItem?.content?.msgContent != null) {
+      CIQuote(chatDir = quotedCItem.chatDir, itemId = quotedCItem.id, sentAt = quotedCItem.meta.createdAt, content = quotedCItem.content.msgContent!!)
+    } else null
+    val cItem = ChatItem.liveChatItemDummy(chatInfo is ChatInfo.Direct, quoted)
+    chatItems.add(cItem)
+    return cItem
+  }
+
+  fun removeLiveChatItemDummy() {
+    if (chatItems.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
+      chatItems.removeLast()
     }
   }
 
@@ -1278,7 +1297,8 @@ data class ChatItem (
     }
     
     private const val TEMP_DELETED_CHAT_ITEM_ID = -1L
-    
+    const val TEMP_LIVE_CHAT_ITEM_ID = -2L
+
     val deletedItemDummy: ChatItem
       get() = ChatItem(
         chatDir = CIDirection.DirectRcv(),
@@ -1297,6 +1317,26 @@ data class ChatItem (
         ),
         content = CIContent.RcvDeleted(deleteMode = CIDeleteMode.cidmBroadcast),
         quotedItem = null,
+        file = null
+      )
+
+    fun liveChatItemDummy(direct: Boolean, quoted: CIQuote?): ChatItem = ChatItem(
+        chatDir = if (direct) CIDirection.DirectSnd() else CIDirection.GroupSnd(),
+        meta = CIMeta(
+          itemId = TEMP_LIVE_CHAT_ITEM_ID,
+          itemTs = Clock.System.now(),
+          itemText = "",
+          itemStatus = CIStatus.RcvRead(),
+          createdAt = Clock.System.now(),
+          updatedAt = Clock.System.now(),
+          itemDeleted = false,
+          itemEdited = false,
+          itemTimed = null,
+          itemLive = true,
+          editable = false
+        ),
+        content = CIContent.SndMsgContent(MsgContent.MCText("")),
+        quotedItem = quoted,
         file = null
       )
 
