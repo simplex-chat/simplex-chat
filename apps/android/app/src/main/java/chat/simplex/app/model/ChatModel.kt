@@ -183,7 +183,7 @@ class ChatModel(val controller: ChatController) {
     }
     // add to current chat
     if (chatId.value == cInfo.id) {
-      if (hasDummyLiveChatItem && cItem.chatDir is CIDirection.DirectSnd || cItem.chatDir is CIDirection.GroupSnd) {
+      if (hasDummyLiveChatItem && (cItem.chatDir is CIDirection.DirectSnd || cItem.chatDir is CIDirection.GroupSnd)) {
         removeLiveChatItemDummy()
         chatItems.add(cItem)
       } else if (hasDummyLiveChatItem) {
