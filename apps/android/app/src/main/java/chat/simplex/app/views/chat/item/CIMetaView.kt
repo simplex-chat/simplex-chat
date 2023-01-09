@@ -68,7 +68,7 @@ fun reserveSpaceForMeta(meta: CIMeta, chatTTL: Int?): String {
   if (meta.itemEdited) res += iconSpace
   if (meta.itemTimed != null) {
     res += iconSpace
-    val ttl = meta.itemTimed?.ttl
+    val ttl = meta.itemTimed.ttl
     if (ttl != chatTTL) {
       res += TimedMessagesPreference.shortTtlText(ttl)
     }

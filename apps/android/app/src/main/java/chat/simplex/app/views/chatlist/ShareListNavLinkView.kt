@@ -29,7 +29,7 @@ fun ShareListNavLinkView(chat: Chat, chatModel: ChatModel) {
         click = { groupChatAction(chat.chatInfo.groupInfo, chatModel) },
         stopped
       )
-    is ChatInfo.ContactRequest, is ChatInfo.ContactConnection -> {}
+    is ChatInfo.ContactRequest, is ChatInfo.ContactConnection, is ChatInfo.InvalidJSON -> {}
   }
 }
 

@@ -254,6 +254,7 @@ It is possible to donate via:
 - Bitcoin address: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
 - BCH address: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
 - Ethereum address: 0x83fd788f7241a2be61780ea9dc72d2151e6843e2
+- Solana address: 43tWFWDczgAcn4Rzwkpqg2mqwnQETSiTwznmCgA2tf1L
 - please let us know, via GitHub issue or chat, if you want to create a donation in some other cryptocurrency - we will add the address to the list.
 
 Thank you,

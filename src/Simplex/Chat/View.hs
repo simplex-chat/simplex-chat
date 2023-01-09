@@ -217,6 +217,7 @@ responseToView user_ testView liveItems ts = \case
       plain $ "agent locks: " <> LB.unpack (J.encode agentLocks)
     ]
   CRAgentStats stats -> map (plain . intercalate ",") stats
+  CRConnectionDisabled entity -> viewConnectionEntityDisabled entity
   CRMessageError _u prefix err -> [plain prefix <> ": " <> plain err]
   CRChatCmdError _u e -> viewChatError e
   CRChatError _u e -> viewChatError e
@@ -1147,6 +1148,8 @@ viewChatError = \case
     CEInvalidConnReq -> viewInvalidConnReq
     CEInvalidChatMessage e -> ["chat message error: " <> sShow e]
     CEContactNotReady c -> [ttyContact' c <> ": not ready"]
+    CEContactDisabled Contact {localDisplayName = c} -> [ttyContact c <> ": disabled, to enable: " <> highlight ("/enable " <> c) <> ", to delete: " <> highlight ("/d " <> c)]
+    CEConnectionDisabled _ -> []
     CEGroupDuplicateMember c -> ["contact " <> ttyContact c <> " is already in the group"]
     CEGroupDuplicateMemberId -> ["cannot add member - duplicate member ID"]
     CEGroupUserRole -> ["you have insufficient permissions for this group command"]
@@ -1212,20 +1215,55 @@ viewChatError = \case
     DBErrorExport e -> ["error encrypting database: " <> sqliteError' e]
     DBErrorOpen e -> ["error opening database after encryption: " <> sqliteError' e]
     e -> ["chat database error: " <> sShow e]
-  ChatErrorAgent err -> case err of
+  ChatErrorAgent err entity_ -> case err of
     SMP SMP.AUTH ->
-      [ "error: connection authorization failed - this could happen if connection was deleted,\
-        \ secured with different credentials, or due to a bug - please re-create the connection"
+      [ withConnEntity
+          <> "error: connection authorization failed - this could happen if connection was deleted,\
+             \ secured with different credentials, or due to a bug - please re-create the connection"
       ]
     AGENT A_DUPLICATE -> []
     AGENT A_PROHIBITED -> []
     CONN NOT_FOUND -> []
-    e -> ["smp agent error: " <> sShow e]
+    e -> [withConnEntity <> "smp agent error: " <> sShow e]
+    where
+      withConnEntity = case entity_ of
+        Just entity@(RcvDirectMsgConnection conn contact_) -> case contact_ of
+          Just Contact {contactId} ->
+            "[" <> connEntityLabel entity <> ", contactId: " <> sShow contactId <> ", connId: " <> cId conn <> "] "
+          Nothing ->
+            "[" <> connEntityLabel entity <> ", connId: " <> cId conn <> "] "
+        Just entity@(RcvGroupMsgConnection conn GroupInfo {groupId} GroupMember {groupMemberId}) ->
+          "[" <> connEntityLabel entity <> ", groupId: " <> sShow groupId <> ", memberId: " <> sShow groupMemberId <> ", connId: " <> cId conn <> "] "
+        Just entity@(RcvFileConnection conn RcvFileTransfer {fileId}) ->
+          "[" <> connEntityLabel entity <> ", fileId: " <> sShow fileId <> ", connId: " <> cId conn <> "] "
+        Just entity@(SndFileConnection conn SndFileTransfer {fileId}) ->
+          "[" <> connEntityLabel entity <> ", fileId: " <> sShow fileId <> ", connId: " <> cId conn <> "] "
+        Just entity@(UserContactConnection conn UserContact {userContactLinkId}) ->
+          "[" <> connEntityLabel entity <> ", userContactLinkId: " <> sShow userContactLinkId <> ", connId: " <> cId conn <> "] "
+        Nothing -> ""
+      cId conn = sShow (connId (conn :: Connection))
   where
     fileNotFound fileId = ["file " <> sShow fileId <> " not found"]
     sqliteError' = \case
       SQLiteErrorNotADatabase -> "wrong passphrase or invalid database file"
       SQLiteError e -> sShow e
+
+viewConnectionEntityDisabled :: ConnectionEntity -> [StyledString]
+viewConnectionEntityDisabled entity = case entity of
+  RcvDirectMsgConnection _ (Just Contact {localDisplayName = c}) -> ["[" <> entityLabel <> "] connection is disabled, to enable: " <> highlight ("/enable " <> c) <> ", to delete: " <> highlight ("/d " <> c)]
+  RcvGroupMsgConnection _ GroupInfo {localDisplayName = g} GroupMember {localDisplayName = m} -> ["[" <> entityLabel <> "] connection is disabled, to enable: " <> highlight ("/enable #" <> g <> " " <> m)]
+  _ -> ["[" <> entityLabel <> "] connection is disabled"]
+  where
+    entityLabel = connEntityLabel entity
+
+connEntityLabel :: ConnectionEntity -> StyledString
+connEntityLabel = \case
+  RcvDirectMsgConnection _ (Just Contact {localDisplayName = c}) -> plain c
+  RcvDirectMsgConnection _ Nothing -> "rcv direct msg"
+  RcvGroupMsgConnection _ GroupInfo {localDisplayName = g} GroupMember {localDisplayName = m} -> plain $ "#" <> g <> " " <> m
+  RcvFileConnection _ RcvFileTransfer {fileInvitation = FileInvitation {fileName}} -> plain $ "rcv file " <> T.pack fileName
+  SndFileConnection _ SndFileTransfer {fileName} -> plain $ "snd file " <> T.pack fileName
+  UserContactConnection _ UserContact {} -> "contact address"
 
 ttyContact :: ContactName -> StyledString
 ttyContact = styled $ colored Green

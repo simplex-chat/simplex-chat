@@ -2060,10 +2060,10 @@ public enum CIContent: Decodable, ItemContent {
 
     public static func preferenceText(_ feature: Feature, _ allowed: FeatureAllowed, _ param: Int?) -> String {
         allowed != .no && feature.hasParam && param != nil
-        ? "offered \(feature.text): \(TimedMessagesPreference.ttlText(param))"
+        ? String.localizedStringWithFormat(NSLocalizedString("offered %@: %@", comment: "feature offered item"), feature.text, TimedMessagesPreference.ttlText(param))
         : allowed != .no
-        ? "offered \(feature.text)"
-        : "cancelled \(feature.text)"
+        ? String.localizedStringWithFormat(NSLocalizedString("offered %@", comment: "feature offered item"), feature.text)
+        : String.localizedStringWithFormat(NSLocalizedString("cancelled %@", comment: "feature offered item"), feature.text)
     }
 
     public var msgContent: MsgContent? {

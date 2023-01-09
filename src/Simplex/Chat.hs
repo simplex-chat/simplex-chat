@@ -879,6 +879,17 @@ processChatCommand = \case
     case activeConn of
       Just conn -> verifyConnectionCode user conn code
       _ -> throwChatError CEGroupMemberNotActive
+  APIEnableContact contactId -> withUser $ \user -> do
+    Contact {activeConn} <- withStore $ \db -> getContact db user contactId
+    withStore' $ \db -> setConnectionAuthErrCounter db user activeConn 0
+    pure $ CRCmdOk (Just user)
+  APIEnableGroupMember gId gMemberId -> withUser $ \user -> do
+    GroupMember {activeConn} <- withStore $ \db -> getGroupMember db user gId gMemberId
+    case activeConn of
+      Just conn -> do
+        withStore' $ \db -> setConnectionAuthErrCounter db user conn 0
+        pure $ CRCmdOk (Just user)
+      _ -> throwChatError CEGroupMemberNotActive
   ShowMessages (ChatName cType name) ntfOn -> withUser $ \user -> do
     chatId <- case cType of
       CTDirect -> withStore $ \db -> getContactIdByName db user name
@@ -893,6 +904,8 @@ processChatCommand = \case
   GetGroupMemberCode gName mName -> withMemberName gName mName APIGetGroupMemberCode
   VerifyContact cName code -> withContactName cName (`APIVerifyContact` code)
   VerifyGroupMember gName mName code -> withMemberName gName mName $ \gId mId -> APIVerifyGroupMember gId mId code
+  EnableContact cName -> withContactName cName APIEnableContact
+  EnableGroupMember gName mName -> withMemberName gName mName $ \gId mId -> APIEnableGroupMember gId mId
   ChatHelp section -> pure $ CRChatHelp section
   Welcome -> withUser $ pure . CRWelcome
   APIAddContact cmdUserId -> withUser $ \user@User {userId} -> withChatLock "addContact" . procCmd $ do
@@ -1226,8 +1239,8 @@ processChatCommand = \case
     where
       processError user ft = \case
         -- TODO AChatItem in Cancelled events
-        ChatErrorAgent (SMP SMP.AUTH) -> pure $ CRRcvFileAcceptedSndCancelled user ft
-        ChatErrorAgent (CONN DUPLICATE) -> pure $ CRRcvFileAcceptedSndCancelled user ft
+        ChatErrorAgent (SMP SMP.AUTH) _ -> pure $ CRRcvFileAcceptedSndCancelled user ft
+        ChatErrorAgent (CONN DUPLICATE) _ -> pure $ CRRcvFileAcceptedSndCancelled user ft
         e -> throwError e
   CancelFile fileId -> withUser $ \user@User {userId} ->
     withChatLock "cancelFile" . procCmd $
@@ -1828,7 +1841,7 @@ subscribeUserConnections agentBatchSubscribe user = do
         addResult connId = (:) . (,err)
           where
             err = case M.lookup connId rs of
-              Just (Left e) -> Just $ ChatErrorAgent e
+              Just (Left e) -> Just $ ChatErrorAgent e Nothing
               Just _ -> Nothing
               _ -> Just . ChatError . CEAgentNoSubResult $ AgentConnId connId
 
@@ -1972,18 +1985,19 @@ processAgentMessageConn user _ agentConnId END =
       showToast (c <> "> ") "connected to another client"
       unsetActive $ ActiveC c
     entity -> toView $ CRSubscriptionEnd user entity
-processAgentMessageConn user@User {userId} corrId agentConnId agentMessage =
-  (withStore (\db -> getConnectionEntity db user $ AgentConnId agentConnId) >>= updateConnStatus) >>= \case
+processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
+  entity <- withStore (\db -> getConnectionEntity db user $ AgentConnId agentConnId) >>= updateConnStatus
+  case entity of
     RcvDirectMsgConnection conn contact_ ->
-      processDirectMessage agentMessage conn contact_
+      processDirectMessage agentMessage entity conn contact_
     RcvGroupMsgConnection conn gInfo m ->
-      processGroupMessage agentMessage conn gInfo m
+      processGroupMessage agentMessage entity conn gInfo m
     RcvFileConnection conn ft ->
-      processRcvFileConn agentMessage conn ft
+      processRcvFileConn agentMessage entity conn ft
     SndFileConnection conn ft ->
-      processSndFileConn agentMessage conn ft
+      processSndFileConn agentMessage entity conn ft
     UserContactConnection conn uc ->
-      processUserContactRequest agentMessage conn uc
+      processUserContactRequest agentMessage entity conn uc
   where
     updateConnStatus :: ConnectionEntity -> m ConnectionEntity
     updateConnStatus acEntity = case agentMsgConnStatus agentMessage of
@@ -2004,8 +2018,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage =
       CON -> Just ConnReady
       _ -> Nothing
 
-    processDirectMessage :: ACommand 'Agent -> Connection -> Maybe Contact -> m ()
-    processDirectMessage agentMsg conn@Connection {connId, viaUserContactLink, groupLinkId, customUserProfileId} = \case
+    processDirectMessage :: ACommand 'Agent -> ConnectionEntity -> Connection -> Maybe Contact -> m ()
+    processDirectMessage agentMsg connEntity conn@Connection {connId, viaUserContactLink, groupLinkId, customUserProfileId} = \case
       Nothing -> case agentMsg of
         CONF confId _ connInfo -> do
           -- [incognito] send saved profile
@@ -2021,15 +2035,16 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage =
           _ <- saveRcvMSG conn (ConnectionId connId) meta msgBody cmdId
           withAckMessage agentConnId cmdId meta $ pure ()
         SENT msgId ->
-          -- ? updateDirectChatItemStatus
           sentMsgDeliveryEvent conn msgId
         OK ->
           -- [async agent commands] continuation on receiving OK
           withCompletedCommand conn agentMsg $ \CommandData {cmdFunction, cmdId} ->
             when (cmdFunction == CFAckMessage) $ ackMsgDeliveryEvent conn cmdId
-        MERR _ err -> toView $ CRChatError (Just user) (ChatErrorAgent err) -- ? updateDirectChatItemStatus
+        MERR _ err -> do
+          toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
+          incAuthErrCounter connEntity conn err
         ERR err -> do
-          toView $ CRChatError (Just user) (ChatErrorAgent err)
+          toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
@@ -2142,14 +2157,16 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage =
           forM_ chatItemId_ $ \chatItemId -> do
             chatItem <- withStore $ \db -> updateDirectChatItemStatus db user contactId chatItemId (agentErrToItemStatus err)
             toView $ CRChatItemStatusUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
+          toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
+          incAuthErrCounter connEntity conn err
         ERR err -> do
-          toView $ CRChatError (Just user) (ChatErrorAgent err)
+          toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
 
-    processGroupMessage :: ACommand 'Agent -> Connection -> GroupInfo -> GroupMember -> m ()
-    processGroupMessage agentMsg conn@Connection {connId} gInfo@GroupInfo {groupId, localDisplayName = gName, groupProfile, membership, chatSettings} m = case agentMsg of
+    processGroupMessage :: ACommand 'Agent -> ConnectionEntity -> Connection -> GroupInfo -> GroupMember -> m ()
+    processGroupMessage agentMsg connEntity conn@Connection {connId} gInfo@GroupInfo {groupId, localDisplayName = gName, groupProfile, membership, chatSettings} m = case agentMsg of
       INV (ACR _ cReq) ->
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
           case cReq of
@@ -2219,7 +2236,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage =
           updateGroupMemberStatus db userId m GSMemConnected
           unless (memberActive membership) $
             updateGroupMemberStatus db userId membership GSMemConnected
-        sendPendingGroupMessages m conn
+        -- possible improvement: check for each pending message, requires keeping track of connection state
+        unless (connDisabled conn) $ sendPendingGroupMessages m conn
         withAgent $ \a -> toggleConnectionNtfs a (aConnId conn) $ enableNtfs chatSettings
         case memberCategory m of
           GCHostMember -> do
@@ -2288,15 +2306,17 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage =
         -- [async agent commands] continuation on receiving OK
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction, cmdId} ->
           when (cmdFunction == CFAckMessage) $ ackMsgDeliveryEvent conn cmdId
-      MERR _ err -> toView $ CRChatError (Just user) (ChatErrorAgent err)
+      MERR _ err -> do
+        toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
+        incAuthErrCounter connEntity conn err
       ERR err -> do
-        toView $ CRChatError (Just user) (ChatErrorAgent err)
+        toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
       -- TODO add debugging output
       _ -> pure ()
 
-    processSndFileConn :: ACommand 'Agent -> Connection -> SndFileTransfer -> m ()
-    processSndFileConn agentMsg conn ft@SndFileTransfer {fileId, fileName, fileStatus} =
+    processSndFileConn :: ACommand 'Agent -> ConnectionEntity -> Connection -> SndFileTransfer -> m ()
+    processSndFileConn agentMsg connEntity conn ft@SndFileTransfer {fileId, fileName, fileStatus} =
       case agentMsg of
         -- SMP CONF for SndFileConnection happens for direct file protocol
         -- when recipient of the file "joins" connection created by the sender
@@ -2334,13 +2354,13 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage =
           -- [async agent commands] continuation on receiving OK
           withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         ERR err -> do
-          toView $ CRChatError (Just user) (ChatErrorAgent err)
+          toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
 
-    processRcvFileConn :: ACommand 'Agent -> Connection -> RcvFileTransfer -> m ()
-    processRcvFileConn agentMsg conn ft@RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}, grpMemberId} =
+    processRcvFileConn :: ACommand 'Agent -> ConnectionEntity -> Connection -> RcvFileTransfer -> m ()
+    processRcvFileConn agentMsg connEntity conn ft@RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}, grpMemberId} =
       case agentMsg of
         INV (ACR _ cReq) ->
           withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
@@ -2379,9 +2399,11 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage =
         OK ->
           -- [async agent commands] continuation on receiving OK
           withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-        MERR _ err -> toView $ CRChatError (Just user) (ChatErrorAgent err)
+        MERR _ err -> do
+          toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
+          incAuthErrCounter connEntity conn err
         ERR err -> do
-          toView $ CRChatError (Just user) (ChatErrorAgent err)
+          toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
@@ -2428,8 +2450,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage =
           RcvChunkDuplicate -> pure ()
           RcvChunkError -> badRcvFileChunk ft $ "incorrect chunk number " <> show chunkNo
 
-    processUserContactRequest :: ACommand 'Agent -> Connection -> UserContact -> m ()
-    processUserContactRequest agentMsg conn UserContact {userContactLinkId} = case agentMsg of
+    processUserContactRequest :: ACommand 'Agent -> ConnectionEntity -> Connection -> UserContact -> m ()
+    processUserContactRequest agentMsg connEntity conn UserContact {userContactLinkId} = case agentMsg of
       REQ invId _ connInfo -> do
         ChatMessage {chatMsgEvent} <- parseChatMessage connInfo
         case chatMsgEvent of
@@ -2437,9 +2459,11 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage =
           XInfo p -> profileContactRequest invId p Nothing
           -- TODO show/log error, other events in contact request
           _ -> pure ()
-      MERR _ err -> toView $ CRChatError (Just user) (ChatErrorAgent err)
+      MERR _ err -> do
+        toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
+        incAuthErrCounter connEntity conn err
       ERR err -> do
-        toView $ CRChatError (Just user) (ChatErrorAgent err)
+        toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
       -- TODO add debugging output
       _ -> pure ()
@@ -2467,6 +2491,15 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage =
                       toView $ CRReceivedContactRequest user cReq
                       showToast (localDisplayName <> "> ") "wants to connect to you"
                 _ -> pure ()
+
+    incAuthErrCounter :: ConnectionEntity -> Connection -> AgentErrorType -> m ()
+    incAuthErrCounter connEntity conn err = do
+      case err of
+        SMP SMP.AUTH -> do
+          authErrCounter' <- withStore' $ \db -> incConnectionAuthErrCounter db user conn
+          when (authErrCounter' >= authErrDisableCount) $ do
+            toView $ CRConnectionDisabled connEntity
+        _ -> pure ()
 
     updateChatLock :: MsgEncodingI e => String -> ChatMsgEvent e -> m ()
     updateChatLock name event = do
@@ -2503,11 +2536,15 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage =
 
     ackMsgDeliveryEvent :: Connection -> CommandId -> m ()
     ackMsgDeliveryEvent Connection {connId} ackCmdId =
-      withStore' $ \db -> createRcvMsgDeliveryEvent db connId ackCmdId MDSRcvAcknowledged
+      withStoreCtx'
+        (Just $ "createRcvMsgDeliveryEvent, connId: " <> show connId <> ", ackCmdId: " <> show ackCmdId <> ", msgDeliveryStatus: MDSRcvAcknowledged")
+        $ \db -> createRcvMsgDeliveryEvent db connId ackCmdId MDSRcvAcknowledged
 
     sentMsgDeliveryEvent :: Connection -> AgentMsgId -> m ()
     sentMsgDeliveryEvent Connection {connId} msgId =
-      withStore $ \db -> createSndMsgDeliveryEvent db connId msgId MDSSndSent
+      withStoreCtx
+        (Just $ "createSndMsgDeliveryEvent, connId: " <> show connId <> ", msgId: " <> show msgId <> ", msgDeliveryStatus: MDSSndSent")
+        $ \db -> createSndMsgDeliveryEvent db connId msgId MDSSndSent
 
     agentErrToItemStatus :: AgentErrorType -> CIStatus 'MDSnd
     agentErrToItemStatus (SMP AUTH) = CISSndErrorAuth
@@ -3381,13 +3418,14 @@ deleteOrUpdateMemberRecord user@User {userId} member =
       Nothing -> deleteGroupMember db user member
 
 sendDirectContactMessage :: (MsgEncodingI e, ChatMonad m) => Contact -> ChatMsgEvent e -> m (SndMessage, Int64)
-sendDirectContactMessage ct@Contact {activeConn = conn@Connection {connId, connStatus}} chatMsgEvent = do
-  if connStatus == ConnReady || connStatus == ConnSndReady
-    then sendDirectMessage conn chatMsgEvent (ConnectionId connId)
-    else throwChatError $ CEContactNotReady ct
+sendDirectContactMessage ct@Contact {activeConn = conn@Connection {connId, connStatus}} chatMsgEvent
+  | connStatus /= ConnReady && connStatus /= ConnSndReady = throwChatError $ CEContactNotReady ct
+  | connDisabled conn = throwChatError $ CEContactDisabled ct
+  | otherwise = sendDirectMessage conn chatMsgEvent (ConnectionId connId)
 
 sendDirectMessage :: (MsgEncodingI e, ChatMonad m) => Connection -> ChatMsgEvent e -> ConnOrGroupId -> m (SndMessage, Int64)
 sendDirectMessage conn chatMsgEvent connOrGroupId = do
+  when (connDisabled conn) $ throwChatError (CEConnectionDisabled conn)
   msg@SndMessage {msgId, msgBody} <- createSndMessage chatMsgEvent connOrGroupId
   (msg,) <$> deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId
 
@@ -3406,7 +3444,9 @@ deliverMessage conn@Connection {connId} cmEventTag msgBody msgId = do
   let msgFlags = MsgFlags {notification = hasNotification cmEventTag}
   agentMsgId <- withAgent $ \a -> sendMessage a (aConnId conn) msgFlags msgBody
   let sndMsgDelivery = SndMsgDelivery {connId, agentMsgId}
-  withStore' $ \db -> createSndMsgDelivery db sndMsgDelivery msgId
+  withStoreCtx'
+    (Just $ "createSndMsgDelivery, sndMsgDelivery: " <> show sndMsgDelivery <> ", msgId: " <> show msgId <> ", cmEventTag: " <> show cmEventTag <> ", msgDeliveryStatus: MDSSndAgent")
+    $ \db -> createSndMsgDelivery db sndMsgDelivery msgId
 
 sendGroupMessage :: (MsgEncodingI e, ChatMonad m) => GroupInfo -> [GroupMember] -> ChatMsgEvent e -> m SndMessage
 sendGroupMessage GroupInfo {groupId} members chatMsgEvent =
@@ -3420,10 +3460,10 @@ sendGroupMessage' members chatMsgEvent groupId introId_ postDeliver = do
     case memberConn m of
       Nothing -> withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId introId_
       Just conn@Connection {connStatus}
+        | connDisabled conn || connStatus == ConnDeleted -> pure ()
         | connStatus == ConnSndReady || connStatus == ConnReady -> do
           let tag = toCMEventTag chatMsgEvent
           (deliverMessage conn tag msgBody msgId >> postDeliver) `catchError` const (pure ())
-        | connStatus == ConnDeleted -> pure ()
         | otherwise -> withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId introId_
   pure msg
 
@@ -3446,7 +3486,9 @@ saveRcvMSG Connection {connId} connOrGroupId agentMsgMeta msgBody agentAckCmdId 
   let agentMsgId = fst $ recipient agentMsgMeta
       newMsg = NewMessage {chatMsgEvent, msgBody}
       rcvMsgDelivery = RcvMsgDelivery {connId, agentMsgId, agentMsgMeta, agentAckCmdId}
-  withStore' $ \db -> createNewMessageAndRcvMsgDelivery db connOrGroupId newMsg sharedMsgId_ rcvMsgDelivery
+  withStoreCtx'
+    (Just $ "createNewMessageAndRcvMsgDelivery, rcvMsgDelivery: " <> show rcvMsgDelivery <> ", sharedMsgId_: " <> show sharedMsgId_ <> ", msgDeliveryStatus: MDSRcvAgent")
+    $ \db -> createNewMessageAndRcvMsgDelivery db connOrGroupId newMsg sharedMsgId_ rcvMsgDelivery
 
 saveSndChatItem :: ChatMonad m => User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> m (ChatItem c 'MDSnd)
 saveSndChatItem user cd msg content = saveSndChatItem' user cd msg content Nothing Nothing Nothing False
@@ -3709,22 +3751,25 @@ withAgent :: ChatMonad m => (AgentClient -> ExceptT AgentErrorType m a) -> m a
 withAgent action =
   asks smpAgent
     >>= runExceptT . action
-    >>= liftEither . first ChatErrorAgent
+    >>= liftEither . first (\e -> ChatErrorAgent e Nothing)
 
 withStore' :: ChatMonad m => (DB.Connection -> IO a) -> m a
 withStore' action = withStore $ liftIO . action
 
-withStore ::
-  ChatMonad m =>
-  (DB.Connection -> ExceptT StoreError IO a) ->
-  m a
-withStore action = do
+withStore :: ChatMonad m => (DB.Connection -> ExceptT StoreError IO a) -> m a
+withStore = withStoreCtx Nothing
+
+withStoreCtx' :: ChatMonad m => Maybe String -> (DB.Connection -> IO a) -> m a
+withStoreCtx' ctx_ action = withStoreCtx ctx_ $ liftIO . action
+
+withStoreCtx :: ChatMonad m => Maybe String -> (DB.Connection -> ExceptT StoreError IO a) -> m a
+withStoreCtx ctx_ action = do
   ChatController {chatStore} <- ask
   liftEitherError ChatErrorStore $
     withTransaction chatStore (runExceptT . action) `E.catch` handleInternal
   where
     handleInternal :: E.SomeException -> IO (Either StoreError a)
-    handleInternal = pure . Left . SEInternalError . show
+    handleInternal e = pure . Left . SEInternalError $ show e <> maybe "" (\ctx -> " (" <> ctx <> ")") ctx_
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
@@ -3821,10 +3866,14 @@ chatCommandP =
       "/_get code #" *> (APIGetGroupMemberCode <$> A.decimal <* A.space <*> A.decimal),
       "/_verify code @" *> (APIVerifyContact <$> A.decimal <*> optional (A.space *> textP)),
       "/_verify code #" *> (APIVerifyGroupMember <$> A.decimal <* A.space <*> A.decimal <*> optional (A.space *> textP)),
+      "/_enable @" *> (APIEnableContact <$> A.decimal),
+      "/_enable #" *> (APIEnableGroupMember <$> A.decimal <* A.space <*> A.decimal),
       "/code " *> char_ '@' *> (GetContactCode <$> displayName),
       "/code #" *> (GetGroupMemberCode <$> displayName <* A.space <* char_ '@' <*> displayName),
       "/verify " *> char_ '@' *> (VerifyContact <$> displayName <*> optional (A.space *> textP)),
       "/verify #" *> (VerifyGroupMember <$> displayName <* A.space <* char_ '@' <*> displayName <*> optional (A.space *> textP)),
+      "/enable " *> char_ '@' *> (EnableContact <$> displayName),
+      "/enable #" *> (EnableGroupMember <$> displayName <* A.space <* char_ '@' <*> displayName),
       ("/help files" <|> "/help file" <|> "/hf") $> ChatHelp HSFiles,
       ("/help groups" <|> "/help group" <|> "/hg") $> ChatHelp HSGroups,
       ("/help address" <|> "/ha") $> ChatHelp HSMyAddress,

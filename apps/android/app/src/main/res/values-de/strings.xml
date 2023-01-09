@@ -49,7 +49,7 @@
     <string name="simplex_link_mode_browser_warning">Das Öffnen des Links über den Browser kann die Privatsphäre und Sicherheit der Verbindung reduzieren. SimpleX-Links, denen nicht vertraut wird, werden Rot sein.</string>
     <!-- SimpleXAPI.kt -->
     <string name="error_saving_smp_servers">Fehler beim Speichern der SMP-Server</string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">Stellen Sie sicher, dass die SMP-Server Adressen das richtige Format haben, zeilenweise angeordnet und nicht kopiert sind.</string>
+    <string name="ensure_smp_server_address_are_correct_format_and_unique">Stellen Sie sicher, dass die SMP-Server Adressen das richtige Format haben, zeilenweise angeordnet und nicht doppelt vorhanden sind.</string>
     <string name="error_setting_network_config">Fehler bei der Aktualisierung der Netzwerk-Konfiguration.</string>
     <!-- API Error Responses - SimpleXAPI.kt -->
     <string name="connection_timeout">Verbindungszeitüberschreitung</string>
@@ -230,8 +230,8 @@
     <string name="icon_descr_send_message">Nachricht senden</string>
     <string name="icon_descr_record_voice_message">Nehme Sprachnachricht auf</string>
     <string name="allow_voice_messages_question">Sprachnachrichten erlauben?</string>
-    <string name="you_need_to_allow_to_send_voice">Sie müssen Ihrem Kontakt das Senden von Sprachnachrichten erlauben, damit Sie sie senden können.</string>
-    <string name="voice_messages_prohibited">Sprachnachrichten unzulässig!</string>
+    <string name="you_need_to_allow_to_send_voice">Sie müssen Ihrem Kontakt das Senden von Sprachnachrichten erlauben, damit Sie sie versenden können.</string>
+    <string name="voice_messages_prohibited">Sprachnachrichten nicht erlaubt!</string>
     <string name="ask_your_contact_to_enable_voice">Bitten Sie Ihren Kontakt darum, das Senden von Sprachnachrichten zu aktivieren.</string>
     <string name="only_group_owners_can_enable_voice">Sprachnachrichten können nur von Gruppen-Eigentümern aktiviert werden.</string>
     <!-- General Actions / Responses -->
@@ -361,7 +361,7 @@
     <string name="smp_servers_add">Füge Server hinzu…</string>
     <string name="smp_servers_test_server">Teste Server</string>
     <string name="smp_servers_test_servers">Teste alle Server</string>
-    <string name="smp_servers_save">Sichere alle Server</string>
+    <string name="smp_servers_save">Alle Server speichern</string>
     <string name="smp_servers_test_failed">Server Test ist fehlgeschlagen!</string>
     <string name="smp_servers_test_some_failed">Einige Server haben den Test nicht bestanden:</string>
     <string name="smp_servers_scan_qr">Scannen Sie den QR-Code des Servers</string>
@@ -386,10 +386,10 @@
     <string name="how_to_use_your_servers">Wie Sie Ihre Server nutzen</string>
     <string name="saved_ICE_servers_will_be_removed">Gespeicherte WebRTC ICE-Server werden entfernt.</string>
     <string name="your_ICE_servers">Ihre ICE-Server</string>
-    <string name="configure_ICE_servers">Konfigurieren Sie ICE-Server</string>
+    <string name="configure_ICE_servers">ICE-Server konfigurieren</string>
     <string name="enter_one_ICE_server_per_line">ICE-Server (einer pro Zeile)</string>
     <string name="error_saving_ICE_servers">Fehler beim Speichern der ICE-Server</string>
-    <string name="ensure_ICE_server_address_are_correct_format_and_unique">Stellen Sie sicher, dass die WebRTC ICE-Server Adressen das richtige Format haben, zeilenweise angeordnet und nicht kopiert sind.</string>
+    <string name="ensure_ICE_server_address_are_correct_format_and_unique">Stellen Sie sicher, dass die WebRTC ICE-Server Adressen das richtige Format haben, zeilenweise angeordnet und nicht doppelt vorhanden sind.</string>
     <string name="save_servers_button">Speichern</string>
     <string name="network_and_servers">Netzwerk &amp; Server</string>
     <string name="network_settings">Erweiterte Netzwerkeinstellungen</string>
@@ -882,29 +882,29 @@
     <string name="allow_your_contacts_irreversibly_delete">Erlauben Sie Ihren Kontakten gesendete Nachrichten unwiederbringlich zu löschen.</string>
     <string name="allow_irreversible_message_deletion_only_if">Erlauben Sie das unwiederbringliche Löschen von Nachrichten nur dann, wenn es Ihnen Ihr Kontakt ebenfalls erlaubt.</string>
     <string name="contacts_can_mark_messages_for_deletion">Ihre Kontakte können Nachrichten zum Löschen markieren. Sie können diese Nachrichten trotzdem anschauen.</string>
-    <string name="allow_your_contacts_to_send_voice_messages">Erlauben Sie Ihre Kontakten Sprachnachrichten zu senden.</string>
+    <string name="allow_your_contacts_to_send_voice_messages">Erlauben Sie Ihre Kontakten Sprachnachrichten zu versenden.</string>
     <string name="allow_voice_messages_only_if">Erlauben Sie Sprachnachrichten nur dann, wenn Ihr Kontakt diese ebenfalls erlaubt.</string>
-    <string name="prohibit_sending_voice_messages">Das Senden von Sprachnachrichten verbieten.</string>
+    <string name="prohibit_sending_voice_messages">Das Senden von Sprachnachrichten nicht erlauben.</string>
     <string name="both_you_and_your_contacts_can_delete">Sowohl Ihr Kontakt, als auch Sie können Nachrichten unwiederbringlich löschen.</string>
     <string name="only_you_can_delete_messages">Nur Sie können Nachrichten unwiederbringlich löschen (Ihr Kontakt kann sie zum Löschen markieren).</string>
     <string name="only_your_contact_can_delete">Nur Ihr Kontakt kann Nachrichten unwiederbringlich löschen (Sie können sie zum Löschen markieren).</string>
     <string name="message_deletion_prohibited">In dieser Gruppe ist das unwiederbringliche Löschen von Nachrichten nicht erlaubt.</string>
-    <string name="both_you_and_your_contact_can_send_voice">Sowohl Ihr Kontakt, als auch Sie können Sprachnachrichten senden.</string>
-    <string name="only_you_can_send_voice">Nur Sie können Sprachnachrichten senden.</string>
-    <string name="only_your_contact_can_send_voice">Nur Ihr Kontakt kann Sprachnachrichten senden.</string>
-    <string name="voice_prohibited_in_this_chat">In diesem Chat sind Sprachnachrichten untersagt.</string>
-    <string name="allow_direct_messages">Das Senden von Direktnachrichten an Mitglieder erlauben.</string>
-    <string name="prohibit_direct_messages">Das Senden von Direktnachrichten an Mitglieder verbieten.</string>
-    <string name="allow_to_delete_messages">Unwiederbringliches Löschen von gesendeten Nachrichten erlauben.</string>
-    <string name="prohibit_message_deletion">Unwiederbringliches Löschen von Nachrichten verbieten.</string>
-    <string name="allow_to_send_voice">Senden von Sprachnachrichten erlauben.</string>
-    <string name="prohibit_sending_voice">Senden von Sprachnachrichten untersagen.</string>
+    <string name="both_you_and_your_contact_can_send_voice">Sowohl Ihr Kontakt, als auch Sie können Sprachnachrichten versenden.</string>
+    <string name="only_you_can_send_voice">Nur Sie können Sprachnachrichten versenden.</string>
+    <string name="only_your_contact_can_send_voice">Nur Ihr Kontakt kann Sprachnachrichten versenden.</string>
+    <string name="voice_prohibited_in_this_chat">In diesem Chat sind Sprachnachrichten nicht erlaubt.</string>
+    <string name="allow_direct_messages">Das Senden von Direktnachrichten an Gruppenmitglieder erlauben.</string>
+    <string name="prohibit_direct_messages">Das Senden von Direktnachrichten an Gruppenmitglieder nicht erlauben.</string>
+    <string name="allow_to_delete_messages">Unwiederbringliches löschen von gesendeten Nachrichten erlauben.</string>
+    <string name="prohibit_message_deletion">Unwiederbringliches löschen von Nachrichten nicht erlauben.</string>
+    <string name="allow_to_send_voice">Das Senden von Sprachnachrichten erlauben.</string>
+    <string name="prohibit_sending_voice">Das Senden von Sprachnachrichten nicht erlauben.</string>
     <string name="group_members_can_send_dms">Gruppenmitglieder können Direktnachrichten versenden.</string>
-    <string name="direct_messages_are_prohibited_in_chat">In dieser Gruppe sind Direktnachrichten zwischen Mitgliedern nicht möglich.</string>
+    <string name="direct_messages_are_prohibited_in_chat">In dieser Gruppe sind Direktnachrichten zwischen Mitgliedern nicht erlaubt.</string>
     <string name="group_members_can_delete">Gruppenmitglieder können gesendete Nachrichten unwiederbringlich löschen.</string>
-    <string name="message_deletion_prohibited_in_chat">In dieser Gruppe ist das unwiederbringliche Löschen von Nachrichten verboten.</string>
-    <string name="group_members_can_send_voice">Gruppenmitglieder können Sprachnachrichten senden.</string>
-    <string name="voice_messages_are_prohibited">In dieser Gruppe sind Sprachnachrichten untersagt.</string>
+    <string name="message_deletion_prohibited_in_chat">In dieser Gruppe ist das unwiederbringliche Löschen von Nachrichten nicht erlaubt.</string>
+    <string name="group_members_can_send_voice">Gruppenmitglieder können Sprachnachrichten versenden.</string>
+    <string name="voice_messages_are_prohibited">In dieser Gruppe sind Sprachnachrichten nicht erlaubt.</string>
     <string name="live">LIVE</string>
     <string name="view_security_code">Schauen Sie sich den Sicherheitscode an</string>
     <string name="onboarding_notifications_mode_service">Sofort</string>
@@ -912,7 +912,7 @@
     <string name="onboarding_notifications_mode_off_desc"><b>Beste Option für die Batterieausdauer</b>. Sie empfangen Benachrichtigungen nur solange die App abläuft. Der Hintergrundservice wird nicht genutzt!</string>
     <string name="send_verb">Senden</string>
     <string name="is_verified">%s wurde überprüft</string>
-    <string name="clear_verification">Überprüfung erfolgt</string>
+    <string name="clear_verification">Überprüfung zurücknehmen</string>
     <string name="onboarding_notifications_mode_off">Solange die App abläuft</string>
     <string name="onboarding_notifications_mode_subtitle">Kann später über die Einstellungen geändert werden.</string>
     <string name="delete_after">Löschen nach</string>
@@ -978,7 +978,7 @@
     <string name="v4_3_improved_privacy_and_security_desc">App-Bildschirm in aktuellen Anwendungen verbergen.</string>
     <string name="v4_3_improved_privacy_and_security">Verbesserte Privatsphäre und Sicherheit</string>
     <string name="v4_3_improved_server_configuration">Verbesserte Serverkonfiguration</string>
-    <string name="v4_3_irreversible_message_deletion">Unwiederbringliches Löschen einer Nachricht</string>
+    <string name="v4_3_irreversible_message_deletion">Unwiederbringliches löschen einer Nachricht</string>
     <string name="v4_4_live_messages">Live Nachrichten</string>
     <string name="v4_3_voice_messages_desc">Max. 40 Sekunden, sofort erhalten.</string>
     <string name="v4_4_live_messages_desc">Die Empfänger sehen Nachrichtenaktualisierungen, während Sie sie eingeben.</string>

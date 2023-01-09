@@ -51,6 +51,8 @@ module Simplex.Chat.Store
     updateContactUnreadChat,
     updateGroupUnreadChat,
     setConnectionVerified,
+    incConnectionAuthErrCounter,
+    setConnectionAuthErrCounter,
     getUserContacts,
     getUserContactProfiles,
     createUserContactLink,
@@ -327,6 +329,7 @@ import Simplex.Chat.Migrations.M20221214_live_message
 import Simplex.Chat.Migrations.M20221222_chat_ts
 import Simplex.Chat.Migrations.M20221223_idx_chat_items_item_status
 import Simplex.Chat.Migrations.M20221230_idxs
+import Simplex.Chat.Migrations.M20230107_connections_auth_err_counter
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (week)
@@ -386,7 +389,8 @@ schemaMigrations =
     ("20221214_live_message", m20221214_live_message),
     ("20221222_chat_ts", m20221222_chat_ts),
     ("20221223_idx_chat_items_item_status", m20221223_idx_chat_items_item_status),
-    ("20221230_idxs", m20221230_idxs)
+    ("20221230_idxs", m20221230_idxs),
+    ("20230107_connections_auth_err_counter", m20230107_connections_auth_err_counter)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -519,7 +523,7 @@ getConnReqContactXContactId db user@User {userId} cReqHash = do
               cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts,
               -- Connection
               c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
-              c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at
+              c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter
             FROM contacts ct
             JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
             JOIN connections c ON c.contact_id = ct.contact_id
@@ -594,7 +598,7 @@ createConnection_ db userId connType entityId acId viaContact viaUserContactLink
         :. (ent ConnContact, ent ConnMember, ent ConnSndFile, ent ConnRcvFile, ent ConnUserContact, currentTs, currentTs)
     )
   connId <- insertedRowId db
-  pure Connection {connId, agentConnId = AgentConnId acId, connType, entityId, viaContact, viaUserContactLink, viaGroupLink, groupLinkId = Nothing, customUserProfileId, connLevel, connStatus = ConnNew, localAlias = "", createdAt = currentTs, connectionCode = Nothing}
+  pure Connection {connId, agentConnId = AgentConnId acId, connType, entityId, viaContact, viaUserContactLink, viaGroupLink, groupLinkId = Nothing, customUserProfileId, connLevel, connStatus = ConnNew, localAlias = "", createdAt = currentTs, connectionCode = Nothing, authErrCounter = 0}
   where
     ent ct = if connType == ct then entityId else Nothing
 
@@ -788,6 +792,19 @@ setConnectionVerified db User {userId} connId code = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE connections SET security_code = ?, security_code_verified_at = ?, updated_at = ? WHERE user_id = ? AND connection_id = ?" (code, code $> updatedAt, updatedAt, userId, connId)
 
+incConnectionAuthErrCounter :: DB.Connection -> User -> Connection -> IO Int
+incConnectionAuthErrCounter db User {userId} Connection {connId, authErrCounter} = do
+  updatedAt <- getCurrentTime
+  (counter_ :: Maybe Int) <- maybeFirstRow fromOnly $ DB.query db "SELECT auth_err_counter FROM connections WHERE user_id = ? AND connection_id = ?" (userId, connId)
+  let counter' = fromMaybe authErrCounter counter_ + 1
+  DB.execute db "UPDATE connections SET auth_err_counter = ?, updated_at = ? WHERE user_id = ? AND connection_id = ?" (counter', updatedAt, userId, connId)
+  pure counter'
+
+setConnectionAuthErrCounter :: DB.Connection -> User -> Connection -> Int -> IO ()
+setConnectionAuthErrCounter db User {userId} Connection {connId} counter = do
+  updatedAt <- getCurrentTime
+  DB.execute db "UPDATE connections SET auth_err_counter = ?, updated_at = ? WHERE user_id = ? AND connection_id = ?" (counter, updatedAt, userId, connId)
+
 updateContactProfile_ :: DB.Connection -> UserId -> ProfileId -> Profile -> IO ()
 updateContactProfile_ db userId profileId profile = do
   currentTs <- getCurrentTime
@@ -885,7 +902,7 @@ getUserAddressConnections db User {userId} = do
           db
           [sql|
             SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-              c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at
+              c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter
             FROM connections c
             JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id
             WHERE c.user_id = ? AND uc.user_id = ? AND uc.local_display_name = '' AND uc.group_id IS NULL
@@ -899,7 +916,7 @@ getUserContactLinks db User {userId} =
       db
       [sql|
         SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at,
+          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
           uc.user_contact_link_id, uc.conn_req_contact, uc.group_id
         FROM connections c
         JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id
@@ -1032,7 +1049,7 @@ getGroupLinkConnection db User {userId} groupInfo@GroupInfo {groupId} =
       db
       [sql|
         SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at
+          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter
         FROM connections c
         JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id
         WHERE c.user_id = ? AND uc.user_id = ? AND uc.group_id = ?
@@ -1136,7 +1153,7 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId Profi
               cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts,
               -- Connection
               c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
-              c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at
+              c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter
             FROM contacts ct
             JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
             LEFT JOIN connections c ON c.contact_id = ct.contact_id
@@ -1335,7 +1352,7 @@ getContactConnections db userId Contact {contactId} =
         db
         [sql|
           SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-            c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at
+            c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter
           FROM connections c
           JOIN contacts ct ON ct.contact_id = c.contact_id
           WHERE c.user_id = ? AND ct.user_id = ? AND ct.contact_id = ?
@@ -1346,15 +1363,15 @@ getContactConnections db userId Contact {contactId} =
 
 type EntityIdsRow = (Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64)
 
-type ConnectionRow = (Int64, ConnId, Int, Maybe Int64, Maybe Int64, Bool, Maybe GroupLinkId, Maybe Int64, ConnStatus, ConnType, LocalAlias) :. EntityIdsRow :. (UTCTime, Maybe Text, Maybe UTCTime)
+type ConnectionRow = (Int64, ConnId, Int, Maybe Int64, Maybe Int64, Bool, Maybe GroupLinkId, Maybe Int64, ConnStatus, ConnType, LocalAlias) :. EntityIdsRow :. (UTCTime, Maybe Text, Maybe UTCTime, Int)
 
-type MaybeConnectionRow = (Maybe Int64, Maybe ConnId, Maybe Int, Maybe Int64, Maybe Int64, Maybe Bool, Maybe GroupLinkId, Maybe Int64, Maybe ConnStatus, Maybe ConnType, Maybe LocalAlias) :. EntityIdsRow :. (Maybe UTCTime, Maybe Text, Maybe UTCTime)
+type MaybeConnectionRow = (Maybe Int64, Maybe ConnId, Maybe Int, Maybe Int64, Maybe Int64, Maybe Bool, Maybe GroupLinkId, Maybe Int64, Maybe ConnStatus, Maybe ConnType, Maybe LocalAlias) :. EntityIdsRow :. (Maybe UTCTime, Maybe Text, Maybe UTCTime, Maybe Int)
 
 toConnection :: ConnectionRow -> Connection
-toConnection ((connId, acId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (createdAt, code_, verifiedAt_)) =
+toConnection ((connId, acId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (createdAt, code_, verifiedAt_, authErrCounter)) =
   let entityId = entityId_ connType
       connectionCode = SecurityCode <$> code_ <*> verifiedAt_
-   in Connection {connId, agentConnId = AgentConnId acId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, localAlias, entityId, connectionCode, createdAt}
+   in Connection {connId, agentConnId = AgentConnId acId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, localAlias, entityId, connectionCode, authErrCounter, createdAt}
   where
     entityId_ :: ConnType -> Maybe Int64
     entityId_ ConnContact = contactId
@@ -1364,8 +1381,8 @@ toConnection ((connId, acId, connLevel, viaContact, viaUserContactLink, viaGroup
     entityId_ ConnUserContact = userContactLinkId
 
 toMaybeConnection :: MaybeConnectionRow -> Maybe Connection
-toMaybeConnection ((Just connId, Just agentConnId, Just connLevel, viaContact, viaUserContactLink, Just viaGroupLink, groupLinkId, customUserProfileId, Just connStatus, Just connType, Just localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (Just createdAt, code_, verifiedAt_)) =
-  Just $ toConnection ((connId, agentConnId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (createdAt, code_, verifiedAt_))
+toMaybeConnection ((Just connId, Just agentConnId, Just connLevel, viaContact, viaUserContactLink, Just viaGroupLink, groupLinkId, customUserProfileId, Just connStatus, Just connType, Just localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (Just createdAt, code_, verifiedAt_, Just authErrCounter)) =
+  Just $ toConnection ((connId, agentConnId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (createdAt, code_, verifiedAt_, authErrCounter))
 toMaybeConnection _ = Nothing
 
 getMatchingContacts :: DB.Connection -> User -> Contact -> IO [Contact]
@@ -1536,7 +1553,7 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
           db
           [sql|
             SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, custom_user_profile_id,
-              conn_status, conn_type, local_alias, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id, created_at, security_code, security_code_verified_at
+              conn_status, conn_type, local_alias, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id, created_at, security_code, security_code_verified_at, auth_err_counter
             FROM connections
             WHERE user_id = ? AND agent_conn_id = ?
           |]
@@ -1636,7 +1653,7 @@ getConnectionById db User {userId} connId = ExceptT $ do
       db
       [sql|
         SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, custom_user_profile_id,
-          conn_status, conn_type, local_alias, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id, created_at, security_code, security_code_verified_at
+          conn_status, conn_type, local_alias, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id, created_at, security_code, security_code_verified_at, auth_err_counter
         FROM connections
         WHERE user_id = ? AND connection_id = ?
       |]
@@ -1681,7 +1698,7 @@ getGroupAndMember db User {userId, userContactId} groupMemberId =
           m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
           m.invited_by, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.local_alias, p.preferences,
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at
+          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter
         FROM group_members m
         JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
         JOIN groups g ON g.group_id = m.group_id
@@ -1961,7 +1978,7 @@ groupMemberQuery =
       m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
       m.invited_by, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.local_alias, p.preferences,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-      c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at
+      c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter
     FROM group_members m
     JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
     LEFT JOIN connections c ON c.connection_id = (
@@ -2121,7 +2138,7 @@ getContactViaMember db user@User {userId} GroupMember {groupMemberId} =
           cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
-          c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at
+          c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter
         FROM contacts ct
         JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id
         JOIN connections c ON c.connection_id = (
@@ -2426,7 +2443,7 @@ getViaGroupMember db User {userId, userContactId} Contact {contactId} =
           m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
           m.invited_by, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.local_alias, p.preferences,
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at
+          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter
         FROM group_members m
         JOIN contacts ct ON ct.contact_id = m.contact_id
         JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
@@ -2459,7 +2476,7 @@ getViaGroupContact db user@User {userId} GroupMember {groupMemberId} =
           ct.contact_id, ct.contact_profile_id, ct.local_display_name, p.display_name, p.full_name, p.image, p.local_alias, ct.via_group, ct.contact_used, ct.enable_ntfs,
           p.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts,
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at
+          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter
         FROM contacts ct
         JOIN contact_profiles p ON ct.contact_profile_id = p.contact_profile_id
         JOIN connections c ON c.connection_id = (
@@ -3374,7 +3391,7 @@ getDirectChatPreviews_ db user@User {userId} = do
           cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
-          c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at,
+          c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
           -- ChatStats
           COALESCE(ChatStats.UnreadCount, 0), COALESCE(ChatStats.MinUnread, 0), ct.unread_chat,
           -- ChatItem
@@ -3697,7 +3714,7 @@ getContact db user@User {userId} contactId =
           cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
-          c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at
+          c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter
         FROM contacts ct
         JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
         LEFT JOIN connections c ON c.contact_id = ct.contact_id

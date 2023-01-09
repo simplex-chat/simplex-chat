@@ -219,6 +219,8 @@ data ChatCommand
   | APIGetGroupMemberCode GroupId GroupMemberId
   | APIVerifyContact ContactId (Maybe Text)
   | APIVerifyGroupMember GroupId GroupMemberId (Maybe Text)
+  | APIEnableContact ContactId
+  | APIEnableGroupMember GroupId GroupMemberId
   | ShowMessages ChatName Bool
   | ContactInfo ContactName
   | GroupMemberInfo GroupName ContactName
@@ -228,6 +230,8 @@ data ChatCommand
   | GetGroupMemberCode GroupName ContactName
   | VerifyContact ContactName (Maybe Text)
   | VerifyGroupMember GroupName ContactName (Maybe Text)
+  | EnableContact ContactName
+  | EnableGroupMember GroupName ContactName
   | ChatHelp HelpSection
   | Welcome
   | APIAddContact UserId
@@ -432,6 +436,7 @@ data ChatResponse
   | CRSQLResult {rows :: [Text]}
   | CRDebugLocks {chatLockName :: Maybe String, agentLocks :: AgentLocks}
   | CRAgentStats {agentStats :: [[String]]}
+  | CRConnectionDisabled {connectionEntity :: ConnectionEntity}
   | CRMessageError {user :: User, severity :: Text, errorMessage :: Text}
   | CRChatCmdError {user_ :: Maybe User, chatError :: ChatError}
   | CRChatError {user_ :: Maybe User, chatError :: ChatError}
@@ -558,7 +563,7 @@ tmeToPref currentTTL tme = uncurry TimedMessagesPreference $ case tme of
 
 data ChatError
   = ChatError {errorType :: ChatErrorType}
-  | ChatErrorAgent {agentError :: AgentErrorType}
+  | ChatErrorAgent {agentError :: AgentErrorType, connectionEntity_ :: Maybe ConnectionEntity}
   | ChatErrorStore {storeError :: StoreError}
   | ChatErrorDatabase {databaseError :: DatabaseError}
   deriving (Show, Exception, Generic)
@@ -578,6 +583,8 @@ data ChatErrorType
   | CEInvalidConnReq
   | CEInvalidChatMessage {message :: String}
   | CEContactNotReady {contact :: Contact}
+  | CEContactDisabled {contact :: Contact}
+  | CEConnectionDisabled {connection :: Connection}
   | CEGroupUserRole
   | CEContactIncognitoCantInvite
   | CEGroupIncognitoCantInvite

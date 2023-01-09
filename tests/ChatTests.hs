@@ -57,6 +57,8 @@ chatTests = do
     it "direct message quoted replies" testDirectMessageQuotedReply
     it "direct message update" testDirectMessageUpdate
     it "direct message delete" testDirectMessageDelete
+    it "direct live message" testDirectLiveMessage
+    it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
   describe "chat groups" $ do
     describe "add contacts, create group and send/receive messages" testGroup
     it "add contacts, create group and send/receive messages, check messages" testGroupCheckMessages
@@ -73,6 +75,7 @@ chatTests = do
     it "group message quoted replies" testGroupMessageQuotedReply
     it "group message update" testGroupMessageUpdate
     it "group message delete" testGroupMessageDelete
+    it "group live message" testGroupLiveMessage
     it "update group profile" testUpdateGroupProfile
     it "update member role" testUpdateMemberRole
     it "unused contacts are deleted after all their groups are deleted" testGroupDeleteUnusedContacts
@@ -494,6 +497,42 @@ testDirectMessageDelete =
       bob #$> ("/_delete item @2 " <> itemId 2 <> " internal", id, "message deleted")
       bob #$> ("/_delete item @2 " <> itemId 4 <> " internal", id, "message deleted")
       bob #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((0, "hello 🙂"), Nothing), ((1, "do you receive my messages?"), Just (0, "hello 🙂"))])
+
+testDirectLiveMessage :: IO ()
+testDirectLiveMessage =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    -- non-empty live message is sent instantly
+    alice `send` "/live @bob hello"
+    bob <# "alice> [LIVE started] use /show [on/off/4] hello"
+    alice ##> ("/_update item @2 " <> itemId 1 <> " text hello there")
+    alice <# "@bob [LIVE] hello there"
+    bob <# "alice> [LIVE ended] hello there"
+    -- empty live message is also sent instantly
+    alice `send` "/live @bob"
+    bob <# "alice> [LIVE started] use /show [on/off/5]"
+    alice ##> ("/_update item @2 " <> itemId 2 <> " text hello 2")
+    alice <# "@bob [LIVE] hello 2"
+    bob <# "alice> [LIVE ended] hello 2"
+
+testRepeatAuthErrorsDisableContact :: IO ()
+testRepeatAuthErrorsDisableContact =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    alice <##> bob
+    bob ##> "/d alice"
+    bob <## "alice: contact is deleted"
+    forM_ [1 .. authErrDisableCount] $ \_ -> sendAuth alice
+    alice <## "[bob] connection is disabled, to enable: /enable bob, to delete: /d bob"
+    alice ##> "@bob hey"
+    alice <## "bob: disabled, to enable: /enable bob, to delete: /d bob"
+    alice ##> "/enable bob"
+    alice <## "ok"
+    sendAuth alice
+  where
+    sendAuth alice = do
+      alice #> "@bob hey"
+      alice <## "[bob, contactId: 2, connId: 1] error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
 
 testGroup :: Spec
 testGroup = versionTestMatrix3 runTestGroup
@@ -1004,6 +1043,7 @@ testGroupDeleteInvitedContact =
       alice ##> "@bob hey"
       alice <## "no contact bob"
       bob #> "@alice hey"
+      bob <## "[alice, contactId: 2, connId: 1] error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
       (alice </)
 
 testDeleteGroupMemberProfileKept :: IO ()
@@ -1055,6 +1095,7 @@ testDeleteGroupMemberProfileKept =
       alice ##> "@bob hey"
       alice <## "no contact bob"
       bob #> "@alice hey"
+      bob <## "[alice, contactId: 2, connId: 1] error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
       (alice </)
       -- delete group 1
       alice ##> "/d #team"
@@ -1370,6 +1411,30 @@ testGroupMessageDelete =
       alice #$> ("/_get chat #1 count=1", chat', [((0, "how are you? [marked deleted]"), Nothing)])
       bob #$> ("/_get chat #1 count=3", chat', [((0, "hello!"), Nothing), ((1, "hi alice"), Just (0, "hello!")), ((0, "how are you? [marked deleted]"), Nothing)])
       cath #$> ("/_get chat #1 count=3", chat', [((0, "hello!"), Nothing), ((0, "hi alice"), Just (0, "hello!")), ((1, "how are you? [marked deleted]"), Nothing)])
+
+testGroupLiveMessage :: IO ()
+testGroupLiveMessage =
+  testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    createGroup3 "team" alice bob cath
+    threadDelay 500000
+    -- non-empty live message is sent instantly
+    alice `send` "/live #team hello"
+    msgItemId1 <- lastItemId alice
+    bob <#. "#team alice> [LIVE started]"
+    cath <#. "#team alice> [LIVE started]"
+    alice ##> ("/_update item #1 " <> msgItemId1 <> " text hello there")
+    alice <# "#team [LIVE] hello there"
+    bob <# "#team alice> [LIVE ended] hello there"
+    cath <# "#team alice> [LIVE ended] hello there"
+    -- empty live message is also sent instantly
+    alice `send` "/live #team"
+    msgItemId2 <- lastItemId alice
+    bob <#. "#team alice> [LIVE started]"
+    cath <#. "#team alice> [LIVE started]"
+    alice ##> ("/_update item #1 " <> msgItemId2 <> " text hello 2")
+    alice <# "#team [LIVE] hello 2"
+    bob <# "#team alice> [LIVE ended] hello 2"
+    cath <# "#team alice> [LIVE ended] hello 2"
 
 testUpdateGroupProfile :: IO ()
 testUpdateGroupProfile =
@@ -5058,6 +5123,13 @@ cc <## line = do
 (<##.) :: TestCC -> String -> Expectation
 cc <##. line = do
   l <- getTermLine cc
+  let prefix = line `isPrefixOf` l
+  unless prefix $ print ("expected to start from: " <> line, ", got: " <> l)
+  prefix `shouldBe` True
+
+(<#.) :: TestCC -> String -> Expectation
+cc <#. line = do
+  l <- dropTime <$> getTermLine cc
   let prefix = line `isPrefixOf` l
   unless prefix $ print ("expected to start from: " <> line, ", got: " <> l)
   prefix `shouldBe` True
