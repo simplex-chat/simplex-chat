@@ -173,7 +173,7 @@ chatTests = do
     it "mute/unmute contact" testMuteContact
     it "mute/unmute group" testMuteGroup
   describe "multiple users" $ do
-    fit "create second user" testCreateSecondUser
+    it "create second user" testCreateSecondUser
   describe "chat item expiration" $ do
     it "set chat item TTL" testSetChatItemTTL
   describe "queue rotation" $ do
@@ -4396,6 +4396,10 @@ testCreateSecondUser =
       (alice, "alisa") $<# "cath> hey alisa"
       alice ##> "@cath hi cath"
       alice <## "no contact cath"
+
+      -- set active user to second user
+      alice ##> "/_user 2"
+      showActiveUser alice "alisa"
 
 testSetChatItemTTL :: IO ()
 testSetChatItemTTL =
