@@ -270,7 +270,7 @@ class ChatModel(val controller: ChatController) {
       CIQuote(chatDir = quotedCItem.chatDir, itemId = quotedCItem.id, sentAt = quotedCItem.meta.createdAt, content = quotedCItem.content.msgContent!!)
     } else null
     val cItem = ChatItem.liveChatItemDummy(chatInfo is ChatInfo.Direct, quoted)
-    addChatItem(chatInfo, cItem)
+    chatItems.add(cItem)
     hasDummyLiveChatItem = true
     return cItem
   }
