@@ -14,6 +14,7 @@ struct SendMessageView: View {
     var sendMessage: () -> Void
     var sendLiveMessage: (() async -> Void)? = nil
     var updateLiveMessage: (() async -> Void)? = nil
+    var cancelLiveMessage: (() -> Void)? = nil
     var showVoiceMessageButton: Bool = true
     var voiceMessageAllowed: Bool = true
     var showEnableVoiceMessagesAlert: ChatInfo.ShowEnableVoiceMessagesAlert = .other
@@ -103,6 +104,10 @@ struct SendMessageView: View {
                         }
                     } else if vmrs == .recording && !holdingVMR {
                         finishVoiceMessageRecordingButton()
+                    } else if composeState.liveMessage?.sent == false && composeState.message.isEmpty {
+                        cancelLiveMessageButton {
+                            cancelLiveMessage?()
+                        }
                     } else {
                         sendMessageButton()
                     }
@@ -129,7 +134,8 @@ struct SendMessageView: View {
         .disabled(
             !composeState.sendEnabled ||
             composeState.disabled ||
-            (!voiceMessageAllowed && composeState.voicePreview)
+            (!voiceMessageAllowed && composeState.voicePreview) ||
+            composeState.message.isEmpty
         )
         .frame(width: 29, height: 29)
 
@@ -218,6 +224,20 @@ struct SendMessageView: View {
         .disabled(composeState.disabled)
         .frame(width: 29, height: 29)
         .padding([.bottom, .trailing], 4)
+    }
+
+    private func cancelLiveMessageButton(cancel: @escaping () -> Void) -> some View {
+        return Button {
+            cancel()
+        } label: {
+            Image(systemName: "multiply")
+                    .resizable()
+                    .scaledToFit()
+                    .foregroundColor(.accentColor)
+                    .frame(width: 20, height: 20)
+        }
+                .frame(width: 29, height: 29)
+                .padding([.bottom, .horizontal], 4)
     }
 
     private func startLiveMessageButton(send:  @escaping () async -> Void, update: @escaping () async -> Void) -> some View {

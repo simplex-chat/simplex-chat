@@ -35,6 +35,7 @@ struct LiveMessage {
     var chatItem: ChatItem
     var typedMsg: String
     var sentMsg: String
+    var sent: Bool
 }
 
 struct ComposeState {
@@ -232,43 +233,47 @@ struct ComposeView: View {
         VStack(spacing: 0) {
             contextItemView()
             switch (composeState.editing, composeState.preview) {
-                case (true, .filePreview): EmptyView()
-                case (true, .voicePreview): EmptyView() // ? we may allow playback when editing is allowed
-                default: previewView()
+            case (true, .filePreview): EmptyView()
+            case (true, .voicePreview): EmptyView() // ? we may allow playback when editing is allowed
+            default: previewView()
             }
             HStack (alignment: .bottom) {
                 Button {
                     showChooseSource = true
                 } label: {
                     Image(systemName: "paperclip")
-                        .resizable()
+                            .resizable()
                 }
-                .disabled(composeState.attachmentDisabled)
-                .frame(width: 25, height: 25)
-                .padding(.bottom, 12)
-                .padding(.leading, 12)
+                        .disabled(composeState.attachmentDisabled)
+                        .frame(width: 25, height: 25)
+                        .padding(.bottom, 12)
+                        .padding(.leading, 12)
                 SendMessageView(
-                    composeState: $composeState,
-                    sendMessage: {
-                        sendMessage()
-                        resetLinkPreview()
-                    },
-                    sendLiveMessage: sendLiveMessage,
-                    updateLiveMessage: updateLiveMessage,
-                    voiceMessageAllowed: chat.chatInfo.featureEnabled(.voice),
-                    showEnableVoiceMessagesAlert: chat.chatInfo.showEnableVoiceMessagesAlert,
-                    startVoiceMessageRecording: {
-                        Task {
-                            await startVoiceMessageRecording()
-                        }
-                    },
-                    finishVoiceMessageRecording: finishVoiceMessageRecording,
-                    allowVoiceMessagesToContact: allowVoiceMessagesToContact,
-                    onImagesAdded: { images in if !images.isEmpty { chosenImages = images }},
-                    keyboardVisible: $keyboardVisible
+                        composeState: $composeState,
+                        sendMessage: {
+                            sendMessage()
+                            resetLinkPreview()
+                        },
+                        sendLiveMessage: sendLiveMessage,
+                        updateLiveMessage: updateLiveMessage,
+                        cancelLiveMessage: {
+                            composeState = composeState.copy(liveMessage: nil)
+                            chatModel.removeLiveChatItemDummy()
+                        },
+                        voiceMessageAllowed: chat.chatInfo.featureEnabled(.voice),
+                        showEnableVoiceMessagesAlert: chat.chatInfo.showEnableVoiceMessagesAlert,
+                        startVoiceMessageRecording: {
+                            Task {
+                                await startVoiceMessageRecording()
+                            }
+                        },
+                        finishVoiceMessageRecording: finishVoiceMessageRecording,
+                        allowVoiceMessagesToContact: allowVoiceMessagesToContact,
+                        onImagesAdded: { images in if !images.isEmpty { chosenImages = images }},
+                        keyboardVisible: $keyboardVisible
                 )
-                .padding(.trailing, 12)
-                .background(.background)
+                        .padding(.trailing, 12)
+                        .background(.background)
             }
         }
         .onChange(of: composeState.message) { _ in
@@ -280,6 +285,16 @@ struct ComposeView: View {
                 }
             }
         }
+        /*.onChange(of: composeState.contextItem) { _ in
+            if composeState.liveMessage?.sent == false {
+                chatModel.removeLiveChatItemDummy()
+                var quoted: ChatItem? = nil
+                if case let .quotedItem(item) = composeState.contextItem {
+                    quoted = item
+                }
+                chatModel.addLiveChatItemDummy(quoted, chat.chatInfo)
+            }
+        }*/
         .confirmationDialog("Attach", isPresented: $showChooseSource, titleVisibility: .visible) {
             Button("Take picture") {
                 showTakePhoto = true
@@ -371,10 +386,11 @@ struct ComposeView: View {
             if let fileName = composeState.voiceMessageRecordingFileName {
                 cancelVoiceMessageRecording(fileName)
             }
-            if composeState.liveMessage != nil {
+            if composeState.liveMessage != nil && (!composeState.message.isEmpty || composeState.liveMessage?.sent == true) {
                 sendMessage()
                 resetLinkPreview()
             }
+            chatModel.removeLiveChatItemDummy()
         }
         .onChange(of: chatModel.stopPreviousRecPlay) { _ in
             if !startingRecording {
@@ -396,10 +412,19 @@ struct ComposeView: View {
     private func sendLiveMessage() async {
         let typedMsg = composeState.message
         let sentMsg = truncateToWords(typedMsg)
-        if composeState.liveMessage == nil,
+        if !sentMsg.isEmpty && (composeState.liveMessage == nil || composeState.liveMessage?.sent == false),
            let ci = await sendMessageAsync(sentMsg, live: true) {
             await MainActor.run {
-                composeState = composeState.copy(liveMessage: LiveMessage(chatItem: ci, typedMsg: typedMsg, sentMsg: sentMsg))
+                composeState = composeState.copy(liveMessage: LiveMessage(chatItem: ci, typedMsg: typedMsg, sentMsg: sentMsg, sent: true))
+            }
+        } else if composeState.liveMessage == nil {
+            var quoted: ChatItem? = nil
+            if case let .quotedItem(item) = composeState.contextItem {
+                quoted = item
+            }
+            let cItem = chatModel.addLiveChatItemDummy(quoted, chat.chatInfo)
+            await MainActor.run {
+                composeState = composeState.copy(liveMessage: LiveMessage(chatItem: cItem, typedMsg: typedMsg, sentMsg: sentMsg, sent: false))
             }
         }
     }
@@ -410,7 +435,7 @@ struct ComposeView: View {
             if let sentMsg = liveMessageToSend(liveMessage, typedMsg),
                let ci = await sendMessageAsync(sentMsg, live: true) {
                 await MainActor.run {
-                    composeState = composeState.copy(liveMessage: LiveMessage(chatItem: ci, typedMsg: typedMsg, sentMsg: sentMsg))
+                    composeState = composeState.copy(liveMessage: LiveMessage(chatItem: ci, typedMsg: typedMsg, sentMsg: sentMsg, sent: true))
                 }
             } else if liveMessage.typedMsg != typedMsg {
                 await MainActor.run {
@@ -512,7 +537,7 @@ struct ComposeView: View {
         }
         if case let .editingItem(ci) = composeState.contextItem {
             sent = await updateMessage(ci, live: live)
-        } else if let liveMessage = liveMessage {
+        } else if let liveMessage = liveMessage, liveMessage.sent {
             sent = await updateMessage(liveMessage.chatItem, live: live)
         } else {
             var quoted: Int64? = nil
@@ -728,6 +753,7 @@ struct ComposeView: View {
         audioRecorder = nil
         voiceMessageRecordingTime = nil
         startingRecording = false
+        chatModel.removeLiveChatItemDummy()
     }
 
     private func showLinkPreview(_ s: String) {

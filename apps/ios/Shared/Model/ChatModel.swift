@@ -230,7 +230,13 @@ final class ChatModel: ObservableObject {
             }
             return false
         } else {
-            withAnimation { reversedChatItems.insert(cItem, at: 0) }
+            withAnimation {
+                if reversedChatItems.last?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID {
+                    reversedChatItems.insert(cItem, at: min(1, reversedChatItems.count))
+                } else {
+                    reversedChatItems.insert(cItem, at: 0)
+                }
+            }
             return true
         }
     }
@@ -272,6 +278,26 @@ final class ChatModel: ObservableObject {
             }
         }
         return nil
+    }
+
+    func addLiveChatItemDummy(_ quotedCItem: ChatItem?, _ chatInfo: ChatInfo) -> ChatItem {
+        var quoted: CIQuote? = nil
+        if let quotedItem = quotedCItem, let msgContent = quotedItem.content.msgContent {
+            quoted = CIQuote.getSampleWithMsgContent(itemId: quotedItem.id, sentAt: quotedItem.meta.updatedAt, msgContent: msgContent, chatDir: quotedItem.chatDir)
+        }
+        var direct = false
+        if case .direct = chatInfo {
+            direct = true
+        }
+        let cItem = ChatItem.liveChatItemDummy(direct, quoted)
+        reversedChatItems.insert(cItem, at: 0)
+        return cItem
+    }
+
+    func removeLiveChatItemDummy() {
+        if reversedChatItems.first?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID {
+            reversedChatItems.removeFirst()
+        }
     }
 
     func markChatItemsRead(_ cInfo: ChatInfo) {

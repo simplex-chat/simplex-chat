@@ -502,7 +502,7 @@ struct ChatView: View {
                 withAnimation {
                     if composeState.editing {
                         composeState = ComposeState(contextItem: .quotedItem(chatItem: ci))
-                    } else {
+                    } else if ci.id != ChatItem.TEMP_LIVE_CHAT_ITEM_ID {
                         composeState = composeState.copy(contextItem: .quotedItem(chatItem: ci))
                     }
                 }

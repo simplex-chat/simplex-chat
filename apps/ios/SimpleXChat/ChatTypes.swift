@@ -1862,6 +1862,29 @@ public struct ChatItem: Identifiable, Decodable {
         )
     }
 
+    public static let TEMP_LIVE_CHAT_ITEM_ID: Int64 = -2
+
+    public static func liveChatItemDummy(_ direct: Bool, _ quoted: CIQuote?) -> ChatItem {
+        ChatItem(
+                chatDir: direct ? CIDirection.directSnd : CIDirection.groupSnd,
+                meta: CIMeta(
+                        itemId: TEMP_LIVE_CHAT_ITEM_ID,
+                        itemTs: .now,
+                        itemText: "",
+                        itemStatus: .rcvRead,
+                        createdAt: .now,
+                        updatedAt: .now,
+                        itemDeleted: false,
+                        itemEdited: false,
+                        itemLive: true,
+                        editable: false
+                ),
+                content: .sndMsgContent(msgContent: .text("")),
+                quotedItem: quoted,
+                file: nil
+        )
+    }
+
     public static func invalidJSON(_ json: String) -> ChatItem {
         ChatItem(
             chatDir: CIDirection.directSnd,
@@ -2110,6 +2133,10 @@ public struct CIQuote: Decodable, ItemContent {
             mc = .text(text)
         }
         return CIQuote(chatDir: chatDir, itemId: itemId, sentAt: sentAt, content: mc)
+    }
+
+    public static func getSampleWithMsgContent(itemId: Int64?, sentAt: Date, msgContent: MsgContent, chatDir: CIDirection) -> CIQuote {
+        return CIQuote(chatDir: chatDir, itemId: itemId, sentAt: sentAt, content: msgContent)
     }
 }
 
