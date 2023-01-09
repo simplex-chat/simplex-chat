@@ -231,7 +231,7 @@ final class ChatModel: ObservableObject {
             return false
         } else {
             withAnimation {
-                if reversedChatItems.last?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID {
+                if reversedChatItems.first?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID {
                     reversedChatItems.insert(cItem, at: min(1, reversedChatItems.count))
                 } else {
                     reversedChatItems.insert(cItem, at: 0)
