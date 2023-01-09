@@ -86,6 +86,9 @@ class ChatModel(val controller: ChatController) {
   val filesToDelete = mutableSetOf<File>()
   val simplexLinkMode = mutableStateOf(controller.appPrefs.simplexLinkMode.get())
 
+  // Tracks existing of dummy live chat item. Allows to skip searching the dummy item before every insert in chatItems list
+  private var hasDummyLiveChatItem = false
+
   fun updateUserProfile(profile: LocalProfile) {
     val user = currentUser.value
     if (user != null) {
@@ -180,7 +183,14 @@ class ChatModel(val controller: ChatController) {
     }
     // add to current chat
     if (chatId.value == cInfo.id) {
-      chatItems.add(cItem)
+      if (hasDummyLiveChatItem && cItem.chatDir is CIDirection.DirectSnd || cItem.chatDir is CIDirection.GroupSnd) {
+        removeLiveChatItemDummy()
+        chatItems.add(cItem)
+      } else if (hasDummyLiveChatItem) {
+        chatItems.add(kotlin.math.max(0, chatItems.lastIndex), cItem)
+      } else {
+        chatItems.add(cItem)
+      }
     }
   }
 
@@ -253,6 +263,19 @@ class ChatModel(val controller: ChatController) {
     if (chatId.value == cInfo.id) {
       chatItems.clear()
     }
+  }
+
+  fun addLiveChatItemDummy(quoted: CIQuote?, chatInfo: ChatInfo): ChatItem {
+    val cItem = ChatItem.liveChatItemDummy(chatInfo is ChatInfo.Direct, quoted)
+    addChatItem(chatInfo, cItem)
+    hasDummyLiveChatItem = true
+    return cItem
+  }
+
+  fun removeLiveChatItemDummy() {
+    if (!hasDummyLiveChatItem) return
+    chatItems.removeAll { it.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID }
+    hasDummyLiveChatItem = false
   }
 
   fun markChatItemsRead(cInfo: ChatInfo, range: CC.ItemRange? = null, unreadCountAfter: Int? = null) {
@@ -1278,7 +1301,8 @@ data class ChatItem (
     }
     
     private const val TEMP_DELETED_CHAT_ITEM_ID = -1L
-    
+    const val TEMP_LIVE_CHAT_ITEM_ID = -2L
+
     val deletedItemDummy: ChatItem
       get() = ChatItem(
         chatDir = CIDirection.DirectRcv(),
@@ -1297,6 +1321,26 @@ data class ChatItem (
         ),
         content = CIContent.RcvDeleted(deleteMode = CIDeleteMode.cidmBroadcast),
         quotedItem = null,
+        file = null
+      )
+
+    fun liveChatItemDummy(direct: Boolean, quoted: CIQuote?): ChatItem = ChatItem(
+        chatDir = if (direct) CIDirection.DirectSnd() else CIDirection.GroupSnd(),
+        meta = CIMeta(
+          itemId = TEMP_LIVE_CHAT_ITEM_ID,
+          itemTs = Clock.System.now(),
+          itemText = "",
+          itemStatus = CIStatus.RcvRead(),
+          createdAt = Clock.System.now(),
+          updatedAt = Clock.System.now(),
+          itemDeleted = false,
+          itemEdited = false,
+          itemTimed = null,
+          itemLive = true,
+          editable = false
+        ),
+        content = CIContent.SndMsgContent(MsgContent.MCText("")),
+        quotedItem = quoted,
         file = null
       )
 

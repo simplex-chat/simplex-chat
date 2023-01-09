@@ -65,6 +65,7 @@ fun SendMsgView(
   sendMessage: () -> Unit,
   sendLiveMessage: ( suspend () -> Unit)? = null,
   updateLiveMessage: (suspend () -> Unit)? = null,
+  dropLiveMessage: (() -> Unit)? = null,
   onMessageChange: (String) -> Unit,
   textStyle: MutableState<TextStyle>
 ) {
@@ -118,6 +119,11 @@ fun SendMsgView(
               }
             }
           }
+        }
+        cs.liveMessage?.sent == false -> {
+          SendTextButton(Icons.Filled.Close, MaterialTheme.colors.primary, Animatable(36f), Animatable(1f), cs.sendEnabled(), {
+            dropLiveMessage?.invoke()
+          })
         }
         else -> {
           val icon = if (cs.editing || cs.liveMessage != null) Icons.Filled.Check else Icons.Outlined.ArrowUpward
