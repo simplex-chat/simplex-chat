@@ -19,10 +19,22 @@ enum ComposePreview {
     case filePreview(fileName: String)
 }
 
-enum ComposeContextItem {
+enum ComposeContextItem: Equatable {
     case noContextItem
     case quotedItem(chatItem: ChatItem)
     case editingItem(chatItem: ChatItem)
+
+    static func == (l: ComposeContextItem, r: ComposeContextItem) -> Bool {
+        switch (l, r) {
+        case (.noContextItem, .noContextItem): return true
+        case (.noContextItem, _): return false
+        case (_, .noContextItem): return false
+        case (.quotedItem(let li), .quotedItem(let ri)): return li.id == ri.id
+        case (.editingItem(let li), .editingItem(let ri)): return li.id == ri.id
+        case (.quotedItem(let li), .editingItem(let ri)): return li.id == ri.id
+        case (.editingItem(let li), .quotedItem(let ri)): return li.id == ri.id
+        }
+    }
 }
 
 enum VoiceMessageRecordingState {
@@ -285,7 +297,7 @@ struct ComposeView: View {
                 }
             }
         }
-        /*.onChange(of: composeState.contextItem) { _ in
+        .onChange(of: composeState.contextItem) { _ in
             if composeState.liveMessage?.sent == false {
                 chatModel.removeLiveChatItemDummy()
                 var quoted: ChatItem? = nil
@@ -294,7 +306,7 @@ struct ComposeView: View {
                 }
                 chatModel.addLiveChatItemDummy(quoted, chat.chatInfo)
             }
-        }*/
+        }
         .confirmationDialog("Attach", isPresented: $showChooseSource, titleVisibility: .visible) {
             Button("Take picture") {
                 showTakePhoto = true
