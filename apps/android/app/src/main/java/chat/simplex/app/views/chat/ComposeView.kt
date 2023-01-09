@@ -579,16 +579,7 @@ fun ComposeView(
         composeState.value = composeState.value.copy(liveMessage = LiveMessage(ci, typedMsg = typedMsg, sentMsg = sentMsg, sent = true))
       }
     } else if (composeState.value.liveMessage == null) {
-      val cs = composeState.value
-      val contextItem = cs.contextItem
-      val quoted = when  {
-        contextItem is ComposeContextItem.QuotedItem && contextItem.chatItem.content.msgContent != null -> {
-          val item = contextItem.chatItem
-          CIQuote(chatDir = item.chatDir, itemId = item.id, sentAt = item.meta.createdAt, content = item.content.msgContent!!)
-        }
-        else -> null
-      }
-      val cItem = chatModel.addLiveChatItemDummy(quoted, chat.chatInfo)
+      val cItem = chatModel.addLiveChatItemDummy((composeState.value.contextItem as? ComposeContextItem.QuotedItem)?.chatItem, chat.chatInfo)
       composeState.value = composeState.value.copy(liveMessage = LiveMessage(cItem, typedMsg = typedMsg, sentMsg = sentMsg, sent = false))
     }
   }
@@ -645,8 +636,6 @@ fun ComposeView(
       ComposeContextItem.NoContextItem -> {}
       is ComposeContextItem.QuotedItem -> ContextItemView(contextItem.chatItem, Icons.Outlined.Reply) {
         composeState.value = composeState.value.copy(contextItem = ComposeContextItem.NoContextItem)
-        chatModel.removeLiveChatItemDummy()
-        chatModel.addLiveChatItemDummy(null, chat.chatInfo)
       }
       is ComposeContextItem.EditingItem -> ContextItemView(contextItem.chatItem, Icons.Filled.Edit) {
         clearState()
@@ -711,6 +700,13 @@ fun ComposeView(
               is RecordingState.NotStarted -> {}
             }
           }
+      }
+      LaunchedEffect(composeState.value.contextItem) {
+        val cs = composeState.value
+        if (cs.liveMessage?.sent == false) {
+          chatModel.removeLiveChatItemDummy()
+          chatModel.addLiveChatItemDummy((composeState.value.contextItem as? ComposeContextItem.QuotedItem)?.chatItem, chat.chatInfo)
+        }
       }
 
       val activity = LocalContext.current as Activity
