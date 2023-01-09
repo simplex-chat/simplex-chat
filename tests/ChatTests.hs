@@ -172,6 +172,8 @@ chatTests = do
   describe "mute/unmute messages" $ do
     it "mute/unmute contact" testMuteContact
     it "mute/unmute group" testMuteGroup
+  describe "multiple users" $ do
+    fit "create second user" testCreateSecondUser
   describe "chat item expiration" $ do
     it "set chat item TTL" testSetChatItemTTL
   describe "queue rotation" $ do
@@ -4348,6 +4350,53 @@ testMuteGroup =
       bob ##> "/gs"
       bob <## "#team"
 
+testCreateSecondUser :: IO ()
+testCreateSecondUser =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      connectUsers alice bob
+
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+
+      -- connect using second user
+      connectUsers alice bob
+      alice #> "@bob hello"
+      bob <# "alisa> hello"
+      bob #> "@alisa hey"
+      alice <# "bob> hey"
+
+      alice ##> "/user"
+      showActiveUser alice "alisa"
+
+      alice ##> "/users"
+      alice <## "alice (Alice)"
+      alice <## "alisa (active)"
+
+      -- receive message to first user
+      bob #> "@alice hey alice"
+      (alice, "alice") $<# "bob> hey alice"
+
+      connectUsers alice cath
+
+      -- set active user to first user
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+
+      alice ##> "/user"
+      showActiveUser alice "alice (Alice)"
+
+      alice ##> "/users"
+      alice <## "alice (Alice) (active)"
+      alice <## "alisa"
+
+      alice <##> bob
+
+      cath #> "@alisa hey alisa"
+      (alice, "alisa") $<# "cath> hey alisa"
+      alice ##> "@cath hi cath"
+      alice <## "no contact cath"
+
 testSetChatItemTTL :: IO ()
 testSetChatItemTTL =
   testChat2 aliceProfile bobProfile $
@@ -4990,7 +5039,7 @@ connectUsers cc1 cc2 = do
 showName :: TestCC -> IO String
 showName (TestCC ChatController {currentUser} _ _ _ _) = do
   Just User {localDisplayName, profile = LocalProfile {fullName}} <- readTVarIO currentUser
-  pure . T.unpack $ localDisplayName <> " (" <> fullName <> ")"
+  pure . T.unpack $ localDisplayName <> optionalFullName localDisplayName fullName
 
 createGroup2 :: String -> TestCC -> TestCC -> IO ()
 createGroup2 gName cc1 cc2 = do
@@ -5174,6 +5223,9 @@ cc <# line = (dropTime <$> getTermLine cc) `shouldReturn` line
 (?<#) :: TestCC -> String -> Expectation
 cc ?<# line = (dropTime <$> getTermLine cc) `shouldReturn` "i " <> line
 
+($<#) :: (TestCC, String) -> String -> Expectation
+(cc, uName) $<# line = (dropTime . dropUser uName <$> getTermLine cc) `shouldReturn` line
+
 (</) :: TestCC -> Expectation
 (</) = (<// 500000)
 
@@ -5185,6 +5237,18 @@ cc1 <#? cc2 = do
   cc1 <## (sName <> " wants to connect to you!")
   cc1 <## ("to accept: /ac " <> name)
   cc1 <## ("to reject: /rc " <> name <> " (the sender will NOT be notified)")
+
+dropUser :: String -> String -> String
+dropUser uName msg = fromMaybe err $ dropUser_ uName msg
+  where
+    err = error $ "invalid user: " <> msg
+
+dropUser_ :: String -> String -> Maybe String
+dropUser_ uName msg = do
+  let userPrefix = "[user: " <> uName <> "] "
+  if userPrefix `isPrefixOf` msg
+    then Just $ drop (length userPrefix) msg
+    else Nothing
 
 dropTime :: String -> String
 dropTime msg = fromMaybe err $ dropTime_ msg
@@ -5245,3 +5309,9 @@ lastItemId :: TestCC -> IO String
 lastItemId cc = do
   cc ##> "/last_item_id"
   getTermLine cc
+
+showActiveUser :: TestCC -> String -> Expectation
+showActiveUser cc name = do
+  cc <## ("user profile: " <> name)
+  cc <## "use /p <display name> [<full name>] to change it"
+  cc <## "(the updated profile will be sent to all your contacts)"
