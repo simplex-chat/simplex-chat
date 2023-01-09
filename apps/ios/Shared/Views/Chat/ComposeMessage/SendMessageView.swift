@@ -234,7 +234,7 @@ struct SendMessageView: View {
                     .resizable()
                     .scaledToFit()
                     .foregroundColor(.accentColor)
-                    .frame(width: 20, height: 20)
+                    .frame(width: 15, height: 15)
         }
                 .frame(width: 29, height: 29)
                 .padding([.bottom, .horizontal], 4)

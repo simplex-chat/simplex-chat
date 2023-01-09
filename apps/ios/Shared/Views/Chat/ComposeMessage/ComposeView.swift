@@ -304,7 +304,7 @@ struct ComposeView: View {
                 if case let .quotedItem(item) = composeState.contextItem {
                     quoted = item
                 }
-                chatModel.addLiveChatItemDummy(quoted, chat.chatInfo)
+                let _ = chatModel.addLiveChatItemDummy(quoted, chat.chatInfo)
             }
         }
         .confirmationDialog("Attach", isPresented: $showChooseSource, titleVisibility: .visible) {

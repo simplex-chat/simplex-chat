@@ -462,7 +462,7 @@ struct ChatView: View {
         private func menu() -> [UIAction] {
             var menu: [UIAction] = []
             if let mc = ci.content.msgContent, !ci.meta.itemDeleted || revealed {
-                if !ci.meta.itemDeleted {
+                if !ci.meta.itemDeleted && ci.id != ChatItem.TEMP_LIVE_CHAT_ITEM_ID {
                     menu.append(replyUIAction())
                 }
                 menu.append(shareUIAction())
@@ -502,7 +502,7 @@ struct ChatView: View {
                 withAnimation {
                     if composeState.editing {
                         composeState = ComposeState(contextItem: .quotedItem(chatItem: ci))
-                    } else if ci.id != ChatItem.TEMP_LIVE_CHAT_ITEM_ID {
+                    } else {
                         composeState = composeState.copy(contextItem: .quotedItem(chatItem: ci))
                     }
                 }
