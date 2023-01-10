@@ -170,7 +170,7 @@ final class ChatModel: ObservableObject {
 //        groups[group.groupInfo.id] = group
 //    }
 
-    func addChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
+    func addChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem, replaceLiveDummy: Bool = false) {
         // update previews
         if let i = getChatIndex(cInfo.id) {
             chats[i].chatItems = [cItem]
@@ -192,7 +192,11 @@ final class ChatModel: ObservableObject {
         }
         // add to current chat
         if chatId == cInfo.id {
-            _ = _upsertChatItem(cInfo, cItem)
+            if replaceLiveDummy && hasLiveDummy {
+                _replaceChatItem(at: 0, with: cItem)
+            } else {
+                _ = _upsertChatItem(cInfo, cItem)
+            }
         }
     }
 
@@ -218,28 +222,26 @@ final class ChatModel: ObservableObject {
 
     private func _upsertChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) -> Bool {
         if let i = reversedChatItems.firstIndex(where: { $0.id == cItem.id }) {
-            let ci = reversedChatItems[i]
-            withAnimation(.default) {
-                self.reversedChatItems[i] = cItem
-                self.reversedChatItems[i].viewTimestamp = .now
-                // on some occasions the confirmation of message being accepted by the server (tick)
-                // arrives earlier than the response from API, and item remains without tick
-                if case .sndNew = cItem.meta.itemStatus {
-                    self.reversedChatItems[i].meta.itemStatus = ci.meta.itemStatus
-                }
-            }
+            _replaceChatItem(at: i, with: cItem)
             return false
         } else {
-            let anim: Animation?
-            switch (cItem.chatDir) {
-            case .directSnd, .groupSnd: anim = cItem.meta.isLive ? nil : Animation.default
-            default: anim = Animation.default
-            }
-            withAnimation(anim) {
-                let index = reversedChatItems.first?.isLiveChatItemDummy == true ? min(1, reversedChatItems.count) : 0
-                reversedChatItems.insert(cItem, at: index)
+            withAnimation {
+                reversedChatItems.insert(cItem, at: hasLiveDummy ? 1 : 0)
             }
             return true
+        }
+    }
+
+    private func _replaceChatItem(at i: Int, with cItem: ChatItem) {
+        let ci = reversedChatItems[i]
+        withAnimation {
+            self.reversedChatItems[i] = cItem
+            self.reversedChatItems[i].viewTimestamp = .now
+            // on some occasions the confirmation of message being accepted by the server (tick)
+            // arrives earlier than the response from API, and item remains without tick
+            if case .sndNew = cItem.meta.itemStatus {
+                self.reversedChatItems[i].meta.itemStatus = ci.meta.itemStatus
+            }
         }
     }
     
@@ -294,12 +296,14 @@ final class ChatModel: ObservableObject {
         return cItem
     }
 
-    func removeLiveChatItemDummy(animated: Bool) {
-        if reversedChatItems.first?.isLiveChatItemDummy == true {
-            withAnimation(animated ? .default : nil){
-                reversedChatItems.removeFirst()
-            }
+    func removeLiveChatItemDummy() {
+        if hasLiveDummy {
+            withAnimation { _ = reversedChatItems.removeFirst() }
         }
+    }
+
+    private var hasLiveDummy: Bool {
+        reversedChatItems.first?.isLiveDummy == true
     }
 
     func markChatItemsRead(_ cInfo: ChatInfo) {

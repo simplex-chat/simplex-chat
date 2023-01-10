@@ -1670,7 +1670,7 @@ public struct ChatItem: Identifiable, Decodable {
     public var file: CIFile?
 
     public var viewTimestamp = Date.now
-    public var isLiveChatItemDummy: Bool = false
+    public var isLiveDummy: Bool = false
 
     private enum CodingKeys: String, CodingKey {
         case chatDir, meta, content, formattedText, quotedItem, file
@@ -1882,7 +1882,7 @@ public struct ChatItem: Identifiable, Decodable {
             quotedItem: quoted,
             file: nil
         )
-        item.isLiveChatItemDummy = true
+        item.isLiveDummy = true
         return item
     }
 
