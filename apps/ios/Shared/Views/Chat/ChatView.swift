@@ -462,7 +462,7 @@ struct ChatView: View {
         private func menu() -> [UIAction] {
             var menu: [UIAction] = []
             if let mc = ci.content.msgContent, !ci.meta.itemDeleted || revealed {
-                if !ci.meta.itemDeleted && ci.id != ChatItem.TEMP_LIVE_CHAT_ITEM_ID {
+                if !ci.meta.itemDeleted && !ci.isLiveChatItemDummy {
                     menu.append(replyUIAction())
                 }
                 menu.append(shareUIAction())

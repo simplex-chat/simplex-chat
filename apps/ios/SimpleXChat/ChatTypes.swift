@@ -1760,6 +1760,10 @@ public struct ChatItem: Identifiable, Decodable {
         }
     }
 
+    public var isLiveChatItemDummy: Bool {
+        return id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID
+    }
+
     public static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, file: CIFile? = nil, _ itemDeleted: Bool = false, _ itemEdited: Bool = false, _ itemLive: Bool = false, _ editable: Bool = true) -> ChatItem {
         ChatItem(
             chatDir: dir,
@@ -1862,11 +1866,11 @@ public struct ChatItem: Identifiable, Decodable {
         )
     }
 
-    public static let TEMP_LIVE_CHAT_ITEM_ID: Int64 = -2
+    private static let TEMP_LIVE_CHAT_ITEM_ID: Int64 = -2
 
-    public static func liveChatItemDummy(_ direct: Bool, _ quoted: CIQuote?) -> ChatItem {
+    public static func liveChatItemDummy(_ chatType: ChatType, _ quoted: CIQuote?) -> ChatItem {
         ChatItem(
-                chatDir: direct ? CIDirection.directSnd : CIDirection.groupSnd,
+                chatDir: chatType == ChatType.direct ? CIDirection.directSnd : CIDirection.groupSnd,
                 meta: CIMeta(
                         itemId: TEMP_LIVE_CHAT_ITEM_ID,
                         itemTs: .now,

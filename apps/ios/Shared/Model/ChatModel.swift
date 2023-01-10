@@ -231,11 +231,8 @@ final class ChatModel: ObservableObject {
             return false
         } else {
             withAnimation {
-                if reversedChatItems.first?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID {
-                    reversedChatItems.insert(cItem, at: min(1, reversedChatItems.count))
-                } else {
-                    reversedChatItems.insert(cItem, at: 0)
-                }
+                let index = reversedChatItems.first?.isLiveChatItemDummy == true ? min(1, reversedChatItems.count) : 0
+                reversedChatItems.insert(cItem, at: index)
             }
             return true
         }
@@ -285,17 +282,13 @@ final class ChatModel: ObservableObject {
         if let quotedItem = quotedCItem, let msgContent = quotedItem.content.msgContent {
             quoted = CIQuote.getSampleWithMsgContent(itemId: quotedItem.id, sentAt: quotedItem.meta.updatedAt, msgContent: msgContent, chatDir: quotedItem.chatDir)
         }
-        var direct = false
-        if case .direct = chatInfo {
-            direct = true
-        }
-        let cItem = ChatItem.liveChatItemDummy(direct, quoted)
+        let cItem = ChatItem.liveChatItemDummy(chatInfo.chatType, quoted)
         reversedChatItems.insert(cItem, at: 0)
         return cItem
     }
 
     func removeLiveChatItemDummy() {
-        if reversedChatItems.first?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID {
+        if reversedChatItems.first?.isLiveChatItemDummy == true {
             reversedChatItems.removeFirst()
         }
     }

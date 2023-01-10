@@ -254,38 +254,38 @@ struct ComposeView: View {
                     showChooseSource = true
                 } label: {
                     Image(systemName: "paperclip")
-                            .resizable()
+                        .resizable()
                 }
-                        .disabled(composeState.attachmentDisabled)
-                        .frame(width: 25, height: 25)
-                        .padding(.bottom, 12)
-                        .padding(.leading, 12)
+                .disabled(composeState.attachmentDisabled)
+                .frame(width: 25, height: 25)
+                .padding(.bottom, 12)
+                .padding(.leading, 12)
                 SendMessageView(
-                        composeState: $composeState,
-                        sendMessage: {
-                            sendMessage()
-                            resetLinkPreview()
-                        },
-                        sendLiveMessage: sendLiveMessage,
-                        updateLiveMessage: updateLiveMessage,
-                        cancelLiveMessage: {
-                            composeState = composeState.copy(liveMessage: nil)
-                            chatModel.removeLiveChatItemDummy()
-                        },
-                        voiceMessageAllowed: chat.chatInfo.featureEnabled(.voice),
-                        showEnableVoiceMessagesAlert: chat.chatInfo.showEnableVoiceMessagesAlert,
-                        startVoiceMessageRecording: {
-                            Task {
-                                await startVoiceMessageRecording()
-                            }
-                        },
-                        finishVoiceMessageRecording: finishVoiceMessageRecording,
-                        allowVoiceMessagesToContact: allowVoiceMessagesToContact,
-                        onImagesAdded: { images in if !images.isEmpty { chosenImages = images }},
-                        keyboardVisible: $keyboardVisible
+                    composeState: $composeState,
+                    sendMessage: {
+                        sendMessage()
+                        resetLinkPreview()
+                    },
+                    sendLiveMessage: sendLiveMessage,
+                    updateLiveMessage: updateLiveMessage,
+                    cancelLiveMessage: {
+                        composeState.liveMessage = nil
+                        chatModel.removeLiveChatItemDummy()
+                    },
+                    voiceMessageAllowed: chat.chatInfo.featureEnabled(.voice),
+                    showEnableVoiceMessagesAlert: chat.chatInfo.showEnableVoiceMessagesAlert,
+                    startVoiceMessageRecording: {
+                        Task {
+                            await startVoiceMessageRecording()
+                        }
+                    },
+                    finishVoiceMessageRecording: finishVoiceMessageRecording,
+                    allowVoiceMessagesToContact: allowVoiceMessagesToContact,
+                    onImagesAdded: { images in if !images.isEmpty { chosenImages = images }},
+                    keyboardVisible: $keyboardVisible
                 )
-                        .padding(.trailing, 12)
-                        .background(.background)
+                .padding(.trailing, 12)
+                .background(.background)
             }
         }
         .onChange(of: composeState.message) { _ in
