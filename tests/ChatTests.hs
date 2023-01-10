@@ -4457,6 +4457,7 @@ testMultipleUserAddresses =
       -- accept request
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
+
       alice ##> "/ac cath"
       alice <## "cath (Catherine): accepting contact request..."
       concurrently_
