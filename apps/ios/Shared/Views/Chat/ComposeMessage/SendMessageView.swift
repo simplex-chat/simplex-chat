@@ -9,6 +9,8 @@
 import SwiftUI
 import SimpleXChat
 
+private let liveMsgInterval: UInt64 = 3000_000000
+
 struct SendMessageView: View {
     @Binding var composeState: ComposeState
     var sendMessage: () -> Void
@@ -292,10 +294,10 @@ struct SendMessageView: View {
                 }
             }
             Task {
-                sleep(3)
+                _ = try? await Task.sleep(nanoseconds: liveMsgInterval)
                 while composeState.liveMessage != nil {
                     await update()
-                    sleep(3)
+                    _ = try? await Task.sleep(nanoseconds: liveMsgInterval)
                 }
             }
         }

@@ -257,7 +257,7 @@ struct ComposeView: View {
                     updateLiveMessage: updateLiveMessage,
                     cancelLiveMessage: {
                         composeState.liveMessage = nil
-                        chatModel.removeLiveChatItemDummy()
+                        chatModel.removeLiveDummy()
                     },
                     voiceMessageAllowed: chat.chatInfo.featureEnabled(.voice),
                     showEnableVoiceMessagesAlert: chat.chatInfo.showEnableVoiceMessagesAlert,
@@ -379,7 +379,7 @@ struct ComposeView: View {
                 sendMessage()
                 resetLinkPreview()
             }
-            chatModel.removeLiveChatItemDummy()
+            chatModel.removeLiveDummy(animated: false)
         }
         .onChange(of: chatModel.stopPreviousRecPlay) { _ in
             if !startingRecording {
@@ -411,7 +411,7 @@ struct ComposeView: View {
             if case let .quotedItem(item) = composeState.contextItem {
                 quoted = item
             }
-            let cItem = chatModel.addLiveChatItemDummy(quoted, chat.chatInfo)
+            let cItem = chatModel.addLiveDummy(quoted, chat.chatInfo)
             await MainActor.run {
                 composeState = composeState.copy(liveMessage: LiveMessage(chatItem: cItem, typedMsg: typedMsg, sentMsg: nil))
             }
@@ -623,7 +623,8 @@ struct ComposeView: View {
                 live: live
             ) {
                 await MainActor.run {
-                    chatModel.addChatItem(chat.chatInfo, chatItem, replaceLiveDummy: live && liveMessage?.sentMsg == nil)
+                    chatModel.removeLiveDummy(animated: false)
+                    chatModel.addChatItem(chat.chatInfo, chatItem)
                 }
                 return chatItem
             }
