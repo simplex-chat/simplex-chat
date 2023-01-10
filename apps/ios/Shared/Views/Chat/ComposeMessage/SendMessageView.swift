@@ -104,7 +104,7 @@ struct SendMessageView: View {
                         }
                     } else if vmrs == .recording && !holdingVMR {
                         finishVoiceMessageRecordingButton()
-                    } else if composeState.liveMessage?.sent == false && composeState.message.isEmpty {
+                    } else if composeState.liveMessage?.sentMsg == nil && composeState.message.isEmpty {
                         cancelLiveMessageButton {
                             cancelLiveMessage?()
                         }

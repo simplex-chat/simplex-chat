@@ -1760,9 +1760,7 @@ public struct ChatItem: Identifiable, Decodable {
         }
     }
 
-    public var isLiveChatItemDummy: Bool {
-        return id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID
-    }
+    public var isLiveChatItemDummy: Bool = false
 
     public static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, file: CIFile? = nil, _ itemDeleted: Bool = false, _ itemEdited: Bool = false, _ itemLive: Bool = false, _ editable: Bool = true) -> ChatItem {
         ChatItem(
@@ -1866,13 +1864,11 @@ public struct ChatItem: Identifiable, Decodable {
         )
     }
 
-    private static let TEMP_LIVE_CHAT_ITEM_ID: Int64 = -2
-
     public static func liveChatItemDummy(_ chatType: ChatType, _ quoted: CIQuote?) -> ChatItem {
-        ChatItem(
+        var item = ChatItem(
                 chatDir: chatType == ChatType.direct ? CIDirection.directSnd : CIDirection.groupSnd,
                 meta: CIMeta(
-                        itemId: TEMP_LIVE_CHAT_ITEM_ID,
+                        itemId: -2,
                         itemTs: .now,
                         itemText: "",
                         itemStatus: .rcvRead,
@@ -1887,6 +1883,8 @@ public struct ChatItem: Identifiable, Decodable {
                 quotedItem: quoted,
                 file: nil
         )
+        item.isLiveChatItemDummy = true
+        return item
     }
 
     public static func invalidJSON(_ json: String) -> ChatItem {

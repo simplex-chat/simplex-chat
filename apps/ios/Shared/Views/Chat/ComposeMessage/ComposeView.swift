@@ -19,22 +19,10 @@ enum ComposePreview {
     case filePreview(fileName: String)
 }
 
-enum ComposeContextItem: Equatable {
+enum ComposeContextItem {
     case noContextItem
     case quotedItem(chatItem: ChatItem)
     case editingItem(chatItem: ChatItem)
-
-    static func == (l: ComposeContextItem, r: ComposeContextItem) -> Bool {
-        switch (l, r) {
-        case (.noContextItem, .noContextItem): return true
-        case (.noContextItem, _): return false
-        case (_, .noContextItem): return false
-        case (.quotedItem(let li), .quotedItem(let ri)): return li.id == ri.id
-        case (.editingItem(let li), .editingItem(let ri)): return li.id == ri.id
-        case (.quotedItem(let li), .editingItem(let ri)): return li.id == ri.id
-        case (.editingItem(let li), .quotedItem(let ri)): return li.id == ri.id
-        }
-    }
 }
 
 enum VoiceMessageRecordingState {
@@ -46,8 +34,7 @@ enum VoiceMessageRecordingState {
 struct LiveMessage {
     var chatItem: ChatItem
     var typedMsg: String
-    var sentMsg: String
-    var sent: Bool
+    var sentMsg: String?
 }
 
 struct ComposeState {
@@ -297,16 +284,6 @@ struct ComposeView: View {
                 }
             }
         }
-        .onChange(of: composeState.contextItem) { _ in
-            if composeState.liveMessage?.sent == false {
-                chatModel.removeLiveChatItemDummy()
-                var quoted: ChatItem? = nil
-                if case let .quotedItem(item) = composeState.contextItem {
-                    quoted = item
-                }
-                let _ = chatModel.addLiveChatItemDummy(quoted, chat.chatInfo)
-            }
-        }
         .confirmationDialog("Attach", isPresented: $showChooseSource, titleVisibility: .visible) {
             Button("Take picture") {
                 showTakePhoto = true
@@ -398,7 +375,7 @@ struct ComposeView: View {
             if let fileName = composeState.voiceMessageRecordingFileName {
                 cancelVoiceMessageRecording(fileName)
             }
-            if composeState.liveMessage != nil && (!composeState.message.isEmpty || composeState.liveMessage?.sent == true) {
+            if composeState.liveMessage != nil && (!composeState.message.isEmpty || composeState.liveMessage?.sentMsg != nil) {
                 sendMessage()
                 resetLinkPreview()
             }
@@ -424,10 +401,10 @@ struct ComposeView: View {
     private func sendLiveMessage() async {
         let typedMsg = composeState.message
         let sentMsg = truncateToWords(typedMsg)
-        if !sentMsg.isEmpty && (composeState.liveMessage == nil || composeState.liveMessage?.sent == false),
+        if !sentMsg.isEmpty && (composeState.liveMessage == nil || composeState.liveMessage?.sentMsg == nil),
            let ci = await sendMessageAsync(sentMsg, live: true) {
             await MainActor.run {
-                composeState = composeState.copy(liveMessage: LiveMessage(chatItem: ci, typedMsg: typedMsg, sentMsg: sentMsg, sent: true))
+                composeState = composeState.copy(liveMessage: LiveMessage(chatItem: ci, typedMsg: typedMsg, sentMsg: sentMsg))
             }
         } else if composeState.liveMessage == nil {
             var quoted: ChatItem? = nil
@@ -436,7 +413,7 @@ struct ComposeView: View {
             }
             let cItem = chatModel.addLiveChatItemDummy(quoted, chat.chatInfo)
             await MainActor.run {
-                composeState = composeState.copy(liveMessage: LiveMessage(chatItem: cItem, typedMsg: typedMsg, sentMsg: sentMsg, sent: false))
+                composeState = composeState.copy(liveMessage: LiveMessage(chatItem: cItem, typedMsg: typedMsg, sentMsg: nil))
             }
         }
     }
@@ -447,7 +424,7 @@ struct ComposeView: View {
             if let sentMsg = liveMessageToSend(liveMessage, typedMsg),
                let ci = await sendMessageAsync(sentMsg, live: true) {
                 await MainActor.run {
-                    composeState = composeState.copy(liveMessage: LiveMessage(chatItem: ci, typedMsg: typedMsg, sentMsg: sentMsg, sent: true))
+                    composeState = composeState.copy(liveMessage: LiveMessage(chatItem: ci, typedMsg: typedMsg, sentMsg: sentMsg))
                 }
             } else if liveMessage.typedMsg != typedMsg {
                 await MainActor.run {
@@ -461,7 +438,7 @@ struct ComposeView: View {
 
     private func liveMessageToSend(_ lm: LiveMessage, _ t: String) -> String? {
         let s = t != lm.typedMsg ? truncateToWords(t) : t
-        return s != lm.sentMsg ? s : nil
+        return s != lm.sentMsg && lm.sentMsg != nil ? s : nil
     }
 
     private func truncateToWords(_ s: String) -> String {
@@ -549,7 +526,7 @@ struct ComposeView: View {
         }
         if case let .editingItem(ci) = composeState.contextItem {
             sent = await updateMessage(ci, live: live)
-        } else if let liveMessage = liveMessage, liveMessage.sent {
+        } else if let liveMessage = liveMessage, liveMessage.sentMsg != nil {
             sent = await updateMessage(liveMessage.chatItem, live: live)
         } else {
             var quoted: Int64? = nil
