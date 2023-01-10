@@ -623,6 +623,7 @@ struct ComposeView: View {
                 live: live
             ) {
                 await MainActor.run {
+                    chatModel.removeLiveChatItemDummy()
                     chatModel.addChatItem(chat.chatInfo, chatItem)
                 }
                 return chatItem
@@ -742,7 +743,6 @@ struct ComposeView: View {
         audioRecorder = nil
         voiceMessageRecordingTime = nil
         startingRecording = false
-        chatModel.removeLiveChatItemDummy()
     }
 
     private func showLinkPreview(_ s: String) {
