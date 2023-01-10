@@ -134,7 +134,7 @@ func imageHasAlpha(_ img: UIImage) -> Bool {
         if let data = context?.data {
             let data = data.assumingMemoryBound(to: UInt8.self)
             for i in 0..<cgImage.width * cgImage.height {
-                if data[i * 4] == 0 {
+                if data[i * 4] < 255 {
                     return true
                 }
             }
