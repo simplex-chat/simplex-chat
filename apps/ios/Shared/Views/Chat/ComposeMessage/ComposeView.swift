@@ -438,7 +438,7 @@ struct ComposeView: View {
 
     private func liveMessageToSend(_ lm: LiveMessage, _ t: String) -> String? {
         let s = t != lm.typedMsg ? truncateToWords(t) : t
-        return s != lm.sentMsg && lm.sentMsg != nil ? s : nil
+        return s != lm.sentMsg && (lm.sentMsg != nil || !s.isEmpty) ? s : nil
     }
 
     private func truncateToWords(_ s: String) -> String {
