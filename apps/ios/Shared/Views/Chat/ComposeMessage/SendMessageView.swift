@@ -292,9 +292,10 @@ struct SendMessageView: View {
                 }
             }
             Task {
+                sleep(3)
                 while composeState.liveMessage != nil {
-                    sleep(3)
                     await update()
+                    sleep(3)
                 }
             }
         }
