@@ -291,9 +291,11 @@ struct SendMessageView: View {
                     sendButtonOpacity = 1
                 }
             }
-            Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { t in
-                if composeState.liveMessage == nil { t.invalidate() }
-                Task { await update() }
+            Task {
+                while composeState.liveMessage != nil {
+                    sleep(3)
+                    await update()
+                }
             }
         }
     }
