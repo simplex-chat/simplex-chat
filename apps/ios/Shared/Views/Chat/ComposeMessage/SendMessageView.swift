@@ -104,7 +104,7 @@ struct SendMessageView: View {
                         }
                     } else if vmrs == .recording && !holdingVMR {
                         finishVoiceMessageRecordingButton()
-                    } else if composeState.liveMessage?.sentMsg == nil && composeState.message.isEmpty {
+                    } else if composeState.liveMessage != nil && composeState.liveMessage?.sentMsg == nil && composeState.message.isEmpty {
                         cancelLiveMessageButton {
                             cancelLiveMessage?()
                         }
@@ -135,7 +135,7 @@ struct SendMessageView: View {
             !composeState.sendEnabled ||
             composeState.disabled ||
             (!voiceMessageAllowed && composeState.voicePreview) ||
-            composeState.message.isEmpty
+            (composeState.liveMessage != nil && composeState.message.isEmpty)
         )
         .frame(width: 29, height: 29)
 
