@@ -235,7 +235,7 @@ final class ChatModel: ObservableObject {
             case .directSnd, .groupSnd: anim = cItem.meta.isLive ? nil : Animation.default
             default: anim = Animation.default
             }
-            withAnimation(nil) {
+            withAnimation(anim) {
                 let index = reversedChatItems.first?.isLiveChatItemDummy == true ? min(1, reversedChatItems.count) : 0
                 reversedChatItems.insert(cItem, at: index)
             }
