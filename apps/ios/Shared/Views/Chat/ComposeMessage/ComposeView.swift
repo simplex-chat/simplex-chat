@@ -34,7 +34,7 @@ enum VoiceMessageRecordingState {
 struct LiveMessage {
     var chatItem: ChatItem
     var typedMsg: String
-    var sentMsg: String
+    var sentMsg: String?
 }
 
 struct ComposeState {
@@ -232,9 +232,9 @@ struct ComposeView: View {
         VStack(spacing: 0) {
             contextItemView()
             switch (composeState.editing, composeState.preview) {
-                case (true, .filePreview): EmptyView()
-                case (true, .voicePreview): EmptyView() // ? we may allow playback when editing is allowed
-                default: previewView()
+            case (true, .filePreview): EmptyView()
+            case (true, .voicePreview): EmptyView() // ? we may allow playback when editing is allowed
+            default: previewView()
             }
             HStack (alignment: .bottom) {
                 Button {
@@ -255,6 +255,10 @@ struct ComposeView: View {
                     },
                     sendLiveMessage: sendLiveMessage,
                     updateLiveMessage: updateLiveMessage,
+                    cancelLiveMessage: {
+                        composeState.liveMessage = nil
+                        chatModel.removeLiveDummy()
+                    },
                     voiceMessageAllowed: chat.chatInfo.featureEnabled(.voice),
                     showEnableVoiceMessagesAlert: chat.chatInfo.showEnableVoiceMessagesAlert,
                     startVoiceMessageRecording: {
@@ -371,10 +375,11 @@ struct ComposeView: View {
             if let fileName = composeState.voiceMessageRecordingFileName {
                 cancelVoiceMessageRecording(fileName)
             }
-            if composeState.liveMessage != nil {
+            if composeState.liveMessage != nil && (!composeState.message.isEmpty || composeState.liveMessage?.sentMsg != nil) {
                 sendMessage()
                 resetLinkPreview()
             }
+            chatModel.removeLiveDummy(animated: false)
         }
         .onChange(of: chatModel.stopPreviousRecPlay) { _ in
             if !startingRecording {
@@ -396,10 +401,19 @@ struct ComposeView: View {
     private func sendLiveMessage() async {
         let typedMsg = composeState.message
         let sentMsg = truncateToWords(typedMsg)
-        if composeState.liveMessage == nil,
+        if !sentMsg.isEmpty && (composeState.liveMessage == nil || composeState.liveMessage?.sentMsg == nil),
            let ci = await sendMessageAsync(sentMsg, live: true) {
             await MainActor.run {
                 composeState = composeState.copy(liveMessage: LiveMessage(chatItem: ci, typedMsg: typedMsg, sentMsg: sentMsg))
+            }
+        } else if composeState.liveMessage == nil {
+            var quoted: ChatItem? = nil
+            if case let .quotedItem(item) = composeState.contextItem {
+                quoted = item
+            }
+            let cItem = chatModel.addLiveDummy(quoted, chat.chatInfo)
+            await MainActor.run {
+                composeState = composeState.copy(liveMessage: LiveMessage(chatItem: cItem, typedMsg: typedMsg, sentMsg: nil))
             }
         }
     }
@@ -424,7 +438,7 @@ struct ComposeView: View {
 
     private func liveMessageToSend(_ lm: LiveMessage, _ t: String) -> String? {
         let s = t != lm.typedMsg ? truncateToWords(t) : t
-        return s != lm.sentMsg ? s : nil
+        return s != lm.sentMsg && (lm.sentMsg != nil || !s.isEmpty) ? s : nil
     }
 
     private func truncateToWords(_ s: String) -> String {
@@ -512,7 +526,7 @@ struct ComposeView: View {
         }
         if case let .editingItem(ci) = composeState.contextItem {
             sent = await updateMessage(ci, live: live)
-        } else if let liveMessage = liveMessage {
+        } else if let liveMessage = liveMessage, liveMessage.sentMsg != nil {
             sent = await updateMessage(liveMessage.chatItem, live: live)
         } else {
             var quoted: Int64? = nil
@@ -609,6 +623,7 @@ struct ComposeView: View {
                 live: live
             ) {
                 await MainActor.run {
+                    chatModel.removeLiveDummy(animated: false)
                     chatModel.addChatItem(chat.chatInfo, chatItem)
                 }
                 return chatItem

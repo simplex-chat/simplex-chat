@@ -219,7 +219,7 @@ final class ChatModel: ObservableObject {
     private func _upsertChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) -> Bool {
         if let i = reversedChatItems.firstIndex(where: { $0.id == cItem.id }) {
             let ci = reversedChatItems[i]
-            withAnimation(.default) {
+            withAnimation {
                 self.reversedChatItems[i] = cItem
                 self.reversedChatItems[i].viewTimestamp = .now
                 // on some occasions the confirmation of message being accepted by the server (tick)
@@ -230,8 +230,17 @@ final class ChatModel: ObservableObject {
             }
             return false
         } else {
-            withAnimation { reversedChatItems.insert(cItem, at: 0) }
+            withAnimation(itemAnimation()) {
+                reversedChatItems.insert(cItem, at: hasLiveDummy ? 1 : 0)
+            }
             return true
+        }
+
+        func itemAnimation() -> Animation? {
+            switch cItem.chatDir {
+            case .directSnd, .groupSnd: return cItem.meta.isLive ? nil : .default
+            default: return .default
+            }
         }
     }
     
@@ -272,6 +281,32 @@ final class ChatModel: ObservableObject {
             }
         }
         return nil
+    }
+
+    func addLiveDummy(_ quotedCItem: ChatItem?, _ chatInfo: ChatInfo) -> ChatItem {
+        var quoted: CIQuote? = nil
+        if let quotedItem = quotedCItem, let msgContent = quotedItem.content.msgContent {
+            quoted = CIQuote.getSampleWithMsgContent(itemId: quotedItem.id, sentAt: quotedItem.meta.updatedAt, msgContent: msgContent, chatDir: quotedItem.chatDir)
+        }
+        let cItem = ChatItem.liveChatItemDummy(chatInfo.chatType, quoted)
+        withAnimation {
+            reversedChatItems.insert(cItem, at: 0)
+        }
+        return cItem
+    }
+
+    func removeLiveDummy(animated: Bool = true) {
+        if hasLiveDummy {
+            if animated {
+                withAnimation { _ = reversedChatItems.removeFirst() }
+            } else {
+                _ = reversedChatItems.removeFirst()
+            }
+        }
+    }
+
+    private var hasLiveDummy: Bool {
+        reversedChatItems.first?.isLiveDummy == true
     }
 
     func markChatItemsRead(_ cInfo: ChatInfo) {
