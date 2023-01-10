@@ -126,20 +126,26 @@ private func resizeImage(_ image: UIImage, newBounds: CGRect, drawIn: CGRect, ha
 }
 
 func imageHasAlpha(_ img: UIImage) -> Bool {
+    print(Date().timeIntervalSince1970)
     if let cgImage = img.cgImage {
         let colorSpace = CGColorSpaceCreateDeviceRGB()
         let bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedFirst.rawValue)
-        let context = CGContext(data: nil, width: cgImage.width, height: cgImage.height, bitsPerComponent: 8, bytesPerRow: cgImage.width * 4, space: colorSpace, bitmapInfo: bitmapInfo.rawValue)
-        context?.draw(cgImage, in: CGRect(x: 0, y: 0, width: cgImage.width, height: cgImage.height))
-        if let data = context?.data {
-            let data = data.assumingMemoryBound(to: UInt8.self)
-            for i in 0..<cgImage.width * cgImage.height {
-                if data[i * 4] < 255 {
-                    return true
+        if let context = CGContext(data: nil, width: cgImage.width, height: cgImage.height, bitsPerComponent: 8, bytesPerRow: cgImage.width * 4, space: colorSpace, bitmapInfo: bitmapInfo.rawValue) {
+            context.draw(cgImage, in: CGRect(x: 0, y: 0, width: cgImage.width, height: cgImage.height))
+            print(Date().timeIntervalSince1970)
+            if let data = context.data {
+                let data = data.assumingMemoryBound(to: UInt8.self)
+                print(Date().timeIntervalSince1970)
+                let size = cgImage.width * cgImage.height
+                var i = 0
+                while i < size {
+                    if data[i] < 255 { return true }
+                    i += 4
                 }
             }
         }
     }
+    print(Date().timeIntervalSince1970)
     return false
 }
 
