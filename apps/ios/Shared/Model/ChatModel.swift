@@ -288,13 +288,17 @@ final class ChatModel: ObservableObject {
             quoted = CIQuote.getSampleWithMsgContent(itemId: quotedItem.id, sentAt: quotedItem.meta.updatedAt, msgContent: msgContent, chatDir: quotedItem.chatDir)
         }
         let cItem = ChatItem.liveChatItemDummy(chatInfo.chatType, quoted)
-        reversedChatItems.insert(cItem, at: 0)
+        withAnimation {
+            reversedChatItems.insert(cItem, at: 0)
+        }
         return cItem
     }
 
-    func removeLiveChatItemDummy() {
+    func removeLiveChatItemDummy(animated: Bool) {
         if reversedChatItems.first?.isLiveChatItemDummy == true {
-            reversedChatItems.removeFirst()
+            withAnimation(animated ? .default : nil){
+                reversedChatItems.removeFirst()
+            }
         }
     }
 
