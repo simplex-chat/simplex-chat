@@ -174,6 +174,7 @@ chatTests = do
     it "mute/unmute group" testMuteGroup
   describe "multiple users" $ do
     it "create second user" testCreateSecondUser
+    it "both users have contact link" testMultipleUserAddresses
   describe "chat item expiration" $ do
     it "set chat item TTL" testSetChatItemTTL
   describe "queue rotation" $ do
@@ -4401,6 +4402,74 @@ testCreateSecondUser =
       alice ##> "/_user 2"
       showActiveUser alice "alisa"
 
+testMultipleUserAddresses :: IO ()
+testMultipleUserAddresses =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      alice ##> "/ad"
+      cLinkAlice <- getContactLink alice True
+      bob ##> ("/c " <> cLinkAlice)
+      alice <#? bob
+      alice @@@ [("<@bob", "")]
+      alice ##> "/ac bob"
+      alice <## "bob (Bob): accepting contact request..."
+      concurrently_
+        (bob <## "alice (Alice): contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+      alice @@@ [("@bob", "Voice messages: enabled")]
+      alice <##> bob
+
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+
+      -- connect using second user address
+      alice ##> "/ad"
+      cLinkAlisa <- getContactLink alice True
+      bob ##> ("/c " <> cLinkAlisa)
+      alice <#? bob
+      alice #$> ("/_get chats 2 pcc=on", chats, [("<@bob", "")])
+      alice ##> "/ac bob"
+      alice <## "bob (Bob): accepting contact request..."
+      concurrently_
+        (bob <## "alisa: contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+      alice #$> ("/_get chats 2 pcc=on", chats, [("@bob", "Voice messages: enabled")])
+      alice <##> bob
+
+      bob #> "@alice hey alice"
+      (alice, "alice") $<# "bob> hey alice"
+
+      -- delete first user address
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+
+      alice ##> "/da"
+      alice <## "Your chat address is deleted - accepted contacts will remain connected."
+      alice <## "To create a new chat address use /ad"
+
+      -- second user receives request when not active
+      cath ##> ("/c " <> cLinkAlisa)
+      cath <## "connection request sent!"
+      alice <## "[user: alisa] cath (Catherine) wants to connect to you!"
+      alice <## "to accept: /ac cath"
+      alice <## "to reject: /rc cath (the sender will NOT be notified)"
+
+      -- accept request
+      alice ##> "/user alisa"
+      showActiveUser alice "alisa"
+      alice ##> "/ac cath"
+      alice <## "cath (Catherine): accepting contact request..."
+      concurrently_
+        (cath <## "alisa: contact is connected")
+        (alice <## "cath (Catherine): contact is connected")
+      alice #$> ("/_get chats 2 pcc=on", chats, [("@cath", "Voice messages: enabled"), ("@bob", "hey")])
+      alice <##> cath
+
+      -- first user doesn't have cath as contact
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+      alice @@@ [("@bob", "hey alice")]
+
 testSetChatItemTTL :: IO ()
 testSetChatItemTTL =
   testChat2 aliceProfile bobProfile $
@@ -5153,7 +5222,13 @@ itemId :: Int -> String
 itemId i = show $ length chatFeatures + i
 
 (@@@) :: TestCC -> [(String, String)] -> Expectation
-(@@@) = getChats . map $ \(ldn, msg, _) -> (ldn, msg)
+(@@@) = getChats mapChats
+
+mapChats :: [(String, String, Maybe ConnStatus)] -> [(String, String)]
+mapChats = map $ \(ldn, msg, _) -> (ldn, msg)
+
+chats :: String -> [(String, String)]
+chats = mapChats . read
 
 (@@@!) :: TestCC -> [(String, String, Maybe ConnStatus)] -> Expectation
 (@@@!) = getChats id
