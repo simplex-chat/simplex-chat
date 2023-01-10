@@ -1670,6 +1670,7 @@ public struct ChatItem: Identifiable, Decodable {
     public var file: CIFile?
 
     public var viewTimestamp = Date.now
+    public var isLiveChatItemDummy: Bool = false
 
     private enum CodingKeys: String, CodingKey {
         case chatDir, meta, content, formattedText, quotedItem, file
@@ -1759,8 +1760,6 @@ public struct ChatItem: Identifiable, Decodable {
             }
         }
     }
-
-    public var isLiveChatItemDummy: Bool = false
 
     public static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, file: CIFile? = nil, _ itemDeleted: Bool = false, _ itemEdited: Bool = false, _ itemLive: Bool = false, _ editable: Bool = true) -> ChatItem {
         ChatItem(
@@ -1866,22 +1865,22 @@ public struct ChatItem: Identifiable, Decodable {
 
     public static func liveChatItemDummy(_ chatType: ChatType, _ quoted: CIQuote?) -> ChatItem {
         var item = ChatItem(
-                chatDir: chatType == ChatType.direct ? CIDirection.directSnd : CIDirection.groupSnd,
-                meta: CIMeta(
-                        itemId: -2,
-                        itemTs: .now,
-                        itemText: "",
-                        itemStatus: .rcvRead,
-                        createdAt: .now,
-                        updatedAt: .now,
-                        itemDeleted: false,
-                        itemEdited: false,
-                        itemLive: true,
-                        editable: false
-                ),
-                content: .sndMsgContent(msgContent: .text("")),
-                quotedItem: quoted,
-                file: nil
+            chatDir: chatType == ChatType.direct ? CIDirection.directSnd : CIDirection.groupSnd,
+            meta: CIMeta(
+                itemId: -2,
+                itemTs: .now,
+                itemText: "",
+                itemStatus: .rcvRead,
+                createdAt: .now,
+                updatedAt: .now,
+                itemDeleted: false,
+                itemEdited: false,
+                itemLive: true,
+                editable: false
+            ),
+            content: .sndMsgContent(msgContent: .text("")),
+            quotedItem: quoted,
+            file: nil
         )
         item.isLiveChatItemDummy = true
         return item

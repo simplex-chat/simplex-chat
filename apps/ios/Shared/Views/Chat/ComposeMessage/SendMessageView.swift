@@ -231,13 +231,13 @@ struct SendMessageView: View {
             cancel()
         } label: {
             Image(systemName: "multiply")
-                    .resizable()
-                    .scaledToFit()
-                    .foregroundColor(.accentColor)
-                    .frame(width: 15, height: 15)
+                .resizable()
+                .scaledToFit()
+                .foregroundColor(.accentColor)
+                .frame(width: 15, height: 15)
         }
-                .frame(width: 29, height: 29)
-                .padding([.bottom, .horizontal], 4)
+        .frame(width: 29, height: 29)
+        .padding([.bottom, .horizontal], 4)
     }
 
     private func startLiveMessageButton(send:  @escaping () async -> Void, update: @escaping () async -> Void) -> some View {
