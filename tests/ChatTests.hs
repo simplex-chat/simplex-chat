@@ -159,12 +159,12 @@ chatTests = do
   -- it "v1 to v2" testFullAsyncV1toV2
   -- it "v2 to v1" testFullAsyncV2toV1
   describe "async sending and receiving files" $ do
-    fit "send and receive file, sender restarts" testAsyncFileTransferSenderRestarts
-    fit "send and receive file, receiver restarts" testAsyncFileTransferReceiverRestarts
+    it "send and receive file, sender restarts" testAsyncFileTransferSenderRestarts
+    it "send and receive file, receiver restarts" testAsyncFileTransferReceiverRestarts
     xdescribe "send and receive file, fully asynchronous" $ do
       it "v2" testAsyncFileTransfer
       it "v1" testAsyncFileTransferV1
-    xit "send and receive file to group, fully asynchronous" testAsyncGroupFileTransfer
+    it "send and receive file to group, fully asynchronous" testAsyncGroupFileTransfer
   describe "webrtc calls api" $ do
     it "negotiate call" testNegotiateCall
   describe "maintenance mode" $ do
@@ -4018,7 +4018,7 @@ testAsyncFileTransferSenderRestarts = withTmpFiles $ do
     withNewTestChat "alice" aliceProfile $ \alice -> do
       connectUsers alice bob
       startFileTransfer' alice bob "test_1MB.pdf" "1017.7 KiB / 1042157 bytes"
-    threadDelay 1000000
+    threadDelay 100000
     withTestChatContactConnected "alice" $ \alice -> do
       alice <## "completed sending file 1 (test_1MB.pdf) to bob"
       bob <## "completed receiving file 1 (test_1MB.pdf) from alice"
@@ -4032,7 +4032,7 @@ testAsyncFileTransferReceiverRestarts = withTmpFiles $ do
     withNewTestChat "bob" bobProfile $ \bob -> do
       connectUsers alice bob
       startFileTransfer' alice bob "test_1MB.pdf" "1017.7 KiB / 1042157 bytes"
-    threadDelay 1000000
+    threadDelay 100000
     withTestChatContactConnected "bob" $ \bob -> do
       alice <## "completed sending file 1 (test_1MB.pdf) to bob"
       bob <## "completed receiving file 1 (test_1MB.pdf) from alice"
