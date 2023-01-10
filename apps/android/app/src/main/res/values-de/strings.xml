@@ -989,4 +989,5 @@
     <string name="v4_4_verify_connection_security">Sicherheit der Verbindung überprüfen</string>
     <string name="v4_2_auto_accept_contact_requests_desc">Mit optionaler Begrüßungsmeldung.</string>
     <string name="v4_3_irreversible_message_deletion_desc">Ihre Kontakte können die unwiederbringliche Löschung von Nachrichten erlauben.</string>
+    <string name="icon_descr_cancel_live_message">Livenachricht abbrechen</string>
 </resources>
