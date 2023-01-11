@@ -80,7 +80,7 @@ struct ChatListView: View {
                 destination: chatView(),
                 isActive: Binding(
                     get: { chatModel.chatId != nil },
-                    set: { _, _ in }
+                    set: { _ in }
                 )
             ) { EmptyView() }
         )
