@@ -41,7 +41,6 @@ import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.views.chat.item.*
 import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
@@ -354,7 +353,7 @@ fun ComposeView(
     chosenContent.value = emptyList()
     chosenAudio.value = null
     chosenFile.value = null
-    chatModel.removeLiveChatItemDummy()
+    chatModel.removeLiveDummy()
   }
 
   suspend fun send(cInfo: ChatInfo, mc: MsgContent, quoted: Long?, file: String? = null, live: Boolean = false): ChatItem? {
@@ -572,16 +571,16 @@ fun ComposeView(
   }
 
   suspend fun sendLiveMessage() {
-    val typedMsg = composeState.value.message
-    val sentMsg = truncateToWords(typedMsg)
-    if (sentMsg.isNotEmpty() && (composeState.value.liveMessage == null || composeState.value.liveMessage?.sent == false)) {
-      val ci = sendMessageAsync(sentMsg, live = true)
+    val cs = composeState.value
+    val typedMsg = cs.message
+    if ((cs.sendEnabled() || cs.contextItem is ComposeContextItem.QuotedItem) && (cs.liveMessage == null || !cs.liveMessage?.sent)) {
+      val ci = sendMessageAsync(typedMsg, live = true)
       if (ci != null) {
-        composeState.value = composeState.value.copy(liveMessage = LiveMessage(ci, typedMsg = typedMsg, sentMsg = sentMsg, sent = true))
+        composeState.value = composeState.value.copy(liveMessage = LiveMessage(ci, typedMsg = typedMsg, sentMsg = typedMsg, sent = true))
       }
-    } else if (composeState.value.liveMessage == null) {
-      val cItem = chatModel.addLiveChatItemDummy((composeState.value.contextItem as? ComposeContextItem.QuotedItem)?.chatItem, chat.chatInfo)
-      composeState.value = composeState.value.copy(liveMessage = LiveMessage(cItem, typedMsg = typedMsg, sentMsg = sentMsg, sent = false))
+    } else if (cs.liveMessage == null) {
+      val cItem = chatModel.addLiveDummy(chat.chatInfo)
+      composeState.value = composeState.value.copy(liveMessage = LiveMessage(cItem, typedMsg = typedMsg, sentMsg = typedMsg, sent = false))
     }
   }
 
@@ -702,16 +701,6 @@ fun ComposeView(
             }
           }
       }
-      LaunchedEffect(Unit) {
-        snapshotFlow { composeState.value.contextItem }
-          .distinctUntilChanged()
-          .collect {
-            if (composeState.value.liveMessage?.sent == false) {
-              chatModel.removeLiveChatItemDummy()
-              chatModel.addLiveChatItemDummy((it as? ComposeContextItem.QuotedItem)?.chatItem, chat.chatInfo)
-            }
-          }
-      }
 
       val activity = LocalContext.current as Activity
       DisposableEffect(Unit) {
@@ -723,7 +712,7 @@ fun ComposeView(
               sendMessage()
               resetLinkPreview()
             }
-            chatModel.removeLiveChatItemDummy()
+            chatModel.removeLiveDummy()
           }
         }
       }
@@ -745,7 +734,7 @@ fun ComposeView(
         updateLiveMessage = ::updateLiveMessage,
         cancelLiveMessage = {
           composeState.value = composeState.value.copy(liveMessage = null)
-          chatModel.removeLiveChatItemDummy()
+          chatModel.removeLiveDummy()
         },
         onMessageChange = ::onMessageChange,
         textStyle = textStyle

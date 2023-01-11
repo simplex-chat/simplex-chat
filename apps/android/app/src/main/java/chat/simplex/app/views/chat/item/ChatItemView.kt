@@ -54,6 +54,7 @@ fun ChatItemView(
   val fullDeleteAllowed = remember(cInfo) { cInfo.featureEnabled(ChatFeature.FullDelete) }
   val saveFileLauncher = rememberSaveFileLauncher(cxt = context, ciFile = cItem.file)
   val onLinkLongClick = { _: String -> showMenu.value = true }
+  val live = composeState.value.liveMessage != null
 
   Box(
     modifier = Modifier
@@ -97,7 +98,7 @@ fun ChatItemView(
           onDismissRequest = { showMenu.value = false },
           Modifier.width(220.dp)
         ) {
-          if (!cItem.meta.itemDeleted) {
+          if (!cItem.meta.itemDeleted && !live) {
             ItemAction(stringResource(R.string.reply_verb), Icons.Outlined.Reply, onClick = {
               if (composeState.value.editing) {
                 composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
@@ -133,7 +134,7 @@ fun ChatItemView(
               })
             }
           }
-          if (cItem.meta.editable && cItem.content.msgContent !is MsgContent.MCVoice) {
+          if (cItem.meta.editable && cItem.content.msgContent !is MsgContent.MCVoice && !live) {
             ItemAction(stringResource(R.string.edit_verb), Icons.Filled.Edit, onClick = {
               composeState.value = ComposeState(editingItem = cItem, useLinkPreviews = useLinkPreviews)
               showMenu.value = false
@@ -149,7 +150,9 @@ fun ChatItemView(
               }
             )
           }
-          DeleteItemAction(cItem, showMenu, questionText = deleteMessageQuestionText(), deleteMessage)
+          if (!(live && cItem.meta.isLive)) {
+            DeleteItemAction(cItem, showMenu, questionText = deleteMessageQuestionText(), deleteMessage)
+          }
         }
       }
 

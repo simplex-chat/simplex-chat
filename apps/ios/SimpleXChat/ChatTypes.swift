@@ -2135,10 +2135,6 @@ public struct CIQuote: Decodable, ItemContent {
         }
         return CIQuote(chatDir: chatDir, itemId: itemId, sentAt: sentAt, content: mc)
     }
-
-    public static func getSampleWithMsgContent(itemId: Int64?, sentAt: Date, msgContent: MsgContent, chatDir: CIDirection) -> CIQuote {
-        return CIQuote(chatDir: chatDir, itemId: itemId, sentAt: sentAt, content: msgContent)
-    }
 }
 
 public struct CIFile: Decodable {

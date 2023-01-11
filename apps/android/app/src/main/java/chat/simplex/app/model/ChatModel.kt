@@ -259,16 +259,13 @@ class ChatModel(val controller: ChatController) {
     }
   }
 
-  fun addLiveChatItemDummy(quotedCItem: ChatItem?, chatInfo: ChatInfo): ChatItem {
-    val quoted = if (quotedCItem?.content?.msgContent != null) {
-      CIQuote(chatDir = quotedCItem.chatDir, itemId = quotedCItem.id, sentAt = quotedCItem.meta.createdAt, content = quotedCItem.content.msgContent!!)
-    } else null
-    val cItem = ChatItem.liveChatItemDummy(chatInfo is ChatInfo.Direct, quoted)
+  fun addLiveDummy(chatInfo: ChatInfo): ChatItem {
+    val cItem = ChatItem.liveDummy(chatInfo is ChatInfo.Direct)
     chatItems.add(cItem)
     return cItem
   }
 
-  fun removeLiveChatItemDummy() {
+  fun removeLiveDummy() {
     if (chatItems.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
       chatItems.removeLast()
     }
@@ -1320,7 +1317,7 @@ data class ChatItem (
         file = null
       )
 
-    fun liveChatItemDummy(direct: Boolean, quoted: CIQuote?): ChatItem = ChatItem(
+    fun liveDummy(direct: Boolean): ChatItem = ChatItem(
         chatDir = if (direct) CIDirection.DirectSnd() else CIDirection.GroupSnd(),
         meta = CIMeta(
           itemId = TEMP_LIVE_CHAT_ITEM_ID,
@@ -1336,7 +1333,7 @@ data class ChatItem (
           editable = false
         ),
         content = CIContent.SndMsgContent(MsgContent.MCText("")),
-        quotedItem = quoted,
+        quotedItem = null,
         file = null
       )
 
