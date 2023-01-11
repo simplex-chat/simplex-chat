@@ -109,7 +109,10 @@ fun SendMsgView(
               else ->
                 RecordVoiceView(recState, stopRecOnNextClick)
             }
-            if (sendLiveMessage != null && updateLiveMessage != null && (cs.preview !is ComposePreview.VoicePreview || !stopRecOnNextClick.value)) {
+            if (sendLiveMessage != null 
+                && updateLiveMessage != null
+                && (cs.preview !is ComposePreview.VoicePreview || !stopRecOnNextClick.value)
+                && cs.contextItem is ComposeContextItem.NoContextItem) {
               Spacer(Modifier.width(10.dp))
               StartLiveMessageButton {
                 if (composeState.value.preview is ComposePreview.NoPreview) {
@@ -132,6 +135,7 @@ fun SendMsgView(
                         cs.endLiveDisabled
           if (cs.liveMessage == null &&
             cs.preview !is ComposePreview.VoicePreview && !cs.editing &&
+            cs.contextItem is ComposeContextItem.NoContextItem &&
             sendLiveMessage != null && updateLiveMessage != null
           ) {
             var showDropdown by rememberSaveable { mutableStateOf(false) }

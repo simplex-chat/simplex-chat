@@ -100,7 +100,9 @@ struct SendMessageView: View {
                             } else {
                                 voiceMessageNotAllowedButton()
                             }
-                            if let send = sendLiveMessage, let update = updateLiveMessage {
+                            if let send = sendLiveMessage,
+                               let update = updateLiveMessage,
+                               case .noContextItem = composeState.contextItem {
                                 startLiveMessageButton(send: send, update: update)
                             }
                         }
@@ -142,6 +144,7 @@ struct SendMessageView: View {
         .frame(width: 29, height: 29)
 
         if composeState.liveMessage == nil,
+           case .noContextItem = composeState.contextItem,
            !composeState.voicePreview && !composeState.editing,
            let send = sendLiveMessage,
            let update = updateLiveMessage {
