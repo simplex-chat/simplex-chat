@@ -104,6 +104,9 @@ data class ComposeState(
       }
       hasContent && !inProgress
     }
+  val endLiveDisabled: Boolean
+    get() = liveMessage != null && message.isEmpty() && preview is ComposePreview.NoPreview && contextItem is ComposeContextItem.NoContextItem
+
   val linkPreviewAllowed: Boolean
     get() =
       when (preview) {

@@ -112,6 +112,10 @@ struct ComposeState {
         }
     }
 
+    var endLiveDisabled: Bool {
+        liveMessage != nil && message.isEmpty && noPreview && !quoting
+    }
+
     var linkPreviewAllowed: Bool {
         switch preview {
         case .imagePreviews: return false

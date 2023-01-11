@@ -137,7 +137,7 @@ struct SendMessageView: View {
             !composeState.sendEnabled ||
             composeState.disabled ||
             (!voiceMessageAllowed && composeState.voicePreview) ||
-            (composeState.liveMessage != nil && composeState.message.isEmpty)
+            composeState.endLiveDisabled
         )
         .frame(width: 29, height: 29)
 

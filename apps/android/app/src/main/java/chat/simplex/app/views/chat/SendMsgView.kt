@@ -125,10 +125,11 @@ fun SendMsgView(
           }
         }
         else -> {
+          val cs = composeState.value
           val icon = if (cs.editing || cs.liveMessage != null) Icons.Filled.Check else Icons.Outlined.ArrowUpward
           val disabled = !cs.sendEnabled() ||
                         (!allowedVoiceByPrefs && cs.preview is ComposePreview.VoicePreview) ||
-                        (cs.liveMessage != null && cs.message.isEmpty() && cs.contextItem !is ComposeContextItem.QuotedItem)
+                        cs.endLiveDisabled
           if (cs.liveMessage == null &&
             cs.preview !is ComposePreview.VoicePreview && !cs.editing &&
             sendLiveMessage != null && updateLiveMessage != null
