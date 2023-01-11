@@ -35,7 +35,7 @@ private struct SheetForItem<T, C>: ViewModifier where T: Identifiable, C: View {
 }
 
 private struct PrivacySensitive: ViewModifier {
-    @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = true
+    @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
     @Environment(\.scenePhase) var scenePhase
 
     func body(content: Content) -> some View {
