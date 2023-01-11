@@ -132,7 +132,7 @@ fun SendMsgView(
             sendLiveMessage != null && updateLiveMessage != null
           ) {
             var showDropdown by rememberSaveable { mutableStateOf(false) }
-            SendTextButton(icon, color, sendButtonSize, sendButtonAlpha, cs.sendEnabled(), sendMessage) { showDropdown = true }
+            SendMsgButton(icon, color, sendButtonSize, sendButtonAlpha, cs.sendEnabled(), sendMessage) { showDropdown = true }
 
             DropdownMenu(
               expanded = showDropdown,
@@ -149,7 +149,7 @@ fun SendMsgView(
               )
             }
           } else {
-            SendTextButton(icon, color, sendButtonSize, sendButtonAlpha, cs.sendEnabled(), sendMessage)
+            SendMsgButton(icon, color, sendButtonSize, sendButtonAlpha, cs.sendEnabled(), sendMessage)
           }
         }
       }
@@ -395,7 +395,7 @@ private fun CancelLiveMessageButton(
 }
 
 @Composable
-private fun SendTextButton(
+private fun SendMsgButton(
   icon: ImageVector,
   backgroundColor: Color,
   sizeDp: Animatable<Float, AnimationVector1D>,
