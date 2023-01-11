@@ -90,10 +90,10 @@
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Um Ihre Privatsphäre zu schützen kann statt der Push-Benachrichtigung der <b><xliff:g id="appName">SimpleX</xliff:g> Hintergrunddienst genutzt werden</b> – dieser benötigt ein paar Prozent Akkuleistung am Tag.</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><b>Diese können über die Einstellungen deaktiviert werden</b> – Solange die App abläuft werden Benachrichtigungen weiterhin angezeigt.</string>
     <string name="turn_off_battery_optimization">Um diese Funktion zu nutzen, ist es nötig, die Einstellung <b>Akkuoptimierung</b> für <xliff:g id="appName">SimpleX</xliff:g> im nächsten Dialog zu <b>deaktivieren</b>. Ansonsten werden die Benachrichtigungen deaktiviert.</string>
-    <string name="turning_off_service_and_periodic">Die Akkuoptimierung ist aktiv, der Hintergrunddienst und die regelmäßige Nachfrage nach neuen Nachrichten ist abgeschaltet. Sie können diese Funktion in den Einstellungen wieder aktivieren.</string>
-    <string name="periodic_notifications">Regelmäßige Benachrichtigungen</string>
-    <string name="periodic_notifications_disabled">Regelmäßige Benachrichtigungen sind deaktiviert!</string>
-    <string name="periodic_notifications_desc">Die App holt regelmäßig neue Nachrichten ab — dies benötigt ein paar Prozent Akkuleistung am Tag. Die App nutzt keine Push-Benachrichtigungen — es werden keine Daten von Ihrem Gerät an Server gesendet.</string>
+    <string name="turning_off_service_and_periodic">Die Akkuoptimierung ist aktiv, der Hintergrunddienst und die periodische Nachfrage nach neuen Nachrichten ist abgeschaltet. Sie können diese Funktion in den Einstellungen wieder aktivieren.</string>
+    <string name="periodic_notifications">Periodische Benachrichtigungen</string>
+    <string name="periodic_notifications_disabled">Periodische Benachrichtigungen sind deaktiviert!</string>
+    <string name="periodic_notifications_desc">Die App holt periodisch neue Nachrichten ab — dies benötigt ein paar Prozent Akkuleistung am Tag. Die App nutzt keine Push-Benachrichtigungen — es werden keine Daten von Ihrem Gerät an Server gesendet.</string>
     <string name="enter_passphrase_notification_title">Passwort wird benötigt</string>
     <string name="enter_passphrase_notification_desc">Geben Sie bitte das Datenbank-Passwort ein, um Benachrichtigungen zu erhalten.</string>
     <string name="database_initialization_error_title">Die Datenbank kann nicht initialisiert werden</string>
@@ -110,7 +110,7 @@
     <string name="settings_notification_preview_mode_title">Vorschau anzeigen</string>
     <string name="settings_notification_preview_title">Benachrichtigungsvorschau</string>
     <string name="notifications_mode_off">Wird ausgeführt, wenn die App geöffnet ist</string>
-    <string name="notifications_mode_periodic">Startet regelmäßig</string>
+    <string name="notifications_mode_periodic">Startet periodisch</string>
     <string name="notifications_mode_service">Immer aktiv</string>
     <string name="notifications_mode_off_desc">Die App kann Benachrichtigungen nur empfangen, wenn sie ausgeführt wird, es wird kein Hintergrunddienst gestartet.</string>
     <string name="notifications_mode_periodic_desc">Überprüft alle 10 Minuten auf neue Nachrichten für bis zu einer Minute.</string>
@@ -578,7 +578,7 @@
     <string name="settings_section_title_calls">CALLS</string>
     <string name="settings_section_title_incognito">Inkognito Modus</string>
     <!-- DatabaseView.kt -->
-    <string name="your_chat_database">Meine Chat-Datenbank</string>
+    <string name="your_chat_database">Chat-Datenbank</string>
     <string name="run_chat_section">CHAT STARTEN</string>
     <string name="chat_is_running">Der Chat läuft</string>
     <string name="chat_is_stopped">Der Chat ist beendet</string>
@@ -870,7 +870,7 @@
     <string name="contact_preferences">Kontakt Präferenzen</string>
     <string name="group_preferences">Gruppen Präferenzen</string>
     <string name="set_group_preferences">Gruppenpräferenzen einstellen</string>
-    <string name="your_preferences">Ihre Präferenzen</string>
+    <string name="your_preferences">Meine Präferenzen</string>
     <string name="direct_messages">Direkte Nachrichten</string>
     <string name="full_deletion">Für Alle löschen</string>
     <string name="voice_messages">Sprachnachrichten</string>
