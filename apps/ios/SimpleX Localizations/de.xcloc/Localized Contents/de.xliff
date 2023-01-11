@@ -202,9 +202,9 @@
         <target>**Mehr Privatsphäre**: Es wird alle 20 Minuten auf neue Nachrichten geprüft. Nur Ihr Geräte-Token wird dem SimpleX-Chat-Server mitgeteilt, aber nicht wie viele Kontakte Sie haben oder welche Nachrichten Sie empfangen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." xml:space="preserve">
+      <trans-unit id="**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." xml:space="preserve" approved="no">
         <source>**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app).</source>
-        <target>**Beste Privatsphäre**: Es wird kein SimpleX-Chat-Benachrichtigungs-Server genutzt, Nachrichten werden in regelmäßigen Abständen im Hintergrund geprüft (dies hängt davon ab, wie häufig Sie die App nutzen).</target>
+        <target state="translated">**Beste Privatsphäre**: Es wird kein SimpleX-Chat-Benachrichtigungs-Server genutzt, Nachrichten werden in periodischen Abständen im Hintergrund geprüft (dies hängt davon ab, wie häufig Sie die App nutzen).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Paste received link** or open it in the browser and tap **Open in mobile app**." xml:space="preserve">
@@ -1246,9 +1246,9 @@
         <target>Benachrichtigungen aktivieren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable periodic notifications?" xml:space="preserve">
+      <trans-unit id="Enable periodic notifications?" xml:space="preserve" approved="no">
         <source>Enable periodic notifications?</source>
-        <target>Regelmäßige Benachrichtigungen aktivieren?</target>
+        <target state="translated">Periodische Benachrichtigungen aktivieren?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Encrypt" xml:space="preserve">
@@ -2303,9 +2303,9 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>Verbindungen mit Kontakten sind nur über Links möglich, die Sie oder Ihre Kontakte untereinander teilen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Periodically" xml:space="preserve">
+      <trans-unit id="Periodically" xml:space="preserve" approved="no">
         <source>Periodically</source>
-        <target>Regelmäßig</target>
+        <target state="translated">Periodisch</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please ask your contact to enable sending voice messages." xml:space="preserve">
@@ -3557,9 +3557,9 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>Anrufe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your chat database" xml:space="preserve">
+      <trans-unit id="Your chat database" xml:space="preserve" approved="no">
         <source>Your chat database</source>
-        <target>Meine Chat-Datenbank</target>
+        <target state="translated">Chat-Datenbank</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chat database is not encrypted - set passphrase to encrypt it." xml:space="preserve">
@@ -3619,9 +3619,9 @@ Sie können diese Verbindung abbrechen und den Kontakt entfernen (und es später
         <target>Ihre aktuelle Chat-Datenbank wird GELÖSCHT und durch die Importierte ERSETZT.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your preferences" xml:space="preserve">
+      <trans-unit id="Your preferences" xml:space="preserve" approved="no">
         <source>Your preferences</source>
-        <target>Ihre Präferenzen</target>
+        <target state="translated">Meine Präferenzen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your privacy" xml:space="preserve">
