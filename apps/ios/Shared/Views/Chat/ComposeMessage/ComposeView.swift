@@ -96,6 +96,13 @@ struct ComposeState {
         }
     }
 
+    var quoting: Bool {
+        switch contextItem {
+        case .quotedItem: return true
+        default: return false
+        }
+    }
+
     var sendEnabled: Bool {
         switch preview {
         case .imagePreviews: return true
@@ -400,18 +407,15 @@ struct ComposeView: View {
 
     private func sendLiveMessage() async {
         let typedMsg = composeState.message
-        let sentMsg = truncateToWords(typedMsg)
-        if !sentMsg.isEmpty && (composeState.liveMessage == nil || composeState.liveMessage?.sentMsg == nil),
-           let ci = await sendMessageAsync(sentMsg, live: true) {
+        let lm = composeState.liveMessage
+        if (composeState.sendEnabled || composeState.quoting)
+            && (lm == nil || lm?.sentMsg == nil),
+           let ci = await sendMessageAsync(typedMsg, live: true) {
             await MainActor.run {
-                composeState = composeState.copy(liveMessage: LiveMessage(chatItem: ci, typedMsg: typedMsg, sentMsg: sentMsg))
+                composeState = composeState.copy(liveMessage: LiveMessage(chatItem: ci, typedMsg: typedMsg, sentMsg: typedMsg))
             }
-        } else if composeState.liveMessage == nil {
-            var quoted: ChatItem? = nil
-            if case let .quotedItem(item) = composeState.contextItem {
-                quoted = item
-            }
-            let cItem = chatModel.addLiveDummy(quoted, chat.chatInfo)
+        } else if lm == nil {
+            let cItem = chatModel.addLiveDummy(chat.chatInfo)
             await MainActor.run {
                 composeState = composeState.copy(liveMessage: LiveMessage(chatItem: cItem, typedMsg: typedMsg, sentMsg: nil))
             }
