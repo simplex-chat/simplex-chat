@@ -1670,6 +1670,7 @@ public struct ChatItem: Identifiable, Decodable {
     public var file: CIFile?
 
     public var viewTimestamp = Date.now
+    public var isLiveDummy: Bool = false
 
     private enum CodingKeys: String, CodingKey {
         case chatDir, meta, content, formattedText, quotedItem, file
@@ -1860,6 +1861,29 @@ public struct ChatItem: Identifiable, Decodable {
             quotedItem: nil,
             file: nil
         )
+    }
+
+    public static func liveDummy(_ chatType: ChatType) -> ChatItem {
+        var item = ChatItem(
+            chatDir: chatType == ChatType.direct ? CIDirection.directSnd : CIDirection.groupSnd,
+            meta: CIMeta(
+                itemId: -2,
+                itemTs: .now,
+                itemText: "",
+                itemStatus: .rcvRead,
+                createdAt: .now,
+                updatedAt: .now,
+                itemDeleted: false,
+                itemEdited: false,
+                itemLive: true,
+                editable: false
+            ),
+            content: .sndMsgContent(msgContent: .text("")),
+            quotedItem: nil,
+            file: nil
+        )
+        item.isLiveDummy = true
+        return item
     }
 
     public static func invalidJSON(_ json: String) -> ChatItem {

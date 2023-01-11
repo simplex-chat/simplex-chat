@@ -228,13 +228,21 @@ restoreCalls user = do
   calls <- asks currentCalls
   atomically $ writeTVar calls callsMap
 
-stopChatController :: MonadUnliftIO m => ChatController -> m ()
-stopChatController ChatController {smpAgent, agentAsync = s, expireCIs} = do
+stopChatController :: forall m. MonadUnliftIO m => ChatController -> m ()
+stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles, expireCIs} = do
   disconnectAgentClient smpAgent
   readTVarIO s >>= mapM_ (\(a1, a2) -> uninterruptibleCancel a1 >> mapM_ uninterruptibleCancel a2)
+  closeFiles sndFiles
+  closeFiles rcvFiles
   atomically $ do
     writeTVar expireCIs False
     writeTVar s Nothing
+  where
+    closeFiles :: TVar (Map Int64 Handle) -> m ()
+    closeFiles files = do
+      fs <- readTVarIO files
+      mapM_ hClose fs
+      atomically $ writeTVar files M.empty
 
 execChatCommand :: (MonadUnliftIO m, MonadReader ChatController m) => ByteString -> m ChatResponse
 execChatCommand s = case parseChatCommand s of
@@ -1831,7 +1839,7 @@ subscribeUserConnections agentBatchSubscribe user = do
     pendingConnSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId PendingContactConnection -> m ()
     pendingConnSubsToView rs = toView . CRPendingSubSummary . map (uncurry PendingSubStatus) . resultsFor rs
     withStore_ :: (DB.Connection -> User -> IO [a]) -> m [a]
-    withStore_ a = withStore' (`a` user) `catchError` \_ -> pure []
+    withStore_ a = withStore' (`a` user) `catchError` \e -> toView (CRChatError (Just user) e) >> pure []
     filterErrors :: [(a, Maybe ChatError)] -> [(a, ChatError)]
     filterErrors = mapMaybe (\(a, e_) -> (a,) <$> e_)
     resultsFor :: Map ConnId (Either AgentErrorType ()) -> Map ConnId a -> [(a, Maybe ChatError)]
@@ -3357,8 +3365,7 @@ getFileHandle fileId filePath files ioMode = do
   maybe (newHandle fs) pure h_
   where
     newHandle fs = do
-      -- TODO handle errors
-      h <- liftIO (openFile filePath ioMode)
+      h <- liftIO (openFile filePath ioMode) `E.catch` (throwChatError . CEFileInternal . (show :: E.SomeException -> String))
       atomically . modifyTVar fs $ M.insert fileId h
       pure h
 

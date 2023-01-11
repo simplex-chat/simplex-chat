@@ -67,7 +67,8 @@ sealed class ComposeContextItem {
 data class LiveMessage(
   val chatItem: ChatItem,
   val typedMsg: String,
-  val sentMsg: String
+  val sentMsg: String,
+  val sent: Boolean
 )
 
 @Serializable
@@ -103,6 +104,9 @@ data class ComposeState(
       }
       hasContent && !inProgress
     }
+  val endLiveDisabled: Boolean
+    get() = liveMessage != null && message.isEmpty() && preview is ComposePreview.NoPreview && contextItem is ComposeContextItem.NoContextItem
+
   val linkPreviewAllowed: Boolean
     get() =
       when (preview) {
@@ -352,6 +356,7 @@ fun ComposeView(
     chosenContent.value = emptyList()
     chosenAudio.value = null
     chosenFile.value = null
+    chatModel.removeLiveDummy()
   }
 
   suspend fun send(cInfo: ChatInfo, mc: MsgContent, quoted: Long?, file: String? = null, live: Boolean = false): ChatItem? {
@@ -430,7 +435,7 @@ fun ComposeView(
     if (cs.contextItem is ComposeContextItem.EditingItem) {
       val ei = cs.contextItem.chatItem
       sent = updateMessage(ei, cInfo, live)
-    } else if (liveMessage != null) {
+    } else if (liveMessage != null && liveMessage.sent) {
       sent = updateMessage(liveMessage.chatItem, cInfo, live)
     } else {
       val msgs: ArrayList<MsgContent> = ArrayList()
@@ -569,13 +574,16 @@ fun ComposeView(
   }
 
   suspend fun sendLiveMessage() {
-    val typedMsg = composeState.value.message
-    val sentMsg = truncateToWords(typedMsg)
-    if (composeState.value.liveMessage == null) {
-      val ci = sendMessageAsync(sentMsg, live = true)
+    val cs = composeState.value
+    val typedMsg = cs.message
+    if ((cs.sendEnabled() || cs.contextItem is ComposeContextItem.QuotedItem) && (cs.liveMessage == null || !cs.liveMessage?.sent)) {
+      val ci = sendMessageAsync(typedMsg, live = true)
       if (ci != null) {
-        composeState.value = composeState.value.copy(liveMessage = LiveMessage(ci, typedMsg = typedMsg, sentMsg = sentMsg))
+        composeState.value = composeState.value.copy(liveMessage = LiveMessage(ci, typedMsg = typedMsg, sentMsg = typedMsg, sent = true))
       }
+    } else if (cs.liveMessage == null) {
+      val cItem = chatModel.addLiveDummy(chat.chatInfo)
+      composeState.value = composeState.value.copy(liveMessage = LiveMessage(cItem, typedMsg = typedMsg, sentMsg = typedMsg, sent = false))
     }
   }
 
@@ -592,7 +600,7 @@ fun ComposeView(
       if (sentMsg != null) {
         val ci = sendMessageAsync(sentMsg, live = true)
         if (ci != null) {
-          composeState.value = composeState.value.copy(liveMessage = LiveMessage(ci, typedMsg = typedMsg, sentMsg = sentMsg))
+          composeState.value = composeState.value.copy(liveMessage = LiveMessage(ci, typedMsg = typedMsg, sentMsg = sentMsg, sent = true))
         }
       } else if (liveMessage.typedMsg != typedMsg) {
         composeState.value = composeState.value.copy(liveMessage = liveMessage.copy(typedMsg = typedMsg))
@@ -701,9 +709,13 @@ fun ComposeView(
       DisposableEffect(Unit) {
         val orientation = activity.resources.configuration.orientation
         onDispose {
-          if (orientation == activity.resources.configuration.orientation && composeState.value.liveMessage != null) {
-            sendMessage()
-            resetLinkPreview()
+          if (orientation == activity.resources.configuration.orientation) {
+            val cs = composeState.value
+            if (cs.liveMessage != null && (cs.message.isNotEmpty() || cs.liveMessage.sent)) {
+              sendMessage()
+              resetLinkPreview()
+            }
+            chatModel.removeLiveDummy()
           }
         }
       }
@@ -723,6 +735,10 @@ fun ComposeView(
         },
         sendLiveMessage = ::sendLiveMessage,
         updateLiveMessage = ::updateLiveMessage,
+        cancelLiveMessage = {
+          composeState.value = composeState.value.copy(liveMessage = null)
+          chatModel.removeLiveDummy()
+        },
         onMessageChange = ::onMessageChange,
         textStyle = textStyle
       )

@@ -11,10 +11,10 @@ import UIKit
 import SwiftUI
 
 extension View {
-    func uiKitContextMenu(title: String = "", actions: [UIAction]) -> some View {
+    func uiKitContextMenu(menu: Binding<UIMenu>) -> some View {
         self.overlay(Color(uiColor: .systemBackground))
         .overlay(
-            InteractionView(content: self, menu: UIMenu(title: title, children: actions))
+            InteractionView(content: self, menu: menu)
         )
     }
 }
@@ -26,7 +26,7 @@ private struct InteractionConfig<Content: View> {
 
 private struct InteractionView<Content: View>: UIViewRepresentable {
     let content: Content
-    let menu: UIMenu
+    @Binding var menu: UIMenu
 
     func makeUIView(context: Context) -> UIView {
         let view = UIView()

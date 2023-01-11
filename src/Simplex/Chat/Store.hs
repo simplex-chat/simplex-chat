@@ -1292,7 +1292,7 @@ getLiveSndFileTransfers db User {userId} = do
           FROM files f
           JOIN snd_files s USING (file_id)
           WHERE f.user_id = ? AND s.file_status IN (?, ?, ?) AND s.file_inline IS NULL
-            AND created_at > ?
+            AND s.created_at > ?
         |]
         (userId, FSNew, FSAccepted, FSConnected, cutoffTs)
   concatMap (filter liveTransfer) . rights <$> mapM (getSndFileTransfers_ db userId) fileIds
@@ -1312,7 +1312,7 @@ getLiveRcvFileTransfers db user@User {userId} = do
           FROM files f
           JOIN rcv_files r USING (file_id)
           WHERE f.user_id = ? AND r.file_status IN (?, ?) AND r.rcv_file_inline IS NULL
-            AND created_at > ?
+            AND r.created_at > ?
         |]
         (userId, FSAccepted, FSConnected, cutoffTs)
   rights <$> mapM (runExceptT . getRcvFileTransfer db user) fileIds

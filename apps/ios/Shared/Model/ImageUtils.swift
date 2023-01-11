@@ -49,8 +49,9 @@ func saveAnimImage(_ image: UIImage) -> String? {
 }
 
 func saveImage(_ uiImage: UIImage) -> String? {
-    if let imageDataResized = resizeImageToDataSize(uiImage, maxDataSize: MAX_IMAGE_SIZE) {
-        let ext = imageHasAlpha(uiImage) ? "png" : "jpg"
+    let hasAlpha = imageHasAlpha(uiImage)
+    let ext = hasAlpha ? "png" : "jpg"
+    if let imageDataResized = resizeImageToDataSize(uiImage, maxDataSize: MAX_IMAGE_SIZE, hasAlpha: hasAlpha) {
         let fileName = generateNewFileName("IMG", ext)
         return saveFile(imageDataResized, fileName)
     }
@@ -67,19 +68,18 @@ func cropToSquare(_ image: UIImage) -> UIImage {
     } else if size.height > side {
         origin.y -= (size.height - side) / 2
     }
-    return resizeImage(image, newBounds: CGRect(origin: .zero, size: newSize), drawIn: CGRect(origin: origin, size: size))
+    return resizeImage(image, newBounds: CGRect(origin: .zero, size: newSize), drawIn: CGRect(origin: origin, size: size), hasAlpha: imageHasAlpha(image))
 }
 
-func resizeImageToDataSize(_ image: UIImage, maxDataSize: Int64) -> Data? {
+func resizeImageToDataSize(_ image: UIImage, maxDataSize: Int64, hasAlpha: Bool) -> Data? {
     var img = image
-    let usePng = imageHasAlpha(image)
-    var data = usePng ? img.pngData() : img.jpegData(compressionQuality: 0.85)
+    var data = hasAlpha ? img.pngData() : img.jpegData(compressionQuality: 0.85)
     var dataSize = data?.count ?? 0
     while dataSize != 0 && dataSize > maxDataSize {
         let ratio = sqrt(Double(dataSize) / Double(maxDataSize))
         let clippedRatio = min(ratio, 2.0)
-        img = reduceSize(img, ratio: clippedRatio)
-        data = usePng ? img.pngData() : img.jpegData(compressionQuality: 0.85)
+        img = reduceSize(img, ratio: clippedRatio, hasAlpha: hasAlpha)
+        data = hasAlpha ? img.pngData() : img.jpegData(compressionQuality: 0.85)
         dataSize = data?.count ?? 0
     }
     logger.debug("resizeImageToDataSize final \(dataSize)")
@@ -88,45 +88,61 @@ func resizeImageToDataSize(_ image: UIImage, maxDataSize: Int64) -> Data? {
 
 func resizeImageToStrSize(_ image: UIImage, maxDataSize: Int64) -> String? {
     var img = image
-    var str = compressImageStr(img)
+    let hasAlpha = imageHasAlpha(image)
+    var str = compressImageStr(img, hasAlpha: hasAlpha)
     var dataSize = str?.count ?? 0
     while dataSize != 0 && dataSize > maxDataSize {
         let ratio = sqrt(Double(dataSize) / Double(maxDataSize))
         let clippedRatio = min(ratio, 2.0)
-        img = reduceSize(img, ratio: clippedRatio)
-        str = compressImageStr(img)
+        img = reduceSize(img, ratio: clippedRatio, hasAlpha: hasAlpha)
+        str = compressImageStr(img, hasAlpha: hasAlpha)
         dataSize = str?.count ?? 0
     }
     logger.debug("resizeImageToStrSize final \(dataSize)")
     return str
 }
 
-func compressImageStr(_ image: UIImage, _ compressionQuality: CGFloat = 0.85) -> String? {
-    let ext = imageHasAlpha(image) ? "png" : "jpg"
-    if let data = imageHasAlpha(image) ? image.pngData() : image.jpegData(compressionQuality: compressionQuality) {
+func compressImageStr(_ image: UIImage, _ compressionQuality: CGFloat = 0.85, hasAlpha: Bool) -> String? {
+    let ext = hasAlpha ? "png" : "jpg"
+    if let data = hasAlpha ? image.pngData() : image.jpegData(compressionQuality: compressionQuality) {
         return "data:image/\(ext);base64,\(data.base64EncodedString())"
     }
     return nil
 }
 
-private func reduceSize(_ image: UIImage, ratio: CGFloat) -> UIImage {
+private func reduceSize(_ image: UIImage, ratio: CGFloat, hasAlpha: Bool) -> UIImage {
     let newSize = CGSize(width: floor(image.size.width / ratio), height: floor(image.size.height / ratio))
     let bounds = CGRect(origin: .zero, size: newSize)
-    return resizeImage(image, newBounds: bounds, drawIn: bounds)
+    return resizeImage(image, newBounds: bounds, drawIn: bounds, hasAlpha: hasAlpha)
 }
 
-private func resizeImage(_ image: UIImage, newBounds: CGRect, drawIn: CGRect) -> UIImage {
+private func resizeImage(_ image: UIImage, newBounds: CGRect, drawIn: CGRect, hasAlpha: Bool) -> UIImage {
     let format = UIGraphicsImageRendererFormat()
     format.scale = 1.0
-    format.opaque = !imageHasAlpha(image)
+    format.opaque = !hasAlpha
     return UIGraphicsImageRenderer(bounds: newBounds, format: format).image { _ in
         image.draw(in: drawIn)
     }
 }
 
 func imageHasAlpha(_ img: UIImage) -> Bool {
-    let alpha = img.cgImage?.alphaInfo
-    return alpha == .first || alpha == .last || alpha == .premultipliedFirst || alpha == .premultipliedLast || alpha == .alphaOnly
+    if let cgImage = img.cgImage {
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedFirst.rawValue)
+        if let context = CGContext(data: nil, width: cgImage.width, height: cgImage.height, bitsPerComponent: 8, bytesPerRow: cgImage.width * 4, space: colorSpace, bitmapInfo: bitmapInfo.rawValue) {
+            context.draw(cgImage, in: CGRect(x: 0, y: 0, width: cgImage.width, height: cgImage.height))
+            if let data = context.data {
+                let data = data.assumingMemoryBound(to: UInt8.self)
+                let size = cgImage.width * cgImage.height
+                var i = 0
+                while i < size {
+                    if data[i] < 255 { return true }
+                    i += 4
+                }
+            }
+        }
+    }
+    return false
 }
 
 func saveFileFromURL(_ url: URL) -> String? {

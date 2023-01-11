@@ -9,11 +9,14 @@
 import SwiftUI
 import SimpleXChat
 
+private let liveMsgInterval: UInt64 = 3000_000000
+
 struct SendMessageView: View {
     @Binding var composeState: ComposeState
     var sendMessage: () -> Void
     var sendLiveMessage: (() async -> Void)? = nil
     var updateLiveMessage: (() async -> Void)? = nil
+    var cancelLiveMessage: (() -> Void)? = nil
     var showVoiceMessageButton: Bool = true
     var voiceMessageAllowed: Bool = true
     var showEnableVoiceMessagesAlert: ChatInfo.ShowEnableVoiceMessagesAlert = .other
@@ -97,12 +100,18 @@ struct SendMessageView: View {
                             } else {
                                 voiceMessageNotAllowedButton()
                             }
-                            if let send = sendLiveMessage, let update = updateLiveMessage {
+                            if let send = sendLiveMessage,
+                               let update = updateLiveMessage,
+                               case .noContextItem = composeState.contextItem {
                                 startLiveMessageButton(send: send, update: update)
                             }
                         }
                     } else if vmrs == .recording && !holdingVMR {
                         finishVoiceMessageRecordingButton()
+                    } else if composeState.liveMessage != nil && composeState.liveMessage?.sentMsg == nil && composeState.message.isEmpty {
+                        cancelLiveMessageButton {
+                            cancelLiveMessage?()
+                        }
                     } else {
                         sendMessageButton()
                     }
@@ -129,11 +138,13 @@ struct SendMessageView: View {
         .disabled(
             !composeState.sendEnabled ||
             composeState.disabled ||
-            (!voiceMessageAllowed && composeState.voicePreview)
+            (!voiceMessageAllowed && composeState.voicePreview) ||
+            composeState.endLiveDisabled
         )
         .frame(width: 29, height: 29)
 
         if composeState.liveMessage == nil,
+           case .noContextItem = composeState.contextItem,
            !composeState.voicePreview && !composeState.editing,
            let send = sendLiveMessage,
            let update = updateLiveMessage {
@@ -220,6 +231,20 @@ struct SendMessageView: View {
         .padding([.bottom, .trailing], 4)
     }
 
+    private func cancelLiveMessageButton(cancel: @escaping () -> Void) -> some View {
+        return Button {
+            cancel()
+        } label: {
+            Image(systemName: "multiply")
+                .resizable()
+                .scaledToFit()
+                .foregroundColor(.accentColor)
+                .frame(width: 15, height: 15)
+        }
+        .frame(width: 29, height: 29)
+        .padding([.bottom, .horizontal], 4)
+    }
+
     private func startLiveMessageButton(send:  @escaping () async -> Void, update: @escaping () async -> Void) -> some View {
         return Button {
             switch composeState.preview {
@@ -271,9 +296,12 @@ struct SendMessageView: View {
                     sendButtonOpacity = 1
                 }
             }
-            Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { t in
-                if composeState.liveMessage == nil { t.invalidate() }
-                Task { await update() }
+            Task {
+                _ = try? await Task.sleep(nanoseconds: liveMsgInterval)
+                while composeState.liveMessage != nil {
+                    await update()
+                    _ = try? await Task.sleep(nanoseconds: liveMsgInterval)
+                }
             }
         }
     }
