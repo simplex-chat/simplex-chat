@@ -126,7 +126,7 @@ fun SendMsgView(
         }
         else -> {
           val icon = if (cs.editing || cs.liveMessage != null) Icons.Filled.Check else Icons.Outlined.ArrowUpward
-          val color = if (cs.sendEnabled() && cs.message.isNotEmpty()) MaterialTheme.colors.primary else HighOrLowlight
+          val color = if (cs.sendEnabled()) MaterialTheme.colors.primary else HighOrLowlight
           if (composeState.value.liveMessage == null &&
             cs.preview !is ComposePreview.VoicePreview && !cs.editing &&
             sendLiveMessage != null && updateLiveMessage != null
@@ -149,7 +149,7 @@ fun SendMsgView(
               )
             }
           } else {
-            SendTextButton(icon, color, sendButtonSize, sendButtonAlpha, cs.sendEnabled() && cs.message.isNotEmpty(), sendMessage)
+            SendTextButton(icon, color, sendButtonSize, sendButtonAlpha, cs.sendEnabled(), sendMessage)
           }
         }
       }
