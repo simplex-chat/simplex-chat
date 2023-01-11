@@ -62,7 +62,7 @@ fun SendMsgView(
   allowedVoiceByPrefs: Boolean,
   allowVoiceToContact: () -> Unit,
   sendMessage: () -> Unit,
-  sendLiveMessage: ( suspend () -> Unit)? = null,
+  sendLiveMessage: (suspend () -> Unit)? = null,
   updateLiveMessage: (suspend () -> Unit)? = null,
   cancelLiveMessage: (() -> Unit)? = null,
   onMessageChange: (String) -> Unit,
@@ -70,7 +70,7 @@ fun SendMsgView(
 ) {
   Box(Modifier.padding(vertical = 8.dp)) {
     val cs = composeState.value
-    val showProgress = cs.inProgress && (cs.preview is ComposePreview.ImagePreview  || cs.preview is ComposePreview.FilePreview)
+    val showProgress = cs.inProgress && (cs.preview is ComposePreview.ImagePreview || cs.preview is ComposePreview.FilePreview)
     val showVoiceButton = cs.message.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
         cs.liveMessage == null && (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started)
     NativeKeyboard(composeState, textStyle, onMessageChange)
@@ -171,7 +171,6 @@ private fun NativeKeyboard(
   val paddingTop = with(LocalDensity.current) { 7.dp.roundToPx() }
   val paddingEnd = with(LocalDensity.current) { 45.dp.roundToPx() }
   val paddingBottom = with(LocalDensity.current) { 7.dp.roundToPx() }
-
   var showKeyboard by remember { mutableStateOf(false) }
   LaunchedEffect(cs.contextItem) {
     if (cs.contextItem is ComposeContextItem.QuotedItem) {
@@ -192,6 +191,7 @@ private fun NativeKeyboard(
       ) {
         super.setOnReceiveContentListener(mimeTypes, listener)
       }
+
       override fun onCreateInputConnection(editorInfo: EditorInfo): InputConnection {
         val connection = super.onCreateInputConnection(editorInfo)
         EditorInfoCompat.setContentMimeTypes(editorInfo, arrayOf("image/*"))
@@ -343,7 +343,6 @@ private fun LockToCurrentOrientationUntilDispose() {
     onDispose { activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED }
   }
 }
-
 
 @Composable
 private fun StopRecordButton(onClick: () -> Unit) {
@@ -573,7 +572,7 @@ fun PreviewSendMsgViewEditing() {
     SendMsgView(
       composeState = remember { mutableStateOf(composeStateEditing) },
       showVoiceRecordIcon = false,
-      recState =  remember { mutableStateOf(RecordingState.NotStarted) },
+      recState = remember { mutableStateOf(RecordingState.NotStarted) },
       isDirectChat = true,
       liveMessageAlertShown = SharedPreference(get = { true }, set = { }),
       needToAllowVoiceToContact = false,
