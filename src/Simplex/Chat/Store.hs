@@ -423,6 +423,7 @@ createUser :: DB.Connection -> Profile -> Bool -> ExceptT StoreError IO User
 createUser db Profile {displayName, fullName, image, preferences = userPreferences} activeUser =
   checkConstraint SEDuplicateName . liftIO $ do
     currentTs <- getCurrentTime
+    when activeUser $ DB.execute_ db "UPDATE users SET active_user = 0"
     DB.execute
       db
       "INSERT INTO users (local_display_name, active_user, contact_id, created_at, updated_at) VALUES (?,?,0,?,?)"

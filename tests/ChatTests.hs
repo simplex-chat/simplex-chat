@@ -172,6 +172,9 @@ chatTests = do
   describe "mute/unmute messages" $ do
     it "mute/unmute contact" testMuteContact
     it "mute/unmute group" testMuteGroup
+  describe "multiple users" $ do
+    it "create second user" testCreateSecondUser
+    it "both users have contact link" testMultipleUserAddresses
   describe "chat item expiration" $ do
     it "set chat item TTL" testSetChatItemTTL
   describe "queue rotation" $ do
@@ -4348,6 +4351,126 @@ testMuteGroup =
       bob ##> "/gs"
       bob <## "#team"
 
+testCreateSecondUser :: IO ()
+testCreateSecondUser =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      connectUsers alice bob
+
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+
+      -- connect using second user
+      connectUsers alice bob
+      alice #> "@bob hello"
+      bob <# "alisa> hello"
+      bob #> "@alisa hey"
+      alice <# "bob> hey"
+
+      alice ##> "/user"
+      showActiveUser alice "alisa"
+
+      alice ##> "/users"
+      alice <## "alice (Alice)"
+      alice <## "alisa (active)"
+
+      -- receive message to first user
+      bob #> "@alice hey alice"
+      (alice, "alice") $<# "bob> hey alice"
+
+      connectUsers alice cath
+
+      -- set active user to first user
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+
+      alice ##> "/user"
+      showActiveUser alice "alice (Alice)"
+
+      alice ##> "/users"
+      alice <## "alice (Alice) (active)"
+      alice <## "alisa"
+
+      alice <##> bob
+
+      cath #> "@alisa hey alisa"
+      (alice, "alisa") $<# "cath> hey alisa"
+      alice ##> "@cath hi cath"
+      alice <## "no contact cath"
+
+      -- set active user to second user
+      alice ##> "/_user 2"
+      showActiveUser alice "alisa"
+
+testMultipleUserAddresses :: IO ()
+testMultipleUserAddresses =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      alice ##> "/ad"
+      cLinkAlice <- getContactLink alice True
+      bob ##> ("/c " <> cLinkAlice)
+      alice <#? bob
+      alice @@@ [("<@bob", "")]
+      alice ##> "/ac bob"
+      alice <## "bob (Bob): accepting contact request..."
+      concurrently_
+        (bob <## "alice (Alice): contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+      alice @@@ [("@bob", "Voice messages: enabled")]
+      alice <##> bob
+
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+
+      -- connect using second user address
+      alice ##> "/ad"
+      cLinkAlisa <- getContactLink alice True
+      bob ##> ("/c " <> cLinkAlisa)
+      alice <#? bob
+      alice #$> ("/_get chats 2 pcc=on", chats, [("<@bob", "")])
+      alice ##> "/ac bob"
+      alice <## "bob (Bob): accepting contact request..."
+      concurrently_
+        (bob <## "alisa: contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+      alice #$> ("/_get chats 2 pcc=on", chats, [("@bob", "Voice messages: enabled")])
+      alice <##> bob
+
+      bob #> "@alice hey alice"
+      (alice, "alice") $<# "bob> hey alice"
+
+      -- delete first user address
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+
+      alice ##> "/da"
+      alice <## "Your chat address is deleted - accepted contacts will remain connected."
+      alice <## "To create a new chat address use /ad"
+
+      -- second user receives request when not active
+      cath ##> ("/c " <> cLinkAlisa)
+      cath <## "connection request sent!"
+      alice <## "[user: alisa] cath (Catherine) wants to connect to you!"
+      alice <## "to accept: /ac cath"
+      alice <## "to reject: /rc cath (the sender will NOT be notified)"
+
+      -- accept request
+      alice ##> "/user alisa"
+      showActiveUser alice "alisa"
+
+      alice ##> "/ac cath"
+      alice <## "cath (Catherine): accepting contact request..."
+      concurrently_
+        (cath <## "alisa: contact is connected")
+        (alice <## "cath (Catherine): contact is connected")
+      alice #$> ("/_get chats 2 pcc=on", chats, [("@cath", "Voice messages: enabled"), ("@bob", "hey")])
+      alice <##> cath
+
+      -- first user doesn't have cath as contact
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+      alice @@@ [("@bob", "hey alice")]
+
 testSetChatItemTTL :: IO ()
 testSetChatItemTTL =
   testChat2 aliceProfile bobProfile $
@@ -4990,7 +5113,7 @@ connectUsers cc1 cc2 = do
 showName :: TestCC -> IO String
 showName (TestCC ChatController {currentUser} _ _ _ _) = do
   Just User {localDisplayName, profile = LocalProfile {fullName}} <- readTVarIO currentUser
-  pure . T.unpack $ localDisplayName <> " (" <> fullName <> ")"
+  pure . T.unpack $ localDisplayName <> optionalFullName localDisplayName fullName
 
 createGroup2 :: String -> TestCC -> TestCC -> IO ()
 createGroup2 gName cc1 cc2 = do
@@ -5100,7 +5223,13 @@ itemId :: Int -> String
 itemId i = show $ length chatFeatures + i
 
 (@@@) :: TestCC -> [(String, String)] -> Expectation
-(@@@) = getChats . map $ \(ldn, msg, _) -> (ldn, msg)
+(@@@) = getChats mapChats
+
+mapChats :: [(String, String, Maybe ConnStatus)] -> [(String, String)]
+mapChats = map $ \(ldn, msg, _) -> (ldn, msg)
+
+chats :: String -> [(String, String)]
+chats = mapChats . read
 
 (@@@!) :: TestCC -> [(String, String, Maybe ConnStatus)] -> Expectation
 (@@@!) = getChats id
@@ -5174,6 +5303,9 @@ cc <# line = (dropTime <$> getTermLine cc) `shouldReturn` line
 (?<#) :: TestCC -> String -> Expectation
 cc ?<# line = (dropTime <$> getTermLine cc) `shouldReturn` "i " <> line
 
+($<#) :: (TestCC, String) -> String -> Expectation
+(cc, uName) $<# line = (dropTime . dropUser uName <$> getTermLine cc) `shouldReturn` line
+
 (</) :: TestCC -> Expectation
 (</) = (<// 500000)
 
@@ -5185,6 +5317,18 @@ cc1 <#? cc2 = do
   cc1 <## (sName <> " wants to connect to you!")
   cc1 <## ("to accept: /ac " <> name)
   cc1 <## ("to reject: /rc " <> name <> " (the sender will NOT be notified)")
+
+dropUser :: String -> String -> String
+dropUser uName msg = fromMaybe err $ dropUser_ uName msg
+  where
+    err = error $ "invalid user: " <> msg
+
+dropUser_ :: String -> String -> Maybe String
+dropUser_ uName msg = do
+  let userPrefix = "[user: " <> uName <> "] "
+  if userPrefix `isPrefixOf` msg
+    then Just $ drop (length userPrefix) msg
+    else Nothing
 
 dropTime :: String -> String
 dropTime msg = fromMaybe err $ dropTime_ msg
@@ -5245,3 +5389,9 @@ lastItemId :: TestCC -> IO String
 lastItemId cc = do
   cc ##> "/last_item_id"
   getTermLine cc
+
+showActiveUser :: TestCC -> String -> Expectation
+showActiveUser cc name = do
+  cc <## ("user profile: " <> name)
+  cc <## "use /p <display name> [<full name>] to change it"
+  cc <## "(the updated profile will be sent to all your contacts)"
