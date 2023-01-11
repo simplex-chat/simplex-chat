@@ -283,12 +283,8 @@ final class ChatModel: ObservableObject {
         return nil
     }
 
-    func addLiveDummy(_ quotedCItem: ChatItem?, _ chatInfo: ChatInfo) -> ChatItem {
-        var quoted: CIQuote? = nil
-        if let quotedItem = quotedCItem, let msgContent = quotedItem.content.msgContent {
-            quoted = CIQuote.getSampleWithMsgContent(itemId: quotedItem.id, sentAt: quotedItem.meta.updatedAt, msgContent: msgContent, chatDir: quotedItem.chatDir)
-        }
-        let cItem = ChatItem.liveChatItemDummy(chatInfo.chatType, quoted)
+    func addLiveDummy(_ chatInfo: ChatInfo) -> ChatItem {
+        let cItem = ChatItem.liveDummy(chatInfo.chatType)
         withAnimation {
             reversedChatItems.insert(cItem, at: 0)
         }

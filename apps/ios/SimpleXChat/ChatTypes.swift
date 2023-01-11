@@ -1863,7 +1863,7 @@ public struct ChatItem: Identifiable, Decodable {
         )
     }
 
-    public static func liveChatItemDummy(_ chatType: ChatType, _ quoted: CIQuote?) -> ChatItem {
+    public static func liveDummy(_ chatType: ChatType) -> ChatItem {
         var item = ChatItem(
             chatDir: chatType == ChatType.direct ? CIDirection.directSnd : CIDirection.groupSnd,
             meta: CIMeta(
@@ -1879,7 +1879,7 @@ public struct ChatItem: Identifiable, Decodable {
                 editable: false
             ),
             content: .sndMsgContent(msgContent: .text("")),
-            quotedItem: quoted,
+            quotedItem: nil,
             file: nil
         )
         item.isLiveDummy = true
@@ -2134,10 +2134,6 @@ public struct CIQuote: Decodable, ItemContent {
             mc = .text(text)
         }
         return CIQuote(chatDir: chatDir, itemId: itemId, sentAt: sentAt, content: mc)
-    }
-
-    public static func getSampleWithMsgContent(itemId: Int64?, sentAt: Date, msgContent: MsgContent, chatDir: CIDirection) -> CIQuote {
-        return CIQuote(chatDir: chatDir, itemId: itemId, sentAt: sentAt, content: msgContent)
     }
 }
 

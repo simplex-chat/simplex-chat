@@ -109,7 +109,10 @@ fun SendMsgView(
               else ->
                 RecordVoiceView(recState, stopRecOnNextClick)
             }
-            if (sendLiveMessage != null && updateLiveMessage != null && (cs.preview !is ComposePreview.VoicePreview || !stopRecOnNextClick.value)) {
+            if (sendLiveMessage != null 
+                && updateLiveMessage != null
+                && (cs.preview !is ComposePreview.VoicePreview || !stopRecOnNextClick.value)
+                && cs.contextItem is ComposeContextItem.NoContextItem) {
               Spacer(Modifier.width(10.dp))
               StartLiveMessageButton {
                 if (composeState.value.preview is ComposePreview.NoPreview) {
@@ -125,14 +128,18 @@ fun SendMsgView(
           }
         }
         else -> {
+          val cs = composeState.value
           val icon = if (cs.editing || cs.liveMessage != null) Icons.Filled.Check else Icons.Outlined.ArrowUpward
-          val color = if (cs.sendEnabled()) MaterialTheme.colors.primary else HighOrLowlight
-          if (composeState.value.liveMessage == null &&
+          val disabled = !cs.sendEnabled() ||
+                        (!allowedVoiceByPrefs && cs.preview is ComposePreview.VoicePreview) ||
+                        cs.endLiveDisabled
+          if (cs.liveMessage == null &&
             cs.preview !is ComposePreview.VoicePreview && !cs.editing &&
+            cs.contextItem is ComposeContextItem.NoContextItem &&
             sendLiveMessage != null && updateLiveMessage != null
           ) {
             var showDropdown by rememberSaveable { mutableStateOf(false) }
-            SendMsgButton(icon, color, sendButtonSize, sendButtonAlpha, cs.sendEnabled(), sendMessage) { showDropdown = true }
+            SendMsgButton(icon, sendButtonSize, sendButtonAlpha, !disabled, sendMessage) { showDropdown = true }
 
             DropdownMenu(
               expanded = showDropdown,
@@ -149,7 +156,7 @@ fun SendMsgView(
               )
             }
           } else {
-            SendMsgButton(icon, color, sendButtonSize, sendButtonAlpha, cs.sendEnabled(), sendMessage)
+            SendMsgButton(icon, sendButtonSize, sendButtonAlpha, !disabled, sendMessage)
           }
         }
       }
@@ -396,7 +403,6 @@ private fun CancelLiveMessageButton(
 @Composable
 private fun SendMsgButton(
   icon: ImageVector,
-  backgroundColor: Color,
   sizeDp: Animatable<Float, AnimationVector1D>,
   alpha: Animatable<Float, AnimationVector1D>,
   enabled: Boolean,
@@ -425,7 +431,7 @@ private fun SendMsgButton(
         .padding(4.dp)
         .alpha(alpha.value)
         .clip(CircleShape)
-        .background(backgroundColor)
+        .background(if (enabled) MaterialTheme.colors.primary else HighOrLowlight)
         .padding(3.dp)
     )
   }
