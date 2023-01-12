@@ -94,7 +94,7 @@ defaultChatConfig =
           },
       yesToMigrations = False,
       defaultServers =
-        InitialAgentServers
+        DefaultAgentServers
           { smp = _defaultSMPServers,
             ntf = _defaultNtfServers,
             netCfg = defaultNetworkConfig
@@ -162,19 +162,25 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   showLiveItems <- newTVarIO False
   pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, incognitoMode, filesFolder, expireCIsAsync, expireCIs, cleanupManagerAsync, timedItemThreads, showLiveItems}
   where
-    configServers :: InitialAgentServers
+    configServers :: DefaultAgentServers
     configServers =
-      let smp' = fromMaybe (smp defaultServers) (nonEmpty smpServers)
+      let smp' = fromMaybe (smp (defaultServers :: DefaultAgentServers)) (nonEmpty smpServers)
        in defaultServers {smp = smp', netCfg = networkConfig}
     agentServers :: ChatConfig -> IO InitialAgentServers
-    agentServers config@ChatConfig {defaultServers = ss@InitialAgentServers {smp}} = do
-      smp' <- maybe (pure smp) userServers user
-      pure ss {smp = smp'}
+    agentServers config@ChatConfig {defaultServers = DefaultAgentServers {smp, ntf, netCfg}} = do
+      users <- withTransaction chatStore getUsers
+      smp' <- case users of
+        [] -> pure $ M.fromList [(1, smp)]
+        _ -> usersServers users
+      pure InitialAgentServers {smp = smp', ntf, netCfg}
       where
+        usersServers :: [User] -> IO (M.Map UserId (NonEmpty SMPServerWithAuth))
+        usersServers users = M.fromList <$> mapM (\user' -> (aUserId user',) <$> userServers user') users
+        userServers :: User -> IO (NonEmpty SMPServerWithAuth)
         userServers user' = activeAgentServers config <$> withTransaction chatStore (`getSMPServers` user')
 
 activeAgentServers :: ChatConfig -> [ServerCfg] -> NonEmpty SMPServerWithAuth
-activeAgentServers ChatConfig {defaultServers = InitialAgentServers {smp}} =
+activeAgentServers ChatConfig {defaultServers = DefaultAgentServers {smp}} =
   fromMaybe smp
     . nonEmpty
     . map (\ServerCfg {server} -> server)
@@ -264,11 +270,17 @@ processChatCommand = \case
   ShowActiveUser -> withUser' $ pure . CRActiveUser
   CreateActiveUser p -> do
     u <- asks currentUser
-    user <- withStore $ \db -> createUser db p True
+    -- TODO option to choose current user servers
+    srvs <- asks (defaultServers . config)
+    auId <-
+      withStore' getUsers >>= \case
+        [] -> pure 1
+        _ -> withAgent $ \a -> createUser a (smp (srvs :: DefaultAgentServers))
+    user <- withStore $ \db -> createUserRecord db (AgentUserId auId) p True
     atomically . writeTVar u $ Just user
     pure $ CRActiveUser user
   ListUsers -> do
-    users <- withStore' $ \db -> getUsers db
+    users <- withStore' getUsers
     pure $ CRUsersList users
   APISetActiveUser userId -> do
     u <- asks currentUser
@@ -359,7 +371,7 @@ processChatCommand = \case
           (agentConnId_, fileConnReq) <-
             if isJust fileInline
               then pure (Nothing, Nothing)
-              else bimap Just Just <$> withAgent (\a -> createConnection a True SCMInvitation Nothing)
+              else bimap Just Just <$> withAgent (\a -> createConnection a (aUserId user) True SCMInvitation Nothing)
           let fileName = takeFileName file
               fileInvitation = FileInvitation {fileName, fileSize, fileConnReq, fileInline}
           withStore' $ \db -> do
@@ -773,7 +785,7 @@ processChatCommand = \case
     pure CRNtfMessages {user, connEntity, msgTs = msgTs', ntfMessages}
   APIGetUserSMPServers cmdUserId -> withUser $ \user -> do
     checkCorrectCmdUser cmdUserId user
-    ChatConfig {defaultServers = InitialAgentServers {smp = defaultSMPServers}} <- asks config
+    ChatConfig {defaultServers = DefaultAgentServers {smp = defaultSMPServers}} <- asks config
     smpServers <- withStore' (`getSMPServers` user)
     let smpServers' = fromMaybe (L.map toServerCfg defaultSMPServers) $ nonEmpty smpServers
     pure $ CRUserSMPServers user smpServers' defaultSMPServers
@@ -785,11 +797,14 @@ processChatCommand = \case
     checkCorrectCmdUser cmdUserId user
     withStore $ \db -> overwriteSMPServers db user smpServers
     cfg <- asks config
-    withAgent $ \a -> setSMPServers a $ activeAgentServers cfg smpServers
+    withAgent $ \a -> setSMPServers a (aUserId user) $ activeAgentServers cfg smpServers
     pure $ CRCmdOk (Just user)
   SetUserSMPServers smpServersConfig -> withUser $ \User {userId} ->
     processChatCommand $ APISetUserSMPServers userId smpServersConfig
-  TestSMPServer smpServer -> CRSmpTestResult <$> withAgent (`testSMPServerConnection` smpServer)
+  TestSMPServer cmdUserId smpServer -> withUser $ \user -> do
+    checkCorrectCmdUser cmdUserId user
+    r <- withAgent $ \a -> testSMPServerConnection a (aUserId user) smpServer
+    pure $ CRSmpTestResult r
   APISetChatItemTTL cmdUserId newTTL_ -> withUser' $ \user -> do
     checkCorrectCmdUser cmdUserId user
     checkStoreNotChanged $
@@ -921,7 +936,7 @@ processChatCommand = \case
     -- [incognito] generate profile for connection
     incognito <- readTVarIO =<< asks incognitoMode
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
-    (connId, cReq) <- withAgent $ \a -> createConnection a True SCMInvitation Nothing
+    (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing
     conn <- withStore' $ \db -> createDirectConnection db userId connId cReq ConnNew incognitoProfile
     toView $ CRNewContactConnection user conn
     pure $ CRInvitation user cReq
@@ -933,7 +948,7 @@ processChatCommand = \case
     incognito <- readTVarIO =<< asks incognitoMode
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     let profileToSend = userProfileToSend user incognitoProfile Nothing
-    connId <- withAgent $ \a -> joinConnection a True cReq . directMessage $ XInfo profileToSend
+    connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq . directMessage $ XInfo profileToSend
     conn <- withStore' $ \db -> createDirectConnection db userId connId cReq ConnJoined $ incognitoProfile $> profileToSend
     toView $ CRNewContactConnection user conn
     pure $ CRSentConfirmation user
@@ -957,7 +972,7 @@ processChatCommand = \case
     processChatCommand $ APIListContacts userId
   APICreateMyAddress cmdUserId -> withUser $ \user@User {userId} -> withChatLock "createMyAddress" . procCmd $ do
     checkCorrectCmdUser cmdUserId user
-    (connId, cReq) <- withAgent $ \a -> createConnection a True SCMContact Nothing
+    (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMContact Nothing
     withStore $ \db -> createUserContactLink db userId connId cReq
     pure $ CRUserContactLinkCreated user cReq
   CreateMyAddress -> withUser $ \User {userId} ->
@@ -1047,7 +1062,7 @@ processChatCommand = \case
     case contactMember contact members of
       Nothing -> do
         gVar <- asks idsDrg
-        (agentConnId, cReq) <- withAgent $ \a -> createConnection a True SCMInvitation Nothing
+        (agentConnId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing
         member <- withStore $ \db -> createNewContactMember db gVar user groupId contact memRole agentConnId cReq
         sendInvitation member cReq
         pure $ CRSentGroupInvitation user gInfo contact member
@@ -1063,7 +1078,7 @@ processChatCommand = \case
   APIJoinGroup groupId -> withUser $ \user@User {userId} -> do
     ReceivedGroupInvitation {fromMember, connRequest, groupInfo = g@GroupInfo {membership}} <- withStore $ \db -> getGroupInvitation db user groupId
     withChatLock "joinGroup" . procCmd $ do
-      agentConnId <- withAgent $ \a -> joinConnection a True connRequest . directMessage $ XGrpAcpt (memberId (membership :: GroupMember))
+      agentConnId <- withAgent $ \a -> joinConnection a (aUserId user) True connRequest . directMessage $ XGrpAcpt (memberId (membership :: GroupMember))
       withStore' $ \db -> do
         createMemberConnection db userId fromMember agentConnId
         updateGroupMemberStatus db userId fromMember GSMemAccepted
@@ -1180,7 +1195,7 @@ processChatCommand = \case
     unless (memberActive membership) $ throwChatError CEGroupMemberNotActive
     groupLinkId <- GroupLinkId <$> (asks idsDrg >>= liftIO . (`randomBytes` 16))
     let crClientData = encodeJSON $ CRDataGroup groupLinkId
-    (connId, cReq) <- withAgent $ \a -> createConnection a True SCMContact $ Just crClientData
+    (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMContact $ Just crClientData
     withStore $ \db -> createGroupLink db user gInfo connId cReq groupLinkId
     pure $ CRGroupLinkCreated user gInfo cReq
   APIDeleteGroupLink groupId -> withUser $ \user -> withChatLock "deleteGroupLink" $ do
@@ -1388,7 +1403,7 @@ processChatCommand = \case
           incognito <- readTVarIO =<< asks incognitoMode
           incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
           let profileToSend = userProfileToSend user incognitoProfile Nothing
-          connId <- withAgent $ \a -> joinConnection a True cReq $ directMessage (XContact profileToSend $ Just xContactId)
+          connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq $ directMessage (XContact profileToSend $ Just xContactId)
           let groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
           conn <- withStore' $ \db -> createConnReqConnection db userId connId cReqHash xContactId incognitoProfile groupLinkId
           toView $ CRNewContactConnection user conn
@@ -3563,13 +3578,13 @@ markGroupCIDeleted user gInfo ci@(CChatItem msgDir deletedItem) msgId byUser = d
 createAgentConnectionAsync :: forall m c. (ChatMonad m, ConnectionModeI c) => User -> CommandFunction -> Bool -> SConnectionMode c -> m (CommandId, ConnId)
 createAgentConnectionAsync user cmdFunction enableNtfs cMode = do
   cmdId <- withStore' $ \db -> createCommand db user Nothing cmdFunction
-  connId <- withAgent $ \a -> createConnectionAsync a (aCorrId cmdId) enableNtfs cMode
+  connId <- withAgent $ \a -> createConnectionAsync a (aUserId user) (aCorrId cmdId) enableNtfs cMode
   pure (cmdId, connId)
 
 joinAgentConnectionAsync :: ChatMonad m => User -> Bool -> ConnectionRequestUri c -> ConnInfo -> m (CommandId, ConnId)
 joinAgentConnectionAsync user enableNtfs cReqUri cInfo = do
   cmdId <- withStore' $ \db -> createCommand db user Nothing CFJoinConn
-  connId <- withAgent $ \a -> joinConnectionAsync a (aCorrId cmdId) enableNtfs cReqUri cInfo
+  connId <- withAgent $ \a -> joinConnectionAsync a (aUserId user) (aCorrId cmdId) enableNtfs cReqUri cInfo
   pure (cmdId, connId)
 
 allowAgentConnectionAsync :: (MsgEncodingI e, ChatMonad m) => User -> Connection -> ConfirmationId -> ChatMsgEvent e -> m ()
@@ -3684,7 +3699,7 @@ getCreateActiveUser st = do
         loop = do
           displayName <- getContactName
           fullName <- T.pack <$> getWithPrompt "full name (optional)"
-          withTransaction st (\db -> runExceptT $ createUser db Profile {displayName, fullName, image = Nothing, preferences = Nothing} True) >>= \case
+          withTransaction st (\db -> runExceptT $ createUserRecord db (AgentUserId 1) Profile {displayName, fullName, image = Nothing, preferences = Nothing} True) >>= \case
             Left SEDuplicateName -> do
               putStrLn "chosen display name is already used by another profile on this device, choose another one"
               loop
@@ -3848,7 +3863,7 @@ chatCommandP =
       "/smp_servers " *> (SetUserSMPServers . SMPServersConfig . map toServerCfg <$> smpServersP),
       "/smp_servers" $> GetUserSMPServers,
       "/smp default" $> SetUserSMPServers (SMPServersConfig []),
-      "/smp test " *> (TestSMPServer <$> strP),
+      "/smp test " *> (TestSMPServer <$> A.decimal <* A.space <*> strP),
       "/_smp " *> (APISetUserSMPServers <$> A.decimal <* A.space <*> jsonP),
       "/smp " *> (SetUserSMPServers . SMPServersConfig . map toServerCfg <$> smpServersP),
       "/_smp " *> (APIGetUserSMPServers <$> A.decimal),

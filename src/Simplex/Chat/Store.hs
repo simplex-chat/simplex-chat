@@ -25,7 +25,7 @@ module Simplex.Chat.Store
     createChatStore,
     chatStoreFile,
     agentStoreFile,
-    createUser,
+    createUserRecord,
     getUsers,
     setActiveUser,
     getSetActiveUser,
@@ -330,6 +330,7 @@ import Simplex.Chat.Migrations.M20221222_chat_ts
 import Simplex.Chat.Migrations.M20221223_idx_chat_items_item_status
 import Simplex.Chat.Migrations.M20221230_idxs
 import Simplex.Chat.Migrations.M20230107_connections_auth_err_counter
+import Simplex.Chat.Migrations.M20230111_users_agent_user_id
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (week)
@@ -390,7 +391,8 @@ schemaMigrations =
     ("20221222_chat_ts", m20221222_chat_ts),
     ("20221223_idx_chat_items_item_status", m20221223_idx_chat_items_item_status),
     ("20221230_idxs", m20221230_idxs),
-    ("20230107_connections_auth_err_counter", m20230107_connections_auth_err_counter)
+    ("20230107_connections_auth_err_counter", m20230107_connections_auth_err_counter),
+    ("20230111_users_agent_user_id", m20230111_users_agent_user_id)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -419,15 +421,15 @@ handleSQLError err e
 insertedRowId :: DB.Connection -> IO Int64
 insertedRowId db = fromOnly . head <$> DB.query_ db "SELECT last_insert_rowid()"
 
-createUser :: DB.Connection -> Profile -> Bool -> ExceptT StoreError IO User
-createUser db Profile {displayName, fullName, image, preferences = userPreferences} activeUser =
+createUserRecord :: DB.Connection -> AgentUserId -> Profile -> Bool -> ExceptT StoreError IO User
+createUserRecord db (AgentUserId auId) Profile {displayName, fullName, image, preferences = userPreferences} activeUser =
   checkConstraint SEDuplicateName . liftIO $ do
     currentTs <- getCurrentTime
     when activeUser $ DB.execute_ db "UPDATE users SET active_user = 0"
     DB.execute
       db
-      "INSERT INTO users (local_display_name, active_user, contact_id, created_at, updated_at) VALUES (?,?,0,?,?)"
-      (displayName, activeUser, currentTs, currentTs)
+      "INSERT INTO users (agent_user_id, local_display_name, active_user, contact_id, created_at, updated_at) VALUES (?,?,?,0,?,?)"
+      (auId, displayName, activeUser, currentTs, currentTs)
     userId <- insertedRowId db
     DB.execute
       db
@@ -444,7 +446,7 @@ createUser db Profile {displayName, fullName, image, preferences = userPreferenc
       (profileId, displayName, userId, True, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
-    pure $ toUser (userId, contactId, profileId, activeUser, displayName, fullName, image, userPreferences)
+    pure $ toUser (userId, auId, contactId, profileId, activeUser, displayName, fullName, image, userPreferences)
 
 getUsers :: DB.Connection -> IO [User]
 getUsers db =
@@ -453,16 +455,16 @@ getUsers db =
 userQuery :: Query
 userQuery =
   [sql|
-    SELECT u.user_id, u.contact_id, cp.contact_profile_id, u.active_user, u.local_display_name, cp.full_name, cp.image, cp.preferences
+    SELECT u.user_id, u.agent_user_id, u.contact_id, cp.contact_profile_id, u.active_user, u.local_display_name, cp.full_name, cp.image, cp.preferences
     FROM users u
     JOIN contacts ct ON ct.contact_id = u.contact_id
     JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id
   |]
 
-toUser :: (UserId, ContactId, ProfileId, Bool, ContactName, Text, Maybe ImageData, Maybe Preferences) -> User
-toUser (userId, userContactId, profileId, activeUser, displayName, fullName, image, userPreferences) =
+toUser :: (UserId, UserId, ContactId, ProfileId, Bool, ContactName, Text, Maybe ImageData, Maybe Preferences) -> User
+toUser (userId, auId, userContactId, profileId, activeUser, displayName, fullName, image, userPreferences) =
   let profile = LocalProfile {profileId, displayName, fullName, image, preferences = userPreferences, localAlias = ""}
-   in User {userId, userContactId, localDisplayName = displayName, profile, activeUser, fullPreferences = mergePreferences Nothing userPreferences}
+   in User {userId, agentUserId = AgentUserId auId, userContactId, localDisplayName = displayName, profile, activeUser, fullPreferences = mergePreferences Nothing userPreferences}
 
 setActiveUser :: DB.Connection -> UserId -> IO ()
 setActiveUser db userId = do
