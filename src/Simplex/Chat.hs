@@ -1337,7 +1337,7 @@ processChatCommand = \case
               ct' = updateMergedPreferences user' ct
               mergedProfile' = userProfileToSend user' Nothing $ Just ct'
           when (mergedProfile' /= mergedProfile) $ do
-            void (sendDirectContactMessage ct' $ XInfo mergedProfile')
+            void $ sendDirectContactMessage ct' (XInfo mergedProfile')
             when (directOrUsed ct') $ createSndFeatureItems user' ct ct'
     updateContactPrefs :: User -> Contact -> Preferences -> m ChatResponse
     updateContactPrefs user@User {userId} ct@Contact {activeConn = Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
