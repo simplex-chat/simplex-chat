@@ -189,16 +189,7 @@ func startChat() -> DBMigrationResult? {
 func receiveMessages() async {
     logger.debug("NotificationService receiveMessages")
     while true {
-        let newNetConfig = getNetCfg()
-        if newNetConfig != networkConfig {
-            logger.debug("NotificationService applying changed network config")
-            do {
-                try setNetworkConfig(networkConfig)
-                networkConfig = newNetConfig
-            } catch {
-                logger.error("NotificationService apply changed network config error: \(responseError(error), privacy: .public)")
-            }
-        }
+        applyNewNetCfgIfChanged()
         if let msg = await chatRecvMsg() {
             if let (id, ntf) = await receivedMsgNtf(msg) {
                 await PendingNtfs.shared.createStream(id)
@@ -249,6 +240,19 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, UNMutableNotification
     default:
         logger.debug("NotificationService processReceivedMsg ignored event: \(res.responseType)")
         return nil
+    }
+}
+
+func applyNewNetCfgIfChanged() {
+    let newNetConfig = getNetCfg()
+    if newNetConfig != networkConfig {
+        logger.debug("NotificationService applying changed network config")
+        do {
+            try setNetworkConfig(networkConfig)
+            networkConfig = newNetConfig
+        } catch {
+            logger.error("NotificationService apply changed network config error: \(responseError(error), privacy: .public)")
+        }
     }
 }
 
