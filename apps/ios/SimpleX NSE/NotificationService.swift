@@ -154,6 +154,7 @@ class NotificationService: UNNotificationServiceExtension {
 }
 
 var chatStarted = false
+var networkConfig: NetCfg = getNetCfg()
 
 func startChat() -> DBMigrationResult? {
     hs_init(0, nil)
@@ -166,7 +167,7 @@ func startChat() -> DBMigrationResult? {
     if let user = apiGetActiveUser() {
         logger.debug("active user \(String(describing: user))")
         do {
-            try setNetworkConfig(getNetCfg())
+            try setNetworkConfig(networkConfig)
             let justStarted = try apiStartChat()
             chatStarted = true
             if justStarted {
@@ -192,6 +193,16 @@ func receiveMessages() async {
             if let (id, ntf) = await receivedMsgNtf(msg) {
                 await PendingNtfs.shared.createStream(id)
                 await PendingNtfs.shared.writeStream(id, ntf)
+            }
+        }
+        let newNetConfig = getNetCfg()
+        if newNetConfig != networkConfig {
+            logger.debug("NotificationService applying changed network config")
+            do {
+                try setNetworkConfig(networkConfig)
+                networkConfig = newNetConfig
+            } catch {
+                logger.error("NotificationService apply changed network config error: \(responseError(error), privacy: .public)")
             }
         }
     }
