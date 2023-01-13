@@ -29,7 +29,8 @@ CREATE TABLE users(
   local_display_name TEXT NOT NULL UNIQUE,
   active_user INTEGER NOT NULL DEFAULT 0,
   created_at TEXT CHECK(created_at NOT NULL),
-  updated_at TEXT CHECK(updated_at NOT NULL), -- 1 for active user
+  updated_at TEXT CHECK(updated_at NOT NULL),
+  agent_user_id INTEGER CHECK(agent_user_id NOT NULL), -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE

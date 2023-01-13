@@ -43,7 +43,7 @@ import Simplex.Chat.Store (AutoAccept, StoreError, UserContactLink)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent (AgentClient)
 import Simplex.Messaging.Agent.Client (AgentLocks, SMPTestFailure)
-import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, InitialAgentServers, NetworkConfig)
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore)
@@ -51,7 +51,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtocolType, CorrId, MsgFlags)
+import Simplex.Messaging.Protocol (AProtocolType, CorrId, MsgFlags, NtfServer)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport.Client (TransportHost)
 import System.IO (Handle)
@@ -70,7 +70,7 @@ updateStr = "To update run: curl -o- https://raw.githubusercontent.com/simplex-c
 data ChatConfig = ChatConfig
   { agentConfig :: AgentConfig,
     yesToMigrations :: Bool,
-    defaultServers :: InitialAgentServers,
+    defaultServers :: DefaultAgentServers,
     tbqSize :: Natural,
     fileChunkSize :: Integer,
     inlineFiles :: InlineFilesConfig,
@@ -78,6 +78,12 @@ data ChatConfig = ChatConfig
     subscriptionEvents :: Bool,
     hostEvents :: Bool,
     testView :: Bool
+  }
+
+data DefaultAgentServers = DefaultAgentServers
+  { smp :: NonEmpty SMPServerWithAuth,
+    ntf :: [NtfServer],
+    netCfg :: NetworkConfig
   }
 
 data InlineFilesConfig = InlineFilesConfig
@@ -203,7 +209,7 @@ data ChatCommand
   | GetUserSMPServers
   | APISetUserSMPServers UserId SMPServersConfig
   | SetUserSMPServers SMPServersConfig
-  | TestSMPServer SMPServerWithAuth
+  | TestSMPServer UserId SMPServerWithAuth
   | APISetChatItemTTL UserId (Maybe Int64)
   | SetChatItemTTL (Maybe Int64)
   | APIGetChatItemTTL UserId

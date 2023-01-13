@@ -25,7 +25,7 @@ import Simplex.Chat.Options
 import Simplex.Chat.Store
 import Simplex.Chat.Terminal
 import Simplex.Chat.Terminal.Output (newChatTerminal)
-import Simplex.Chat.Types (Profile, User (..))
+import Simplex.Chat.Types (AgentUserId (..), Profile, User (..))
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import Simplex.Messaging.Client (ProtocolClientConfig (..), defaultNetworkConfig)
@@ -108,7 +108,7 @@ testCfgV1 = testCfg {agentConfig = testAgentCfgV1}
 createTestChat :: ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
 createTestChat cfg opts@ChatOpts {dbKey} dbPrefix profile = do
   db@ChatDatabase {chatStore} <- createChatDatabase (testDBPrefix <> dbPrefix) dbKey False
-  Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUser db' profile True
+  Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUserRecord db' (AgentUserId 1) profile True
   startTestChat_ db cfg opts user
 
 startTestChat :: ChatConfig -> ChatOpts -> String -> IO TestCC

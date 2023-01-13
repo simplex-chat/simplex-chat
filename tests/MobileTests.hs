@@ -7,7 +7,7 @@ import ChatTests
 import Control.Monad.Except
 import Simplex.Chat.Mobile
 import Simplex.Chat.Store
-import Simplex.Chat.Types (Profile (..))
+import Simplex.Chat.Types (AgentUserId (..), Profile (..))
 import Test.Hspec
 
 mobileTests :: Spec
@@ -32,9 +32,9 @@ activeUserExists = "{\"resp\":{\"type\":\"chatCmdError\",\"chatError\":{\"type\"
 
 activeUser :: String
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-activeUser = "{\"resp\":{\"activeUser\":{\"user\":{\"userId\":1,\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"no\"},\"fullDelete\":{\"allow\":\"no\"},\"voice\":{\"allow\":\"yes\"}},\"activeUser\":true}}}"
+activeUser = "{\"resp\":{\"activeUser\":{\"user\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"no\"},\"fullDelete\":{\"allow\":\"no\"},\"voice\":{\"allow\":\"yes\"}},\"activeUser\":true}}}"
 #else
-activeUser = "{\"resp\":{\"type\":\"activeUser\",\"user\":{\"userId\":1,\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"no\"},\"fullDelete\":{\"allow\":\"no\"},\"voice\":{\"allow\":\"yes\"}},\"activeUser\":true}}}"
+activeUser = "{\"resp\":{\"type\":\"activeUser\",\"user\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"no\"},\"fullDelete\":{\"allow\":\"no\"},\"voice\":{\"allow\":\"yes\"}},\"activeUser\":true}}}"
 #endif
 
 chatStarted :: String
@@ -93,7 +93,7 @@ testChatApi = withTmpFiles $ do
   let dbPrefix = testDBPrefix <> "1"
       f = chatStoreFile dbPrefix
   st <- createChatStore f "myKey" True
-  Right _ <- withTransaction st $ \db -> runExceptT $ createUser db aliceProfile {preferences = Nothing} True
+  Right _ <- withTransaction st $ \db -> runExceptT $ createUserRecord db (AgentUserId 1) aliceProfile {preferences = Nothing} True
   Right cc <- chatMigrateInit dbPrefix "myKey"
   Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix ""
   Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "anotherKey"

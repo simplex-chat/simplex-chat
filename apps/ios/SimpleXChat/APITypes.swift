@@ -48,7 +48,7 @@ public enum ChatCommand {
     case apiGetGroupLink(groupId: Int64)
     case apiGetUserSMPServers(userId: Int64)
     case apiSetUserSMPServers(userId: Int64, smpServers: [ServerCfg])
-    case testSMPServer(smpServer: String)
+    case testSMPServer(userId: Int64, smpServer: String)
     case apiSetChatItemTTL(userId: Int64, seconds: Int64?)
     case apiGetChatItemTTL(userId: Int64)
     case apiSetNetworkConfig(networkConfig: NetCfg)
@@ -132,7 +132,7 @@ public enum ChatCommand {
             case let .apiGetGroupLink(groupId): return "/_get link #\(groupId)"
             case let .apiGetUserSMPServers(userId): return "/_smp \(userId)"
             case let .apiSetUserSMPServers(userId, smpServers): return "/_smp \(userId) \(smpServersStr(smpServers: smpServers))"
-            case let .testSMPServer(smpServer): return "/smp test \(smpServer)"
+            case let .testSMPServer(userId, smpServer): return "/smp test \(userId) \(smpServer)"
             case let .apiSetChatItemTTL(userId, seconds): return "/_ttl \(userId) \(chatItemTTLStr(seconds: seconds))"
             case let .apiGetChatItemTTL(userId): return "/_ttl \(userId)"
             case let .apiSetNetworkConfig(networkConfig): return "/_network \(encodeJSON(networkConfig))"
