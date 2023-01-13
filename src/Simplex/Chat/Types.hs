@@ -111,7 +111,7 @@ data User = User
     fullPreferences :: FullPreferences,
     activeUser :: Bool
   }
-  deriving (Eq, Show, Generic, FromJSON)
+  deriving (Show, Generic, FromJSON)
 
 instance ToJSON User where toEncoding = J.genericToEncoding J.defaultOptions
 
