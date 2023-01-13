@@ -171,11 +171,11 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
       users <- withTransaction chatStore getUsers
       smp' <- case users of
         [] -> pure $ M.fromList [(1, smp)]
-        _ -> serversMap users
+        _ -> M.fromList <$> initialServers users
       pure InitialAgentServers {smp = smp', ntf, netCfg}
       where
-        serversMap :: [User] -> IO (M.Map UserId (NonEmpty SMPServerWithAuth))
-        serversMap users = M.fromList <$> mapM (\user' -> (aUserId user',) <$> userServers user') users
+        initialServers :: [User] -> IO [(UserId, NonEmpty SMPServerWithAuth)]
+        initialServers = mapM (\u -> (aUserId u,) <$> userServers u)
         userServers :: User -> IO (NonEmpty SMPServerWithAuth)
         userServers user' = activeAgentServers config <$> withTransaction chatStore (`getSMPServers` user')
 
