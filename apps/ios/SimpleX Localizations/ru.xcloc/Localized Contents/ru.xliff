@@ -114,7 +114,7 @@
       </trans-unit>
       <trans-unit id="%lld" xml:space="preserve" approved="no">
         <source>%lld</source>
-        <target state="translated">%llд</target>
+        <target state="translated">%lld</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld %@" xml:space="preserve">
