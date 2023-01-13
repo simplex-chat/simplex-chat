@@ -112,9 +112,9 @@
         <target>%d пропущенных сообщение(й)</target>
         <note>integrity error chat item</note>
       </trans-unit>
-      <trans-unit id="%lld" xml:space="preserve" approved="no">
+      <trans-unit id="%lld" xml:space="preserve">
         <source>%lld</source>
-        <target state="translated">%lld</target>
+        <target>%lld</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld %@" xml:space="preserve">
@@ -1196,9 +1196,9 @@
         <target>Имя профиля:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Do NOT use SimpleX for emergency calls." xml:space="preserve" approved="no">
+      <trans-unit id="Do NOT use SimpleX for emergency calls." xml:space="preserve">
         <source>Do NOT use SimpleX for emergency calls.</source>
-        <target state="translated">Не используйте SimpleX для экстренных звонков.</target>
+        <target>Не используйте SimpleX для экстренных звонков.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Do it later" xml:space="preserve">
@@ -2203,9 +2203,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Onion хосты не используются.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." xml:space="preserve" approved="no">
+      <trans-unit id="Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." xml:space="preserve">
         <source>Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**.</source>
-        <target state="translated">Только пользовательские устройства хранят контакты, группы и сообщения, которые отправляются **с двухуровневым end-to-end шифрованием**.</target>
+        <target>Только пользовательские устройства хранят контакты, группы и сообщения, которые отправляются **с двухуровневым end-to-end шифрованием**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only group owners can change group preferences." xml:space="preserve">
@@ -2948,9 +2948,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Сделать фото</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap button " xml:space="preserve" approved="no">
+      <trans-unit id="Tap button " xml:space="preserve">
         <source>Tap button </source>
-        <target state="translated">Нажмите кнопку </target>
+        <target>Нажмите кнопку </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap to join" xml:space="preserve">
@@ -3592,9 +3592,9 @@ To connect, please ask your contact to create another connection link and check 
         <target>Ваш SimpleX адрес</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your contact can scan it from the app." xml:space="preserve" approved="no">
+      <trans-unit id="Your contact can scan it from the app." xml:space="preserve">
         <source>Your contact can scan it from the app.</source>
-        <target state="translated">Ваш контакт может сосканировать QR код в приложении.</target>
+        <target>Ваш контакт может сосканировать QR код в приложении.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact needs to be online for the connection to complete.&#10;You can cancel this connection and remove the contact (and try later with a new link)." xml:space="preserve">
@@ -3696,9 +3696,9 @@ SimpleX серверы не могут получить доступ к ваше
         <target>наверху, затем выберите:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="accepted call" xml:space="preserve" approved="no">
+      <trans-unit id="accepted call" xml:space="preserve">
         <source>accepted call</source>
-        <target state="translated">принятый звонок</target>
+        <target>принятый звонок</target>
         <note>call status</note>
       </trans-unit>
       <trans-unit id="admin" xml:space="preserve">
