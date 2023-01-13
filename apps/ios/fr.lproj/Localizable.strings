@@ -377,6 +377,9 @@
 /* No comment provided by engineer. */
 "Cancel" = "Annuler";
 
+/* feature offered item */
+"cancelled %@" = "annulé %@";
+
 /* No comment provided by engineer. */
 "Cannot access keychain to save database password" = "Impossible d'accéder à la keychain pour enregistrer le mot de passe de la base de données";
 
@@ -1242,7 +1245,7 @@
 "Instant push notifications will be hidden!\n" = "Les notifications push instantanées vont être cachées !\n";
 
 /* No comment provided by engineer. */
-"Instantly" = "Instantanément";
+"Instantly" = "Instantané";
 
 /* invalid chat data */
 "invalid chat" = "chat invalide";
@@ -1521,6 +1524,12 @@
 /* No comment provided by engineer. */
 "Off (Local)" = "Off (Local)";
 
+/* feature offered item */
+"offered %@" = "offert %@";
+
+/* feature offered item */
+"offered %@: %@" = "offert %1$@ : %2$@";
+
 /* No comment provided by engineer. */
 "Ok" = "Ok";
 
@@ -1609,10 +1618,10 @@
 "peer-to-peer" = "pair-à-pair";
 
 /* No comment provided by engineer. */
-"People can connect to you only via the links you share." = "Les gens peuvent se connecter à vous uniquement via les liens que vous partagez.";
+"People can connect to you only via the links you share." = "On ne peut se connecter à vous qu’avec les liens que vous partagez.";
 
 /* No comment provided by engineer. */
-"Periodically" = "Périodiquement";
+"Periodically" = "Périodique";
 
 /* No comment provided by engineer. */
 "PING interval" = "Intervalle de PING";
