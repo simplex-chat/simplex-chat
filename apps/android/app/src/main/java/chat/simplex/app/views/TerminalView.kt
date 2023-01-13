@@ -174,7 +174,7 @@ fun TerminalLog(terminalItems: List<TerminalItem>) {
   DisposableEffect(Unit) {
     onDispose { lazyListState = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
   }
-  val reversedTerminalItems by remember { derivedStateOf { terminalItems.reversed() } }
+  val reversedTerminalItems by remember { derivedStateOf { terminalItems.reversed().toList() } }
   LazyColumn(state = listState, reverseLayout = true) {
     items(reversedTerminalItems) { item ->
       Text(
