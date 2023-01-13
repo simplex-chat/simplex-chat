@@ -64,31 +64,31 @@ responseToView user_ testView liveItems ts = \case
   CRChatRunning -> ["chat is running"]
   CRChatStopped -> ["chat stopped"]
   CRChatSuspended -> ["chat suspended"]
-  CRApiChats u chats -> withOtherUser u $ if testView then testViewChats chats else [plain . bshow $ J.encode chats]
-  CRApiChat u chat -> withOtherUser u $ if testView then testViewChat chat else [plain . bshow $ J.encode chat]
+  CRApiChats u chats -> ttyUser u $ if testView then testViewChats chats else [plain . bshow $ J.encode chats]
+  CRApiChat u chat -> ttyUser u $ if testView then testViewChat chat else [plain . bshow $ J.encode chat]
   CRApiParsedMarkdown ft -> [plain . bshow $ J.encode ft]
-  CRUserSMPServers u smpServers _ -> withOtherUser u $ viewSMPServers (L.toList smpServers) testView
+  CRUserSMPServers u smpServers _ -> ttyUser u $ viewSMPServers (L.toList smpServers) testView
   CRSmpTestResult testFailure -> viewSMPTestResult testFailure
-  CRChatItemTTL u ttl -> withOtherUser u $ viewChatItemTTL ttl
+  CRChatItemTTL u ttl -> ttyUser u $ viewChatItemTTL ttl
   CRNetworkConfig cfg -> viewNetworkConfig cfg
-  CRContactInfo u ct cStats customUserProfile -> withOtherUser u $ viewContactInfo ct cStats customUserProfile
-  CRGroupMemberInfo u g m cStats -> withOtherUser u $ viewGroupMemberInfo g m cStats
-  CRContactSwitch u ct progress -> withOtherUser u $ viewContactSwitch ct progress
-  CRGroupMemberSwitch u g m progress -> withOtherUser u $ viewGroupMemberSwitch g m progress
-  CRConnectionVerified u verified code -> withOtherUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
-  CRContactCode u ct code -> withOtherUser u $ viewContactCode ct code testView
-  CRGroupMemberCode u g m code -> withOtherUser u $ viewGroupMemberCode g m code testView
-  CRNewChatItem u (AChatItem _ _ chat item) -> withOtherUser u $ unmuted chat item $ viewChatItem chat item False ts
-  CRChatItems u chatItems -> withOtherUser u $ concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True ts) chatItems
-  CRChatItemId u itemId -> withOtherUser u [plain $ maybe "no item" show itemId]
-  CRChatItemStatusUpdated u _ -> withOtherUser u []
-  CRChatItemUpdated u (AChatItem _ _ chat item) -> withOtherUser u $ unmuted chat item $ viewItemUpdate chat item liveItems ts
-  CRChatItemDeleted u (AChatItem _ _ chat deletedItem) toItem byUser timed -> withOtherUser u $ unmuted chat deletedItem $ viewItemDelete chat deletedItem (isJust toItem) byUser timed ts
-  CRChatItemDeletedNotFound u Contact {localDisplayName = c} _ -> withOtherUser u [ttyFrom $ c <> "> [deleted - original message not found]"]
-  CRBroadcastSent u mc n t -> withOtherUser u $ viewSentBroadcast mc n ts t
-  CRMsgIntegrityError u mErr -> withOtherUser u $ viewMsgIntegrityError mErr
+  CRContactInfo u ct cStats customUserProfile -> ttyUser u $ viewContactInfo ct cStats customUserProfile
+  CRGroupMemberInfo u g m cStats -> ttyUser u $ viewGroupMemberInfo g m cStats
+  CRContactSwitch u ct progress -> ttyUser u $ viewContactSwitch ct progress
+  CRGroupMemberSwitch u g m progress -> ttyUser u $ viewGroupMemberSwitch g m progress
+  CRConnectionVerified u verified code -> ttyUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
+  CRContactCode u ct code -> ttyUser u $ viewContactCode ct code testView
+  CRGroupMemberCode u g m code -> ttyUser u $ viewGroupMemberCode g m code testView
+  CRNewChatItem u (AChatItem _ _ chat item) -> ttyUser u $ unmuted chat item $ viewChatItem chat item False ts
+  CRChatItems u chatItems -> ttyUser u $ concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True ts) chatItems
+  CRChatItemId u itemId -> ttyUser u [plain $ maybe "no item" show itemId]
+  CRChatItemStatusUpdated u _ -> ttyUser u []
+  CRChatItemUpdated u (AChatItem _ _ chat item) -> ttyUser u $ unmuted chat item $ viewItemUpdate chat item liveItems ts
+  CRChatItemDeleted u (AChatItem _ _ chat deletedItem) toItem byUser timed -> ttyUser u $ unmuted chat deletedItem $ viewItemDelete chat deletedItem (isJust toItem) byUser timed ts
+  CRChatItemDeletedNotFound u Contact {localDisplayName = c} _ -> ttyUser u [ttyFrom $ c <> "> [deleted - original message not found]"]
+  CRBroadcastSent u mc n t -> ttyUser u $ viewSentBroadcast mc n ts t
+  CRMsgIntegrityError u mErr -> ttyUser u $ viewMsgIntegrityError mErr
   CRCmdAccepted _ -> []
-  CRCmdOk u_ -> withOtherUser' u_ ["ok"]
+  CRCmdOk u_ -> ttyUser' u_ ["ok"]
   CRChatHelp section -> case section of
     HSMain -> chatHelpInfo
     HSFiles -> filesHelpInfo
@@ -98,61 +98,61 @@ responseToView user_ testView liveItems ts = \case
     HSMarkdown -> markdownInfo
     HSSettings -> settingsInfo
   CRWelcome user -> chatWelcome user
-  CRContactsList u cs -> withOtherUser u $ viewContactsList cs
-  CRUserContactLink u UserContactLink {connReqContact, autoAccept} -> withOtherUser u $ connReqContact_ "Your chat address:" connReqContact <> autoAcceptStatus_ autoAccept
-  CRUserContactLinkUpdated u UserContactLink {autoAccept} -> withOtherUser u $ autoAcceptStatus_ autoAccept
-  CRContactRequestRejected u UserContactRequest {localDisplayName = c} -> withOtherUser u [ttyContact c <> ": contact request rejected"]
-  CRGroupCreated u g -> withOtherUser u $ viewGroupCreated g
-  CRGroupMembers u g -> withOtherUser u $ viewGroupMembers g
-  CRGroupsList u gs -> withOtherUser u $ viewGroupsList gs
+  CRContactsList u cs -> ttyUser u $ viewContactsList cs
+  CRUserContactLink u UserContactLink {connReqContact, autoAccept} -> ttyUser u $ connReqContact_ "Your chat address:" connReqContact <> autoAcceptStatus_ autoAccept
+  CRUserContactLinkUpdated u UserContactLink {autoAccept} -> ttyUser u $ autoAcceptStatus_ autoAccept
+  CRContactRequestRejected u UserContactRequest {localDisplayName = c} -> ttyUser u [ttyContact c <> ": contact request rejected"]
+  CRGroupCreated u g -> ttyUser u $ viewGroupCreated g
+  CRGroupMembers u g -> ttyUser u $ viewGroupMembers g
+  CRGroupsList u gs -> ttyUser u $ viewGroupsList gs
   CRSentGroupInvitation u g c _ ->
-    withOtherUser u $
+    ttyUser u $
       if viaGroupLink . contactConn $ c
         then [ttyContact' c <> " invited to group " <> ttyGroup' g <> " via your group link"]
         else ["invitation to join the group " <> ttyGroup' g <> " sent to " <> ttyContact' c]
-  CRFileTransferStatus u ftStatus -> withOtherUser u $ viewFileTransferStatus ftStatus
-  CRUserProfile u p -> withOtherUser u $ viewUserProfile p
-  CRUserProfileNoChange u -> withOtherUser u ["user profile did not change"]
+  CRFileTransferStatus u ftStatus -> ttyUser u $ viewFileTransferStatus ftStatus
+  CRUserProfile u p -> ttyUser u $ viewUserProfile p
+  CRUserProfileNoChange u -> ttyUser u ["user profile did not change"]
   CRVersionInfo _ -> [plain versionStr, plain updateStr]
-  CRInvitation u cReq -> withOtherUser u $ viewConnReqInvitation cReq
-  CRSentConfirmation u -> withOtherUser u ["confirmation sent!"]
-  CRSentInvitation u customUserProfile -> withOtherUser u $ viewSentInvitation customUserProfile testView
-  CRContactDeleted u c -> withOtherUser u [ttyContact' c <> ": contact is deleted"]
-  CRChatCleared u chatInfo -> withOtherUser u $ viewChatCleared chatInfo
-  CRAcceptingContactRequest u c -> withOtherUser u [ttyFullContact c <> ": accepting contact request..."]
-  CRContactAlreadyExists u c -> withOtherUser u [ttyFullContact c <> ": contact already exists"]
-  CRContactRequestAlreadyAccepted u c -> withOtherUser u [ttyFullContact c <> ": sent you a duplicate contact request, but you are already connected, no action needed"]
-  CRUserContactLinkCreated u cReq -> withOtherUser u $ connReqContact_ "Your new chat address is created!" cReq
-  CRUserContactLinkDeleted u -> withOtherUser u viewUserContactLinkDeleted
-  CRUserAcceptedGroupSent u _g _ -> withOtherUser u [] -- [ttyGroup' g <> ": joining the group..."]
-  CRUserDeletedMember u g m -> withOtherUser u [ttyGroup' g <> ": you removed " <> ttyMember m <> " from the group"]
-  CRLeftMemberUser u g -> withOtherUser u $ [ttyGroup' g <> ": you left the group"] <> groupPreserved g
-  CRGroupDeletedUser u g -> withOtherUser u [ttyGroup' g <> ": you deleted the group"]
-  CRRcvFileAccepted u ci -> withOtherUser u $ savingFile' ci
-  CRRcvFileAcceptedSndCancelled u ft -> withOtherUser u $ viewRcvFileSndCancelled ft
-  CRSndGroupFileCancelled u _ ftm fts -> withOtherUser u $ viewSndGroupFileCancelled ftm fts
-  CRRcvFileCancelled u ft -> withOtherUser u $ receivingFile_ "cancelled" ft
-  CRUserProfileUpdated u p p' -> withOtherUser u $ viewUserProfileUpdated p p'
-  CRContactPrefsUpdated {user = u, fromContact, toContact} -> withOtherUser u $ viewUserContactPrefsUpdated u fromContact toContact
-  CRContactAliasUpdated u c -> withOtherUser u $ viewContactAliasUpdated c
-  CRConnectionAliasUpdated u c -> withOtherUser u $ viewConnectionAliasUpdated c
-  CRContactUpdated {user = u, fromContact = c, toContact = c'} -> withOtherUser u $ viewContactUpdated c c' <> viewContactPrefsUpdated u c c'
-  CRContactsMerged u intoCt mergedCt -> withOtherUser u $ viewContactsMerged intoCt mergedCt
-  CRReceivedContactRequest u UserContactRequest {localDisplayName = c, profile} -> withOtherUser u $ viewReceivedContactRequest c profile
-  CRRcvFileStart u ci -> withOtherUser u $ receivingFile_' "started" ci
-  CRRcvFileComplete u ci -> withOtherUser u $ receivingFile_' "completed" ci
-  CRRcvFileSndCancelled u ft -> withOtherUser u $ viewRcvFileSndCancelled ft
-  CRSndFileStart u _ ft -> withOtherUser u $ sendingFile_ "started" ft
-  CRSndFileComplete u _ ft -> withOtherUser u $ sendingFile_ "completed" ft
+  CRInvitation u cReq -> ttyUser u $ viewConnReqInvitation cReq
+  CRSentConfirmation u -> ttyUser u ["confirmation sent!"]
+  CRSentInvitation u customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
+  CRContactDeleted u c -> ttyUser u [ttyContact' c <> ": contact is deleted"]
+  CRChatCleared u chatInfo -> ttyUser u $ viewChatCleared chatInfo
+  CRAcceptingContactRequest u c -> ttyUser u [ttyFullContact c <> ": accepting contact request..."]
+  CRContactAlreadyExists u c -> ttyUser u [ttyFullContact c <> ": contact already exists"]
+  CRContactRequestAlreadyAccepted u c -> ttyUser u [ttyFullContact c <> ": sent you a duplicate contact request, but you are already connected, no action needed"]
+  CRUserContactLinkCreated u cReq -> ttyUser u $ connReqContact_ "Your new chat address is created!" cReq
+  CRUserContactLinkDeleted u -> ttyUser u viewUserContactLinkDeleted
+  CRUserAcceptedGroupSent u _g _ -> ttyUser u [] -- [ttyGroup' g <> ": joining the group..."]
+  CRUserDeletedMember u g m -> ttyUser u [ttyGroup' g <> ": you removed " <> ttyMember m <> " from the group"]
+  CRLeftMemberUser u g -> ttyUser u $ [ttyGroup' g <> ": you left the group"] <> groupPreserved g
+  CRGroupDeletedUser u g -> ttyUser u [ttyGroup' g <> ": you deleted the group"]
+  CRRcvFileAccepted u ci -> ttyUser u $ savingFile' ci
+  CRRcvFileAcceptedSndCancelled u ft -> ttyUser u $ viewRcvFileSndCancelled ft
+  CRSndGroupFileCancelled u _ ftm fts -> ttyUser u $ viewSndGroupFileCancelled ftm fts
+  CRRcvFileCancelled u ft -> ttyUser u $ receivingFile_ "cancelled" ft
+  CRUserProfileUpdated u p p' -> ttyUser u $ viewUserProfileUpdated p p'
+  CRContactPrefsUpdated {user = u, fromContact, toContact} -> ttyUser u $ viewUserContactPrefsUpdated u fromContact toContact
+  CRContactAliasUpdated u c -> ttyUser u $ viewContactAliasUpdated c
+  CRConnectionAliasUpdated u c -> ttyUser u $ viewConnectionAliasUpdated c
+  CRContactUpdated {user = u, fromContact = c, toContact = c'} -> ttyUser u $ viewContactUpdated c c' <> viewContactPrefsUpdated u c c'
+  CRContactsMerged u intoCt mergedCt -> ttyUser u $ viewContactsMerged intoCt mergedCt
+  CRReceivedContactRequest u UserContactRequest {localDisplayName = c, profile} -> ttyUser u $ viewReceivedContactRequest c profile
+  CRRcvFileStart u ci -> ttyUser u $ receivingFile_' "started" ci
+  CRRcvFileComplete u ci -> ttyUser u $ receivingFile_' "completed" ci
+  CRRcvFileSndCancelled u ft -> ttyUser u $ viewRcvFileSndCancelled ft
+  CRSndFileStart u _ ft -> ttyUser u $ sendingFile_ "started" ft
+  CRSndFileComplete u _ ft -> ttyUser u $ sendingFile_ "completed" ft
   CRSndFileCancelled _ ft -> sendingFile_ "cancelled" ft
   CRSndFileRcvCancelled u _ ft@SndFileTransfer {recipientDisplayName = c} ->
-    withOtherUser u $ [ttyContact c <> " cancelled receiving " <> sndFile ft]
-  CRContactConnecting u _ -> withOtherUser u []
-  CRContactConnected u ct userCustomProfile -> withOtherUser u $ viewContactConnected ct userCustomProfile testView
-  CRContactAnotherClient u c -> withOtherUser u [ttyContact' c <> ": contact is connected to another client"]
-  CRSubscriptionEnd u acEntity -> withOtherUser u [sShow (connId (entityConnection acEntity :: Connection)) <> ": END"]
-  CRContactsDisconnected u srv cs -> withOtherUser u [plain $ "server disconnected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
-  CRContactsSubscribed u srv cs -> withOtherUser u [plain $ "server connected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
+    ttyUser u $ [ttyContact c <> " cancelled receiving " <> sndFile ft]
+  CRContactConnecting u _ -> ttyUser u []
+  CRContactConnected u ct userCustomProfile -> ttyUser u $ viewContactConnected ct userCustomProfile testView
+  CRContactAnotherClient u c -> ttyUser u [ttyContact' c <> ": contact is connected to another client"]
+  CRSubscriptionEnd u acEntity -> ttyUser u [sShow (connId (entityConnection acEntity :: Connection)) <> ": END"]
+  CRContactsDisconnected u srv cs -> ttyUser u [plain $ "server disconnected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
+  CRContactsSubscribed u srv cs -> ttyUser u [plain $ "server connected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
   CRContactSubError c e -> [ttyContact' c <> ": contact error " <> sShow e]
   CRContactSubSummary summary ->
     [sShow (length subscribed) <> " contacts connected (use " <> highlight' "/cs" <> " for the list)" | not (null subscribed)] <> viewErrorsSummary errors " contact errors"
@@ -166,26 +166,26 @@ responseToView user_ testView liveItems ts = \case
       addressSS UserContactSubStatus {userContactError} = maybe ("Your address is active! To show: " <> highlight' "/sa") (\e -> "User address error: " <> sShow e <> ", to delete your address: " <> highlight' "/da") userContactError
       (groupLinkErrors, groupLinksSubscribed) = partition (isJust . userContactError) groupLinks
   CRGroupInvitation g -> [groupInvitation' g]
-  CRReceivedGroupInvitation u g c role -> withOtherUser u $ viewReceivedGroupInvitation g c role
-  CRUserJoinedGroup u g _ -> withOtherUser u $ viewUserJoinedGroup g
-  CRJoinedGroupMember u g m -> withOtherUser u $ viewJoinedGroupMember g m
+  CRReceivedGroupInvitation u g c role -> ttyUser u $ viewReceivedGroupInvitation g c role
+  CRUserJoinedGroup u g _ -> ttyUser u $ viewUserJoinedGroup g
+  CRJoinedGroupMember u g m -> ttyUser u $ viewJoinedGroupMember g m
   CRHostConnected p h -> [plain $ "connected to " <> viewHostEvent p h]
   CRHostDisconnected p h -> [plain $ "disconnected from " <> viewHostEvent p h]
-  CRJoinedGroupMemberConnecting u g host m -> withOtherUser u [ttyGroup' g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group (connecting...)"]
-  CRConnectedToGroupMember u g m -> withOtherUser u [ttyGroup' g <> ": " <> connectedMember m <> " is connected"]
-  CRMemberRole u g by m r r' -> withOtherUser u $ viewMemberRoleChanged g by m r r'
-  CRMemberRoleUser u g m r r' -> withOtherUser u $ viewMemberRoleUserChanged g m r r'
-  CRDeletedMemberUser u g by -> withOtherUser u $ [ttyGroup' g <> ": " <> ttyMember by <> " removed you from the group"] <> groupPreserved g
-  CRDeletedMember u g by m -> withOtherUser u [ttyGroup' g <> ": " <> ttyMember by <> " removed " <> ttyMember m <> " from the group"]
-  CRLeftMember u g m -> withOtherUser u [ttyGroup' g <> ": " <> ttyMember m <> " left the group"]
+  CRJoinedGroupMemberConnecting u g host m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group (connecting...)"]
+  CRConnectedToGroupMember u g m -> ttyUser u [ttyGroup' g <> ": " <> connectedMember m <> " is connected"]
+  CRMemberRole u g by m r r' -> ttyUser u $ viewMemberRoleChanged g by m r r'
+  CRMemberRoleUser u g m r r' -> ttyUser u $ viewMemberRoleUserChanged g m r r'
+  CRDeletedMemberUser u g by -> ttyUser u $ [ttyGroup' g <> ": " <> ttyMember by <> " removed you from the group"] <> groupPreserved g
+  CRDeletedMember u g by m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember by <> " removed " <> ttyMember m <> " from the group"]
+  CRLeftMember u g m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember m <> " left the group"]
   CRGroupEmpty g -> [ttyFullGroup g <> ": group is empty"]
   CRGroupRemoved g -> [ttyFullGroup g <> ": you are no longer a member or group deleted"]
-  CRGroupDeleted u g m -> withOtherUser u [ttyGroup' g <> ": " <> ttyMember m <> " deleted the group", "use " <> highlight ("/d #" <> groupName' g) <> " to delete the local copy of the group"]
-  CRGroupUpdated u g g' m -> withOtherUser u $ viewGroupUpdated g g' m
-  CRGroupProfile u g -> withOtherUser u $ viewGroupProfile g
-  CRGroupLinkCreated u g cReq -> withOtherUser u $ groupLink_ "Group link is created!" g cReq
-  CRGroupLink u g cReq -> withOtherUser u $ groupLink_ "Group link:" g cReq
-  CRGroupLinkDeleted u g -> withOtherUser u $ viewGroupLinkDeleted g
+  CRGroupDeleted u g m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember m <> " deleted the group", "use " <> highlight ("/d #" <> groupName' g) <> " to delete the local copy of the group"]
+  CRGroupUpdated u g g' m -> ttyUser u $ viewGroupUpdated g g' m
+  CRGroupProfile u g -> ttyUser u $ viewGroupProfile g
+  CRGroupLinkCreated u g cReq -> ttyUser u $ groupLink_ "Group link is created!" g cReq
+  CRGroupLink u g cReq -> ttyUser u $ groupLink_ "Group link:" g cReq
+  CRGroupLinkDeleted u g -> ttyUser u $ viewGroupLinkDeleted g
   CRAcceptingGroupJoinRequest _ g c -> [ttyFullContact c <> ": accepting request to join group " <> ttyGroup' g <> "..."]
   CRMemberSubError g m e -> [ttyGroup' g <> " member " <> ttyMember m <> " error: " <> sShow e]
   CRMemberSubSummary summary -> viewErrorsSummary (filter (isJust . memberError) summary) " group member errors"
@@ -195,16 +195,16 @@ responseToView user_ testView liveItems ts = \case
     ["sent file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
   CRRcvFileSubError RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}} e ->
     ["received file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
-  CRCallInvitation u RcvCallInvitation {contact, callType, sharedKey} -> withOtherUser u $ viewCallInvitation contact callType sharedKey
-  CRCallOffer {user = u, contact, callType, offer, sharedKey} -> withOtherUser u $ viewCallOffer contact callType offer sharedKey
-  CRCallAnswer {user = u, contact, answer} -> withOtherUser u $ viewCallAnswer contact answer
-  CRCallExtraInfo {user = u, contact} -> withOtherUser u ["call extra info from " <> ttyContact' contact]
-  CRCallEnded {user = u, contact} -> withOtherUser u ["call with " <> ttyContact' contact <> " ended"]
-  CRCallInvitations u _ -> withOtherUser u []
+  CRCallInvitation u RcvCallInvitation {contact, callType, sharedKey} -> ttyUser u $ viewCallInvitation contact callType sharedKey
+  CRCallOffer {user = u, contact, callType, offer, sharedKey} -> ttyUser u $ viewCallOffer contact callType offer sharedKey
+  CRCallAnswer {user = u, contact, answer} -> ttyUser u $ viewCallAnswer contact answer
+  CRCallExtraInfo {user = u, contact} -> ttyUser u ["call extra info from " <> ttyContact' contact]
+  CRCallEnded {user = u, contact} -> ttyUser u ["call with " <> ttyContact' contact <> " ended"]
+  CRCallInvitations u _ -> ttyUser u []
   CRUserContactLinkSubscribed -> ["Your address is active! To show: " <> highlight' "/sa"]
   CRUserContactLinkSubError e -> ["user address error: " <> sShow e, "to delete your address: " <> highlight' "/da"]
-  CRNewContactConnection u _ -> withOtherUser u []
-  CRContactConnectionDeleted u PendingContactConnection {pccConnId} -> withOtherUser u ["connection :" <> sShow pccConnId <> " deleted"]
+  CRNewContactConnection u _ -> ttyUser u []
+  CRContactConnectionDeleted u PendingContactConnection {pccConnId} -> ttyUser u ["connection :" <> sShow pccConnId <> " deleted"]
   CRNtfTokenStatus status -> ["device token status: " <> plain (smpEncode status)]
   CRNtfToken _ status mode -> ["device token status: " <> plain (smpEncode status) <> ", notifications mode: " <> plain (strEncode mode)]
   CRNtfMessages {} -> []
@@ -215,18 +215,20 @@ responseToView user_ testView liveItems ts = \case
     ]
   CRAgentStats stats -> map (plain . intercalate ",") stats
   CRConnectionDisabled entity -> viewConnectionEntityDisabled entity
-  CRMessageError u prefix err -> withOtherUser u [plain prefix <> ": " <> plain err]
-  CRChatCmdError u e -> withOtherUser' u $ viewChatError e
-  CRChatError u e -> withOtherUser' u $ viewChatError e
+  CRMessageError u prefix err -> ttyUser u [plain prefix <> ": " <> plain err]
+  CRChatCmdError u e -> ttyUser' u $ viewChatError e
+  CRChatError u e -> ttyUser' u $ viewChatError e
   where
-    withOtherUser :: User -> [StyledString] -> [StyledString]
-    withOtherUser = withOtherUser' . Just
-    withOtherUser' :: Maybe User -> [StyledString] -> [StyledString]
-    withOtherUser' cmdUser@(Just User {localDisplayName = u}) ss@(s : ss')
-      | cmdUser /= user_ = "[user: " <> highlight u <> "] " <> s : ss'
-      | otherwise = ss
-    withOtherUser' (Just _) [] = []
-    withOtherUser' Nothing ss = ss
+    ttyUser :: User -> [StyledString] -> [StyledString]
+    ttyUser User {userId, localDisplayName = u} = \case
+      ss@(s : ss') -> if sameUser then ss else "[user: " <> highlight u <> "] " <> s : ss'
+        where
+          sameUser = case user_ of
+            Just User {userId = activeUserId} -> userId == activeUserId
+            _ -> False
+      [] -> []
+    ttyUser' :: Maybe User -> [StyledString] -> [StyledString]
+    ttyUser' = maybe id ttyUser
     testViewChats :: [AChat] -> [StyledString]
     testViewChats chats = [sShow $ map toChatView chats]
       where

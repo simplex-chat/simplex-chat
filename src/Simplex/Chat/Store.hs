@@ -543,8 +543,8 @@ getConnReqContactXContactId db user@User {userId} cReqHash = do
           "SELECT xcontact_id FROM connections WHERE user_id = ? AND via_contact_uri_hash = ? LIMIT 1"
           (userId, cReqHash)
 
-createDirectConnection :: DB.Connection -> UserId -> ConnId -> ConnReqInvitation -> ConnStatus -> Maybe Profile -> IO PendingContactConnection
-createDirectConnection db userId acId cReq pccConnStatus incognitoProfile = do
+createDirectConnection :: DB.Connection -> User -> ConnId -> ConnReqInvitation -> ConnStatus -> Maybe Profile -> IO PendingContactConnection
+createDirectConnection db User {userId} acId cReq pccConnStatus incognitoProfile = do
   createdAt <- getCurrentTime
   customUserProfileId <- mapM (createIncognitoProfile_ db userId createdAt) incognitoProfile
   DB.execute
@@ -882,8 +882,8 @@ getUserContactProfiles db User {userId} =
     toContactProfile :: (ContactName, Text, Maybe ImageData, Maybe Preferences) -> (Profile)
     toContactProfile (displayName, fullName, image, preferences) = Profile {displayName, fullName, image, preferences}
 
-createUserContactLink :: DB.Connection -> UserId -> ConnId -> ConnReqContact -> ExceptT StoreError IO ()
-createUserContactLink db userId agentConnId cReq =
+createUserContactLink :: DB.Connection -> User -> ConnId -> ConnReqContact -> ExceptT StoreError IO ()
+createUserContactLink db User {userId} agentConnId cReq =
   checkConstraint SEDuplicateContactLink . liftIO $ do
     currentTs <- getCurrentTime
     DB.execute
@@ -991,8 +991,8 @@ toUserContactLink (connReq, autoAccept, acceptIncognito, autoReply) =
   UserContactLink connReq $
     if autoAccept then Just AutoAccept {acceptIncognito, autoReply} else Nothing
 
-getUserAddress :: DB.Connection -> UserId -> ExceptT StoreError IO UserContactLink
-getUserAddress db userId =
+getUserAddress :: DB.Connection -> User -> ExceptT StoreError IO UserContactLink
+getUserAddress db User {userId} =
   ExceptT . firstRow toUserContactLink SEUserContactLinkNotFound $
     DB.query
       db
@@ -1016,9 +1016,9 @@ getUserContactLinkById db userId userContactLinkId =
       |]
       (userId, userContactLinkId)
 
-updateUserAddressAutoAccept :: DB.Connection -> UserId -> Maybe AutoAccept -> ExceptT StoreError IO UserContactLink
-updateUserAddressAutoAccept db userId autoAccept = do
-  link <- getUserAddress db userId
+updateUserAddressAutoAccept :: DB.Connection -> User -> Maybe AutoAccept -> ExceptT StoreError IO UserContactLink
+updateUserAddressAutoAccept db user@User {userId} autoAccept = do
+  link <- getUserAddress db user
   liftIO updateUserAddressAutoAccept_ $> link {autoAccept}
   where
     updateUserAddressAutoAccept_ =
