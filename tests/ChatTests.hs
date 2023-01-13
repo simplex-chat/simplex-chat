@@ -256,6 +256,7 @@ testAddContact = versionTestMatrix2 runTestAddContact
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
+      threadDelay 100000
       chatsEmpty alice bob
       alice #> "@bob hello there 🙂"
       bob <# "alice> hello there 🙂"
@@ -2579,6 +2580,7 @@ testUserContactLink = versionTestMatrix3 $ \alice bob cath -> do
   concurrently_
     (bob <## "alice (Alice): contact is connected")
     (alice <## "bob (Bob): contact is connected")
+  threadDelay 100000
   alice @@@ [("@bob", "Voice messages: enabled")]
   alice <##> bob
 
@@ -2590,6 +2592,7 @@ testUserContactLink = versionTestMatrix3 $ \alice bob cath -> do
   concurrently_
     (cath <## "alice (Alice): contact is connected")
     (alice <## "cath (Catherine): contact is connected")
+  threadDelay 100000
   alice @@@ [("@cath", "Voice messages: enabled"), ("@bob", "hey")]
   alice <##> cath
 
@@ -2692,6 +2695,7 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
     concurrently_
       (cath <## "alice (Alice): contact is connected")
       (alice <## "cath (Catherine): contact is connected")
+    threadDelay 100000
     alice @@@ [("@cath", "Voice messages: enabled"), ("@bob", "hey")]
     alice <##> cath
 
@@ -2764,6 +2768,7 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
     concurrently_
       (cath <## "alice (Alice): contact is connected")
       (alice <## "cath (Catherine): contact is connected")
+    threadDelay 100000
     alice @@@ [("@cath", "Voice messages: enabled"), ("@robert", "hey")]
     alice <##> cath
 
@@ -3410,6 +3415,7 @@ testSetConnectionAlias = testChat2 aliceProfile bobProfile $
     concurrently_
       (alice <## "bob (Bob): contact is connected")
       (bob <## "alice (Alice): contact is connected")
+    threadDelay 100000
     alice @@@ [("@bob", "Voice messages: enabled")]
     alice ##> "/cs"
     alice <## "bob (Bob) (alias: friend)"
@@ -3815,6 +3821,7 @@ testAsyncInitiatingOffline :: IO ()
 testAsyncInitiatingOffline = withTmpFiles $ do
   putStrLn "testAsyncInitiatingOffline"
   inv <- withNewTestChat "alice" aliceProfile $ \alice -> do
+    threadDelay 250000
     putStrLn "1"
     alice ##> "/c"
     putStrLn "2"
@@ -4446,6 +4453,7 @@ testMultipleUserAddresses =
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
+      threadDelay 100000
       alice @@@ [("@bob", "Voice messages: enabled")]
       alice <##> bob
 
@@ -4463,6 +4471,7 @@ testMultipleUserAddresses =
       concurrently_
         (bob <## "alisa: contact is connected")
         (alice <## "bob (Bob): contact is connected")
+      threadDelay 100000
       alice #$> ("/_get chats 2 pcc=on", chats, [("@bob", "Voice messages: enabled")])
       alice <##> bob
 
@@ -4493,6 +4502,7 @@ testMultipleUserAddresses =
       concurrently_
         (cath <## "alisa: contact is connected")
         (alice <## "cath (Catherine): contact is connected")
+      threadDelay 100000
       alice #$> ("/_get chats 2 pcc=on", chats, [("@cath", "Voice messages: enabled"), ("@bob", "hey")])
       alice <##> cath
 
@@ -4567,6 +4577,7 @@ testGroupLink =
             bob <## "alice (Alice): contact is connected"
             bob <## "#team: you joined the group"
         ]
+      threadDelay 100000
       alice #$> ("/_get chat #1 count=100", chat, [(0, "invited via your group link"), (0, "connected")])
       -- contacts connected via group link are not in chat previews
       alice @@@ [("#team", "connected")]
@@ -4713,6 +4724,7 @@ testGroupLinkContactUsed =
             bob <## "#team: you joined the group"
         ]
       -- sending/receiving a message marks contact as used
+      threadDelay 100000
       alice @@@ [("#team", "connected")]
       bob @@@ [("#team", "connected")]
       alice #> "@bob hello"
