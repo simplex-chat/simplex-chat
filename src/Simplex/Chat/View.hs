@@ -221,12 +221,12 @@ responseToView user_ testView liveItems ts = \case
   where
     ttyUser :: User -> [StyledString] -> [StyledString]
     ttyUser _ [] = []
-    ttyUser User {userId, localDisplayName = u} ss@(s : ss') =
-      if sameUser then ss else "[user: " <> highlight u <> "] " <> s : ss'
+    ttyUser User {userId, localDisplayName = u} ss = prependFirst userPrefix ss
       where
-        sameUser = case user_ of
-          Just User {userId = activeUserId} -> userId == activeUserId
-          _ -> False
+        userPrefix = case user_ of
+          Just User {userId = activeUserId} -> if userId /= activeUserId then prefix else ""
+          _ -> prefix
+        prefix = "[user: " <> highlight u <> "] "
     ttyUser' :: Maybe User -> [StyledString] -> [StyledString]
     ttyUser' = maybe id ttyUser
     testViewChats :: [AChat] -> [StyledString]
