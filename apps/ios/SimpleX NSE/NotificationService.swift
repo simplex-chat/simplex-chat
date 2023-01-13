@@ -189,7 +189,7 @@ func startChat() -> DBMigrationResult? {
 func receiveMessages() async {
     logger.debug("NotificationService receiveMessages")
     while true {
-        applyNewNetCfgIfChanged()
+        updateNetCfg()
         if let msg = await chatRecvMsg() {
             if let (id, ntf) = await receivedMsgNtf(msg) {
                 await PendingNtfs.shared.createStream(id)
@@ -243,7 +243,7 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, UNMutableNotification
     }
 }
 
-func applyNewNetCfgIfChanged() {
+func updateNetCfg() {
     let newNetConfig = getNetCfg()
     if newNetConfig != networkConfig {
         logger.debug("NotificationService applying changed network config")
