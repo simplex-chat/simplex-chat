@@ -69,12 +69,12 @@
       </trans-unit>
       <trans-unit id="%@ is not verified" xml:space="preserve">
         <source>%@ is not verified</source>
-        <target>%@ wurde nicht überprüft</target>
+        <target>%@ wurde noch nicht überprüft</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ is verified" xml:space="preserve">
         <source>%@ is verified</source>
-        <target>%@ wurde überprüft</target>
+        <target>%@ wurde erfolgreich überprüft</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ wants to connect!" xml:space="preserve">
@@ -204,7 +204,7 @@
       </trans-unit>
       <trans-unit id="**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." xml:space="preserve">
         <source>**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app).</source>
-        <target>**Beste Privatsphäre**: Es wird kein SimpleX-Chat-Benachrichtigungs-Server genutzt, Nachrichten werden in regelmäßigen Abständen im Hintergrund geprüft (dies hängt davon ab, wie häufig Sie die App nutzen).</target>
+        <target>**Beste Privatsphäre**: Es wird kein SimpleX-Chat-Benachrichtigungs-Server genutzt, Nachrichten werden in periodischen Abständen im Hintergrund geprüft (dies hängt davon ab, wie häufig Sie die App nutzen).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Paste received link** or open it in the browser and tap **Open in mobile app**." xml:space="preserve">
@@ -214,7 +214,7 @@
       </trans-unit>
       <trans-unit id="**Please note**: you will NOT be able to recover or change passphrase if you lose it." xml:space="preserve">
         <source>**Please note**: you will NOT be able to recover or change passphrase if you lose it.</source>
-        <target>**Bitte beachten Sie**: Sie können das Passwort NICHT wiederherstellen oder ändern, wenn Sie es vergessen haben oder verlieren.</target>
+        <target>**Bitte beachten Sie**: Das Passwort kann NICHT wiederhergestellt oder geändert werden, wenn Sie es vergessen haben oder verlieren.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." xml:space="preserve">
@@ -299,12 +299,12 @@
       </trans-unit>
       <trans-unit id="A random profile will be sent to the contact that you received this link from" xml:space="preserve">
         <source>A random profile will be sent to the contact that you received this link from</source>
-        <target>Ein zufälliges Profil wird an den Kontakt gesendet, von dem Sie diesen Link erhalten haben.</target>
+        <target>Ein zufälliges Profil wird an den Kontakt gesendet, von dem Sie diesen Link erhalten haben</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="A random profile will be sent to your contact" xml:space="preserve">
         <source>A random profile will be sent to your contact</source>
-        <target>Ein zufälliges Profil wird an Ihren Kontakt gesendet.</target>
+        <target>Ein zufälliges Profil wird an Ihren Kontakt gesendet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="About SimpleX" xml:space="preserve">
@@ -390,7 +390,7 @@
       </trans-unit>
       <trans-unit id="All your contacts will remain connected" xml:space="preserve">
         <source>All your contacts will remain connected</source>
-        <target>Alle Ihre Kontakte bleiben verbunden.</target>
+        <target>Alle Ihre Kontakte bleiben verbunden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow" xml:space="preserve">
@@ -555,7 +555,7 @@
       </trans-unit>
       <trans-unit id="Cannot access keychain to save database password" xml:space="preserve">
         <source>Cannot access keychain to save database password</source>
-        <target>Die App kann nicht auf den Schlüsselbund zugreifen, um das Datenbank-Passwort zu speichern.</target>
+        <target>Die App kann nicht auf den Schlüsselbund zugreifen, um das Datenbank-Passwort zu speichern</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Cannot receive file" xml:space="preserve">
@@ -1168,7 +1168,7 @@
       </trans-unit>
       <trans-unit id="Disappearing messages" xml:space="preserve">
         <source>Disappearing messages</source>
-        <target>Verschwindende Nachrichten</target>
+        <target>verschwindende Nachrichten</target>
         <note>chat feature</note>
       </trans-unit>
       <trans-unit id="Disappearing messages are prohibited in this chat." xml:space="preserve">
@@ -1248,7 +1248,7 @@
       </trans-unit>
       <trans-unit id="Enable periodic notifications?" xml:space="preserve">
         <source>Enable periodic notifications?</source>
-        <target>Regelmäßige Benachrichtigungen aktivieren?</target>
+        <target>Periodische Benachrichtigungen aktivieren?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Encrypt" xml:space="preserve">
@@ -1703,12 +1703,12 @@
       </trans-unit>
       <trans-unit id="If you can't meet in person, **show QR code in the video call**, or share the link." xml:space="preserve">
         <source>If you can't meet in person, **show QR code in the video call**, or share the link.</source>
-        <target>Wenn Sie sich nicht persönlich treffen können, können Sie den **QR-Code während eines Videoanrufs anzeigen** oder den Einladungslink über einen anderen Kanal mit Ihrem Kontakt teilen.</target>
+        <target>Wenn Sie sich nicht persönlich treffen können, kann der **QR-Code während eines Videoanrufs angezeigt werden**, oder der Einladungslink über einen anderen Kanal mit Ihrem Kontakt geteilt werden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." xml:space="preserve">
         <source>If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link.</source>
-        <target>Wenn Sie sich nicht persönlich treffen können, können Sie den **QR-Code während eines Videoanrufs scannen** oder Ihr Kontakt kann den Einladungslink über einen anderen Kanal mit Ihnen teilen.</target>
+        <target>Wenn Sie sich nicht persönlich treffen können, kann der **QR-Code während eines Videoanrufs gescannt werden**, oder Ihr Kontakt kann den Einladungslink über einen anderen Kanal mit Ihnen teilen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." xml:space="preserve">
@@ -2305,7 +2305,7 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       </trans-unit>
       <trans-unit id="Periodically" xml:space="preserve">
         <source>Periodically</source>
-        <target>Regelmäßig</target>
+        <target>Periodisch</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please ask your contact to enable sending voice messages." xml:space="preserve">
@@ -2335,7 +2335,7 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       </trans-unit>
       <trans-unit id="Please enter the previous password after restoring database backup. This action can not be undone." xml:space="preserve">
         <source>Please enter the previous password after restoring database backup. This action can not be undone.</source>
-        <target>Bitte geben Sie das vorherige Passwort ein, nachdem Sie die Datenbanksicherung wiederhergestellt haben. Diese Aktion kann nicht rückgängig gemacht werden!</target>
+        <target>Bitte geben Sie das vorherige Passwort ein, nachdem Sie die Datenbanksicherung wiederhergestellt haben. Diese Aktion kann nicht rückgängig gemacht werden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please restart the app and migrate the database to enable push notifications." xml:space="preserve">
@@ -2525,7 +2525,7 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       </trans-unit>
       <trans-unit id="Restart the app to create a new chat profile" xml:space="preserve">
         <source>Restart the app to create a new chat profile</source>
-        <target>Um ein neues Chat-Profil zu erstellen, starten Sie die App neu.</target>
+        <target>Um ein neues Chat-Profil zu erstellen, starten Sie die App neu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Restart the app to use imported chat database" xml:space="preserve">
@@ -2995,7 +2995,7 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       </trans-unit>
       <trans-unit id="The 1st platform without any user identifiers – private by design." xml:space="preserve">
         <source>The 1st platform without any user identifiers – private by design.</source>
-        <target>Die erste Plattform ohne Benutzerkennungen – Privat per Design</target>
+        <target>Die erste Plattform ohne Benutzerkennungen – Privat per Design.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The app can notify you when you receive messages or contact requests - please open settings to enable." xml:space="preserve">
@@ -3434,7 +3434,7 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
       </trans-unit>
       <trans-unit id="You can start chat via app Settings / Database or by restarting the app" xml:space="preserve">
         <source>You can start chat via app Settings / Database or by restarting the app</source>
-        <target>Sie können den Chat über die App-Einstellungen / Datenbank oder durch Neustart der App starten.</target>
+        <target>Sie können den Chat über die App-Einstellungen / Datenbank oder durch Neustart der App starten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can use markdown to format messages:" xml:space="preserve">
@@ -3529,12 +3529,12 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
       </trans-unit>
       <trans-unit id="You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile" xml:space="preserve">
         <source>You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile</source>
-        <target>Sie versuchen, einen Kontakt, mit dem Sie ein Inkognito-Profil geteilt haben, in die Gruppe einzuladen, in der Sie Ihr Hauptprofil verwenden.</target>
+        <target>Sie versuchen, einen Kontakt, mit dem Sie ein Inkognito-Profil geteilt haben, in die Gruppe einzuladen, in der Sie Ihr Hauptprofil verwenden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" xml:space="preserve">
         <source>You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed</source>
-        <target>Sie verwenden ein Inkognito-Profil für diese Gruppe. Um zu verhindern, dass Sie Ihr Hauptprofil teilen, ist in diesem Fall das Einladen von Kontakten nicht erlaubt.</target>
+        <target>Sie verwenden ein Inkognito-Profil für diese Gruppe. Um zu verhindern, dass Sie Ihr Hauptprofil teilen, ist in diesem Fall das Einladen von Kontakten nicht erlaubt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your ICE servers" xml:space="preserve">
@@ -3559,7 +3559,7 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
       </trans-unit>
       <trans-unit id="Your chat database" xml:space="preserve">
         <source>Your chat database</source>
-        <target>Meine Chat-Datenbank</target>
+        <target>Chat-Datenbank</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chat database is not encrypted - set passphrase to encrypt it." xml:space="preserve">
@@ -3621,7 +3621,7 @@ Sie können diese Verbindung abbrechen und den Kontakt entfernen (und es später
       </trans-unit>
       <trans-unit id="Your preferences" xml:space="preserve">
         <source>Your preferences</source>
-        <target>Ihre Präferenzen</target>
+        <target>Meine Präferenzen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your privacy" xml:space="preserve">
@@ -3638,7 +3638,7 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
       </trans-unit>
       <trans-unit id="Your profile will be sent to the contact that you received this link from" xml:space="preserve">
         <source>Your profile will be sent to the contact that you received this link from</source>
-        <target>Ihr Profil wird an den Kontakt gesendet, von dem Sie diesen Link erhalten haben.</target>
+        <target>Ihr Profil wird an den Kontakt gesendet, von dem Sie diesen Link erhalten haben</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile, contacts and delivered messages are stored on your device." xml:space="preserve">
@@ -3748,6 +3748,7 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
       </trans-unit>
       <trans-unit id="cancelled %@" xml:space="preserve">
         <source>cancelled %@</source>
+        <target>Beende %@</target>
         <note>feature offered item</note>
       </trans-unit>
       <trans-unit id="changed address for you" xml:space="preserve">
@@ -3982,7 +3983,7 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
       </trans-unit>
       <trans-unit id="invited %@" xml:space="preserve">
         <source>invited %@</source>
-        <target>hat %@ eingeladen.</target>
+        <target>hat %@ eingeladen</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="invited to connect" xml:space="preserve">
@@ -4063,10 +4064,12 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
       </trans-unit>
       <trans-unit id="offered %@" xml:space="preserve">
         <source>offered %@</source>
+        <target>Beginne %@</target>
         <note>feature offered item</note>
       </trans-unit>
       <trans-unit id="offered %@: %@" xml:space="preserve">
         <source>offered %1$@: %2$@</source>
+        <target>Beginne %1$@: %2$@</target>
         <note>feature offered item</note>
       </trans-unit>
       <trans-unit id="on" xml:space="preserve">

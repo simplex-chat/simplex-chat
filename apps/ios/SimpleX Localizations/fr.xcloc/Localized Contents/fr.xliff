@@ -1810,7 +1810,7 @@
       </trans-unit>
       <trans-unit id="Instantly" xml:space="preserve">
         <source>Instantly</source>
-        <target>Instantanément</target>
+        <target>Instantané</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invalid connection link" xml:space="preserve">
@@ -2300,12 +2300,12 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
       </trans-unit>
       <trans-unit id="People can connect to you only via the links you share." xml:space="preserve">
         <source>People can connect to you only via the links you share.</source>
-        <target>Les gens peuvent se connecter à vous uniquement via les liens que vous partagez.</target>
+        <target>On ne peut se connecter à vous qu’avec les liens que vous partagez.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Periodically" xml:space="preserve">
         <source>Periodically</source>
-        <target>Périodiquement</target>
+        <target>Périodique</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please ask your contact to enable sending voice messages." xml:space="preserve">
@@ -3748,6 +3748,7 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
       </trans-unit>
       <trans-unit id="cancelled %@" xml:space="preserve">
         <source>cancelled %@</source>
+        <target>annulé %@</target>
         <note>feature offered item</note>
       </trans-unit>
       <trans-unit id="changed address for you" xml:space="preserve">
@@ -4063,10 +4064,12 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
       </trans-unit>
       <trans-unit id="offered %@" xml:space="preserve">
         <source>offered %@</source>
+        <target>offert %@</target>
         <note>feature offered item</note>
       </trans-unit>
       <trans-unit id="offered %@: %@" xml:space="preserve">
         <source>offered %1$@: %2$@</source>
+        <target>offert %1$@ : %2$@</target>
         <note>feature offered item</note>
       </trans-unit>
       <trans-unit id="on" xml:space="preserve">
