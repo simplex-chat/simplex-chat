@@ -78,14 +78,6 @@ fun SendMsgView(
     if (cs.preview is ComposePreview.VoicePreview) {
       Box(Modifier.matchParentSize().clickable(enabled = false, onClick = { }))
     }
-
-    LaunchedEffect(Unit) {
-      for (i in 0..100) {
-        delay(10)
-        onMessageChange("" + i)
-        sendMessage()
-      }
-    }
     Box(Modifier.align(Alignment.BottomEnd)) {
       val sendButtonSize = remember { Animatable(36f) }
       val sendButtonAlpha = remember { Animatable(1f) }
