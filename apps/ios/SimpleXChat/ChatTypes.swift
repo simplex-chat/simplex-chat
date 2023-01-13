@@ -93,11 +93,11 @@ public struct LocalProfile: Codable, NamedChat {
 }
 
 public func toLocalProfile (_ profileId: Int64, _ profile: Profile, _ localAlias: String) -> LocalProfile {
-    LocalProfile(profileId: profileId, displayName: profile.displayName, fullName: profile.fullName, image: profile.image, localAlias: localAlias)
+    LocalProfile(profileId: profileId, displayName: profile.displayName, fullName: profile.fullName, image: profile.image, preferences: profile.preferences, localAlias: localAlias)
 }
 
 public func fromLocalProfile (_ profile: LocalProfile) -> Profile {
-    Profile(displayName: profile.displayName, fullName: profile.fullName, image: profile.image)
+    Profile(displayName: profile.displayName, fullName: profile.fullName, image: profile.image, preferences: profile.preferences)
 }
 
 public enum ChatType: String {
