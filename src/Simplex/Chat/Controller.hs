@@ -129,8 +129,8 @@ data ChatController = ChatController
     config :: ChatConfig,
     filesFolder :: TVar (Maybe FilePath), -- path to files folder for mobile apps,
     incognitoMode :: TVar Bool,
-    expireCIsAsync :: TVar (Maybe (Async ())),
-    expireCIs :: TVar Bool,
+    expireCIThreads :: TMap UserId (Maybe (Async ())),
+    expireCIFlags :: TMap UserId Bool,
     cleanupManagerAsync :: TVar (Maybe (Async ())),
     timedItemThreads :: TMap (ChatRef, ChatItemId) (TVar (Maybe (Weak ThreadId))),
     showLiveItems :: TVar Bool
