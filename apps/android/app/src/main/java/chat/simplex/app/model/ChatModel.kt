@@ -157,7 +157,7 @@ class ChatModel(val controller: ChatController) {
     }
   }
 
-  fun addChatItem(cInfo: ChatInfo, cItem: ChatItem) {
+  suspend fun addChatItem(cInfo: ChatInfo, cItem: ChatItem) {
     // update previews
     val i = getChatIndex(cInfo.id)
     val chat: Chat
@@ -181,7 +181,7 @@ class ChatModel(val controller: ChatController) {
     }
     // add to current chat
     if (chatId.value == cInfo.id) {
-      runBlocking(Dispatchers.Main) {
+      withContext(Dispatchers.Main) {
         if (chatItems.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
           chatItems.add(kotlin.math.max(0, chatItems.lastIndex), cItem)
         } else {
@@ -191,7 +191,7 @@ class ChatModel(val controller: ChatController) {
     }
   }
 
-  fun upsertChatItem(cInfo: ChatInfo, cItem: ChatItem): Boolean {
+  suspend fun upsertChatItem(cInfo: ChatInfo, cItem: ChatItem): Boolean {
     // update previews
     val i = getChatIndex(cInfo.id)
     val chat: Chat
@@ -218,7 +218,7 @@ class ChatModel(val controller: ChatController) {
         chatItems[itemIndex] = cItem
         return false
       } else {
-        runBlocking(Dispatchers.Main) {
+        withContext(Dispatchers.Main) {
           chatItems.add(cItem)
         }
         return true
@@ -264,9 +264,9 @@ class ChatModel(val controller: ChatController) {
     }
   }
 
-  fun addLiveDummy(chatInfo: ChatInfo): ChatItem {
+  suspend fun addLiveDummy(chatInfo: ChatInfo): ChatItem {
     val cItem = ChatItem.liveDummy(chatInfo is ChatInfo.Direct)
-    runBlocking(Dispatchers.Main) {
+    withContext(Dispatchers.Main) {
       chatItems.add(cItem)
     }
     return cItem

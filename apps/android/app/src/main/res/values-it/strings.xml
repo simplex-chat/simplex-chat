@@ -386,7 +386,7 @@
     <string name="integrity_msg_duplicate">messaggio duplicato</string>
     <string name="status_e2e_encrypted">crittografato e2e</string>
     <string name="allow_accepting_calls_from_lock_screen">Attiva le chiamate dalla schermata di blocco tramite le impostazioni.</string>
-    <string name="icon_descr_flip_camera">Capovolgi la fotocamera</string>
+    <string name="icon_descr_flip_camera">Fotocamera frontale/posteriore</string>
     <string name="icon_descr_hang_up">Riaggancia</string>
     <string name="settings_section_title_calls">CHIAMATE</string>
     <string name="chat_database_section">DATABASE DELLA CHAT</string>
@@ -781,13 +781,13 @@
     <string name="group_member_status_invited">invitato</string>
     <string name="rcv_group_event_invited_via_your_group_link">invitato via link del tuo gruppo</string>
     <string name="rcv_group_event_member_added">invitato <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
-    <string name="rcv_group_event_member_left">uscito</string>
-    <string name="group_member_status_left">uscito</string>
+    <string name="rcv_group_event_member_left">uscito/a</string>
+    <string name="group_member_status_left">uscito/a</string>
     <string name="group_member_role_member">membro</string>
     <string name="group_member_role_owner">proprietario</string>
     <string name="group_member_status_removed">rimosso</string>
     <string name="rcv_group_event_member_deleted">rimosso <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
-    <string name="rcv_group_event_user_deleted">sei stato rimosso</string>
+    <string name="rcv_group_event_user_deleted">sei stato/a rimosso/a</string>
     <string name="group_invitation_tap_to_join">Tocca per entrare</string>
     <string name="group_invitation_tap_to_join_incognito">Toccare per entrare in incognito</string>
     <string name="alert_message_no_group">Questo gruppo non esiste più.</string>
@@ -918,4 +918,5 @@
     <string name="you_have_to_enter_passphrase_every_time">Devi inserire la password ogni volta che si avvia l\'app: non viene memorizzata sul dispositivo.</string>
     <string name="you_must_use_the_most_recent_version_of_database">Devi usare la versione più recente del tuo database della chat SOLO su un dispositivo, altrimenti potresti non ricevere più i messaggi da alcuni contatti.</string>
     <string name="database_is_not_encrypted">Il database della chat non è crittografato: imposta la password per proteggerlo.</string>
+    <string name="icon_descr_cancel_live_message">Annulla messaggio in diretta</string>
 </resources>

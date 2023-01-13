@@ -1023,7 +1023,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     AlertManager.shared.showAlertMsg(title, errMsg)
   }
 
-  fun processReceivedMsg(r: CR) {
+  suspend fun processReceivedMsg(r: CR) {
     lastMsgReceivedTimestamp = System.currentTimeMillis()
     chatModel.terminalItems.add(TerminalItem.resp(r))
     when (r) {
@@ -1257,7 +1257,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     }
   }
 
-  private fun chatItemSimpleUpdate(aChatItem: AChatItem) {
+  private suspend fun chatItemSimpleUpdate(aChatItem: AChatItem) {
     val cInfo = aChatItem.chatInfo
     val cItem = aChatItem.chatItem
     if (chatModel.upsertChatItem(cInfo, cItem)) {

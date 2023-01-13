@@ -918,4 +918,5 @@
     <string name="v4_3_improved_server_configuration_desc">Ajoutez des serveurs en scannant des codes QR.</string>
     <string name="invalid_data">données invalides</string>
     <string name="invalid_chat">chat invalide</string>
+    <string name="icon_descr_cancel_live_message">Annuler le message dynamique</string>
 </resources>

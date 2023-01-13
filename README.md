@@ -151,7 +151,7 @@ What is already implemented:
 
 We plan to add soon:
 
-1. Message queue rotation. Currently the queues created between two users are used until the contact is deleted, providing a long-term pairwise identifiers of the conversation. We are planning to add queue rotation to make these identifiers termporary and rotate based on some schedule TBC (e.g., every X messages, or every X hours/days).
+1. Message queue rotation. Currently the queues created between two users are used until the contact is deleted, providing a long-term pairwise identifiers of the conversation. We are planning to add queue rotation to make these identifiers temporary and rotate based on some schedule TBC (e.g., every X messages, or every X hours/days).
 2. Local files encryption. Currently the images and files you send and receive are stored in the app unencrypted, you can delete them via `Settings / Database passphrase & export`.
 3. Message "mixing" - adding latency to message delivery, to protect against traffic correlation by message time.
 
