@@ -803,8 +803,7 @@ processChatCommand = \case
     processChatCommand $ APISetUserSMPServers userId smpServersConfig
   TestSMPServer cmdUserId smpServer -> withUser $ \user -> do
     checkCorrectCmdUser cmdUserId user
-    r <- withAgent $ \a -> testSMPServerConnection a (aUserId user) smpServer
-    pure $ CRSmpTestResult r
+    CRSmpTestResult <$> (withAgent $ \a -> testSMPServerConnection a (aUserId user) smpServer)
   APISetChatItemTTL cmdUserId newTTL_ -> withUser' $ \user -> do
     checkCorrectCmdUser cmdUserId user
     checkStoreNotChanged $
