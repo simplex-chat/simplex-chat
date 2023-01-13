@@ -187,10 +187,10 @@ activeAgentServers ChatConfig {defaultServers = DefaultAgentServers {smp}} =
     . filter (\ServerCfg {enabled} -> enabled)
 
 startChatController :: (MonadUnliftIO m, MonadReader ChatController m) => User -> Bool -> Bool -> m (Async ())
-startChatController user subConns enableExpireCIs = do
+startChatController currentUser subConns enableExpireCIs = do
   asks smpAgent >>= resumeAgentClient
   users <- fromRight [] <$> runExceptT (withStore' getUsers)
-  restoreCalls user
+  restoreCalls currentUser
   s <- asks agentAsync
   readTVarIO s >>= maybe (start s users) (pure . fst)
   where
@@ -198,7 +198,7 @@ startChatController user subConns enableExpireCIs = do
       a1 <- async $ race_ notificationSubscriber agentSubscriber
       a2 <-
         if subConns
-          then Just <$> async (void . runExceptT $ subscribeUserConnections Agent.subscribeConnections user)
+          then Just <$> async (void . runExceptT $ subscribeUserConnections Agent.subscribeConnections currentUser)
           else pure Nothing
       atomically . writeTVar s $ Just (a1, a2)
       startCleanupManager
@@ -208,7 +208,7 @@ startChatController user subConns enableExpireCIs = do
       cleanupAsync <- asks cleanupManagerAsync
       readTVarIO cleanupAsync >>= \case
         Nothing -> do
-          a <- Just <$> async (void . runExceptT $ cleanupManager user)
+          a <- Just <$> async (void . runExceptT $ cleanupManager currentUser)
           atomically $ writeTVar cleanupAsync a
         _ -> pure ()
     startExpireCIs users = do
@@ -218,16 +218,15 @@ startChatController user subConns enableExpireCIs = do
           Nothing -> do
             a <- Just <$> async (void . runExceptT $ runExpireCIs u)
             atomically $ TM.insert userId a expireThreads
-            setExpireCIFlag user True
-          _ -> setExpireCIFlag user True
+            setExpireCIFlag u True
+          _ -> setExpireCIFlag u True
       where
         runExpireCIs u@User {userId} = forever $ do
-          -- TODO per user
           flip catchError (toView . CRChatError (Just u)) $ do
             expireFlags <- asks expireCIFlags
             atomically $ TM.lookup userId expireFlags >>= \b -> unless (b == Just True) retry
-            ttl <- withStore' (`getChatItemTTL` user)
-            forM_ ttl $ \t -> expireChatItems user t False
+            ttl <- withStore' (`getChatItemTTL` u)
+            forM_ ttl $ \t -> expireChatItems u t False
           threadDelay $ 1800 * 1000000 -- 30 minutes
 
 restoreCalls :: (MonadUnliftIO m, MonadReader ChatController m) => User -> m ()
