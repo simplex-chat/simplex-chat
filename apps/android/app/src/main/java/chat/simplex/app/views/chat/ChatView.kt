@@ -529,7 +529,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   }
 
   Spacer(Modifier.size(8.dp))
-  val reversedChatItems by remember { derivedStateOf { chatItems.reversed() } }
+  val reversedChatItems by remember { derivedStateOf { chatItems.reversed().toList() } }
   val maxHeightRounded = with(LocalDensity.current) { maxHeight.roundToPx() }
   val scrollToItem: (Long) -> Unit = { itemId: Long ->
     val index = reversedChatItems.indexOfFirst { it.id == itemId }
