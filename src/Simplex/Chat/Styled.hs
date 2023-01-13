@@ -29,20 +29,48 @@ instance Monoid StyledString where mempty = plain ""
 
 instance IsString StyledString where fromString = plain
 
+data SingleStyled = SStyled [SGR] String
+
+type MaybeSnippet = Either StyledString SingleStyled
+
 styleMarkdown :: Markdown -> StyledString
-styleMarkdown (s1 :|: s2) = styleMarkdown s1 <> styleMarkdown s2
-styleMarkdown (Markdown f s) = styleFormat f s
+styleMarkdown = \case
+  (a :|: b) -> styleMarkdown a <> styleMarkdown b
+  Markdown f t -> inlineSnippets . styleSMarkdown $ FormattedText f t
+  where
+    breakApart :: Markdown -> [FormattedText]
+    breakApart = \case
+      Markdown f s -> [FormattedText f s]
+      a :|: b -> breakApart a ++ breakApart b
+
+    unify :: MaybeSnippet -> StyledString
+    unify = \case
+      Left a -> a
+      Right (SStyled a b) -> Styled a b
+
+    inlineSnippets :: [MaybeSnippet] -> StyledString
+    inlineSnippets = foldr (\nxt acc -> (<> acc) . unify $ nxt) (plain "")
+
+    inherit :: [SGR] -> MaybeSnippet -> MaybeSnippet
+    inherit f1 = \case
+      Left snippet -> Left snippet
+      Right (SStyled f2 s) -> Right $ SStyled (f1 ++ f2) s
+
+    inheritAll :: [SGR] -> Markdown -> [MaybeSnippet]
+    inheritAll f = concatMap (map (inherit f) . styleSMarkdown) . breakApart
+
+    styleSMarkdown :: FormattedText -> [MaybeSnippet]
+    styleSMarkdown = \case
+      FormattedText (Just Snippet) s -> (: []) . Left $ '`' `wrap` styled Snippet s
+      FormattedText (Just Secret) s -> (:) (Right $ SStyled [] "#") . (++ [Right $ SStyled [] "#"]) . inheritAll (sgr Secret) . parseMarkdown $ s
+      FormattedText (Just f) s -> inheritAll (sgr f) . parseMarkdown $ s
+      FormattedText Nothing s -> (: []) . Right . SStyled [] . T.unpack $ s
 
 styleMarkdownList :: MarkdownList -> StyledString
-styleMarkdownList [] = plain ""
-styleMarkdownList [FormattedText f s] = styleFormat f s
-styleMarkdownList (FormattedText f s : ts) = styleFormat f s <> styleMarkdownList ts
-
-styleFormat :: Maybe Format -> Text -> StyledString
-styleFormat (Just Snippet) s = '`' `wrap` styled Snippet s
-styleFormat (Just Secret) s = '#' `wrap` styled Secret s
-styleFormat (Just f) s = styled f s
-styleFormat Nothing s = plain s
+styleMarkdownList = \case
+  [] -> plain ""
+  [FormattedText f s] -> styleMarkdown (Markdown f s)
+  (FormattedText f s : ts) -> (<>) (styleMarkdown (Markdown f s)) . styleMarkdownList $ ts
 
 wrap :: Char -> StyledString -> StyledString
 wrap c s = plain [c] <> s <> plain [c]
