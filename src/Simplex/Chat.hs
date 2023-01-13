@@ -171,11 +171,11 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
       users <- withTransaction chatStore getUsers
       smp' <- case users of
         [] -> pure $ M.fromList [(1, smp)]
-        _ -> usersServers users
+        _ -> serversMap users
       pure InitialAgentServers {smp = smp', ntf, netCfg}
       where
-        usersServers :: [User] -> IO (M.Map UserId (NonEmpty SMPServerWithAuth))
-        usersServers users = M.fromList <$> mapM (\user' -> (aUserId user',) <$> userServers user') users
+        serversMap :: [User] -> IO (M.Map UserId (NonEmpty SMPServerWithAuth))
+        serversMap users = M.fromList <$> mapM (\user' -> (aUserId user',) <$> userServers user') users
         userServers :: User -> IO (NonEmpty SMPServerWithAuth)
         userServers user' = activeAgentServers config <$> withTransaction chatStore (`getSMPServers` user')
 
@@ -271,11 +271,11 @@ processChatCommand = \case
   CreateActiveUser p -> do
     u <- asks currentUser
     -- TODO option to choose current user servers
-    srvs <- asks (defaultServers . config)
+    DefaultAgentServers {smp} <- asks $ defaultServers . config
     auId <-
       withStore' getUsers >>= \case
         [] -> pure 1
-        _ -> withAgent $ \a -> createUser a (smp (srvs :: DefaultAgentServers))
+        _ -> withAgent (`createUser` smp)
     user <- withStore $ \db -> createUserRecord db (AgentUserId auId) p True
     atomically . writeTVar u $ Just user
     pure $ CRActiveUser user
