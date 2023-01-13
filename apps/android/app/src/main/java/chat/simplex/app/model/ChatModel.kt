@@ -17,6 +17,7 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.onboarding.OnboardingStage
 import chat.simplex.app.views.usersettings.NotificationPreviewMode
 import chat.simplex.app.views.usersettings.NotificationsMode
+import kotlinx.coroutines.*
 import kotlinx.datetime.*
 import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.*
@@ -180,10 +181,12 @@ class ChatModel(val controller: ChatController) {
     }
     // add to current chat
     if (chatId.value == cInfo.id) {
-      if (chatItems.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
-        chatItems.add(kotlin.math.max(0, chatItems.lastIndex), cItem)
-      } else {
-        chatItems.add(cItem)
+      runBlocking(Dispatchers.Main) {
+        if (chatItems.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
+          chatItems.add(kotlin.math.max(0, chatItems.lastIndex), cItem)
+        } else {
+          chatItems.add(cItem)
+        }
       }
     }
   }
@@ -215,7 +218,9 @@ class ChatModel(val controller: ChatController) {
         chatItems[itemIndex] = cItem
         return false
       } else {
-        chatItems.add(cItem)
+        runBlocking(Dispatchers.Main) {
+          chatItems.add(cItem)
+        }
         return true
       }
     } else {
@@ -261,7 +266,9 @@ class ChatModel(val controller: ChatController) {
 
   fun addLiveDummy(chatInfo: ChatInfo): ChatItem {
     val cItem = ChatItem.liveDummy(chatInfo is ChatInfo.Direct)
-    chatItems.add(cItem)
+    runBlocking(Dispatchers.Main) {
+      chatItems.add(cItem)
+    }
     return cItem
   }
 

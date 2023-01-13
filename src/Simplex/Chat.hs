@@ -407,7 +407,7 @@ processChatCommand = \case
           (fileInvitation_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer gInfo (length $ filter memberCurrent ms)
           timed_ <- sndGroupCITimed live gInfo
           (msgContainer, quotedItem_) <- prepareMsg fileInvitation_ timed_ membership
-          msg@SndMessage {sharedMsgId} <- sendGroupMessage gInfo ms (XMsgNew msgContainer)
+          msg@SndMessage {sharedMsgId} <- sendGroupMessage user gInfo ms (XMsgNew msgContainer)
           mapM_ (sendGroupFileInline ms sharedMsgId) ft_
           ci <- saveSndChatItem' user (CDGroupSnd gInfo) msg (CISndMsgContent mc) ciFile_ quotedItem_ timed_ live
           forM_ (timed_ >>= deleteAt) $
@@ -427,12 +427,14 @@ processChatCommand = \case
             pure (fileInvitation, ciFile, ft)
         sendGroupFileInline :: [GroupMember] -> SharedMsgId -> FileTransferMeta -> m ()
         sendGroupFileInline ms sharedMsgId ft@FileTransferMeta {fileInline} =
-          when (fileInline == Just IFMSent) . forM_ ms $ \case
-            m@GroupMember {activeConn = Just conn@Connection {connStatus}} ->
+          when (fileInline == Just IFMSent) . forM_ ms $ \m ->
+            processMember m `catchError` (toView . CRChatError (Just user))
+          where
+            processMember m@GroupMember {activeConn = Just conn@Connection {connStatus}} =
               when (connStatus == ConnReady || connStatus == ConnSndReady) $ do
                 void . withStore' $ \db -> createSndGroupInlineFT db m conn ft
                 sendMemberFileInline m conn ft sharedMsgId
-            _ -> pure ()
+            processMember _ = pure ()
         prepareMsg :: Maybe FileInvitation -> Maybe CITimed -> GroupMember -> m (MsgContainer, Maybe (CIQuote 'CTGroup))
         prepareMsg fileInvitation_ timed_ membership = case quotedItemId_ of
           Nothing -> pure (MCSimple (ExtMsgContent mc fileInvitation_ (ttl' <$> timed_) (justTrue live)), Nothing)
@@ -501,7 +503,7 @@ processChatCommand = \case
         CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive}, content = ciContent} -> do
           case (ciContent, itemSharedMsgId) of
             (CISndMsgContent _, Just itemSharedMId) -> do
-              SndMessage {msgId} <- sendGroupMessage gInfo ms (XMsgUpdate itemSharedMId mc (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive))
+              SndMessage {msgId} <- sendGroupMessage user gInfo ms (XMsgUpdate itemSharedMId mc (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive))
               ci' <- withStore' $ \db -> updateGroupChatItem db user groupId ci (CISndMsgContent mc) live $ Just msgId
               startUpdatedTimedItemThread user (ChatRef CTGroup groupId) ci ci'
               setActive $ ActiveG gName
@@ -530,7 +532,7 @@ processChatCommand = \case
       case (mode, msgDir, itemSharedMsgId) of
         (CIDMInternal, _, _) -> deleteGroupCI user gInfo ci True False
         (CIDMBroadcast, SMDSnd, Just itemSharedMId) -> do
-          SndMessage {msgId} <- sendGroupMessage gInfo ms (XMsgDel itemSharedMId)
+          SndMessage {msgId} <- sendGroupMessage user gInfo ms (XMsgDel itemSharedMId)
           setActive $ ActiveG gName
           if groupFeatureAllowed SGFFullDelete gInfo
             then deleteGroupCI user gInfo ci True False
@@ -597,7 +599,7 @@ processChatCommand = \case
       filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
       withChatLock "deleteChat group" . procCmd $ do
         forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
-        when (memberActive membership) . void $ sendGroupMessage gInfo members XGrpDel
+        when (memberActive membership) . void $ sendGroupMessage user gInfo members XGrpDel
         deleteGroupLink' user gInfo `catchError` \_ -> pure ()
         forM_ members $ deleteMemberConnection user
         -- functions below are called in separate transactions to prevent crashes on android
@@ -1114,7 +1116,7 @@ processChatCommand = \case
                   (Just ct, Just cReq) -> sendGrpInvitation user ct gInfo (m :: GroupMember) {memberRole = memRole} cReq
                   _ -> throwChatError $ CEGroupCantResendInvitation gInfo cName
               _ -> do
-                msg <- sendGroupMessage gInfo members $ XGrpMemRole mId memRole
+                msg <- sendGroupMessage user gInfo members $ XGrpMemRole mId memRole
                 ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent gEvent)
                 toView $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
           pure CRMemberRoleUser {user, groupInfo = gInfo, member = m {memberRole = memRole}, fromRole = mRole, toRole = memRole}
@@ -1132,7 +1134,7 @@ processChatCommand = \case
               deleteMemberConnection user m
               withStore' $ \db -> deleteGroupMember db user m
             _ -> do
-              msg <- sendGroupMessage gInfo members $ XGrpMemDel mId
+              msg <- sendGroupMessage user gInfo members $ XGrpMemDel mId
               ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent $ SGEMemberDeleted memberId (fromLocalProfile memberProfile))
               toView $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
               deleteMemberConnection user m
@@ -1142,7 +1144,7 @@ processChatCommand = \case
   APILeaveGroup groupId -> withUser $ \user@User {userId} -> do
     Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user groupId
     withChatLock "leaveGroup" . procCmd $ do
-      msg <- sendGroupMessage gInfo members XGrpLeave
+      msg <- sendGroupMessage user gInfo members XGrpLeave
       ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent SGEUserLeft)
       toView $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
       -- TODO delete direct connections that were unused
@@ -1277,7 +1279,7 @@ processChatCommand = \case
                 void . sendDirectContactMessage contact $ XFileCancel sharedMsgId
               ChatRef CTGroup groupId -> do
                 Group gInfo ms <- withStore $ \db -> getGroup db user groupId
-                void . sendGroupMessage gInfo ms $ XFileCancel sharedMsgId
+                void . sendGroupMessage user gInfo ms $ XFileCancel sharedMsgId
               _ -> throwChatError $ CEFileInternal "invalid chat ref for file transfer"
           ci <- withStore $ \db -> getChatItemByFileId db user fileId
           pure $ CRSndGroupFileCancelled user ci ftm fts
@@ -1436,13 +1438,16 @@ processChatCommand = \case
         asks currentUser >>= atomically . (`writeTVar` Just user')
         withChatLock "updateProfile" . procCmd $ do
           forM_ contacts $ \ct -> do
-            let mergedProfile = userProfileToSend user Nothing $ Just ct
-                ct' = updateMergedPreferences user' ct
-                mergedProfile' = userProfileToSend user' Nothing $ Just ct'
-            when (mergedProfile' /= mergedProfile) $ do
-              void (sendDirectContactMessage ct' $ XInfo mergedProfile') `catchError` (toView . CRChatError (Just user))
-              when (directOrUsed ct') $ createSndFeatureItems user' ct ct'
+            processContact user' ct `catchError` (toView . CRChatError (Just user))
           pure $ CRUserProfileUpdated user' (fromLocalProfile p) p'
+      where
+        processContact user' ct = do
+          let mergedProfile = userProfileToSend user Nothing $ Just ct
+              ct' = updateMergedPreferences user' ct
+              mergedProfile' = userProfileToSend user' Nothing $ Just ct'
+          when (mergedProfile' /= mergedProfile) $ do
+            void $ sendDirectContactMessage ct' (XInfo mergedProfile')
+            when (directOrUsed ct') $ createSndFeatureItems user' ct ct'
     updateContactPrefs :: User -> Contact -> Preferences -> m ChatResponse
     updateContactPrefs user@User {userId} ct@Contact {activeConn = Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
       | contactUserPrefs == contactUserPrefs' = pure $ CRContactPrefsUpdated user ct ct
@@ -1465,7 +1470,7 @@ processChatCommand = \case
               || (s == GSMemRemoved || s == GSMemLeft || s == GSMemGroupDeleted || s == GSMemInvited)
       unless canUpdate $ throwChatError CEGroupUserRole
       g' <- withStore $ \db -> updateGroupProfile db user g p'
-      msg <- sendGroupMessage g' ms (XGrpInfo p')
+      msg <- sendGroupMessage user g' ms (XGrpInfo p')
       let cd = CDGroupSnd g'
       unless (sameGroupProfileInfo p p') $ do
         ci <- saveSndChatItem user cd msg (CISndGroupEvent $ SGEGroupUpdated p')
@@ -2259,7 +2264,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           unless (memberActive membership) $
             updateGroupMemberStatus db userId membership GSMemConnected
         -- possible improvement: check for each pending message, requires keeping track of connection state
-        unless (connDisabled conn) $ sendPendingGroupMessages m conn
+        unless (connDisabled conn) $ sendPendingGroupMessages user m conn
         withAgent $ \a -> toggleConnectionNtfs a (aConnId conn) $ enableNtfs chatSettings
         case memberCategory m of
           GCHostMember -> do
@@ -2276,10 +2281,13 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             setActive $ ActiveG gName
             showToast ("#" <> gName) $ "member " <> localDisplayName (m :: GroupMember) <> " is connected"
             intros <- withStore' $ \db -> createIntroductions db members m
-            void . sendGroupMessage gInfo members . XGrpMemNew $ memberInfo m
-            forM_ intros $ \intro@GroupMemberIntro {introId} -> do
-              void $ sendDirectMessage conn (XGrpMemIntro . memberInfo $ reMember intro) (GroupId groupId)
-              withStore' $ \db -> updateIntroStatus db introId GMIntroSent
+            void . sendGroupMessage user gInfo members . XGrpMemNew $ memberInfo m
+            forM_ intros $ \intro ->
+              processIntro intro `catchError` (toView . CRChatError (Just user))
+            where
+              processIntro intro@GroupMemberIntro {introId} = do
+                void $ sendDirectMessage conn (XGrpMemIntro . memberInfo $ reMember intro) (GroupId groupId)
+                withStore' $ \db -> updateIntroStatus db introId GMIntroSent
           _ -> do
             -- TODO send probe and decide whether to use existing contact connection or the new contact connection
             -- TODO notify member who forwarded introduction - question - where it is stored? There is via_contact but probably there should be via_member in group_members table
@@ -3179,7 +3187,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             Nothing -> messageError "x.grp.mem.inv error: referenced member does not exist"
             Just reMember -> do
               GroupMemberIntro {introId} <- withStore $ \db -> saveIntroInvitation db reMember m introInv
-              void . sendGroupMessage' [reMember] (XGrpMemFwd (memberInfo m) introInv) groupId (Just introId) $
+              void . sendGroupMessage' user [reMember] (XGrpMemFwd (memberInfo m) introInv) groupId (Just introId) $
                 withStore' $ \db -> updateIntroStatus db introId GMIntroInvForwarded
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
 
@@ -3469,37 +3477,42 @@ deliverMessage conn@Connection {connId} cmEventTag msgBody msgId = do
     (Just $ "createSndMsgDelivery, sndMsgDelivery: " <> show sndMsgDelivery <> ", msgId: " <> show msgId <> ", cmEventTag: " <> show cmEventTag <> ", msgDeliveryStatus: MDSSndAgent")
     $ \db -> createSndMsgDelivery db sndMsgDelivery msgId
 
-sendGroupMessage :: (MsgEncodingI e, ChatMonad m) => GroupInfo -> [GroupMember] -> ChatMsgEvent e -> m SndMessage
-sendGroupMessage GroupInfo {groupId} members chatMsgEvent =
-  sendGroupMessage' members chatMsgEvent groupId Nothing $ pure ()
+sendGroupMessage :: (MsgEncodingI e, ChatMonad m) => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> m SndMessage
+sendGroupMessage user GroupInfo {groupId} members chatMsgEvent =
+  sendGroupMessage' user members chatMsgEvent groupId Nothing $ pure ()
 
-sendGroupMessage' :: (MsgEncodingI e, ChatMonad m) => [GroupMember] -> ChatMsgEvent e -> Int64 -> Maybe Int64 -> m () -> m SndMessage
-sendGroupMessage' members chatMsgEvent groupId introId_ postDeliver = do
-  msg@SndMessage {msgId, msgBody} <- createSndMessage chatMsgEvent (GroupId groupId)
+sendGroupMessage' :: (MsgEncodingI e, ChatMonad m) => User -> [GroupMember] -> ChatMsgEvent e -> Int64 -> Maybe Int64 -> m () -> m SndMessage
+sendGroupMessage' user members chatMsgEvent groupId introId_ postDeliver = do
+  msg <- createSndMessage chatMsgEvent (GroupId groupId)
   -- TODO collect failed deliveries into a single error
-  forM_ (filter memberCurrent members) $ \m@GroupMember {groupMemberId} ->
-    case memberConn m of
+  forM_ (filter memberCurrent members) $ \m ->
+    messageMember m msg `catchError` (toView . CRChatError (Just user))
+  pure msg
+  where
+    messageMember m@GroupMember {groupMemberId} SndMessage {msgId, msgBody} = case memberConn m of
       Nothing -> withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId introId_
       Just conn@Connection {connStatus}
         | connDisabled conn || connStatus == ConnDeleted -> pure ()
         | connStatus == ConnSndReady || connStatus == ConnReady -> do
           let tag = toCMEventTag chatMsgEvent
-          (deliverMessage conn tag msgBody msgId >> postDeliver) `catchError` const (pure ())
+          deliverMessage conn tag msgBody msgId >> postDeliver
         | otherwise -> withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId introId_
-  pure msg
 
-sendPendingGroupMessages :: ChatMonad m => GroupMember -> Connection -> m ()
-sendPendingGroupMessages GroupMember {groupMemberId, localDisplayName} conn = do
+sendPendingGroupMessages :: ChatMonad m => User -> GroupMember -> Connection -> m ()
+sendPendingGroupMessages user GroupMember {groupMemberId, localDisplayName} conn = do
   pendingMessages <- withStore' $ \db -> getPendingGroupMessages db groupMemberId
   -- TODO ensure order - pending messages interleave with user input messages
-  forM_ pendingMessages $ \PendingGroupMessage {msgId, cmEventTag = ACMEventTag _ tag, msgBody, introId_} -> do
-    void $ deliverMessage conn tag msgBody msgId
-    withStore' $ \db -> deletePendingGroupMessage db groupMemberId msgId
-    case tag of
-      XGrpMemFwd_ -> case introId_ of
-        Just introId -> withStore' $ \db -> updateIntroStatus db introId GMIntroInvForwarded
-        _ -> throwChatError $ CEGroupMemberIntroNotFound localDisplayName
-      _ -> pure ()
+  forM_ pendingMessages $ \pgm ->
+    processPendingMessage pgm `catchError` (toView . CRChatError (Just user))
+  where
+    processPendingMessage PendingGroupMessage {msgId, cmEventTag = ACMEventTag _ tag, msgBody, introId_} = do
+      void $ deliverMessage conn tag msgBody msgId
+      withStore' $ \db -> deletePendingGroupMessage db groupMemberId msgId
+      case tag of
+        XGrpMemFwd_ -> case introId_ of
+          Just introId -> withStore' $ \db -> updateIntroStatus db introId GMIntroInvForwarded
+          _ -> throwChatError $ CEGroupMemberIntroNotFound localDisplayName
+        _ -> pure ()
 
 saveRcvMSG :: ChatMonad m => Connection -> ConnOrGroupId -> MsgMeta -> MsgBody -> CommandId -> m RcvMessage
 saveRcvMSG Connection {connId} connOrGroupId agentMsgMeta msgBody agentAckCmdId = do
