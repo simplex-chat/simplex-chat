@@ -277,6 +277,7 @@ processChatCommand = \case
         [] -> pure 1
         _ -> withAgent (`createUser` smp)
     user <- withStore $ \db -> createUserRecord db (AgentUserId auId) p True
+    setActive ActiveNone
     atomically . writeTVar u $ Just user
     pure $ CRActiveUser user
   ListUsers -> do
@@ -285,6 +286,7 @@ processChatCommand = \case
   APISetActiveUser userId -> do
     u <- asks currentUser
     user <- withStore $ \db -> getSetActiveUser db userId
+    setActive ActiveNone
     atomically . writeTVar u $ Just user
     pure $ CRActiveUser user
   SetActiveUser uName -> withUserName uName APISetActiveUser
@@ -292,6 +294,7 @@ processChatCommand = \case
     -- prohibit to delete active user
     -- withStore' $ \db -> deleteUser db userId
     -- ? other cleanup
+    setActive ActiveNone
     pure $ CRCmdOk Nothing
   DeleteUser uName -> withUserName uName APIDeleteUser
   StartChat subConns enableExpireCIs -> withUser' $ \user ->
