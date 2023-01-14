@@ -208,7 +208,7 @@ startChatController currentUser subConns enableExpireCIs = do
       cleanupAsync <- asks cleanupManagerAsync
       readTVarIO cleanupAsync >>= \case
         Nothing -> do
-          a <- Just <$> async (void . runExceptT $ cleanupManager currentUser)
+          a <- Just <$> async (void $ runExceptT cleanupManager)
           atomically $ writeTVar cleanupAsync a
         _ -> pure ()
     startExpireCIs users =
@@ -1882,15 +1882,20 @@ subscribeUserConnections agentBatchSubscribe user = do
 cleanupManagerInterval :: Int
 cleanupManagerInterval = 1800 -- 30 minutes
 
-cleanupManager :: forall m. ChatMonad m => User -> m ()
-cleanupManager user = do
+cleanupManager :: forall m. ChatMonad m => m ()
+cleanupManager = do
   forever $ do
-    flip catchError (toView . CRChatError (Just user)) $ do
+    flip catchError (toView . CRChatError Nothing) $ do
       waitChatStarted
-      cleanupTimedItems
+      users <- withStore' getUsers
+      let (us, us') = partition activeUser users
+      forM_ us cleanupUser
+      forM_ us' cleanupUser
     threadDelay $ cleanupManagerInterval * 1000000
   where
-    cleanupTimedItems = do
+    cleanupUser user =
+      cleanupTimedItems user `catchError` (toView . CRChatError (Just user))
+    cleanupTimedItems user = do
       ts <- liftIO getCurrentTime
       let startTimedThreadCutoff = addUTCTime (realToFrac cleanupManagerInterval) ts
       timedItems <- withStore' $ \db -> getTimedItems db user startTimedThreadCutoff
