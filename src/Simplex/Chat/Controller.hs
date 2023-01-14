@@ -432,8 +432,8 @@ data ChatResponse
   | CRCallExtraInfo {user :: User, contact :: Contact, extraInfo :: WebRTCExtraInfo}
   | CRCallEnded {user :: User, contact :: Contact}
   | CRCallInvitations {user :: User, callInvitations :: [RcvCallInvitation]}
-  | CRUserContactLinkSubscribed
-  | CRUserContactLinkSubError {chatError :: ChatError}
+  | CRUserContactLinkSubscribed -- TODO delete
+  | CRUserContactLinkSubError {chatError :: ChatError} -- TODO delete
   | CRNtfTokenStatus {status :: NtfTknStatus}
   | CRNtfToken {token :: DeviceToken, status :: NtfTknStatus, ntfMode :: NotificationsMode}
   | CRNtfMessages {user :: User, connEntity :: Maybe ConnectionEntity, msgTs :: Maybe UTCTime, ntfMessages :: [NtfMsgInfo]}
