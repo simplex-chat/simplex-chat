@@ -32,7 +32,7 @@ import Data.Either (fromRight)
 import Data.Fixed (div')
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.List (find, isSuffixOf, sortOn)
+import Data.List (find, isSuffixOf, partition, sortOn)
 import Data.List.NonEmpty (NonEmpty, nonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -231,12 +231,12 @@ startChatController currentUser subConns enableExpireCIs = do
 
 subscribeUsers :: forall m. (MonadUnliftIO m, MonadReader ChatController m) => [User] -> m ()
 subscribeUsers users = do
-  let currentUser = find (\User {activeUser} -> activeUser) users
-  forM_ currentUser $ \u -> subscribeUser u
-  forM_ users $ \u@User {activeUser} -> unless activeUser $ subscribeUser u
+  let (us, us') = partition activeUser users
+  subscribe us
+  subscribe us'
   where
-    subscribeUser :: User -> m ()
-    subscribeUser u = void . runExceptT $ subscribeUserConnections Agent.subscribeConnections u
+    subscribe :: [User] -> m ()
+    subscribe = mapM_ $ runExceptT . subscribeUserConnections Agent.subscribeConnections
 
 restoreCalls :: (MonadUnliftIO m, MonadReader ChatController m) => User -> m ()
 restoreCalls user = do
