@@ -37,7 +37,7 @@ import Data.List.NonEmpty (NonEmpty, nonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe, isJust, isNothing, listToMaybe, mapMaybe)
+import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, listToMaybe, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time (NominalDiffTime, addUTCTime)
@@ -750,20 +750,23 @@ processChatCommand = \case
       (SndMessage {msgId}, _) <- sendDirectContactMessage ct (XCallEnd callId)
       updateCallItemStatus user ct call WCSDisconnected $ Just msgId
       pure Nothing
-  APIGetCallInvitations userId -> withUserId userId $ \user -> do
+  APIGetCallInvitations -> withUser $ \_ -> do
+    users <- withStore' getUsers
     calls <- asks currentCalls >>= readTVarIO
-    let invs = mapMaybe callInvitation $ userCalls calls
-    rcvCallInvitations <- mapM (rcvCallInvitation user) invs
-    pure $ CRCallInvitations user rcvCallInvitations
+    let invs = mapMaybe callInvitation $ usersCalls calls
+    rcvCallInvitations <- catMaybes <$> mapM (rcvCallInvitation users) invs
+    pure $ CRCallInvitations rcvCallInvitations
     where
-      callInvitation Call {contactId, callState, callTs} = case callState of
-        CallInvitationReceived {peerCallType, sharedKey} -> Just (contactId, callTs, peerCallType, sharedKey)
+      callInvitation (userId, Call {contactId, callState, callTs}) = case callState of
+        CallInvitationReceived {peerCallType, sharedKey} -> Just (userId, contactId, callTs, peerCallType, sharedKey)
         _ -> Nothing
-      rcvCallInvitation user (contactId, callTs, peerCallType, sharedKey) = do
-        contact <- withStore (\db -> getContact db user contactId)
-        pure RcvCallInvitation {contact, callType = peerCallType, sharedKey, callTs}
-      userCalls :: Map (UserId, ContactId) Call -> [Call]
-      userCalls calls = map snd $ filter (\((uid, _), _) -> uid == userId) $ M.toList calls
+      rcvCallInvitation users (uId, contactId, callTs, peerCallType, sharedKey) = do
+        let user_ = find (\User {userId} -> uId == userId) users
+        forM user_ $ \user -> do
+          contact <- withStore (\db -> getContact db user contactId)
+          pure RcvCallInvitation {contact, callType = peerCallType, sharedKey, callTs}
+      usersCalls :: Map (UserId, ContactId) Call -> [(UserId, Call)]
+      usersCalls calls = map (\((userId, _), call) -> (userId, call)) $ M.toList calls
   APICallStatus contactId receivedStatus ->
     withCurrentCall contactId $ \user ct call ->
       updateCallItemStatus user ct call receivedStatus Nothing $> Just call
@@ -3887,7 +3890,7 @@ chatCommandP =
       "/_call extra @" *> (APISendCallExtraInfo <$> A.decimal <* A.space <*> jsonP),
       "/_call end @" *> (APIEndCall <$> A.decimal),
       "/_call status @" *> (APICallStatus <$> A.decimal <* A.space <*> strP),
-      "/_call get " *> (APIGetCallInvitations <$> A.decimal),
+      "/_call get " $> APIGetCallInvitations,
       "/_profile " *> (APIUpdateProfile <$> A.decimal <* A.space <*> jsonP),
       "/_set alias @" *> (APISetContactAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set alias :" *> (APISetConnectionAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
