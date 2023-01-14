@@ -803,7 +803,7 @@ processChatCommand = \case
   SetUserSMPServers smpServersConfig -> withUser $ \User {userId} ->
     processChatCommand $ APISetUserSMPServers userId smpServersConfig
   TestSMPServer userId smpServer -> withUserId userId $ \user ->
-    CRSmpTestResult <$> withAgent (\a -> testSMPServerConnection a (aUserId user) smpServer)
+    CRSmpTestResult user <$> withAgent (\a -> testSMPServerConnection a (aUserId user) smpServer)
   APISetChatItemTTL userId newTTL_ -> withUser' $ \user -> do
     checkSameUser userId user
     checkStoreNotChanged $
