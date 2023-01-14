@@ -125,7 +125,7 @@ data ChatController = ChatController
     chatLock :: Lock,
     sndFiles :: TVar (Map Int64 Handle),
     rcvFiles :: TVar (Map Int64 Handle),
-    currentCalls :: TMap ContactId Call,
+    currentCalls :: TMap (UserId, ContactId) Call,
     config :: ChatConfig,
     filesFolder :: TVar (Maybe FilePath), -- path to files folder for mobile apps,
     incognitoMode :: TVar Bool,
