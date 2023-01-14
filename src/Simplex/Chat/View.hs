@@ -146,7 +146,7 @@ responseToView user_ testView liveItems ts = \case
   CRSndFileComplete u _ ft -> ttyUser u $ sendingFile_ "completed" ft
   CRSndFileCancelled _ ft -> sendingFile_ "cancelled" ft
   CRSndFileRcvCancelled u _ ft@SndFileTransfer {recipientDisplayName = c} ->
-    ttyUser u $ [ttyContact c <> " cancelled receiving " <> sndFile ft]
+    ttyUser u [ttyContact c <> " cancelled receiving " <> sndFile ft]
   CRContactConnecting u _ -> ttyUser u []
   CRContactConnected u ct userCustomProfile -> ttyUser u $ viewContactConnected ct userCustomProfile testView
   CRContactAnotherClient u c -> ttyUser u [ttyContact' c <> ": contact is connected to another client"]
@@ -154,18 +154,19 @@ responseToView user_ testView liveItems ts = \case
   CRContactsDisconnected u srv cs -> ttyUser u [plain $ "server disconnected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
   CRContactsSubscribed u srv cs -> ttyUser u [plain $ "server connected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
   CRContactSubError c e -> [ttyContact' c <> ": contact error " <> sShow e]
-  CRContactSubSummary summary ->
-    [sShow (length subscribed) <> " contacts connected (use " <> highlight' "/cs" <> " for the list)" | not (null subscribed)] <> viewErrorsSummary errors " contact errors"
+  CRContactSubSummary u summary ->
+    ttyUser u $ [sShow (length subscribed) <> " contacts connected (use " <> highlight' "/cs" <> " for the list)" | not (null subscribed)] <> viewErrorsSummary errors " contact errors"
     where
       (errors, subscribed) = partition (isJust . contactError) summary
-  CRUserContactSubSummary summary ->
-    map addressSS addresses
-      <> ([sShow (length groupLinksSubscribed) <> " group links active" | not (null groupLinksSubscribed)] <> viewErrorsSummary groupLinkErrors " group link errors")
+  CRUserContactSubSummary u summary ->
+    ttyUser u $
+      map addressSS addresses
+        <> ([sShow (length groupLinksSubscribed) <> " group links active" | not (null groupLinksSubscribed)] <> viewErrorsSummary groupLinkErrors " group link errors")
     where
       (addresses, groupLinks) = partition (\UserContactSubStatus {userContact} -> isNothing . userContactGroupId $ userContact) summary
       addressSS UserContactSubStatus {userContactError} = maybe ("Your address is active! To show: " <> highlight' "/sa") (\e -> "User address error: " <> sShow e <> ", to delete your address: " <> highlight' "/da") userContactError
       (groupLinkErrors, groupLinksSubscribed) = partition (isJust . userContactError) groupLinks
-  CRGroupInvitation g -> [groupInvitation' g]
+  CRGroupInvitation u g -> ttyUser u [groupInvitation' g]
   CRReceivedGroupInvitation u g c role -> ttyUser u $ viewReceivedGroupInvitation g c role
   CRUserJoinedGroup u g _ -> ttyUser u $ viewUserJoinedGroup g
   CRJoinedGroupMember u g m -> ttyUser u $ viewJoinedGroupMember g m
@@ -178,8 +179,8 @@ responseToView user_ testView liveItems ts = \case
   CRDeletedMemberUser u g by -> ttyUser u $ [ttyGroup' g <> ": " <> ttyMember by <> " removed you from the group"] <> groupPreserved g
   CRDeletedMember u g by m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember by <> " removed " <> ttyMember m <> " from the group"]
   CRLeftMember u g m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember m <> " left the group"]
-  CRGroupEmpty g -> [ttyFullGroup g <> ": group is empty"]
-  CRGroupRemoved g -> [ttyFullGroup g <> ": you are no longer a member or group deleted"]
+  CRGroupEmpty u g -> ttyUser u [ttyFullGroup g <> ": group is empty"]
+  CRGroupRemoved u g -> ttyUser u [ttyFullGroup g <> ": you are no longer a member or group deleted"]
   CRGroupDeleted u g m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember m <> " deleted the group", "use " <> highlight ("/d #" <> groupName' g) <> " to delete the local copy of the group"]
   CRGroupUpdated u g g' m -> ttyUser u $ viewGroupUpdated g g' m
   CRGroupProfile u g -> ttyUser u $ viewGroupProfile g
@@ -187,14 +188,14 @@ responseToView user_ testView liveItems ts = \case
   CRGroupLink u g cReq -> ttyUser u $ groupLink_ "Group link:" g cReq
   CRGroupLinkDeleted u g -> ttyUser u $ viewGroupLinkDeleted g
   CRAcceptingGroupJoinRequest _ g c -> [ttyFullContact c <> ": accepting request to join group " <> ttyGroup' g <> "..."]
-  CRMemberSubError g m e -> [ttyGroup' g <> " member " <> ttyMember m <> " error: " <> sShow e]
-  CRMemberSubSummary summary -> viewErrorsSummary (filter (isJust . memberError) summary) " group member errors"
-  CRGroupSubscribed g -> viewGroupSubscribed g
-  CRPendingSubSummary _ -> []
-  CRSndFileSubError SndFileTransfer {fileId, fileName} e ->
-    ["sent file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
-  CRRcvFileSubError RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}} e ->
-    ["received file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
+  CRMemberSubError u g m e -> ttyUser u [ttyGroup' g <> " member " <> ttyMember m <> " error: " <> sShow e]
+  CRMemberSubSummary u summary -> ttyUser u $ viewErrorsSummary (filter (isJust . memberError) summary) " group member errors"
+  CRGroupSubscribed u g -> ttyUser u $ viewGroupSubscribed g
+  CRPendingSubSummary u _ -> ttyUser u []
+  CRSndFileSubError u SndFileTransfer {fileId, fileName} e ->
+    ttyUser u ["sent file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
+  CRRcvFileSubError u RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}} e ->
+    ttyUser u ["received file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
   CRCallInvitation u RcvCallInvitation {contact, callType, sharedKey} -> ttyUser u $ viewCallInvitation contact callType sharedKey
   CRCallOffer {user = u, contact, callType, offer, sharedKey} -> ttyUser u $ viewCallOffer contact callType offer sharedKey
   CRCallAnswer {user = u, contact, answer} -> ttyUser u $ viewCallAnswer contact answer

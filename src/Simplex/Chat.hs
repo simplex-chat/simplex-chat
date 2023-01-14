@@ -198,7 +198,7 @@ startChatController currentUser subConns enableExpireCIs = do
       a1 <- async $ race_ notificationSubscriber agentSubscriber
       a2 <-
         if subConns
-          then Just <$> async (void . runExceptT $ subscribeUserConnections Agent.subscribeConnections currentUser)
+          then Just <$> async (subscribeUsers users)
           else pure Nothing
       atomically . writeTVar s $ Just (a1, a2)
       startCleanupManager
@@ -228,6 +228,15 @@ startChatController currentUser subConns enableExpireCIs = do
             ttl <- withStore' (`getChatItemTTL` u)
             forM_ ttl $ \t -> expireChatItems u t False
           threadDelay $ 1800 * 1000000 -- 30 minutes
+
+subscribeUsers :: forall m. (MonadUnliftIO m, MonadReader ChatController m) => [User] -> m ()
+subscribeUsers users = do
+  let currentUser = find (\User {activeUser} -> activeUser) users
+  forM_ currentUser $ \u -> subscribeUser u
+  forM_ users $ \u@User {activeUser} -> unless activeUser $ subscribeUser u
+  where
+    subscribeUser :: User -> m ()
+    subscribeUser u = void . runExceptT $ subscribeUserConnections Agent.subscribeConnections u
 
 restoreCalls :: (MonadUnliftIO m, MonadReader ChatController m) => User -> m ()
 restoreCalls user = do
@@ -316,8 +325,9 @@ processChatCommand = \case
     setAllExpireCIFlags False
     withAgent (`suspendAgent` t)
     pure $ CRCmdOk Nothing
-  ResubscribeAllConnections -> withUser $ \user -> do
-    subscribeUserConnections Agent.resubscribeConnections user
+  ResubscribeAllConnections -> do
+    users <- withStore' getUsers
+    subscribeUsers users
     pure $ CRCmdOk Nothing
   SetFilesFolder filesFolder' -> do
     createDirectoryIfMissing True filesFolder'
@@ -1805,19 +1815,19 @@ subscribeUserConnections agentBatchSubscribe user = do
       let connIds = map aConnId' pcs
       pure (connIds, M.fromList $ zip connIds pcs)
     contactSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId Contact -> m ()
-    contactSubsToView rs = toView . CRContactSubSummary . map (uncurry ContactSubStatus) . resultsFor rs
+    contactSubsToView rs = toView . CRContactSubSummary user . map (uncurry ContactSubStatus) . resultsFor rs
     contactLinkSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId UserContact -> m ()
-    contactLinkSubsToView rs = toView . CRUserContactSubSummary . map (uncurry UserContactSubStatus) . resultsFor rs
+    contactLinkSubsToView rs = toView . CRUserContactSubSummary user . map (uncurry UserContactSubStatus) . resultsFor rs
     groupSubsToView :: Map ConnId (Either AgentErrorType ()) -> [Group] -> Map ConnId GroupMember -> Bool -> m ()
     groupSubsToView rs gs ms ce = do
       mapM_ groupSub $
         sortOn (\(Group GroupInfo {localDisplayName = g} _) -> g) gs
-      toView . CRMemberSubSummary $ map (uncurry MemberSubStatus) mRs
+      toView . CRMemberSubSummary user $ map (uncurry MemberSubStatus) mRs
       where
         mRs = resultsFor rs ms
         groupSub :: Group -> m ()
         groupSub (Group g@GroupInfo {membership, groupId = gId} members) = do
-          when ce $ mapM_ (toView . uncurry (CRMemberSubError g)) mErrors
+          when ce $ mapM_ (toView . uncurry (CRMemberSubError user g)) mErrors
           toView groupEvent
           where
             mErrors :: [(GroupMember, ChatError)]
@@ -1827,26 +1837,26 @@ subscribeUserConnections agentBatchSubscribe user = do
                 $ filter (\(GroupMember {groupId}, _) -> groupId == gId) mRs
             groupEvent :: ChatResponse
             groupEvent
-              | memberStatus membership == GSMemInvited = CRGroupInvitation g
+              | memberStatus membership == GSMemInvited = CRGroupInvitation user g
               | all (\GroupMember {activeConn} -> isNothing activeConn) members =
                 if memberActive membership
-                  then CRGroupEmpty g
-                  else CRGroupRemoved g
-              | otherwise = CRGroupSubscribed g
+                  then CRGroupEmpty user g
+                  else CRGroupRemoved user g
+              | otherwise = CRGroupSubscribed user g
     sndFileSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId SndFileTransfer -> m ()
     sndFileSubsToView rs sfts = do
       let sftRs = resultsFor rs sfts
       forM_ sftRs $ \(ft@SndFileTransfer {fileId, fileStatus}, err_) -> do
-        forM_ err_ $ toView . CRSndFileSubError ft
+        forM_ err_ $ toView . CRSndFileSubError user ft
         void . forkIO $ do
           threadDelay 1000000
           l <- asks chatLock
           when (fileStatus == FSConnected) . unlessM (isFileActive fileId sndFiles) . withLock l "subscribe sendFileChunk" $
             sendFileChunk user ft
     rcvFileSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId RcvFileTransfer -> m ()
-    rcvFileSubsToView rs = mapM_ (toView . uncurry CRRcvFileSubError) . filterErrors . resultsFor rs
+    rcvFileSubsToView rs = mapM_ (toView . uncurry (CRRcvFileSubError user)) . filterErrors . resultsFor rs
     pendingConnSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId PendingContactConnection -> m ()
-    pendingConnSubsToView rs = toView . CRPendingSubSummary . map (uncurry PendingSubStatus) . resultsFor rs
+    pendingConnSubsToView rs = toView . CRPendingSubSummary user . map (uncurry PendingSubStatus) . resultsFor rs
     withStore_ :: (DB.Connection -> User -> IO [a]) -> m [a]
     withStore_ a = withStore' (`a` user) `catchError` \e -> toView (CRChatError (Just user) e) >> pure []
     filterErrors :: [(a, Maybe ChatError)] -> [(a, ChatError)]
