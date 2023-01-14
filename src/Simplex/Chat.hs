@@ -752,7 +752,6 @@ processChatCommand = \case
       pure Nothing
   APIGetCallInvitations userId -> withUserId userId $ \user -> do
     calls <- asks currentCalls >>= readTVarIO
-    -- get calls for userId
     let invs = mapMaybe callInvitation $ userCalls calls
     rcvCallInvitations <- mapM (rcvCallInvitation user) invs
     pure $ CRCallInvitations user rcvCallInvitations
