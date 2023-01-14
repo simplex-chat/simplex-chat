@@ -186,7 +186,7 @@ activeAgentServers ChatConfig {defaultServers = DefaultAgentServers {smp}} =
     . map (\ServerCfg {server} -> server)
     . filter (\ServerCfg {enabled} -> enabled)
 
-startChatController :: (MonadUnliftIO m, MonadReader ChatController m) => User -> Bool -> Bool -> m (Async ())
+startChatController :: forall m. (MonadUnliftIO m, MonadReader ChatController m) => User -> Bool -> Bool -> m (Async ())
 startChatController currentUser subConns enableExpireCIs = do
   asks smpAgent >>= resumeAgentClient
   users <- fromRight [] <$> runExceptT (withStore' getUsers)
@@ -211,23 +211,12 @@ startChatController currentUser subConns enableExpireCIs = do
           a <- Just <$> async (void . runExceptT $ cleanupManager currentUser)
           atomically $ writeTVar cleanupAsync a
         _ -> pure ()
-    startExpireCIs users = do
-      expireThreads <- asks expireCIThreads
-      forM_ users $ \u@User {userId} ->
-        atomically (TM.lookup userId expireThreads) >>= \case
-          Nothing -> do
-            a <- Just <$> async (void . runExceptT $ runExpireCIs u)
-            atomically $ TM.insert userId a expireThreads
-            setExpireCIFlag u True
-          _ -> setExpireCIFlag u True
-      where
-        runExpireCIs u@User {userId} = forever $ do
-          flip catchError (toView . CRChatError (Just u)) $ do
-            expireFlags <- asks expireCIFlags
-            atomically $ TM.lookup userId expireFlags >>= \b -> unless (b == Just True) retry
-            ttl <- withStore' (`getChatItemTTL` u)
-            forM_ ttl $ \t -> expireChatItems u t False
-          threadDelay $ 1800 * 1000000 -- 30 minutes
+    startExpireCIs users =
+      forM_ users $ \user -> do
+        ttl <- fromRight Nothing <$> runExceptT (withStore' (`getChatItemTTL` user))
+        forM_ ttl $ \_ -> do
+          startExpireCIThread user
+          setExpireCIFlag user True
 
 subscribeUsers :: forall m. (MonadUnliftIO m, MonadReader ChatController m) => [User] -> m ()
 subscribeUsers users = do
@@ -828,6 +817,7 @@ processChatCommand = \case
               setExpireCIFlag user False
               expireChatItems user newTTL True
             withStore' $ \db -> setChatItemTTL db user newTTL_
+            startExpireCIThread user
             whenM chatStarted $ setExpireCIFlag user True
         pure $ CRCmdOk (Just user)
   SetChatItemTTL newTTL_ -> withUser' $ \User {userId} -> do
@@ -1550,6 +1540,23 @@ assertDirectAllowed user dir ct event =
       XGrpInv_ -> False
       XCallInv_ -> False
       _ -> True
+
+startExpireCIThread :: forall m. (MonadUnliftIO m, MonadReader ChatController m) => User -> m ()
+startExpireCIThread user@User {userId} = do
+  expireThreads <- asks expireCIThreads
+  atomically (TM.lookup userId expireThreads) >>= \case
+    Nothing -> do
+      a <- Just <$> async (void $ runExceptT runExpireCIs)
+      atomically $ TM.insert userId a expireThreads
+    _ -> pure ()
+  where
+    runExpireCIs = forever $ do
+      flip catchError (toView . CRChatError (Just user)) $ do
+        expireFlags <- asks expireCIFlags
+        atomically $ TM.lookup userId expireFlags >>= \b -> unless (b == Just True) retry
+        ttl <- withStore' (`getChatItemTTL` user)
+        forM_ ttl $ \t -> expireChatItems user t False
+      threadDelay $ 1800 * 1000000 -- 30 minutes
 
 setExpireCIFlag :: (MonadUnliftIO m, MonadReader ChatController m) => User -> Bool -> m ()
 setExpireCIFlag User {userId} b = do
