@@ -395,12 +395,12 @@ data ChatResponse
   | CRSubscriptionEnd {user :: User, connectionEntity :: ConnectionEntity}
   | CRContactsDisconnected {user :: User, server :: SMPServer, contactRefs :: [ContactRef]}
   | CRContactsSubscribed {user :: User, server :: SMPServer, contactRefs :: [ContactRef]}
-  | CRContactSubError {contact :: Contact, chatError :: ChatError}
-  | CRContactSubSummary {contactSubscriptions :: [ContactSubStatus]}
-  | CRUserContactSubSummary {userContactSubscriptions :: [UserContactSubStatus]}
+  | CRContactSubError {contact :: Contact, chatError :: ChatError} -- TODO delete
+  | CRContactSubSummary {user :: User, contactSubscriptions :: [ContactSubStatus]}
+  | CRUserContactSubSummary {user :: User, userContactSubscriptions :: [UserContactSubStatus]}
   | CRHostConnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CRHostDisconnected {protocol :: AProtocolType, transportHost :: TransportHost}
-  | CRGroupInvitation {groupInfo :: GroupInfo}
+  | CRGroupInvitation {user :: User, groupInfo :: GroupInfo}
   | CRReceivedGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, memberRole :: GroupMemberRole}
   | CRUserJoinedGroup {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember}
   | CRJoinedGroupMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
@@ -411,8 +411,8 @@ data ChatResponse
   | CRDeletedMember {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, deletedMember :: GroupMember}
   | CRDeletedMemberUser {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRLeftMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
-  | CRGroupEmpty {groupInfo :: GroupInfo}
-  | CRGroupRemoved {groupInfo :: GroupInfo}
+  | CRGroupEmpty {user :: User, groupInfo :: GroupInfo}
+  | CRGroupRemoved {user :: User, groupInfo :: GroupInfo}
   | CRGroupDeleted {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRGroupUpdated {user :: User, fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember}
   | CRGroupProfile {user :: User, groupInfo :: GroupInfo}
@@ -420,20 +420,20 @@ data ChatResponse
   | CRGroupLink {user :: User, groupInfo :: GroupInfo, connReqContact :: ConnReqContact}
   | CRGroupLinkDeleted {user :: User, groupInfo :: GroupInfo}
   | CRAcceptingGroupJoinRequest {user :: User, groupInfo :: GroupInfo, contact :: Contact}
-  | CRMemberSubError {groupInfo :: GroupInfo, member :: GroupMember, chatError :: ChatError}
-  | CRMemberSubSummary {memberSubscriptions :: [MemberSubStatus]}
-  | CRGroupSubscribed {groupInfo :: GroupInfo}
-  | CRPendingSubSummary {pendingSubscriptions :: [PendingSubStatus]}
-  | CRSndFileSubError {sndFileTransfer :: SndFileTransfer, chatError :: ChatError}
-  | CRRcvFileSubError {rcvFileTransfer :: RcvFileTransfer, chatError :: ChatError}
+  | CRMemberSubError {user :: User, groupInfo :: GroupInfo, member :: GroupMember, chatError :: ChatError}
+  | CRMemberSubSummary {user :: User, memberSubscriptions :: [MemberSubStatus]}
+  | CRGroupSubscribed {user :: User, groupInfo :: GroupInfo}
+  | CRPendingSubSummary {user :: User, pendingSubscriptions :: [PendingSubStatus]}
+  | CRSndFileSubError {user :: User, sndFileTransfer :: SndFileTransfer, chatError :: ChatError}
+  | CRRcvFileSubError {user :: User, rcvFileTransfer :: RcvFileTransfer, chatError :: ChatError}
   | CRCallInvitation {user :: User, callInvitation :: RcvCallInvitation}
   | CRCallOffer {user :: User, contact :: Contact, callType :: CallType, offer :: WebRTCSession, sharedKey :: Maybe C.Key, askConfirmation :: Bool}
   | CRCallAnswer {user :: User, contact :: Contact, answer :: WebRTCSession}
   | CRCallExtraInfo {user :: User, contact :: Contact, extraInfo :: WebRTCExtraInfo}
   | CRCallEnded {user :: User, contact :: Contact}
   | CRCallInvitations {user :: User, callInvitations :: [RcvCallInvitation]}
-  | CRUserContactLinkSubscribed
-  | CRUserContactLinkSubError {chatError :: ChatError}
+  | CRUserContactLinkSubscribed -- TODO delete
+  | CRUserContactLinkSubError {chatError :: ChatError} -- TODO delete
   | CRNtfTokenStatus {status :: NtfTknStatus}
   | CRNtfToken {token :: DeviceToken, status :: NtfTknStatus, ntfMode :: NotificationsMode}
   | CRNtfMessages {user :: User, connEntity :: Maybe ConnectionEntity, msgTs :: Maybe UTCTime, ntfMessages :: [NtfMsgInfo]}
