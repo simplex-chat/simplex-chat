@@ -1,5 +1,6 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -15,7 +16,7 @@ where
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import Options.Applicative
-import Simplex.Chat.Controller (updateStr, versionStr)
+import Simplex.Chat.Controller (ChatLogLevel (..), updateStr, versionStr)
 import Simplex.Messaging.Client (NetworkConfig (..), defaultNetworkConfig)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
@@ -28,6 +29,7 @@ data ChatOpts = ChatOpts
     dbKey :: String,
     smpServers :: [SMPServerWithAuth],
     networkConfig :: NetworkConfig,
+    logLevel :: ChatLogLevel,
     logConnections :: Bool,
     logServerHosts :: Bool,
     logAgent :: Bool,
@@ -84,27 +86,35 @@ chatOpts appDir defaultDbFileName = do
           <> help "TCP timeout, seconds (default: 5/10 without/with SOCKS5 proxy)"
           <> value 0
       )
+  logLevel <-
+    option
+      parseLogLevel
+      ( long "log-level"
+          <> short 'l'
+          <> metavar "LEVEL"
+          <> help "Log level: debug, info, warn, error, important (default)"
+          <> value CLLImportant
+      )
   logTLSErrors <-
     switch
       ( long "log-tls-errors"
-          <> help "Log TLS errors"
+          <> help "Log TLS errors (also enabled with `-l debug`)"
       )
   logConnections <-
     switch
       ( long "connections"
           <> short 'c'
-          <> help "Log every contact and group connection on start"
+          <> help "Log every contact and group connection on start (also with `-l info`)"
       )
   logServerHosts <-
     switch
       ( long "log-hosts"
-          <> short 'l'
-          <> help "Log connections to servers"
+          <> help "Log connections to servers (also with `-l info`)"
       )
   logAgent <-
     switch
       ( long "log-agent"
-          <> help "Enable logs from SMP agent"
+          <> help "Enable logs from SMP agent (also with `-l debug`)"
       )
   chatCmd <-
     strOption
@@ -139,7 +149,7 @@ chatOpts appDir defaultDbFileName = do
         ( long "files-folder"
             <> metavar "FOLDER"
             <> help "Folder to use for sent and received files"
-      )
+        )
   allowInstantFiles <-
     switch
       ( long "allow-instant-files"
@@ -157,10 +167,11 @@ chatOpts appDir defaultDbFileName = do
       { dbFilePrefix,
         dbKey,
         smpServers,
-        networkConfig = fullNetworkConfig socksProxy (useTcpTimeout socksProxy t) logTLSErrors,
-        logConnections,
-        logServerHosts,
-        logAgent,
+        networkConfig = fullNetworkConfig socksProxy (useTcpTimeout socksProxy t) (logTLSErrors || logLevel == CLLDebug),
+        logLevel,
+        logConnections = logConnections || logLevel <= CLLInfo,
+        logServerHosts = logServerHosts || logLevel <= CLLInfo,
+        logAgent = logAgent || logLevel == CLLDebug,
         chatCmd,
         chatCmdDelay,
         chatServerPort,
@@ -191,6 +202,15 @@ serverPortP = Just . B.unpack <$> A.takeWhile A.isDigit
 
 smpServersP :: A.Parser [SMPServerWithAuth]
 smpServersP = strP `A.sepBy1` A.char ';'
+
+parseLogLevel :: ReadM ChatLogLevel
+parseLogLevel = eitherReader $ \case
+  "debug" -> Right CLLDebug
+  "info" -> Right CLLInfo
+  "warn" -> Right CLLWarning
+  "error" -> Right CLLError
+  "important" -> Right CLLImportant
+  _ -> Left "Invalid log level"
 
 getChatOpts :: FilePath -> FilePath -> IO ChatOpts
 getChatOpts appDir defaultDbFileName =

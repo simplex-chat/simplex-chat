@@ -102,6 +102,7 @@ defaultChatConfig =
       tbqSize = 64,
       fileChunkSize = 15780, -- do not change
       inlineFiles = defaultInlineFilesConfig,
+      logLevel = CLLImportant,
       subscriptionConcurrency = 16,
       subscriptionEvents = False,
       hostEvents = False,
@@ -135,9 +136,9 @@ createChatDatabase filePrefix key yesToMigrations = do
   pure ChatDatabase {chatStore, agentStore}
 
 newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> IO ChatController
-newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agentConfig = aCfg, tbqSize, defaultServers, inlineFiles} ChatOpts {smpServers, networkConfig, logConnections, logServerHosts, optFilesFolder, allowInstantFiles} sendToast = do
+newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agentConfig = aCfg, tbqSize, defaultServers, inlineFiles} ChatOpts {smpServers, networkConfig, logLevel, logConnections, logServerHosts, optFilesFolder, allowInstantFiles} sendToast = do
   let inlineFiles' = if allowInstantFiles then inlineFiles else inlineFiles {sendChunks = 0, receiveInstant = False}
-      config = cfg {subscriptionEvents = logConnections, hostEvents = logServerHosts, defaultServers = configServers, inlineFiles = inlineFiles'}
+      config = cfg {logLevel, subscriptionEvents = logConnections, hostEvents = logServerHosts, defaultServers = configServers, inlineFiles = inlineFiles'}
       sendNotification = fromMaybe (const $ pure ()) sendToast
       firstTime = dbNew chatStore
   activeTo <- newTVarIO ActiveNone

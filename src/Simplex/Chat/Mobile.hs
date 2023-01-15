@@ -123,6 +123,7 @@ mobileChatOpts =
       dbKey = "",
       smpServers = [],
       networkConfig = defaultNetworkConfig,
+      logLevel = CLLImportant,
       logConnections = False,
       logServerHosts = True,
       logAgent = False,
