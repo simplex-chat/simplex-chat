@@ -283,8 +283,8 @@ viewChats ts = concatMap chatPreview . reverse
       _ -> chatName
       where
         chatName = case chat of
-          DirectChat ct -> [ttyToContact' ct]
-          GroupChat g -> [ttyToGroup g]
+          DirectChat ct -> ["      " <> ttyToContact' ct]
+          GroupChat g -> ["      " <> ttyToGroup g]
           _ -> []
 
 viewChatItem :: forall c d. MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> CurrentTime -> [StyledString]
