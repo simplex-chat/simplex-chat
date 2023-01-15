@@ -15,6 +15,7 @@ where
 
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
+import Numeric.Natural (Natural)
 import Options.Applicative
 import Simplex.Chat.Controller (ChatLogLevel (..), updateStr, versionStr)
 import Simplex.Messaging.Client (NetworkConfig (..), defaultNetworkConfig)
@@ -33,6 +34,7 @@ data ChatOpts = ChatOpts
     logConnections :: Bool,
     logServerHosts :: Bool,
     logAgent :: Bool,
+    tbqSize :: Natural,
     chatCmd :: String,
     chatCmdDelay :: Int,
     chatServerPort :: Maybe String,
@@ -116,6 +118,16 @@ chatOpts appDir defaultDbFileName = do
       ( long "log-agent"
           <> help "Enable logs from SMP agent (also with `-l debug`)"
       )
+  tbqSize <-
+    option
+      auto
+      ( long "queue-size"
+          <> short 'q'
+          <> metavar "SIZE"
+          <> help "Internal queue size"
+          <> value 64
+          <> showDefault
+      )
   chatCmd <-
     strOption
       ( long "execute"
@@ -172,6 +184,7 @@ chatOpts appDir defaultDbFileName = do
         logConnections = logConnections || logLevel <= CLLInfo,
         logServerHosts = logServerHosts || logLevel <= CLLInfo,
         logAgent = logAgent || logLevel == CLLDebug,
+        tbqSize,
         chatCmd,
         chatCmdDelay,
         chatServerPort,

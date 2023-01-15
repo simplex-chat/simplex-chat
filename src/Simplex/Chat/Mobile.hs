@@ -127,6 +127,7 @@ mobileChatOpts =
       logConnections = False,
       logServerHosts = True,
       logAgent = False,
+      tbqSize = 64,
       chatCmd = "",
       chatCmdDelay = 3,
       chatServerPort = Nothing,

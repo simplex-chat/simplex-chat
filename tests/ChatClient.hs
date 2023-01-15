@@ -57,6 +57,7 @@ testOpts =
       logConnections = False,
       logServerHosts = False,
       logAgent = False,
+      tbqSize = 64,
       chatCmd = "",
       chatCmdDelay = 3,
       chatServerPort = Nothing,
