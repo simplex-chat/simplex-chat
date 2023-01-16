@@ -32,7 +32,6 @@ module Simplex.Chat.Store
     getUserIdByName,
     getUserByAConnId,
     getUserByContactId,
-    getUserByContactId',
     createDirectConnection,
     createConnReqConnection,
     getProfileById,
@@ -496,11 +495,6 @@ getUserByAConnId db agentConnId =
 getUserByContactId :: DB.Connection -> ContactId -> ExceptT StoreError IO User
 getUserByContactId db contactId =
   ExceptT . firstRow toUser (SEUserNotFoundByContactId contactId) $
-    DB.query db (userQuery <> " JOIN contacts ct ON ct.user_id = u.user_id WHERE ct.contact_id = ?") (Only contactId)
-
-getUserByContactId' :: DB.Connection -> ContactId -> IO (Maybe User)
-getUserByContactId' db contactId =
-  maybeFirstRow toUser $
     DB.query db (userQuery <> " JOIN contacts ct ON ct.user_id = u.user_id WHERE ct.contact_id = ?") (Only contactId)
 
 createConnReqConnection :: DB.Connection -> UserId -> ConnId -> ConnReqUriHash -> XContactId -> Maybe Profile -> Maybe GroupLinkId -> IO PendingContactConnection

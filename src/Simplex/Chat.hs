@@ -760,7 +760,7 @@ processChatCommand = \case
         CallInvitationReceived {peerCallType, sharedKey} -> Just (contactId, callTs, peerCallType, sharedKey)
         _ -> Nothing
       rcvCallInvitation (contactId, callTs, peerCallType, sharedKey) = do
-        user_ <- withStore' $ \db -> getUserByContactId' db contactId
+        user_ <- eitherToMaybe <$> runExceptT (withStore $ \db -> getUserByContactId db contactId)
         forM user_ $ \user -> do
           contact <- withStore (\db -> getContact db user contactId)
           pure RcvCallInvitation {contact, callType = peerCallType, sharedKey, callTs}
