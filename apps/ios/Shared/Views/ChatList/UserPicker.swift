@@ -109,9 +109,8 @@ struct UserPicker: View {
 }
 
 struct UserPicker_Previews: PreviewProvider {
-    let chatModel = ChatModel()
     static var previews: some View {
-        return UserPicker(
+        UserPicker(
             showSettings: Binding.constant(false),
             userPickerVisible: Binding.constant(true),
             users: [User.sampleData, User.sampleData]
