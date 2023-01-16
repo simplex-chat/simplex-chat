@@ -235,9 +235,9 @@ restoreCalls users = do
   forM_ us $ restoreUserCalls calls
   forM_ us' $ restoreUserCalls calls
   where
-    restoreUserCalls calls user@User {userId} = do
+    restoreUserCalls calls user = do
       savedCalls <- fromRight [] <$> runExceptT (withStore' $ \db -> getCalls db user)
-      let callsMap = M.fromList $ map (\call@Call {contactId} -> ((contactId, userId), call)) savedCalls
+      let callsMap = M.fromList $ map (\call@Call {contactId} -> (contactId, call)) savedCalls
       atomically $ TM.union callsMap calls
 
 stopChatController :: forall m. MonadUnliftIO m => ChatController -> m ()
@@ -679,7 +679,7 @@ processChatCommand = \case
           `E.finally` liftIO (deleteContactRequest db userId connReqId)
     withAgent $ \a -> rejectContact a connId invId
     pure $ CRContactRequestRejected user cReq
-  APISendCallInvitation contactId callType -> withUser $ \user@User {userId} -> do
+  APISendCallInvitation contactId callType -> withUser $ \user -> do
     -- party initiating call
     ct <- withStore $ \db -> getContact db user contactId
     assertDirectAllowed user MDSnd ct XCallInv_
@@ -692,7 +692,7 @@ processChatCommand = \case
       (msg, _) <- sendDirectContactMessage ct (XCallInv callId invitation)
       ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndCall CISCallPending 0)
       let call' = Call {contactId, callId, chatItemId = chatItemId' ci, callState, callTs = chatItemTs' ci}
-      call_ <- atomically $ TM.lookupInsert (userId, contactId) call' calls
+      call_ <- atomically $ TM.lookupInsert contactId call' calls
       forM_ call_ $ \call -> updateCallItemStatus user ct call WCSDisconnected Nothing
       toView $ CRNewChatItem user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
       pure $ CRCmdOk (Just user)
@@ -751,19 +751,16 @@ processChatCommand = \case
       updateCallItemStatus user ct call WCSDisconnected $ Just msgId
       pure Nothing
   APIGetCallInvitations -> withUser $ \_ -> do
-    users <- withStore' getUsers
     calls <- asks currentCalls >>= readTVarIO
-    let invs = mapMaybe callInvitation $ usersCalls calls
-    rcvCallInvitations <- catMaybes <$> mapM (rcvCallInvitation users) invs
+    let invs = mapMaybe callInvitation $ M.elems calls
+    rcvCallInvitations <- catMaybes <$> mapM rcvCallInvitation invs
     pure $ CRCallInvitations rcvCallInvitations
     where
-      usersCalls calls =
-        map (\((userId, _), call) -> (userId, call)) $ M.toList calls
-      callInvitation (userId, Call {contactId, callState, callTs}) = case callState of
-        CallInvitationReceived {peerCallType, sharedKey} -> Just (userId, contactId, callTs, peerCallType, sharedKey)
+      callInvitation Call {contactId, callState, callTs} = case callState of
+        CallInvitationReceived {peerCallType, sharedKey} -> Just (contactId, callTs, peerCallType, sharedKey)
         _ -> Nothing
-      rcvCallInvitation users (uId, contactId, callTs, peerCallType, sharedKey) = do
-        let user_ = find (\User {userId} -> uId == userId) users
+      rcvCallInvitation (contactId, callTs, peerCallType, sharedKey) = do
+        user_ <- withStore' $ \db -> getUserByContactId' db contactId
         forM user_ $ \user -> do
           contact <- withStore (\db -> getContact db user contactId)
           pure RcvCallInvitation {contact, callType = peerCallType, sharedKey, callTs}
@@ -1483,11 +1480,11 @@ processChatCommand = \case
        in s == ConnReady || s == ConnSndReady
     withCurrentCall :: ContactId -> (User -> Contact -> Call -> m (Maybe Call)) -> m ChatResponse
     withCurrentCall ctId action = do
-      user@User {userId} <- withStore $ \db -> getUserByContactId db ctId
+      user <- withStore $ \db -> getUserByContactId db ctId
       ct <- withStore $ \db -> getContact db user ctId
       calls <- asks currentCalls
       withChatLock "currentCall" $
-        atomically (TM.lookup (userId, ctId) calls) >>= \case
+        atomically (TM.lookup ctId calls) >>= \case
           Nothing -> throwChatError CENoCurrentCall
           Just call@Call {contactId}
             | ctId == contactId -> do
@@ -1495,10 +1492,10 @@ processChatCommand = \case
               case call_ of
                 Just call' -> do
                   unless (isRcvInvitation call') $ withStore' $ \db -> deleteCalls db user ctId
-                  atomically $ TM.insert (userId, ctId) call' calls
+                  atomically $ TM.insert ctId call' calls
                 _ -> do
                   withStore' $ \db -> deleteCalls db user ctId
-                  atomically $ TM.delete (userId, ctId) calls
+                  atomically $ TM.delete ctId calls
               pure $ CRCmdOk (Just user)
             | otherwise -> throwChatError $ CECallContact contactId
     forwardFile :: ChatName -> FileTransferId -> (ChatName -> FilePath -> ChatCommand) -> m ChatResponse
@@ -3071,7 +3068,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       -- (and replace it in ChatController)
       -- practically, this should not happen
       withStore' $ \db -> createCall db user call' $ chatItemTs' ci
-      call_ <- atomically (TM.lookupInsert (userId, contactId) call' calls)
+      call_ <- atomically (TM.lookupInsert contactId call' calls)
       forM_ call_ $ \call -> updateCallItemStatus user ct call WCSDisconnected Nothing
       toView $ CRCallInvitation user (RcvCallInvitation {contact = ct, callType, sharedKey, callTs = chatItemTs' ci})
       toView $ CRNewChatItem user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
@@ -3136,7 +3133,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     msgCurrentCall ct@Contact {contactId = ctId'} callId' eventName RcvMessage {msgId} msgMeta action = do
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       calls <- asks currentCalls
-      atomically (TM.lookup (userId, ctId') calls) >>= \case
+      atomically (TM.lookup ctId' calls) >>= \case
         Nothing -> messageError $ eventName <> ": no current call"
         Just call@Call {contactId, callId, chatItemId}
           | contactId /= ctId' || callId /= callId' -> messageError $ eventName <> ": wrong contact or callId"
@@ -3145,10 +3142,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             case call_ of
               Just call' -> do
                 unless (isRcvInvitation call') $ withStore' $ \db -> deleteCalls db user ctId'
-                atomically $ TM.insert (userId, ctId') call' calls
+                atomically $ TM.insert ctId' call' calls
               _ -> do
                 withStore' $ \db -> deleteCalls db user ctId'
-                atomically $ TM.delete (userId, ctId') calls
+                atomically $ TM.delete ctId' calls
             forM_ aciContent_ $ \aciContent ->
               updateDirectChatItemView user ct chatItemId aciContent False $ Just msgId
 
