@@ -285,6 +285,7 @@ data ChatCommand
   | DeleteGroupLink GroupName
   | ShowGroupLink GroupName
   | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: ByteString, message :: ByteString}
+  | LastChats (Maybe Int) -- UserId (not used in UI)
   | LastMessages (Maybe ChatName) Int (Maybe String) -- UserId (not used in UI)
   | LastChatItemId (Maybe ChatName) Int -- UserId (not used in UI)
   | ShowChatItem (Maybe ChatItemId) -- UserId (not used in UI)
@@ -320,6 +321,7 @@ data ChatResponse
   | CRChatStopped
   | CRChatSuspended
   | CRApiChats {user :: User, chats :: [AChat]}
+  | CRChats {chats :: [AChat]}
   | CRApiChat {user :: User, chat :: AChat}
   | CRChatItems {user :: User, chatItems :: [AChatItem]}
   | CRChatItemId User (Maybe ChatItemId)

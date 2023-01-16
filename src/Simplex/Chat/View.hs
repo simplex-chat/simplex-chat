@@ -65,6 +65,7 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
   CRChatStopped -> ["chat stopped"]
   CRChatSuspended -> ["chat suspended"]
   CRApiChats u chats -> ttyUser u $ if testView then testViewChats chats else [plain . bshow $ J.encode chats]
+  CRChats chats -> viewChats ts chats
   CRApiChat u chat -> ttyUser u $ if testView then testViewChat chat else [plain . bshow $ J.encode chat]
   CRApiParsedMarkdown ft -> [plain . bshow $ J.encode ft]
   CRUserSMPServers u smpServers _ -> ttyUser u $ viewSMPServers (L.toList smpServers) testView
@@ -287,6 +288,20 @@ showSMPServer = B.unpack . strEncode . host
 
 viewHostEvent :: AProtocolType -> TransportHost -> String
 viewHostEvent p h = map toUpper (B.unpack $ strEncode p) <> " host " <> B.unpack (strEncode h)
+
+viewChats :: CurrentTime -> [AChat] -> [StyledString]
+viewChats ts = concatMap chatPreview . reverse
+  where
+    chatPreview (AChat _ (Chat chat items _)) = case items of
+      CChatItem _ ci : _ -> case viewChatItem chat ci True ts of
+        s : _ -> [let s' = sTake 120 s in if sLength s' < sLength s then s' <> "..." else s']
+        _ -> chatName
+      _ -> chatName
+      where
+        chatName = case chat of
+          DirectChat ct -> ["      " <> ttyToContact' ct]
+          GroupChat g -> ["      " <> ttyToGroup g]
+          _ -> []
 
 viewChatItem :: forall c d. MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> CurrentTime -> [StyledString]
 viewChatItem chat ChatItem {chatDir, meta = meta@CIMeta {itemDeleted}, content, quotedItem, file} doShow ts =
