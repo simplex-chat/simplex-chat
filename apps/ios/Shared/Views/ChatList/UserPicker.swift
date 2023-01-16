@@ -59,7 +59,7 @@ struct UserPicker: View {
                             //                            .overlay(Divider().background(fillColor).padding(.leading, i < users.count - 1 ? 40 : 0), alignment: .bottom)
                             Divider()
                         }
-                        menuButton("Edit user profiles", icon: "plus") {
+                        menuButton("Your user profiles", icon: "plus") {
                             print("manage profiles page")
                         }
                         Divider()
@@ -77,7 +77,7 @@ struct UserPicker: View {
                         }
                     }
                 }
-                .frame(maxWidth: 250)
+                .frame(maxWidth: 300)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 .background(
                     Rectangle()
