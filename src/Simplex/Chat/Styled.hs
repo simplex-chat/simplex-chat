@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Simplex.Chat.Styled
   ( StyledString (..),
@@ -9,6 +10,7 @@ module Simplex.Chat.Styled
     unStyle,
     sLength,
     sShow,
+    sTake,
   )
 where
 
@@ -25,7 +27,7 @@ data StyledString = Styled [SGR] String | StyledString :<>: StyledString
 
 instance Semigroup StyledString where (<>) = (:<>:)
 
-instance Monoid StyledString where mempty = plain ""
+instance Monoid StyledString where mempty = ""
 
 instance IsString StyledString where fromString = plain
 
@@ -34,7 +36,7 @@ styleMarkdown (s1 :|: s2) = styleMarkdown s1 <> styleMarkdown s2
 styleMarkdown (Markdown f s) = styleFormat f s
 
 styleMarkdownList :: MarkdownList -> StyledString
-styleMarkdownList [] = plain ""
+styleMarkdownList [] = ""
 styleMarkdownList [FormattedText f s] = styleFormat f s
 styleMarkdownList (FormattedText f s : ts) = styleFormat f s <> styleMarkdownList ts
 
@@ -82,3 +84,15 @@ unStyle (s1 :<>: s2) = unStyle s1 <> unStyle s2
 sLength :: StyledString -> Int
 sLength (Styled _ s) = length s
 sLength (s1 :<>: s2) = sLength s1 + sLength s2
+
+sTake :: Int -> StyledString -> StyledString
+sTake n = go Nothing 0
+  where
+    go res len = \case
+      Styled f s ->
+        let s' = Styled f $ take (n - len) s
+         in maybe id (<>) res s'
+      s1 :<>: s2 ->
+        let s1' = go res len s1
+            len' = sLength s1'
+         in if len' >= n then s1' else go (Just s1') len' s2

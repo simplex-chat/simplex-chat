@@ -329,13 +329,13 @@ testDeleteContactDeletesProfile =
       -- alice deletes contact, profile is deleted
       alice ##> "/d bob"
       alice <## "bob: contact is deleted"
-      alice ##> "/cs"
+      alice ##> "/contacts"
       (alice </)
       alice `hasContactProfiles` ["alice"]
       -- bob deletes contact, profile is deleted
       bob ##> "/d alice"
       bob <## "alice: contact is deleted"
-      bob ##> "/cs"
+      bob ##> "/contacts"
       (bob </)
       bob `hasContactProfiles` ["bob"]
 
@@ -612,7 +612,7 @@ testGroupShared alice bob cath checkMessages = do
            "cath (Catherine): admin, invited, connected"
          ]
   -- list contacts
-  alice ##> "/cs"
+  alice ##> "/contacts"
   alice <## "bob (Bob)"
   alice <## "cath (Catherine)"
   -- remove member
@@ -1554,28 +1554,28 @@ testGroupDeleteUnusedContacts =
             bob <## "use @cath <message> to send messages"
         ]
       -- list contacts
-      bob ##> "/cs"
+      bob ##> "/contacts"
       bob <## "alice (Alice)"
       bob <## "cath (Catherine)"
-      cath ##> "/cs"
+      cath ##> "/contacts"
       cath <## "alice (Alice)"
       cath <## "bob (Bob)"
       -- delete group 1, contacts and profiles are kept
       deleteGroup alice bob cath "team"
-      bob ##> "/cs"
+      bob ##> "/contacts"
       bob <## "alice (Alice)"
       bob <## "cath (Catherine)"
       bob `hasContactProfiles` ["alice", "bob", "cath"]
-      cath ##> "/cs"
+      cath ##> "/contacts"
       cath <## "alice (Alice)"
       cath <## "bob (Bob)"
       cath `hasContactProfiles` ["alice", "bob", "cath"]
       -- delete group 2, unused contacts and profiles are deleted
       deleteGroup alice bob cath "club"
-      bob ##> "/cs"
+      bob ##> "/contacts"
       bob <## "alice (Alice)"
       bob `hasContactProfiles` ["alice", "bob"]
-      cath ##> "/cs"
+      cath ##> "/contacts"
       cath <## "alice (Alice)"
       cath `hasContactProfiles` ["alice", "cath"]
   where
@@ -2913,25 +2913,25 @@ testConnectIncognitoInvitationLink = testChat3 aliceProfile bobProfile cathProfi
     bob <## (aliceIncognito <> " updated preferences for you:")
     bob <## "Full deletion: off (you allow: no, contact allows: no)"
     -- list contacts
-    alice ##> "/cs"
+    alice ##> "/contacts"
     alice
       <### [ ConsoleString $ "i " <> bobIncognito,
              "cath (Catherine)"
            ]
     alice `hasContactProfiles` ["alice", T.pack aliceIncognito, T.pack bobIncognito, "cath"]
-    bob ##> "/cs"
+    bob ##> "/contacts"
     bob <## ("i " <> aliceIncognito)
     bob `hasContactProfiles` ["bob", T.pack aliceIncognito, T.pack bobIncognito]
     -- alice deletes contact, incognito profile is deleted
     alice ##> ("/d " <> bobIncognito)
     alice <## (bobIncognito <> ": contact is deleted")
-    alice ##> "/cs"
+    alice ##> "/contacts"
     alice <## "cath (Catherine)"
     alice `hasContactProfiles` ["alice", "cath"]
     -- bob deletes contact, incognito profile is deleted
     bob ##> ("/d " <> aliceIncognito)
     bob <## (aliceIncognito <> ": contact is deleted")
-    bob ##> "/cs"
+    bob ##> "/contacts"
     (bob </)
     bob `hasContactProfiles` ["bob"]
 
@@ -2964,13 +2964,13 @@ testConnectIncognitoContactAddress = testChat2 aliceProfile bobProfile $
     bob ?#> "@alice I'm Batman"
     alice <# (bobIncognito <> "> I'm Batman")
     -- list contacts
-    bob ##> "/cs"
+    bob ##> "/contacts"
     bob <## "i alice (Alice)"
     bob `hasContactProfiles` ["alice", "bob", T.pack bobIncognito]
     -- delete contact, incognito profile is deleted
     bob ##> "/d alice"
     bob <## "alice: contact is deleted"
-    bob ##> "/cs"
+    bob ##> "/contacts"
     (bob </)
     bob `hasContactProfiles` ["bob"]
 
@@ -2999,13 +2999,13 @@ testAcceptContactRequestIncognito = testChat2 aliceProfile bobProfile $
     bob #> ("@" <> aliceIncognito <> " I know!")
     alice ?<# "bob> I know!"
     -- list contacts
-    alice ##> "/cs"
+    alice ##> "/contacts"
     alice <## "i bob (Bob)"
     alice `hasContactProfiles` ["alice", "bob", T.pack aliceIncognito]
     -- delete contact, incognito profile is deleted
     alice ##> "/d bob"
     alice <## "bob: contact is deleted"
-    alice ##> "/cs"
+    alice ##> "/contacts"
     (alice </)
     alice `hasContactProfiles` ["alice"]
 
@@ -3310,13 +3310,13 @@ testDeleteContactThenGroupDeletesIncognitoProfile = testChat2 aliceProfile bobPr
     concurrently_
       (alice <## ("#team: " <> bobIncognito <> " joined the group"))
       (bob <## ("#team: you joined the group incognito as " <> bobIncognito))
-    bob ##> "/cs"
+    bob ##> "/contacts"
     bob <## "i alice (Alice)"
     bob `hasContactProfiles` ["alice", "bob", T.pack bobIncognito]
     -- delete contact
     bob ##> "/d alice"
     bob <## "alice: contact is deleted"
-    bob ##> "/cs"
+    bob ##> "/contacts"
     (bob </)
     bob `hasContactProfiles` ["alice", "bob", T.pack bobIncognito]
     -- delete group
@@ -3362,7 +3362,7 @@ testDeleteGroupThenContactDeletesIncognitoProfile = testChat2 aliceProfile bobPr
     concurrently_
       (alice <## ("#team: " <> bobIncognito <> " joined the group"))
       (bob <## ("#team: you joined the group incognito as " <> bobIncognito))
-    bob ##> "/cs"
+    bob ##> "/contacts"
     bob <## "i alice (Alice)"
     bob `hasContactProfiles` ["alice", "bob", T.pack bobIncognito]
     -- delete group
@@ -3379,7 +3379,7 @@ testDeleteGroupThenContactDeletesIncognitoProfile = testChat2 aliceProfile bobPr
     -- delete contact
     bob ##> "/d alice"
     bob <## "alice: contact is deleted"
-    bob ##> "/cs"
+    bob ##> "/contacts"
     (bob </)
     bob `hasContactProfiles` ["bob"]
 
@@ -3388,10 +3388,10 @@ testSetAlias = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     connectUsers alice bob
     alice #$> ("/_set alias @2 my friend bob", id, "contact bob alias updated: my friend bob")
-    alice ##> "/cs"
+    alice ##> "/contacts"
     alice <## "bob (Bob) (alias: my friend bob)"
     alice #$> ("/_set alias @2", id, "contact bob alias removed")
-    alice ##> "/cs"
+    alice ##> "/contacts"
     alice <## "bob (Bob)"
 
 testSetConnectionAlias :: IO ()
@@ -3408,7 +3408,7 @@ testSetConnectionAlias = testChat2 aliceProfile bobProfile $
       (alice <## "bob (Bob): contact is connected")
       (bob <## "alice (Alice): contact is connected")
     alice @@@ [("@bob", "Voice messages: enabled")]
-    alice ##> "/cs"
+    alice ##> "/contacts"
     alice <## "bob (Bob) (alias: friend)"
 
 testSetContactPrefs :: IO ()
@@ -4342,11 +4342,11 @@ testMuteContact =
       bob <## "ok"
       alice #> "@bob hi"
       (bob </)
-      bob ##> "/cs"
+      bob ##> "/contacts"
       bob <## "alice (Alice) (muted, you can /unmute @alice)"
       bob ##> "/unmute alice"
       bob <## "ok"
-      bob ##> "/cs"
+      bob ##> "/contacts"
       bob <## "alice (Alice)"
       alice #> "@bob hi again"
       bob <# "alice> hi again"
@@ -4764,16 +4764,16 @@ testGroupLinkUnusedHostContactDeleted =
                  ]
         ]
       -- list contacts
-      bob ##> "/cs"
+      bob ##> "/contacts"
       bob <## "alice (Alice)"
       -- delete group 1, host contact and profile are kept
       bobLeaveDeleteGroup alice bob "team"
-      bob ##> "/cs"
+      bob ##> "/contacts"
       bob <## "alice (Alice)"
       bob `hasContactProfiles` ["alice", "bob"]
       -- delete group 2, unused host contact and profile are deleted
       bobLeaveDeleteGroup alice bob "club"
-      bob ##> "/cs"
+      bob ##> "/contacts"
       (bob </)
       bob `hasContactProfiles` ["bob"]
   where
@@ -4797,18 +4797,18 @@ testGroupLinkIncognitoUnusedHostContactsDeleted =
       bobIncognitoClub <- createGroupBobIncognito alice bob "club" "alice_1"
       bobIncognitoTeam `shouldNotBe` bobIncognitoClub
       -- list contacts
-      bob ##> "/cs"
+      bob ##> "/contacts"
       bob <## "i alice (Alice)"
       bob <## "i alice_1 (Alice)"
       bob `hasContactProfiles` ["alice", "alice", "bob", T.pack bobIncognitoTeam, T.pack bobIncognitoClub]
       -- delete group 1, unused host contact and profile are deleted
       bobLeaveDeleteGroup alice bob "team" bobIncognitoTeam
-      bob ##> "/cs"
+      bob ##> "/contacts"
       bob <## "i alice_1 (Alice)"
       bob `hasContactProfiles` ["alice", "bob", T.pack bobIncognitoClub]
       -- delete group 2, unused host contact and profile are deleted
       bobLeaveDeleteGroup alice bob "club" bobIncognitoClub
-      bob ##> "/cs"
+      bob ##> "/contacts"
       (bob </)
       bob `hasContactProfiles` ["bob"]
   where
