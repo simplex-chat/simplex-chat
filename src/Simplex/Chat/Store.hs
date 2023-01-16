@@ -452,9 +452,7 @@ createUserRecord db (AgentUserId auId) Profile {displayName, fullName, image, pr
     pure $ toUser (userId, auId, contactId, profileId, activeUser, displayName, fullName, image, userPreferences)
 
 getUsersInfo :: DB.Connection -> IO [UserInfo]
-getUsersInfo db = do
-  users <- getUsers db
-  mapM getUserInfo users
+getUsersInfo db = getUsers db >>= mapM getUserInfo
   where
     getUserInfo :: User -> IO UserInfo
     getUserInfo user@User {userId} = do

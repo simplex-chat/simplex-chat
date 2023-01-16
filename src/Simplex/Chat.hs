@@ -284,8 +284,7 @@ processChatCommand = \case
     atomically . writeTVar u $ Just user
     pure $ CRActiveUser user
   ListUsers -> do
-    usersInfo <- withStore' getUsersInfo
-    pure $ CRUsersList usersInfo
+    CRUsersList <$> withStore' getUsersInfo
   APISetActiveUser userId -> do
     u <- asks currentUser
     user <- withStore $ \db -> getSetActiveUser db userId
