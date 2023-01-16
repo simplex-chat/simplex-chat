@@ -158,6 +158,7 @@ module Simplex.Chat.Store
     deleteSndFileChunks,
     createRcvFileTransfer,
     createRcvGroupFileTransfer,
+    getRcvFileTransferById,
     getRcvFileTransfer,
     acceptRcvFileTransfer,
     getContactByFileId,
@@ -496,6 +497,11 @@ getUserByContactId :: DB.Connection -> ContactId -> ExceptT StoreError IO User
 getUserByContactId db contactId =
   ExceptT . firstRow toUser (SEUserNotFoundByContactId contactId) $
     DB.query db (userQuery <> " JOIN contacts ct ON ct.user_id = u.user_id WHERE ct.contact_id = ?") (Only contactId)
+
+getUserByFileId :: DB.Connection -> FileTransferId -> ExceptT StoreError IO User
+getUserByFileId db fileId =
+  ExceptT . firstRow toUser (SEUserNotFoundByFileId fileId) $
+    DB.query db (userQuery <> " JOIN files f ON f.user_id = u.user_id WHERE f.file_id = ?") (Only fileId)
 
 createConnReqConnection :: DB.Connection -> UserId -> ConnId -> ConnReqUriHash -> XContactId -> Maybe Profile -> Maybe GroupLinkId -> IO PendingContactConnection
 createConnReqConnection db userId acId cReqHash xContactId incognitoProfile groupLinkId = do
@@ -2775,7 +2781,12 @@ createRcvGroupFileTransfer db userId GroupMember {groupId, groupMemberId, localD
     (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, groupMemberId, currentTs, currentTs)
   pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, rcvFileInline, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Just groupMemberId}
 
-getRcvFileTransfer :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO RcvFileTransfer
+getRcvFileTransferById :: DB.Connection -> FileTransferId -> ExceptT StoreError IO (User, RcvFileTransfer)
+getRcvFileTransferById db fileId = do
+  user <- getUserByFileId db fileId
+  (user,) <$> getRcvFileTransfer db user fileId
+
+getRcvFileTransfer :: DB.Connection -> User -> FileTransferId -> ExceptT StoreError IO RcvFileTransfer
 getRcvFileTransfer db user@User {userId} fileId = do
   rftRow <-
     ExceptT . firstRow id (SERcvFileNotFound fileId) $
@@ -4854,6 +4865,7 @@ data StoreError
   | SEUserNotFound {userId :: UserId}
   | SEUserNotFoundByName {contactName :: ContactName}
   | SEUserNotFoundByContactId {contactId :: ContactId}
+  | SEUserNotFoundByFileId {fileId :: FileTransferId}
   | SEContactNotFound {contactId :: ContactId}
   | SEContactNotFoundByName {contactName :: ContactName}
   | SEContactNotReady {contactName :: ContactName}
