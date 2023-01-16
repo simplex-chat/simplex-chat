@@ -1,5 +1,5 @@
 //
-// Created by Dev on 16.01.2023.
+// Created by Avently on 16.01.2023.
 // Copyright (c) 2023 SimpleX Chat. All rights reserved.
 //
 
