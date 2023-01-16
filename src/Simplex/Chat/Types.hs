@@ -115,6 +115,16 @@ data User = User
 
 instance ToJSON User where toEncoding = J.genericToEncoding J.defaultOptions
 
+data UserInfo = UserInfo
+  { user :: User,
+    unreadCount :: Int
+  }
+  deriving (Show, Generic, FromJSON)
+
+instance ToJSON UserInfo where
+  toJSON = J.genericToJSON J.defaultOptions
+  toEncoding = J.genericToEncoding J.defaultOptions
+
 type UserId = Int64
 
 type ContactId = Int64
