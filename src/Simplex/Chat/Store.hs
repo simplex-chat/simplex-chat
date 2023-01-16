@@ -458,16 +458,13 @@ getUsersInfo db = do
   where
     getUserInfo :: User -> IO UserInfo
     getUserInfo user@User {userId} = do
-      unreadCount <-
-        fromMaybe 0
-          <$> maybeFirstRow
-            fromOnly
-            ( DB.query
-                db
-                "SELECT COUNT(1) FROM chat_items WHERE user_id = ? AND item_status = ? GROUP BY user_id"
-                (userId, CISRcvNew)
-            )
-      pure UserInfo {user, unreadCount}
+      count_ <-
+        maybeFirstRow fromOnly $
+          DB.query
+            db
+            "SELECT COUNT(1) FROM chat_items WHERE user_id = ? AND item_status = ? GROUP BY user_id"
+            (userId, CISRcvNew)
+      pure UserInfo {user, unreadCount = fromMaybe 0 count_}
 
 getUsers :: DB.Connection -> IO [User]
 getUsers db =
