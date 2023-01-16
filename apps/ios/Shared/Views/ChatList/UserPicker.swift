@@ -59,10 +59,10 @@ struct UserPicker: View {
                             //                            .overlay(Divider().background(fillColor).padding(.leading, i < users.count - 1 ? 40 : 0), alignment: .bottom)
                             Divider()
                         }
-                        menuButton("Your user profiles", icon: "plus") {
-                            print("manage profiles page")
-                        }
-                        Divider()
+//                        menuButton("Your user profiles", icon: "plus") {
+//                            print("manage profiles page")
+//                        }
+//                        Divider()
                         menuButton("Settings", icon: "gearshape") {
                             showSettings = true
                             userPickerVisible.toggle()
