@@ -6,6 +6,9 @@
 import SwiftUI
 import SimpleXChat
 
+private let fillColorDark = Color(uiColor: UIColor(red: 0.11, green: 0.11, blue: 0.11, alpha: 255))
+private let fillColorLight = Color(uiColor: UIColor(red: 0.99, green: 0.99, blue: 0.99, alpha: 255))
+
 struct UserPicker: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
@@ -14,10 +17,11 @@ struct UserPicker: View {
     @State var users: [User] = [ChatModel.shared.currentUser ?? User.sampleData, User.sampleData]
     @State var scrollViewContentSize: CGSize = .zero
 
+    var fillColor: Color {
+        colorScheme == .dark ? fillColorDark : fillColorLight
+    }
+
     var body: some View {
-        let fillColor = colorScheme == .dark
-            ? Color(uiColor: UIColor(red: 0.11, green: 0.11, blue: 0.11, alpha: 255))
-            : Color(uiColor: UIColor(red: 0.99, green: 0.99, blue: 0.99, alpha: 255))
         VStack {
             Spacer().frame(height: 1)
             VStack(spacing: 0) {
@@ -41,48 +45,29 @@ struct UserPicker: View {
                                             .frame(width: 24, alignment: .center)
                                     } else if unreadCount > 0 {
                                         unreadCountText(unreadCount)
-                                        .font(.caption)
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, 4)
-                                        .frame(minWidth: 18, minHeight: 18)
-                                        .background(Color.accentColor)
-                                        .cornerRadius(10)
+                                            .font(.caption)
+                                            .foregroundColor(.white)
+                                            .padding(.horizontal, 4)
+                                            .frame(minWidth: 18, minHeight: 18)
+                                            .background(Color.accentColor)
+                                            .cornerRadius(10)
                                     }
                                 }
                                 .padding(12)
                             })
                             .buttonStyle(PressedButtonStyle(defaultColor: fillColor, pressedColor: Color(uiColor: .secondarySystemFill)))
-//                            .overlay(Divider().background(fillColor).padding(.leading, i < users.count - 1 ? 40 : 0), alignment: .bottom)
+                            //                            .overlay(Divider().background(fillColor).padding(.leading, i < users.count - 1 ? 40 : 0), alignment: .bottom)
                             Divider()
                         }
-                        Button {
+                        menuButton("Edit user profiles", icon: "plus") {
                             print("manage profiles page")
-                        } label: {
-                            HStack(spacing: 0) {
-                                Text("Edit user profiles")
-                                Spacer()
-                                Image(systemName: "plus")
-                                    .frame(width: 24, alignment: .center)
-                            }
-                            .padding()
                         }
-                        .buttonStyle(PressedButtonStyle(defaultColor: fillColor, pressedColor: Color(uiColor: .secondarySystemFill)))
-                        .frame(height: 60)
                         Divider()
-                        Button {
+                        menuButton("Settings", icon: "gearshape") {
                             showSettings = true
                             userPickerVisible.toggle()
-                        } label: {
-                            HStack(spacing: 0) {
-                                Text("Settings")
-                                Spacer()
-                                Image(systemName: "gearshape")
-                                    .frame(width: 24, alignment: .center)
-                            }
-                            .padding()
                         }
-                        .buttonStyle(PressedButtonStyle(defaultColor: fillColor, pressedColor: Color(uiColor: .secondarySystemFill)))
-                        .frame(height: 60)                    }
+                    }
                     .overlay {
                         GeometryReader { geo -> Color in
                             DispatchQueue.main.async {
@@ -105,6 +90,21 @@ struct UserPicker: View {
             }
         }
         .padding(8)
+    }
+
+    private func menuButton(_ title: LocalizedStringKey, icon: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 0) {
+                Text(title)
+                Spacer()
+                Image(systemName: icon)
+                    .frame(width: 24, alignment: .center)
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 22)
+        }
+        .frame(height: 68)
+        .buttonStyle(PressedButtonStyle(defaultColor: fillColor, pressedColor: Color(uiColor: .secondarySystemFill)))
     }
 }
 
