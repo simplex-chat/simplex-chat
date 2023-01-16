@@ -225,7 +225,7 @@
 "Accept requests" = "Принимать запросы";
 
 /* call status */
-"accepted call" = " принятый звонок";
+"accepted call" = "принятый звонок";
 
 /* No comment provided by engineer. */
 "Add preset servers" = "Добавить серверы по умолчанию";
@@ -840,7 +840,7 @@
 "Do it later" = "Отложить";
 
 /* No comment provided by engineer. */
-"Do NOT use SimpleX for emergency calls." = "Не используйте SimpleX для экстренных звонков";
+"Do NOT use SimpleX for emergency calls." = "Не используйте SimpleX для экстренных звонков.";
 
 /* integrity error chat item */
 "duplicate message" = "повторное сообщение";
@@ -1555,7 +1555,7 @@
 "Onion hosts will not be used." = "Onion хосты не используются.";
 
 /* No comment provided by engineer. */
-"Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." = "Только пользовательские устройства хранят контакты, группы и сообщения, которые отправляются **с двухуровневым end-to-end шифрованием**";
+"Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." = "Только пользовательские устройства хранят контакты, группы и сообщения, которые отправляются **с двухуровневым end-to-end шифрованием**.";
 
 /* No comment provided by engineer. */
 "Only group owners can change group preferences." = "Только владельцы группы могут изменять предпочтения группы.";
@@ -2029,7 +2029,7 @@
 "Take picture" = "Сделать фото";
 
 /* No comment provided by engineer. */
-"Tap button " = "Нажмите кнопку";
+"Tap button " = "Нажмите кнопку ";
 
 /* No comment provided by engineer. */
 "Tap to join" = "Нажмите, чтобы вступить";
@@ -2485,7 +2485,7 @@
 "Your contact address" = "Ваш SimpleX адрес";
 
 /* No comment provided by engineer. */
-"Your contact can scan it from the app." = "Ваш контакт может сосканировать QR код в приложении";
+"Your contact can scan it from the app." = "Ваш контакт может сосканировать QR код в приложении.";
 
 /* No comment provided by engineer. */
 "Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Ваш контакт должен быть в сети чтобы установить соединение.\nВы можете отменить соединение и удалить контакт (и попробовать позже с другой ссылкой).";

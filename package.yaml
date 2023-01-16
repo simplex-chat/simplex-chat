@@ -46,6 +46,17 @@ dependencies:
   - unliftio-core == 0.2.*
   - zip == 1.7.*
 
+flags:
+  swift:
+    description: Enable swift JSON format
+    manual: True
+    default: False
+
+when:
+  - condition: flag(swift)
+    cpp-options:
+      - -DswiftJSON
+
 library:
   source-dirs: src
 

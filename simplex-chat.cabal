@@ -17,6 +17,11 @@ build-type:     Simple
 extra-source-files:
     README.md
 
+flag swift
+  description: Enable swift JSON format
+  manual: True
+  default: False
+
 library
   exposed-modules:
       Simplex.Chat
@@ -128,6 +133,8 @@ library
     , unliftio-core ==0.2.*
     , zip ==1.7.*
   default-language: Haskell2010
+  if flag(swift)
+    cpp-options: -DswiftJSON
 
 executable simplex-bot
   main-is: Main.hs
@@ -172,6 +179,8 @@ executable simplex-bot
     , unliftio-core ==0.2.*
     , zip ==1.7.*
   default-language: Haskell2010
+  if flag(swift)
+    cpp-options: -DswiftJSON
 
 executable simplex-bot-advanced
   main-is: Main.hs
@@ -216,6 +225,8 @@ executable simplex-bot-advanced
     , unliftio-core ==0.2.*
     , zip ==1.7.*
   default-language: Haskell2010
+  if flag(swift)
+    cpp-options: -DswiftJSON
 
 executable simplex-chat
   main-is: Main.hs
@@ -262,6 +273,8 @@ executable simplex-chat
     , websockets ==0.12.*
     , zip ==1.7.*
   default-language: Haskell2010
+  if flag(swift)
+    cpp-options: -DswiftJSON
 
 test-suite simplex-chat-test
   type: exitcode-stdio-1.0
@@ -315,3 +328,5 @@ test-suite simplex-chat-test
     , unliftio-core ==0.2.*
     , zip ==1.7.*
   default-language: Haskell2010
+  if flag(swift)
+    cpp-options: -DswiftJSON
