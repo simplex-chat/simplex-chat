@@ -805,6 +805,7 @@ public struct NetCfg: Codable, Equatable {
     public var socksProxy: String? = nil
     public var hostMode: HostMode = .publicHost
     public var requiredHostMode = true
+    public var sessionMode = TransportSessionMode.user
     public var tcpConnectTimeout: Int // microseconds
     public var tcpTimeout: Int // microseconds
     public var tcpKeepAlive: KeepAliveOpts?
@@ -870,6 +871,11 @@ public enum OnionHosts: String, Identifiable {
     public var id: OnionHosts { self }
 
     public static let values: [OnionHosts] = [.no, .prefer, .require]
+}
+
+public enum TransportSessionMode: String, Codable {
+    case user
+    case entity
 }
 
 public struct KeepAliveOpts: Codable, Equatable {

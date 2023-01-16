@@ -1247,9 +1247,9 @@ processChatCommand = \case
     processChatCommand . APISendMessage chatRef False $ ComposedMessage (Just f) Nothing (MCImage "" fixedImagePreview)
   ForwardFile chatName fileId -> forwardFile chatName fileId SendFile
   ForwardImage chatName fileId -> forwardFile chatName fileId SendImage
-  ReceiveFile fileId rcvInline_ filePath_ -> withUser $ \user ->
+  ReceiveFile fileId rcvInline_ filePath_ -> withUser $ \_ ->
     withChatLock "receiveFile" . procCmd $ do
-      ft <- withStore $ \db -> getRcvFileTransfer db user fileId
+      (user, ft) <- withStore $ \db -> getRcvFileTransferById db fileId
       (CRRcvFileAccepted user <$> acceptFileReceive user ft rcvInline_ filePath_) `catchError` processError user ft
     where
       processError user ft = \case
