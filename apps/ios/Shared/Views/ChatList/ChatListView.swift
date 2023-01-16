@@ -14,11 +14,11 @@ struct ChatListView: View {
     @State private var showSettings = false
     @State private var searchText = ""
     @State private var showAddChat = false
-    @State var userChooserVisible = false
+    @State var userPickerVisible = false
 
     var body: some View {
-        NavigationView {
-            ZStack(alignment: .topLeading) {
+        ZStack(alignment: .topLeading) {
+            NavigationView {
                 VStack {
                     if chatModel.chats.isEmpty {
                         onboardingButtons()
@@ -29,12 +29,12 @@ struct ChatListView: View {
                         chatList
                     }
                 }
-                if userChooserVisible {
-                    UserChooser(showSettings: $showSettings, userChooserVisible: $userChooserVisible)
-                }
+            }
+            .navigationViewStyle(.stack)
+            if userPickerVisible {
+                UserPicker(showSettings: $showSettings, userPickerVisible: $userPickerVisible)
             }
         }
-        .navigationViewStyle(.stack)
     }
 
     var chatList: some View {
@@ -51,14 +51,14 @@ struct ChatListView: View {
                 chatModel.popChat(chatId)
             }
         }
-        .simultaneousGesture(userChooserVisible ? TapGesture().onEnded {
-            if userChooserVisible {
-                userChooserVisible.toggle()
+        .simultaneousGesture(userPickerVisible ? TapGesture().onEnded {
+            if userPickerVisible {
+                userPickerVisible.toggle()
             }
         } : nil)
         .onChange(of: chatModel.appOpenUrl) { _ in connectViaUrl() }
         .onAppear() { connectViaUrl() }
-        .onDisappear() { userChooserVisible = false }
+        .onDisappear() { userPickerVisible = false }
         .offset(x: -8)
         .listStyle(.plain)
         .navigationTitle("Your chats")
@@ -67,8 +67,8 @@ struct ChatListView: View {
             ToolbarItem(placement: .navigationBarLeading) {
                 HStack {
                     Button {
-                        withAnimation(userChooserVisible ? nil : .easeInOut(duration: 0.2)) {
-                            userChooserVisible.toggle()
+                        withAnimation(userPickerVisible ? nil : .easeInOut(duration: 0.2)) {
+                            userPickerVisible.toggle()
                         }
                     } label: {
                         let user = chatModel.currentUser ?? User.sampleData
@@ -93,7 +93,7 @@ struct ChatListView: View {
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 switch chatModel.chatRunning {
-                case .some(true): NewChatButton(showAddChat: $showAddChat, onClick: { userChooserVisible = false })
+                case .some(true): NewChatButton(showAddChat: $showAddChat, onClick: { userPickerVisible = false })
                 case .some(false): chatStoppedIcon()
                 case .none: EmptyView()
                 }

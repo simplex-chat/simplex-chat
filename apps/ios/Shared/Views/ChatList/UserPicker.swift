@@ -6,12 +6,12 @@
 import SwiftUI
 import SimpleXChat
 
-struct UserChooser: View {
+struct UserPicker: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
     @Binding var showSettings: Bool
-    @Binding var userChooserVisible: Bool
-    @State var users: [User] = []
+    @Binding var userPickerVisible: Bool
+    @State var users: [User] = [ChatModel.shared.currentUser ?? User.sampleData, User.sampleData]
     @State var scrollViewContentSize: CGSize = .zero
 
     var body: some View {
@@ -24,20 +24,22 @@ struct UserChooser: View {
                 ScrollView {
                     LazyVStack(spacing: 0) {
                         //let users: [User] = [chatModel.currentUser ?? User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData]
-                        let users: [User] = [chatModel.currentUser ?? User.sampleData, User.sampleData]
                         let unreadCount = 777
                         ForEach(Array(users.enumerated()), id: \.0) { i, user in
                             Button(action: {
                             }, label: {
                                 HStack(spacing: 0) {
-                                    Label {
-                                        Text(user.fullName).foregroundColor(.primary)
-                                    } icon: {
-                                        ProfileImage(imageStr: user.image)
-                                        .frame(width: 20, height: 20)
-                                    }
+                                    ProfileImage(imageStr: user.image)
+                                        .frame(width: 44, height: 44)
+                                        .padding(.trailing, 12)
+                                    Text(user.chatViewName)
+                                        .fontWeight(i == 0 ? .medium : .regular)
+                                        .foregroundColor(.primary)
                                     Spacer()
-                                    if unreadCount > 0 {
+                                    if i == 0 {
+                                        Image(systemName: "chevron.right")
+                                            .frame(width: 24, alignment: .center)
+                                    } else if unreadCount > 0 {
                                         unreadCountText(unreadCount)
                                         .font(.caption)
                                         .foregroundColor(.white)
@@ -47,24 +49,40 @@ struct UserChooser: View {
                                         .cornerRadius(10)
                                     }
                                 }
-                                .padding(10)
+                                .padding(12)
                             })
                             .buttonStyle(PressedButtonStyle(defaultColor: fillColor, pressedColor: Color(uiColor: .secondarySystemFill)))
-                            .overlay(Divider().background(fillColor).padding(.leading, i < users.count - 1 ? 40 : 0), alignment: .bottom)
+//                            .overlay(Divider().background(fillColor).padding(.leading, i < users.count - 1 ? 40 : 0), alignment: .bottom)
+                            Divider()
                         }
                         Button {
-                            showSettings = true
-                            userChooserVisible.toggle()
+                            print("manage profiles page")
                         } label: {
                             HStack(spacing: 0) {
-                                Text("Settings").foregroundColor(.primary)
+                                Text("Edit user profiles")
                                 Spacer()
-                                Image(systemName: "gearshape")
+                                Image(systemName: "plus")
+                                    .frame(width: 24, alignment: .center)
                             }
-                            .padding(10)
+                            .padding()
                         }
                         .buttonStyle(PressedButtonStyle(defaultColor: fillColor, pressedColor: Color(uiColor: .secondarySystemFill)))
-                    }
+                        .frame(height: 60)
+                        Divider()
+                        Button {
+                            showSettings = true
+                            userPickerVisible.toggle()
+                        } label: {
+                            HStack(spacing: 0) {
+                                Text("Settings")
+                                Spacer()
+                                Image(systemName: "gearshape")
+                                    .frame(width: 24, alignment: .center)
+                            }
+                            .padding()
+                        }
+                        .buttonStyle(PressedButtonStyle(defaultColor: fillColor, pressedColor: Color(uiColor: .secondarySystemFill)))
+                        .frame(height: 60)                    }
                     .overlay {
                         GeometryReader { geo -> Color in
                             DispatchQueue.main.async {
@@ -75,17 +93,29 @@ struct UserChooser: View {
                     }
                 }
                 .frame(maxWidth: 250)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .clipShape(RoundedRectangle(cornerRadius: 16))
                 .background(
                     Rectangle()
                     .fill(fillColor)
-                    .cornerRadius(10)
-                    .shadow(color: .black.opacity(0.6), radius: 100, x: 0, y: 0)
+                    .cornerRadius(16)
+                    .shadow(color: .black.opacity(0.12), radius: 24, x: 0, y: 0)
                 )
                 .frame(maxHeight: scrollViewContentSize.height)
                 .transition(.opacity)
             }
         }
-        .padding([.leading, .bottom], 5)
+        .padding(8)
+    }
+}
+
+struct UserPicker_Previews: PreviewProvider {
+    let chatModel = ChatModel()
+    static var previews: some View {
+        return UserPicker(
+            showSettings: Binding.constant(false),
+            userPickerVisible: Binding.constant(true),
+            users: [User.sampleData, User.sampleData]
+        )
+        .environmentObject(ChatModel())
     }
 }

@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		1841538E296606C74533367C /* UserChooser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18415835CBD939A9ABDC108A /* UserChooser.swift */; };
+		1841538E296606C74533367C /* UserPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18415835CBD939A9ABDC108A /* UserPicker.swift */; };
 		1841594C978674A7B42EF0C0 /* AnimatedImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1841511920742C6E152E469F /* AnimatedImageView.swift */; };
 		18415B0585EB5A9A0A7CA8CD /* PressedButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18415A7F0F189D87DEFEABCA /* PressedButtonStyle.swift */; };
 		3C714777281C081000CB4D4B /* WebRTCView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C714776281C081000CB4D4B /* WebRTCView.swift */; };
@@ -224,7 +224,7 @@
 
 /* Begin PBXFileReference section */
 		1841511920742C6E152E469F /* AnimatedImageView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AnimatedImageView.swift; sourceTree = "<group>"; };
-		18415835CBD939A9ABDC108A /* UserChooser.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UserChooser.swift; sourceTree = "<group>"; };
+		18415835CBD939A9ABDC108A /* UserPicker.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UserPicker.swift; sourceTree = "<group>"; };
 		18415A7F0F189D87DEFEABCA /* PressedButtonStyle.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PressedButtonStyle.swift; sourceTree = "<group>"; };
 		3C714776281C081000CB4D4B /* WebRTCView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebRTCView.swift; sourceTree = "<group>"; };
 		3C714779281C0F6800CB4D4B /* www */ = {isa = PBXFileReference; lastKnownFileType = folder; name = www; path = ../android/app/src/main/assets/www; sourceTree = "<group>"; };
@@ -661,7 +661,7 @@
 				5C116CDB27AABE0400E66D01 /* ContactRequestView.swift */,
 				5C13730A28156D2700F43030 /* ContactConnectionView.swift */,
 				5C10D88728EED12E00E58BF0 /* ContactConnectionInfo.swift */,
-				18415835CBD939A9ABDC108A /* UserChooser.swift */,
+				18415835CBD939A9ABDC108A /* UserPicker.swift */,
 			);
 			path = ChatList;
 			sourceTree = "<group>";
@@ -1079,7 +1079,7 @@
 				644EFFE42937BE9700525D5B /* MarkedDeletedItemView.swift in Sources */,
 				1841594C978674A7B42EF0C0 /* AnimatedImageView.swift in Sources */,
 				5C7031162953C97F00150A12 /* CIFeaturePreferenceView.swift in Sources */,
-				1841538E296606C74533367C /* UserChooser.swift in Sources */,
+				1841538E296606C74533367C /* UserPicker.swift in Sources */,
 				18415B0585EB5A9A0A7CA8CD /* PressedButtonStyle.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
