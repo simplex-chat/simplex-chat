@@ -112,10 +112,9 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems} = do
 
 printRespToTerminal :: ChatTerminal -> ChatController -> Bool -> ChatResponse -> IO ()
 printRespToTerminal ct cc liveItems r = do
-  let testV = testView $ config cc
   user <- readTVarIO $ currentUser cc
   ts <- getCurrentTime
-  printToTerminal ct $ responseToView user testV liveItems ts r
+  printToTerminal ct $ responseToView user (config cc) liveItems ts r
 
 printToTerminal :: ChatTerminal -> [StyledString] -> IO ()
 printToTerminal ct s =

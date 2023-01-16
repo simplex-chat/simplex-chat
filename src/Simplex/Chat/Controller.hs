@@ -77,6 +77,7 @@ data ChatConfig = ChatConfig
     subscriptionConcurrency :: Int,
     subscriptionEvents :: Bool,
     hostEvents :: Bool,
+    logLevel :: ChatLogLevel,
     testView :: Bool
   }
 
@@ -544,6 +545,9 @@ tmeToPref currentTTL tme = uncurry TimedMessagesPreference $ case tme of
   TMEEnableSetTTL ttl -> (FAYes, Just ttl)
   TMEEnableKeepTTL -> (FAYes, currentTTL)
   TMEDisableKeepTTL -> (FANo, currentTTL)
+
+data ChatLogLevel = CLLDebug | CLLInfo | CLLWarning | CLLError | CLLImportant
+  deriving (Eq, Ord, Show)
 
 data ChatError
   = ChatError {errorType :: ChatErrorType}

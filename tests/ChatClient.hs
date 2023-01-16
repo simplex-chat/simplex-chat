@@ -19,7 +19,7 @@ import Data.Maybe (fromJust, isNothing)
 import qualified Data.Text as T
 import Network.Socket
 import Simplex.Chat
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatDatabase (..))
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..))
 import Simplex.Chat.Core
 import Simplex.Chat.Options
 import Simplex.Chat.Store
@@ -53,9 +53,11 @@ testOpts =
       -- dbKey = "this is a pass-phrase to encrypt the database",
       smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:5001"],
       networkConfig = defaultNetworkConfig,
+      logLevel = CLLImportant,
       logConnections = False,
       logServerHosts = False,
       logAgent = False,
+      tbqSize = 64,
       chatCmd = "",
       chatCmdDelay = 3,
       chatServerPort = Nothing,

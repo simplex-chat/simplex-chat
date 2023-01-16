@@ -28,7 +28,7 @@ import Data.Time.LocalTime (ZonedTime (..), localDay, localTimeOfDay, timeOfDayT
 import GHC.Generics (Generic)
 import qualified Network.HTTP.Types as Q
 import Numeric (showFFloat)
-import Simplex.Chat (maxImageSize)
+import Simplex.Chat (defaultChatConfig, maxImageSize)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Help
@@ -48,16 +48,16 @@ import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
 import Simplex.Messaging.Protocol (AProtocolType, ProtocolServer (..))
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Transport.Client (TransportHost (..))
-import Simplex.Messaging.Util (bshow)
+import Simplex.Messaging.Util (bshow, tshow)
 import System.Console.ANSI.Types
 
 type CurrentTime = UTCTime
 
 serializeChatResponse :: Maybe User -> CurrentTime -> ChatResponse -> String
-serializeChatResponse user_ ts = unlines . map unStyle . responseToView user_ False False ts
+serializeChatResponse user_ ts = unlines . map unStyle . responseToView user_ defaultChatConfig False ts
 
-responseToView :: Maybe User -> Bool -> Bool -> CurrentTime -> ChatResponse -> [StyledString]
-responseToView user_ testView liveItems ts = \case
+responseToView :: Maybe User -> ChatConfig -> Bool -> CurrentTime -> ChatResponse -> [StyledString]
+responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
   CRActiveUser User {profile} -> viewUserProfile $ fromLocalProfile profile
   CRChatStarted -> ["chat started"]
   CRChatRunning -> ["chat is running"]
@@ -113,7 +113,7 @@ responseToView user_ testView liveItems ts = \case
   CRUserProfile p -> viewUserProfile p
   CRUserProfileNoChange -> ["user profile did not change"]
   CRVersionInfo _ -> [plain versionStr, plain updateStr]
-  CRChatCmdError e -> viewChatError e
+  CRChatCmdError e -> viewChatError logLevel e
   CRInvitation cReq -> viewConnReqInvitation cReq
   CRSentConfirmation -> ["confirmation sent!"]
   CRSentInvitation customUserProfile -> viewSentInvitation customUserProfile testView
@@ -219,8 +219,8 @@ responseToView user_ testView liveItems ts = \case
     ]
   CRAgentStats stats -> map (plain . intercalate ",") stats
   CRConnectionDisabled entity -> viewConnectionEntityDisabled entity
-  CRMessageError prefix err -> [plain prefix <> ": " <> plain err]
-  CRChatError e -> viewChatError e
+  CRMessageError prefix err -> [plain prefix <> ": " <> plain err | prefix == "error" || logLevel <= CLLWarning]
+  CRChatError e -> viewChatError logLevel e
   where
     testViewChats :: [AChat] -> [StyledString]
     testViewChats chats = [sShow $ map toChatView chats]
@@ -1142,8 +1142,8 @@ instance ToJSON WCallCommand where
   toEncoding = J.genericToEncoding . taggedObjectJSON $ dropPrefix "WCCall"
   toJSON = J.genericToJSON . taggedObjectJSON $ dropPrefix "WCCall"
 
-viewChatError :: ChatError -> [StyledString]
-viewChatError = \case
+viewChatError :: ChatLogLevel -> ChatError -> [StyledString]
+viewChatError logLevel = \case
   ChatError err -> case err of
     CENoActiveUser -> ["error: active user is required"]
     CEActiveUserExists -> ["error: active user already exists"]
@@ -1154,7 +1154,7 @@ viewChatError = \case
     CEInvalidChatMessage e -> ["chat message error: " <> sShow e]
     CEContactNotReady c -> [ttyContact' c <> ": not ready"]
     CEContactDisabled Contact {localDisplayName = c} -> [ttyContact c <> ": disabled, to enable: " <> highlight ("/enable " <> c) <> ", to delete: " <> highlight ("/d " <> c)]
-    CEConnectionDisabled _ -> []
+    CEConnectionDisabled Connection {connId, connType} -> [plain $ "connection " <> textEncode connType <> " (" <> tshow connId <> ") is disabled" | logLevel <= CLLWarning]
     CEGroupDuplicateMember c -> ["contact " <> ttyContact c <> " is already in the group"]
     CEGroupDuplicateMemberId -> ["cannot add member - duplicate member ID"]
     CEGroupUserRole -> ["you have insufficient permissions for this group command"]
@@ -1208,7 +1208,7 @@ viewChatError = \case
     SEUserContactLinkNotFound -> ["no chat address, to create: " <> highlight' "/ad"]
     SEContactRequestNotFoundByName c -> ["no contact request from " <> ttyContact c]
     SEFileIdNotFoundBySharedMsgId _ -> [] -- recipient tried to accept cancelled file
-    SEConnectionNotFound _ -> [] -- TODO mutes delete group error, but also mutes any error from getConnectionEntity
+    SEConnectionNotFound agentConnId -> ["event connection not found, agent ID: " <> sShow agentConnId | logLevel <= CLLWarning] -- mutes delete group error
     SEQuotedChatItemNotFound -> ["message not found - reply is not sent"]
     SEDuplicateGroupLink g -> ["you already have link for this group, to show: " <> highlight ("/show link #" <> groupName' g)]
     SEGroupLinkNotFound g -> ["no group link, to create: " <> highlight ("/create link #" <> groupName' g)]
@@ -1225,10 +1225,10 @@ viewChatError = \case
           <> "error: connection authorization failed - this could happen if connection was deleted,\
              \ secured with different credentials, or due to a bug - please re-create the connection"
       ]
-    AGENT A_DUPLICATE -> []
-    AGENT A_PROHIBITED -> []
-    CONN NOT_FOUND -> []
-    e -> [withConnEntity <> "smp agent error: " <> sShow e]
+    AGENT A_DUPLICATE -> [withConnEntity <> "error: AGENT A_DUPLICATE" | logLevel == CLLDebug]
+    AGENT A_PROHIBITED -> [withConnEntity <> "error: AGENT A_PROHIBITED" | logLevel <= CLLWarning]
+    CONN NOT_FOUND -> [withConnEntity <> "error: CONN NOT_FOUND" | logLevel <= CLLWarning]
+    e -> [withConnEntity <> "smp agent error: " <> sShow e | logLevel <= CLLWarning]
     where
       withConnEntity = case entity_ of
         Just entity@(RcvDirectMsgConnection conn contact_) -> case contact_ of
