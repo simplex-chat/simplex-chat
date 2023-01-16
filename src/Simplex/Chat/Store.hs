@@ -26,6 +26,7 @@ module Simplex.Chat.Store
     chatStoreFile,
     agentStoreFile,
     createUserRecord,
+    getUsersInfo,
     getUsers,
     setActiveUser,
     getSetActiveUser,
@@ -449,6 +450,19 @@ createUserRecord db (AgentUserId auId) Profile {displayName, fullName, image, pr
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
     pure $ toUser (userId, auId, contactId, profileId, activeUser, displayName, fullName, image, userPreferences)
+
+getUsersInfo :: DB.Connection -> IO [UserInfo]
+getUsersInfo db = getUsers db >>= mapM getUserInfo
+  where
+    getUserInfo :: User -> IO UserInfo
+    getUserInfo user@User {userId} = do
+      count_ <-
+        maybeFirstRow fromOnly $
+          DB.query
+            db
+            "SELECT COUNT(1) FROM chat_items WHERE user_id = ? AND item_status = ? GROUP BY user_id"
+            (userId, CISRcvNew)
+      pure UserInfo {user, unreadCount = fromMaybe 0 count_}
 
 getUsers :: DB.Connection -> IO [User]
 getUsers db =

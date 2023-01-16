@@ -254,11 +254,11 @@ stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles,
       atomically $ writeTVar files M.empty
 
 execChatCommand :: (MonadUnliftIO m, MonadReader ChatController m) => ByteString -> m ChatResponse
-execChatCommand s = case parseChatCommand s of
-  Left e -> do
-    u <- readTVarIO =<< asks currentUser
-    pure $ chatCmdError u e
-  Right cmd -> either (CRChatCmdError Nothing) id <$> runExceptT (processChatCommand cmd)
+execChatCommand s = do
+  u <- readTVarIO =<< asks currentUser
+  case parseChatCommand s of
+    Left e -> pure $ chatCmdError u e
+    Right cmd -> either (CRChatCmdError u) id <$> runExceptT (processChatCommand cmd)
 
 parseChatCommand :: ByteString -> Either String ChatCommand
 parseChatCommand = A.parseOnly chatCommandP . B.dropWhileEnd isSpace
@@ -283,9 +283,7 @@ processChatCommand = \case
     setActive ActiveNone
     atomically . writeTVar u $ Just user
     pure $ CRActiveUser user
-  ListUsers -> do
-    users <- withStore' getUsers
-    pure $ CRUsersList users
+  ListUsers -> CRUsersList <$> withStore' getUsersInfo
   APISetActiveUser userId -> do
     u <- asks currentUser
     user <- withStore $ \db -> getSetActiveUser db userId
@@ -3792,7 +3790,9 @@ withUser' :: ChatMonad m => (User -> m ChatResponse) -> m ChatResponse
 withUser' action =
   asks currentUser
     >>= readTVarIO
-    >>= maybe (throwChatError CENoActiveUser) (\u -> action u `catchError` (pure . CRChatError (Just u)))
+    >>= maybe (throwChatError CENoActiveUser) run
+  where
+    run u = action u `catchError` (pure . CRChatCmdError (Just u))
 
 withUser :: ChatMonad m => (User -> m ChatResponse) -> m ChatResponse
 withUser action = withUser' $ \user ->

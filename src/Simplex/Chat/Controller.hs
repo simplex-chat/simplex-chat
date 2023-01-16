@@ -315,7 +315,7 @@ data ChatCommand
 
 data ChatResponse
   = CRActiveUser {user :: User}
-  | CRUsersList {users :: [User]}
+  | CRUsersList {users :: [UserInfo]}
   | CRChatStarted
   | CRChatRunning
   | CRChatStopped
