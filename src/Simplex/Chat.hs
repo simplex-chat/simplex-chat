@@ -757,6 +757,8 @@ processChatCommand = \case
     rcvCallInvitations <- catMaybes <$> mapM (rcvCallInvitation users) invs
     pure $ CRCallInvitations rcvCallInvitations
     where
+      usersCalls calls =
+        map (\((userId, _), call) -> (userId, call)) $ M.toList calls
       callInvitation (userId, Call {contactId, callState, callTs}) = case callState of
         CallInvitationReceived {peerCallType, sharedKey} -> Just (userId, contactId, callTs, peerCallType, sharedKey)
         _ -> Nothing
@@ -765,8 +767,6 @@ processChatCommand = \case
         forM user_ $ \user -> do
           contact <- withStore (\db -> getContact db user contactId)
           pure RcvCallInvitation {contact, callType = peerCallType, sharedKey, callTs}
-      usersCalls :: Map (UserId, ContactId) Call -> [(UserId, Call)]
-      usersCalls calls = map (\((userId, _), call) -> (userId, call)) $ M.toList calls
   APICallStatus contactId receivedStatus ->
     withCurrentCall contactId $ \user ct call ->
       updateCallItemStatus user ct call receivedStatus Nothing $> Just call
@@ -1482,7 +1482,8 @@ processChatCommand = \case
       let s = connStatus $ activeConn (ct :: Contact)
        in s == ConnReady || s == ConnSndReady
     withCurrentCall :: ContactId -> (User -> Contact -> Call -> m (Maybe Call)) -> m ChatResponse
-    withCurrentCall ctId action = withUser $ \user@User {userId} -> do
+    withCurrentCall ctId action = do
+      user@User {userId} <- withStore $ \db -> getUserByContactId db ctId
       ct <- withStore $ \db -> getContact db user ctId
       calls <- asks currentCalls
       withChatLock "currentCall" $
