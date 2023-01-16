@@ -11,10 +11,10 @@ import SimpleXChat
 
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
-    // not really used in this view
     @State private var showSettings = false
     @State private var searchText = ""
     @State private var showAddChat = false
+    @State var userChooserVisible = false
 
     var body: some View {
         NavigationView {
@@ -25,7 +25,12 @@ struct ChatListView: View {
                 if chatModel.chats.count > 8 {
                     chatList.searchable(text: $searchText)
                 } else {
-                    chatList
+                    ZStack(alignment: .topLeading) {
+                        chatList
+                        if userChooserVisible {
+                            UserChooser(showSettings: $showSettings, userChooserVisible: $userChooserVisible)
+                        }
+                    }
                 }
             }
         }
@@ -46,6 +51,13 @@ struct ChatListView: View {
                 chatModel.popChat(chatId)
             }
         }
+        .simultaneousGesture(userChooserVisible ? TapGesture().onEnded {
+            if userChooserVisible {
+                withAnimation {
+                    userChooserVisible.toggle()
+                }
+            }
+        } : nil)
         .onChange(of: chatModel.appOpenUrl) { _ in connectViaUrl() }
         .onAppear() { connectViaUrl() }
         .offset(x: -8)
@@ -54,7 +66,20 @@ struct ChatListView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                SettingsButton()
+                HStack {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            userChooserVisible.toggle()
+                        }
+                    } label: {
+                        let user = chatModel.currentUser ?? User.sampleData
+                        let color = Color(uiColor: .tertiarySystemGroupedBackground)
+                        ProfileImage(imageStr: user.image, color: color)
+                            .frame(width: 30, height: 30)
+                            .padding(.trailing, 6)
+                            .padding(.vertical, 6)
+                    }
+                }
             }
             ToolbarItem(placement: .principal) {
                 if (chatModel.incognito) {
@@ -75,6 +100,12 @@ struct ChatListView: View {
                 }
             }
         }
+        .sheet(
+            isPresented: $showSettings,
+            content: {
+                SettingsView(showSettings: $showSettings)
+            }
+        )
         .background(
             NavigationLink(
                 destination: chatView(),
