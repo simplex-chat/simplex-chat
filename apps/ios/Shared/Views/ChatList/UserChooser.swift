@@ -53,9 +53,8 @@ struct UserChooser: View {
                             .overlay(Divider().background(fillColor).padding(.leading, i < users.count - 1 ? 40 : 0), alignment: .bottom)
                         }
                         Button {
-                            showSettings = true; withAnimation {
-                                userChooserVisible.toggle()
-                            }
+                            showSettings = true
+                            userChooserVisible.toggle()
                         } label: {
                             HStack(spacing: 0) {
                                 Text("Settings").foregroundColor(.primary)
