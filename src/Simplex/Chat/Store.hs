@@ -4558,19 +4558,17 @@ deleteCalls :: DB.Connection -> User -> ContactId -> IO ()
 deleteCalls db User {userId} contactId = do
   DB.execute db "DELETE FROM calls WHERE user_id = ? AND contact_id = ?" (userId, contactId)
 
-getCalls :: DB.Connection -> User -> IO [Call]
-getCalls db User {userId} = do
+getCalls :: DB.Connection -> IO [Call]
+getCalls db =
   map toCall
-    <$> DB.query
+    <$> DB.query_
       db
       [sql|
         SELECT
           contact_id, shared_call_id, chat_item_id, call_state, call_ts
         FROM calls
-        WHERE user_id = ?
         ORDER BY call_ts ASC
       |]
-      (Only userId)
   where
     toCall :: (ContactId, CallId, ChatItemId, CallState, UTCTime) -> Call
     toCall (contactId, callId, chatItemId, callState, callTs) = Call {contactId, callId, chatItemId, callState, callTs}

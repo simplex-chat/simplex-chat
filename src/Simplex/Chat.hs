@@ -190,7 +190,7 @@ startChatController :: forall m. (MonadUnliftIO m, MonadReader ChatController m)
 startChatController subConns enableExpireCIs = do
   asks smpAgent >>= resumeAgentClient
   users <- fromRight [] <$> runExceptT (withStore' getUsers)
-  restoreCalls users
+  restoreCalls
   s <- asks agentAsync
   readTVarIO s >>= maybe (start s users) (pure . fst)
   where
@@ -227,18 +227,12 @@ subscribeUsers users = do
     subscribe :: [User] -> m ()
     subscribe = mapM_ $ runExceptT . subscribeUserConnections Agent.subscribeConnections
 
-restoreCalls :: (MonadUnliftIO m, MonadReader ChatController m) => [User] -> m ()
-restoreCalls users = do
+restoreCalls :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
+restoreCalls = do
+  savedCalls <- fromRight [] <$> runExceptT (withStore' $ \db -> getCalls db)
+  let callsMap = M.fromList $ map (\call@Call {contactId} -> (contactId, call)) savedCalls
   calls <- asks currentCalls
-  atomically $ writeTVar calls M.empty
-  let (us, us') = partition activeUser users
-  forM_ us $ restoreUserCalls calls
-  forM_ us' $ restoreUserCalls calls
-  where
-    restoreUserCalls calls user = do
-      savedCalls <- fromRight [] <$> runExceptT (withStore' $ \db -> getCalls db user)
-      let callsMap = M.fromList $ map (\call@Call {contactId} -> (contactId, call)) savedCalls
-      atomically $ TM.union callsMap calls
+  atomically $ writeTVar calls callsMap
 
 stopChatController :: forall m. MonadUnliftIO m => ChatController -> m ()
 stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles, expireCIFlags} = do
@@ -312,8 +306,7 @@ processChatCommand = \case
     ask >>= stopChatController
     pure CRChatStopped
   APIActivateChat -> withUser $ \_ -> do
-    users <- withStore' getUsers
-    restoreCalls users
+    restoreCalls
     withAgent activateAgent
     setAllExpireCIFlags True
     pure $ CRCmdOk Nothing
