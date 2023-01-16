@@ -456,10 +456,10 @@ getUsers db =
 userQuery :: Query
 userQuery =
   [sql|
-    SELECT u.user_id, u.agent_user_id, u.contact_id, cp.contact_profile_id, u.active_user, u.local_display_name, cp.full_name, cp.image, cp.preferences
+    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.local_display_name, ucp.full_name, ucp.image, ucp.preferences
     FROM users u
-    JOIN contacts ct ON ct.contact_id = u.contact_id
-    JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id
+    JOIN contacts uct ON uct.contact_id = u.contact_id
+    JOIN contact_profiles ucp ON ucp.contact_profile_id = uct.contact_profile_id
   |]
 
 toUser :: (UserId, UserId, ContactId, ProfileId, Bool, ContactName, Text, Maybe ImageData, Maybe Preferences) -> User

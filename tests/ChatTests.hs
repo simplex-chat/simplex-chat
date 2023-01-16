@@ -4186,7 +4186,7 @@ testNegotiateCall =
   testChat2 aliceProfile bobProfile $ \alice bob -> do
     connectUsers alice bob
     -- just for testing db query
-    alice ##> "/_call get 1"
+    alice ##> "/_call get"
     -- alice invite bob to call
     alice ##> ("/_call invite @2 " <> serialize testCallType)
     alice <## "ok"
