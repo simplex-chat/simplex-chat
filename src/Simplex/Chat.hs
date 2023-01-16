@@ -28,7 +28,7 @@ import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isSpace)
-import Data.Either (fromRight)
+import Data.Either (fromRight, rights)
 import Data.Fixed (div')
 import Data.Functor (($>))
 import Data.Int (Int64)
@@ -37,7 +37,7 @@ import Data.List.NonEmpty (NonEmpty, nonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, listToMaybe, mapMaybe)
+import Data.Maybe (fromMaybe, isJust, isNothing, listToMaybe, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time (NominalDiffTime, addUTCTime)
@@ -753,17 +753,16 @@ processChatCommand = \case
   APIGetCallInvitations -> withUser $ \_ -> do
     calls <- asks currentCalls >>= readTVarIO
     let invs = mapMaybe callInvitation $ M.elems calls
-    rcvCallInvitations <- catMaybes <$> mapM rcvCallInvitation invs
+    rcvCallInvitations <- rights <$> mapM rcvCallInvitation invs
     pure $ CRCallInvitations rcvCallInvitations
     where
       callInvitation Call {contactId, callState, callTs} = case callState of
         CallInvitationReceived {peerCallType, sharedKey} -> Just (contactId, callTs, peerCallType, sharedKey)
         _ -> Nothing
-      rcvCallInvitation (contactId, callTs, peerCallType, sharedKey) = do
-        user_ <- eitherToMaybe <$> runExceptT (withStore $ \db -> getUserByContactId db contactId)
-        forM user_ $ \user -> do
-          contact <- withStore (\db -> getContact db user contactId)
-          pure RcvCallInvitation {contact, callType = peerCallType, sharedKey, callTs}
+      rcvCallInvitation (contactId, callTs, peerCallType, sharedKey) = runExceptT . withStore $ \db -> do
+        user <- getUserByContactId db contactId
+        contact <- getContact db user contactId
+        pure RcvCallInvitation {contact, callType = peerCallType, sharedKey, callTs}
   APICallStatus contactId receivedStatus ->
     withCurrentCall contactId $ \user ct call ->
       updateCallItemStatus user ct call receivedStatus Nothing $> Just call
@@ -1480,8 +1479,9 @@ processChatCommand = \case
        in s == ConnReady || s == ConnSndReady
     withCurrentCall :: ContactId -> (User -> Contact -> Call -> m (Maybe Call)) -> m ChatResponse
     withCurrentCall ctId action = do
-      user <- withStore $ \db -> getUserByContactId db ctId
-      ct <- withStore $ \db -> getContact db user ctId
+      (user, ct) <- withStore $ \db -> do
+        user <- getUserByContactId db ctId
+        (user,) <$> getContact db user ctId
       calls <- asks currentCalls
       withChatLock "currentCall" $
         atomically (TM.lookup ctId calls) >>= \case
