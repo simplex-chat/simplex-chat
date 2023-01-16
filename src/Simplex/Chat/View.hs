@@ -268,15 +268,14 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
       | otherwise = s
 
 viewUsersList :: [UserInfo] -> [StyledString]
-viewUsersList =
-  map viewUserInfo . sortOn ldn
+viewUsersList = map userInfo . sortOn ldn
   where
-    ldn UserInfo {user = User {localDisplayName = n}} = T.toLower n
-    viewUserInfo (UserInfo user@User {localDisplayName = n, profile = LocalProfile {fullName}, activeUser} n) =
+    ldn (UserInfo User {localDisplayName = n} _) = T.toLower n
+    userInfo (UserInfo User {localDisplayName = n, profile = LocalProfile {fullName}, activeUser} count) =
       ttyFullName n fullName <> active <> unread
       where
         active = if activeUser then highlight' " (active)" else ""
-        unread = if n /= 0 then plain $ " (unread: " <> show n <> ")" else ""
+        unread = if count /= 0 then plain $ " (unread: " <> show count <> ")" else ""
 
 muted :: ChatInfo c -> ChatItem c d -> Bool
 muted chat ChatItem {chatDir} = case (chat, chatDir) of

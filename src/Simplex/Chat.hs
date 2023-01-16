@@ -283,8 +283,7 @@ processChatCommand = \case
     setActive ActiveNone
     atomically . writeTVar u $ Just user
     pure $ CRActiveUser user
-  ListUsers -> do
-    CRUsersList <$> withStore' getUsersInfo
+  ListUsers -> CRUsersList <$> withStore' getUsersInfo
   APISetActiveUser userId -> do
     u <- asks currentUser
     user <- withStore $ \db -> getSetActiveUser db userId
