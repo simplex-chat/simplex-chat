@@ -122,8 +122,8 @@ data UserInfo = UserInfo
   deriving (Show, Generic, FromJSON)
 
 instance ToJSON UserInfo where
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+  toJSON = J.genericToJSON J.defaultOptions
+  toEncoding = J.genericToEncoding J.defaultOptions
 
 type UserId = Int64
 
