@@ -276,8 +276,8 @@ viewUserInfo :: UserInfo -> StyledString
 viewUserInfo (UserInfo user@User {profile = LocalProfile {displayName, fullName}} unreadCount) =
   ttyFullName displayName fullName <> active user <> unread unreadCount
   where
-    unread n = if n /= 0 then " (unread: " <> sShow n <> ")" else ""
     active User {activeUser} = if activeUser then highlight' " (active)" else ""
+    unread n = if n /= 0 then " (unread: " <> sShow n <> ")" else ""
 
 muted :: ChatInfo c -> ChatItem c d -> Bool
 muted chat ChatItem {chatDir} = case (chat, chatDir) of
