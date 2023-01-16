@@ -84,7 +84,7 @@ public enum ChatCommand {
     case apiSendCallAnswer(contact: Contact, answer: WebRTCSession)
     case apiSendCallExtraInfo(contact: Contact, extraInfo: WebRTCExtraInfo)
     case apiEndCall(contact: Contact)
-    case apiGetCallInvitations(userId: Int64)
+    case apiGetCallInvitations
     case apiCallStatus(contact: Contact, callStatus: WebRTCCallStatus)
     case apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64))
     case apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool)
@@ -169,7 +169,7 @@ public enum ChatCommand {
             case let .apiSendCallAnswer(contact, answer): return "/_call answer @\(contact.apiId) \(encodeJSON(answer))"
             case let .apiSendCallExtraInfo(contact, extraInfo): return "/_call extra @\(contact.apiId) \(encodeJSON(extraInfo))"
             case let .apiEndCall(contact): return "/_call end @\(contact.apiId)"
-            case let .apiGetCallInvitations(userId): return "/_call get \(userId)"
+            case .apiGetCallInvitations: return "/_call get"
             case let .apiCallStatus(contact, callStatus): return "/_call status @\(contact.apiId) \(callStatus.rawValue)"
             case let .apiChatRead(type, id, itemRange: (from, to)): return "/_read chat \(ref(type, id)) from=\(from) to=\(to)"
             case let .apiChatUnread(type, id, unreadChat): return "/_unread chat \(ref(type, id)) \(onOff(unreadChat))"

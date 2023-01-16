@@ -711,8 +711,7 @@ func apiEndCall(_ contact: Contact) async throws {
 }
 
 func apiGetCallInvitations() throws -> [RcvCallInvitation] {
-    guard let userId = ChatModel.shared.currentUser?.userId else { throw RuntimeError("apiGetCallInvitations: no current user") }
-    let r = chatSendCmdSync(.apiGetCallInvitations(userId: userId))
+    let r = chatSendCmdSync(.apiGetCallInvitations)
     if case let .callInvitations(invs) = r { return invs }
     throw r
 }

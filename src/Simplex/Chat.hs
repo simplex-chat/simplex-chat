@@ -28,7 +28,7 @@ import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isSpace)
-import Data.Either (fromRight)
+import Data.Either (fromRight, rights)
 import Data.Fixed (div')
 import Data.Functor (($>))
 import Data.Int (Int64)
@@ -186,11 +186,11 @@ activeAgentServers ChatConfig {defaultServers = DefaultAgentServers {smp}} =
     . map (\ServerCfg {server} -> server)
     . filter (\ServerCfg {enabled} -> enabled)
 
-startChatController :: forall m. (MonadUnliftIO m, MonadReader ChatController m) => User -> Bool -> Bool -> m (Async ())
-startChatController currentUser subConns enableExpireCIs = do
+startChatController :: forall m. (MonadUnliftIO m, MonadReader ChatController m) => Bool -> Bool -> m (Async ())
+startChatController subConns enableExpireCIs = do
   asks smpAgent >>= resumeAgentClient
   users <- fromRight [] <$> runExceptT (withStore' getUsers)
-  restoreCalls currentUser
+  restoreCalls
   s <- asks agentAsync
   readTVarIO s >>= maybe (start s users) (pure . fst)
   where
@@ -227,9 +227,9 @@ subscribeUsers users = do
     subscribe :: [User] -> m ()
     subscribe = mapM_ $ runExceptT . subscribeUserConnections Agent.subscribeConnections
 
-restoreCalls :: (MonadUnliftIO m, MonadReader ChatController m) => User -> m ()
-restoreCalls user = do
-  savedCalls <- fromRight [] <$> runExceptT (withStore' $ \db -> getCalls db user)
+restoreCalls :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
+restoreCalls = do
+  savedCalls <- fromRight [] <$> runExceptT (withStore' $ \db -> getCalls db)
   let callsMap = M.fromList $ map (\call@Call {contactId} -> (contactId, call)) savedCalls
   calls <- asks currentCalls
   atomically $ writeTVar calls callsMap
@@ -298,15 +298,15 @@ processChatCommand = \case
     setActive ActiveNone
     pure $ CRCmdOk Nothing
   DeleteUser uName -> withUserName uName APIDeleteUser
-  StartChat subConns enableExpireCIs -> withUser' $ \user ->
+  StartChat subConns enableExpireCIs -> withUser' $ \_ ->
     asks agentAsync >>= readTVarIO >>= \case
       Just _ -> pure CRChatRunning
-      _ -> checkStoreNotChanged $ startChatController user subConns enableExpireCIs $> CRChatStarted
+      _ -> checkStoreNotChanged $ startChatController subConns enableExpireCIs $> CRChatStarted
   APIStopChat -> do
     ask >>= stopChatController
     pure CRChatStopped
-  APIActivateChat -> withUser $ \user -> do
-    restoreCalls user
+  APIActivateChat -> withUser $ \_ -> do
+    restoreCalls
     withAgent activateAgent
     setAllExpireCIFlags True
     pure $ CRCmdOk Nothing
@@ -702,25 +702,25 @@ processChatCommand = \case
       _ -> throwChatError . CECallState $ callStateTag callState
   APISendCallOffer contactId WebRTCCallOffer {callType, rtcSession} ->
     -- party accepting call
-    withCurrentCall contactId $ \userId ct call@Call {callId, chatItemId, callState} -> case callState of
+    withCurrentCall contactId $ \user ct call@Call {callId, chatItemId, callState} -> case callState of
       CallInvitationReceived {peerCallType, localDhPubKey, sharedKey} -> do
         let callDhPubKey = if encryptedCall callType then localDhPubKey else Nothing
             offer = CallOffer {callType, rtcSession, callDhPubKey}
             callState' = CallOfferSent {localCallType = callType, peerCallType, localCallSession = rtcSession, sharedKey}
             aciContent = ACIContent SMDRcv $ CIRcvCall CISCallAccepted 0
         (SndMessage {msgId}, _) <- sendDirectContactMessage ct (XCallOffer callId offer)
-        withStore' $ \db -> updateDirectChatItemsRead db userId contactId $ Just (chatItemId, chatItemId)
-        updateDirectChatItemView userId ct chatItemId aciContent False $ Just msgId
+        withStore' $ \db -> updateDirectChatItemsRead db user contactId $ Just (chatItemId, chatItemId)
+        updateDirectChatItemView user ct chatItemId aciContent False $ Just msgId
         pure $ Just call {callState = callState'}
       _ -> throwChatError . CECallState $ callStateTag callState
   APISendCallAnswer contactId rtcSession ->
     -- party initiating call
-    withCurrentCall contactId $ \userId ct call@Call {callId, chatItemId, callState} -> case callState of
+    withCurrentCall contactId $ \user ct call@Call {callId, chatItemId, callState} -> case callState of
       CallOfferReceived {localCallType, peerCallType, peerCallSession, sharedKey} -> do
         let callState' = CallNegotiated {localCallType, peerCallType, localCallSession = rtcSession, peerCallSession, sharedKey}
             aciContent = ACIContent SMDSnd $ CISndCall CISCallNegotiated 0
         (SndMessage {msgId}, _) <- sendDirectContactMessage ct (XCallAnswer callId CallAnswer {rtcSession})
-        updateDirectChatItemView userId ct chatItemId aciContent False $ Just msgId
+        updateDirectChatItemView user ct chatItemId aciContent False $ Just msgId
         pure $ Just call {callState = callState'}
       _ -> throwChatError . CECallState $ callStateTag callState
   APISendCallExtraInfo contactId rtcExtraInfo ->
@@ -739,25 +739,26 @@ processChatCommand = \case
       _ -> throwChatError . CECallState $ callStateTag callState
   APIEndCall contactId ->
     -- any call party
-    withCurrentCall contactId $ \userId ct call@Call {callId} -> do
+    withCurrentCall contactId $ \user ct call@Call {callId} -> do
       (SndMessage {msgId}, _) <- sendDirectContactMessage ct (XCallEnd callId)
-      updateCallItemStatus userId ct call WCSDisconnected $ Just msgId
+      updateCallItemStatus user ct call WCSDisconnected $ Just msgId
       pure Nothing
-  APIGetCallInvitations userId -> withUserId userId $ \user -> do
+  APIGetCallInvitations -> withUser $ \_ -> do
     calls <- asks currentCalls >>= readTVarIO
     let invs = mapMaybe callInvitation $ M.elems calls
-    rcvCallInvitations <- mapM (rcvCallInvitation user) invs
-    pure $ CRCallInvitations user rcvCallInvitations
+    rcvCallInvitations <- rights <$> mapM rcvCallInvitation invs
+    pure $ CRCallInvitations rcvCallInvitations
     where
       callInvitation Call {contactId, callState, callTs} = case callState of
         CallInvitationReceived {peerCallType, sharedKey} -> Just (contactId, callTs, peerCallType, sharedKey)
         _ -> Nothing
-      rcvCallInvitation user (contactId, callTs, peerCallType, sharedKey) = do
-        contact <- withStore (\db -> getContact db user contactId)
+      rcvCallInvitation (contactId, callTs, peerCallType, sharedKey) = runExceptT . withStore $ \db -> do
+        user <- getUserByContactId db contactId
+        contact <- getContact db user contactId
         pure RcvCallInvitation {contact, callType = peerCallType, sharedKey, callTs}
   APICallStatus contactId receivedStatus ->
-    withCurrentCall contactId $ \userId ct call ->
-      updateCallItemStatus userId ct call receivedStatus Nothing $> Just call
+    withCurrentCall contactId $ \user ct call ->
+      updateCallItemStatus user ct call receivedStatus Nothing $> Just call
   APIUpdateProfile userId profile -> withUserId userId (`updateProfile` profile)
   APISetContactPrefs contactId prefs' -> withUser $ \user -> do
     ct <- withStore $ \db -> getContact db user contactId
@@ -1470,8 +1471,10 @@ processChatCommand = \case
       let s = connStatus $ activeConn (ct :: Contact)
        in s == ConnReady || s == ConnSndReady
     withCurrentCall :: ContactId -> (User -> Contact -> Call -> m (Maybe Call)) -> m ChatResponse
-    withCurrentCall ctId action = withUser $ \user -> do
-      ct <- withStore $ \db -> getContact db user ctId
+    withCurrentCall ctId action = do
+      (user, ct) <- withStore $ \db -> do
+        user <- getUserByContactId db ctId
+        (user,) <$> getContact db user ctId
       calls <- asks currentCalls
       withChatLock "currentCall" $
         atomically (TM.lookup ctId calls) >>= \case
@@ -3878,7 +3881,7 @@ chatCommandP =
       "/_call extra @" *> (APISendCallExtraInfo <$> A.decimal <* A.space <*> jsonP),
       "/_call end @" *> (APIEndCall <$> A.decimal),
       "/_call status @" *> (APICallStatus <$> A.decimal <* A.space <*> strP),
-      "/_call get " *> (APIGetCallInvitations <$> A.decimal),
+      "/_call get" $> APIGetCallInvitations,
       "/_profile " *> (APIUpdateProfile <$> A.decimal <* A.space <*> jsonP),
       "/_set alias @" *> (APISetContactAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set alias :" *> (APISetConnectionAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),

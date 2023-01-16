@@ -201,7 +201,7 @@ responseToView user_ testView liveItems ts = \case
   CRCallAnswer {user = u, contact, answer} -> ttyUser u $ viewCallAnswer contact answer
   CRCallExtraInfo {user = u, contact} -> ttyUser u ["call extra info from " <> ttyContact' contact]
   CRCallEnded {user = u, contact} -> ttyUser u ["call with " <> ttyContact' contact <> " ended"]
-  CRCallInvitations u _ -> ttyUser u []
+  CRCallInvitations _ -> []
   CRUserContactLinkSubscribed -> ["Your address is active! To show: " <> highlight' "/sa"]
   CRUserContactLinkSubError e -> ["user address error: " <> sShow e, "to delete your address: " <> highlight' "/da"]
   CRNewContactConnection u _ -> ttyUser u []

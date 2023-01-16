@@ -183,7 +183,7 @@ data ChatCommand
   | APISendCallAnswer ContactId WebRTCSession
   | APISendCallExtraInfo ContactId WebRTCExtraInfo
   | APIEndCall ContactId
-  | APIGetCallInvitations UserId
+  | APIGetCallInvitations
   | APICallStatus ContactId WebRTCCallStatus
   | APIUpdateProfile UserId Profile
   | APISetContactPrefs ContactId Preferences
@@ -431,7 +431,7 @@ data ChatResponse
   | CRCallAnswer {user :: User, contact :: Contact, answer :: WebRTCSession}
   | CRCallExtraInfo {user :: User, contact :: Contact, extraInfo :: WebRTCExtraInfo}
   | CRCallEnded {user :: User, contact :: Contact}
-  | CRCallInvitations {user :: User, callInvitations :: [RcvCallInvitation]}
+  | CRCallInvitations {callInvitations :: [RcvCallInvitation]}
   | CRUserContactLinkSubscribed -- TODO delete
   | CRUserContactLinkSubError {chatError :: ChatError} -- TODO delete
   | CRNtfTokenStatus {status :: NtfTknStatus}

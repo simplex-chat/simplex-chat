@@ -31,6 +31,7 @@ module Simplex.Chat.Store
     getSetActiveUser,
     getUserIdByName,
     getUserByAConnId,
+    getUserByContactId,
     createDirectConnection,
     createConnReqConnection,
     getProfileById,
@@ -455,10 +456,10 @@ getUsers db =
 userQuery :: Query
 userQuery =
   [sql|
-    SELECT u.user_id, u.agent_user_id, u.contact_id, cp.contact_profile_id, u.active_user, u.local_display_name, cp.full_name, cp.image, cp.preferences
+    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.local_display_name, ucp.full_name, ucp.image, ucp.preferences
     FROM users u
-    JOIN contacts ct ON ct.contact_id = u.contact_id
-    JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id
+    JOIN contacts uct ON uct.contact_id = u.contact_id
+    JOIN contact_profiles ucp ON ucp.contact_profile_id = uct.contact_profile_id
   |]
 
 toUser :: (UserId, UserId, ContactId, ProfileId, Bool, ContactName, Text, Maybe ImageData, Maybe Preferences) -> User
@@ -490,6 +491,11 @@ getUserByAConnId :: DB.Connection -> AgentConnId -> IO (Maybe User)
 getUserByAConnId db agentConnId =
   maybeFirstRow toUser $
     DB.query db (userQuery <> " JOIN connections c ON c.user_id = u.user_id WHERE c.agent_conn_id = ?") (Only agentConnId)
+
+getUserByContactId :: DB.Connection -> ContactId -> ExceptT StoreError IO User
+getUserByContactId db contactId =
+  ExceptT . firstRow toUser (SEUserNotFoundByContactId contactId) $
+    DB.query db (userQuery <> " JOIN contacts ct ON ct.user_id = u.user_id WHERE ct.contact_id = ?") (Only contactId)
 
 createConnReqConnection :: DB.Connection -> UserId -> ConnId -> ConnReqUriHash -> XContactId -> Maybe Profile -> Maybe GroupLinkId -> IO PendingContactConnection
 createConnReqConnection db userId acId cReqHash xContactId incognitoProfile groupLinkId = do
@@ -4552,19 +4558,17 @@ deleteCalls :: DB.Connection -> User -> ContactId -> IO ()
 deleteCalls db User {userId} contactId = do
   DB.execute db "DELETE FROM calls WHERE user_id = ? AND contact_id = ?" (userId, contactId)
 
-getCalls :: DB.Connection -> User -> IO [Call]
-getCalls db User {userId} = do
+getCalls :: DB.Connection -> IO [Call]
+getCalls db =
   map toCall
-    <$> DB.query
+    <$> DB.query_
       db
       [sql|
         SELECT
           contact_id, shared_call_id, chat_item_id, call_state, call_ts
         FROM calls
-        WHERE user_id = ?
         ORDER BY call_ts ASC
       |]
-      (Only userId)
   where
     toCall :: (ContactId, CallId, ChatItemId, CallState, UTCTime) -> Call
     toCall (contactId, callId, chatItemId, callState, callTs) = Call {contactId, callId, chatItemId, callState, callTs}
@@ -4849,6 +4853,7 @@ data StoreError
   = SEDuplicateName
   | SEUserNotFound {userId :: UserId}
   | SEUserNotFoundByName {contactName :: ContactName}
+  | SEUserNotFoundByContactId {contactId :: ContactId}
   | SEContactNotFound {contactId :: ContactId}
   | SEContactNotFoundByName {contactName :: ContactName}
   | SEContactNotReady {contactName :: ContactName}
