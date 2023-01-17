@@ -6,7 +6,7 @@
 import SwiftUI
 import SimpleXChat
 
-struct UserManagerView: View {
+struct UserProfilesView: View {
     @EnvironmentObject private var m: ChatModel
     @Environment(\.editMode) private var editMode
     @State private var selectedUser: Int? = nil
@@ -15,16 +15,10 @@ struct UserManagerView: View {
     @State private var testing = false
 
     var body: some View {
-        ZStack {
-            userManagerView()
-        }
-    }
-
-    private func userManagerView() -> some View {
         List {
             Section("Your profiles") {
                 ForEach(Array($m.users.enumerated()), id: \.0) { i, userInfo in
-                    userManagerView(userInfo, index: i)
+                    userProfileView(userInfo, index: i)
                         .deleteDisabled(userInfo.wrappedValue.user.activeUser)
                 }
                 .onDelete { indexSet in
@@ -43,7 +37,7 @@ struct UserManagerView: View {
         .toolbar { EditButton() }
     }
 
-    private func userManagerView(_ userBinding: Binding<UserInfo>, index: Int) -> some View {
+    private func userProfileView(_ userBinding: Binding<UserInfo>, index: Int) -> some View {
         let user = userBinding.wrappedValue.user
         return NavigationLink(tag: index, selection: $selectedUser) {
 //            UserPrefs(user: userBinding, index: index)
@@ -55,8 +49,8 @@ struct UserManagerView: View {
     }
 }
 
-struct UserManagerView_Previews: PreviewProvider {
+struct UserProfilesView_Previews: PreviewProvider {
     static var previews: some View {
-        UserManagerView()
+        UserProfilesView()
     }
 }

@@ -29,7 +29,7 @@ struct ChatListView: View {
                     } else {
                         chatList
                     }
-                    NavigationLink(destination: UserManagerView().navigationTitle("Profiles"), tag: 0, selection: $selectedView) {
+                    NavigationLink(destination: UserProfilesView().navigationTitle("Profiles"), tag: 0, selection: $selectedView) {
                         EmptyView()
                     }
                 }

@@ -8,7 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		1841538E296606C74533367C /* UserPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18415835CBD939A9ABDC108A /* UserPicker.swift */; };
-		1841560FD1CD447955474C1D /* UserManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18415845648CA4F5A8BCA272 /* UserManagerView.swift */; };
+		1841560FD1CD447955474C1D /* UserProfilesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18415845648CA4F5A8BCA272 /* UserProfilesView.swift */; };
 		1841594C978674A7B42EF0C0 /* AnimatedImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1841511920742C6E152E469F /* AnimatedImageView.swift */; };
 		18415B0585EB5A9A0A7CA8CD /* PressedButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18415A7F0F189D87DEFEABCA /* PressedButtonStyle.swift */; };
 		3C714777281C081000CB4D4B /* WebRTCView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C714776281C081000CB4D4B /* WebRTCView.swift */; };
@@ -225,7 +225,7 @@
 /* Begin PBXFileReference section */
 		1841511920742C6E152E469F /* AnimatedImageView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AnimatedImageView.swift; sourceTree = "<group>"; };
 		18415835CBD939A9ABDC108A /* UserPicker.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UserPicker.swift; sourceTree = "<group>"; };
-		18415845648CA4F5A8BCA272 /* UserManagerView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UserManagerView.swift; sourceTree = "<group>"; };
+		18415845648CA4F5A8BCA272 /* UserProfilesView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UserProfilesView.swift; sourceTree = "<group>"; };
 		18415A7F0F189D87DEFEABCA /* PressedButtonStyle.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PressedButtonStyle.swift; sourceTree = "<group>"; };
 		3C714776281C081000CB4D4B /* WebRTCView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebRTCView.swift; sourceTree = "<group>"; };
 		3C714779281C0F6800CB4D4B /* www */ = {isa = PBXFileReference; lastKnownFileType = folder; name = www; path = ../android/app/src/main/assets/www; sourceTree = "<group>"; };
@@ -646,7 +646,7 @@
 				5CB2084E28DA4B4800D024EC /* RTCServers.swift */,
 				5C3F1D592844B4DE00EC8A82 /* ExperimentalFeaturesView.swift */,
 				64F1CC3A28B39D8600CD1FB1 /* IncognitoHelp.swift */,
-				18415845648CA4F5A8BCA272 /* UserManagerView.swift */,
+				18415845648CA4F5A8BCA272 /* UserProfilesView.swift */,
 			);
 			path = UserSettings;
 			sourceTree = "<group>";
@@ -1080,7 +1080,7 @@
 				5C7031162953C97F00150A12 /* CIFeaturePreferenceView.swift in Sources */,
 				1841538E296606C74533367C /* UserPicker.swift in Sources */,
 				18415B0585EB5A9A0A7CA8CD /* PressedButtonStyle.swift in Sources */,
-				1841560FD1CD447955474C1D /* UserManagerView.swift in Sources */,
+				1841560FD1CD447955474C1D /* UserProfilesView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
