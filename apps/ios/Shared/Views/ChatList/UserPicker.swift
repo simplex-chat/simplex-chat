@@ -16,6 +16,7 @@ struct UserPicker: View {
     @Binding var userPickerVisible: Bool
     @State var users: [User] = [ChatModel.shared.currentUser ?? User.sampleData, User.sampleData]
     @State var scrollViewContentSize: CGSize = .zero
+    @State var disableScrolling: Bool = true
 
     var fillColor: Color {
         colorScheme == .dark ? fillColorDark : fillColorLight
@@ -65,18 +66,23 @@ struct UserPicker: View {
 //                        Divider()
                         menuButton("Settings", icon: "gearshape") {
                             showSettings = true
-                            userPickerVisible.toggle()
+                            withAnimation {
+                                userPickerVisible.toggle()
+                            }
                         }
                     }
                     .overlay {
                         GeometryReader { geo -> Color in
                             DispatchQueue.main.async {
                                 scrollViewContentSize = geo.size
+                                let layoutFrame = UIApplication.shared.windows[0].safeAreaLayoutGuide.layoutFrame
+                                disableScrolling = scrollViewContentSize.height < layoutFrame.height
                             }
                             return Color.clear
                         }
                     }
                 }
+                .simultaneousGesture(DragGesture(minimumDistance: disableScrolling ? 0 : 10000000))
                 .frame(maxWidth: 300)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 .background(

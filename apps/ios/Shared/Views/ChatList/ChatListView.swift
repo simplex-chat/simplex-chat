@@ -58,7 +58,7 @@ struct ChatListView: View {
         }
         .onChange(of: chatModel.appOpenUrl) { _ in connectViaUrl() }
         .onAppear() { connectViaUrl() }
-        .onDisappear() { userPickerVisible = false }
+        .onDisappear() { withAnimation { userPickerVisible = false } }
         .offset(x: -8)
         .listStyle(.plain)
         .navigationTitle("Your chats")
