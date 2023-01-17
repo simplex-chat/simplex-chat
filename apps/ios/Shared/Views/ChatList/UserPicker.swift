@@ -50,6 +50,7 @@ struct UserPicker: View {
                                             .frame(width: 24, alignment: .center)
                                     } else if userInfo.unreadCount > 0 {
                                         unreadCounter(userInfo.unreadCount)
+                                          .padding(.trailing, 10)
                                     }
                                 }
                                 .padding(12)

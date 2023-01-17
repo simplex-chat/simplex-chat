@@ -92,7 +92,7 @@ struct ChatListView: View {
                             let unread = chatModel.users.filter { !$0.user.activeUser }.reduce(0, {prev, next in prev + next.unreadCount})
                             if unread > 0 {
                                 unreadCounter(unread)
-                                    .padding(.leading, 20)
+                                    .padding(.leading, 50)
                             }
                         }
                     }
