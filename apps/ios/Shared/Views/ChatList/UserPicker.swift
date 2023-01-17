@@ -128,7 +128,7 @@ struct UserPicker: View {
                 let removed = chatModel.users.remove(at: currentActiveIndex)
                 chatModel.users.insert(UserInfo(user: activeUser, unreadCount: removed.unreadCount), at: 0)
                 chatModel.users = chatModel.users.map { $0 }
-                try retrieveUserSpecificData(chatModel)
+                try getUserChatData(chatModel)
                 userPickerVisible = false
             } catch {
                 logger.error("Unable to set active user: \(error.localizedDescription)")

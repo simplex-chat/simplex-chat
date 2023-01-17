@@ -918,7 +918,7 @@ func startChat() throws {
     try setNetworkConfig(getNetCfg())
     let justStarted = try apiStartChat()
     if justStarted {
-        try retrieveUserSpecificData(m)
+        try getUserChatData(m)
         m.users = listUsers()
         NtfManager.shared.setNtfBadgeCount(m.totalUnreadCount())
         try refreshCallInvitations()
@@ -937,7 +937,7 @@ func startChat() throws {
     chatLastStartGroupDefault.set(Date.now)
 }
 
-func retrieveUserSpecificData(_ m: ChatModel) throws {
+func getUserChatData(_ m: ChatModel) throws {
     m.userAddress = try apiGetUserAddress()
     (m.userSMPServers, m.presetSMPServers) = try getUserSMPServers()
     m.chatItemTTL = try getChatItemTTL()
