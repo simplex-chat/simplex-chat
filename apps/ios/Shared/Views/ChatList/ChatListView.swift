@@ -118,12 +118,9 @@ struct ChatListView: View {
                 }
             }
         }
-        .sheet(
-            isPresented: $showSettings,
-            content: {
-                SettingsView(showSettings: $showSettings)
-            }
-        )
+        .sheet(isPresented: $showSettings) {
+            SettingsView(showSettings: $showSettings)
+        }
         .background(
             NavigationLink(
                 destination: chatView(),

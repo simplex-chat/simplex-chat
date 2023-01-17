@@ -98,7 +98,6 @@
 		5CB346E52868AA7F001FD2EF /* SuspendChat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB346E42868AA7F001FD2EF /* SuspendChat.swift */; };
 		5CB346E72868D76D001FD2EF /* NotificationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB346E62868D76D001FD2EF /* NotificationsView.swift */; };
 		5CB346E92869E8BA001FD2EF /* PushEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB346E82869E8BA001FD2EF /* PushEnvironment.swift */; };
-		5CB924D427A853F100ACCCDD /* SettingsButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924D327A853F100ACCCDD /* SettingsButton.swift */; };
 		5CB924D727A8563F00ACCCDD /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924D627A8563F00ACCCDD /* SettingsView.swift */; };
 		5CB924E127A867BA00ACCCDD /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924E027A867BA00ACCCDD /* UserProfile.swift */; };
 		5CB924E427A8683A00ACCCDD /* UserAddress.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924E327A8683A00ACCCDD /* UserAddress.swift */; };
@@ -327,7 +326,6 @@
 		5CB346E42868AA7F001FD2EF /* SuspendChat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuspendChat.swift; sourceTree = "<group>"; };
 		5CB346E62868D76D001FD2EF /* NotificationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationsView.swift; sourceTree = "<group>"; };
 		5CB346E82869E8BA001FD2EF /* PushEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushEnvironment.swift; sourceTree = "<group>"; };
-		5CB924D327A853F100ACCCDD /* SettingsButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsButton.swift; sourceTree = "<group>"; };
 		5CB924D627A8563F00ACCCDD /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		5CB924E027A867BA00ACCCDD /* UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
 		5CB924E327A8683A00ACCCDD /* UserAddress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserAddress.swift; sourceTree = "<group>"; };
@@ -630,7 +628,6 @@
 		5CB924DF27A8678B00ACCCDD /* UserSettings */ = {
 			isa = PBXGroup;
 			children = (
-				5CB924D327A853F100ACCCDD /* SettingsButton.swift */,
 				5CB924D627A8563F00ACCCDD /* SettingsView.swift */,
 				5CB346E62868D76D001FD2EF /* NotificationsView.swift */,
 				5C9C2DA6289957AE00CC63B1 /* AdvancedNetworkSettings.swift */,
@@ -1062,7 +1059,6 @@
 				5CC1C99527A6CF7F000D9FF6 /* ShareSheet.swift in Sources */,
 				5C5E5D3B2824468B00B0488A /* ActiveCallView.swift in Sources */,
 				5C2E260727A2941F00F70299 /* SimpleXAPI.swift in Sources */,
-				5CB924D427A853F100ACCCDD /* SettingsButton.swift in Sources */,
 				3C714777281C081000CB4D4B /* WebRTCView.swift in Sources */,
 				6440CA00288857A10062C672 /* CIEventView.swift in Sources */,
 				5CB0BA92282713FD00B3292C /* CreateProfile.swift in Sources */,
