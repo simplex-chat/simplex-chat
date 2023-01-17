@@ -131,8 +131,8 @@ func apiCreateActiveUser(_ p: Profile) throws -> User {
     throw r
 }
 
-func listUsers() async -> [UserInfo] {
-    let r = await chatSendCmd(.listUsers)
+func listUsers() -> [UserInfo] {
+    let r = chatSendCmdSync(.listUsers)
     if case let .usersList(users) = r { return users }
     return []
 }
@@ -919,6 +919,7 @@ func startChat() throws {
     let justStarted = try apiStartChat()
     if justStarted {
         try retrieveUserSpecificData(m)
+        m.users = listUsers()
         NtfManager.shared.setNtfBadgeCount(m.totalUnreadCount())
         try refreshCallInvitations()
         (m.savedToken, m.tokenStatus, m.notificationMode) = apiGetNtfToken()

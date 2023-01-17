@@ -15,7 +15,6 @@ struct UserPicker: View {
     @Binding var showSettings: Bool
     @Binding var userPickerVisible: Bool
     var manageUsers: () -> Void = {}
-    @State var users: [UserInfo] = []
     @State var scrollViewContentSize: CGSize = .zero
     @State var disableScrolling: Bool = true
     private let menuButtonHeight: CGFloat = 68
@@ -31,12 +30,11 @@ struct UserPicker: View {
             VStack(spacing: 0) {
                 ScrollView {
                     LazyVStack(spacing: 0) {
-                        ForEach(Array(users.enumerated()), id: \.0) { i, userInfo in
+                        ForEach(Array(chatModel.users.enumerated()), id: \.0) { i, userInfo in
                             Button(action: {
-                                // TODO: why the reference is not updating?
-                                //if !userInfo.user.activeUser {
+                                if !userInfo.user.activeUser {
                                     changeActiveUser(toUser: userInfo)
-                                //}
+                                }
                             }, label: {
                                 HStack(spacing: 0) {
                                     ProfileImage(imageStr: userInfo.user.image)
@@ -51,19 +49,13 @@ struct UserPicker: View {
                                         Image(systemName: "chevron.right")
                                             .frame(width: 24, alignment: .center)
                                     } else if userInfo.unreadCount > 0 {
-                                        unreadCountText(Int(truncatingIfNeeded: userInfo.unreadCount))
-                                            .font(.caption)
-                                            .foregroundColor(.white)
-                                            .padding(.horizontal, 4)
-                                            .frame(minWidth: 18, minHeight: 18)
-                                            .background(Color.accentColor)
-                                            .cornerRadius(10)
+                                        unreadCounter(userInfo.unreadCount)
                                     }
                                 }
                                 .padding(12)
                             })
                             .buttonStyle(PressedButtonStyle(defaultColor: fillColor, pressedColor: Color(uiColor: .secondarySystemFill)))
-                            if i < users.count - 1 {
+                            if i < chatModel.users.count - 1 {
                                 Divider()
                             }
                         }
@@ -115,9 +107,9 @@ struct UserPicker: View {
     }
 
     private func reloadCurrentUser() {
-        if let updatedUser = chatModel.currentUser, let index = users.firstIndex(where: { $0.user.userId == updatedUser.userId }) {
-            let removed = users.remove(at: index)
-            users.insert(UserInfo(user: updatedUser, unreadCount: removed.unreadCount), at: 0)
+        if let updatedUser = chatModel.currentUser, let index = chatModel.users.firstIndex(where: { $0.user.userId == updatedUser.userId }) {
+            let removed = chatModel.users.remove(at: index)
+            chatModel.users.insert(UserInfo(user: updatedUser, unreadCount: removed.unreadCount), at: 0)
         }
     }
 
@@ -125,10 +117,16 @@ struct UserPicker: View {
         Task {
             do {
                 let activeUser = try apiSetActiveUser(toUser.user.userId)
+                let oldActiveIndex = chatModel.users.firstIndex(where: { $0.user.userId == chatModel.currentUser?.userId })!
+                var oldActive = chatModel.users[oldActiveIndex]
+                oldActive.user.activeUser = false
+                chatModel.users[oldActiveIndex] = oldActive
+
                 chatModel.currentUser = activeUser
-                let index = users.firstIndex(where: { $0.user.userId == activeUser.userId })!
-                users.remove(at: index)
-                users.insert(UserInfo(user: activeUser, unreadCount: toUser.unreadCount), at: 0)
+                let currentActiveIndex = chatModel.users.firstIndex(where: { $0.user.userId == activeUser.userId })!
+                let removed = chatModel.users.remove(at: currentActiveIndex)
+                chatModel.users.insert(UserInfo(user: activeUser, unreadCount: removed.unreadCount), at: 0)
+                chatModel.users = chatModel.users.map { $0 }
                 try retrieveUserSpecificData(chatModel)
                 userPickerVisible = false
             } catch {
@@ -139,7 +137,7 @@ struct UserPicker: View {
 
     private func reloadUsers() {
         Task {
-            users = await listUsers().sorted { one, two -> Bool in one.user.activeUser }
+            chatModel.users = listUsers().sorted { one, two -> Bool in one.user.activeUser }
         }
     }
 
@@ -160,13 +158,24 @@ struct UserPicker: View {
     }
 }
 
+func unreadCounter(_ unread: Int64) -> some View {
+    unreadCountText(Int(truncatingIfNeeded: unread))
+    .font(.caption)
+    .foregroundColor(.white)
+    .padding(.horizontal, 4)
+    .frame(minWidth: 18, minHeight: 18)
+    .background(Color.accentColor)
+    .cornerRadius(10)
+}
+
 struct UserPicker_Previews: PreviewProvider {
     static var previews: some View {
-        UserPicker(
+        let m = ChatModel()
+        m.users = [UserInfo.sampleData, UserInfo.sampleData]
+        return UserPicker(
             showSettings: Binding.constant(false),
-            userPickerVisible: Binding.constant(true),
-            users: [UserInfo.sampleData, UserInfo.sampleData]
+            userPickerVisible: Binding.constant(true)
         )
-        .environmentObject(ChatModel())
+        .environmentObject(m)
     }
 }
