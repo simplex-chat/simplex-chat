@@ -2358,9 +2358,8 @@ testFilesFoldersImageSndDelete =
       checkActionDeletesFile "./tests/tmp/alice_app_files/test_1MB.pdf" $ do
         alice ##> "/d bob"
         alice <## "bob: contact is deleted"
-        bob <## "alice cancelled sending file 1 (test_1MB.pdf)"
         bob ##> "/fs 1"
-        bob <## "receiving file 1 (test_1MB.pdf) cancelled, received part path: test_1MB.pdf"
+        bob <##. "receiving file 1 (test_1MB.pdf) progress"
       -- deleting contact should remove cancelled file
       checkActionDeletesFile "./tests/tmp/bob_app_files/test_1MB.pdf" $ do
         bob ##> "/d alice"
