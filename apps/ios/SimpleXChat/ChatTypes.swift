@@ -15,7 +15,7 @@ public struct User: Decodable, NamedChat, Identifiable {
     var localDisplayName: ContactName
     public var profile: LocalProfile
     public var fullPreferences: FullPreferences
-    var activeUser: Bool
+    public var activeUser: Bool
 
     public var displayName: String { get { profile.displayName } }
     public var fullName: String { get { profile.fullName } }
@@ -31,6 +31,21 @@ public struct User: Decodable, NamedChat, Identifiable {
         profile: LocalProfile.sampleData,
         fullPreferences: FullPreferences.sampleData,
         activeUser: true
+    )
+}
+
+public struct UserInfo: Decodable {
+    public var user: User
+    public var unreadCount: Int64
+
+    public init(user: User, unreadCount: Int64) {
+        self.user = user
+        self.unreadCount = unreadCount
+    }
+
+    public static let sampleData = UserInfo(
+        user: User.sampleData,
+        unreadCount: 1
     )
 }
 

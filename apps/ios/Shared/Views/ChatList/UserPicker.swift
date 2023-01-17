@@ -15,7 +15,7 @@ struct UserPicker: View {
     @Binding var showSettings: Bool
     @Binding var userPickerVisible: Bool
     var manageUsers: () -> Void = {}
-    @State var users: [User] = [ChatModel.shared.currentUser ?? User.sampleData, User.sampleData]
+    @State var users: [UserInfo] = []
     @State var scrollViewContentSize: CGSize = .zero
     @State var disableScrolling: Bool = true
     private let menuButtonHeight: CGFloat = 68
@@ -31,16 +31,18 @@ struct UserPicker: View {
             VStack(spacing: 0) {
                 ScrollView {
                     LazyVStack(spacing: 0) {
-                        //let users: [User] = [chatModel.currentUser ?? User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData, User.sampleData]
-                        let unreadCount = 777
-                        ForEach(Array(users.enumerated()), id: \.0) { i, user in
+                        ForEach(Array(users.enumerated()), id: \.0) { i, userInfo in
                             Button(action: {
+                                // TODO: why the reference is not updating?
+                                //if !userInfo.user.activeUser {
+                                    changeActiveUser(toUser: userInfo)
+                                //}
                             }, label: {
                                 HStack(spacing: 0) {
-                                    ProfileImage(imageStr: user.image)
+                                    ProfileImage(imageStr: userInfo.user.image)
                                         .frame(width: 44, height: 44)
                                         .padding(.trailing, 12)
-                                    Text(user.chatViewName)
+                                    Text(userInfo.user.chatViewName)
                                         .fontWeight(i == 0 ? .medium : .regular)
                                         .foregroundColor(.primary)
                                         .overlay(DetermineWidth())
@@ -48,8 +50,8 @@ struct UserPicker: View {
                                     if i == 0 {
                                         Image(systemName: "chevron.right")
                                             .frame(width: 24, alignment: .center)
-                                    } else if unreadCount > 0 {
-                                        unreadCountText(unreadCount)
+                                    } else if userInfo.unreadCount > 0 {
+                                        unreadCountText(Int(truncatingIfNeeded: userInfo.unreadCount))
                                             .font(.caption)
                                             .foregroundColor(.white)
                                             .padding(.horizontal, 4)
@@ -103,13 +105,48 @@ struct UserPicker: View {
         .onPreferenceChange(DetermineWidth.Key.self) { chatViewNameWidth = $0 }
         .frame(maxWidth: chatViewNameWidth > 0 ? min(300, chatViewNameWidth + 130) : 300)
         .padding(8)
+        .onChange(of: [chatModel.currentUser?.chatViewName, chatModel.currentUser?.image] ) { _ in
+            reloadCurrentUser()
+        }
         .opacity(userPickerVisible ? 1.0 : 0.0)
+        .onAppear {
+            reloadUsers()
+        }
+    }
+
+    private func reloadCurrentUser() {
+        if let updatedUser = chatModel.currentUser, let index = users.firstIndex(where: { $0.user.userId == updatedUser.userId }) {
+            let removed = users.remove(at: index)
+            users.insert(UserInfo(user: updatedUser, unreadCount: removed.unreadCount), at: 0)
+        }
+    }
+
+    private func changeActiveUser(toUser: UserInfo) {
+        Task {
+            do {
+                let activeUser = try apiSetActiveUser(toUser.user.userId)
+                chatModel.currentUser = activeUser
+                let index = users.firstIndex(where: { $0.user.userId == activeUser.userId })!
+                users.remove(at: index)
+                users.insert(UserInfo(user: activeUser, unreadCount: toUser.unreadCount), at: 0)
+                try retrieveUserSpecificData(chatModel)
+            } catch {
+                logger.error("Unable to set active user: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    private func reloadUsers() {
+        Task {
+            users = await listUsers().sorted { one, two -> Bool in one.user.activeUser }
+        }
     }
 
     private func menuButton(_ title: LocalizedStringKey, icon: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 0) {
                 Text(title)
+                    .overlay(DetermineWidth())
                 Spacer()
                 Image(systemName: icon)
                     .frame(width: 24, alignment: .center)
@@ -127,7 +164,7 @@ struct UserPicker_Previews: PreviewProvider {
         UserPicker(
             showSettings: Binding.constant(false),
             userPickerVisible: Binding.constant(true),
-            users: [User.sampleData, User.sampleData]
+            users: [UserInfo.sampleData, UserInfo.sampleData]
         )
         .environmentObject(ChatModel())
     }

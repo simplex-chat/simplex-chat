@@ -131,6 +131,24 @@ func apiCreateActiveUser(_ p: Profile) throws -> User {
     throw r
 }
 
+func listUsers() async -> [UserInfo] {
+    let r = await chatSendCmd(.listUsers)
+    if case let .usersList(users) = r { return users }
+    return []
+}
+
+func apiSetActiveUser(_ userId: Int64) throws -> User {
+    let r = chatSendCmdSync(.apiSetActiveUser(userId: userId))
+    if case let .activeUser(user) = r { return user }
+    throw r
+}
+
+func apiDeleteUser(_ userId: Int64) throws {
+    let r = chatSendCmdSync(.apiDeleteUser(userId: userId))
+    if case .cmdOk = r { return }
+    throw r
+}
+
 func apiStartChat() throws -> Bool {
     let r = chatSendCmdSync(.startChat(subscribe: true, expire: true))
     switch r {
@@ -900,11 +918,7 @@ func startChat() throws {
     try setNetworkConfig(getNetCfg())
     let justStarted = try apiStartChat()
     if justStarted {
-        m.userAddress = try apiGetUserAddress()
-        (m.userSMPServers, m.presetSMPServers) = try getUserSMPServers()
-        m.chatItemTTL = try getChatItemTTL()
-        let chats = try apiGetChats()
-        m.chats = chats.map { Chat.init($0) }
+        try retrieveUserSpecificData(m)
         NtfManager.shared.setNtfBadgeCount(m.totalUnreadCount())
         try refreshCallInvitations()
         (m.savedToken, m.tokenStatus, m.notificationMode) = apiGetNtfToken()
@@ -920,6 +934,14 @@ func startChat() throws {
     ChatReceiver.shared.start()
     m.chatRunning = true
     chatLastStartGroupDefault.set(Date.now)
+}
+
+func retrieveUserSpecificData(_ m: ChatModel) throws {
+    m.userAddress = try apiGetUserAddress()
+    (m.userSMPServers, m.presetSMPServers) = try getUserSMPServers()
+    m.chatItemTTL = try getChatItemTTL()
+    let chats = try apiGetChats()
+    m.chats = chats.map { Chat.init($0) }
 }
 
 class ChatReceiver {
