@@ -41,7 +41,7 @@ struct UserPicker: View {
                                         .frame(width: 44, height: 44)
                                         .padding(.trailing, 12)
                                     Text(userInfo.user.chatViewName)
-                                        .fontWeight(i == 0 ? .semibold : .regular)
+                                        .fontWeight(i == 0 ? .medium : .regular)
                                         .foregroundColor(.primary)
                                         .overlay(DetermineWidth())
                                     Spacer()
