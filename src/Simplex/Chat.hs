@@ -89,7 +89,7 @@ defaultChatConfig =
     { agentConfig =
         defaultAgentConfig
           { tcpPort = undefined, -- agent does not listen to TCP
-            tbqSize = 64,
+            tbqSize = 1024,
             database = AgentDBFile {dbFile = "simplex_v1_agent", dbKey = ""},
             yesToMigrations = False
           },
@@ -100,7 +100,7 @@ defaultChatConfig =
             ntf = _defaultNtfServers,
             netCfg = defaultNetworkConfig
           },
-      tbqSize = 64,
+      tbqSize = 1024,
       fileChunkSize = 15780, -- do not change
       inlineFiles = defaultInlineFilesConfig,
       logLevel = CLLImportant,
