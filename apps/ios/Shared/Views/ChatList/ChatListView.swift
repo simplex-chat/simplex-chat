@@ -32,6 +32,9 @@ struct ChatListView: View {
             }
             .navigationViewStyle(.stack)
             if userPickerVisible {
+                Rectangle().fill(.white.opacity(0.001)).onTapGesture {
+                    userPickerVisible.toggle()
+                }
                 UserPicker(showSettings: $showSettings, userPickerVisible: $userPickerVisible)
             }
         }
@@ -51,11 +54,6 @@ struct ChatListView: View {
                 chatModel.popChat(chatId)
             }
         }
-        .simultaneousGesture(userPickerVisible ? TapGesture().onEnded {
-            if userPickerVisible {
-                userPickerVisible.toggle()
-            }
-        } : nil)
         .onChange(of: chatModel.appOpenUrl) { _ in connectViaUrl() }
         .onAppear() { connectViaUrl() }
         .onDisappear() { userPickerVisible = false }
