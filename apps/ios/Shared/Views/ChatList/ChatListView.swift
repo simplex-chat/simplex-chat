@@ -17,7 +17,7 @@ struct ChatListView: View {
     @State private var showAddChat = false
 
     var body: some View {
-        NavigationView {
+        NavStackWorkaround {
             VStack {
                 if chatModel.chats.isEmpty {
                     onboardingButtons()

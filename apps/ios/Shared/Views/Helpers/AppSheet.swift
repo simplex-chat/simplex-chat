@@ -64,3 +64,16 @@ extension View {
         modifier(SheetForItem(item: item, onDismiss: onDismiss, sheetContent: content))
     }
 }
+
+struct NavStackWorkaround<T: View>: View {
+    let content: ()->T
+
+    var body: some View {
+        if #available(iOS 16, *) {
+            NavigationStack(root: content)
+        } else {
+            NavigationView(content: content)
+                .navigationViewStyle(.stack)
+        }
+    }
+}
