@@ -17,6 +17,7 @@ struct UserPicker: View {
     @State var users: [User] = [ChatModel.shared.currentUser ?? User.sampleData, User.sampleData]
     @State var scrollViewContentSize: CGSize = .zero
     @State var disableScrolling: Bool = true
+    private let menuButtonHeight: CGFloat = 68
 
     var fillColor: Color {
         colorScheme == .dark ? fillColorDark : fillColorLight
@@ -58,17 +59,9 @@ struct UserPicker: View {
                             })
                             .buttonStyle(PressedButtonStyle(defaultColor: fillColor, pressedColor: Color(uiColor: .secondarySystemFill)))
                             //                            .overlay(Divider().background(fillColor).padding(.leading, i < users.count - 1 ? 40 : 0), alignment: .bottom)
+                            if i < users.count - 1 {
                             Divider()
                         }
-//                        menuButton("Your user profiles", icon: "plus") {
-//                            print("manage profiles page")
-//                        }
-//                        Divider()
-                        menuButton("Settings", icon: "gearshape") {
-                            showSettings = true
-                            withAnimation {
-                                userPickerVisible.toggle()
-                            }
                         }
                     }
                     .overlay {
@@ -76,14 +69,28 @@ struct UserPicker: View {
                             DispatchQueue.main.async {
                                 scrollViewContentSize = geo.size
                                 let layoutFrame = UIApplication.shared.windows[0].safeAreaLayoutGuide.layoutFrame
-                                disableScrolling = scrollViewContentSize.height < layoutFrame.height
+                                disableScrolling = scrollViewContentSize.height + menuButtonHeight * 2 + 10 < layoutFrame.height
                             }
                             return Color.clear
                         }
                     }
                 }
                 .simultaneousGesture(DragGesture(minimumDistance: disableScrolling ? 0 : 10000000))
-                .frame(maxWidth: 300)
+                .frame(maxHeight: scrollViewContentSize.height)
+
+                Divider()
+                menuButton("Your user profiles", icon: "plus") {
+                    print("manage profiles page")
+                }
+                Divider()
+                menuButton("Settings", icon: "gearshape") {
+                    showSettings = true
+                    withAnimation {
+                        userPickerVisible.toggle()
+                    }
+                }
+            }
+        }
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 .background(
                     Rectangle()
@@ -91,11 +98,9 @@ struct UserPicker: View {
                     .cornerRadius(16)
                     .shadow(color: .black.opacity(0.12), radius: 24, x: 0, y: 0)
                 )
-                .frame(maxHeight: scrollViewContentSize.height)
-                .transition(.opacity)
-            }
-        }
+        .frame(maxWidth: 300)
         .padding(8)
+        .transition(.opacity)
         .opacity(userPickerVisible ? 1.0 : 0.0)
     }
 
@@ -109,8 +114,8 @@ struct UserPicker: View {
             }
             .padding(.horizontal)
             .padding(.vertical, 22)
+            .frame(height: menuButtonHeight)
         }
-        .frame(height: 68)
         .buttonStyle(PressedButtonStyle(defaultColor: fillColor, pressedColor: Color(uiColor: .secondarySystemFill)))
     }
 }
