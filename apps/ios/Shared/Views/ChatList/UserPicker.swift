@@ -14,6 +14,7 @@ struct UserPicker: View {
     @Environment(\.colorScheme) var colorScheme
     @Binding var showSettings: Bool
     @Binding var userPickerVisible: Bool
+    var manageUsers: () -> Void = {}
     @State var users: [User] = [ChatModel.shared.currentUser ?? User.sampleData, User.sampleData]
     @State var scrollViewContentSize: CGSize = .zero
     @State var disableScrolling: Bool = true
@@ -80,8 +81,8 @@ struct UserPicker: View {
                 .frame(maxHeight: scrollViewContentSize.height)
 
                 Divider()
-                menuButton("Your user profiles", icon: "plus") {
-                    print("manage profiles page")
+                menuButton("Your user profiles", icon: "pencil") {
+                    manageUsers()
                 }
                 Divider()
                 menuButton("Settings", icon: "gearshape") {

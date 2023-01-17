@@ -9,7 +9,7 @@
 import Foundation
 import SwiftUI
 
-public struct User: Decodable, NamedChat {
+public struct User: Decodable, NamedChat, Identifiable {
     public var userId: Int64
     var userContactId: Int64
     var localDisplayName: ContactName
@@ -21,6 +21,8 @@ public struct User: Decodable, NamedChat {
     public var fullName: String { get { profile.fullName } }
     public var image: String? { get { profile.image } }
     public var localAlias: String { get { "" } }
+
+    public var id: Int64 { userId }
 
     public static let sampleData = User(
         userId: 1,
