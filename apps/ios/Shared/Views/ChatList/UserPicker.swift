@@ -29,7 +29,7 @@ struct UserPicker: View {
             Spacer().frame(height: 1)
             VStack(spacing: 0) {
                 ScrollView {
-                    LazyVStack(spacing: 0) {
+                    VStack(spacing: 0) {
                         ForEach(Array(chatModel.users.enumerated()), id: \.0) { i, userInfo in
                             Button(action: {
                                 if !userInfo.user.activeUser {
