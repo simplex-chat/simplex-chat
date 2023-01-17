@@ -90,6 +90,7 @@ struct UserPicker: View {
             }
         }
         .padding(8)
+        .opacity(userPickerVisible ? 1.0 : 0.0)
     }
 
     private func menuButton(_ title: LocalizedStringKey, icon: String, action: @escaping () -> Void) -> some View {

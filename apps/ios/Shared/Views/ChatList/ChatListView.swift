@@ -33,10 +33,12 @@ struct ChatListView: View {
             .navigationViewStyle(.stack)
             if userPickerVisible {
                 Rectangle().fill(.white.opacity(0.001)).onTapGesture {
-                    userPickerVisible.toggle()
+                    withAnimation {
+                        userPickerVisible.toggle()
+                    }
                 }
-                UserPicker(showSettings: $showSettings, userPickerVisible: $userPickerVisible)
             }
+            UserPicker(showSettings: $showSettings, userPickerVisible: $userPickerVisible)
         }
     }
 
@@ -65,7 +67,7 @@ struct ChatListView: View {
             ToolbarItem(placement: .navigationBarLeading) {
                 HStack {
                     Button {
-                        withAnimation(userPickerVisible ? nil : .easeInOut(duration: 0.2)) {
+                        withAnimation {
                             userPickerVisible.toggle()
                         }
                     } label: {
