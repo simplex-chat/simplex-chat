@@ -60,8 +60,8 @@ struct UserPicker: View {
                             .buttonStyle(PressedButtonStyle(defaultColor: fillColor, pressedColor: Color(uiColor: .secondarySystemFill)))
                             //                            .overlay(Divider().background(fillColor).padding(.leading, i < users.count - 1 ? 40 : 0), alignment: .bottom)
                             if i < users.count - 1 {
-                            Divider()
-                        }
+                                Divider()
+                            }
                         }
                     }
                     .overlay {
@@ -91,13 +91,13 @@ struct UserPicker: View {
                 }
             }
         }
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .background(
-                    Rectangle()
-                    .fill(fillColor)
-                    .cornerRadius(16)
-                    .shadow(color: .black.opacity(0.12), radius: 24, x: 0, y: 0)
-                )
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .background(
+            Rectangle()
+                .fill(fillColor)
+                .cornerRadius(16)
+                .shadow(color: .black.opacity(0.12), radius: 24, x: 0, y: 0)
+        )
         .frame(maxWidth: 300)
         .padding(8)
         .opacity(userPickerVisible ? 1.0 : 0.0)
