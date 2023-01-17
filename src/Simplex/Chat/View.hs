@@ -1168,6 +1168,8 @@ viewChatError logLevel = \case
     CENoConnectionUser _agentConnId -> [] -- ["error: connection has no user, conn id: " <> sShow agentConnId]
     CEActiveUserExists -> ["error: active user already exists"]
     CEDifferentActiveUser commandUserId activeUserId -> ["error: different active user, command user id: " <> sShow commandUserId <> ", active user id: " <> sShow activeUserId]
+    CECantDeleteActiveUser _ -> ["cannot delete active user"]
+    CECantDeleteLastUser _ -> ["cannot delete last user"]
     CEChatNotStarted -> ["error: chat not started"]
     CEChatNotStopped -> ["error: chat not stopped"]
     CEChatStoreChanged -> ["error: chat store changed, please restart chat"]

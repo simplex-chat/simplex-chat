@@ -177,6 +177,7 @@ chatTests = do
   describe "multiple users" $ do
     it "create second user" testCreateSecondUser
     it "both users have contact link" testMultipleUserAddresses
+    it "delete user" testDeleteUser
   describe "chat item expiration" $ do
     it "set chat item TTL" testSetChatItemTTL
   describe "queue rotation" $ do
@@ -4510,6 +4511,42 @@ testMultipleUserAddresses =
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
       alice @@@ [("@bob", "hey alice")]
+
+testDeleteUser :: IO ()
+testDeleteUser =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      connectUsers alice bob
+
+      alice ##> "/_delete user 1"
+      alice <## "cannot delete active user"
+
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+
+      connectUsers alice cath
+
+      alice ##> "/users"
+      alice <## "alice (Alice)"
+      alice <## "alisa (active)"
+
+      alice ##> "/delete user alice"
+      alice <## "ok"
+
+      alice ##> "/users"
+      alice <## "alisa (active)"
+
+      bob #> "@alice hey"
+      -- bob <## "[alice, contactId: 2, connId: 1] error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
+      (alice </)
+
+      alice ##> "/delete user alisa"
+      alice <## "cannot delete active user"
+
+      alice ##> "/users"
+      alice <## "alisa (active)"
+
+      alice <##> cath
 
 testSetChatItemTTL :: IO ()
 testSetChatItemTTL =

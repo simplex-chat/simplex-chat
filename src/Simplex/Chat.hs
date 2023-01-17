@@ -291,12 +291,19 @@ processChatCommand = \case
     atomically . writeTVar u $ Just user
     pure $ CRActiveUser user
   SetActiveUser uName -> withUserName uName APISetActiveUser
-  APIDeleteUser _userId -> do
-    -- prohibit to delete active user
-    -- withStore' $ \db -> deleteUser db userId
-    -- ? other cleanup
-    setActive ActiveNone
-    pure $ CRCmdOk Nothing
+  APIDeleteUser userId -> do
+    user <- withStore $ \db -> getUser db userId
+    when (activeUser user) $ throwChatError (CECantDeleteActiveUser userId)
+    users <- withStore' getUsers
+    -- shouldn't happen - last user should be active
+    when (length users == 1) $ throwChatError (CECantDeleteLastUser userId)
+    filesInfo <- withStore' $ \db -> getUserFileInfo db user
+    withChatLock "deleteUser" . procCmd $ do
+      forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
+      withAgent $ \a -> deleteUser a (aUserId user)
+      withStore' $ \db -> deleteUserRecord db user
+      setActive ActiveNone
+      pure $ CRCmdOk Nothing
   DeleteUser uName -> withUserName uName APIDeleteUser
   StartChat subConns enableExpireCIs -> withUser' $ \_ ->
     asks agentAsync >>= readTVarIO >>= \case
