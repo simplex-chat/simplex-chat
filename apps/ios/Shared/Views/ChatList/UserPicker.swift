@@ -41,19 +41,18 @@ struct UserPicker: View {
                                         .frame(width: 44, height: 44)
                                         .padding(.trailing, 12)
                                     Text(userInfo.user.chatViewName)
-                                        .fontWeight(i == 0 ? .medium : .regular)
+                                        .fontWeight(i == 0 ? .semibold : .regular)
                                         .foregroundColor(.primary)
                                         .overlay(DetermineWidth())
                                     Spacer()
                                     if i == 0 {
-                                        Image(systemName: "chevron.right")
-                                            .frame(width: 24, alignment: .center)
+                                        Image(systemName: "checkmark")
                                     } else if userInfo.unreadCount > 0 {
                                         unreadCounter(userInfo.unreadCount)
-                                          .padding(.trailing, 10)
                                     }
                                 }
-                                .padding(12)
+                                .padding(.trailing)
+                                .padding([.leading, .vertical], 12)
                             })
                             .buttonStyle(PressedButtonStyle(defaultColor: fillColor, pressedColor: Color(uiColor: .secondarySystemFill)))
                             if i < chatModel.users.count - 1 {
@@ -149,7 +148,7 @@ struct UserPicker: View {
                     .overlay(DetermineWidth())
                 Spacer()
                 Image(systemName: icon)
-                    .frame(width: 24, alignment: .center)
+//                    .frame(width: 24, alignment: .center)
             }
             .padding(.horizontal)
             .padding(.vertical, 22)

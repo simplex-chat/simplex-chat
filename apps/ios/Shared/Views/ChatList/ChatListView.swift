@@ -76,24 +76,25 @@ struct ChatListView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                HStack {
-                    Button {
-                        withAnimation {
-                            userPickerVisible.toggle()
-                        }
-                    } label: {
-                        let user = chatModel.currentUser ?? User.sampleData
-                        let color = Color(uiColor: .tertiarySystemGroupedBackground)
+                Button {
+                    withAnimation {
+                        userPickerVisible.toggle()
+                    }
+                } label: {
+                    let user = chatModel.currentUser ?? User.sampleData
+                    let color = Color(uiColor: .tertiarySystemGroupedBackground)
+                    HStack(spacing: 0) {
                         ProfileImage(imageStr: user.image, color: color)
-                            .frame(width: 30, height: 30)
+                            .frame(width: 32, height: 32)
                             .padding(.trailing, 6)
                             .padding(.vertical, 6)
-                        .overlay {
-                            let unread = chatModel.users.filter { !$0.user.activeUser }.reduce(0, {prev, next in prev + next.unreadCount})
-                            if unread > 0 {
-                                unreadCounter(unread)
-                                    .padding(.leading, 50)
-                            }
+                        let unread = chatModel.users
+                            .filter { !$0.user.activeUser }
+                            .reduce(0, {cnt, u in cnt + u.unreadCount})
+                        if unread > 0 {
+                            unreadCounter(unread)
+                                .padding(.leading, -12)
+                                .padding(.top, -16)
                         }
                     }
                 }
