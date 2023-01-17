@@ -335,6 +335,7 @@ import Simplex.Chat.Migrations.M20221223_idx_chat_items_item_status
 import Simplex.Chat.Migrations.M20221230_idxs
 import Simplex.Chat.Migrations.M20230107_connections_auth_err_counter
 import Simplex.Chat.Migrations.M20230111_users_agent_user_id
+import Simplex.Chat.Migrations.M20230117_fkey_indexes
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (week)
@@ -396,7 +397,8 @@ schemaMigrations =
     ("20221223_idx_chat_items_item_status", m20221223_idx_chat_items_item_status),
     ("20221230_idxs", m20221230_idxs),
     ("20230107_connections_auth_err_counter", m20230107_connections_auth_err_counter),
-    ("20230111_users_agent_user_id", m20230111_users_agent_user_id)
+    ("20230111_users_agent_user_id", m20230111_users_agent_user_id),
+    ("20230117_fkey_indexes", m20230117_fkey_indexes)
   ]
 
 -- | The list of migrations in ascending order by date

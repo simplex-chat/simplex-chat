@@ -80,6 +80,7 @@ library
       Simplex.Chat.Migrations.M20221230_idxs
       Simplex.Chat.Migrations.M20230107_connections_auth_err_counter
       Simplex.Chat.Migrations.M20230111_users_agent_user_id
+      Simplex.Chat.Migrations.M20230117_fkey_indexes
       Simplex.Chat.Mobile
       Simplex.Chat.Options
       Simplex.Chat.ProfileGenerator
