@@ -17,7 +17,6 @@ CREATE INDEX idx_commands_user_id ON commands(user_id);
 CREATE INDEX idx_connections_custom_user_profile_id ON connections(custom_user_profile_id);
 CREATE INDEX idx_connections_via_user_contact_link ON connections(via_user_contact_link);
 CREATE INDEX idx_connections_rcv_file_id ON connections(rcv_file_id);
--- CREATE INDEX idx_connections_group_member_id ON connections(group_member_id);
 CREATE INDEX idx_connections_contact_id ON connections(contact_id);
 CREATE INDEX idx_connections_user_contact_link_id ON connections(user_contact_link_id);
 CREATE INDEX idx_connections_via_contact ON connections(via_contact);
