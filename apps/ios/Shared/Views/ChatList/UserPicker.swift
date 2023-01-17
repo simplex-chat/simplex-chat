@@ -18,6 +18,7 @@ struct UserPicker: View {
     @State var scrollViewContentSize: CGSize = .zero
     @State var disableScrolling: Bool = true
     private let menuButtonHeight: CGFloat = 68
+    @State var chatViewNameWidth: CGFloat = 0
 
     var fillColor: Color {
         colorScheme == .dark ? fillColorDark : fillColorLight
@@ -41,6 +42,7 @@ struct UserPicker: View {
                                     Text(user.chatViewName)
                                         .fontWeight(i == 0 ? .medium : .regular)
                                         .foregroundColor(.primary)
+                                        .overlay(DetermineWidth())
                                     Spacer()
                                     if i == 0 {
                                         Image(systemName: "chevron.right")
@@ -58,7 +60,6 @@ struct UserPicker: View {
                                 .padding(12)
                             })
                             .buttonStyle(PressedButtonStyle(defaultColor: fillColor, pressedColor: Color(uiColor: .secondarySystemFill)))
-                            //                            .overlay(Divider().background(fillColor).padding(.leading, i < users.count - 1 ? 40 : 0), alignment: .bottom)
                             if i < users.count - 1 {
                                 Divider()
                             }
@@ -98,7 +99,8 @@ struct UserPicker: View {
                 .cornerRadius(16)
                 .shadow(color: .black.opacity(0.12), radius: 24, x: 0, y: 0)
         )
-        .frame(maxWidth: 300)
+        .onPreferenceChange(DetermineWidth.Key.self) { chatViewNameWidth = $0 }
+        .frame(maxWidth: chatViewNameWidth > 0 ? min(300, chatViewNameWidth + 130) : 300)
         .padding(8)
         .opacity(userPickerVisible ? 1.0 : 0.0)
     }
