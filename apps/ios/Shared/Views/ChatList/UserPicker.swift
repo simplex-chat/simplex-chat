@@ -100,7 +100,6 @@ struct UserPicker: View {
                 )
         .frame(maxWidth: 300)
         .padding(8)
-        .transition(.opacity)
         .opacity(userPickerVisible ? 1.0 : 0.0)
     }
 
