@@ -26,10 +26,9 @@ enum NewChatAction: Identifiable {
 struct NewChatButton: View {
     @Binding var showAddChat: Bool
     @State private var actionSheet: NewChatAction?
-    var onClick: () -> Void = {}
 
     var body: some View {
-        Button { showAddChat = true; onClick() } label: {
+        Button { showAddChat = true } label: {
             Image(systemName: "square.and.pencil")
                 .resizable()
                 .scaledToFit()
