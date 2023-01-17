@@ -4425,7 +4425,7 @@ testCreateSecondUser =
       showActiveUser alice "alice (Alice)"
 
       alice ##> "/users"
-      alice <## "alice (Alice) (active) (unread: 1)"
+      alice <## "alice (Alice) (active)"
       alice <## "alisa"
 
       alice <##> bob

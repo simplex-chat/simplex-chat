@@ -33,6 +33,7 @@ module Simplex.Chat.Store
     getUserIdByName,
     getUserByAConnId,
     getUserByContactId,
+    getUserByGroupId,
     createDirectConnection,
     createConnReqConnection,
     getProfileById,
@@ -511,6 +512,11 @@ getUserByContactId :: DB.Connection -> ContactId -> ExceptT StoreError IO User
 getUserByContactId db contactId =
   ExceptT . firstRow toUser (SEUserNotFoundByContactId contactId) $
     DB.query db (userQuery <> " JOIN contacts ct ON ct.user_id = u.user_id WHERE ct.contact_id = ?") (Only contactId)
+
+getUserByGroupId :: DB.Connection -> GroupId -> ExceptT StoreError IO User
+getUserByGroupId db groupId =
+  ExceptT . firstRow toUser (SEUserNotFoundByGroupId groupId) $
+    DB.query db (userQuery <> " JOIN groups g ON g.user_id = u.user_id WHERE g.group_id = ?") (Only groupId)
 
 getUserByFileId :: DB.Connection -> FileTransferId -> ExceptT StoreError IO User
 getUserByFileId db fileId =
@@ -4879,6 +4885,7 @@ data StoreError
   | SEUserNotFound {userId :: UserId}
   | SEUserNotFoundByName {contactName :: ContactName}
   | SEUserNotFoundByContactId {contactId :: ContactId}
+  | SEUserNotFoundByGroupId {groupId :: GroupId}
   | SEUserNotFoundByFileId {fileId :: FileTransferId}
   | SEContactNotFound {contactId :: ContactId}
   | SEContactNotFoundByName {contactName :: ContactName}

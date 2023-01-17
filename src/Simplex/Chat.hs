@@ -544,8 +544,9 @@ processChatCommand = \case
         (CIDMBroadcast, _, _) -> throwChatError CEInvalidChatItemDelete
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
-  APIChatRead (ChatRef cType chatId) fromToIds -> withUser $ \user@User {userId} -> case cType of
+  APIChatRead (ChatRef cType chatId) fromToIds -> withUser $ \_ -> case cType of
     CTDirect -> do
+      user <- withStore $ \db -> getUserByContactId db chatId
       timedItems <- withStore' $ \db -> getDirectUnreadTimedItems db user chatId fromToIds
       ts <- liftIO getCurrentTime
       forM_ timedItems $ \(itemId, ttl) -> do
@@ -555,6 +556,7 @@ processChatCommand = \case
       withStore' $ \db -> updateDirectChatItemsRead db user chatId fromToIds
       pure $ CRCmdOk (Just user)
     CTGroup -> do
+      user@User {userId} <- withStore $ \db -> getUserByGroupId db chatId
       timedItems <- withStore' $ \db -> getGroupUnreadTimedItems db user chatId fromToIds
       ts <- liftIO getCurrentTime
       forM_ timedItems $ \(itemId, ttl) -> do
@@ -563,8 +565,8 @@ processChatCommand = \case
         startProximateTimedItemThread user (ChatRef CTGroup chatId, itemId) deleteAt
       withStore' $ \db -> updateGroupChatItemsRead db userId chatId fromToIds
       pure $ CRCmdOk (Just user)
-    CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
-    CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
+    CTContactRequest -> pure $ chatCmdError Nothing "not supported"
+    CTContactConnection -> pure $ chatCmdError Nothing "not supported"
   APIChatUnread (ChatRef cType chatId) unreadChat -> withUser $ \user -> case cType of
     CTDirect -> do
       withStore $ \db -> do
