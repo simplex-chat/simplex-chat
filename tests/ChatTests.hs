@@ -178,6 +178,7 @@ chatTests = do
     it "create second user" testCreateSecondUser
     it "both users have contact link" testMultipleUserAddresses
     it "create user with same servers" testCreateUserSameServers
+    it "delete user" testDeleteUser
   describe "chat item expiration" $ do
     it "set chat item TTL" testSetChatItemTTL
   describe "queue rotation" $ do
@@ -2358,9 +2359,8 @@ testFilesFoldersImageSndDelete =
       checkActionDeletesFile "./tests/tmp/alice_app_files/test_1MB.pdf" $ do
         alice ##> "/d bob"
         alice <## "bob: contact is deleted"
-        bob <## "alice cancelled sending file 1 (test_1MB.pdf)"
         bob ##> "/fs 1"
-        bob <## "receiving file 1 (test_1MB.pdf) cancelled, received part path: test_1MB.pdf"
+        bob <##. "receiving file 1 (test_1MB.pdf) progress"
       -- deleting contact should remove cancelled file
       checkActionDeletesFile "./tests/tmp/bob_app_files/test_1MB.pdf" $ do
         bob ##> "/d alice"
@@ -4523,6 +4523,42 @@ testCreateUserSameServers =
       showActiveUser alice "alisa"
 
       alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im, smp://3456-w==@smp3.example.im:5224")
+
+testDeleteUser :: IO ()
+testDeleteUser =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      connectUsers alice bob
+
+      alice ##> "/_delete user 1"
+      alice <## "cannot delete active user"
+
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+
+      connectUsers alice cath
+
+      alice ##> "/users"
+      alice <## "alice (Alice)"
+      alice <## "alisa (active)"
+
+      alice ##> "/delete user alice"
+      alice <## "ok"
+
+      alice ##> "/users"
+      alice <## "alisa (active)"
+
+      bob #> "@alice hey"
+      -- bob <## "[alice, contactId: 2, connId: 1] error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
+      (alice </)
+
+      alice ##> "/delete user alisa"
+      alice <## "cannot delete active user"
+
+      alice ##> "/users"
+      alice <## "alisa (active)"
+
+      alice <##> cath
 
 testSetChatItemTTL :: IO ()
 testSetChatItemTTL =

@@ -589,6 +589,8 @@ data ChatErrorType
   | CENoConnectionUser {agentConnId :: AgentConnId}
   | CEActiveUserExists -- TODO delete
   | CEDifferentActiveUser {commandUserId :: UserId, activeUserId :: UserId}
+  | CECantDeleteActiveUser {userId :: UserId}
+  | CECantDeleteLastUser {userId :: UserId}
   | CEChatNotStarted
   | CEChatNotStopped
   | CEChatStoreChanged
