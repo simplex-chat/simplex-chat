@@ -177,6 +177,8 @@ chatTests = do
   describe "multiple users" $ do
     it "create second user" testCreateSecondUser
     it "both users have contact link" testMultipleUserAddresses
+    it "create user with default servers" testCreateUserDefaultServers
+    it "create user with same servers" testCreateUserSameServers
     it "delete user" testDeleteUser
   describe "chat item expiration" $ do
     it "set chat item TTL" testSetChatItemTTL
@@ -4510,6 +4512,40 @@ testMultipleUserAddresses =
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
       alice @@@ [("@bob", "hey alice")]
+
+testCreateUserDefaultServers :: IO ()
+testCreateUserDefaultServers =
+  testChat2 aliceProfile bobProfile $
+    \alice _ -> do
+      alice #$> ("/smp smp://2345-w==@smp2.example.im;smp://3456-w==@smp3.example.im:5224", id, "ok")
+      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im, smp://3456-w==@smp3.example.im:5224")
+
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+
+      alice #$> ("/smp", id, "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:5001")
+
+      -- with same_smp=off
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im, smp://3456-w==@smp3.example.im:5224")
+
+      alice ##> "/create user same_smp=off alisa2"
+      showActiveUser alice "alisa2"
+
+      alice #$> ("/smp", id, "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:5001")
+
+testCreateUserSameServers :: IO ()
+testCreateUserSameServers =
+  testChat2 aliceProfile bobProfile $
+    \alice _ -> do
+      alice #$> ("/smp smp://2345-w==@smp2.example.im;smp://3456-w==@smp3.example.im:5224", id, "ok")
+      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im, smp://3456-w==@smp3.example.im:5224")
+
+      alice ##> "/create user same_smp=on alisa"
+      showActiveUser alice "alisa"
+
+      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im, smp://3456-w==@smp3.example.im:5224")
 
 testDeleteUser :: IO ()
 testDeleteUser =

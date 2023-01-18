@@ -271,18 +271,32 @@ toView event = do
 processChatCommand :: forall m. ChatMonad m => ChatCommand -> m ChatResponse
 processChatCommand = \case
   ShowActiveUser -> withUser' $ pure . CRActiveUser
-  CreateActiveUser p -> do
+  CreateActiveUser p sameServers -> do
     u <- asks currentUser
-    -- TODO option to choose current user servers
-    DefaultAgentServers {smp} <- asks $ defaultServers . config
+    (smp, smpServers) <- chooseServers
     auId <-
       withStore' getUsers >>= \case
         [] -> pure 1
         _ -> withAgent (`createUser` smp)
     user <- withStore $ \db -> createUserRecord db (AgentUserId auId) p True
+    unless (null smpServers) $
+      withStore $ \db -> overwriteSMPServers db user smpServers
     setActive ActiveNone
     atomically . writeTVar u $ Just user
     pure $ CRActiveUser user
+    where
+      chooseServers :: m (NonEmpty SMPServerWithAuth, [ServerCfg])
+      chooseServers
+        | sameServers =
+          asks currentUser >>= readTVarIO >>= \case
+            Nothing -> throwChatError CENoActiveUser
+            Just user -> do
+              smpServers <- withStore' (`getSMPServers` user)
+              cfg <- asks config
+              pure (activeAgentServers cfg smpServers, smpServers)
+        | otherwise = do
+          DefaultAgentServers {smp} <- asks $ defaultServers . config
+          pure (smp, [])
   ListUsers -> CRUsersList <$> withStore' getUsersInfo
   APISetActiveUser userId -> do
     u <- asks currentUser
@@ -3814,7 +3828,12 @@ chatCommandP =
   choice
     [ "/mute " *> ((`ShowMessages` False) <$> chatNameP'),
       "/unmute " *> ((`ShowMessages` True) <$> chatNameP'),
-      "/create user " *> (CreateActiveUser <$> userProfile),
+      "/create user"
+        *> ( do
+               sameSmp <- (A.space *> "same_smp=" *> onOffP) <|> pure False
+               uProfile <- A.space *> userProfile
+               pure $ CreateActiveUser uProfile sameSmp
+           ),
       "/users" $> ListUsers,
       "/_user " *> (APISetActiveUser <$> A.decimal),
       ("/user " <|> "/u ") *> (SetActiveUser <$> displayName),

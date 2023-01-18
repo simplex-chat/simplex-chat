@@ -386,20 +386,6 @@ CREATE INDEX idx_connections_via_contact_uri_hash ON connections(
 );
 CREATE INDEX idx_contact_requests_xcontact_id ON contact_requests(xcontact_id);
 CREATE INDEX idx_contacts_xcontact_id ON contacts(xcontact_id);
-CREATE TABLE smp_servers(
-  smp_server_id INTEGER PRIMARY KEY,
-  host TEXT NOT NULL,
-  port TEXT NOT NULL,
-  key_hash BLOB NOT NULL,
-  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
-  created_at TEXT NOT NULL DEFAULT(datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT(datetime('now')),
-  basic_auth TEXT,
-  preset INTEGER DEFAULT 0 CHECK(preset NOT NULL),
-  tested INTEGER,
-  enabled INTEGER DEFAULT 1 CHECK(enabled NOT NULL),
-  UNIQUE(host, port)
-);
 CREATE INDEX idx_messages_shared_msg_id ON messages(shared_msg_id);
 CREATE INDEX idx_chat_items_shared_msg_id ON chat_items(shared_msg_id);
 CREATE TABLE calls(
@@ -539,7 +525,6 @@ CREATE INDEX idx_received_probes_contact_id ON received_probes(contact_id);
 CREATE INDEX idx_sent_probe_hashes_user_id ON sent_probe_hashes(user_id);
 CREATE INDEX idx_sent_probe_hashes_contact_id ON sent_probe_hashes(contact_id);
 CREATE INDEX idx_settings_user_id ON settings(user_id);
-CREATE INDEX idx_smp_servers_user_id ON smp_servers(user_id);
 CREATE INDEX idx_snd_file_chunks_file_id_connection_id ON snd_file_chunks(
   file_id,
   connection_id
@@ -547,3 +532,18 @@ CREATE INDEX idx_snd_file_chunks_file_id_connection_id ON snd_file_chunks(
 CREATE INDEX idx_snd_files_group_member_id ON snd_files(group_member_id);
 CREATE INDEX idx_snd_files_connection_id ON snd_files(connection_id);
 CREATE INDEX idx_snd_files_file_id ON snd_files(file_id);
+CREATE TABLE IF NOT EXISTS "smp_servers"(
+  smp_server_id INTEGER PRIMARY KEY,
+  host TEXT NOT NULL,
+  port TEXT NOT NULL,
+  key_hash BLOB NOT NULL,
+  basic_auth TEXT,
+  preset INTEGER NOT NULL DEFAULT 0,
+  tested INTEGER,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now')),
+  UNIQUE(user_id, host, port)
+);
+CREATE INDEX idx_smp_servers_user_id ON smp_servers(user_id);

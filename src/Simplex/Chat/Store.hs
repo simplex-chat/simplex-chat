@@ -333,6 +333,7 @@ import Simplex.Chat.Migrations.M20221230_idxs
 import Simplex.Chat.Migrations.M20230107_connections_auth_err_counter
 import Simplex.Chat.Migrations.M20230111_users_agent_user_id
 import Simplex.Chat.Migrations.M20230117_fkey_indexes
+import Simplex.Chat.Migrations.M20230118_recreate_smp_servers
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (week)
@@ -395,7 +396,8 @@ schemaMigrations =
     ("20221230_idxs", m20221230_idxs),
     ("20230107_connections_auth_err_counter", m20230107_connections_auth_err_counter),
     ("20230111_users_agent_user_id", m20230111_users_agent_user_id),
-    ("20230117_fkey_indexes", m20230117_fkey_indexes)
+    ("20230117_fkey_indexes", m20230117_fkey_indexes),
+    ("20230118_recreate_smp_servers", m20230118_recreate_smp_servers)
   ]
 
 -- | The list of migrations in ascending order by date
