@@ -299,7 +299,7 @@ processChatCommand = \case
     when (length users == 1) $ throwChatError (CECantDeleteLastUser userId)
     filesInfo <- withStore' (`getUserFileInfo` user)
     withChatLock "deleteUser" . procCmd $ do
-      forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo False
+      forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
       withAgent (`deleteUser` aUserId user)
       withStore' (`deleteUserRecord` user)
       setActive ActiveNone
@@ -586,7 +586,7 @@ processChatCommand = \case
       filesInfo <- withStore' $ \db -> getContactFileInfo db user ct
       conns <- withStore $ \db -> getContactConnections db userId ct
       withChatLock "deleteChat direct" . procCmd $ do
-        forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo False
+        forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
         forM_ conns $ \conn -> deleteAgentConnectionAsync user conn `catchError` \_ -> pure ()
         -- functions below are called in separate transactions to prevent crashes on android
         -- (possibly, race condition on integrity check?)
@@ -605,7 +605,7 @@ processChatCommand = \case
       unless canDelete $ throwChatError CEGroupUserRole
       filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
       withChatLock "deleteChat group" . procCmd $ do
-        forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo False
+        forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
         when (memberActive membership) . void $ sendGroupMessage user gInfo members XGrpDel
         deleteGroupLink' user gInfo `catchError` \_ -> pure ()
         forM_ members $ deleteMemberConnection user
@@ -632,13 +632,13 @@ processChatCommand = \case
     CTDirect -> do
       ct <- withStore $ \db -> getContact db user chatId
       filesInfo <- withStore' $ \db -> getContactFileInfo db user ct
-      forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo False
+      forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
       withStore' $ \db -> deleteContactCIs db user ct
       pure $ CRChatCleared user (AChatInfo SCTDirect $ DirectChat ct)
     CTGroup -> do
       gInfo <- withStore $ \db -> getGroupInfo db user chatId
       filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
-      forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo False
+      forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
       withStore' $ \db -> deleteGroupCIs db user gInfo
       membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db user gInfo
       forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
@@ -1558,8 +1558,11 @@ setAllExpireCIFlags b = do
     keys <- M.keys <$> readTVar expireFlags
     forM_ keys $ \k -> TM.insert k b expireFlags
 
-deleteFile :: forall m. ChatMonad m => User -> CIFileInfo -> Bool -> m ()
-deleteFile user CIFileInfo {filePath, fileId, fileStatus} sendCancel =
+deleteFile :: forall m. ChatMonad m => User -> CIFileInfo -> m ()
+deleteFile user fileInfo = deleteFile' user fileInfo False
+
+deleteFile' :: forall m. ChatMonad m => User -> CIFileInfo -> Bool -> m ()
+deleteFile' user CIFileInfo {filePath, fileId, fileStatus} sendCancel =
   (cancel' >> delete) `catchError` (toView . CRChatError (Just user))
   where
     cancel' = forM_ fileStatus $ \(AFS dir status) ->
@@ -1958,12 +1961,12 @@ expireChatItems user@User {userId} ttl sync = do
     processContact :: UTCTime -> Contact -> m ()
     processContact expirationDate ct = do
       filesInfo <- withStore' $ \db -> getContactExpiredFileInfo db user ct expirationDate
-      forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo False
+      forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
       withStore' $ \db -> deleteContactExpiredCIs db user ct expirationDate
     processGroup :: UTCTime -> UTCTime -> GroupInfo -> m ()
     processGroup expirationDate createdAtCutoff gInfo = do
       filesInfo <- withStore' $ \db -> getGroupExpiredFileInfo db user gInfo expirationDate createdAtCutoff
-      forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo False
+      forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
       withStore' $ \db -> deleteGroupExpiredCIs db user gInfo expirationDate createdAtCutoff
       membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db user gInfo
       forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
@@ -3565,7 +3568,7 @@ deleteCIFile :: (ChatMonad m, MsgDirectionI d) => User -> Maybe (CIFile d) -> m 
 deleteCIFile user file =
   forM_ file $ \CIFile {fileId, filePath, fileStatus} -> do
     let fileInfo = CIFileInfo {fileId, fileStatus = Just $ AFS msgDirection fileStatus, filePath}
-    deleteFile user fileInfo True
+    deleteFile' user fileInfo True
 
 markDirectCIDeleted :: ChatMonad m => User -> Contact -> CChatItem 'CTDirect -> MessageId -> Bool -> m ChatResponse
 markDirectCIDeleted user ct ci@(CChatItem msgDir deletedItem) msgId byUser = do
