@@ -32,9 +32,8 @@ SELECT
   smp_server_id, host, port, key_hash, basic_auth, preset, tested, enabled, user_id, created_at, updated_at
   FROM smp_servers;
 
-ALTER TABLE smp_servers RENAME TO old_smp_servers;
+DROP TABLE smp_servers;
 ALTER TABLE new_smp_servers RENAME TO smp_servers;
-DROP TABLE old_smp_servers;
 
 CREATE INDEX idx_smp_servers_user_id ON smp_servers(user_id);
 |]
