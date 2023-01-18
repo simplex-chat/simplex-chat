@@ -3414,8 +3414,7 @@ cancelSndFileTransfer user ft@SndFileTransfer {connId, agentConnId = agentConnId
       updateSndFileStatus db ft FSCancelled
       deleteSndFileChunks db ft
     when sendCancel $
-      withAgent
-        (\a -> void (sendMessage a acId SMP.noMsgFlags $ smpEncode FileChunkCancel))
+      withAgent (\a -> void (sendMessage a acId SMP.noMsgFlags $ smpEncode FileChunkCancel))
         `catchError` (toView . CRChatError (Just user))
     deleteAgentConnectionAsync' user connId agentConnId
 
