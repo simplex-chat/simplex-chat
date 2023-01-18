@@ -271,7 +271,7 @@ toView event = do
 processChatCommand :: forall m. ChatMonad m => ChatCommand -> m ChatResponse
 processChatCommand = \case
   ShowActiveUser -> withUser' $ pure . CRActiveUser
-  CreateActiveUser p reuseServers -> do
+  CreateActiveUser p sameServers -> do
     u <- asks currentUser
     (smp, smpServers) <- chooseServers
     auId <-
@@ -287,7 +287,7 @@ processChatCommand = \case
     where
       chooseServers :: m (NonEmpty SMPServerWithAuth, [ServerCfg])
       chooseServers
-        | reuseServers =
+        | sameServers =
           asks currentUser >>= readTVarIO >>= \case
             Nothing -> throwChatError CENoActiveUser
             Just user -> do
