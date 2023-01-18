@@ -1570,7 +1570,7 @@ setAllExpireCIFlags b = do
     forM_ keys $ \k -> TM.insert k b expireFlags
 
 deleteFile :: forall m. ChatMonad m => User -> CIFileInfo -> Bool -> m ()
-deleteFile user CIFileInfo {filePath, fileId, fileStatus} doSendCancel =
+deleteFile user CIFileInfo {filePath, fileId, fileStatus} sendCancel =
   (cancel' >> delete) `catchError` (toView . CRChatError (Just user))
   where
     cancel' = forM_ fileStatus $ \(AFS dir status) ->
@@ -1578,7 +1578,7 @@ deleteFile user CIFileInfo {filePath, fileId, fileStatus} doSendCancel =
         case dir of
           SMDSnd -> do
             (ftm@FileTransferMeta {cancelled}, fts) <- withStore (\db -> getSndFileTransfer db user fileId)
-            unless cancelled $ cancelSndFile user ftm fts doSendCancel
+            unless cancelled $ cancelSndFile user ftm fts sendCancel
           SMDRcv -> do
             ft@RcvFileTransfer {cancelled} <- withStore (\db -> getRcvFileTransfer db user fileId)
             unless cancelled $ cancelRcvFileTransfer user ft
@@ -3411,17 +3411,17 @@ cancelRcvFileTransfer user ft@RcvFileTransfer {fileId, fileStatus, rcvFileInline
     _ -> pure ()
 
 cancelSndFile :: ChatMonad m => User -> FileTransferMeta -> [SndFileTransfer] -> Bool -> m ()
-cancelSndFile user FileTransferMeta {fileId} fts doSendCancel = do
+cancelSndFile user FileTransferMeta {fileId} fts sendCancel = do
   withStore' $ \db -> updateFileCancelled db user fileId CIFSSndCancelled
-  forM_ fts $ \ft' -> cancelSndFileTransfer user ft' doSendCancel
+  forM_ fts $ \ft' -> cancelSndFileTransfer user ft' sendCancel
 
 cancelSndFileTransfer :: ChatMonad m => User -> SndFileTransfer -> Bool -> m ()
-cancelSndFileTransfer user ft@SndFileTransfer {connId, agentConnId = agentConnId@(AgentConnId acId), fileStatus} doSendCancel =
+cancelSndFileTransfer user ft@SndFileTransfer {connId, agentConnId = agentConnId@(AgentConnId acId), fileStatus} sendCancel =
   unless (fileStatus == FSCancelled || fileStatus == FSComplete) $ do
     withStore' $ \db -> do
       updateSndFileStatus db ft FSCancelled
       deleteSndFileChunks db ft
-    when doSendCancel $
+    when sendCancel $
       withAgent $ \a -> void (sendMessage a acId SMP.noMsgFlags $ smpEncode FileChunkCancel) `catchError` \_ -> pure ()
     deleteAgentConnectionAsync' user connId agentConnId
 
