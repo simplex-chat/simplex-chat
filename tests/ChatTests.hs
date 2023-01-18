@@ -177,6 +177,7 @@ chatTests = do
   describe "multiple users" $ do
     it "create second user" testCreateSecondUser
     it "both users have contact link" testMultipleUserAddresses
+    it "create user with same servers" testCreateUserSameServers
   describe "chat item expiration" $ do
     it "set chat item TTL" testSetChatItemTTL
   describe "queue rotation" $ do
@@ -4510,6 +4511,18 @@ testMultipleUserAddresses =
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
       alice @@@ [("@bob", "hey alice")]
+
+testCreateUserSameServers :: IO ()
+testCreateUserSameServers =
+  testChat2 aliceProfile bobProfile $
+    \alice _ -> do
+      alice #$> ("/smp smp://2345-w==@smp2.example.im;smp://3456-w==@smp3.example.im:5224", id, "ok")
+      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im, smp://3456-w==@smp3.example.im:5224")
+
+      alice ##> "/create user same_smp=on alisa"
+      showActiveUser alice "alisa"
+
+      alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im, smp://3456-w==@smp3.example.im:5224")
 
 testSetChatItemTTL :: IO ()
 testSetChatItemTTL =

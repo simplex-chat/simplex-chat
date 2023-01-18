@@ -3827,7 +3827,12 @@ chatCommandP =
   choice
     [ "/mute " *> ((`ShowMessages` False) <$> chatNameP'),
       "/unmute " *> ((`ShowMessages` True) <$> chatNameP'),
-      "/create user " *> (CreateActiveUser <$> userProfile <*> (A.space *> "same_smp=" *> onOffP <|> pure False)),
+      "/create user"
+        *> ( do
+               sameSmp <- (A.space *> "same_smp=" *> onOffP) <|> pure False
+               uProfile <- A.space *> userProfile
+               pure $ CreateActiveUser uProfile sameSmp
+           ),
       "/users" $> ListUsers,
       "/_user " *> (APISetActiveUser <$> A.decimal),
       ("/user " <|> "/u ") *> (SetActiveUser <$> displayName),
