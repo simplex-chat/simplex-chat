@@ -29,45 +29,55 @@ struct UserPicker: View {
             Spacer().frame(height: 1)
             VStack(spacing: 0) {
                 ScrollView {
-                    VStack(spacing: 0) {
-                        ForEach(Array(chatModel.users.enumerated()), id: \.0) { i, userInfo in
-                            Button(action: {
-                                if !userInfo.user.activeUser {
-                                    changeActiveUser(toUser: userInfo)
-                                }
-                            }, label: {
-                                HStack(spacing: 0) {
-                                    ProfileImage(imageStr: userInfo.user.image)
+                    ScrollViewReader { sp in
+                        VStack(spacing: 0) {
+                            ForEach(Array(chatModel.users.enumerated()), id: \.0) { i, userInfo in
+                                Button(action: {
+                                    if !userInfo.user.activeUser {
+                                        changeActiveUser(toUser: userInfo)
+                                    }
+                                }, label: {
+                                    HStack(spacing: 0) {
+                                        ProfileImage(imageStr: userInfo.user.image)
                                         .frame(width: 44, height: 44)
                                         .padding(.trailing, 12)
-                                    Text(userInfo.user.chatViewName)
+                                        Text(userInfo.user.chatViewName)
                                         .fontWeight(i == 0 ? .medium : .regular)
                                         .foregroundColor(.primary)
                                         .overlay(DetermineWidth())
-                                    Spacer()
-                                    if i == 0 {
-                                        Image(systemName: "checkmark")
-                                    } else if userInfo.unreadCount > 0 {
-                                        unreadCounter(userInfo.unreadCount)
+                                        Spacer()
+                                        if i == 0 {
+                                            Image(systemName: "checkmark")
+                                        } else if userInfo.unreadCount > 0 {
+                                            unreadCounter(userInfo.unreadCount)
+                                        }
                                     }
+                                    .padding(.trailing)
+                                    .padding([.leading, .vertical], 12)
+                                })
+                                .buttonStyle(PressedButtonStyle(defaultColor: fillColor, pressedColor: Color(uiColor: .secondarySystemFill)))
+                                if i < chatModel.users.count - 1 {
+                                    Divider()
                                 }
-                                .padding(.trailing)
-                                .padding([.leading, .vertical], 12)
-                            })
-                            .buttonStyle(PressedButtonStyle(defaultColor: fillColor, pressedColor: Color(uiColor: .secondarySystemFill)))
-                            if i < chatModel.users.count - 1 {
-                                Divider()
                             }
                         }
-                    }
-                    .overlay {
-                        GeometryReader { geo -> Color in
-                            DispatchQueue.main.async {
-                                scrollViewContentSize = geo.size
-                                let layoutFrame = UIApplication.shared.windows[0].safeAreaLayoutGuide.layoutFrame
-                                disableScrolling = scrollViewContentSize.height + menuButtonHeight * 2 + 10 < layoutFrame.height
+                        .overlay {
+                            GeometryReader { geo -> Color in
+                                DispatchQueue.main.async {
+                                    scrollViewContentSize = geo.size
+                                    let scenes = UIApplication.shared.connectedScenes
+                                    if let windowScene = scenes.first as? UIWindowScene {
+                                        let layoutFrame = windowScene.windows[0].safeAreaLayoutGuide.layoutFrame
+                                        disableScrolling = scrollViewContentSize.height + menuButtonHeight * 2 + 10 < layoutFrame.height
+                                    }
+                                }
+                                return Color.clear
                             }
-                            return Color.clear
+                        }
+                        .onChange(of: userPickerVisible) { visible in
+                            if visible {
+                                sp.scrollTo(0)
+                            }
                         }
                     }
                 }
@@ -108,8 +118,9 @@ struct UserPicker: View {
 
     private func reloadCurrentUser() {
         if let updatedUser = chatModel.currentUser, let index = chatModel.users.firstIndex(where: { $0.user.userId == updatedUser.userId }) {
-            let removed = chatModel.users.remove(at: index)
-            chatModel.users.insert(UserInfo(user: updatedUser, unreadCount: removed.unreadCount), at: 0)
+            var users = chatModel.users
+            users[index] = UserInfo(user: updatedUser, unreadCount: users[index].unreadCount)
+            chatModel.updateUsers(users)
         }
     }
 
@@ -117,16 +128,16 @@ struct UserPicker: View {
         Task {
             do {
                 let activeUser = try apiSetActiveUser(toUser.user.userId)
-                let oldActiveIndex = chatModel.users.firstIndex(where: { $0.user.userId == chatModel.currentUser?.userId })!
-                var oldActive = chatModel.users[oldActiveIndex]
+                var users = chatModel.users
+                let oldActiveIndex = users.firstIndex(where: { $0.user.userId == chatModel.currentUser?.userId })!
+                var oldActive = users[oldActiveIndex]
                 oldActive.user.activeUser = false
-                chatModel.users[oldActiveIndex] = oldActive
+                users[oldActiveIndex] = oldActive
 
                 chatModel.currentUser = activeUser
-                let currentActiveIndex = chatModel.users.firstIndex(where: { $0.user.userId == activeUser.userId })!
-                let removed = chatModel.users.remove(at: currentActiveIndex)
-                chatModel.users.insert(UserInfo(user: activeUser, unreadCount: removed.unreadCount), at: 0)
-                chatModel.users = chatModel.users.map { $0 }
+                let currentActiveIndex = users.firstIndex(where: { $0.user.userId == activeUser.userId })!
+                users[currentActiveIndex] = UserInfo(user: activeUser, unreadCount: users[currentActiveIndex].unreadCount)
+                chatModel.updateUsers(users)
                 try getUserChatData(chatModel)
                 userPickerVisible = false
             } catch {
@@ -137,7 +148,7 @@ struct UserPicker: View {
 
     private func reloadUsers() {
         Task {
-            chatModel.users = listUsers().sorted { one, two -> Bool in one.user.activeUser }
+            chatModel.updateUsers(listUsers())
         }
     }
 
@@ -171,7 +182,7 @@ func unreadCounter(_ unread: Int64) -> some View {
 struct UserPicker_Previews: PreviewProvider {
     static var previews: some View {
         let m = ChatModel()
-        m.users = [UserInfo.sampleData, UserInfo.sampleData]
+        m.updateUsers([UserInfo.sampleData, UserInfo.sampleData])
         return UserPicker(
             showSettings: Binding.constant(false),
             userPickerVisible: Binding.constant(true)

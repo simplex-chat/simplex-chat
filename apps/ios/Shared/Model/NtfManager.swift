@@ -38,6 +38,14 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         let chatModel = ChatModel.shared
         let action = response.actionIdentifier
         logger.debug("NtfManager.userNotificationCenter: didReceive: action \(action), categoryIdentifier \(content.categoryIdentifier)")
+        let userId = content.userInfo["userId"] as? Int64
+        if let userId = userId {
+            do {
+                _ = try apiSetActiveUser(userId)
+            } catch {
+                logger.error("Unable to change active user: \(error.localizedDescription)")
+            }
+        }
         if content.categoryIdentifier == ntfCategoryContactRequest && action == ntfActionAcceptContact,
            let chatId = content.userInfo["chatId"] as? String {
             if case let .contactRequest(contactRequest) = chatModel.getChat(chatId)?.chatInfo {
@@ -46,8 +54,8 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
                 chatModel.ntfContactRequest = chatId
             }
         } else if let (chatId, ntfAction) = ntfCallAction(content, action) {
-            if let invitation = chatModel.callInvitations.removeValue(forKey: chatId) {
-                CallController.shared.callAction(invitation: invitation, action: ntfAction)
+            if let userId = userId, let invitation = chatModel.callInvitations.removeValue(forKey: chatId) {
+                CallController.shared.callAction(invitation: (userId, invitation), action: ntfAction)
             } else {
                 chatModel.ntfCallInvitationAction = (chatId, ntfAction)
             }
@@ -189,26 +197,26 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         center.delegate = self
     }
 
-    func notifyContactRequest(_ contactRequest: UserContactRequest) {
+    func notifyContactRequest(_ user: User, _ contactRequest: UserContactRequest) {
         logger.debug("NtfManager.notifyContactRequest")
-        addNotification(createContactRequestNtf(contactRequest))
+        addNotification(createContactRequestNtf(user, contactRequest))
     }
 
-    func notifyContactConnected(_ contact: Contact) {
+    func notifyContactConnected(_ user: User, _ contact: Contact) {
         logger.debug("NtfManager.notifyContactConnected")
-        addNotification(createContactConnectedNtf(contact))
+        addNotification(createContactConnectedNtf(user, contact))
     }
 
-    func notifyMessageReceived(_ cInfo: ChatInfo, _ cItem: ChatItem) {
+    func notifyMessageReceived(_ user: User, _ cInfo: ChatInfo, _ cItem: ChatItem) {
         logger.debug("NtfManager.notifyMessageReceived")
         if cInfo.ntfsEnabled {
-            addNotification(createMessageReceivedNtf(cInfo, cItem))
+            addNotification(createMessageReceivedNtf(user, cInfo, cItem))
         }
     }
 
-    func notifyCallInvitation(_ invitation: RcvCallInvitation) {
+    func notifyCallInvitation(_ user: User, _ invitation: RcvCallInvitation) {
         logger.debug("NtfManager.notifyCallInvitation")
-        addNotification(createCallInvitationNtf(invitation))
+        addNotification(createCallInvitationNtf(user, invitation))
     }
 
     func setNtfBadgeCount(_ count: Int) {

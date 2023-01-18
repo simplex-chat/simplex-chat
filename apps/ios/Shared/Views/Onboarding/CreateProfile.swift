@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct CreateProfile: View {
     @EnvironmentObject var m: ChatModel
+    @Environment(\.presentationMode) var presentationMode: Binding<PresentationMode>
     @State private var displayName: String = ""
     @State private var fullName: String = ""
     @FocusState private var focusDisplayName
@@ -97,8 +98,12 @@ struct CreateProfile: View {
         do {
             m.currentUser = try apiCreateActiveUser(profile)
             try startChat()
-            withAnimation { m.onboardingStage = .step3_SetNotificationsMode }
-
+            if m.users.count == 1 {
+                withAnimation { m.onboardingStage = .step3_SetNotificationsMode }
+            } else {
+                presentationMode.wrappedValue.dismiss()
+                try getUserChatData(m)
+            }
         } catch {
             fatalError("Failed to create user or start chat: \(responseError(error))")
         }

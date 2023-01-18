@@ -63,7 +63,7 @@ struct CICallItemView: View {
         if case let .direct(contact) = chatInfo {
             Button {
                 if let invitation = m.callInvitations[contact.id] {
-                    CallController.shared.answerCall(invitation: invitation)
+                    CallController.shared.answerCall(invitation: (m.currentUser!.userId, invitation)) // LALAL: wrong
                     logger.debug("acceptCallButton call answered")
                 } else {
                     AlertManager.shared.showAlertMsg(title: "Call already ended!")

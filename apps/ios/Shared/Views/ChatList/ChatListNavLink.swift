@@ -416,9 +416,9 @@ struct ErrorAlert {
 
 func getErrorAlert(_ error: Error, _ title: LocalizedStringKey) -> ErrorAlert {
     switch error as? ChatResponse {
-    case let .chatCmdError(.errorAgent(.BROKER(addr, .TIMEOUT))):
+    case let .chatCmdError(_, .errorAgent(.BROKER(addr, .TIMEOUT))):
         return ErrorAlert(title: "Connection timeout", message: "Please check your network connection with \(serverHostname(addr)) and try again.")
-    case let .chatCmdError(.errorAgent(.BROKER(addr, .NETWORK))):
+    case let .chatCmdError(_, .errorAgent(.BROKER(addr, .NETWORK))):
         return ErrorAlert(title: "Connection error", message: "Please check your network connection with \(serverHostname(addr)) and try again.")
     default:
         return ErrorAlert(title: title, message: "Error: \(responseError(error))")
