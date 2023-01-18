@@ -292,18 +292,18 @@ processChatCommand = \case
     pure $ CRActiveUser user
   SetActiveUser uName -> withUserName uName APISetActiveUser
   APIDeleteUser userId -> do
-    user <- withStore $ \db -> getUser db userId
+    user <- withStore (`getUser` userId)
     when (activeUser user) $ throwChatError (CECantDeleteActiveUser userId)
     users <- withStore' getUsers
     -- shouldn't happen - last user should be active
     when (length users == 1) $ throwChatError (CECantDeleteLastUser userId)
-    filesInfo <- withStore' $ \db -> getUserFileInfo db user
+    filesInfo <- withStore' (`getUserFileInfo` user)
     withChatLock "deleteUser" . procCmd $ do
       forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo False
-      withAgent $ \a -> deleteUser a (aUserId user)
-      withStore' $ \db -> deleteUserRecord db user
+      withAgent (`deleteUser` aUserId user)
+      withStore' (`deleteUserRecord` user)
       setActive ActiveNone
-      pure $ CRCmdOk Nothing
+      ok_
   DeleteUser uName -> withUserName uName APIDeleteUser
   StartChat subConns enableExpireCIs -> withUser' $ \_ ->
     asks agentAsync >>= readTVarIO >>= \case
