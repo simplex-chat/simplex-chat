@@ -15,6 +15,9 @@ let jsonEncoder = getJSONEncoder()
 public enum ChatCommand {
     case showActiveUser
     case createActiveUser(profile: Profile)
+    case listUsers
+    case apiSetActiveUser(userId: Int64)
+    case apiDeleteUser(userId: Int64)
     case startChat(subscribe: Bool, expire: Bool)
     case apiStopChat
     case apiActivateChat
@@ -96,6 +99,9 @@ public enum ChatCommand {
             switch self {
             case .showActiveUser: return "/u"
             case let .createActiveUser(profile): return "/create user \(profile.displayName) \(profile.fullName)"
+            case .listUsers: return "/users"
+            case let .apiSetActiveUser(userId): return "/_user \(userId)"
+            case let .apiDeleteUser(userId): return "/_delete user \(userId)"
             case let .startChat(subscribe, expire): return "/_start subscribe=\(onOff(subscribe)) expire=\(onOff(expire))"
             case .apiStopChat: return "/_stop"
             case .apiActivateChat: return "/_app activate"
@@ -184,6 +190,9 @@ public enum ChatCommand {
             switch self {
             case .showActiveUser: return "showActiveUser"
             case .createActiveUser: return "createActiveUser"
+            case .listUsers: return "listUsers"
+            case .apiSetActiveUser: return "apiSetActiveUser"
+            case .apiDeleteUser: return "apiDeleteUser"
             case .startChat: return "startChat"
             case .apiStopChat: return "apiStopChat"
             case .apiActivateChat: return "apiActivateChat"
@@ -302,6 +311,7 @@ struct APIResponse: Decodable {
 public enum ChatResponse: Decodable, Error {
     case response(type: String, json: String)
     case activeUser(user: User)
+    case usersList(users: [UserInfo])
     case chatStarted
     case chatRunning
     case chatStopped
@@ -408,6 +418,7 @@ public enum ChatResponse: Decodable, Error {
             switch self {
             case let .response(type, _): return "* \(type)"
             case .activeUser: return "activeUser"
+            case .usersList: return "usersList"
             case .chatStarted: return "chatStarted"
             case .chatRunning: return "chatRunning"
             case .chatStopped: return "chatStopped"
@@ -514,6 +525,7 @@ public enum ChatResponse: Decodable, Error {
             switch self {
             case let .response(_, json): return json
             case let .activeUser(user): return String(describing: user)
+            case let .usersList(users): return String(describing: users)
             case .chatStarted: return noDetails
             case .chatRunning: return noDetails
             case .chatStopped: return noDetails

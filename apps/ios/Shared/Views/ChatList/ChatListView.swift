@@ -11,25 +11,46 @@ import SimpleXChat
 
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
-    // not really used in this view
     @State private var showSettings = false
     @State private var searchText = ""
     @State private var showAddChat = false
+    @State var userPickerVisible = false
+    @State var selectedView: Int? = nil
 
     var body: some View {
-        NavigationView {
-            VStack {
-                if chatModel.chats.isEmpty {
-                    onboardingButtons()
-                }
-                if chatModel.chats.count > 8 {
-                    chatList.searchable(text: $searchText)
-                } else {
-                    chatList
+        ZStack(alignment: .topLeading) {
+            NavigationView {
+                VStack {
+                    if chatModel.chats.isEmpty {
+                        onboardingButtons()
+                    }
+                    if chatModel.chats.count > 8 {
+                        chatList.searchable(text: $searchText)
+                    } else {
+                        chatList
+                    }
+                    NavigationLink(destination: UserProfilesView().navigationTitle("Profiles"), tag: 0, selection: $selectedView) {
+                        EmptyView()
+                    }
                 }
             }
+            .navigationViewStyle(.stack)
+            if userPickerVisible {
+                Rectangle().fill(.white.opacity(0.001)).onTapGesture {
+                    withAnimation {
+                        userPickerVisible.toggle()
+                    }
+                }
+            }
+            UserPicker(
+                showSettings: $showSettings,
+                userPickerVisible: $userPickerVisible,
+                manageUsers: {
+                    selectedView = 0
+                    userPickerVisible = false
+                }
+            )
         }
-        .navigationViewStyle(.stack)
     }
 
     var chatList: some View {
@@ -48,13 +69,35 @@ struct ChatListView: View {
         }
         .onChange(of: chatModel.appOpenUrl) { _ in connectViaUrl() }
         .onAppear() { connectViaUrl() }
+        .onDisappear() { withAnimation { userPickerVisible = false } }
         .offset(x: -8)
         .listStyle(.plain)
         .navigationTitle("Your chats")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                SettingsButton()
+                Button {
+                    withAnimation {
+                        userPickerVisible.toggle()
+                    }
+                } label: {
+                    let user = chatModel.currentUser ?? User.sampleData
+                    let color = Color(uiColor: .tertiarySystemGroupedBackground)
+                    HStack(spacing: 0) {
+                        ProfileImage(imageStr: user.image, color: color)
+                            .frame(width: 32, height: 32)
+                            .padding(.trailing, 6)
+                            .padding(.vertical, 6)
+                        let unread = chatModel.users
+                            .filter { !$0.user.activeUser }
+                            .reduce(0, {cnt, u in cnt + u.unreadCount})
+                        if unread > 0 {
+                            unreadCounter(unread)
+                                .padding(.leading, -12)
+                                .padding(.top, -16)
+                        }
+                    }
+                }
             }
             ToolbarItem(placement: .principal) {
                 if (chatModel.incognito) {
@@ -74,6 +117,9 @@ struct ChatListView: View {
                 case .none: EmptyView()
                 }
             }
+        }
+        .sheet(isPresented: $showSettings) {
+            SettingsView(showSettings: $showSettings)
         }
         .background(
             NavigationLink(

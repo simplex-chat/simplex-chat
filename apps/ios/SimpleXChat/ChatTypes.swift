@@ -9,18 +9,20 @@
 import Foundation
 import SwiftUI
 
-public struct User: Decodable, NamedChat {
+public struct User: Decodable, NamedChat, Identifiable {
     public var userId: Int64
     var userContactId: Int64
     var localDisplayName: ContactName
     public var profile: LocalProfile
     public var fullPreferences: FullPreferences
-    var activeUser: Bool
+    public var activeUser: Bool
 
     public var displayName: String { get { profile.displayName } }
     public var fullName: String { get { profile.fullName } }
     public var image: String? { get { profile.image } }
     public var localAlias: String { get { "" } }
+
+    public var id: Int64 { userId }
 
     public static let sampleData = User(
         userId: 1,
@@ -29,6 +31,21 @@ public struct User: Decodable, NamedChat {
         profile: LocalProfile.sampleData,
         fullPreferences: FullPreferences.sampleData,
         activeUser: true
+    )
+}
+
+public struct UserInfo: Decodable {
+    public var user: User
+    public var unreadCount: Int64
+
+    public init(user: User, unreadCount: Int64) {
+        self.user = user
+        self.unreadCount = unreadCount
+    }
+
+    public static let sampleData = UserInfo(
+        user: User.sampleData,
+        unreadCount: 1
     )
 }
 
