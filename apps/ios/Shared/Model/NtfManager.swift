@@ -28,7 +28,6 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     private var granted = false
     private var prevNtfTime: Dictionary<ChatId, Date> = [:]
 
-
     // Handle notification when app is in background
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 didReceive response: UNNotificationResponse,
@@ -40,11 +39,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         logger.debug("NtfManager.userNotificationCenter: didReceive: action \(action), categoryIdentifier \(content.categoryIdentifier)")
         if let userId = content.userInfo["userId"] as? Int64,
            userId != chatModel.currentUser?.userId {
-            do {
-                _ = try apiSetActiveUser(userId)
-            } catch {
-                logger.error("Unable to change active user: \(error.localizedDescription)")
-            }
+            chatModel.changeActiveUser(userId)
         }
         if content.categoryIdentifier == ntfCategoryContactRequest && action == ntfActionAcceptContact,
            let chatId = content.userInfo["chatId"] as? String {

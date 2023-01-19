@@ -34,7 +34,8 @@ struct UserPicker: View {
                             ForEach(Array(chatModel.users.enumerated()), id: \.0) { i, userInfo in
                                 Button(action: {
                                     if !userInfo.user.activeUser {
-                                        changeActiveUser(toUser: userInfo)
+                                        chatModel.changeActiveUser(userInfo.user.userId)
+                                        userPickerVisible = false
                                     }
                                 }, label: {
                                     HStack(spacing: 0) {
@@ -121,28 +122,6 @@ struct UserPicker: View {
             var users = chatModel.users
             users[index] = UserInfo(user: updatedUser, unreadCount: users[index].unreadCount)
             chatModel.updateUsers(users)
-        }
-    }
-
-    private func changeActiveUser(toUser: UserInfo) {
-        Task {
-            do {
-                let activeUser = try apiSetActiveUser(toUser.user.userId)
-                var users = chatModel.users
-                let oldActiveIndex = users.firstIndex(where: { $0.user.userId == chatModel.currentUser?.userId })!
-                var oldActive = users[oldActiveIndex]
-                oldActive.user.activeUser = false
-                users[oldActiveIndex] = oldActive
-
-                chatModel.currentUser = activeUser
-                let currentActiveIndex = users.firstIndex(where: { $0.user.userId == activeUser.userId })!
-                users[currentActiveIndex] = UserInfo(user: activeUser, unreadCount: users[currentActiveIndex].unreadCount)
-                chatModel.updateUsers(users)
-                try getUserChatData(chatModel)
-                userPickerVisible = false
-            } catch {
-                logger.error("Unable to set active user: \(error.localizedDescription)")
-            }
         }
     }
 
