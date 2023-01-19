@@ -26,7 +26,6 @@ class CallManager {
         return false
     }
 
-
     func answerIncomingCall(callUUID: UUID) -> Bool {
         if let invitation = getCallInvitation(callUUID) {
             answerIncomingCall(invitation: invitation)
