@@ -756,7 +756,7 @@ processChatCommand = \case
       rcvCallInvitation (contactId, callTs, peerCallType, sharedKey) = runExceptT . withStore $ \db -> do
         user <- getUserByContactId db contactId
         contact <- getContact db user contactId
-        pure RcvCallInvitation {contact, callType = peerCallType, sharedKey, callTs}
+        pure RcvCallInvitation {user, contact, callType = peerCallType, sharedKey, callTs}
   APICallStatus contactId receivedStatus ->
     withCurrentCall contactId $ \user ct call ->
       updateCallItemStatus user ct call receivedStatus Nothing $> Just call
@@ -3049,7 +3049,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       withStore' $ \db -> createCall db user call' $ chatItemTs' ci
       call_ <- atomically (TM.lookupInsert contactId call' calls)
       forM_ call_ $ \call -> updateCallItemStatus user ct call WCSDisconnected Nothing
-      toView $ CRCallInvitation user (RcvCallInvitation {contact = ct, callType, sharedKey, callTs = chatItemTs' ci})
+      toView $ CRCallInvitation (RcvCallInvitation {user, contact = ct, callType, sharedKey, callTs = chatItemTs' ci})
       toView $ CRNewChatItem user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
       where
         saveCallItem status = saveRcvChatItem user (CDDirectRcv ct) msg msgMeta (CIRcvCall status 0)
