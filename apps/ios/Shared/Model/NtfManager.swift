@@ -39,7 +39,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         let action = response.actionIdentifier
         logger.debug("NtfManager.userNotificationCenter: didReceive: action \(action), categoryIdentifier \(content.categoryIdentifier)")
         let userId = content.userInfo["userId"] as? Int64
-        if let userId = userId {
+        if let userId = userId, userId != chatModel.currentUser?.userId {
             do {
                 _ = try apiSetActiveUser(userId)
             } catch {
