@@ -410,11 +410,8 @@ final class ChatModel: ObservableObject {
     }
 
     private func changeUnreadCounter(user: User, by: Int) {
-        for i in 0..<users.count {
-            let u = users[i]
-            if u.user.id == user.id {
-                users[i].unreadCount += Int64(by)
-            }
+        if let i = users.firstIndex(where: { $0.user.id == user.id }) {
+            users[i].unreadCount += Int64(by)
         }
     }
 
