@@ -530,104 +530,108 @@ public enum ChatResponse: Decodable, Error {
             case .chatRunning: return noDetails
             case .chatStopped: return noDetails
             case .chatSuspended: return noDetails
-            case let .apiChats(_, chats): return String(describing: chats)
-            case let .apiChat(_, chat): return String(describing: chat)
-            case let .userSMPServers(_, smpServers, presetServers): return "smpServers: \(String(describing: smpServers))\npresetServers: \(String(describing: presetServers))"
-            case let .smpTestResult(_, smpTestFailure): return String(describing: smpTestFailure)
-            case let .chatItemTTL(_, chatItemTTL): return String(describing: chatItemTTL)
+            case let .apiChats(u, chats): return withUser(u, String(describing: chats))
+            case let .apiChat(u, chat): return withUser(u, String(describing: chat))
+            case let .userSMPServers(u, smpServers, presetServers): return withUser(u, "smpServers: \(String(describing: smpServers))\npresetServers: \(String(describing: presetServers))")
+            case let .smpTestResult(u, smpTestFailure): return withUser(u, String(describing: smpTestFailure))
+            case let .chatItemTTL(u, chatItemTTL): return withUser(u, String(describing: chatItemTTL))
             case let .networkConfig(networkConfig): return String(describing: networkConfig)
-            case let .contactInfo(_, contact, connectionStats, customUserProfile): return "contact: \(String(describing: contact))\nconnectionStats: \(String(describing: connectionStats))\ncustomUserProfile: \(String(describing: customUserProfile))"
-            case let .groupMemberInfo(_, groupInfo, member, connectionStats_): return "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionStats_: \(String(describing: connectionStats_)))"
-            case let .contactCode(_, contact, connectionCode): return "contact: \(String(describing: contact))\nconnectionCode: \(connectionCode)"
-            case let .groupMemberCode(_, groupInfo, member, connectionCode): return "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionCode: \(connectionCode)"
-            case let .connectionVerified(_, verified, expectedCode): return "verified: \(verified)\nconnectionCode: \(expectedCode)"
-            case let .invitation(_, connReqInvitation): return connReqInvitation
+            case let .contactInfo(u, contact, connectionStats, customUserProfile): return withUser(u, "contact: \(String(describing: contact))\nconnectionStats: \(String(describing: connectionStats))\ncustomUserProfile: \(String(describing: customUserProfile))")
+            case let .groupMemberInfo(u, groupInfo, member, connectionStats_): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionStats_: \(String(describing: connectionStats_)))")
+            case let .contactCode(u, contact, connectionCode): return withUser(u, "contact: \(String(describing: contact))\nconnectionCode: \(connectionCode)")
+            case let .groupMemberCode(u, groupInfo, member, connectionCode): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionCode: \(connectionCode)")
+            case let .connectionVerified(u, verified, expectedCode): return withUser(u, "verified: \(verified)\nconnectionCode: \(expectedCode)")
+            case let .invitation(u, connReqInvitation): return withUser(u, connReqInvitation)
             case .sentConfirmation: return noDetails
             case .sentInvitation: return noDetails
-            case let .contactAlreadyExists(_, contact): return String(describing: contact)
-            case let .contactDeleted(_, contact): return String(describing: contact)
-            case let .chatCleared(_, chatInfo): return String(describing: chatInfo)
+            case let .contactAlreadyExists(u, contact): return withUser(u, String(describing: contact))
+            case let .contactDeleted(u, contact): return withUser(u, String(describing: contact))
+            case let .chatCleared(u, chatInfo): return withUser(u, String(describing: chatInfo))
             case .userProfileNoChange: return noDetails
-            case let .userProfileUpdated(_, _, toProfile): return String(describing: toProfile)
-            case let .contactAliasUpdated(_, toContact): return String(describing: toContact)
-            case let .connectionAliasUpdated(_, toConnection): return String(describing: toConnection)
-            case let .contactPrefsUpdated(_, fromContact, toContact): return "fromContact: \(String(describing: fromContact))\ntoContact: \(String(describing: toContact))"
-            case let .userContactLink(_, contactLink): return contactLink.responseDetails
-            case let .userContactLinkUpdated(_, contactLink): return contactLink.responseDetails
-            case let .userContactLinkCreated(_, connReq): return connReq
+            case let .userProfileUpdated(u, _, toProfile): return withUser(u, String(describing: toProfile))
+            case let .contactAliasUpdated(u, toContact): return withUser(u, String(describing: toContact))
+            case let .connectionAliasUpdated(u, toConnection): return withUser(u, String(describing: toConnection))
+            case let .contactPrefsUpdated(u, fromContact, toContact): return withUser(u, "fromContact: \(String(describing: fromContact))\ntoContact: \(String(describing: toContact))")
+            case let .userContactLink(u, contactLink): return withUser(u, contactLink.responseDetails)
+            case let .userContactLinkUpdated(u, contactLink): return withUser(u, contactLink.responseDetails)
+            case let .userContactLinkCreated(u, connReq): return withUser(u, connReq)
             case .userContactLinkDeleted: return noDetails
-            case let .contactConnected(_, contact, _): return String(describing: contact)
-            case let .contactConnecting(_, contact): return String(describing: contact)
-            case let .receivedContactRequest(_, contactRequest): return String(describing: contactRequest)
-            case let .acceptingContactRequest(_, contact): return String(describing: contact)
+            case let .contactConnected(u, contact, _): return withUser(u, String(describing: contact))
+            case let .contactConnecting(u, contact): return withUser(u, String(describing: contact))
+            case let .receivedContactRequest(u, contactRequest): return withUser(u, String(describing: contactRequest))
+            case let .acceptingContactRequest(u, contact): return withUser(u, String(describing: contact))
             case .contactRequestRejected: return noDetails
-            case let .contactUpdated(_, toContact): return String(describing: toContact)
-            case let .contactsSubscribed(_, server, contactRefs): return "server: \(server)\ncontacts:\n\(String(describing: contactRefs))"
-            case let .contactsDisconnected(_, server, contactRefs): return "server: \(server)\ncontacts:\n\(String(describing: contactRefs))"
-            case let .contactSubError(_, contact, chatError): return "contact:\n\(String(describing: contact))\nerror:\n\(String(describing: chatError))"
-            case let .contactSubSummary(_, contactSubscriptions): return String(describing: contactSubscriptions)
-            case let .groupSubscribed(_, groupInfo): return String(describing: groupInfo)
-            case let .memberSubErrors(_, memberSubErrors): return String(describing: memberSubErrors)
-            case let .groupEmpty(_, groupInfo): return String(describing: groupInfo)
+            case let .contactUpdated(u, toContact): return withUser(u, String(describing: toContact))
+            case let .contactsSubscribed(u, server, contactRefs): return withUser(u, "server: \(server)\ncontacts:\n\(String(describing: contactRefs))")
+            case let .contactsDisconnected(u, server, contactRefs): return withUser(u, "server: \(server)\ncontacts:\n\(String(describing: contactRefs))")
+            case let .contactSubError(u, contact, chatError): return withUser(u, "contact:\n\(String(describing: contact))\nerror:\n\(String(describing: chatError))")
+            case let .contactSubSummary(u, contactSubscriptions): return withUser(u, String(describing: contactSubscriptions))
+            case let .groupSubscribed(u, groupInfo): return withUser(u, String(describing: groupInfo))
+            case let .memberSubErrors(u, memberSubErrors): return withUser(u, String(describing: memberSubErrors))
+            case let .groupEmpty(u, groupInfo): return withUser(u, String(describing: groupInfo))
             case .userContactLinkSubscribed: return noDetails
-            case let .newChatItem(_, chatItem): return String(describing: chatItem)
-            case let .chatItemStatusUpdated(_, chatItem): return String(describing: chatItem)
-            case let .chatItemUpdated(_, chatItem): return String(describing: chatItem)
-            case let .chatItemDeleted(_, deletedChatItem, toChatItem, byUser): return "deletedChatItem:\n\(String(describing: deletedChatItem))\ntoChatItem:\n\(String(describing: toChatItem))\nbyUser: \(byUser)"
-            case let .contactsList(_, contacts): return String(describing: contacts)
-            case let .groupCreated(_, groupInfo): return String(describing: groupInfo)
-            case let .sentGroupInvitation(_, groupInfo, contact, member): return "groupInfo: \(groupInfo)\ncontact: \(contact)\nmember: \(member)"
-            case let .userAcceptedGroupSent(_, groupInfo, hostContact): return "groupInfo: \(groupInfo)\nhostContact: \(String(describing: hostContact))"
-            case let .userDeletedMember(_, groupInfo, member): return "groupInfo: \(groupInfo)\nmember: \(member)"
-            case let .leftMemberUser(_, groupInfo): return String(describing: groupInfo)
-            case let .groupMembers(_, group): return String(describing: group)
-            case let .receivedGroupInvitation(_, groupInfo, contact, memberRole): return "groupInfo: \(groupInfo)\ncontact: \(contact)\nmemberRole: \(memberRole)"
-            case let .groupDeletedUser(_, groupInfo): return String(describing: groupInfo)
-            case let .joinedGroupMemberConnecting(_, groupInfo, hostMember, member): return "groupInfo: \(groupInfo)\nhostMember: \(hostMember)\nmember: \(member)"
-            case let .memberRole(_, groupInfo, byMember, member, fromRole, toRole): return "groupInfo: \(groupInfo)\nbyMember: \(byMember)\nmember: \(member)\nfromRole: \(fromRole)\ntoRole: \(toRole)"
-            case let .memberRoleUser(_, groupInfo, member, fromRole, toRole): return "groupInfo: \(groupInfo)\nmember: \(member)\nfromRole: \(fromRole)\ntoRole: \(toRole)"
-            case let .deletedMemberUser(_, groupInfo, member): return "groupInfo: \(groupInfo)\nmember: \(member)"
-            case let .deletedMember(_, groupInfo, byMember, deletedMember): return "groupInfo: \(groupInfo)\nbyMember: \(byMember)\ndeletedMember: \(deletedMember)"
-            case let .leftMember(_, groupInfo, member): return "groupInfo: \(groupInfo)\nmember: \(member)"
-            case let .groupDeleted(_, groupInfo, member): return "groupInfo: \(groupInfo)\nmember: \(member)"
-            case let .contactsMerged(_, intoContact, mergedContact): return "intoContact: \(intoContact)\nmergedContact: \(mergedContact)"
-            case let .groupInvitation(_, groupInfo): return String(describing: groupInfo)
-            case let .userJoinedGroup(_, groupInfo): return String(describing: groupInfo)
-            case let .joinedGroupMember(_, groupInfo, member): return "groupInfo: \(groupInfo)\nmember: \(member)"
-            case let .connectedToGroupMember(_, groupInfo, member): return "groupInfo: \(groupInfo)\nmember: \(member)"
-            case let .groupRemoved(_, groupInfo): return String(describing: groupInfo)
-            case let .groupUpdated(_, toGroup): return String(describing: toGroup)
-            case let .groupLinkCreated(_, groupInfo, connReqContact): return "groupInfo: \(groupInfo)\nconnReqContact: \(connReqContact)"
-            case let .groupLink(_, groupInfo, connReqContact): return "groupInfo: \(groupInfo)\nconnReqContact: \(connReqContact)"
-            case let .groupLinkDeleted(_, groupInfo): return String(describing: groupInfo)
-            case let .rcvFileAccepted(_, chatItem): return String(describing: chatItem)
+            case let .newChatItem(u, chatItem): return withUser(u, String(describing: chatItem))
+            case let .chatItemStatusUpdated(u, chatItem): return withUser(u, String(describing: chatItem))
+            case let .chatItemUpdated(u, chatItem): return withUser(u, String(describing: chatItem))
+            case let .chatItemDeleted(u, deletedChatItem, toChatItem, byUser): return withUser(u, "deletedChatItem:\n\(String(describing: deletedChatItem))\ntoChatItem:\n\(String(describing: toChatItem))\nbyUser: \(byUser)")
+            case let .contactsList(u, contacts): return withUser(u, String(describing: contacts))
+            case let .groupCreated(u, groupInfo): return withUser(u, String(describing: groupInfo))
+            case let .sentGroupInvitation(u, groupInfo, contact, member): return withUser(u, "groupInfo: \(groupInfo)\ncontact: \(contact)\nmember: \(member)")
+            case let .userAcceptedGroupSent(u, groupInfo, hostContact): return withUser(u, "groupInfo: \(groupInfo)\nhostContact: \(String(describing: hostContact))")
+            case let .userDeletedMember(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
+            case let .leftMemberUser(u, groupInfo): return withUser(u, String(describing: groupInfo))
+            case let .groupMembers(u, group): return withUser(u, String(describing: group))
+            case let .receivedGroupInvitation(u, groupInfo, contact, memberRole): return withUser(u, "groupInfo: \(groupInfo)\ncontact: \(contact)\nmemberRole: \(memberRole)")
+            case let .groupDeletedUser(u, groupInfo): return withUser(u, String(describing: groupInfo))
+            case let .joinedGroupMemberConnecting(u, groupInfo, hostMember, member): return withUser(u, "groupInfo: \(groupInfo)\nhostMember: \(hostMember)\nmember: \(member)")
+            case let .memberRole(u, groupInfo, byMember, member, fromRole, toRole): return withUser(u, "groupInfo: \(groupInfo)\nbyMember: \(byMember)\nmember: \(member)\nfromRole: \(fromRole)\ntoRole: \(toRole)")
+            case let .memberRoleUser(u, groupInfo, member, fromRole, toRole): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)\nfromRole: \(fromRole)\ntoRole: \(toRole)")
+            case let .deletedMemberUser(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
+            case let .deletedMember(u, groupInfo, byMember, deletedMember): return withUser(u, "groupInfo: \(groupInfo)\nbyMember: \(byMember)\ndeletedMember: \(deletedMember)")
+            case let .leftMember(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
+            case let .groupDeleted(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
+            case let .contactsMerged(u, intoContact, mergedContact): return withUser(u, "intoContact: \(intoContact)\nmergedContact: \(mergedContact)")
+            case let .groupInvitation(u, groupInfo): return withUser(u, String(describing: groupInfo))
+            case let .userJoinedGroup(u, groupInfo): return withUser(u, String(describing: groupInfo))
+            case let .joinedGroupMember(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
+            case let .connectedToGroupMember(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
+            case let .groupRemoved(u, groupInfo): return withUser(u, String(describing: groupInfo))
+            case let .groupUpdated(u, toGroup): return withUser(u, String(describing: toGroup))
+            case let .groupLinkCreated(u, groupInfo, connReqContact): return withUser(u, "groupInfo: \(groupInfo)\nconnReqContact: \(connReqContact)")
+            case let .groupLink(u, groupInfo, connReqContact): return withUser(u, "groupInfo: \(groupInfo)\nconnReqContact: \(connReqContact)")
+            case let .groupLinkDeleted(u, groupInfo): return withUser(u, String(describing: groupInfo))
+            case let .rcvFileAccepted(u, chatItem): return withUser(u, String(describing: chatItem))
             case .rcvFileAcceptedSndCancelled: return noDetails
-            case let .rcvFileStart(_, chatItem): return String(describing: chatItem)
-            case let .rcvFileComplete(_, chatItem): return String(describing: chatItem)
-            case let .sndFileStart(_, chatItem, _): return String(describing: chatItem)
-            case let .sndFileComplete(_, chatItem, _): return String(describing: chatItem)
+            case let .rcvFileStart(u, chatItem): return withUser(u, String(describing: chatItem))
+            case let .rcvFileComplete(u, chatItem): return withUser(u, String(describing: chatItem))
+            case let .sndFileStart(u, chatItem, _): return withUser(u, String(describing: chatItem))
+            case let .sndFileComplete(u, chatItem, _): return withUser(u, String(describing: chatItem))
             case let .sndFileCancelled(chatItem, _): return String(describing: chatItem)
-            case let .sndFileRcvCancelled(_, chatItem, _): return String(describing: chatItem)
-            case let .sndGroupFileCancelled(_, chatItem, _, _): return String(describing: chatItem)
-            case let .callInvitation(_, inv): return String(describing: inv)
-            case let .callOffer(_, contact, callType, offer, sharedKey, askConfirmation): return "contact: \(contact.id)\ncallType: \(String(describing: callType))\nsharedKey: \(sharedKey ?? "")\naskConfirmation: \(askConfirmation)\noffer: \(String(describing: offer))"
-            case let .callAnswer(_, contact, answer): return "contact: \(contact.id)\nanswer: \(String(describing: answer))"
-            case let .callExtraInfo(_, contact, extraInfo): return "contact: \(contact.id)\nextraInfo: \(String(describing: extraInfo))"
-            case let .callEnded(_, contact): return "contact: \(contact.id)"
+            case let .sndFileRcvCancelled(u, chatItem, _): return withUser(u, String(describing: chatItem))
+            case let .sndGroupFileCancelled(u, chatItem, _, _): return withUser(u, String(describing: chatItem))
+            case let .callInvitation(u, inv): return withUser(u, String(describing: inv))
+            case let .callOffer(u, contact, callType, offer, sharedKey, askConfirmation): return withUser(u, "contact: \(contact.id)\ncallType: \(String(describing: callType))\nsharedKey: \(sharedKey ?? "")\naskConfirmation: \(askConfirmation)\noffer: \(String(describing: offer))")
+            case let .callAnswer(u, contact, answer): return withUser(u, "contact: \(contact.id)\nanswer: \(String(describing: answer))")
+            case let .callExtraInfo(u, contact, extraInfo): return withUser(u, "contact: \(contact.id)\nextraInfo: \(String(describing: extraInfo))")
+            case let .callEnded(u, contact): return withUser(u, "contact: \(contact.id)")
             case let .callInvitations(invs): return String(describing: invs)
             case let .ntfTokenStatus(status): return String(describing: status)
             case let .ntfToken(token, status, ntfMode): return "token: \(token)\nstatus: \(status.rawValue)\nntfMode: \(ntfMode.rawValue)"
-            case let .ntfMessages(_, connEntity, msgTs, ntfMessages): return "connEntity: \(String(describing: connEntity))\nmsgTs: \(String(describing: msgTs))\nntfMessages: \(String(describing: ntfMessages))"
-            case let .newContactConnection(_, connection): return String(describing: connection)
-            case let .contactConnectionDeleted(_, connection): return String(describing: connection)
+            case let .ntfMessages(u, connEntity, msgTs, ntfMessages): return withUser(u, "connEntity: \(String(describing: connEntity))\nmsgTs: \(String(describing: msgTs))\nntfMessages: \(String(describing: ntfMessages))")
+            case let .newContactConnection(u, connection): return withUser(u, String(describing: connection))
+            case let .contactConnectionDeleted(u, connection): return withUser(u, String(describing: connection))
             case .cmdOk: return noDetails
-            case let .chatCmdError(_, chatError): return String(describing: chatError)
-            case let .chatError(_, chatError): return String(describing: chatError)
+            case let .chatCmdError(u, chatError): return withUser(u, String(describing: chatError))
+            case let .chatError(u, chatError): return withUser(u, String(describing: chatError))
             }
         }
     }
 
     private var noDetails: String { get { "\(responseType): no details" } }
+
+    private func withUser(_ u: User?, _ s: String) -> String {
+        "userId: \(u?.userId ?? -1)\n\(s)"
+    }
 }
 
 public enum ChatPagination {
