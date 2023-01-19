@@ -81,7 +81,7 @@ struct DatabaseView: View {
             } header: {
                 Text("Messages")
             } footer: {
-                Text("This setting applies to messages in your current user profile \(m.currentUser?.displayName ?? "").")
+                Text("This setting applies to messages in your current chat profile **\(m.currentUser?.displayName ?? "")**.")
             }
 
             Section {
@@ -174,7 +174,7 @@ struct DatabaseView: View {
             }
 
             Section {
-                Button(m.users.count > 1 ? "Delete files for all user profiles" : "Delete all files", role: .destructive) {
+                Button(m.users.count > 1 ? "Delete files for all chat profiles" : "Delete all files", role: .destructive) {
                     alert = .deleteFilesAndMedia
                 }
                 .disabled(!stopped || appFilesCountAndSize?.0 == 0)

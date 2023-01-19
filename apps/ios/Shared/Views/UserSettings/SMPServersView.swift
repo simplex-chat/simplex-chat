@@ -60,7 +60,7 @@ struct SMPServersView: View {
             } header: {
                 Text("SMP servers")
             } footer: {
-                Text("The servers for new connections of your current profile \(m.currentUser?.displayName ?? "").")
+                Text("The servers for new connections of your current chat profile **\(m.currentUser?.displayName ?? "")**.")
                     .lineLimit(10)
             }
 
