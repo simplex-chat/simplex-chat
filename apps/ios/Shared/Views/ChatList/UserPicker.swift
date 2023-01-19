@@ -24,7 +24,7 @@ struct UserPicker: View {
     }
 
     var body: some View {
-        VStack { // .sorted({ first, _ in first.user.activeUser })
+        VStack {
             Spacer().frame(height: 1)
             VStack(spacing: 0) {
                 ScrollView {
