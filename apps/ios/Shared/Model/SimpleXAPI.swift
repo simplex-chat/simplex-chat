@@ -131,10 +131,12 @@ func apiCreateActiveUser(_ p: Profile) throws -> User {
     throw r
 }
 
-func listUsers() -> [UserInfo] {
+func listUsers() throws -> [UserInfo] {
     let r = chatSendCmdSync(.listUsers)
-    if case let .usersList(users) = r { return users }
-    return []
+    if case let .usersList(users) = r {
+        return users.sorted { $0.user.chatViewName.compare($1.user.chatViewName) == .orderedAscending }
+    }
+    throw r
 }
 
 func apiSetActiveUser(_ userId: Int64) throws -> User {
@@ -917,9 +919,9 @@ func startChat() throws {
     let m = ChatModel.shared
     try setNetworkConfig(getNetCfg())
     let justStarted = try apiStartChat()
-    m.updateUsers(listUsers())
+    m.users = try listUsers()
     if justStarted {
-        try getUserChatData(m)
+        try getUserChatData()
         NtfManager.shared.setNtfBadgeCount(m.totalUnreadCount())
         try refreshCallInvitations()
         (m.savedToken, m.tokenStatus, m.notificationMode) = apiGetNtfToken()
@@ -937,7 +939,19 @@ func startChat() throws {
     chatLastStartGroupDefault.set(Date.now)
 }
 
-func getUserChatData(_ m: ChatModel) throws {
+func changeActiveUser(_ toUserId: Int64) {
+    let m = ChatModel.shared
+    do {
+        m.currentUser = try apiSetActiveUser(toUserId)
+        m.users = try listUsers()
+        try getUserChatData()
+    } catch let error {
+        logger.error("Unable to set active user: \(responseError(error))")
+    }
+}
+
+func getUserChatData() throws {
+    let m = ChatModel.shared
     m.userAddress = try apiGetUserAddress()
     (m.userSMPServers, m.presetSMPServers) = try getUserSMPServers()
     m.chatItemTTL = try getChatItemTTL()
