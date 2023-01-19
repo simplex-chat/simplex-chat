@@ -197,7 +197,7 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
     ttyUser u ["sent file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
   CRRcvFileSubError u RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}} e ->
     ttyUser u ["received file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
-  CRCallInvitation u RcvCallInvitation {contact, callType, sharedKey} -> ttyUser u $ viewCallInvitation contact callType sharedKey
+  CRCallInvitation RcvCallInvitation {user, contact, callType, sharedKey} -> ttyUser user $ viewCallInvitation contact callType sharedKey
   CRCallOffer {user = u, contact, callType, offer, sharedKey} -> ttyUser u $ viewCallOffer contact callType offer sharedKey
   CRCallAnswer {user = u, contact, answer} -> ttyUser u $ viewCallAnswer contact answer
   CRCallExtraInfo {user = u, contact} -> ttyUser u ["call extra info from " <> ttyContact' contact]

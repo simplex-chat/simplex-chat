@@ -429,7 +429,7 @@ data ChatResponse
   | CRPendingSubSummary {user :: User, pendingSubscriptions :: [PendingSubStatus]}
   | CRSndFileSubError {user :: User, sndFileTransfer :: SndFileTransfer, chatError :: ChatError}
   | CRRcvFileSubError {user :: User, rcvFileTransfer :: RcvFileTransfer, chatError :: ChatError}
-  | CRCallInvitation {user :: User, callInvitation :: RcvCallInvitation}
+  | CRCallInvitation {callInvitation :: RcvCallInvitation}
   | CRCallOffer {user :: User, contact :: Contact, callType :: CallType, offer :: WebRTCSession, sharedKey :: Maybe C.Key, askConfirmation :: Bool}
   | CRCallAnswer {user :: User, contact :: Contact, answer :: WebRTCSession}
   | CRCallExtraInfo {user :: User, contact :: Contact, extraInfo :: WebRTCExtraInfo}
