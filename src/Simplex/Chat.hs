@@ -150,6 +150,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   inputQ <- newTBQueueIO tbqSize
   outputQ <- newTBQueueIO tbqSize
   notifyQ <- newTBQueueIO tbqSize
+  networkStatuses <- newTVarIO M.empty
   chatLock <- newEmptyTMVarIO
   sndFiles <- newTVarIO M.empty
   rcvFiles <- newTVarIO M.empty
@@ -162,7 +163,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   cleanupManagerAsync <- newTVarIO Nothing
   timedItemThreads <- atomically TM.empty
   showLiveItems <- newTVarIO False
-  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, incognitoMode, filesFolder, expireCIThreads, expireCIFlags, cleanupManagerAsync, timedItemThreads, showLiveItems}
+  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, networkStatuses, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, incognitoMode, filesFolder, expireCIThreads, expireCIFlags, cleanupManagerAsync, timedItemThreads, showLiveItems}
   where
     configServers :: DefaultAgentServers
     configServers =
@@ -349,8 +350,9 @@ processChatCommand = \case
   APIStorageEncryption cfg -> withStoreChanged $ sqlCipherExport cfg
   ExecChatStoreSQL query -> CRSQLResult <$> withStore' (`execSQL` query)
   ExecAgentStoreSQL query -> CRSQLResult <$> withAgent (`execAgentStoreSQL` query)
-  APIGetChats userId withPCC -> withUserId userId $ \user ->
-    CRApiChats user <$> withStore' (\db -> getChatPreviews db user withPCC)
+  APIGetChats userId withPCC -> withUserId userId $ \user -> do
+    nss <- readTVarIO =<< asks networkStatuses
+    CRApiChats user <$> withStore' (\db -> getChatPreviews db user nss withPCC)
   APIGetChat (ChatRef cType cId) pagination search -> withUser $ \user -> case cType of
     -- TODO optimize queries calculating ChatStats, currently they're disabled
     CTDirect -> do
@@ -1203,7 +1205,8 @@ processChatCommand = \case
     let mc = MCText $ safeDecodeUtf8 msg
     processChatCommand . APISendMessage (ChatRef CTGroup groupId) False $ ComposedMessage Nothing (Just quotedItemId) mc
   LastChats count_ -> withUser' $ \user -> do
-    chats <- withStore' $ \db -> getChatPreviews db user False
+    nss <- readTVarIO =<< asks networkStatuses
+    chats <- withStore' $ \db -> getChatPreviews db user nss False
     pure $ CRChats $ maybe id take count_ chats
   LastMessages (Just chatName) count search -> withUser $ \user -> do
     chatRef <- getChatRef user chatName

@@ -141,6 +141,7 @@ data Contact = Contact
     chatSettings :: ChatSettings,
     userPreferences :: Preferences,
     mergedPreferences :: ContactUserPreferences,
+    networkStatus :: NetworkStatus,
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     chatTs :: Maybe UTCTime
@@ -1941,3 +1942,15 @@ instance ToJSON ServerCfg where
 
 instance FromJSON ServerCfg where
   parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
+
+data NetworkStatus
+  = NSUnknown
+  | NSConnected
+  | NSDisconnected
+  -- | NSError {chatError :: ChatError} -- TODO resolve cyclic dependencies, Eq ChatError
+  |  NSError {chatError :: String}
+  deriving (Eq, Show, Generic)
+
+instance ToJSON NetworkStatus where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "NS"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "NS"

@@ -4,7 +4,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StrictData #-}
@@ -122,6 +121,7 @@ data ChatController = ChatController
     inputQ :: TBQueue String,
     outputQ :: TBQueue (Maybe CorrId, ChatResponse),
     notifyQ :: TBQueue Notification,
+    networkStatuses :: TMap ConnId (TVar NetworkStatus),
     sendNotification :: Notification -> IO (),
     chatLock :: Lock,
     sndFiles :: TVar (Map Int64 Handle),
@@ -678,3 +678,47 @@ unsetActive :: (MonadUnliftIO m, MonadReader ChatController m) => ActiveTo -> m 
 unsetActive a = asks activeTo >>= atomically . (`modifyTVar` unset)
   where
     unset a' = if a == a' then ActiveNone else a'
+
+-- data NetworkStatus
+--   = NSUnknown
+--   | NSConnected
+--   | NSDisconnected
+--   | NSError {chatError :: ChatError}
+--   deriving (Show, Generic)
+
+-- instance ToJSON NetworkStatus where
+--   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "NS"
+--   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "NS"
+
+-- data ContactNS = ContactNS
+--   { contact :: Contact,
+--     networkStatus :: NetworkStatus
+--   }
+--   deriving (Show, Generic)
+
+-- -- TODO flat
+-- instance ToJSON ContactNS where
+--   toJSON = J.genericToJSON J.defaultOptions
+--   toEncoding = J.genericToEncoding J.defaultOptions
+
+-- data GroupMemberNS = GroupMemberNS
+--   { groupMember :: GroupMember,
+--     networkStatus :: NetworkStatus
+--   }
+--   deriving (Show, Generic)
+
+-- -- TODO flat
+-- instance ToJSON GroupMemberNS where
+--   toJSON = J.genericToJSON J.defaultOptions
+--   toEncoding = J.genericToEncoding J.defaultOptions
+
+-- data UserContactLinkNS = UserContactLinkNS
+--   { contact :: UserContactLink,
+--     networkStatus :: NetworkStatus
+--   }
+--   deriving (Show, Generic)
+
+-- -- TODO flat
+-- instance ToJSON UserContactLinkNS where
+--   toJSON = J.genericToJSON J.defaultOptions
+--   toEncoding = J.genericToEncoding J.defaultOptions

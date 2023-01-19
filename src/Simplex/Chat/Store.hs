@@ -269,6 +269,8 @@ import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (sortBy, sortOn)
 import Data.List.NonEmpty (NonEmpty)
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, isNothing, listToMaybe, mapMaybe)
 import Data.Ord (Down (..))
 import Data.Text (Text)
@@ -665,7 +667,7 @@ createDirectContact db user@User {userId} activeConn@Connection {connId, localAl
   let profile = toLocalProfile profileId p localAlias
       userPreferences = emptyChatPrefs
       mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
-  pure $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt, updatedAt = createdAt, chatTs = Just createdAt}
+  pure $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, networkStatus = NSUnknown, createdAt, updatedAt = createdAt, chatTs = Just createdAt}
 
 createContact_ :: DB.Connection -> UserId -> Int64 -> Profile -> LocalAlias -> Maybe Int64 -> UTCTime -> Maybe UTCTime -> ExceptT StoreError IO (Text, ContactId, ProfileId)
 createContact_ db userId connId Profile {displayName, fullName, image, preferences} localAlias viaGroup currentTs chatTs =
@@ -891,13 +893,24 @@ updateContact_ db userId contactId displayName newName updatedAt = do
 
 type ContactRow = (ContactId, ProfileId, ContactName, Maybe Int64, ContactName, Text, Maybe ImageData, LocalAlias, Bool, Maybe Bool) :. (Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime)
 
+toContactNS :: User -> Map ConnId (TVar NetworkStatus) -> ContactRow :. ConnectionRow -> IO Contact
+toContactNS user networkStatuses (((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, localAlias, contactUsed, enableNtfs_) :. (preferences, userPreferences, createdAt, updatedAt, chatTs)) :. connRow) = do
+  let profile = LocalProfile {profileId, displayName, fullName, image, preferences, localAlias}
+      activeConn = toConnection connRow
+      chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_}
+      mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
+  networkStatus <- case M.lookup (aConnId activeConn) networkStatuses of
+    Nothing -> pure NSUnknown
+    Just nsVar -> readTVarIO nsVar
+  pure Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, networkStatus, createdAt, updatedAt, chatTs}
+
 toContact :: User -> ContactRow :. ConnectionRow -> Contact
 toContact user (((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, localAlias, contactUsed, enableNtfs_) :. (preferences, userPreferences, createdAt, updatedAt, chatTs)) :. connRow) =
   let profile = LocalProfile {profileId, displayName, fullName, image, preferences, localAlias}
       activeConn = toConnection connRow
       chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_}
       mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
-   in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs}
+   in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, networkStatus = NSUnknown, createdAt, updatedAt, chatTs}
 
 toContactOrError :: User -> ContactRow :. MaybeConnectionRow -> Either StoreError Contact
 toContactOrError user (((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, localAlias, contactUsed, enableNtfs_) :. (preferences, userPreferences, createdAt, updatedAt, chatTs)) :. connRow) =
@@ -906,7 +919,7 @@ toContactOrError user (((contactId, profileId, localDisplayName, viaGroup, displ
    in case toMaybeConnection connRow of
         Just activeConn ->
           let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
-           in Right Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs}
+           in Right Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, networkStatus = NSUnknown, createdAt, updatedAt, chatTs}
         _ -> Left $ SEContactNotReady localDisplayName
 
 getContactByName :: DB.Connection -> User -> ContactName -> ExceptT StoreError IO Contact
@@ -1333,7 +1346,7 @@ createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}
   contactId <- insertedRowId db
   activeConn <- createConnection_ db userId ConnContact (Just contactId) agentConnId Nothing (Just userContactLinkId) customUserProfileId 0 createdAt
   let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
-  pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile "", activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = createdAt, updatedAt = createdAt, chatTs = Just createdAt}
+  pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile "", activeConn, viaGroup = Nothing, contactUsed = False, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, networkStatus = NSUnknown, createdAt = createdAt, updatedAt = createdAt, chatTs = Just createdAt}
 
 getLiveSndFileTransfers :: DB.Connection -> User -> IO [SndFileTransfer]
 getLiveSndFileTransfers db User {userId} = do
@@ -1633,7 +1646,7 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
       let profile = LocalProfile {profileId, displayName, fullName, image, preferences, localAlias}
           chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_}
           mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
-       in Right Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs}
+       in Right Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, networkStatus = NSUnknown, createdAt, updatedAt, chatTs}
     toContact' _ _ _ = Left $ SEInternalError "referenced contact not found"
     getGroupAndMember_ :: Int64 -> Connection -> ExceptT StoreError IO (GroupInfo, GroupMember)
     getGroupAndMember_ groupMemberId c = ExceptT $ do
@@ -2552,7 +2565,7 @@ getViaGroupContact db user@User {userId} GroupMember {groupMemberId} =
           chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_}
           activeConn = toConnection connRow
           mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
-       in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs}
+       in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, networkStatus = NSUnknown, createdAt, updatedAt, chatTs}
 
 createSndDirectFileTransfer :: DB.Connection -> UserId -> Contact -> FilePath -> FileInvitation -> Maybe ConnId -> Integer -> IO FileTransferMeta
 createSndDirectFileTransfer db userId Contact {contactId} filePath FileInvitation {fileName, fileSize, fileInline} acId_ chunkSize = do
@@ -3376,9 +3389,9 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
         ciQuoteGroup [] = ciQuote Nothing $ CIQGroupRcv Nothing
         ciQuoteGroup ((Only itemId :. memberRow) : _) = ciQuote itemId . CIQGroupRcv . Just $ toGroupMember userContactId memberRow
 
-getChatPreviews :: DB.Connection -> User -> Bool -> IO [AChat]
-getChatPreviews db user withPCC = do
-  directChats <- getDirectChatPreviews_ db user
+getChatPreviews :: DB.Connection -> User -> Map ConnId (TVar NetworkStatus) -> Bool -> IO [AChat]
+getChatPreviews db user networkStatuses withPCC = do
+  directChats <- getDirectChatPreviews_ db user networkStatuses
   groupChats <- getGroupChatPreviews_ db user
   cReqChats <- getContactRequestChatPreviews_ db user
   connChats <- getContactConnectionChatPreviews_ db user withPCC
@@ -3391,12 +3404,12 @@ getChatPreviews db user withPCC = do
         ci : _ -> max (chatItemTs ci) (chatInfoUpdatedAt chatInfo)
         _ -> chatInfoUpdatedAt chatInfo
 
-getDirectChatPreviews_ :: DB.Connection -> User -> IO [AChat]
-getDirectChatPreviews_ db user@User {userId} = do
+getDirectChatPreviews_ :: DB.Connection -> User -> Map ConnId (TVar NetworkStatus) -> IO [AChat]
+getDirectChatPreviews_ db user@User {userId} networkStatuses = do
   tz <- getCurrentTimeZone
   currentTs <- getCurrentTime
-  map (toDirectChatPreview tz currentTs)
-    <$> DB.query
+  mapM (toDirectChatPreview tz currentTs)
+    =<< DB.query
       db
       [sql|
         SELECT
@@ -3449,12 +3462,12 @@ getDirectChatPreviews_ db user@User {userId} = do
       |]
       (CISRcvNew, userId, ConnReady, ConnSndReady)
   where
-    toDirectChatPreview :: TimeZone -> UTCTime -> ContactRow :. ConnectionRow :. ChatStatsRow :. MaybeChatItemRow :. QuoteRow -> AChat
-    toDirectChatPreview tz currentTs (contactRow :. connRow :. statsRow :. ciRow_) =
-      let contact = toContact user $ contactRow :. connRow
-          ci_ = toDirectChatItemList tz currentTs ciRow_
+    toDirectChatPreview :: TimeZone -> UTCTime -> ContactRow :. ConnectionRow :. ChatStatsRow :. MaybeChatItemRow :. QuoteRow -> IO AChat
+    toDirectChatPreview tz currentTs (contactRow :. connRow :. statsRow :. ciRow_) = do
+      contact <- toContactNS user networkStatuses $ contactRow :. connRow
+      let ci_ = toDirectChatItemList tz currentTs ciRow_
           stats = toChatStats statsRow
-       in AChat SCTDirect $ Chat (DirectChat contact) ci_ stats
+      pure $ AChat SCTDirect (Chat (DirectChat contact) ci_ stats)
 
 getGroupChatPreviews_ :: DB.Connection -> User -> IO [AChat]
 getGroupChatPreviews_ db User {userId, userContactId} = do
