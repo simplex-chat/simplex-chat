@@ -989,17 +989,15 @@ func processReceivedMsg(_ res: ChatResponse) async {
         logger.debug("processReceivedMsg: \(res.responseType)")
         switch res {
         case let .newContactConnection(user, connection):
-            if user.id != m.currentUser?.id { return }
-
-            m.updateContactConnection(connection)
+            if active(user) {
+                m.updateContactConnection(connection)
+            }
         case let .contactConnectionDeleted(user, connection):
-            if user.id != m.currentUser?.id { return }
-
-            m.removeChat(connection.id)
+            if active(user) {
+                m.removeChat(connection.id)
+            }
         case let .contactConnected(user, contact, _):
-            if user.id != m.currentUser?.id { return }
-
-            if contact.directOrUsed {
+            if active(user) && contact.directOrUsed {
                 m.updateContact(contact)
                 m.dismissConnReqView(contact.activeConn.id)
                 m.removeChat(contact.activeConn.id)
@@ -1007,15 +1005,13 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 NtfManager.shared.notifyContactConnected(user, contact)
             }
         case let .contactConnecting(user, contact):
-            if user.id != m.currentUser?.id { return }
-
-            if contact.directOrUsed {
+            if active(user) && contact.directOrUsed {
                 m.updateContact(contact)
                 m.dismissConnReqView(contact.activeConn.id)
                 m.removeChat(contact.activeConn.id)
             }
         case let .receivedContactRequest(user, contactRequest):
-            if user.id != m.currentUser?.id { return }
+            if !active(user) { return }
 
             let cInfo = ChatInfo.contactRequest(contactRequest: contactRequest)
             if m.hasChat(contactRequest.id) {
@@ -1028,36 +1024,31 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 NtfManager.shared.notifyContactRequest(user, contactRequest)
             }
         case let .contactUpdated(user, toContact):
-            if user.id != m.currentUser?.id { return }
-
-            let cInfo = ChatInfo.direct(contact: toContact)
-            if m.hasChat(toContact.id) {
+            if active(user) && m.hasChat(toContact.id) {
+                let cInfo = ChatInfo.direct(contact: toContact)
                 m.updateChatInfo(cInfo)
             }
         case let .contactsMerged(user, intoContact, mergedContact):
-            if user.id != m.currentUser?.id { return }
-
-            if m.hasChat(mergedContact.id) {
+            if active(user) && m.hasChat(mergedContact.id) {
                 if m.chatId == mergedContact.id {
                     m.chatId = intoContact.id
                 }
                 m.removeChat(mergedContact.id)
             }
         case let .contactsSubscribed(user, _, contactRefs):
-            if user.id != m.currentUser?.id { return }
-
-            updateContactsStatus(contactRefs, status: .connected)
+            if active(user) {
+                updateContactsStatus(contactRefs, status: .connected)
+            }
         case let .contactsDisconnected(user, _, contactRefs):
-            if user.id != m.currentUser?.id { return }
-
-            updateContactsStatus(contactRefs, status: .disconnected)
+            if active(user) {
+                updateContactsStatus(contactRefs, status: .disconnected)
+            }
         case let .contactSubError(user, contact, chatError):
-            if user.id != m.currentUser?.id { return }
-
-            processContactSubError(contact, chatError)
+            if active(user) {
+                processContactSubError(contact, chatError)
+            }
         case let .contactSubSummary(user, contactSubscriptions):
-            if user.id != m.currentUser?.id { return }
-
+            if !active(user) { return }
             for sub in contactSubscriptions {
                 if let err = sub.contactError {
                     processContactSubError(sub.contact, err)
@@ -1067,7 +1058,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 }
             }
         case let .newChatItem(user, aChatItem):
-            if user.id != m.currentUser?.id {
+            if !active(user) {
                 if case .rcvNew = aChatItem.chatItem.meta.itemStatus {
                     m.increaseUnreadCounter(user: user)
                 }
@@ -1092,7 +1083,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
             }
         case let .chatItemStatusUpdated(user, aChatItem):
-            if user.id != m.currentUser?.id { return }
+            if !active(user) { return }
 
             let cInfo = aChatItem.chatInfo
             let cItem = aChatItem.chatItem
@@ -1111,11 +1102,11 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 }
             }
         case let .chatItemUpdated(user, aChatItem):
-            if user.id != m.currentUser?.id { return }
-
-            chatItemSimpleUpdate(aChatItem)
+            if active(user) {
+                chatItemSimpleUpdate(aChatItem)
+            }
         case let .chatItemDeleted(user, deletedChatItem, toChatItem, _):
-            if user.id != m.currentUser?.id {
+            if !active(user) {
                 if toChatItem == nil && deletedChatItem.chatItem.isRcvNew {
                     m.decreaseUnreadCounter(user: user)
                 }
@@ -1128,12 +1119,12 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 m.removeChatItem(deletedChatItem.chatInfo, deletedChatItem.chatItem)
             }
         case let .receivedGroupInvitation(user, groupInfo, _, _):
-            if user.id != m.currentUser?.id { return }
-
-            m.updateGroup(groupInfo) // update so that repeat group invitations are not duplicated
-            // NtfManager.shared.notifyContactRequest(contactRequest) // TODO notifyGroupInvitation?
+            if active(user) {
+                m.updateGroup(groupInfo) // update so that repeat group invitations are not duplicated
+                // NtfManager.shared.notifyContactRequest(contactRequest) // TODO notifyGroupInvitation?
+            }
         case let .userAcceptedGroupSent(user, groupInfo, hostContact):
-            if user.id != m.currentUser?.id { return }
+            if !active(user) { return }
 
             m.updateGroup(groupInfo)
             if let hostContact = hostContact {
@@ -1141,55 +1132,55 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 m.removeChat(hostContact.activeConn.id)
             }
         case let .joinedGroupMemberConnecting(user, groupInfo, _, member):
-            if user.id != m.currentUser?.id { return }
-
-            _ = m.upsertGroupMember(groupInfo, member)
+            if active(user) {
+                _ = m.upsertGroupMember(groupInfo, member)
+            }
         case let .deletedMemberUser(user, groupInfo, _): // TODO update user member
-            if user.id != m.currentUser?.id { return }
-
-            m.updateGroup(groupInfo)
+            if active(user) {
+                m.updateGroup(groupInfo)
+            }
         case let .deletedMember(user, groupInfo, _, deletedMember):
-            if user.id != m.currentUser?.id { return }
-
-            _ = m.upsertGroupMember(groupInfo, deletedMember)
+            if active(user) {
+                _ = m.upsertGroupMember(groupInfo, deletedMember)
+            }
         case let .leftMember(user, groupInfo, member):
-            if user.id != m.currentUser?.id { return }
-
-            _ = m.upsertGroupMember(groupInfo, member)
+            if active(user) {
+                _ = m.upsertGroupMember(groupInfo, member)
+            }
         case let .groupDeleted(user, groupInfo, _): // TODO update user member
-            if user.id != m.currentUser?.id { return }
-
-            m.updateGroup(groupInfo)
+            if active(user) {
+                m.updateGroup(groupInfo)
+            }
         case let .userJoinedGroup(user, groupInfo):
-            if user.id != m.currentUser?.id { return }
-
-            m.updateGroup(groupInfo)
+            if active(user) {
+                m.updateGroup(groupInfo)
+            }
         case let .joinedGroupMember(user, groupInfo, member):
-            if user.id != m.currentUser?.id { return }
-
-            _ = m.upsertGroupMember(groupInfo, member)
+            if active(user) {
+                _ = m.upsertGroupMember(groupInfo, member)
+            }
         case let .connectedToGroupMember(user, groupInfo, member):
-            if user.id != m.currentUser?.id { return }
-
-            _ = m.upsertGroupMember(groupInfo, member)
+            if active(user) {
+                _ = m.upsertGroupMember(groupInfo, member)
+            }
         case let .groupUpdated(user, toGroup):
-            if user.id != m.currentUser?.id { return }
-
-            m.updateGroup(toGroup)
+            if active(user) {
+                m.updateGroup(toGroup)
+            }
         case let .rcvFileStart(user, aChatItem):
-            if user.id != m.currentUser?.id { return }
-
-            chatItemSimpleUpdate(aChatItem)
+            if active(user) {
+                chatItemSimpleUpdate(aChatItem)
+            }
         case let .rcvFileComplete(user, aChatItem):
-            if user.id != m.currentUser?.id { return }
-
-            chatItemSimpleUpdate(aChatItem)
+            if active(user) {
+                chatItemSimpleUpdate(aChatItem)
+            }
         case let .sndFileStart(user, aChatItem, _):
-            if user.id != m.currentUser?.id { return }
-
-            chatItemSimpleUpdate(aChatItem)
+            if active(user) {
+                chatItemSimpleUpdate(aChatItem)
+            }
         case let .sndFileComplete(user, aChatItem, _):
-            if user.id != m.currentUser?.id { return }
+            if !active(user) { return }
 
             chatItemSimpleUpdate(aChatItem)
             let cItem = aChatItem.chatItem
@@ -1215,7 +1206,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
 //                    logger.debug("reportNewIncomingVoIPPushPayload success for \(contact.id)")
 //                }
 //            }
-        case let .callOffer(user, contact, callType, offer, sharedKey, _):
+        case let .callOffer(_, contact, callType, offer, sharedKey, _):
             withCall(contact) { call in
                 call.callState = .offerReceived
                 call.peerMedia = callType.media
@@ -1233,16 +1224,16 @@ func processReceivedMsg(_ res: ChatResponse) async {
                     relay: useRelay
                 )
             }
-        case let .callAnswer(user, contact, answer):
+        case let .callAnswer(_, contact, answer):
             withCall(contact) { call in
                 call.callState = .answerReceived
                 m.callCommand = .answer(answer: answer.rtcSession, iceCandidates: answer.rtcIceCandidates)
             }
-        case let .callExtraInfo(user, contact, extraInfo):
+        case let .callExtraInfo(_, contact, extraInfo):
             withCall(contact) { _ in
                 m.callCommand = .ice(iceCandidates: extraInfo.rtcIceCandidates)
             }
-        case let .callEnded(user, contact):
+        case let .callEnded(_, contact):
             if let invitation = m.callInvitations.removeValue(forKey: contact.id) {
                 CallController.shared.reportCallRemoteEnded(invitation: invitation)
             }
@@ -1254,6 +1245,10 @@ func processReceivedMsg(_ res: ChatResponse) async {
             chatSuspended()
         default:
             logger.debug("unsupported event: \(res.responseType)")
+        }
+
+        func active(_ user: User) -> Bool {
+            user.id == m.currentUser?.id
         }
 
         func withCall(_ contact: Contact, _ perform: (Call) -> Void) {
