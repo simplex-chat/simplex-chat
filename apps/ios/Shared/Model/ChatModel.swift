@@ -16,7 +16,7 @@ final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
     @Published var v3DBMigration: V3DBMigrationState = v3DBMigrationDefault.get()
     @Published var currentUser: User?
-    @Published var users: [UserInfo] = []
+    @Published private(set) var users: [UserInfo] = []
     @Published var chatInitialized = false
     @Published var chatRunning: Bool?
     @Published var chatDbChanged = false
@@ -177,6 +177,7 @@ final class ChatModel: ObservableObject {
             chats[i].chatItems = [cItem]
             if case .rcvNew = cItem.meta.itemStatus {
                 chats[i].chatStats.unreadCount = chats[i].chatStats.unreadCount + 1
+                increaseUnreadCounter(user: currentUser!)
                 NtfManager.shared.incNtfBadgeCount()
             }
             if i > 0 {
@@ -344,6 +345,7 @@ final class ChatModel: ObservableObject {
                     if markedCount > 0 {
                         NtfManager.shared.decNtfBadgeCount(by: markedCount)
                         chat.chatStats.unreadCount -= markedCount
+                        self.decreaseUnreadCounter(user: self.currentUser!, by: markedCount)
                     }
                 }
             }
@@ -395,6 +397,21 @@ final class ChatModel: ObservableObject {
     func decreaseUnreadCounter(_ cInfo: ChatInfo) {
         if let i = getChatIndex(cInfo.id) {
             chats[i].chatStats.unreadCount = chats[i].chatStats.unreadCount - 1
+            decreaseUnreadCounter(user: currentUser!)
+        }
+    }
+
+    func increaseUnreadCounter(user: User) {
+        changeUnreadCounter(user: user, by: 1)
+    }
+
+    func decreaseUnreadCounter(user: User, by: Int = 1) {
+        changeUnreadCounter(user: user, by: -by)
+    }
+
+    private func changeUnreadCounter(user: User, by: Int) {
+        if let i = users.firstIndex(where: { $0.user.id == user.id }) {
+            users[i].unreadCount += Int64(by)
         }
     }
 
@@ -479,6 +496,31 @@ final class ChatModel: ObservableObject {
         while i < maxIx && !inView(i) { i += 1 }
         while i < maxIx && inView(i) { i += 1 }
         return reversedChatItems[min(i - 1, maxIx)]
+    }
+
+    func updateUsers(_ new: [UserInfo]) {
+        users = new
+        .sorted { $0.user.chatViewName.compare($1.user.chatViewName) == .orderedAscending }
+        .sorted { first, _ in first.user.activeUser }
+    }
+
+    func changeActiveUser(_ toUserId: Int64) {
+        do {
+            let activeUser = try apiSetActiveUser(toUserId)
+            var users = users
+            let oldActiveIndex = users.firstIndex(where: { $0.user.userId == currentUser?.userId })!
+            var oldActive = users[oldActiveIndex]
+            oldActive.user.activeUser = false
+            users[oldActiveIndex] = oldActive
+
+            currentUser = activeUser
+            let currentActiveIndex = users.firstIndex(where: { $0.user.userId == activeUser.userId })!
+            users[currentActiveIndex] = UserInfo(user: activeUser, unreadCount: users[currentActiveIndex].unreadCount)
+            updateUsers(users)
+            try getUserChatData(self)
+        } catch {
+            logger.error("Unable to set active user: \(error.localizedDescription)")
+        }
     }
 }
 

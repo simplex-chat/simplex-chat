@@ -11,23 +11,24 @@ struct UserProfilesView: View {
     @Environment(\.editMode) private var editMode
     @State private var selectedUser: Int? = nil
     @State private var showAddUser: Bool? = false
-    @State private var showScanSMPServer = false
-    @State private var testing = false
 
     var body: some View {
         List {
             Section("Your profiles") {
-                ForEach(Array($m.users.enumerated()), id: \.0) { i, userInfo in
+                ForEach(Array(m.users.enumerated()), id: \.0) { i, userInfo in
                     userProfileView(userInfo, index: i)
-                        .deleteDisabled(userInfo.wrappedValue.user.activeUser)
+                        .deleteDisabled(userInfo.user.activeUser)
                 }
                 .onDelete { indexSet in
-                    do {
-                        try apiDeleteUser(m.users[indexSet.first!].user.userId)
-                        m.users.remove(atOffsets: indexSet)
-                    } catch {
-                        fatalError("Failed to delete user: \(responseError(error))")
-                    }
+                    AlertManager.shared.showAlert(
+                        Alert(
+                            title: Text("Delete profile?"),
+                            message: Text("All chats and messages will be deleted - this cannot be undone!"),
+                            primaryButton: .destructive(Text("Delete")) {
+                                removeUser(index: indexSet.first!)
+                            },
+                            secondaryButton: .cancel()
+                        ))
                 }
                 NavigationLink(destination: CreateProfile(), tag: true, selection: $showAddUser) {
                     Text("Add profile…")
@@ -37,8 +38,21 @@ struct UserProfilesView: View {
         .toolbar { EditButton() }
     }
 
-    private func userProfileView(_ userBinding: Binding<UserInfo>, index: Int) -> some View {
-        let user = userBinding.wrappedValue.user
+    private func removeUser(index: Int) {
+        do {
+            try apiDeleteUser(m.users[index].user.userId)
+            var users = m.users
+            users.remove(at: index)
+            m.updateUsers(users)
+        } catch {
+            AlertManager.shared.showAlertMsg(
+                title: "Failed to delete the user",
+                message: "Error: \(responseError(error))"
+            )
+        }
+    }
+    private func userProfileView(_ userBinding: UserInfo, index: Int) -> some View {
+        let user = userBinding.user
         return NavigationLink(tag: index, selection: $selectedUser) {
 //            UserPrefs(user: userBinding, index: index)
 //            .navigationBarTitle(user.chatViewName)
