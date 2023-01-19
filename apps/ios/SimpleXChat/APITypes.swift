@@ -630,7 +630,10 @@ public enum ChatResponse: Decodable, Error {
     private var noDetails: String { get { "\(responseType): no details" } }
 
     private func withUser(_ u: User?, _ s: String) -> String {
-        "userId: \(u?.userId ?? -1)\n\(s)"
+        if let id = u?.userId {
+            return "userId: \(id)\n\(s)"
+        }
+        return s
     }
 }
 
