@@ -146,7 +146,7 @@ instance ToJSON HelpSection where
 
 data ChatCommand
   = ShowActiveUser
-  | CreateActiveUser Profile
+  | CreateActiveUser Profile Bool
   | ListUsers
   | APISetActiveUser UserId
   | SetActiveUser UserName
@@ -589,6 +589,8 @@ data ChatErrorType
   | CENoConnectionUser {agentConnId :: AgentConnId}
   | CEActiveUserExists -- TODO delete
   | CEDifferentActiveUser {commandUserId :: UserId, activeUserId :: UserId}
+  | CECantDeleteActiveUser {userId :: UserId}
+  | CECantDeleteLastUser {userId :: UserId}
   | CEChatNotStarted
   | CEChatNotStopped
   | CEChatStoreChanged

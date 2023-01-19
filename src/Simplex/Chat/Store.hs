@@ -30,10 +30,13 @@ module Simplex.Chat.Store
     getUsers,
     setActiveUser,
     getSetActiveUser,
+    getUser,
     getUserIdByName,
     getUserByAConnId,
     getUserByContactId,
     getUserByGroupId,
+    getUserFileInfo,
+    deleteUserRecord,
     createDirectConnection,
     createConnReqConnection,
     getProfileById,
@@ -330,6 +333,7 @@ import Simplex.Chat.Migrations.M20221230_idxs
 import Simplex.Chat.Migrations.M20230107_connections_auth_err_counter
 import Simplex.Chat.Migrations.M20230111_users_agent_user_id
 import Simplex.Chat.Migrations.M20230117_fkey_indexes
+import Simplex.Chat.Migrations.M20230118_recreate_smp_servers
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (week)
@@ -392,7 +396,8 @@ schemaMigrations =
     ("20221230_idxs", m20221230_idxs),
     ("20230107_connections_auth_err_counter", m20230107_connections_auth_err_counter),
     ("20230111_users_agent_user_id", m20230111_users_agent_user_id),
-    ("20230117_fkey_indexes", m20230117_fkey_indexes)
+    ("20230117_fkey_indexes", m20230117_fkey_indexes),
+    ("20230118_recreate_smp_servers", m20230118_recreate_smp_servers)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -487,10 +492,10 @@ setActiveUser db userId = do
 getSetActiveUser :: DB.Connection -> UserId -> ExceptT StoreError IO User
 getSetActiveUser db userId = do
   liftIO $ setActiveUser db userId
-  getUser_ db userId
+  getUser db userId
 
-getUser_ :: DB.Connection -> UserId -> ExceptT StoreError IO User
-getUser_ db userId =
+getUser :: DB.Connection -> UserId -> ExceptT StoreError IO User
+getUser db userId =
   ExceptT . firstRow toUser (SEUserNotFound userId) $
     DB.query db (userQuery <> " WHERE u.user_id = ?") (Only userId)
 
@@ -518,6 +523,26 @@ getUserByFileId :: DB.Connection -> FileTransferId -> ExceptT StoreError IO User
 getUserByFileId db fileId =
   ExceptT . firstRow toUser (SEUserNotFoundByFileId fileId) $
     DB.query db (userQuery <> " JOIN files f ON f.user_id = u.user_id WHERE f.file_id = ?") (Only fileId)
+
+getUserFileInfo :: DB.Connection -> User -> IO [CIFileInfo]
+getUserFileInfo db User {userId} =
+  map toFileInfo
+    <$> DB.query db (fileInfoQuery <> " WHERE i.user_id = ?") (Only userId)
+
+fileInfoQuery :: Query
+fileInfoQuery =
+  [sql|
+    SELECT f.file_id, f.ci_file_status, f.file_path
+    FROM chat_items i
+    JOIN files f ON f.chat_item_id = i.chat_item_id
+  |]
+
+toFileInfo :: (Int64, Maybe ACIFileStatus, Maybe FilePath) -> CIFileInfo
+toFileInfo (fileId, fileStatus, filePath) = CIFileInfo {fileId, fileStatus, filePath}
+
+deleteUserRecord :: DB.Connection -> User -> IO ()
+deleteUserRecord db User {userId} =
+  DB.execute db "DELETE FROM users WHERE user_id = ?" (Only userId)
 
 createConnReqConnection :: DB.Connection -> UserId -> ConnId -> ConnReqUriHash -> XContactId -> Maybe Profile -> Maybe GroupLinkId -> IO PendingContactConnection
 createConnReqConnection db userId acId cReqHash xContactId incognitoProfile groupLinkId = do
@@ -3031,18 +3056,7 @@ getFileTransferMeta db User {userId} fileId =
 getContactFileInfo :: DB.Connection -> User -> Contact -> IO [CIFileInfo]
 getContactFileInfo db User {userId} Contact {contactId} =
   map toFileInfo
-    <$> DB.query
-      db
-      [sql|
-        SELECT f.file_id, f.ci_file_status, f.file_path
-        FROM chat_items i
-        JOIN files f ON f.chat_item_id = i.chat_item_id
-        WHERE i.user_id = ? AND i.contact_id = ?
-      |]
-      (userId, contactId)
-
-toFileInfo :: (Int64, Maybe ACIFileStatus, Maybe FilePath) -> CIFileInfo
-toFileInfo (fileId, fileStatus, filePath) = CIFileInfo {fileId, fileStatus, filePath}
+    <$> DB.query db (fileInfoQuery <> " WHERE i.user_id = ? AND i.contact_id = ?") (userId, contactId)
 
 deleteContactCIs :: DB.Connection -> User -> Contact -> IO ()
 deleteContactCIs db user@User {userId} ct@Contact {contactId} = do
@@ -3059,15 +3073,7 @@ getContactConnIds_ db User {userId} Contact {contactId} =
 getGroupFileInfo :: DB.Connection -> User -> GroupInfo -> IO [CIFileInfo]
 getGroupFileInfo db User {userId} GroupInfo {groupId} =
   map toFileInfo
-    <$> DB.query
-      db
-      [sql|
-        SELECT f.file_id, f.ci_file_status, f.file_path
-        FROM chat_items i
-        JOIN files f ON f.chat_item_id = i.chat_item_id
-        WHERE i.user_id = ? AND i.group_id = ?
-      |]
-      (userId, groupId)
+    <$> DB.query db (fileInfoQuery <> " WHERE i.user_id = ? AND i.group_id = ?") (userId, groupId)
 
 deleteGroupCIs :: DB.Connection -> User -> GroupInfo -> IO ()
 deleteGroupCIs db User {userId} GroupInfo {groupId} = do
@@ -4742,12 +4748,7 @@ getContactExpiredFileInfo db User {userId} Contact {contactId} expirationDate =
   map toFileInfo
     <$> DB.query
       db
-      [sql|
-        SELECT f.file_id, f.ci_file_status, f.file_path
-        FROM chat_items i
-        JOIN files f ON f.chat_item_id = i.chat_item_id
-        WHERE i.user_id = ? AND i.contact_id = ? AND i.created_at <= ?
-      |]
+      (fileInfoQuery <> " WHERE i.user_id = ? AND i.contact_id = ? AND i.created_at <= ?")
       (userId, contactId, expirationDate)
 
 deleteContactExpiredCIs :: DB.Connection -> User -> Contact -> UTCTime -> IO ()
@@ -4762,12 +4763,7 @@ getGroupExpiredFileInfo db User {userId} GroupInfo {groupId} expirationDate crea
   map toFileInfo
     <$> DB.query
       db
-      [sql|
-        SELECT f.file_id, f.ci_file_status, f.file_path
-        FROM chat_items i
-        JOIN files f ON f.chat_item_id = i.chat_item_id
-        WHERE i.user_id = ? AND i.group_id = ? AND i.item_ts <= ? AND i.created_at <= ?
-      |]
+      (fileInfoQuery <> " WHERE i.user_id = ? AND i.group_id = ? AND i.item_ts <= ? AND i.created_at <= ?")
       (userId, groupId, expirationDate, createdAtCutoff)
 
 deleteGroupExpiredCIs :: DB.Connection -> User -> GroupInfo -> UTCTime -> UTCTime -> IO ()
