@@ -45,7 +45,10 @@ struct UserProfilesView: View {
             users.remove(at: index)
             m.updateUsers(users)
         } catch {
-            fatalError("Failed to delete user: \(responseError(error))")
+            AlertManager.shared.showAlertMsg(
+                title: "Failed to delete the user",
+                message: "Error: \(responseError(error))"
+            )
         }
     }
     private func userProfileView(_ userBinding: UserInfo, index: Int) -> some View {
