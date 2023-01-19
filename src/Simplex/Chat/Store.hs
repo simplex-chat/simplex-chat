@@ -1721,11 +1721,11 @@ getConnectionsContacts db userId agentConnIds = do
   DB.execute_ db "CREATE TABLE temp.conn_ids (conn_id BLOB)"
   DB.executeMany db "INSERT INTO temp.conn_ids (conn_id) VALUES (?)" $ map Only agentConnIds
   conns <-
-    map (uncurry ContactRef)
+    map toContactRef
       <$> DB.query
         db
         [sql|
-          SELECT ct.contact_id, ct.local_display_name
+          SELECT ct.contact_id, c.connection_id, ct.local_display_name
           FROM contacts ct
           JOIN connections c ON c.contact_id = ct.contact_id
           WHERE ct.user_id = ?
@@ -1735,6 +1735,9 @@ getConnectionsContacts db userId agentConnIds = do
         (userId, ConnContact)
   DB.execute_ db "DROP TABLE temp.conn_ids"
   pure conns
+  where
+    toContactRef :: (ContactId, Int64, ContactName) -> ContactRef
+    toContactRef (contactId, connId, localDisplayName) = ContactRef {contactId, connId, localDisplayName}
 
 getGroupAndMember :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO (GroupInfo, GroupMember)
 getGroupAndMember db User {userId, userContactId} groupMemberId =
