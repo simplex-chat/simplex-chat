@@ -26,18 +26,18 @@ struct IncomingCallView: View {
         }
     }
 
-    private func incomingCall(_ invitation: (Int64, RcvCallInvitation)) -> some View {
+    private func incomingCall(_ invitation: RcvCallInvitation) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Image(systemName: invitation.1.callType.media == .video ? "video.fill" : "phone.fill").foregroundColor(.green)
-                Text(invitation.1.callTypeText)
+                Image(systemName: invitation.callType.media == .video ? "video.fill" : "phone.fill").foregroundColor(.green)
+                Text(invitation.callTypeText)
             }
             HStack {
-                ProfilePreview(profileOf: invitation.1.contact, color: .white)
+                ProfilePreview(profileOf: invitation.contact, color: .white)
                 Spacer()
 
                 callButton("Reject", "phone.down.fill", .red) {
-                    cc.endCall(invitation: invitation.1)
+                    cc.endCall(invitation: invitation)
                 }
 
                 callButton("Ignore", "multiply", .accentColor) {
@@ -81,7 +81,7 @@ struct IncomingCallView: View {
 
 struct IncomingCallView_Previews: PreviewProvider {
     static var previews: some View {
-        CallController.shared.activeCallInvitation = (User.sampleData.userId, RcvCallInvitation.sampleData)
+        CallController.shared.activeCallInvitation = RcvCallInvitation.sampleData
         return IncomingCallView()
     }
 }

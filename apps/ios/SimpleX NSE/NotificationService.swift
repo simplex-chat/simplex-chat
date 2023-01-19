@@ -237,8 +237,8 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, UNMutableNotification
             }
          }
         return cItem.showMutableNotification ? (aChatItem.chatId, createMessageReceivedNtf(user, cInfo, cItem)) : nil
-    case let .callInvitation(user, invitation):
-        return (invitation.contact.id, createCallInvitationNtf(user, invitation))
+    case let .callInvitation(invitation):
+        return (invitation.contact.id, createCallInvitationNtf(invitation))
     default:
         logger.debug("NotificationService processReceivedMsg ignored event: \(res.responseType)")
         return nil

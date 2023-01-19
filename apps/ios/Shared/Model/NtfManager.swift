@@ -54,8 +54,8 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
                 chatModel.ntfContactRequest = chatId
             }
         } else if let (chatId, ntfAction) = ntfCallAction(content, action) {
-            if let userId = userId, let invitation = chatModel.callInvitations.removeValue(forKey: chatId) {
-                CallController.shared.callAction(invitation: (userId, invitation), action: ntfAction)
+            if let invitation = chatModel.callInvitations.removeValue(forKey: chatId) {
+                CallController.shared.callAction(invitation: invitation, action: ntfAction)
             } else {
                 chatModel.ntfCallInvitationAction = (chatId, ntfAction)
             }
@@ -214,9 +214,9 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         }
     }
 
-    func notifyCallInvitation(_ user: User, _ invitation: RcvCallInvitation) {
+    func notifyCallInvitation(_ invitation: RcvCallInvitation) {
         logger.debug("NtfManager.notifyCallInvitation")
-        addNotification(createCallInvitationNtf(user, invitation))
+        addNotification(createCallInvitationNtf(invitation))
     }
 
     func setNtfBadgeCount(_ count: Int) {

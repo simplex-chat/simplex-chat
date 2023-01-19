@@ -1199,11 +1199,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
                let fileName = cItem.file?.filePath {
                 removeFile(fileName)
             }
-        case let .callInvitation(user, invitation):
-            if user.id != m.currentUser?.id { return }
-
+        case let .callInvitation(invitation):
             m.callInvitations[invitation.contact.id] = invitation
-            activateCall(user, invitation)
+            activateCall(invitation)
 
 // This will be called from notification service extension
 //            CXProvider.reportNewIncomingVoIPPushPayload([
@@ -1303,15 +1301,15 @@ func refreshCallInvitations() throws {
     if let (chatId, ntfAction) = m.ntfCallInvitationAction,
        let invitation = m.callInvitations.removeValue(forKey: chatId) {
         m.ntfCallInvitationAction = nil
-        CallController.shared.callAction(invitation: (m.currentUser!.userId, invitation), action: ntfAction) // LALAL: wrong
+        CallController.shared.callAction(invitation: invitation, action: ntfAction)
     } else if let invitation = callInvitations.last {
-        activateCall(m.currentUser!, invitation)
+        activateCall(invitation)
     }
 }
 
-func activateCall(_ user: User, _ callInvitation: RcvCallInvitation) {
+func activateCall(_ callInvitation: RcvCallInvitation) {
     let m = ChatModel.shared
-    CallController.shared.reportNewIncomingCall(user: user, invitation: callInvitation) { error in
+    CallController.shared.reportNewIncomingCall(invitation: callInvitation) { error in
         if let error = error {
             m.callInvitations[callInvitation.contact.id]?.callkitUUID = nil
             logger.error("reportNewIncomingCall error: \(error.localizedDescription)")

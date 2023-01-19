@@ -74,7 +74,7 @@ public func createMessageReceivedNtf(_ user: User, _ cInfo: ChatInfo, _ cItem: C
     )
 }
 
-public func createCallInvitationNtf(_ user: User, _ invitation: RcvCallInvitation) -> UNMutableNotificationContent {
+public func createCallInvitationNtf(_ invitation: RcvCallInvitation) -> UNMutableNotificationContent {
     let text = invitation.callType.media == .video
                 ? NSLocalizedString("Incoming video call", comment: "notification")
                 : NSLocalizedString("Incoming audio call", comment: "notification")
@@ -84,7 +84,7 @@ public func createCallInvitationNtf(_ user: User, _ invitation: RcvCallInvitatio
         title: hideContent ? contactHidden : "\(invitation.contact.chatViewName):",
         body: text,
         targetContentIdentifier: nil,
-        userInfo: ["chatId": invitation.contact.id, "userId": user.userId]
+        userInfo: ["chatId": invitation.contact.id, "userId": invitation.user.userId]
     )
 }
 

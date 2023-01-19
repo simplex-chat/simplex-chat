@@ -27,26 +27,25 @@ class CallManager {
     }
 
 
-    // LALAL: probably unneeded
-    /*func answerIncomingCall(callUUID: UUID) -> Bool {
+    func answerIncomingCall(callUUID: UUID) -> Bool {
         if let invitation = getCallInvitation(callUUID) {
             answerIncomingCall(invitation: invitation)
             return true
         }
         return false
-    }*/
+    }
 
-    func answerIncomingCall(invitation: (Int64, RcvCallInvitation)) {
+    func answerIncomingCall(invitation: RcvCallInvitation) {
         let m = ChatModel.shared
         // TODO: change active user
-        m.callInvitations.removeValue(forKey: invitation.1.contact.id)
+        m.callInvitations.removeValue(forKey: invitation.contact.id)
         m.activeCall = Call(
             direction: .incoming,
-            contact: invitation.1.contact,
-            callkitUUID: invitation.1.callkitUUID,
+            contact: invitation.contact,
+            callkitUUID: invitation.callkitUUID,
             callState: .invitationAccepted,
-            localMedia: invitation.1.callType.media,
-            sharedKey: invitation.1.sharedKey
+            localMedia: invitation.callType.media,
+            sharedKey: invitation.sharedKey
         )
         m.showCallView = true
         let useRelay = UserDefaults.standard.bool(forKey: DEFAULT_WEBRTC_POLICY_RELAY)
@@ -54,8 +53,8 @@ class CallManager {
         logger.debug("answerIncomingCall useRelay: \(useRelay)")
         logger.debug("answerIncomingCall iceServers: \(String(describing: iceServers))")
         m.callCommand = .start(
-            media: invitation.1.callType.media,
-            aesKey: invitation.1.sharedKey,
+            media: invitation.callType.media,
+            aesKey: invitation.sharedKey,
             useWorker: true,
             iceServers: iceServers,
             relay: useRelay

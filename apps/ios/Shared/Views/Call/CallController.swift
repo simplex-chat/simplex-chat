@@ -18,7 +18,7 @@ class CallController: NSObject, ObservableObject {
 //    private let provider = CXProvider(configuration: CallController.configuration)
 //    private let controller = CXCallController()
     private let callManager = CallManager()
-    @Published var activeCallInvitation: (Int64, RcvCallInvitation)?
+    @Published var activeCallInvitation: RcvCallInvitation?
 
 // PKPushRegistry will be used from notification service extension
 //    let registry = PKPushRegistry(queue: nil)
@@ -120,7 +120,7 @@ class CallController: NSObject, ObservableObject {
 //        }
 //    }
 
-    func reportNewIncomingCall(user: User, invitation: RcvCallInvitation, completion: @escaping (Error?) -> Void) {
+    func reportNewIncomingCall(invitation: RcvCallInvitation, completion: @escaping (Error?) -> Void) {
         logger.debug("CallController.reportNewIncomingCall")
 //        if CallController.useCallKit, let uuid = invitation.callkitUUID {
 //            let update = CXCallUpdate()
@@ -128,9 +128,9 @@ class CallController: NSObject, ObservableObject {
 //            update.hasVideo = invitation.peerMedia == .video
 //            provider.reportNewIncomingCall(with: uuid, update: update, completion: completion)
 //        } else {
-            NtfManager.shared.notifyCallInvitation(user, invitation)
+            NtfManager.shared.notifyCallInvitation(invitation)
             if invitation.callTs.timeIntervalSinceNow >= -180 {
-                activeCallInvitation = (user.userId, invitation)
+                activeCallInvitation = invitation
             }
 //        }
     }
@@ -171,9 +171,9 @@ class CallController: NSObject, ObservableObject {
         }
     }
 
-    func answerCall(invitation: (Int64, RcvCallInvitation)) {
+    func answerCall(invitation: RcvCallInvitation) {
         callManager.answerIncomingCall(invitation: invitation)
-        if invitation.1.contact.id == self.activeCallInvitation?.1.contact.id {
+        if invitation.contact.id == self.activeCallInvitation?.contact.id {
             self.activeCallInvitation = nil
         }
     }
@@ -194,7 +194,7 @@ class CallController: NSObject, ObservableObject {
 
     func endCall(invitation: RcvCallInvitation) {
         callManager.endCall(invitation: invitation) {
-            if invitation.contact.id == self.activeCallInvitation?.1.contact.id {
+            if invitation.contact.id == self.activeCallInvitation?.contact.id {
                 DispatchQueue.main.async {
                     self.activeCallInvitation = nil
                 }
@@ -206,10 +206,10 @@ class CallController: NSObject, ObservableObject {
         callManager.endCall(call: call, completed: completed)
     }
 
-    func callAction(invitation: (Int64, RcvCallInvitation), action: NtfCallAction) {
+    func callAction(invitation: RcvCallInvitation, action: NtfCallAction) {
         switch action {
         case .accept: answerCall(invitation: invitation)
-        case .reject: endCall(invitation: invitation.1)
+        case .reject: endCall(invitation: invitation)
         }
     }
 
