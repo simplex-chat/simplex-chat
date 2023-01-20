@@ -131,10 +131,12 @@ func apiCreateActiveUser(_ p: Profile) throws -> User {
     throw r
 }
 
-func listUsers() -> [UserInfo] {
+func listUsers() throws -> [UserInfo] {
     let r = chatSendCmdSync(.listUsers)
-    if case let .usersList(users) = r { return users }
-    return []
+    if case let .usersList(users) = r {
+        return users.sorted { $0.user.chatViewName.compare($1.user.chatViewName) == .orderedAscending }
+    }
+    throw r
 }
 
 func apiSetActiveUser(_ userId: Int64) throws -> User {
@@ -917,9 +919,9 @@ func startChat() throws {
     let m = ChatModel.shared
     try setNetworkConfig(getNetCfg())
     let justStarted = try apiStartChat()
-    m.updateUsers(listUsers())
+    m.users = try listUsers()
     if justStarted {
-        try getUserChatData(m)
+        try getUserChatData()
         NtfManager.shared.setNtfBadgeCount(m.totalUnreadCount())
         try refreshCallInvitations()
         (m.savedToken, m.tokenStatus, m.notificationMode) = apiGetNtfToken()
@@ -937,7 +939,19 @@ func startChat() throws {
     chatLastStartGroupDefault.set(Date.now)
 }
 
-func getUserChatData(_ m: ChatModel) throws {
+func changeActiveUser(_ toUserId: Int64) {
+    let m = ChatModel.shared
+    do {
+        m.currentUser = try apiSetActiveUser(toUserId)
+        m.users = try listUsers()
+        try getUserChatData()
+    } catch let error {
+        logger.error("Unable to set active user: \(responseError(error))")
+    }
+}
+
+func getUserChatData() throws {
+    let m = ChatModel.shared
     m.userAddress = try apiGetUserAddress()
     (m.userSMPServers, m.presetSMPServers) = try getUserSMPServers()
     m.chatItemTTL = try getChatItemTTL()
@@ -1001,9 +1015,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 m.updateContact(contact)
                 m.dismissConnReqView(contact.activeConn.id)
                 m.removeChat(contact.activeConn.id)
-                m.updateNetworkStatus(contact.id, .connected)
                 NtfManager.shared.notifyContactConnected(user, contact)
             }
+            m.updateContactNetworkStatus(contact, .connected)
         case let .contactConnecting(user, contact):
             if active(user) && contact.directOrUsed {
                 m.updateContact(contact)
@@ -1035,26 +1049,24 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 }
                 m.removeChat(mergedContact.id)
             }
-        case let .contactsSubscribed(user, _, contactRefs):
-            if active(user) {
-                updateContactsStatus(contactRefs, status: .connected)
-            }
-        case let .contactsDisconnected(user, _, contactRefs):
-            if active(user) {
-                updateContactsStatus(contactRefs, status: .disconnected)
-            }
+        case let .contactsSubscribed(_, _, contactRefs):
+            updateContactsStatus(contactRefs, status: .connected)
+        case let .contactsDisconnected(_, _, contactRefs):
+            updateContactsStatus(contactRefs, status: .disconnected)
         case let .contactSubError(user, contact, chatError):
             if active(user) {
-                processContactSubError(contact, chatError)
+                m.updateContact(contact)
             }
+            processContactSubError(contact, chatError)
         case let .contactSubSummary(user, contactSubscriptions):
-            if !active(user) { return }
             for sub in contactSubscriptions {
+                if active(user) {
+                    m.updateContact(sub.contact)
+                }
                 if let err = sub.contactError {
                     processContactSubError(sub.contact, err)
                 } else {
-                    m.updateContact(sub.contact)
-                    m.updateNetworkStatus(sub.contact.id, .connected)
+                    m.updateContactNetworkStatus(sub.contact, .connected)
                 }
             }
         case let .newChatItem(user, aChatItem):
@@ -1270,23 +1282,22 @@ func chatItemSimpleUpdate(_ aChatItem: AChatItem) {
     }
 }
 
-func updateContactsStatus(_ contactRefs: [ContactRef], status: Chat.NetworkStatus) {
+func updateContactsStatus(_ contactRefs: [ContactRef], status: NetworkStatus) {
     let m = ChatModel.shared
     for c in contactRefs {
-        m.updateNetworkStatus(c.id, status)
+        m.networkStatuses[c.connId] = status
     }
 }
 
 func processContactSubError(_ contact: Contact, _ chatError: ChatError) {
     let m = ChatModel.shared
-    m.updateContact(contact)
     var err: String
     switch chatError {
     case .errorAgent(agentError: .BROKER(_, .NETWORK)): err = "network"
     case .errorAgent(agentError: .SMP(smpErr: .AUTH)): err = "contact deleted"
     default: err = String(describing: chatError)
     }
-    m.updateNetworkStatus(contact.id, .error(err))
+    m.updateContactNetworkStatus(contact, .error(err))
 }
 
 func refreshCallInvitations() throws {

@@ -263,14 +263,14 @@ struct ChatInfoView: View {
                 .foregroundColor(.accentColor)
                 .font(.system(size: 14))
             Spacer()
-            Text(chat.serverInfo.networkStatus.statusString)
+            Text(chatModel.contactNetworkStatus(contact).statusString)
                 .foregroundColor(.secondary)
             serverImage()
         }
     }
 
     private func serverImage() -> some View {
-        let status = chat.serverInfo.networkStatus
+        let status = chatModel.contactNetworkStatus(contact)
         return Image(systemName: status.imageName)
             .foregroundColor(status == .connected ? .green : .secondary)
             .font(.system(size: 12))
@@ -337,7 +337,7 @@ struct ChatInfoView: View {
     private func networkStatusAlert() -> Alert {
         Alert(
             title: Text("Network status"),
-            message: Text(chat.serverInfo.networkStatus.statusExplanation)
+            message: Text(chatModel.contactNetworkStatus(contact).statusExplanation)
         )
     }
 

@@ -34,7 +34,7 @@ public struct User: Decodable, NamedChat, Identifiable {
     )
 }
 
-public struct UserInfo: Decodable {
+public struct UserInfo: Decodable, Identifiable {
     public var user: User
     public var unreadCount: Int64
 
@@ -42,6 +42,8 @@ public struct UserInfo: Decodable {
         self.user = user
         self.unreadCount = unreadCount
     }
+
+    public var id: Int64 { user.userId }
 
     public static let sampleData = UserInfo(
         user: User.sampleData,
@@ -1154,6 +1156,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
 
 public struct ContactRef: Decodable, Equatable {
     var contactId: Int64
+    public var connId: Int64
     var localDisplayName: ContactName
 
     public var id: ChatId { get { "@\(contactId)" } }
@@ -1165,7 +1168,7 @@ public struct ContactSubStatus: Decodable {
 }
 
 public struct Connection: Decodable {
-    var connId: Int64
+    public var connId: Int64
     var connStatus: ConnStatus
     public var connLevel: Int
     public var viaGroupLink: Bool
