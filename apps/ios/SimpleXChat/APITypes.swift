@@ -406,7 +406,7 @@ public enum ChatResponse: Decodable, Error {
     case callInvitations(callInvitations: [RcvCallInvitation])
     case ntfTokenStatus(status: NtfTknStatus)
     case ntfToken(token: DeviceToken, status: NtfTknStatus, ntfMode: NotificationsMode)
-    case ntfMessages(user: User?, connEntity: ConnectionEntity?, msgTs: Date?, ntfMessages: [NtfMsgInfo])
+    case ntfMessages(user_: User?, connEntity: ConnectionEntity?, msgTs: Date?, ntfMessages: [NtfMsgInfo])
     case newContactConnection(user: User, connection: PendingContactConnection)
     case contactConnectionDeleted(user: User, connection: PendingContactConnection)
     case cmdOk(user: User?)
