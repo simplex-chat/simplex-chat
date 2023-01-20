@@ -348,8 +348,8 @@ public enum ChatResponse: Decodable, Error {
     case acceptingContactRequest(user: User, contact: Contact)
     case contactRequestRejected(user: User)
     case contactUpdated(user: User, toContact: Contact)
-    case contactsSubscribed(user: User, server: String, contactRefs: [ContactRef])
-    case contactsDisconnected(user: User, server: String, contactRefs: [ContactRef])
+    case contactsSubscribed(server: String, contactRefs: [ContactRef])
+    case contactsDisconnected(server: String, contactRefs: [ContactRef])
     case contactSubError(user: User, contact: Contact, chatError: ChatError)
     case contactSubSummary(user: User, contactSubscriptions: [ContactSubStatus])
     case groupSubscribed(user: User, groupInfo: GroupInfo)
@@ -562,8 +562,8 @@ public enum ChatResponse: Decodable, Error {
             case let .acceptingContactRequest(u, contact): return withUser(u, String(describing: contact))
             case .contactRequestRejected: return noDetails
             case let .contactUpdated(u, toContact): return withUser(u, String(describing: toContact))
-            case let .contactsSubscribed(u, server, contactRefs): return withUser(u, "server: \(server)\ncontacts:\n\(String(describing: contactRefs))")
-            case let .contactsDisconnected(u, server, contactRefs): return withUser(u, "server: \(server)\ncontacts:\n\(String(describing: contactRefs))")
+            case let .contactsSubscribed(server, contactRefs): return "server: \(server)\ncontacts:\n\(String(describing: contactRefs))"
+            case let .contactsDisconnected(server, contactRefs): return "server: \(server)\ncontacts:\n\(String(describing: contactRefs))"
             case let .contactSubError(u, contact, chatError): return withUser(u, "contact:\n\(String(describing: contact))\nerror:\n\(String(describing: chatError))")
             case let .contactSubSummary(u, contactSubscriptions): return withUser(u, String(describing: contactSubscriptions))
             case let .groupSubscribed(u, groupInfo): return withUser(u, String(describing: groupInfo))

@@ -1035,9 +1035,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 }
                 m.removeChat(mergedContact.id)
             }
-        case let .contactsSubscribed(_, _, contactRefs):
+        case let .contactsSubscribed(_, contactRefs):
             updateContactsStatus(contactRefs, status: .connected)
-        case let .contactsDisconnected(_, _, contactRefs):
+        case let .contactsDisconnected(_, contactRefs):
             updateContactsStatus(contactRefs, status: .disconnected)
         case let .contactSubError(user, contact, chatError):
             if active(user) {
@@ -1271,7 +1271,7 @@ func chatItemSimpleUpdate(_ aChatItem: AChatItem) {
 func updateContactsStatus(_ contactRefs: [ContactRef], status: NetworkStatus) {
     let m = ChatModel.shared
     for c in contactRefs {
-        m.networkStatuses[c.connId] = status
+        m.networkStatuses[c.agentConnId] = status
     }
 }
 
