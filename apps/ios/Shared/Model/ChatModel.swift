@@ -518,7 +518,7 @@ final class ChatModel: ObservableObject {
     }
 
     func connNetworkStatus(_ conn: Connection) -> NetworkStatus {
-        return networkStatuses[conn.connId] ?? .unknown
+        networkStatuses[conn.connId] ?? .unknown
     }
 }
 
