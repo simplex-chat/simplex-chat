@@ -660,8 +660,7 @@ processChatCommand = \case
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
   APIAcceptContact connReqId -> withUser $ \_ -> withChatLock "acceptContact" $ do
-    user <- withStore (`getUserByContactRequestId` connReqId)
-    cReq <- withStore $ \db -> getContactRequest db user connReqId
+    (user, cReq) <- withStore $ \db -> getContactRequest' db connReqId
     -- [incognito] generate profile to send, create connection with incognito profile
     incognito <- readTVarIO =<< asks incognitoMode
     incognitoProfile <- if incognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing

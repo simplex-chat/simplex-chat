@@ -76,6 +76,7 @@ module Simplex.Chat.Store
     getGroupLink,
     getGroupLinkId,
     createOrUpdateContactRequest,
+    getContactRequest',
     getContactRequest,
     getContactRequestIdByName,
     deleteContactRequest,
@@ -1180,7 +1181,7 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId Profi
     createOrUpdate_ = do
       cReqId <-
         ExceptT $
-          maybeM getContactRequest' xContactId_ >>= \case
+          maybeM getContactRequestByXContactId xContactId_ >>= \case
             Nothing -> createContactRequest
             Just cr -> updateContactRequest cr $> Right (contactRequestId (cr :: UserContactRequest))
       getContactRequest db user cReqId
@@ -1225,8 +1226,8 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId Profi
             LIMIT 1
           |]
           (userId, xContactId)
-    getContactRequest' :: XContactId -> IO (Maybe UserContactRequest)
-    getContactRequest' xContactId =
+    getContactRequestByXContactId :: XContactId -> IO (Maybe UserContactRequest)
+    getContactRequestByXContactId xContactId =
       maybeFirstRow toContactRequest $
         DB.query
           db
@@ -1270,6 +1271,11 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId Profi
               )
             |]
             (displayName, fullName, image, currentTs, userId, cReqId)
+
+getContactRequest' :: DB.Connection -> Int64 -> ExceptT StoreError IO (User, UserContactRequest)
+getContactRequest' db contactRequestId = do
+  user <- getUserByContactRequestId db contactRequestId
+  (user,) <$> getContactRequest db user contactRequestId
 
 getContactRequest :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO UserContactRequest
 getContactRequest db User {userId} contactRequestId =
