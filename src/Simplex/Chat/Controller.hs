@@ -396,8 +396,8 @@ data ChatResponse
   | CRContactConnected {user :: User, contact :: Contact, userCustomProfile :: Maybe Profile}
   | CRContactAnotherClient {user :: User, contact :: Contact}
   | CRSubscriptionEnd {user :: User, connectionEntity :: ConnectionEntity}
-  | CRContactsDisconnected {user :: User, server :: SMPServer, contactRefs :: [ContactRef]}
-  | CRContactsSubscribed {user :: User, server :: SMPServer, contactRefs :: [ContactRef]}
+  | CRContactsDisconnected {server :: SMPServer, contactRefs :: [ContactRef]}
+  | CRContactsSubscribed {server :: SMPServer, contactRefs :: [ContactRef]}
   | CRContactSubError {contact :: Contact, chatError :: ChatError} -- TODO delete
   | CRContactSubSummary {user :: User, contactSubscriptions :: [ContactSubStatus]}
   | CRUserContactSubSummary {user :: User, userContactSubscriptions :: [UserContactSubStatus]}

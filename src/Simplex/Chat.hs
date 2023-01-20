@@ -1987,16 +1987,14 @@ expireChatItems user@User {userId} ttl sync = do
 
 processAgentMessage :: forall m. ChatMonad m => ACorrId -> ConnId -> ACommand 'Agent -> m ()
 processAgentMessage _ "" msg =
-  asks currentUser >>= readTVarIO >>= \case
-    Just user -> processAgentMessageNoConn user msg `catchError` (toView . CRChatError (Just user))
-    _ -> throwChatError CENoActiveUser
+  processAgentMessageNoConn msg `catchError` (toView . CRChatError Nothing)
 processAgentMessage corrId connId msg =
   withStore' (`getUserByAConnId` AgentConnId connId) >>= \case
     Just user -> processAgentMessageConn user corrId connId msg `catchError` (toView . CRChatError (Just user))
     _ -> throwChatError $ CENoConnectionUser (AgentConnId connId)
 
-processAgentMessageNoConn :: forall m. ChatMonad m => User -> ACommand 'Agent -> m ()
-processAgentMessageNoConn user@User {userId} = \case
+processAgentMessageNoConn :: forall m. ChatMonad m => ACommand 'Agent -> m ()
+processAgentMessageNoConn = \case
   CONNECT p h -> hostEvent $ CRHostConnected p h
   DISCONNECT p h -> hostEvent $ CRHostDisconnected p h
   DOWN srv conns -> serverEvent srv conns CRContactsDisconnected "disconnected"
@@ -2006,8 +2004,8 @@ processAgentMessageNoConn user@User {userId} = \case
   where
     hostEvent = whenM (asks $ hostEvents . config) . toView
     serverEvent srv@(SMPServer host _ _) conns event str = do
-      cs <- withStore' $ \db -> getConnectionsContacts db userId conns
-      toView $ event user srv cs
+      cs <- withStore' $ \db -> getConnectionsContacts db conns
+      toView $ event srv cs
       showToast ("server " <> str) (safeDecodeUtf8 $ strEncode host)
 
 processAgentMessageConn :: forall m. ChatMonad m => User -> ACorrId -> ConnId -> ACommand 'Agent -> m ()

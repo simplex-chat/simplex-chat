@@ -1715,8 +1715,8 @@ getConnectionById db User {userId} connId = ExceptT $ do
       |]
       (userId, connId)
 
-getConnectionsContacts :: DB.Connection -> UserId -> [ConnId] -> IO [ContactRef]
-getConnectionsContacts db userId agentConnIds = do
+getConnectionsContacts :: DB.Connection-> [ConnId] -> IO [ContactRef]
+getConnectionsContacts db agentConnIds = do
   DB.execute_ db "DROP TABLE IF EXISTS temp.conn_ids"
   DB.execute_ db "CREATE TABLE temp.conn_ids (conn_id BLOB)"
   DB.executeMany db "INSERT INTO temp.conn_ids (conn_id) VALUES (?)" $ map Only agentConnIds
@@ -1728,11 +1728,10 @@ getConnectionsContacts db userId agentConnIds = do
           SELECT ct.contact_id, c.connection_id, ct.local_display_name
           FROM contacts ct
           JOIN connections c ON c.contact_id = ct.contact_id
-          WHERE ct.user_id = ?
-            AND c.agent_conn_id IN (SELECT conn_id FROM temp.conn_ids)
+          WHERE c.agent_conn_id IN (SELECT conn_id FROM temp.conn_ids)
             AND c.conn_type = ?
         |]
-        (userId, ConnContact)
+        (Only ConnContact)
   DB.execute_ db "DROP TABLE temp.conn_ids"
   pure conns
   where
