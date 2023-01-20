@@ -195,7 +195,7 @@ data ChatCommand
   | APIRegisterToken DeviceToken NotificationsMode
   | APIVerifyToken DeviceToken C.CbNonce ByteString
   | APIDeleteToken DeviceToken
-  | APIGetNtfMessage {userId :: UserId, nonce :: C.CbNonce, encNtfInfo :: ByteString}
+  | APIGetNtfMessage {nonce :: C.CbNonce, encNtfInfo :: ByteString}
   | APIAddMember GroupId ContactId GroupMemberRole
   | APIJoinGroup GroupId
   | APIMemberRole GroupId GroupMemberId GroupMemberRole
@@ -396,8 +396,8 @@ data ChatResponse
   | CRContactConnected {user :: User, contact :: Contact, userCustomProfile :: Maybe Profile}
   | CRContactAnotherClient {user :: User, contact :: Contact}
   | CRSubscriptionEnd {user :: User, connectionEntity :: ConnectionEntity}
-  | CRContactsDisconnected {user :: User, server :: SMPServer, contactRefs :: [ContactRef]}
-  | CRContactsSubscribed {user :: User, server :: SMPServer, contactRefs :: [ContactRef]}
+  | CRContactsDisconnected {server :: SMPServer, contactRefs :: [ContactRef]}
+  | CRContactsSubscribed {server :: SMPServer, contactRefs :: [ContactRef]}
   | CRContactSubError {contact :: Contact, chatError :: ChatError} -- TODO delete
   | CRContactSubSummary {user :: User, contactSubscriptions :: [ContactSubStatus]}
   | CRUserContactSubSummary {user :: User, userContactSubscriptions :: [UserContactSubStatus]}
@@ -439,7 +439,7 @@ data ChatResponse
   | CRUserContactLinkSubError {chatError :: ChatError} -- TODO delete
   | CRNtfTokenStatus {status :: NtfTknStatus}
   | CRNtfToken {token :: DeviceToken, status :: NtfTknStatus, ntfMode :: NotificationsMode}
-  | CRNtfMessages {user :: User, connEntity :: Maybe ConnectionEntity, msgTs :: Maybe UTCTime, ntfMessages :: [NtfMsgInfo]}
+  | CRNtfMessages {user_ :: Maybe User, connEntity :: Maybe ConnectionEntity, msgTs :: Maybe UTCTime, ntfMessages :: [NtfMsgInfo]}
   | CRNewContactConnection {user :: User, connection :: PendingContactConnection}
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
   | CRSQLResult {rows :: [Text]}

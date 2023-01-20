@@ -152,8 +152,8 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
   CRContactConnected u ct userCustomProfile -> ttyUser u $ viewContactConnected ct userCustomProfile testView
   CRContactAnotherClient u c -> ttyUser u [ttyContact' c <> ": contact is connected to another client"]
   CRSubscriptionEnd u acEntity -> ttyUser u [sShow (connId (entityConnection acEntity :: Connection)) <> ": END"]
-  CRContactsDisconnected u srv cs -> ttyUser u [plain $ "server disconnected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
-  CRContactsSubscribed u srv cs -> ttyUser u [plain $ "server connected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
+  CRContactsDisconnected srv cs -> [plain $ "server disconnected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
+  CRContactsSubscribed srv cs -> [plain $ "server connected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
   CRContactSubError c e -> [ttyContact' c <> ": contact error " <> sShow e]
   CRContactSubSummary u summary ->
     ttyUser u $ [sShow (length subscribed) <> " contacts connected (use " <> highlight' "/cs" <> " for the list)" | not (null subscribed)] <> viewErrorsSummary errors " contact errors"
@@ -1165,7 +1165,7 @@ viewChatError :: ChatLogLevel -> ChatError -> [StyledString]
 viewChatError logLevel = \case
   ChatError err -> case err of
     CENoActiveUser -> ["error: active user is required"]
-    CENoConnectionUser _agentConnId -> [] -- ["error: connection has no user, conn id: " <> sShow agentConnId]
+    CENoConnectionUser agentConnId -> ["error: message user not found, conn id: " <> sShow agentConnId | logLevel <= CLLError]
     CEActiveUserExists -> ["error: active user already exists"]
     CEDifferentActiveUser commandUserId activeUserId -> ["error: different active user, command user id: " <> sShow commandUserId <> ", active user id: " <> sShow activeUserId]
     CECantDeleteActiveUser _ -> ["cannot delete active user"]

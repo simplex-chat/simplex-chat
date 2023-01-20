@@ -173,6 +173,7 @@ contactSecurityCode Contact {activeConn} = connectionCode activeConn
 data ContactRef = ContactRef
   { contactId :: ContactId,
     connId :: Int64,
+    agentConnId :: AgentConnId,
     localDisplayName :: ContactName
   }
   deriving (Eq, Show, Generic)

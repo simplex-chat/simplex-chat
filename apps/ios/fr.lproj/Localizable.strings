@@ -1374,7 +1374,7 @@
 "Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." = "Assurez-vous que les adresses des serveurs WebRTC ICE sont au bon format et ne sont pas dupliquées, un par ligne.";
 
 /* No comment provided by engineer. */
-"Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" = "Beaucoup se demandent : *si SimpleX n'a pas d'identifiants d'utilisateur, comment peut-il délivrer des messages?*";
+"Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" = "Beaucoup se demandent : *si SimpleX n'a pas d'identifiants d'utilisateur, comment peut-il délivrer des messages ?*";
 
 /* No comment provided by engineer. */
 "Mark deleted for everyone" = "Marquer comme supprimé pour tout le monde";
@@ -1900,7 +1900,7 @@
 "Sender may have deleted the connection request." = "L'expéditeur a peut-être supprimé la demande de connexion.";
 
 /* No comment provided by engineer. */
-"Sending via" = "Envoyé via";
+"Sending via" = "Envoi via";
 
 /* notification */
 "Sent file event" = "Événement de fichier envoyé";
@@ -1945,7 +1945,7 @@
 "Share link" = "Partager le lien";
 
 /* No comment provided by engineer. */
-"Share one-time invitation link" = "Partager le lien d'invitation unique";
+"Share one-time invitation link" = "Partager un lien d'invitation unique";
 
 /* No comment provided by engineer. */
 "Show preview" = "Montrer l'aperçu";

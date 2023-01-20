@@ -2273,6 +2273,10 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>Das Öffnen des Links über den Browser kann die Privatsphäre und Sicherheit der Verbindung reduzieren. SimpleX-Links, denen nicht vertraut wird, werden Rot sein.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="PING count" xml:space="preserve">
+        <source>PING count</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="PING interval" xml:space="preserve">
         <source>PING interval</source>
         <target>PING-Intervall</target>

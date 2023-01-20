@@ -69,12 +69,12 @@
       </trans-unit>
       <trans-unit id="%@ is not verified" xml:space="preserve">
         <source>%@ is not verified</source>
-        <target>%@ non è verificato</target>
+        <target>%@ non è verificato/a</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ is verified" xml:space="preserve">
         <source>%@ is verified</source>
-        <target>%@ è verificato</target>
+        <target>%@ è verificato/a</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ wants to connect!" xml:space="preserve">
@@ -144,12 +144,12 @@
       </trans-unit>
       <trans-unit id="%lldd" xml:space="preserve">
         <source>%lldd</source>
-        <target>%lldd</target>
+        <target>%lldg</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lldh" xml:space="preserve">
         <source>%lldh</source>
-        <target>%lldh</target>
+        <target>%lldo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lldk" xml:space="preserve">
@@ -164,7 +164,7 @@
       </trans-unit>
       <trans-unit id="%lldmth" xml:space="preserve">
         <source>%lldmth</source>
-        <target>%lldmth</target>
+        <target>%lldmese</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%llds" xml:space="preserve">
@@ -174,7 +174,7 @@
       </trans-unit>
       <trans-unit id="%lldw" xml:space="preserve">
         <source>%lldw</source>
-        <target>%lldw</target>
+        <target>%lldset</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="(" xml:space="preserve">
@@ -635,7 +635,7 @@
       </trans-unit>
       <trans-unit id="Chats" xml:space="preserve">
         <source>Chats</source>
-        <target>Conversazioni</target>
+        <target>Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Check server address and try again." xml:space="preserve">
@@ -1093,7 +1093,7 @@
       </trans-unit>
       <trans-unit id="Delete messages after" xml:space="preserve">
         <source>Delete messages after</source>
-        <target>Elimina messaggio dopo</target>
+        <target>Elimina messaggi dopo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete old database" xml:space="preserve">
@@ -1653,7 +1653,7 @@
       </trans-unit>
       <trans-unit id="Hidden" xml:space="preserve">
         <source>Hidden</source>
-        <target>Nascosto</target>
+        <target>Nascosta</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Hide" xml:space="preserve">
@@ -1703,12 +1703,12 @@
       </trans-unit>
       <trans-unit id="If you can't meet in person, **show QR code in the video call**, or share the link." xml:space="preserve">
         <source>If you can't meet in person, **show QR code in the video call**, or share the link.</source>
-        <target>Se non potete incontrarvi di persona, **mostratevi il codice QR durante la videochiamata** o condividete il link.</target>
+        <target>Se non potete incontrarvi di persona, **mostra il codice QR durante la videochiamata** o condividi il link.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." xml:space="preserve">
         <source>If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link.</source>
-        <target>Se non potete incontrarvi di persona, potete **scansionare il codice QR durante la videochiamata** oppure il tuo contatto può condividere un link di invito.</target>
+        <target>Se non potete incontrarvi di persona, puoi **scansionare il codice QR durante la videochiamata** oppure il tuo contatto può condividere un link di invito.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." xml:space="preserve">
@@ -1985,7 +1985,7 @@ Aggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</tar
       </trans-unit>
       <trans-unit id="Mark verified" xml:space="preserve">
         <source>Mark verified</source>
-        <target>Segna come verificato</target>
+        <target>Segna come verificato/a</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Markdown in messages" xml:space="preserve">
@@ -2100,7 +2100,7 @@ Aggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</tar
       </trans-unit>
       <trans-unit id="New in %@" xml:space="preserve">
         <source>New in %@</source>
-        <target>Novità in %@</target>
+        <target>Novità nella %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New member role" xml:space="preserve">
@@ -2273,6 +2273,10 @@ Aggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</tar
         <target>Aprire il link nel browser può ridurre la privacy e la sicurezza della connessione. I link SimpleX non fidati saranno in rosso.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="PING count" xml:space="preserve">
+        <source>PING count</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="PING interval" xml:space="preserve">
         <source>PING interval</source>
         <target>Intervallo PING</target>
@@ -2375,7 +2379,7 @@ Aggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</tar
       </trans-unit>
       <trans-unit id="Privacy redefined" xml:space="preserve">
         <source>Privacy redefined</source>
-        <target>La privacy ridefinita</target>
+        <target>Privacy ridefinita</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile image" xml:space="preserve">
@@ -2820,7 +2824,7 @@ Aggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</tar
       </trans-unit>
       <trans-unit id="SimpleX Chat security was [audited by Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html)." xml:space="preserve">
         <source>SimpleX Chat security was [audited by Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html).</source>
-        <target>La sicurezza di SimpleX Chat è stata [controllata da Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html).</target>
+        <target>La sicurezza di SimpleX Chat è stata [verificata da Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX Lock" xml:space="preserve">
@@ -2965,7 +2969,7 @@ Aggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</tar
       </trans-unit>
       <trans-unit id="Tap to start a new chat" xml:space="preserve">
         <source>Tap to start a new chat</source>
-        <target>Tocca per iniziare una conversazione</target>
+        <target>Tocca per iniziare una chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Test failed at step %@." xml:space="preserve">
@@ -3439,7 +3443,7 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
       </trans-unit>
       <trans-unit id="You can use markdown to format messages:" xml:space="preserve">
         <source>You can use markdown to format messages:</source>
-        <target>Puoi utilizzare il markdown per formattare i messaggi:</target>
+        <target>Puoi usare il markdown per formattare i messaggi:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." xml:space="preserve">
@@ -3454,7 +3458,7 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
       </trans-unit>
       <trans-unit id="You have no chats" xml:space="preserve">
         <source>You have no chats</source>
-        <target>Non hai conversazioni</target>
+        <target>Non hai chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You have to enter passphrase every time the app starts - it is not stored on the device." xml:space="preserve">
@@ -3584,7 +3588,7 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
       </trans-unit>
       <trans-unit id="Your chats" xml:space="preserve">
         <source>Your chats</source>
-        <target>Le tue conversazioni</target>
+        <target>Le tue chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact address" xml:space="preserve">
@@ -3798,27 +3802,27 @@ I server di SimpleX non possono vedere il tuo profilo.</target>
       </trans-unit>
       <trans-unit id="connecting" xml:space="preserve">
         <source>connecting</source>
-        <target>connessione</target>
+        <target>in connessione</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connecting (accepted)" xml:space="preserve">
         <source>connecting (accepted)</source>
-        <target>connessione (accettato)</target>
+        <target>in connessione (accettato)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connecting (announced)" xml:space="preserve">
         <source>connecting (announced)</source>
-        <target>connessione (annunciato)</target>
+        <target>in connessione (annunciato)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connecting (introduced)" xml:space="preserve">
         <source>connecting (introduced)</source>
-        <target>connessione (presentato)</target>
+        <target>in connessione (presentato)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connecting (introduction invitation)" xml:space="preserve">
         <source>connecting (introduction invitation)</source>
-        <target>connessione (invito di presentazione)</target>
+        <target>in connessione (invito di presentazione)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connecting call" xml:space="preserve">
@@ -3828,7 +3832,7 @@ I server di SimpleX non possono vedere il tuo profilo.</target>
       </trans-unit>
       <trans-unit id="connecting…" xml:space="preserve">
         <source>connecting…</source>
-        <target>connessione…</target>
+        <target>in connessione…</target>
         <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="connection established" xml:space="preserve">
@@ -3958,12 +3962,12 @@ I server di SimpleX non possono vedere il tuo profilo.</target>
       </trans-unit>
       <trans-unit id="invalid chat" xml:space="preserve">
         <source>invalid chat</source>
-        <target>conversazione non valida</target>
+        <target>chat non valida</target>
         <note>invalid chat data</note>
       </trans-unit>
       <trans-unit id="invalid chat data" xml:space="preserve">
         <source>invalid chat data</source>
-        <target>dati della conversazione non validi</target>
+        <target>dati chat non validi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="invalid data" xml:space="preserve">

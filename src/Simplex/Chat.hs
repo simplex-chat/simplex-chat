@@ -89,7 +89,7 @@ defaultChatConfig =
     { agentConfig =
         defaultAgentConfig
           { tcpPort = undefined, -- agent does not listen to TCP
-            tbqSize = 64,
+            tbqSize = 1024,
             database = AgentDBFile {dbFile = "simplex_v1_agent", dbKey = ""},
             yesToMigrations = False
           },
@@ -100,7 +100,7 @@ defaultChatConfig =
             ntf = _defaultNtfServers,
             netCfg = defaultNetworkConfig
           },
-      tbqSize = 64,
+      tbqSize = 1024,
       fileChunkSize = 15780, -- do not change
       inlineFiles = defaultInlineFilesConfig,
       logLevel = CLLImportant,
@@ -780,12 +780,16 @@ processChatCommand = \case
     CRNtfTokenStatus <$> withAgent (\a -> registerNtfToken a token mode)
   APIVerifyToken token nonce code -> withUser $ \_ -> withAgent (\a -> verifyNtfToken a token nonce code) >> ok_
   APIDeleteToken token -> withUser $ \_ -> withAgent (`deleteNtfToken` token) >> ok_
-  APIGetNtfMessage userId nonce encNtfInfo -> withUserId userId $ \user -> do
+  APIGetNtfMessage nonce encNtfInfo -> withUser $ \_ -> do
     (NotificationInfo {ntfConnId, ntfMsgMeta}, msgs) <- withAgent $ \a -> getNotificationMessage a nonce encNtfInfo
     let ntfMessages = map (\SMP.SMPMsgMeta {msgTs, msgFlags} -> NtfMsgInfo {msgTs = systemToUTCTime msgTs, msgFlags}) msgs
         msgTs' = systemToUTCTime . (SMP.msgTs :: SMP.NMsgMeta -> SystemTime) <$> ntfMsgMeta
-    connEntity <- withStore (\db -> Just <$> getConnectionEntity db user (AgentConnId ntfConnId)) `catchError` \_ -> pure Nothing
-    pure CRNtfMessages {user, connEntity, msgTs = msgTs', ntfMessages}
+        agentConnId = AgentConnId ntfConnId
+    user_ <- withStore' (`getUserByAConnId` agentConnId)
+    connEntity <-
+      pure user_ $>>= \user ->
+        withStore (\db -> Just <$> getConnectionEntity db user agentConnId) `catchError` \_ -> pure Nothing
+    pure CRNtfMessages {user_, connEntity, msgTs = msgTs', ntfMessages}
   APIGetUserSMPServers userId -> withUserId userId $ \user -> do
     ChatConfig {defaultServers = DefaultAgentServers {smp = defaultSMPServers}} <- asks config
     smpServers <- withStore' (`getSMPServers` user)
@@ -1987,16 +1991,14 @@ expireChatItems user@User {userId} ttl sync = do
 
 processAgentMessage :: forall m. ChatMonad m => ACorrId -> ConnId -> ACommand 'Agent -> m ()
 processAgentMessage _ "" msg =
-  asks currentUser >>= readTVarIO >>= \case
-    Just user -> processAgentMessageNoConn user msg `catchError` (toView . CRChatError (Just user))
-    _ -> throwChatError CENoActiveUser
+  processAgentMessageNoConn msg `catchError` (toView . CRChatError Nothing)
 processAgentMessage corrId connId msg =
   withStore' (`getUserByAConnId` AgentConnId connId) >>= \case
     Just user -> processAgentMessageConn user corrId connId msg `catchError` (toView . CRChatError (Just user))
     _ -> throwChatError $ CENoConnectionUser (AgentConnId connId)
 
-processAgentMessageNoConn :: forall m. ChatMonad m => User -> ACommand 'Agent -> m ()
-processAgentMessageNoConn user@User {userId} = \case
+processAgentMessageNoConn :: forall m. ChatMonad m => ACommand 'Agent -> m ()
+processAgentMessageNoConn = \case
   CONNECT p h -> hostEvent $ CRHostConnected p h
   DISCONNECT p h -> hostEvent $ CRHostDisconnected p h
   DOWN srv conns -> serverEvent srv conns CRContactsDisconnected "disconnected"
@@ -2006,8 +2008,8 @@ processAgentMessageNoConn user@User {userId} = \case
   where
     hostEvent = whenM (asks $ hostEvents . config) . toView
     serverEvent srv@(SMPServer host _ _) conns event str = do
-      cs <- withStore' $ \db -> getConnectionsContacts db userId conns
-      toView $ event user srv cs
+      cs <- withStore' $ \db -> getConnectionsContacts db conns
+      toView $ event srv cs
       showToast ("server " <> str) (safeDecodeUtf8 $ strEncode host)
 
 processAgentMessageConn :: forall m. ChatMonad m => User -> ACorrId -> ConnId -> ACommand 'Agent -> m ()
@@ -3886,7 +3888,7 @@ chatCommandP =
       "/_ntf register " *> (APIRegisterToken <$> strP_ <*> strP),
       "/_ntf verify " *> (APIVerifyToken <$> strP <* A.space <*> strP <* A.space <*> strP),
       "/_ntf delete " *> (APIDeleteToken <$> strP),
-      "/_ntf message " *> (APIGetNtfMessage <$> A.decimal <* A.space <*> strP <* A.space <*> strP),
+      "/_ntf message " *> (APIGetNtfMessage <$> strP <* A.space <*> strP),
       "/_add #" *> (APIAddMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_join #" *> (APIJoinGroup <$> A.decimal),
       "/_member role #" *> (APIMemberRole <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
