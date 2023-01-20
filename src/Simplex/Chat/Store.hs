@@ -267,6 +267,7 @@ import Data.Bifunctor (first)
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import Data.Either (rights)
+import Data.Foldable (foldrM)
 import Data.Function (on)
 import Data.Functor (($>))
 import Data.Int (Int64)
@@ -461,13 +462,13 @@ getUsersInfo db = getUsers db >>= mapM getUserInfo
   where
     getUserInfo :: User -> IO UserInfo
     getUserInfo user@User {userId} = do
-      count_ <-
-        maybeFirstRow fromOnly $
-          DB.query
-            db
-            "SELECT COUNT(1) FROM chat_items WHERE user_id = ? AND item_status = ? GROUP BY user_id"
-            (userId, CISRcvNew)
-      pure UserInfo {user, unreadCount = fromMaybe 0 count_}
+      ctIds <- map fromOnly <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND (enable_ntfs = 1 OR enable_ntfs IS NULL)" (Only userId)
+      let ctUnread :: ContactId -> IO Int = \ctId -> fromMaybe 0 <$> maybeFirstRow fromOnly (DB.query db "SELECT COUNT(1) FROM chat_items WHERE user_id = ? AND contact_id = ? AND item_status = ?" (userId, ctId, CISRcvNew))
+      ctCount <- foldrM (\ctId acc -> (+ acc) <$> ctUnread ctId) 0 ctIds
+      gIds <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ? AND (enable_ntfs = 1 OR enable_ntfs IS NULL)" (Only userId)
+      let gUnread :: GroupId -> IO Int = \gId -> fromMaybe 0 <$> maybeFirstRow fromOnly (DB.query db "SELECT COUNT(1) FROM chat_items WHERE user_id = ? AND group_id = ? AND item_status = ?" (userId, gId, CISRcvNew))
+      unreadCount <- foldrM (\gId acc -> (+ acc) <$> gUnread gId) ctCount gIds
+      pure UserInfo {user, unreadCount}
 
 getUsers :: DB.Connection -> IO [User]
 getUsers db =
