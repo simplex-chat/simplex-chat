@@ -2273,6 +2273,10 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Ouvrir le lien dans le navigateur peut réduire la confidentialité et la sécurité de la connexion. Les liens SimpleX non fiables seront en rouge.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="PING count" xml:space="preserve">
+        <source>PING count</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="PING interval" xml:space="preserve">
         <source>PING interval</source>
         <target>Intervalle de PING</target>
