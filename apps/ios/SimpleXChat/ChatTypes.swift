@@ -1154,6 +1154,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
 
 public struct ContactRef: Decodable, Equatable {
     var contactId: Int64
+    public var connId: Int64
     var localDisplayName: ContactName
 
     public var id: ChatId { get { "@\(contactId)" } }
@@ -1165,7 +1166,7 @@ public struct ContactSubStatus: Decodable {
 }
 
 public struct Connection: Decodable {
-    var connId: Int64
+    public var connId: Int64
     var connStatus: ConnStatus
     public var connLevel: Int
     public var viaGroupLink: Bool

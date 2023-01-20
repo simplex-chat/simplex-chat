@@ -1001,7 +1001,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 m.updateContact(contact)
                 m.dismissConnReqView(contact.activeConn.id)
                 m.removeChat(contact.activeConn.id)
-                m.updateNetworkStatus(contact.id, .connected)
+                m.networkStatuses[contact.activeConn.connId] = .connected
                 NtfManager.shared.notifyContactConnected(user, contact)
             }
         case let .contactConnecting(user, contact):
@@ -1054,7 +1054,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
                     processContactSubError(sub.contact, err)
                 } else {
                     m.updateContact(sub.contact)
-                    m.updateNetworkStatus(sub.contact.id, .connected)
+                    m.networkStatuses[sub.contact.activeConn.connId] = .connected
                 }
             }
         case let .newChatItem(user, aChatItem):
@@ -1270,10 +1270,10 @@ func chatItemSimpleUpdate(_ aChatItem: AChatItem) {
     }
 }
 
-func updateContactsStatus(_ contactRefs: [ContactRef], status: Chat.NetworkStatus) {
+func updateContactsStatus(_ contactRefs: [ContactRef], status: NetworkStatus) {
     let m = ChatModel.shared
     for c in contactRefs {
-        m.updateNetworkStatus(c.id, status)
+        m.networkStatuses[c.connId] = status
     }
 }
 
@@ -1286,7 +1286,7 @@ func processContactSubError(_ contact: Contact, _ chatError: ChatError) {
     case .errorAgent(agentError: .SMP(smpErr: .AUTH)): err = "contact deleted"
     default: err = String(describing: chatError)
     }
-    m.updateNetworkStatus(contact.id, .error(err))
+    m.networkStatuses[contact.activeConn.connId] = .error(err)
 }
 
 func refreshCallInvitations() throws {
