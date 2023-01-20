@@ -152,8 +152,8 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
   CRContactConnected u ct userCustomProfile -> ttyUser u $ viewContactConnected ct userCustomProfile testView
   CRContactAnotherClient u c -> ttyUser u [ttyContact' c <> ": contact is connected to another client"]
   CRSubscriptionEnd u acEntity -> ttyUser u [sShow (connId (entityConnection acEntity :: Connection)) <> ": END"]
-  CRContactsDisconnected u srv cs -> ttyUser u [plain $ "server disconnected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
-  CRContactsSubscribed u srv cs -> ttyUser u [plain $ "server connected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
+  CRContactsDisconnected srv cs -> [plain $ "server disconnected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
+  CRContactsSubscribed srv cs -> [plain $ "server connected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
   CRContactSubError c e -> [ttyContact' c <> ": contact error " <> sShow e]
   CRContactSubSummary u summary ->
     ttyUser u $ [sShow (length subscribed) <> " contacts connected (use " <> highlight' "/cs" <> " for the list)" | not (null subscribed)] <> viewErrorsSummary errors " contact errors"
