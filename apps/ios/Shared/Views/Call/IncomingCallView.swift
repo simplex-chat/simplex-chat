@@ -67,6 +67,7 @@ struct IncomingCallView: View {
                         .font(.subheadline)
                         .foregroundColor(.primary)
                 }
+                .padding(.top, 4)
             }
         }
         .padding(.horizontal, 16)
