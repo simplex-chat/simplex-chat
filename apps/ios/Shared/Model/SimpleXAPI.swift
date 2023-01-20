@@ -1001,9 +1001,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 m.updateContact(contact)
                 m.dismissConnReqView(contact.activeConn.id)
                 m.removeChat(contact.activeConn.id)
-                m.networkStatuses[contact.activeConn.connId] = .connected
                 NtfManager.shared.notifyContactConnected(user, contact)
             }
+            m.networkStatuses[contact.activeConn.connId] = .connected
         case let .contactConnecting(user, contact):
             if active(user) && contact.directOrUsed {
                 m.updateContact(contact)
@@ -1035,25 +1035,23 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 }
                 m.removeChat(mergedContact.id)
             }
-        case let .contactsSubscribed(user, _, contactRefs):
-            if active(user) {
-                updateContactsStatus(contactRefs, status: .connected)
-            }
-        case let .contactsDisconnected(user, _, contactRefs):
-            if active(user) {
-                updateContactsStatus(contactRefs, status: .disconnected)
-            }
+        case let .contactsSubscribed(_, _, contactRefs):
+            updateContactsStatus(contactRefs, status: .connected)
+        case let .contactsDisconnected(_, _, contactRefs):
+            updateContactsStatus(contactRefs, status: .disconnected)
         case let .contactSubError(user, contact, chatError):
             if active(user) {
-                processContactSubError(contact, chatError)
+                m.updateContact(contact)
             }
+            processContactSubError(contact, chatError)
         case let .contactSubSummary(user, contactSubscriptions):
-            if !active(user) { return }
             for sub in contactSubscriptions {
+                if active(user) {
+                    m.updateContact(sub.contact)
+                }
                 if let err = sub.contactError {
                     processContactSubError(sub.contact, err)
                 } else {
-                    m.updateContact(sub.contact)
                     m.networkStatuses[sub.contact.activeConn.connId] = .connected
                 }
             }
@@ -1279,7 +1277,6 @@ func updateContactsStatus(_ contactRefs: [ContactRef], status: NetworkStatus) {
 
 func processContactSubError(_ contact: Contact, _ chatError: ChatError) {
     let m = ChatModel.shared
-    m.updateContact(contact)
     var err: String
     switch chatError {
     case .errorAgent(agentError: .BROKER(_, .NETWORK)): err = "network"
