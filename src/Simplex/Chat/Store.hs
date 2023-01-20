@@ -462,33 +462,28 @@ getUsersInfo db = getUsers db >>= mapM getUserInfo
     getUserInfo :: User -> IO UserInfo
     getUserInfo user@User {userId} = do
       ctCount <-
-        fromMaybe 0
-          <$> maybeFirstRow
-            fromOnly
-            ( DB.query
-                db
-                [sql|
-                  SELECT COUNT(1)
-                  FROM chat_items i
-                  JOIN contacts ct USING (contact_id)
-                  WHERE i.user_id = ? AND i.item_status = ? AND (ct.enable_ntfs = 1 OR ct.enable_ntfs IS NULL)
-                |]
-                (userId, CISRcvNew)
-            )
-      unreadCount <-
-        (+ ctCount) . fromMaybe 0
-          <$> maybeFirstRow
-            fromOnly
-            ( DB.query
-                db
-                [sql|
-                  SELECT COUNT(1)
-                  FROM chat_items i
-                  JOIN groups g USING (group_id)
-                  WHERE i.user_id = ? AND i.item_status = ? AND (g.enable_ntfs = 1 OR g.enable_ntfs IS NULL)
-                |]
-                (userId, CISRcvNew)
-            )
+        maybeFirstRow fromOnly $
+          DB.query
+            db
+            [sql|
+              SELECT COUNT(1)
+              FROM chat_items i
+              JOIN contacts ct USING (contact_id)
+              WHERE i.user_id = ? AND i.item_status = ? AND (ct.enable_ntfs = 1 OR ct.enable_ntfs IS NULL)
+            |]
+            (userId, CISRcvNew)
+      gCount <-
+        maybeFirstRow fromOnly $
+          DB.query
+            db
+            [sql|
+              SELECT COUNT(1)
+              FROM chat_items i
+              JOIN groups g USING (group_id)
+              WHERE i.user_id = ? AND i.item_status = ? AND (g.enable_ntfs = 1 OR g.enable_ntfs IS NULL)
+            |]
+            (userId, CISRcvNew)
+      let unreadCount = fromMaybe 0 ctCount + fromMaybe 0 gCount
       pure UserInfo {user, unreadCount}
 
 getUsers :: DB.Connection -> IO [User]
