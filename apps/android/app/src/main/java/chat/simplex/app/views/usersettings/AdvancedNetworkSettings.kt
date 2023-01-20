@@ -171,7 +171,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
       SectionItemView {
         TimeoutSettingRow(
           stringResource(R.string.network_option_ping_interval), networkSMPPingInterval,
-          listOf(300_000000, 600_000000, 1200_000000, 2400_000000, 3600_000000), secondsLabel
+          listOf(120_000000, 300_000000, 600_000000, 1200_000000, 2400_000000, 3600_000000), secondsLabel
         )
       }
       SectionDivider()
