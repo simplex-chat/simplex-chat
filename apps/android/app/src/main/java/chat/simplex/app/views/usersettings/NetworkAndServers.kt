@@ -123,10 +123,8 @@ fun NetworkAndServersView(
       }
       SectionDivider()
       UseOnionHosts(onionHosts, networkUseSocksProxy, showSettingsModal, useOnion)
-      if (developerTools) {
-        SectionDivider()
-        SettingsActionItem(Icons.Outlined.Cable, stringResource(R.string.network_settings), showSettingsModal { AdvancedNetworkSettingsView(it) })
-      }
+      SectionDivider()
+      SettingsActionItem(Icons.Outlined.Cable, stringResource(R.string.network_settings), showSettingsModal { AdvancedNetworkSettingsView(it) })
     }
     Spacer(Modifier.height(8.dp))
     SectionView(generalGetString(R.string.settings_section_title_calls)) {
