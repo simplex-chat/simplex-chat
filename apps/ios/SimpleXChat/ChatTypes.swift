@@ -34,7 +34,7 @@ public struct User: Decodable, NamedChat, Identifiable {
     )
 }
 
-public struct UserInfo: Decodable {
+public struct UserInfo: Decodable, Identifiable {
     public var user: User
     public var unreadCount: Int64
 
@@ -42,6 +42,8 @@ public struct UserInfo: Decodable {
         self.user = user
         self.unreadCount = unreadCount
     }
+
+    public var id: Int64 { user.userId }
 
     public static let sampleData = UserInfo(
         user: User.sampleData,

@@ -15,7 +15,6 @@ struct ChatListView: View {
     @State private var searchText = ""
     @State private var showAddChat = false
     @State var userPickerVisible = false
-    @State var selectedView: Int? = nil
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -29,9 +28,6 @@ struct ChatListView: View {
                     } else {
                         chatList
                     }
-                    NavigationLink(destination: UserProfilesView().navigationTitle("Profiles"), tag: 0, selection: $selectedView) {
-                        EmptyView()
-                    }
                 }
             }
             .navigationViewStyle(.stack)
@@ -42,14 +38,7 @@ struct ChatListView: View {
                     }
                 }
             }
-            UserPicker(
-                showSettings: $showSettings,
-                userPickerVisible: $userPickerVisible,
-                manageUsers: {
-                    selectedView = 0
-                    userPickerVisible = false
-                }
-            )
+            UserPicker(showSettings: $showSettings, userPickerVisible: $userPickerVisible)
         }
     }
 
