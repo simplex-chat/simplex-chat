@@ -195,7 +195,7 @@ data ChatCommand
   | APIRegisterToken DeviceToken NotificationsMode
   | APIVerifyToken DeviceToken C.CbNonce ByteString
   | APIDeleteToken DeviceToken
-  | APIGetNtfMessage {userId :: UserId, nonce :: C.CbNonce, encNtfInfo :: ByteString}
+  | APIGetNtfMessage {nonce :: C.CbNonce, encNtfInfo :: ByteString}
   | APIAddMember GroupId ContactId GroupMemberRole
   | APIJoinGroup GroupId
   | APIMemberRole GroupId GroupMemberId GroupMemberRole
@@ -586,7 +586,6 @@ instance ToJSON ChatError where
 
 data ChatErrorType
   = CENoActiveUser
-  | CENoConnectionUser {agentConnId :: AgentConnId}
   | CEActiveUserExists -- TODO delete
   | CEDifferentActiveUser {commandUserId :: UserId, activeUserId :: UserId}
   | CECantDeleteActiveUser {userId :: UserId}

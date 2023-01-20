@@ -504,9 +504,9 @@ getUserIdByName db uName =
   ExceptT . firstRow fromOnly (SEUserNotFoundByName uName) $
     DB.query db "SELECT user_id FROM users WHERE local_display_name = ?" (Only uName)
 
-getUserByAConnId :: DB.Connection -> AgentConnId -> IO (Maybe User)
+getUserByAConnId :: DB.Connection -> AgentConnId -> ExceptT StoreError IO User
 getUserByAConnId db agentConnId =
-  maybeFirstRow toUser $
+  ExceptT . firstRow toUser (SEUserNotFoundByAConnId agentConnId) $
     DB.query db (userQuery <> " JOIN connections c ON c.user_id = u.user_id WHERE c.agent_conn_id = ?") (Only agentConnId)
 
 getUserByContactId :: DB.Connection -> ContactId -> ExceptT StoreError IO User
@@ -4839,6 +4839,7 @@ data StoreError
   = SEDuplicateName
   | SEUserNotFound {userId :: UserId}
   | SEUserNotFoundByName {contactName :: ContactName}
+  | SEUserNotFoundByAConnId {agentConnId :: AgentConnId}
   | SEUserNotFoundByContactId {contactId :: ContactId}
   | SEUserNotFoundByGroupId {groupId :: GroupId}
   | SEUserNotFoundByFileId {fileId :: FileTransferId}

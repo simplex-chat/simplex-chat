@@ -780,10 +780,11 @@ processChatCommand = \case
     CRNtfTokenStatus <$> withAgent (\a -> registerNtfToken a token mode)
   APIVerifyToken token nonce code -> withUser $ \_ -> withAgent (\a -> verifyNtfToken a token nonce code) >> ok_
   APIDeleteToken token -> withUser $ \_ -> withAgent (`deleteNtfToken` token) >> ok_
-  APIGetNtfMessage userId nonce encNtfInfo -> withUserId userId $ \user -> do
+  APIGetNtfMessage nonce encNtfInfo -> withUser $ \_ -> do
     (NotificationInfo {ntfConnId, ntfMsgMeta}, msgs) <- withAgent $ \a -> getNotificationMessage a nonce encNtfInfo
     let ntfMessages = map (\SMP.SMPMsgMeta {msgTs, msgFlags} -> NtfMsgInfo {msgTs = systemToUTCTime msgTs, msgFlags}) msgs
         msgTs' = systemToUTCTime . (SMP.msgTs :: SMP.NMsgMeta -> SystemTime) <$> ntfMsgMeta
+    user <- withStore (`getUserByAConnId` AgentConnId ntfConnId)
     connEntity <- withStore (\db -> Just <$> getConnectionEntity db user (AgentConnId ntfConnId)) `catchError` \_ -> pure Nothing
     pure CRNtfMessages {user, connEntity, msgTs = msgTs', ntfMessages}
   APIGetUserSMPServers userId -> withUserId userId $ \user -> do
@@ -1990,10 +1991,9 @@ processAgentMessage _ "" msg =
   asks currentUser >>= readTVarIO >>= \case
     Just user -> processAgentMessageNoConn user msg `catchError` (toView . CRChatError (Just user))
     _ -> throwChatError CENoActiveUser
-processAgentMessage corrId connId msg =
-  withStore' (`getUserByAConnId` AgentConnId connId) >>= \case
-    Just user -> processAgentMessageConn user corrId connId msg `catchError` (toView . CRChatError (Just user))
-    _ -> throwChatError $ CENoConnectionUser (AgentConnId connId)
+processAgentMessage corrId connId msg = do
+  user <- withStore (`getUserByAConnId` AgentConnId connId)
+  processAgentMessageConn user corrId connId msg `catchError` (toView . CRChatError (Just user))
 
 processAgentMessageNoConn :: forall m. ChatMonad m => User -> ACommand 'Agent -> m ()
 processAgentMessageNoConn user@User {userId} = \case
@@ -3886,7 +3886,7 @@ chatCommandP =
       "/_ntf register " *> (APIRegisterToken <$> strP_ <*> strP),
       "/_ntf verify " *> (APIVerifyToken <$> strP <* A.space <*> strP <* A.space <*> strP),
       "/_ntf delete " *> (APIDeleteToken <$> strP),
-      "/_ntf message " *> (APIGetNtfMessage <$> A.decimal <* A.space <*> strP <* A.space <*> strP),
+      "/_ntf message " *> (APIGetNtfMessage <$> strP <* A.space <*> strP),
       "/_add #" *> (APIAddMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_join #" *> (APIJoinGroup <$> A.decimal),
       "/_member role #" *> (APIMemberRole <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
