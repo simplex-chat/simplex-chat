@@ -439,7 +439,7 @@ data ChatResponse
   | CRUserContactLinkSubError {chatError :: ChatError} -- TODO delete
   | CRNtfTokenStatus {status :: NtfTknStatus}
   | CRNtfToken {token :: DeviceToken, status :: NtfTknStatus, ntfMode :: NotificationsMode}
-  | CRNtfMessages {user :: User, connEntity :: Maybe ConnectionEntity, msgTs :: Maybe UTCTime, ntfMessages :: [NtfMsgInfo]}
+  | CRNtfMessages {user_ :: Maybe User, connEntity :: Maybe ConnectionEntity, msgTs :: Maybe UTCTime, ntfMessages :: [NtfMsgInfo]}
   | CRNewContactConnection {user :: User, connection :: PendingContactConnection}
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
   | CRSQLResult {rows :: [Text]}
@@ -586,6 +586,7 @@ instance ToJSON ChatError where
 
 data ChatErrorType
   = CENoActiveUser
+  | CENoConnectionUser {agentConnId :: AgentConnId}
   | CEActiveUserExists -- TODO delete
   | CEDifferentActiveUser {commandUserId :: UserId, activeUserId :: UserId}
   | CECantDeleteActiveUser {userId :: UserId}

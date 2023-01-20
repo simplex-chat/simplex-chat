@@ -784,9 +784,10 @@ processChatCommand = \case
     (NotificationInfo {ntfConnId, ntfMsgMeta}, msgs) <- withAgent $ \a -> getNotificationMessage a nonce encNtfInfo
     let ntfMessages = map (\SMP.SMPMsgMeta {msgTs, msgFlags} -> NtfMsgInfo {msgTs = systemToUTCTime msgTs, msgFlags}) msgs
         msgTs' = systemToUTCTime . (SMP.msgTs :: SMP.NMsgMeta -> SystemTime) <$> ntfMsgMeta
-    user <- withStore (`getUserByAConnId` AgentConnId ntfConnId)
-    connEntity <- withStore (\db -> Just <$> getConnectionEntity db user (AgentConnId ntfConnId)) `catchError` \_ -> pure Nothing
-    pure CRNtfMessages {user, connEntity, msgTs = msgTs', ntfMessages}
+        agentConnId = AgentConnId ntfConnId
+    user_ <- withStore' (`getUserByAConnId` agentConnId)
+    connEntity <- join <$> forM user_ (\user -> eitherToMaybe <$> runExceptT (withStore $ \db -> getConnectionEntity db user agentConnId))
+    pure CRNtfMessages {user_, connEntity, msgTs = msgTs', ntfMessages}
   APIGetUserSMPServers userId -> withUserId userId $ \user -> do
     ChatConfig {defaultServers = DefaultAgentServers {smp = defaultSMPServers}} <- asks config
     smpServers <- withStore' (`getSMPServers` user)
@@ -1991,9 +1992,10 @@ processAgentMessage _ "" msg =
   asks currentUser >>= readTVarIO >>= \case
     Just user -> processAgentMessageNoConn user msg `catchError` (toView . CRChatError (Just user))
     _ -> throwChatError CENoActiveUser
-processAgentMessage corrId connId msg = do
-  user <- withStore (`getUserByAConnId` AgentConnId connId)
-  processAgentMessageConn user corrId connId msg `catchError` (toView . CRChatError (Just user))
+processAgentMessage corrId connId msg =
+  withStore' (`getUserByAConnId` AgentConnId connId) >>= \case
+    Just user -> processAgentMessageConn user corrId connId msg `catchError` (toView . CRChatError (Just user))
+    _ -> throwChatError $ CENoConnectionUser (AgentConnId connId)
 
 processAgentMessageNoConn :: forall m. ChatMonad m => User -> ACommand 'Agent -> m ()
 processAgentMessageNoConn user@User {userId} = \case
