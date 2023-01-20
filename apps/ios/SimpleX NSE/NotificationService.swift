@@ -218,6 +218,9 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, UNMutableNotification
     case let .newChatItem(user, aChatItem):
         let cInfo = aChatItem.chatInfo
         var cItem = aChatItem.chatItem
+        if !cInfo.ntfsEnabled {
+            ntfBadgeCountGroupDefault.set(max(0, ntfBadgeCountGroupDefault.get() - 1))
+        }
         if case .image = cItem.content.msgContent {
            if let file = cItem.file,
               file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV,
