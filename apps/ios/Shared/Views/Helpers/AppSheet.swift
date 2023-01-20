@@ -65,12 +65,21 @@ extension View {
     }
 }
 
-struct NavStackWorkaround<T: View>: View {
-    let content: ()->T
+struct NavStackWorkaround <C: View, D: View>: View {
+    let isPresented: Binding<Bool>
+    let destination: () -> D
+    let content: () -> C
 
     var body: some View {
         if #available(iOS 16, *) {
-            NavigationStack(root: content)
+            NavigationStack {
+                content()
+                .navigationDestination(isPresented: isPresented) {
+                    destination()
+                    .navigationBarTitleDisplayMode(.inline)
+                    .navigationBarBackButtonHidden(true)
+                }
+            }
         } else {
             NavigationView(content: content)
                 .navigationViewStyle(.stack)

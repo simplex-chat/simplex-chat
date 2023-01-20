@@ -17,7 +17,7 @@ struct ChatListView: View {
     @State private var showAddChat = false
 
     var body: some View {
-        NavStackWorkaround {
+        NavStackWorkaround(isPresented: Binding(get: { chatModel.chatId != nil }, set: { _ in }), destination: chatView) {
             VStack {
                 if chatModel.chats.isEmpty {
                     onboardingButtons()
@@ -29,7 +29,6 @@ struct ChatListView: View {
                 }
             }
         }
-        .navigationViewStyle(.stack)
     }
 
     var chatList: some View {
@@ -76,13 +75,15 @@ struct ChatListView: View {
             }
         }
         .background(
-            NavigationLink(
+            ProcessInfo().operatingSystemVersion.majorVersion < 16
+            ? NavigationLink(
                 destination: chatView(),
                 isActive: Binding(
                     get: { chatModel.chatId != nil },
                     set: { _ in }
                 )
             ) { EmptyView() }
+            : nil
         )
     }
 
