@@ -492,7 +492,7 @@ final class ChatModel: ObservableObject {
         return reversedChatItems[min(i - 1, maxIx)]
     }
 
-    func updateContactNetworkStatus(_ contact: Contact, _ status: NetworkStatus) {
+    func setContactNetworkStatus(_ contact: Contact, _ status: NetworkStatus) {
         networkStatuses[contact.activeConn.agentConnId] = status
     }
 
