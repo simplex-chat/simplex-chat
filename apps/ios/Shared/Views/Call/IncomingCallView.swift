@@ -96,7 +96,7 @@ struct IncomingCallView_Previews: PreviewProvider {
     static var previews: some View {
         CallController.shared.activeCallInvitation = RcvCallInvitation.sampleData
         let m = ChatModel()
-        m.updateUsers([UserInfo.sampleData, UserInfo.sampleData])
+        m.users = [UserInfo.sampleData, UserInfo.sampleData]
         return IncomingCallView().environmentObject(m)
     }
 }
