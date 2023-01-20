@@ -24,6 +24,8 @@ final class ChatModel: ObservableObject {
     @Published var chatDbStatus: DBMigrationResult?
     // list of chat "previews"
     @Published var chats: [Chat] = []
+    // map of connections network statuses, key is connection id
+    @Published var networkStatuses: Dictionary<Int64, NetworkStatus> = [:]
     // current chat
     @Published var chatId: String?
     @Published var reversedChatItems: [ChatItem] = []
@@ -128,17 +130,9 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    func updateNetworkStatus(_ id: ChatId, _ status: Chat.NetworkStatus) {
-        if let i = getChatIndex(id) {
-            chats[i].serverInfo.networkStatus = status
-        }
-    }
-
     func replaceChat(_ id: String, _ chat: Chat) {
         if let i = getChatIndex(id) {
-            let serverInfo = chats[i].serverInfo
             chats[i] = chat
-            chats[i].serverInfo = serverInfo
         } else {
             // invalid state, correcting
             chats.insert(chat, at: 0)
@@ -522,6 +516,14 @@ final class ChatModel: ObservableObject {
             logger.error("Unable to set active user: \(error.localizedDescription)")
         }
     }
+
+    func updateContactNetworkStatus(_ contact: Contact, _ status: NetworkStatus) {
+        networkStatuses[contact.activeConn.connId] = status
+    }
+
+    func contactNetworkStatus(_ contact: Contact) -> NetworkStatus {
+        networkStatuses[contact.activeConn.connId] ?? .unknown
+    }
 }
 
 struct UnreadChatItemCounts {
@@ -533,50 +535,7 @@ final class Chat: ObservableObject, Identifiable {
     @Published var chatInfo: ChatInfo
     @Published var chatItems: [ChatItem]
     @Published var chatStats: ChatStats
-    @Published var serverInfo = ServerInfo(networkStatus: .unknown)
     var created = Date.now
-
-    struct ServerInfo: Decodable {
-        var networkStatus: NetworkStatus
-    }
-
-    enum NetworkStatus: Decodable, Equatable {
-        case unknown
-        case connected
-        case disconnected
-        case error(String)
-
-        var statusString: LocalizedStringKey {
-            get {
-                switch self {
-                case .connected: return "connected"
-                case .error: return "error"
-                default: return "connecting"
-                }
-            }
-        }
-
-        var statusExplanation: LocalizedStringKey {
-            get {
-                switch self {
-                case .connected: return "You are connected to the server used to receive messages from this contact."
-                case let .error(err): return "Trying to connect to the server used to receive messages from this contact (error: \(err))."
-                default: return "Trying to connect to the server used to receive messages from this contact."
-                }
-            }
-        }
-
-        var imageName: String {
-            get {
-                switch self {
-                case .unknown: return "circle.dotted"
-                case .connected: return "circle.fill"
-                case .disconnected: return "ellipsis.circle.fill"
-                case .error: return "exclamationmark.circle.fill"
-                }
-            }
-        }
-    }
 
     init(_ cData: ChatData) {
         self.chatInfo = cData.chatInfo
@@ -584,11 +543,10 @@ final class Chat: ObservableObject, Identifiable {
         self.chatStats = cData.chatStats
     }
 
-    init(chatInfo: ChatInfo, chatItems: [ChatItem] = [], chatStats: ChatStats = ChatStats(), serverInfo: ServerInfo = ServerInfo(networkStatus: .unknown)) {
+    init(chatInfo: ChatInfo, chatItems: [ChatItem] = [], chatStats: ChatStats = ChatStats()) {
         self.chatInfo = chatInfo
         self.chatItems = chatItems
         self.chatStats = chatStats
-        self.serverInfo = serverInfo
     }
 
     var id: ChatId { get { chatInfo.id } }
@@ -596,4 +554,42 @@ final class Chat: ObservableObject, Identifiable {
     var viewId: String { get { "\(chatInfo.id) \(created.timeIntervalSince1970)" } }
 
     public static var sampleData: Chat = Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [])
+}
+
+enum NetworkStatus: Decodable, Equatable {
+    case unknown
+    case connected
+    case disconnected
+    case error(String)
+
+    var statusString: LocalizedStringKey {
+        get {
+            switch self {
+            case .connected: return "connected"
+            case .error: return "error"
+            default: return "connecting"
+            }
+        }
+    }
+
+    var statusExplanation: LocalizedStringKey {
+        get {
+            switch self {
+            case .connected: return "You are connected to the server used to receive messages from this contact."
+            case let .error(err): return "Trying to connect to the server used to receive messages from this contact (error: \(err))."
+            default: return "Trying to connect to the server used to receive messages from this contact."
+            }
+        }
+    }
+
+    var imageName: String {
+        get {
+            switch self {
+            case .unknown: return "circle.dotted"
+            case .connected: return "circle.fill"
+            case .disconnected: return "ellipsis.circle.fill"
+            case .error: return "exclamationmark.circle.fill"
+            }
+        }
+    }
 }
