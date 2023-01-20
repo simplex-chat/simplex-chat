@@ -659,18 +659,19 @@ processChatCommand = \case
       pure $ CRChatCleared user (AChatInfo SCTGroup $ GroupChat gInfo)
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
-  APIAcceptContact connReqId -> withUser $ \user@User {userId} -> withChatLock "acceptContact" $ do
-    cReq <- withStore $ \db -> getContactRequest db userId connReqId
+  APIAcceptContact connReqId -> withUser $ \_ -> withChatLock "acceptContact" $ do
+    user <- withStore (`getUserByContactRequestId` connReqId)
+    cReq <- withStore $ \db -> getContactRequest db user connReqId
     -- [incognito] generate profile to send, create connection with incognito profile
     incognito <- readTVarIO =<< asks incognitoMode
     incognitoProfile <- if incognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
     ct <- acceptContactRequest user cReq incognitoProfile
     pure $ CRAcceptingContactRequest user ct
-  APIRejectContact connReqId -> withUser $ \user@User {userId} -> withChatLock "rejectContact" $ do
+  APIRejectContact connReqId -> withUser $ \user -> withChatLock "rejectContact" $ do
     cReq@UserContactRequest {agentContactConnId = AgentConnId connId, agentInvitationId = AgentInvId invId} <-
       withStore $ \db ->
-        getContactRequest db userId connReqId
-          `E.finally` liftIO (deleteContactRequest db userId connReqId)
+        getContactRequest db user connReqId
+          `E.finally` liftIO (deleteContactRequest db user connReqId)
     withAgent $ \a -> rejectContact a connId invId
     pure $ CRContactRequestRejected user cReq
   APISendCallInvitation contactId callType -> withUser $ \user -> do
