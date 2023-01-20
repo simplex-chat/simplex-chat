@@ -45,13 +45,11 @@ struct NetworkAndServers: View {
                     }
                     .frame(height: 36)
 
-                    if developerTools {
-                        NavigationLink {
-                            AdvancedNetworkSettings()
-                                .navigationTitle("Network settings")
-                        } label: {
-                            Text("Advanced network settings")
-                        }
+                    NavigationLink {
+                        AdvancedNetworkSettings()
+                            .navigationTitle("Network settings")
+                    } label: {
+                        Text("Advanced network settings")
                     }
                 } header: {
                     Text("Messages")

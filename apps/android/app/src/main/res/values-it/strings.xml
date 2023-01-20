@@ -3,7 +3,7 @@
     <string name="simplex_link_mode">Link di SimpleX</string>
     <string name="network_error_desc">Controlla la tua connessione di rete con <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g> e riprova.</string>
     <string name="service_notifications_disabled">Le notifiche istantanee sono disattivate!</string>
-    <string name="contact_connection_pending">connessione…</string>
+    <string name="contact_connection_pending">in connessione…</string>
     <string name="attach">Allega</string>
     <string name="icon_descr_cancel_image_preview">Annulla anteprima immagine</string>
     <string name="images_limit_desc">Possono essere inviate solo 10 immagini alla volta</string>
@@ -17,7 +17,7 @@
     <string name="connect_via_link_verb">Connetti</string>
     <string name="server_connected">connesso</string>
     <string name="server_error">errore</string>
-    <string name="server_connecting">connessione</string>
+    <string name="server_connecting">in connessione</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Sei connesso al server usato per ricevere messaggi da questo contatto.</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Tentativo di connessione al server usato per ricevere messaggi da questo contatto.</string>
     <string name="deleted_description">eliminato</string>
@@ -32,7 +32,7 @@
     <string name="invalid_data">dati non validi</string>
     <string name="display_name_connection_established">connessione stabilita</string>
     <string name="display_name_invited_to_connect">invitato a connettersi</string>
-    <string name="display_name_connecting">connessione…</string>
+    <string name="display_name_connecting">in connessione…</string>
     <string name="description_you_shared_one_time_link">hai condiviso un link una tantum</string>
     <string name="description_you_shared_one_time_link_incognito">hai condiviso un link incognito una tantum</string>
     <string name="description_via_group_link">via link di gruppo</string>
@@ -50,7 +50,7 @@
     <string name="ensure_smp_server_address_are_correct_format_and_unique">Assicurati che gli indirizzi dei server SMP siano nel formato giusto, uno per riga e non doppi.</string>
     <string name="error_setting_network_config">Errore di aggiornamento della configurazione di rete</string>
     <string name="failed_to_parse_chat_title">Caricamento conversazione fallito</string>
-    <string name="failed_to_parse_chats_title">Caricamento conversazioni fallito</string>
+    <string name="failed_to_parse_chats_title">Caricamento delle chat fallito</string>
     <string name="contact_developers">Aggiorna l\'app e contatta gli sviluppatori.</string>
     <string name="connection_timeout">Connessione scaduta</string>
     <string name="connection_error">Errore di connessione</string>
@@ -104,7 +104,7 @@
     <string name="notifications_mode_periodic_desc">Controlla messaggi nuovi ogni 10 minuti per massimo 1 minuto</string>
     <string name="notification_preview_mode_message">Testo del messaggio</string>
     <string name="notification_preview_mode_contact">Nome del contatto</string>
-    <string name="notification_preview_mode_hidden">Nascosto</string>
+    <string name="notification_preview_mode_hidden">Nascosta</string>
     <string name="notification_preview_mode_message_desc">Mostra contatto e messaggio</string>
     <string name="notification_preview_mode_contact_desc">Mostra solo il contatto</string>
     <string name="notification_display_mode_hidden_desc">Nascondi contatto e messaggio</string>
@@ -145,13 +145,13 @@
     <string name="personal_welcome">Benvenuto/a <xliff:g>%1$s</xliff:g>!</string>
     <string name="welcome">Benvenuto/a!</string>
     <string name="this_text_is_available_in_settings">Questo testo è disponibile nelle impostazioni</string>
-    <string name="your_chats">Le tue conversazioni</string>
+    <string name="your_chats">Le tue chat</string>
     <string name="group_preview_you_are_invited">sei stato invitato in un gruppo</string>
     <string name="group_preview_join_as">entra come %s</string>
-    <string name="group_connection_pending">connessione…</string>
+    <string name="group_connection_pending">in connessione…</string>
     <string name="tap_to_start_new_chat">Tocca per iniziare una conversazione</string>
     <string name="chat_with_developers">Scrivi agli sviluppatori</string>
-    <string name="you_have_no_chats">Non hai conversazioni</string>
+    <string name="you_have_no_chats">Non hai chat</string>
     <string name="share_image">Condividi immagine…</string>
     <string name="share_file">Condividi file…</string>
     <string name="icon_descr_context">Icona contestuale</string>
@@ -265,7 +265,7 @@
     <string name="chat_item_ttl_month">1 mese</string>
     <string name="error_importing_database">Errore nell\'importazione del database della chat</string>
     <string name="group_full_name_field">Nome completo del gruppo:</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Se non potete incontrarvi di persona, potete <b>scansionare il codice QR nella videochiamata</b>, oppure il tuo contatto può condividere un link di invito.</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Se non potete incontrarvi di persona, puoi <b>scansionare il codice QR nella videochiamata</b>, oppure il tuo contatto può condividere un link di invito.</string>
     <string name="full_backup">Backup dei dati dell\'app</string>
     <string name="keychain_is_storing_securely">Android Keystore è usato per memorizzare in modo sicuro la password; permette il funzionamento del servizio di notifica.</string>
     <string name="allow_your_contacts_to_send_voice_messages">Permetti ai tuoi contatti di inviare messaggi vocali.</string>
@@ -485,7 +485,7 @@
     <string name="feature_enabled_for_you">attivato per te</string>
     <string name="group_preferences">Preferenze del gruppo</string>
     <string name="v4_2_auto_accept_contact_requests">Auto-accetta richieste di contatto</string>
-    <string name="ttl_d">%dd</string>
+    <string name="ttl_d">%dg</string>
     <string name="ttl_day">%d giorno</string>
     <string name="ttl_days">%d giorni</string>
     <string name="delete_after">Elimina dopo</string>
@@ -497,10 +497,10 @@
     <string name="ttl_min">%d min</string>
     <string name="ttl_month">%d mese</string>
     <string name="ttl_months">%d mesi</string>
-    <string name="ttl_mth">%dmth</string>
+    <string name="ttl_mth">%dmese</string>
     <string name="ttl_s">%ds</string>
     <string name="ttl_sec">%d sec</string>
-    <string name="ttl_w">%dw</string>
+    <string name="ttl_w">%dset</string>
     <string name="ttl_week">%d settimana</string>
     <string name="ttl_weeks">%d settimane</string>
     <string name="v4_2_group_links">Link del gruppo</string>
@@ -523,7 +523,7 @@
     <string name="delete_files_and_media_question">Eliminare i file e i multimediali\?</string>
     <string name="delete_files_and_media">"Elimina file e multimediali"</string>
     <string name="delete_messages">Elimina messaggi</string>
-    <string name="delete_messages_after">Elimina messaggio dopo</string>
+    <string name="delete_messages_after">Elimina messaggi dopo</string>
     <string name="total_files_count_and_size">%d file con dimensione totale di %s</string>
     <string name="enable_automatic_deletion_question">Attivare l\'eliminazione automatica dei messaggi\?</string>
     <string name="encrypt_database_question">Crittografare il database\?</string>
@@ -584,7 +584,7 @@
     <string name="smp_servers_invalid_address">Indirizzo del server non valido!</string>
     <string name="markdown_help">Aiuto sul markdown</string>
     <string name="markdown_in_messages">Markdown nei messaggi</string>
-    <string name="mark_code_verified">Segna come verificato</string>
+    <string name="mark_code_verified">Segna come verificato/a</string>
     <string name="one_time_link">Link di invito una tantum</string>
     <string name="paste_button">Incolla</string>
     <string name="paste_connection_link_below_to_connect">Incolla il link che hai ricevuto nella casella sottostante per connetterti con il tuo contatto.</string>
@@ -600,8 +600,8 @@
     <string name="smp_servers_test_failed">Test del server fallito!</string>
     <string name="share_invitation_link">Condividi link di invito</string>
     <string name="chat_lock">SimpleX Lock</string>
-    <string name="is_not_verified">%s non è verificato</string>
-    <string name="is_verified">%s è verificato</string>
+    <string name="is_not_verified">%s non è verificato/a</string>
+    <string name="is_verified">%s è verificato/a</string>
     <string name="smp_servers">Server SMP</string>
     <string name="smp_servers_test_some_failed">Alcuni server hanno fallito il test:</string>
     <string name="smp_servers_test_server">Testa server</string>
@@ -663,7 +663,7 @@
     <string name="callstate_waiting_for_confirmation">in attesa di conferma…</string>
     <string name="we_do_not_store_contacts_or_messages_on_servers">Non memorizziamo nessuno dei tuoi contatti o messaggi (una volta recapitati) sui server.</string>
     <string name="section_title_welcome_message">MESSAGGIO DI BENVENUTO</string>
-    <string name="you_can_use_markdown_to_format_messages__prompt">Puoi utilizzare il markdown per formattare i messaggi:</string>
+    <string name="you_can_use_markdown_to_format_messages__prompt">Puoi usare il markdown per formattare i messaggi:</string>
     <string name="you_control_your_chat">Sei tu a controllare la tua chat!</string>
     <string name="your_chat_profile">Il tuo profilo di chat</string>
     <string name="your_profile_is_stored_on_your_device">Il tuo profilo, i contatti e i messaggi recapitati sono memorizzati sul tuo dispositivo.</string>
@@ -683,7 +683,7 @@
     <string name="paste_the_link_you_received">Incolla il link ricevuto</string>
     <string name="people_can_connect_only_via_links_you_share">Le persone possono connettersi a te solo tramite i link che condividi.</string>
     <string name="onboarding_notifications_mode_periodic">Periodico</string>
-    <string name="privacy_redefined">La privacy ridefinita</string>
+    <string name="privacy_redefined">Privacy ridefinita</string>
     <string name="onboarding_notifications_mode_title">Notifiche private</string>
     <string name="read_more_in_github_with_link">Maggiori informazioni nel nostro <font color="#0088ff">repository GitHub</font>.</string>
     <string name="read_more_in_github">Maggiori informazioni nel nostro repository GitHub.</string>
@@ -880,7 +880,7 @@
     <string name="v4_3_irreversible_message_deletion">Eliminazione irreversibile del messaggio</string>
     <string name="message_deletion_prohibited_in_chat">L\'eliminazione irreversibile dei messaggi è vietata in questo gruppo.</string>
     <string name="v4_3_voice_messages_desc">Max 40 secondi, ricevuto istantaneamente.</string>
-    <string name="new_in_version">Novità in %s</string>
+    <string name="new_in_version">Novità nella %s</string>
     <string name="only_you_can_send_voice">Solo tu puoi inviare messaggi vocali.</string>
     <string name="only_your_contact_can_send_voice">Solo il tuo contatto può inviare messaggi vocali.</string>
     <string name="prohibit_message_deletion">Proibisci l\'eliminazione irreversibile dei messaggi.</string>

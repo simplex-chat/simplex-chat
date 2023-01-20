@@ -2273,6 +2273,11 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Использование ссылки в браузере может уменьшить конфиденциальность и безопасность соединения. Ссылки на неизвестные сайты будут красными.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="PING count" xml:space="preserve">
+        <source>PING count</source>
+        <source>Количество PING</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="PING interval" xml:space="preserve">
         <source>PING interval</source>
         <target>Интервал PING</target>

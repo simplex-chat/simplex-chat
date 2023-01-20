@@ -786,7 +786,7 @@
     <string name="prohibit_direct_messages">Interdire l\'envoi de messages directs aux membres.</string>
     <string name="group_members_can_delete">Les membres du groupe peuvent supprimer de manière irréversible les messages envoyés.</string>
     <string name="message_deletion_prohibited_in_chat">La suppression irréversible de messages est interdite dans ce groupe.</string>
-    <string name="sending_via">Envoyé via</string>
+    <string name="sending_via">Envoi via</string>
     <string name="network_status">État du réseau</string>
     <string name="switch_receiving_address">Changer d\'adresse de réception</string>
     <string name="create_secret_group_title">Créer un groupe secret</string>
