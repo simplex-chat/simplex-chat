@@ -1725,7 +1725,7 @@ getConnectionsContacts db agentConnIds = do
       <$> DB.query
         db
         [sql|
-          SELECT ct.contact_id, c.agent_conn_id, ct.local_display_name
+          SELECT ct.contact_id, c.connection_id, c.agent_conn_id, ct.local_display_name
           FROM contacts ct
           JOIN connections c ON c.contact_id = ct.contact_id
           WHERE c.agent_conn_id IN (SELECT conn_id FROM temp.conn_ids)
@@ -1735,8 +1735,8 @@ getConnectionsContacts db agentConnIds = do
   DB.execute_ db "DROP TABLE temp.conn_ids"
   pure conns
   where
-    toContactRef :: (ContactId, ConnId, ContactName) -> ContactRef
-    toContactRef (contactId, acId, localDisplayName) = ContactRef {contactId, agentConnId = AgentConnId acId, localDisplayName}
+    toContactRef :: (ContactId, Int64, ConnId, ContactName) -> ContactRef
+    toContactRef (contactId, connId, acId, localDisplayName) = ContactRef {contactId, connId, agentConnId = AgentConnId acId, localDisplayName}
 
 getGroupAndMember :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO (GroupInfo, GroupMember)
 getGroupAndMember db User {userId, userContactId} groupMemberId =
