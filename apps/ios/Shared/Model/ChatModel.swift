@@ -24,8 +24,8 @@ final class ChatModel: ObservableObject {
     @Published var chatDbStatus: DBMigrationResult?
     // list of chat "previews"
     @Published var chats: [Chat] = []
-    // map of connections network statuses, key is connection id
-    @Published var networkStatuses: Dictionary<Int64, NetworkStatus> = [:]
+    // map of connections network statuses, key is agent connection id
+    @Published var networkStatuses: Dictionary<String, NetworkStatus> = [:]
     // current chat
     @Published var chatId: String?
     @Published var reversedChatItems: [ChatItem] = []
@@ -492,12 +492,12 @@ final class ChatModel: ObservableObject {
         return reversedChatItems[min(i - 1, maxIx)]
     }
 
-    func updateContactNetworkStatus(_ contact: Contact, _ status: NetworkStatus) {
-        networkStatuses[contact.activeConn.connId] = status
+    func setContactNetworkStatus(_ contact: Contact, _ status: NetworkStatus) {
+        networkStatuses[contact.activeConn.agentConnId] = status
     }
 
     func contactNetworkStatus(_ contact: Contact) -> NetworkStatus {
-        networkStatuses[contact.activeConn.connId] ?? .unknown
+        networkStatuses[contact.activeConn.agentConnId] ?? .unknown
     }
 }
 
