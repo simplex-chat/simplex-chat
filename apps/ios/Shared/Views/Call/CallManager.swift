@@ -36,7 +36,6 @@ class CallManager {
 
     func answerIncomingCall(invitation: RcvCallInvitation) {
         let m = ChatModel.shared
-        // TODO: change active user
         m.callInvitations.removeValue(forKey: invitation.contact.id)
         m.activeCall = Call(
             direction: .incoming,

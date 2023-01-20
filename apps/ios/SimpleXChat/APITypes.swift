@@ -37,7 +37,7 @@ public enum ChatCommand {
     case apiRegisterToken(token: DeviceToken, notificationMode: NotificationsMode)
     case apiVerifyToken(token: DeviceToken, nonce: String, code: String)
     case apiDeleteToken(token: DeviceToken)
-    case apiGetNtfMessage(userId: Int64, nonce: String, encNtfInfo: String)
+    case apiGetNtfMessage(nonce: String, encNtfInfo: String)
     case apiNewGroup(userId: Int64, groupProfile: GroupProfile)
     case apiAddMember(groupId: Int64, contactId: Int64, memberRole: GroupMemberRole)
     case apiJoinGroup(groupId: Int64)
@@ -124,7 +124,7 @@ public enum ChatCommand {
             case let .apiRegisterToken(token, notificationMode): return "/_ntf register \(token.cmdString) \(notificationMode.rawValue)"
             case let .apiVerifyToken(token, nonce, code): return "/_ntf verify \(token.cmdString) \(nonce) \(code)"
             case let .apiDeleteToken(token): return "/_ntf delete \(token.cmdString)"
-            case let .apiGetNtfMessage(userId, nonce, encNtfInfo): return "/_ntf message \(userId) \(nonce) \(encNtfInfo)"
+            case let .apiGetNtfMessage(nonce, encNtfInfo): return "/_ntf message \(nonce) \(encNtfInfo)"
             case let .apiNewGroup(userId, groupProfile): return "/_group \(userId) \(encodeJSON(groupProfile))"
             case let .apiAddMember(groupId, contactId, memberRole): return "/_add #\(groupId) \(contactId) \(memberRole)"
             case let .apiJoinGroup(groupId): return "/_join #\(groupId)"
@@ -406,7 +406,7 @@ public enum ChatResponse: Decodable, Error {
     case callInvitations(callInvitations: [RcvCallInvitation])
     case ntfTokenStatus(status: NtfTknStatus)
     case ntfToken(token: DeviceToken, status: NtfTknStatus, ntfMode: NotificationsMode)
-    case ntfMessages(user: User, connEntity: ConnectionEntity?, msgTs: Date?, ntfMessages: [NtfMsgInfo])
+    case ntfMessages(user: User?, connEntity: ConnectionEntity?, msgTs: Date?, ntfMessages: [NtfMsgInfo])
     case newContactConnection(user: User, connection: PendingContactConnection)
     case contactConnectionDeleted(user: User, connection: PendingContactConnection)
     case cmdOk(user: User?)
@@ -1049,6 +1049,7 @@ public enum ChatError: Decodable {
 public enum ChatErrorType: Decodable {
     case noActiveUser
     case activeUserExists
+    case differentActiveUser
     case chatNotStarted
     case invalidConnReq
     case invalidChatMessage(message: String)

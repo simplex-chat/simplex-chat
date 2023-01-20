@@ -37,12 +37,11 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         let chatModel = ChatModel.shared
         let action = response.actionIdentifier
         logger.debug("NtfManager.userNotificationCenter: didReceive: action \(action), categoryIdentifier \(content.categoryIdentifier)")
-        if let userId = content.userInfo["userId"] as? Int64,
-           userId != chatModel.currentUser?.userId {
+        if let userId = content.userInfo["userId"] as? Int64, userId != chatModel.currentUser?.userId {
             chatModel.changeActiveUser(userId)
         }
         if content.categoryIdentifier == ntfCategoryContactRequest && action == ntfActionAcceptContact,
-           let chatId = content.userInfo["chatId"] as? String {
+            let chatId = content.userInfo["chatId"] as? String {
             if case let .contactRequest(contactRequest) = chatModel.getChat(chatId)?.chatInfo {
                 Task { await acceptContactRequest(contactRequest) }
             } else {

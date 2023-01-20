@@ -56,6 +56,18 @@ struct IncomingCallView: View {
                     }
                 }
             }
+            if m.users.count > 1 {
+                Divider()
+                HStack {
+                    Spacer()
+                    ProfileImage(imageStr: invitation.user.image, color: .white)
+                        .frame(width: 20, height: 20)
+                    Text(invitation.user.chatViewName)
+                        .fontWeight(.regular)
+                        .font(.subheadline)
+                        .foregroundColor(.primary)
+                }
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -82,6 +94,8 @@ struct IncomingCallView: View {
 struct IncomingCallView_Previews: PreviewProvider {
     static var previews: some View {
         CallController.shared.activeCallInvitation = RcvCallInvitation.sampleData
-        return IncomingCallView()
+        let m = ChatModel()
+        m.updateUsers([UserInfo.sampleData, UserInfo.sampleData])
+        return IncomingCallView().environmentObject(m)
     }
 }
