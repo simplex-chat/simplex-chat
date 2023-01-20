@@ -483,8 +483,7 @@ getUsersInfo db = getUsers db >>= mapM getUserInfo
               WHERE i.user_id = ? AND i.item_status = ? AND (g.enable_ntfs = 1 OR g.enable_ntfs IS NULL)
             |]
             (userId, CISRcvNew)
-      let unreadCount = fromMaybe 0 ctCount + fromMaybe 0 gCount
-      pure UserInfo {user, unreadCount}
+      pure UserInfo {user, unreadCount = fromMaybe 0 ctCount + fromMaybe 0 gCount}
 
 getUsers :: DB.Connection -> IO [User]
 getUsers db =
