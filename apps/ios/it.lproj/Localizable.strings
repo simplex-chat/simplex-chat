@@ -98,10 +98,10 @@
 "%@ is connected!" = "%@ è connesso!";
 
 /* No comment provided by engineer. */
-"%@ is not verified" = "%@ non è verificato";
+"%@ is not verified" = "%@ non è verificato/a";
 
 /* No comment provided by engineer. */
-"%@ is verified" = "%@ è verificato";
+"%@ is verified" = "%@ è verificato/a";
 
 /* notification title */
 "%@ wants to connect!" = "%@ si vuole connettere!";
@@ -143,10 +143,10 @@
 "%lld second(s)" = "%lld secondo/i";
 
 /* No comment provided by engineer. */
-"%lldd" = "%lldd";
+"%lldd" = "%lldg";
 
 /* No comment provided by engineer. */
-"%lldh" = "%lldh";
+"%lldh" = "%lldo";
 
 /* No comment provided by engineer. */
 "%lldk" = "%lldk";
@@ -155,13 +155,13 @@
 "%lldm" = "%lldm";
 
 /* No comment provided by engineer. */
-"%lldmth" = "%lldmth";
+"%lldmth" = "%lldmese";
 
 /* No comment provided by engineer. */
 "%llds" = "%llds";
 
 /* No comment provided by engineer. */
-"%lldw" = "%lldw";
+"%lldw" = "%lldset";
 
 /* No comment provided by engineer. */
 "`a + b`" = "\\`a + b`";
@@ -444,7 +444,7 @@
 "Chat preferences" = "Preferenze della chat";
 
 /* No comment provided by engineer. */
-"Chats" = "Conversazioni";
+"Chats" = "Chat";
 
 /* No comment provided by engineer. */
 "Check server address and try again." = "Controlla l'indirizzo del server e riprova.";
@@ -516,19 +516,19 @@
 "connected" = "connesso";
 
 /* No comment provided by engineer. */
-"connecting" = "connessione";
+"connecting" = "in connessione";
 
 /* No comment provided by engineer. */
-"connecting (accepted)" = "connessione (accettato)";
+"connecting (accepted)" = "in connessione (accettato)";
 
 /* No comment provided by engineer. */
-"connecting (announced)" = "connessione (annunciato)";
+"connecting (announced)" = "in connessione (annunciato)";
 
 /* No comment provided by engineer. */
-"connecting (introduced)" = "connessione (presentato)";
+"connecting (introduced)" = "in connessione (presentato)";
 
 /* No comment provided by engineer. */
-"connecting (introduction invitation)" = "connessione (invito di presentazione)";
+"connecting (introduction invitation)" = "in connessione (invito di presentazione)";
 
 /* call status */
 "connecting call" = "connessione chiamata…";
@@ -540,7 +540,7 @@
 "Connecting server… (error: %@)" = "Connessione al server… (errore: %@)";
 
 /* chat list item title */
-"connecting…" = "connessione…";
+"connecting…" = "in connessione…";
 
 /* No comment provided by engineer. */
 "Connection" = "Connessione";
@@ -765,7 +765,7 @@
 "Delete messages" = "Elimina messaggi";
 
 /* No comment provided by engineer. */
-"Delete messages after" = "Elimina messaggio dopo";
+"Delete messages after" = "Elimina messaggi dopo";
 
 /* No comment provided by engineer. */
 "Delete old database" = "Elimina database vecchio";
@@ -1140,7 +1140,7 @@
 "Help" = "Aiuto";
 
 /* No comment provided by engineer. */
-"Hidden" = "Nascosto";
+"Hidden" = "Nascosta";
 
 /* chat item action */
 "Hide" = "Nascondi";
@@ -1170,10 +1170,10 @@
 "If the video fails to connect, flip the camera to resolve it." = "Se il video non riesce a connettersi, cambia la fotocamera (frontale/posteriore) per risolvere.";
 
 /* No comment provided by engineer. */
-"If you can't meet in person, **show QR code in the video call**, or share the link." = "Se non potete incontrarvi di persona, **mostratevi il codice QR durante la videochiamata** o condividete il link.";
+"If you can't meet in person, **show QR code in the video call**, or share the link." = "Se non potete incontrarvi di persona, **mostra il codice QR durante la videochiamata** o condividi il link.";
 
 /* No comment provided by engineer. */
-"If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." = "Se non potete incontrarvi di persona, potete **scansionare il codice QR durante la videochiamata** oppure il tuo contatto può condividere un link di invito.";
+"If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." = "Se non potete incontrarvi di persona, puoi **scansionare il codice QR durante la videochiamata** oppure il tuo contatto può condividere un link di invito.";
 
 /* No comment provided by engineer. */
 "If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." = "Se devi usare la chat adesso, tocca **Fallo più tardi** qui sotto (ti verrà offerto di migrare il database quando riavvii l'app).";
@@ -1248,10 +1248,10 @@
 "Instantly" = "Istantaneamente";
 
 /* invalid chat data */
-"invalid chat" = "conversazione non valida";
+"invalid chat" = "chat non valida";
 
 /* No comment provided by engineer. */
-"invalid chat data" = "dati della conversazione non validi";
+"invalid chat data" = "dati chat non validi";
 
 /* No comment provided by engineer. */
 "Invalid connection link" = "Link di connessione non valido";
@@ -1383,7 +1383,7 @@
 "Mark read" = "Segna come già letto";
 
 /* No comment provided by engineer. */
-"Mark verified" = "Segna come verificato";
+"Mark verified" = "Segna come verificato/a";
 
 /* No comment provided by engineer. */
 "Markdown in messages" = "Markdown nei messaggi";
@@ -1470,7 +1470,7 @@
 "New database archive" = "Nuovo archivio database";
 
 /* No comment provided by engineer. */
-"New in %@" = "Novità in %@";
+"New in %@" = "Novità nella %@";
 
 /* No comment provided by engineer. */
 "New member role" = "Nuovo ruolo del membro";
@@ -1666,7 +1666,7 @@
 "Privacy & security" = "Privacy e sicurezza";
 
 /* No comment provided by engineer. */
-"Privacy redefined" = "La privacy ridefinita";
+"Privacy redefined" = "Privacy ridefinita";
 
 /* No comment provided by engineer. */
 "Profile image" = "Immagine del profilo";
@@ -1954,7 +1954,7 @@
 "Show QR code" = "Mostra codice QR";
 
 /* No comment provided by engineer. */
-"SimpleX Chat security was [audited by Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html)." = "La sicurezza di SimpleX Chat è stata [controllata da Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html).";
+"SimpleX Chat security was [audited by Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html)." = "La sicurezza di SimpleX Chat è stata [verificata da Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html).";
 
 /* simplex link type */
 "SimpleX contact address" = "Indirizzo del contatto SimpleX";
@@ -2038,7 +2038,7 @@
 "Tap to join incognito" = "Toccare per entrare in incognito";
 
 /* No comment provided by engineer. */
-"Tap to start a new chat" = "Tocca per iniziare una conversazione";
+"Tap to start a new chat" = "Tocca per iniziare una chat";
 
 /* No comment provided by engineer. */
 "TCP connection timeout" = "Scadenza connessione TCP";
@@ -2374,7 +2374,7 @@
 "You can start chat via app Settings / Database or by restarting the app" = "Puoi avviare la chat via Impostazioni / Database o riavviando l'app";
 
 /* No comment provided by engineer. */
-"You can use markdown to format messages:" = "Puoi utilizzare il markdown per formattare i messaggi:";
+"You can use markdown to format messages:" = "Puoi usare il markdown per formattare i messaggi:";
 
 /* chat item text */
 "you changed address" = "hai cambiato indirizzo";
@@ -2395,7 +2395,7 @@
 "You could not be verified; please try again." = "Non è stato possibile verificarti, riprova.";
 
 /* No comment provided by engineer. */
-"You have no chats" = "Non hai conversazioni";
+"You have no chats" = "Non hai chat";
 
 /* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "Devi inserire la password ogni volta che si avvia l'app: non viene memorizzata sul dispositivo.";
@@ -2479,7 +2479,7 @@
 "Your chat profile will be sent to your contact" = "Il tuo profilo di chat verrà inviato al tuo contatto";
 
 /* No comment provided by engineer. */
-"Your chats" = "Le tue conversazioni";
+"Your chats" = "Le tue chat";
 
 /* No comment provided by engineer. */
 "Your contact address" = "Il tuo indirizzo di contatto";
