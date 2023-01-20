@@ -66,24 +66,25 @@ struct ChatListView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
-                    withAnimation {
-                        userPickerVisible.toggle()
+                    if chatModel.users.count > 1 {
+                        withAnimation {
+                            userPickerVisible.toggle()
+                        }
+                    } else {
+                        showSettings = true
                     }
                 } label: {
                     let user = chatModel.currentUser ?? User.sampleData
                     let color = Color(uiColor: .tertiarySystemGroupedBackground)
-                    HStack(spacing: 0) {
+                    ZStack(alignment: .topTrailing) {
                         ProfileImage(imageStr: user.image, color: color)
                             .frame(width: 32, height: 32)
-                            .padding(.trailing, 6)
-                            .padding(.vertical, 6)
-                        let unread = chatModel.users
+                            .padding(.trailing, 4)
+                        let allRead = chatModel.users
                             .filter { !$0.user.activeUser }
-                            .reduce(0, {cnt, u in cnt + u.unreadCount})
-                        if unread > 0 {
-                            unreadCounter(unread)
-                                .padding(.leading, -12)
-                                .padding(.top, -16)
+                            .allSatisfy { u in u.unreadCount == 0 }
+                        if !allRead {
+                            unreadBadge(size: 12)
                         }
                     }
                 }
@@ -119,6 +120,12 @@ struct ChatListView: View {
                 )
             ) { EmptyView() }
         )
+    }
+
+    private func unreadBadge(_ text: Text? = Text(" "), size: CGFloat = 18) -> some View {
+        Circle()
+            .frame(width: size, height: size)
+            .foregroundColor(.accentColor)
     }
 
     private func onboardingButtons() -> some View {
