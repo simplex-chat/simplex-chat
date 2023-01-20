@@ -1165,7 +1165,7 @@ viewChatError :: ChatLogLevel -> ChatError -> [StyledString]
 viewChatError logLevel = \case
   ChatError err -> case err of
     CENoActiveUser -> ["error: active user is required"]
-    CENoConnectionUser _agentConnId -> [] -- ["error: connection has no user, conn id: " <> sShow agentConnId]
+    CENoConnectionUser agentConnId -> ["error: message user not found, conn id: " <> sShow agentConnId | logLevel <= CLLError]
     CEActiveUserExists -> ["error: active user already exists"]
     CEDifferentActiveUser commandUserId activeUserId -> ["error: different active user, command user id: " <> sShow commandUserId <> ", active user id: " <> sShow activeUserId]
     CECantDeleteActiveUser _ -> ["cannot delete active user"]
