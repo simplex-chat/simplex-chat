@@ -922,7 +922,7 @@ func startChat() throws {
     m.users = try listUsers()
     if justStarted {
         try getUserChatData()
-        NtfManager.shared.setNtfBadgeCount(m.totalUnreadCount())
+        NtfManager.shared.setNtfBadgeCount(m.totalUnreadCountForAllUsers())
         try refreshCallInvitations()
         (m.savedToken, m.tokenStatus, m.notificationMode) = apiGetNtfToken()
         if let token = m.deviceToken {
@@ -1071,7 +1071,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
             }
         case let .newChatItem(user, aChatItem):
             if !active(user) {
-                if case .rcvNew = aChatItem.chatItem.meta.itemStatus {
+                if case .rcvNew = aChatItem.chatItem.meta.itemStatus, aChatItem.chatInfo.ntfsEnabled {
                     m.increaseUnreadCounter(user: user)
                 }
                 return
@@ -1119,7 +1119,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
             }
         case let .chatItemDeleted(user, deletedChatItem, toChatItem, _):
             if !active(user) {
-                if toChatItem == nil && deletedChatItem.chatItem.isRcvNew {
+                if toChatItem == nil && deletedChatItem.chatItem.isRcvNew && deletedChatItem.chatInfo.ntfsEnabled {
                     m.decreaseUnreadCounter(user: user)
                 }
                 return

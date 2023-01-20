@@ -36,9 +36,9 @@ public struct User: Decodable, NamedChat, Identifiable {
 
 public struct UserInfo: Decodable, Identifiable {
     public var user: User
-    public var unreadCount: Int64
+    public var unreadCount: Int
 
-    public init(user: User, unreadCount: Int64) {
+    public init(user: User, unreadCount: Int) {
         self.user = user
         self.unreadCount = unreadCount
     }

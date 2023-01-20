@@ -132,8 +132,8 @@ struct UserPicker: View {
     }
 }
 
-func unreadCounter(_ unread: Int64) -> some View {
-    unreadCountText(Int(truncatingIfNeeded: unread))
+func unreadCounter(_ unread: Int) -> some View {
+    unreadCountText(unread)
     .font(.caption)
     .foregroundColor(.white)
     .padding(.horizontal, 4)

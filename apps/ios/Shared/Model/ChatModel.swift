@@ -158,7 +158,7 @@ final class ChatModel: ObservableObject {
                 addChat(Chat(c), at: i)
             }
         }
-        NtfManager.shared.setNtfBadgeCount(totalUnreadCount())
+        NtfManager.shared.setNtfBadgeCount(totalUnreadCountForAllUsers())
     }
 
 //    func addGroup(_ group: SimpleXChat.Group) {
@@ -392,26 +392,23 @@ final class ChatModel: ObservableObject {
 
     func increaseUnreadCounter(user: User) {
         changeUnreadCounter(user: user, by: 1)
-        if user.userId == currentUser?.userId {
-            NtfManager.shared.incNtfBadgeCount()
-        }
+        NtfManager.shared.incNtfBadgeCount()
     }
 
     func decreaseUnreadCounter(user: User, by: Int = 1) {
         changeUnreadCounter(user: user, by: -by)
-        if user.userId == currentUser?.userId {
-            NtfManager.shared.decNtfBadgeCount(by: by)
-        }
+        NtfManager.shared.decNtfBadgeCount(by: by)
     }
 
     private func changeUnreadCounter(user: User, by: Int) {
         if let i = users.firstIndex(where: { $0.user.id == user.id }) {
-            users[i].unreadCount += Int64(by)
+            users[i].unreadCount += by
         }
     }
 
-    func totalUnreadCount() -> Int {
-        chats.reduce(0, { count, chat in count + chat.chatStats.unreadCount })
+    func totalUnreadCountForAllUsers() -> Int {
+        chats.filter { $0.chatInfo.ntfsEnabled }.reduce(0, { count, chat in count + chat.chatStats.unreadCount }) +
+            users.filter { !$0.user.activeUser }.reduce(0, { unread, next -> Int in unread + next.unreadCount })
     }
 
     func getPrevChatItem(_ ci: ChatItem) -> ChatItem? {
