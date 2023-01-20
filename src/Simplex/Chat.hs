@@ -786,7 +786,7 @@ processChatCommand = \case
         msgTs' = systemToUTCTime . (SMP.msgTs :: SMP.NMsgMeta -> SystemTime) <$> ntfMsgMeta
         agentConnId = AgentConnId ntfConnId
     user_ <- withStore' (`getUserByAConnId` agentConnId)
-    connEntity <- join <$> forM user_ (\user -> eitherToMaybe <$> runExceptT (withStore $ \db -> getConnectionEntity db user agentConnId))
+    connEntity <- pure user_ $>>= \user -> eitherToMaybe <$> runExceptT (withStore $ \db -> getConnectionEntity db user agentConnId)
     pure CRNtfMessages {user_, connEntity, msgTs = msgTs', ntfMessages}
   APIGetUserSMPServers userId -> withUserId userId $ \user -> do
     ChatConfig {defaultServers = DefaultAgentServers {smp = defaultSMPServers}} <- asks config
