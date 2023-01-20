@@ -181,7 +181,7 @@ struct ChatPreviewView: View {
     @ViewBuilder private func chatStatusImage() -> some View {
         switch chat.chatInfo {
         case let .direct(contact):
-            switch (chatModel.connNetworkStatus(contact.activeConn)) {
+            switch (chatModel.contactNetworkStatus(contact)) {
             case .connected: EmptyView()
             case .error:
                 Image(systemName: "exclamationmark.circle")
