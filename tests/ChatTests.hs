@@ -4553,7 +4553,7 @@ testDeleteUser =
     \alice bob cath -> do
       connectUsers alice bob
 
-      alice ##> "/_delete user 1"
+      alice ##> "/_delete user 1 delSMPQueues=off"
       alice <## "cannot delete active user"
 
       alice ##> "/create user alisa"
