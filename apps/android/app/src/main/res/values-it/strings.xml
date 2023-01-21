@@ -919,4 +919,7 @@
     <string name="you_must_use_the_most_recent_version_of_database">Devi usare la versione più recente del tuo database della chat SOLO su un dispositivo, altrimenti potresti non ricevere più i messaggi da alcuni contatti.</string>
     <string name="database_is_not_encrypted">Il database della chat non è crittografato: imposta la password per proteggerlo.</string>
     <string name="icon_descr_cancel_live_message">Annulla messaggio in diretta</string>
+    <string name="feature_offered_item">offerto %s</string>
+    <string name="feature_offered_item_with_param">offerto %s: %2s</string>
+    <string name="feature_cancelled_item">annullato %s</string>
 </resources>
