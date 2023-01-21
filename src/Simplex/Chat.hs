@@ -640,7 +640,7 @@ processChatCommand = \case
             ctGroupId <- withStore' $ \db -> checkContactHasGroups db user ct
             when (isNothing ctGroupId) $ do
               conns <- withStore $ \db -> getContactConnections db userId ct
-              deleteAgentConnectionsAsync' $ map (\Connection {agentConnId} -> agentConnId) conns
+              deleteAgentConnectionsAsync' (map (\Connection {agentConnId} -> agentConnId) conns)
               withStore' $ \db -> deleteContactWithoutGroups db user ct
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
   APIClearChat (ChatRef cType chatId) -> withUser $ \user -> case cType of
@@ -3658,9 +3658,9 @@ deleteAgentConnectionAsync Connection {agentConnId} =
 deleteAgentConnectionsAsync' :: ChatMonad m => [AgentConnId] -> m ()
 deleteAgentConnectionsAsync' [] = pure ()
 deleteAgentConnectionsAsync' [AgentConnId acId] = do
-  withAgent $ \a -> deleteConnectionAsync a acId
+  withAgent (`deleteConnectionAsync` acId) `catchError` (toView . CRChatError Nothing)
 deleteAgentConnectionsAsync' acIds = do
-  withAgent $ \a -> deleteConnectionsAsync a (map (\(AgentConnId acId) -> acId) acIds)
+  withAgent (\a -> deleteConnectionsAsync a (map (\(AgentConnId acId) -> acId) acIds)) `catchError` (toView . CRChatError Nothing)
 
 userProfileToSend :: User -> Maybe Profile -> Maybe Contact -> Profile
 userProfileToSend user@User {profile = p} incognitoProfile ct =
