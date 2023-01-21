@@ -623,7 +623,7 @@ processChatCommand = \case
         deleteAgentConnectionsAsync' fileAgentConnIds
         when (memberActive membership) . void $ sendGroupMessage user gInfo members XGrpDel
         deleteGroupLink' user gInfo `catchError` \_ -> pure ()
-        forM_ members deleteMemberConnection
+        deleteMembersConnections members
         -- functions below are called in separate transactions to prevent crashes on android
         -- (possibly, race condition on integrity check?)
         withStore' $ \db -> deleteGroupConnectionsAndFiles db user gInfo members
@@ -1141,7 +1141,7 @@ processChatCommand = \case
       -- TODO delete direct connections that were unused
       deleteGroupLink' user gInfo `catchError` \_ -> pure ()
       -- member records are not deleted to keep history
-      forM_ members deleteMemberConnection
+      deleteMembersConnections members
       withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemLeft
       pure $ CRLeftMemberUser user gInfo {membership = membership {memberStatus = GSMemLeft}}
   APIListMembers groupId -> withUser $ \user ->
@@ -3264,7 +3264,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         then checkRole membership $ do
           deleteGroupLink' user gInfo `catchError` \_ -> pure ()
           -- member records are not deleted to keep history
-          forM_ members deleteMemberConnection
+          deleteMembersConnections members
           withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemRemoved
           deleteMemberItem RGEUserDeleted
           toView $ CRDeletedMemberUser user gInfo {membership = membership {memberStatus = GSMemRemoved}} m
@@ -3306,7 +3306,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         updateGroupMemberStatus db userId membership GSMemGroupDeleted
         pure members
       -- member records are not deleted to keep history
-      forM_ ms deleteMemberConnection
+      deleteMembersConnections ms
       ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvGroupEvent RGEGroupDeleted)
       groupMsgToView gInfo m ci msgMeta
       toView $ CRGroupDeleted user gInfo {membership = membership {memberStatus = GSMemGroupDeleted}} m
@@ -3466,6 +3466,12 @@ closeFileHandle fileId files = do
 
 throwChatError :: ChatMonad m => ChatErrorType -> m a
 throwChatError = throwError . ChatError
+
+deleteMembersConnections :: ChatMonad m => [GroupMember] -> m ()
+deleteMembersConnections members = do
+  let memberConns = mapMaybe (\GroupMember {activeConn} -> activeConn) members
+  deleteAgentConnectionsAsync' $ map (\Connection {agentConnId} -> agentConnId) memberConns
+  forM_ memberConns $ \conn -> withStore' $ \db -> updateConnectionStatus db conn ConnDeleted
 
 deleteMemberConnection :: ChatMonad m => GroupMember -> m ()
 deleteMemberConnection GroupMember {activeConn} = do
