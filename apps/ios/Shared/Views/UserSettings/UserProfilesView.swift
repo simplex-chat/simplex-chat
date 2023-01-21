@@ -66,7 +66,7 @@ struct UserProfilesView: View {
 
     private func removeUser(index: Int) {
         do {
-            try apiDeleteUser(m.users[index].user.userId)
+            try apiDeleteUser(m.users[index].user.userId, true)
             m.users.remove(at: index)
         } catch let error {
             let a = getErrorAlert(error, "Error deleting user profile")
