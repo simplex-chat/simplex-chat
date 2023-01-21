@@ -112,7 +112,7 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
   CRFileTransferStatus ftStatus -> viewFileTransferStatus ftStatus
   CRUserProfile p -> viewUserProfile p
   CRUserProfileNoChange -> ["user profile did not change"]
-  CRVersionInfo _ -> [plain versionStr, plain updateStr]
+  CRVersionInfo _ _ -> [plain versionStr, plain updateStr]
   CRChatCmdError e -> viewChatError logLevel e
   CRInvitation cReq -> viewConnReqInvitation cReq
   CRSentConfirmation -> ["confirmation sent!"]

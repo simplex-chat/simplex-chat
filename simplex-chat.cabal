@@ -125,6 +125,7 @@ library
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
+    , template-haskell ==2.16.*
     , terminal ==0.2.*
     , text ==1.2.*
     , time ==1.9.*
@@ -171,6 +172,7 @@ executable simplex-bot
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
+    , template-haskell ==2.16.*
     , terminal ==0.2.*
     , text ==1.2.*
     , time ==1.9.*
@@ -217,6 +219,7 @@ executable simplex-bot-advanced
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
+    , template-haskell ==2.16.*
     , terminal ==0.2.*
     , text ==1.2.*
     , time ==1.9.*
@@ -264,6 +267,7 @@ executable simplex-chat
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
+    , template-haskell ==2.16.*
     , terminal ==0.2.*
     , text ==1.2.*
     , time ==1.9.*
@@ -320,6 +324,7 @@ test-suite simplex-chat-test
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
+    , template-haskell ==2.16.*
     , terminal ==0.2.*
     , text ==1.2.*
     , time ==1.9.*
