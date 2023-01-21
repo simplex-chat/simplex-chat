@@ -620,12 +620,10 @@ processChatCommand = \case
       filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
       withChatLock "deleteChat group" . procCmd $ do
         fileAgentConnIds <- concat <$> forM filesInfo (deleteFile user)
-        let memberConns = mapMaybe (\GroupMember {activeConn} -> activeConn) members
-        deleteAgentConnectionsAsync' $ fileAgentConnIds <> map (\Connection {agentConnId} -> agentConnId) memberConns
+        deleteAgentConnectionsAsync' fileAgentConnIds
         when (memberActive membership) . void $ sendGroupMessage user gInfo members XGrpDel
         deleteGroupLink' user gInfo `catchError` \_ -> pure ()
-        forM_ members $ \GroupMember {activeConn} ->
-          forM_ activeConn $ \conn -> withStore' $ \db -> updateConnectionStatus db conn ConnDeleted
+        forM_ members deleteMemberConnection
         -- functions below are called in separate transactions to prevent crashes on android
         -- (possibly, race condition on integrity check?)
         withStore' $ \db -> deleteGroupConnectionsAndFiles db user gInfo members
