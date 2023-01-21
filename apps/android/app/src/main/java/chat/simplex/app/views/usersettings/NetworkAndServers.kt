@@ -114,7 +114,7 @@ fun NetworkAndServersView(
       updateNetworkSettingsDialog(
         title = generalGetString(R.string.update_network_session_mode_question),
         startsWith,
-        onDismiss = {  sessionMode.value = prevValue }
+        onDismiss = { sessionMode.value = prevValue }
       ) {
         withApi {
           val newCfg = chatModel.controller.getNetCfg().copy(sessionMode = it)
