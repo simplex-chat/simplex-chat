@@ -824,7 +824,7 @@ public struct NetCfg: Codable, Equatable {
     public var socksProxy: String? = nil
     public var hostMode: HostMode = .publicHost
     public var requiredHostMode = true
-    public var sessionMode = TransportSessionMode.user
+    public var sessionMode: TransportSessionMode
     public var tcpConnectTimeout: Int // microseconds
     public var tcpTimeout: Int // microseconds
     public var tcpKeepAlive: KeepAliveOpts?
@@ -834,6 +834,7 @@ public struct NetCfg: Codable, Equatable {
 
     public static let defaults: NetCfg = NetCfg(
         socksProxy: nil,
+        sessionMode: TransportSessionMode.user,
         tcpConnectTimeout: 10_000_000,
         tcpTimeout: 7_000_000,
         tcpKeepAlive: KeepAliveOpts.defaults,
@@ -844,6 +845,7 @@ public struct NetCfg: Codable, Equatable {
 
     public static let proxyDefaults: NetCfg = NetCfg(
         socksProxy: nil,
+        sessionMode: TransportSessionMode.user,
         tcpConnectTimeout: 20_000_000,
         tcpTimeout: 15_000_000,
         tcpKeepAlive: KeepAliveOpts.defaults,
@@ -895,9 +897,20 @@ public enum OnionHosts: String, Identifiable {
     public static let values: [OnionHosts] = [.no, .prefer, .require]
 }
 
-public enum TransportSessionMode: String, Codable {
+public enum TransportSessionMode: String, Codable, Identifiable {
     case user
     case entity
+
+    public var text: LocalizedStringKey {
+        switch self {
+        case .user: return "User profile"
+        case .entity: return "Connection"
+        }
+    }
+
+    public var id: TransportSessionMode { self }
+
+    public static let values: [TransportSessionMode] = [.user, .entity]
 }
 
 public struct KeepAliveOpts: Codable, Equatable {
