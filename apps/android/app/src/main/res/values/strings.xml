@@ -1061,6 +1061,9 @@
   <string name="ttl_week">%d week</string>
   <string name="ttl_weeks">%d weeks</string>
   <string name="ttl_w">%dw</string>
+  <string name="feature_offered_item">offered %s</string>
+  <string name="feature_offered_item_with_param">offered %s: %2s</string>
+  <string name="feature_cancelled_item">cancelled %s</string>
 
   <!-- WhatsNewView.kt -->
   <string name="whats_new">What\'s new</string>
