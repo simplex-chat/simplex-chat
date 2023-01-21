@@ -1535,11 +1535,11 @@ sealed class CIContent: ItemContent {
 
     fun preferenceText(feature: Feature, allowed: FeatureAllowed, param: Int?): String = when {
       allowed != FeatureAllowed.NO && feature.hasParam && param != null ->
-        "offered ${feature.text}: ${TimedMessagesPreference.ttlText(param)}"
+        String.format(generalGetString(R.string.feature_offered_item_with_param), feature.text, TimedMessagesPreference.ttlText(param))
       allowed != FeatureAllowed.NO ->
-        "offered ${feature.text}"
+        String.format(generalGetString(R.string.feature_offered_item), feature.text, TimedMessagesPreference.ttlText(param))
       else ->
-        "cancelled ${feature.text}"
+        String.format(generalGetString(R.string.feature_cancelled_item), feature.text, TimedMessagesPreference.ttlText(param))
     }
   }
 }
