@@ -161,8 +161,8 @@ struct NetworkAndServers: View {
 
     private func sessionModeInfo(_ mode: TransportSessionMode) -> LocalizedStringKey {
         switch mode {
-        case .user: return "For better traffic privacy, a separate TCP connection will be used **for each user profile**."
-        case .entity: return "For the best traffic privacy, a separate TCP connection will be used **for each contact and group member**.\n**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail."
+        case .user: return "A separate TCP connection will be used **for each chat profile you have in the app**."
+        case .entity: return "A separate TCP connection will be used **for each contact and group member**.\n**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail."
         }
     }
 }
