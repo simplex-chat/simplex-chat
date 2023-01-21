@@ -4,10 +4,10 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StrictData #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Simplex.Chat.Controller where
 
@@ -30,9 +30,11 @@ import Data.Map.Strict (Map)
 import Data.String
 import Data.Text (Text)
 import Data.Time (ZonedTime)
-import Data.Time.Clock (UTCTime)
+import Data.Time.Clock (UTCTime, getCurrentTime)
+import Data.Time.Format (defaultTimeLocale, formatTime, iso8601DateFormat)
 import Data.Version (showVersion)
 import GHC.Generics (Generic)
+import Language.Haskell.TH (Exp, Q, runIO)
 import Numeric.Natural
 import qualified Paths_simplex_chat as SC
 import Simplex.Chat.Call
@@ -66,6 +68,11 @@ versionStr = "SimpleX Chat v" <> versionNumber
 
 updateStr :: String
 updateStr = "To update run: curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash"
+
+buildTimestampQ :: Q Exp
+buildTimestampQ = do
+  s <- formatTime defaultTimeLocale (iso8601DateFormat $ Just "%H:%M:%S") <$> runIO getCurrentTime
+  [|fromString s|]
 
 data ChatConfig = ChatConfig
   { agentConfig :: AgentConfig,
@@ -361,7 +368,7 @@ data ChatResponse
   | CRFileTransferStatus User (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
   | CRUserProfile {user :: User, profile :: Profile}
   | CRUserProfileNoChange {user :: User}
-  | CRVersionInfo {version :: String}
+  | CRVersionInfo {version :: String, versionInfo :: CoreVersionInfo}
   | CRInvitation {user :: User, connReqInvitation :: ConnReqInvitation}
   | CRSentConfirmation {user :: User}
   | CRSentInvitation {user :: User, customUserProfile :: Maybe Profile}
@@ -572,6 +579,13 @@ tmeToPref currentTTL tme = uncurry TimedMessagesPreference $ case tme of
 
 data ChatLogLevel = CLLDebug | CLLInfo | CLLWarning | CLLError | CLLImportant
   deriving (Eq, Ord, Show)
+
+data CoreVersionInfo = CoreVersionInfo
+  { buildTimestamp :: String
+  }
+  deriving (Show, Generic)
+
+instance ToJSON CoreVersionInfo where toEncoding = J.genericToEncoding J.defaultOptions
 
 data ChatError
   = ChatError {errorType :: ChatErrorType}
