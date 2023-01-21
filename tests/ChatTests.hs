@@ -4572,7 +4572,7 @@ testDeleteUser =
       alice <## "alisa (active)"
 
       bob #> "@alice hey"
-      -- bob <## "[alice, contactId: 2, connId: 1] error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
+      bob <## "[alice, contactId: 2, connId: 1] error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
       (alice </)
 
       alice ##> "/delete user alisa"

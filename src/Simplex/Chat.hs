@@ -640,7 +640,7 @@ processChatCommand = \case
             ctGroupId <- withStore' $ \db -> checkContactHasGroups db user ct
             when (isNothing ctGroupId) $ do
               conns <- withStore $ \db -> getContactConnections db userId ct
-              forM_ conns $ \conn -> deleteAgentConnectionAsync conn `catchError` \_ -> pure ()
+              deleteAgentConnectionsAsync' $ map (\Connection {agentConnId} -> agentConnId) conns
               withStore' $ \db -> deleteContactWithoutGroups db user ct
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
   APIClearChat (ChatRef cType chatId) -> withUser $ \user -> case cType of
@@ -977,7 +977,7 @@ processChatCommand = \case
   APIDeleteMyAddress userId -> withUserId userId $ \user -> withChatLock "deleteMyAddress" $ do
     conns <- withStore (`getUserAddressConnections` user)
     procCmd $ do
-      forM_ conns $ \conn -> deleteAgentConnectionAsync conn `catchError` \_ -> pure ()
+      deleteAgentConnectionsAsync' $ map (\Connection {agentConnId} -> agentConnId) conns
       withStore' (`deleteUserAddress` user)
       pure $ CRUserContactLinkDeleted user
   DeleteMyAddress -> withUser $ \User {userId} ->
@@ -1275,9 +1275,8 @@ processChatCommand = \case
           ci <- withStore $ \db -> getChatItemByFileId db user fileId
           pure $ CRSndGroupFileCancelled user ci ftm fts
         FTRcv ftr@RcvFileTransfer {cancelled} -> do
-          unless cancelled $ do
-            aConnId_ <- cancelRcvFileTransfer user ftr
-            forM_ aConnId_ $ \acId -> deleteAgentConnectionsAsync' [acId]
+          unless cancelled $
+            deleteAgentConnectionsAsync' . maybeToList =<< cancelRcvFileTransfer user ftr
           pure $ CRRcvFileCancelled user ftr
   FileStatus fileId -> withUser $ \user -> do
     fileStatus <- withStore $ \db -> getFileTransferProgress db user fileId
