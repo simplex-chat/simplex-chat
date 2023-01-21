@@ -1864,7 +1864,7 @@ data CommandFunction
   | CFAllowConn
   | CFAcceptContact
   | CFAckMessage
-  | CFDeleteConn
+  | CFDeleteConn -- not used
   deriving (Eq, Show, Generic)
 
 instance FromField CommandFunction where fromField = fromTextField_ textDecode
