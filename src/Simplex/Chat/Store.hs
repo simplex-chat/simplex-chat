@@ -4579,8 +4579,9 @@ overwriteSMPServers db User {userId} servers =
     pure $ Right ()
 
 createCall :: DB.Connection -> User -> Call -> UTCTime -> IO ()
-createCall db User {userId} Call {contactId, callId, chatItemId, callState} callTs = do
+createCall db user@User {userId} Call {contactId, callId, chatItemId, callState} callTs = do
   currentTs <- getCurrentTime
+  deleteCalls db user contactId
   DB.execute
     db
     [sql|
