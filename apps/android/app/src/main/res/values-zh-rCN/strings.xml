@@ -2,7 +2,7 @@
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="a_plus_b">a + b</string>
     <string name="chat_item_ttl_day">1天</string>
-    <string name="about_simplex">关于SimpleX</string>
+    <string name="about_simplex">关于 SimpleX</string>
     <string name="all_group_members_will_remain_connected">所有群组成员将保持连接</string>
     <string name="about_simplex_chat">关于 <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
     <string name="above_then_preposition_continuation">关于, 然后:</string>
@@ -14,7 +14,7 @@
     <string name="color_primary">强化</string>
     <string name="callstatus_accepted">已接受通话</string>
     <string name="accept">接受</string>
-    <string name="network_enable_socks_info">通过SOCKS代理访问服务器在端口9050？允许该选项前必须开始代理。</string>
+    <string name="network_enable_socks_info">通过 SOCKS 代理访问服务器在端口9050？允许该选项前必须开始代理。</string>
     <string name="smp_servers_add">添加服务器</string>
     <string name="smp_servers_add_to_another_device">添加另一设备</string>
     <string name="group_member_role_admin">管理员</string>
