@@ -63,8 +63,8 @@ import UnliftIO.STM
 versionNumber :: String
 versionNumber = showVersion SC.version
 
-versionStr :: String
-versionStr = "SimpleX Chat v" <> versionNumber
+versionString :: String -> String
+versionString version = "SimpleX Chat v" <> version
 
 updateStr :: String
 updateStr = "To update run: curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash"
@@ -344,7 +344,7 @@ data ChatResponse
   | CRFileTransferStatus (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
   | CRUserProfile {profile :: Profile}
   | CRUserProfileNoChange
-  | CRVersionInfo {version :: String, versionInfo :: CoreVersionInfo}
+  | CRVersionInfo {versionInfo :: CoreVersionInfo}
   | CRInvitation {connReqInvitation :: ConnReqInvitation}
   | CRSentConfirmation
   | CRSentInvitation {customUserProfile :: Maybe Profile}
@@ -557,7 +557,8 @@ data ChatLogLevel = CLLDebug | CLLInfo | CLLWarning | CLLError | CLLImportant
   deriving (Eq, Ord, Show)
 
 data CoreVersionInfo = CoreVersionInfo
-  { buildTimestamp :: String
+  { version :: String,
+    buildTimestamp :: String
   }
   deriving (Show, Generic)
 
