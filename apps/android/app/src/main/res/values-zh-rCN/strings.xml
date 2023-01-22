@@ -1,2 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="a_plus_b">a + b</string>
+    <string name="chat_item_ttl_day">1天</string>
+    <string name="about_simplex">关于SimpleX</string>
+    <string name="all_group_members_will_remain_connected">所有群组成员将保持连接</string>
+    <string name="about_simplex_chat">关于 <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
+    <string name="above_then_preposition_continuation">关于, 然后:</string>
+    <string name="accept_contact_button">接受</string>
+    <string name="accept_call_on_lock_screen">接受</string>
+    <string name="accept_feature">接受</string>
+    <string name="chat_item_ttl_month">1月</string>
+    <string name="chat_item_ttl_week">1周</string>
+    <string name="color_primary">强化</string>
+    <string name="callstatus_accepted">已接受通话</string>
+    <string name="accept">接受</string>
+    <string name="network_enable_socks_info">通过SOCKS代理访问服务器在端口9050？允许该选项前必须开始代理。</string>
+    <string name="smp_servers_add">添加服务器</string>
+    <string name="smp_servers_add_to_another_device">添加另一设备</string>
+    <string name="group_member_role_admin">管理员</string>
+    <string name="v4_3_improved_server_configuration_desc">扫描二维码来添加服务器</string>
+    <string name="network_settings">高级网络设置</string>
+    <string name="accept_connection_request__question">接受连接请求？</string>
+    <string name="accept_contact_incognito_button">接受无痕模式</string>
+    <string name="v4_2_group_links_desc">管理员可以创建链接以加入群组。</string>
+    <string name="accept_requests">接受请求</string>
+    <string name="smp_servers_preset_add">添加预设服务器</string>
+</resources>
