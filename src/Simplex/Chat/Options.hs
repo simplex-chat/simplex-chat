@@ -17,7 +17,7 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import Numeric.Natural (Natural)
 import Options.Applicative
-import Simplex.Chat.Controller (ChatLogLevel (..), updateStr, versionStr)
+import Simplex.Chat.Controller (ChatLogLevel (..), updateStr, versionNumber, versionString)
 import Simplex.Messaging.Client (NetworkConfig (..), defaultNetworkConfig)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
@@ -232,5 +232,6 @@ getChatOpts appDir defaultDbFileName =
       (helper <*> versionOption <*> chatOpts appDir defaultDbFileName)
       (header versionStr <> fullDesc <> progDesc "Start chat with DB_FILE file and use SERVER as SMP server")
   where
+    versionStr = versionString versionNumber
     versionOption = infoOption versionAndUpdate (long "version" <> short 'v' <> help "Show version")
     versionAndUpdate = versionStr <> "\n" <> updateStr

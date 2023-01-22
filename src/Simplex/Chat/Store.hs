@@ -35,6 +35,8 @@ module Simplex.Chat.Store
     getUserByAConnId,
     getUserByContactId,
     getUserByGroupId,
+    getUserByFileId,
+    getUserByContactRequestId,
     getUserFileInfo,
     deleteUserRecord,
     createDirectConnection,
@@ -74,6 +76,7 @@ module Simplex.Chat.Store
     getGroupLink,
     getGroupLinkId,
     createOrUpdateContactRequest,
+    getContactRequest',
     getContactRequest,
     getContactRequestIdByName,
     deleteContactRequest,
@@ -458,13 +461,29 @@ getUsersInfo db = getUsers db >>= mapM getUserInfo
   where
     getUserInfo :: User -> IO UserInfo
     getUserInfo user@User {userId} = do
-      count_ <-
+      ctCount <-
         maybeFirstRow fromOnly $
           DB.query
             db
-            "SELECT COUNT(1) FROM chat_items WHERE user_id = ? AND item_status = ? GROUP BY user_id"
+            [sql|
+              SELECT COUNT(1)
+              FROM chat_items i
+              JOIN contacts ct USING (contact_id)
+              WHERE i.user_id = ? AND i.item_status = ? AND (ct.enable_ntfs = 1 OR ct.enable_ntfs IS NULL)
+            |]
             (userId, CISRcvNew)
-      pure UserInfo {user, unreadCount = fromMaybe 0 count_}
+      gCount <-
+        maybeFirstRow fromOnly $
+          DB.query
+            db
+            [sql|
+              SELECT COUNT(1)
+              FROM chat_items i
+              JOIN groups g USING (group_id)
+              WHERE i.user_id = ? AND i.item_status = ? AND (g.enable_ntfs = 1 OR g.enable_ntfs IS NULL)
+            |]
+            (userId, CISRcvNew)
+      pure UserInfo {user, unreadCount = fromMaybe 0 ctCount + fromMaybe 0 gCount}
 
 getUsers :: DB.Connection -> IO [User]
 getUsers db =
@@ -523,6 +542,11 @@ getUserByFileId :: DB.Connection -> FileTransferId -> ExceptT StoreError IO User
 getUserByFileId db fileId =
   ExceptT . firstRow toUser (SEUserNotFoundByFileId fileId) $
     DB.query db (userQuery <> " JOIN files f ON f.user_id = u.user_id WHERE f.file_id = ?") (Only fileId)
+
+getUserByContactRequestId :: DB.Connection -> Int64 -> ExceptT StoreError IO User
+getUserByContactRequestId db contactRequestId =
+  ExceptT . firstRow toUser (SEUserNotFoundByContactRequestId contactRequestId) $
+    DB.query db (userQuery <> " JOIN contact_requests cr ON cr.user_id = u.user_id WHERE cr.contact_request_id = ?") (Only contactRequestId)
 
 getUserFileInfo :: DB.Connection -> User -> IO [CIFileInfo]
 getUserFileInfo db User {userId} =
@@ -1173,10 +1197,10 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId Profi
     createOrUpdate_ = do
       cReqId <-
         ExceptT $
-          maybeM getContactRequest' xContactId_ >>= \case
+          maybeM getContactRequestByXContactId xContactId_ >>= \case
             Nothing -> createContactRequest
             Just cr -> updateContactRequest cr $> Right (contactRequestId (cr :: UserContactRequest))
-      getContactRequest db userId cReqId
+      getContactRequest db user cReqId
     createContactRequest :: IO (Either StoreError Int64)
     createContactRequest = do
       currentTs <- getCurrentTime
@@ -1218,8 +1242,8 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId Profi
             LIMIT 1
           |]
           (userId, xContactId)
-    getContactRequest' :: XContactId -> IO (Maybe UserContactRequest)
-    getContactRequest' xContactId =
+    getContactRequestByXContactId :: XContactId -> IO (Maybe UserContactRequest)
+    getContactRequestByXContactId xContactId =
       maybeFirstRow toContactRequest $
         DB.query
           db
@@ -1264,8 +1288,13 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId Profi
             |]
             (displayName, fullName, image, currentTs, userId, cReqId)
 
-getContactRequest :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO UserContactRequest
-getContactRequest db userId contactRequestId =
+getContactRequest' :: DB.Connection -> Int64 -> ExceptT StoreError IO (User, UserContactRequest)
+getContactRequest' db contactRequestId = do
+  user <- getUserByContactRequestId db contactRequestId
+  (user,) <$> getContactRequest db user contactRequestId
+
+getContactRequest :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO UserContactRequest
+getContactRequest db User {userId} contactRequestId =
   ExceptT . firstRow toContactRequest (SEContactRequestNotFound contactRequestId) $
     DB.query
       db
@@ -1293,8 +1322,8 @@ getContactRequestIdByName db userId cName =
   ExceptT . firstRow fromOnly (SEContactRequestNotFoundByName cName) $
     DB.query db "SELECT contact_request_id FROM contact_requests WHERE user_id = ? AND local_display_name = ?" (userId, cName)
 
-deleteContactRequest :: DB.Connection -> UserId -> Int64 -> IO ()
-deleteContactRequest db userId contactRequestId = do
+deleteContactRequest :: DB.Connection -> User -> Int64 -> IO ()
+deleteContactRequest db User {userId} contactRequestId = do
   DB.execute
     db
     [sql|
@@ -4550,8 +4579,9 @@ overwriteSMPServers db User {userId} servers =
     pure $ Right ()
 
 createCall :: DB.Connection -> User -> Call -> UTCTime -> IO ()
-createCall db User {userId} Call {contactId, callId, chatItemId, callState} callTs = do
+createCall db user@User {userId} Call {contactId, callId, chatItemId, callState} callTs = do
   currentTs <- getCurrentTime
+  deleteCalls db user contactId
   DB.execute
     db
     [sql|
@@ -4841,6 +4871,7 @@ data StoreError
   | SEUserNotFoundByContactId {contactId :: ContactId}
   | SEUserNotFoundByGroupId {groupId :: GroupId}
   | SEUserNotFoundByFileId {fileId :: FileTransferId}
+  | SEUserNotFoundByContactRequestId {contactRequestId :: Int64}
   | SEContactNotFound {contactId :: ContactId}
   | SEContactNotFoundByName {contactName :: ContactName}
   | SEContactNotReady {contactName :: ContactName}
