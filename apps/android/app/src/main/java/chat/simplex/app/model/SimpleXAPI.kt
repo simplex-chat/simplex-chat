@@ -1057,6 +1057,16 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     }
   }
 
+  suspend fun apiGetVersion(): CoreVersionInfo? {
+    val r = sendCmd(CC.ShowVersion())
+    return if (r is CR.VersionInfo) {
+      r.versionInfo
+    } else {
+      Log.e(TAG, "apiGetVersion bad response: ${r.responseType} ${r.details}")
+      null
+    }
+  }
+
   private fun networkErrorAlert(r: CR): Boolean {
     return when {
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
@@ -1677,6 +1687,7 @@ sealed class CC {
   class ApiChatRead(val type: ChatType, val id: Long, val range: ItemRange): CC()
   class ApiChatUnread(val type: ChatType, val id: Long, val unreadChat: Boolean): CC()
   class ReceiveFile(val fileId: Long, val inline: Boolean): CC()
+  class ShowVersion(): CC()
 
   val cmdString: String get() = when (this) {
     is Console -> cmd
@@ -1748,6 +1759,7 @@ sealed class CC {
     is ApiChatRead -> "/_read chat ${chatRef(type, id)} from=${range.from} to=${range.to}"
     is ApiChatUnread -> "/_unread chat ${chatRef(type, id)} ${onOff(unreadChat)}"
     is ReceiveFile -> "/freceive $fileId inline=${onOff(inline)}"
+    is ShowVersion -> "/version"
   }
 
   val cmdType: String get() = when (this) {
@@ -1820,6 +1832,7 @@ sealed class CC {
     is ApiChatRead -> "apiChatRead"
     is ApiChatUnread -> "apiChatUnread"
     is ReceiveFile -> "receiveFile"
+    is ShowVersion -> "showVersion"
   }
 
   class ItemRange(val from: Long, val to: Long)
@@ -2815,6 +2828,7 @@ sealed class CR {
   @Serializable @SerialName("callEnded") class CallEnded(val contact: Contact): CR()
   @Serializable @SerialName("newContactConnection") class NewContactConnection(val connection: PendingContactConnection): CR()
   @Serializable @SerialName("contactConnectionDeleted") class ContactConnectionDeleted(val connection: PendingContactConnection): CR()
+  @Serializable @SerialName("versionInfo") class VersionInfo(val versionInfo: CoreVersionInfo): CR()
   @Serializable @SerialName("cmdOk") class CmdOk: CR()
   @Serializable @SerialName("chatCmdError") class ChatCmdError(val chatError: ChatError): CR()
   @Serializable @SerialName("chatError") class ChatRespError(val chatError: ChatError): CR()
@@ -2913,6 +2927,7 @@ sealed class CR {
     is CallEnded -> "callEnded"
     is NewContactConnection -> "newContactConnection"
     is ContactConnectionDeleted -> "contactConnectionDeleted"
+    is VersionInfo -> "versionInfo"
     is CmdOk -> "cmdOk"
     is ChatCmdError -> "chatCmdError"
     is ChatRespError -> "chatError"
@@ -3012,6 +3027,7 @@ sealed class CR {
     is CallEnded -> "contact: ${contact.id}"
     is NewContactConnection -> json.encodeToString(connection)
     is ContactConnectionDeleted -> json.encodeToString(connection)
+    is VersionInfo -> json.encodeToString(versionInfo)
     is CmdOk -> noDetails()
     is ChatCmdError -> chatError.string
     is ChatRespError -> chatError.string
@@ -3069,6 +3085,13 @@ class AutoAccept(val acceptIncognito: Boolean, val autoReply: MsgContent?) {
   }
 }
 
+@Serializable
+data class CoreVersionInfo(
+  val version: String,
+  val buildTimestamp: String,
+  val simplexmqVersion: String,
+  val simplexmqCommit: String
+)
 
 @Serializable
 sealed class ChatError {

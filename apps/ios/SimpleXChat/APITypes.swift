@@ -92,6 +92,7 @@ public enum ChatCommand {
     case apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64))
     case apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool)
     case receiveFile(fileId: Int64, inline: Bool)
+    case showVersion
     case string(String)
 
     public var cmdString: String {
@@ -180,6 +181,7 @@ public enum ChatCommand {
             case let .apiChatRead(type, id, itemRange: (from, to)): return "/_read chat \(ref(type, id)) from=\(from) to=\(to)"
             case let .apiChatUnread(type, id, unreadChat): return "/_unread chat \(ref(type, id)) \(onOff(unreadChat))"
             case let .receiveFile(fileId, inline): return "/freceive \(fileId) inline=\(onOff(inline))"
+            case .showVersion: return "/version"
             case let .string(str): return str
             }
         }
@@ -266,6 +268,7 @@ public enum ChatCommand {
             case .apiChatRead: return "apiChatRead"
             case .apiChatUnread: return "apiChatUnread"
             case .receiveFile: return "receiveFile"
+            case .showVersion: return "showVersion"
             case .string: return "console command"
             }
         }
@@ -409,6 +412,7 @@ public enum ChatResponse: Decodable, Error {
     case ntfMessages(user: User, connEntity: ConnectionEntity?, msgTs: Date?, ntfMessages: [NtfMsgInfo])
     case newContactConnection(user: User, connection: PendingContactConnection)
     case contactConnectionDeleted(user: User, connection: PendingContactConnection)
+    case versionInfo(versionInfo: CoreVersionInfo)
     case cmdOk(user: User?)
     case chatCmdError(user: User?, chatError: ChatError)
     case chatError(user: User?, chatError: ChatError)
@@ -513,6 +517,7 @@ public enum ChatResponse: Decodable, Error {
             case .ntfMessages: return "ntfMessages"
             case .newContactConnection: return "newContactConnection"
             case .contactConnectionDeleted: return "contactConnectionDeleted"
+            case .versionInfo: return "versionInfo"
             case .cmdOk: return "cmdOk"
             case .chatCmdError: return "chatCmdError"
             case .chatError: return "chatError"
@@ -620,6 +625,7 @@ public enum ChatResponse: Decodable, Error {
             case let .ntfMessages(u, connEntity, msgTs, ntfMessages): return withUser(u, "connEntity: \(String(describing: connEntity))\nmsgTs: \(String(describing: msgTs))\nntfMessages: \(String(describing: ntfMessages))")
             case let .newContactConnection(u, connection): return withUser(u, String(describing: connection))
             case let .contactConnectionDeleted(u, connection): return withUser(u, String(describing: connection))
+            case let .versionInfo(versionInfo): return String(describing: versionInfo)
             case .cmdOk: return noDetails
             case let .chatCmdError(u, chatError): return withUser(u, String(describing: chatError))
             case let .chatError(u, chatError): return withUser(u, String(describing: chatError))
@@ -1037,6 +1043,13 @@ public enum NotificationPreviewMode: String, SelectableItem {
     public var id: String { self.rawValue }
 
     public static var values: [NotificationPreviewMode] = [.message, .contact, .hidden]
+}
+
+public struct CoreVersionInfo: Decodable {
+    public var version: String
+    public var buildTimestamp: String
+    public var simplexmqVersion: String
+    public var simplexmqCommit: String
 }
 
 public func decodeJSON<T: Decodable>(_ json: String) -> T? {

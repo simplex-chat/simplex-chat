@@ -463,9 +463,21 @@
         <target>Принять звонок</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="App build: %@" xml:space="preserve">
+        <source>App build: %@</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="App icon" xml:space="preserve">
         <source>App icon</source>
         <target>Иконка</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="App version" xml:space="preserve">
+        <source>App version</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="App version: v%@" xml:space="preserve">
+        <source>App version: v%@</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Appearance" xml:space="preserve">
@@ -827,6 +839,14 @@
         <source>Copy</source>
         <target>Скопировать</target>
         <note>chat item action</note>
+      </trans-unit>
+      <trans-unit id="Core built at: %@" xml:space="preserve">
+        <source>Core built at: %@</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Core version: v%@" xml:space="preserve">
+        <source>Core version: v%@</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create" xml:space="preserve">
         <source>Create</source>
@@ -2275,7 +2295,6 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="PING count" xml:space="preserve">
         <source>PING count</source>
-        <source>Количество PING</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="PING interval" xml:space="preserve">
