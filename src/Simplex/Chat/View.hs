@@ -112,9 +112,7 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
   CRFileTransferStatus ftStatus -> viewFileTransferStatus ftStatus
   CRUserProfile p -> viewUserProfile p
   CRUserProfileNoChange -> ["user profile did not change"]
-  CRVersionInfo CoreVersionInfo {version, buildTimestamp, simplexmqVersion, simplexmqCommit}
-    | logLevel <= CLLInfo -> [plain $ versionString version <> " (" <> buildTimestamp <> ")", plain updateStr, plain $ "simplexmq: " <> simplexmqVersion <> " (" <> simplexmqCommit <> ")"]
-    | otherwise -> [plain $ versionString version, plain updateStr]
+  CRVersionInfo info -> viewVersionInfo logLevel info
   CRChatCmdError e -> viewChatError logLevel e
   CRInvitation cReq -> viewConnReqInvitation cReq
   CRSentConfirmation -> ["confirmation sent!"]
