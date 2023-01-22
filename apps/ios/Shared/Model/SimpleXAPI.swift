@@ -851,6 +851,12 @@ func apiGetGroupLink(_ groupId: Int64) throws -> String? {
     }
 }
 
+func apiGetVersion() throws -> CoreVersionInfo {
+    let r = chatSendCmdSync(.showVersion)
+    if case let .versionInfo(info) = r { return info }
+    throw r
+}
+
 func initializeChat(start: Bool, dbKey: String? = nil) throws {
     logger.debug("initializeChat")
     let m = ChatModel.shared
