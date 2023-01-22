@@ -112,7 +112,9 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
   CRFileTransferStatus ftStatus -> viewFileTransferStatus ftStatus
   CRUserProfile p -> viewUserProfile p
   CRUserProfileNoChange -> ["user profile did not change"]
-  CRVersionInfo CoreVersionInfo {version} -> [plain $ versionString version, plain updateStr]
+  CRVersionInfo CoreVersionInfo {version, buildTimestamp, simplexmqVersion, simplexmqCommit}
+    | logLevel <= CLLInfo -> [plain $ versionString version <> " (" <> buildTimestamp <> ")", plain updateStr, plain $ "simplexmq: " <> simplexmqVersion <> " (" <> simplexmqCommit <> ")"]
+    | otherwise -> [plain $ versionString version, plain updateStr]
   CRChatCmdError e -> viewChatError logLevel e
   CRInvitation cReq -> viewConnReqInvitation cReq
   CRSentConfirmation -> ["confirmation sent!"]
@@ -1141,6 +1143,15 @@ data WCallCommand
 instance ToJSON WCallCommand where
   toEncoding = J.genericToEncoding . taggedObjectJSON $ dropPrefix "WCCall"
   toJSON = J.genericToJSON . taggedObjectJSON $ dropPrefix "WCCall"
+
+viewVersionInfo :: ChatLogLevel -> CoreVersionInfo -> [StyledString]
+viewVersionInfo logLevel CoreVersionInfo {version, buildTimestamp, simplexmqVersion, simplexmqCommit} =
+  map plain $
+    if logLevel <= CLLInfo
+      then [versionString version <> parens buildTimestamp, updateStr, "simplexmq: " <> simplexmqVersion <> parens simplexmqCommit]
+      else [versionString version, updateStr]
+  where
+    parens s = " (" <> s <> ")"
 
 viewChatError :: ChatLogLevel -> ChatError -> [StyledString]
 viewChatError logLevel = \case

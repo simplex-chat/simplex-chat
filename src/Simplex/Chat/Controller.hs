@@ -55,6 +55,7 @@ import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtocolType, CorrId, MsgFlags)
 import Simplex.Messaging.TMap (TMap)
+import Simplex.Messaging.Transport (simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
 import System.IO (Handle)
 import System.Mem.Weak (Weak)
@@ -73,6 +74,29 @@ buildTimestampQ :: Q Exp
 buildTimestampQ = do
   s <- formatTime defaultTimeLocale (iso8601DateFormat $ Just "%H:%M:%S") <$> runIO getCurrentTime
   [|fromString s|]
+
+simplexmqCommitQ :: Q Exp
+simplexmqCommitQ = do
+  s <- either error B.unpack . A.parseOnly commitHashP <$> runIO (B.readFile "./cabal.project")
+  [|fromString s|]
+  where
+    commitHashP :: A.Parser ByteString
+    commitHashP =
+      A.manyTill' A.anyChar "location: https://github.com/simplex-chat/simplexmq.git"
+        *> A.takeWhile (== ' ')
+        *> A.endOfLine
+        *> A.takeWhile (== ' ')
+        *> "tag: "
+        *> A.takeWhile (A.notInClass " \r\n")
+
+coreVersionInfo :: String -> String -> CoreVersionInfo
+coreVersionInfo buildTimestamp simplexmqCommit =
+  CoreVersionInfo
+    { version = versionNumber,
+      buildTimestamp,
+      simplexmqVersion = simplexMQVersion,
+      simplexmqCommit
+    }
 
 data ChatConfig = ChatConfig
   { agentConfig :: AgentConfig,
@@ -558,7 +582,9 @@ data ChatLogLevel = CLLDebug | CLLInfo | CLLWarning | CLLError | CLLImportant
 
 data CoreVersionInfo = CoreVersionInfo
   { version :: String,
-    buildTimestamp :: String
+    buildTimestamp :: String,
+    simplexmqVersion :: String,
+    simplexmqCommit :: String
   }
   deriving (Show, Generic)
 
