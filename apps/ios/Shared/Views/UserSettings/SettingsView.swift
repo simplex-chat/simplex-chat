@@ -271,7 +271,12 @@ struct SettingsView: View {
 //                    } label: {
 //                        settingsRow("gauge") { Text("Experimental features") }
 //                    }
-                    Text("v\(appVersion ?? "?") (\(appBuild ?? "?"))")
+                    NavigationLink {
+                        VersionView()
+                            .navigationBarTitle("App version")
+                    } label: {
+                        Text("v\(appVersion ?? "?") (\(appBuild ?? "?"))")
+                    }
                 }
             }
             .navigationTitle("Your settings")
