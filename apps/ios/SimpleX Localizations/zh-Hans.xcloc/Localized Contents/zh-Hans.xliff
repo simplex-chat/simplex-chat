@@ -64,7 +64,7 @@
       </trans-unit>
       <trans-unit id="%@ is connected!" xml:space="preserve" approved="no">
         <source>%@ is connected!</source>
-        <target state="translated">%@ 已连接!</target>
+        <target state="translated">%@ 已连接！</target>
         <note>notification title</note>
       </trans-unit>
       <trans-unit id="%@ is not verified" xml:space="preserve" approved="no">
@@ -79,7 +79,7 @@
       </trans-unit>
       <trans-unit id="%@ wants to connect!" xml:space="preserve" approved="no">
         <source>%@ wants to connect!</source>
-        <target state="translated">%@ 要连接!</target>
+        <target state="translated">%@ 要连接！</target>
         <note>notification title</note>
       </trans-unit>
       <trans-unit id="%d days" xml:space="preserve" approved="no">
@@ -122,144 +122,179 @@
         <target state="translated">%lld %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld contact(s) selected" xml:space="preserve">
+      <trans-unit id="%lld contact(s) selected" xml:space="preserve" approved="no">
         <source>%lld contact(s) selected</source>
+        <target state="translated">%lld 联系人已选择</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld file(s) with total size of %@" xml:space="preserve">
+      <trans-unit id="%lld file(s) with total size of %@" xml:space="preserve" approved="no">
         <source>%lld file(s) with total size of %@</source>
+        <target state="translated">%lld 总文件大小 %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld members" xml:space="preserve">
+      <trans-unit id="%lld members" xml:space="preserve" approved="no">
         <source>%lld members</source>
+        <target state="translated">%lld 成员</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld second(s)" xml:space="preserve">
+      <trans-unit id="%lld second(s)" xml:space="preserve" approved="no">
         <source>%lld second(s)</source>
+        <target state="translated">%lld 秒</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lldd" xml:space="preserve">
+      <trans-unit id="%lldd" xml:space="preserve" approved="no">
         <source>%lldd</source>
+        <target state="translated">%lld天</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lldh" xml:space="preserve">
+      <trans-unit id="%lldh" xml:space="preserve" approved="no">
         <source>%lldh</source>
+        <target state="translated">%lld时</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lldk" xml:space="preserve">
+      <trans-unit id="%lldk" xml:space="preserve" approved="no">
         <source>%lldk</source>
+        <target state="translated">%lldk</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lldm" xml:space="preserve">
+      <trans-unit id="%lldm" xml:space="preserve" approved="no">
         <source>%lldm</source>
+        <target state="translated">%lld分</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lldmth" xml:space="preserve">
+      <trans-unit id="%lldmth" xml:space="preserve" approved="no">
         <source>%lldmth</source>
+        <target state="translated">%lld月</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%llds" xml:space="preserve">
+      <trans-unit id="%llds" xml:space="preserve" approved="no">
         <source>%llds</source>
+        <target state="translated">%lld秒</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lldw" xml:space="preserve">
+      <trans-unit id="%lldw" xml:space="preserve" approved="no">
         <source>%lldw</source>
+        <target state="translated">%lld周</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="(" xml:space="preserve">
+      <trans-unit id="(" xml:space="preserve" approved="no">
         <source>(</source>
+        <target state="translated">(</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id=")" xml:space="preserve">
+      <trans-unit id=")" xml:space="preserve" approved="no">
         <source>)</source>
+        <target state="translated">)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Add new contact**: to create your one-time QR Code for your contact." xml:space="preserve">
+      <trans-unit id="**Add new contact**: to create your one-time QR Code for your contact." xml:space="preserve" approved="no">
         <source>**Add new contact**: to create your one-time QR Code or link for your contact.</source>
+        <target state="translated">**添加新联系人**：为您的联系人创建一次性二维码或者链接。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Create link / QR code** for your contact to use." xml:space="preserve">
+      <trans-unit id="**Create link / QR code** for your contact to use." xml:space="preserve" approved="no">
         <source>**Create link / QR code** for your contact to use.</source>
+        <target state="translated">**创建链接 / 二维码** 给您的联系人使用。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." xml:space="preserve">
+      <trans-unit id="**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." xml:space="preserve" approved="no">
         <source>**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have.</source>
+        <target state="translated">**更私密**：每20分钟检查新消息。设备令牌和 SimpleX Chat 服务器共享，但是不会共享有您有多少联系人或者消息。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." xml:space="preserve">
+      <trans-unit id="**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." xml:space="preserve" approved="no">
         <source>**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app).</source>
+        <target state="translated">**最私密**：不使用 SimpleX Chat 消息提醒服务器，在后台定期检查消息（取决于您多经常使用应用程序）。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Paste received link** or open it in the browser and tap **Open in mobile app**." xml:space="preserve">
+      <trans-unit id="**Paste received link** or open it in the browser and tap **Open in mobile app**." xml:space="preserve" approved="no">
         <source>**Paste received link** or open it in the browser and tap **Open in mobile app**.</source>
+        <target state="translated">**粘贴收到的链接**或者在浏览器里打开并且点击**在移动应用程序里打开**。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Please note**: you will NOT be able to recover or change passphrase if you lose it." xml:space="preserve">
+      <trans-unit id="**Please note**: you will NOT be able to recover or change passphrase if you lose it." xml:space="preserve" approved="no">
         <source>**Please note**: you will NOT be able to recover or change passphrase if you lose it.</source>
+        <target state="translated">**请注意**：一但丢失您将无法恢复或者更改密码。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." xml:space="preserve">
+      <trans-unit id="**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." xml:space="preserve" approved="no">
         <source>**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from.</source>
+        <target state="translated">**推荐**：设备令牌和消息提醒会发送至 SimpleX Chat 消息提醒服务器，但是消息内容、大小或者发送人不会。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Scan QR code**: to connect to your contact in person or via video call." xml:space="preserve">
+      <trans-unit id="**Scan QR code**: to connect to your contact in person or via video call." xml:space="preserve" approved="no">
         <source>**Scan QR code**: to connect to your contact in person or via video call.</source>
+        <target state="translated">**扫描二维码**：见面或者通过视频通话来连接您的联系人。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Warning**: Instant push notifications require passphrase saved in Keychain." xml:space="preserve">
+      <trans-unit id="**Warning**: Instant push notifications require passphrase saved in Keychain." xml:space="preserve" approved="no">
         <source>**Warning**: Instant push notifications require passphrase saved in Keychain.</source>
+        <target state="translated">**警告**：及时推送消息提醒需要保存在钥匙串的密码。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**e2e encrypted** audio call" xml:space="preserve">
+      <trans-unit id="**e2e encrypted** audio call" xml:space="preserve" approved="no">
         <source>**e2e encrypted** audio call</source>
+        <target state="translated">**点对点加密** 语音通话</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**e2e encrypted** video call" xml:space="preserve">
+      <trans-unit id="**e2e encrypted** video call" xml:space="preserve" approved="no">
         <source>**e2e encrypted** video call</source>
+        <target state="translated">**点对点加密** 视频通话</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="*bold*" xml:space="preserve">
+      <trans-unit id="*bold*" xml:space="preserve" approved="no">
         <source>\*bold*</source>
+        <target state="translated">\*加粗*</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id=", " xml:space="preserve">
+      <trans-unit id=", " xml:space="preserve" approved="no">
         <source>, </source>
+        <target state="needs-translation">, </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="." xml:space="preserve">
+      <trans-unit id="." xml:space="preserve" approved="no">
         <source>.</source>
+        <target state="translated">.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="1 day" xml:space="preserve">
+      <trans-unit id="1 day" xml:space="preserve" approved="no">
         <source>1 day</source>
+        <target state="translated">1天</target>
         <note>message ttl</note>
       </trans-unit>
-      <trans-unit id="1 hour" xml:space="preserve">
+      <trans-unit id="1 hour" xml:space="preserve" approved="no">
         <source>1 hour</source>
+        <target state="translated">1时</target>
         <note>message ttl</note>
       </trans-unit>
-      <trans-unit id="1 month" xml:space="preserve">
+      <trans-unit id="1 month" xml:space="preserve" approved="no">
         <source>1 month</source>
+        <target state="translated">1月</target>
         <note>message ttl</note>
       </trans-unit>
-      <trans-unit id="1 week" xml:space="preserve">
+      <trans-unit id="1 week" xml:space="preserve" approved="no">
         <source>1 week</source>
+        <target state="translated">1周</target>
         <note>message ttl</note>
       </trans-unit>
-      <trans-unit id="2 weeks" xml:space="preserve">
+      <trans-unit id="2 weeks" xml:space="preserve" approved="no">
         <source>2 weeks</source>
+        <target state="translated">2周</target>
         <note>message ttl</note>
       </trans-unit>
-      <trans-unit id="6" xml:space="preserve">
+      <trans-unit id="6" xml:space="preserve" approved="no">
         <source>6</source>
+        <target state="translated">6</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id=": " xml:space="preserve">
+      <trans-unit id=": " xml:space="preserve" approved="no">
         <source>: </source>
+        <target state="translated">: </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="A new contact" xml:space="preserve">
+      <trans-unit id="A new contact" xml:space="preserve" approved="no">
         <source>A new contact</source>
+        <target state="translated">新联系人</target>
         <note>notification title</note>
       </trans-unit>
       <trans-unit id="A random profile will be sent to the contact that you received this link from" xml:space="preserve">
@@ -479,8 +514,9 @@
         <source>Change</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change database passphrase?" xml:space="preserve">
+      <trans-unit id="Change database passphrase?" xml:space="preserve" approved="no">
         <source>Change database passphrase?</source>
+        <target state="translated">更改数据库密码？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change member role?" xml:space="preserve">
@@ -579,8 +615,9 @@
         <source>Confirm</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm new passphrase…" xml:space="preserve">
+      <trans-unit id="Confirm new passphrase…" xml:space="preserve" approved="no">
         <source>Confirm new passphrase…</source>
+        <target state="translated">确认新密码…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect" xml:space="preserve">
@@ -723,8 +760,9 @@
         <source>Created on %@</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Current passphrase…" xml:space="preserve">
+      <trans-unit id="Current passphrase…" xml:space="preserve" approved="no">
         <source>Current passphrase…</source>
+        <target state="translated">现有密码…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Currently maximum supported file size is %@." xml:space="preserve">
