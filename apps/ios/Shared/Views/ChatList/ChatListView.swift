@@ -17,7 +17,13 @@ struct ChatListView: View {
     @State private var showAddChat = false
 
     var body: some View {
-        NavigationView {
+        NavStackCompat(
+            isActive: Binding(
+                get: { ChatModel.shared.chatId != nil },
+                set: { _ in }
+            ),
+            destination: chatView
+        ) {
             VStack {
                 if chatModel.chats.isEmpty {
                     onboardingButtons()
@@ -29,7 +35,6 @@ struct ChatListView: View {
                 }
             }
         }
-        .navigationViewStyle(.stack)
     }
 
     var chatList: some View {
@@ -75,15 +80,6 @@ struct ChatListView: View {
                 }
             }
         }
-        .background(
-            NavigationLink(
-                destination: chatView(),
-                isActive: Binding(
-                    get: { chatModel.chatId != nil },
-                    set: { _ in }
-                )
-            ) { EmptyView() }
-        )
     }
 
     private func onboardingButtons() -> some View {

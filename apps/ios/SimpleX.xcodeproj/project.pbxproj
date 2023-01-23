@@ -110,6 +110,7 @@
 		5CC2C0FC2809BF11000C35E3 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 5CC2C0FA2809BF11000C35E3 /* Localizable.strings */; };
 		5CC2C0FF2809BF11000C35E3 /* SimpleX--iOS--InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 5CC2C0FD2809BF11000C35E3 /* SimpleX--iOS--InfoPlist.strings */; };
 		5CCA7DF32905735700C8FEBA /* AcceptRequestsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCA7DF22905735700C8FEBA /* AcceptRequestsView.swift */; };
+		5CCB939C297EFCB100399E78 /* NavStackCompat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCB939B297EFCB100399E78 /* NavStackCompat.swift */; };
 		5CCD403427A5F6DF00368C90 /* AddContactView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403327A5F6DF00368C90 /* AddContactView.swift */; };
 		5CCD403727A5F9A200368C90 /* ScanToConnectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403627A5F9A200368C90 /* ScanToConnectView.swift */; };
 		5CDCAD482818589900503DA2 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CDCAD472818589900503DA2 /* NotificationService.swift */; };
@@ -341,6 +342,7 @@
 		5CC2C0FB2809BF11000C35E3 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/Localizable.strings; sourceTree = "<group>"; };
 		5CC2C0FE2809BF11000C35E3 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = "ru.lproj/SimpleX--iOS--InfoPlist.strings"; sourceTree = "<group>"; };
 		5CCA7DF22905735700C8FEBA /* AcceptRequestsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcceptRequestsView.swift; sourceTree = "<group>"; };
+		5CCB939B297EFCB100399E78 /* NavStackCompat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavStackCompat.swift; sourceTree = "<group>"; };
 		5CCD403327A5F6DF00368C90 /* AddContactView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddContactView.swift; sourceTree = "<group>"; };
 		5CCD403627A5F9A200368C90 /* ScanToConnectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanToConnectView.swift; sourceTree = "<group>"; };
 		5CDCAD452818589900503DA2 /* SimpleX NSE.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "SimpleX NSE.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -538,6 +540,7 @@
 				5C6BA666289BD954009B8ECC /* DismissSheets.swift */,
 				5C00164328A26FBC0094D739 /* ContextMenu.swift */,
 				5CA7DFC229302AF000F7FDDE /* AppSheet.swift */,
+				5CCB939B297EFCB100399E78 /* NavStackCompat.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -1051,6 +1054,7 @@
 				5CB346E52868AA7F001FD2EF /* SuspendChat.swift in Sources */,
 				5C9C2DA52894777E00CC63B1 /* GroupProfileView.swift in Sources */,
 				5CEACCED27DEA495000BD591 /* MsgContentView.swift in Sources */,
+				5CCB939C297EFCB100399E78 /* NavStackCompat.swift in Sources */,
 				5C764E89279CBCB3000C6508 /* ChatModel.swift in Sources */,
 				5C971E1D27AEBEF600C8A3CE /* ChatInfoView.swift in Sources */,
 				5CBD285C29575B8E00EC2CF4 /* WhatsNewView.swift in Sources */,
