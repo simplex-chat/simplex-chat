@@ -4,10 +4,10 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StrictData #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Simplex.Chat.Controller where
 
@@ -30,9 +30,11 @@ import Data.Map.Strict (Map)
 import Data.String
 import Data.Text (Text)
 import Data.Time (ZonedTime)
-import Data.Time.Clock (UTCTime)
+import Data.Time.Clock (UTCTime, getCurrentTime)
+import Data.Time.Format (defaultTimeLocale, formatTime, iso8601DateFormat)
 import Data.Version (showVersion)
 import GHC.Generics (Generic)
+import Language.Haskell.TH (Exp, Q, runIO)
 import Numeric.Natural
 import qualified Paths_simplex_chat as SC
 import Simplex.Chat.Call
@@ -53,6 +55,7 @@ import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtocolType, CorrId, MsgFlags)
 import Simplex.Messaging.TMap (TMap)
+import Simplex.Messaging.Transport (simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
 import System.IO (Handle)
 import System.Mem.Weak (Weak)
@@ -61,11 +64,39 @@ import UnliftIO.STM
 versionNumber :: String
 versionNumber = showVersion SC.version
 
-versionStr :: String
-versionStr = "SimpleX Chat v" <> versionNumber
+versionString :: String -> String
+versionString version = "SimpleX Chat v" <> version
 
 updateStr :: String
 updateStr = "To update run: curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash"
+
+buildTimestampQ :: Q Exp
+buildTimestampQ = do
+  s <- formatTime defaultTimeLocale (iso8601DateFormat $ Just "%H:%M:%S") <$> runIO getCurrentTime
+  [|fromString s|]
+
+simplexmqCommitQ :: Q Exp
+simplexmqCommitQ = do
+  s <- either error B.unpack . A.parseOnly commitHashP <$> runIO (B.readFile "./cabal.project")
+  [|fromString s|]
+  where
+    commitHashP :: A.Parser ByteString
+    commitHashP =
+      A.manyTill' A.anyChar "location: https://github.com/simplex-chat/simplexmq.git"
+        *> A.takeWhile (== ' ')
+        *> A.endOfLine
+        *> A.takeWhile (== ' ')
+        *> "tag: "
+        *> A.takeWhile (A.notInClass " \r\n")
+
+coreVersionInfo :: String -> String -> CoreVersionInfo
+coreVersionInfo buildTimestamp simplexmqCommit =
+  CoreVersionInfo
+    { version = versionNumber,
+      buildTimestamp,
+      simplexmqVersion = simplexMQVersion,
+      simplexmqCommit
+    }
 
 data ChatConfig = ChatConfig
   { agentConfig :: AgentConfig,
@@ -337,7 +368,7 @@ data ChatResponse
   | CRFileTransferStatus (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
   | CRUserProfile {profile :: Profile}
   | CRUserProfileNoChange
-  | CRVersionInfo {version :: String}
+  | CRVersionInfo {versionInfo :: CoreVersionInfo}
   | CRInvitation {connReqInvitation :: ConnReqInvitation}
   | CRSentConfirmation
   | CRSentInvitation {customUserProfile :: Maybe Profile}
@@ -548,6 +579,16 @@ tmeToPref currentTTL tme = uncurry TimedMessagesPreference $ case tme of
 
 data ChatLogLevel = CLLDebug | CLLInfo | CLLWarning | CLLError | CLLImportant
   deriving (Eq, Ord, Show)
+
+data CoreVersionInfo = CoreVersionInfo
+  { version :: String,
+    buildTimestamp :: String,
+    simplexmqVersion :: String,
+    simplexmqCommit :: String
+  }
+  deriving (Show, Generic)
+
+instance ToJSON CoreVersionInfo where toEncoding = J.genericToEncoding J.defaultOptions
 
 data ChatError
   = ChatError {errorType :: ChatErrorType}

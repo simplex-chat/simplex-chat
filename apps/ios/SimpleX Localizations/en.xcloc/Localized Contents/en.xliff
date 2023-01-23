@@ -463,9 +463,24 @@
         <target>Answer call</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="App build: %@" xml:space="preserve">
+        <source>App build: %@</source>
+        <target>App build: %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="App icon" xml:space="preserve">
         <source>App icon</source>
         <target>App icon</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="App version" xml:space="preserve">
+        <source>App version</source>
+        <target>App version</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="App version: v%@" xml:space="preserve">
+        <source>App version: v%@</source>
+        <target>App version: v%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Appearance" xml:space="preserve">
@@ -827,6 +842,16 @@
         <source>Copy</source>
         <target>Copy</target>
         <note>chat item action</note>
+      </trans-unit>
+      <trans-unit id="Core built at: %@" xml:space="preserve">
+        <source>Core built at: %@</source>
+        <target>Core built at: %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Core version: v%@" xml:space="preserve">
+        <source>Core version: v%@</source>
+        <target>Core version: v%@</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create" xml:space="preserve">
         <source>Create</source>

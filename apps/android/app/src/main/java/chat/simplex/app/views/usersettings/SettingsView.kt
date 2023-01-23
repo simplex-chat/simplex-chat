@@ -5,6 +5,7 @@ import SectionItemView
 import SectionSpacer
 import SectionView
 import android.content.res.Configuration
+import android.icu.util.VersionInfo
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -57,7 +58,14 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
       showSettingsModal = { modalView -> { ModalManager.shared.showModal(true) { modalView(chatModel) } } },
       showCustomModal = { modalView -> { ModalManager.shared.showCustomModal { close -> modalView(chatModel, close) } } },
       showTerminal = { ModalManager.shared.showCustomModal { close -> TerminalView(chatModel, close) } },
-//      showVideoChatPrototype = { ModalManager.shared.showCustomModal { close -> CallViewDebug(close) } },
+      showVersion = {
+        withApi {
+          val info = chatModel.controller.apiGetVersion()
+          if (info != null) {
+            ModalManager.shared.showModal { VersionInfoView(info) }
+          }
+        }
+      }
     )
   }
 }
@@ -89,7 +97,7 @@ fun SettingsLayout(
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   showTerminal: () -> Unit,
-//  showVideoChatPrototype: () -> Unit
+  showVersion: () -> Unit
 ) {
   val uriHandler = LocalUriHandler.current
   Surface(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
@@ -170,7 +178,7 @@ fun SettingsLayout(
         }
 //        SettingsActionItem(Icons.Outlined.Science, stringResource(R.string.settings_experimental_features), showSettingsModal { ExperimentalFeaturesView(it, enableCalls) })
 //        SectionDivider()
-        AppVersionItem()
+        AppVersionItem(showVersion)
       }
     }
   }
@@ -345,8 +353,8 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
   }
 }
 
-@Composable private fun AppVersionItem() {
-  SectionItemView() {
+@Composable private fun AppVersionItem(showVersion: () -> Unit) {
+  SectionItemView(showVersion) {
     Text("v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
   }
 }
@@ -491,7 +499,7 @@ fun PreviewSettingsLayout() {
       showSettingsModal = { {} },
       showCustomModal = { {} },
       showTerminal = {},
-//      showVideoChatPrototype = {}
+      showVersion = {}
     )
   }
 }

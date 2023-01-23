@@ -1481,8 +1481,8 @@ instance ToJSON RcvFileStatus where
 
 data RcvFileInfo = RcvFileInfo
   { filePath :: FilePath,
-    connId :: Int64,
-    agentConnId :: AgentConnId
+    connId :: Maybe Int64,
+    agentConnId :: Maybe AgentConnId
   }
   deriving (Eq, Show, Generic)
 
@@ -1494,7 +1494,8 @@ liveRcvFileTransferConnId RcvFileTransfer {fileStatus} = case fileStatus of
   RFSConnected fi -> acId fi
   _ -> Nothing
   where
-    acId RcvFileInfo {agentConnId = AgentConnId cId} = Just cId
+    acId RcvFileInfo {agentConnId = Just (AgentConnId cId)} = Just cId
+    acId _ = Nothing
 
 newtype AgentConnId = AgentConnId ConnId
   deriving (Eq, Show)
