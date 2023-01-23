@@ -49,7 +49,7 @@ struct ChatListView: View {
         .onAppear() { connectViaUrl() }
         .offset(x: -8)
         .listStyle(.plain)
-        .navigationTitle("Your chats")
+        .navigationTitle("Chats")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
@@ -64,6 +64,8 @@ struct ChatListView: View {
                         }
                         Image(systemName: "theatermasks").frame(maxWidth: 24, maxHeight: 24, alignment: .center).foregroundColor(.indigo)
                     }
+                } else {
+                    Text("Your chats").font(.headline)
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
