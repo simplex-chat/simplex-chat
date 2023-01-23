@@ -2743,7 +2743,7 @@ createRcvGroupFileTransfer db userId GroupMember {groupId, groupMemberId, localD
   pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, rcvFileInline, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Just groupMemberId}
 
 getRcvFileTransfer :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO RcvFileTransfer
-getRcvFileTransfer db user@User {userId} fileId = do
+getRcvFileTransfer db User {userId} fileId = do
   rftRow <-
     ExceptT . firstRow id (SERcvFileNotFound fileId) $
       DB.query
@@ -2782,15 +2782,7 @@ getRcvFileTransfer db user@User {userId} fileId = do
           RcvFileTransfer {fileId, fileInvitation, fileStatus, rcvFileInline, senderDisplayName, chunkSize, cancelled, grpMemberId}
         rfi fileInfo = maybe (throwError $ SERcvFileInvalid fileId) pure =<< rfi_ fileInfo
         rfi_ = \case
-          (Just filePath, Just connId, Just agentConnId, _, _, _, _) -> pure $ Just RcvFileInfo {filePath, connId, agentConnId}
-          (Just filePath, Nothing, Nothing, Just contactId, _, _, True) -> do
-            Contact {activeConn = Connection {connId, agentConnId}} <- getContact db user contactId
-            pure $ Just RcvFileInfo {filePath, connId, agentConnId}
-          (Just filePath, Nothing, Nothing, _, Just groupId, Just groupMemberId, True) -> do
-            getGroupMember db user groupId groupMemberId >>= \case
-              GroupMember {activeConn = Just Connection {connId, agentConnId}} ->
-                pure $ Just RcvFileInfo {filePath, connId, agentConnId}
-              _ -> pure Nothing
+          (Just filePath, connId, agentConnId, _, _, _, _) -> pure $ Just RcvFileInfo {filePath, connId, agentConnId}
           _ -> pure Nothing
         cancelled = fromMaybe False cancelled_
 

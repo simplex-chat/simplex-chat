@@ -3291,9 +3291,9 @@ cancelRcvFileTransfer user ft@RcvFileTransfer {fileId, fileStatus, rcvFileInline
     updateRcvFileStatus db ft FSCancelled
     deleteRcvFileChunks db ft
   when (isNothing rcvFileInline) $ case fileStatus of
-    RFSAccepted RcvFileInfo {connId, agentConnId} ->
+    RFSAccepted RcvFileInfo {connId = Just connId, agentConnId = Just agentConnId} ->
       deleteAgentConnectionAsync' user connId agentConnId
-    RFSConnected RcvFileInfo {connId, agentConnId} ->
+    RFSConnected RcvFileInfo {connId = Just connId, agentConnId = Just agentConnId} ->
       deleteAgentConnectionAsync' user connId agentConnId
     _ -> pure ()
 
