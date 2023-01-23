@@ -2667,7 +2667,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       (filePath, fileStatus) <- case inline of
         Just IFMSent -> do
           fPath <- getRcvFilePath fileId Nothing fileName
-          withStore' $ \db -> startRcvInlineFT db user ft fPath
+          withStore' $ \db -> startRcvInlineFT db user ft fPath inline
           pure (Just fPath, CIFSRcvAccepted)
         _ -> pure (Nothing, CIFSRcvInvitation)
       pure CIFile {fileId, fileName, fileSize, filePath, fileStatus}
@@ -3413,9 +3413,9 @@ cancelRcvFileTransfer user ft@RcvFileTransfer {fileId, fileStatus, rcvFileInline
     updateRcvFileStatus db ft FSCancelled
     deleteRcvFileChunks db ft
   when (isNothing rcvFileInline) $ case fileStatus of
-    RFSAccepted RcvFileInfo {connId, agentConnId} ->
+    RFSAccepted RcvFileInfo {connId = Just connId, agentConnId = Just agentConnId} ->
       deleteAgentConnectionAsync' user connId agentConnId
-    RFSConnected RcvFileInfo {connId, agentConnId} ->
+    RFSConnected RcvFileInfo {connId = Just connId, agentConnId = Just agentConnId} ->
       deleteAgentConnectionAsync' user connId agentConnId
     _ -> pure ()
 
@@ -3425,7 +3425,7 @@ cancelSndFile user FileTransferMeta {fileId} fts sendCancel = do
   forM_ fts $ \ft' -> cancelSndFileTransfer user ft' sendCancel
 
 cancelSndFileTransfer :: ChatMonad m => User -> SndFileTransfer -> Bool -> m ()
-cancelSndFileTransfer user ft@SndFileTransfer {connId, agentConnId = agentConnId@(AgentConnId acId), fileStatus} sendCancel =
+cancelSndFileTransfer user ft@SndFileTransfer {connId, agentConnId = agentConnId@(AgentConnId acId), fileStatus, fileInline} sendCancel =
   unless (fileStatus == FSCancelled || fileStatus == FSComplete) $ do
     withStore' $ \db -> do
       updateSndFileStatus db ft FSCancelled
@@ -3433,7 +3433,7 @@ cancelSndFileTransfer user ft@SndFileTransfer {connId, agentConnId = agentConnId
     when sendCancel $
       withAgent (\a -> void (sendMessage a acId SMP.noMsgFlags $ smpEncode FileChunkCancel))
         `catchError` (toView . CRChatError (Just user))
-    deleteAgentConnectionAsync' user connId agentConnId
+    when (isNothing fileInline) $ deleteAgentConnectionAsync' user connId agentConnId
 
 closeFileHandle :: ChatMonad m => Int64 -> (ChatController -> TVar (Map Int64 Handle)) -> m ()
 closeFileHandle fileId files = do

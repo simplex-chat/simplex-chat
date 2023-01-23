@@ -18,7 +18,13 @@ struct ChatListView: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            NavigationView {
+            NavStackCompat(
+                isActive: Binding(
+                    get: { ChatModel.shared.chatId != nil },
+                    set: { _ in }
+                ),
+                destination: chatView
+            ) {
                 VStack {
                     if chatModel.chats.isEmpty {
                         onboardingButtons()
@@ -30,7 +36,6 @@ struct ChatListView: View {
                     }
                 }
             }
-            .navigationViewStyle(.stack)
             if userPickerVisible {
                 Rectangle().fill(.white.opacity(0.001)).onTapGesture {
                     withAnimation {
@@ -111,15 +116,6 @@ struct ChatListView: View {
         .sheet(isPresented: $showSettings) {
             SettingsView(showSettings: $showSettings)
         }
-        .background(
-            NavigationLink(
-                destination: chatView(),
-                isActive: Binding(
-                    get: { chatModel.chatId != nil },
-                    set: { _ in }
-                )
-            ) { EmptyView() }
-        )
     }
 
     private func unreadBadge(_ text: Text? = Text(" "), size: CGFloat = 18) -> some View {
