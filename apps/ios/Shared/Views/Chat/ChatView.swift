@@ -63,6 +63,7 @@ struct ChatView: View {
         .padding(.top, 1)
         .navigationTitle(cInfo.chatViewName)
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
         .onAppear {
             if chat.chatStats.unreadChat {
                 Task {
@@ -70,20 +71,25 @@ struct ChatView: View {
                 }
             }
         }
-        .onChange(of: chatModel.chatId) { _ in
-            if chatModel.chatId == nil { dismiss() }
-        }
-        .onDisappear {
-            if chatModel.chatId == cInfo.id {
-                chatModel.chatId = nil
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                    if chatModel.chatId == nil {
-                        chatModel.reversedChatItems = []
+         .onChange(of: chatModel.chatId) { _ in
+             if chatModel.chatId == nil { dismiss() }
+         }
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button {
+                    chatModel.chatId = nil
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        if chatModel.chatId == nil {
+                            chatModel.reversedChatItems = []
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 0) {
+                        Image(systemName: "chevron.backward")
+                        Text("Chats")
                     }
                 }
             }
-        }
-        .toolbar {
             ToolbarItem(placement: .principal) {
                 if case let .direct(contact) = cInfo {
                     Button {
