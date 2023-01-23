@@ -2545,7 +2545,7 @@ processAgentMessage (Just user@User {userId}) corrId agentConnId agentMessage = 
       (filePath, fileStatus) <- case inline of
         Just IFMSent -> do
           fPath <- getRcvFilePath fileId Nothing fileName
-          withStore' $ \db -> startRcvInlineFT db user ft fPath
+          withStore' $ \db -> startRcvInlineFT db user ft fPath inline
           pure (Just fPath, CIFSRcvAccepted)
         _ -> pure (Nothing, CIFSRcvInvitation)
       pure CIFile {fileId, fileName, fileSize, filePath, fileStatus}
@@ -3291,9 +3291,9 @@ cancelRcvFileTransfer user ft@RcvFileTransfer {fileId, fileStatus, rcvFileInline
     updateRcvFileStatus db ft FSCancelled
     deleteRcvFileChunks db ft
   when (isNothing rcvFileInline) $ case fileStatus of
-    RFSAccepted RcvFileInfo {connId, agentConnId} ->
+    RFSAccepted RcvFileInfo {connId = Just connId, agentConnId = Just agentConnId} ->
       deleteAgentConnectionAsync' user connId agentConnId
-    RFSConnected RcvFileInfo {connId, agentConnId} ->
+    RFSConnected RcvFileInfo {connId = Just connId, agentConnId = Just agentConnId} ->
       deleteAgentConnectionAsync' user connId agentConnId
     _ -> pure ()
 
