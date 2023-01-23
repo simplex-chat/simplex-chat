@@ -3303,13 +3303,14 @@ cancelSndFile user FileTransferMeta {fileId} fts = do
   forM_ fts $ \ft' -> cancelSndFileTransfer user ft'
 
 cancelSndFileTransfer :: ChatMonad m => User -> SndFileTransfer -> m ()
-cancelSndFileTransfer user ft@SndFileTransfer {connId, agentConnId = agentConnId@(AgentConnId acId), fileStatus} =
+cancelSndFileTransfer user ft@SndFileTransfer {connId, agentConnId = agentConnId@(AgentConnId acId), fileStatus, fileInline} =
   unless (fileStatus == FSCancelled || fileStatus == FSComplete) $ do
     withStore' $ \db -> do
       updateSndFileStatus db ft FSCancelled
       deleteSndFileChunks db ft
     withAgent $ \a -> void (sendMessage a acId SMP.noMsgFlags $ smpEncode FileChunkCancel) `catchError` \_ -> pure ()
-    deleteAgentConnectionAsync' user connId agentConnId
+    when (isNothing fileInline) $
+      deleteAgentConnectionAsync' user connId agentConnId
 
 closeFileHandle :: ChatMonad m => Int64 -> (ChatController -> TVar (Map Int64 Handle)) -> m ()
 closeFileHandle fileId files = do
