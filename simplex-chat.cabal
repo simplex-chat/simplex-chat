@@ -82,6 +82,7 @@ library
       Simplex.Chat.Migrations.M20230111_users_agent_user_id
       Simplex.Chat.Migrations.M20230117_fkey_indexes
       Simplex.Chat.Migrations.M20230118_recreate_smp_servers
+      Simplex.Chat.Migrations.M20230123_recreate_snd_files
       Simplex.Chat.Mobile
       Simplex.Chat.Options
       Simplex.Chat.ProfileGenerator

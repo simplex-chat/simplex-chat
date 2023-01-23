@@ -1436,8 +1436,8 @@ data SndFileTransfer = SndFileTransfer
     fileSize :: Integer,
     chunkSize :: Integer,
     recipientDisplayName :: ContactName,
-    connId :: Int64,
-    agentConnId :: AgentConnId,
+    connId :: Maybe Int64,
+    agentConnId :: Maybe AgentConnId,
     fileStatus :: FileStatus,
     fileInline :: Maybe InlineFileMode
   }
@@ -1445,8 +1445,9 @@ data SndFileTransfer = SndFileTransfer
 
 instance ToJSON SndFileTransfer where toEncoding = J.genericToEncoding J.defaultOptions
 
-sndFileTransferConnId :: SndFileTransfer -> ConnId
-sndFileTransferConnId SndFileTransfer {agentConnId = AgentConnId acId} = acId
+sndFileTransferConnId :: SndFileTransfer -> Maybe ConnId
+sndFileTransferConnId SndFileTransfer {agentConnId = Just (AgentConnId acId)} = Just acId
+sndFileTransferConnId _ = Nothing
 
 type FileTransferId = Int64
 

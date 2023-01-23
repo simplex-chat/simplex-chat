@@ -452,7 +452,7 @@ processChatCommand = \case
           where
             processMember m@GroupMember {activeConn = Just conn@Connection {connStatus}} =
               when (connStatus == ConnReady || connStatus == ConnSndReady) $ do
-                void . withStore' $ \db -> createSndGroupInlineFT db m conn ft
+                void . withStore' $ \db -> createSndGroupInlineFT db m ft
                 sendMemberFileInline m conn ft sharedMsgId
             processMember _ = pure ()
         prepareMsg :: Maybe FileInvitation -> Maybe CITimed -> GroupMember -> m (MsgContainer, Maybe (CIQuote 'CTGroup))
@@ -1819,7 +1819,7 @@ subscribeUserConnections agentBatchSubscribe user = do
     getSndFileTransferConns :: m ([ConnId], Map ConnId SndFileTransfer)
     getSndFileTransferConns = do
       sfts <- withStore_ getLiveSndFileTransfers
-      let connIds = map sndFileTransferConnId sfts
+      let connIds = mapMaybe sndFileTransferConnId sfts
       pure (connIds, M.fromList $ zip connIds sfts)
     getRcvFileTransferConns :: m ([ConnId], Map ConnId RcvFileTransfer)
     getRcvFileTransferConns = do
@@ -2173,7 +2173,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 when (memberCategory m == GCPreMember) $ probeMatchingContacts ct connectedIncognito
         SENT msgId -> do
           sentMsgDeliveryEvent conn msgId
-          checkSndInlineFTComplete conn msgId
+          checkSndInlineFTComplete msgId
           withStore' (\db -> getDirectChatItemByAgentMsgId db user contactId connId msgId) >>= \case
             Just (CChatItem SMDSnd ci) -> do
               chatItem <- withStore $ \db -> updateDirectChatItemStatus db user contactId (chatItemId' ci) CISSndSent
@@ -2335,7 +2335,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             _ -> messageError $ "unsupported message: " <> T.pack (show event)
       SENT msgId -> do
         sentMsgDeliveryEvent conn msgId
-        checkSndInlineFTComplete conn msgId
+        checkSndInlineFTComplete msgId
       SWITCH qd phase cStats -> do
         toView $ CRGroupMemberSwitch user gInfo m (SwitchProgress qd phase cStats)
         when (phase /= SPConfirmed) $ case qd of
@@ -2849,9 +2849,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               (messageError "x.file.acpt.inv: fileSize is bigger than allowed to send inline")
         else messageError "x.file.acpt.inv: fileName is different from expected"
 
-    checkSndInlineFTComplete :: Connection -> AgentMsgId -> m ()
-    checkSndInlineFTComplete conn agentMsgId = do
-      ft_ <- withStore' $ \db -> getSndInlineFTViaMsgDelivery db user conn agentMsgId
+    checkSndInlineFTComplete :: AgentMsgId -> m ()
+    checkSndInlineFTComplete agentMsgId = do
+      ft_ <- withStore' $ \db -> getSndInlineFTViaMsgDelivery db user agentMsgId
       forM_ ft_ $ \ft@SndFileTransfer {fileId} -> do
         ci <- withStore $ \db -> do
           liftIO $ updateSndFileStatus db ft FSComplete
@@ -2919,7 +2919,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             -- receiving inline
             event <- withStore $ \db -> do
               ci <- updateDirectCIFileStatus db user fileId CIFSSndTransfer
-              sft <- liftIO $ createSndGroupInlineFT db m conn ft
+              sft <- liftIO $ createSndGroupInlineFT db m ft
               pure $ CRSndFileStart user ci sft
             toView event
             ifM
@@ -3338,7 +3338,7 @@ parseAChatMessage :: ChatMonad m => ByteString -> m AChatMessage
 parseAChatMessage = liftEither . first (ChatError . CEInvalidChatMessage) . strDecode
 
 sendFileChunk :: ChatMonad m => User -> SndFileTransfer -> m ()
-sendFileChunk user ft@SndFileTransfer {fileId, fileStatus, connId, agentConnId} =
+sendFileChunk user ft@SndFileTransfer {fileId, fileStatus, connId = connId_, agentConnId = agentConnId_} =
   unless (fileStatus == FSComplete || fileStatus == FSCancelled) $
     withStore' (`createSndFileChunk` ft) >>= \case
       Just chunkNo -> sendFileChunkNo ft chunkNo
@@ -3349,13 +3349,16 @@ sendFileChunk user ft@SndFileTransfer {fileId, fileStatus, connId, agentConnId} 
           updateDirectCIFileStatus db user fileId CIFSSndComplete
         toView $ CRSndFileComplete user ci ft
         closeFileHandle fileId sndFiles
-        deleteAgentConnectionAsync' user connId agentConnId
+        case (connId_, agentConnId_) of
+          (Just connId, Just agentConnId) -> deleteAgentConnectionAsync' user connId agentConnId
+          _ -> pure ()
 
 sendFileChunkNo :: ChatMonad m => SndFileTransfer -> Integer -> m ()
-sendFileChunkNo ft@SndFileTransfer {agentConnId = AgentConnId acId} chunkNo = do
+sendFileChunkNo ft@SndFileTransfer {agentConnId = Just (AgentConnId acId)} chunkNo = do
   chunkBytes <- readFileChunk ft chunkNo
   msgId <- withAgent $ \a -> sendMessage a acId SMP.noMsgFlags $ smpEncode FileChunk {chunkNo, chunkBytes}
   withStore' $ \db -> updateSndFileChunkMsg db ft chunkNo msgId
+sendFileChunkNo _ _ = pure ()
 
 readFileChunk :: ChatMonad m => SndFileTransfer -> Integer -> m ByteString
 readFileChunk SndFileTransfer {fileId, filePath, chunkSize} chunkNo = do
@@ -3425,15 +3428,18 @@ cancelSndFile user FileTransferMeta {fileId} fts sendCancel = do
   forM_ fts $ \ft' -> cancelSndFileTransfer user ft' sendCancel
 
 cancelSndFileTransfer :: ChatMonad m => User -> SndFileTransfer -> Bool -> m ()
-cancelSndFileTransfer user ft@SndFileTransfer {connId, agentConnId = agentConnId@(AgentConnId acId), fileStatus} sendCancel =
+cancelSndFileTransfer user ft@SndFileTransfer {connId = connId_, agentConnId = agentConnId_, fileStatus} sendCancel =
   unless (fileStatus == FSCancelled || fileStatus == FSComplete) $ do
     withStore' $ \db -> do
       updateSndFileStatus db ft FSCancelled
       deleteSndFileChunks db ft
-    when sendCancel $
-      withAgent (\a -> void (sendMessage a acId SMP.noMsgFlags $ smpEncode FileChunkCancel))
-        `catchError` (toView . CRChatError (Just user))
-    deleteAgentConnectionAsync' user connId agentConnId
+    case (connId_, agentConnId_) of
+      (Just connId, Just agentConnId@(AgentConnId acId)) -> do
+        when sendCancel $
+          withAgent (\a -> void (sendMessage a acId SMP.noMsgFlags $ smpEncode FileChunkCancel))
+            `catchError` (toView . CRChatError (Just user))
+        deleteAgentConnectionAsync' user connId agentConnId
+      _ -> pure ()
 
 closeFileHandle :: ChatMonad m => Int64 -> (ChatController -> TVar (Map Int64 Handle)) -> m ()
 closeFileHandle fileId files = do

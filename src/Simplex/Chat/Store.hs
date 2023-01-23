@@ -337,6 +337,7 @@ import Simplex.Chat.Migrations.M20230107_connections_auth_err_counter
 import Simplex.Chat.Migrations.M20230111_users_agent_user_id
 import Simplex.Chat.Migrations.M20230117_fkey_indexes
 import Simplex.Chat.Migrations.M20230118_recreate_smp_servers
+import Simplex.Chat.Migrations.M20230123_recreate_snd_files
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (week)
@@ -400,7 +401,8 @@ schemaMigrations =
     ("20230107_connections_auth_err_counter", m20230107_connections_auth_err_counter),
     ("20230111_users_agent_user_id", m20230111_users_agent_user_id),
     ("20230117_fkey_indexes", m20230117_fkey_indexes),
-    ("20230118_recreate_smp_servers", m20230118_recreate_smp_servers)
+    ("20230118_recreate_smp_servers", m20230118_recreate_smp_servers),
+    ("20230123_recreate_snd_files", m20230123_recreate_snd_files)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -1713,7 +1715,7 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
     sndFileTransfer_ :: Int64 -> Int64 -> (FileStatus, String, Integer, Integer, FilePath, Maybe InlineFileMode, Maybe ContactName, Maybe ContactName) -> Either StoreError SndFileTransfer
     sndFileTransfer_ fileId connId (fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, contactName_, memberName_) =
       case contactName_ <|> memberName_ of
-        Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, recipientDisplayName, connId, agentConnId}
+        Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, recipientDisplayName, connId = Just connId, agentConnId = Just agentConnId}
         Nothing -> Left $ SESndFileInvalid fileId
     getUserContact_ :: Int64 -> ExceptT StoreError IO UserContact
     getUserContact_ userContactLinkId = ExceptT $ do
@@ -2633,26 +2635,26 @@ createSndGroupFileTransferConnection db user@User {userId} fileId (cmdId, acId) 
     (fileId, FSAccepted, connId, groupMemberId, currentTs, currentTs)
 
 createSndDirectInlineFT :: DB.Connection -> Contact -> FileTransferMeta -> IO SndFileTransfer
-createSndDirectInlineFT db Contact {localDisplayName = n, activeConn = Connection {connId, agentConnId}} FileTransferMeta {fileId, fileName, filePath, fileSize, chunkSize, fileInline} = do
+createSndDirectInlineFT db Contact {localDisplayName = n} FileTransferMeta {fileId, fileName, filePath, fileSize, chunkSize, fileInline} = do
   currentTs <- getCurrentTime
   let fileStatus = FSConnected
       fileInline' = Just $ fromMaybe IFMOffer fileInline
   DB.execute
     db
-    "INSERT INTO snd_files (file_id, file_status, file_inline, connection_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
-    (fileId, fileStatus, fileInline', connId, currentTs, currentTs)
-  pure SndFileTransfer {fileId, fileName, filePath, fileSize, chunkSize, recipientDisplayName = n, connId, agentConnId, fileStatus, fileInline = fileInline'}
+    "INSERT INTO snd_files (file_id, file_status, file_inline, created_at, updated_at) VALUES (?,?,?,?,?)"
+    (fileId, fileStatus, fileInline', currentTs, currentTs)
+  pure SndFileTransfer {fileId, fileName, filePath, fileSize, chunkSize, recipientDisplayName = n, connId = Nothing, agentConnId = Nothing, fileStatus, fileInline = fileInline'}
 
-createSndGroupInlineFT :: DB.Connection -> GroupMember -> Connection -> FileTransferMeta -> IO SndFileTransfer
-createSndGroupInlineFT db GroupMember {groupMemberId, localDisplayName = n} Connection {connId, agentConnId} FileTransferMeta {fileId, fileName, filePath, fileSize, chunkSize, fileInline} = do
+createSndGroupInlineFT :: DB.Connection -> GroupMember -> FileTransferMeta -> IO SndFileTransfer
+createSndGroupInlineFT db GroupMember {groupMemberId, localDisplayName = n} FileTransferMeta {fileId, fileName, filePath, fileSize, chunkSize, fileInline} = do
   currentTs <- getCurrentTime
   let fileStatus = FSConnected
       fileInline' = Just $ fromMaybe IFMOffer fileInline
   DB.execute
     db
-    "INSERT INTO snd_files (file_id, file_status, file_inline, connection_id, group_member_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
-    (fileId, fileStatus, fileInline', connId, groupMemberId, currentTs, currentTs)
-  pure SndFileTransfer {fileId, fileName, filePath, fileSize, chunkSize, recipientDisplayName = n, connId, agentConnId, fileStatus, fileInline = fileInline'}
+    "INSERT INTO snd_files (file_id, file_status, file_inline, group_member_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
+    (fileId, fileStatus, fileInline', groupMemberId, currentTs, currentTs)
+  pure SndFileTransfer {fileId, fileName, filePath, fileSize, chunkSize, recipientDisplayName = n, connId = Nothing, agentConnId = Nothing, fileStatus, fileInline = fileInline'}
 
 updateSndDirectFTDelivery :: DB.Connection -> Contact -> FileTransferMeta -> Int64 -> IO ()
 updateSndDirectFTDelivery db Contact {activeConn = Connection {connId}} FileTransferMeta {fileId} msgDeliveryId =
@@ -2668,8 +2670,8 @@ updateSndGroupFTDelivery db GroupMember {groupMemberId} Connection {connId} File
     "UPDATE snd_files SET last_inline_msg_delivery_id = ? WHERE group_member_id = ? AND connection_id = ? AND file_id = ? AND file_inline IS NOT NULL"
     (msgDeliveryId, groupMemberId, connId, fileId)
 
-getSndInlineFTViaMsgDelivery :: DB.Connection -> User -> Connection -> AgentMsgId -> IO (Maybe SndFileTransfer)
-getSndInlineFTViaMsgDelivery db User {userId} Connection {connId, agentConnId} agentMsgId = do
+getSndInlineFTViaMsgDelivery :: DB.Connection -> User -> AgentMsgId -> IO (Maybe SndFileTransfer)
+getSndInlineFTViaMsgDelivery db User {userId} agentMsgId = do
   (sndFileTransfer_ <=< listToMaybe)
     <$> DB.query
       db
@@ -2680,13 +2682,13 @@ getSndInlineFTViaMsgDelivery db User {userId} Connection {connId, agentConnId} a
         JOIN files f ON f.file_id = s.file_id
         LEFT JOIN contacts c USING (contact_id)
         LEFT JOIN group_members m USING (group_member_id)
-        WHERE d.connection_id = ? AND d.agent_msg_id = ? AND f.user_id = ? AND s.file_inline IS NOT NULL
+        WHERE d.agent_msg_id = ? AND f.user_id = ? AND s.file_inline IS NOT NULL
       |]
-      (connId, agentMsgId, userId)
+      (agentMsgId, userId)
   where
     sndFileTransfer_ :: (Int64, FileStatus, String, Integer, Integer, FilePath, Maybe InlineFileMode, Maybe ContactName, Maybe ContactName) -> Maybe SndFileTransfer
     sndFileTransfer_ (fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, contactName_, memberName_) =
-      (\n -> SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, recipientDisplayName = n, connId, agentConnId})
+      (\n -> SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, recipientDisplayName = n, connId = Nothing, agentConnId = Nothing})
         <$> (contactName_ <|> memberName_)
 
 updateFileCancelled :: MsgDirectionI d => DB.Connection -> User -> Int64 -> CIFileStatus d -> IO ()
@@ -3062,7 +3064,7 @@ getSndFileTransfers_ db userId fileId =
       |]
       (userId, fileId)
   where
-    sndFileTransfer :: (FileStatus, String, Integer, Integer, FilePath, Maybe InlineFileMode, Int64, AgentConnId, Maybe ContactName, Maybe ContactName) -> Either StoreError SndFileTransfer
+    sndFileTransfer :: (FileStatus, String, Integer, Integer, FilePath, Maybe InlineFileMode, Maybe Int64, Maybe AgentConnId, Maybe ContactName, Maybe ContactName) -> Either StoreError SndFileTransfer
     sndFileTransfer (fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, connId, agentConnId, contactName_, memberName_) =
       case contactName_ <|> memberName_ of
         Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, recipientDisplayName, connId, agentConnId}
