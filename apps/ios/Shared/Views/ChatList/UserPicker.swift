@@ -30,7 +30,7 @@ struct UserPicker: View {
                 ScrollView {
                     ScrollViewReader { sp in
                         VStack(spacing: 0) {
-                            ForEach(Array(m.users.sorted(by: { u, _ in u.user.activeUser }))) { u in
+                            ForEach(Array(m.users.sorted(by: { u, _ in u.user.activeUser }).enumerated()), id: \.0) { _, u in
                                 userView(u)
                                 Divider()
                             }
@@ -77,12 +77,19 @@ struct UserPicker: View {
         .frame(maxWidth: chatViewNameWidth > 0 ? min(300, chatViewNameWidth + 130) : 300)
         .padding(8)
         .opacity(userPickerVisible ? 1.0 : 0.0)
+        .onChange(of: [m.currentUser?.chatViewName, m.currentUser?.image] ) { _ in
+            reloadUsers()
+        }
         .onAppear {
-            do {
-                m.users = try listUsers()
-            } catch let error {
-                logger.error("Error updating users \(responseError(error))")
-            }
+            reloadUsers()
+        }
+    }
+
+    private func reloadUsers() {
+        do {
+            m.users = try listUsers()
+        } catch let error {
+            logger.error("Error updating users \(responseError(error))")
         }
     }
 
