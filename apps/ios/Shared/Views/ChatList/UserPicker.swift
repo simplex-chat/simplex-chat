@@ -78,9 +78,6 @@ struct UserPicker: View {
         .frame(maxWidth: chatViewNameWidth > 0 ? min(300, chatViewNameWidth + 130) : 300)
         .padding(8)
         .opacity(userPickerVisible ? 1.0 : 0.0)
-        .onChange(of: [m.currentUser?.chatViewName, m.currentUser?.image] ) { _ in
-            reloadUsers()
-        }
         .onAppear {
             reloadUsers()
         }
