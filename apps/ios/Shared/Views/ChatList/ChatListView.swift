@@ -17,7 +17,13 @@ struct ChatListView: View {
     @State private var showAddChat = false
 
     var body: some View {
-        NavStackWorkaround(path: Binding(get: { ChatModel.shared.chatId != nil ? [true] : [] }, set: { _ in }), destination: chatView) {
+        NavStackCompat(
+            isActive: Binding(
+                get: { ChatModel.shared.chatId != nil },
+                set: { _ in }
+            ),
+            destination: chatView
+        ) {
             VStack {
                 if chatModel.chats.isEmpty {
                     onboardingButtons()
