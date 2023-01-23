@@ -275,6 +275,18 @@ final class ChatModel: ObservableObject {
         return nil
     }
 
+    func updateCurrentUser(_ newProfile: Profile, _ preferences: FullPreferences? = nil) {
+        if let current = currentUser {
+            currentUser?.profile = toLocalProfile(current.profile.profileId, newProfile, "")
+            if let preferences = preferences {
+                currentUser?.fullPreferences = preferences
+            }
+            if let current = currentUser, let i = users.firstIndex(where: { $0.user.userId == current.userId }) {
+                users[i].user = current
+            }
+        }
+    }
+
     func addLiveDummy(_ chatInfo: ChatInfo) -> ChatItem {
         let cItem = ChatItem.liveDummy(chatInfo.chatType)
         withAnimation {
