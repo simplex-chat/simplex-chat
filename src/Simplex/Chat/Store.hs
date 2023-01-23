@@ -2789,7 +2789,7 @@ getRcvFileTransfer db User {userId} fileId = do
 acceptRcvFileTransfer :: DB.Connection -> User -> Int64 -> (CommandId, ConnId) -> ConnStatus -> FilePath -> ExceptT StoreError IO AChatItem
 acceptRcvFileTransfer db user@User {userId} fileId (cmdId, acId) connStatus filePath = ExceptT $ do
   currentTs <- getCurrentTime
-  acceptRcvFT_ db user fileId filePath currentTs
+  acceptRcvFT_ db user fileId filePath Nothing currentTs
   DB.execute
     db
     "INSERT INTO connections (agent_conn_id, conn_status, conn_type, rcv_file_id, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
@@ -2809,23 +2809,23 @@ getContactByFileId db user@User {userId} fileId = do
 
 acceptRcvInlineFT :: DB.Connection -> User -> Int64 -> FilePath -> ExceptT StoreError IO AChatItem
 acceptRcvInlineFT db user fileId filePath = do
-  liftIO $ acceptRcvFT_ db user fileId filePath =<< getCurrentTime
+  liftIO $ acceptRcvFT_ db user fileId filePath (Just IFMOffer) =<< getCurrentTime
   getChatItemByFileId db user fileId
 
-startRcvInlineFT :: DB.Connection -> User -> RcvFileTransfer -> FilePath -> IO ()
-startRcvInlineFT db user RcvFileTransfer {fileId} filePath =
-  acceptRcvFT_ db user fileId filePath =<< getCurrentTime
+startRcvInlineFT :: DB.Connection -> User -> RcvFileTransfer -> FilePath -> Maybe InlineFileMode -> IO ()
+startRcvInlineFT db user RcvFileTransfer {fileId} filePath rcvFileInline =
+  acceptRcvFT_ db user fileId filePath rcvFileInline =<< getCurrentTime
 
-acceptRcvFT_ :: DB.Connection -> User -> Int64 -> FilePath -> UTCTime -> IO ()
-acceptRcvFT_ db User {userId} fileId filePath currentTs = do
+acceptRcvFT_ :: DB.Connection -> User -> Int64 -> FilePath -> Maybe InlineFileMode -> UTCTime -> IO ()
+acceptRcvFT_ db User {userId} fileId filePath rcvFileInline currentTs = do
   DB.execute
     db
     "UPDATE files SET file_path = ?, ci_file_status = ?, updated_at = ? WHERE user_id = ? AND file_id = ?"
     (filePath, CIFSRcvAccepted, currentTs, userId, fileId)
   DB.execute
     db
-    "UPDATE rcv_files SET file_status = ?, updated_at = ? WHERE file_id = ?"
-    (FSAccepted, currentTs, fileId)
+    "UPDATE rcv_files SET rcv_file_inline = ?, file_status = ?, updated_at = ? WHERE file_id = ?"
+    (rcvFileInline, FSAccepted, currentTs, fileId)
 
 updateRcvFileStatus :: DB.Connection -> RcvFileTransfer -> FileStatus -> IO ()
 updateRcvFileStatus db RcvFileTransfer {fileId} status = do
