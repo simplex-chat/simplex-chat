@@ -66,23 +66,37 @@ extension View {
 }
 
 struct NavStackWorkaround <C: View, D: View>: View {
-    let isPresented: Binding<Bool>
+    let path: Binding<[Bool]>
     let destination: () -> D
     let content: () -> C
 
     var body: some View {
         if #available(iOS 16, *) {
-            NavigationStack {
-                content()
-                .navigationDestination(isPresented: isPresented) {
-                    destination()
-                    .navigationBarTitleDisplayMode(.inline)
-                    .navigationBarBackButtonHidden(true)
+            NavigationStack(path: path) {
+                ZStack {
+                    NavigationLink(value: true) {
+                        EmptyView()
+                    }
+                    content()
+                }
+                .navigationDestination(for: Bool.self) { show in
+                    if show { destination() }
                 }
             }
         } else {
-            NavigationView(content: content)
-                .navigationViewStyle(.stack)
+            NavigationView {
+                ZStack {
+                    NavigationLink(
+                        destination: destination(),
+                        isActive: Binding(
+                            get: { !path.wrappedValue.isEmpty },
+                            set: { _ in }
+                        )
+                    ) { EmptyView() }
+                    content()
+                }
+            }
+            .navigationViewStyle(.stack)
         }
     }
 }
