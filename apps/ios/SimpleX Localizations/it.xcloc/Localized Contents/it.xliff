@@ -463,8 +463,9 @@
         <target>Rispondi alla chiamata</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App build: %@" xml:space="preserve">
+      <trans-unit id="App build: %@" xml:space="preserve" approved="no">
         <source>App build: %@</source>
+        <target state="translated">Build dell'app: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App icon" xml:space="preserve">
@@ -472,12 +473,14 @@
         <target>Icona app</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App version" xml:space="preserve">
+      <trans-unit id="App version" xml:space="preserve" approved="no">
         <source>App version</source>
+        <target state="translated">Versione dell'app</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App version: v%@" xml:space="preserve">
+      <trans-unit id="App version: v%@" xml:space="preserve" approved="no">
         <source>App version: v%@</source>
+        <target state="translated">Versione app: v%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Appearance" xml:space="preserve">
@@ -840,12 +843,14 @@
         <target>Copia</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Core built at: %@" xml:space="preserve">
+      <trans-unit id="Core built at: %@" xml:space="preserve" approved="no">
         <source>Core built at: %@</source>
+        <target state="translated">Core compilato il: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Core version: v%@" xml:space="preserve">
+      <trans-unit id="Core version: v%@" xml:space="preserve" approved="no">
         <source>Core version: v%@</source>
+        <target state="translated">Versione core: v%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create" xml:space="preserve">
@@ -2293,8 +2298,9 @@ Aggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</tar
         <target>Aprire il link nel browser può ridurre la privacy e la sicurezza della connessione. I link SimpleX non fidati saranno in rosso.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="PING count" xml:space="preserve">
+      <trans-unit id="PING count" xml:space="preserve" approved="no">
         <source>PING count</source>
+        <target state="translated">Conteggio PING</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="PING interval" xml:space="preserve">
