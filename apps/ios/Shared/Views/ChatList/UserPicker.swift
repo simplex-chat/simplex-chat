@@ -79,15 +79,11 @@ struct UserPicker: View {
         .padding(8)
         .opacity(userPickerVisible ? 1.0 : 0.0)
         .onAppear {
-            reloadUsers()
-        }
-    }
-
-    private func reloadUsers() {
-        do {
-            m.users = try listUsers()
-        } catch let error {
-            logger.error("Error updating users \(responseError(error))")
+            do {
+                m.users = try listUsers()
+            } catch let error {
+                logger.error("Error updating users \(responseError(error))")
+            }
         }
     }
 

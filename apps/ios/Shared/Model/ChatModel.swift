@@ -277,15 +277,13 @@ final class ChatModel: ObservableObject {
 
     func updateCurrentUser(_ newProfile: Profile, _ preferences: FullPreferences? = nil) {
         if let current = currentUser {
-            var updatedUser = current
-            updatedUser.profile = toLocalProfile(updatedUser.profile.profileId, newProfile, "")
+            currentUser?.profile = toLocalProfile(current.profile.profileId, newProfile, "")
             if let preferences = preferences {
-                updatedUser.fullPreferences = preferences
+                currentUser?.fullPreferences = preferences
             }
-            if let currentUserIndex = users.firstIndex { $0.user.userId == updatedUser.userId } {
-                users[currentUserIndex] = UserInfo(user: updatedUser, unreadCount: users[currentUserIndex].unreadCount)
+            if let current = currentUser, let i = users.firstIndex(where: { $0.user.userId == current.userId }) {
+                users[i].user = current
             }
-            currentUser = updatedUser
         }
     }
 
