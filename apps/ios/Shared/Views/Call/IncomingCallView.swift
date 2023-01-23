@@ -29,6 +29,10 @@ struct IncomingCallView: View {
     private func incomingCall(_ invitation: RcvCallInvitation) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
+                if m.users.count > 1 {
+                    ProfileImage(imageStr: invitation.user.image, color: .white)
+                        .frame(width: 24, height: 24)
+                }
                 Image(systemName: invitation.callType.media == .video ? "video.fill" : "phone.fill").foregroundColor(.green)
                 Text(invitation.callTypeText)
             }
@@ -55,19 +59,6 @@ struct IncomingCallView: View {
                         cc.answerCall(invitation: invitation)
                     }
                 }
-            }
-            if m.users.count > 1 {
-                Divider()
-                HStack {
-                    Spacer()
-                    ProfileImage(imageStr: invitation.user.image, color: .white)
-                        .frame(width: 20, height: 20)
-                    Text(invitation.user.chatViewName)
-                        .fontWeight(.regular)
-                        .font(.subheadline)
-                        .foregroundColor(.primary)
-                }
-                .padding(.top, 4)
             }
         }
         .padding(.horizontal, 16)
