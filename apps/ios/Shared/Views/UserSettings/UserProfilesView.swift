@@ -9,15 +9,17 @@ import SimpleXChat
 struct UserProfilesView: View {
     @EnvironmentObject private var m: ChatModel
     @Environment(\.editMode) private var editMode
+    @State private var showDeleteConfirmation = false
+    @State private var userToDelete: Int?
     @State private var alert: UserProfilesAlert?
 
     private enum UserProfilesAlert: Identifiable {
-        case deleteUser(index: Int)
+        case deleteUser(index: Int, delSMPQueues: Bool)
         case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
 
         var id: String {
             switch self {
-            case let .deleteUser(index): return "deleteUser \(index)"
+            case let .deleteUser(index, delSMPQueues): return "deleteUser \(index) \(delSMPQueues)"
             case let .error(title, _): return "error \(title)"
             }
         }
@@ -31,7 +33,9 @@ struct UserProfilesView: View {
                 }
                 .onDelete { indexSet in
                     if let i = indexSet.first {
-                        alert = .deleteUser(index: i)
+                        showDeleteConfirmation = true
+                        userToDelete = i
+//                        alert = .deleteUser(index: i)
                     }
                 }
 
@@ -47,14 +51,31 @@ struct UserProfilesView: View {
             }
         }
         .toolbar { EditButton() }
+        .confirmationDialog("Delete chat profile", isPresented: $showDeleteConfirmation, titleVisibility: .visible) {
+            Button("Profile and server connections", role: .destructive) {
+                if let i = userToDelete {
+                    alert = .deleteUser(index: i, delSMPQueues: true)
+                }
+            }
+            Button("Local profile data only", role: .destructive) {
+                if let i = userToDelete {
+                    alert = .deleteUser(index: i, delSMPQueues: false)
+                }
+            }
+//            Button("", role: .cancel) {}
+        }
         .alert(item: $alert) { alert in
             switch alert {
-            case let .deleteUser(index):
+            case let .deleteUser(index, delSMPQueues):
                 return Alert(
                     title: Text("Delete user profile?"),
-                    message: Text("All chats and messages will be deleted - this cannot be undone!"),
+                    message: Text("All chats and messages will be deleted - this cannot be undone!") + (
+                        delSMPQueues
+                        ? Text("This will also delete all server connections in this profile.")
+                        : Text("This will NOT delete all server connections in this profile.")
+                    ),
                     primaryButton: .destructive(Text("Delete")) {
-                        removeUser(index: index)
+                        removeUser(index, delSMPQueues)
                     },
                     secondaryButton: .cancel()
                 )
@@ -64,13 +85,26 @@ struct UserProfilesView: View {
         }
     }
 
-    private func removeUser(index: Int) {
+    private func removeUser(_ index: Int, _ delSMPQueues: Bool) {
+        if index >= m.users.count { return }
         do {
-            try apiDeleteUser(m.users[index].user.userId, true)
-            m.users.remove(at: index)
+            let u = m.users[index].user
+            if u.activeUser {
+                if let newActive = m.users.first(where: { !$0.user.activeUser }) {
+                    changeActiveUser(newActive.user.userId)
+                    try deleteUser(u.userId)
+                }
+            } else {
+                try deleteUser(u.userId)
+            }
         } catch let error {
             let a = getErrorAlert(error, "Error deleting user profile")
             alert = .error(title: a.title, error: a.message)
+        }
+
+        func deleteUser(_ userId: Int64) throws {
+            try apiDeleteUser(userId, delSMPQueues)
+            m.users.remove(at: index)
         }
     }
 
@@ -92,7 +126,7 @@ struct UserProfilesView: View {
             }
         }
         .foregroundColor(.primary)
-        .deleteDisabled(user.activeUser)
+        .deleteDisabled(m.users.count <= 1)
     }
 }
 

@@ -102,7 +102,7 @@ public enum ChatCommand {
             case let .createActiveUser(profile): return "/create user \(profile.displayName) \(profile.fullName)"
             case .listUsers: return "/users"
             case let .apiSetActiveUser(userId): return "/_user \(userId)"
-            case let .apiDeleteUser(userId, delSMPQueues): return "/_delete user \(userId) delSMPQueues=\(onOff(delSMPQueues))"
+            case let .apiDeleteUser(userId, delSMPQueues): return "/_delete user \(userId) del_smp=\(onOff(delSMPQueues))"
             case let .startChat(subscribe, expire): return "/_start subscribe=\(onOff(subscribe)) expire=\(onOff(expire))"
             case .apiStopChat: return "/_stop"
             case .apiActivateChat: return "/_app activate"
