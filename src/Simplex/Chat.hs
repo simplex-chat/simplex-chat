@@ -635,21 +635,19 @@ processChatCommand = \case
       where
         deleteUnusedContact :: ContactId -> m [ConnId]
         deleteUnusedContact contactId =
-          delete `catchError` (\e -> toView (CRChatError (Just user) e) >> pure [])
+          (withStore (\db -> getContact db user contactId) >>= delete)
+            `catchError` (\e -> toView (CRChatError (Just user) e) >> pure [])
           where
-            delete = do
-              ct <- withStore $ \db -> getContact db user contactId
-              if directOrUsed ct
-                then pure []
-                else do
-                  ctGroupId <- withStore' $ \db -> checkContactHasGroups db user ct
-                  if isNothing ctGroupId
-                    then pure []
-                    else do
-                      conns <- withStore $ \db -> getContactConnections db userId ct
-                      withStore' (\db -> deleteContactWithoutGroups db user ct)
-                        `catchError` (toView . CRChatError (Just user))
-                      pure $ map aConnId conns
+            delete ct
+              | directOrUsed ct = pure []
+              | otherwise = do
+                withStore' (\db -> checkContactHasGroups db user ct) >>= \case
+                  Just _ -> pure []
+                  Nothing -> do
+                    conns <- withStore $ \db -> getContactConnections db userId ct
+                    withStore' (\db -> deleteContactWithoutGroups db user ct)
+                      `catchError` (toView . CRChatError (Just user))
+                    pure $ map aConnId conns
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
   APIClearChat (ChatRef cType chatId) -> withUser $ \user -> case cType of
     CTDirect -> do
