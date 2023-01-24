@@ -76,9 +76,15 @@ struct ChatView: View {
         .onChange(of: chatModel.chatId) { _ in
             if chatModel.chatId == nil { dismiss() }
         }
-        .onChange(of: composeState.empty, perform: updateDraft)
-        .onChange(of: composeState.message, perform: updateDraft)
-        .onChange(of: composeState.noPreview, perform: updateDraft)
+        .onChange(of: "\(composeState.empty) \(composeState.noPreview) \(composeState.message)") { _ in
+            if !composeState.empty {
+                chatModel.draft = composeState
+                chatModel.draftChatId = chat.id
+            } else if chatModel.draftChatId == chat.id {
+                chatModel.draft = nil
+                chatModel.draftChatId = nil
+            }
+        }
         .onDisappear {
             if chatModel.chatId == cInfo.id {
                 chatModel.chatId = nil
@@ -182,16 +188,6 @@ struct ChatView: View {
                     EmptyView()
                 }
             }
-        }
-    }
-
-    private func updateDraft(_: any Equatable) {
-        if !composeState.empty {
-            chatModel.draft = composeState
-            chatModel.draftChatId = chat.id
-        } else if chatModel.draftChatId == chat.id {
-            chatModel.draft = nil
-            chatModel.draftChatId = nil
         }
     }
 

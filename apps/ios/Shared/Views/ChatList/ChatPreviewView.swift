@@ -132,12 +132,15 @@ struct ChatPreviewView: View {
 
     private func messageDraft(_ draft: ComposeState) -> Text {
         let msg = draft.message
-        return Text("draft ").foregroundColor(.red)
+        return image("rectangle.and.pencil.and.ellipsis", color: .accentColor)
                 + attachment()
                 + messageText(msg, parseSimpleXMarkdown(msg), nil, preview: true)
 
+        func image(_ s: String, color: Color = Color(uiColor: .tertiaryLabel)) -> Text {
+            Text(Image(systemName: s)).foregroundColor(color) + Text(" ")
+        }
+
         func attachment() -> Text {
-            let image = { Text(Image(systemName: $0)).foregroundColor(Color(uiColor: .tertiaryLabel)) + Text(" ") }
             switch draft.preview {
             case .filePreview: return image("doc.fill")
             case .imagePreviews: return image("photo")
