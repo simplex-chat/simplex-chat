@@ -51,29 +51,16 @@ struct UserProfilesView: View {
             }
         }
         .toolbar { EditButton() }
-        .confirmationDialog("Delete chat profile", isPresented: $showDeleteConfirmation, titleVisibility: .visible) {
-            Button("Profile and server connections", role: .destructive) {
-                if let i = userToDelete {
-                    alert = .deleteUser(index: i, delSMPQueues: true)
-                }
-            }
-            Button("Local profile data only", role: .destructive) {
-                if let i = userToDelete {
-                    alert = .deleteUser(index: i, delSMPQueues: false)
-                }
-            }
-//            Button("", role: .cancel) {}
+        .confirmationDialog("Delete chat profile?", isPresented: $showDeleteConfirmation, titleVisibility: .visible) {
+            deleteModeButton("Profile and server connections", true)
+            deleteModeButton("Local profile data only", false)
         }
         .alert(item: $alert) { alert in
             switch alert {
             case let .deleteUser(index, delSMPQueues):
                 return Alert(
                     title: Text("Delete user profile?"),
-                    message: Text("All chats and messages will be deleted - this cannot be undone!") + (
-                        delSMPQueues
-                        ? Text("This will also delete all server connections in this profile.")
-                        : Text("This will NOT delete server connections in this profile.")
-                    ),
+                    message: Text("All chats and messages will be deleted - this cannot be undone!"),
                     primaryButton: .destructive(Text("Delete")) {
                         removeUser(index, delSMPQueues)
                     },
@@ -81,6 +68,14 @@ struct UserProfilesView: View {
                 )
             case let .error(title, error):
                 return Alert(title: Text(title), message: Text(error))
+            }
+        }
+    }
+
+    private func deleteModeButton(_ title: LocalizedStringKey, _ delSMPQueues: Bool) -> some View {
+        Button(title, role: .destructive) {
+            if let i = userToDelete {
+                alert = .deleteUser(index: i, delSMPQueues: delSMPQueues)
             }
         }
     }
@@ -110,9 +105,7 @@ struct UserProfilesView: View {
 
     @ViewBuilder private func userView(_ user: User) -> some View {
         Button {
-            if !user.activeUser {
-                changeActiveUser(user.userId)
-            }
+            changeActiveUser(user.userId)
         } label: {
             HStack {
                 ProfileImage(imageStr: user.image)
@@ -125,6 +118,7 @@ struct UserProfilesView: View {
                     .foregroundColor(user.activeUser ? .primary : .clear)
             }
         }
+        .disabled(user.activeUser)
         .foregroundColor(.primary)
         .deleteDisabled(m.users.count <= 1)
     }
