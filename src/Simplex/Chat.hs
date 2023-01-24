@@ -602,7 +602,8 @@ processChatCommand = \case
       contactConns <- withStore $ \db -> getContactConnections db userId ct
       withChatLock "deleteChat direct" . procCmd $ do
         fileAgentConnIds <- concat <$> forM filesInfo (deleteFile user)
-        deleteAgentConnectionsAsync' $ fileAgentConnIds <> map (\Connection {agentConnId} -> agentConnId) contactConns
+        deleteAgentConnectionsAsync' (fileAgentConnIds <> map (\Connection {agentConnId} -> agentConnId) contactConns)
+          `catchError` (toView . CRChatError (Just user))
         -- functions below are called in separate transactions to prevent crashes on android
         -- (possibly, race condition on integrity check?)
         withStore' $ \db -> deleteContactConnectionsAndFiles db userId ct
@@ -611,7 +612,7 @@ processChatCommand = \case
         pure $ CRContactDeleted user ct
     CTContactConnection -> withChatLock "deleteChat contactConnection" . procCmd $ do
       conn@PendingContactConnection {pccAgentConnId} <- withStore $ \db -> getPendingContactConnection db userId chatId
-      deleteAgentConnectionsAsync' [pccAgentConnId]
+      deleteAgentConnectionAsync' pccAgentConnId
       withStore' $ \db -> deletePendingContactConnection db userId chatId
       pure $ CRContactConnectionDeleted user conn
     CTGroup -> do
@@ -621,10 +622,10 @@ processChatCommand = \case
       filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
       withChatLock "deleteChat group" . procCmd $ do
         fileAgentConnIds <- concat <$> forM filesInfo (deleteFile user)
-        deleteAgentConnectionsAsync' fileAgentConnIds
+        deleteAgentConnectionsAsync' fileAgentConnIds `catchError` (toView . CRChatError (Just user))
         when (memberActive membership) . void $ sendGroupMessage user gInfo members XGrpDel
         deleteGroupLink' user gInfo `catchError` \_ -> pure ()
-        deleteMembersConnections members
+        deleteMembersConnections user members
         -- functions below are called in separate transactions to prevent crashes on android
         -- (possibly, race condition on integrity check?)
         withStore' $ \db -> deleteGroupConnectionsAndFiles db user gInfo members
@@ -642,6 +643,7 @@ processChatCommand = \case
             when (isNothing ctGroupId) $ do
               conns <- withStore $ \db -> getContactConnections db userId ct
               deleteAgentConnectionsAsync' (map (\Connection {agentConnId} -> agentConnId) conns)
+                `catchError` (toView . CRChatError (Just user))
               withStore' $ \db -> deleteContactWithoutGroups db user ct
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
   APIClearChat (ChatRef cType chatId) -> withUser $ \user -> case cType of
@@ -649,14 +651,14 @@ processChatCommand = \case
       ct <- withStore $ \db -> getContact db user chatId
       filesInfo <- withStore' $ \db -> getContactFileInfo db user ct
       fileAgentConnIds <- concat <$> forM filesInfo (deleteFile user)
-      deleteAgentConnectionsAsync' fileAgentConnIds
+      deleteAgentConnectionsAsync' fileAgentConnIds `catchError` (toView . CRChatError (Just user))
       withStore' $ \db -> deleteContactCIs db user ct
       pure $ CRChatCleared user (AChatInfo SCTDirect $ DirectChat ct)
     CTGroup -> do
       gInfo <- withStore $ \db -> getGroupInfo db user chatId
       filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
       fileAgentConnIds <- concat <$> forM filesInfo (deleteFile user)
-      deleteAgentConnectionsAsync' fileAgentConnIds
+      deleteAgentConnectionsAsync' fileAgentConnIds `catchError` (toView . CRChatError (Just user))
       withStore' $ \db -> deleteGroupCIs db user gInfo
       membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db user gInfo
       forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
@@ -978,7 +980,8 @@ processChatCommand = \case
   APIDeleteMyAddress userId -> withUserId userId $ \user -> withChatLock "deleteMyAddress" $ do
     conns <- withStore (`getUserAddressConnections` user)
     procCmd $ do
-      deleteAgentConnectionsAsync' $ map (\Connection {agentConnId} -> agentConnId) conns
+      deleteAgentConnectionsAsync' (map (\Connection {agentConnId} -> agentConnId) conns)
+        `catchError` (toView . CRChatError (Just user))
       withStore' (`deleteUserAddress` user)
       pure $ CRUserContactLinkDeleted user
   DeleteMyAddress -> withUser $ \User {userId} ->
@@ -1142,7 +1145,7 @@ processChatCommand = \case
       -- TODO delete direct connections that were unused
       deleteGroupLink' user gInfo `catchError` \_ -> pure ()
       -- member records are not deleted to keep history
-      deleteMembersConnections members
+      deleteMembersConnections user members
       withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemLeft
       pure $ CRLeftMemberUser user gInfo {membership = membership {memberStatus = GSMemLeft}}
   APIListMembers groupId -> withUser $ \user ->
@@ -1263,7 +1266,7 @@ processChatCommand = \case
         FTSnd ftm@FileTransferMeta {cancelled} fts -> do
           unless cancelled $ do
             fileAgentConnIds <- cancelSndFile user ftm fts True
-            deleteAgentConnectionsAsync' fileAgentConnIds
+            deleteAgentConnectionsAsync' fileAgentConnIds `catchError` (toView . CRChatError (Just user))
             sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
             withStore (\db -> getChatRefByFileId db user fileId) >>= \case
               ChatRef CTDirect contactId -> do
@@ -1276,8 +1279,10 @@ processChatCommand = \case
           ci <- withStore $ \db -> getChatItemByFileId db user fileId
           pure $ CRSndGroupFileCancelled user ci ftm fts
         FTRcv ftr@RcvFileTransfer {cancelled} -> do
-          unless cancelled $
-            deleteAgentConnectionsAsync' . maybeToList =<< cancelRcvFileTransfer user ftr
+          unless cancelled $ do
+            fileAgentConnId_ <- cancelRcvFileTransfer user ftr
+            forM_ fileAgentConnId_ $ \fileAgentConnId ->
+              deleteAgentConnectionAsync' fileAgentConnId `catchError` (toView . CRChatError (Just user))
           pure $ CRRcvFileCancelled user ftr
   FileStatus fileId -> withUser $ \user -> do
     fileStatus <- withStore $ \db -> getFileTransferProgress db user fileId
@@ -1993,13 +1998,13 @@ expireChatItems user@User {userId} ttl sync = do
     processContact expirationDate ct = do
       filesInfo <- withStore' $ \db -> getContactExpiredFileInfo db user ct expirationDate
       fileAgentConnIds <- concat <$> forM filesInfo (deleteFile user)
-      deleteAgentConnectionsAsync' fileAgentConnIds
+      deleteAgentConnectionsAsync' fileAgentConnIds `catchError` (toView . CRChatError (Just user))
       withStore' $ \db -> deleteContactExpiredCIs db user ct expirationDate
     processGroup :: UTCTime -> UTCTime -> GroupInfo -> m ()
     processGroup expirationDate createdAtCutoff gInfo = do
       filesInfo <- withStore' $ \db -> getGroupExpiredFileInfo db user gInfo expirationDate createdAtCutoff
       fileAgentConnIds <- concat <$> forM filesInfo (deleteFile user)
-      deleteAgentConnectionsAsync' fileAgentConnIds
+      deleteAgentConnectionsAsync' fileAgentConnIds `catchError` (toView . CRChatError (Just user))
       withStore' $ \db -> deleteGroupExpiredCIs db user gInfo expirationDate createdAtCutoff
       membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db user gInfo
       forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
@@ -2394,7 +2399,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           withStore' $ \db -> updateSndFileChunkSent db ft msgId
           unless (fileStatus == FSCancelled) $ sendFileChunk user ft
         MERR _ err -> do
-          deleteAgentConnectionsAsync' . maybeToList =<< cancelSndFileTransfer user ft True
+          fileAgentConnId_ <- cancelSndFileTransfer user ft True
+          forM_ fileAgentConnId_ $ \fileAgentConnId ->
+            deleteAgentConnectionAsync' fileAgentConnId `catchError` (toView . CRChatError (Just user))
           case err of
             SMP SMP.AUTH -> unless (fileStatus == FSCancelled) $ do
               ci <- withStore $ \db -> getChatItemByFileId db user fileId
@@ -2473,7 +2480,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     receiveFileChunk ft@RcvFileTransfer {fileId, chunkSize, cancelled} conn_ MsgMeta {recipient = (msgId, _), integrity} = \case
       FileChunkCancel ->
         unless cancelled $ do
-          deleteAgentConnectionsAsync' . maybeToList =<< cancelRcvFileTransfer user ft
+          fileAgentConnId_ <- cancelRcvFileTransfer user ft
+          forM_ fileAgentConnId_ $ \fileAgentConnId ->
+            deleteAgentConnectionAsync' fileAgentConnId `catchError` (toView . CRChatError (Just user))
           toView $ CRRcvFileSndCancelled user ft
       FileChunk {chunkNo, chunkBytes = chunk} -> do
         case integrity of
@@ -2606,7 +2615,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     badRcvFileChunk :: RcvFileTransfer -> String -> m ()
     badRcvFileChunk ft@RcvFileTransfer {cancelled} err =
       unless cancelled $ do
-        deleteAgentConnectionsAsync' . maybeToList =<< cancelRcvFileTransfer user ft
+        fileAgentConnId_ <- cancelRcvFileTransfer user ft
+        forM_ fileAgentConnId_ $ \fileAgentConnId ->
+          deleteAgentConnectionAsync' fileAgentConnId `catchError` (toView . CRChatError (Just user))
         throwChatError $ CEFileRcvChunk err
 
     memberConnectedChatItem :: GroupInfo -> GroupMember -> m ()
@@ -2835,7 +2846,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       fileId <- withStore $ \db -> getFileIdBySharedMsgId db userId contactId sharedMsgId
       ft@RcvFileTransfer {cancelled} <- withStore (\db -> getRcvFileTransfer db user fileId)
       unless cancelled $ do
-        deleteAgentConnectionsAsync' . maybeToList =<< cancelRcvFileTransfer user ft
+        fileAgentConnId_ <- cancelRcvFileTransfer user ft
+        forM_ fileAgentConnId_ $ \fileAgentConnId ->
+          deleteAgentConnectionAsync' fileAgentConnId `catchError` (toView . CRChatError (Just user))
         toView $ CRRcvFileSndCancelled user ft
 
     xFileAcptInv :: Contact -> SharedMsgId -> Maybe ConnReqInvitation -> String -> MsgMeta -> m ()
@@ -2911,7 +2924,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             then do
               ft@RcvFileTransfer {cancelled} <- withStore (\db -> getRcvFileTransfer db user fileId)
               unless cancelled $ do
-                deleteAgentConnectionsAsync' . maybeToList =<< cancelRcvFileTransfer user ft
+                fileAgentConnId_ <- cancelRcvFileTransfer user ft
+                forM_ fileAgentConnId_ $ \fileAgentConnId ->
+                  deleteAgentConnectionAsync' fileAgentConnId `catchError` (toView . CRChatError (Just user))
                 toView $ CRRcvFileSndCancelled user ft
             else messageError "x.file.cancel: group member attempted to cancel file of another member" -- shouldn't happen now that query includes group member id
         (SMDSnd, _) -> messageError "x.file.cancel: group member attempted invalid file cancel"
@@ -3264,7 +3279,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         then checkRole membership $ do
           deleteGroupLink' user gInfo `catchError` \_ -> pure ()
           -- member records are not deleted to keep history
-          deleteMembersConnections members
+          deleteMembersConnections user members
           withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemRemoved
           deleteMemberItem RGEUserDeleted
           toView $ CRDeletedMemberUser user gInfo {membership = membership {memberStatus = GSMemRemoved}} m
@@ -3306,7 +3321,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         updateGroupMemberStatus db userId membership GSMemGroupDeleted
         pure members
       -- member records are not deleted to keep history
-      deleteMembersConnections ms
+      deleteMembersConnections user ms
       ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvGroupEvent RGEGroupDeleted)
       groupMsgToView gInfo m ci msgMeta
       toView $ CRGroupDeleted user gInfo {membership = membership {memberStatus = GSMemGroupDeleted}} m
@@ -3363,7 +3378,7 @@ sendFileChunk user ft@SndFileTransfer {fileId, fileStatus, agentConnId} =
           updateDirectCIFileStatus db user fileId CIFSSndComplete
         toView $ CRSndFileComplete user ci ft
         closeFileHandle fileId sndFiles
-        deleteAgentConnectionsAsync' [agentConnId]
+        deleteAgentConnectionAsync' agentConnId
 
 sendFileChunkNo :: ChatMonad m => SndFileTransfer -> Integer -> m ()
 sendFileChunkNo ft@SndFileTransfer {agentConnId = AgentConnId acId} chunkNo = do
@@ -3470,10 +3485,11 @@ closeFileHandle fileId files = do
 throwChatError :: ChatMonad m => ChatErrorType -> m a
 throwChatError = throwError . ChatError
 
-deleteMembersConnections :: ChatMonad m => [GroupMember] -> m ()
-deleteMembersConnections members = do
+deleteMembersConnections :: ChatMonad m => User -> [GroupMember] -> m ()
+deleteMembersConnections user members = do
   let memberConns = mapMaybe (\GroupMember {activeConn} -> activeConn) members
-  deleteAgentConnectionsAsync' $ map (\Connection {agentConnId} -> agentConnId) memberConns
+  deleteAgentConnectionsAsync' (map (\Connection {agentConnId} -> agentConnId) memberConns)
+    `catchError` (toView . CRChatError (Just user))
   forM_ memberConns $ \conn -> withStore' $ \db -> updateConnectionStatus db conn ConnDeleted
 
 deleteMemberConnection :: ChatMonad m => GroupMember -> m ()
@@ -3619,7 +3635,7 @@ deleteCIFile user file =
   forM_ file $ \CIFile {fileId, filePath, fileStatus} -> do
     let fileInfo = CIFileInfo {fileId, fileStatus = Just $ AFS msgDirection fileStatus, filePath}
     fileAgentConnIds <- deleteFile' user fileInfo True
-    deleteAgentConnectionsAsync' fileAgentConnIds
+    deleteAgentConnectionsAsync' fileAgentConnIds `catchError` (toView . CRChatError (Just user))
 
 markDirectCIDeleted :: ChatMonad m => User -> Contact -> CChatItem 'CTDirect -> MessageId -> Bool -> m ChatResponse
 markDirectCIDeleted user ct ci@(CChatItem msgDir deletedItem) msgId byUser = do
@@ -3657,14 +3673,17 @@ agentAcceptContactAsync user enableNtfs invId msg = do
 
 deleteAgentConnectionAsync :: ChatMonad m => Connection -> m ()
 deleteAgentConnectionAsync Connection {agentConnId} =
-  deleteAgentConnectionsAsync' [agentConnId]
+  deleteAgentConnectionAsync' agentConnId
+
+deleteAgentConnectionAsync' :: ChatMonad m => AgentConnId -> m ()
+deleteAgentConnectionAsync' (AgentConnId acId) = do
+  withAgent (`deleteConnectionAsync` acId)
 
 deleteAgentConnectionsAsync' :: ChatMonad m => [AgentConnId] -> m ()
 deleteAgentConnectionsAsync' [] = pure ()
-deleteAgentConnectionsAsync' [AgentConnId acId] = do
-  withAgent (`deleteConnectionAsync` acId) `catchError` (toView . CRChatError Nothing)
+deleteAgentConnectionsAsync' [acId] = deleteAgentConnectionAsync' acId
 deleteAgentConnectionsAsync' acIds = do
-  withAgent (\a -> deleteConnectionsAsync a (map (\(AgentConnId acId) -> acId) acIds)) `catchError` (toView . CRChatError Nothing)
+  withAgent (\a -> deleteConnectionsAsync a (map (\(AgentConnId acId) -> acId) acIds))
 
 userProfileToSend :: User -> Maybe Profile -> Maybe Contact -> Profile
 userProfileToSend user@User {profile = p} incognitoProfile ct =
