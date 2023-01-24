@@ -2029,7 +2029,7 @@ processAgentMessageNoConn = \case
   DOWN srv conns -> serverEvent srv conns CRContactsDisconnected "disconnected"
   UP srv conns -> serverEvent srv conns CRContactsSubscribed "connected"
   SUSPENDED -> toView CRChatSuspended
-  DEL_USER userId -> toView $ CRAgentUserDeleted userId
+  DEL_USER agentUserId -> toView $ CRAgentUserDeleted agentUserId
   _ -> pure ()
   where
     hostEvent = whenM (asks $ hostEvents . config) . toView
