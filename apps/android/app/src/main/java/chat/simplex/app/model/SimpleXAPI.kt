@@ -1446,9 +1446,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
 
   private fun updateContactsStatus(contactRefs: List<ContactRef>, status: NetworkStatus) {
     for (c in contactRefs) {
-      val updated = chatModel.networkStatuses.value.toMutableMap()
-      updated[c.agentConnId] = status
-      chatModel.networkStatuses.value = updated
+      chatModel.networkStatuses[c.agentConnId] = status
     }
   }
 
