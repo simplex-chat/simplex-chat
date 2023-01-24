@@ -1126,13 +1126,13 @@ processChatCommand = \case
         withChatLock "removeMember" . procCmd $ do
           case mStatus of
             GSMemInvited -> do
-              deleteMemberConnection m
+              deleteMemberConnection user m
               withStore' $ \db -> deleteGroupMember db user m
             _ -> do
               msg <- sendGroupMessage user gInfo members $ XGrpMemDel mId
               ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent $ SGEMemberDeleted memberId (fromLocalProfile memberProfile))
               toView $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
-              deleteMemberConnection m
+              deleteMemberConnection user m
               -- undeleted "member connected" chat item will prevent deletion of member record
               deleteOrUpdateMemberRecord user m
           pure $ CRUserDeletedMember user gInfo m {memberStatus = GSMemRemoved}
@@ -1780,7 +1780,7 @@ profileToSendOnAccept user ip = userProfileToSend user (getIncognitoProfile <$> 
 deleteGroupLink' :: ChatMonad m => User -> GroupInfo -> m ()
 deleteGroupLink' user gInfo = do
   conn <- withStore $ \db -> getGroupLinkConnection db user gInfo
-  deleteAgentConnectionAsync conn `catchError` \_ -> pure ()
+  deleteAgentConnectionAsync conn `catchError` (toView . CRChatError (Just user))
   withStore' $ \db -> deleteGroupLink db user gInfo
 
 agentSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
@@ -3287,7 +3287,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           Nothing -> messageError "x.grp.mem.del with unknown member ID"
           Just member@GroupMember {groupMemberId, memberProfile} ->
             checkRole member $ do
-              deleteMemberConnection member
+              deleteMemberConnection user member
               -- undeleted "member connected" chat item will prevent deletion of member record
               deleteOrUpdateMemberRecord user member
               deleteMemberItem $ RGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
@@ -3306,7 +3306,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     xGrpLeave :: GroupInfo -> GroupMember -> RcvMessage -> MsgMeta -> m ()
     xGrpLeave gInfo m msg msgMeta = do
-      deleteMemberConnection m
+      deleteMemberConnection user m
       -- member record is not deleted to allow creation of "member left" chat item
       withStore' $ \db -> updateGroupMemberStatus db userId m GSMemLeft
       ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvGroupEvent RGEMemberLeft)
@@ -3492,10 +3492,10 @@ deleteMembersConnections user members = do
     `catchError` (toView . CRChatError (Just user))
   forM_ memberConns $ \conn -> withStore' $ \db -> updateConnectionStatus db conn ConnDeleted
 
-deleteMemberConnection :: ChatMonad m => GroupMember -> m ()
-deleteMemberConnection GroupMember {activeConn} = do
+deleteMemberConnection :: ChatMonad m => User -> GroupMember -> m ()
+deleteMemberConnection user GroupMember {activeConn} = do
   forM_ activeConn $ \conn -> do
-    deleteAgentConnectionAsync conn `catchError` \_ -> pure ()
+    deleteAgentConnectionAsync conn `catchError` (toView . CRChatError (Just user))
     withStore' $ \db -> updateConnectionStatus db conn ConnDeleted
 
 deleteOrUpdateMemberRecord :: ChatMonad m => User -> GroupMember -> m ()
