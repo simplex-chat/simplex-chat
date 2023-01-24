@@ -620,8 +620,7 @@ processChatCommand = \case
       unless canDelete $ throwChatError CEGroupUserRole
       filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
       withChatLock "deleteChat group" . procCmd $ do
-        fileAgentConnIds <- concat <$> forM filesInfo (deleteFile user)
-        deleteAgentConnectionsAsync user fileAgentConnIds
+        deleteFilesAndConns user filesInfo
         when (memberActive membership) . void $ sendGroupMessage user gInfo members XGrpDel
         deleteGroupLink' user gInfo `catchError` \_ -> pure ()
         deleteMembersConnections user members
@@ -648,15 +647,13 @@ processChatCommand = \case
     CTDirect -> do
       ct <- withStore $ \db -> getContact db user chatId
       filesInfo <- withStore' $ \db -> getContactFileInfo db user ct
-      fileAgentConnIds <- concat <$> forM filesInfo (deleteFile user)
-      deleteAgentConnectionsAsync user fileAgentConnIds
+      deleteFilesAndConns user filesInfo
       withStore' $ \db -> deleteContactCIs db user ct
       pure $ CRChatCleared user (AChatInfo SCTDirect $ DirectChat ct)
     CTGroup -> do
       gInfo <- withStore $ \db -> getGroupInfo db user chatId
       filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
-      fileAgentConnIds <- concat <$> forM filesInfo (deleteFile user)
-      deleteAgentConnectionsAsync user fileAgentConnIds
+      deleteFilesAndConns user filesInfo
       withStore' $ \db -> deleteGroupCIs db user gInfo
       membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db user gInfo
       forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
@@ -1582,6 +1579,11 @@ setAllExpireCIFlags b = do
     keys <- M.keys <$> readTVar expireFlags
     forM_ keys $ \k -> TM.insert k b expireFlags
 
+deleteFilesAndConns :: forall m. ChatMonad m => User -> [CIFileInfo] -> m ()
+deleteFilesAndConns user filesInfo = do
+  fileAgentConnIds <- concat <$> forM filesInfo (deleteFile user)
+  deleteAgentConnectionsAsync user fileAgentConnIds
+
 deleteFile :: forall m. ChatMonad m => User -> CIFileInfo -> m [ConnId]
 deleteFile user fileInfo = deleteFile' user fileInfo False
 
@@ -1992,14 +1994,12 @@ expireChatItems user@User {userId} ttl sync = do
     processContact :: UTCTime -> Contact -> m ()
     processContact expirationDate ct = do
       filesInfo <- withStore' $ \db -> getContactExpiredFileInfo db user ct expirationDate
-      fileAgentConnIds <- concat <$> forM filesInfo (deleteFile user)
-      deleteAgentConnectionsAsync user fileAgentConnIds
+      deleteFilesAndConns user filesInfo
       withStore' $ \db -> deleteContactExpiredCIs db user ct expirationDate
     processGroup :: UTCTime -> UTCTime -> GroupInfo -> m ()
     processGroup expirationDate createdAtCutoff gInfo = do
       filesInfo <- withStore' $ \db -> getGroupExpiredFileInfo db user gInfo expirationDate createdAtCutoff
-      fileAgentConnIds <- concat <$> forM filesInfo (deleteFile user)
-      deleteAgentConnectionsAsync user fileAgentConnIds
+      deleteFilesAndConns user filesInfo
       withStore' $ \db -> deleteGroupExpiredCIs db user gInfo expirationDate createdAtCutoff
       membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db user gInfo
       forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
