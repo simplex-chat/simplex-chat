@@ -3441,13 +3441,10 @@ cancelRcvFileTransfer user ft@RcvFileTransfer {fileId, fileStatus, rcvFileInline
     updateFileCancelled db user fileId CIFSRcvCancelled
     updateRcvFileStatus db ft FSCancelled
     deleteRcvFileChunks db ft
-  pure $
-    if isNothing rcvFileInline
-      then case fileStatus of
-        RFSAccepted RcvFileInfo {agentConnId = Just agentConnId} -> Just agentConnId
-        RFSConnected RcvFileInfo {agentConnId = Just agentConnId} -> Just agentConnId
-        _ -> Nothing
-      else Nothing
+  pure $ case (rcvFileInline, fileStatus) of
+    (Nothing, RFSAccepted RcvFileInfo {agentConnId}) -> agentConnId
+    (Nothing, RFSConnected RcvFileInfo {agentConnId}) -> agentConnId
+    _ -> Nothing
 
 cancelSndFile :: ChatMonad m => User -> FileTransferMeta -> [SndFileTransfer] -> Bool -> m [AgentConnId]
 cancelSndFile user FileTransferMeta {fileId} fts sendCancel = do
@@ -3462,19 +3459,16 @@ cancelSndFile user FileTransferMeta {fileId} fts sendCancel = do
 
 cancelSndFileTransfer :: ChatMonad m => User -> SndFileTransfer -> Bool -> m (Maybe AgentConnId)
 cancelSndFileTransfer user ft@SndFileTransfer {agentConnId = agentConnId@(AgentConnId acId), fileStatus, fileInline} sendCancel =
-  if not (fileStatus == FSCancelled || fileStatus == FSComplete)
-    then do
+  if fileStatus == FSCancelled || fileStatus == FSComplete
+    then pure Nothing
+    else do
       withStore' $ \db -> do
         updateSndFileStatus db ft FSCancelled
         deleteSndFileChunks db ft
       when sendCancel $
         withAgent (\a -> void (sendMessage a acId SMP.noMsgFlags $ smpEncode FileChunkCancel))
           `catchError` (toView . CRChatError (Just user))
-      pure $
-        if isNothing fileInline
-          then Just agentConnId
-          else Nothing
-    else pure Nothing
+      pure $ if isNothing fileInline then Just agentConnId else Nothing
 
 closeFileHandle :: ChatMonad m => Int64 -> (ChatController -> TVar (Map Int64 Handle)) -> m ()
 closeFileHandle fileId files = do
