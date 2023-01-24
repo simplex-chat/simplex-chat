@@ -2859,14 +2859,14 @@ getRcvFileTransferById db fileId = do
   (user,) <$> getRcvFileTransfer db user fileId
 
 getRcvFileTransfer :: DB.Connection -> User -> FileTransferId -> ExceptT StoreError IO RcvFileTransfer
-getRcvFileTransfer db user@User {userId} fileId = do
+getRcvFileTransfer db User {userId} fileId = do
   rftRow <-
     ExceptT . firstRow id (SERcvFileNotFound fileId) $
       DB.query
         db
         [sql|
           SELECT r.file_status, r.file_queue_info, r.group_member_id, f.file_name,
-            f.file_size, f.chunk_size, f.cancelled, cs.contact_id, cs.local_display_name, m.group_id, m.group_member_id, m.local_display_name,
+            f.file_size, f.chunk_size, f.cancelled, cs.local_display_name, m.local_display_name,
             f.file_path, r.file_inline, r.rcv_file_inline, c.connection_id, c.agent_conn_id
           FROM rcv_files r
           JOIN files f USING (file_id)
@@ -2879,11 +2879,11 @@ getRcvFileTransfer db user@User {userId} fileId = do
   rcvFileTransfer rftRow
   where
     rcvFileTransfer ::
-      (FileStatus, Maybe ConnReqInvitation, Maybe Int64, String, Integer, Integer, Maybe Bool) :. (Maybe Int64, Maybe ContactName, Maybe Int64, Maybe Int64, Maybe ContactName, Maybe FilePath, Maybe InlineFileMode, Maybe InlineFileMode) :. (Maybe Int64, Maybe AgentConnId) ->
+      (FileStatus, Maybe ConnReqInvitation, Maybe Int64, String, Integer, Integer, Maybe Bool) :. (Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe InlineFileMode, Maybe InlineFileMode) :. (Maybe Int64, Maybe AgentConnId) ->
       ExceptT StoreError IO RcvFileTransfer
-    rcvFileTransfer ((fileStatus', fileConnReq, grpMemberId, fileName, fileSize, chunkSize, cancelled_) :. (contactId_, contactName_, groupId_, groupMemberId_, memberName_, filePath_, fileInline, rcvFileInline) :. (connId_, agentConnId_)) = do
+    rcvFileTransfer ((fileStatus', fileConnReq, grpMemberId, fileName, fileSize, chunkSize, cancelled_) :. (contactName_, memberName_, filePath_, fileInline, rcvFileInline) :. (connId_, agentConnId_)) = do
       let fileInv = FileInvitation {fileName, fileSize, fileConnReq, fileInline}
-          fileInfo = (filePath_, connId_, agentConnId_, contactId_, groupId_, groupMemberId_, isJust fileInline)
+          fileInfo = (filePath_, connId_, agentConnId_)
       case contactName_ <|> memberName_ of
         Nothing -> throwError $ SERcvFileInvalid fileId
         Just name -> do
@@ -2898,22 +2898,14 @@ getRcvFileTransfer db user@User {userId} fileId = do
           RcvFileTransfer {fileId, fileInvitation, fileStatus, rcvFileInline, senderDisplayName, chunkSize, cancelled, grpMemberId}
         rfi fileInfo = maybe (throwError $ SERcvFileInvalid fileId) pure =<< rfi_ fileInfo
         rfi_ = \case
-          (Just filePath, Just connId, Just agentConnId, _, _, _, _) -> pure $ Just RcvFileInfo {filePath, connId, agentConnId}
-          (Just filePath, Nothing, Nothing, Just contactId, _, _, True) -> do
-            Contact {activeConn = Connection {connId, agentConnId}} <- getContact db user contactId
-            pure $ Just RcvFileInfo {filePath, connId, agentConnId}
-          (Just filePath, Nothing, Nothing, _, Just groupId, Just groupMemberId, True) -> do
-            getGroupMember db user groupId groupMemberId >>= \case
-              GroupMember {activeConn = Just Connection {connId, agentConnId}} ->
-                pure $ Just RcvFileInfo {filePath, connId, agentConnId}
-              _ -> pure Nothing
+          (Just filePath, connId, agentConnId) -> pure $ Just RcvFileInfo {filePath, connId, agentConnId}
           _ -> pure Nothing
         cancelled = fromMaybe False cancelled_
 
 acceptRcvFileTransfer :: DB.Connection -> User -> Int64 -> (CommandId, ConnId) -> ConnStatus -> FilePath -> ExceptT StoreError IO AChatItem
 acceptRcvFileTransfer db user@User {userId} fileId (cmdId, acId) connStatus filePath = ExceptT $ do
   currentTs <- getCurrentTime
-  acceptRcvFT_ db user fileId filePath currentTs
+  acceptRcvFT_ db user fileId filePath Nothing currentTs
   DB.execute
     db
     "INSERT INTO connections (agent_conn_id, conn_status, conn_type, rcv_file_id, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
@@ -2933,23 +2925,23 @@ getContactByFileId db user@User {userId} fileId = do
 
 acceptRcvInlineFT :: DB.Connection -> User -> Int64 -> FilePath -> ExceptT StoreError IO AChatItem
 acceptRcvInlineFT db user fileId filePath = do
-  liftIO $ acceptRcvFT_ db user fileId filePath =<< getCurrentTime
+  liftIO $ acceptRcvFT_ db user fileId filePath (Just IFMOffer) =<< getCurrentTime
   getChatItemByFileId db user fileId
 
-startRcvInlineFT :: DB.Connection -> User -> RcvFileTransfer -> FilePath -> IO ()
-startRcvInlineFT db user RcvFileTransfer {fileId} filePath =
-  acceptRcvFT_ db user fileId filePath =<< getCurrentTime
+startRcvInlineFT :: DB.Connection -> User -> RcvFileTransfer -> FilePath -> Maybe InlineFileMode -> IO ()
+startRcvInlineFT db user RcvFileTransfer {fileId} filePath rcvFileInline =
+  acceptRcvFT_ db user fileId filePath rcvFileInline =<< getCurrentTime
 
-acceptRcvFT_ :: DB.Connection -> User -> Int64 -> FilePath -> UTCTime -> IO ()
-acceptRcvFT_ db User {userId} fileId filePath currentTs = do
+acceptRcvFT_ :: DB.Connection -> User -> Int64 -> FilePath -> Maybe InlineFileMode -> UTCTime -> IO ()
+acceptRcvFT_ db User {userId} fileId filePath rcvFileInline currentTs = do
   DB.execute
     db
     "UPDATE files SET file_path = ?, ci_file_status = ?, updated_at = ? WHERE user_id = ? AND file_id = ?"
     (filePath, CIFSRcvAccepted, currentTs, userId, fileId)
   DB.execute
     db
-    "UPDATE rcv_files SET file_status = ?, updated_at = ? WHERE file_id = ?"
-    (FSAccepted, currentTs, fileId)
+    "UPDATE rcv_files SET rcv_file_inline = ?, file_status = ?, updated_at = ? WHERE file_id = ?"
+    (rcvFileInline, FSAccepted, currentTs, fileId)
 
 updateRcvFileStatus :: DB.Connection -> RcvFileTransfer -> FileStatus -> IO ()
 updateRcvFileStatus db RcvFileTransfer {fileId} status = do
@@ -4579,8 +4571,9 @@ overwriteSMPServers db User {userId} servers =
     pure $ Right ()
 
 createCall :: DB.Connection -> User -> Call -> UTCTime -> IO ()
-createCall db User {userId} Call {contactId, callId, chatItemId, callState} callTs = do
+createCall db user@User {userId} Call {contactId, callId, chatItemId, callState} callTs = do
   currentTs <- getCurrentTime
+  deleteCalls db user contactId
   DB.execute
     db
     [sql|

@@ -29,8 +29,9 @@ struct UserPicker: View {
             VStack(spacing: 0) {
                 ScrollView {
                     ScrollViewReader { sp in
+                        let users = m.users.sorted { u, _ in u.user.activeUser }
                         VStack(spacing: 0) {
-                            ForEach(Array(m.users.sorted(by: { u, _ in u.user.activeUser }))) { u in
+                            ForEach(users) { u in
                                 userView(u)
                                 Divider()
                             }
@@ -49,8 +50,8 @@ struct UserPicker: View {
                             }
                         }
                         .onChange(of: userPickerVisible) { visible in
-                            if visible {
-                                sp.scrollTo(0)
+                            if visible, let u = users.first {
+                                sp.scrollTo(u.id)
                             }
                         }
                     }
@@ -132,8 +133,8 @@ struct UserPicker: View {
     }
 }
 
-func unreadCounter(_ unread: Int64) -> some View {
-    unreadCountText(Int(truncatingIfNeeded: unread))
+func unreadCounter(_ unread: Int) -> some View {
+    unreadCountText(unread)
     .font(.caption)
     .foregroundColor(.white)
     .padding(.horizontal, 4)

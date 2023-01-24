@@ -88,6 +88,7 @@ chatTests = do
   describe "sending and receiving files" $ do
     describe "send and receive file" $ fileTestMatrix2 runTestFileTransfer
     it "send and receive file inline (without accepting)" testInlineFileTransfer
+    it "accept inline file transfer, sender cancels during transfer" testAcceptInlineFileSndCancelDuringTransfer
     it "send and receive small file inline (default config)" testSmallInlineFileTransfer
     it "small file sent without acceptance is ignored in terminal by default" testSmallInlineFileIgnored
     it "receive file inline with inline=on option" testReceiveInline
@@ -1912,6 +1913,37 @@ testInlineFileTransfer =
     dest `shouldBe` src
   where
     cfg = testCfg {inlineFiles = defaultInlineFilesConfig {offerChunks = 100, sendChunks = 100, receiveChunks = 100}}
+
+testAcceptInlineFileSndCancelDuringTransfer :: IO ()
+testAcceptInlineFileSndCancelDuringTransfer =
+  testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    bob ##> "/_files_folder ./tests/tmp/"
+    bob <## "ok"
+    alice #> "/f @bob ./tests/fixtures/test_1MB.pdf"
+    alice <## "use /fc 1 to cancel sending"
+    bob <# "alice> sends file test_1MB.pdf (1017.7 KiB / 1042157 bytes)"
+    bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+    bob ##> "/fr 1 inline=on"
+    bob <## "saving file 1 from alice to test_1MB.pdf"
+    alice <## "started sending file 1 (test_1MB.pdf) to bob"
+    bob <## "started receiving file 1 (test_1MB.pdf) from alice"
+    alice ##> "/fc 1" -- test that inline file cancel doesn't delete contact connection
+    concurrentlyN_
+      [ do
+          alice <##. "cancelled sending file 1 (test_1MB.pdf)"
+          alice <## "completed sending file 1 (test_1MB.pdf) to bob",
+        bob <## "completed receiving file 1 (test_1MB.pdf) from alice"
+      ]
+    _ <- getTermLine alice
+    alice #> "@bob hi"
+    bob #> "@alice hey"
+    _ <- getTermLine bob
+    bob <## "alice cancelled sending file 1 (test_1MB.pdf)"
+    bob <# "alice> hi"
+    alice <# "bob> hey"
+  where
+    cfg = testCfg {inlineFiles = defaultInlineFilesConfig {offerChunks = 100, receiveChunks = 50}}
 
 testSmallInlineFileTransfer :: IO ()
 testSmallInlineFileTransfer =

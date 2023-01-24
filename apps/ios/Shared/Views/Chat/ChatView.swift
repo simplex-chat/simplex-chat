@@ -15,6 +15,7 @@ private let memberImageSize: CGFloat = 34
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
+    @Environment(\.dismiss) var dismiss
     @State @ObservedObject var chat: Chat
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
@@ -70,6 +71,9 @@ struct ChatView: View {
                 }
             }
         }
+         .onChange(of: chatModel.chatId) { _ in
+             if chatModel.chatId == nil { dismiss() }
+         }
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
@@ -233,7 +237,6 @@ struct ChatView: View {
                                             if chatModel.chatId == cInfo.id && itemsInView.contains(ci.viewId) {
                                                 Task {
                                                     await apiMarkChatItemRead(cInfo, ci)
-                                                    NtfManager.shared.decNtfBadgeCount()
                                                 }
                                             }
                                         }

@@ -51,13 +51,17 @@ struct CreateProfile: View {
             Spacer()
 
             HStack {
-                Button {
-                    hideKeyboard()
-                    withAnimation { m.onboardingStage = .step1_SimpleXInfo }
-                } label: {
-                    HStack {
-                        Image(systemName: "lessthan")
-                        Text("About SimpleX")
+                if m.users.isEmpty {
+                    Button {
+                        hideKeyboard()
+                        withAnimation {
+                            m.onboardingStage = .step1_SimpleXInfo
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: "lessthan")
+                            Text("About SimpleX")
+                        }
                     }
                 }
 

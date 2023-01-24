@@ -990,4 +990,7 @@
     <string name="v4_2_group_links_desc">Админы могут создать ссылки для вступления в группу.</string>
     <string name="v4_2_auto_accept_contact_requests">Автоматически принимать запросы контактов</string>
     <string name="v4_2_auto_accept_contact_requests_desc">С опциональным авто-ответом.</string>
+    <string name="feature_offered_item">предложил(a) %s</string>
+    <string name="feature_offered_item_with_param">предложил(a) %s: %2s</string>
+    <string name="feature_cancelled_item">отменил(a) %s</string>
 </resources>

@@ -37,7 +37,7 @@ public enum ChatCommand {
     case apiRegisterToken(token: DeviceToken, notificationMode: NotificationsMode)
     case apiVerifyToken(token: DeviceToken, nonce: String, code: String)
     case apiDeleteToken(token: DeviceToken)
-    case apiGetNtfMessage(userId: Int64, nonce: String, encNtfInfo: String)
+    case apiGetNtfMessage(nonce: String, encNtfInfo: String)
     case apiNewGroup(userId: Int64, groupProfile: GroupProfile)
     case apiAddMember(groupId: Int64, contactId: Int64, memberRole: GroupMemberRole)
     case apiJoinGroup(groupId: Int64)
@@ -92,6 +92,7 @@ public enum ChatCommand {
     case apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64))
     case apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool)
     case receiveFile(fileId: Int64, inline: Bool)
+    case showVersion
     case string(String)
 
     public var cmdString: String {
@@ -124,7 +125,7 @@ public enum ChatCommand {
             case let .apiRegisterToken(token, notificationMode): return "/_ntf register \(token.cmdString) \(notificationMode.rawValue)"
             case let .apiVerifyToken(token, nonce, code): return "/_ntf verify \(token.cmdString) \(nonce) \(code)"
             case let .apiDeleteToken(token): return "/_ntf delete \(token.cmdString)"
-            case let .apiGetNtfMessage(userId, nonce, encNtfInfo): return "/_ntf message \(userId) \(nonce) \(encNtfInfo)"
+            case let .apiGetNtfMessage(nonce, encNtfInfo): return "/_ntf message \(nonce) \(encNtfInfo)"
             case let .apiNewGroup(userId, groupProfile): return "/_group \(userId) \(encodeJSON(groupProfile))"
             case let .apiAddMember(groupId, contactId, memberRole): return "/_add #\(groupId) \(contactId) \(memberRole)"
             case let .apiJoinGroup(groupId): return "/_join #\(groupId)"
@@ -180,6 +181,7 @@ public enum ChatCommand {
             case let .apiChatRead(type, id, itemRange: (from, to)): return "/_read chat \(ref(type, id)) from=\(from) to=\(to)"
             case let .apiChatUnread(type, id, unreadChat): return "/_unread chat \(ref(type, id)) \(onOff(unreadChat))"
             case let .receiveFile(fileId, inline): return "/freceive \(fileId) inline=\(onOff(inline))"
+            case .showVersion: return "/version"
             case let .string(str): return str
             }
         }
@@ -266,6 +268,7 @@ public enum ChatCommand {
             case .apiChatRead: return "apiChatRead"
             case .apiChatUnread: return "apiChatUnread"
             case .receiveFile: return "receiveFile"
+            case .showVersion: return "showVersion"
             case .string: return "console command"
             }
         }
@@ -406,9 +409,10 @@ public enum ChatResponse: Decodable, Error {
     case callInvitations(callInvitations: [RcvCallInvitation])
     case ntfTokenStatus(status: NtfTknStatus)
     case ntfToken(token: DeviceToken, status: NtfTknStatus, ntfMode: NotificationsMode)
-    case ntfMessages(user: User, connEntity: ConnectionEntity?, msgTs: Date?, ntfMessages: [NtfMsgInfo])
+    case ntfMessages(user_: User?, connEntity: ConnectionEntity?, msgTs: Date?, ntfMessages: [NtfMsgInfo])
     case newContactConnection(user: User, connection: PendingContactConnection)
     case contactConnectionDeleted(user: User, connection: PendingContactConnection)
+    case versionInfo(versionInfo: CoreVersionInfo)
     case cmdOk(user: User?)
     case chatCmdError(user: User?, chatError: ChatError)
     case chatError(user: User?, chatError: ChatError)
@@ -513,6 +517,7 @@ public enum ChatResponse: Decodable, Error {
             case .ntfMessages: return "ntfMessages"
             case .newContactConnection: return "newContactConnection"
             case .contactConnectionDeleted: return "contactConnectionDeleted"
+            case .versionInfo: return "versionInfo"
             case .cmdOk: return "cmdOk"
             case .chatCmdError: return "chatCmdError"
             case .chatError: return "chatError"
@@ -620,6 +625,7 @@ public enum ChatResponse: Decodable, Error {
             case let .ntfMessages(u, connEntity, msgTs, ntfMessages): return withUser(u, "connEntity: \(String(describing: connEntity))\nmsgTs: \(String(describing: msgTs))\nntfMessages: \(String(describing: ntfMessages))")
             case let .newContactConnection(u, connection): return withUser(u, String(describing: connection))
             case let .contactConnectionDeleted(u, connection): return withUser(u, String(describing: connection))
+            case let .versionInfo(versionInfo): return String(describing: versionInfo)
             case .cmdOk: return noDetails
             case let .chatCmdError(u, chatError): return withUser(u, String(describing: chatError))
             case let .chatError(u, chatError): return withUser(u, String(describing: chatError))
@@ -824,7 +830,7 @@ public struct NetCfg: Codable, Equatable {
     public var socksProxy: String? = nil
     public var hostMode: HostMode = .publicHost
     public var requiredHostMode = true
-    public var sessionMode = TransportSessionMode.user
+    public var sessionMode: TransportSessionMode
     public var tcpConnectTimeout: Int // microseconds
     public var tcpTimeout: Int // microseconds
     public var tcpKeepAlive: KeepAliveOpts?
@@ -834,6 +840,7 @@ public struct NetCfg: Codable, Equatable {
 
     public static let defaults: NetCfg = NetCfg(
         socksProxy: nil,
+        sessionMode: TransportSessionMode.user,
         tcpConnectTimeout: 10_000_000,
         tcpTimeout: 7_000_000,
         tcpKeepAlive: KeepAliveOpts.defaults,
@@ -844,6 +851,7 @@ public struct NetCfg: Codable, Equatable {
 
     public static let proxyDefaults: NetCfg = NetCfg(
         socksProxy: nil,
+        sessionMode: TransportSessionMode.user,
         tcpConnectTimeout: 20_000_000,
         tcpTimeout: 15_000_000,
         tcpKeepAlive: KeepAliveOpts.defaults,
@@ -895,9 +903,20 @@ public enum OnionHosts: String, Identifiable {
     public static let values: [OnionHosts] = [.no, .prefer, .require]
 }
 
-public enum TransportSessionMode: String, Codable {
+public enum TransportSessionMode: String, Codable, Identifiable {
     case user
     case entity
+
+    public var text: LocalizedStringKey {
+        switch self {
+        case .user: return "User profile"
+        case .entity: return "Connection"
+        }
+    }
+
+    public var id: TransportSessionMode { self }
+
+    public static let values: [TransportSessionMode] = [.user, .entity]
 }
 
 public struct KeepAliveOpts: Codable, Equatable {
@@ -1026,6 +1045,13 @@ public enum NotificationPreviewMode: String, SelectableItem {
     public static var values: [NotificationPreviewMode] = [.message, .contact, .hidden]
 }
 
+public struct CoreVersionInfo: Decodable {
+    public var version: String
+    public var buildTimestamp: String
+    public var simplexmqVersion: String
+    public var simplexmqCommit: String
+}
+
 public func decodeJSON<T: Decodable>(_ json: String) -> T? {
     if let data = json.data(using: .utf8) {
         return try? jsonDecoder.decode(T.self, from: data)
@@ -1052,6 +1078,7 @@ public enum ChatError: Decodable {
 public enum ChatErrorType: Decodable {
     case noActiveUser
     case activeUserExists
+    case differentActiveUser
     case chatNotStarted
     case invalidConnReq
     case invalidChatMessage(message: String)

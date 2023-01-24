@@ -8,6 +8,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 
@@ -1314,7 +1315,7 @@ processChatCommand = \case
     updateGroupProfileByName gName $ \p ->
       p {groupPreferences = Just . setGroupPreference' SGFTimedMessages pref $ groupPreferences p}
   QuitChat -> liftIO exitSuccess
-  ShowVersion -> pure $ CRVersionInfo versionNumber
+  ShowVersion -> pure $ CRVersionInfo $ coreVersionInfo $(buildTimestampQ) $(simplexmqCommitQ)
   DebugLocks -> do
     chatLockName <- atomically . tryReadTMVar =<< asks chatLock
     agentLocks <- withAgent debugAgentLocks
@@ -2680,7 +2681,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       (filePath, fileStatus) <- case inline of
         Just IFMSent -> do
           fPath <- getRcvFilePath fileId Nothing fileName
-          withStore' $ \db -> startRcvInlineFT db user ft fPath
+          withStore' $ \db -> startRcvInlineFT db user ft fPath inline
           pure (Just fPath, CIFSRcvAccepted)
         _ -> pure (Nothing, CIFSRcvInvitation)
       pure CIFile {fileId, fileName, fileSize, filePath, fileStatus}
@@ -3428,8 +3429,8 @@ cancelRcvFileTransfer user ft@RcvFileTransfer {fileId, fileStatus, rcvFileInline
   pure $
     if isNothing rcvFileInline
       then case fileStatus of
-        RFSAccepted RcvFileInfo {agentConnId} -> Just agentConnId
-        RFSConnected RcvFileInfo {agentConnId} -> Just agentConnId
+        RFSAccepted RcvFileInfo {agentConnId = Just agentConnId} -> Just agentConnId
+        RFSConnected RcvFileInfo {agentConnId = Just agentConnId} -> Just agentConnId
         _ -> Nothing
       else Nothing
 
@@ -3445,7 +3446,7 @@ cancelSndFile user FileTransferMeta {fileId} fts sendCancel = do
       )
 
 cancelSndFileTransfer :: ChatMonad m => User -> SndFileTransfer -> Bool -> m (Maybe AgentConnId)
-cancelSndFileTransfer user ft@SndFileTransfer {agentConnId = agentConnId@(AgentConnId acId), fileStatus} sendCancel =
+cancelSndFileTransfer user ft@SndFileTransfer {agentConnId = agentConnId@(AgentConnId acId), fileStatus, fileInline} sendCancel =
   if not (fileStatus == FSCancelled || fileStatus == FSComplete)
     then do
       withStore' $ \db -> do
@@ -3454,7 +3455,10 @@ cancelSndFileTransfer user ft@SndFileTransfer {agentConnId = agentConnId@(AgentC
       when sendCancel $
         withAgent (\a -> void (sendMessage a acId SMP.noMsgFlags $ smpEncode FileChunkCancel))
           `catchError` (toView . CRChatError (Just user))
-      pure $ Just agentConnId
+      pure $
+        if isNothing fileInline
+          then Just agentConnId
+          else Nothing
     else pure Nothing
 
 closeFileHandle :: ChatMonad m => Int64 -> (ChatController -> TVar (Map Int64 Handle)) -> m ()

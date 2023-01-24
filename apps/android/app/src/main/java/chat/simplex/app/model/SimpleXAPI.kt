@@ -109,6 +109,18 @@ class AppPreferences(val context: Context) {
   val chatLastStart = mkDatePreference(SHARED_PREFS_CHAT_LAST_START, null)
   val developerTools = mkBoolPreference(SHARED_PREFS_DEVELOPER_TOOLS, false)
   val networkUseSocksProxy = mkBoolPreference(SHARED_PREFS_NETWORK_USE_SOCKS_PROXY, false)
+  private val _networkSessionMode = mkStrPreference(SHARED_PREFS_NETWORK_SESSION_MODE, TransportSessionMode.default.name)
+  val networkSessionMode: SharedPreference<TransportSessionMode> = SharedPreference(
+    get = fun(): TransportSessionMode {
+      val value = _networkSessionMode.get() ?: return TransportSessionMode.default
+      return try {
+        TransportSessionMode.valueOf(value)
+      } catch (e: Error) {
+        TransportSessionMode.default
+      }
+    },
+    set = fun(mode: TransportSessionMode) { _networkSessionMode.set(mode.name) }
+  )
   val networkHostMode = mkStrPreference(SHARED_PREFS_NETWORK_HOST_MODE, HostMode.OnionViaSocks.name)
   val networkRequiredHostMode = mkBoolPreference(SHARED_PREFS_NETWORK_REQUIRED_HOST_MODE, false)
   val networkTCPConnectTimeout = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_CONNECT_TIMEOUT, NetCfg.defaults.tcpConnectTimeout, NetCfg.proxyDefaults.tcpConnectTimeout)
@@ -206,6 +218,7 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_CHAT_LAST_START = "ChatLastStart"
     private const val SHARED_PREFS_DEVELOPER_TOOLS = "DeveloperTools"
     private const val SHARED_PREFS_NETWORK_USE_SOCKS_PROXY = "NetworkUseSocksProxy"
+    private const val SHARED_PREFS_NETWORK_SESSION_MODE = "NetworkSessionMode"
     private const val SHARED_PREFS_NETWORK_HOST_MODE = "NetworkHostMode"
     private const val SHARED_PREFS_NETWORK_REQUIRED_HOST_MODE = "NetworkRequiredHostMode"
     private const val SHARED_PREFS_NETWORK_TCP_CONNECT_TIMEOUT = "NetworkTCPConnectTimeout"
@@ -254,6 +267,8 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       apiSetNetworkConfig(getNetCfg())
       val justStarted = apiStartChat()
       if (justStarted) {
+        chatModel.currentUser.value = user
+        chatModel.userCreated.value = true
         apiSetFilesFolder(getAppFilesDirectory(appContext))
         apiSetIncognito(chatModel.incognito.value)
         chatModel.userAddress.value = apiGetUserAddress()
@@ -263,8 +278,6 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         chatModel.chatItemTTL.value = getChatItemTTL()
         val chats = apiGetChats()
         chatModel.updateChats(chats)
-        chatModel.currentUser.value = user
-        chatModel.userCreated.value = true
         chatModel.onboardingStage.value = OnboardingStage.OnboardingComplete
         chatModel.controller.appPrefs.chatLastStart.set(Clock.System.now())
         chatModel.chatRunning.value = true
@@ -1044,6 +1057,16 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     }
   }
 
+  suspend fun apiGetVersion(): CoreVersionInfo? {
+    val r = sendCmd(CC.ShowVersion())
+    return if (r is CR.VersionInfo) {
+      r.versionInfo
+    } else {
+      Log.e(TAG, "apiGetVersion bad response: ${r.responseType} ${r.details}")
+      null
+    }
+  }
+
   private fun networkErrorAlert(r: CR): Boolean {
     return when {
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
@@ -1533,6 +1556,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     val socksProxy = if (useSocksProxy) ":9050" else null
     val hostMode = HostMode.valueOf(appPrefs.networkHostMode.get()!!)
     val requiredHostMode = appPrefs.networkRequiredHostMode.get()
+    val sessionMode = appPrefs.networkSessionMode.get()
     val tcpConnectTimeout = appPrefs.networkTCPConnectTimeout.get()
     val tcpTimeout = appPrefs.networkTCPTimeout.get()
     val smpPingInterval = appPrefs.networkSMPPingInterval.get()
@@ -1550,6 +1574,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       socksProxy = socksProxy,
       hostMode = hostMode,
       requiredHostMode = requiredHostMode,
+      sessionMode = sessionMode,
       tcpConnectTimeout = tcpConnectTimeout,
       tcpTimeout = tcpTimeout,
       tcpKeepAlive = tcpKeepAlive,
@@ -1562,6 +1587,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     appPrefs.networkUseSocksProxy.set(cfg.useSocksProxy)
     appPrefs.networkHostMode.set(cfg.hostMode.name)
     appPrefs.networkRequiredHostMode.set(cfg.requiredHostMode)
+    appPrefs.networkSessionMode.set(cfg.sessionMode)
     appPrefs.networkTCPConnectTimeout.set(cfg.tcpConnectTimeout)
     appPrefs.networkTCPTimeout.set(cfg.tcpTimeout)
     appPrefs.networkSMPPingInterval.set(cfg.smpPingInterval)
@@ -1661,6 +1687,7 @@ sealed class CC {
   class ApiChatRead(val type: ChatType, val id: Long, val range: ItemRange): CC()
   class ApiChatUnread(val type: ChatType, val id: Long, val unreadChat: Boolean): CC()
   class ReceiveFile(val fileId: Long, val inline: Boolean): CC()
+  class ShowVersion(): CC()
 
   val cmdString: String get() = when (this) {
     is Console -> cmd
@@ -1732,6 +1759,7 @@ sealed class CC {
     is ApiChatRead -> "/_read chat ${chatRef(type, id)} from=${range.from} to=${range.to}"
     is ApiChatUnread -> "/_unread chat ${chatRef(type, id)} ${onOff(unreadChat)}"
     is ReceiveFile -> "/freceive $fileId inline=${onOff(inline)}"
+    is ShowVersion -> "/version"
   }
 
   val cmdType: String get() = when (this) {
@@ -1804,6 +1832,7 @@ sealed class CC {
     is ApiChatRead -> "apiChatRead"
     is ApiChatUnread -> "apiChatUnread"
     is ReceiveFile -> "receiveFile"
+    is ShowVersion -> "showVersion"
   }
 
   class ItemRange(val from: Long, val to: Long)
@@ -2000,9 +2029,10 @@ data class ParsedServerAddress (
 
 @Serializable
 data class NetCfg(
-  val socksProxy: String? = null,
-  val hostMode: HostMode = HostMode.OnionViaSocks,
-  val requiredHostMode: Boolean = false,
+  val socksProxy: String?,
+  val hostMode: HostMode,
+  val requiredHostMode: Boolean,
+  val sessionMode: TransportSessionMode,
   val tcpConnectTimeout: Long, // microseconds
   val tcpTimeout: Long, // microseconds
   val tcpKeepAlive: KeepAliveOpts?,
@@ -2017,6 +2047,9 @@ data class NetCfg(
     val defaults: NetCfg =
       NetCfg(
         socksProxy = null,
+        hostMode = HostMode.OnionViaSocks,
+        requiredHostMode = false,
+        sessionMode = TransportSessionMode.User,
         tcpConnectTimeout = 10_000_000,
         tcpTimeout = 7_000_000,
         tcpKeepAlive = KeepAliveOpts.defaults,
@@ -2027,6 +2060,9 @@ data class NetCfg(
     val proxyDefaults: NetCfg =
       NetCfg(
         socksProxy = ":9050",
+        hostMode = HostMode.OnionViaSocks,
+        requiredHostMode = false,
+        sessionMode = TransportSessionMode.User,
         tcpConnectTimeout = 20_000_000,
         tcpTimeout = 15_000_000,
         tcpKeepAlive = KeepAliveOpts.defaults,
@@ -2061,6 +2097,16 @@ enum class HostMode {
   @SerialName("onionViaSocks") OnionViaSocks,
   @SerialName("onion") Onion,
   @SerialName("public") Public;
+}
+
+@Serializable
+enum class TransportSessionMode {
+  @SerialName("user") User,
+  @SerialName("entity") Entity;
+
+  companion object {
+    val default = User
+  }
 }
 
 @Serializable
@@ -2782,6 +2828,7 @@ sealed class CR {
   @Serializable @SerialName("callEnded") class CallEnded(val contact: Contact): CR()
   @Serializable @SerialName("newContactConnection") class NewContactConnection(val connection: PendingContactConnection): CR()
   @Serializable @SerialName("contactConnectionDeleted") class ContactConnectionDeleted(val connection: PendingContactConnection): CR()
+  @Serializable @SerialName("versionInfo") class VersionInfo(val versionInfo: CoreVersionInfo): CR()
   @Serializable @SerialName("cmdOk") class CmdOk: CR()
   @Serializable @SerialName("chatCmdError") class ChatCmdError(val chatError: ChatError): CR()
   @Serializable @SerialName("chatError") class ChatRespError(val chatError: ChatError): CR()
@@ -2880,6 +2927,7 @@ sealed class CR {
     is CallEnded -> "callEnded"
     is NewContactConnection -> "newContactConnection"
     is ContactConnectionDeleted -> "contactConnectionDeleted"
+    is VersionInfo -> "versionInfo"
     is CmdOk -> "cmdOk"
     is ChatCmdError -> "chatCmdError"
     is ChatRespError -> "chatError"
@@ -2979,6 +3027,7 @@ sealed class CR {
     is CallEnded -> "contact: ${contact.id}"
     is NewContactConnection -> json.encodeToString(connection)
     is ContactConnectionDeleted -> json.encodeToString(connection)
+    is VersionInfo -> json.encodeToString(versionInfo)
     is CmdOk -> noDetails()
     is ChatCmdError -> chatError.string
     is ChatRespError -> chatError.string
@@ -3036,6 +3085,13 @@ class AutoAccept(val acceptIncognito: Boolean, val autoReply: MsgContent?) {
   }
 }
 
+@Serializable
+data class CoreVersionInfo(
+  val version: String,
+  val buildTimestamp: String,
+  val simplexmqVersion: String,
+  val simplexmqCommit: String
+)
 
 @Serializable
 sealed class ChatError {
