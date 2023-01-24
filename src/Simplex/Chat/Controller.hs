@@ -181,8 +181,8 @@ data ChatCommand
   | ListUsers
   | APISetActiveUser UserId
   | SetActiveUser UserName
-  | APIDeleteUser UserId
-  | DeleteUser UserName
+  | APIDeleteUser UserId Bool
+  | DeleteUser UserName Bool
   | StartChat {subscribeConnections :: Bool, enableExpireChatItems :: Bool}
   | APIStopChat
   | APIActivateChat

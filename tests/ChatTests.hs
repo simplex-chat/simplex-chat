@@ -4585,8 +4585,12 @@ testDeleteUser =
     \alice bob cath -> do
       connectUsers alice bob
 
-      alice ##> "/_delete user 1"
+      -- cannot delete active user
+
+      alice ##> "/_delete user 1 delSMPQueues=off"
       alice <## "cannot delete active user"
+
+      -- delete user without deleting SMP queues
 
       alice ##> "/create user alisa"
       showActiveUser alice "alisa"
@@ -4597,15 +4601,17 @@ testDeleteUser =
       alice <## "alice (Alice)"
       alice <## "alisa (active)"
 
-      alice ##> "/delete user alice"
+      alice ##> "/_delete user 1 delSMPQueues=off"
       alice <## "ok"
 
       alice ##> "/users"
       alice <## "alisa (active)"
 
       bob #> "@alice hey"
-      -- bob <## "[alice, contactId: 2, connId: 1] error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
+      -- no connection authorization error - connection wasn't deleted
       (alice </)
+
+      -- cannot delete new active user
 
       alice ##> "/delete user alisa"
       alice <## "cannot delete active user"
@@ -4614,6 +4620,25 @@ testDeleteUser =
       alice <## "alisa (active)"
 
       alice <##> cath
+
+      -- delete user deleting SMP queues
+
+      alice ##> "/create user alisa2"
+      showActiveUser alice "alisa2"
+
+      alice ##> "/users"
+      alice <## "alisa"
+      alice <## "alisa2 (active)"
+
+      alice ##> "/delete user alisa"
+      alice <## "ok"
+
+      alice ##> "/users"
+      alice <## "alisa2 (active)"
+
+      cath #> "@alisa hey"
+      cath <## "[alisa, contactId: 2, connId: 1] error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
+      (alice </)
 
 testSetChatItemTTL :: IO ()
 testSetChatItemTTL =

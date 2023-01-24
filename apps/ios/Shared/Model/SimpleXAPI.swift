@@ -145,8 +145,8 @@ func apiSetActiveUser(_ userId: Int64) throws -> User {
     throw r
 }
 
-func apiDeleteUser(_ userId: Int64) throws {
-    let r = chatSendCmdSync(.apiDeleteUser(userId: userId))
+func apiDeleteUser(_ userId: Int64, _ delSMPQueues: Bool) throws {
+    let r = chatSendCmdSync(.apiDeleteUser(userId: userId, delSMPQueues: delSMPQueues))
     if case .cmdOk = r { return }
     throw r
 }
