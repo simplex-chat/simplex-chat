@@ -194,7 +194,9 @@ fun ChatPreviewView(
           Modifier.padding(top = 52.dp),
           contentAlignment = Alignment.Center
         ) {
-          ChatStatusImage(chat, contactNetworkStatus)
+          if (chat.chatInfo is ChatInfo.Direct) {
+            ChatStatusImage(chat, contactNetworkStatus)
+          }
         }
       }
     }
@@ -218,25 +220,23 @@ fun unreadCountStr(n: Int): String {
 
 @Composable
 fun ChatStatusImage(chat: Chat, s: NetworkStatus?) {
-  if (chat.chatInfo is ChatInfo.Direct) {
-    val descr = s?.statusString
-    if (s is NetworkStatus.Error) {
-      Icon(
-        Icons.Outlined.ErrorOutline,
-        contentDescription = descr,
-        tint = HighOrLowlight,
-        modifier = Modifier
-          .size(19.dp)
-      )
-    } else if (s !is NetworkStatus.Connected) {
-      CircularProgressIndicator(
-        Modifier
-          .padding(horizontal = 2.dp)
-          .size(15.dp),
-        color = HighOrLowlight,
-        strokeWidth = 1.5.dp
-      )
-    }
+  val descr = s?.statusString
+  if (s is NetworkStatus.Error) {
+    Icon(
+      Icons.Outlined.ErrorOutline,
+      contentDescription = descr,
+      tint = HighOrLowlight,
+      modifier = Modifier
+        .size(19.dp)
+    )
+  } else if (s !is NetworkStatus.Connected) {
+    CircularProgressIndicator(
+      Modifier
+        .padding(horizontal = 2.dp)
+        .size(15.dp),
+      color = HighOrLowlight,
+      strokeWidth = 1.5.dp
+    )
   }
 }
 
