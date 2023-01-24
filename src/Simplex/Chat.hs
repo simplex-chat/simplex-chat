@@ -630,18 +630,26 @@ processChatCommand = \case
         withStore' $ \db -> deleteGroupItemsAndMembers db user gInfo members
         withStore' $ \db -> deleteGroup db user gInfo
         let contactIds = mapMaybe memberContactId members
-        forM_ contactIds $ \ctId ->
-          deleteUnusedContact ctId `catchError` (toView . CRChatError (Just user))
+        deleteAgentConnectionsAsync user . concat =<< mapM deleteUnusedContact contactIds
         pure $ CRGroupDeletedUser user gInfo
       where
-        deleteUnusedContact contactId = do
-          ct <- withStore $ \db -> getContact db user contactId
-          unless (directOrUsed ct) $ do
-            ctGroupId <- withStore' $ \db -> checkContactHasGroups db user ct
-            when (isNothing ctGroupId) $ do
-              conns <- withStore $ \db -> getContactConnections db userId ct
-              deleteAgentConnectionsAsync user $ map aConnId conns
-              withStore' $ \db -> deleteContactWithoutGroups db user ct
+        deleteUnusedContact :: ContactId -> m [ConnId]
+        deleteUnusedContact contactId =
+          delete `catchError` (\e -> toView (CRChatError (Just user) e) >> pure [])
+          where
+            delete = do
+              ct <- withStore $ \db -> getContact db user contactId
+              if directOrUsed ct
+                then pure []
+                else do
+                  ctGroupId <- withStore' $ \db -> checkContactHasGroups db user ct
+                  if isNothing ctGroupId
+                    then pure []
+                    else do
+                      conns <- withStore $ \db -> getContactConnections db userId ct
+                      withStore' (\db -> deleteContactWithoutGroups db user ct)
+                        `catchError` (toView . CRChatError (Just user))
+                      pure $ map aConnId conns
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
   APIClearChat (ChatRef cType chatId) -> withUser $ \user -> case cType of
     CTDirect -> do
