@@ -161,6 +161,10 @@ struct ComposeState {
         default: return true
         }
     }
+
+    var empty: Bool {
+        message == "" && liveMessage == nil && noPreview && !voicePreview
+    }
 }
 
 func chatItemPreview(chatItem: ChatItem) -> ComposePreview {

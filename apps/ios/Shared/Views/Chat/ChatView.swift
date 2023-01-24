@@ -64,6 +64,9 @@ struct ChatView: View {
         .navigationTitle(cInfo.chatViewName)
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
+            if chatModel.draftChatId == cInfo.id, let draft = chatModel.draft {
+                composeState = draft
+            }
             if chat.chatStats.unreadChat {
                 Task {
                     await markChatUnread(chat, unreadChat: false)
@@ -76,6 +79,10 @@ struct ChatView: View {
         .onDisappear {
             if chatModel.chatId == cInfo.id {
                 chatModel.chatId = nil
+                if !composeState.empty {
+                    chatModel.draft = composeState
+                    chatModel.draftChatId = cInfo.id
+                }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                     if chatModel.chatId == nil {
                         chatModel.reversedChatItems = []
