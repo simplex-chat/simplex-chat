@@ -3871,7 +3871,7 @@ chatCommandP =
       "/users" $> ListUsers,
       "/_user " *> (APISetActiveUser <$> A.decimal),
       ("/user " <|> "/u ") *> (SetActiveUser <$> displayName),
-      "/_delete user " *> (APIDeleteUser <$> A.decimal <* " delSMPQueues=" <*> onOffP),
+      "/_delete user " *> (APIDeleteUser <$> A.decimal <* " del_smp=" <*> onOffP),
       "/delete user " *> (DeleteUser <$> displayName <*> pure True),
       ("/user" <|> "/u") $> ShowActiveUser,
       "/_start subscribe=" *> (StartChat <$> onOffP <* " expire=" <*> onOffP),

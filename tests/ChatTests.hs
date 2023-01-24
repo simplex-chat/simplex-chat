@@ -4587,7 +4587,7 @@ testDeleteUser =
 
       -- cannot delete active user
 
-      alice ##> "/_delete user 1 delSMPQueues=off"
+      alice ##> "/_delete user 1 del_smp=off"
       alice <## "cannot delete active user"
 
       -- delete user without deleting SMP queues
@@ -4601,7 +4601,7 @@ testDeleteUser =
       alice <## "alice (Alice)"
       alice <## "alisa (active)"
 
-      alice ##> "/_delete user 1 delSMPQueues=off"
+      alice ##> "/_delete user 1 del_smp=off"
       alice <## "ok"
 
       alice ##> "/users"
