@@ -1581,8 +1581,8 @@ setAllExpireCIFlags b = do
 
 deleteFilesAndConns :: forall m. ChatMonad m => User -> [CIFileInfo] -> m ()
 deleteFilesAndConns user filesInfo = do
-  fileAgentConnIds <- concat <$> forM filesInfo (deleteFile user)
-  deleteAgentConnectionsAsync user fileAgentConnIds
+  connIds <- mapM (deleteFile user) filesInfo
+  deleteAgentConnectionsAsync user $ concat connIds
 
 deleteFile :: forall m. ChatMonad m => User -> CIFileInfo -> m [ConnId]
 deleteFile user fileInfo = deleteFile' user fileInfo False
