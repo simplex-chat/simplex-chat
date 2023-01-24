@@ -946,7 +946,6 @@ func startChat() throws {
 }
 
 func changeActiveUser(_ userId: Int64) {
-    let m = ChatModel.shared
     do {
         try changeActiveUser_(userId)
     } catch let error {
