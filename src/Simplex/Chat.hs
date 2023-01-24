@@ -3434,7 +3434,7 @@ cancelRcvFileTransfer user ft@RcvFileTransfer {fileId, rcvFileInline} =
 
 cancelSndFile :: ChatMonad m => User -> FileTransferMeta -> [SndFileTransfer] -> Bool -> m [ConnId]
 cancelSndFile user FileTransferMeta {fileId} fts sendCancel = do
-  withStore' $ \db -> updateFileCancelled db user fileId CIFSSndCancelled
+  withStore' (\db -> updateFileCancelled db user fileId CIFSSndCancelled) `catchError` (toView . CRChatError (Just user))
   catMaybes <$> forM fts (\ft -> cancelSndFileTransfer user ft sendCancel)
 
 cancelSndFileTransfer :: ChatMonad m => User -> SndFileTransfer -> Bool -> m (Maybe ConnId)
