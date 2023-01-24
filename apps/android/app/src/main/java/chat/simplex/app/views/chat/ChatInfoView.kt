@@ -54,7 +54,7 @@ fun ChatInfoView(
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   if (chat != null) {
-    val contactNetworkStatus = remember(chatModel.networkStatuses) {
+    val contactNetworkStatus = remember(chatModel.networkStatuses.toMap()) {
       mutableStateOf(chatModel.contactNetworkStatus(contact))
     }
     ChatInfoLayout(
