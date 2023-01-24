@@ -757,13 +757,6 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return null
   }
 
-  suspend fun apiParseMarkdown(text: String): List<FormattedText>? {
-    val r = sendCmd(CC.ApiParseMarkdown(text))
-    if (r is CR.ParsedMarkdown) return r.formattedText
-    Log.e(TAG, "apiParseMarkdown bad response: ${r.responseType} ${r.details}")
-    return null
-  }
-
   suspend fun apiSetContactPrefs(contactId: Long, prefs: ChatPreferences): Contact? {
     val r = sendCmd(CC.ApiSetContactPrefs(contactId, prefs))
     if (r is CR.ContactPrefsUpdated) return r.toContact
@@ -1101,6 +1094,13 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       Log.e(TAG, "apiGetVersion bad response: ${r.responseType} ${r.details}")
       null
     }
+  }
+
+  suspend fun apiParseMarkdown(text: String): List<FormattedText>? {
+    val r = sendCmd(CC.ApiParseMarkdown(text))
+    if (r is CR.ParsedMarkdown) return r.formattedText
+    Log.e(TAG, "apiParseMarkdown bad response: ${r.responseType} ${r.details}")
+    return null
   }
 
   private fun networkErrorAlert(r: CR): Boolean {
@@ -2876,7 +2876,6 @@ sealed class CR {
   @Serializable @SerialName("contactAliasUpdated") class ContactAliasUpdated(val user: User, val toContact: Contact): CR()
   @Serializable @SerialName("connectionAliasUpdated") class ConnectionAliasUpdated(val user: User, val toConnection: PendingContactConnection): CR()
   @Serializable @SerialName("contactPrefsUpdated") class ContactPrefsUpdated(val user: User, val fromContact: Contact, val toContact: Contact): CR()
-  @Serializable @SerialName("apiParsedMarkdown") class ParsedMarkdown(val formattedText: List<FormattedText>? = null): CR()
   @Serializable @SerialName("userContactLink") class UserContactLink(val user: User, val contactLink: UserContactLinkRec): CR()
   @Serializable @SerialName("userContactLinkUpdated") class UserContactLinkUpdated(val user: User, val contactLink: UserContactLinkRec): CR()
   @Serializable @SerialName("userContactLinkCreated") class UserContactLinkCreated(val user: User, val connReqContact: String): CR()
@@ -2945,6 +2944,7 @@ sealed class CR {
   @Serializable @SerialName("newContactConnection") class NewContactConnection(val user: User, val connection: PendingContactConnection): CR()
   @Serializable @SerialName("contactConnectionDeleted") class ContactConnectionDeleted(val user: User, val connection: PendingContactConnection): CR()
   @Serializable @SerialName("versionInfo") class VersionInfo(val versionInfo: CoreVersionInfo): CR()
+  @Serializable @SerialName("apiParsedMarkdown") class ParsedMarkdown(val formattedText: List<FormattedText>? = null): CR()
   @Serializable @SerialName("cmdOk") class CmdOk(val user: User?): CR()
   @Serializable @SerialName("chatCmdError") class ChatCmdError(val user: User?, val chatError: ChatError): CR()
   @Serializable @SerialName("chatError") class ChatRespError(val user: User?, val chatError: ChatError): CR()
@@ -2979,7 +2979,6 @@ sealed class CR {
     is ContactAliasUpdated -> "contactAliasUpdated"
     is ConnectionAliasUpdated -> "connectionAliasUpdated"
     is ContactPrefsUpdated -> "contactPrefsUpdated"
-    is ParsedMarkdown -> "apiParsedMarkdown"
     is UserContactLink -> "userContactLink"
     is UserContactLinkUpdated -> "userContactLinkUpdated"
     is UserContactLinkCreated -> "userContactLinkCreated"
@@ -3045,6 +3044,7 @@ sealed class CR {
     is NewContactConnection -> "newContactConnection"
     is ContactConnectionDeleted -> "contactConnectionDeleted"
     is VersionInfo -> "versionInfo"
+    is ParsedMarkdown -> "apiParsedMarkdown"
     is CmdOk -> "cmdOk"
     is ChatCmdError -> "chatCmdError"
     is ChatRespError -> "chatError"
