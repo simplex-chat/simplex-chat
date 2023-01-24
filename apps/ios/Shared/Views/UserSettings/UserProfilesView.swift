@@ -9,15 +9,17 @@ import SimpleXChat
 struct UserProfilesView: View {
     @EnvironmentObject private var m: ChatModel
     @Environment(\.editMode) private var editMode
+    @State private var showDeleteConfirmation = false
+    @State private var userToDelete: Int?
     @State private var alert: UserProfilesAlert?
 
     private enum UserProfilesAlert: Identifiable {
-        case deleteUser(index: Int)
+        case deleteUser(index: Int, delSMPQueues: Bool)
         case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
 
         var id: String {
             switch self {
-            case let .deleteUser(index): return "deleteUser \(index)"
+            case let .deleteUser(index, delSMPQueues): return "deleteUser \(index) \(delSMPQueues)"
             case let .error(title, _): return "error \(title)"
             }
         }
@@ -31,7 +33,8 @@ struct UserProfilesView: View {
                 }
                 .onDelete { indexSet in
                     if let i = indexSet.first {
-                        alert = .deleteUser(index: i)
+                        showDeleteConfirmation = true
+                        userToDelete = i
                     }
                 }
 
@@ -47,14 +50,18 @@ struct UserProfilesView: View {
             }
         }
         .toolbar { EditButton() }
+        .confirmationDialog("Delete chat profile?", isPresented: $showDeleteConfirmation, titleVisibility: .visible) {
+            deleteModeButton("Profile and server connections", true)
+            deleteModeButton("Local profile data only", false)
+        }
         .alert(item: $alert) { alert in
             switch alert {
-            case let .deleteUser(index):
+            case let .deleteUser(index, delSMPQueues):
                 return Alert(
                     title: Text("Delete user profile?"),
                     message: Text("All chats and messages will be deleted - this cannot be undone!"),
                     primaryButton: .destructive(Text("Delete")) {
-                        removeUser(index: index)
+                        removeUser(index, delSMPQueues)
                     },
                     secondaryButton: .cancel()
                 )
@@ -64,24 +71,43 @@ struct UserProfilesView: View {
         }
     }
 
-    private func removeUser(index: Int) {
+    private func deleteModeButton(_ title: LocalizedStringKey, _ delSMPQueues: Bool) -> some View {
+        Button(title, role: .destructive) {
+            if let i = userToDelete {
+                alert = .deleteUser(index: i, delSMPQueues: delSMPQueues)
+            }
+        }
+    }
+
+    private func removeUser(_ index: Int, _ delSMPQueues: Bool) {
+        if index >= m.users.count { return }
         do {
-            try apiDeleteUser(m.users[index].user.userId)
-            m.users.remove(at: index)
+            let u = m.users[index].user
+            if u.activeUser {
+                if let newActive = m.users.first(where: { !$0.user.activeUser }) {
+                    try changeActiveUser_(newActive.user.userId)
+                    try deleteUser(u.userId)
+                }
+            } else {
+                try deleteUser(u.userId)
+            }
         } catch let error {
             let a = getErrorAlert(error, "Error deleting user profile")
             alert = .error(title: a.title, error: a.message)
+        }
+
+        func deleteUser(_ userId: Int64) throws {
+            try apiDeleteUser(userId, delSMPQueues)
+            m.users.remove(at: index)
         }
     }
 
     @ViewBuilder private func userView(_ user: User) -> some View {
         Button {
-            if !user.activeUser {
-                changeActiveUser(user.userId)
-            }
+            changeActiveUser(user.userId)
         } label: {
             HStack {
-                ProfileImage(imageStr: user.image)
+                ProfileImage(imageStr: user.image, color: Color(uiColor: .tertiarySystemFill))
                     .frame(width: 44, height: 44)
                     .padding(.vertical, 4)
                     .padding(.trailing, 12)
@@ -91,8 +117,9 @@ struct UserProfilesView: View {
                     .foregroundColor(user.activeUser ? .primary : .clear)
             }
         }
+        .disabled(user.activeUser)
         .foregroundColor(.primary)
-        .deleteDisabled(user.activeUser)
+        .deleteDisabled(m.users.count <= 1)
     }
 }
 

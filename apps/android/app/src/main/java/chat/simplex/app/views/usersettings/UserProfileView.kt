@@ -46,9 +46,7 @@ fun UserProfileView(chatModel: ChatModel, close: () -> Unit) {
         withApi {
           val newProfile = chatModel.controller.apiUpdateProfile(profile.copy(displayName = displayName, fullName = fullName, image = image))
           if (newProfile != null) {
-            chatModel.currentUser.value?.profile?.profileId?.let {
-              chatModel.updateUserProfile(newProfile.toLocalProfile(it))
-            }
+            chatModel.updateCurrentUser(newProfile)
             profile = newProfile
           }
           editProfile.value = false

@@ -217,6 +217,7 @@ fun PreviewIncomingCallLockScreenAlert() {
         .fillMaxSize()) {
       IncomingCallLockScreenAlertLayout(
         invitation = RcvCallInvitation(
+          user = User.sampleData,
           contact = Contact.sampleData,
           callType = CallType(media = CallMediaType.Audio, capabilities = CallCapabilities(encryption = false)),
           sharedKey = null,
