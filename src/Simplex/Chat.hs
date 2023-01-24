@@ -3420,16 +3420,17 @@ isFileActive fileId files = do
   isJust . M.lookup fileId <$> readTVarIO fs
 
 cancelRcvFileTransfer :: ChatMonad m => User -> RcvFileTransfer -> m (Maybe ConnId)
-cancelRcvFileTransfer user ft@RcvFileTransfer {fileId, fileStatus, rcvFileInline} = do
-  closeFileHandle fileId rcvFiles
-  withStore' $ \db -> do
-    updateFileCancelled db user fileId CIFSRcvCancelled
-    updateRcvFileStatus db ft FSCancelled
-    deleteRcvFileChunks db ft
-  pure $ case (rcvFileInline, fileStatus) of
-    (Nothing, RFSAccepted RcvFileInfo {agentConnId = Just (AgentConnId acId)}) -> Just acId
-    (Nothing, RFSConnected RcvFileInfo {agentConnId = Just (AgentConnId acId)}) -> Just acId
-    _ -> Nothing
+cancelRcvFileTransfer user ft@RcvFileTransfer {fileId, rcvFileInline} =
+  cancel' `catchError` (\e -> toView (CRChatError (Just user) e) >> pure fileConnId)
+  where
+    cancel' = do
+      closeFileHandle fileId rcvFiles
+      withStore' $ \db -> do
+        updateFileCancelled db user fileId CIFSRcvCancelled
+        updateRcvFileStatus db ft FSCancelled
+        deleteRcvFileChunks db ft
+      pure fileConnId
+    fileConnId = if isNothing rcvFileInline then liveRcvFileTransferConnId ft else Nothing
 
 cancelSndFile :: ChatMonad m => User -> FileTransferMeta -> [SndFileTransfer] -> Bool -> m [ConnId]
 cancelSndFile user FileTransferMeta {fileId} fts sendCancel = do
