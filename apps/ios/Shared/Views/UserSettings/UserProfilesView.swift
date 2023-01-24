@@ -72,7 +72,7 @@ struct UserProfilesView: View {
                     message: Text("All chats and messages will be deleted - this cannot be undone!") + (
                         delSMPQueues
                         ? Text("This will also delete all server connections in this profile.")
-                        : Text("This will NOT delete all server connections in this profile.")
+                        : Text("This will NOT delete server connections in this profile.")
                     ),
                     primaryButton: .destructive(Text("Delete")) {
                         removeUser(index, delSMPQueues)
