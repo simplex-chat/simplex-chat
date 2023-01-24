@@ -4631,7 +4631,7 @@ testDeleteUser =
       alice <## "alisa2 (active)"
 
       alice ##> "/delete user alisa"
-      alice <## "ok"
+      alice <### ["ok", "completed deleting user"]
 
       alice ##> "/users"
       alice <## "alisa2 (active)"
