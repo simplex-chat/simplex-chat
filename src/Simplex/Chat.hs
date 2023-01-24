@@ -3440,7 +3440,7 @@ cancelSndFileTransfer :: ChatMonad m => User -> SndFileTransfer -> Bool -> m (Ma
 cancelSndFileTransfer user ft@SndFileTransfer {agentConnId = AgentConnId acId, fileStatus, fileInline} sendCancel =
   if fileStatus == FSCancelled || fileStatus == FSComplete
     then pure Nothing
-    else cancel' `catchError` (\e -> toView (CRChatError (Just user) e) >> pure fileAgentConnId)
+    else cancel' `catchError` (\e -> toView (CRChatError (Just user) e) >> pure fileConnId)
   where
     cancel' = do
       withStore' $ \db -> do
@@ -3448,8 +3448,8 @@ cancelSndFileTransfer user ft@SndFileTransfer {agentConnId = AgentConnId acId, f
         deleteSndFileChunks db ft
       when sendCancel $
         withAgent (\a -> void (sendMessage a acId SMP.noMsgFlags $ smpEncode FileChunkCancel))
-      pure fileAgentConnId
-    fileAgentConnId = if isNothing fileInline then Just acId else Nothing
+      pure fileConnId
+    fileConnId = if isNothing fileInline then Just acId else Nothing
 
 closeFileHandle :: ChatMonad m => Int64 -> (ChatController -> TVar (Map Int64 Handle)) -> m ()
 closeFileHandle fileId files = do
