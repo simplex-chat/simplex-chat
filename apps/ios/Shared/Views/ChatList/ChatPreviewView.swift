@@ -179,16 +179,21 @@ struct ChatPreviewView: View {
     }
 
     @ViewBuilder private func chatStatusImage() -> some View {
-        switch chat.serverInfo.networkStatus {
-        case .connected: EmptyView()
-        case .error:
-            Image(systemName: "exclamationmark.circle")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 17, height: 17)
-                .foregroundColor(.secondary)
+        switch chat.chatInfo {
+        case let .direct(contact):
+            switch (chatModel.contactNetworkStatus(contact)) {
+            case .connected: EmptyView()
+            case .error:
+                Image(systemName: "exclamationmark.circle")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 17, height: 17)
+                    .foregroundColor(.secondary)
+            default:
+                ProgressView()
+            }
         default:
-            ProgressView()
+            EmptyView()
         }
     }
 }
@@ -220,8 +225,7 @@ struct ChatPreviewView_Previews: PreviewProvider {
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent)],
-                chatStats: ChatStats(unreadCount: 3, minUnreadItemId: 0),
-                serverInfo: Chat.ServerInfo(networkStatus: .error("status"))
+                chatStats: ChatStats(unreadCount: 3, minUnreadItemId: 0)
             ))
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.group,

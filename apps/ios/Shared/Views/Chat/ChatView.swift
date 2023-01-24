@@ -231,7 +231,6 @@ struct ChatView: View {
                                             if chatModel.chatId == cInfo.id && itemsInView.contains(ci.viewId) {
                                                 Task {
                                                     await apiMarkChatItemRead(cInfo, ci)
-                                                    NtfManager.shared.decNtfBadgeCount()
                                                 }
                                             }
                                         }

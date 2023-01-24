@@ -478,7 +478,19 @@
   <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion hosts will be used when available.</string>
   <string name="network_use_onion_hosts_no_desc_in_alert">Onion hosts will not be used.</string>
   <string name="network_use_onion_hosts_required_desc_in_alert">Onion hosts will be required for connection.</string>
+  <string name="network_session_mode_transport_isolation">Transport isolation</string>
+  <string name="network_session_mode_user">Chat profile</string>
+  <string name="network_session_mode_entity">Connection</string>
+  <string name="network_session_mode_user_description">A separate TCP connection (and SOCKS credential) will be used <b>for each chat profile you have in the app</b>.</string>
+  <string name="network_session_mode_entity_description">A separate TCP connection (and SOCKS credential) will be used <b>for each contact and group member</b>.\n<b>Please note</b>: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail.</string>
+  <string name="update_network_session_mode_question">Update transport isolation mode?</string>
   <string name="appearance_settings">Appearance</string>
+  <string name="app_version_title">App version</string>
+  <string name="app_version_name">App version: v%s</string>
+  <string name="app_version_code">App build: %s</string>
+  <string name="core_version">Core version: v%s</string>
+  <string name="core_build_timestamp">Core built at: %s</string>
+  <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
 
   <!-- Address Items - UserAddressView.kt -->
   <string name="create_address">Create address</string>
@@ -1061,6 +1073,9 @@
   <string name="ttl_week">%d week</string>
   <string name="ttl_weeks">%d weeks</string>
   <string name="ttl_w">%dw</string>
+  <string name="feature_offered_item">offered %s</string>
+  <string name="feature_offered_item_with_param">offered %s: %2s</string>
+  <string name="feature_cancelled_item">cancelled %s</string>
 
   <!-- WhatsNewView.kt -->
   <string name="whats_new">What\'s new</string>

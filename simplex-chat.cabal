@@ -79,6 +79,9 @@ library
       Simplex.Chat.Migrations.M20221223_idx_chat_items_item_status
       Simplex.Chat.Migrations.M20221230_idxs
       Simplex.Chat.Migrations.M20230107_connections_auth_err_counter
+      Simplex.Chat.Migrations.M20230111_users_agent_user_id
+      Simplex.Chat.Migrations.M20230117_fkey_indexes
+      Simplex.Chat.Migrations.M20230118_recreate_smp_servers
       Simplex.Chat.Mobile
       Simplex.Chat.Options
       Simplex.Chat.ProfileGenerator
@@ -125,6 +128,7 @@ library
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
+    , template-haskell ==2.16.*
     , terminal ==0.2.*
     , text ==1.2.*
     , time ==1.9.*
@@ -171,6 +175,7 @@ executable simplex-bot
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
+    , template-haskell ==2.16.*
     , terminal ==0.2.*
     , text ==1.2.*
     , time ==1.9.*
@@ -217,6 +222,7 @@ executable simplex-bot-advanced
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
+    , template-haskell ==2.16.*
     , terminal ==0.2.*
     , text ==1.2.*
     , time ==1.9.*
@@ -264,6 +270,7 @@ executable simplex-chat
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
+    , template-haskell ==2.16.*
     , terminal ==0.2.*
     , text ==1.2.*
     , time ==1.9.*
@@ -320,6 +327,7 @@ test-suite simplex-chat-test
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
+    , template-haskell ==2.16.*
     , terminal ==0.2.*
     , text ==1.2.*
     , time ==1.9.*
