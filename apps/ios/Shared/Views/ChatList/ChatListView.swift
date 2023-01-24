@@ -80,9 +80,8 @@ struct ChatListView: View {
                     }
                 } label: {
                     let user = chatModel.currentUser ?? User.sampleData
-                    let color = Color(uiColor: .tertiarySystemGroupedBackground)
                     ZStack(alignment: .topTrailing) {
-                        ProfileImage(imageStr: user.image, color: color)
+                        ProfileImage(imageStr: user.image, color: Color(uiColor: .quaternaryLabel))
                             .frame(width: 32, height: 32)
                             .padding(.trailing, 4)
                         let allRead = chatModel.users

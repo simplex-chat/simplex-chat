@@ -35,7 +35,6 @@ struct UserProfilesView: View {
                     if let i = indexSet.first {
                         showDeleteConfirmation = true
                         userToDelete = i
-//                        alert = .deleteUser(index: i)
                     }
                 }
 
@@ -108,7 +107,7 @@ struct UserProfilesView: View {
             changeActiveUser(user.userId)
         } label: {
             HStack {
-                ProfileImage(imageStr: user.image)
+                ProfileImage(imageStr: user.image, color: Color(uiColor: .tertiarySystemFill))
                     .frame(width: 44, height: 44)
                     .padding(.vertical, 4)
                     .padding(.trailing, 12)
