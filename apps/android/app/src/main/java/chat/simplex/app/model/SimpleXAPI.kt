@@ -290,8 +290,8 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   }
 
   suspend fun changeActiveUser(toUserId: Long) {
-    chatModel.currentUser.value = apiSetActiveUser(toUserId)
     try {
+      chatModel.currentUser.value = apiSetActiveUser(toUserId)
       chatModel.users.value = listUsers()
       getUserChatData()
     } catch (e: Exception) {
