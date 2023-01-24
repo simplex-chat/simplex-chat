@@ -427,8 +427,7 @@ fun PreviewGroupChatInfoLayout() {
     GroupChatInfoLayout(
       chat = Chat(
         chatInfo = ChatInfo.Direct.sampleData,
-        chatItems = arrayListOf(),
-        serverInfo = Chat.ServerInfo(Chat.NetworkStatus.Error("agent BROKER TIMEOUT"))
+        chatItems = arrayListOf()
       ),
       groupInfo = GroupInfo.sampleData,
       members = listOf(GroupMember.sampleData, GroupMember.sampleData, GroupMember.sampleData),

@@ -17,8 +17,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
-import chat.simplex.app.model.ChatModel
-import chat.simplex.app.model.Contact
+import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.usersettings.ProfilePreview
 import kotlinx.datetime.Clock
@@ -101,6 +100,7 @@ fun PreviewIncomingCallAlertLayout() {
   SimpleXTheme {
     IncomingCallAlertLayout(
       invitation = RcvCallInvitation(
+        user = User.sampleData,
         contact = Contact.sampleData,
         callType = CallType(media = CallMediaType.Audio, capabilities = CallCapabilities(encryption = false)),
         sharedKey = null,

@@ -77,8 +77,9 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
     }
   }
 
-  fun notifyContactRequestReceived(cInfo: ChatInfo.ContactRequest) {
+  fun notifyContactRequestReceived(user: User, cInfo: ChatInfo.ContactRequest) {
     notifyMessageReceived(
+      user = user,
       chatId = cInfo.id,
       displayName = cInfo.displayName,
       msgText = generalGetString(R.string.notification_new_contact_request),
@@ -87,21 +88,22 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
     )
   }
 
-  fun notifyContactConnected(contact: Contact) {
+  fun notifyContactConnected(user: User, contact: Contact) {
     notifyMessageReceived(
+      user = user,
       chatId = contact.id,
       displayName = contact.displayName,
       msgText = generalGetString(R.string.notification_contact_connected)
     )
   }
 
-  fun notifyMessageReceived(cInfo: ChatInfo, cItem: ChatItem) {
+  fun notifyMessageReceived(user: User, cInfo: ChatInfo, cItem: ChatItem) {
     if (!cInfo.ntfsEnabled) return
 
-    notifyMessageReceived(chatId = cInfo.id, displayName = cInfo.displayName, msgText = hideSecrets(cItem))
+    notifyMessageReceived(user = user, chatId = cInfo.id, displayName = cInfo.displayName, msgText = hideSecrets(cItem))
   }
 
-  fun notifyMessageReceived(chatId: String, displayName: String, msgText: String, image: String? = null, actions: List<NotificationAction> = emptyList()) {
+  fun notifyMessageReceived(user: User, chatId: String, displayName: String, msgText: String, image: String? = null, actions: List<NotificationAction> = emptyList()) {
     Log.d(TAG, "notifyMessageReceived $chatId")
     val now = Clock.System.now().toEpochMilliseconds()
     val recentNotification = (now - prevNtfTime.getOrDefault(chatId, 0) < msgNtfTimeoutMs)

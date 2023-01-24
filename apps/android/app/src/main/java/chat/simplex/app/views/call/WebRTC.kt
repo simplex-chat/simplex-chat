@@ -5,6 +5,7 @@ import androidx.compose.ui.res.stringResource
 import chat.simplex.app.R
 import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.Contact
+import chat.simplex.app.model.User
 import chat.simplex.app.views.helpers.generalGetString
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
@@ -93,7 +94,7 @@ sealed class WCallResponse {
 @Serializable class WebRTCSession(val rtcSession: String, val rtcIceCandidates: String)
 @Serializable class WebRTCExtraInfo(val rtcIceCandidates: String)
 @Serializable class CallType(val media: CallMediaType, val capabilities: CallCapabilities)
-@Serializable class RcvCallInvitation(val contact: Contact, val callType: CallType, val sharedKey: String? = null, val callTs: Instant) {
+@Serializable class RcvCallInvitation(val user: User, val contact: Contact, val callType: CallType, val sharedKey: String? = null, val callTs: Instant) {
   val callTypeText: String get() = generalGetString(when(callType.media) {
     CallMediaType.Video -> if (sharedKey == null) R.string.video_call_no_encryption else R.string.encrypted_video_call
     CallMediaType.Audio -> if (sharedKey == null) R.string.audio_call_no_encryption else R.string.encrypted_audio_call

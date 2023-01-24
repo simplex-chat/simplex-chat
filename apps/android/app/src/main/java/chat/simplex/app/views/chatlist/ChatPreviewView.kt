@@ -25,7 +25,14 @@ import chat.simplex.app.views.chat.item.MarkdownText
 import chat.simplex.app.views.helpers.*
 
 @Composable
-fun ChatPreviewView(chat: Chat, chatModelIncognito: Boolean, currentUserProfileDisplayName: String?, stopped: Boolean, linkMode: SimplexLinkMode) {
+fun ChatPreviewView(
+  chat: Chat,
+  chatModelIncognito: Boolean,
+  currentUserProfileDisplayName: String?,
+  contactNetworkStatus: NetworkStatus?,
+  stopped: Boolean,
+  linkMode: SimplexLinkMode
+) {
   val cInfo = chat.chatInfo
 
   @Composable
@@ -187,7 +194,7 @@ fun ChatPreviewView(chat: Chat, chatModelIncognito: Boolean, currentUserProfileD
           Modifier.padding(top = 52.dp),
           contentAlignment = Alignment.Center
         ) {
-          ChatStatusImage(chat)
+          ChatStatusImage(chat, contactNetworkStatus)
         }
       }
     }
@@ -210,25 +217,29 @@ fun unreadCountStr(n: Int): String {
 }
 
 @Composable
-fun ChatStatusImage(chat: Chat) {
-  val s = chat.serverInfo.networkStatus
-  val descr = s.statusString
-  if (s is Chat.NetworkStatus.Error) {
-    Icon(
-      Icons.Outlined.ErrorOutline,
-      contentDescription = descr,
-      tint = HighOrLowlight,
-      modifier = Modifier
-        .size(19.dp)
-    )
-  } else if (s !is Chat.NetworkStatus.Connected) {
-    CircularProgressIndicator(
-      Modifier
-        .padding(horizontal = 2.dp)
-        .size(15.dp),
-      color = HighOrLowlight,
-      strokeWidth = 1.5.dp
-    )
+fun ChatStatusImage(chat: Chat, s: NetworkStatus?) {
+  when (chat.chatInfo) {
+    is ChatInfo.Direct -> {
+      val descr = s?.statusString
+      if (s is NetworkStatus.Error) {
+        Icon(
+          Icons.Outlined.ErrorOutline,
+          contentDescription = descr,
+          tint = HighOrLowlight,
+          modifier = Modifier
+            .size(19.dp)
+        )
+      } else if (s !is NetworkStatus.Connected) {
+        CircularProgressIndicator(
+          Modifier
+            .padding(horizontal = 2.dp)
+            .size(15.dp),
+          color = HighOrLowlight,
+          strokeWidth = 1.5.dp
+        )
+      }
+    }
+    else -> {}
   }
 }
 
@@ -241,6 +252,6 @@ fun ChatStatusImage(chat: Chat) {
 @Composable
 fun PreviewChatPreviewView() {
   SimpleXTheme {
-    ChatPreviewView(Chat.sampleData, false, "", stopped = false, linkMode = SimplexLinkMode.DESCRIPTION)
+    ChatPreviewView(Chat.sampleData, false, "", contactNetworkStatus = NetworkStatus.Connected(), stopped = false, linkMode = SimplexLinkMode.DESCRIPTION)
   }
 }
