@@ -640,7 +640,7 @@ processChatCommand = \case
           where
             delete ct
               | directOrUsed ct = pure []
-              | otherwise = do
+              | otherwise =
                 withStore' (\db -> checkContactHasGroups db user ct) >>= \case
                   Just _ -> pure []
                   Nothing -> do
