@@ -2013,6 +2013,10 @@ expireChatItems user@User {userId} ttl sync = do
 processAgentMessage :: forall m. ChatMonad m => ACorrId -> ConnId -> ACommand 'Agent -> m ()
 processAgentMessage _ "" msg =
   processAgentMessageNoConn msg `catchError` (toView . CRChatError Nothing)
+processAgentMessage _ connId (DEL_RCVQ srv qId err_) =
+  toView $ CRAgentRcvQueueDeleted (AgentConnId connId) srv (AgentQueueId qId) err_
+processAgentMessage _ connId DEL_CONN =
+  toView $ CRAgentConnDeleted (AgentConnId connId)
 processAgentMessage corrId connId msg =
   withStore' (`getUserByAConnId` AgentConnId connId) >>= \case
     Just user -> processAgentMessageConn user corrId connId msg `catchError` (toView . CRChatError (Just user))
@@ -2025,6 +2029,7 @@ processAgentMessageNoConn = \case
   DOWN srv conns -> serverEvent srv conns CRContactsDisconnected "disconnected"
   UP srv conns -> serverEvent srv conns CRContactsSubscribed "connected"
   SUSPENDED -> toView CRChatSuspended
+  DEL_USER userId -> toView $ CRAgentUserDeleted userId
   _ -> pure ()
   where
     hostEvent = whenM (asks $ hostEvents . config) . toView

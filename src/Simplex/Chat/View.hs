@@ -217,6 +217,15 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
     ]
   CRAgentStats stats -> map (plain . intercalate ",") stats
   CRConnectionDisabled entity -> viewConnectionEntityDisabled entity
+  CRAgentRcvQueueDeleted agentConnId server agentQueueId agentError_ ->
+    [ "completed deleting rcv queue, agent connection id: " <> sShow agentConnId
+        <> (", server: " <> sShow server)
+        <> (", agent queue id: " <> sShow agentQueueId)
+        <> maybe "" (\e -> ", error: " <> sShow e) agentError_
+      | logLevel <= CLLInfo
+    ]
+  CRAgentConnDeleted agentConnId -> ["completed deleting connection, agent connection id: " <> sShow agentConnId | logLevel <= CLLInfo]
+  CRAgentUserDeleted agentUserId -> ["completed deleting user" <> if logLevel <= CLLInfo then ", agent user id: " <> sShow agentUserId else ""]
   CRMessageError u prefix err -> ttyUser u [plain prefix <> ": " <> plain err | prefix == "error" || logLevel <= CLLWarning]
   CRChatCmdError u e -> ttyUser' u $ viewChatError logLevel e
   CRChatError u e -> ttyUser' u $ viewChatError logLevel e

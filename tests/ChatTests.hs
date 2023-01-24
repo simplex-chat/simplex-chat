@@ -180,7 +180,7 @@ chatTests = do
     it "both users have contact link" testMultipleUserAddresses
     it "create user with default servers" testCreateUserDefaultServers
     it "create user with same servers" testCreateUserSameServers
-    it "delete user" testDeleteUser
+    fit "delete user" testDeleteUser
   describe "chat item expiration" $ do
     it "set chat item TTL" testSetChatItemTTL
   describe "queue rotation" $ do
@@ -4602,7 +4602,7 @@ testDeleteUser =
       alice <## "alisa (active)"
 
       alice ##> "/_delete user 1 delSMPQueues=off"
-      alice <## "ok"
+      alice <### ["ok", "completed deleting user"]
 
       alice ##> "/users"
       alice <## "alisa (active)"
@@ -4631,7 +4631,7 @@ testDeleteUser =
       alice <## "alisa2 (active)"
 
       alice ##> "/delete user alisa"
-      alice <## "ok"
+      alice <### ["ok", "completed deleting user"]
 
       alice ##> "/users"
       alice <## "alisa2 (active)"

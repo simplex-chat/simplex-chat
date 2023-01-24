@@ -53,7 +53,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtocolType, CorrId, MsgFlags, NtfServer)
+import Simplex.Messaging.Protocol (AProtocolType, CorrId, MsgFlags, NtfServer, QueueId)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
@@ -477,6 +477,9 @@ data ChatResponse
   | CRDebugLocks {chatLockName :: Maybe String, agentLocks :: AgentLocks}
   | CRAgentStats {agentStats :: [[String]]}
   | CRConnectionDisabled {connectionEntity :: ConnectionEntity}
+  | CRAgentRcvQueueDeleted {agentConnId :: AgentConnId, server :: SMPServer, agentQueueId :: AgentQueueId, agentError_ :: Maybe AgentErrorType}
+  | CRAgentConnDeleted {agentConnId :: AgentConnId}
+  | CRAgentUserDeleted {agentUserId :: Int64}
   | CRMessageError {user :: User, severity :: Text, errorMessage :: Text}
   | CRChatCmdError {user_ :: Maybe User, chatError :: ChatError}
   | CRChatError {user_ :: Maybe User, chatError :: ChatError}
@@ -485,6 +488,18 @@ data ChatResponse
 instance ToJSON ChatResponse where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CR"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
+
+newtype AgentQueueId = AgentQueueId QueueId
+  deriving (Eq, Show)
+
+instance StrEncoding AgentQueueId where
+  strEncode (AgentQueueId qId) = strEncode qId
+  strDecode s = AgentQueueId <$> strDecode s
+  strP = AgentQueueId <$> strP
+
+instance ToJSON AgentQueueId where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
 
 data SMPServersConfig = SMPServersConfig {smpServers :: [ServerCfg]}
   deriving (Show, Generic, FromJSON)
