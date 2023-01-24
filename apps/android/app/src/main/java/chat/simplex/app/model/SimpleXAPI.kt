@@ -266,7 +266,8 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       if (chatModel.chatRunning.value == true) return
       apiSetNetworkConfig(getNetCfg())
       val justStarted = apiStartChat()
-      chatModel.users.value = listUsers()
+      chatModel.users.clear()
+      chatModel.users.addAll(listUsers())
       if (justStarted) {
         chatModel.currentUser.value = user
         chatModel.userCreated.value = true
@@ -292,7 +293,8 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   suspend fun changeActiveUser(toUserId: Long) {
     try {
       chatModel.currentUser.value = apiSetActiveUser(toUserId)
-      chatModel.users.value = listUsers()
+      chatModel.users.clear()
+      chatModel.users.addAll(listUsers())
       getUserChatData()
     } catch (e: Exception) {
       Log.e(TAG, "Unable to set active user: ${e.stackTraceToString()}")

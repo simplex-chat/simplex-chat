@@ -35,7 +35,7 @@ import kotlin.time.*
 class ChatModel(val controller: ChatController) {
   val onboardingStage = mutableStateOf<OnboardingStage?>(null)
   val currentUser = mutableStateOf<User?>(null)
-  val users = mutableStateOf<List<UserInfo>>(emptyList())
+  val users = mutableStateListOf<UserInfo>()
   val userCreated = mutableStateOf<Boolean?>(null)
   val chatRunning = mutableStateOf<Boolean?>(null)
   val chatDbChanged = mutableStateOf<Boolean>(false)
@@ -44,7 +44,7 @@ class ChatModel(val controller: ChatController) {
   val chatDbDeleted = mutableStateOf(false)
   val chats = mutableStateListOf<Chat>()
   // map of connections network statuses, key is agent connection id
-  val networkStatuses = mutableStateOf(mapOf<String, NetworkStatus>())
+  val networkStatuses = mutableStateMapOf<String, NetworkStatus>()
 
   // current chat
   val chatId = mutableStateOf<String?>(null)
@@ -89,13 +89,6 @@ class ChatModel(val controller: ChatController) {
 
   val filesToDelete = mutableSetOf<File>()
   val simplexLinkMode = mutableStateOf(controller.appPrefs.simplexLinkMode.get())
-
-  fun updateUserProfile(profile: LocalProfile) {
-    val user = currentUser.value
-    if (user != null) {
-      currentUser.value = user.copy(profile = profile)
-    }
-  }
 
   fun hasChat(id: String): Boolean = chats.firstOrNull { it.id == id } != null
   fun getChat(id: String): Chat? = chats.firstOrNull { it.id == id }
@@ -258,11 +251,9 @@ class ChatModel(val controller: ChatController) {
       profile = newProfile.toLocalProfile(current.profile.profileId),
       fullPreferences = preferences ?: current.fullPreferences
     )
-    val indexInUsers = users.value.indexOfFirst { it.user.userId == current.userId }
+    val indexInUsers = users.indexOfFirst { it.user.userId == current.userId }
     if (indexInUsers != -1) {
-      val mutableUsers = users.value.toMutableList()
-      mutableUsers[indexInUsers] = UserInfo(updated, mutableUsers[indexInUsers].unreadCount)
-      users.value = mutableUsers
+      users[indexInUsers] = UserInfo(updated, users[indexInUsers].unreadCount)
     }
   }
 
@@ -346,11 +337,9 @@ class ChatModel(val controller: ChatController) {
   }
 
   private fun changeUnreadCounter(user: User, by: Int) {
-    val i = users.value.indexOfFirst { it.user.userId == user.userId }
+    val i = users.indexOfFirst { it.user.userId == user.userId }
     if (i != -1) {
-      val updated = users.value.toMutableList()
-      updated[i] = UserInfo(user, users.value[i].unreadCount + by)
-      users.value = updated
+      users[i] = UserInfo(user, users[i].unreadCount + by)
     }
   }
 
@@ -400,13 +389,11 @@ class ChatModel(val controller: ChatController) {
   }
 
   fun setContactNetworkStatus(contact: Contact, status: NetworkStatus) {
-    val updated = networkStatuses.value.toMutableMap()
-    updated[contact.activeConn.agentConnId] = status
-    networkStatuses.value = updated
+    networkStatuses[contact.activeConn.agentConnId] = status
   }
 
   fun contactNetworkStatus(contact: Contact): NetworkStatus =
-    networkStatuses.value[contact.activeConn.agentConnId] ?: NetworkStatus.Unknown()
+    networkStatuses[contact.activeConn.agentConnId] ?: NetworkStatus.Unknown()
 }
 
 enum class ChatType(val type: String) {
