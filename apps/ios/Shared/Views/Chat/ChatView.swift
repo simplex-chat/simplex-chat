@@ -76,12 +76,14 @@ struct ChatView: View {
         .onChange(of: chatModel.chatId) { _ in
             if chatModel.chatId == nil { dismiss() }
         }
+        .onChange(of: composeState.empty, perform: updateDraft)
+        .onChange(of: composeState.message, perform: updateDraft)
+        .onChange(of: composeState.noPreview, perform: updateDraft)
         .onDisappear {
             if chatModel.chatId == cInfo.id {
                 chatModel.chatId = nil
-                if !composeState.empty {
+                if chatModel.draftChatId == cInfo.id {
                     chatModel.draft = composeState
-                    chatModel.draftChatId = cInfo.id
                 }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                     if chatModel.chatId == nil {
@@ -182,7 +184,17 @@ struct ChatView: View {
             }
         }
     }
-    
+
+    private func updateDraft(_: any Equatable) {
+        if !composeState.empty {
+            chatModel.draft = composeState
+            chatModel.draftChatId = chat.id
+        } else if chatModel.draftChatId == chat.id {
+            chatModel.draft = nil
+            chatModel.draftChatId = nil
+        }
+    }
+
     private func searchToolbar() -> some View {
         HStack {
             HStack {

@@ -106,31 +106,54 @@ struct ChatPreviewView: View {
             .kerning(-2)
     }
 
+    private func chatPreviewLayout(_ text: Text) -> some View {
+        ZStack(alignment: .topTrailing) {
+            text
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+                .padding(.leading, 8)
+                .padding(.trailing, 36)
+            let s = chat.chatStats
+            if s.unreadCount > 0 || s.unreadChat {
+                unreadCountText(s.unreadCount)
+                    .font(.caption)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 4)
+                    .frame(minWidth: 18, minHeight: 18)
+                    .background(chat.chatInfo.ntfsEnabled ? Color.accentColor : Color.secondary)
+                    .cornerRadius(10)
+            } else if !chat.chatInfo.ntfsEnabled {
+                Image(systemName: "speaker.slash.fill")
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+
+    private func messageDraft(_ draft: ComposeState) -> Text {
+        let msg = draft.message
+        return Text("draft ").foregroundColor(.red)
+                + attachment()
+                + messageText(msg, parseSimpleXMarkdown(msg), nil, preview: true)
+
+        func attachment() -> Text {
+            let image = { Text(Image(systemName: $0)).foregroundColor(Color(uiColor: .tertiaryLabel)) + Text(" ") }
+            switch draft.preview {
+            case .filePreview: return image("doc.fill")
+            case .imagePreviews: return image("photo")
+            case .voicePreview: return image("play.fill")
+            default: return Text("")
+            }
+        }
+    }
+
     @ViewBuilder private func chatPreviewText(_ cItem: ChatItem?) -> some View {
-        if let cItem = cItem {
+        if chatModel.draftChatId == chat.id, let draft = chatModel.draft {
+            chatPreviewLayout(messageDraft(draft))
+        } else if let cItem = cItem {
             let itemText = !cItem.meta.itemDeleted ? cItem.text : NSLocalizedString("marked deleted", comment: "marked deleted chat item preview text")
             let itemFormattedText = !cItem.meta.itemDeleted ? cItem.formattedText : nil
-            ZStack(alignment: .topTrailing) {
-                (itemStatusMark(cItem) + messageText(itemText, itemFormattedText, cItem.memberDisplayName, preview: true))
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .topLeading)
-                    .padding(.leading, 8)
-                    .padding(.trailing, 36)
-                let s = chat.chatStats
-                if s.unreadCount > 0 || s.unreadChat {
-                    unreadCountText(s.unreadCount)
-                        .font(.caption)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 4)
-                        .frame(minWidth: 18, minHeight: 18)
-                        .background(chat.chatInfo.ntfsEnabled ? Color.accentColor : Color.secondary)
-                        .cornerRadius(10)
-                } else if !chat.chatInfo.ntfsEnabled {
-                    Image(systemName: "speaker.slash.fill")
-                        .foregroundColor(.secondary)
-                }
-            }
+            chatPreviewLayout(itemStatusMark(cItem) + messageText(itemText, itemFormattedText, cItem.memberDisplayName, preview: true))
         } else {
             switch (chat.chatInfo) {
             case let .direct(contact):
