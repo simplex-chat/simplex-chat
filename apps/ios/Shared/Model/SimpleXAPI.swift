@@ -945,15 +945,20 @@ func startChat() throws {
     chatLastStartGroupDefault.set(Date.now)
 }
 
-func changeActiveUser(_ toUserId: Int64) {
+func changeActiveUser(_ userId: Int64) {
     let m = ChatModel.shared
     do {
-        m.currentUser = try apiSetActiveUser(toUserId)
-        m.users = try listUsers()
-        try getUserChatData()
+        try changeActiveUser_(userId)
     } catch let error {
         logger.error("Unable to set active user: \(responseError(error))")
     }
+}
+
+func changeActiveUser_(_ userId: Int64) throws {
+    let m = ChatModel.shared
+    m.currentUser = try apiSetActiveUser(userId)
+    m.users = try listUsers()
+    try getUserChatData()
 }
 
 func getUserChatData() throws {

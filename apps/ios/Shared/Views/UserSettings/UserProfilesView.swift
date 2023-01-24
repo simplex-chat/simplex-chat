@@ -85,7 +85,7 @@ struct UserProfilesView: View {
             let u = m.users[index].user
             if u.activeUser {
                 if let newActive = m.users.first(where: { !$0.user.activeUser }) {
-                    changeActiveUser(newActive.user.userId)
+                    try changeActiveUser_(newActive.user.userId)
                     try deleteUser(u.userId)
                 }
             } else {
