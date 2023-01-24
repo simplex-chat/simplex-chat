@@ -64,39 +64,3 @@ extension View {
         modifier(SheetForItem(item: item, onDismiss: onDismiss, sheetContent: content))
     }
 }
-
-struct NavStackWorkaround <C: View, D: View>: View {
-    let path: Binding<[Bool]>
-    let destination: () -> D
-    let content: () -> C
-
-    var body: some View {
-        if #available(iOS 16, *) {
-            NavigationStack(path: path) {
-                ZStack {
-                    NavigationLink(value: true) {
-                        EmptyView()
-                    }
-                    content()
-                }
-                .navigationDestination(for: Bool.self) { show in
-                    if show { destination() }
-                }
-            }
-        } else {
-            NavigationView {
-                ZStack {
-                    NavigationLink(
-                        destination: destination(),
-                        isActive: Binding(
-                            get: { !path.wrappedValue.isEmpty },
-                            set: { _ in }
-                        )
-                    ) { EmptyView() }
-                    content()
-                }
-            }
-            .navigationViewStyle(.stack)
-        }
-    }
-}
