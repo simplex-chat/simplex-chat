@@ -17,25 +17,26 @@ struct CIVoiceView: View {
     @State var playbackTime: TimeInterval?
 
     var body: some View {
-        VStack (
-            alignment: chatItem.chatDir.sent ? .trailing : .leading,
-            spacing: 6
-        ) {
-            HStack {
-                if chatItem.chatDir.sent {
-                    playerTime()
-                        .frame(width: 50, alignment: .leading)
-                    player()
-                } else {
-                    player()
-                    playerTime()
-                        .frame(width: 50, alignment: .leading)
+        Group {
+            if chatItem.chatDir.sent {
+                VStack (alignment: .trailing, spacing: 6) {
+                    HStack {
+                        playerTime()
+                        player()
+                    }
+                    metaView().padding(.trailing, 10)
+                }
+            } else {
+                VStack (alignment: .leading, spacing: 6) {
+                    HStack {
+                        player()
+                        playerTime()
+                    }
+                    metaView().padding(.leading, -6)
                 }
             }
-            CIMetaView(chatItem: chatItem)
-                .padding(.leading, chatItem.chatDir.sent ? 0 : 12)
-                .padding(.trailing, chatItem.chatDir.sent ? 12 : 0)
         }
+        .padding([.top, .horizontal], 4)
         .padding(.bottom, 8)
     }
 
@@ -57,6 +58,11 @@ struct CIVoiceView: View {
             playbackTime: $playbackTime
         )
         .foregroundColor(.secondary)
+        .frame(alignment: .leading)
+    }
+
+    private func metaView() -> some View {
+        CIMetaView(chatItem: chatItem)
     }
 }
 
