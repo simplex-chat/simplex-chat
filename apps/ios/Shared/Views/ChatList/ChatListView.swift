@@ -66,7 +66,7 @@ struct ChatListView: View {
         .onDisappear() { withAnimation { userPickerVisible = false } }
         .offset(x: -8)
         .listStyle(.plain)
-        .navigationTitle("Chats")
+        .navigationTitle("Your chats")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
