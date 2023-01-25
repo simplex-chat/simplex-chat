@@ -165,8 +165,7 @@ func saveFileFromURL(_ url: URL) -> String? {
 }
 
 func generateNewFileName(_ prefix: String, _ ext: String) -> String {
-    let fileName = uniqueCombine("\(prefix)_\(getTimestamp()).\(ext)")
-    return fileName
+    uniqueCombine("\(prefix)_\(getTimestamp()).\(ext)")
 }
 
 private func uniqueCombine(_ fileName: String) -> String {
