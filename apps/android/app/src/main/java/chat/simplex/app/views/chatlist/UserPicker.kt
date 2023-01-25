@@ -25,8 +25,9 @@ import chat.simplex.app.R
 import chat.simplex.app.TAG
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.UserInfo
-import chat.simplex.app.ui.theme.DEFAULT_PADDING
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -37,6 +38,15 @@ fun UserPicker(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedV
   var newChat by remember { mutableStateOf(userPickerState.value) }
   val users by remember { derivedStateOf { chatModel.users.sortedByDescending { it.user.activeUser } } }
   val animatedFloat = remember { Animatable(if (newChat.isVisible()) 0f else 1f) }
+  var progressIndicator by remember { mutableStateOf(false) }
+  if (progressIndicator) {
+    Box(
+      Modifier.fillMaxSize().clickable(enabled = false, onClick = {}),
+      contentAlignment = Alignment.Center
+    ) {
+      ProgressIndicator()
+    }
+  }
   LaunchedEffect(Unit) {
     launch {
       userPickerState.collect {
@@ -99,9 +109,16 @@ fun UserPicker(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedV
         users.forEachIndexed { i, u ->
           UserProfilePickerItem(u) {
             userPickerState.value = AnimatedViewState.HIDING
-            scope.launch {
-              if (!u.user.activeUser) {
+            if (!u.user.activeUser) {
+              chatModel.chats.clear()
+              scope.launch {
+                val job = launch {
+                  delay(500)
+                  progressIndicator = true
+                }
                 chatModel.controller.changeActiveUser(u.user.userId)
+                job.cancel()
+                progressIndicator = false
               }
             }
           }
@@ -169,4 +186,15 @@ private fun SettingsPickerItem(onClick: () -> Unit) {
     )
     Icon(Icons.Outlined.Settings, text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
   }
+}
+
+@Composable
+private fun ProgressIndicator() {
+  CircularProgressIndicator(
+    Modifier
+      .padding(horizontal = 2.dp)
+      .size(30.dp),
+    color = HighOrLowlight,
+    strokeWidth = 2.5.dp
+  )
 }
