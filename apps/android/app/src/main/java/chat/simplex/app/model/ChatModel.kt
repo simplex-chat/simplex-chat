@@ -255,6 +255,7 @@ class ChatModel(val controller: ChatController) {
     if (indexInUsers != -1) {
       users[indexInUsers] = UserInfo(updated, users[indexInUsers].unreadCount)
     }
+    currentUser.value = updated
   }
 
   suspend fun addLiveDummy(chatInfo: ChatInfo): ChatItem {

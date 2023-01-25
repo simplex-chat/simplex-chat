@@ -121,11 +121,11 @@ fun UserPicker(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedV
 
 @Composable
 private fun UserProfilePickerItem(u: UserInfo, onClick: () -> Unit) {
-  SectionItemViewSpaceBetween(onClick, padding = PaddingValues(start = 8.dp, end = 8.dp)) {
+  SectionItemViewSpaceBetween(onClick, padding = PaddingValues(start = 8.dp, end = DEFAULT_PADDING)) {
     Row(
       Modifier
         .widthIn(max = LocalConfiguration.current.screenWidthDp.dp * 0.7f)
-        .padding(top = 8.dp, bottom = 8.dp),
+        .padding(vertical = 8.dp),
       verticalAlignment = Alignment.CenterVertically
     ) {
       ProfileImage(
@@ -153,13 +153,15 @@ private fun UserProfilePickerItem(u: UserInfo, onClick: () -> Unit) {
         textAlign = TextAlign.Center,
         maxLines = 1
       )
+    } else {
+      Box(Modifier.size(20.dp))
     }
   }
 }
 
 @Composable
 private fun SettingsPickerItem(onClick: () -> Unit) {
-  SectionItemViewSpaceBetween(onClick, minHeight = 60.dp) {
+  SectionItemViewSpaceBetween(onClick, minHeight = 76.dp) {
     val text = generalGetString(R.string.settings_section_title_settings).lowercase().capitalize(Locale.current)
     Text(
       text,
