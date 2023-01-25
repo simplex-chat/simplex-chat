@@ -177,16 +177,16 @@ chatTests = do
     it "mute/unmute group" testMuteGroup
   describe "multiple users" $ do
     it "create second user" testCreateSecondUser
-    fit "multiple users subscribe and receive messages after restart" testUsersSubscribeAfterRestart
+    it "multiple users subscribe and receive messages after restart" testUsersSubscribeAfterRestart
     it "both users have contact link" testMultipleUserAddresses
     it "create user with default servers" testCreateUserDefaultServers
     it "create user with same servers" testCreateUserSameServers
-    fit "delete user" testDeleteUser
-    fit "users have different chat item TTL configuration, chat items expire" testUsersDifferentCIExpirationTTL
-    fit "chat items expire after restart for all users according to per user configuration" testUsersRestartCIExpiration
-    fit "chat items only expire for users who configured expiration" testEnableCIExpirationOnlyForOneUser
-    fit "disabling chat item expiration doesn't disable it for other users" testDisableCIExpirationOnlyForOneUser
-    fit "both users have configured timed messages with contacts" testUsersTimedMessages
+    it "delete user" testDeleteUser
+    it "users have different chat item TTL configuration, chat items expire" testUsersDifferentCIExpirationTTL
+    it "chat items expire after restart for all users according to per user configuration" testUsersRestartCIExpiration
+    it "chat items only expire for users who configured expiration" testEnableCIExpirationOnlyForOneUser
+    it "disabling chat item expiration doesn't disable it for other users" testDisableCIExpirationOnlyForOneUser
+    it "both users have configured timed messages with contacts" testUsersTimedMessages
   describe "chat item expiration" $ do
     it "set chat item TTL" testSetChatItemTTL
   describe "queue rotation" $ do
