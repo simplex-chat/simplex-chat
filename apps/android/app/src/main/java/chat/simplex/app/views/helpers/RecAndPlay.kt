@@ -50,8 +50,8 @@ class RecorderNative(private val recordedBytesLimit: Long): Recorder {
     rec.setAudioEncodingBitRate(16000)
     rec.setMaxDuration(MAX_VOICE_MILLIS_FOR_SENDING)
     rec.setMaxFileSize(recordedBytesLimit)
-    val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-    val path = getAppFilePath(SimplexApp.context, uniqueCombine(SimplexApp.context, getAppFilePath(SimplexApp.context, "voice_${timestamp}.m4a")))
+    val fileToSave = generateNewFileName(SimplexApp.context, "voice", "m4a")
+    val path = getAppFilePath(SimplexApp.context, fileToSave)
     filePath = path
     rec.setOutputFile(path)
     rec.prepare()
