@@ -186,7 +186,7 @@ chatTests = do
     it "chat items expire after restart for all users according to per user configuration" testUsersRestartCIExpiration
     it "chat items only expire for users who configured expiration" testEnableCIExpirationOnlyForOneUser
     it "disabling chat item expiration doesn't disable it for other users" testDisableCIExpirationOnlyForOneUser
-    it "both users have configured timed messages with contacts" testUsersTimedMessages
+    it "both users have configured timed messages with contacts, messages expire, restart" testUsersTimedMessages
   describe "chat item expiration" $ do
     it "set chat item TTL" testSetChatItemTTL
   describe "queue rotation" $ do
