@@ -16,13 +16,11 @@ enum VoiceMessagePlaybackState {
 }
 
 func voiceMessageTime(_ time: TimeInterval) -> String {
-    let min = Int(time / 60)
-    let sec = Int(time.truncatingRemainder(dividingBy: 60))
-    return String(format: "%02d:%02d", min, sec)
+    durationText(Int(time))
 }
 
 func voiceMessageTime_(_ time: TimeInterval?) -> String {
-    return voiceMessageTime(time ?? TimeInterval(0))
+    durationText(Int(time ?? 0))
 }
 
 struct ComposeVoiceView: View {
