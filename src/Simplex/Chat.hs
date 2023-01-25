@@ -108,7 +108,8 @@ defaultChatConfig =
       subscriptionConcurrency = 16,
       subscriptionEvents = False,
       hostEvents = False,
-      testView = False
+      testView = False,
+      ciExpirationInterval = 1800 * 1000000 -- 30 minutes
     }
 
 _defaultSMPServers :: NonEmpty SMPServerWithAuth
@@ -1565,13 +1566,15 @@ startExpireCIThread user@User {userId} = do
       atomically $ TM.insert userId a expireThreads
     _ -> pure ()
   where
-    runExpireCIs = forever $ do
-      flip catchError (toView . CRChatError (Just user)) $ do
-        expireFlags <- asks expireCIFlags
-        atomically $ TM.lookup userId expireFlags >>= \b -> unless (b == Just True) retry
-        ttl <- withStore' (`getChatItemTTL` user)
-        forM_ ttl $ \t -> expireChatItems user t False
-      threadDelay $ 1800 * 1000000 -- 30 minutes
+    runExpireCIs = do
+      interval <- asks $ ciExpirationInterval . config
+      forever $ do
+        flip catchError (toView . CRChatError (Just user)) $ do
+          expireFlags <- asks expireCIFlags
+          atomically $ TM.lookup userId expireFlags >>= \b -> unless (b == Just True) retry
+          ttl <- withStore' (`getChatItemTTL` user)
+          forM_ ttl $ \t -> expireChatItems user t False
+        threadDelay interval
 
 setExpireCIFlag :: (MonadUnliftIO m, MonadReader ChatController m) => User -> Bool -> m ()
 setExpireCIFlag User {userId} b = do
