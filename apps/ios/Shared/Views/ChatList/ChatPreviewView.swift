@@ -144,7 +144,7 @@ struct ChatPreviewView: View {
             switch draft.preview {
             case .filePreview: return image("doc.fill")
             case .imagePreviews: return image("photo")
-            case .voicePreview: return image("play.fill")
+            case let .voicePreview(_, duration): return image("play.fill") + Text(voiceMessageTime(TimeInterval(duration)))
             default: return Text("")
             }
         }
