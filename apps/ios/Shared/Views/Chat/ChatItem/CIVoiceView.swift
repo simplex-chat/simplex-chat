@@ -74,7 +74,7 @@ struct VoiceMessagePlayerTime: View {
 
     var body: some View {
         ZStack(alignment: .leading) {
-            Text("66:66").foregroundColor(.clear)
+            Text(String("66:66")).foregroundColor(.clear)
             switch playbackState {
             case .noPlayback:
                 Text(voiceMessageTime(recordingTime))
