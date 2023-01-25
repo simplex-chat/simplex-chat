@@ -125,7 +125,7 @@ private fun UserProfilePickerItem(u: UserInfo, onClick: () -> Unit) {
     Row(Modifier.widthIn(max = LocalConfiguration.current.screenWidthDp.dp * 0.7f), verticalAlignment = Alignment.CenterVertically) {
       ProfileImage(
         image = u.user.image,
-        size = 40.dp
+        size = 60.dp
       )
       Text(
         u.user.chatViewName,
@@ -154,7 +154,7 @@ private fun UserProfilePickerItem(u: UserInfo, onClick: () -> Unit) {
 
 @Composable
 private fun SettingsPickerItem(onClick: () -> Unit) {
-  SectionItemViewSpaceBetween(onClick) {
+  SectionItemViewSpaceBetween(onClick, minHeight = 60.dp) {
     val text = generalGetString(R.string.settings_section_title_settings).lowercase().capitalize(Locale.current)
     Text(
       text,
