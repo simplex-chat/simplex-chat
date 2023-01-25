@@ -243,7 +243,7 @@ private fun UserProfileButton(image: String?, allRead: Boolean, onButtonClicked:
     Box {
       ProfileImage(
         image = image,
-        size = 40.dp
+        size = 36.dp
       )
       if (!allRead) {
         unreadBadge()

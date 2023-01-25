@@ -92,8 +92,8 @@ fun UserPicker(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedV
         .widthIn(min = 220.dp)
         .width(IntrinsicSize.Min)
         .height(IntrinsicSize.Min)
-        .shadow(8.dp, MaterialTheme.shapes.small, clip = false)
-        .background(MaterialTheme.colors.background, MaterialTheme.shapes.small)
+        .shadow(8.dp, MaterialTheme.shapes.medium, clip = false)
+        .background(MaterialTheme.colors.background, MaterialTheme.shapes.medium)
     ) {
       Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
         users.forEachIndexed { i, u ->
@@ -121,8 +121,13 @@ fun UserPicker(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedV
 
 @Composable
 private fun UserProfilePickerItem(u: UserInfo, onClick: () -> Unit) {
-  SectionItemViewSpaceBetween(onClick, padding = PaddingValues(start = DEFAULT_PADDING - 2.dp, end = DEFAULT_PADDING)) {
-    Row(Modifier.widthIn(max = LocalConfiguration.current.screenWidthDp.dp * 0.7f), verticalAlignment = Alignment.CenterVertically) {
+  SectionItemViewSpaceBetween(onClick, padding = PaddingValues(start = 8.dp, end = 8.dp)) {
+    Row(
+      Modifier
+        .widthIn(max = LocalConfiguration.current.screenWidthDp.dp * 0.7f)
+        .padding(top = 8.dp, bottom = 8.dp),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
       ProfileImage(
         image = u.user.image,
         size = 60.dp
@@ -130,7 +135,7 @@ private fun UserProfilePickerItem(u: UserInfo, onClick: () -> Unit) {
       Text(
         u.user.chatViewName,
         modifier = Modifier
-          .padding(start = 10.dp, end = 10.dp)
+          .padding(start = 8.dp, end = 8.dp)
       )
     }
     if (u.user.activeUser) {
