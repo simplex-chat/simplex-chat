@@ -339,7 +339,7 @@ import Simplex.Chat.Migrations.M20230117_fkey_indexes
 import Simplex.Chat.Migrations.M20230118_recreate_smp_servers
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
-import Simplex.Chat.Util (week)
+import Simplex.Chat.Util (diffInMillis, week)
 import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..))
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, firstRow, firstRow', maybeFirstRow, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
@@ -3401,10 +3401,10 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
 
 getChatPreviews :: DB.Connection -> User -> Bool -> IO [AChat]
 getChatPreviews db user withPCC = do
-  directChats <- getDirectChatPreviews_ db user
-  groupChats <- getGroupChatPreviews_ db user
-  cReqChats <- getContactRequestChatPreviews_ db user
-  connChats <- getContactConnectionChatPreviews_ db user withPCC
+  directChats <- timeItIO "getDirectChatPreviews_" $ getDirectChatPreviews_ db user
+  groupChats <- timeItIO "getGroupChatPreviews_" $ getGroupChatPreviews_ db user
+  cReqChats <- timeItIO "getContactRequestChatPreviews_" $ getContactRequestChatPreviews_ db user
+  connChats <- timeItIO "getContactConnectionChatPreviews_" $ getContactConnectionChatPreviews_ db user withPCC
   pure $ sortOn (Down . ts) (directChats <> groupChats <> cReqChats <> connChats)
   where
     ts :: AChat -> UTCTime
@@ -4909,3 +4909,12 @@ data StoreError
 instance ToJSON StoreError where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "SE"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "SE"
+
+timeItIO :: String -> IO a -> IO a
+timeItIO s action = do
+  t1 <- getCurrentTime
+  a <- action
+  t2 <- getCurrentTime
+  let diff = diffInMillis t2 t1
+  print $ show diff <> " ms - " <> s
+  pure a

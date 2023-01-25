@@ -64,7 +64,7 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
   CRChatRunning -> ["chat is running"]
   CRChatStopped -> ["chat stopped"]
   CRChatSuspended -> ["chat suspended"]
-  CRApiChats u chats -> ttyUser u $ if testView then testViewChats chats else [plain . bshow $ J.encode chats]
+  CRApiChats u chats -> [] -- ttyUser u $ if testView then testViewChats chats else [plain . bshow $ J.encode chats]
   CRChats chats -> viewChats ts chats
   CRApiChat u chat -> ttyUser u $ if testView then testViewChat chat else [plain . bshow $ J.encode chat]
   CRApiParsedMarkdown ft -> [plain . bshow $ J.encode ft]
