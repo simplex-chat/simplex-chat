@@ -57,6 +57,8 @@ final class ChatModel: ObservableObject {
     @Published var connReqInv: String?
     // audio recording and playback
     @Published var stopPreviousRecPlay: Bool = false // value is not taken into account, only the fact it switches
+    @Published var draft: ComposeState?
+    @Published var draftChatId: String?
     var callWebView: WKWebView?
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
