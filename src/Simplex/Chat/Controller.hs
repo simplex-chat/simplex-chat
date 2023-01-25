@@ -109,7 +109,8 @@ data ChatConfig = ChatConfig
     subscriptionEvents :: Bool,
     hostEvents :: Bool,
     logLevel :: ChatLogLevel,
-    testView :: Bool
+    testView :: Bool,
+    ciExpirationInterval :: Int -- microseconds
   }
 
 data DefaultAgentServers = DefaultAgentServers

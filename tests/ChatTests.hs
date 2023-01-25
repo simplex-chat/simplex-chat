@@ -177,10 +177,16 @@ chatTests = do
     it "mute/unmute group" testMuteGroup
   describe "multiple users" $ do
     it "create second user" testCreateSecondUser
+    it "multiple users subscribe and receive messages after restart" testUsersSubscribeAfterRestart
     it "both users have contact link" testMultipleUserAddresses
     it "create user with default servers" testCreateUserDefaultServers
     it "create user with same servers" testCreateUserSameServers
     it "delete user" testDeleteUser
+    it "users have different chat item TTL configuration, chat items expire" testUsersDifferentCIExpirationTTL
+    it "chat items expire after restart for all users according to per user configuration" testUsersRestartCIExpiration
+    it "chat items only expire for users who configured expiration" testEnableCIExpirationOnlyForOneUser
+    it "disabling chat item expiration doesn't disable it for other users" testDisableCIExpirationOnlyForOneUser
+    it "both users have configured timed messages with contacts, messages expire, restart" testUsersTimedMessages
   describe "chat item expiration" $ do
     it "set chat item TTL" testSetChatItemTTL
   describe "queue rotation" $ do
@@ -4473,6 +4479,30 @@ testCreateSecondUser =
       alice ##> "/_user 2"
       showActiveUser alice "alisa"
 
+testUsersSubscribeAfterRestart :: IO ()
+testUsersSubscribeAfterRestart = withTmpFiles $ do
+  withNewTestChat "bob" bobProfile $ \bob -> do
+    withNewTestChat "alice" aliceProfile $ \alice -> do
+      connectUsers alice bob
+      alice <##> bob
+
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+      connectUsers alice bob
+      alice <##> bob
+
+    withTestChat "alice" $ \alice -> do
+      -- second user is active
+      alice <## "1 contacts connected (use /cs for the list)"
+      alice <## "[user: alice] 1 contacts connected (use /cs for the list)"
+
+      -- second user receives message
+      alice <##> bob
+
+      -- first user receives message
+      bob #> "@alice hey alice"
+      (alice, "alice") $<# "bob> hey alice"
+
 testMultipleUserAddresses :: IO ()
 testMultipleUserAddresses =
   testChat3 aliceProfile bobProfile cathProfile $
@@ -4581,8 +4611,8 @@ testCreateUserSameServers =
 
 testDeleteUser :: IO ()
 testDeleteUser =
-  testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
+    \alice bob cath dan -> do
       connectUsers alice bob
 
       -- cannot delete active user
@@ -4596,6 +4626,7 @@ testDeleteUser =
       showActiveUser alice "alisa"
 
       connectUsers alice cath
+      alice <##> cath
 
       alice ##> "/users"
       alice <## "alice (Alice)"
@@ -4626,6 +4657,9 @@ testDeleteUser =
       alice ##> "/create user alisa2"
       showActiveUser alice "alisa2"
 
+      connectUsers alice dan
+      alice <##> dan
+
       alice ##> "/users"
       alice <## "alisa"
       alice <## "alisa2 (active)"
@@ -4639,6 +4673,414 @@ testDeleteUser =
       cath #> "@alisa hey"
       cath <## "[alisa, contactId: 2, connId: 1] error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
       (alice </)
+
+      alice <##> dan
+
+testUsersDifferentCIExpirationTTL :: IO ()
+testUsersDifferentCIExpirationTTL = withTmpFiles $ do
+  withNewTestChat "bob" bobProfile $ \bob -> do
+    withNewTestChatCfg cfg "alice" aliceProfile $ \alice -> do
+      -- first user messages
+      connectUsers alice bob
+
+      alice #> "@bob alice 1"
+      bob <# "alice> alice 1"
+      bob #> "@alice alice 2"
+      alice <# "bob> alice 2"
+
+      -- second user messages
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+      connectUsers alice bob
+
+      alice #> "@bob alisa 1"
+      bob <# "alisa> alisa 1"
+      bob #> "@alisa alisa 2"
+      alice <# "bob> alisa 2"
+
+      -- set ttl for first user
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+      alice #$> ("/_ttl 1 1", id, "ok")
+
+      -- set ttl for second user
+      alice ##> "/user alisa"
+      showActiveUser alice "alisa"
+      alice #$> ("/_ttl 2 3", id, "ok")
+
+      -- first user messages
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+      alice #$> ("/ttl", id, "old messages are set to be deleted after: 1 second(s)")
+
+      alice #> "@bob alice 3"
+      bob <# "alice> alice 3"
+      bob #> "@alice alice 4"
+      alice <# "bob> alice 4"
+
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "alice 1"), (0, "alice 2"), (1, "alice 3"), (0, "alice 4")])
+
+      -- second user messages
+      alice ##> "/user alisa"
+      showActiveUser alice "alisa"
+      alice #$> ("/ttl", id, "old messages are set to be deleted after: 3 second(s)")
+
+      alice #> "@bob alisa 3"
+      bob <# "alisa> alisa 3"
+      bob #> "@alisa alisa 4"
+      alice <# "bob> alisa 4"
+
+      alice #$> ("/_get chat @4 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
+
+      threadDelay 2000000
+
+      -- messages both before and after setting chat item ttl are deleted
+      -- first user messages
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+      alice #$> ("/_get chat @2 count=100", chat, [])
+
+      -- second user messages
+      alice ##> "/user alisa"
+      showActiveUser alice "alisa"
+      alice #$> ("/_get chat @4 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
+
+      threadDelay 2000000
+
+      alice #$> ("/_get chat @4 count=100", chat, [])
+  where
+    cfg = testCfg {ciExpirationInterval = 500000}
+
+testUsersRestartCIExpiration :: IO ()
+testUsersRestartCIExpiration = withTmpFiles $ do
+  withNewTestChat "bob" bobProfile $ \bob -> do
+    withNewTestChatCfg cfg "alice" aliceProfile $ \alice -> do
+      -- set ttl for first user
+      alice #$> ("/_ttl 1 1", id, "ok")
+      connectUsers alice bob
+
+      -- create second user and set ttl
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+      alice #$> ("/_ttl 2 3", id, "ok")
+      connectUsers alice bob
+
+      -- first user messages
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+
+      alice #> "@bob alice 1"
+      bob <# "alice> alice 1"
+      bob #> "@alice alice 2"
+      alice <# "bob> alice 2"
+
+      -- second user messages
+      alice ##> "/user alisa"
+      showActiveUser alice "alisa"
+
+      alice #> "@bob alisa 1"
+      bob <# "alisa> alisa 1"
+      bob #> "@alisa alisa 2"
+      alice <# "bob> alisa 2"
+
+      -- first user will be active on restart
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+
+    withTestChatCfg cfg "alice" $ \alice -> do
+      alice <## "1 contacts connected (use /cs for the list)"
+      alice <## "[user: alisa] 1 contacts connected (use /cs for the list)"
+
+      -- first user messages
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+      alice #$> ("/ttl", id, "old messages are set to be deleted after: 1 second(s)")
+
+      alice #> "@bob alice 3"
+      bob <# "alice> alice 3"
+      bob #> "@alice alice 4"
+      alice <# "bob> alice 4"
+
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "alice 1"), (0, "alice 2"), (1, "alice 3"), (0, "alice 4")])
+
+      -- second user messages
+      alice ##> "/user alisa"
+      showActiveUser alice "alisa"
+      alice #$> ("/ttl", id, "old messages are set to be deleted after: 3 second(s)")
+
+      alice #> "@bob alisa 3"
+      bob <# "alisa> alisa 3"
+      bob #> "@alisa alisa 4"
+      alice <# "bob> alisa 4"
+
+      alice #$> ("/_get chat @4 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
+
+      threadDelay 2000000
+
+      -- messages both before and after restart are deleted
+      -- first user messages
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+      alice #$> ("/_get chat @2 count=100", chat, [])
+
+      -- second user messages
+      alice ##> "/user alisa"
+      showActiveUser alice "alisa"
+      alice #$> ("/_get chat @4 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
+
+      threadDelay 2000000
+
+      alice #$> ("/_get chat @4 count=100", chat, [])
+  where
+    cfg = testCfg {ciExpirationInterval = 500000}
+
+testEnableCIExpirationOnlyForOneUser :: IO ()
+testEnableCIExpirationOnlyForOneUser = withTmpFiles $ do
+  withNewTestChat "bob" bobProfile $ \bob -> do
+    withNewTestChatCfg cfg "alice" aliceProfile $ \alice -> do
+      -- first user messages
+      connectUsers alice bob
+
+      alice #> "@bob alice 1"
+      bob <# "alice> alice 1"
+      bob #> "@alice alice 2"
+      alice <# "bob> alice 2"
+
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "alice 1"), (0, "alice 2")])
+
+      -- second user messages before first user sets ttl
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+      connectUsers alice bob
+
+      alice #> "@bob alisa 1"
+      bob <# "alisa> alisa 1"
+      bob #> "@alisa alisa 2"
+      alice <# "bob> alisa 2"
+
+      -- set ttl for first user
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+      alice #$> ("/_ttl 1 1", id, "ok")
+
+      -- second user messages after first user sets ttl
+      alice ##> "/user alisa"
+      showActiveUser alice "alisa"
+
+      alice #> "@bob alisa 3"
+      bob <# "alisa> alisa 3"
+      bob #> "@alisa alisa 4"
+      alice <# "bob> alisa 4"
+
+      alice #$> ("/_get chat @4 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
+
+      threadDelay 2000000
+
+      -- messages are deleted for first user
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+      alice #$> ("/_get chat @2 count=100", chat, [])
+
+      -- messages are not deleted for second user
+      alice ##> "/user alisa"
+      showActiveUser alice "alisa"
+      alice #$> ("/_get chat @4 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
+
+    withTestChatCfg cfg "alice" $ \alice -> do
+      alice <## "1 contacts connected (use /cs for the list)"
+      alice <## "[user: alice] 1 contacts connected (use /cs for the list)"
+
+      -- messages are not deleted for second user after restart
+      alice #$> ("/_get chat @4 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
+
+      alice #> "@bob alisa 5"
+      bob <# "alisa> alisa 5"
+      bob #> "@alisa alisa 6"
+      alice <# "bob> alisa 6"
+
+      threadDelay 2000000
+
+      -- new messages are not deleted for second user
+      alice #$> ("/_get chat @4 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4"), (1, "alisa 5"), (0, "alisa 6")])
+  where
+    cfg = testCfg {ciExpirationInterval = 500000}
+
+testDisableCIExpirationOnlyForOneUser :: IO ()
+testDisableCIExpirationOnlyForOneUser = withTmpFiles $ do
+  withNewTestChat "bob" bobProfile $ \bob -> do
+    withNewTestChatCfg cfg "alice" aliceProfile $ \alice -> do
+      -- set ttl for first user
+      alice #$> ("/_ttl 1 1", id, "ok")
+      connectUsers alice bob
+
+      -- create second user and set ttl
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+      alice #$> ("/_ttl 2 1", id, "ok")
+      connectUsers alice bob
+
+      -- first user disables expiration
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+      alice #$> ("/ttl none", id, "ok")
+      alice #$> ("/ttl", id, "old messages are not being deleted")
+
+      -- second user still has ttl configured
+      alice ##> "/user alisa"
+      showActiveUser alice "alisa"
+      alice #$> ("/ttl", id, "old messages are set to be deleted after: 1 second(s)")
+
+      alice #> "@bob alisa 1"
+      bob <# "alisa> alisa 1"
+      bob #> "@alisa alisa 2"
+      alice <# "bob> alisa 2"
+
+      alice #$> ("/_get chat @4 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2")])
+
+      threadDelay 2000000
+
+      -- second user messages are deleted
+      alice #$> ("/_get chat @4 count=100", chat, [])
+
+    withTestChatCfg cfg "alice" $ \alice -> do
+      alice <## "1 contacts connected (use /cs for the list)"
+      alice <## "[user: alice] 1 contacts connected (use /cs for the list)"
+
+      -- second user still has ttl configured after restart
+      alice #$> ("/ttl", id, "old messages are set to be deleted after: 1 second(s)")
+
+      alice #> "@bob alisa 3"
+      bob <# "alisa> alisa 3"
+      bob #> "@alisa alisa 4"
+      alice <# "bob> alisa 4"
+
+      alice #$> ("/_get chat @4 count=100", chat, [(1, "alisa 3"), (0, "alisa 4")])
+
+      threadDelay 2000000
+
+      -- second user messages are deleted
+      alice #$> ("/_get chat @4 count=100", chat, [])
+  where
+    cfg = testCfg {ciExpirationInterval = 500000}
+
+testUsersTimedMessages :: IO ()
+testUsersTimedMessages = withTmpFiles $ do
+  withNewTestChat "bob" bobProfile $ \bob -> do
+    withNewTestChat "alice" aliceProfile $ \alice -> do
+      connectUsers alice bob
+      configureTimedMessages alice bob "2" "1"
+
+      -- create second user and configure timed messages for contact
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+      connectUsers alice bob
+      configureTimedMessages alice bob "4" "2"
+
+      -- first user messages
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+
+      alice #> "@bob alice 1"
+      bob <# "alice> alice 1"
+      bob #> "@alice alice 2"
+      alice <# "bob> alice 2"
+
+      -- second user messages
+      alice ##> "/user alisa"
+      showActiveUser alice "alisa"
+
+      alice #> "@bob alisa 1"
+      bob <# "alisa> alisa 1"
+      bob #> "@alisa alisa 2"
+      alice <# "bob> alisa 2"
+
+      -- messages are deleted after ttl
+      threadDelay 500000
+
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+      alice #$> ("/_get chat @2 count=100", chat, [(1, "alice 1"), (0, "alice 2")])
+
+      alice ##> "/user alisa"
+      showActiveUser alice "alisa"
+      alice #$> ("/_get chat @4 count=100", chat, [(1, "alisa 1"), (0, "alisa 2")])
+
+      threadDelay 1000000
+
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+      alice #$> ("/_get chat @2 count=100", chat, [])
+
+      alice ##> "/user alisa"
+      showActiveUser alice "alisa"
+      alice #$> ("/_get chat @4 count=100", chat, [(1, "alisa 1"), (0, "alisa 2")])
+
+      threadDelay 1000000
+
+      alice ##> "/user"
+      showActiveUser alice "alisa"
+      alice #$> ("/_get chat @4 count=100", chat, [])
+
+      -- first user messages
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+
+      alice #> "@bob alice 3"
+      bob <# "alice> alice 3"
+      bob #> "@alice alice 4"
+      alice <# "bob> alice 4"
+
+      -- second user messages
+      alice ##> "/user alisa"
+      showActiveUser alice "alisa"
+
+      alice #> "@bob alisa 3"
+      bob <# "alisa> alisa 3"
+      bob #> "@alisa alisa 4"
+      alice <# "bob> alisa 4"
+
+    withTestChat "alice" $ \alice -> do
+      alice <## "1 contacts connected (use /cs for the list)"
+      alice <## "[user: alice] 1 contacts connected (use /cs for the list)"
+
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+      alice #$> ("/_get chat @2 count=100", chat, [(1, "alice 3"), (0, "alice 4")])
+
+      alice ##> "/user alisa"
+      showActiveUser alice "alisa"
+      alice #$> ("/_get chat @4 count=100", chat, [(1, "alisa 3"), (0, "alisa 4")])
+
+      -- messages are deleted after restart
+      threadDelay 1500000
+
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+      alice #$> ("/_get chat @2 count=100", chat, [])
+
+      alice ##> "/user alisa"
+      showActiveUser alice "alisa"
+      alice #$> ("/_get chat @4 count=100", chat, [(1, "alisa 3"), (0, "alisa 4")])
+
+      threadDelay 1000000
+
+      alice ##> "/user"
+      showActiveUser alice "alisa"
+      alice #$> ("/_get chat @4 count=100", chat, [])
+  where
+    configureTimedMessages alice bob bobId ttl = do
+      aliceName <- userName alice
+      alice ##> ("/_set prefs @" <> bobId <> " {\"timedMessages\": {\"allow\": \"yes\", \"ttl\": " <> ttl <> "}}")
+      alice <## "you updated preferences for bob:"
+      alice <## ("Disappearing messages: off (you allow: yes (" <> ttl <> " sec), contact allows: no)")
+      bob <## (aliceName <> " updated preferences for you:")
+      bob <## ("Disappearing messages: off (you allow: no, contact allows: yes (" <> ttl <> " sec))")
+      bob ##> ("/set disappear @" <> aliceName <> " yes")
+      bob <## ("you updated preferences for " <> aliceName <> ":")
+      bob <## ("Disappearing messages: enabled (you allow: yes (" <> ttl <> " sec), contact allows: yes (" <> ttl <> " sec))")
+      alice <## "bob updated preferences for you:"
+      alice <## ("Disappearing messages: enabled (you allow: yes (" <> ttl <> " sec), contact allows: yes (" <> ttl <> " sec))")
+      alice #$> ("/clear bob", id, "bob: all messages are removed locally ONLY") -- to remove feature items
 
 testSetChatItemTTL :: IO ()
 testSetChatItemTTL =
