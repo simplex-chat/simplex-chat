@@ -24,6 +24,7 @@ struct CIVoiceView: View {
                         playerTime()
                         player()
                     }
+                    .frame(alignment: .trailing)
                     metaView().padding(.trailing, 10)
                 }
             } else {
@@ -32,6 +33,7 @@ struct CIVoiceView: View {
                         player()
                         playerTime()
                     }
+                    .frame(alignment: .leading)
                     metaView().padding(.leading, -6)
                 }
             }
@@ -58,7 +60,6 @@ struct CIVoiceView: View {
             playbackTime: $playbackTime
         )
         .foregroundColor(.secondary)
-        .frame(alignment: .leading)
     }
 
     private func metaView() -> some View {
@@ -72,13 +73,16 @@ struct VoiceMessagePlayerTime: View {
     @Binding var playbackTime: TimeInterval?
 
     var body: some View {
-        switch playbackState {
-        case .noPlayback:
-            Text(voiceMessageTime(recordingTime))
-        case .playing:
-            Text(voiceMessageTime_(playbackTime))
-        case .paused:
-            Text(voiceMessageTime_(playbackTime))
+        ZStack(alignment: .leading) {
+            Text("66:66").foregroundColor(.clear)
+            switch playbackState {
+            case .noPlayback:
+                Text(voiceMessageTime(recordingTime))
+            case .playing:
+                Text(voiceMessageTime_(playbackTime))
+            case .paused:
+                Text(voiceMessageTime_(playbackTime))
+            }
         }
     }
 }
