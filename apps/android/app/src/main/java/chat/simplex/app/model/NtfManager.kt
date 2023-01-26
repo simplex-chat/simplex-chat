@@ -35,8 +35,7 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
 
     fun getUserIdFromIntent(intent: Intent?): Long? {
       val userId = intent?.getLongExtra(UserIdKey, -1L)
-      if (userId == -1L || userId == null) return null
-      return userId
+      return if (userId == -1L || userId == null) null else userId
     }
   }
 
