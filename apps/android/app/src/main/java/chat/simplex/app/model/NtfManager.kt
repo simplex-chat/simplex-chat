@@ -275,7 +275,7 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
   class NtfActionReceiver: BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
       val userId = getUserIdFromIntent(intent)
-      val chatId = intent.getStringExtra(ChatIdKey) ?: return
+      val chatId = intent?.getStringExtra(ChatIdKey) ?: return
       val m = SimplexApp.context.chatModel
       when (intent.action) {
         NotificationAction.ACCEPT_CONTACT_REQUEST.name -> {
