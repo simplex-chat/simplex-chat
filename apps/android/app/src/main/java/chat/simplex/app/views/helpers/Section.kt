@@ -1,4 +1,5 @@
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.*
@@ -99,6 +100,7 @@ fun SectionItemView(
 @Composable
 fun SectionItemViewSpaceBetween(
   click: (() -> Unit)? = null,
+  onLongClick: (() -> Unit)? = null,
   minHeight: Dp = 46.dp,
   padding: PaddingValues = PaddingValues(horizontal = DEFAULT_PADDING),
   disabled: Boolean = false,
@@ -108,7 +110,7 @@ fun SectionItemViewSpaceBetween(
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
   Row(
-    if (click == null || disabled) modifier.padding(padding) else modifier.clickable(onClick = click).padding(padding),
+    if (click == null || disabled) modifier.padding(padding) else modifier.combinedClickable(onClick = click, onLongClick = onLongClick).padding(padding),
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
   ) {

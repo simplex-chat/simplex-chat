@@ -121,6 +121,8 @@ fun SettingsLayout(
           ProfilePreview(profile, stopped = stopped)
         }
         SectionDivider()
+        SettingsActionItem(Icons.Outlined.HowToReg, stringResource(R.string.your_chat_profiles), showSettingsModal { UserProfilesView(it) }, disabled = stopped)
+        SectionDivider()
         SettingsIncognitoActionItem(incognitoPref, incognito, stopped) { showModal { IncognitoView() }() }
         SectionDivider()
         SettingsActionItem(Icons.Outlined.QrCode, stringResource(R.string.your_simplex_contact_address), showModal { CreateLinkView(it, CreateLinkTab.LONG_TERM) }, disabled = stopped)
