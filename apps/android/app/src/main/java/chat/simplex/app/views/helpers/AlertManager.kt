@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.window.Dialog
@@ -45,7 +46,7 @@ class AlertManager {
 
   fun showAlertDialogButtonsColumn(
     title: String,
-    text: String? = null,
+    text: AnnotatedString? = null,
     buttons: @Composable () -> Unit,
   ) {
     showAlert {

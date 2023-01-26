@@ -979,6 +979,7 @@
   <string name="users_add">Add profile</string>
   <string name="users_delete_question">Delete chat profile?</string>
   <string name="users_delete_all_chats_deleted">All chats and messages will be deleted - this cannot be undone!</string>
+  <string name="users_delete_profile_for">Delete chat profile for</string>
   <string name="users_delete_with_connections">Profile and server connections</string>
   <string name="users_delete_data_only">Local profile data only</string>
 

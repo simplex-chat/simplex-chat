@@ -13,6 +13,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.*
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
@@ -38,9 +40,16 @@ fun UserProfilesView(m: ChatModel) {
       }
     },
     removeUser = { user ->
+      val text = buildAnnotatedString {
+        append(generalGetString(R.string.users_delete_all_chats_deleted) + "\n\n" + generalGetString(R.string.users_delete_profile_for) + " ")
+        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+          append(user.chatViewName)
+        }
+        append(":")
+      }
       AlertManager.shared.showAlertDialogButtonsColumn(
         title = generalGetString(R.string.users_delete_question),
-        text = generalGetString(R.string.users_delete_all_chats_deleted),
+        text = text,
         buttons = {
           Column {
             SectionItemView({
