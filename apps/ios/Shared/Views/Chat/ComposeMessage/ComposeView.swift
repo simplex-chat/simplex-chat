@@ -161,6 +161,10 @@ struct ComposeState {
         default: return true
         }
     }
+
+    var empty: Bool {
+        message == "" && liveMessage == nil && noPreview
+    }
 }
 
 func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
@@ -549,14 +553,16 @@ struct ComposeView: View {
                 sent = await send(checkLinkPreview(), quoted: quoted, live: live)
             case let .imagePreviews(imagePreviews: images):
                 let last = min(chosenImages.count, images.count) - 1
-                for i in 0..<last {
-                    if let savedFile = saveAnyImage(chosenImages[i]) {
-                        _ = await send(.image(text: "", image: images[i]), quoted: nil, file: savedFile)
+                if last >= 0 {
+                    for i in 0..<last {
+                        if let savedFile = saveAnyImage(chosenImages[i]) {
+                            _ = await send(.image(text: "", image: images[i]), quoted: nil, file: savedFile)
+                        }
+                        _ = try? await Task.sleep(nanoseconds: 100_000000)
                     }
-                    _ = try? await Task.sleep(nanoseconds: 100_000000)
-                }
-                if let savedFile = saveAnyImage(chosenImages[last]) {
-                    sent = await send(.image(text: msgText, image: images[last]), quoted: quoted, file: savedFile, live: live)
+                    if let savedFile = saveAnyImage(chosenImages[last]) {
+                        sent = await send(.image(text: msgText, image: images[last]), quoted: quoted, file: savedFile, live: live)
+                    }
                 }
                 if sent == nil {
                     sent = await send(.text(msgText), quoted: quoted, live: live)

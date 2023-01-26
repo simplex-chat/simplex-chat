@@ -63,33 +63,42 @@ struct ChatView: View {
         .padding(.top, 1)
         .navigationTitle(cInfo.chatViewName)
         .navigationBarTitleDisplayMode(.inline)
-        .navigationBarBackButtonHidden(true)
         .onAppear {
+            if chatModel.draftChatId == cInfo.id, let draft = chatModel.draft {
+                composeState = draft
+            }
             if chat.chatStats.unreadChat {
                 Task {
                     await markChatUnread(chat, unreadChat: false)
                 }
             }
         }
-         .onChange(of: chatModel.chatId) { _ in
-             if chatModel.chatId == nil { dismiss() }
-         }
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    chatModel.chatId = nil
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                        if chatModel.chatId == nil {
-                            chatModel.reversedChatItems = []
-                        }
-                    }
-                } label: {
-                    HStack(spacing: 0) {
-                        Image(systemName: "chevron.backward")
-                        Text("Chats")
+        .onChange(of: chatModel.chatId) { _ in
+            if chatModel.chatId == nil { dismiss() }
+        }
+        .onChange(of: "\(composeState.empty) \(composeState.noPreview) \(composeState.message)") { _ in
+            if !composeState.empty {
+                chatModel.draft = composeState
+                chatModel.draftChatId = chat.id
+            } else if chatModel.draftChatId == chat.id {
+                chatModel.draft = nil
+                chatModel.draftChatId = nil
+            }
+        }
+        .onDisappear {
+            if chatModel.chatId == cInfo.id {
+                chatModel.chatId = nil
+                if chatModel.draftChatId == cInfo.id {
+                    chatModel.draft = composeState
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    if chatModel.chatId == nil {
+                        chatModel.reversedChatItems = []
                     }
                 }
             }
+        }
+        .toolbar {
             ToolbarItem(placement: .principal) {
                 if case let .direct(contact) = cInfo {
                     Button {
@@ -181,7 +190,7 @@ struct ChatView: View {
             }
         }
     }
-    
+
     private func searchToolbar() -> some View {
         HStack {
             HStack {
@@ -237,7 +246,6 @@ struct ChatView: View {
                                             if chatModel.chatId == cInfo.id && itemsInView.contains(ci.viewId) {
                                                 Task {
                                                     await apiMarkChatItemRead(cInfo, ci)
-                                                    NtfManager.shared.decNtfBadgeCount()
                                                 }
                                             }
                                         }

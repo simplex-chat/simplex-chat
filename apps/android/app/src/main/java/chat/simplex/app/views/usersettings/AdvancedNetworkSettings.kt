@@ -60,6 +60,9 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
     }
     return NetCfg(
       socksProxy = currentCfg.value.socksProxy,
+      hostMode = currentCfg.value.hostMode,
+      requiredHostMode = currentCfg.value.requiredHostMode,
+      sessionMode = currentCfg.value.sessionMode,
       tcpConnectTimeout = networkTCPConnectTimeout.value,
       tcpTimeout = networkTCPTimeout.value,
       tcpKeepAlive = tcpKeepAlive,

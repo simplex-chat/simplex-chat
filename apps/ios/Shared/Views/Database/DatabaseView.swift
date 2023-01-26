@@ -68,6 +68,23 @@ struct DatabaseView: View {
         List {
             let stopped = m.chatRunning == false
             Section {
+                Picker("Delete messages after", selection: $chatItemTTL) {
+                    ForEach(ChatItemTTL.values) { ttl in
+                        Text(ttl.deleteAfterText).tag(ttl)
+                    }
+                    if case .seconds = chatItemTTL {
+                        Text(chatItemTTL.deleteAfterText).tag(chatItemTTL)
+                    }
+                }
+                .frame(height: 36)
+                .disabled(m.chatDbChanged || progressIndicator)
+            } header: {
+                Text("Messages")
+            } footer: {
+                Text("This setting applies to messages in your current chat profile **\(m.currentUser?.displayName ?? "")**.")
+            }
+
+            Section {
                 settingsRow(
                     stopped ? "exclamationmark.octagon.fill" : "play.fill",
                     color: stopped ? .red : .green
@@ -157,22 +174,12 @@ struct DatabaseView: View {
             }
 
             Section {
-                Picker("Delete messages after", selection: $chatItemTTL) {
-                    ForEach(ChatItemTTL.values) { ttl in
-                        Text(ttl.deleteAfterText).tag(ttl)
-                    }
-                    if case .seconds = chatItemTTL {
-                        Text(chatItemTTL.deleteAfterText).tag(chatItemTTL)
-                    }
-                }
-                .frame(height: 36)
-                .disabled(m.chatDbChanged || progressIndicator)
-                Button("Delete files & media", role: .destructive) {
+                Button(m.users.count > 1 ? "Delete files for all chat profiles" : "Delete all files", role: .destructive) {
                     alert = .deleteFilesAndMedia
                 }
                 .disabled(!stopped || appFilesCountAndSize?.0 == 0)
             } header: {
-                Text("Data")
+                Text("Files & media")
             } footer: {
                 if let (fileCount, size) = appFilesCountAndSize {
                     if fileCount == 0 {

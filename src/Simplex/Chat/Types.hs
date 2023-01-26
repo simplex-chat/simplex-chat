@@ -80,8 +80,31 @@ instance IsContact Contact where
   preferences' Contact {profile = LocalProfile {preferences}} = preferences
   {-# INLINE preferences' #-}
 
+newtype AgentUserId = AgentUserId UserId
+  deriving (Eq, Show)
+
+instance StrEncoding AgentUserId where
+  strEncode (AgentUserId uId) = strEncode uId
+  strDecode s = AgentUserId <$> strDecode s
+  strP = AgentUserId <$> strP
+
+instance FromJSON AgentUserId where
+  parseJSON = strParseJSON "AgentUserId"
+
+instance ToJSON AgentUserId where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
+instance FromField AgentUserId where fromField f = AgentUserId <$> fromField f
+
+instance ToField AgentUserId where toField (AgentUserId uId) = toField uId
+
+aUserId :: User -> UserId
+aUserId User {agentUserId = AgentUserId uId} = uId
+
 data User = User
   { userId :: UserId,
+    agentUserId :: AgentUserId,
     userContactId :: ContactId,
     localDisplayName :: ContactName,
     profile :: LocalProfile,
@@ -92,7 +115,17 @@ data User = User
 
 instance ToJSON User where toEncoding = J.genericToEncoding J.defaultOptions
 
-type UserId = ContactId
+data UserInfo = UserInfo
+  { user :: User,
+    unreadCount :: Int
+  }
+  deriving (Show, Generic, FromJSON)
+
+instance ToJSON UserInfo where
+  toJSON = J.genericToJSON J.defaultOptions
+  toEncoding = J.genericToEncoding J.defaultOptions
+
+type UserId = Int64
 
 type ContactId = Int64
 
@@ -139,6 +172,8 @@ contactSecurityCode Contact {activeConn} = connectionCode activeConn
 
 data ContactRef = ContactRef
   { contactId :: ContactId,
+    connId :: Int64,
+    agentConnId :: AgentConnId,
     localDisplayName :: ContactName
   }
   deriving (Eq, Show, Generic)
@@ -215,6 +250,8 @@ instance ToJSON ConnReqUriHash where
   toEncoding = strToJEncoding
 
 data ContactOrRequest = CORContact Contact | CORRequest UserContactRequest
+
+type UserName = Text
 
 type ContactName = Text
 
@@ -1828,7 +1865,7 @@ data CommandFunction
   | CFAllowConn
   | CFAcceptContact
   | CFAckMessage
-  | CFDeleteConn
+  | CFDeleteConn -- not used
   deriving (Eq, Show, Generic)
 
 instance FromField CommandFunction where fromField = fromTextField_ textDecode

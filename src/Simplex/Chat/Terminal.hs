@@ -17,7 +17,6 @@ import Simplex.Chat.Options
 import Simplex.Chat.Terminal.Input
 import Simplex.Chat.Terminal.Notification
 import Simplex.Chat.Terminal.Output
-import Simplex.Messaging.Agent.Env.SQLite (InitialAgentServers (..))
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import Simplex.Messaging.Util (raceAny_)
 import System.Exit (exitFailure)
@@ -26,7 +25,7 @@ terminalChatConfig :: ChatConfig
 terminalChatConfig =
   defaultChatConfig
     { defaultServers =
-        InitialAgentServers
+        DefaultAgentServers
           { smp =
               L.fromList
                 [ "smp://u2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU=@smp4.simplex.im,o5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion",
