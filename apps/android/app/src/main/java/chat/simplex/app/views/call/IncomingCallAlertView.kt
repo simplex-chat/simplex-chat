@@ -73,7 +73,7 @@ fun IncomingCallInfo(invitation: RcvCallInvitation, chatModel: ChatModel) {
   @Composable fun CallIcon(icon: ImageVector, descr: String) = Icon(icon, descr, tint = SimplexGreen)
   Row {
     if (chatModel.users.size > 1) {
-      ProfileImage(size = 24.dp, image = invitation.user.profile.image, color = Color.White)
+      ProfileImage(size = 24.dp, image = invitation.user.profile.image, color = HighOrLowlight)
       Spacer(Modifier.width(4.dp))
     }
     if (invitation.callType.media == CallMediaType.Video) CallIcon(Icons.Filled.Videocam, stringResource(R.string.icon_descr_video_call))
