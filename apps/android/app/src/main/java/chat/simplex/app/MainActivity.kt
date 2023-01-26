@@ -29,6 +29,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.*
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.NtfManager
+import chat.simplex.app.model.NtfManager.Companion.getUserIdFromIntent
 import chat.simplex.app.ui.theme.SimpleButton
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.SplashView
@@ -404,7 +405,7 @@ fun MainPage(
 }
 
 fun processNotificationIntent(intent: Intent?, chatModel: ChatModel) {
-  val userId = intent?.getLongExtra("userId", -1L)?.takeIf { it != -1L }
+  val userId = getUserIdFromIntent(intent)
   when (intent?.action) {
     NtfManager.OpenChatAction -> {
       val chatId = intent.getStringExtra("chatId")

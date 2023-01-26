@@ -32,6 +32,12 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
 
     private const val UserIdKey: String = "userId"
     private const val ChatIdKey: String = "chatId"
+
+    fun getUserIdFromIntent(intent: Intent?): Long? {
+      val userId = intent?.getLongExtra(UserIdKey, -1L)
+      if (userId == -1L || userId == null) return null
+      return userId
+    }
   }
 
   private val manager: NotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -269,7 +275,7 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
    * */
   class NtfActionReceiver: BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
-      val userId = intent?.getLongExtra(UserIdKey, -1L)?.takeIf { it != -1L } ?: return
+      val userId = getUserIdFromIntent(intent)
       val chatId = intent.getStringExtra(ChatIdKey) ?: return
       val m = SimplexApp.context.chatModel
       when (intent.action) {
