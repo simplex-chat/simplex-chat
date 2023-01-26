@@ -89,7 +89,7 @@ private fun UserProfilesView(
 
     SectionView {
       for (user in users) {
-        UserView(user, activateUser, removeUser)
+        UserView(user, users, activateUser, removeUser)
         SectionDivider()
       }
       SectionItemView(addUser, minHeight = 68.dp) {
@@ -103,9 +103,9 @@ private fun UserProfilesView(
 }
 
 @Composable
-private fun UserView(user: User, activateUser: (User) -> Unit, removeUser: (User) -> Unit) {
+private fun UserView(user: User, users: List<User>, activateUser: (User) -> Unit, removeUser: (User) -> Unit) {
   var showDropdownMenu by remember { mutableStateOf(false) }
-  UserProfilePickerItem(user, onLongClick = { showDropdownMenu = true }) {
+  UserProfilePickerItem(user, onLongClick = { if (users.size > 1) showDropdownMenu = true }) {
     activateUser(user)
   }
   Box(Modifier.padding(horizontal = 16.dp)) {
@@ -124,7 +124,7 @@ private fun UserView(user: User, activateUser: (User) -> Unit, removeUser: (User
 }
 
 private fun removeUser(m: ChatModel, user: User, users: List<User>, delSMPQueues: Boolean) {
-  if (users.isEmpty()) return
+  if (users.size < 2) return
 
   withBGApi {
     try {
