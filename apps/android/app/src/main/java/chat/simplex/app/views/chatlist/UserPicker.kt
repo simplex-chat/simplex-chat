@@ -23,8 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import chat.simplex.app.R
 import chat.simplex.app.TAG
-import chat.simplex.app.model.ChatModel
-import chat.simplex.app.model.UserInfo
+import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.delay
@@ -107,7 +106,7 @@ fun UserPicker(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedV
     ) {
       Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
         users.forEachIndexed { i, u ->
-          UserProfilePickerItem(u) {
+          UserProfilePickerItem(u.user, u.unreadCount) {
             userPickerState.value = AnimatedViewState.HIDING
             if (!u.user.activeUser) {
               chatModel.chats.clear()
@@ -137,8 +136,8 @@ fun UserPicker(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedV
 }
 
 @Composable
-private fun UserProfilePickerItem(u: UserInfo, onClick: () -> Unit) {
-  SectionItemViewSpaceBetween(onClick, padding = PaddingValues(start = 8.dp, end = DEFAULT_PADDING)) {
+fun UserProfilePickerItem(u: User, unreadCount: Int = 0, onLongClick: () -> Unit = {}, onClick: () -> Unit) {
+  SectionItemViewSpaceBetween(onClick, onLongClick, padding = PaddingValues(start = 8.dp, end = DEFAULT_PADDING)) {
     Row(
       Modifier
         .widthIn(max = LocalConfiguration.current.screenWidthDp.dp * 0.7f)
@@ -146,20 +145,20 @@ private fun UserProfilePickerItem(u: UserInfo, onClick: () -> Unit) {
       verticalAlignment = Alignment.CenterVertically
     ) {
       ProfileImage(
-        image = u.user.image,
+        image = u.image,
         size = 54.dp
       )
       Text(
-        u.user.chatViewName,
+        u.chatViewName,
         modifier = Modifier
           .padding(start = 8.dp, end = 8.dp)
       )
     }
-    if (u.user.activeUser) {
+    if (u.activeUser) {
       Icon(Icons.Filled.Done, null, Modifier.size(20.dp), tint = MaterialTheme.colors.primary)
-    } else if (u.unreadCount > 0) {
+    } else if (unreadCount > 0) {
       Text(
-        unreadCountStr(u.unreadCount),
+        unreadCountStr(unreadCount),
         color = MaterialTheme.colors.onPrimary,
         fontSize = 11.sp,
         modifier = Modifier

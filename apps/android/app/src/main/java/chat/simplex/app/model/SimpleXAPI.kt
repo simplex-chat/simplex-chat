@@ -293,14 +293,18 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
 
   suspend fun changeActiveUser(toUserId: Long) {
     try {
-      chatModel.currentUser.value = apiSetActiveUser(toUserId)
-      val users = listUsers()
-      chatModel.users.clear()
-      chatModel.users.addAll(users)
-      getUserChatData()
+      changeActiveUser_(toUserId)
     } catch (e: Exception) {
       Log.e(TAG, "Unable to set active user: ${e.stackTraceToString()}")
     }
+  }
+
+  suspend fun changeActiveUser_(toUserId: Long) {
+    chatModel.currentUser.value = apiSetActiveUser(toUserId)
+    val users = listUsers()
+    chatModel.users.clear()
+    chatModel.users.addAll(users)
+    getUserChatData()
   }
 
   suspend fun getUserChatData() {
@@ -396,8 +400,8 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     throw Exception("failed to set the user as active ${r.responseType} ${r.details}")
   }
 
-  suspend fun apiDeleteUser(userId: Long) {
-    val r = sendCmd(CC.ApiDeleteUser(userId))
+  suspend fun apiDeleteUser(userId: Long, delSMPQueues: Boolean) {
+    val r = sendCmd(CC.ApiDeleteUser(userId, delSMPQueues))
     if (r is CR.CmdOk) return
     Log.d(TAG, "apiDeleteUser: ${r.responseType} ${r.details}")
     throw Exception("failed to delete the user ${r.responseType} ${r.details}")
@@ -1729,7 +1733,7 @@ sealed class CC {
   class CreateActiveUser(val profile: Profile): CC()
   class ListUsers: CC()
   class ApiSetActiveUser(val userId: Long): CC()
-  class ApiDeleteUser(val userId: Long): CC()
+  class ApiDeleteUser(val userId: Long, val delSMPQueues: Boolean): CC()
   class StartChat(val expire: Boolean): CC()
   class ApiStopChat: CC()
   class SetFilesFolder(val filesFolder: String): CC()
@@ -1804,7 +1808,7 @@ sealed class CC {
     is CreateActiveUser -> "/create user ${profile.displayName} ${profile.fullName}"
     is ListUsers -> "/users"
     is ApiSetActiveUser -> "/_user $userId"
-    is ApiDeleteUser -> "/_delete user $userId"
+    is ApiDeleteUser -> "/_delete user $userId del_smp=${onOff(delSMPQueues)}"
     is StartChat -> "/_start subscribe=on expire=${onOff(expire)}"
     is ApiStopChat -> "/_stop"
     is SetFilesFolder -> "/_files_folder $filesFolder"

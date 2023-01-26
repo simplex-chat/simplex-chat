@@ -96,6 +96,7 @@
   <string name="smp_server_test_secure_queue">Secure queue</string>
   <string name="smp_server_test_delete_queue">Delete queue</string>
   <string name="smp_server_test_disconnect">Disconnect</string>
+  <string name="error_deleting_user">Error deleting user profile</string>
 
   <!-- background service notice - SimpleXAPI.kt -->
   <string name="icon_descr_instant_notifications">Instant notifications</string>
@@ -414,6 +415,7 @@
   <!-- settings - SettingsView.kt -->
   <string name="your_settings">Your settings</string>
   <string name="your_simplex_contact_address">Your <xliff:g id="appName">SimpleX</xliff:g> contact address</string>
+  <string name="your_chat_profiles">Your chat profiles</string>
   <string name="database_passphrase_and_export">Database passphrase &amp; export</string>
   <string name="about_simplex_chat">About <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
   <string name="how_to_use_simplex_chat">How to use it</string>
@@ -971,6 +973,14 @@
   <string name="update_network_settings_question">Update network settings?</string>
   <string name="updating_settings_will_reconnect_client_to_all_servers">Updating settings will re-connect the client to all servers.</string>
   <string name="update_network_settings_confirmation">Update</string>
+
+  <!-- UserProfilesView.kt -->
+  <string name="your_chat_profiles_stored_locally">Your chat profiles are stored locally, only on your device</string>
+  <string name="users_add">Add profile</string>
+  <string name="users_delete_question">Delete chat profile?</string>
+  <string name="users_delete_all_chats_deleted">All chats and messages will be deleted - this cannot be undone!</string>
+  <string name="users_delete_with_connections">Profile and server connections</string>
+  <string name="users_delete_data_only">Local profile data only</string>
 
   <!-- Incognito mode -->
   <string name="incognito">Incognito</string>
