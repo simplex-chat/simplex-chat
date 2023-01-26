@@ -204,7 +204,10 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
         }
       },
       receiveFile = { fileId ->
-        withApi { chatModel.controller.receiveFile(fileId) }
+        val user = chatModel.currentUser.value
+        if (user != null) {
+          withApi { chatModel.controller.receiveFile(user, fileId) }
+        }
       },
       joinGroup = { groupId ->
         withApi { chatModel.controller.apiJoinGroup(groupId) }
