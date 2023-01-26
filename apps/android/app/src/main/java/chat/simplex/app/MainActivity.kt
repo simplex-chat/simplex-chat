@@ -404,20 +404,31 @@ fun MainPage(
 }
 
 fun processNotificationIntent(intent: Intent?, chatModel: ChatModel) {
+  val userId = intent?.getLongExtra("userId", -1L)?.takeIf { it != -1L }
   when (intent?.action) {
     NtfManager.OpenChatAction -> {
       val chatId = intent.getStringExtra("chatId")
       Log.d(TAG, "processNotificationIntent: OpenChatAction $chatId")
       if (chatId != null) {
-        val cInfo = chatModel.getChat(chatId)?.chatInfo
-        chatModel.clearOverlays.value = true
-        if (cInfo != null) withApi { openChat(cInfo, chatModel) }
+        withBGApi {
+          if (userId != null && userId != chatModel.currentUser.value?.userId) {
+            chatModel.controller.changeActiveUser(userId)
+          }
+          val cInfo = chatModel.getChat(chatId)?.chatInfo
+          chatModel.clearOverlays.value = true
+          if (cInfo != null) openChat(cInfo, chatModel)
+        }
       }
     }
     NtfManager.ShowChatsAction -> {
       Log.d(TAG, "processNotificationIntent: ShowChatsAction")
-      chatModel.chatId.value = null
-      chatModel.clearOverlays.value = true
+      withBGApi {
+        if (userId != null && userId != chatModel.currentUser.value?.userId) {
+          chatModel.controller.changeActiveUser(userId)
+        }
+        chatModel.chatId.value = null
+        chatModel.clearOverlays.value = true
+      }
     }
     NtfManager.AcceptCallAction -> {
       val chatId = intent.getStringExtra("chatId")

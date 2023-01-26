@@ -1172,11 +1172,11 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         }
       }
       is CR.ReceivedContactRequest -> {
-        if (!active(r.user)) return
-
         val contactRequest = r.contactRequest
         val cInfo = ChatInfo.ContactRequest(contactRequest)
-        chatModel.addChat(Chat(chatInfo = cInfo, chatItems = listOf()))
+        if (active(r.user)) {
+          chatModel.addChat(Chat(chatInfo = cInfo, chatItems = listOf()))
+        }
         ntfManager.notifyContactRequestReceived(r.user, cInfo)
       }
       is CR.ContactUpdated -> {
