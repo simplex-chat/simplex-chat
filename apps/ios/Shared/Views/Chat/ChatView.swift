@@ -82,6 +82,9 @@ struct ChatView: View {
                 if !composeState.empty {
                     chatModel.draft = composeState
                     chatModel.draftChatId = chat.id
+                } else if chatModel.draftChatId == chat.id {
+                    chatModel.draft = nil
+                    chatModel.draftChatId = nil
                 }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                     if chatModel.chatId == nil {
