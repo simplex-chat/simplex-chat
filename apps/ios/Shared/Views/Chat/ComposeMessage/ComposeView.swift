@@ -179,7 +179,8 @@ func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
     case let .voice(_, duration):
         chatItemPreview = .voicePreview(recordingFileName: chatItem.file?.fileName ?? "", duration: duration)
     case .file:
-        chatItemPreview = .filePreview(fileName: chatItem.file?.fileName ?? "", file: getAppFilePath(chatItem.file?.fileName ?? ""))
+        let fileName = chatItem.file?.fileName ?? ""
+        chatItemPreview = .filePreview(fileName: fileName, file: getAppFilePath(fileName))
     default:
         chatItemPreview = .noPreview
     }
@@ -493,7 +494,7 @@ struct ComposeView: View {
                 cancelEnabled: !composeState.editing,
                 stopPlayback: $stopPlayback
             )
-        case let .filePreview(fileName: fileName, file: _):
+        case let .filePreview(fileName, _):
             ComposeFileView(
                 fileName: fileName,
                 cancelFile: {
@@ -557,14 +558,10 @@ struct ComposeView: View {
                 let last = images.count - 1
                 if last >= 0 {
                     for i in 0..<last {
-                        if let image = images[i].1, let savedFile = saveAnyImage(image) {
-                            _ = await send(.image(text: "", image: images[i].0), quoted: nil, file: savedFile)
-                        }
+                        sent = await sendImage(images[i])
                         _ = try? await Task.sleep(nanoseconds: 100_000000)
                     }
-                    if let image = images[last].1, let savedFile = saveAnyImage(image) {
-                        sent = await send(.image(text: msgText, image: images[last].0), quoted: quoted, file: savedFile, live: live)
-                    }
+                    sent = await sendImage(images[last], text: msgText, quoted: quoted, live: live)
                 }
                 if sent == nil {
                     sent = await send(.text(msgText), quoted: quoted, live: live)
@@ -573,7 +570,7 @@ struct ComposeView: View {
                 stopPlayback.toggle()
                 chatModel.filesToDelete.removeAll { $0 == recordingFileName }
                 sent = await send(.voice(text: msgText, duration: duration), quoted: quoted, file: recordingFileName)
-            case let .filePreview(fileName: _, file: file):
+            case let .filePreview(_, file):
                 if let savedFile = saveFileFromURL(file) {
                     sent = await send(.file(msgText), quoted: quoted, file: savedFile, live: live)
                 }
@@ -627,6 +624,14 @@ struct ComposeView: View {
             case .unknown(let type, _):
                 return .unknown(type: type, text: msgText)
             }
+        }
+
+        func sendImage(_ imageData: (String, UploadContent?), text: String = "", quoted: Int64? = nil, live: Bool = false) async -> ChatItem? {
+            let (image, data) = imageData
+            if let data = data, let savedFile = saveAnyImage(data) {
+                return await send(.image(text: text, image: image), quoted: quoted, file: savedFile, live: live)
+            }
+            return nil
         }
 
         func send(_ mc: MsgContent, quoted: Int64?, file: String? = nil, live: Bool = false) async -> ChatItem? {
