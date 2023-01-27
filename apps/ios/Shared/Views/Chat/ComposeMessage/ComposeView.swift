@@ -386,30 +386,18 @@ struct ComposeView: View {
             }
         }
         .onDisappear {
-            let live = composeState.liveMessage != nil && (!composeState.message.isEmpty || composeState.liveMessage?.sentMsg != nil)
-            if live {
+            if composeState.liveMessage != nil
+                && (!composeState.message.isEmpty || composeState.liveMessage?.sentMsg != nil) {
+                cancelCurrentVoiceRecording()
+                clearCurrentDraft()
                 sendMessage()
                 resetLinkPreview()
+            } else if !composeState.empty  {
+                saveCurrentDraft()
             } else {
+                cancelCurrentVoiceRecording()
+                clearCurrentDraft()
                 clearState()
-            }
-            if !live && !composeState.empty  {
-                if case .recording = composeState.voiceMessageRecordingState {
-                    finishVoiceMessageRecording()
-                    if let fileName = composeState.voiceMessageRecordingFileName {
-                        chatModel.filesToDelete.append(fileName)
-                    }
-                }
-                chatModel.draft = composeState
-                chatModel.draftChatId = chat.id
-            } else {
-                if let fileName = composeState.voiceMessageRecordingFileName {
-                    cancelVoiceMessageRecording(fileName)
-                }
-                if chatModel.draftChatId == chat.id {
-                    chatModel.draft = nil
-                    chatModel.draftChatId = nil
-                }
             }
             chatModel.removeLiveDummy(animated: false)
         }
@@ -766,7 +754,13 @@ struct ComposeView: View {
         )
     }
 
-    private func cancelVoiceMessageRecording(_ fileName: String, removeAudioFile: Bool = true) {
+    private func cancelCurrentVoiceRecording() {
+        if let fileName = composeState.voiceMessageRecordingFileName {
+            cancelVoiceMessageRecording(fileName)
+        }
+    }
+
+    private func cancelVoiceMessageRecording(_ fileName: String) {
         stopPlayback.toggle()
         audioRecorder?.stop()
         removeFile(fileName)
@@ -784,6 +778,24 @@ struct ComposeView: View {
         audioRecorder = nil
         voiceMessageRecordingTime = nil
         startingRecording = false
+    }
+
+    private func saveCurrentDraft() {
+        if case .recording = composeState.voiceMessageRecordingState {
+            finishVoiceMessageRecording()
+            if let fileName = composeState.voiceMessageRecordingFileName {
+                chatModel.filesToDelete.append(fileName)
+            }
+        }
+        chatModel.draft = composeState
+        chatModel.draftChatId = chat.id
+    }
+
+    private func clearCurrentDraft() {
+        if chatModel.draftChatId == chat.id {
+            chatModel.draft = nil
+            chatModel.draftChatId = nil
+        }
     }
 
     private func showLinkPreview(_ s: String) {
