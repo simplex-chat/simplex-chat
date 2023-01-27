@@ -243,6 +243,7 @@ fun getAppFilesDirectory(context: Context): String {
 fun getAppFilePath(context: Context, fileName: String): String {
   return "${getAppFilesDirectory(context)}/$fileName"
 }
+
 fun getAppFileUri(fileName: String): Uri {
   return Uri.parse("${getAppFilesDirectory(SimplexApp.context)}/$fileName")
 }
