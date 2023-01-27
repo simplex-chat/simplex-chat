@@ -406,7 +406,7 @@ struct ComposeView: View {
                 chatModel.draftChatId = nil
             }
             if let fileName = composeState.voiceMessageRecordingFileName {
-                cancelVoiceMessageRecording(fileName, removeAudioFile: false)
+                cancelVoiceMessageRecording(fileName, removeAudioFile: !saveDraft)
             }
             chatModel.removeLiveDummy(animated: false)
         }
