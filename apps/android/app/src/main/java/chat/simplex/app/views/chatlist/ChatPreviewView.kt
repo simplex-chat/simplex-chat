@@ -108,12 +108,12 @@ fun ChatPreviewView(
       "editIcon" to InlineTextContent(
         Placeholder(20.sp, 20.sp, PlaceholderVerticalAlign.TextCenter)
       ) {
-        Icon(Icons.Outlined.More, null, tint = MaterialTheme.colors.primary)
+        Icon(Icons.Outlined.EditNote, null, tint = MaterialTheme.colors.primary)
       },
       "attachmentIcon" to InlineTextContent(
         Placeholder(20.sp, 20.sp, PlaceholderVerticalAlign.TextCenter)
       ) {
-        Icon(attachment?.first ?: Icons.Outlined.More, null, tint = HighOrLowlight)
+        Icon(attachment?.first ?: Icons.Outlined.EditNote, null, tint = HighOrLowlight)
       }
     )
     return text to inlineContent
@@ -156,7 +156,11 @@ fun ChatPreviewView(
       MarkdownText(
         text,
         formattedText,
-        sender = if (cInfo is ChatInfo.Group && !ci.chatDir.sent) ci.memberDisplayName else null,
+        sender = when {
+          chatModelDraftChatId == chat.id && chatModelDraft != null -> null
+          cInfo is ChatInfo.Group && !ci.chatDir.sent -> ci.memberDisplayName
+          else -> null
+        },
         linkMode = linkMode,
         senderBold = true,
         maxLines = 2,

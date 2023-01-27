@@ -1,8 +1,8 @@
 @file:UseSerializers(UriSerializer::class)
 package chat.simplex.app.views.chat
 
-import ComposeVoiceView
 import ComposeFileView
+import ComposeVoiceView
 import android.Manifest
 import android.app.Activity
 import android.content.*
@@ -21,7 +21,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.outlined.Reply
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.Saver
@@ -40,11 +41,11 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.views.chat.item.*
 import chat.simplex.app.views.helpers.*
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.*
 import java.io.File
+import java.nio.file.Files
 
 @Serializable
 sealed class ComposePreview {
@@ -348,6 +349,11 @@ fun ComposeView(
     chatModel.removeLiveDummy()
   }
 
+  fun deleteUnusedFiles() {
+    chatModel.filesToDelete.forEach { it.delete() }
+    chatModel.filesToDelete.clear()
+  }
+
   suspend fun send(cInfo: ChatInfo, mc: MsgContent, quoted: Long?, file: String? = null, live: Boolean = false): ChatItem? {
     val aChatItem = chatModel.controller.apiSendMessage(
       type = cInfo.chatType,
@@ -445,10 +451,14 @@ fun ComposeView(
           }
         }
         is ComposePreview.VoicePreview -> {
-          val file = File(preview.voice)
-          files.add(file.name)
-          chatModel.filesToDelete.remove(file)
-          AudioPlayer.stop(file.absolutePath)
+          val tmpFile = File(preview.voice)
+          AudioPlayer.stop(tmpFile.absolutePath)
+          val actualFile = File(getAppFilePath(SimplexApp.context, tmpFile.name.replaceAfter(RecorderNative.extension, "")))
+          withContext(Dispatchers.IO) {
+            Files.move(tmpFile.toPath(), actualFile.toPath())
+          }
+          files.add(actualFile.name)
+          deleteUnusedFiles()
           msgs.add(MsgContent.MCVoice(if (msgs.isEmpty()) msgText else "", preview.durationMs / 1000))
         }
         is ComposePreview.FilePreview -> {
@@ -623,15 +633,6 @@ fun ComposeView(
         clearState()
       }
     }
-  }
-
-  /**
-   * Deletes files that were not sent but already stored in files directory.
-   * Currently, it's voice records only
-   * */
-  fun deleteUnusedFiles() {
-    chatModel.filesToDelete.forEach { it.delete() }
-    chatModel.filesToDelete.clear()
   }
 
   LaunchedEffect(chatModel.sharedContent.value) {
