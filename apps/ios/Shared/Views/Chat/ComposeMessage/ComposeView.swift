@@ -163,7 +163,7 @@ struct ComposeState {
     }
 
     var empty: Bool {
-        message == "" && liveMessage == nil && noPreview
+        message == "" && noPreview
     }
 }
 
