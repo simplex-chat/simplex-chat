@@ -40,7 +40,7 @@ struct ChatPreviewView: View {
                 .padding(.horizontal, 8)
 
                 ZStack(alignment: .topTrailing) {
-                    chatPreviewText(cItem)
+                    chatMessagePreview(cItem)
                     if case .direct = chat.chatInfo {
                         chatStatusImage()
                             .padding(.top, 24)
@@ -142,21 +142,34 @@ struct ChatPreviewView: View {
 
         func attachment() -> Text {
             switch draft.preview {
-            case .filePreview: return image("doc.fill")
+            case let .filePreview(fileName, _): return image("doc.fill") + Text(fileName) + Text(" ")
             case .imagePreviews: return image("photo")
-            case let .voicePreview(_, duration): return image("play.fill") + Text(voiceMessageTime(TimeInterval(duration)))
+            case let .voicePreview(_, duration): return image("play.fill") + Text(durationText(duration))
             default: return Text("")
             }
         }
     }
 
-    @ViewBuilder private func chatPreviewText(_ cItem: ChatItem?) -> some View {
+    func chatItemPreview(_ cItem: ChatItem) -> Text {
+        let itemText = !cItem.meta.itemDeleted ? cItem.text : NSLocalizedString("marked deleted", comment: "marked deleted chat item preview text")
+        let itemFormattedText = !cItem.meta.itemDeleted ? cItem.formattedText : nil
+        return messageText(itemText, itemFormattedText, cItem.memberDisplayName, icon: attachment(), preview: true)
+
+        func attachment() -> String? {
+            switch cItem.content.msgContent {
+            case .file: return "doc.fill"
+            case .image: return "photo"
+            case .voice: return "play.fill"
+            default: return nil
+            }
+        }
+    }
+
+    @ViewBuilder private func chatMessagePreview(_ cItem: ChatItem?) -> some View {
         if chatModel.draftChatId == chat.id, let draft = chatModel.draft {
             chatPreviewLayout(messageDraft(draft))
         } else if let cItem = cItem {
-            let itemText = !cItem.meta.itemDeleted ? cItem.text : NSLocalizedString("marked deleted", comment: "marked deleted chat item preview text")
-            let itemFormattedText = !cItem.meta.itemDeleted ? cItem.formattedText : nil
-            chatPreviewLayout(itemStatusMark(cItem) + messageText(itemText, itemFormattedText, cItem.memberDisplayName, preview: true))
+            chatPreviewLayout(itemStatusMark(cItem) + chatItemPreview(cItem))
         } else {
             switch (chat.chatInfo) {
             case let .direct(contact):

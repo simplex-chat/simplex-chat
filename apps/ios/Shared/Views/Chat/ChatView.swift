@@ -52,7 +52,7 @@ struct ChatView: View {
             }
             
             Spacer(minLength: 0)
-            
+
             ComposeView(
                 chat: chat,
                 composeState: $composeState,
@@ -79,10 +79,6 @@ struct ChatView: View {
         .onDisappear {
             if chatModel.chatId == cInfo.id {
                 chatModel.chatId = nil
-                if !composeState.empty {
-                    chatModel.draft = composeState
-                    chatModel.draftChatId = chat.id
-                }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                     if chatModel.chatId == nil {
                         chatModel.reversedChatItems = []
