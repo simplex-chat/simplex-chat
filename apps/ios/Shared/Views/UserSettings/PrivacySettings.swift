@@ -13,9 +13,9 @@ struct PrivacySettings: View {
     @AppStorage(DEFAULT_PRIVACY_ACCEPT_IMAGES) private var autoAcceptImages = true
     @AppStorage(DEFAULT_PRIVACY_LINK_PREVIEWS) private var useLinkPreviews = true
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
-    @AppStorage(GROUP_DEFAULT_PRIVACY_TRANSFER_IMAGES_INLINE, store: groupDefaults) private var transferImagesInline = false
+    @AppStorage(GROUP_DEFAULT_PRIVACY_TRANSFER_IMAGES_INLINE, store: groupDefaults) private var transferImagesInline = true
     @State private var simplexLinkMode = privacySimplexLinkModeDefault.get()
-    @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = true
+    @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
 
     var body: some View {
         VStack {

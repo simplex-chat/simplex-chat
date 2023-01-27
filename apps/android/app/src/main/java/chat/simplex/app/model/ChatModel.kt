@@ -17,6 +17,7 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.onboarding.OnboardingStage
 import chat.simplex.app.views.usersettings.NotificationPreviewMode
 import chat.simplex.app.views.usersettings.NotificationsMode
+import kotlinx.coroutines.*
 import kotlinx.datetime.*
 import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.*
@@ -34,6 +35,7 @@ import kotlin.time.*
 class ChatModel(val controller: ChatController) {
   val onboardingStage = mutableStateOf<OnboardingStage?>(null)
   val currentUser = mutableStateOf<User?>(null)
+  val users = mutableStateListOf<UserInfo>()
   val userCreated = mutableStateOf<Boolean?>(null)
   val chatRunning = mutableStateOf<Boolean?>(null)
   val chatDbChanged = mutableStateOf<Boolean>(false)
@@ -41,6 +43,8 @@ class ChatModel(val controller: ChatController) {
   val chatDbStatus = mutableStateOf<DBMigrationResult?>(null)
   val chatDbDeleted = mutableStateOf(false)
   val chats = mutableStateListOf<Chat>()
+  // map of connections network statuses, key is agent connection id
+  val networkStatuses = mutableStateMapOf<String, NetworkStatus>()
 
   // current chat
   val chatId = mutableStateOf<String?>(null)
@@ -86,13 +90,6 @@ class ChatModel(val controller: ChatController) {
   val filesToDelete = mutableSetOf<File>()
   val simplexLinkMode = mutableStateOf(controller.appPrefs.simplexLinkMode.get())
 
-  fun updateUserProfile(profile: LocalProfile) {
-    val user = currentUser.value
-    if (user != null) {
-      currentUser.value = user.copy(profile = profile)
-    }
-  }
-
   fun hasChat(id: String): Boolean = chats.firstOrNull { it.id == id } != null
   fun getChat(id: String): Chat? = chats.firstOrNull { it.id == id }
   fun getContactChat(contactId: Long): Chat? = chats.firstOrNull { it.chatInfo is ChatInfo.Direct && it.chatInfo.apiId == contactId }
@@ -119,30 +116,13 @@ class ChatModel(val controller: ChatController) {
   }
 
   fun updateChats(newChats: List<Chat>) {
-    val mergedChats = arrayListOf<Chat>()
-    for (newChat in newChats) {
-      val i = getChatIndex(newChat.chatInfo.id)
-      if (i >= 0) {
-        mergedChats.add(newChat.copy(serverInfo = chats[i].serverInfo))
-      } else {
-        mergedChats.add(newChat)
-      }
-    }
     chats.clear()
-    chats.addAll(mergedChats)
+    chats.addAll(newChats)
 
     val cId = chatId.value
     // If chat is null, it was deleted in background after apiGetChats call
     if (cId != null && getChat(cId) == null) {
       chatId.value = null
-    }
-  }
-
-  fun updateNetworkStatus(id: ChatId, status: Chat.NetworkStatus) {
-    val i = getChatIndex(id)
-    if (i >= 0) {
-      val chat = chats[i]
-      chats[i] = chat.copy(serverInfo = chat.serverInfo.copy(networkStatus = status))
     }
   }
 
@@ -156,7 +136,7 @@ class ChatModel(val controller: ChatController) {
     }
   }
 
-  fun addChatItem(cInfo: ChatInfo, cItem: ChatItem) {
+  suspend fun addChatItem(cInfo: ChatInfo, cItem: ChatItem) {
     // update previews
     val i = getChatIndex(cInfo.id)
     val chat: Chat
@@ -167,6 +147,7 @@ class ChatModel(val controller: ChatController) {
         chatStats =
           if (cItem.meta.itemStatus is CIStatus.RcvNew) {
             val minUnreadId = if(chat.chatStats.minUnreadItemId == 0L) cItem.id else chat.chatStats.minUnreadItemId
+            increaseUnreadCounter(currentUser.value!!)
             chat.chatStats.copy(unreadCount = chat.chatStats.unreadCount + 1, minUnreadItemId = minUnreadId)
           }
           else
@@ -180,11 +161,17 @@ class ChatModel(val controller: ChatController) {
     }
     // add to current chat
     if (chatId.value == cInfo.id) {
-      chatItems.add(cItem)
+      withContext(Dispatchers.Main) {
+        if (chatItems.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
+          chatItems.add(kotlin.math.max(0, chatItems.lastIndex), cItem)
+        } else {
+          chatItems.add(cItem)
+        }
+      }
     }
   }
 
-  fun upsertChatItem(cInfo: ChatInfo, cItem: ChatItem): Boolean {
+  suspend fun upsertChatItem(cInfo: ChatInfo, cItem: ChatItem): Boolean {
     // update previews
     val i = getChatIndex(cInfo.id)
     val chat: Chat
@@ -211,7 +198,9 @@ class ChatModel(val controller: ChatController) {
         chatItems[itemIndex] = cItem
         return false
       } else {
-        chatItems.add(cItem)
+        withContext(Dispatchers.Main) {
+          chatItems.add(cItem)
+        }
         return true
       }
     } else {
@@ -247,11 +236,39 @@ class ChatModel(val controller: ChatController) {
     // clear preview
     val i = getChatIndex(cInfo.id)
     if (i >= 0) {
+      decreaseUnreadCounter(currentUser.value!!, chats[i].chatStats.unreadCount)
       chats[i] = chats[i].copy(chatItems = arrayListOf(), chatStats = Chat.ChatStats(), chatInfo = cInfo)
     }
     // clear current chat
     if (chatId.value == cInfo.id) {
       chatItems.clear()
+    }
+  }
+
+  fun updateCurrentUser(newProfile: Profile, preferences: FullChatPreferences? = null) {
+    val current = currentUser.value ?: return
+    val updated = current.copy(
+      profile = newProfile.toLocalProfile(current.profile.profileId),
+      fullPreferences = preferences ?: current.fullPreferences
+    )
+    val indexInUsers = users.indexOfFirst { it.user.userId == current.userId }
+    if (indexInUsers != -1) {
+      users[indexInUsers] = UserInfo(updated, users[indexInUsers].unreadCount)
+    }
+    currentUser.value = updated
+  }
+
+  suspend fun addLiveDummy(chatInfo: ChatInfo): ChatItem {
+    val cItem = ChatItem.liveDummy(chatInfo is ChatInfo.Direct)
+    withContext(Dispatchers.Main) {
+      chatItems.add(cItem)
+    }
+    return cItem
+  }
+
+  fun removeLiveDummy() {
+    if (chatItems.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
+      chatItems.removeLast()
     }
   }
 
@@ -263,9 +280,11 @@ class ChatModel(val controller: ChatController) {
       val chat = chats[chatIdx]
       val lastId = chat.chatItems.lastOrNull()?.id
       if (lastId != null) {
+        val unreadCount = unreadCountAfter ?: if (range != null) chat.chatStats.unreadCount - markedRead else 0
+        decreaseUnreadCounter(currentUser.value!!, chat.chatStats.unreadCount - unreadCount)
         chats[chatIdx] = chat.copy(
           chatStats = chat.chatStats.copy(
-            unreadCount = unreadCountAfter ?: if (range != null) chat.chatStats.unreadCount - markedRead else 0,
+            unreadCount = unreadCount,
             // Can't use minUnreadItemId currently since chat items can have unread items between read items
             //minUnreadItemId = if (range != null) kotlin.math.max(chat.chatStats.minUnreadItemId, range.to + 1) else lastId + 1
           )
@@ -301,11 +320,28 @@ class ChatModel(val controller: ChatController) {
     if (chatIndex == -1) return
 
     val chat = chats[chatIndex]
+    val unreadCount = kotlin.math.max(chat.chatStats.unreadCount - 1, 0)
+    decreaseUnreadCounter(currentUser.value!!, chat.chatStats.unreadCount - unreadCount)
     chats[chatIndex] = chat.copy(
       chatStats = chat.chatStats.copy(
-        unreadCount = kotlin.math.max(chat.chatStats.unreadCount - 1, 0),
+        unreadCount = unreadCount,
       )
     )
+  }
+
+  fun increaseUnreadCounter(user: User) {
+    changeUnreadCounter(user, 1)
+  }
+
+  fun decreaseUnreadCounter(user: User, by: Int = 1) {
+    changeUnreadCounter(user, -by)
+  }
+
+  private fun changeUnreadCounter(user: User, by: Int) {
+    val i = users.indexOfFirst { it.user.userId == user.userId }
+    if (i != -1) {
+      users[i] = UserInfo(user, users[i].unreadCount + by)
+    }
   }
 
 //  func popChat(_ id: String) {
@@ -352,6 +388,13 @@ class ChatModel(val controller: ChatController) {
       false
     }
   }
+
+  fun setContactNetworkStatus(contact: Contact, status: NetworkStatus) {
+    networkStatuses[contact.activeConn.agentConnId] = status
+  }
+
+  fun contactNetworkStatus(contact: Contact): NetworkStatus =
+    networkStatuses[contact.activeConn.agentConnId] ?: NetworkStatus.Unknown()
 }
 
 enum class ChatType(val type: String) {
@@ -387,6 +430,19 @@ data class User(
   }
 }
 
+@Serializable
+data class UserInfo(
+  val user: User,
+  val unreadCount: Int
+) {
+  companion object {
+    val sampleData = UserInfo(
+      user = User.sampleData,
+      unreadCount = 1
+    )
+  }
+}
+
 typealias ChatId = String
 
 interface NamedChat {
@@ -418,36 +474,11 @@ data class Chat (
   val chatInfo: ChatInfo,
   val chatItems: List<ChatItem>,
   val chatStats: ChatStats = ChatStats(),
-  val serverInfo: ServerInfo = ServerInfo(NetworkStatus.Unknown())
 ) {
   val id: String get() = chatInfo.id
 
   @Serializable
   data class ChatStats(val unreadCount: Int = 0, val minUnreadItemId: Long = 0, val unreadChat: Boolean = false)
-
-  @Serializable
-  data class ServerInfo(val networkStatus: NetworkStatus)
-
-  @Serializable
-  sealed class NetworkStatus {
-    val statusString: String get() =
-      when (this) {
-        is Connected -> generalGetString(R.string.server_connected)
-        is Error -> generalGetString(R.string.server_error)
-        else -> generalGetString(R.string.server_connecting)
-      }
-    val statusExplanation: String get() =
-      when (this) {
-        is Connected -> generalGetString(R.string.connected_to_server_to_receive_messages_from_contact)
-        is Error -> String.format(generalGetString(R.string.trying_to_connect_to_server_to_receive_messages_with_error), error)
-        else -> generalGetString(R.string.trying_to_connect_to_server_to_receive_messages)
-      }
-
-    @Serializable @SerialName("unknown") class Unknown: NetworkStatus()
-    @Serializable @SerialName("connected") class Connected: NetworkStatus()
-    @Serializable @SerialName("disconnected") class Disconnected: NetworkStatus()
-    @Serializable @SerialName("error") class Error(val error: String): NetworkStatus()
-  }
 
   companion object {
     val sampleData = Chat(
@@ -583,6 +614,27 @@ sealed class ChatInfo: SomeChat, NamedChat {
 }
 
 @Serializable
+sealed class NetworkStatus {
+  val statusString: String get() =
+    when (this) {
+      is Connected -> generalGetString(R.string.server_connected)
+      is Error -> generalGetString(R.string.server_error)
+      else -> generalGetString(R.string.server_connecting)
+    }
+  val statusExplanation: String get() =
+    when (this) {
+      is Connected -> generalGetString(R.string.connected_to_server_to_receive_messages_from_contact)
+      is Error -> String.format(generalGetString(R.string.trying_to_connect_to_server_to_receive_messages_with_error), error)
+      else -> generalGetString(R.string.trying_to_connect_to_server_to_receive_messages)
+    }
+
+  @Serializable @SerialName("unknown") class Unknown: NetworkStatus()
+  @Serializable @SerialName("connected") class Connected: NetworkStatus()
+  @Serializable @SerialName("disconnected") class Disconnected: NetworkStatus()
+  @Serializable @SerialName("error") class Error(val error: String): NetworkStatus()
+}
+
+@Serializable
 data class Contact(
   val contactId: Long,
   override val localDisplayName: String,
@@ -652,6 +704,8 @@ data class Contact(
 @Serializable
 class ContactRef(
   val contactId: Long,
+  val agentConnId: String,
+  val connId: Long,
   var localDisplayName: String
 ) {
   val id: ChatId get() = "@$contactId"
@@ -666,6 +720,7 @@ class ContactSubStatus(
 @Serializable
 data class Connection(
   val connId: Long,
+  val agentConnId: String,
   val connStatus: ConnStatus,
   val connLevel: Int,
   val viaGroupLink: Boolean,
@@ -674,7 +729,7 @@ data class Connection(
 ) {
   val id: ChatId get() = ":$connId"
   companion object {
-    val sampleData = Connection(connId = 1, connStatus = ConnStatus.Ready, connLevel = 0, viaGroupLink = false, customUserProfileId = null)
+    val sampleData = Connection(connId = 1, agentConnId = "abc", connStatus = ConnStatus.Ready, connLevel = 0, viaGroupLink = false, customUserProfileId = null)
   }
 }
 
@@ -1278,7 +1333,8 @@ data class ChatItem (
     }
     
     private const val TEMP_DELETED_CHAT_ITEM_ID = -1L
-    
+    const val TEMP_LIVE_CHAT_ITEM_ID = -2L
+
     val deletedItemDummy: ChatItem
       get() = ChatItem(
         chatDir = CIDirection.DirectRcv(),
@@ -1296,6 +1352,26 @@ data class ChatItem (
           editable = false
         ),
         content = CIContent.RcvDeleted(deleteMode = CIDeleteMode.cidmBroadcast),
+        quotedItem = null,
+        file = null
+      )
+
+    fun liveDummy(direct: Boolean): ChatItem = ChatItem(
+        chatDir = if (direct) CIDirection.DirectSnd() else CIDirection.GroupSnd(),
+        meta = CIMeta(
+          itemId = TEMP_LIVE_CHAT_ITEM_ID,
+          itemTs = Clock.System.now(),
+          itemText = "",
+          itemStatus = CIStatus.RcvRead(),
+          createdAt = Clock.System.now(),
+          updatedAt = Clock.System.now(),
+          itemDeleted = false,
+          itemEdited = false,
+          itemTimed = null,
+          itemLive = true,
+          editable = false
+        ),
+        content = CIContent.SndMsgContent(MsgContent.MCText("")),
         quotedItem = null,
         file = null
       )
@@ -1491,11 +1567,11 @@ sealed class CIContent: ItemContent {
 
     fun preferenceText(feature: Feature, allowed: FeatureAllowed, param: Int?): String = when {
       allowed != FeatureAllowed.NO && feature.hasParam && param != null ->
-        "offered ${feature.text}: ${TimedMessagesPreference.ttlText(param)}"
+        String.format(generalGetString(R.string.feature_offered_item_with_param), feature.text, TimedMessagesPreference.ttlText(param))
       allowed != FeatureAllowed.NO ->
-        "offered ${feature.text}"
+        String.format(generalGetString(R.string.feature_offered_item), feature.text, TimedMessagesPreference.ttlText(param))
       else ->
-        "cancelled ${feature.text}"
+        String.format(generalGetString(R.string.feature_cancelled_item), feature.text, TimedMessagesPreference.ttlText(param))
     }
   }
 }

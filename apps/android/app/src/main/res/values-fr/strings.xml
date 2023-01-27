@@ -296,7 +296,7 @@
     <string name="toast_permission_denied">Autorisation refusée !</string>
     <string name="use_camera_button">Utiliser l\'Appareil photo</string>
     <string name="thank_you_for_installing_simplex">Merci d\'avoir installé <xliff:g id="appNameFull">SimpleX Chat</xliff:g> !</string>
-    <string name="you_can_connect_to_simplex_chat_founder">Vous pouvez <font color="#0088ff">vous connecter aux développeurs de <xliff:g id="appNameFull">SimpleX Chat</xliff:g> pour leur poser toutes vos questions et pour recevoir des informations sur les mises à jour</font>.</string>
+    <string name="you_can_connect_to_simplex_chat_founder">Vous pouvez <font color="#0088ff">vous connecter aux développeurs de <xliff:g id="appNameFull">SimpleX Chat</xliff:g> pour leur poser des questions et recevoir des réponses :</font>.</string>
     <string name="above_then_preposition_continuation">ci-dessus, puis :</string>
     <string name="add_new_contact_to_create_one_time_QR_code"><b>Ajouter un nouveau contact</b> : afin de créer un code QR à usage unique pour votre contact.</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Si vous choisissez de la rejeter, l\'expéditeur·rice NE sera PAS notifié·e.</string>
@@ -328,7 +328,7 @@
     <string name="network_use_onion_hosts">Utiliser les hôtes .onions</string>
     <string name="network_use_onion_hosts_prefer_desc_in_alert">Les hôtes .onion seront utilisés lorsqu\'ils sont disponibles.</string>
     <string name="network_use_onion_hosts_required_desc_in_alert">Les hôtes .onion seront nécessaires pour la connexion.</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send">Vous contrôlez par quel·s serveur·s vous pouvez <b>transmettre</b> ainsi que par quel·s serveur·s vous pouvez <b>recevoir</b> des messages de vos contacts.</string>
+    <string name="you_control_servers_to_receive_your_contacts_to_send">Vous contrôlez par quel·s serveur·s vous pouvez <b>transmettre</b> ainsi que par quel·s serveur·s vous pouvez <b>recevoir</b> les messages de vos contacts.</string>
     <string name="your_settings">Vos paramètres</string>
     <string name="chat_lock">SimpleX Lock</string>
     <string name="chat_console">Console du chat</string>
@@ -381,7 +381,7 @@
     <string name="callstate_received_confirmation">confimation reçu…</string>
     <string name="callstate_connecting">connexion…</string>
     <string name="opensource_protocol_and_code_anybody_can_run_servers">Protocole et code open-source – n\'importe qui peut heberger un serveur.</string>
-    <string name="to_protect_privacy_simplex_has_ids_for_queues">Pour protéger la vie privée, au lieu d\'ID d\'utilisateur utilisés par toutes les autres plateformes, <xliff:g id="appName">SimpleX</xliff:g> possède des identifiants pour les files d\'attente de messages, distincts pour chacun de vos contacts.</string>
+    <string name="to_protect_privacy_simplex_has_ids_for_queues">Pour protéger votre vie privée, au lieu d\'IDs utilisés par toutes les autres plateformes, <xliff:g id="appName">SimpleX</xliff:g> possède des IDs pour les queues de messages, distinctes pour chacun de vos contacts.</string>
     <string name="read_more_in_github">Plus d\'informations sur notre GitHub.</string>
     <string name="paste_the_link_you_received">Coller le lien reçu</string>
     <string name="use_chat">Utiliser le chat</string>
@@ -461,13 +461,13 @@
     <string name="privacy_redefined">La vie privée redéfinie</string>
     <string name="first_platform_without_user_ids">La 1ère plateforme sans aucun identifiant d\'utilisateur – privée par design.</string>
     <string name="immune_to_spam_and_abuse">Protégé du spam et des abus</string>
-    <string name="people_can_connect_only_via_links_you_share">Les gens peuvent se connecter à vous uniquement via les liens que vous partagez.</string>
+    <string name="people_can_connect_only_via_links_you_share">On ne peut se connecter à vous qu’avec les liens que vous partagez.</string>
     <string name="decentralized">Décentralisé</string>
     <string name="create_your_profile">Créez votre profil</string>
     <string name="make_private_connection">Établir une connexion privée</string>
     <string name="how_it_works">Comment ça fonctionne</string>
     <string name="how_simplex_works">Comment <xliff:g id="appName">SimpleX</xliff:g> fonctionne</string>
-    <string name="many_people_asked_how_can_it_deliver">Beaucoup se demande : <i>si <xliff:g id="appName">SimpleX</xliff:g> n\'a pas d\'identifiant d\'utilisateur, comment peut-il transmettre des messages \?</i></string>
+    <string name="many_people_asked_how_can_it_deliver">Beaucoup se demandent : <i>si <xliff:g id="appName">SimpleX</xliff:g> n\'a pas d\'identifiant d\'utilisateur, comment peut-il transmettre des messages \?</i></string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Seuls les appareils clients stockent les profils des utilisateurs, les contacts, les groupes et les messages envoyés avec un <b>chiffrement de bout en bout à deux couches</b>.</string>
     <string name="read_more_in_github_with_link">Pour en savoir plus, consultez notre <font color="#0088ff">GitHub repository</font>.</string>
     <string name="onboarding_notifications_mode_periodic_desc"><b>Batterie peu utilisée</b>. Le service de fond vérifie les nouveaux messages toutes les 10 minutes. Vous risquez de manquer des appels et des messages urgents.</string>
@@ -786,7 +786,7 @@
     <string name="prohibit_direct_messages">Interdire l\'envoi de messages directs aux membres.</string>
     <string name="group_members_can_delete">Les membres du groupe peuvent supprimer de manière irréversible les messages envoyés.</string>
     <string name="message_deletion_prohibited_in_chat">La suppression irréversible de messages est interdite dans ce groupe.</string>
-    <string name="sending_via">Envoyé via</string>
+    <string name="sending_via">Envoi via</string>
     <string name="network_status">État du réseau</string>
     <string name="switch_receiving_address">Changer d\'adresse de réception</string>
     <string name="create_secret_group_title">Créer un groupe secret</string>
@@ -895,7 +895,7 @@
     <string name="v4_4_live_messages_desc">Les destinataires voient les mises à jour au fur et à mesure que vous les tapez.</string>
     <string name="v4_4_verify_connection_security">Vérifier la sécurité de la connexion</string>
     <string name="v4_4_verify_connection_security_desc">Comparez les codes de sécurité avec vos contacts.</string>
-    <string name="new_in_version">Nouveau en %s</string>
+    <string name="new_in_version">Nouveautés de la %s</string>
     <string name="v4_2_security_assessment">Évaluation de sécurité</string>
     <string name="v4_2_group_links">Liens de groupe</string>
     <string name="v4_2_auto_accept_contact_requests_desc">Avec message de bienvenue facultatif.</string>
@@ -918,4 +918,8 @@
     <string name="v4_3_improved_server_configuration_desc">Ajoutez des serveurs en scannant des codes QR.</string>
     <string name="invalid_data">données invalides</string>
     <string name="invalid_chat">chat invalide</string>
+    <string name="icon_descr_cancel_live_message">Annuler le message dynamique</string>
+    <string name="feature_offered_item">offert %s</string>
+    <string name="feature_offered_item_with_param">offert %s: %2s</string>
+    <string name="feature_cancelled_item">annulé %s</string>
 </resources>

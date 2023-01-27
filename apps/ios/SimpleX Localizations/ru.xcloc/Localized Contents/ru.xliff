@@ -463,9 +463,21 @@
         <target>Принять звонок</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="App build: %@" xml:space="preserve">
+        <source>App build: %@</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="App icon" xml:space="preserve">
         <source>App icon</source>
         <target>Иконка</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="App version" xml:space="preserve">
+        <source>App version</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="App version: v%@" xml:space="preserve">
+        <source>App version: v%@</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Appearance" xml:space="preserve">
@@ -827,6 +839,14 @@
         <source>Copy</source>
         <target>Скопировать</target>
         <note>chat item action</note>
+      </trans-unit>
+      <trans-unit id="Core built at: %@" xml:space="preserve">
+        <source>Core built at: %@</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Core version: v%@" xml:space="preserve">
+        <source>Core version: v%@</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create" xml:space="preserve">
         <source>Create</source>
@@ -1198,7 +1218,7 @@
       </trans-unit>
       <trans-unit id="Do NOT use SimpleX for emergency calls." xml:space="preserve">
         <source>Do NOT use SimpleX for emergency calls.</source>
-        <target>Не используйте SimpleX для экстренных звонков</target>
+        <target>Не используйте SimpleX для экстренных звонков.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Do it later" xml:space="preserve">
@@ -2205,7 +2225,7 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." xml:space="preserve">
         <source>Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**.</source>
-        <target>Только пользовательские устройства хранят контакты, группы и сообщения, которые отправляются **с двухуровневым end-to-end шифрованием**</target>
+        <target>Только пользовательские устройства хранят контакты, группы и сообщения, которые отправляются **с двухуровневым end-to-end шифрованием**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only group owners can change group preferences." xml:space="preserve">
@@ -2271,6 +2291,10 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." xml:space="preserve">
         <source>Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red.</source>
         <target>Использование ссылки в браузере может уменьшить конфиденциальность и безопасность соединения. Ссылки на неизвестные сайты будут красными.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="PING count" xml:space="preserve">
+        <source>PING count</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="PING interval" xml:space="preserve">
@@ -2950,7 +2974,7 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="Tap button " xml:space="preserve">
         <source>Tap button </source>
-        <target>Нажмите кнопку</target>
+        <target>Нажмите кнопку </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap to join" xml:space="preserve">
@@ -3594,7 +3618,7 @@ To connect, please ask your contact to create another connection link and check 
       </trans-unit>
       <trans-unit id="Your contact can scan it from the app." xml:space="preserve">
         <source>Your contact can scan it from the app.</source>
-        <target>Ваш контакт может сосканировать QR код в приложении</target>
+        <target>Ваш контакт может сосканировать QR код в приложении.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact needs to be online for the connection to complete.&#10;You can cancel this connection and remove the contact (and try later with a new link)." xml:space="preserve">
@@ -3698,7 +3722,7 @@ SimpleX серверы не могут получить доступ к ваше
       </trans-unit>
       <trans-unit id="accepted call" xml:space="preserve">
         <source>accepted call</source>
-        <target> принятый звонок</target>
+        <target>принятый звонок</target>
         <note>call status</note>
       </trans-unit>
       <trans-unit id="admin" xml:space="preserve">
@@ -3745,6 +3769,11 @@ SimpleX серверы не могут получить доступ к ваше
         <source>calling…</source>
         <target>входящий звонок…</target>
         <note>call status</note>
+      </trans-unit>
+      <trans-unit id="cancelled %@" xml:space="preserve">
+        <source>cancelled %@</source>
+        <target>отменил(a) %@</target>
+        <note>feature offered item</note>
       </trans-unit>
       <trans-unit id="changed address for you" xml:space="preserve">
         <source>changed address for you</source>
@@ -4056,6 +4085,16 @@ SimpleX серверы не могут получить доступ к ваше
         <target>нет</target>
         <note>enabled status
    group pref value</note>
+      </trans-unit>
+      <trans-unit id="offered %@" xml:space="preserve">
+        <source>offered %@</source>
+        <target>предложил(a) %@</target>
+        <note>feature offered item</note>
+      </trans-unit>
+      <trans-unit id="offered %@: %@" xml:space="preserve">
+        <source>offered %1$@: %2$@</source>
+        <target>предложил(a) %1$@: %2$@</target>
+        <note>feature offered item</note>
       </trans-unit>
       <trans-unit id="on" xml:space="preserve">
         <source>on</source>

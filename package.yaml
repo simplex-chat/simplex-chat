@@ -1,5 +1,5 @@
 name: simplex-chat
-version: 4.4.0
+version: 4.4.4
 #synopsis:
 #description:
 homepage: https://github.com/simplex-chat/simplex-chat#readme
@@ -39,12 +39,24 @@ dependencies:
   - socks == 0.6.*
   - sqlcipher-simple == 0.4.*
   - stm == 2.5.*
+  - template-haskell == 2.16.*
   - terminal == 0.2.*
   - text == 1.2.*
   - time == 1.9.*
   - unliftio == 0.2.*
   - unliftio-core == 0.2.*
   - zip == 1.7.*
+
+flags:
+  swift:
+    description: Enable swift JSON format
+    manual: True
+    default: False
+
+when:
+  - condition: flag(swift)
+    cpp-options:
+      - -DswiftJSON
 
 library:
   source-dirs: src

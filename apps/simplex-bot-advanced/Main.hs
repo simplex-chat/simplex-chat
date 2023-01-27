@@ -39,10 +39,10 @@ mySquaringBot _user cc = do
   race_ (forever $ void getLine) . forever $ do
     (_, resp) <- atomically . readTBQueue $ outputQ cc
     case resp of
-      CRContactConnected contact _ -> do
+      CRContactConnected _ contact _ -> do
         contactConnected contact
         void . sendMsg contact $ "Hello! I am a simple squaring bot - if you send me a number, I will calculate its square"
-      CRNewChatItem (AChatItem _ SMDRcv (DirectChat contact) ChatItem {content}) -> do
+      CRNewChatItem _ (AChatItem _ SMDRcv (DirectChat contact) ChatItem {content}) -> do
         let msg = T.unpack $ ciContentToText content
             number_ = readMaybe msg :: Maybe Integer
         void . sendMsg contact $ case number_ of

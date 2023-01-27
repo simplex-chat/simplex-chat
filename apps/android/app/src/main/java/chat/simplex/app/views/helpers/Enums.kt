@@ -1,6 +1,5 @@
 package chat.simplex.app.views.helpers
 
-import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.runtime.saveable.Saver
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,7 +10,7 @@ sealed class SharedContent {
   data class File(val text: String, val uri: Uri): SharedContent()
 }
 
-enum class NewChatSheetState {
+enum class AnimatedViewState {
   VISIBLE, HIDING, GONE;
   fun isVisible(): Boolean {
     return this == VISIBLE
@@ -23,7 +22,7 @@ enum class NewChatSheetState {
     return this == GONE
   }
   companion object {
-    fun saver(): Saver<MutableStateFlow<NewChatSheetState>, *> = Saver(
+    fun saver(): Saver<MutableStateFlow<AnimatedViewState>, *> = Saver(
       save = { it.value.toString() },
       restore = {
         MutableStateFlow(valueOf(it))

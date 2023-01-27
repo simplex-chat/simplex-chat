@@ -102,7 +102,7 @@ private fun sendCommand(chatModel: ChatModel, composeState: MutableState<Compose
   val prefPerformLA = chatModel.controller.appPrefs.performLA.get()
   val s = composeState.value.message
   if (s.startsWith("/sql") && (!prefPerformLA || !developerTools)) {
-    val resp = CR.ChatCmdError(ChatError.ChatErrorChat(ChatErrorType.СommandError("Failed reading: empty")))
+    val resp = CR.ChatCmdError(null, ChatError.ChatErrorChat(ChatErrorType.СommandError("Failed reading: empty")))
     chatModel.terminalItems.add(TerminalItem.cmd(CC.Console(s)))
     chatModel.terminalItems.add(TerminalItem.resp(resp))
     composeState.value = ComposeState(useLinkPreviews = false)
@@ -138,7 +138,7 @@ fun TerminalLayout(
           SendMsgView(
             composeState = composeState,
             showVoiceRecordIcon = false,
-            recState = mutableStateOf(RecordingState.NotStarted),
+            recState = remember { mutableStateOf(RecordingState.NotStarted) },
             isDirectChat = false,
             liveMessageAlertShown = SharedPreference(get = { false }, set = {}),
             needToAllowVoiceToContact = false,
@@ -147,8 +147,8 @@ fun TerminalLayout(
             sendMessage = sendCommand,
             sendLiveMessage = null,
             updateLiveMessage = null,
-            ::onMessageChange,
-            textStyle
+            onMessageChange = ::onMessageChange,
+            textStyle = textStyle
           )
         }
       },
@@ -174,7 +174,7 @@ fun TerminalLog(terminalItems: List<TerminalItem>) {
   DisposableEffect(Unit) {
     onDispose { lazyListState = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
   }
-  val reversedTerminalItems by remember { derivedStateOf { terminalItems.reversed() } }
+  val reversedTerminalItems by remember { derivedStateOf { terminalItems.reversed().toList() } }
   LazyColumn(state = listState, reverseLayout = true) {
     items(reversedTerminalItems) { item ->
       Text(

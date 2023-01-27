@@ -29,6 +29,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.*
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.NtfManager
+import chat.simplex.app.model.NtfManager.Companion.getUserIdFromIntent
 import chat.simplex.app.ui.theme.SimpleButton
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.SplashView
@@ -393,7 +394,7 @@ fun MainPage(
         }
       }
       onboarding == OnboardingStage.Step1_SimpleXInfo -> SimpleXInfo(chatModel, onboarding = true)
-      onboarding == OnboardingStage.Step2_CreateProfile -> CreateProfile(chatModel)
+      onboarding == OnboardingStage.Step2_CreateProfile -> CreateProfile(chatModel) {}
       onboarding == OnboardingStage.Step3_SetNotificationsMode -> SetNotificationsMode(chatModel)
     }
     ModalManager.shared.showInView()
@@ -404,20 +405,31 @@ fun MainPage(
 }
 
 fun processNotificationIntent(intent: Intent?, chatModel: ChatModel) {
+  val userId = getUserIdFromIntent(intent)
   when (intent?.action) {
     NtfManager.OpenChatAction -> {
       val chatId = intent.getStringExtra("chatId")
       Log.d(TAG, "processNotificationIntent: OpenChatAction $chatId")
       if (chatId != null) {
-        val cInfo = chatModel.getChat(chatId)?.chatInfo
-        chatModel.clearOverlays.value = true
-        if (cInfo != null) withApi { openChat(cInfo, chatModel) }
+        withBGApi {
+          if (userId != null && userId != chatModel.currentUser.value?.userId) {
+            chatModel.controller.changeActiveUser(userId)
+          }
+          val cInfo = chatModel.getChat(chatId)?.chatInfo
+          chatModel.clearOverlays.value = true
+          if (cInfo != null) openChat(cInfo, chatModel)
+        }
       }
     }
     NtfManager.ShowChatsAction -> {
       Log.d(TAG, "processNotificationIntent: ShowChatsAction")
-      chatModel.chatId.value = null
-      chatModel.clearOverlays.value = true
+      withBGApi {
+        if (userId != null && userId != chatModel.currentUser.value?.userId) {
+          chatModel.controller.changeActiveUser(userId)
+        }
+        chatModel.chatId.value = null
+        chatModel.clearOverlays.value = true
+      }
     }
     NtfManager.AcceptCallAction -> {
       val chatId = intent.getStringExtra("chatId")

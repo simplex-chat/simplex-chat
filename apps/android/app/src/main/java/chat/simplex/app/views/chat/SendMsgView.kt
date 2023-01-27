@@ -6,8 +6,10 @@ import android.app.Activity
 import android.content.Context
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
+import android.os.Build
 import android.text.InputType
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.view.inputmethod.*
 import android.widget.EditText
 import androidx.compose.animation.core.*
@@ -60,14 +62,15 @@ fun SendMsgView(
   allowedVoiceByPrefs: Boolean,
   allowVoiceToContact: () -> Unit,
   sendMessage: () -> Unit,
-  sendLiveMessage: ( suspend () -> Unit)? = null,
+  sendLiveMessage: (suspend () -> Unit)? = null,
   updateLiveMessage: (suspend () -> Unit)? = null,
+  cancelLiveMessage: (() -> Unit)? = null,
   onMessageChange: (String) -> Unit,
   textStyle: MutableState<TextStyle>
 ) {
   Box(Modifier.padding(vertical = 8.dp)) {
     val cs = composeState.value
-    val showProgress = cs.inProgress && (cs.preview is ComposePreview.ImagePreview  || cs.preview is ComposePreview.FilePreview)
+    val showProgress = cs.inProgress && (cs.preview is ComposePreview.ImagePreview || cs.preview is ComposePreview.FilePreview)
     val showVoiceButton = cs.message.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
         cs.liveMessage == null && (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started)
     NativeKeyboard(composeState, textStyle, onMessageChange)
@@ -106,7 +109,10 @@ fun SendMsgView(
               else ->
                 RecordVoiceView(recState, stopRecOnNextClick)
             }
-            if (sendLiveMessage != null && updateLiveMessage != null && (cs.preview !is ComposePreview.VoicePreview || !stopRecOnNextClick.value)) {
+            if (sendLiveMessage != null 
+                && updateLiveMessage != null
+                && (cs.preview !is ComposePreview.VoicePreview || !stopRecOnNextClick.value)
+                && cs.contextItem is ComposeContextItem.NoContextItem) {
               Spacer(Modifier.width(10.dp))
               StartLiveMessageButton {
                 if (composeState.value.preview is ComposePreview.NoPreview) {
@@ -116,15 +122,24 @@ fun SendMsgView(
             }
           }
         }
+        cs.liveMessage?.sent == false && cs.message.isEmpty() -> {
+          CancelLiveMessageButton {
+            cancelLiveMessage?.invoke()
+          }
+        }
         else -> {
+          val cs = composeState.value
           val icon = if (cs.editing || cs.liveMessage != null) Icons.Filled.Check else Icons.Outlined.ArrowUpward
-          val color = if (cs.sendEnabled()) MaterialTheme.colors.primary else HighOrLowlight
-          if (composeState.value.liveMessage == null &&
+          val disabled = !cs.sendEnabled() ||
+                        (!allowedVoiceByPrefs && cs.preview is ComposePreview.VoicePreview) ||
+                        cs.endLiveDisabled
+          if (cs.liveMessage == null &&
             cs.preview !is ComposePreview.VoicePreview && !cs.editing &&
+            cs.contextItem is ComposeContextItem.NoContextItem &&
             sendLiveMessage != null && updateLiveMessage != null
           ) {
             var showDropdown by rememberSaveable { mutableStateOf(false) }
-            SendTextButton(icon, color, sendButtonSize, sendButtonAlpha, cs.sendEnabled(), sendMessage) { showDropdown = true }
+            SendMsgButton(icon, sendButtonSize, sendButtonAlpha, !disabled, sendMessage) { showDropdown = true }
 
             DropdownMenu(
               expanded = showDropdown,
@@ -141,7 +156,7 @@ fun SendMsgView(
               )
             }
           } else {
-            SendTextButton(icon, color, sendButtonSize, sendButtonAlpha, cs.sendEnabled(), sendMessage)
+            SendMsgButton(icon, sendButtonSize, sendButtonAlpha, !disabled, sendMessage)
           }
         }
       }
@@ -163,7 +178,6 @@ private fun NativeKeyboard(
   val paddingTop = with(LocalDensity.current) { 7.dp.roundToPx() }
   val paddingEnd = with(LocalDensity.current) { 45.dp.roundToPx() }
   val paddingBottom = with(LocalDensity.current) { 7.dp.roundToPx() }
-
   var showKeyboard by remember { mutableStateOf(false) }
   LaunchedEffect(cs.contextItem) {
     if (cs.contextItem is ComposeContextItem.QuotedItem) {
@@ -184,6 +198,7 @@ private fun NativeKeyboard(
       ) {
         super.setOnReceiveContentListener(mimeTypes, listener)
       }
+
       override fun onCreateInputConnection(editorInfo: EditorInfo): InputConnection {
         val connection = super.onCreateInputConnection(editorInfo)
         EditorInfoCompat.setContentMimeTypes(editorInfo, arrayOf("image/*"))
@@ -323,7 +338,9 @@ private fun LockToCurrentOrientationUntilDispose() {
   val context = LocalContext.current
   DisposableEffect(Unit) {
     val activity = context as Activity
-    activity.requestedOrientation = when (activity.display?.rotation) {
+    val manager = context.getSystemService(Activity.WINDOW_SERVICE) as WindowManager
+    val rotation = if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) manager.defaultDisplay.rotation else activity.display?.rotation
+    activity.requestedOrientation = when (rotation) {
       android.view.Surface.ROTATION_90 -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
       android.view.Surface.ROTATION_180 -> ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT
       android.view.Surface.ROTATION_270 -> ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
@@ -333,7 +350,6 @@ private fun LockToCurrentOrientationUntilDispose() {
     onDispose { activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED }
   }
 }
-
 
 @Composable
 private fun StopRecordButton(onClick: () -> Unit) {
@@ -369,9 +385,24 @@ private fun ProgressIndicator() {
 }
 
 @Composable
-private fun SendTextButton(
+private fun CancelLiveMessageButton(
+  onClick: () -> Unit
+) {
+  IconButton(onClick, Modifier.size(36.dp)) {
+    Icon(
+      Icons.Filled.Close,
+      stringResource(R.string.icon_descr_cancel_live_message),
+      tint = MaterialTheme.colors.primary,
+      modifier = Modifier
+        .size(36.dp)
+        .padding(4.dp)
+    )
+  }
+}
+
+@Composable
+private fun SendMsgButton(
   icon: ImageVector,
-  backgroundColor: Color,
   sizeDp: Animatable<Float, AnimationVector1D>,
   alpha: Animatable<Float, AnimationVector1D>,
   enabled: Boolean,
@@ -400,7 +431,7 @@ private fun SendTextButton(
         .padding(4.dp)
         .alpha(alpha.value)
         .clip(CircleShape)
-        .background(backgroundColor)
+        .background(if (enabled) MaterialTheme.colors.primary else HighOrLowlight)
         .padding(3.dp)
     )
   }
@@ -519,7 +550,7 @@ fun PreviewSendMsgView() {
     SendMsgView(
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       showVoiceRecordIcon = false,
-      recState = mutableStateOf(RecordingState.NotStarted),
+      recState = remember { mutableStateOf(RecordingState.NotStarted) },
       isDirectChat = true,
       liveMessageAlertShown = SharedPreference(get = { true }, set = { }),
       needToAllowVoiceToContact = false,
@@ -547,7 +578,7 @@ fun PreviewSendMsgViewEditing() {
     SendMsgView(
       composeState = remember { mutableStateOf(composeStateEditing) },
       showVoiceRecordIcon = false,
-      recState = mutableStateOf(RecordingState.NotStarted),
+      recState = remember { mutableStateOf(RecordingState.NotStarted) },
       isDirectChat = true,
       liveMessageAlertShown = SharedPreference(get = { true }, set = { }),
       needToAllowVoiceToContact = false,
@@ -575,7 +606,7 @@ fun PreviewSendMsgViewInProgress() {
     SendMsgView(
       composeState = remember { mutableStateOf(composeStateInProgress) },
       showVoiceRecordIcon = false,
-      recState = mutableStateOf(RecordingState.NotStarted),
+      recState = remember { mutableStateOf(RecordingState.NotStarted) },
       isDirectChat = true,
       liveMessageAlertShown = SharedPreference(get = { true }, set = { }),
       needToAllowVoiceToContact = false,

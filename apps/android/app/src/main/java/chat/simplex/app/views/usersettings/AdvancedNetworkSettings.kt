@@ -33,6 +33,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
   val networkTCPConnectTimeout = remember { mutableStateOf(currentCfgVal.tcpConnectTimeout) }
   val networkTCPTimeout = remember { mutableStateOf(currentCfgVal.tcpTimeout) }
   val networkSMPPingInterval = remember { mutableStateOf(currentCfgVal.smpPingInterval) }
+  val networkSMPPingCount = remember { mutableStateOf(currentCfgVal.smpPingCount) }
   val networkEnableKeepAlive = remember { mutableStateOf(currentCfgVal.enableKeepAlive) }
   val networkTCPKeepIdle: MutableState<Int>
   val networkTCPKeepIntvl: MutableState<Int>
@@ -48,10 +49,6 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
   }
 
   fun buildCfg(): NetCfg {
-    val socksProxy = currentCfg.value.socksProxy
-    val tcpConnectTimeout = networkTCPConnectTimeout.value
-    val tcpTimeout = networkTCPTimeout.value
-    val smpPingInterval = networkSMPPingInterval.value
     val enableKeepAlive = networkEnableKeepAlive.value
     val tcpKeepAlive = if (enableKeepAlive) {
       val keepIdle = networkTCPKeepIdle.value
@@ -62,11 +59,15 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
       null
     }
     return NetCfg(
-      socksProxy = socksProxy,
-      tcpConnectTimeout = tcpConnectTimeout,
-      tcpTimeout = tcpTimeout,
+      socksProxy = currentCfg.value.socksProxy,
+      hostMode = currentCfg.value.hostMode,
+      requiredHostMode = currentCfg.value.requiredHostMode,
+      sessionMode = currentCfg.value.sessionMode,
+      tcpConnectTimeout = networkTCPConnectTimeout.value,
+      tcpTimeout = networkTCPTimeout.value,
       tcpKeepAlive = tcpKeepAlive,
-      smpPingInterval = smpPingInterval
+      smpPingInterval = networkSMPPingInterval.value,
+      smpPingCount = networkSMPPingCount.value
     )
   }
 
@@ -74,6 +75,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
     networkTCPConnectTimeout.value = cfg.tcpConnectTimeout
     networkTCPTimeout.value = cfg.tcpTimeout
     networkSMPPingInterval.value = cfg.smpPingInterval
+    networkSMPPingCount.value = cfg.smpPingCount
     networkEnableKeepAlive.value = cfg.enableKeepAlive
     if (cfg.tcpKeepAlive != null) {
       networkTCPKeepIdle.value = cfg.tcpKeepAlive.keepIdle
@@ -113,6 +115,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
     networkTCPConnectTimeout,
     networkTCPTimeout,
     networkSMPPingInterval,
+    networkSMPPingCount,
     networkEnableKeepAlive,
     networkTCPKeepIdle,
     networkTCPKeepIntvl,
@@ -129,6 +132,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
   networkTCPConnectTimeout: MutableState<Long>,
   networkTCPTimeout: MutableState<Long>,
   networkSMPPingInterval: MutableState<Long>,
+  networkSMPPingCount: MutableState<Int>,
   networkEnableKeepAlive: MutableState<Boolean>,
   networkTCPKeepIdle: MutableState<Int>,
   networkTCPKeepIntvl: MutableState<Int>,
@@ -170,7 +174,14 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
       SectionItemView {
         TimeoutSettingRow(
           stringResource(R.string.network_option_ping_interval), networkSMPPingInterval,
-          listOf(120_000000, 300_000000, 600_000000, 1200_000000, 2400_000000), secondsLabel
+          listOf(120_000000, 300_000000, 600_000000, 1200_000000, 2400_000000, 3600_000000), secondsLabel
+        )
+      }
+      SectionDivider()
+      SectionItemView {
+        IntSettingRow(
+          stringResource(R.string.network_option_ping_count), networkSMPPingCount,
+          listOf(1, 2, 3, 5, 8), ""
         )
       }
       SectionDivider()
@@ -412,6 +423,7 @@ fun PreviewAdvancedNetworkSettingsLayout() {
       networkTCPConnectTimeout = remember { mutableStateOf(10_000000) },
       networkTCPTimeout = remember { mutableStateOf(10_000000) },
       networkSMPPingInterval = remember { mutableStateOf(10_000000) },
+      networkSMPPingCount = remember { mutableStateOf(3) },
       networkEnableKeepAlive = remember { mutableStateOf(true) },
       networkTCPKeepIdle = remember { mutableStateOf(10) },
       networkTCPKeepIntvl = remember { mutableStateOf(10) },

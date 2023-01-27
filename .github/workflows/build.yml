@@ -5,7 +5,7 @@ on:
     branches:
       - master
       - stable
-      - sqlcipher
+      - users
     tags:
       - "v*"
   pull_request:

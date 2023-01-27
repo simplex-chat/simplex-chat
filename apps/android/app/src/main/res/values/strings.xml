@@ -96,6 +96,7 @@
   <string name="smp_server_test_secure_queue">Secure queue</string>
   <string name="smp_server_test_delete_queue">Delete queue</string>
   <string name="smp_server_test_disconnect">Disconnect</string>
+  <string name="error_deleting_user">Error deleting user profile</string>
 
   <!-- background service notice - SimpleXAPI.kt -->
   <string name="icon_descr_instant_notifications">Instant notifications</string>
@@ -271,6 +272,7 @@
   <string name="live_message">Live message!</string>
   <string name="send_live_message_desc">Send a live message - it will update for the recipient(s) as you type it</string>
   <string name="send_verb">Send</string>
+  <string name="icon_descr_cancel_live_message">Cancel live message</string>
 
   <!-- General Actions / Responses -->
   <string name="back">Back</string>
@@ -413,6 +415,7 @@
   <!-- settings - SettingsView.kt -->
   <string name="your_settings">Your settings</string>
   <string name="your_simplex_contact_address">Your <xliff:g id="appName">SimpleX</xliff:g> contact address</string>
+  <string name="your_chat_profiles">Your chat profiles</string>
   <string name="database_passphrase_and_export">Database passphrase &amp; export</string>
   <string name="about_simplex_chat">About <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
   <string name="how_to_use_simplex_chat">How to use it</string>
@@ -477,7 +480,19 @@
   <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion hosts will be used when available.</string>
   <string name="network_use_onion_hosts_no_desc_in_alert">Onion hosts will not be used.</string>
   <string name="network_use_onion_hosts_required_desc_in_alert">Onion hosts will be required for connection.</string>
+  <string name="network_session_mode_transport_isolation">Transport isolation</string>
+  <string name="network_session_mode_user">Chat profile</string>
+  <string name="network_session_mode_entity">Connection</string>
+  <string name="network_session_mode_user_description">A separate TCP connection (and SOCKS credential) will be used <b>for each chat profile you have in the app</b>.</string>
+  <string name="network_session_mode_entity_description">A separate TCP connection (and SOCKS credential) will be used <b>for each contact and group member</b>.\n<b>Please note</b>: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail.</string>
+  <string name="update_network_session_mode_question">Update transport isolation mode?</string>
   <string name="appearance_settings">Appearance</string>
+  <string name="app_version_title">App version</string>
+  <string name="app_version_name">App version: v%s</string>
+  <string name="app_version_code">App build: %s</string>
+  <string name="core_version">Core version: v%s</string>
+  <string name="core_build_timestamp">Core built at: %s</string>
+  <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
 
   <!-- Address Items - UserAddressView.kt -->
   <string name="create_address">Create address</string>
@@ -951,12 +966,22 @@
   <string name="network_option_tcp_connection_timeout">TCP connection timeout</string>
   <string name="network_option_protocol_timeout">Protocol timeout</string>
   <string name="network_option_ping_interval">PING interval</string>
+  <string name="network_option_ping_count">PING count</string>
   <string name="network_option_enable_tcp_keep_alive">Enable TCP keep-alive</string>
   <string name="network_options_revert">Revert</string>
   <string name="network_options_save">Save</string>
   <string name="update_network_settings_question">Update network settings?</string>
   <string name="updating_settings_will_reconnect_client_to_all_servers">Updating settings will re-connect the client to all servers.</string>
   <string name="update_network_settings_confirmation">Update</string>
+
+  <!-- UserProfilesView.kt -->
+  <string name="your_chat_profiles_stored_locally">Your chat profiles are stored locally, only on your device</string>
+  <string name="users_add">Add profile</string>
+  <string name="users_delete_question">Delete chat profile?</string>
+  <string name="users_delete_all_chats_deleted">All chats and messages will be deleted - this cannot be undone!</string>
+  <string name="users_delete_profile_for">Delete chat profile for</string>
+  <string name="users_delete_with_connections">Profile and server connections</string>
+  <string name="users_delete_data_only">Local profile data only</string>
 
   <!-- Incognito mode -->
   <string name="incognito">Incognito</string>
@@ -1059,6 +1084,9 @@
   <string name="ttl_week">%d week</string>
   <string name="ttl_weeks">%d weeks</string>
   <string name="ttl_w">%dw</string>
+  <string name="feature_offered_item">offered %s</string>
+  <string name="feature_offered_item_with_param">offered %s: %2s</string>
+  <string name="feature_cancelled_item">cancelled %s</string>
 
   <!-- WhatsNewView.kt -->
   <string name="whats_new">What\'s new</string>

@@ -19,13 +19,13 @@ import Data.Maybe (fromJust, isNothing)
 import qualified Data.Text as T
 import Network.Socket
 import Simplex.Chat
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatDatabase (..))
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..))
 import Simplex.Chat.Core
 import Simplex.Chat.Options
 import Simplex.Chat.Store
 import Simplex.Chat.Terminal
 import Simplex.Chat.Terminal.Output (newChatTerminal)
-import Simplex.Chat.Types (Profile, User (..))
+import Simplex.Chat.Types (AgentUserId (..), Profile, User (..))
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import Simplex.Messaging.Client (ProtocolClientConfig (..), defaultNetworkConfig)
@@ -53,9 +53,11 @@ testOpts =
       -- dbKey = "this is a pass-phrase to encrypt the database",
       smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:5001"],
       networkConfig = defaultNetworkConfig,
+      logLevel = CLLImportant,
       logConnections = False,
       logServerHosts = False,
       logAgent = False,
+      tbqSize = 64,
       chatCmd = "",
       chatCmdDelay = 3,
       chatServerPort = Nothing,
@@ -108,7 +110,7 @@ testCfgV1 = testCfg {agentConfig = testAgentCfgV1}
 createTestChat :: ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
 createTestChat cfg opts@ChatOpts {dbKey} dbPrefix profile = do
   db@ChatDatabase {chatStore} <- createChatDatabase (testDBPrefix <> dbPrefix) dbKey False
-  Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUser db' profile True
+  Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUserRecord db' (AgentUserId 1) profile True
   startTestChat_ db cfg opts user
 
 startTestChat :: ChatConfig -> ChatOpts -> String -> IO TestCC

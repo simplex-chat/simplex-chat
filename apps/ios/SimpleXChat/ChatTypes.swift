@@ -9,18 +9,20 @@
 import Foundation
 import SwiftUI
 
-public struct User: Decodable, NamedChat {
-    var userId: Int64
+public struct User: Decodable, NamedChat, Identifiable {
+    public var userId: Int64
     var userContactId: Int64
     var localDisplayName: ContactName
     public var profile: LocalProfile
     public var fullPreferences: FullPreferences
-    var activeUser: Bool
+    public var activeUser: Bool
 
     public var displayName: String { get { profile.displayName } }
     public var fullName: String { get { profile.fullName } }
     public var image: String? { get { profile.image } }
     public var localAlias: String { get { "" } }
+
+    public var id: Int64 { userId }
 
     public static let sampleData = User(
         userId: 1,
@@ -29,6 +31,23 @@ public struct User: Decodable, NamedChat {
         profile: LocalProfile.sampleData,
         fullPreferences: FullPreferences.sampleData,
         activeUser: true
+    )
+}
+
+public struct UserInfo: Decodable, Identifiable {
+    public var user: User
+    public var unreadCount: Int
+
+    public init(user: User, unreadCount: Int) {
+        self.user = user
+        self.unreadCount = unreadCount
+    }
+
+    public var id: Int64 { user.userId }
+
+    public static let sampleData = UserInfo(
+        user: User.sampleData,
+        unreadCount: 1
     )
 }
 
@@ -93,11 +112,11 @@ public struct LocalProfile: Codable, NamedChat {
 }
 
 public func toLocalProfile (_ profileId: Int64, _ profile: Profile, _ localAlias: String) -> LocalProfile {
-    LocalProfile(profileId: profileId, displayName: profile.displayName, fullName: profile.fullName, image: profile.image, localAlias: localAlias)
+    LocalProfile(profileId: profileId, displayName: profile.displayName, fullName: profile.fullName, image: profile.image, preferences: profile.preferences, localAlias: localAlias)
 }
 
 public func fromLocalProfile (_ profile: LocalProfile) -> Profile {
-    Profile(displayName: profile.displayName, fullName: profile.fullName, image: profile.image)
+    Profile(displayName: profile.displayName, fullName: profile.fullName, image: profile.image, preferences: profile.preferences)
 }
 
 public enum ChatType: String {
@@ -1137,6 +1156,8 @@ public struct Contact: Identifiable, Decodable, NamedChat {
 
 public struct ContactRef: Decodable, Equatable {
     var contactId: Int64
+    public var agentConnId: String
+    var connId: Int64
     var localDisplayName: ContactName
 
     public var id: ChatId { get { "@\(contactId)" } }
@@ -1148,7 +1169,8 @@ public struct ContactSubStatus: Decodable {
 }
 
 public struct Connection: Decodable {
-    var connId: Int64
+    public var connId: Int64
+    public var agentConnId: String
     var connStatus: ConnStatus
     public var connLevel: Int
     public var viaGroupLink: Bool
@@ -1159,6 +1181,7 @@ public struct Connection: Decodable {
 
     static let sampleData = Connection(
         connId: 1,
+        agentConnId: "abc",
         connStatus: .ready,
         connLevel: 0,
         viaGroupLink: false
@@ -1670,6 +1693,7 @@ public struct ChatItem: Identifiable, Decodable {
     public var file: CIFile?
 
     public var viewTimestamp = Date.now
+    public var isLiveDummy: Bool = false
 
     private enum CodingKeys: String, CodingKey {
         case chatDir, meta, content, formattedText, quotedItem, file
@@ -1860,6 +1884,29 @@ public struct ChatItem: Identifiable, Decodable {
             quotedItem: nil,
             file: nil
         )
+    }
+
+    public static func liveDummy(_ chatType: ChatType) -> ChatItem {
+        var item = ChatItem(
+            chatDir: chatType == ChatType.direct ? CIDirection.directSnd : CIDirection.groupSnd,
+            meta: CIMeta(
+                itemId: -2,
+                itemTs: .now,
+                itemText: "",
+                itemStatus: .rcvRead,
+                createdAt: .now,
+                updatedAt: .now,
+                itemDeleted: false,
+                itemEdited: false,
+                itemLive: true,
+                editable: false
+            ),
+            content: .sndMsgContent(msgContent: .text("")),
+            quotedItem: nil,
+            file: nil
+        )
+        item.isLiveDummy = true
+        return item
     }
 
     public static func invalidJSON(_ json: String) -> ChatItem {
@@ -2060,10 +2107,10 @@ public enum CIContent: Decodable, ItemContent {
 
     public static func preferenceText(_ feature: Feature, _ allowed: FeatureAllowed, _ param: Int?) -> String {
         allowed != .no && feature.hasParam && param != nil
-        ? "offered \(feature.text): \(TimedMessagesPreference.ttlText(param))"
+        ? String.localizedStringWithFormat(NSLocalizedString("offered %@: %@", comment: "feature offered item"), feature.text, TimedMessagesPreference.ttlText(param))
         : allowed != .no
-        ? "offered \(feature.text)"
-        : "cancelled \(feature.text)"
+        ? String.localizedStringWithFormat(NSLocalizedString("offered %@", comment: "feature offered item"), feature.text)
+        : String.localizedStringWithFormat(NSLocalizedString("cancelled %@", comment: "feature offered item"), feature.text)
     }
 
     public var msgContent: MsgContent? {

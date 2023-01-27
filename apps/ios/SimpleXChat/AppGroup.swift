@@ -17,9 +17,11 @@ let GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
 public let GROUP_DEFAULT_PRIVACY_TRANSFER_IMAGES_INLINE = "privacyTransferImagesInline"
 let GROUP_DEFAULT_NTF_BADGE_COUNT = "ntgBadgeCount"
 let GROUP_DEFAULT_NETWORK_USE_ONION_HOSTS = "networkUseOnionHosts"
+let GROUP_DEFAULT_NETWORK_SESSION_MODE = "networkSessionMode"
 let GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT = "networkTCPConnectTimeout"
 let GROUP_DEFAULT_NETWORK_TCP_TIMEOUT = "networkTCPTimeout"
 let GROUP_DEFAULT_NETWORK_SMP_PING_INTERVAL = "networkSMPPingInterval"
+let GROUP_DEFAULT_NETWORK_SMP_PING_COUNT = "networkSMPPingCount"
 let GROUP_DEFAULT_NETWORK_ENABLE_KEEP_ALIVE = "networkEnableKeepAlive"
 let GROUP_DEFAULT_NETWORK_TCP_KEEP_IDLE = "networkTCPKeepIdle"
 let GROUP_DEFAULT_NETWORK_TCP_KEEP_INTVL = "networkTCPKeepIntvl"
@@ -35,16 +37,20 @@ public let groupDefaults = UserDefaults(suiteName: APP_GROUP_NAME)!
 public func registerGroupDefaults() {
     groupDefaults.register(defaults: [
         GROUP_DEFAULT_NETWORK_USE_ONION_HOSTS: OnionHosts.no.rawValue,
+        GROUP_DEFAULT_NETWORK_SESSION_MODE: TransportSessionMode.user.rawValue,
         GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT: NetCfg.defaults.tcpConnectTimeout,
         GROUP_DEFAULT_NETWORK_TCP_TIMEOUT: NetCfg.defaults.tcpTimeout,
         GROUP_DEFAULT_NETWORK_SMP_PING_INTERVAL: NetCfg.defaults.smpPingInterval,
+        GROUP_DEFAULT_NETWORK_SMP_PING_COUNT: NetCfg.defaults.smpPingCount,
         GROUP_DEFAULT_NETWORK_ENABLE_KEEP_ALIVE: NetCfg.defaults.enableKeepAlive,
         GROUP_DEFAULT_NETWORK_TCP_KEEP_IDLE: KeepAliveOpts.defaults.keepIdle,
         GROUP_DEFAULT_NETWORK_TCP_KEEP_INTVL: KeepAliveOpts.defaults.keepIntvl,
         GROUP_DEFAULT_NETWORK_TCP_KEEP_CNT: KeepAliveOpts.defaults.keepCnt,
         GROUP_DEFAULT_INCOGNITO: false,
         GROUP_DEFAULT_STORE_DB_PASSPHRASE: true,
-        GROUP_DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE: false
+        GROUP_DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE: false,
+        GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES: true,
+        GROUP_DEFAULT_PRIVACY_TRANSFER_IMAGES_INLINE: true
     ])
 }
 
@@ -101,6 +107,12 @@ public let networkUseOnionHostsGroupDefault = EnumDefault<OnionHosts>(
     defaults: groupDefaults,
     forKey: GROUP_DEFAULT_NETWORK_USE_ONION_HOSTS,
     withDefault: .no
+)
+
+public let networkSessionModeGroupDefault = EnumDefault<TransportSessionMode>(
+    defaults: groupDefaults,
+    forKey: GROUP_DEFAULT_NETWORK_SESSION_MODE,
+    withDefault: .user
 )
 
 public let storeDBPassphraseGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_STORE_DB_PASSPHRASE)
@@ -182,9 +194,11 @@ public class Default<T> {
 public func getNetCfg() -> NetCfg {
     let onionHosts = networkUseOnionHostsGroupDefault.get()
     let (hostMode, requiredHostMode) = onionHosts.hostMode
+    let sessionMode = networkSessionModeGroupDefault.get()
     let tcpConnectTimeout = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT)
     let tcpTimeout = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT)
     let smpPingInterval = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_SMP_PING_INTERVAL)
+    let smpPingCount = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_SMP_PING_COUNT)
     let enableKeepAlive = groupDefaults.bool(forKey: GROUP_DEFAULT_NETWORK_ENABLE_KEEP_ALIVE)
     var tcpKeepAlive: KeepAliveOpts?
     if enableKeepAlive {
@@ -198,19 +212,23 @@ public func getNetCfg() -> NetCfg {
     return NetCfg(
         hostMode: hostMode,
         requiredHostMode: requiredHostMode,
+        sessionMode: sessionMode,
         tcpConnectTimeout: tcpConnectTimeout,
         tcpTimeout: tcpTimeout,
         tcpKeepAlive: tcpKeepAlive,
         smpPingInterval: smpPingInterval,
+        smpPingCount: smpPingCount,
         logTLSErrors: false
     )
 }
 
 public func setNetCfg(_ cfg: NetCfg) {
     networkUseOnionHostsGroupDefault.set(OnionHosts(netCfg: cfg))
+    networkSessionModeGroupDefault.set(cfg.sessionMode)
     groupDefaults.set(cfg.tcpConnectTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT)
     groupDefaults.set(cfg.tcpTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT)
     groupDefaults.set(cfg.smpPingInterval, forKey: GROUP_DEFAULT_NETWORK_SMP_PING_INTERVAL)
+    groupDefaults.set(cfg.smpPingCount, forKey: GROUP_DEFAULT_NETWORK_SMP_PING_COUNT)
     if let tcpKeepAlive = cfg.tcpKeepAlive {
         groupDefaults.set(true, forKey: GROUP_DEFAULT_NETWORK_ENABLE_KEEP_ALIVE)
         groupDefaults.set(tcpKeepAlive.keepIdle, forKey: GROUP_DEFAULT_NETWORK_TCP_KEEP_IDLE)

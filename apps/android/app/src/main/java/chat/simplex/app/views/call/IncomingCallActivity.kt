@@ -126,6 +126,7 @@ fun IncomingCallLockScreenAlert(invitation: RcvCallInvitation, chatModel: ChatMo
   IncomingCallLockScreenAlertLayout(
     invitation,
     callOnLockScreen,
+    chatModel,
     rejectCall = { cm.endCall(invitation = invitation) },
     ignoreCall = {
       chatModel.activeCallInvitation.value = null
@@ -135,6 +136,7 @@ fun IncomingCallLockScreenAlert(invitation: RcvCallInvitation, chatModel: ChatMo
     openApp = {
       val intent = Intent(context, MainActivity::class.java)
         .setAction(OpenChatAction)
+        .putExtra("userId", invitation.user.userId)
         .putExtra("chatId", invitation.contact.id)
       context.startActivity(intent)
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -149,6 +151,7 @@ fun IncomingCallLockScreenAlert(invitation: RcvCallInvitation, chatModel: ChatMo
 fun IncomingCallLockScreenAlertLayout(
   invitation: RcvCallInvitation,
   callOnLockScreen: CallOnLockScreen?,
+  chatModel: ChatModel,
   rejectCall: () -> Unit,
   ignoreCall: () -> Unit,
   acceptCall: () -> Unit,
@@ -160,7 +163,7 @@ fun IncomingCallLockScreenAlertLayout(
       .fillMaxSize(),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
-    IncomingCallInfo(invitation)
+    IncomingCallInfo(invitation, chatModel)
     Spacer(Modifier.fillMaxHeight().weight(1f))
     if (callOnLockScreen == CallOnLockScreen.ACCEPT) {
       ProfileImage(size = 192.dp, image = invitation.contact.profile.image)
@@ -217,12 +220,14 @@ fun PreviewIncomingCallLockScreenAlert() {
         .fillMaxSize()) {
       IncomingCallLockScreenAlertLayout(
         invitation = RcvCallInvitation(
+          user = User.sampleData,
           contact = Contact.sampleData,
           callType = CallType(media = CallMediaType.Audio, capabilities = CallCapabilities(encryption = false)),
           sharedKey = null,
           callTs = Clock.System.now()
         ),
         callOnLockScreen = null,
+        chatModel = SimplexApp.context.chatModel,
         rejectCall = {},
         ignoreCall = {},
         acceptCall = {},

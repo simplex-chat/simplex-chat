@@ -204,7 +204,10 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
         }
       },
       receiveFile = { fileId ->
-        withApi { chatModel.controller.receiveFile(fileId) }
+        val user = chatModel.currentUser.value
+        if (user != null) {
+          withApi { chatModel.controller.receiveFile(user, fileId) }
+        }
       },
       joinGroup = { groupId ->
         withApi { chatModel.controller.apiJoinGroup(groupId) }
@@ -529,7 +532,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   }
 
   Spacer(Modifier.size(8.dp))
-  val reversedChatItems by remember { derivedStateOf { chatItems.reversed() } }
+  val reversedChatItems by remember { derivedStateOf { chatItems.reversed().toList() } }
   val maxHeightRounded = with(LocalDensity.current) { maxHeight.roundToPx() }
   val scrollToItem: (Long) -> Unit = { itemId: Long ->
     val index = reversedChatItems.indexOfFirst { it.id == itemId }
@@ -568,7 +571,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
             scope.launch {
               if (composeState.value.editing) {
                 composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
-              } else {
+              } else if (cItem.id != ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
                 composeState.value = composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
               }
             }

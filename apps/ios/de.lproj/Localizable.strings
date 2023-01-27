@@ -62,13 +62,13 @@
 "**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." = "**Mehr Privatsphäre**: Es wird alle 20 Minuten auf neue Nachrichten geprüft. Nur Ihr Geräte-Token wird dem SimpleX-Chat-Server mitgeteilt, aber nicht wie viele Kontakte Sie haben oder welche Nachrichten Sie empfangen.";
 
 /* No comment provided by engineer. */
-"**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." = "**Beste Privatsphäre**: Es wird kein SimpleX-Chat-Benachrichtigungs-Server genutzt, Nachrichten werden in regelmäßigen Abständen im Hintergrund geprüft (dies hängt davon ab, wie häufig Sie die App nutzen).";
+"**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." = "**Beste Privatsphäre**: Es wird kein SimpleX-Chat-Benachrichtigungs-Server genutzt, Nachrichten werden in periodischen Abständen im Hintergrund geprüft (dies hängt davon ab, wie häufig Sie die App nutzen).";
 
 /* No comment provided by engineer. */
 "**Paste received link** or open it in the browser and tap **Open in mobile app**." = "**Fügen Sie den von Ihrem Kontakt erhaltenen Link ein** oder öffnen Sie ihn im Browser und tippen Sie auf **In mobiler App öffnen**.";
 
 /* No comment provided by engineer. */
-"**Please note**: you will NOT be able to recover or change passphrase if you lose it." = "**Bitte beachten Sie**: Sie können das Passwort NICHT wiederherstellen oder ändern, wenn Sie es vergessen haben oder verlieren.";
+"**Please note**: you will NOT be able to recover or change passphrase if you lose it." = "**Bitte beachten Sie**: Das Passwort kann NICHT wiederhergestellt oder geändert werden, wenn Sie es vergessen haben oder verlieren.";
 
 /* No comment provided by engineer. */
 "**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." = "**Empfohlen**: Nur Ihr Geräte-Token und ihre Benachrichtigungen werden an den SimpleX-Chat-Benachrichtigungs-Server gesendet, aber weder der Nachrichteninhalt noch deren Größe oder von wem sie gesendet wurde.";
@@ -98,10 +98,10 @@
 "%@ is connected!" = "%@ ist mit Ihnen verbunden!";
 
 /* No comment provided by engineer. */
-"%@ is not verified" = "%@ wurde nicht überprüft";
+"%@ is not verified" = "%@ wurde noch nicht überprüft";
 
 /* No comment provided by engineer. */
-"%@ is verified" = "%@ wurde überprüft";
+"%@ is verified" = "%@ wurde erfolgreich überprüft";
 
 /* notification title */
 "%@ wants to connect!" = "%@ will sich mit Ihnen verbinden!";
@@ -143,25 +143,25 @@
 "%lld second(s)" = "%lld Sekunde(n)";
 
 /* No comment provided by engineer. */
-"%lldd" = "%lldd";
+"%lldd" = "%lldT";
 
 /* No comment provided by engineer. */
-"%lldh" = "%lldh";
+"%lldh" = "%lldH";
 
 /* No comment provided by engineer. */
 "%lldk" = "%lldk";
 
 /* No comment provided by engineer. */
-"%lldm" = "%lldm";
+"%lldm" = "%lldmin";
 
 /* No comment provided by engineer. */
-"%lldmth" = "%lldmth";
+"%lldmth" = "%lldMon";
 
 /* No comment provided by engineer. */
-"%llds" = "%llds";
+"%llds" = "%lldsek";
 
 /* No comment provided by engineer. */
-"%lldw" = "%lldw";
+"%lldw" = "%lldW";
 
 /* No comment provided by engineer. */
 "`a + b`" = "\\`a + b`";
@@ -191,10 +191,10 @@
 "A new contact" = "Ein neuer Kontakt";
 
 /* No comment provided by engineer. */
-"A random profile will be sent to the contact that you received this link from" = "Ein zufälliges Profil wird an den Kontakt gesendet, von dem Sie diesen Link erhalten haben.";
+"A random profile will be sent to the contact that you received this link from" = "Ein zufälliges Profil wird an den Kontakt gesendet, von dem Sie diesen Link erhalten haben";
 
 /* No comment provided by engineer. */
-"A random profile will be sent to your contact" = "Ein zufälliges Profil wird an Ihren Kontakt gesendet.";
+"A random profile will be sent to your contact" = "Ein zufälliges Profil wird an Ihren Kontakt gesendet";
 
 /* No comment provided by engineer. */
 "About SimpleX" = "Über SimpleX";
@@ -255,7 +255,7 @@
 "All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." = "Alle Nachrichten werden gelöscht - dies kann nicht rückgängig gemacht werden! Die Nachrichten werden NUR bei Ihnen gelöscht.";
 
 /* No comment provided by engineer. */
-"All your contacts will remain connected" = "Alle Ihre Kontakte bleiben verbunden.";
+"All your contacts will remain connected" = "Alle Ihre Kontakte bleiben verbunden";
 
 /* No comment provided by engineer. */
 "Allow" = "Erlauben";
@@ -264,19 +264,19 @@
 "Allow disappearing messages only if your contact allows it to you." = "Verschwindende Nachrichten nur erlauben, wenn Ihr Kontakt das ebenfalls erlaubt.";
 
 /* No comment provided by engineer. */
-"Allow irreversible message deletion only if your contact allows it to you." = "Erlauben Sie das unwiederbringliche löschen von Nachrichten nur dann, wenn es Ihnen Ihr Kontakt ebenfalls erlaubt.";
+"Allow irreversible message deletion only if your contact allows it to you." = "Erlauben Sie das unwiederbringliche Löschen von Nachrichten nur dann, wenn es Ihnen Ihr Kontakt ebenfalls erlaubt.";
 
 /* No comment provided by engineer. */
-"Allow sending direct messages to members." = "Erlauben Sie das Senden von Direktnachrichten an Mitglieder";
+"Allow sending direct messages to members." = "Das Senden von Direktnachrichten an Gruppenmitglieder erlauben.";
 
 /* No comment provided by engineer. */
 "Allow sending disappearing messages." = "Das Senden von verschwindenden Nachrichten erlauben.";
 
 /* No comment provided by engineer. */
-"Allow to irreversibly delete sent messages." = "Unwiederbringliches Löschen von gesendeten Nachrichten erlauben.";
+"Allow to irreversibly delete sent messages." = "Unwiederbringliches löschen von gesendeten Nachrichten erlauben.";
 
 /* No comment provided by engineer. */
-"Allow to send voice messages." = "Senden von Sprachnachrichten erlauben.";
+"Allow to send voice messages." = "Das Senden von Sprachnachrichten erlauben.";
 
 /* No comment provided by engineer. */
 "Allow voice messages only if your contact allows them." = "Erlauben Sie Sprachnachrichten nur dann, wenn Ihr Kontakt diese ebenfalls erlaubt.";
@@ -377,8 +377,11 @@
 /* No comment provided by engineer. */
 "Cancel" = "Abbrechen";
 
+/* feature offered item */
+"cancelled %@" = "Beende %@";
+
 /* No comment provided by engineer. */
-"Cannot access keychain to save database password" = "Die App kann nicht auf den Schlüsselbund zugreifen, um das Datenbank-Passwort zu speichern.";
+"Cannot access keychain to save database password" = "Die App kann nicht auf den Schlüsselbund zugreifen, um das Datenbank-Passwort zu speichern";
 
 /* No comment provided by engineer. */
 "Cannot receive file" = "Datei kann nicht empfangen werden";
@@ -462,7 +465,7 @@
 "Clear conversation?" = "Unterhaltung löschen?";
 
 /* No comment provided by engineer. */
-"Clear verification" = "Überprüfung erfolgt";
+"Clear verification" = "Überprüfung zurücknehmen";
 
 /* No comment provided by engineer. */
 "colored" = "farbig";
@@ -810,13 +813,13 @@
 "Direct messages" = "Direkte Nachrichten";
 
 /* No comment provided by engineer. */
-"Direct messages between members are prohibited in this group." = "In dieser Gruppe sind Direktnachrichten zwischen Mitgliedern nicht möglich.";
+"Direct messages between members are prohibited in this group." = "In dieser Gruppe sind Direktnachrichten zwischen Mitgliedern nicht erlaubt.";
 
 /* authentication reason */
 "Disable SimpleX Lock" = "SimpleX Sperre deaktivieren";
 
 /* chat feature */
-"Disappearing messages" = "Verschwindende Nachrichten";
+"Disappearing messages" = "verschwindende Nachrichten";
 
 /* No comment provided by engineer. */
 "Disappearing messages are prohibited in this chat." = "In diesem Chat sind verschwindende Nachrichten nicht erlaubt.";
@@ -864,7 +867,7 @@
 "Enable notifications" = "Benachrichtigungen aktivieren";
 
 /* No comment provided by engineer. */
-"Enable periodic notifications?" = "Regelmäßige Benachrichtigungen aktivieren?";
+"Enable periodic notifications?" = "Periodische Benachrichtigungen aktivieren?";
 
 /* authentication reason */
 "Enable SimpleX Lock" = "SimpleX Sperre aktivieren";
@@ -1005,7 +1008,7 @@
 "Error saving passphrase to keychain" = "Fehler beim Speichern des Passworts in den Schlüsselbund";
 
 /* No comment provided by engineer. */
-"Error saving SMP servers" = "Fehler beim Speichern der SMP Server";
+"Error saving SMP servers" = "Fehler beim Speichern der SMP-Server";
 
 /* No comment provided by engineer. */
 "Error sending message" = "Fehler beim Senden der Nachricht";
@@ -1110,7 +1113,7 @@
 "Group members can send disappearing messages." = "Gruppenmitglieder können verschwindende Nachrichten senden.";
 
 /* No comment provided by engineer. */
-"Group members can send voice messages." = "Gruppenmitglieder können Sprachnachrichten senden.";
+"Group members can send voice messages." = "Gruppenmitglieder können Sprachnachrichten versenden.";
 
 /* notification */
 "Group message:" = "Grppennachricht:";
@@ -1122,7 +1125,7 @@
 "Group profile" = "Gruppenprofil";
 
 /* No comment provided by engineer. */
-"Group profile is stored on members' devices, not on the servers." = "Das Gruppenprofil wird nur auf den Mitglieds-Systemen gespeichtert und nicht auf den Servern.";
+"Group profile is stored on members' devices, not on the servers." = "Das Gruppenprofil wird nur auf den Mitglieds-Systemen gespeichert und nicht auf den Servern.";
 
 /* snd group event chat item */
 "group profile updated" = "Gruppenprofil aktualisiert";
@@ -1167,10 +1170,10 @@
 "If the video fails to connect, flip the camera to resolve it." = "Wenn der Videoanruf nicht funktioniert, wechseln Sie die Kamera, um das Problem zu lösen.";
 
 /* No comment provided by engineer. */
-"If you can't meet in person, **show QR code in the video call**, or share the link." = "Wenn Sie sich nicht persönlich treffen können, können Sie den **QR-Code während eines Videoanrufs anzeigen** oder den Einladungslink über einen anderen Kanal mit Ihrem Kontakt teilen.";
+"If you can't meet in person, **show QR code in the video call**, or share the link." = "Wenn Sie sich nicht persönlich treffen können, kann der **QR-Code während eines Videoanrufs angezeigt werden**, oder der Einladungslink über einen anderen Kanal mit Ihrem Kontakt geteilt werden.";
 
 /* No comment provided by engineer. */
-"If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." = "Wenn Sie sich nicht persönlich treffen können, können Sie den **QR-Code während eines Videoanrufs scannen** oder Ihr Kontakt kann den Einladungslink über einen anderen Kanal mit Ihnen teilen.";
+"If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." = "Wenn Sie sich nicht persönlich treffen können, kann der **QR-Code während eines Videoanrufs gescannt werden**, oder Ihr Kontakt kann den Einladungslink über einen anderen Kanal mit Ihnen teilen.";
 
 /* No comment provided by engineer. */
 "If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." = "Tippen Sie unten auf **Später wiederholen**, wenn Sie den Chat jetzt benötigen (es wird Ihnen angeboten, die Datenbank bei einem Neustart der App zu migrieren).";
@@ -1275,7 +1278,7 @@
 "invited" = "eingeladen";
 
 /* rcv group event chat item */
-"invited %@" = "hat %@ eingeladen.";
+"invited %@" = "hat %@ eingeladen";
 
 /* chat list item title */
 "invited to connect" = "Für eine Verbindung eingeladen";
@@ -1290,13 +1293,13 @@
 "iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications." = "Für die sichere Speicherung des Passworts nach dem Neustart der App und dem Wechsel des Passworts wird der iOS Schlüsselbund verwendet - dies erlaubt den Empfang von Push-Benachrichtigungen.";
 
 /* No comment provided by engineer. */
-"Irreversible message deletion" = "Unwiederbringliches Löschen einer Nachricht";
+"Irreversible message deletion" = "Unwiederbringliches löschen einer Nachricht";
 
 /* No comment provided by engineer. */
-"Irreversible message deletion is prohibited in this chat." = "In diesem Chat ist das unwiederbringliche Löschen von Nachrichten untersagt.";
+"Irreversible message deletion is prohibited in this chat." = "In diesem Chat ist das unwiederbringliche Löschen von Nachrichten nicht erlaubt.";
 
 /* No comment provided by engineer. */
-"Irreversible message deletion is prohibited in this group." = "In dieser Gruppe ist das unwiederbringliche Löschen von Nachrichten verboten.";
+"Irreversible message deletion is prohibited in this group." = "In dieser Gruppe ist das unwiederbringliche Löschen von Nachrichten nicht erlaubt.";
 
 /* No comment provided by engineer. */
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "Er ermöglicht mehrere anonyme Verbindungen in einem einzigen Chat-Profil ohne Daten zwischen diesen zu teilen.";
@@ -1368,7 +1371,7 @@
 "Make sure SMP server addresses are in correct format, line separated and are not duplicated (%@)." = "Stellen Sie sicher, dass die SMP-Server-Adressen das richtige Format haben, zeilenweise getrennt und nicht doppelt vorhanden sind (%@).";
 
 /* No comment provided by engineer. */
-"Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." = "Stellen Sie sicher, dass die WebRTC ICE-Server Adressen das richtige Format haben, zeilenweise angeordnet und nicht kopiert sind.";
+"Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." = "Stellen Sie sicher, dass die WebRTC ICE-Server Adressen das richtige Format haben, zeilenweise angeordnet und nicht doppelt vorhanden sind.";
 
 /* No comment provided by engineer. */
 "Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" = "Viele Menschen haben gefragt: *Wie kann SimpleX Nachrichten zustellen, wenn es keine Benutzerkennungen gibt?*";
@@ -1521,6 +1524,12 @@
 /* No comment provided by engineer. */
 "Off (Local)" = "Aus (Lokal)";
 
+/* feature offered item */
+"offered %@" = "Beginne %@";
+
+/* feature offered item */
+"offered %@: %@" = "Beginne %1$@: %2$@";
+
 /* No comment provided by engineer. */
 "Ok" = "Ok";
 
@@ -1561,7 +1570,7 @@
 "Only you can send disappearing messages." = "Nur Sie können verschwindende Nachrichten senden.";
 
 /* No comment provided by engineer. */
-"Only you can send voice messages." = "Nur Sie können Sprachnachrichten senden.";
+"Only you can send voice messages." = "Nur Sie können Sprachnachrichten versenden.";
 
 /* No comment provided by engineer. */
 "Only your contact can irreversibly delete messages (you can mark them for deletion)." = "Nur Ihr Kontakt kann Nachrichten unwiederbringlich löschen (Sie können sie zum Löschen markieren).";
@@ -1570,7 +1579,7 @@
 "Only your contact can send disappearing messages." = "Nur Ihr Kontakt kann verschwindende Nachrichten senden.";
 
 /* No comment provided by engineer. */
-"Only your contact can send voice messages." = "Nur Ihr Kontakt kann Sprachnachrichten senden.";
+"Only your contact can send voice messages." = "Nur Ihr Kontakt kann Sprachnachrichten versenden.";
 
 /* No comment provided by engineer. */
 "Open chat" = "Chat öffnen";
@@ -1612,7 +1621,7 @@
 "People can connect to you only via the links you share." = "Verbindungen mit Kontakten sind nur über Links möglich, die Sie oder Ihre Kontakte untereinander teilen.";
 
 /* No comment provided by engineer. */
-"Periodically" = "Regelmäßig";
+"Periodically" = "Periodisch";
 
 /* No comment provided by engineer. */
 "PING interval" = "PING-Intervall";
@@ -1633,7 +1642,7 @@
 "Please enter correct current passphrase." = "Bitte geben Sie das korrekte, aktuelle Passwort ein.";
 
 /* No comment provided by engineer. */
-"Please enter the previous password after restoring database backup. This action can not be undone." = "Bitte geben Sie das vorherige Passwort ein, nachdem Sie die Datenbanksicherung wiederhergestellt haben. Diese Aktion kann nicht rückgängig gemacht werden!";
+"Please enter the previous password after restoring database backup. This action can not be undone." = "Bitte geben Sie das vorherige Passwort ein, nachdem Sie die Datenbanksicherung wiederhergestellt haben. Diese Aktion kann nicht rückgängig gemacht werden.";
 
 /* No comment provided by engineer. */
 "Please restart the app and migrate the database to enable push notifications." = "Bitte führen Sie einen Neustart der App durch und migrieren Sie die Datenbank, um Benachrichtigungen zu aktivieren.";
@@ -1663,16 +1672,16 @@
 "Profile image" = "Profilbild";
 
 /* No comment provided by engineer. */
-"Prohibit irreversible message deletion." = "Unwiederbringliches Löschen von Nachrichten verbieten.";
+"Prohibit irreversible message deletion." = "Unwiederbringliches löschen von Nachrichten nicht erlauben.";
 
 /* No comment provided by engineer. */
-"Prohibit sending direct messages to members." = "Verbieten Sie das Senden von Direktnachrichten an Mitglieder";
+"Prohibit sending direct messages to members." = "Das Senden von Direktnachrichten an Gruppenmitglieder nicht erlauben.";
 
 /* No comment provided by engineer. */
 "Prohibit sending disappearing messages." = "Das Senden von verschwindenden Nachrichten verbieten.";
 
 /* No comment provided by engineer. */
-"Prohibit sending voice messages." = "Senden von Sprachnachrichten untersagen.";
+"Prohibit sending voice messages." = "Das Senden von Sprachnachrichten nicht erlauben.";
 
 /* No comment provided by engineer. */
 "Protect app screen" = "App-Bildschirm schützen";
@@ -1765,7 +1774,7 @@
 "Reset to defaults" = "Auf Standardwerte zurücksetzen";
 
 /* No comment provided by engineer. */
-"Restart the app to create a new chat profile" = "Um ein neues Chat-Profil zu erstellen, starten Sie die App neu.";
+"Restart the app to create a new chat profile" = "Um ein neues Chat-Profil zu erstellen, starten Sie die App neu";
 
 /* No comment provided by engineer. */
 "Restart the app to use imported chat database" = "Um die importierte Chat-Datenbank zu verwenden, starten Sie die App neu";
@@ -1822,7 +1831,7 @@
 "Save preferences?" = "Präferenzen speichern?";
 
 /* No comment provided by engineer. */
-"Save servers" = "Server speichern";
+"Save servers" = "Alle Server speichern";
 
 /* No comment provided by engineer. */
 "Saved WebRTC ICE servers will be removed" = "Gespeicherte WebRTC ICE-Server werden entfernt";
@@ -1900,7 +1909,7 @@
 "Sent messages will be deleted after set time." = "Gesendete Nachrichten werden nach der eingestellten Zeit gelöscht.";
 
 /* server test error */
-"Server requires authorization to create queues, check password" = "Um Warteschlangen zu erzeugen benötigt der Server eine Authentifizierung. Bitte überprüfen Sie das Passwort.";
+"Server requires authorization to create queues, check password" = "Um Warteschlangen zu erzeugen benötigt der Server eine Authentifizierung. Bitte überprüfen Sie das Passwort";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "Server Test ist fehlgeschlagen!";
@@ -2059,7 +2068,7 @@
 "Thank you for installing SimpleX Chat!" = "Vielen Dank, dass Sie SimpleX Chat installiert haben!";
 
 /* No comment provided by engineer. */
-"The 1st platform without any user identifiers – private by design." = "Die erste Plattform ohne Benutzerkennungen – Privat per Design";
+"The 1st platform without any user identifiers – private by design." = "Die erste Plattform ohne Benutzerkennungen – Privat per Design.";
 
 /* No comment provided by engineer. */
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "Wenn sie Nachrichten oder Kontaktanfragen empfangen, kann Sie die App benachrichtigen - Um dies zu aktivieren, öffnen Sie bitte die Einstellungen.";
@@ -2221,7 +2230,7 @@
 "Use for new connections" = "Für neue Verbindungen nutzen";
 
 /* No comment provided by engineer. */
-"Use server" = "Benutze Server";
+"Use server" = "Server nutzen";
 
 /* No comment provided by engineer. */
 "Use SimpleX Chat servers?" = "Verwenden Sie SimpleX Chat Server?";
@@ -2272,13 +2281,13 @@
 "Voice messages" = "Sprachnachrichten";
 
 /* No comment provided by engineer. */
-"Voice messages are prohibited in this chat." = "In diesem Chat sind Sprachnachrichten untersagt.";
+"Voice messages are prohibited in this chat." = "In diesem Chat sind Sprachnachrichten nicht erlaubt.";
 
 /* No comment provided by engineer. */
-"Voice messages are prohibited in this group." = "In dieser Gruppe sind Sprachnachrichten untersagt.";
+"Voice messages are prohibited in this group." = "In dieser Gruppe sind Sprachnachrichten nicht erlaubt.";
 
 /* No comment provided by engineer. */
-"Voice messages prohibited!" = "Sprachnachrichten sind untersagt!";
+"Voice messages prohibited!" = "Sprachnachrichten sind nicht erlaubt!";
 
 /* No comment provided by engineer. */
 "waiting for answer…" = "Warten auf Antwort…";
@@ -2362,7 +2371,7 @@
 "You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it." = "Sie können Ihre Adresse als Link oder als QR-Code teilen – Jede Person kann sich darüber mit Ihnen verbinden. Sie werden Ihre mit dieser Adresse verbundenen Kontakte nicht verlieren, wenn Sie diese Adresse später löschen.";
 
 /* No comment provided by engineer. */
-"You can start chat via app Settings / Database or by restarting the app" = "Sie können den Chat über die App-Einstellungen / Datenbank oder durch Neustart der App starten.";
+"You can start chat via app Settings / Database or by restarting the app" = "Sie können den Chat über die App-Einstellungen / Datenbank oder durch Neustart der App starten";
 
 /* No comment provided by engineer. */
 "You can use markdown to format messages:" = "Um Nachrichteninhalte zu formatieren, können Sie Markdowns verwenden:";
@@ -2446,16 +2455,16 @@
 "you: " = "Sie: ";
 
 /* No comment provided by engineer. */
-"You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile" = "Sie versuchen, einen Kontakt, mit dem Sie ein Inkognito-Profil geteilt haben, in die Gruppe einzuladen, in der Sie Ihr Hauptprofil verwenden.";
+"You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile" = "Sie versuchen, einen Kontakt, mit dem Sie ein Inkognito-Profil geteilt haben, in die Gruppe einzuladen, in der Sie Ihr Hauptprofil verwenden";
 
 /* No comment provided by engineer. */
-"You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" = "Sie verwenden ein Inkognito-Profil für diese Gruppe. Um zu verhindern, dass Sie Ihr Hauptprofil teilen, ist in diesem Fall das Einladen von Kontakten nicht erlaubt.";
+"You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" = "Sie verwenden ein Inkognito-Profil für diese Gruppe. Um zu verhindern, dass Sie Ihr Hauptprofil teilen, ist in diesem Fall das Einladen von Kontakten nicht erlaubt";
 
 /* No comment provided by engineer. */
 "Your calls" = "Anrufe";
 
 /* No comment provided by engineer. */
-"Your chat database" = "Meine Chat-Datenbank";
+"Your chat database" = "Chat-Datenbank";
 
 /* No comment provided by engineer. */
 "Your chat database is not encrypted - set passphrase to encrypt it." = "Ihre Chat-Datenbank ist nicht verschlüsselt. Bitte legen Sie ein Passwort fest, um sie zu schützen.";
@@ -2494,7 +2503,7 @@
 "Your ICE servers" = "Ihre ICE-Server";
 
 /* No comment provided by engineer. */
-"Your preferences" = "Ihre Präferenzen";
+"Your preferences" = "Meine Präferenzen";
 
 /* No comment provided by engineer. */
 "Your privacy" = "Meine Privatsphäre";
@@ -2503,7 +2512,7 @@
 "Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "Ihr Profil wird auf Ihrem Gerät gespeichert und nur mit Ihren Kontakten geteilt.\nSimpleX-Server können Ihr Profil nicht einsehen.";
 
 /* No comment provided by engineer. */
-"Your profile will be sent to the contact that you received this link from" = "Ihr Profil wird an den Kontakt gesendet, von dem Sie diesen Link erhalten haben.";
+"Your profile will be sent to the contact that you received this link from" = "Ihr Profil wird an den Kontakt gesendet, von dem Sie diesen Link erhalten haben";
 
 /* No comment provided by engineer. */
 "Your profile, contacts and delivered messages are stored on your device." = "Ihr Profil, Ihre Kontakte und zugestellten Nachrichten werden auf Ihrem Gerät gespeichert.";

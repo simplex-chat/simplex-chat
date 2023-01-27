@@ -8,11 +8,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.window.Dialog
 import chat.simplex.app.R
 import chat.simplex.app.TAG
-import chat.simplex.app.ui.theme.DEFAULT_PADDING
+import chat.simplex.app.ui.theme.*
 
 class AlertManager {
   var alertViews = mutableStateListOf<(@Composable () -> Unit)>()
@@ -44,15 +46,25 @@ class AlertManager {
 
   fun showAlertDialogButtonsColumn(
     title: String,
-    text: String? = null,
+    text: AnnotatedString? = null,
     buttons: @Composable () -> Unit,
   ) {
     showAlert {
       Dialog(onDismissRequest = this::hideAlert) {
-        Column(Modifier.background(MaterialTheme.colors.background)) {
-          Text(title, Modifier.padding(DEFAULT_PADDING), fontSize = 18.sp)
+        Column(Modifier.background(MaterialTheme.colors.background, MaterialTheme.shapes.medium)) {
+          Text(title,
+            Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, top = DEFAULT_PADDING, bottom = if (text == null) DEFAULT_PADDING else DEFAULT_PADDING_HALF),
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold
+          )
           if (text != null) {
-            Text(text)
+            CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.high) {
+              Text(
+                text,
+                Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING),
+                fontSize = 14.sp,
+              )
+            }
           }
           CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.high) {
             buttons()

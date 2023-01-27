@@ -15,6 +15,7 @@ private let memberImageSize: CGFloat = 34
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
+    @Environment(\.dismiss) var dismiss
     @State @ObservedObject var chat: Chat
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
@@ -62,30 +63,34 @@ struct ChatView: View {
         .padding(.top, 1)
         .navigationTitle(cInfo.chatViewName)
         .navigationBarTitleDisplayMode(.inline)
-        .navigationBarBackButtonHidden(true)
         .onAppear {
+            if chatModel.draftChatId == cInfo.id, let draft = chatModel.draft {
+                composeState = draft
+            }
             if chat.chatStats.unreadChat {
                 Task {
                     await markChatUnread(chat, unreadChat: false)
                 }
             }
         }
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    chatModel.chatId = nil
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                        if chatModel.chatId == nil {
-                            chatModel.reversedChatItems = []
-                        }
-                    }
-                } label: {
-                    HStack(spacing: 0) {
-                        Image(systemName: "chevron.backward")
-                        Text("Chats")
+        .onChange(of: chatModel.chatId) { _ in
+            if chatModel.chatId == nil { dismiss() }
+        }
+        .onDisappear {
+            if chatModel.chatId == cInfo.id {
+                chatModel.chatId = nil
+                if !composeState.empty {
+                    chatModel.draft = composeState
+                    chatModel.draftChatId = chat.id
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    if chatModel.chatId == nil {
+                        chatModel.reversedChatItems = []
                     }
                 }
             }
+        }
+        .toolbar {
             ToolbarItem(placement: .principal) {
                 if case let .direct(contact) = cInfo {
                     Button {
@@ -177,7 +182,7 @@ struct ChatView: View {
             }
         }
     }
-    
+
     private func searchToolbar() -> some View {
         HStack {
             HStack {
@@ -233,7 +238,6 @@ struct ChatView: View {
                                             if chatModel.chatId == cInfo.id && itemsInView.contains(ci.viewId) {
                                                 Task {
                                                     await apiMarkChatItemRead(cInfo, ci)
-                                                    NtfManager.shared.decNtfBadgeCount()
                                                 }
                                             }
                                         }
@@ -442,9 +446,13 @@ struct ChatView: View {
         
         var body: some View {
             let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
-            
+            let uiMenu: Binding<UIMenu> = Binding(
+                get: { UIMenu(title: "", children: menu(live: composeState.liveMessage != nil)) },
+                set: { _ in }
+            )
+
             ChatItemView(chatInfo: chat.chatInfo, chatItem: ci, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy, revealed: $revealed)
-                .uiKitContextMenu(actions: menu())
+                .uiKitContextMenu(menu: uiMenu)
                 .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {
                     Button("Delete for me", role: .destructive) {
                         deleteMessage(.cidmInternal)
@@ -459,10 +467,10 @@ struct ChatView: View {
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
         }
         
-        private func menu() -> [UIAction] {
+        private func menu(live: Bool) -> [UIAction] {
             var menu: [UIAction] = []
             if let mc = ci.content.msgContent, !ci.meta.itemDeleted || revealed {
-                if !ci.meta.itemDeleted {
+                if !ci.meta.itemDeleted && !ci.isLiveDummy && !live {
                     menu.append(replyUIAction())
                 }
                 menu.append(shareUIAction())
@@ -478,13 +486,15 @@ struct ChatView: View {
                         menu.append(saveFileAction(filePath))
                     }
                 }
-                if ci.meta.editable && !mc.isVoice {
+                if ci.meta.editable && !mc.isVoice && !live {
                     menu.append(editAction())
                 }
                 if revealed {
                     menu.append(hideUIAction())
                 }
-                menu.append(deleteUIAction())
+                if !live || !ci.meta.isLive {
+                    menu.append(deleteUIAction())
+                }
             } else if ci.meta.itemDeleted {
                 menu.append(revealUIAction())
                 menu.append(deleteUIAction())

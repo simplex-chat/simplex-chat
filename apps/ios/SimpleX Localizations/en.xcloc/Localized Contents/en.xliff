@@ -463,9 +463,24 @@
         <target>Answer call</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="App build: %@" xml:space="preserve">
+        <source>App build: %@</source>
+        <target>App build: %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="App icon" xml:space="preserve">
         <source>App icon</source>
         <target>App icon</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="App version" xml:space="preserve">
+        <source>App version</source>
+        <target>App version</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="App version: v%@" xml:space="preserve">
+        <source>App version: v%@</source>
+        <target>App version: v%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Appearance" xml:space="preserve">
@@ -827,6 +842,16 @@
         <source>Copy</source>
         <target>Copy</target>
         <note>chat item action</note>
+      </trans-unit>
+      <trans-unit id="Core built at: %@" xml:space="preserve">
+        <source>Core built at: %@</source>
+        <target>Core built at: %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Core version: v%@" xml:space="preserve">
+        <source>Core version: v%@</source>
+        <target>Core version: v%@</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create" xml:space="preserve">
         <source>Create</source>
@@ -2271,6 +2296,11 @@ We will be adding server redundancy to prevent lost messages.</target>
       <trans-unit id="Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." xml:space="preserve">
         <source>Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red.</source>
         <target>Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="PING count" xml:space="preserve">
+        <source>PING count</source>
+        <target>PING count</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="PING interval" xml:space="preserve">
@@ -3746,6 +3776,11 @@ SimpleX servers cannot see your profile.</target>
         <target>calling…</target>
         <note>call status</note>
       </trans-unit>
+      <trans-unit id="cancelled %@" xml:space="preserve">
+        <source>cancelled %@</source>
+        <target>cancelled %@</target>
+        <note>feature offered item</note>
+      </trans-unit>
       <trans-unit id="changed address for you" xml:space="preserve">
         <source>changed address for you</source>
         <target>changed address for you</target>
@@ -4056,6 +4091,16 @@ SimpleX servers cannot see your profile.</target>
         <target>off</target>
         <note>enabled status
    group pref value</note>
+      </trans-unit>
+      <trans-unit id="offered %@" xml:space="preserve">
+        <source>offered %@</source>
+        <target>offered %@</target>
+        <note>feature offered item</note>
+      </trans-unit>
+      <trans-unit id="offered %@: %@" xml:space="preserve">
+        <source>offered %1$@: %2$@</source>
+        <target>offered %1$@: %2$@</target>
+        <note>feature offered item</note>
       </trans-unit>
       <trans-unit id="on" xml:space="preserve">
         <source>on</source>

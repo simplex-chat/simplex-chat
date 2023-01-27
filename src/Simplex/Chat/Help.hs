@@ -87,7 +87,7 @@ chatHelpInfo =
       indent <> highlight "/help <topic>    " <> " - help on: " <> listHighlight ["messages", "files", "groups", "address", "settings"],
       indent <> highlight "/profile         " <> " - show / update user profile",
       indent <> highlight "/delete <contact>" <> " - delete contact and all messages with them",
-      indent <> highlight "/contacts        " <> " - list contacts",
+      indent <> highlight "/chats           " <> " - most recent chats",
       indent <> highlight "/markdown        " <> " - supported markdown syntax",
       indent <> highlight "/version         " <> " - SimpleX Chat version",
       indent <> highlight "/quit            " <> " - quit chat",
@@ -153,7 +153,11 @@ messagesHelpInfo :: [StyledString]
 messagesHelpInfo =
   map
     styleMarkdown
-    [ green "Show recent messages",
+    [ green "Show recent chats",
+      indent <> highlight "/chats [N]      " <> " - the most recent N conversations (20 by default)",
+      indent <> highlight "/chats all      " <> " - all conversations",
+      "",
+      green "Show recent messages",
       indent <> highlight "/tail @alice [N]" <> " - the last N messages with alice (10 by default)",
       indent <> highlight "/tail #team [N] " <> " - the last N messages in the group team",
       indent <> highlight "/tail [N]       " <> " - the last N messages in all chats",

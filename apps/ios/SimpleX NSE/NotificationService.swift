@@ -110,7 +110,7 @@ class NotificationService: UNNotificationServiceExtension {
                let ntfMsgInfo = apiGetNtfMessage(nonce: nonce, encNtfInfo: encNtfInfo) {
                 logger.debug("NotificationService: receiveNtfMessages: apiGetNtfMessage \(String(describing: ntfMsgInfo), privacy: .public)")
                 if let connEntity = ntfMsgInfo.connEntity {
-                    setBestAttemptNtf(createConnectionEventNtf(connEntity))
+                    setBestAttemptNtf(createConnectionEventNtf(ntfMsgInfo.user, connEntity))
                     if let id = connEntity.id {
                         Task {
                             logger.debug("NotificationService: receiveNtfMessages: in Task, connEntity id \(id, privacy: .public)")
@@ -118,9 +118,9 @@ class NotificationService: UNNotificationServiceExtension {
                             await PendingNtfs.shared.readStream(id, for: self, msgCount: ntfMsgInfo.ntfMessages.count)
                             deliverBestAttemptNtf()
                         }
-                        return
                     }
                 }
+                return
             } else {
                 setBestAttemptNtf(createErrorNtf(dbStatus))
             }
@@ -154,6 +154,7 @@ class NotificationService: UNNotificationServiceExtension {
 }
 
 var chatStarted = false
+var networkConfig: NetCfg = getNetCfg()
 
 func startChat() -> DBMigrationResult? {
     hs_init(0, nil)
@@ -166,7 +167,7 @@ func startChat() -> DBMigrationResult? {
     if let user = apiGetActiveUser() {
         logger.debug("active user \(String(describing: user))")
         do {
-            try setNetworkConfig(getNetCfg())
+            try setNetworkConfig(networkConfig)
             let justStarted = try apiStartChat()
             chatStarted = true
             if justStarted {
@@ -188,6 +189,7 @@ func startChat() -> DBMigrationResult? {
 func receiveMessages() async {
     logger.debug("NotificationService receiveMessages")
     while true {
+        updateNetCfg()
         if let msg = await chatRecvMsg() {
             if let (id, ntf) = await receivedMsgNtf(msg) {
                 await PendingNtfs.shared.createStream(id)
@@ -207,15 +209,18 @@ func chatRecvMsg() async -> ChatResponse? {
 func receivedMsgNtf(_ res: ChatResponse) async -> (String, UNMutableNotificationContent)? {
     logger.debug("NotificationService processReceivedMsg: \(res.responseType)")
     switch res {
-    case let .contactConnected(contact, _):
-        return (contact.id, createContactConnectedNtf(contact))
+    case let .contactConnected(user, contact, _):
+        return (contact.id, createContactConnectedNtf(user, contact))
 //        case let .contactConnecting(contact):
 //            TODO profile update
-    case let .receivedContactRequest(contactRequest):
-        return (UserContact(contactRequest: contactRequest).id, createContactRequestNtf(contactRequest))
-    case let .newChatItem(aChatItem):
+    case let .receivedContactRequest(user, contactRequest):
+        return (UserContact(contactRequest: contactRequest).id, createContactRequestNtf(user, contactRequest))
+    case let .newChatItem(user, aChatItem):
         let cInfo = aChatItem.chatInfo
         var cItem = aChatItem.chatItem
+        if !cInfo.ntfsEnabled {
+            ntfBadgeCountGroupDefault.set(max(0, ntfBadgeCountGroupDefault.get() - 1))
+        }
         if case .image = cItem.content.msgContent {
            if let file = cItem.file,
               file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV,
@@ -232,7 +237,7 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, UNMutableNotification
                 cItem = apiReceiveFile(fileId: file.fileId, inline: inline)?.chatItem ?? cItem
             }
          }
-        return cItem.showMutableNotification ? (aChatItem.chatId, createMessageReceivedNtf(cInfo, cItem)) : nil
+        return cItem.showMutableNotification ? (aChatItem.chatId, createMessageReceivedNtf(user, cInfo, cItem)) : nil
     case let .callInvitation(invitation):
         return (invitation.contact.id, createCallInvitationNtf(invitation))
     default:
@@ -241,12 +246,25 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, UNMutableNotification
     }
 }
 
+func updateNetCfg() {
+    let newNetConfig = getNetCfg()
+    if newNetConfig != networkConfig {
+        logger.debug("NotificationService applying changed network config")
+        do {
+            try setNetworkConfig(networkConfig)
+            networkConfig = newNetConfig
+        } catch {
+            logger.error("NotificationService apply changed network config error: \(responseError(error), privacy: .public)")
+        }
+    }
+}
+
 func apiGetActiveUser() -> User? {
     let r = sendSimpleXCmd(.showActiveUser)
-    logger.debug("apiGetActiveUser sendSimpleXCmd responce: \(String(describing: r))")
+    logger.debug("apiGetActiveUser sendSimpleXCmd response: \(String(describing: r))")
     switch r {
     case let .activeUser(user): return user
-    case .chatCmdError(.error(.noActiveUser)): return nil
+    case .chatCmdError(_, .error(.noActiveUser)): return nil
     default:
         logger.error("NotificationService apiGetActiveUser unexpected response: \(String(describing: r))")
         return nil
@@ -275,17 +293,24 @@ func apiSetIncognito(incognito: Bool) throws {
 }
 
 func apiGetNtfMessage(nonce: String, encNtfInfo: String) -> NtfMessages? {
-    let r = sendSimpleXCmd(.apiGetNtfMessage(nonce: nonce, encNtfInfo: encNtfInfo))
-    if case let .ntfMessages(connEntity, msgTs, ntfMessages) = r {
-        return NtfMessages(connEntity: connEntity, msgTs: msgTs, ntfMessages: ntfMessages)
+    guard apiGetActiveUser() != nil else {
+        logger.debug("no active user")
+        return nil
     }
-    logger.debug("apiGetNtfMessage ignored response: \(String.init(describing: r), privacy: .public)")
+    let r = sendSimpleXCmd(.apiGetNtfMessage(nonce: nonce, encNtfInfo: encNtfInfo))
+    if case let .ntfMessages(user, connEntity, msgTs, ntfMessages) = r, let user = user {
+        return NtfMessages(user: user, connEntity: connEntity, msgTs: msgTs, ntfMessages: ntfMessages)
+    } else if case let .chatCmdError(_, error) = r {
+        logger.debug("apiGetNtfMessage error response: \(String.init(describing: error))")
+    } else {
+        logger.debug("apiGetNtfMessage ignored response: \(r.responseType, privacy: .public) \(String.init(describing: r), privacy: .private)")
+    }
     return nil
 }
 
 func apiReceiveFile(fileId: Int64, inline: Bool) -> AChatItem? {
     let r = sendSimpleXCmd(.receiveFile(fileId: fileId, inline: inline))
-    if case let .rcvFileAccepted(chatItem) = r { return chatItem }
+    if case let .rcvFileAccepted(_, chatItem) = r { return chatItem }
     logger.error("receiveFile error: \(responseError(r))")
     return nil
 }
@@ -297,6 +322,7 @@ func setNetworkConfig(_ cfg: NetCfg) throws {
 }
 
 struct NtfMessages {
+    var user: User
     var connEntity: ConnectionEntity?
     var msgTs: Date?
     var ntfMessages: [NtfMsgInfo]
