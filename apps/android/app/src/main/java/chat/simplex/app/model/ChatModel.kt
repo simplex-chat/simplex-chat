@@ -13,6 +13,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import chat.simplex.app.R
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.call.*
+import chat.simplex.app.views.chat.ComposeState
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.onboarding.OnboardingStage
 import chat.simplex.app.views.usersettings.NotificationPreviewMode
@@ -83,6 +84,9 @@ class ChatModel(val controller: ChatController) {
 
   // currently showing QR code
   val connReqInv = mutableStateOf(null as String?)
+
+  var draft = mutableStateOf(null as ComposeState?)
+  var draftChatId = mutableStateOf(null as String?)
 
   // working with external intents
   val sharedContent = mutableStateOf(null as SharedContent?)
