@@ -390,6 +390,8 @@ struct ComposeView: View {
             if live {
                 sendMessage()
                 resetLinkPreview()
+            } else {
+                clearState()
             }
             if !live && !composeState.empty  {
                 if case .recording = composeState.voiceMessageRecordingState {
@@ -407,7 +409,6 @@ struct ComposeView: View {
                 chatModel.draft = nil
                 chatModel.draftChatId = nil
             }
-            clearState()
             chatModel.removeLiveDummy(animated: false)
         }
         .onChange(of: chatModel.stopPreviousRecPlay) { _ in
