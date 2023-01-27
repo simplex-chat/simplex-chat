@@ -113,6 +113,7 @@ struct UserPicker: View {
             .padding(.trailing)
             .padding([.leading, .vertical], 12)
         })
+        .disabled(user.activeUser)
         .buttonStyle(PressedButtonStyle(defaultColor: fillColor, pressedColor: Color(uiColor: .secondarySystemFill)))
     }
 

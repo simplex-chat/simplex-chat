@@ -102,7 +102,7 @@ struct UserProfilesView: View {
         }
     }
 
-    @ViewBuilder private func userView(_ user: User) -> some View {
+    private func userView(_ user: User) -> some View {
         Button {
             changeActiveUser(user.userId)
         } label: {
