@@ -386,12 +386,27 @@ struct ComposeView: View {
             }
         }
         .onDisappear {
-            if let fileName = composeState.voiceMessageRecordingFileName {
-                cancelVoiceMessageRecording(fileName, removeAudioFile: false)
-            }
+            var saveDraft = true
             if composeState.liveMessage != nil && (!composeState.message.isEmpty || composeState.liveMessage?.sentMsg != nil) {
+                saveDraft = false
                 sendMessage()
                 resetLinkPreview()
+            }
+            if case .recording = composeState.voiceMessageRecordingState, case let .voicePreview(recordingFileName, _) = composeState.preview {
+                audioRecorder?.stop()
+                composeState.voiceMessageRecordingState = .finished
+                composeState.preview = .voicePreview(recordingFileName: recordingFileName, duration: Int(voiceMessageRecordingTime?.rounded() ?? 0))
+                chatModel.stopPreviousRecPlay = true
+            }
+            if !composeState.empty && saveDraft {
+                chatModel.draft = composeState
+                chatModel.draftChatId = chat.id
+            } else if chatModel.draftChatId == chat.id {
+                chatModel.draft = nil
+                chatModel.draftChatId = nil
+            }
+            if let fileName = composeState.voiceMessageRecordingFileName {
+                cancelVoiceMessageRecording(fileName, removeAudioFile: false)
             }
             chatModel.removeLiveDummy(animated: false)
         }
