@@ -392,12 +392,7 @@ struct ComposeView: View {
                 sendMessage()
                 resetLinkPreview()
             }
-            if case .recording = composeState.voiceMessageRecordingState, case let .voicePreview(recordingFileName, _) = composeState.preview {
-                audioRecorder?.stop()
-                composeState.voiceMessageRecordingState = .finished
-                composeState.preview = .voicePreview(recordingFileName: recordingFileName, duration: Int(voiceMessageRecordingTime?.rounded() ?? 0))
-                chatModel.stopPreviousRecPlay = true
-            }
+            finishVoiceMessageRecording()
             if !composeState.empty && saveDraft {
                 chatModel.draft = composeState
                 chatModel.draftChatId = chat.id
