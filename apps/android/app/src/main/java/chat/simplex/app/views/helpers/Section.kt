@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.app.ui.theme.*
@@ -159,6 +160,11 @@ fun <T> SectionItemWithValue(
 
 @Composable
 fun SectionTextFooter(text: String) {
+  SectionTextFooter(AnnotatedString(text))
+}
+
+@Composable
+fun SectionTextFooter(text: AnnotatedString) {
   Text(
     text,
     Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF).fillMaxWidth(0.9F),

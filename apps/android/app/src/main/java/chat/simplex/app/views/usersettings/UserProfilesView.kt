@@ -43,7 +43,7 @@ fun UserProfilesView(m: ChatModel) {
       val text = buildAnnotatedString {
         append(generalGetString(R.string.users_delete_all_chats_deleted) + "\n\n" + generalGetString(R.string.users_delete_profile_for) + " ")
         withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-          append(user.chatViewName)
+          append(user.displayName)
         }
         append(":")
       }
