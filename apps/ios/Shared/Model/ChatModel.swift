@@ -63,6 +63,8 @@ final class ChatModel: ObservableObject {
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 
+    var filesToDelete: [String] = []
+
     static let shared = ChatModel()
 
     static var ok: Bool { ChatModel.shared.chatDbStatus == .ok }
