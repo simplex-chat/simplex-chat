@@ -34,7 +34,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import androidx.core.net.toFile
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
@@ -52,7 +51,7 @@ sealed class ComposePreview {
   @Serializable object NoPreview: ComposePreview()
   @Serializable class CLinkPreview(val linkPreview: LinkPreview?): ComposePreview()
   @Serializable class ImagePreview(val images: List<String>, val content: List<UploadContent>): ComposePreview()
-  @Serializable class VoicePreview(val voice: String, val durationMs: Int, val finished: Boolean): ComposePreview()
+  @Serializable data class VoicePreview(val voice: String, val durationMs: Int, val finished: Boolean): ComposePreview()
   @Serializable class FilePreview(val fileName: String, val uri: Uri): ComposePreview()
 }
 
@@ -709,6 +708,9 @@ fun ComposeView(
             chatModel.removeLiveDummy()
 
             if (!composeState.value.empty && saveDraft) {
+              if (cs.preview is ComposePreview.VoicePreview && !cs.preview.finished) {
+                composeState.value = cs.copy(preview = cs.preview.copy(finished = true))
+              }
               chatModel.draft.value = composeState.value
               chatModel.draftChatId.value = chat.id
             } else if (chatModel.draftChatId.value == chat.id) {
