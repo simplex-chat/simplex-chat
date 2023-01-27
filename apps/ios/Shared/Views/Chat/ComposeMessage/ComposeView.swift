@@ -392,7 +392,9 @@ struct ComposeView: View {
                 sendMessage()
                 resetLinkPreview()
             }
-            finishVoiceMessageRecording()
+            if case .recording = composeState.voiceMessageRecordingState {
+                finishVoiceMessageRecording()
+            }
             if !composeState.empty && saveDraft {
                 chatModel.draft = composeState
                 chatModel.draftChatId = chat.id
