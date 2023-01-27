@@ -386,25 +386,28 @@ struct ComposeView: View {
             }
         }
         .onDisappear {
-            var saveDraft = true
-            if composeState.liveMessage != nil && (!composeState.message.isEmpty || composeState.liveMessage?.sentMsg != nil) {
-                saveDraft = false
+            let live = composeState.liveMessage != nil && (!composeState.message.isEmpty || composeState.liveMessage?.sentMsg != nil)
+            if live {
                 sendMessage()
                 resetLinkPreview()
             }
-            if case .recording = composeState.voiceMessageRecordingState {
-                finishVoiceMessageRecording()
-            }
-            if !composeState.empty && saveDraft {
+            if !live && !composeState.empty  {
+                if case .recording = composeState.voiceMessageRecordingState {
+                    finishVoiceMessageRecording()
+                    if let fileName = composeState.voiceMessageRecordingFileName {
+                        chatModel.filesToDelete.append(fileName)
+                    }
+                }
                 chatModel.draft = composeState
                 chatModel.draftChatId = chat.id
             } else if chatModel.draftChatId == chat.id {
+                if let fileName = composeState.voiceMessageRecordingFileName {
+                    cancelVoiceMessageRecording(fileName)
+                }
                 chatModel.draft = nil
                 chatModel.draftChatId = nil
             }
-            if let fileName = composeState.voiceMessageRecordingFileName {
-                cancelVoiceMessageRecording(fileName, removeAudioFile: !saveDraft)
-            }
+            clearState()
             chatModel.removeLiveDummy(animated: false)
         }
         .onChange(of: chatModel.stopPreviousRecPlay) { _ in
@@ -420,6 +423,7 @@ struct ComposeView: View {
             if !vmAllowed && composeState.voicePreview,
                let fileName = composeState.voiceMessageRecordingFileName {
                 cancelVoiceMessageRecording(fileName)
+                clearState()
             }
         }
         .onAppear {
@@ -502,7 +506,10 @@ struct ComposeView: View {
                 recordingFileName: recordingFileName,
                 recordingTime: $voiceMessageRecordingTime,
                 recordingState: $composeState.voiceMessageRecordingState,
-                cancelVoiceMessage: { cancelVoiceMessageRecording($0) },
+                cancelVoiceMessage: {
+                    cancelVoiceMessageRecording($0)
+                    clearState()
+                },
                 cancelEnabled: !composeState.editing,
                 stopPlayback: $stopPlayback
             )
@@ -759,12 +766,7 @@ struct ComposeView: View {
     private func cancelVoiceMessageRecording(_ fileName: String, removeAudioFile: Bool = true) {
         stopPlayback.toggle()
         audioRecorder?.stop()
-        if removeAudioFile {
-            removeFile(fileName)
-        } else {
-            chatModel.filesToDelete.append(fileName)
-        }
-        clearState()
+        removeFile(fileName)
     }
 
     private func clearState(live: Bool = false) {
