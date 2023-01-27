@@ -159,7 +159,8 @@ html {
 #network::before {
   display: block;
   content: " ";
-  margin-top: -26px;
+  position: absolute;
+  top: -26px;
   height: 66px;
   visibility: hidden;
   pointer-events: none;
@@ -357,7 +358,7 @@ header nav {
 }
 
 .swiper-scrollbar-drag {
-  width: 112px !important;
+  /* width: 112px !important; */
   height: 8px !important;
   background-color: #0197FF;
 }
@@ -387,24 +388,24 @@ header nav {
   transform: translateY(40px);
 }
 
-.card:hover > div:nth-child(1) {
+.card:not(.no-hover):hover > div:nth-child(1) {
   height: 200px;
   padding: 12px 10px;
 }
-.card:hover > div:nth-child(2) {
+.card:not(.no-hover):hover > div:nth-child(2) {
   height: 270px;
   padding: 8px 24px;
 }
 .card.card-active > div:nth-child(2) {
-  height: 470px;
+  height: 480px;
 }
 
-.card:hover > div:nth-child(2) > *:nth-child(2),
-.card:hover > div:nth-child(2) > *:nth-child(3),
+.card:not(.no-hover):hover > div:nth-child(2) > *:nth-child(2),
+.card:not(.no-hover):hover > div:nth-child(2) > *:nth-child(3),
 .card.card-active > div:nth-child(2) > *:nth-child(2),
 .card.card-active > div:nth-child(2) > *:nth-child(3) {
   opacity: 1;
-  max-height: 470px;
+  max-height: 480px;
   transform: translateY(0px);
 }
 
@@ -417,7 +418,7 @@ header nav {
 .simplex-unique-card .card-content{
   transition: all .5s ease-out;
 }
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .simplex-unique-card .card-content .content-body{
     height: 0;
     opacity: 0;
@@ -446,16 +447,29 @@ header nav {
 
 
 /* comparison */
-#comparison table td,
-#comparison table th {
-  font-size: 15px;
-  font-weight: normal;
-  font-stretch: normal;
-  font-style: normal;
-  line-height: 1.4;
-  letter-spacing: 0.47px;
+#comparison table thead th{
+  font-size: 16px;
+  line-height: 36px;
+  font-weight: 500;
+  text-align: center;
 }
-
+#comparison table tbody td{
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+}
+#comparison table tbody tr > td:first-child{
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+  text-align: left;
+}
+@media (min-width: 1024px) {
+  #comparison table tbody tr > td:first-child{
+    font-size: 18px;
+    line-height: 36px;
+  }  
+}
 
 /* hero */
 header{
