@@ -486,7 +486,7 @@ struct ComposeView: View {
             ComposeLinkView(linkPreview: preview, cancelPreview: cancelLinkPreview)
         case let .imagePreviews(imagePreviews: images):
             ComposeImageView(
-                images: images.map { $0.0 },
+                images: images.map { (img, _) in img },
                 cancelImage: {
                     composeState = composeState.copy(preview: .noPreview)
                     chosenImages = []
