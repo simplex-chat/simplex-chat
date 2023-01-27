@@ -142,7 +142,7 @@ struct ChatPreviewView: View {
 
         func attachment() -> Text {
             switch draft.preview {
-            case let .filePreview(file): return image("doc.fill") + Text(file)
+            case let .filePreview(fileName: fileName, file: _): return image("doc.fill") + Text(fileName)
             case .imagePreviews: return image("photo")
             case let .voicePreview(_, duration): return image("play.fill") + Text(durationText(duration))
             default: return Text("")

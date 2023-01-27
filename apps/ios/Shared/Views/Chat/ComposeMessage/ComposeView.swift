@@ -14,9 +14,9 @@ import PhotosUI
 enum ComposePreview {
     case noPreview
     case linkPreview(linkPreview: LinkPreview?)
-    case imagePreviews(imagePreviews: [String])
+    case imagePreviews(imagePreviews: [(String, UploadContent?)])
     case voicePreview(recordingFileName: String, duration: Int)
-    case filePreview(fileName: String)
+    case filePreview(fileName: String, file: URL)
 }
 
 enum ComposeContextItem {
@@ -175,11 +175,11 @@ func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
     case let .link(_, preview: preview):
         chatItemPreview = .linkPreview(linkPreview: preview)
     case let .image(_, image):
-        chatItemPreview = .imagePreviews(imagePreviews: [image])
+        chatItemPreview = .imagePreviews(imagePreviews: [(image, nil)])
     case let .voice(_, duration):
         chatItemPreview = .voicePreview(recordingFileName: chatItem.file?.fileName ?? "", duration: duration)
     case .file:
-        chatItemPreview = .filePreview(fileName: chatItem.file?.fileName ?? "")
+        chatItemPreview = .filePreview(fileName: chatItem.file?.fileName ?? "", file: getAppFilePath(chatItem.file?.fileName ?? ""))
     default:
         chatItemPreview = .noPreview
     }
@@ -233,7 +233,6 @@ struct ComposeView: View {
     @State private var showTakePhoto = false
     @State var chosenImages: [UploadContent] = []
     @State private var showFileImporter = false
-    @State var chosenFile: URL? = nil
 
     @State private var audioRecorder: AudioRecorder?
     @State private var voiceMessageRecordingTime: TimeInterval?
@@ -341,10 +340,10 @@ struct ComposeView: View {
         }
         .onChange(of: chosenImages) { images in
             Task {
-                var imgs: [String] = []
+                var imgs: [(String, UploadContent)] = []
                 for image in images {
                     if let img = resizeImageToStrSize(image.uiImage, maxDataSize: 14000) {
-                        imgs.append(img)
+                        imgs.append((img, image))
                         await MainActor.run {
                             composeState = composeState.copy(preview: .imagePreviews(imagePreviews: imgs))
                         }
@@ -371,9 +370,8 @@ struct ComposeView: View {
                     }
                     fileURL.stopAccessingSecurityScopedResource()
                     if let fileSize = fileSize,
-                       fileSize <= MAX_FILE_SIZE {
-                        chosenFile = fileURL
-                        composeState = composeState.copy(preview: .filePreview(fileName: fileURL.lastPathComponent))
+                        fileSize <= MAX_FILE_SIZE {
+                        composeState = composeState.copy(preview: .filePreview(fileName: fileURL.lastPathComponent, file: fileURL))
                     } else {
                         let prettyMaxFileSize = ByteCountFormatter().string(fromByteCount: MAX_FILE_SIZE)
                         AlertManager.shared.showAlertMsg(
@@ -388,7 +386,7 @@ struct ComposeView: View {
         }
         .onDisappear {
             if let fileName = composeState.voiceMessageRecordingFileName {
-                cancelVoiceMessageRecording(fileName)
+                cancelVoiceMessageRecording(fileName, false)
             }
             if composeState.liveMessage != nil && (!composeState.message.isEmpty || composeState.liveMessage?.sentMsg != nil) {
                 sendMessage()
@@ -409,6 +407,11 @@ struct ComposeView: View {
             if !vmAllowed && composeState.voicePreview,
                let fileName = composeState.voiceMessageRecordingFileName {
                 cancelVoiceMessageRecording(fileName)
+            }
+        }
+        .onAppear {
+            if case let .voicePreview(_, interval) = composeState.preview {
+                voiceMessageRecordingTime = TimeInterval(interval)
             }
         }
     }
@@ -475,7 +478,7 @@ struct ComposeView: View {
             ComposeLinkView(linkPreview: preview, cancelPreview: cancelLinkPreview)
         case let .imagePreviews(imagePreviews: images):
             ComposeImageView(
-                images: images,
+                images: images.map { $0.0 },
                 cancelImage: {
                     composeState = composeState.copy(preview: .noPreview)
                     chosenImages = []
@@ -490,12 +493,11 @@ struct ComposeView: View {
                 cancelEnabled: !composeState.editing,
                 stopPlayback: $stopPlayback
             )
-        case let .filePreview(fileName: fileName):
+        case let .filePreview(fileName: fileName, file: _):
             ComposeFileView(
                 fileName: fileName,
                 cancelFile: {
                     composeState = composeState.copy(preview: .noPreview)
-                    chosenFile = nil
                 },
                 cancelEnabled: !composeState.editing)
         }
@@ -552,16 +554,16 @@ struct ComposeView: View {
             case .linkPreview:
                 sent = await send(checkLinkPreview(), quoted: quoted, live: live)
             case let .imagePreviews(imagePreviews: images):
-                let last = min(chosenImages.count, images.count) - 1
+                let last = images.count - 1
                 if last >= 0 {
                     for i in 0..<last {
-                        if let savedFile = saveAnyImage(chosenImages[i]) {
-                            _ = await send(.image(text: "", image: images[i]), quoted: nil, file: savedFile)
+                        if let image = images[i].1, let savedFile = saveAnyImage(image) {
+                            _ = await send(.image(text: "", image: images[i].0), quoted: nil, file: savedFile)
                         }
                         _ = try? await Task.sleep(nanoseconds: 100_000000)
                     }
-                    if let savedFile = saveAnyImage(chosenImages[last]) {
-                        sent = await send(.image(text: msgText, image: images[last]), quoted: quoted, file: savedFile, live: live)
+                    if let image = images[last].1, let savedFile = saveAnyImage(image) {
+                        sent = await send(.image(text: msgText, image: images[last].0), quoted: quoted, file: savedFile, live: live)
                     }
                 }
                 if sent == nil {
@@ -569,10 +571,10 @@ struct ComposeView: View {
                 }
             case let .voicePreview(recordingFileName, duration):
                 stopPlayback.toggle()
+                chatModel.filesToDelete.removeAll { $0 == recordingFileName }
                 sent = await send(.voice(text: msgText, duration: duration), quoted: quoted, file: recordingFileName)
-            case .filePreview:
-                if let fileURL = chosenFile,
-                   let savedFile = saveFileFromURL(fileURL) {
+            case let .filePreview(fileName: _, file: file):
+                if let savedFile = saveFileFromURL(file) {
                     sent = await send(.file(msgText), quoted: quoted, file: savedFile, live: live)
                 }
             }
@@ -737,10 +739,14 @@ struct ComposeView: View {
         )
     }
 
-    private func cancelVoiceMessageRecording(_ fileName: String) {
+    private func cancelVoiceMessageRecording(_ fileName: String, _ removeAudioFile: Bool = false) {
         stopPlayback.toggle()
         audioRecorder?.stop()
-        removeFile(fileName)
+        if removeAudioFile {
+            removeFile(fileName)
+        } else {
+            chatModel.filesToDelete.append(fileName)
+        }
         clearState()
     }
 
@@ -753,7 +759,6 @@ struct ComposeView: View {
             resetLinkPreview()
         }
         chosenImages = []
-        chosenFile = nil
         audioRecorder = nil
         voiceMessageRecordingTime = nil
         startingRecording = false
