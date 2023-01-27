@@ -402,12 +402,14 @@ struct ComposeView: View {
                 }
                 chatModel.draft = composeState
                 chatModel.draftChatId = chat.id
-            } else if chatModel.draftChatId == chat.id {
+            } else {
                 if let fileName = composeState.voiceMessageRecordingFileName {
                     cancelVoiceMessageRecording(fileName)
                 }
-                chatModel.draft = nil
-                chatModel.draftChatId = nil
+                if chatModel.draftChatId == chat.id {
+                    chatModel.draft = nil
+                    chatModel.draftChatId = nil
+                }
             }
             chatModel.removeLiveDummy(animated: false)
         }
