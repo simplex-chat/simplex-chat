@@ -387,7 +387,7 @@ struct ComposeView: View {
         }
         .onDisappear {
             if let fileName = composeState.voiceMessageRecordingFileName {
-                cancelVoiceMessageRecording(fileName, false)
+                cancelVoiceMessageRecording(fileName, removeAudioFile: false)
             }
             if composeState.liveMessage != nil && (!composeState.message.isEmpty || composeState.liveMessage?.sentMsg != nil) {
                 sendMessage()
@@ -411,8 +411,8 @@ struct ComposeView: View {
             }
         }
         .onAppear {
-            if case let .voicePreview(_, interval) = composeState.preview {
-                voiceMessageRecordingTime = TimeInterval(interval)
+            if case let .voicePreview(_, duration) = composeState.preview {
+                voiceMessageRecordingTime = TimeInterval(duration)
             }
         }
     }
@@ -744,7 +744,7 @@ struct ComposeView: View {
         )
     }
 
-    private func cancelVoiceMessageRecording(_ fileName: String, _ removeAudioFile: Bool = true) {
+    private func cancelVoiceMessageRecording(_ fileName: String, removeAudioFile: Bool = true) {
         stopPlayback.toggle()
         audioRecorder?.stop()
         if removeAudioFile {
