@@ -744,7 +744,7 @@ struct ComposeView: View {
         )
     }
 
-    private func cancelVoiceMessageRecording(_ fileName: String, _ removeAudioFile: Bool = false) {
+    private func cancelVoiceMessageRecording(_ fileName: String, _ removeAudioFile: Bool = true) {
         stopPlayback.toggle()
         audioRecorder?.stop()
         if removeAudioFile {
