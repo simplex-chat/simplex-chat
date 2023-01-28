@@ -360,7 +360,7 @@
     <string name="appearance_settings">Apparence</string>
     <string name="create_address">Créer une adresse</string>
     <string name="you_can_share_your_address_anybody_will_be_able_to_connect">Vous pouvez partager votre adresse sous forme de lien ou de code QR - n\'importe qui pourra se connecter à vous. Vous ne perdrez pas vos contacts si vous la supprimez par la suite.</string>
-    <string name="your_chat_profile">Votre profil de chat</string>
+    <string name="your_current_profile">Votre profil de chat</string>
     <string name="edit_image">Modifier l\'image</string>
     <string name="save_and_notify_contacts">Sauvegarder et notifier les contacts</string>
     <string name="save_and_notify_group_members">Sauvegarder et en informer les membres du groupe</string>
@@ -519,7 +519,6 @@
     <string name="run_chat_section">LANCER LE CHAT</string>
     <string name="stop_chat_question">Arrêter le chat \?</string>
     <string name="restart_the_app_to_use_imported_chat_database">Redémarrez l\'application pour utiliser la base de données de chat importée.</string>
-    <string name="data_section">DONNÉES</string>
     <string name="chat_item_ttl_day">1 jour</string>
     <string name="delete_messages">Supprimer les messages</string>
     <string name="save_passphrase_in_keychain">Sauvegarder la phrase secrète dans le keystore</string>
@@ -643,7 +642,6 @@
     <string name="delete_chat_profile_question">Supprimer le profil du chat \?</string>
     <string name="stop_chat_to_enable_database_actions">Arrêter le chat pour agir sur la base de données.</string>
     <string name="delete_files_and_media_question">Supprimer les fichiers et médias \?</string>
-    <string name="delete_files_and_media">"Supprimer les fichiers  médias"</string>
     <string name="delete_files_and_media_desc">Cette action ne peut être annulée - tous les fichiers et médias reçus et envoyés seront supprimés. Les photos à faible résolution seront conservées.</string>
     <string name="no_received_app_files">Aucun fichier reçu ou envoyé</string>
     <string name="chat_item_ttl_month">1 mois</string>
@@ -778,7 +776,7 @@
     <string name="chat_preferences_off">off</string>
     <string name="direct_messages">Messages dynamiques</string>
     <string name="full_deletion">Supprimer pour tous</string>
-    <string name="only_you_can_delete_messages">Vous êtes le seul à pouvoir supprimer des messages de manière irréversible (votre contact peut les marquer pour suppression).</string>
+    <string name="only_you_can_delete_messages">Vous êtes le seul à pouvoir supprimer des messages de manière irréversible (votre contact peut les marquer comme supprimé).</string>
     <string name="conn_stats_section_title_servers">SERVEURS</string>
     <string name="receiving_via">Réception via</string>
     <string name="theme_system">Système</string>
@@ -862,9 +860,9 @@
     <string name="chat_preferences_yes">oui</string>
     <string name="allow_disappearing_messages_only_if">Autorise les messages éphémères seulement si votre contact les autorises.</string>
     <string name="allow_irreversible_message_deletion_only_if">Autoriser la suppression irréversible des messages uniquement si votre contact vous l\'autorise.</string>
-    <string name="only_your_contact_can_delete">Seul votre contact peut supprimer de manière irréversible des messages (vous pouvez les marquer pour suppression).</string>
+    <string name="only_your_contact_can_delete">Seul votre contact peut supprimer de manière irréversible des messages (vous pouvez les marquer comme supprimé).</string>
     <string name="only_your_contact_can_send_disappearing">Seulement votre contact peut envoyer des messages éphémères.</string>
-    <string name="both_you_and_your_contact_can_send_disappearing">Vous et votre contact peuvent envoyer des messages éphémères.</string>
+    <string name="both_you_and_your_contact_can_send_disappearing">Vous et votre contact êtes tous deux en mesure d\'envoyer des messages éphémères.</string>
     <string name="voice_messages_are_prohibited">Les messages vocaux sont interdits dans ce groupe.</string>
     <string name="group_display_name_field">Nom affiché du groupe :</string>
     <string name="group_unsupported_incognito_main_profile_sent">Le mode Incognito n\'est pas supporté ici - votre profil principal sera envoyé aux membres du groupe</string>
@@ -879,9 +877,9 @@
     <string name="network_options_reset_to_defaults">Réinitialisation des valeurs par défaut</string>
     <string name="network_option_protocol_timeout">Délai du protocole</string>
     <string name="network_option_ping_interval">Intervalle de PING</string>
-    <string name="both_you_and_your_contacts_can_delete">Vous et votre contact pouvez tous deux supprimer de manière irréversible les messages envoyés.</string>
+    <string name="both_you_and_your_contacts_can_delete">Vous et votre contact êtes tous deux en mesure de supprimer de manière irréversible les messages envoyés.</string>
     <string name="message_deletion_prohibited">La suppression irréversible de message est interdite dans ce chat.</string>
-    <string name="both_you_and_your_contact_can_send_voice">Vous et votre contact pouvez tous deux supprimer de manière irréversible les messages envoyés.</string>
+    <string name="both_you_and_your_contact_can_send_voice">Vous et votre contact êtes tous deux en mesure d\'envoyer des messages vocaux.</string>
     <string name="only_your_contact_can_send_voice">Seul votre contact peut envoyer des messages vocaux.</string>
     <string name="voice_prohibited_in_this_chat">Les messages vocaux sont interdits dans ce chat.</string>
     <string name="disappearing_prohibited_in_this_chat">Les messages éphémères sont interdits dans cette discussion.</string>
@@ -922,4 +920,11 @@
     <string name="feature_offered_item">offert %s</string>
     <string name="feature_offered_item_with_param">offert %s: %2s</string>
     <string name="feature_cancelled_item">annulé %s</string>
+    <string name="app_version_title">Version de l\'application</string>
+    <string name="core_simplexmq_version">simplexmq : v%s (%2s)</string>
+    <string name="app_version_code">Build de l\'app : %s</string>
+    <string name="app_version_name">Version de l\'app : v%s</string>
+    <string name="core_build_timestamp">Cœur compilé le : %s</string>
+    <string name="core_version">Version du cœur : v%s</string>
+    <string name="network_option_ping_count">Nombre de PING</string>
 </resources>

@@ -27,6 +27,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.*
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
@@ -87,6 +89,8 @@ fun DatabaseView(
       m.controller.appPrefs.privacyFullBackup,
       appFilesCountAndSize,
       chatItemTTL,
+      m.currentUser.value,
+      m.users,
       startChat = { startChat(m, runChat, chatLastStart, m.chatDbChanged) },
       stopChatAlert = { stopChatAlert(m, runChat, context) },
       exportArchive = { exportArchive(context, m, progressIndicator, chatArchiveName, chatArchiveTime, chatArchiveFile, saveArchiveLauncher) },
@@ -136,6 +140,8 @@ fun DatabaseLayout(
   privacyFullBackup: SharedPreference<Boolean>,
   appFilesCountAndSize: MutableState<Pair<Int, Long>>,
   chatItemTTL: MutableState<ChatItemTTL>,
+  currentUser: User?,
+  users: List<UserInfo>,
   startChat: () -> Unit,
   stopChatAlert: () -> Unit,
   exportArchive: () -> Unit,
@@ -148,10 +154,27 @@ fun DatabaseLayout(
   val operationsDisabled = !stopped || progressIndicator
 
   Column(
-    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 48.dp),
     horizontalAlignment = Alignment.Start,
   ) {
     AppBarTitle(stringResource(R.string.your_chat_database))
+
+    SectionView(stringResource(R.string.messages_section_title).uppercase()) {
+      SectionItemView { TtlOptions(chatItemTTL, enabled = rememberUpdatedState(!progressIndicator && !chatDbChanged), onChatItemTTLSelected) }
+    }
+    SectionTextFooter(
+      remember(currentUser?.displayName) {
+        buildAnnotatedString {
+          append(generalGetString(R.string.messages_section_description) + " ")
+          withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+            append(currentUser?.displayName ?: "")
+          }
+          append(".")
+        }
+      }
+    )
+    SectionSpacer()
+
     SectionView(stringResource(R.string.run_chat_section)) {
       RunChatSetting(runChat, stopped, chatDbDeleted, startChat, stopChatAlert)
     }
@@ -224,16 +247,14 @@ fun DatabaseLayout(
     )
     SectionSpacer()
 
-    SectionView(stringResource(R.string.data_section)) {
-      SectionItemView { TtlOptions(chatItemTTL, enabled = rememberUpdatedState(!progressIndicator && !chatDbChanged), onChatItemTTLSelected) }
-      SectionDivider()
+    SectionView(stringResource(R.string.files_and_media_section).uppercase()) {
       val deleteFilesDisabled = operationsDisabled || appFilesCountAndSize.value.first == 0
       SectionItemView(
         deleteAppFilesAndMedia,
         disabled = deleteFilesDisabled
       ) {
         Text(
-          stringResource(R.string.delete_files_and_media),
+          stringResource(if (users.size > 1) R.string.delete_files_and_media_for_all_users else R.string.delete_files_and_media_all),
           color = if (deleteFilesDisabled) HighOrLowlight else Color.Red
         )
       }
@@ -696,6 +717,8 @@ fun PreviewDatabaseLayout() {
       privacyFullBackup = SharedPreference({ true }, {}),
       appFilesCountAndSize = remember { mutableStateOf(0 to 0L) },
       chatItemTTL = remember { mutableStateOf(ChatItemTTL.None) },
+      currentUser = User.sampleData,
+      users = listOf(UserInfo.sampleData),
       startChat = {},
       stopChatAlert = {},
       exportArchive = {},

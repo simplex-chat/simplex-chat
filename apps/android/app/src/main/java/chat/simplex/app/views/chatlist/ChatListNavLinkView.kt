@@ -44,17 +44,19 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
     delay(500L)
   }
   when (chat.chatInfo) {
-    is ChatInfo.Direct ->
+    is ChatInfo.Direct -> {
+      val contactNetworkStatus = chatModel.contactNetworkStatus(chat.chatInfo.contact)
       ChatListNavLinkLayout(
-        chatLinkPreview = { ChatPreviewView(chat, chatModel.incognito.value, chatModel.currentUser.value?.profile?.displayName, stopped, linkMode) },
+        chatLinkPreview = { ChatPreviewView(chat, chatModel.draft.value, chatModel.draftChatId.value, chatModel.incognito.value, chatModel.currentUser.value?.profile?.displayName, contactNetworkStatus, stopped, linkMode) },
         click = { directChatAction(chat.chatInfo, chatModel) },
         dropdownMenuItems = { ContactMenuItems(chat, chatModel, showMenu, showMarkRead) },
         showMenu,
         stopped
       )
+    }
     is ChatInfo.Group ->
       ChatListNavLinkLayout(
-        chatLinkPreview = { ChatPreviewView(chat, chatModel.incognito.value, chatModel.currentUser.value?.profile?.displayName, stopped, linkMode) },
+        chatLinkPreview = { ChatPreviewView(chat, chatModel.draft.value, chatModel.draftChatId.value, chatModel.incognito.value, chatModel.currentUser.value?.profile?.displayName, null, stopped, linkMode) },
         click = { groupChatAction(chat.chatInfo.groupInfo, chatModel) },
         dropdownMenuItems = { GroupMenuItems(chat, chat.chatInfo.groupInfo, chatModel, showMenu, showMarkRead) },
         showMenu,
@@ -299,7 +301,7 @@ fun ContactRequestMenuItems(chatInfo: ChatInfo.ContactRequest, chatModel: ChatMo
     if (chatModel.incognito.value) Icons.Filled.TheaterComedy else Icons.Outlined.Check,
     color = if (chatModel.incognito.value) Indigo else MaterialTheme.colors.onBackground,
     onClick = {
-      acceptContactRequest(chatInfo, chatModel)
+      acceptContactRequest(chatInfo.apiId, chatInfo, true, chatModel)
       showMenu.value = false
     }
   )
@@ -407,16 +409,16 @@ fun contactRequestAlertDialog(contactRequest: ChatInfo.ContactRequest, chatModel
     title = generalGetString(R.string.accept_connection_request__question),
     text = generalGetString(R.string.if_you_choose_to_reject_the_sender_will_not_be_notified),
     confirmText = if (chatModel.incognito.value) generalGetString(R.string.accept_contact_incognito_button) else generalGetString(R.string.accept_contact_button),
-    onConfirm = { acceptContactRequest(contactRequest, chatModel) },
+    onConfirm = { acceptContactRequest(contactRequest.apiId, contactRequest, true, chatModel) },
     dismissText = generalGetString(R.string.reject_contact_button),
     onDismiss = { rejectContactRequest(contactRequest, chatModel) }
   )
 }
 
-fun acceptContactRequest(contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel) {
+fun acceptContactRequest(apiId: Long, contactRequest: ChatInfo.ContactRequest?, isCurrentUser: Boolean, chatModel: ChatModel) {
   withApi {
-    val contact = chatModel.controller.apiAcceptContactRequest(contactRequest.apiId)
-    if (contact != null) {
+    val contact = chatModel.controller.apiAcceptContactRequest(apiId)
+    if (contact != null && isCurrentUser && contactRequest != null) {
       val chat = Chat(ChatInfo.Direct(contact), listOf())
       chatModel.replaceChat(contactRequest.id, chat)
     }
@@ -625,7 +627,10 @@ fun PreviewChatListNavLinkDirect() {
             ),
             chatStats = Chat.ChatStats()
           ),
+          null,
+          null,
           false,
+          null,
           null,
           stopped = false,
           linkMode = SimplexLinkMode.DESCRIPTION
@@ -663,7 +668,10 @@ fun PreviewChatListNavLinkGroup() {
             ),
             chatStats = Chat.ChatStats()
           ),
+          null,
+          null,
           false,
+          null,
           null,
           stopped = false,
           linkMode = SimplexLinkMode.DESCRIPTION

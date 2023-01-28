@@ -145,12 +145,6 @@ struct GroupChatInfoView: View {
         }
     }
 
-    private func serverImage() -> some View {
-        let status = chat.serverInfo.networkStatus
-        return Image(systemName: status.imageName)
-            .foregroundColor(status == .connected ? .green : .secondary)
-    }
-
     private func memberView(_ member: GroupMember, user: Bool = false) -> some View {
         HStack{
             ProfileImage(imageStr: member.image)

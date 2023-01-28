@@ -95,11 +95,11 @@ runChatServer ChatServerConfig {chatPort, clientQSize} cc = do
             Left e -> sendError (Just corrId) e
         Nothing -> sendError Nothing "invalid request"
       where
-        sendError corrId e = atomically $ writeTBQueue sndQ ChatSrvResponse {corrId, resp = chatCmdError e}
+        sendError corrId e = atomically $ writeTBQueue sndQ ChatSrvResponse {corrId, resp = chatCmdError Nothing e}
     processCommand (corrId, cmd) =
       runReaderT (runExceptT $ processChatCommand cmd) cc >>= \case
         Right resp -> response resp
-        Left e -> response $ CRChatCmdError e
+        Left e -> response $ CRChatCmdError Nothing e
       where
         response resp = pure ChatSrvResponse {corrId = Just corrId, resp}
     clientDisconnected _ = pure ()

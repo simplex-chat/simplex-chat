@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct CreateProfile: View {
     @EnvironmentObject var m: ChatModel
+    @Environment(\.dismiss) var dismiss
     @State private var displayName: String = ""
     @State private var fullName: String = ""
     @FocusState private var focusDisplayName
@@ -50,13 +51,17 @@ struct CreateProfile: View {
             Spacer()
 
             HStack {
-                Button {
-                    hideKeyboard()
-                    withAnimation { m.onboardingStage = .step1_SimpleXInfo }
-                } label: {
-                    HStack {
-                        Image(systemName: "lessthan")
-                        Text("About SimpleX")
+                if m.users.isEmpty {
+                    Button {
+                        hideKeyboard()
+                        withAnimation {
+                            m.onboardingStage = .step1_SimpleXInfo
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: "lessthan")
+                            Text("About SimpleX")
+                        }
                     }
                 }
 
@@ -96,9 +101,14 @@ struct CreateProfile: View {
         )
         do {
             m.currentUser = try apiCreateActiveUser(profile)
-            try startChat()
-            withAnimation { m.onboardingStage = .step3_SetNotificationsMode }
-
+            if m.users.isEmpty {
+                try startChat()
+                withAnimation { m.onboardingStage = .step3_SetNotificationsMode }
+            } else {
+                dismiss()
+                m.users = try listUsers()
+                try getUserChatData()
+            }
         } catch {
             fatalError("Failed to create user or start chat: \(responseError(error))")
         }

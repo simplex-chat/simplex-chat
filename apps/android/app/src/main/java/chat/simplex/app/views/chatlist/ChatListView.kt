@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -13,16 +14,15 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.*
+import chat.simplex.app.*
 import chat.simplex.app.R
-import chat.simplex.app.connectIfOpenedViaUri
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
@@ -37,13 +37,14 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
-  val newChatSheetState by rememberSaveable(stateSaver = NewChatSheetState.saver()) { mutableStateOf(MutableStateFlow(NewChatSheetState.GONE)) }
+  val newChatSheetState by rememberSaveable(stateSaver = AnimatedViewState.saver()) { mutableStateOf(MutableStateFlow(AnimatedViewState.GONE)) }
+  val userPickerState by rememberSaveable(stateSaver = AnimatedViewState.saver()) { mutableStateOf(MutableStateFlow(AnimatedViewState.GONE)) }
   val showNewChatSheet = {
-    newChatSheetState.value = NewChatSheetState.VISIBLE
+    newChatSheetState.value = AnimatedViewState.VISIBLE
   }
   val hideNewChatSheet: (animated: Boolean) -> Unit = { animated ->
-    if (animated) newChatSheetState.value = NewChatSheetState.HIDING
-    else newChatSheetState.value = NewChatSheetState.GONE
+    if (animated) newChatSheetState.value = AnimatedViewState.HIDING
+    else newChatSheetState.value = AnimatedViewState.GONE
   }
   LaunchedEffect(Unit) {
     if (shouldShowWhatsNew(chatModel)) {
@@ -63,8 +64,9 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
   }
   var searchInList by rememberSaveable { mutableStateOf("") }
   val scaffoldState = rememberScaffoldState()
+  val scope = rememberCoroutineScope()
   Scaffold(
-    topBar = { ChatListToolbar(chatModel, scaffoldState.drawerState, stopped) { searchInList = it.trim() } },
+    topBar = { ChatListToolbar(chatModel, scaffoldState.drawerState, userPickerState, stopped) { searchInList = it.trim() } },
     scaffoldState = scaffoldState,
     drawerContent = { SettingsView(chatModel, setPerformLA) },
     floatingActionButton = {
@@ -111,6 +113,9 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
   if (searchInList.isEmpty()) {
     NewChatSheet(chatModel, newChatSheetState, stopped, hideNewChatSheet)
   }
+  UserPicker(chatModel, userPickerState) {
+    scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
+  }
 }
 
 @Composable
@@ -156,7 +161,7 @@ private fun ConnectButton(text: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, stopped: Boolean, onSearchValueChanged: (String) -> Unit) {
+private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, userPickerState: MutableStateFlow<AnimatedViewState>, stopped: Boolean, onSearchValueChanged: (String) -> Unit) {
   var showSearch by rememberSaveable { mutableStateOf(false) }
   val hideSearchOnBack = { onSearchValueChanged(""); showSearch = false }
   if (showSearch) {
@@ -189,10 +194,23 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, stop
   val scope = rememberCoroutineScope()
   DefaultTopAppBar(
     navigationButton = {
-      if (showSearch)
+      if (showSearch) {
         NavigationButtonBack(hideSearchOnBack)
-      else
+      } else if (chatModel.users.isEmpty()) {
         NavigationButtonMenu { scope.launch { if (drawerState.isOpen) drawerState.close() else drawerState.open() } }
+      } else {
+        val users by remember { derivedStateOf { chatModel.users.toList() } }
+        val allRead = users
+          .filter { !it.user.activeUser }
+          .all { u -> u.unreadCount == 0 }
+        UserProfileButton(chatModel.currentUser.value?.profile?.image, allRead) {
+          if (users.size == 1) {
+            scope.launch { drawerState.open() }
+          } else {
+            userPickerState.value = AnimatedViewState.VISIBLE
+          }
+        }
+      }
     },
     title = {
       Row(verticalAlignment = Alignment.CenterVertically) {
@@ -217,6 +235,36 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, stop
     buttons = barButtons
   )
   Divider(Modifier.padding(top = AppBarHeight))
+}
+
+@Composable
+private fun UserProfileButton(image: String?, allRead: Boolean, onButtonClicked: () -> Unit) {
+  IconButton(onClick = onButtonClicked) {
+    Box {
+      ProfileImage(
+        image = image,
+        size = 37.dp
+      )
+      if (!allRead) {
+        unreadBadge()
+      }
+    }
+  }
+}
+
+@Composable
+private fun BoxScope.unreadBadge(text: String? = "") {
+  Text(
+    text ?: "",
+    color = MaterialTheme.colors.onPrimary,
+    fontSize = 6.sp,
+    modifier = Modifier
+      .background(MaterialTheme.colors.primary, shape = CircleShape)
+      .badgeLayout()
+      .padding(horizontal = 3.dp)
+      .padding(vertical = 1.dp)
+      .align(Alignment.TopEnd)
+  )
 }
 
 private var lazyListState = 0 to 0

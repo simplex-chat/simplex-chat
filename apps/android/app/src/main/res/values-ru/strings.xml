@@ -423,7 +423,7 @@
     <!-- User profile details - UserProfileView.kt -->
     <string name="display_name__field">Имя профиля:</string>
     <string name="full_name__field">"Полное имя:</string>
-    <string name="your_chat_profile">Ваш профиль</string>
+    <string name="your_current_profile">Ваш профиль</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Ваш профиль хранится на вашем устройстве и отправляется только вашим контактам.\n\n<xliff:g id="appName">SimpleX</xliff:g> серверы не могут получить доступ к вашему профилю.</string>
     <string name="edit_image">Поменять аватар</string>
     <string name="delete_image">Удалить аватар</string>
@@ -612,8 +612,8 @@
     <string name="restart_the_app_to_create_a_new_chat_profile">Перезапустите приложение, чтобы создать новый профиль.</string>
     <string name="you_must_use_the_most_recent_version_of_database">Используйте самую последнюю версию архива чата и ТОЛЬКО на одном устройстве, иначе вы можете перестать получать сообщения от некоторых контактов.</string>
     <string name="stop_chat_to_enable_database_actions">Остановите чат, чтобы разблокировать операции с архивом чата.</string>
-    <string name="data_section">ДАННЫЕ</string>
-    <string name="delete_files_and_media">Удалить файлы и медиа</string>
+    <string name="delete_files_and_media_for_all_users">Удалить файлы во всех профилях чата</string>
+    <string name="delete_files_and_media_all">Удалить все файлы</string>
     <string name="delete_files_and_media_question">Удалить файлы и медиа?</string>
     <string name="delete_files_and_media_desc">Это действие нельзя отменить — все полученные и отправленные файлы будут удалены. Изображения останутся в низком разрешении.</string>
     <string name="no_received_app_files">Нет полученных или отправленных файлов</string>

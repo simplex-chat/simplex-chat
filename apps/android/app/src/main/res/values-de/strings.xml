@@ -426,7 +426,7 @@
     <!-- User profile details - UserProfileView.kt -->
     <string name="display_name__field">Angezeigter Name:</string>
     <string name="full_name__field">"Vollständiger Name:</string>
-    <string name="your_chat_profile">Mein Chat-Profil</string>
+    <string name="your_current_profile">Mein Chat-Profil</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Ihr Profil wird auf Ihrem Gerät gespeichert und nur mit Ihren Kontakten geteilt.\n\n<xliff:g id="appName">SimpleX</xliff:g>-Server können Ihr Profil nicht sehen.</string>
     <string name="edit_image">Bild bearbeiten</string>
     <string name="delete_image">Bild löschen</string>
@@ -610,8 +610,6 @@
     <string name="restart_the_app_to_create_a_new_chat_profile">Starten Sie die App neu, um ein neues Chat-Profil zu erstellen.</string>
     <string name="you_must_use_the_most_recent_version_of_database">Sie dürfen die neueste Version Ihrer Chat-Datenbank NUR auf einem Gerät verwenden, andernfalls erhalten Sie möglicherweise keine Nachrichten mehr von einigen Ihrer Kontakte.</string>
     <string name="stop_chat_to_enable_database_actions">Chat beenden, um Datenbankaktionen zu erlauben.</string>
-    <string name="data_section">DATEN</string>
-    <string name="delete_files_and_media">Dateien \&amp; Medien löschen</string>
     <string name="delete_files_and_media_question">Dateien und Medien löschen?</string>
     <string name="delete_files_and_media_desc">Diese Aktion kann nicht rückgängig gemacht werden - Alle empfangenen und gesendeten Dateien und Medien werden gelöscht. Bilder mit niedriger Auflösung bleiben erhalten.</string>
     <string name="no_received_app_files">Keine empfangenen oder gesendeten Dateien</string>
