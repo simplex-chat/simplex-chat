@@ -920,4 +920,11 @@
     <string name="feature_offered_item">offerto %s</string>
     <string name="feature_offered_item_with_param">offerto %s: %2s</string>
     <string name="feature_cancelled_item">annullato %s</string>
+    <string name="network_option_ping_count">Conteggio PING</string>
+    <string name="app_version_title">Versione dell\'app</string>
+    <string name="core_version">Versione core: v%s</string>
+    <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
+    <string name="app_version_code">Build dell\'app: %s</string>
+    <string name="app_version_name">Versione app: v%s</string>
+    <string name="core_build_timestamp">Core compilato il: %s</string>
 </resources>
