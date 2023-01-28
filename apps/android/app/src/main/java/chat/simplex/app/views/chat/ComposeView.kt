@@ -132,7 +132,7 @@ data class ComposeState(
     }
 
   val empty: Boolean
-    get() = message.isEmpty() && liveMessage == null && preview is ComposePreview.NoPreview
+    get() = message.isEmpty() && preview is ComposePreview.NoPreview
 
   companion object {
     fun saver(): Saver<MutableState<ComposeState>, *> = Saver(
