@@ -307,13 +307,16 @@
         <target>Вашему контакту будет отправлен случайный профиль</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="A separate TCP connection will be used **for each chat profile you have in the app**." xml:space="preserve">
+      <trans-unit id="A separate TCP connection will be used **for each chat profile you have in the app**." xml:space="preserve" approved="no">
         <source>A separate TCP connection will be used **for each chat profile you have in the app**.</source>
+        <target state="translated">Отдельное TCP-соединение будет использоваться **для каждого профиля чата, который вы имеете в приложении**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="A separate TCP connection will be used **for each contact and group member**.&#10;**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." xml:space="preserve">
+      <trans-unit id="A separate TCP connection will be used **for each contact and group member**.&#10;**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." xml:space="preserve" approved="no">
         <source>A separate TCP connection will be used **for each contact and group member**.
 **Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail.</source>
+        <target state="translated">Отдельное TCP-соединение (и авторизация SOCKS) будет использоваться **для каждого контакта и члена группы**.
+**Обратите внимание**: если у вас много контактов, потребление батареи и трафика может быть значительно выше, и некоторые соединения могут не работать.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="About SimpleX" xml:space="preserve">
@@ -362,8 +365,9 @@
         <target>Добавить серверы по умолчанию</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add profile" xml:space="preserve">
+      <trans-unit id="Add profile" xml:space="preserve" approved="no">
         <source>Add profile</source>
+        <target state="translated">Добавить профиль</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add servers by scanning QR codes." xml:space="preserve">
@@ -391,8 +395,9 @@
         <target>Настройки сети</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All chats and messages will be deleted - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="All chats and messages will be deleted - this cannot be undone!" xml:space="preserve" approved="no">
         <source>All chats and messages will be deleted - this cannot be undone!</source>
+        <target state="translated">Все чаты и сообщения будут удалены - это нельзя отменить!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All group members will remain connected." xml:space="preserve">
@@ -480,8 +485,9 @@
         <target>Принять звонок</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App build: %@" xml:space="preserve">
+      <trans-unit id="App build: %@" xml:space="preserve" approved="no">
         <source>App build: %@</source>
+        <target state="translated">Сборка приложения: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App icon" xml:space="preserve">
@@ -489,12 +495,14 @@
         <target>Иконка</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App version" xml:space="preserve">
+      <trans-unit id="App version" xml:space="preserve" approved="no">
         <source>App version</source>
+        <target state="translated">Версия приложения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App version: v%@" xml:space="preserve">
+      <trans-unit id="App version: v%@" xml:space="preserve" approved="no">
         <source>App version: v%@</source>
+        <target state="translated">Версия приложения: v%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Appearance" xml:space="preserve">
@@ -857,12 +865,14 @@
         <target>Скопировать</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Core built at: %@" xml:space="preserve">
+      <trans-unit id="Core built at: %@" xml:space="preserve" approved="no">
         <source>Core built at: %@</source>
+        <target state="translated">Ядро скомпилировано: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Core version: v%@" xml:space="preserve">
+      <trans-unit id="Core version: v%@" xml:space="preserve" approved="no">
         <source>Core version: v%@</source>
+        <target state="translated">Версия ядра: v%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create" xml:space="preserve">
@@ -1038,8 +1048,9 @@
         <target>Удалять через</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete all files" xml:space="preserve">
+      <trans-unit id="Delete all files" xml:space="preserve" approved="no">
         <source>Delete all files</source>
+        <target state="translated">Удалить все файлы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete archive" xml:space="preserve">
@@ -1087,8 +1098,9 @@
         <target>Удалить файлы и медиа?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete files for all chat profiles" xml:space="preserve">
+      <trans-unit id="Delete files for all chat profiles" xml:space="preserve" approved="no">
         <source>Delete files for all chat profiles</source>
+        <target state="translated">Удалить файлы во всех профилях чата</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete for everyone" xml:space="preserve">
@@ -1166,8 +1178,9 @@
         <target>Удаление очереди</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Delete user profile?" xml:space="preserve">
+      <trans-unit id="Delete user profile?" xml:space="preserve" approved="no">
         <source>Delete user profile?</source>
+        <target state="translated">Удалить профиль пользователя?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Description" xml:space="preserve">
@@ -1440,8 +1453,9 @@
         <target>Ошибка удаления токена</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error deleting user profile" xml:space="preserve">
+      <trans-unit id="Error deleting user profile" xml:space="preserve" approved="no">
         <source>Error deleting user profile</source>
+        <target state="translated">Ошибка удаления профиля пользователя</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error enabling notifications" xml:space="preserve">
@@ -1579,8 +1593,9 @@
         <target>Файл: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Files &amp; media" xml:space="preserve">
+      <trans-unit id="Files &amp; media" xml:space="preserve" approved="no">
         <source>Files &amp; media</source>
+        <target state="translated">Файлы и медиа</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="For console" xml:space="preserve">
@@ -2010,8 +2025,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Локальное имя</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Local profile data only" xml:space="preserve">
+      <trans-unit id="Local profile data only" xml:space="preserve" approved="no">
         <source>Local profile data only</source>
+        <target state="translated">Только локальные данные профиля</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Make a private connection" xml:space="preserve">
@@ -2334,8 +2350,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Использование ссылки в браузере может уменьшить конфиденциальность и безопасность соединения. Ссылки на неизвестные сайты будут красными.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="PING count" xml:space="preserve">
+      <trans-unit id="PING count" xml:space="preserve" approved="no">
         <source>PING count</source>
+        <target state="translated">Количество PING</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="PING interval" xml:space="preserve">
@@ -2443,8 +2460,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Более конфиденциальный</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Profile and server connections" xml:space="preserve">
+      <trans-unit id="Profile and server connections" xml:space="preserve" approved="no">
         <source>Profile and server connections</source>
+        <target state="translated">Профиль и соединения на сервере</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile image" xml:space="preserve">
@@ -3122,8 +3140,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Отправитель не будет уведомлён</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The servers for new connections of your current chat profile **%@**." xml:space="preserve">
+      <trans-unit id="The servers for new connections of your current chat profile **%@**." xml:space="preserve" approved="no">
         <source>The servers for new connections of your current chat profile **%@**.</source>
+        <target state="translated">Серверы для новых соединений вашего текущего профиля чата **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Theme" xml:space="preserve">
@@ -3156,8 +3175,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Эта группа больше не существует.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This setting applies to messages in your current chat profile **%@**." xml:space="preserve">
+      <trans-unit id="This setting applies to messages in your current chat profile **%@**." xml:space="preserve" approved="no">
         <source>This setting applies to messages in your current chat profile **%@**.</source>
+        <target state="translated">Эта настройка применяется к сообщениям в вашем текущем профиле чата **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To ask any questions and to receive updates:" xml:space="preserve">
@@ -3212,8 +3232,9 @@ You will be prompted to complete authentication before this feature is enabled.<
         <target>Передавать изображения быстрее</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Transport isolation" xml:space="preserve">
+      <trans-unit id="Transport isolation" xml:space="preserve" approved="no">
         <source>Transport isolation</source>
+        <target state="translated">Отдельные сессии для</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Trying to connect to the server used to receive messages from this contact (error: %@)." xml:space="preserve">
@@ -3308,8 +3329,9 @@ To connect, please ask your contact to create another connection link and check 
         <target>Обновить настройки сети?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Update transport isolation mode?" xml:space="preserve">
+      <trans-unit id="Update transport isolation mode?" xml:space="preserve" approved="no">
         <source>Update transport isolation mode?</source>
+        <target state="translated">Обновить режим отдельных сессий?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Updating settings will re-connect the client to all servers." xml:space="preserve">
@@ -3347,8 +3369,9 @@ To connect, please ask your contact to create another connection link and check 
         <target>Использовать сервер</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="User profile" xml:space="preserve">
+      <trans-unit id="User profile" xml:space="preserve" approved="no">
         <source>User profile</source>
+        <target state="translated">Профиль чата</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Using .onion hosts requires compatible VPN provider." xml:space="preserve">
@@ -3671,12 +3694,14 @@ To connect, please ask your contact to create another connection link and check 
         <target>Ваш профиль будет отправлен вашему контакту</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your chat profiles" xml:space="preserve">
+      <trans-unit id="Your chat profiles" xml:space="preserve" approved="no">
         <source>Your chat profiles</source>
+        <target state="translated">Ваши профили чата</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your chat profiles are stored locally, only on your device." xml:space="preserve">
+      <trans-unit id="Your chat profiles are stored locally, only on your device." xml:space="preserve" approved="no">
         <source>Your chat profiles are stored locally, only on your device.</source>
+        <target state="translated">Ваши профили чата хранятся локально, только на вашем устройстве.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chats" xml:space="preserve">
@@ -3716,8 +3741,9 @@ You can cancel this connection and remove the contact (and try later with a new 
         <target>Текущие данные вашего чата будет УДАЛЕНЫ и ЗАМЕНЕНЫ импортированными.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your current profile" xml:space="preserve">
+      <trans-unit id="Your current profile" xml:space="preserve" approved="no">
         <source>Your current profile</source>
+        <target state="translated">Ваш активный профиль</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your preferences" xml:space="preserve">
