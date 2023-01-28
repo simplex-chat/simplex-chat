@@ -360,7 +360,7 @@
     <string name="appearance_settings">Apparence</string>
     <string name="create_address">Créer une adresse</string>
     <string name="you_can_share_your_address_anybody_will_be_able_to_connect">Vous pouvez partager votre adresse sous forme de lien ou de code QR - n\'importe qui pourra se connecter à vous. Vous ne perdrez pas vos contacts si vous la supprimez par la suite.</string>
-    <string name="your_chat_profile">Votre profil de chat</string>
+    <string name="your_current_profile">Votre profil de chat</string>
     <string name="edit_image">Modifier l\'image</string>
     <string name="save_and_notify_contacts">Sauvegarder et notifier les contacts</string>
     <string name="save_and_notify_group_members">Sauvegarder et en informer les membres du groupe</string>
@@ -519,7 +519,6 @@
     <string name="run_chat_section">LANCER LE CHAT</string>
     <string name="stop_chat_question">Arrêter le chat \?</string>
     <string name="restart_the_app_to_use_imported_chat_database">Redémarrez l\'application pour utiliser la base de données de chat importée.</string>
-    <string name="data_section">DONNÉES</string>
     <string name="chat_item_ttl_day">1 jour</string>
     <string name="delete_messages">Supprimer les messages</string>
     <string name="save_passphrase_in_keychain">Sauvegarder la phrase secrète dans le keystore</string>
@@ -643,7 +642,6 @@
     <string name="delete_chat_profile_question">Supprimer le profil du chat \?</string>
     <string name="stop_chat_to_enable_database_actions">Arrêter le chat pour agir sur la base de données.</string>
     <string name="delete_files_and_media_question">Supprimer les fichiers et médias \?</string>
-    <string name="delete_files_and_media">"Supprimer les fichiers  médias"</string>
     <string name="delete_files_and_media_desc">Cette action ne peut être annulée - tous les fichiers et médias reçus et envoyés seront supprimés. Les photos à faible résolution seront conservées.</string>
     <string name="no_received_app_files">Aucun fichier reçu ou envoyé</string>
     <string name="chat_item_ttl_month">1 mois</string>
