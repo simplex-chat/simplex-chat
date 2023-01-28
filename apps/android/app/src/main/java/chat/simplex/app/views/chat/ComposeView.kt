@@ -154,16 +154,14 @@ sealed class RecordingState {
 }
 
 fun chatItemPreview(chatItem: ChatItem): ComposePreview {
+  val fileName = chatItem.file?.fileName ?: ""
   return when (val mc = chatItem.content.msgContent) {
     is MsgContent.MCText -> ComposePreview.NoPreview
     is MsgContent.MCLink -> ComposePreview.CLinkPreview(linkPreview = mc.preview)
     // TODO: include correct type
-    is MsgContent.MCImage -> ComposePreview.ImagePreview(images = listOf(mc.image), listOf(UploadContent.SimpleImage(getAppFileUri(chatItem.file?.fileName ?: ""))))
-    is MsgContent.MCVoice -> ComposePreview.VoicePreview(voice = chatItem.file?.fileName ?: "", mc.duration / 1000, true)
-    is MsgContent.MCFile -> {
-      val fileName = chatItem.file?.fileName ?: ""
-      ComposePreview.FilePreview(fileName, getAppFileUri(fileName))
-    }
+    is MsgContent.MCImage -> ComposePreview.ImagePreview(images = listOf(mc.image), listOf(UploadContent.SimpleImage(getAppFileUri(fileName))))
+    is MsgContent.MCVoice -> ComposePreview.VoicePreview(voice = fileName, mc.duration / 1000, true)
+    is MsgContent.MCFile -> ComposePreview.FilePreview(fileName, getAppFileUri(fileName))
     is MsgContent.MCUnknown, null -> ComposePreview.NoPreview
   }
 }
@@ -693,31 +691,35 @@ fun ComposeView(
           }
       }
 
+      fun clearCurrentDraft() {
+        if (chatModel.draftChatId.value == chat.id) {
+          chatModel.draft.value = null
+          chatModel.draftChatId.value = null
+        }
+      }
+
       val activity = LocalContext.current as Activity
       DisposableEffect(Unit) {
         val orientation = activity.resources.configuration.orientation
         onDispose {
           if (orientation == activity.resources.configuration.orientation) {
             val cs = composeState.value
-            var saveDraft = true
             if (cs.liveMessage != null && (cs.message.isNotEmpty() || cs.liveMessage.sent)) {
-              saveDraft = false
               sendMessage()
               resetLinkPreview()
-            }
-            chatModel.removeLiveDummy()
-
-            if (!composeState.value.empty && saveDraft) {
+              clearCurrentDraft()
+              deleteUnusedFiles()
+            } else if (!composeState.value.empty) {
               if (cs.preview is ComposePreview.VoicePreview && !cs.preview.finished) {
                 composeState.value = cs.copy(preview = cs.preview.copy(finished = true))
               }
               chatModel.draft.value = composeState.value
               chatModel.draftChatId.value = chat.id
-            } else if (chatModel.draftChatId.value == chat.id) {
-              chatModel.draft.value = null
-              chatModel.draftChatId.value = null
+            } else {
+              clearCurrentDraft()
               deleteUnusedFiles()
             }
+            chatModel.removeLiveDummy()
           }
         }
       }
