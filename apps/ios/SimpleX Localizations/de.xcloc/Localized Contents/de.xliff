@@ -307,6 +307,15 @@
         <target>Ein zufälliges Profil wird an Ihren Kontakt gesendet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="A separate TCP connection will be used **for each chat profile you have in the app**." xml:space="preserve">
+        <source>A separate TCP connection will be used **for each chat profile you have in the app**.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="A separate TCP connection will be used **for each contact and group member**.&#10;**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." xml:space="preserve">
+        <source>A separate TCP connection will be used **for each contact and group member**.
+**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="About SimpleX" xml:space="preserve">
         <source>About SimpleX</source>
         <target>Über SimpleX</target>
@@ -353,6 +362,10 @@
         <target>Füge voreingestellte Server hinzu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Add profile" xml:space="preserve">
+        <source>Add profile</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Add servers by scanning QR codes." xml:space="preserve">
         <source>Add servers by scanning QR codes.</source>
         <target>Fügen Sie Server durch Scannen der QR Codes hinzu.</target>
@@ -376,6 +389,10 @@
       <trans-unit id="Advanced network settings" xml:space="preserve">
         <source>Advanced network settings</source>
         <target>Erweiterte Netzwerkeinstellungen</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="All chats and messages will be deleted - this cannot be undone!" xml:space="preserve">
+        <source>All chats and messages will be deleted - this cannot be undone!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All group members will remain connected." xml:space="preserve">
@@ -1021,6 +1038,10 @@
         <target>Löschen nach</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Delete all files" xml:space="preserve">
+        <source>Delete all files</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Delete archive" xml:space="preserve">
         <source>Delete archive</source>
         <target>Archiv löschen</target>
@@ -1064,6 +1085,10 @@
       <trans-unit id="Delete files and media?" xml:space="preserve">
         <source>Delete files and media?</source>
         <target>Dateien und Medien löschen?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Delete files for all chat profiles" xml:space="preserve">
+        <source>Delete files for all chat profiles</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete for everyone" xml:space="preserve">
@@ -1140,6 +1165,10 @@
         <source>Delete queue</source>
         <target>Lösche Warteschlange</target>
         <note>server test step</note>
+      </trans-unit>
+      <trans-unit id="Delete user profile?" xml:space="preserve">
+        <source>Delete user profile?</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Description" xml:space="preserve">
         <source>Description</source>
@@ -1411,6 +1440,10 @@
         <target>Fehler beim Löschen des Tokens</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error deleting user profile" xml:space="preserve">
+        <source>Error deleting user profile</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error enabling notifications" xml:space="preserve">
         <source>Error enabling notifications</source>
         <target>Fehler beim Aktivieren der Benachrichtigungen</target>
@@ -1544,6 +1577,10 @@
       <trans-unit id="File: %@" xml:space="preserve">
         <source>File: %@</source>
         <target>Datei: %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Files &amp; media" xml:space="preserve">
+        <source>Files &amp; media</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="For console" xml:space="preserve">
@@ -1973,6 +2010,10 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>Lokaler Name</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Local profile data only" xml:space="preserve">
+        <source>Local profile data only</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Make a private connection" xml:space="preserve">
         <source>Make a private connection</source>
         <target>Stellen Sie eine private Verbindung her</target>
@@ -2400,6 +2441,10 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       <trans-unit id="Privacy redefined" xml:space="preserve">
         <source>Privacy redefined</source>
         <target>Datenschutz neu definiert</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Profile and server connections" xml:space="preserve">
+        <source>Profile and server connections</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile image" xml:space="preserve">
@@ -3077,6 +3122,10 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>Der Absender wird NICHT benachrichtigt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="The servers for new connections of your current chat profile **%@**." xml:space="preserve">
+        <source>The servers for new connections of your current chat profile **%@**.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Theme" xml:space="preserve">
         <source>Theme</source>
         <target>Design</target>
@@ -3105,6 +3154,10 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       <trans-unit id="This group no longer exists." xml:space="preserve">
         <source>This group no longer exists.</source>
         <target>Diese Gruppe existiert nicht mehr.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="This setting applies to messages in your current chat profile **%@**." xml:space="preserve">
+        <source>This setting applies to messages in your current chat profile **%@**.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To ask any questions and to receive updates:" xml:space="preserve">
@@ -3157,6 +3210,10 @@ Sie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funkt
       <trans-unit id="Transfer images faster" xml:space="preserve">
         <source>Transfer images faster</source>
         <target>Bilder schneller übertragen</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Transport isolation" xml:space="preserve">
+        <source>Transport isolation</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Trying to connect to the server used to receive messages from this contact (error: %@)." xml:space="preserve">
@@ -3251,6 +3308,10 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>Netzwerkeinstellungen aktualisieren?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Update transport isolation mode?" xml:space="preserve">
+        <source>Update transport isolation mode?</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Updating settings will re-connect the client to all servers." xml:space="preserve">
         <source>Updating settings will re-connect the client to all servers.</source>
         <target>Die Aktualisierung der Einstellungen wird den Client wieder mit allen Servern verbinden.</target>
@@ -3284,6 +3345,10 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
       <trans-unit id="Use server" xml:space="preserve">
         <source>Use server</source>
         <target>Server nutzen</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="User profile" xml:space="preserve">
+        <source>User profile</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Using .onion hosts requires compatible VPN provider." xml:space="preserve">
@@ -3606,6 +3671,14 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>Ihr Chat-Profil wird an Ihren Kontakt gesendet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Your chat profiles" xml:space="preserve">
+        <source>Your chat profiles</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your chat profiles are stored locally, only on your device." xml:space="preserve">
+        <source>Your chat profiles are stored locally, only on your device.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Your chats" xml:space="preserve">
         <source>Your chats</source>
         <target>Meine Chats</target>
@@ -3641,6 +3714,10 @@ Sie können diese Verbindung abbrechen und den Kontakt entfernen (und es später
       <trans-unit id="Your current chat database will be DELETED and REPLACED with the imported one." xml:space="preserve">
         <source>Your current chat database will be DELETED and REPLACED with the imported one.</source>
         <target>Ihre aktuelle Chat-Datenbank wird GELÖSCHT und durch die Importierte ERSETZT.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your current profile" xml:space="preserve">
+        <source>Your current profile</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your preferences" xml:space="preserve">

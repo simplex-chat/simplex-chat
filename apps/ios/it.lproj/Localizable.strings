@@ -303,7 +303,16 @@
 "Answer call" = "Rispondi alla chiamata";
 
 /* No comment provided by engineer. */
+"App build: %@" = "Build dell'app: %@";
+
+/* No comment provided by engineer. */
 "App icon" = "Icona app";
+
+/* No comment provided by engineer. */
+"App version" = "Versione dell'app";
+
+/* No comment provided by engineer. */
+"App version: v%@" = "Versione app: v%@";
 
 /* No comment provided by engineer. */
 "Appearance" = "Aspetto";
@@ -604,6 +613,12 @@
 
 /* chat item action */
 "Copy" = "Copia";
+
+/* No comment provided by engineer. */
+"Core built at: %@" = "Core compilato il: %@";
+
+/* No comment provided by engineer. */
+"Core version: v%@" = "Versione core: v%@";
 
 /* No comment provided by engineer. */
 "Create" = "Crea";
@@ -1622,6 +1637,9 @@
 
 /* No comment provided by engineer. */
 "Periodically" = "Periodicamente";
+
+/* No comment provided by engineer. */
+"PING count" = "Conteggio PING";
 
 /* No comment provided by engineer. */
 "PING interval" = "Intervallo PING";
