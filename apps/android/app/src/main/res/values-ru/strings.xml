@@ -423,7 +423,7 @@
     <!-- User profile details - UserProfileView.kt -->
     <string name="display_name__field">Имя профиля:</string>
     <string name="full_name__field">"Полное имя:</string>
-    <string name="your_current_profile">Ваш профиль</string>
+    <string name="your_current_profile">Ваш активный профиль</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Ваш профиль хранится на вашем устройстве и отправляется только вашим контактам.\n\n<xliff:g id="appName">SimpleX</xliff:g> серверы не могут получить доступ к вашему профилю.</string>
     <string name="edit_image">Поменять аватар</string>
     <string name="delete_image">Удалить аватар</string>
@@ -993,4 +993,32 @@
     <string name="feature_offered_item">предложил(a) %s</string>
     <string name="feature_offered_item_with_param">предложил(a) %s: %2s</string>
     <string name="feature_cancelled_item">отменил(a) %s</string>
+    <string name="icon_descr_cancel_live_message">Отменить живое сообщение</string>
+    <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
+    <string name="network_option_ping_count">Количество PING</string>
+    <string name="users_delete_with_connections">Профиль и соединения на сервере</string>
+    <string name="app_version_title">Версия приложения</string>
+    <string name="network_session_mode_user">Профиль чата</string>
+    <string name="network_session_mode_entity">Соединение</string>
+    <string name="users_add">Добавить профиль</string>
+    <string name="error_deleting_user">Ошибка удаления профиля пользователя</string>
+    <string name="files_and_media_section">Файлы и медиа</string>
+    <string name="users_delete_data_only">Только локальные данные профиля</string>
+    <string name="messages_section_title">Сообщения</string>
+    <string name="smp_servers_per_user">Серверы для новых соединений вашего текущего профиля чата</string>
+    <string name="your_chat_profiles_stored_locally">Ваши профили чата хранятся локально, только на вашем устройстве</string>
+    <string name="your_chat_profiles">Ваши профили чата</string>
+    <string name="users_delete_all_chats_deleted">Все чаты и сообщения будут удалены - это нельзя отменить!</string>
+    <string name="app_version_code">Сборка приложения: %s</string>
+    <string name="app_version_name">Версия приложения: v%s</string>
+    <string name="network_session_mode_entity_description">Отдельное TCP-соединение (и авторизация SOCKS) будет использоваться <b>для каждого контакта и члена группы</b>.
+\n<b>Обратите внимание</b>: если у вас много контактов, потребление батареи и трафика может быть значительно выше, и некоторые соединения могут не работать.</string>
+    <string name="network_session_mode_user_description">Отдельное TCP-соединение (и авторизация SOCKS) будет использоваться <b>для каждого профиля чата, который вы имеете в приложении</b>.</string>
+    <string name="core_build_timestamp">Ядро скомпилировано: %s</string>
+    <string name="core_version">Версия ядра: v%s</string>
+    <string name="users_delete_question">Удалить профиль чата\?</string>
+    <string name="users_delete_profile_for">Удалить профиль чата для</string>
+    <string name="messages_section_description">Эта настройка применяется к сообщениям в вашем текущем профиле чата</string>
+    <string name="network_session_mode_transport_isolation">Отдельные сессии для</string>
+    <string name="update_network_session_mode_question">Обновить режим отдельных сессий\?</string>
 </resources>
