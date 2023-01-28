@@ -47,7 +47,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
     is ChatInfo.Direct -> {
       val contactNetworkStatus = chatModel.contactNetworkStatus(chat.chatInfo.contact)
       ChatListNavLinkLayout(
-        chatLinkPreview = { ChatPreviewView(chat, chatModel.incognito.value, chatModel.currentUser.value?.profile?.displayName, contactNetworkStatus, stopped, linkMode) },
+        chatLinkPreview = { ChatPreviewView(chat, chatModel.draft.value, chatModel.draftChatId.value, chatModel.incognito.value, chatModel.currentUser.value?.profile?.displayName, contactNetworkStatus, stopped, linkMode) },
         click = { directChatAction(chat.chatInfo, chatModel) },
         dropdownMenuItems = { ContactMenuItems(chat, chatModel, showMenu, showMarkRead) },
         showMenu,
@@ -56,7 +56,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
     }
     is ChatInfo.Group ->
       ChatListNavLinkLayout(
-        chatLinkPreview = { ChatPreviewView(chat, chatModel.incognito.value, chatModel.currentUser.value?.profile?.displayName, null, stopped, linkMode) },
+        chatLinkPreview = { ChatPreviewView(chat, chatModel.draft.value, chatModel.draftChatId.value, chatModel.incognito.value, chatModel.currentUser.value?.profile?.displayName, null, stopped, linkMode) },
         click = { groupChatAction(chat.chatInfo.groupInfo, chatModel) },
         dropdownMenuItems = { GroupMenuItems(chat, chat.chatInfo.groupInfo, chatModel, showMenu, showMarkRead) },
         showMenu,
@@ -627,6 +627,8 @@ fun PreviewChatListNavLinkDirect() {
             ),
             chatStats = Chat.ChatStats()
           ),
+          null,
+          null,
           false,
           null,
           null,
@@ -666,6 +668,8 @@ fun PreviewChatListNavLinkGroup() {
             ),
             chatStats = Chat.ChatStats()
           ),
+          null,
+          null,
           false,
           null,
           null,

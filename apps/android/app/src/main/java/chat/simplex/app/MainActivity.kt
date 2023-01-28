@@ -374,13 +374,6 @@ fun MainPage(
                     .collect {
                       if (it != null) currentChatId = it
                       else onComposed()
-
-                      // Deletes files that were not sent but already stored in files directory.
-                      // Currently, it's voice records only
-                      if (it == null && chatModel.filesToDelete.isNotEmpty()) {
-                        chatModel.filesToDelete.forEach { it.delete() }
-                        chatModel.filesToDelete.clear()
-                      }
                     }
                 }
               }

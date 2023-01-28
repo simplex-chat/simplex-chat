@@ -56,7 +56,13 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
   val user = chatModel.currentUser.value
   val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
   val composeState = rememberSaveable(saver = ComposeState.saver()) {
-    mutableStateOf(ComposeState(useLinkPreviews = useLinkPreviews))
+    mutableStateOf(
+      if (chatModel.draftChatId.value == chatId && chatModel.draft.value != null) {
+        chatModel.draft.value ?: ComposeState(useLinkPreviews = useLinkPreviews)
+      } else {
+        ComposeState(useLinkPreviews = useLinkPreviews)
+      }
+    )
   }
   val attachmentOption = rememberSaveable { mutableStateOf<AttachmentOption?>(null) }
   val attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
