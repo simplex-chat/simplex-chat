@@ -32,6 +32,7 @@
 		5C1E42CF2985810A00042FC4 /* libHSsimplex-chat-4.5.0.0-pkeapC1NZvUHBi8mGvxp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C1E42CA2985810A00042FC4 /* libHSsimplex-chat-4.5.0.0-pkeapC1NZvUHBi8mGvxp.a */; };
 		5C1E42D02985810A00042FC4 /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C1E42CB2985810A00042FC4 /* libgmp.a */; };
 		5C1E42D12985810A00042FC4 /* libHSsimplex-chat-4.5.0.0-pkeapC1NZvUHBi8mGvxp-ghc8.10.7.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C1E42CC2985810A00042FC4 /* libHSsimplex-chat-4.5.0.0-pkeapC1NZvUHBi8mGvxp-ghc8.10.7.a */; };
+		5C1E42D32986CE2800042FC4 /* UserProfilesRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C1E42D22986CE2800042FC4 /* UserProfilesRow.swift */; };
 		5C2E260727A2941F00F70299 /* SimpleXAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C2E260627A2941F00F70299 /* SimpleXAPI.swift */; };
 		5C2E260B27A30CFA00F70299 /* ChatListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C2E260A27A30CFA00F70299 /* ChatListView.swift */; };
 		5C2E260F27A30FDC00F70299 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C2E260E27A30FDC00F70299 /* ChatView.swift */; };
@@ -251,6 +252,7 @@
 		5C1E42CA2985810A00042FC4 /* libHSsimplex-chat-4.5.0.0-pkeapC1NZvUHBi8mGvxp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-4.5.0.0-pkeapC1NZvUHBi8mGvxp.a"; sourceTree = "<group>"; };
 		5C1E42CB2985810A00042FC4 /* libgmp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmp.a; sourceTree = "<group>"; };
 		5C1E42CC2985810A00042FC4 /* libHSsimplex-chat-4.5.0.0-pkeapC1NZvUHBi8mGvxp-ghc8.10.7.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-4.5.0.0-pkeapC1NZvUHBi8mGvxp-ghc8.10.7.a"; sourceTree = "<group>"; };
+		5C1E42D22986CE2800042FC4 /* UserProfilesRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfilesRow.swift; sourceTree = "<group>"; };
 		5C2E260627A2941F00F70299 /* SimpleXAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleXAPI.swift; sourceTree = "<group>"; };
 		5C2E260A27A30CFA00F70299 /* ChatListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatListView.swift; sourceTree = "<group>"; };
 		5C2E260E27A30FDC00F70299 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
@@ -651,6 +653,7 @@
 				5CB2084E28DA4B4800D024EC /* RTCServers.swift */,
 				5C3F1D592844B4DE00EC8A82 /* ExperimentalFeaturesView.swift */,
 				64F1CC3A28B39D8600CD1FB1 /* IncognitoHelp.swift */,
+				5C1E42D22986CE2800042FC4 /* UserProfilesRow.swift */,
 				18415845648CA4F5A8BCA272 /* UserProfilesView.swift */,
 				5C65F341297D3F3600B67AF3 /* VersionView.swift */,
 			);
@@ -1085,6 +1088,7 @@
 				5CADE79A29211BB900072E13 /* PreferencesView.swift in Sources */,
 				644EFFE42937BE9700525D5B /* MarkedDeletedItemView.swift in Sources */,
 				1841594C978674A7B42EF0C0 /* AnimatedImageView.swift in Sources */,
+				5C1E42D32986CE2800042FC4 /* UserProfilesRow.swift in Sources */,
 				5C7031162953C97F00150A12 /* CIFeaturePreferenceView.swift in Sources */,
 				1841538E296606C74533367C /* UserPicker.swift in Sources */,
 				18415B0585EB5A9A0A7CA8CD /* PressedButtonStyle.swift in Sources */,

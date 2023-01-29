@@ -28,9 +28,7 @@ struct UserProfilesView: View {
     var body: some View {
         List {
             Section {
-                ForEach(m.users) { u in
-                    userView(u.user)
-                }
+                ForEach(m.users, content: userView)
                 .onDelete { indexSet in
                     if let i = indexSet.first {
                         showDeleteConfirmation = true
@@ -102,8 +100,9 @@ struct UserProfilesView: View {
         }
     }
 
-    private func userView(_ user: User) -> some View {
-        Button {
+    private func userView(_ u: UserInfo) -> some View {
+        let user = u.user
+        return Button {
             changeActiveUser(user.userId)
         } label: {
             HStack {
@@ -113,8 +112,11 @@ struct UserProfilesView: View {
                     .padding(.trailing, 12)
                 Text(user.chatViewName)
                 Spacer()
-                Image(systemName: "checkmark")
-                    .foregroundColor(user.activeUser ? .primary : .clear)
+                if user.activeUser {
+                    Image(systemName: "checkmark")
+                } else if u.unreadCount > 0 {
+                    unreadCounter(u.unreadCount)
+                }
             }
         }
         .disabled(user.activeUser)

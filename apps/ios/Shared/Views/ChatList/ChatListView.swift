@@ -71,13 +71,13 @@ struct ChatListView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
-                    if chatModel.users.count > 1 {
-                        withAnimation {
-                            userPickerVisible.toggle()
-                        }
-                    } else {
+//                    if chatModel.users.count > 1 {
+//                        withAnimation {
+//                            userPickerVisible.toggle()
+//                        }
+//                    } else {
                         showSettings = true
-                    }
+//                    }
                 } label: {
                     let user = chatModel.currentUser ?? User.sampleData
                     ZStack(alignment: .topTrailing) {
