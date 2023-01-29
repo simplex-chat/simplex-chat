@@ -43,7 +43,7 @@ testDBPrefix :: FilePath
 testDBPrefix = "tests/tmp/test"
 
 serverPort :: ServiceName
-serverPort = "5001"
+serverPort = "7001"
 
 testOpts :: ChatOpts
 testOpts =
@@ -51,7 +51,7 @@ testOpts =
     { dbFilePrefix = undefined,
       dbKey = "",
       -- dbKey = "this is a pass-phrase to encrypt the database",
-      smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:5001"],
+      smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"],
       networkConfig = defaultNetworkConfig,
       logLevel = CLLImportant,
       logConnections = False,
