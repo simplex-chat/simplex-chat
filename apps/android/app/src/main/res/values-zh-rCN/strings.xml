@@ -3,9 +3,9 @@
     <string name="a_plus_b">a + b</string>
     <string name="chat_item_ttl_day">1天</string>
     <string name="about_simplex">关于 SimpleX</string>
-    <string name="all_group_members_will_remain_connected">所有群组成员将保持连接</string>
+    <string name="all_group_members_will_remain_connected">所有群组成员将保持连接。</string>
     <string name="about_simplex_chat">关于 <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
-    <string name="above_then_preposition_continuation">关于, 然后:</string>
+    <string name="above_then_preposition_continuation">以上，然后：</string>
     <string name="accept_contact_button">接受</string>
     <string name="accept_call_on_lock_screen">接受</string>
     <string name="accept_feature">接受</string>
@@ -15,10 +15,10 @@
     <string name="callstatus_accepted">已接受通话</string>
     <string name="accept">接受</string>
     <string name="network_enable_socks_info">通过 SOCKS 代理访问服务器在端口9050？允许该选项前必须开始代理。</string>
-    <string name="smp_servers_add">添加服务器</string>
+    <string name="smp_servers_add">添加服务器…</string>
     <string name="smp_servers_add_to_another_device">添加另一设备</string>
     <string name="group_member_role_admin">管理员</string>
-    <string name="v4_3_improved_server_configuration_desc">扫描二维码来添加服务器</string>
+    <string name="v4_3_improved_server_configuration_desc">扫描二维码来添加服务器。</string>
     <string name="network_settings">高级网络设置</string>
     <string name="accept_connection_request__question">接受连接请求？</string>
     <string name="accept_contact_incognito_button">接受无痕模式</string>
@@ -99,8 +99,36 @@
     <string name="app_version_title">应用程序版本</string>
     <string name="full_backup">应用程序数据备份</string>
     <string name="settings_section_title_icon">应用程序图标</string>
-    <string name="incognito_random_profile_from_contact_description">将向您从其接收此链接的联系人发送随机配置文件</string>
+    <string name="incognito_random_profile_from_contact_description">将向您从其接收此链接的联系人发送随机个人资料</string>
     <string name="app_version_name">应用程序版本：v%s</string>
     <string name="notifications_mode_off_desc">仅在运行时应用程序可以接受消息提醒，不会启动后台服务</string>
-    <string name="incognito_random_profile_description">随机配置文件将发送到您的联系人</string>
+    <string name="incognito_random_profile_description">随机个人资料将发送到您的联系人</string>
+    <string name="auth_unavailable">身份验证不可用</string>
+    <string name="auto_accept_images">自动接受图像</string>
+    <string name="attach">附件</string>
+    <string name="icon_descr_audio_call">语音通话</string>
+    <string name="audio_call_no_encryption">语音通话（非端到端加密）</string>
+    <string name="v4_2_auto_accept_contact_requests">自动接受联系人请求</string>
+    <string name="integrity_msg_bad_hash">错误消息散列</string>
+    <string name="integrity_msg_bad_id">错误消息 ID</string>
+    <string name="settings_audio_video_calls">语音和视频通话</string>
+    <string name="accept_automatically">自动地</string>
+    <string name="turning_off_service_and_periodic">激活电池优化，关闭了后台服务和新消息的定期请求。您可以通过设置重新启用它们。</string>
+    <string name="notifications_mode_service_desc">后台服务一直在运行——一旦有消息，就会显示消息提醒。</string>
+    <string name="icon_descr_audio_off">关闭音频</string>
+    <string name="icon_descr_audio_on">开启音频</string>
+    <string name="icon_descr_asked_to_receive">已要求接收图片</string>
+    <string name="network_session_mode_user_description">一个单独的TCP连接（和SOCKS凭证）将被用于<b>，用于您在应用程序中的每个聊天个人资料</b> 。</string>
+    <string name="network_session_mode_entity_description">每个联系人和群组成员&lt;/b&gt; 将使用单独的 TCP 连接（和 SOCKS 凭证）&lt;b&gt;。
+\n&lt;b&gt;请注意&lt;/b&gt;：如果您有很多连接，您的电池和流量消耗可能会大大增加，并且某些连接可能会失败。</string>
+    <string name="back">返回</string>
+    <string name="add_new_contact_to_create_one_time_QR_code"><b>添加新联系人</b>：为您的联系人创建一次性二维码。</string>
+    <string name="onboarding_notifications_mode_off_desc"><b> 最适合电池 </b>。您只会在应用程序运行时收到消息提醒，不会使用后台服务。</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b> 适合于电池 </b>。后台服务每 10 分钟检查一次新消息提醒。您可能会错过来电和紧急信息。</string>
+    <string name="bold">加粗</string>
+    <string name="both_you_and_your_contacts_can_delete">您和您的联系人都可以不可逆转地删除已发送的消息。</string>
+    <string name="both_you_and_your_contact_can_send_disappearing">您和您的联系人都可以发送限时消息。</string>
+    <string name="both_you_and_your_contact_can_send_voice">您和您的联系人都可以发送语音消息。</string>
+    <string name="it_can_disabled_via_settings_notifications_still_shown"><b> 可以通过设置禁用它 </b> - 应用程序运行时仍会显示消息提醒。</string>
+    <string name="onboarding_notifications_mode_service_desc"><b> 使用更多电池 </b>！后台服务一直在运行——一旦收到消息，就会显示消息提醒。</string>
 </resources>
