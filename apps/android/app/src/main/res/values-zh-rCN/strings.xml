@@ -95,4 +95,12 @@
     <string name="delete_database">删除数据库</string>
     <string name="keychain_allows_to_receive_ntfs">在您重启应用程序或者更换密码后安卓密钥库系统用来安全地保存密码——来确保收到消息提醒。</string>
     <string name="keychain_is_storing_securely">安卓密钥库系统用来安全地保存密码——来确保消息提醒服务运作。</string>
+    <string name="appearance_settings">外观</string>
+    <string name="app_version_title">应用程序版本</string>
+    <string name="full_backup">应用程序数据备份</string>
+    <string name="settings_section_title_icon">应用程序图标</string>
+    <string name="incognito_random_profile_from_contact_description">将向您从其接收此链接的联系人发送随机配置文件</string>
+    <string name="app_version_name">应用程序版本：v%s</string>
+    <string name="notifications_mode_off_desc">仅在运行时应用程序可以接受消息提醒，不会启动后台服务</string>
+    <string name="incognito_random_profile_description">随机配置文件将发送到您的联系人</string>
 </resources>
