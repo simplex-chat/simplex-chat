@@ -459,7 +459,6 @@ CREATE INDEX idx_commands_connection_id ON commands(connection_id);
 CREATE INDEX idx_calls_user_id ON calls(user_id);
 CREATE INDEX idx_calls_chat_item_id ON calls(chat_item_id);
 CREATE INDEX idx_calls_contact_id ON calls(contact_id);
-CREATE INDEX idx_chat_items_group_id ON chat_items(group_id);
 CREATE INDEX idx_commands_user_id ON commands(user_id);
 CREATE INDEX idx_connections_custom_user_profile_id ON connections(
   custom_user_profile_id
