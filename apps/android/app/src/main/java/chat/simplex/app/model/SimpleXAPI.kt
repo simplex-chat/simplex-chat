@@ -293,14 +293,18 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
 
   suspend fun changeActiveUser(toUserId: Long) {
     try {
-      chatModel.currentUser.value = apiSetActiveUser(toUserId)
-      val users = listUsers()
-      chatModel.users.clear()
-      chatModel.users.addAll(users)
-      getUserChatData()
+      changeActiveUser_(toUserId)
     } catch (e: Exception) {
       Log.e(TAG, "Unable to set active user: ${e.stackTraceToString()}")
     }
+  }
+
+  suspend fun changeActiveUser_(toUserId: Long) {
+    chatModel.currentUser.value = apiSetActiveUser(toUserId)
+    val users = listUsers()
+    chatModel.users.clear()
+    chatModel.users.addAll(users)
+    getUserChatData()
   }
 
   suspend fun getUserChatData() {
@@ -396,8 +400,8 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     throw Exception("failed to set the user as active ${r.responseType} ${r.details}")
   }
 
-  suspend fun apiDeleteUser(userId: Long) {
-    val r = sendCmd(CC.ApiDeleteUser(userId))
+  suspend fun apiDeleteUser(userId: Long, delSMPQueues: Boolean) {
+    val r = sendCmd(CC.ApiDeleteUser(userId, delSMPQueues))
     if (r is CR.CmdOk) return
     Log.d(TAG, "apiDeleteUser: ${r.responseType} ${r.details}")
     throw Exception("failed to delete the user ${r.responseType} ${r.details}")
@@ -1156,6 +1160,8 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
           chatModel.updateContact(r.contact)
           chatModel.dismissConnReqView(r.contact.activeConn.id)
           chatModel.removeChat(r.contact.activeConn.id)
+        }
+        if (r.contact.directOrUsed) {
           ntfManager.notifyContactConnected(r.user, r.contact)
         }
         chatModel.setContactNetworkStatus(r.contact, NetworkStatus.Connected())
@@ -1168,11 +1174,11 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         }
       }
       is CR.ReceivedContactRequest -> {
-        if (!active(r.user)) return
-
         val contactRequest = r.contactRequest
         val cInfo = ChatInfo.ContactRequest(contactRequest)
-        chatModel.addChat(Chat(chatInfo = cInfo, chatItems = listOf()))
+        if (active(r.user)) {
+          chatModel.addChat(Chat(chatInfo = cInfo, chatItems = listOf()))
+        }
         ntfManager.notifyContactRequestReceived(r.user, cInfo)
       }
       is CR.ContactUpdated -> {
@@ -1211,22 +1217,20 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         }
       }
       is CR.NewChatItem -> {
-        if (!active(r.user)) {
-          if (r.chatItem.chatItem.isRcvNew && r.chatItem.chatInfo.ntfsEnabled) {
-            chatModel.increaseUnreadCounter(r.user)
-          }
-          return
-        }
         val cInfo = r.chatItem.chatInfo
         val cItem = r.chatItem.chatItem
-        chatModel.addChatItem(cInfo, cItem)
+        if (active(r.user)) {
+          chatModel.addChatItem(cInfo, cItem)
+        } else if (cItem.isRcvNew && cInfo.ntfsEnabled) {
+          chatModel.increaseUnreadCounter(r.user)
+        }
         val file = cItem.file
         val mc = cItem.content.msgContent
         if (file != null && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV) {
           val acceptImages = appPrefs.privacyAcceptImages.get()
           if ((mc is MsgContent.MCImage && acceptImages)
             || (mc is MsgContent.MCVoice && ((file.fileSize > MAX_VOICE_SIZE_FOR_SENDING && acceptImages) || cInfo is ChatInfo.Group))) {
-            withApi { receiveFile(file.fileId) } // TODO check inlineFileMode != IFMSent
+            withApi { receiveFile(r.user, file.fileId) } // TODO check inlineFileMode != IFMSent
           }
         }
         if (cItem.showNotification && (!SimplexApp.context.isAppOnForeground || chatModel.chatId.value != cInfo.id)) {
@@ -1234,22 +1238,17 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         }
       }
       is CR.ChatItemStatusUpdated -> {
-        if (!active(r.user)) return
-
         val cInfo = r.chatItem.chatInfo
         val cItem = r.chatItem.chatItem
-        var res = false
-        if (!cItem.isDeletedContent) {
-          res = chatModel.upsertChatItem(cInfo, cItem)
+        if (active(r.user) && !cItem.isDeletedContent && chatModel.upsertChatItem(cInfo, cItem)) {
+          ntfManager.notifyMessageReceived(r.user, cInfo, cItem)
         }
-        if (res) {
+        if (!active(r.user) && !cItem.isDeletedContent) {
           ntfManager.notifyMessageReceived(r.user, cInfo, cItem)
         }
       }
       is CR.ChatItemUpdated ->
-        if (active(r.user)) {
-          chatItemSimpleUpdate(r.chatItem)
-        }
+        chatItemSimpleUpdate(r.user, r.chatItem)
       is CR.ChatItemDeleted -> {
         if (!active(r.user)) {
           if (r.toChatItem == null && r.deletedChatItem.chatItem.isRcvNew && r.deletedChatItem.chatInfo.ntfsEnabled) {
@@ -1337,21 +1336,13 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
           chatModel.updateGroup(r.toGroup)
         }
       is CR.RcvFileStart ->
-        if (active(r.user)) {
-          chatItemSimpleUpdate(r.chatItem)
-        }
+        chatItemSimpleUpdate(r.user, r.chatItem)
       is CR.RcvFileComplete ->
-        if (active(r.user)) {
-          chatItemSimpleUpdate(r.chatItem)
-        }
+        chatItemSimpleUpdate(r.user, r.chatItem)
       is CR.SndFileStart ->
-        if (active(r.user)) {
-          chatItemSimpleUpdate(r.chatItem)
-        }
+        chatItemSimpleUpdate(r.user, r.chatItem)
       is CR.SndFileComplete -> {
-        if (!active(r.user)) return
-
-        chatItemSimpleUpdate(r.chatItem)
+        chatItemSimpleUpdate(r.user, r.chatItem)
         val cItem = r.chatItem.chatItem
         val mc = cItem.content.msgContent
         val fileName = cItem.file?.fileName
@@ -1423,11 +1414,11 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     }
   }
 
-  suspend fun receiveFile(fileId: Long) {
+  suspend fun receiveFile(user: User, fileId: Long) {
     val inline = appPrefs.privacyTransferImagesInline.get()
     val chatItem = apiReceiveFile(fileId, inline)
     if (chatItem != null) {
-      chatItemSimpleUpdate(chatItem)
+      chatItemSimpleUpdate(user, chatItem)
     }
   }
 
@@ -1438,10 +1429,10 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     }
   }
 
-  private suspend fun chatItemSimpleUpdate(aChatItem: AChatItem) {
+  private suspend fun chatItemSimpleUpdate(user: User, aChatItem: AChatItem) {
     val cInfo = aChatItem.chatInfo
     val cItem = aChatItem.chatItem
-    if (chatModel.upsertChatItem(cInfo, cItem)) {
+    if (!active(user) || chatModel.upsertChatItem(cInfo, cItem)) {
       ntfManager.notifyMessageReceived(chatModel.currentUser.value!!, cInfo, cItem)
     }
   }
@@ -1729,7 +1720,7 @@ sealed class CC {
   class CreateActiveUser(val profile: Profile): CC()
   class ListUsers: CC()
   class ApiSetActiveUser(val userId: Long): CC()
-  class ApiDeleteUser(val userId: Long): CC()
+  class ApiDeleteUser(val userId: Long, val delSMPQueues: Boolean): CC()
   class StartChat(val expire: Boolean): CC()
   class ApiStopChat: CC()
   class SetFilesFolder(val filesFolder: String): CC()
@@ -1804,7 +1795,7 @@ sealed class CC {
     is CreateActiveUser -> "/create user ${profile.displayName} ${profile.fullName}"
     is ListUsers -> "/users"
     is ApiSetActiveUser -> "/_user $userId"
-    is ApiDeleteUser -> "/_delete user $userId"
+    is ApiDeleteUser -> "/_delete user $userId del_smp=${onOff(delSMPQueues)}"
     is StartChat -> "/_start subscribe=on expire=${onOff(expire)}"
     is ApiStopChat -> "/_stop"
     is SetFilesFolder -> "/_files_folder $filesFolder"

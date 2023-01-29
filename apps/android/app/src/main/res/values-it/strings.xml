@@ -290,7 +290,6 @@
     <string name="delete_link">Elimina link</string>
     <string name="create_address">Crea indirizzo</string>
     <string name="button_create_group_link">Crea link</string>
-    <string name="data_section">DATI</string>
     <string name="database_encryption_will_be_updated">La password di crittografia del database verrà aggiornata e conservata nel Keystore.</string>
     <string name="encrypted_with_random_passphrase">Il database è crittografato con una password casuale, puoi cambiarla.</string>
     <string name="database_passphrase_is_required">La password del database è necessaria per aprire la chat.</string>
@@ -521,7 +520,6 @@
     <string name="database_will_be_encrypted">Il database verrà crittografato.</string>
     <string name="database_will_be_encrypted_and_passphrase_stored">Il database verrà crittografato e la password conservata nel Keystore.</string>
     <string name="delete_files_and_media_question">Eliminare i file e i multimediali\?</string>
-    <string name="delete_files_and_media">"Elimina file e multimediali"</string>
     <string name="delete_messages">Elimina messaggi</string>
     <string name="delete_messages_after">Elimina messaggi dopo</string>
     <string name="total_files_count_and_size">%d file con dimensione totale di %s</string>
@@ -665,7 +663,7 @@
     <string name="section_title_welcome_message">MESSAGGIO DI BENVENUTO</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">Puoi usare il markdown per formattare i messaggi:</string>
     <string name="you_control_your_chat">Sei tu a controllare la tua chat!</string>
-    <string name="your_chat_profile">Il tuo profilo di chat</string>
+    <string name="your_current_profile">Il tuo profilo di chat</string>
     <string name="your_profile_is_stored_on_your_device">Il tuo profilo, i contatti e i messaggi recapitati sono memorizzati sul tuo dispositivo.</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Il tuo profilo è memorizzato sul tuo dispositivo e condiviso solo con i tuoi contatti.
 \n
@@ -922,4 +920,11 @@
     <string name="feature_offered_item">offerto %s</string>
     <string name="feature_offered_item_with_param">offerto %s: %2s</string>
     <string name="feature_cancelled_item">annullato %s</string>
+    <string name="network_option_ping_count">Conteggio PING</string>
+    <string name="app_version_title">Versione dell\'app</string>
+    <string name="core_version">Versione core: v%s</string>
+    <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
+    <string name="app_version_code">Build dell\'app: %s</string>
+    <string name="app_version_name">Versione app: v%s</string>
+    <string name="core_build_timestamp">Core compilato il: %s</string>
 </resources>

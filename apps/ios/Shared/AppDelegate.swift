@@ -77,6 +77,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
     func applicationWillTerminate(_ application: UIApplication) {
         logger.debug("AppDelegate: applicationWillTerminate")
+        ChatModel.shared.filesToDelete.forEach {
+            removeFile($0)
+        }
+        ChatModel.shared.filesToDelete = []
         terminateChat()
     }
 

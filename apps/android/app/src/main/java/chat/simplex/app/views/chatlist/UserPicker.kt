@@ -23,10 +23,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import chat.simplex.app.R
 import chat.simplex.app.TAG
-import chat.simplex.app.model.ChatModel
-import chat.simplex.app.model.UserInfo
-import chat.simplex.app.ui.theme.DEFAULT_PADDING
+import chat.simplex.app.model.*
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -37,6 +37,15 @@ fun UserPicker(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedV
   var newChat by remember { mutableStateOf(userPickerState.value) }
   val users by remember { derivedStateOf { chatModel.users.sortedByDescending { it.user.activeUser } } }
   val animatedFloat = remember { Animatable(if (newChat.isVisible()) 0f else 1f) }
+  var progressIndicator by remember { mutableStateOf(false) }
+  if (progressIndicator) {
+    Box(
+      Modifier.fillMaxSize().clickable(enabled = false, onClick = {}),
+      contentAlignment = Alignment.Center
+    ) {
+      ProgressIndicator()
+    }
+  }
   LaunchedEffect(Unit) {
     launch {
       userPickerState.collect {
@@ -97,11 +106,18 @@ fun UserPicker(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedV
     ) {
       Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
         users.forEachIndexed { i, u ->
-          UserProfilePickerItem(u) {
+          UserProfilePickerItem(u.user, u.unreadCount) {
             userPickerState.value = AnimatedViewState.HIDING
-            scope.launch {
-              if (!u.user.activeUser) {
+            if (!u.user.activeUser) {
+              chatModel.chats.clear()
+              scope.launch {
+                val job = launch {
+                  delay(500)
+                  progressIndicator = true
+                }
                 chatModel.controller.changeActiveUser(u.user.userId)
+                job.cancel()
+                progressIndicator = false
               }
             }
           }
@@ -120,29 +136,29 @@ fun UserPicker(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedV
 }
 
 @Composable
-private fun UserProfilePickerItem(u: UserInfo, onClick: () -> Unit) {
-  SectionItemViewSpaceBetween(onClick, padding = PaddingValues(start = 8.dp, end = 8.dp)) {
+fun UserProfilePickerItem(u: User, unreadCount: Int = 0, onLongClick: () -> Unit = {}, onClick: () -> Unit) {
+  SectionItemViewSpaceBetween(onClick, onLongClick, padding = PaddingValues(start = 8.dp, end = DEFAULT_PADDING)) {
     Row(
       Modifier
         .widthIn(max = LocalConfiguration.current.screenWidthDp.dp * 0.7f)
-        .padding(top = 8.dp, bottom = 8.dp),
+        .padding(vertical = 8.dp),
       verticalAlignment = Alignment.CenterVertically
     ) {
       ProfileImage(
-        image = u.user.image,
-        size = 60.dp
+        image = u.image,
+        size = 54.dp
       )
       Text(
-        u.user.chatViewName,
+        u.chatViewName,
         modifier = Modifier
           .padding(start = 8.dp, end = 8.dp)
       )
     }
-    if (u.user.activeUser) {
+    if (u.activeUser) {
       Icon(Icons.Filled.Done, null, Modifier.size(20.dp), tint = MaterialTheme.colors.primary)
-    } else if (u.unreadCount > 0) {
+    } else if (unreadCount > 0) {
       Text(
-        unreadCountStr(u.unreadCount),
+        unreadCountStr(unreadCount),
         color = MaterialTheme.colors.onPrimary,
         fontSize = 11.sp,
         modifier = Modifier
@@ -153,13 +169,15 @@ private fun UserProfilePickerItem(u: UserInfo, onClick: () -> Unit) {
         textAlign = TextAlign.Center,
         maxLines = 1
       )
+    } else {
+      Box(Modifier.size(20.dp))
     }
   }
 }
 
 @Composable
 private fun SettingsPickerItem(onClick: () -> Unit) {
-  SectionItemViewSpaceBetween(onClick, minHeight = 60.dp) {
+  SectionItemViewSpaceBetween(onClick, minHeight = 68.dp) {
     val text = generalGetString(R.string.settings_section_title_settings).lowercase().capitalize(Locale.current)
     Text(
       text,
@@ -167,4 +185,15 @@ private fun SettingsPickerItem(onClick: () -> Unit) {
     )
     Icon(Icons.Outlined.Settings, text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
   }
+}
+
+@Composable
+private fun ProgressIndicator() {
+  CircularProgressIndicator(
+    Modifier
+      .padding(horizontal = 2.dp)
+      .size(30.dp),
+    color = HighOrLowlight,
+    strokeWidth = 2.5.dp
+  )
 }
