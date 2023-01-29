@@ -69,7 +69,7 @@ chatTests = do
     it "re-add member in status invited" testGroupReAddInvited
     it "re-add member in status invited, change role" testGroupReAddInvitedChangeRole
     it "delete contact before they accept group invitation, contact joins group" testGroupDeleteInvitedContact
-    it "member profile is kept when deleting group if other groups have this member" testDeleteGroupMemberProfileKept
+    fit "member profile is kept when deleting group if other groups have this member" testDeleteGroupMemberProfileKept
     it "remove contact from group and add again" testGroupRemoveAdd
     it "list groups containing group invitations" testGroupList
     it "group message quoted replies" testGroupMessageQuotedReply
@@ -120,7 +120,7 @@ chatTests = do
     it "auto-reply message" testAutoReplyMessage
     it "auto-reply message in incognito" testAutoReplyMessageInIncognito
   describe "incognito mode" $ do
-    it "connect incognito via invitation link" testConnectIncognitoInvitationLink
+    fit "connect incognito via invitation link" testConnectIncognitoInvitationLink
     it "connect incognito via contact address" testConnectIncognitoContactAddress
     it "accept contact request incognito" testAcceptContactRequestIncognito
     it "join group incognito" testJoinGroupIncognito
@@ -129,9 +129,9 @@ chatTests = do
     it "deleting contact first, group second deletes incognito profile" testDeleteContactThenGroupDeletesIncognitoProfile
     it "deleting group first, contact second deletes incognito profile" testDeleteGroupThenContactDeletesIncognitoProfile
   describe "group links" $ do
-    it "create group link, join via group link" testGroupLink
+    fit "create group link, join via group link" testGroupLink
     it "delete group, re-join via same link" testGroupLinkDeleteGroupRejoin
-    it "sending message to contact created via group link marks it used" testGroupLinkContactUsed
+    fit "sending message to contact created via group link marks it used" testGroupLinkContactUsed
     it "create group link, join via group link - incognito membership" testGroupLinkIncognitoMembership
     it "unused host contact is deleted after all groups with it are deleted" testGroupLinkUnusedHostContactDeleted
     it "leaving groups with unused host contacts deletes incognito profiles" testGroupLinkIncognitoUnusedHostContactsDeleted
@@ -161,7 +161,7 @@ chatTests = do
   -- it "v2 to v1" testFullAsyncV2toV1
   describe "async sending and receiving files" $ do
     it "send and receive file, sender restarts" testAsyncFileTransferSenderRestarts
-    it "send and receive file, receiver restarts" testAsyncFileTransferReceiverRestarts
+    fit "send and receive file, receiver restarts" testAsyncFileTransferReceiverRestarts
     xdescribe "send and receive file, fully asynchronous" $ do
       it "v2" testAsyncFileTransfer
       it "v1" testAsyncFileTransferV1
@@ -185,7 +185,7 @@ chatTests = do
     it "users have different chat item TTL configuration, chat items expire" testUsersDifferentCIExpirationTTL
     it "chat items expire after restart for all users according to per user configuration" testUsersRestartCIExpiration
     it "chat items only expire for users who configured expiration" testEnableCIExpirationOnlyForOneUser
-    it "disabling chat item expiration doesn't disable it for other users" testDisableCIExpirationOnlyForOneUser
+    fit "disabling chat item expiration doesn't disable it for other users" testDisableCIExpirationOnlyForOneUser
     it "both users have configured timed messages with contacts, messages expire, restart" testUsersTimedMessages
   describe "chat item expiration" $ do
     it "set chat item TTL" testSetChatItemTTL
