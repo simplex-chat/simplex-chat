@@ -4,8 +4,9 @@ import SectionDivider
 import SectionItemView
 import SectionSpacer
 import SectionView
+import android.content.Context
 import android.content.res.Configuration
-import android.icu.util.VersionInfo
+import android.os.SystemClock
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -13,18 +14,19 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.platform.UriHandler
+import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.*
+import androidx.fragment.app.FragmentActivity
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
@@ -45,6 +47,9 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
   MaintainIncognitoState(chatModel)
 
   if (user != null) {
+    val requireAuth = remember { chatModel.controller.appPrefs.performLA.state }
+    val context = LocalContext.current
+    val lastSuccessfulAuth: MutableState<Long?> = rememberSaveable { mutableStateOf(null) }
     SettingsLayout(
       profile = user.profile,
       stopped,
@@ -57,7 +62,6 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
       showModal = { modalView -> { ModalManager.shared.showModal { modalView(chatModel) } } },
       showSettingsModal = { modalView -> { ModalManager.shared.showModal(true) { modalView(chatModel) } } },
       showCustomModal = { modalView -> { ModalManager.shared.showCustomModal { close -> modalView(chatModel, close) } } },
-      showTerminal = { ModalManager.shared.showCustomModal { close -> TerminalView(chatModel, close) } },
       showVersion = {
         withApi {
           val info = chatModel.controller.apiGetVersion()
@@ -65,7 +69,35 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
             ModalManager.shared.showModal { VersionInfoView(info) }
           }
         }
-      }
+      },
+      withAuth = { block ->
+        if (!requireAuth.value || authorizedPreviously(lastSuccessfulAuth)) {
+          block()
+        } else {
+          ModalManager.shared.showModalCloseable { close ->
+            LaunchedEffect(lastSuccessfulAuth.value) {
+              if (requireAuth.value && !authorizedPreviously(lastSuccessfulAuth)) {
+                runAuth(lastSuccessfulAuth, context)
+              } else {
+                close()
+                block()
+              }
+            }
+            Box(
+              Modifier.fillMaxSize(),
+              contentAlignment = Alignment.Center
+            ) {
+              SimpleButton(
+                stringResource(R.string.auth_unlock),
+                icon = Icons.Outlined.Lock,
+                click = {
+                  runAuth(lastSuccessfulAuth, context)
+                }
+              )
+            }
+          }
+        }
+      },
     )
   }
 }
@@ -96,8 +128,8 @@ fun SettingsLayout(
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
-  showTerminal: () -> Unit,
-  showVersion: () -> Unit
+  showVersion: () -> Unit,
+  withAuth: (block: () -> Unit) -> Unit
 ) {
   val uriHandler = LocalUriHandler.current
   Surface(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
@@ -121,7 +153,7 @@ fun SettingsLayout(
           ProfilePreview(profile, stopped = stopped)
         }
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.HowToReg, stringResource(R.string.your_chat_profiles), showSettingsModal { UserProfilesView(it) }, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.HowToReg, stringResource(R.string.your_chat_profiles), { withAuth { showSettingsModal { UserProfilesView(it) }() } }, disabled = stopped)
         SectionDivider()
         SettingsIncognitoActionItem(incognitoPref, incognito, stopped) { showModal { IncognitoView() }() }
         SectionDivider()
@@ -173,7 +205,7 @@ fun SettingsLayout(
         SettingsPreferenceItem(Icons.Outlined.Construction, stringResource(R.string.settings_developer_tools), developerTools, devTools)
         SectionDivider()
         if (devTools.value) {
-          ChatConsoleItem(showTerminal)
+          ChatConsoleItem { withAuth(showCustomModal { it, close -> TerminalView(it, close) }) }
           SectionDivider()
           InstallTerminalAppItem(uriHandler)
           SectionDivider()
@@ -479,6 +511,23 @@ fun PreferenceToggleWithIcon(
   }
 }
 
+private fun authorizedPreviously(lastSuccessfulAuth: State<Long?>): Boolean =
+  lastSuccessfulAuth.value?.let { SystemClock.elapsedRealtime() - it < 30_000 } ?: false
+
+private fun runAuth(lastSuccessfulAuth: MutableState<Long?>, context: Context) {
+  authenticate(
+    generalGetString(R.string.auth_open_chat_console),
+    generalGetString(R.string.auth_log_in_using_credential),
+    context as FragmentActivity,
+    completed = { laResult ->
+      lastSuccessfulAuth.value = when (laResult) {
+        LAResult.Success, LAResult.Unavailable -> SystemClock.elapsedRealtime()
+        is LAResult.Error, LAResult.Failed -> null
+      }
+    }
+  )
+}
+
 @Preview(showBackground = true)
 @Preview(
   uiMode = Configuration.UI_MODE_NIGHT_YES,
@@ -500,8 +549,8 @@ fun PreviewSettingsLayout() {
       showModal = { {} },
       showSettingsModal = { {} },
       showCustomModal = { {} },
-      showTerminal = {},
-      showVersion = {}
+      showVersion = {},
+      withAuth = {},
     )
   }
 }
