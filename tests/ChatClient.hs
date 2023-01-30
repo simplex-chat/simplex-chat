@@ -3,6 +3,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeApplications #-}
 
 module ChatClient where
@@ -148,7 +149,7 @@ withNewTestChatCfg cfg = withNewTestChatCfgOpts cfg testOpts
 withNewTestChatOpts :: ChatOpts -> String -> Profile -> (TestCC -> IO a) -> IO a
 withNewTestChatOpts = withNewTestChatCfgOpts testCfg
 
-withNewTestChatCfgOpts :: ChatConfig -> ChatOpts -> String -> Profile -> (TestCC -> IO a) -> IO a
+withNewTestChatCfgOpts :: HasCallStack => ChatConfig -> ChatOpts -> String -> Profile -> (HasCallStack => TestCC -> IO a) -> IO a
 withNewTestChatCfgOpts cfg opts dbPrefix profile runTest =
   bracket
     (createTestChat cfg opts dbPrefix profile)
@@ -167,7 +168,7 @@ withTestChatCfg cfg = withTestChatCfgOpts cfg testOpts
 withTestChatOpts :: ChatOpts -> String -> (TestCC -> IO a) -> IO a
 withTestChatOpts = withTestChatCfgOpts testCfg
 
-withTestChatCfgOpts :: ChatConfig -> ChatOpts -> String -> (TestCC -> IO a) -> IO a
+withTestChatCfgOpts :: HasCallStack => ChatConfig -> ChatOpts -> String -> (HasCallStack => TestCC -> IO a) -> IO a
 withTestChatCfgOpts cfg opts dbPrefix = bracket (startTestChat cfg opts dbPrefix) (\cc -> cc <// 100000 >> stopTestChat cc)
 
 readTerminalOutput :: VirtualTerminal -> TQueue String -> IO ()
@@ -199,7 +200,7 @@ withTmpFiles =
     (createDirectoryIfMissing False "tests/tmp")
     (removeDirectoryRecursive "tests/tmp")
 
-testChatN :: ChatConfig -> ChatOpts -> [Profile] -> ([TestCC] -> IO ()) -> IO ()
+testChatN :: HasCallStack => ChatConfig -> ChatOpts -> [Profile] -> (HasCallStack => [TestCC] -> IO ()) -> IO ()
 testChatN cfg opts ps test = do
   tcs <- getTestCCs (zip ps [1 ..]) []
   test tcs
