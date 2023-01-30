@@ -25,9 +25,9 @@ noActiveUser = "{\"resp\":{\"type\":\"chatCmdError\",\"chatError\":{\"type\":\"e
 
 activeUserExists :: String
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-activeUserExists = "{\"resp\":{\"chatCmdError\":{\"user_\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"no\"},\"fullDelete\":{\"allow\":\"no\"},\"voice\":{\"allow\":\"yes\"}},\"activeUser\":true},\"chatError\":{\"errorStore\":{\"storeError\":{\"duplicateName\":{}}}}}}}"
+activeUserExists = "{\"resp\":{\"chatCmdError\":{\"user_\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"no\"},\"fullDelete\":{\"allow\":\"no\"},\"voice\":{\"allow\":\"yes\"}},\"activeUser\":true},\"chatError\":{\"error\":{\"errorType\":{\"userExists\":{\"contactName\":\"alice\"}}}}}}}"
 #else
-activeUserExists = "{\"resp\":{\"type\":\"chatCmdError\",\"user_\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"no\"},\"fullDelete\":{\"allow\":\"no\"},\"voice\":{\"allow\":\"yes\"}},\"activeUser\":true},\"chatError\":{\"type\":\"errorStore\",\"storeError\":{\"type\":\"duplicateName\"}}}}"
+activeUserExists = "{\"resp\":{\"type\":\"chatCmdError\",\"user_\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"no\"},\"fullDelete\":{\"allow\":\"no\"},\"voice\":{\"allow\":\"yes\"}},\"activeUser\":true},\"chatError\":{\"type\":\"error\",\"errorType\":{\"type\":\"userExists\",\"contactName\":\"alice\"}}}}"
 #endif
 
 activeUser :: String
@@ -73,7 +73,7 @@ pendingSubSummary = "{\"resp\":{\"type\":\"pendingSubSummary\"," <> userJSON <> 
 #endif
 
 userJSON :: String
-userJSON = "\"user\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"no\"},\"fullDelete\":{\"allow\":\"no\"},\"voice\":{\"allow\":\"yes\"}},\"activeUser\":false}"
+userJSON = "\"user\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"no\"},\"fullDelete\":{\"allow\":\"no\"},\"voice\":{\"allow\":\"yes\"}},\"activeUser\":true}"
 
 parsedMarkdown :: String
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
