@@ -54,7 +54,7 @@ fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
       lastSuccessfulAuth.value = SystemClock.elapsedRealtime()
     }
     TerminalLayout(
-      chatModel.terminalItems,
+      remember { chatModel.terminalItems },
       composeState,
       sendCommand = { sendCommand(chatModel, composeState) },
       close
@@ -174,7 +174,8 @@ fun TerminalLog(terminalItems: List<TerminalItem>) {
   DisposableEffect(Unit) {
     onDispose { lazyListState = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
   }
-  val reversedTerminalItems by remember { derivedStateOf { terminalItems.reversed().toList() } }
+  val reversedTerminalItems by remember { derivedStateOf { terminalItems.reversed().toList().take(500) } }
+  val context = LocalContext.current
   LazyColumn(state = listState, reverseLayout = true) {
     items(reversedTerminalItems) { item ->
       Text(
@@ -185,7 +186,7 @@ fun TerminalLog(terminalItems: List<TerminalItem>) {
         modifier = Modifier
           .fillMaxWidth()
           .clickable {
-            ModalManager.shared.showModal {
+            ModalManager.shared.showModal(endButtons = { ShareButton { shareText(context, item.details) } }) {
               SelectionContainer(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 Text(item.details, modifier = Modifier.padding(horizontal = DEFAULT_PADDING).padding(bottom = DEFAULT_PADDING))
               }
