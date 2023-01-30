@@ -50,7 +50,7 @@ cathProfile = Profile {displayName = "cath", fullName = "Catherine", image = Not
 danProfile :: Profile
 danProfile = Profile {displayName = "dan", fullName = "Daniel", image = Nothing, preferences = defaultPrefs}
 
-chatTests :: Spec
+chatTests :: SpecWith FilePath
 chatTests = do
   describe "direct messages" $ do
     describe "add contact and send/receive message" testAddContact
@@ -194,23 +194,23 @@ chatTests = do
     it "switch contact to a different queue" testSwitchContact
     it "switch group member to a different queue" testSwitchGroupMember
   describe "connection verification code" $ do
-    it "verificationCode function converts ByteString to series of digits" $
+    it "verificationCode function converts ByteString to series of digits" $ \_ ->
       verificationCode (C.sha256Hash "abcd") `shouldBe` "61889 38426 63934 09576 96390 79389 84124 85253 63658 69469 70853 37788 95900 68296 20156 25"
-    it "sameVerificationCode function should ignore spaces" $
+    it "sameVerificationCode function should ignore spaces" $ \_ ->
       sameVerificationCode "123 456 789" "12345 6789" `shouldBe` True
     it "mark contact verified" testMarkContactVerified
     it "mark group member verified" testMarkGroupMemberVerified
 
-versionTestMatrix2 :: (HasCallStack => TestCC -> TestCC -> IO ()) -> Spec
+versionTestMatrix2 :: (HasCallStack => TestCC -> TestCC -> IO ()) -> SpecWith FilePath
 versionTestMatrix2 runTest = do
-  it "v2" $ testChat2 aliceProfile bobProfile runTest
-  it "v1" $ testChatCfg2 testCfgV1 aliceProfile bobProfile runTest
-  it "v1 to v2" $ runTestCfg2 testCfg testCfgV1 runTest
-  it "v2 to v1" $ runTestCfg2 testCfgV1 testCfg runTest
+  it "v2" $ \tmp -> testChat2 tmp aliceProfile bobProfile runTest
+  it "v1" $ \tmp -> testChatCfg2 tmp testCfgV1 aliceProfile bobProfile runTest
+  it "v1 to v2" $ \tmp -> runTestCfg2 tmp testCfg testCfgV1 runTest
+  it "v2 to v1" $ \tmp -> runTestCfg2 tmp testCfgV1 testCfg runTest
 
-versionTestMatrix3 :: (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> Spec
+versionTestMatrix3 :: (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> SpecWith FilePath
 versionTestMatrix3 runTest = do
-  it "v2" $ testChat3 aliceProfile bobProfile cathProfile runTest
+  it "v2" $ \tmp -> testChat3 tmp aliceProfile bobProfile cathProfile runTest
 
 -- it "v1" $ testChatCfg3 testCfgV1 aliceProfile bobProfile cathProfile runTest
 -- it "v1 to v2" $ runTestCfg3 testCfg testCfgV1 testCfgV1 runTest
@@ -221,40 +221,40 @@ versionTestMatrix3 runTest = do
 inlineCfg :: Integer -> ChatConfig
 inlineCfg n = testCfg {inlineFiles = defaultInlineFilesConfig {sendChunks = 0, offerChunks = n, receiveChunks = n}}
 
-fileTestMatrix2 :: (HasCallStack => TestCC -> TestCC -> IO ()) -> Spec
+fileTestMatrix2 :: (HasCallStack => TestCC -> TestCC -> IO ()) -> SpecWith FilePath
 fileTestMatrix2 runTest = do
-  it "via connection" $ runTestCfg2 viaConn viaConn runTest
-  it "inline (accepting)" $ runTestCfg2 inline inline runTest
-  it "via connection (inline offered)" $ runTestCfg2 inline viaConn runTest
-  it "via connection (inline supported)" $ runTestCfg2 viaConn inline runTest
+  it "via connection" $ \tmp -> runTestCfg2 tmp viaConn viaConn runTest
+  it "inline (accepting)" $ \tmp -> runTestCfg2 tmp inline inline runTest
+  it "via connection (inline offered)" $ \tmp -> runTestCfg2 tmp inline viaConn runTest
+  it "via connection (inline supported)" $ \tmp -> runTestCfg2 tmp viaConn inline runTest
   where
     inline = inlineCfg 100
     viaConn = inlineCfg 0
 
-fileTestMatrix3 :: (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> Spec
+fileTestMatrix3 :: (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> SpecWith FilePath
 fileTestMatrix3 runTest = do
-  it "via connection" $ runTestCfg3 viaConn viaConn viaConn runTest
-  it "inline" $ runTestCfg3 inline inline inline runTest
-  it "via connection (inline offered)" $ runTestCfg3 inline viaConn viaConn runTest
-  it "via connection (inline supported)" $ runTestCfg3 viaConn inline inline runTest
+  it "via connection" $ \tmp -> runTestCfg3 tmp viaConn viaConn viaConn runTest
+  it "inline" $ \tmp -> runTestCfg3 tmp inline inline inline runTest
+  it "via connection (inline offered)" $ \tmp -> runTestCfg3 tmp inline viaConn viaConn runTest
+  it "via connection (inline supported)" $ \tmp -> runTestCfg3 tmp viaConn inline inline runTest
   where
     inline = inlineCfg 100
     viaConn = inlineCfg 0
 
-runTestCfg2 :: ChatConfig -> ChatConfig -> (HasCallStack => TestCC -> TestCC -> IO ()) -> IO ()
-runTestCfg2 aliceCfg bobCfg runTest =
-  withNewTestChatCfg aliceCfg "alice" aliceProfile $ \alice ->
-    withNewTestChatCfg bobCfg "bob" bobProfile $ \bob ->
+runTestCfg2 :: FilePath -> ChatConfig -> ChatConfig -> (HasCallStack => TestCC -> TestCC -> IO ()) -> IO ()
+runTestCfg2 tmp aliceCfg bobCfg runTest =
+  withNewTestChatCfg tmp aliceCfg "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg tmp bobCfg "bob" bobProfile $ \bob ->
       runTest alice bob
 
-runTestCfg3 :: ChatConfig -> ChatConfig -> ChatConfig -> (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> IO ()
-runTestCfg3 aliceCfg bobCfg cathCfg runTest =
-  withNewTestChatCfg aliceCfg "alice" aliceProfile $ \alice ->
-    withNewTestChatCfg bobCfg "bob" bobProfile $ \bob ->
-      withNewTestChatCfg cathCfg "cath" cathProfile $ \cath ->
+runTestCfg3 :: FilePath -> ChatConfig -> ChatConfig -> ChatConfig -> (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> IO ()
+runTestCfg3 tmp aliceCfg bobCfg cathCfg runTest =
+  withNewTestChatCfg tmp aliceCfg "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg tmp bobCfg "bob" bobProfile $ \bob ->
+      withNewTestChatCfg tmp cathCfg "cath" cathProfile $ \cath ->
         runTest alice bob cath
 
-testAddContact :: HasCallStack => Spec
+testAddContact :: HasCallStack => SpecWith FilePath
 testAddContact = versionTestMatrix2 runTestAddContact
   where
     runTestAddContact alice bob = do
@@ -333,9 +333,9 @@ testAddContact = versionTestMatrix2 runTestAddContact
       alice #$> ("/_read chat @2", id, "ok")
       bob #$> ("/_read chat @2", id, "ok")
 
-testDeleteContactDeletesProfile :: HasCallStack => IO ()
-testDeleteContactDeletesProfile =
-  testChat2 aliceProfile bobProfile $
+testDeleteContactDeletesProfile :: HasCallStack => FilePath -> IO ()
+testDeleteContactDeletesProfile tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
       alice <##> bob
@@ -352,9 +352,9 @@ testDeleteContactDeletesProfile =
       (bob </)
       bob `hasContactProfiles` ["bob"]
 
-testDirectMessageQuotedReply :: HasCallStack => IO ()
-testDirectMessageQuotedReply =
-  testChat2 aliceProfile bobProfile $
+testDirectMessageQuotedReply :: HasCallStack => FilePath -> IO ()
+testDirectMessageQuotedReply tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
       alice ##> "/_send @2 text hello! how are you?"
@@ -377,9 +377,9 @@ testDirectMessageQuotedReply =
       bob #$> ("/_get chat @2 count=1", chat', [((1, "will tell more"), Just (1, "all good - you?"))])
       alice #$> ("/_get chat @2 count=1", chat', [((0, "will tell more"), Just (0, "all good - you?"))])
 
-testDirectMessageUpdate :: HasCallStack => IO ()
-testDirectMessageUpdate =
-  testChat2 aliceProfile bobProfile $
+testDirectMessageUpdate :: HasCallStack => FilePath -> IO ()
+testDirectMessageUpdate tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
 
@@ -438,9 +438,9 @@ testDirectMessageUpdate =
       alice #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((1, "greetings 🤝"), Nothing), ((0, "hey Alice"), Just (1, "hello 🙂")), ((0, "greetings Alice"), Just (1, "hey 👋"))])
       bob #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((0, "greetings 🤝"), Nothing), ((1, "hey Alice"), Just (0, "hello 🙂")), ((1, "greetings Alice"), Just (0, "hey 👋"))])
 
-testDirectMessageDelete :: HasCallStack => IO ()
-testDirectMessageDelete =
-  testChat2 aliceProfile bobProfile $
+testDirectMessageDelete :: HasCallStack => FilePath -> IO ()
+testDirectMessageDelete tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
 
@@ -513,9 +513,9 @@ testDirectMessageDelete =
       bob #$> ("/_delete item @2 " <> itemId 4 <> " internal", id, "message deleted")
       bob #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((0, "hello 🙂"), Nothing), ((1, "do you receive my messages?"), Just (0, "hello 🙂"))])
 
-testDirectLiveMessage :: HasCallStack => IO ()
-testDirectLiveMessage =
-  testChat2 aliceProfile bobProfile $ \alice bob -> do
+testDirectLiveMessage :: HasCallStack => FilePath -> IO ()
+testDirectLiveMessage tmp =
+  testChat2 tmp aliceProfile bobProfile $ \alice bob -> do
     connectUsers alice bob
     -- non-empty live message is sent instantly
     alice `send` "/live @bob hello"
@@ -530,9 +530,9 @@ testDirectLiveMessage =
     alice <# "@bob [LIVE] hello 2"
     bob <# "alice> [LIVE ended] hello 2"
 
-testRepeatAuthErrorsDisableContact :: HasCallStack => IO ()
-testRepeatAuthErrorsDisableContact =
-  testChat2 aliceProfile bobProfile $ \alice bob -> do
+testRepeatAuthErrorsDisableContact :: HasCallStack => FilePath -> IO ()
+testRepeatAuthErrorsDisableContact tmp =
+  testChat2 tmp aliceProfile bobProfile $ \alice bob -> do
     connectUsers alice bob
     alice <##> bob
     bob ##> "/d alice"
@@ -549,14 +549,14 @@ testRepeatAuthErrorsDisableContact =
       alice #> "@bob hey"
       alice <## "[bob, contactId: 2, connId: 1] error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
 
-testGroup :: HasCallStack => Spec
+testGroup :: HasCallStack => SpecWith FilePath
 testGroup = versionTestMatrix3 runTestGroup
   where
     runTestGroup alice bob cath = testGroupShared alice bob cath False
 
-testGroupCheckMessages :: HasCallStack => IO ()
-testGroupCheckMessages =
-  testChat3 aliceProfile bobProfile cathProfile $
+testGroupCheckMessages :: HasCallStack => FilePath -> IO ()
+testGroupCheckMessages tmp =
+  testChat3 tmp aliceProfile bobProfile cathProfile $
     \alice bob cath -> testGroupShared alice bob cath True
 
 testGroupShared :: HasCallStack => TestCC -> TestCC -> TestCC -> Bool -> IO ()
@@ -692,9 +692,9 @@ testGroupShared alice bob cath checkMessages = do
       alice #$> ("/_unread chat #1 on", id, "ok")
       alice #$> ("/_unread chat #1 off", id, "ok")
 
-testGroup2 :: HasCallStack => IO ()
-testGroup2 =
-  testChat4 aliceProfile bobProfile cathProfile danProfile $
+testGroup2 :: HasCallStack => FilePath -> IO ()
+testGroup2 tmp =
+  testChat4 tmp aliceProfile bobProfile cathProfile danProfile $
     \alice bob cath dan -> do
       connectUsers alice bob
       connectUsers alice cath
@@ -884,9 +884,9 @@ testGroup2 =
       bob <##> cath
       bob <##> alice
 
-testGroupDelete :: HasCallStack => IO ()
-testGroupDelete =
-  testChat3 aliceProfile bobProfile cathProfile $
+testGroupDelete :: HasCallStack => FilePath -> IO ()
+testGroupDelete tmp =
+  testChat3 tmp aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
       alice ##> "/d #team"
@@ -917,9 +917,9 @@ testGroupDelete =
       cath <## "no contact bob"
       (bob </)
 
-testGroupSameName :: HasCallStack => IO ()
-testGroupSameName =
-  testChat2 aliceProfile bobProfile $
+testGroupSameName :: HasCallStack => FilePath -> IO ()
+testGroupSameName tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice _ -> do
       alice ##> "/g team"
       alice <## "group #team is created"
@@ -928,9 +928,9 @@ testGroupSameName =
       alice <## "group #team_1 (team) is created"
       alice <## "to add members use /a team_1 <name> or /create link #team_1"
 
-testGroupDeleteWhenInvited :: HasCallStack => IO ()
-testGroupDeleteWhenInvited =
-  testChat2 aliceProfile bobProfile $
+testGroupDeleteWhenInvited :: HasCallStack => FilePath -> IO ()
+testGroupDeleteWhenInvited tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
       alice ##> "/g team"
@@ -955,9 +955,9 @@ testGroupDeleteWhenInvited =
             bob <## "use /j team to accept"
         ]
 
-testGroupReAddInvited :: HasCallStack => IO ()
-testGroupReAddInvited =
-  testChat2 aliceProfile bobProfile $
+testGroupReAddInvited :: HasCallStack => FilePath -> IO ()
+testGroupReAddInvited tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
       alice ##> "/g team"
@@ -990,9 +990,9 @@ testGroupReAddInvited =
             bob <## "use /j team_1 to accept"
         ]
 
-testGroupReAddInvitedChangeRole :: HasCallStack => IO ()
-testGroupReAddInvitedChangeRole =
-  testChat2 aliceProfile bobProfile $
+testGroupReAddInvitedChangeRole :: HasCallStack => FilePath -> IO ()
+testGroupReAddInvitedChangeRole tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
       alice ##> "/g team"
@@ -1030,9 +1030,9 @@ testGroupReAddInvitedChangeRole =
       alice ##> "/d #team"
       alice <## "#team: you deleted the group"
 
-testGroupDeleteInvitedContact :: HasCallStack => IO ()
-testGroupDeleteInvitedContact =
-  testChat2 aliceProfile bobProfile $
+testGroupDeleteInvitedContact :: HasCallStack => FilePath -> IO ()
+testGroupDeleteInvitedContact tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
       alice ##> "/g team"
@@ -1061,9 +1061,9 @@ testGroupDeleteInvitedContact =
       bob <## "[alice, contactId: 2, connId: 1] error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
       (alice </)
 
-testDeleteGroupMemberProfileKept :: HasCallStack => IO ()
-testDeleteGroupMemberProfileKept =
-  testChat2 aliceProfile bobProfile $
+testDeleteGroupMemberProfileKept :: HasCallStack => FilePath -> IO ()
+testDeleteGroupMemberProfileKept tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
       -- group 1
@@ -1130,9 +1130,9 @@ testDeleteGroupMemberProfileKept =
       bob #> "#club received"
       alice <# "#club bob> received"
 
-testGroupRemoveAdd :: HasCallStack => IO ()
-testGroupRemoveAdd =
-  testChat3 aliceProfile bobProfile cathProfile $
+testGroupRemoveAdd :: HasCallStack => FilePath -> IO ()
+testGroupRemoveAdd tmp =
+  testChat3 tmp aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
       -- remove member
@@ -1175,9 +1175,9 @@ testGroupRemoveAdd =
         (alice <# "#team cath> hello")
         (bob <# "#team_1 cath> hello")
 
-testGroupList :: HasCallStack => IO ()
-testGroupList =
-  testChat2 aliceProfile bobProfile $
+testGroupList :: HasCallStack => FilePath -> IO ()
+testGroupList tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice bob -> do
       createGroup2 "team" alice bob
       alice ##> "/g tennis"
@@ -1205,9 +1205,9 @@ testGroupList =
       bob ##> "/gs"
       bob <## "#team"
 
-testGroupMessageQuotedReply :: HasCallStack => IO ()
-testGroupMessageQuotedReply =
-  testChat3 aliceProfile bobProfile cathProfile $
+testGroupMessageQuotedReply :: HasCallStack => FilePath -> IO ()
+testGroupMessageQuotedReply tmp =
+  testChat3 tmp aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
       threadDelay 1000000
@@ -1275,9 +1275,9 @@ testGroupMessageQuotedReply =
             cath <## "      go on"
         )
 
-testGroupMessageUpdate :: HasCallStack => IO ()
-testGroupMessageUpdate =
-  testChat3 aliceProfile bobProfile cathProfile $
+testGroupMessageUpdate :: HasCallStack => FilePath -> IO ()
+testGroupMessageUpdate tmp =
+  testChat3 tmp aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
       threadDelay 1000000
@@ -1344,9 +1344,9 @@ testGroupMessageUpdate =
       bob #$> ("/_get chat #1 count=3", chat', [((0, "greetings 🤝"), Nothing), ((1, "hi alice"), Just (0, "hey 👋")), ((0, "greetings!"), Just (0, "greetings 🤝"))])
       cath #$> ("/_get chat #1 count=3", chat', [((0, "greetings 🤝"), Nothing), ((0, "hi alice"), Just (0, "hey 👋")), ((1, "greetings!"), Just (0, "greetings 🤝"))])
 
-testGroupMessageDelete :: HasCallStack => IO ()
-testGroupMessageDelete =
-  testChat3 aliceProfile bobProfile cathProfile $
+testGroupMessageDelete :: HasCallStack => FilePath -> IO ()
+testGroupMessageDelete tmp =
+  testChat3 tmp aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
       threadDelay 1000000
@@ -1427,9 +1427,9 @@ testGroupMessageDelete =
       bob #$> ("/_get chat #1 count=3", chat', [((0, "hello!"), Nothing), ((1, "hi alice"), Just (0, "hello!")), ((0, "how are you? [marked deleted]"), Nothing)])
       cath #$> ("/_get chat #1 count=3", chat', [((0, "hello!"), Nothing), ((0, "hi alice"), Just (0, "hello!")), ((1, "how are you? [marked deleted]"), Nothing)])
 
-testGroupLiveMessage :: HasCallStack => IO ()
-testGroupLiveMessage =
-  testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+testGroupLiveMessage :: HasCallStack => FilePath -> IO ()
+testGroupLiveMessage tmp =
+  testChat3 tmp aliceProfile bobProfile cathProfile $ \alice bob cath -> do
     createGroup3 "team" alice bob cath
     threadDelay 500000
     -- non-empty live message is sent instantly
@@ -1451,9 +1451,9 @@ testGroupLiveMessage =
     bob <# "#team alice> [LIVE ended] hello 2"
     cath <# "#team alice> [LIVE ended] hello 2"
 
-testUpdateGroupProfile :: HasCallStack => IO ()
-testUpdateGroupProfile =
-  testChat3 aliceProfile bobProfile cathProfile $
+testUpdateGroupProfile :: HasCallStack => FilePath -> IO ()
+testUpdateGroupProfile tmp =
+  testChat3 tmp aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
       threadDelay 1000000
@@ -1478,9 +1478,9 @@ testUpdateGroupProfile =
         (alice <# "#my_team bob> hi")
         (cath <# "#my_team bob> hi")
 
-testUpdateMemberRole :: HasCallStack => IO ()
-testUpdateMemberRole =
-  testChat3 aliceProfile bobProfile cathProfile $
+testUpdateMemberRole :: HasCallStack => FilePath -> IO ()
+testUpdateMemberRole tmp =
+  testChat3 tmp aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       connectUsers alice bob
       alice ##> "/g team"
@@ -1524,9 +1524,9 @@ testUpdateMemberRole =
       alice ##> "/d #team"
       alice <## "you have insufficient permissions for this group command"
 
-testGroupDeleteUnusedContacts :: HasCallStack => IO ()
-testGroupDeleteUnusedContacts =
-  testChat3 aliceProfile bobProfile cathProfile $
+testGroupDeleteUnusedContacts :: HasCallStack => FilePath -> IO ()
+testGroupDeleteUnusedContacts tmp =
+  testChat3 tmp aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       -- create group 1
       createGroup3 "team" alice bob cath
@@ -1609,8 +1609,8 @@ testGroupDeleteUnusedContacts =
       cath ##> ("/d #" <> group)
       cath <## ("#" <> group <> ": you deleted the group")
 
-testGroupDescription :: HasCallStack => IO ()
-testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
+testGroupDescription :: HasCallStack => FilePath -> IO ()
+testGroupDescription tmp = testChat4 tmp aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
   connectUsers alice bob
   alice ##> "/g team"
   alice <## "group #team is created"
@@ -1676,11 +1676,11 @@ testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile 
       cc <## "#team: bob added dan (Daniel) to the group (connecting...)"
       cc <## "#team: new member dan is connected"
 
-testGroupAsync :: HasCallStack => IO ()
-testGroupAsync = do
+testGroupAsync :: HasCallStack => FilePath -> IO ()
+testGroupAsync tmp = do
   print (0 :: Integer)
-  withNewTestChat "alice" aliceProfile $ \alice -> do
-    withNewTestChat "bob" bobProfile $ \bob -> do
+  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
       connectUsers alice bob
       alice ##> "/g team"
       alice <## "group #team is created"
@@ -1699,8 +1699,8 @@ testGroupAsync = do
       alice #> "#team hello bob"
       bob <# "#team alice> hello bob"
   print (1 :: Integer)
-  withTestChat "alice" $ \alice -> do
-    withNewTestChat "cath" cathProfile $ \cath -> do
+  withTestChat tmp "alice" $ \alice -> do
+    withNewTestChat tmp "cath" cathProfile $ \cath -> do
       alice <## "1 contacts connected (use /cs for the list)"
       alice <## "#team: connected to server(s)"
       connectUsers alice cath
@@ -1719,8 +1719,8 @@ testGroupAsync = do
       alice #> "#team hello cath"
       cath <# "#team alice> hello cath"
   print (2 :: Integer)
-  withTestChat "bob" $ \bob -> do
-    withTestChat "cath" $ \cath -> do
+  withTestChat tmp "bob" $ \bob -> do
+    withTestChat tmp "cath" $ \cath -> do
       concurrentlyN_
         [ do
             bob <## "1 contacts connected (use /cs for the list)"
@@ -1735,8 +1735,8 @@ testGroupAsync = do
         ]
   threadDelay 500000
   print (3 :: Integer)
-  withTestChat "bob" $ \bob -> do
-    withNewTestChat "dan" danProfile $ \dan -> do
+  withTestChat tmp "bob" $ \bob -> do
+    withNewTestChat tmp "dan" danProfile $ \dan -> do
       bob <## "2 contacts connected (use /cs for the list)"
       bob <## "#team: connected to server(s)"
       connectUsers bob dan
@@ -1755,9 +1755,9 @@ testGroupAsync = do
       threadDelay 1000000
   threadDelay 1000000
   print (4 :: Integer)
-  withTestChat "alice" $ \alice -> do
-    withTestChat "cath" $ \cath -> do
-      withTestChat "dan" $ \dan -> do
+  withTestChat tmp "alice" $ \alice -> do
+    withTestChat tmp "cath" $ \cath -> do
+      withTestChat tmp "dan" $ \dan -> do
         concurrentlyN_
           [ do
               alice <## "2 contacts connected (use /cs for the list)"
@@ -1777,10 +1777,10 @@ testGroupAsync = do
           ]
         threadDelay 1000000
   print (5 :: Integer)
-  withTestChat "alice" $ \alice -> do
-    withTestChat "bob" $ \bob -> do
-      withTestChat "cath" $ \cath -> do
-        withTestChat "dan" $ \dan -> do
+  withTestChat tmp "alice" $ \alice -> do
+    withTestChat tmp "bob" $ \bob -> do
+      withTestChat tmp "cath" $ \cath -> do
+        withTestChat tmp "dan" $ \dan -> do
           concurrentlyN_
             [ do
                 alice <## "3 contacts connected (use /cs for the list)"
@@ -1823,9 +1823,9 @@ testGroupAsync = do
           dan <##> cath
           dan <##> alice
 
-testUpdateProfile :: HasCallStack => IO ()
-testUpdateProfile =
-  testChat3 aliceProfile bobProfile cathProfile $
+testUpdateProfile :: HasCallStack => FilePath -> IO ()
+testUpdateProfile tmp =
+  testChat3 tmp aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
       alice ##> "/p"
@@ -1865,9 +1865,9 @@ testUpdateProfile =
             bob <## "use @cat <message> to send messages"
         ]
 
-testUpdateProfileImage :: HasCallStack => IO ()
-testUpdateProfileImage =
-  testChat2 aliceProfile bobProfile $
+testUpdateProfileImage :: HasCallStack => FilePath -> IO ()
+testUpdateProfileImage tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
       alice ##> "/profile_image data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="
@@ -1897,9 +1897,9 @@ runTestFileTransfer alice bob = do
   dest <- B.readFile "./tests/tmp/test.pdf"
   dest `shouldBe` src
 
-testInlineFileTransfer :: HasCallStack => IO ()
-testInlineFileTransfer =
-  testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
+testInlineFileTransfer :: HasCallStack => FilePath -> IO ()
+testInlineFileTransfer tmp =
+  testChatCfg2 tmp cfg aliceProfile bobProfile $ \alice bob -> do
     connectUsers alice bob
     bob ##> "/_files_folder ./tests/tmp/"
     bob <## "ok"
@@ -1922,9 +1922,9 @@ testInlineFileTransfer =
   where
     cfg = testCfg {inlineFiles = defaultInlineFilesConfig {offerChunks = 100, sendChunks = 100, receiveChunks = 100}}
 
-testAcceptInlineFileSndCancelDuringTransfer :: HasCallStack => IO ()
-testAcceptInlineFileSndCancelDuringTransfer =
-  testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
+testAcceptInlineFileSndCancelDuringTransfer :: HasCallStack => FilePath -> IO ()
+testAcceptInlineFileSndCancelDuringTransfer tmp =
+  testChatCfg2 tmp cfg aliceProfile bobProfile $ \alice bob -> do
     connectUsers alice bob
     bob ##> "/_files_folder ./tests/tmp/"
     bob <## "ok"
@@ -1953,9 +1953,9 @@ testAcceptInlineFileSndCancelDuringTransfer =
   where
     cfg = testCfg {inlineFiles = defaultInlineFilesConfig {offerChunks = 100, receiveChunks = 50}}
 
-testSmallInlineFileTransfer :: HasCallStack => IO ()
-testSmallInlineFileTransfer =
-  testChat2 aliceProfile bobProfile $ \alice bob -> do
+testSmallInlineFileTransfer :: HasCallStack => FilePath -> IO ()
+testSmallInlineFileTransfer tmp =
+  testChat2 tmp aliceProfile bobProfile $ \alice bob -> do
     connectUsers alice bob
     bob ##> "/_files_folder ./tests/tmp/"
     bob <## "ok"
@@ -1976,10 +1976,10 @@ testSmallInlineFileTransfer =
     dest <- B.readFile "./tests/tmp/logo.jpg"
     dest `shouldBe` src
 
-testSmallInlineFileIgnored :: HasCallStack => IO ()
-testSmallInlineFileIgnored = do
-  withNewTestChat "alice" aliceProfile $ \alice ->
-    withNewTestChatOpts testOpts {allowInstantFiles = False} "bob" bobProfile $ \bob -> do
+testSmallInlineFileIgnored :: HasCallStack => FilePath -> IO ()
+testSmallInlineFileIgnored tmp = do
+  withNewTestChat tmp "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts tmp testOpts {allowInstantFiles = False} "bob" bobProfile $ \bob -> do
       connectUsers alice bob
       bob ##> "/_files_folder ./tests/tmp/"
       bob <## "ok"
@@ -1998,9 +1998,9 @@ testSmallInlineFileIgnored = do
       bob ##> "/fr 1"
       bob <## "file is already being received: logo.jpg"
 
-testReceiveInline :: HasCallStack => IO ()
-testReceiveInline =
-  testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
+testReceiveInline :: HasCallStack => FilePath -> IO ()
+testReceiveInline tmp =
+  testChatCfg2 tmp cfg aliceProfile bobProfile $ \alice bob -> do
     connectUsers alice bob
     alice #> "/f @bob ./tests/fixtures/test.jpg"
     alice <## "use /fc 1 to cancel sending"
@@ -2062,9 +2062,9 @@ runTestFileSndCancelBeforeTransfer alice bob = do
   bob ##> "/fr 1 ./tests/tmp"
   bob <## "file cancelled: test.txt"
 
-testFileSndCancelDuringTransfer :: HasCallStack => IO ()
-testFileSndCancelDuringTransfer =
-  testChat2 aliceProfile bobProfile $
+testFileSndCancelDuringTransfer :: HasCallStack => FilePath -> IO ()
+testFileSndCancelDuringTransfer tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
       startFileTransfer' alice bob "test_1MB.pdf" "1017.7 KiB / 1042157 bytes"
@@ -2082,9 +2082,9 @@ testFileSndCancelDuringTransfer =
         ]
       checkPartialTransfer "test_1MB.pdf"
 
-testFileRcvCancel :: HasCallStack => IO ()
-testFileRcvCancel =
-  testChat2 aliceProfile bobProfile $
+testFileRcvCancel :: HasCallStack => FilePath -> IO ()
+testFileRcvCancel tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
       startFileTransfer alice bob
@@ -2149,9 +2149,9 @@ runTestGroupFileTransfer alice bob cath = do
   dest1 `shouldBe` src
   dest2 `shouldBe` src
 
-testInlineGroupFileTransfer :: HasCallStack => IO ()
-testInlineGroupFileTransfer =
-  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
+testInlineGroupFileTransfer :: HasCallStack => FilePath -> IO ()
+testInlineGroupFileTransfer tmp =
+  testChatCfg3 tmp cfg aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
       bob ##> "/_files_folder ./tests/tmp/bob/"
@@ -2190,9 +2190,9 @@ testInlineGroupFileTransfer =
   where
     cfg = testCfg {inlineFiles = defaultInlineFilesConfig {offerChunks = 100, sendChunks = 100, totalSendChunks = 100, receiveChunks = 100}}
 
-testSmallInlineGroupFileTransfer :: HasCallStack => IO ()
-testSmallInlineGroupFileTransfer =
-  testChatCfg3 testCfg aliceProfile bobProfile cathProfile $
+testSmallInlineGroupFileTransfer :: HasCallStack => FilePath -> IO ()
+testSmallInlineGroupFileTransfer tmp =
+  testChatCfg3 tmp testCfg aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
       bob ##> "/_files_folder ./tests/tmp/bob/"
@@ -2229,11 +2229,11 @@ testSmallInlineGroupFileTransfer =
       dest1 `shouldBe` src
       dest2 `shouldBe` src
 
-testSmallInlineGroupFileIgnored :: HasCallStack => IO ()
-testSmallInlineGroupFileIgnored = do
-  withNewTestChat "alice" aliceProfile $ \alice ->
-    withNewTestChatOpts testOpts {allowInstantFiles = False} "bob" bobProfile $ \bob -> do
-      withNewTestChatOpts testOpts {allowInstantFiles = False} "cath" cathProfile $ \cath -> do
+testSmallInlineGroupFileIgnored :: HasCallStack => FilePath -> IO ()
+testSmallInlineGroupFileIgnored tmp = do
+  withNewTestChat tmp "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts tmp testOpts {allowInstantFiles = False} "bob" bobProfile $ \bob -> do
+      withNewTestChatOpts tmp testOpts {allowInstantFiles = False} "cath" cathProfile $ \cath -> do
         createGroup3 "team" alice bob cath
         bob ##> "/_files_folder ./tests/tmp/bob/"
         bob <## "ok"
@@ -2319,9 +2319,9 @@ runTestMessageWithFile alice bob = do
   alice #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((1, "hi, sending a file"), Just "./tests/fixtures/test.jpg")])
   bob #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((0, "hi, sending a file"), Just "./tests/tmp/test.jpg")])
 
-testSendImage :: HasCallStack => IO ()
-testSendImage =
-  testChat2 aliceProfile bobProfile $
+testSendImage :: HasCallStack => FilePath -> IO ()
+testSendImage tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
       alice ##> "/_send @2 json {\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}"
@@ -2348,9 +2348,9 @@ testSendImage =
       fileExists <- doesFileExist "./tests/tmp/test.jpg"
       fileExists `shouldBe` True
 
-testFilesFoldersSendImage :: HasCallStack => IO ()
-testFilesFoldersSendImage =
-  testChat2 aliceProfile bobProfile $
+testFilesFoldersSendImage :: HasCallStack => FilePath -> IO ()
+testFilesFoldersSendImage tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
       alice #$> ("/_files_folder ./tests/fixtures", id, "ok")
@@ -2378,9 +2378,9 @@ testFilesFoldersSendImage =
         bob ##> "/d alice"
         bob <## "alice: contact is deleted"
 
-testFilesFoldersImageSndDelete :: HasCallStack => IO ()
-testFilesFoldersImageSndDelete =
-  testChat2 aliceProfile bobProfile $
+testFilesFoldersImageSndDelete :: HasCallStack => FilePath -> IO ()
+testFilesFoldersImageSndDelete tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
       alice #$> ("/_files_folder ./tests/tmp/alice_app_files", id, "ok")
@@ -2407,9 +2407,9 @@ testFilesFoldersImageSndDelete =
         bob ##> "/d alice"
         bob <## "alice: contact is deleted"
 
-testFilesFoldersImageRcvDelete :: HasCallStack => IO ()
-testFilesFoldersImageRcvDelete =
-  testChat2 aliceProfile bobProfile $
+testFilesFoldersImageRcvDelete :: HasCallStack => FilePath -> IO ()
+testFilesFoldersImageRcvDelete tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
       alice #$> ("/_files_folder ./tests/fixtures", id, "ok")
@@ -2433,9 +2433,9 @@ testFilesFoldersImageRcvDelete =
         alice ##> "/fs 1"
         alice <## "sending file 1 (test.jpg) cancelled: bob"
 
-testSendImageWithTextAndQuote :: HasCallStack => IO ()
-testSendImageWithTextAndQuote =
-  testChat2 aliceProfile bobProfile $
+testSendImageWithTextAndQuote :: HasCallStack => FilePath -> IO ()
+testSendImageWithTextAndQuote tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
       bob #> "@alice hi alice"
@@ -2503,7 +2503,7 @@ testSendImageWithTextAndQuote =
         (alice <## "completed sending file 3 (test.jpg) to bob")
       B.readFile "./tests/tmp/test_1.jpg" `shouldReturn` src
 
-testGroupSendImage :: Spec
+testGroupSendImage :: SpecWith FilePath
 testGroupSendImage = versionTestMatrix3 runTestGroupSendImage
   where
     runTestGroupSendImage :: HasCallStack => TestCC -> TestCC -> TestCC -> IO ()
@@ -2550,9 +2550,9 @@ testGroupSendImage = versionTestMatrix3 runTestGroupSendImage
       bob #$> ("/_get chat #1 count=1", chatF, [((0, ""), Just "./tests/tmp/test.jpg")])
       cath #$> ("/_get chat #1 count=1", chatF, [((0, ""), Just "./tests/tmp/test_1.jpg")])
 
-testGroupSendImageWithTextAndQuote :: HasCallStack => IO ()
-testGroupSendImageWithTextAndQuote =
-  testChat3 aliceProfile bobProfile cathProfile $
+testGroupSendImageWithTextAndQuote :: HasCallStack => FilePath -> IO ()
+testGroupSendImageWithTextAndQuote tmp =
+  testChat3 tmp aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
       threadDelay 1000000
@@ -2611,7 +2611,7 @@ testGroupSendImageWithTextAndQuote =
       cath #$> ("/_get chat #1 count=2", chat'', [((0, "hi team"), Nothing, Nothing), ((0, "hey bob"), Just (0, "hi team"), Just "./tests/tmp/test_1.jpg")])
       cath @@@ [("#team", "hey bob"), ("@alice", "received invitation to join group team as admin")]
 
-testUserContactLink :: Spec
+testUserContactLink :: SpecWith FilePath
 testUserContactLink = versionTestMatrix3 $ \alice bob cath -> do
   alice ##> "/ad"
   cLink <- getContactLink alice True
@@ -2639,9 +2639,9 @@ testUserContactLink = versionTestMatrix3 $ \alice bob cath -> do
   alice @@@ [("@cath", "Voice messages: enabled"), ("@bob", "hey")]
   alice <##> cath
 
-testUserContactLinkAutoAccept :: HasCallStack => IO ()
-testUserContactLinkAutoAccept =
-  testChat4 aliceProfile bobProfile cathProfile danProfile $
+testUserContactLinkAutoAccept :: HasCallStack => FilePath -> IO ()
+testUserContactLinkAutoAccept tmp =
+  testChat4 tmp aliceProfile bobProfile cathProfile danProfile $
     \alice bob cath dan -> do
       alice ##> "/ad"
       cLink <- getContactLink alice True
@@ -2686,8 +2686,8 @@ testUserContactLinkAutoAccept =
       alice @@@ [("@dan", "Voice messages: enabled"), ("@cath", "hey"), ("@bob", "hey")]
       alice <##> dan
 
-testDeduplicateContactRequests :: HasCallStack => IO ()
-testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
+testDeduplicateContactRequests :: HasCallStack => FilePath -> IO ()
+testDeduplicateContactRequests tmp = testChat3 tmp aliceProfile bobProfile cathProfile $
   \alice bob cath -> do
     alice ##> "/ad"
     cLink <- getContactLink alice True
@@ -2742,8 +2742,8 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
     alice @@@ [("@cath", "Voice messages: enabled"), ("@bob", "hey")]
     alice <##> cath
 
-testDeduplicateContactRequestsProfileChange :: HasCallStack => IO ()
-testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile cathProfile $
+testDeduplicateContactRequestsProfileChange :: HasCallStack => FilePath -> IO ()
+testDeduplicateContactRequestsProfileChange tmp = testChat3 tmp aliceProfile bobProfile cathProfile $
   \alice bob cath -> do
     alice ##> "/ad"
     cLink <- getContactLink alice True
@@ -2815,8 +2815,8 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
     alice @@@ [("@cath", "Voice messages: enabled"), ("@robert", "hey")]
     alice <##> cath
 
-testRejectContactAndDeleteUserContact :: HasCallStack => IO ()
-testRejectContactAndDeleteUserContact = testChat3 aliceProfile bobProfile cathProfile $
+testRejectContactAndDeleteUserContact :: HasCallStack => FilePath -> IO ()
+testRejectContactAndDeleteUserContact tmp = testChat3 tmp aliceProfile bobProfile cathProfile $
   \alice bob cath -> do
     alice ##> "/_address 1"
     cLink <- getContactLink alice True
@@ -2838,8 +2838,8 @@ testRejectContactAndDeleteUserContact = testChat3 aliceProfile bobProfile cathPr
     cath ##> ("/c " <> cLink)
     cath <## "error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
 
-testDeleteConnectionRequests :: HasCallStack => IO ()
-testDeleteConnectionRequests = testChat3 aliceProfile bobProfile cathProfile $
+testDeleteConnectionRequests :: HasCallStack => FilePath -> IO ()
+testDeleteConnectionRequests tmp = testChat3 tmp aliceProfile bobProfile cathProfile $
   \alice bob cath -> do
     alice ##> "/ad"
     cLink <- getContactLink alice True
@@ -2860,8 +2860,8 @@ testDeleteConnectionRequests = testChat3 aliceProfile bobProfile cathProfile $
     cath ##> ("/c " <> cLink')
     alice <#? cath
 
-testAutoReplyMessage :: HasCallStack => IO ()
-testAutoReplyMessage = testChat2 aliceProfile bobProfile $
+testAutoReplyMessage :: HasCallStack => FilePath -> IO ()
+testAutoReplyMessage tmp = testChat2 tmp aliceProfile bobProfile $
   \alice bob -> do
     alice ##> "/ad"
     cLink <- getContactLink alice True
@@ -2882,8 +2882,8 @@ testAutoReplyMessage = testChat2 aliceProfile bobProfile $
           alice <# "@bob hello!"
       ]
 
-testAutoReplyMessageInIncognito :: HasCallStack => IO ()
-testAutoReplyMessageInIncognito = testChat2 aliceProfile bobProfile $
+testAutoReplyMessageInIncognito :: HasCallStack => FilePath -> IO ()
+testAutoReplyMessageInIncognito tmp = testChat2 tmp aliceProfile bobProfile $
   \alice bob -> do
     alice ##> "/ad"
     cLink <- getContactLink alice True
@@ -2908,8 +2908,8 @@ testAutoReplyMessageInIncognito = testChat2 aliceProfile bobProfile $
                  ]
       ]
 
-testConnectIncognitoInvitationLink :: HasCallStack => IO ()
-testConnectIncognitoInvitationLink = testChat3 aliceProfile bobProfile cathProfile $
+testConnectIncognitoInvitationLink :: HasCallStack => FilePath -> IO ()
+testConnectIncognitoInvitationLink tmp = testChat3 tmp aliceProfile bobProfile cathProfile $
   \alice bob cath -> do
     alice #$> ("/incognito on", id, "ok")
     bob #$> ("/incognito on", id, "ok")
@@ -2986,8 +2986,8 @@ testConnectIncognitoInvitationLink = testChat3 aliceProfile bobProfile cathProfi
     (bob </)
     bob `hasContactProfiles` ["bob"]
 
-testConnectIncognitoContactAddress :: HasCallStack => IO ()
-testConnectIncognitoContactAddress = testChat2 aliceProfile bobProfile $
+testConnectIncognitoContactAddress :: HasCallStack => FilePath -> IO ()
+testConnectIncognitoContactAddress tmp = testChat2 tmp aliceProfile bobProfile $
   \alice bob -> do
     alice ##> "/ad"
     cLink <- getContactLink alice True
@@ -3025,8 +3025,8 @@ testConnectIncognitoContactAddress = testChat2 aliceProfile bobProfile $
     (bob </)
     bob `hasContactProfiles` ["bob"]
 
-testAcceptContactRequestIncognito :: HasCallStack => IO ()
-testAcceptContactRequestIncognito = testChat2 aliceProfile bobProfile $
+testAcceptContactRequestIncognito :: HasCallStack => FilePath -> IO ()
+testAcceptContactRequestIncognito tmp = testChat2 tmp aliceProfile bobProfile $
   \alice bob -> do
     alice ##> "/ad"
     cLink <- getContactLink alice True
@@ -3060,8 +3060,8 @@ testAcceptContactRequestIncognito = testChat2 aliceProfile bobProfile $
     (alice </)
     alice `hasContactProfiles` ["alice"]
 
-testJoinGroupIncognito :: HasCallStack => IO ()
-testJoinGroupIncognito = testChat4 aliceProfile bobProfile cathProfile danProfile $
+testJoinGroupIncognito :: HasCallStack => FilePath -> IO ()
+testJoinGroupIncognito tmp = testChat4 tmp aliceProfile bobProfile cathProfile danProfile $
   \alice bob cath dan -> do
     -- non incognito connections
     connectUsers alice bob
@@ -3251,8 +3251,8 @@ testJoinGroupIncognito = testChat4 aliceProfile bobProfile cathProfile danProfil
     cath ?#> "@bob_1 ok"
     bob <# (cathIncognito <> "> ok")
 
-testCantInviteContactIncognito :: HasCallStack => IO ()
-testCantInviteContactIncognito = testChat2 aliceProfile bobProfile $
+testCantInviteContactIncognito :: HasCallStack => FilePath -> IO ()
+testCantInviteContactIncognito tmp = testChat2 tmp aliceProfile bobProfile $
   \alice bob -> do
     -- alice connected incognito to bob
     alice #$> ("/incognito on", id, "ok")
@@ -3277,8 +3277,8 @@ testCantInviteContactIncognito = testChat2 aliceProfile bobProfile $
     -- bob doesn't receive invitation
     (bob </)
 
-testCantSeeGlobalPrefsUpdateIncognito :: HasCallStack => IO ()
-testCantSeeGlobalPrefsUpdateIncognito = testChat3 aliceProfile bobProfile cathProfile $
+testCantSeeGlobalPrefsUpdateIncognito :: HasCallStack => FilePath -> IO ()
+testCantSeeGlobalPrefsUpdateIncognito tmp = testChat3 tmp aliceProfile bobProfile cathProfile $
   \alice bob cath -> do
     alice #$> ("/incognito on", id, "ok")
     alice ##> "/c"
@@ -3330,8 +3330,8 @@ testCantSeeGlobalPrefsUpdateIncognito = testChat3 aliceProfile bobProfile cathPr
     cath <## "alice updated preferences for you:"
     cath <## "Full deletion: off (you allow: default (no), contact allows: yes)"
 
-testDeleteContactThenGroupDeletesIncognitoProfile :: HasCallStack => IO ()
-testDeleteContactThenGroupDeletesIncognitoProfile = testChat2 aliceProfile bobProfile $
+testDeleteContactThenGroupDeletesIncognitoProfile :: HasCallStack => FilePath -> IO ()
+testDeleteContactThenGroupDeletesIncognitoProfile tmp = testChat2 tmp aliceProfile bobProfile $
   \alice bob -> do
     -- bob connects incognito to alice
     alice ##> "/c"
@@ -3382,8 +3382,8 @@ testDeleteContactThenGroupDeletesIncognitoProfile = testChat2 aliceProfile bobPr
     bob <## "#team: you deleted the group"
     bob `hasContactProfiles` ["bob"]
 
-testDeleteGroupThenContactDeletesIncognitoProfile :: HasCallStack => IO ()
-testDeleteGroupThenContactDeletesIncognitoProfile = testChat2 aliceProfile bobProfile $
+testDeleteGroupThenContactDeletesIncognitoProfile :: HasCallStack => FilePath -> IO ()
+testDeleteGroupThenContactDeletesIncognitoProfile tmp = testChat2 tmp aliceProfile bobProfile $
   \alice bob -> do
     -- bob connects incognito to alice
     alice ##> "/c"
@@ -3434,8 +3434,8 @@ testDeleteGroupThenContactDeletesIncognitoProfile = testChat2 aliceProfile bobPr
     (bob </)
     bob `hasContactProfiles` ["bob"]
 
-testSetAlias :: HasCallStack => IO ()
-testSetAlias = testChat2 aliceProfile bobProfile $
+testSetAlias :: HasCallStack => FilePath -> IO ()
+testSetAlias tmp = testChat2 tmp aliceProfile bobProfile $
   \alice bob -> do
     connectUsers alice bob
     alice #$> ("/_set alias @2 my friend bob", id, "contact bob alias updated: my friend bob")
@@ -3445,8 +3445,8 @@ testSetAlias = testChat2 aliceProfile bobProfile $
     alice ##> "/contacts"
     alice <## "bob (Bob)"
 
-testSetConnectionAlias :: HasCallStack => IO ()
-testSetConnectionAlias = testChat2 aliceProfile bobProfile $
+testSetConnectionAlias :: HasCallStack => FilePath -> IO ()
+testSetConnectionAlias tmp = testChat2 tmp aliceProfile bobProfile $
   \alice bob -> do
     alice ##> "/c"
     inv <- getInvitation alice
@@ -3463,8 +3463,8 @@ testSetConnectionAlias = testChat2 aliceProfile bobProfile $
     alice ##> "/contacts"
     alice <## "bob (Bob) (alias: friend)"
 
-testSetContactPrefs :: HasCallStack => IO ()
-testSetContactPrefs = testChat2 aliceProfile bobProfile $
+testSetContactPrefs :: HasCallStack => FilePath -> IO ()
+testSetContactPrefs tmp = testChat2 tmp aliceProfile bobProfile $
   \alice bob -> do
     alice #$> ("/_files_folder ./tests/tmp/alice", id, "ok")
     bob #$> ("/_files_folder ./tests/tmp/bob", id, "ok")
@@ -3547,8 +3547,8 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     bob <## "Voice messages: off (you allow: default (yes), contact allows: no)"
     bob #$> ("/_get chat @2 count=100", chat, startFeatures <> [(0, "Voice messages: enabled for you"), (1, "voice message (00:10)"), (0, "Voice messages: off"), (1, "Voice messages: enabled"), (0, "Voice messages: off")])
 
-testFeatureOffers :: HasCallStack => IO ()
-testFeatureOffers = testChat2 aliceProfile bobProfile $
+testFeatureOffers :: HasCallStack => FilePath -> IO ()
+testFeatureOffers tmp = testChat2 tmp aliceProfile bobProfile $
   \alice bob -> do
     connectUsers alice bob
     alice ##> "/set delete @bob yes"
@@ -3566,9 +3566,9 @@ testFeatureOffers = testChat2 aliceProfile bobProfile $
     bob <## "Full deletion: off (you allow: default (no), contact allows: no)"
     bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "offered Full deletion"), (0, "cancelled Full deletion")])
 
-testUpdateGroupPrefs :: HasCallStack => IO ()
-testUpdateGroupPrefs =
-  testChat2 aliceProfile bobProfile $
+testUpdateGroupPrefs :: HasCallStack => FilePath -> IO ()
+testUpdateGroupPrefs tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice bob -> do
       createGroup2 "team" alice bob
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected")])
@@ -3618,9 +3618,9 @@ testUpdateGroupPrefs =
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on"), (1, "hey"), (0, "hi")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Full deletion: on"), (0, "Full deletion: off"), (0, "Voice messages: off"), (0, "Voice messages: on"), (0, "hey"), (1, "hi")])
 
-testAllowFullDeletionContact :: HasCallStack => IO ()
-testAllowFullDeletionContact =
-  testChat2 aliceProfile bobProfile $
+testAllowFullDeletionContact :: HasCallStack => FilePath -> IO ()
+testAllowFullDeletionContact tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
       alice <##> bob
@@ -3636,9 +3636,9 @@ testAllowFullDeletionContact =
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "hi"), (1, "Full deletion: enabled for contact")])
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hi"), (0, "Full deletion: enabled for you")])
 
-testAllowFullDeletionGroup :: HasCallStack => IO ()
-testAllowFullDeletionGroup =
-  testChat2 aliceProfile bobProfile $
+testAllowFullDeletionGroup :: HasCallStack => FilePath -> IO ()
+testAllowFullDeletionGroup tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice bob -> do
       createGroup2 "team" alice bob
       threadDelay 1000000
@@ -3662,9 +3662,9 @@ testAllowFullDeletionGroup =
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "hi"), (1, "Full deletion: on")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "hi"), (0, "Full deletion: on")])
 
-testProhibitDirectMessages :: HasCallStack => IO ()
-testProhibitDirectMessages =
-  testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
+testProhibitDirectMessages :: HasCallStack => FilePath -> IO ()
+testProhibitDirectMessages tmp =
+  testChat4 tmp aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
     createGroup3 "team" alice bob cath
     threadDelay 1000000
     alice ##> "/set direct #team off"
@@ -3719,9 +3719,9 @@ testProhibitDirectMessages =
       cc <## "updated group preferences:"
       cc <## "Direct messages: off"
 
-testEnableTimedMessagesContact :: HasCallStack => IO ()
-testEnableTimedMessagesContact =
-  testChat2 aliceProfile bobProfile $
+testEnableTimedMessagesContact :: HasCallStack => FilePath -> IO ()
+testEnableTimedMessagesContact tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
       alice ##> "/_set prefs @2 {\"timedMessages\": {\"allow\": \"yes\", \"ttl\": 1}}"
@@ -3763,9 +3763,9 @@ testEnableTimedMessagesContact =
       alice <## "bob updated preferences for you:"
       alice <## "Disappearing messages: enabled (you allow: yes (1 week), contact allows: yes (1 week))"
 
-testEnableTimedMessagesGroup :: HasCallStack => IO ()
-testEnableTimedMessagesGroup =
-  testChat2 aliceProfile bobProfile $
+testEnableTimedMessagesGroup :: HasCallStack => FilePath -> IO ()
+testEnableTimedMessagesGroup tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice bob -> do
       createGroup2 "team" alice bob
       threadDelay 1000000
@@ -3811,9 +3811,9 @@ testEnableTimedMessagesGroup =
       bob <## "updated group preferences:"
       bob <## "Disappearing messages: on (1 week)"
 
-testTimedMessagesEnabledGlobally :: HasCallStack => IO ()
-testTimedMessagesEnabledGlobally =
-  testChat2 aliceProfile bobProfile $
+testTimedMessagesEnabledGlobally :: HasCallStack => FilePath -> IO ()
+testTimedMessagesEnabledGlobally tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice bob -> do
       alice ##> "/set disappear yes"
       alice <## "updated preferences:"
@@ -3832,9 +3832,9 @@ testTimedMessagesEnabledGlobally =
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled (1 sec)")])
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled (1 sec)")])
 
-testGetSetSMPServers :: HasCallStack => IO ()
-testGetSetSMPServers =
-  testChat2 aliceProfile bobProfile $
+testGetSetSMPServers :: HasCallStack => FilePath -> IO ()
+testGetSetSMPServers tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice _ -> do
       alice #$> ("/_smp 1", id, "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001")
       alice #$> ("/smp smp://1234-w==@smp1.example.im", id, "ok")
@@ -3846,9 +3846,9 @@ testGetSetSMPServers =
       alice #$> ("/smp default", id, "ok")
       alice #$> ("/smp", id, "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001")
 
-testTestSMPServerConnection :: HasCallStack => IO ()
-testTestSMPServerConnection =
-  testChat2 aliceProfile bobProfile $
+testTestSMPServerConnection :: HasCallStack => FilePath -> IO ()
+testTestSMPServerConnection tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice _ -> do
       alice ##> "/smp test 1 smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7001"
       alice <## "SMP server test passed"
@@ -3861,88 +3861,88 @@ testTestSMPServerConnection =
       alice <## "SMP server test failed at Connect, error: BROKER smp://LcJU@localhost:7001 NETWORK"
       alice <## "Possibly, certificate fingerprint in server address is incorrect"
 
-testAsyncInitiatingOffline :: HasCallStack => IO ()
-testAsyncInitiatingOffline = do
+testAsyncInitiatingOffline :: HasCallStack => FilePath -> IO ()
+testAsyncInitiatingOffline tmp = do
   putStrLn "testAsyncInitiatingOffline"
-  inv <- withNewTestChat "alice" aliceProfile $ \alice -> do
+  inv <- withNewTestChat tmp "alice" aliceProfile $ \alice -> do
     threadDelay 250000
     putStrLn "1"
     alice ##> "/c"
     putStrLn "2"
     getInvitation alice
   putStrLn "3"
-  withNewTestChat "bob" bobProfile $ \bob -> do
+  withNewTestChat tmp "bob" bobProfile $ \bob -> do
     threadDelay 250000
     putStrLn "4"
     bob ##> ("/c " <> inv)
     putStrLn "5"
     bob <## "confirmation sent!"
     putStrLn "6"
-    withTestChat "alice" $ \alice -> do
+    withTestChat tmp "alice" $ \alice -> do
       putStrLn "7"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
 
-testAsyncAcceptingOffline :: HasCallStack => IO ()
-testAsyncAcceptingOffline = do
+testAsyncAcceptingOffline :: HasCallStack => FilePath -> IO ()
+testAsyncAcceptingOffline tmp = do
   putStrLn "testAsyncAcceptingOffline"
-  inv <- withNewTestChat "alice" aliceProfile $ \alice -> do
+  inv <- withNewTestChat tmp "alice" aliceProfile $ \alice -> do
     putStrLn "1"
     alice ##> "/c"
     putStrLn "2"
     getInvitation alice
   putStrLn "3"
-  withNewTestChat "bob" bobProfile $ \bob -> do
+  withNewTestChat tmp "bob" bobProfile $ \bob -> do
     threadDelay 250000
     putStrLn "4"
     bob ##> ("/c " <> inv)
     putStrLn "5"
     bob <## "confirmation sent!"
   putStrLn "6"
-  withTestChat "alice" $ \alice -> do
+  withTestChat tmp "alice" $ \alice -> do
     putStrLn "7"
-    withTestChat "bob" $ \bob -> do
+    withTestChat tmp "bob" $ \bob -> do
       putStrLn "8"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
 
-testFullAsync :: HasCallStack => IO ()
-testFullAsync = do
+testFullAsync :: HasCallStack => FilePath -> IO ()
+testFullAsync tmp = do
   putStrLn "testFullAsync"
-  inv <- withNewTestChat "alice" aliceProfile $ \alice -> do
+  inv <- withNewTestChat tmp "alice" aliceProfile $ \alice -> do
     threadDelay 250000
     putStrLn "1"
     alice ##> "/c"
     putStrLn "2"
     getInvitation alice
   putStrLn "3"
-  withNewTestChat "bob" bobProfile $ \bob -> do
+  withNewTestChat tmp "bob" bobProfile $ \bob -> do
     threadDelay 250000
     putStrLn "4"
     bob ##> ("/c " <> inv)
     putStrLn "5"
     bob <## "confirmation sent!"
   putStrLn "6"
-  withTestChat "alice" $ \_ -> pure () -- connecting... notification in UI
+  withTestChat tmp "alice" $ \_ -> pure () -- connecting... notification in UI
   putStrLn "7"
-  withTestChat "bob" $ \_ -> pure () -- connecting... notification in UI
+  withTestChat tmp "bob" $ \_ -> pure () -- connecting... notification in UI
   putStrLn "8"
-  withTestChat "alice" $ \alice -> do
+  withTestChat tmp "alice" $ \alice -> do
     putStrLn "9"
     alice <## "1 contacts connected (use /cs for the list)"
     putStrLn "10"
     alice <## "bob (Bob): contact is connected"
   putStrLn "11"
-  withTestChat "bob" $ \bob -> do
+  withTestChat tmp "bob" $ \bob -> do
     putStrLn "12"
     bob <## "1 contacts connected (use /cs for the list)"
     putStrLn "13"
     bob <## "alice (Alice): contact is connected"
 
-testFullAsyncV1 :: HasCallStack => IO ()
-testFullAsyncV1 = do
+testFullAsyncV1 :: HasCallStack => FilePath -> IO ()
+testFullAsyncV1 tmp = do
   putStrLn "testFullAsyncV1"
   inv <- withNewAlice $ \alice -> do
     putStrLn "1"
@@ -3978,13 +3978,13 @@ testFullAsyncV1 = do
     putStrLn "16"
     bob <## "alice (Alice): contact is connected"
   where
-    withNewAlice = withNewTestChatV1 "alice" aliceProfile
-    withAlice = withTestChatV1 "alice"
-    withNewBob = withNewTestChatV1 "bob" bobProfile
-    withBob = withTestChatV1 "bob"
+    withNewAlice = withNewTestChatV1 tmp "alice" aliceProfile
+    withAlice = withTestChatV1 tmp "alice"
+    withNewBob = withNewTestChatV1 tmp "bob" bobProfile
+    withBob = withTestChatV1 tmp "bob"
 
-testFullAsyncV1toV2 :: HasCallStack => IO ()
-testFullAsyncV1toV2 = do
+testFullAsyncV1toV2 :: HasCallStack => FilePath -> IO ()
+testFullAsyncV1toV2 tmp = do
   putStrLn "testFullAsyncV1toV2"
   inv <- withNewAlice $ \alice -> do
     putStrLn "1"
@@ -4019,13 +4019,13 @@ testFullAsyncV1toV2 = do
     putStrLn "15"
     bob <## "alice (Alice): contact is connected"
   where
-    withNewAlice = withNewTestChat "alice" aliceProfile
-    withAlice = withTestChat "alice"
-    withNewBob = withNewTestChatV1 "bob" bobProfile
-    withBob = withTestChatV1 "bob"
+    withNewAlice = withNewTestChat tmp "alice" aliceProfile
+    withAlice = withTestChat tmp "alice"
+    withNewBob = withNewTestChatV1 tmp "bob" bobProfile
+    withBob = withTestChatV1 tmp "bob"
 
-testFullAsyncV2toV1 :: HasCallStack => IO ()
-testFullAsyncV2toV1 = do
+testFullAsyncV2toV1 :: HasCallStack => FilePath -> IO ()
+testFullAsyncV2toV1 tmp = do
   putStrLn "testFullAsyncV2toV1"
   inv <- withNewAlice $ \alice -> do
     putStrLn "1"
@@ -4061,144 +4061,144 @@ testFullAsyncV2toV1 = do
     putStrLn "16"
     bob <## "alice (Alice): contact is connected"
   where
-    withNewAlice = withNewTestChatV1 "alice" aliceProfile
+    withNewAlice = withNewTestChatV1 tmp "alice" aliceProfile
     {-# INLINE withNewAlice #-}
-    withAlice = withTestChatV1 "alice"
+    withAlice = withTestChatV1 tmp "alice"
     {-# INLINE withAlice #-}
-    withNewBob = withNewTestChat "bob" bobProfile
+    withNewBob = withNewTestChat tmp "bob" bobProfile
     {-# INLINE withNewBob #-}
-    withBob = withTestChat "bob"
+    withBob = withTestChat tmp "bob"
     {-# INLINE withBob #-}
 
-testAsyncFileTransferSenderRestarts :: HasCallStack => IO ()
-testAsyncFileTransferSenderRestarts = do
-  withNewTestChat "bob" bobProfile $ \bob -> do
-    withNewTestChat "alice" aliceProfile $ \alice -> do
+testAsyncFileTransferSenderRestarts :: HasCallStack => FilePath -> IO ()
+testAsyncFileTransferSenderRestarts tmp = do
+  withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    withNewTestChat tmp "alice" aliceProfile $ \alice -> do
       connectUsers alice bob
       startFileTransfer' alice bob "test_1MB.pdf" "1017.7 KiB / 1042157 bytes"
     threadDelay 100000
-    withTestChatContactConnected "alice" $ \alice -> do
+    withTestChatContactConnected tmp "alice" $ \alice -> do
       alice <## "completed sending file 1 (test_1MB.pdf) to bob"
       bob <## "completed receiving file 1 (test_1MB.pdf) from alice"
       src <- B.readFile "./tests/fixtures/test_1MB.pdf"
       dest <- B.readFile "./tests/tmp/test_1MB.pdf"
       dest `shouldBe` src
 
-testAsyncFileTransferReceiverRestarts :: HasCallStack => IO ()
-testAsyncFileTransferReceiverRestarts = do
-  withNewTestChat "alice" aliceProfile $ \alice -> do
-    withNewTestChat "bob" bobProfile $ \bob -> do
+testAsyncFileTransferReceiverRestarts :: HasCallStack => FilePath -> IO ()
+testAsyncFileTransferReceiverRestarts tmp = do
+  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
       connectUsers alice bob
       startFileTransfer' alice bob "test_1MB.pdf" "1017.7 KiB / 1042157 bytes"
     threadDelay 100000
-    withTestChatContactConnected "bob" $ \bob -> do
+    withTestChatContactConnected tmp "bob" $ \bob -> do
       alice <## "completed sending file 1 (test_1MB.pdf) to bob"
       bob <## "completed receiving file 1 (test_1MB.pdf) from alice"
       src <- B.readFile "./tests/fixtures/test_1MB.pdf"
       dest <- B.readFile "./tests/tmp/test_1MB.pdf"
       dest `shouldBe` src
 
-testAsyncFileTransfer :: HasCallStack => IO ()
-testAsyncFileTransfer = do
-  withNewTestChat "alice" aliceProfile $ \alice ->
-    withNewTestChat "bob" bobProfile $ \bob ->
+testAsyncFileTransfer :: HasCallStack => FilePath -> IO ()
+testAsyncFileTransfer tmp = do
+  withNewTestChat tmp "alice" aliceProfile $ \alice ->
+    withNewTestChat tmp "bob" bobProfile $ \bob ->
       connectUsers alice bob
-  withTestChatContactConnected "alice" $ \alice -> do
+  withTestChatContactConnected tmp "alice" $ \alice -> do
     alice ##> "/_send @2 json {\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\":\"text\", \"text\": \"hi, sending a file\"}}"
     alice <# "@bob hi, sending a file"
     alice <# "/f @bob ./tests/fixtures/test.jpg"
     alice <## "use /fc 1 to cancel sending"
-  withTestChatContactConnected "bob" $ \bob -> do
+  withTestChatContactConnected tmp "bob" $ \bob -> do
     bob <# "alice> hi, sending a file"
     bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
     bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
     bob ##> "/fr 1 ./tests/tmp"
     bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
-  -- withTestChatContactConnected' "alice" -- TODO not needed in v2
-  -- withTestChatContactConnected' "bob" -- TODO not needed in v2
-  withTestChatContactConnected' "alice"
-  withTestChatContactConnected' "bob"
-  withTestChatContactConnected "alice" $ \alice -> do
+  -- withTestChatContactConnected' tmp "alice" -- TODO not needed in v2
+  -- withTestChatContactConnected' tmp "bob" -- TODO not needed in v2
+  withTestChatContactConnected' tmp "alice"
+  withTestChatContactConnected' tmp "bob"
+  withTestChatContactConnected tmp "alice" $ \alice -> do
     alice <## "started sending file 1 (test.jpg) to bob"
     alice <## "completed sending file 1 (test.jpg) to bob"
-  withTestChatContactConnected "bob" $ \bob -> do
+  withTestChatContactConnected tmp "bob" $ \bob -> do
     bob <## "started receiving file 1 (test.jpg) from alice"
     bob <## "completed receiving file 1 (test.jpg) from alice"
   src <- B.readFile "./tests/fixtures/test.jpg"
   dest <- B.readFile "./tests/tmp/test.jpg"
   dest `shouldBe` src
 
-testAsyncFileTransferV1 :: HasCallStack => IO ()
-testAsyncFileTransferV1 = do
-  withNewTestChatV1 "alice" aliceProfile $ \alice ->
-    withNewTestChatV1 "bob" bobProfile $ \bob ->
+testAsyncFileTransferV1 :: HasCallStack => FilePath -> IO ()
+testAsyncFileTransferV1 tmp = do
+  withNewTestChatV1 tmp "alice" aliceProfile $ \alice ->
+    withNewTestChatV1 tmp "bob" bobProfile $ \bob ->
       connectUsers alice bob
-  withTestChatContactConnectedV1 "alice" $ \alice -> do
+  withTestChatContactConnectedV1 tmp "alice" $ \alice -> do
     alice ##> "/_send @2 json {\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\":\"text\", \"text\": \"hi, sending a file\"}}"
     alice <# "@bob hi, sending a file"
     alice <# "/f @bob ./tests/fixtures/test.jpg"
     alice <## "use /fc 1 to cancel sending"
-  withTestChatContactConnectedV1 "bob" $ \bob -> do
+  withTestChatContactConnectedV1 tmp "bob" $ \bob -> do
     bob <# "alice> hi, sending a file"
     bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
     bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
     bob ##> "/fr 1 ./tests/tmp"
     bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
-  withTestChatContactConnectedV1' "alice" -- TODO not needed in v2
-  withTestChatContactConnectedV1' "bob" -- TODO not needed in v2
-  withTestChatContactConnectedV1' "alice"
-  withTestChatContactConnectedV1' "bob"
-  withTestChatContactConnectedV1 "alice" $ \alice -> do
+  withTestChatContactConnectedV1' tmp "alice" -- TODO not needed in v2
+  withTestChatContactConnectedV1' tmp "bob" -- TODO not needed in v2
+  withTestChatContactConnectedV1' tmp "alice"
+  withTestChatContactConnectedV1' tmp "bob"
+  withTestChatContactConnectedV1 tmp "alice" $ \alice -> do
     alice <## "started sending file 1 (test.jpg) to bob"
     alice <## "completed sending file 1 (test.jpg) to bob"
-  withTestChatContactConnectedV1 "bob" $ \bob -> do
+  withTestChatContactConnectedV1 tmp "bob" $ \bob -> do
     bob <## "started receiving file 1 (test.jpg) from alice"
     bob <## "completed receiving file 1 (test.jpg) from alice"
   src <- B.readFile "./tests/fixtures/test.jpg"
   dest <- B.readFile "./tests/tmp/test.jpg"
   dest `shouldBe` src
 
-testAsyncGroupFileTransfer :: HasCallStack => IO ()
-testAsyncGroupFileTransfer = do
-  withNewTestChat "alice" aliceProfile $ \alice ->
-    withNewTestChat "bob" bobProfile $ \bob ->
-      withNewTestChat "cath" cathProfile $ \cath ->
+testAsyncGroupFileTransfer :: HasCallStack => FilePath -> IO ()
+testAsyncGroupFileTransfer tmp = do
+  withNewTestChat tmp "alice" aliceProfile $ \alice ->
+    withNewTestChat tmp "bob" bobProfile $ \bob ->
+      withNewTestChat tmp "cath" cathProfile $ \cath ->
         createGroup3 "team" alice bob cath
-  withTestChatGroup3Connected "alice" $ \alice -> do
+  withTestChatGroup3Connected tmp "alice" $ \alice -> do
     alice ##> "/_send #1 json {\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"text\":\"\",\"type\":\"text\"}}"
     alice <# "/f #team ./tests/fixtures/test.jpg"
     alice <## "use /fc 1 to cancel sending"
-  withTestChatGroup3Connected "bob" $ \bob -> do
+  withTestChatGroup3Connected tmp "bob" $ \bob -> do
     bob <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
     bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
     bob ##> "/fr 1 ./tests/tmp/"
     bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
-  withTestChatGroup3Connected "cath" $ \cath -> do
+  withTestChatGroup3Connected tmp "cath" $ \cath -> do
     cath <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
     cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
     cath ##> "/fr 1 ./tests/tmp/"
     cath <## "saving file 1 from alice to ./tests/tmp/test_1.jpg"
-  withTestChatGroup3Connected' "alice"
-  withTestChatGroup3Connected' "bob"
-  withTestChatGroup3Connected' "cath"
-  -- withTestChatGroup3Connected' "alice" -- TODO not needed in v2
-  -- withTestChatGroup3Connected' "bob" -- TODO not needed in v2
-  -- withTestChatGroup3Connected' "cath" -- TODO not needed in v2
-  withTestChatGroup3Connected' "alice"
-  withTestChatGroup3Connected "bob" $ \bob -> do
+  withTestChatGroup3Connected' tmp "alice"
+  withTestChatGroup3Connected' tmp "bob"
+  withTestChatGroup3Connected' tmp "cath"
+  -- withTestChatGroup3Connected' tmp "alice" -- TODO not needed in v2
+  -- withTestChatGroup3Connected' tmp "bob" -- TODO not needed in v2
+  -- withTestChatGroup3Connected' tmp "cath" -- TODO not needed in v2
+  withTestChatGroup3Connected' tmp "alice"
+  withTestChatGroup3Connected tmp "bob" $ \bob -> do
     bob <## "started receiving file 1 (test.jpg) from alice"
-  withTestChatGroup3Connected "cath" $ \cath -> do
+  withTestChatGroup3Connected tmp "cath" $ \cath -> do
     cath <## "started receiving file 1 (test.jpg) from alice"
-  withTestChatGroup3Connected "alice" $ \alice -> do
+  withTestChatGroup3Connected tmp "alice" $ \alice -> do
     alice
       <### [ "started sending file 1 (test.jpg) to bob",
              "completed sending file 1 (test.jpg) to bob",
              "started sending file 1 (test.jpg) to cath",
              "completed sending file 1 (test.jpg) to cath"
            ]
-  withTestChatGroup3Connected "bob" $ \bob -> do
+  withTestChatGroup3Connected tmp "bob" $ \bob -> do
     bob <## "completed receiving file 1 (test.jpg) from alice"
-  withTestChatGroup3Connected "cath" $ \cath -> do
+  withTestChatGroup3Connected tmp "cath" $ \cath -> do
     cath <## "completed receiving file 1 (test.jpg) from alice"
   src <- B.readFile "./tests/fixtures/test.jpg"
   dest <- B.readFile "./tests/tmp/test.jpg"
@@ -4229,9 +4229,9 @@ serialize = B.unpack . LB.toStrict . J.encode
 repeatM_ :: Int -> IO a -> IO ()
 repeatM_ n a = forM_ [1 .. n] $ const a
 
-testNegotiateCall :: HasCallStack => IO ()
-testNegotiateCall =
-  testChat2 aliceProfile bobProfile $ \alice bob -> do
+testNegotiateCall :: HasCallStack => FilePath -> IO ()
+testNegotiateCall tmp =
+  testChat2 tmp aliceProfile bobProfile $ \alice bob -> do
     connectUsers alice bob
     -- just for testing db query
     alice ##> "/_call get"
@@ -4270,10 +4270,10 @@ testNegotiateCall =
     alice <## "call with bob ended"
     alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "outgoing call: ended (00:00)")])
 
-testMaintenanceMode :: HasCallStack => IO ()
-testMaintenanceMode = do
-  withNewTestChat "bob" bobProfile $ \bob -> do
-    withNewTestChatOpts testOpts {maintenance = True} "alice" aliceProfile $ \alice -> do
+testMaintenanceMode :: HasCallStack => FilePath -> IO ()
+testMaintenanceMode tmp = do
+  withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    withNewTestChatOpts tmp testOpts {maintenance = True} "alice" aliceProfile $ \alice -> do
       alice ##> "/c"
       alice <## "error: chat not started"
       alice ##> "/_start"
@@ -4305,7 +4305,7 @@ testMaintenanceMode = do
       alice ##> "/_start"
       alice <## "error: chat store changed, please restart chat"
     -- works after full restart
-    withTestChat "alice" $ \alice -> testChatWorking alice bob
+    withTestChat tmp "alice" $ \alice -> testChatWorking alice bob
 
 testChatWorking :: HasCallStack => TestCC -> TestCC -> IO ()
 testChatWorking alice bob = do
@@ -4315,10 +4315,10 @@ testChatWorking alice bob = do
   bob #> "@alice hello too"
   alice <# "bob> hello too"
 
-testMaintenanceModeWithFiles :: HasCallStack => IO ()
-testMaintenanceModeWithFiles = do
-  withNewTestChat "bob" bobProfile $ \bob -> do
-    withNewTestChatOpts testOpts {maintenance = True} "alice" aliceProfile $ \alice -> do
+testMaintenanceModeWithFiles :: HasCallStack => FilePath -> IO ()
+testMaintenanceModeWithFiles tmp = do
+  withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    withNewTestChatOpts tmp testOpts {maintenance = True} "alice" aliceProfile $ \alice -> do
       alice ##> "/_start"
       alice <## "chat started"
       alice ##> "/_files_folder ./tests/tmp/alice_files"
@@ -4344,12 +4344,12 @@ testMaintenanceModeWithFiles = do
       alice <## "ok"
       B.readFile "./tests/tmp/alice_files/test.jpg" `shouldReturn` src
     -- works after full restart
-    withTestChat "alice" $ \alice -> testChatWorking alice bob
+    withTestChat tmp "alice" $ \alice -> testChatWorking alice bob
 
-testDatabaseEncryption :: HasCallStack => IO ()
-testDatabaseEncryption = do
-  withNewTestChat "bob" bobProfile $ \bob -> do
-    withNewTestChatOpts testOpts {maintenance = True} "alice" aliceProfile $ \alice -> do
+testDatabaseEncryption :: HasCallStack => FilePath -> IO ()
+testDatabaseEncryption tmp = do
+  withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    withNewTestChatOpts tmp testOpts {maintenance = True} "alice" aliceProfile $ \alice -> do
       alice ##> "/_start"
       alice <## "chat started"
       connectUsers alice bob
@@ -4367,7 +4367,7 @@ testDatabaseEncryption = do
       alice <## "ok"
       alice ##> "/_start"
       alice <## "error: chat store changed, please restart chat"
-    withTestChatOpts testOpts {maintenance = True, dbKey = "mykey"} "alice" $ \alice -> do
+    withTestChatOpts tmp testOpts {maintenance = True, dbKey = "mykey"} "alice" $ \alice -> do
       alice ##> "/_start"
       alice <## "chat started"
       testChatWorking alice bob
@@ -4379,7 +4379,7 @@ testDatabaseEncryption = do
       alice <## "ok"
       alice ##> "/_db encryption {\"currentKey\":\"nextkey\",\"newKey\":\"anotherkey\"}"
       alice <## "ok"
-    withTestChatOpts testOpts {maintenance = True, dbKey = "anotherkey"} "alice" $ \alice -> do
+    withTestChatOpts tmp testOpts {maintenance = True, dbKey = "anotherkey"} "alice" $ \alice -> do
       alice ##> "/_start"
       alice <## "chat started"
       testChatWorking alice bob
@@ -4387,11 +4387,11 @@ testDatabaseEncryption = do
       alice <## "chat stopped"
       alice ##> "/db decrypt anotherkey"
       alice <## "ok"
-    withTestChat "alice" $ \alice -> testChatWorking alice bob
+    withTestChat tmp "alice" $ \alice -> testChatWorking alice bob
 
-testMuteContact :: HasCallStack => IO ()
-testMuteContact =
-  testChat2 aliceProfile bobProfile $
+testMuteContact :: HasCallStack => FilePath -> IO ()
+testMuteContact tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
       alice #> "@bob hello"
@@ -4409,9 +4409,9 @@ testMuteContact =
       alice #> "@bob hi again"
       bob <# "alice> hi again"
 
-testMuteGroup :: HasCallStack => IO ()
-testMuteGroup =
-  testChat3 aliceProfile bobProfile cathProfile $
+testMuteGroup :: HasCallStack => FilePath -> IO ()
+testMuteGroup tmp =
+  testChat3 tmp aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
       threadDelay 1000000
@@ -4436,9 +4436,9 @@ testMuteGroup =
       bob ##> "/gs"
       bob <## "#team"
 
-testCreateSecondUser :: HasCallStack => IO ()
-testCreateSecondUser =
-  testChat3 aliceProfile bobProfile cathProfile $
+testCreateSecondUser :: HasCallStack => FilePath -> IO ()
+testCreateSecondUser tmp =
+  testChat3 tmp aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       connectUsers alice bob
 
@@ -4487,10 +4487,10 @@ testCreateSecondUser =
       alice ##> "/_user 2"
       showActiveUser alice "alisa"
 
-testUsersSubscribeAfterRestart :: HasCallStack => IO ()
-testUsersSubscribeAfterRestart = do
-  withNewTestChat "bob" bobProfile $ \bob -> do
-    withNewTestChat "alice" aliceProfile $ \alice -> do
+testUsersSubscribeAfterRestart :: HasCallStack => FilePath -> IO ()
+testUsersSubscribeAfterRestart tmp = do
+  withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    withNewTestChat tmp "alice" aliceProfile $ \alice -> do
       connectUsers alice bob
       alice <##> bob
 
@@ -4499,7 +4499,7 @@ testUsersSubscribeAfterRestart = do
       connectUsers alice bob
       alice <##> bob
 
-    withTestChat "alice" $ \alice -> do
+    withTestChat tmp "alice" $ \alice -> do
       -- second user is active
       alice <## "1 contacts connected (use /cs for the list)"
       alice <## "[user: alice] 1 contacts connected (use /cs for the list)"
@@ -4511,9 +4511,9 @@ testUsersSubscribeAfterRestart = do
       bob #> "@alice hey alice"
       (alice, "alice") $<# "bob> hey alice"
 
-testMultipleUserAddresses :: HasCallStack => IO ()
-testMultipleUserAddresses =
-  testChat3 aliceProfile bobProfile cathProfile $
+testMultipleUserAddresses :: HasCallStack => FilePath -> IO ()
+testMultipleUserAddresses tmp =
+  testChat3 tmp aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       alice ##> "/ad"
       cLinkAlice <- getContactLink alice True
@@ -4583,9 +4583,9 @@ testMultipleUserAddresses =
       showActiveUser alice "alice (Alice)"
       alice @@@ [("@bob", "hey alice")]
 
-testCreateUserDefaultServers :: HasCallStack => IO ()
-testCreateUserDefaultServers =
-  testChat2 aliceProfile bobProfile $
+testCreateUserDefaultServers :: HasCallStack => FilePath -> IO ()
+testCreateUserDefaultServers tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice _ -> do
       alice #$> ("/smp smp://2345-w==@smp2.example.im;smp://3456-w==@smp3.example.im:5224", id, "ok")
       alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im, smp://3456-w==@smp3.example.im:5224")
@@ -4605,9 +4605,9 @@ testCreateUserDefaultServers =
 
       alice #$> ("/smp", id, "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001")
 
-testCreateUserSameServers :: HasCallStack => IO ()
-testCreateUserSameServers =
-  testChat2 aliceProfile bobProfile $
+testCreateUserSameServers :: HasCallStack => FilePath -> IO ()
+testCreateUserSameServers tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice _ -> do
       alice #$> ("/smp smp://2345-w==@smp2.example.im;smp://3456-w==@smp3.example.im:5224", id, "ok")
       alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im, smp://3456-w==@smp3.example.im:5224")
@@ -4617,9 +4617,9 @@ testCreateUserSameServers =
 
       alice #$> ("/smp", id, "smp://2345-w==@smp2.example.im, smp://3456-w==@smp3.example.im:5224")
 
-testDeleteUser :: HasCallStack => IO ()
-testDeleteUser =
-  testChat4 aliceProfile bobProfile cathProfile danProfile $
+testDeleteUser :: HasCallStack => FilePath -> IO ()
+testDeleteUser tmp =
+  testChat4 tmp aliceProfile bobProfile cathProfile danProfile $
     \alice bob cath dan -> do
       connectUsers alice bob
 
@@ -4684,10 +4684,10 @@ testDeleteUser =
 
       alice <##> dan
 
-testUsersDifferentCIExpirationTTL :: HasCallStack => IO ()
-testUsersDifferentCIExpirationTTL = do
-  withNewTestChat "bob" bobProfile $ \bob -> do
-    withNewTestChatCfg cfg "alice" aliceProfile $ \alice -> do
+testUsersDifferentCIExpirationTTL :: HasCallStack => FilePath -> IO ()
+testUsersDifferentCIExpirationTTL tmp = do
+  withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
       -- first user messages
       connectUsers alice bob
 
@@ -4759,10 +4759,10 @@ testUsersDifferentCIExpirationTTL = do
   where
     cfg = testCfg {ciExpirationInterval = 500000}
 
-testUsersRestartCIExpiration :: HasCallStack => IO ()
-testUsersRestartCIExpiration = do
-  withNewTestChat "bob" bobProfile $ \bob -> do
-    withNewTestChatCfg cfg "alice" aliceProfile $ \alice -> do
+testUsersRestartCIExpiration :: HasCallStack => FilePath -> IO ()
+testUsersRestartCIExpiration tmp = do
+  withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
       -- set ttl for first user
       alice #$> ("/_ttl 1 1", id, "ok")
       connectUsers alice bob
@@ -4795,7 +4795,7 @@ testUsersRestartCIExpiration = do
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
 
-    withTestChatCfg cfg "alice" $ \alice -> do
+    withTestChatCfg tmp cfg "alice" $ \alice -> do
       alice <## "1 contacts connected (use /cs for the list)"
       alice <## "[user: alisa] 1 contacts connected (use /cs for the list)"
 
@@ -4842,10 +4842,10 @@ testUsersRestartCIExpiration = do
   where
     cfg = testCfg {ciExpirationInterval = 500000}
 
-testEnableCIExpirationOnlyForOneUser :: HasCallStack => IO ()
-testEnableCIExpirationOnlyForOneUser = do
-  withNewTestChat "bob" bobProfile $ \bob -> do
-    withNewTestChatCfg cfg "alice" aliceProfile $ \alice -> do
+testEnableCIExpirationOnlyForOneUser :: HasCallStack => FilePath -> IO ()
+testEnableCIExpirationOnlyForOneUser tmp = do
+  withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
       -- first user messages
       connectUsers alice bob
 
@@ -4894,7 +4894,7 @@ testEnableCIExpirationOnlyForOneUser = do
       showActiveUser alice "alisa"
       alice #$> ("/_get chat @4 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
-    withTestChatCfg cfg "alice" $ \alice -> do
+    withTestChatCfg tmp cfg "alice" $ \alice -> do
       alice <## "1 contacts connected (use /cs for the list)"
       alice <## "[user: alice] 1 contacts connected (use /cs for the list)"
 
@@ -4913,10 +4913,10 @@ testEnableCIExpirationOnlyForOneUser = do
   where
     cfg = testCfg {ciExpirationInterval = 500000}
 
-testDisableCIExpirationOnlyForOneUser :: HasCallStack => IO ()
-testDisableCIExpirationOnlyForOneUser = do
-  withNewTestChat "bob" bobProfile $ \bob -> do
-    withNewTestChatCfg cfg "alice" aliceProfile $ \alice -> do
+testDisableCIExpirationOnlyForOneUser :: HasCallStack => FilePath -> IO ()
+testDisableCIExpirationOnlyForOneUser tmp = do
+  withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
       -- set ttl for first user
       alice #$> ("/_ttl 1 1", id, "ok")
       connectUsers alice bob
@@ -4950,7 +4950,7 @@ testDisableCIExpirationOnlyForOneUser = do
       -- second user messages are deleted
       alice #$> ("/_get chat @4 count=100", chat, [])
 
-    withTestChatCfg cfg "alice" $ \alice -> do
+    withTestChatCfg tmp cfg "alice" $ \alice -> do
       alice <## "1 contacts connected (use /cs for the list)"
       alice <## "[user: alice] 1 contacts connected (use /cs for the list)"
 
@@ -4971,10 +4971,10 @@ testDisableCIExpirationOnlyForOneUser = do
   where
     cfg = testCfg {ciExpirationInterval = 500000}
 
-testUsersTimedMessages :: HasCallStack => IO ()
-testUsersTimedMessages = do
-  withNewTestChat "bob" bobProfile $ \bob -> do
-    withNewTestChat "alice" aliceProfile $ \alice -> do
+testUsersTimedMessages :: HasCallStack => FilePath -> IO ()
+testUsersTimedMessages tmp = do
+  withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    withNewTestChat tmp "alice" aliceProfile $ \alice -> do
       connectUsers alice bob
       configureTimedMessages alice bob "2" "1"
 
@@ -5047,7 +5047,7 @@ testUsersTimedMessages = do
       bob #> "@alisa alisa 4"
       alice <# "bob> alisa 4"
 
-    withTestChat "alice" $ \alice -> do
+    withTestChat tmp "alice" $ \alice -> do
       alice <## "1 contacts connected (use /cs for the list)"
       alice <## "[user: alice] 1 contacts connected (use /cs for the list)"
 
@@ -5091,9 +5091,9 @@ testUsersTimedMessages = do
       alice <## ("Disappearing messages: enabled (you allow: yes (" <> ttl <> " sec), contact allows: yes (" <> ttl <> " sec))")
       alice #$> ("/clear bob", id, "bob: all messages are removed locally ONLY") -- to remove feature items
 
-testSetChatItemTTL :: HasCallStack => IO ()
-testSetChatItemTTL =
-  testChat2 aliceProfile bobProfile $
+testSetChatItemTTL :: HasCallStack => FilePath -> IO ()
+testSetChatItemTTL tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
       alice #> "@bob 1"
@@ -5125,9 +5125,9 @@ testSetChatItemTTL =
       alice #$> ("/ttl none", id, "ok")
       alice #$> ("/ttl", id, "old messages are not being deleted")
 
-testGroupLink :: HasCallStack => IO ()
-testGroupLink =
-  testChat3 aliceProfile bobProfile cathProfile $
+testGroupLink :: HasCallStack => FilePath -> IO ()
+testGroupLink tmp =
+  testChat3 tmp aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       alice ##> "/g team"
       alice <## "group #team is created"
@@ -5226,9 +5226,9 @@ testGroupLink =
       alice ##> "/show link #team"
       alice <## "no group link, to create: /create link #team"
 
-testGroupLinkDeleteGroupRejoin :: HasCallStack => IO ()
-testGroupLinkDeleteGroupRejoin =
-  testChat2 aliceProfile bobProfile $
+testGroupLinkDeleteGroupRejoin :: HasCallStack => FilePath -> IO ()
+testGroupLinkDeleteGroupRejoin tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice bob -> do
       alice ##> "/g team"
       alice <## "group #team is created"
@@ -5282,9 +5282,9 @@ testGroupLinkDeleteGroupRejoin =
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
 
-testGroupLinkContactUsed :: HasCallStack => IO ()
-testGroupLinkContactUsed =
-  testChat2 aliceProfile bobProfile $
+testGroupLinkContactUsed :: HasCallStack => FilePath -> IO ()
+testGroupLinkContactUsed tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice bob -> do
       alice ##> "/g team"
       alice <## "group #team is created"
@@ -5314,9 +5314,9 @@ testGroupLinkContactUsed =
       bob #$> ("/clear alice", id, "alice: all messages are removed locally ONLY")
       bob @@@ [("@alice", ""), ("#team", "connected")]
 
-testGroupLinkIncognitoMembership :: HasCallStack => IO ()
-testGroupLinkIncognitoMembership =
-  testChat4 aliceProfile bobProfile cathProfile danProfile $
+testGroupLinkIncognitoMembership :: HasCallStack => FilePath -> IO ()
+testGroupLinkIncognitoMembership tmp =
+  testChat4 tmp aliceProfile bobProfile cathProfile danProfile $
     \alice bob cath dan -> do
       -- bob connected incognito to alice
       alice ##> "/c"
@@ -5432,9 +5432,9 @@ testGroupLinkIncognitoMembership =
           cath <# ("#team " <> danIncognito <> "> how is it going?")
         ]
 
-testGroupLinkUnusedHostContactDeleted :: HasCallStack => IO ()
-testGroupLinkUnusedHostContactDeleted =
-  testChat2 aliceProfile bobProfile $
+testGroupLinkUnusedHostContactDeleted :: HasCallStack => FilePath -> IO ()
+testGroupLinkUnusedHostContactDeleted tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice bob -> do
       -- create group 1
       alice ##> "/g team"
@@ -5504,9 +5504,9 @@ testGroupLinkUnusedHostContactDeleted =
       bob ##> ("/d #" <> group)
       bob <## ("#" <> group <> ": you deleted the group")
 
-testGroupLinkIncognitoUnusedHostContactsDeleted :: HasCallStack => IO ()
-testGroupLinkIncognitoUnusedHostContactsDeleted =
-  testChat2 aliceProfile bobProfile $
+testGroupLinkIncognitoUnusedHostContactsDeleted :: HasCallStack => FilePath -> IO ()
+testGroupLinkIncognitoUnusedHostContactsDeleted tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice bob -> do
       bob #$> ("/incognito on", id, "ok")
       bobIncognitoTeam <- createGroupBobIncognito alice bob "team" "alice"
@@ -5563,9 +5563,9 @@ testGroupLinkIncognitoUnusedHostContactsDeleted =
       bob ##> ("/d #" <> group)
       bob <## ("#" <> group <> ": you deleted the group")
 
-testSwitchContact :: HasCallStack => IO ()
-testSwitchContact =
-  testChat2 aliceProfile bobProfile $
+testSwitchContact :: HasCallStack => FilePath -> IO ()
+testSwitchContact tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
       alice #$> ("/switch bob", id, "ok")
@@ -5577,9 +5577,9 @@ testSwitchContact =
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "started changing address for you..."), (0, "changed address for you")])
       alice <##> bob
 
-testSwitchGroupMember :: HasCallStack => IO ()
-testSwitchGroupMember =
-  testChat2 aliceProfile bobProfile $
+testSwitchGroupMember :: HasCallStack => FilePath -> IO ()
+testSwitchGroupMember tmp =
+  testChat2 tmp aliceProfile bobProfile $
     \alice bob -> do
       createGroup2 "team" alice bob
       alice #$> ("/switch #team bob", id, "ok")
@@ -5594,9 +5594,9 @@ testSwitchGroupMember =
       bob #> "#team hi"
       alice <# "#team bob> hi"
 
-testMarkContactVerified :: HasCallStack => IO ()
-testMarkContactVerified =
-  testChat2 aliceProfile bobProfile $ \alice bob -> do
+testMarkContactVerified :: HasCallStack => FilePath -> IO ()
+testMarkContactVerified tmp =
+  testChat2 tmp aliceProfile bobProfile $ \alice bob -> do
     connectUsers alice bob
     alice ##> "/i bob"
     bobInfo alice
@@ -5626,9 +5626,9 @@ testMarkContactVerified =
       alice <## "sending messages via: localhost"
       alice <## "you've shared main profile with this contact"
 
-testMarkGroupMemberVerified :: HasCallStack => IO ()
-testMarkGroupMemberVerified =
-  testChat2 aliceProfile bobProfile $ \alice bob -> do
+testMarkGroupMemberVerified :: HasCallStack => FilePath -> IO ()
+testMarkGroupMemberVerified tmp =
+  testChat2 tmp aliceProfile bobProfile $ \alice bob -> do
     createGroup2 "team" alice bob
     alice ##> "/i #team bob"
     bobInfo alice
@@ -5658,33 +5658,33 @@ testMarkGroupMemberVerified =
       alice <## "receiving messages via: localhost"
       alice <## "sending messages via: localhost"
 
-withTestChatContactConnected :: HasCallStack => String -> (TestCC -> IO a) -> IO a
-withTestChatContactConnected dbPrefix action =
-  withTestChat dbPrefix $ \cc -> do
+withTestChatContactConnected :: HasCallStack => FilePath -> String -> (TestCC -> IO a) -> IO a
+withTestChatContactConnected tmp dbPrefix action =
+  withTestChat tmp dbPrefix $ \cc -> do
     cc <## "1 contacts connected (use /cs for the list)"
     action cc
 
-withTestChatContactConnected' :: HasCallStack => String -> IO ()
-withTestChatContactConnected' dbPrefix = withTestChatContactConnected dbPrefix $ \_ -> pure ()
+withTestChatContactConnected' :: HasCallStack => FilePath -> String -> IO ()
+withTestChatContactConnected' tmp dbPrefix = withTestChatContactConnected tmp dbPrefix $ \_ -> pure ()
 
-withTestChatContactConnectedV1 :: HasCallStack => String -> (TestCC -> IO a) -> IO a
-withTestChatContactConnectedV1 dbPrefix action =
-  withTestChatV1 dbPrefix $ \cc -> do
+withTestChatContactConnectedV1 :: HasCallStack => FilePath -> String -> (TestCC -> IO a) -> IO a
+withTestChatContactConnectedV1 tmp dbPrefix action =
+  withTestChatV1 tmp dbPrefix $ \cc -> do
     cc <## "1 contacts connected (use /cs for the list)"
     action cc
 
-withTestChatContactConnectedV1' :: HasCallStack => String -> IO ()
-withTestChatContactConnectedV1' dbPrefix = withTestChatContactConnectedV1 dbPrefix $ \_ -> pure ()
+withTestChatContactConnectedV1' :: HasCallStack => FilePath -> String -> IO ()
+withTestChatContactConnectedV1' tmp dbPrefix = withTestChatContactConnectedV1 tmp dbPrefix $ \_ -> pure ()
 
-withTestChatGroup3Connected :: HasCallStack => String -> (TestCC -> IO a) -> IO a
-withTestChatGroup3Connected dbPrefix action = do
-  withTestChat dbPrefix $ \cc -> do
+withTestChatGroup3Connected :: HasCallStack => FilePath -> String -> (TestCC -> IO a) -> IO a
+withTestChatGroup3Connected tmp dbPrefix action = do
+  withTestChat tmp dbPrefix $ \cc -> do
     cc <## "2 contacts connected (use /cs for the list)"
     cc <## "#team: connected to server(s)"
     action cc
 
-withTestChatGroup3Connected' :: HasCallStack => String -> IO ()
-withTestChatGroup3Connected' dbPrefix = withTestChatGroup3Connected dbPrefix $ \_ -> pure ()
+withTestChatGroup3Connected' :: HasCallStack => FilePath -> String -> IO ()
+withTestChatGroup3Connected' tmp dbPrefix = withTestChatGroup3Connected tmp dbPrefix $ \_ -> pure ()
 
 startFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()
 startFileTransfer alice bob =

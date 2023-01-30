@@ -34,6 +34,7 @@ import Simplex.Messaging.Server.Env.STM
 import Simplex.Messaging.Transport
 import Simplex.Messaging.Version
 import System.Directory (createDirectoryIfMissing, removeDirectoryRecursive)
+import System.FilePath ((</>))
 import qualified System.Terminal as C
 import System.Terminal.Internal (VirtualTerminal (..), VirtualTerminalSettings (..), withVirtualTerminal)
 import System.Timeout (timeout)
@@ -107,15 +108,15 @@ testAgentCfgV1 =
 testCfgV1 :: ChatConfig
 testCfgV1 = testCfg {agentConfig = testAgentCfgV1}
 
-createTestChat :: ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
-createTestChat cfg opts@ChatOpts {dbKey} dbPrefix profile = do
-  db@ChatDatabase {chatStore} <- createChatDatabase (testDBPrefix <> dbPrefix) dbKey False
+createTestChat :: FilePath -> ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
+createTestChat tmp cfg opts@ChatOpts {dbKey} dbPrefix profile = do
+  db@ChatDatabase {chatStore} <- createChatDatabase (tmp </> dbPrefix) dbKey False
   Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUserRecord db' (AgentUserId 1) profile True
   startTestChat_ db cfg opts user
 
-startTestChat :: ChatConfig -> ChatOpts -> String -> IO TestCC
-startTestChat cfg opts@ChatOpts {dbKey} dbPrefix = do
-  db@ChatDatabase {chatStore} <- createChatDatabase (testDBPrefix <> dbPrefix) dbKey False
+startTestChat :: FilePath -> ChatConfig -> ChatOpts -> String -> IO TestCC
+startTestChat tmp cfg opts@ChatOpts {dbKey} dbPrefix = do
+  db@ChatDatabase {chatStore} <- createChatDatabase (tmp </> dbPrefix) dbKey False
   Just user <- find activeUser <$> withTransaction chatStore getUsers
   startTestChat_ db cfg opts user
 
@@ -137,39 +138,39 @@ stopTestChat TestCC {chatController = cc, chatAsync, termAsync} = do
   uninterruptibleCancel chatAsync
   threadDelay 200000
 
-withNewTestChat :: HasCallStack => String -> Profile -> (HasCallStack => TestCC -> IO a) -> IO a
-withNewTestChat = withNewTestChatCfgOpts testCfg testOpts
+withNewTestChat :: HasCallStack => FilePath -> String -> Profile -> (HasCallStack => TestCC -> IO a) -> IO a
+withNewTestChat tmp = withNewTestChatCfgOpts tmp testCfg testOpts
 
-withNewTestChatV1 :: HasCallStack => String -> Profile -> (HasCallStack => TestCC -> IO a) -> IO a
-withNewTestChatV1 = withNewTestChatCfg testCfgV1
+withNewTestChatV1 :: HasCallStack => FilePath -> String -> Profile -> (HasCallStack => TestCC -> IO a) -> IO a
+withNewTestChatV1 tmp = withNewTestChatCfg tmp testCfgV1
 
-withNewTestChatCfg :: HasCallStack => ChatConfig -> String -> Profile -> (HasCallStack => TestCC -> IO a) -> IO a
-withNewTestChatCfg cfg = withNewTestChatCfgOpts cfg testOpts
+withNewTestChatCfg :: HasCallStack => FilePath -> ChatConfig -> String -> Profile -> (HasCallStack => TestCC -> IO a) -> IO a
+withNewTestChatCfg tmp cfg = withNewTestChatCfgOpts tmp cfg testOpts
 
-withNewTestChatOpts :: HasCallStack => ChatOpts -> String -> Profile -> (HasCallStack => TestCC -> IO a) -> IO a
-withNewTestChatOpts = withNewTestChatCfgOpts testCfg
+withNewTestChatOpts :: HasCallStack => FilePath -> ChatOpts -> String -> Profile -> (HasCallStack => TestCC -> IO a) -> IO a
+withNewTestChatOpts tmp = withNewTestChatCfgOpts tmp testCfg
 
-withNewTestChatCfgOpts :: HasCallStack => ChatConfig -> ChatOpts -> String -> Profile -> (HasCallStack => TestCC -> IO a) -> IO a
-withNewTestChatCfgOpts cfg opts dbPrefix profile runTest =
+withNewTestChatCfgOpts :: HasCallStack => FilePath -> ChatConfig -> ChatOpts -> String -> Profile -> (HasCallStack => TestCC -> IO a) -> IO a
+withNewTestChatCfgOpts tmp cfg opts dbPrefix profile runTest =
   bracket
-    (createTestChat cfg opts dbPrefix profile)
+    (createTestChat tmp cfg opts dbPrefix profile)
     stopTestChat
     (\cc -> runTest cc >>= ((cc <// 100000) $>))
 
-withTestChatV1 :: HasCallStack => String -> (HasCallStack => TestCC -> IO a) -> IO a
-withTestChatV1 = withTestChatCfg testCfgV1
+withTestChatV1 :: HasCallStack => FilePath -> String -> (HasCallStack => TestCC -> IO a) -> IO a
+withTestChatV1 tmp = withTestChatCfg tmp testCfgV1
 
-withTestChat :: HasCallStack => String -> (HasCallStack => TestCC -> IO a) -> IO a
-withTestChat = withTestChatCfgOpts testCfg testOpts
+withTestChat :: HasCallStack => FilePath -> String -> (HasCallStack => TestCC -> IO a) -> IO a
+withTestChat tmp = withTestChatCfgOpts tmp testCfg testOpts
 
-withTestChatCfg :: HasCallStack => ChatConfig -> String -> (HasCallStack => TestCC -> IO a) -> IO a
-withTestChatCfg cfg = withTestChatCfgOpts cfg testOpts
+withTestChatCfg :: HasCallStack => FilePath -> ChatConfig -> String -> (HasCallStack => TestCC -> IO a) -> IO a
+withTestChatCfg tmp cfg = withTestChatCfgOpts tmp cfg testOpts
 
-withTestChatOpts :: HasCallStack => ChatOpts -> String -> (HasCallStack => TestCC -> IO a) -> IO a
-withTestChatOpts = withTestChatCfgOpts testCfg
+withTestChatOpts :: HasCallStack => FilePath -> ChatOpts -> String -> (HasCallStack => TestCC -> IO a) -> IO a
+withTestChatOpts tmp = withTestChatCfgOpts tmp testCfg
 
-withTestChatCfgOpts :: HasCallStack => ChatConfig -> ChatOpts -> String -> (HasCallStack => TestCC -> IO a) -> IO a
-withTestChatCfgOpts cfg opts dbPrefix = bracket (startTestChat cfg opts dbPrefix) (\cc -> cc <// 100000 >> stopTestChat cc)
+withTestChatCfgOpts :: HasCallStack => FilePath -> ChatConfig -> ChatOpts -> String -> (HasCallStack => TestCC -> IO a) -> IO a
+withTestChatCfgOpts tmp cfg opts dbPrefix = bracket (startTestChat tmp cfg opts dbPrefix) (\cc -> cc <// 100000 >> stopTestChat cc)
 
 readTerminalOutput :: VirtualTerminal -> TQueue String -> IO ()
 readTerminalOutput t termQ = do
@@ -200,8 +201,8 @@ withTmpFiles =
     (createDirectoryIfMissing False "tests/tmp")
     (removeDirectoryRecursive "tests/tmp")
 
-testChatN :: HasCallStack => ChatConfig -> ChatOpts -> [Profile] -> (HasCallStack => [TestCC] -> IO ()) -> IO ()
-testChatN cfg opts ps test = do
+testChatN :: FilePath -> HasCallStack => ChatConfig -> ChatOpts -> [Profile] -> (HasCallStack => [TestCC] -> IO ()) -> IO ()
+testChatN tmp cfg opts ps test = do
   tcs <- getTestCCs (zip ps [1 ..]) []
   test tcs
   concurrentlyN_ $ map (<// 100000) tcs
@@ -209,7 +210,7 @@ testChatN cfg opts ps test = do
   where
     getTestCCs :: [(Profile, Int)] -> [TestCC] -> IO [TestCC]
     getTestCCs [] tcs = pure tcs
-    getTestCCs ((p, db) : envs') tcs = (:) <$> createTestChat cfg opts (show db) p <*> getTestCCs envs' tcs
+    getTestCCs ((p, db) : envs') tcs = (:) <$> createTestChat tmp cfg opts (show db) p <*> getTestCCs envs' tcs
 
 (<//) :: HasCallStack => TestCC -> Int -> Expectation
 (<//) cc t = timeout t (getTermLine cc) `shouldReturn` Nothing
@@ -227,37 +228,37 @@ getTermLine cc =
 userName :: TestCC -> IO [Char]
 userName (TestCC ChatController {currentUser} _ _ _ _) = T.unpack . localDisplayName . fromJust <$> readTVarIO currentUser
 
-testChat2 :: Profile -> Profile -> (TestCC -> TestCC -> IO ()) -> IO ()
-testChat2 = testChatCfgOpts2 testCfg testOpts
+testChat2 :: FilePath -> Profile -> Profile -> (TestCC -> TestCC -> IO ()) -> IO ()
+testChat2 tmp = testChatCfgOpts2 tmp testCfg testOpts
 
-testChatCfg2 :: ChatConfig -> Profile -> Profile -> (TestCC -> TestCC -> IO ()) -> IO ()
-testChatCfg2 cfg = testChatCfgOpts2 cfg testOpts
+testChatCfg2 :: FilePath -> ChatConfig -> Profile -> Profile -> (TestCC -> TestCC -> IO ()) -> IO ()
+testChatCfg2 tmp cfg = testChatCfgOpts2 tmp cfg testOpts
 
-testChatOpts2 :: ChatOpts -> Profile -> Profile -> (TestCC -> TestCC -> IO ()) -> IO ()
-testChatOpts2 = testChatCfgOpts2 testCfg
+testChatOpts2 :: FilePath -> ChatOpts -> Profile -> Profile -> (TestCC -> TestCC -> IO ()) -> IO ()
+testChatOpts2 tmp = testChatCfgOpts2 tmp testCfg
 
-testChatCfgOpts2 :: ChatConfig -> ChatOpts -> Profile -> Profile -> (TestCC -> TestCC -> IO ()) -> IO ()
-testChatCfgOpts2 cfg opts p1 p2 test = testChatN cfg opts [p1, p2] test_
+testChatCfgOpts2 :: FilePath -> ChatConfig -> ChatOpts -> Profile -> Profile -> (TestCC -> TestCC -> IO ()) -> IO ()
+testChatCfgOpts2 tmp cfg opts p1 p2 test = testChatN tmp cfg opts [p1, p2] test_
   where
     test_ :: [TestCC] -> IO ()
     test_ [tc1, tc2] = test tc1 tc2
     test_ _ = error "expected 2 chat clients"
 
-testChat3 :: Profile -> Profile -> Profile -> (TestCC -> TestCC -> TestCC -> IO ()) -> IO ()
-testChat3 = testChatCfgOpts3 testCfg testOpts
+testChat3 :: FilePath -> Profile -> Profile -> Profile -> (TestCC -> TestCC -> TestCC -> IO ()) -> IO ()
+testChat3 tmp = testChatCfgOpts3 tmp testCfg testOpts
 
-testChatCfg3 :: ChatConfig -> Profile -> Profile -> Profile -> (TestCC -> TestCC -> TestCC -> IO ()) -> IO ()
-testChatCfg3 cfg = testChatCfgOpts3 cfg testOpts
+testChatCfg3 :: FilePath -> ChatConfig -> Profile -> Profile -> Profile -> (TestCC -> TestCC -> TestCC -> IO ()) -> IO ()
+testChatCfg3 tmp cfg = testChatCfgOpts3 tmp cfg testOpts
 
-testChatCfgOpts3 :: ChatConfig -> ChatOpts -> Profile -> Profile -> Profile -> (TestCC -> TestCC -> TestCC -> IO ()) -> IO ()
-testChatCfgOpts3 cfg opts p1 p2 p3 test = testChatN cfg opts [p1, p2, p3] test_
+testChatCfgOpts3 :: FilePath -> ChatConfig -> ChatOpts -> Profile -> Profile -> Profile -> (TestCC -> TestCC -> TestCC -> IO ()) -> IO ()
+testChatCfgOpts3 tmp cfg opts p1 p2 p3 test = testChatN tmp cfg opts [p1, p2, p3] test_
   where
     test_ :: [TestCC] -> IO ()
     test_ [tc1, tc2, tc3] = test tc1 tc2 tc3
     test_ _ = error "expected 3 chat clients"
 
-testChat4 :: Profile -> Profile -> Profile -> Profile -> (TestCC -> TestCC -> TestCC -> TestCC -> IO ()) -> IO ()
-testChat4 p1 p2 p3 p4 test = testChatN testCfg testOpts [p1, p2, p3, p4] test_
+testChat4 :: FilePath -> Profile -> Profile -> Profile -> Profile -> (TestCC -> TestCC -> TestCC -> TestCC -> IO ()) -> IO ()
+testChat4 tmp p1 p2 p3 p4 test = testChatN tmp testCfg testOpts [p1, p2, p3, p4] test_
   where
     test_ :: [TestCC] -> IO ()
     test_ [tc1, tc2, tc3, tc4] = test tc1 tc2 tc3 tc4

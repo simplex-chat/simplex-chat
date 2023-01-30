@@ -2,15 +2,15 @@
 
 module MobileTests where
 
-import ChatClient
 import ChatTests
 import Control.Monad.Except
 import Simplex.Chat.Mobile
 import Simplex.Chat.Store
 import Simplex.Chat.Types (AgentUserId (..), Profile (..))
+import System.FilePath ((</>))
 import Test.Hspec
 
-mobileTests :: Spec
+mobileTests :: SpecWith FilePath
 mobileTests = do
   describe "mobile API" $ do
     it "start new chat without user" testChatApiNoUser
@@ -82,18 +82,19 @@ parsedMarkdown = "{\"formattedText\":[{\"format\":{\"bold\":{}},\"text\":\"hello
 parsedMarkdown = "{\"formattedText\":[{\"format\":{\"type\":\"bold\"},\"text\":\"hello\"}]}"
 #endif
 
-testChatApiNoUser :: IO ()
-testChatApiNoUser = do
-  Right cc <- chatMigrateInit testDBPrefix ""
-  Left (DBMErrorNotADatabase _) <- chatMigrateInit testDBPrefix "myKey"
+testChatApiNoUser :: FilePath -> IO ()
+testChatApiNoUser tmp = do
+  let dbPrefix = tmp </> "1"
+  Right cc <- chatMigrateInit dbPrefix ""
+  Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "myKey"
   chatSendCmd cc "/u" `shouldReturn` noActiveUser
   chatSendCmd cc "/_start" `shouldReturn` noActiveUser
   chatSendCmd cc "/create user alice Alice" `shouldReturn` activeUser
   chatSendCmd cc "/_start" `shouldReturn` chatStarted
 
-testChatApi :: IO ()
-testChatApi = do
-  let dbPrefix = testDBPrefix <> "1"
+testChatApi :: FilePath -> IO ()
+testChatApi tmp = do
+  let dbPrefix = tmp </> "1"
       f = chatStoreFile dbPrefix
   st <- createChatStore f "myKey" True
   Right _ <- withTransaction st $ \db -> runExceptT $ createUserRecord db (AgentUserId 1) aliceProfile {preferences = Nothing} True
