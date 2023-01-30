@@ -6,7 +6,6 @@ import SectionSpacer
 import SectionView
 import android.content.Context
 import android.content.res.Configuration
-import android.os.SystemClock
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -14,7 +13,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -49,7 +47,6 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
   if (user != null) {
     val requireAuth = remember { chatModel.controller.appPrefs.performLA.state }
     val context = LocalContext.current
-    val lastSuccessfulAuth: MutableState<Long?> = rememberSaveable { mutableStateOf(null) }
     SettingsLayout(
       profile = user.profile,
       stopped,
@@ -71,17 +68,18 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
         }
       },
       withAuth = { block ->
-        if (!requireAuth.value || authorizedPreviously(lastSuccessfulAuth)) {
+        if (!requireAuth.value) {
           block()
         } else {
           ModalManager.shared.showModalCloseable { close ->
-            LaunchedEffect(lastSuccessfulAuth.value) {
-              if (requireAuth.value && !authorizedPreviously(lastSuccessfulAuth)) {
-                runAuth(lastSuccessfulAuth, context)
-              } else {
+            val onFinishAuth = { success: Boolean ->
+              if (success) {
                 close()
                 block()
               }
+            }
+            LaunchedEffect(Unit) {
+              runAuth(context, onFinishAuth)
             }
             Box(
               Modifier.fillMaxSize(),
@@ -91,7 +89,7 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
                 stringResource(R.string.auth_unlock),
                 icon = Icons.Outlined.Lock,
                 click = {
-                  runAuth(lastSuccessfulAuth, context)
+                  runAuth(context, onFinishAuth)
                 }
               )
             }
@@ -511,19 +509,13 @@ fun PreferenceToggleWithIcon(
   }
 }
 
-private fun authorizedPreviously(lastSuccessfulAuth: State<Long?>): Boolean =
-  lastSuccessfulAuth.value?.let { SystemClock.elapsedRealtime() - it < 30_000 } ?: false
-
-private fun runAuth(lastSuccessfulAuth: MutableState<Long?>, context: Context) {
+private fun runAuth(context: Context, onFinish: (success: Boolean) -> Unit) {
   authenticate(
     generalGetString(R.string.auth_open_chat_console),
     generalGetString(R.string.auth_log_in_using_credential),
     context as FragmentActivity,
     completed = { laResult ->
-      lastSuccessfulAuth.value = when (laResult) {
-        LAResult.Success, LAResult.Unavailable -> SystemClock.elapsedRealtime()
-        is LAResult.Error, LAResult.Failed -> null
-      }
+      onFinish(laResult == LAResult.Success || laResult == LAResult.Unavailable)
     }
   )
 }
