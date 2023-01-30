@@ -137,16 +137,16 @@ stopTestChat TestCC {chatController = cc, chatAsync, termAsync} = do
   uninterruptibleCancel chatAsync
   threadDelay 500000
 
-withNewTestChat :: String -> Profile -> (TestCC -> IO a) -> IO a
+withNewTestChat :: HasCallStack => String -> Profile -> (HasCallStack => TestCC -> IO a) -> IO a
 withNewTestChat = withNewTestChatCfgOpts testCfg testOpts
 
-withNewTestChatV1 :: String -> Profile -> (TestCC -> IO a) -> IO a
+withNewTestChatV1 :: HasCallStack => String -> Profile -> (HasCallStack => TestCC -> IO a) -> IO a
 withNewTestChatV1 = withNewTestChatCfg testCfgV1
 
-withNewTestChatCfg :: ChatConfig -> String -> Profile -> (TestCC -> IO a) -> IO a
+withNewTestChatCfg :: HasCallStack => ChatConfig -> String -> Profile -> (HasCallStack => TestCC -> IO a) -> IO a
 withNewTestChatCfg cfg = withNewTestChatCfgOpts cfg testOpts
 
-withNewTestChatOpts :: ChatOpts -> String -> Profile -> (TestCC -> IO a) -> IO a
+withNewTestChatOpts :: HasCallStack => ChatOpts -> String -> Profile -> (HasCallStack => TestCC -> IO a) -> IO a
 withNewTestChatOpts = withNewTestChatCfgOpts testCfg
 
 withNewTestChatCfgOpts :: HasCallStack => ChatConfig -> ChatOpts -> String -> Profile -> (HasCallStack => TestCC -> IO a) -> IO a
@@ -156,16 +156,16 @@ withNewTestChatCfgOpts cfg opts dbPrefix profile runTest =
     stopTestChat
     (\cc -> runTest cc >>= ((cc <// 100000) $>))
 
-withTestChatV1 :: String -> (TestCC -> IO a) -> IO a
+withTestChatV1 :: HasCallStack => String -> (HasCallStack => TestCC -> IO a) -> IO a
 withTestChatV1 = withTestChatCfg testCfgV1
 
-withTestChat :: String -> (TestCC -> IO a) -> IO a
+withTestChat :: HasCallStack => String -> (HasCallStack => TestCC -> IO a) -> IO a
 withTestChat = withTestChatCfgOpts testCfg testOpts
 
-withTestChatCfg :: ChatConfig -> String -> (TestCC -> IO a) -> IO a
+withTestChatCfg :: HasCallStack => ChatConfig -> String -> (HasCallStack => TestCC -> IO a) -> IO a
 withTestChatCfg cfg = withTestChatCfgOpts cfg testOpts
 
-withTestChatOpts :: ChatOpts -> String -> (TestCC -> IO a) -> IO a
+withTestChatOpts :: HasCallStack => ChatOpts -> String -> (HasCallStack => TestCC -> IO a) -> IO a
 withTestChatOpts = withTestChatCfgOpts testCfg
 
 withTestChatCfgOpts :: HasCallStack => ChatConfig -> ChatOpts -> String -> (HasCallStack => TestCC -> IO a) -> IO a
