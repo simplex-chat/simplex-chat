@@ -16,7 +16,6 @@ import Data.Functor (($>))
 import Data.List (dropWhileEnd, find)
 import Data.Maybe (fromJust, isNothing)
 import qualified Data.Text as T
-import GHC.Stack (callStack, prettyCallStack)
 import Network.Socket
 import Simplex.Chat
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..))
@@ -211,7 +210,7 @@ testChatN cfg opts ps test = do
     getTestCCs [] tcs = pure tcs
     getTestCCs ((p, db) : envs') tcs = (:) <$> createTestChat cfg opts (show db) p <*> getTestCCs envs' tcs
 
-(<//) :: TestCC -> Int -> Expectation
+(<//) :: HasCallStack => TestCC -> Int -> Expectation
 (<//) cc t = timeout t (getTermLine cc) `shouldReturn` Nothing
 
 getTermLine :: HasCallStack => TestCC -> IO String
@@ -222,7 +221,7 @@ getTermLine cc =
       -- name <- userName cc
       -- putStrLn $ name <> ": " <> s
       pure s
-    _ -> error $ "no output for 5 seconds" <> "\n" <> prettyCallStack callStack
+    _ -> error "no output for 5 seconds"
 
 userName :: TestCC -> IO [Char]
 userName (TestCC ChatController {currentUser} _ _ _ _) = T.unpack . localDisplayName . fromJust <$> readTVarIO currentUser

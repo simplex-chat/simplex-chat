@@ -5642,42 +5642,42 @@ testMarkGroupMemberVerified =
       alice <## "receiving messages via: localhost"
       alice <## "sending messages via: localhost"
 
-withTestChatContactConnected :: String -> (TestCC -> IO a) -> IO a
+withTestChatContactConnected :: HasCallStack => String -> (TestCC -> IO a) -> IO a
 withTestChatContactConnected dbPrefix action =
   withTestChat dbPrefix $ \cc -> do
     cc <## "1 contacts connected (use /cs for the list)"
     action cc
 
-withTestChatContactConnected' :: String -> IO ()
+withTestChatContactConnected' :: HasCallStack => String -> IO ()
 withTestChatContactConnected' dbPrefix = withTestChatContactConnected dbPrefix $ \_ -> pure ()
 
-withTestChatContactConnectedV1 :: String -> (TestCC -> IO a) -> IO a
+withTestChatContactConnectedV1 :: HasCallStack => String -> (TestCC -> IO a) -> IO a
 withTestChatContactConnectedV1 dbPrefix action =
   withTestChatV1 dbPrefix $ \cc -> do
     cc <## "1 contacts connected (use /cs for the list)"
     action cc
 
-withTestChatContactConnectedV1' :: String -> IO ()
+withTestChatContactConnectedV1' :: HasCallStack => String -> IO ()
 withTestChatContactConnectedV1' dbPrefix = withTestChatContactConnectedV1 dbPrefix $ \_ -> pure ()
 
-withTestChatGroup3Connected :: String -> (TestCC -> IO a) -> IO a
+withTestChatGroup3Connected :: HasCallStack => String -> (TestCC -> IO a) -> IO a
 withTestChatGroup3Connected dbPrefix action = do
   withTestChat dbPrefix $ \cc -> do
     cc <## "2 contacts connected (use /cs for the list)"
     cc <## "#team: connected to server(s)"
     action cc
 
-withTestChatGroup3Connected' :: String -> IO ()
+withTestChatGroup3Connected' :: HasCallStack => String -> IO ()
 withTestChatGroup3Connected' dbPrefix = withTestChatGroup3Connected dbPrefix $ \_ -> pure ()
 
-startFileTransfer :: TestCC -> TestCC -> IO ()
+startFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()
 startFileTransfer alice bob =
   startFileTransfer' alice bob "test.jpg" "136.5 KiB / 139737 bytes"
 
-startFileTransfer' :: TestCC -> TestCC -> String -> String -> IO ()
+startFileTransfer' :: HasCallStack => TestCC -> TestCC -> String -> String -> IO ()
 startFileTransfer' cc1 cc2 fileName fileSize = startFileTransferWithDest' cc1 cc2 fileName fileSize $ Just "./tests/tmp"
 
-startFileTransferWithDest' :: TestCC -> TestCC -> String -> String -> Maybe String -> IO ()
+startFileTransferWithDest' :: HasCallStack => TestCC -> TestCC -> String -> String -> Maybe String -> IO ()
 startFileTransferWithDest' cc1 cc2 fileName fileSize fileDest_ = do
   name1 <- userName cc1
   name2 <- userName cc2
@@ -5691,14 +5691,14 @@ startFileTransferWithDest' cc1 cc2 fileName fileSize fileDest_ = do
     (cc2 <## ("started receiving file 1 (" <> fileName <> ") from " <> name1))
     (cc1 <## ("started sending file 1 (" <> fileName <> ") to " <> name2))
 
-checkPartialTransfer :: String -> IO ()
+checkPartialTransfer :: HasCallStack => String -> IO ()
 checkPartialTransfer fileName = do
   src <- B.readFile $ "./tests/fixtures/" <> fileName
   dest <- B.readFile $ "./tests/tmp/" <> fileName
   B.unpack src `shouldStartWith` B.unpack dest
   B.length src > B.length dest `shouldBe` True
 
-checkActionDeletesFile :: FilePath -> IO () -> IO ()
+checkActionDeletesFile :: HasCallStack => FilePath -> IO () -> IO ()
 checkActionDeletesFile file action = do
   fileExistsBefore <- doesFileExist file
   fileExistsBefore `shouldBe` True
@@ -5706,10 +5706,10 @@ checkActionDeletesFile file action = do
   fileExistsAfter <- doesFileExist file
   fileExistsAfter `shouldBe` False
 
-waitFileExists :: FilePath -> IO ()
+waitFileExists :: HasCallStack => FilePath -> IO ()
 waitFileExists f = unlessM (doesFileExist f) $ waitFileExists f
 
-connectUsers :: TestCC -> TestCC -> IO ()
+connectUsers :: HasCallStack => TestCC -> TestCC -> IO ()
 connectUsers cc1 cc2 = do
   name1 <- showName cc1
   name2 <- showName cc2
@@ -5726,7 +5726,7 @@ showName (TestCC ChatController {currentUser} _ _ _ _) = do
   Just User {localDisplayName, profile = LocalProfile {fullName}} <- readTVarIO currentUser
   pure . T.unpack $ localDisplayName <> optionalFullName localDisplayName fullName
 
-createGroup2 :: String -> TestCC -> TestCC -> IO ()
+createGroup2 :: HasCallStack => String -> TestCC -> TestCC -> IO ()
 createGroup2 gName cc1 cc2 = do
   connectUsers cc1 cc2
   name2 <- userName cc2
@@ -5739,7 +5739,7 @@ createGroup2 gName cc1 cc2 = do
     (cc1 <## ("#" <> gName <> ": " <> name2 <> " joined the group"))
     (cc2 <## ("#" <> gName <> ": you joined the group"))
 
-createGroup3 :: String -> TestCC -> TestCC -> TestCC -> IO ()
+createGroup3 :: HasCallStack => String -> TestCC -> TestCC -> TestCC -> IO ()
 createGroup3 gName cc1 cc2 cc3 = do
   createGroup2 gName cc1 cc2
   connectUsers cc1 cc3
@@ -5758,7 +5758,7 @@ createGroup3 gName cc1 cc2 cc3 = do
         cc2 <## ("#" <> gName <> ": new member " <> name3 <> " is connected")
     ]
 
-addMember :: String -> TestCC -> TestCC -> GroupMemberRole -> IO ()
+addMember :: HasCallStack => String -> TestCC -> TestCC -> GroupMemberRole -> IO ()
 addMember gName inviting invitee role = do
   name1 <- userName inviting
   memName <- userName invitee
@@ -5771,7 +5771,7 @@ addMember gName inviting invitee role = do
     ]
 
 -- | test sending direct messages
-(<##>) :: TestCC -> TestCC -> IO ()
+(<##>) :: HasCallStack => TestCC -> TestCC -> IO ()
 cc1 <##> cc2 = do
   name1 <- userName cc1
   name2 <- userName cc2
@@ -5780,22 +5780,22 @@ cc1 <##> cc2 = do
   cc2 #> ("@" <> name1 <> " hey")
   cc1 <# (name2 <> "> hey")
 
-(##>) :: TestCC -> String -> IO ()
+(##>) :: HasCallStack => TestCC -> String -> IO ()
 cc ##> cmd = do
   cc `send` cmd
   cc <## cmd
 
-(#>) :: TestCC -> String -> IO ()
+(#>) :: HasCallStack => TestCC -> String -> IO ()
 cc #> cmd = do
   cc `send` cmd
   cc <# cmd
 
-(?#>) :: TestCC -> String -> IO ()
+(?#>) :: HasCallStack => TestCC -> String -> IO ()
 cc ?#> cmd = do
   cc `send` cmd
   cc <# ("i " <> cmd)
 
-(#$>) :: (Eq a, Show a) => TestCC -> (String, String -> a, a) -> Expectation
+(#$>) :: (Eq a, Show a, HasCallStack) => TestCC -> (String, String -> a, a) -> Expectation
 cc #$> (cmd, f, res) = do
   cc ##> cmd
   (f <$> getTermLine cc) `shouldReturn` res
@@ -5833,7 +5833,7 @@ groupFeatures'' = [((0, "Disappearing messages: off"), Nothing, Nothing), ((0, "
 itemId :: Int -> String
 itemId i = show $ length chatFeatures + i
 
-(@@@) :: TestCC -> [(String, String)] -> Expectation
+(@@@) :: HasCallStack => TestCC -> [(String, String)] -> Expectation
 (@@@) = getChats mapChats
 
 mapChats :: [(String, String, Maybe ConnStatus)] -> [(String, String)]
@@ -5842,10 +5842,10 @@ mapChats = map $ \(ldn, msg, _) -> (ldn, msg)
 chats :: String -> [(String, String)]
 chats = mapChats . read
 
-(@@@!) :: TestCC -> [(String, String, Maybe ConnStatus)] -> Expectation
+(@@@!) :: HasCallStack => TestCC -> [(String, String, Maybe ConnStatus)] -> Expectation
 (@@@!) = getChats id
 
-getChats :: (Eq a, Show a) => ([(String, String, Maybe ConnStatus)] -> [a]) -> TestCC -> [a] -> Expectation
+getChats :: HasCallStack => (Eq a, Show a) => ([(String, String, Maybe ConnStatus)] -> [a]) -> TestCC -> [a] -> Expectation
 getChats f cc res = do
   cc ##> "/_get chats 1 pcc=on"
   line <- getTermLine cc
@@ -5854,27 +5854,27 @@ getChats f cc res = do
 send :: TestCC -> String -> IO ()
 send TestCC {chatController = cc} cmd = atomically $ writeTBQueue (inputQ cc) cmd
 
-(<##) :: TestCC -> String -> Expectation
+(<##) :: HasCallStack => TestCC -> String -> Expectation
 cc <## line = do
   l <- getTermLine cc
   when (l /= line) $ print ("expected: " <> line, ", got: " <> l)
   l `shouldBe` line
 
-(<##.) :: TestCC -> String -> Expectation
+(<##.) :: HasCallStack => TestCC -> String -> Expectation
 cc <##. line = do
   l <- getTermLine cc
   let prefix = line `isPrefixOf` l
   unless prefix $ print ("expected to start from: " <> line, ", got: " <> l)
   prefix `shouldBe` True
 
-(<#.) :: TestCC -> String -> Expectation
+(<#.) :: HasCallStack => TestCC -> String -> Expectation
 cc <#. line = do
   l <- dropTime <$> getTermLine cc
   let prefix = line `isPrefixOf` l
   unless prefix $ print ("expected to start from: " <> line, ", got: " <> l)
   prefix `shouldBe` True
 
-(<##..) :: TestCC -> [String] -> Expectation
+(<##..) :: HasCallStack => TestCC -> [String] -> Expectation
 cc <##.. ls = do
   l <- getTermLine cc
   let prefix = any (`isPrefixOf` l) ls
@@ -5887,7 +5887,7 @@ data ConsoleResponse = ConsoleString String | WithTime String | EndsWith String
 instance IsString ConsoleResponse where fromString = ConsoleString
 
 -- this assumes that the string can only match one option
-getInAnyOrder :: (String -> String) -> TestCC -> [ConsoleResponse] -> Expectation
+getInAnyOrder :: HasCallStack => (String -> String) -> TestCC -> [ConsoleResponse] -> Expectation
 getInAnyOrder _ _ [] = pure ()
 getInAnyOrder f cc ls = do
   line <- f <$> getTermLine cc
@@ -5902,25 +5902,25 @@ getInAnyOrder f cc ls = do
       WithTime s -> dropTime_ l == Just s
       EndsWith s -> s `isSuffixOf` l
 
-(<###) :: TestCC -> [ConsoleResponse] -> Expectation
+(<###) :: HasCallStack => TestCC -> [ConsoleResponse] -> Expectation
 (<###) = getInAnyOrder id
 
-(<##?) :: TestCC -> [ConsoleResponse] -> Expectation
+(<##?) :: HasCallStack => TestCC -> [ConsoleResponse] -> Expectation
 (<##?) = getInAnyOrder dropTime
 
-(<#) :: TestCC -> String -> Expectation
+(<#) :: HasCallStack => TestCC -> String -> Expectation
 cc <# line = (dropTime <$> getTermLine cc) `shouldReturn` line
 
-(?<#) :: TestCC -> String -> Expectation
+(?<#) :: HasCallStack => TestCC -> String -> Expectation
 cc ?<# line = (dropTime <$> getTermLine cc) `shouldReturn` "i " <> line
 
-($<#) :: (TestCC, String) -> String -> Expectation
+($<#) :: HasCallStack => (TestCC, String) -> String -> Expectation
 (cc, uName) $<# line = (dropTime . dropUser uName <$> getTermLine cc) `shouldReturn` line
 
-(</) :: TestCC -> Expectation
+(</) :: HasCallStack => TestCC -> Expectation
 (</) = (<// 500000)
 
-(<#?) :: TestCC -> TestCC -> Expectation
+(<#?) :: HasCallStack => TestCC -> TestCC -> Expectation
 cc1 <#? cc2 = do
   name <- userName cc2
   sName <- showName cc2
@@ -5929,7 +5929,7 @@ cc1 <#? cc2 = do
   cc1 <## ("to accept: /ac " <> name)
   cc1 <## ("to reject: /rc " <> name <> " (the sender will NOT be notified)")
 
-dropUser :: String -> String -> String
+dropUser :: HasCallStack => String -> String -> String
 dropUser uName msg = fromMaybe err $ dropUser_ uName msg
   where
     err = error $ "invalid user: " <> msg
@@ -5941,7 +5941,7 @@ dropUser_ uName msg = do
     then Just $ drop (length userPrefix) msg
     else Nothing
 
-dropTime :: String -> String
+dropTime :: HasCallStack => String -> String
 dropTime msg = fromMaybe err $ dropTime_ msg
   where
     err = error $ "invalid time: " <> msg
@@ -5952,7 +5952,7 @@ dropTime_ msg = case splitAt 6 msg of
     if all isDigit [m, m', s, s'] then Just text else Nothing
   _ -> Nothing
 
-getInvitation :: TestCC -> IO String
+getInvitation :: HasCallStack => TestCC -> IO String
 getInvitation cc = do
   cc <## "pass this invitation link to your contact (via another channel):"
   cc <## ""
@@ -5961,7 +5961,7 @@ getInvitation cc = do
   cc <## "and ask them to connect: /c <invitation_link_above>"
   pure inv
 
-getContactLink :: TestCC -> Bool -> IO String
+getContactLink :: HasCallStack => TestCC -> Bool -> IO String
 getContactLink cc created = do
   cc <## if created then "Your new chat address is created!" else "Your chat address:"
   cc <## ""
@@ -5972,7 +5972,7 @@ getContactLink cc created = do
   cc <## "to delete it: /da (accepted contacts will remain connected)"
   pure link
 
-getGroupLink :: TestCC -> String -> Bool -> IO String
+getGroupLink :: HasCallStack => TestCC -> String -> Bool -> IO String
 getGroupLink cc gName created = do
   cc <## if created then "Group link is created!" else "Group link:"
   cc <## ""
@@ -5983,7 +5983,7 @@ getGroupLink cc gName created = do
   cc <## ("to delete it: /delete link #" <> gName <> " (joined members will remain connected to you)")
   pure link
 
-hasContactProfiles :: TestCC -> [ContactName] -> Expectation
+hasContactProfiles :: HasCallStack => TestCC -> [ContactName] -> Expectation
 hasContactProfiles cc names =
   getContactProfiles cc >>= \ps -> ps `shouldMatchList` names
 
@@ -5996,12 +5996,12 @@ getContactProfiles cc = do
       profiles <- withTransaction (chatStore $ chatController cc) $ \db -> getUserContactProfiles db user
       pure $ map (\Profile {displayName} -> displayName) profiles
 
-lastItemId :: TestCC -> IO String
+lastItemId :: HasCallStack => TestCC -> IO String
 lastItemId cc = do
   cc ##> "/last_item_id"
   getTermLine cc
 
-showActiveUser :: TestCC -> String -> Expectation
+showActiveUser :: HasCallStack => TestCC -> String -> Expectation
 showActiveUser cc name = do
   cc <## ("user profile: " <> name)
   cc <## "use /p <display name> [<full name>] to change it"
