@@ -54,7 +54,7 @@ fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
       lastSuccessfulAuth.value = SystemClock.elapsedRealtime()
     }
     TerminalLayout(
-      chatModel.terminalItems,
+      remember { chatModel.terminalItems },
       composeState,
       sendCommand = { sendCommand(chatModel, composeState) },
       close
@@ -103,8 +103,8 @@ private fun sendCommand(chatModel: ChatModel, composeState: MutableState<Compose
   val s = composeState.value.message
   if (s.startsWith("/sql") && (!prefPerformLA || !developerTools)) {
     val resp = CR.ChatCmdError(null, ChatError.ChatErrorChat(ChatErrorType.СommandError("Failed reading: empty")))
-    chatModel.terminalItems.add(TerminalItem.cmd(CC.Console(s)))
-    chatModel.terminalItems.add(TerminalItem.resp(resp))
+    chatModel.addTerminalItem(TerminalItem.cmd(CC.Console(s)))
+    chatModel.addTerminalItem(TerminalItem.resp(resp))
     composeState.value = ComposeState(useLinkPreviews = false)
   } else {
     withApi {
@@ -175,6 +175,7 @@ fun TerminalLog(terminalItems: List<TerminalItem>) {
     onDispose { lazyListState = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
   }
   val reversedTerminalItems by remember { derivedStateOf { terminalItems.reversed().toList() } }
+  val context = LocalContext.current
   LazyColumn(state = listState, reverseLayout = true) {
     items(reversedTerminalItems) { item ->
       Text(
@@ -185,7 +186,7 @@ fun TerminalLog(terminalItems: List<TerminalItem>) {
         modifier = Modifier
           .fillMaxWidth()
           .clickable {
-            ModalManager.shared.showModal {
+            ModalManager.shared.showModal(endButtons = { ShareButton { shareText(context, item.details) } }) {
               SelectionContainer(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 Text(item.details, modifier = Modifier.padding(horizontal = DEFAULT_PADDING).padding(bottom = DEFAULT_PADDING))
               }

@@ -399,6 +399,13 @@ class ChatModel(val controller: ChatController) {
 
   fun contactNetworkStatus(contact: Contact): NetworkStatus =
     networkStatuses[contact.activeConn.agentConnId] ?: NetworkStatus.Unknown()
+
+  fun addTerminalItem(item: TerminalItem) {
+    if (terminalItems.size >= 500) {
+      terminalItems.removeAt(0)
+    }
+    terminalItems.add(item)
+  }
 }
 
 enum class ChatType(val type: String) {
