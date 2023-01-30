@@ -7,7 +7,7 @@
 
 module ChatClient where
 
-import Control.Concurrent (forkIO, forkIOWithUnmask, killThread, threadDelay)
+import Control.Concurrent (forkIOWithUnmask, killThread, threadDelay)
 import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Exception (bracket, bracket_)
@@ -16,6 +16,7 @@ import Data.Functor (($>))
 import Data.List (dropWhileEnd, find)
 import Data.Maybe (fromJust, isNothing)
 import qualified Data.Text as T
+import GHC.Stack (callStack, prettyCallStack)
 import Network.Socket
 import Simplex.Chat
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..))
@@ -36,7 +37,7 @@ import System.Directory (createDirectoryIfMissing, removePathForcibly)
 import qualified System.Terminal as C
 import System.Terminal.Internal (VirtualTerminal (..), VirtualTerminalSettings (..), withVirtualTerminal)
 import System.Timeout (timeout)
-import Test.Hspec (Expectation, shouldReturn)
+import Test.Hspec (Expectation, HasCallStack, shouldReturn)
 
 testDBPrefix :: FilePath
 testDBPrefix = "tests/tmp/test"
@@ -213,7 +214,7 @@ testChatN cfg opts ps test = do
 (<//) :: TestCC -> Int -> Expectation
 (<//) cc t = timeout t (getTermLine cc) `shouldReturn` Nothing
 
-getTermLine :: TestCC -> IO String
+getTermLine :: HasCallStack => TestCC -> IO String
 getTermLine cc =
   5000000 `timeout` atomically (readTQueue $ termQ cc) >>= \case
     Just s -> do
@@ -221,7 +222,7 @@ getTermLine cc =
       -- name <- userName cc
       -- putStrLn $ name <> ": " <> s
       pure s
-    _ -> error "no output for 5 seconds"
+    _ -> error $ "no output for 5 seconds" <> "\n" <> prettyCallStack callStack
 
 userName :: TestCC -> IO [Char]
 userName (TestCC ChatController {currentUser} _ _ _ _) = T.unpack . localDisplayName . fromJust <$> readTVarIO currentUser

@@ -1,7 +1,6 @@
 import ChatClient
 -- import Control.Logger.Simple
 import ChatTests
-import Control.Concurrent (threadDelay)
 import MarkdownTests
 import MobileTests
 import ProtocolTests
@@ -18,8 +17,6 @@ main = do
     describe "Schema dump" schemaDumpTest
     around_ withTmpFiles . around_ withSmpServer $ do
       describe "Mobile API Tests" mobileTests
-      -- -- Workaround for SQLite IO error in first test after mobile tests on Mac
-      -- it "Delay after Mobile API Tests" $ threadDelay 100000
       describe "SimpleX chat client" chatTests
 
 -- logCfg :: LogConfig
