@@ -5630,7 +5630,7 @@ testMarkGroupMemberVerified =
       alice <## "receiving messages via: localhost"
       alice <## "sending messages via: localhost"
 
-withTestChatContactConnected :: HasCallStack => FilePath -> String -> (TestCC -> IO a) -> IO a
+withTestChatContactConnected :: HasCallStack => FilePath -> String -> (HasCallStack => TestCC -> IO a) -> IO a
 withTestChatContactConnected tmp dbPrefix action =
   withTestChat tmp dbPrefix $ \cc -> do
     cc <## "1 contacts connected (use /cs for the list)"
@@ -5639,7 +5639,7 @@ withTestChatContactConnected tmp dbPrefix action =
 withTestChatContactConnected' :: HasCallStack => FilePath -> String -> IO ()
 withTestChatContactConnected' tmp dbPrefix = withTestChatContactConnected tmp dbPrefix $ \_ -> pure ()
 
-withTestChatContactConnectedV1 :: HasCallStack => FilePath -> String -> (TestCC -> IO a) -> IO a
+withTestChatContactConnectedV1 :: HasCallStack => FilePath -> String -> (HasCallStack => TestCC -> IO a) -> IO a
 withTestChatContactConnectedV1 tmp dbPrefix action =
   withTestChatV1 tmp dbPrefix $ \cc -> do
     cc <## "1 contacts connected (use /cs for the list)"
@@ -5648,7 +5648,7 @@ withTestChatContactConnectedV1 tmp dbPrefix action =
 withTestChatContactConnectedV1' :: HasCallStack => FilePath -> String -> IO ()
 withTestChatContactConnectedV1' tmp dbPrefix = withTestChatContactConnectedV1 tmp dbPrefix $ \_ -> pure ()
 
-withTestChatGroup3Connected :: HasCallStack => FilePath -> String -> (TestCC -> IO a) -> IO a
+withTestChatGroup3Connected :: HasCallStack => FilePath -> String -> (HasCallStack => TestCC -> IO a) -> IO a
 withTestChatGroup3Connected tmp dbPrefix action = do
   withTestChat tmp dbPrefix $ \cc -> do
     cc <## "2 contacts connected (use /cs for the list)"
