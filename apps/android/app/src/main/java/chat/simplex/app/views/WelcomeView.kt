@@ -111,7 +111,7 @@ fun createProfile(chatModel: ChatModel, displayName: String, fullName: String, c
   withApi {
     val user = chatModel.controller.apiCreateActiveUser(
       Profile(displayName, fullName, null)
-    )
+    ) ?: return@withApi
     chatModel.currentUser.value = user
     if (chatModel.users.isEmpty()) {
       chatModel.controller.startChat(user)

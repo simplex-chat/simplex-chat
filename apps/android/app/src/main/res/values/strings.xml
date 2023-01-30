@@ -63,6 +63,9 @@
   <string name="failed_to_parse_chat_title">Failed to load chat</string>
   <string name="failed_to_parse_chats_title">Failed to load chats</string>
   <string name="contact_developers">Please update the app and contact developers.</string>
+  <string name="failed_to_create_user_title">Duplicate display name!</string>
+  <string name="failed_to_create_user_duplicate_desc">You already have a chat profile with the same display name. Please choose another name.</string>
+  <string name="failed_to_active_user_title">Error switching profile!</string>
 
   <!-- API Error Responses - SimpleXAPI.kt -->
   <string name="connection_timeout">Connection timeout</string>

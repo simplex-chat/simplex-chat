@@ -296,6 +296,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       changeActiveUser_(toUserId)
     } catch (e: Exception) {
       Log.e(TAG, "Unable to set active user: ${e.stackTraceToString()}")
+      AlertManager.shared.showAlertMsg(generalGetString(R.string.failed_to_active_user_title), e.stackTraceToString())
     }
   }
 
@@ -379,11 +380,16 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return null
   }
 
-  suspend fun apiCreateActiveUser(p: Profile): User {
+  suspend fun apiCreateActiveUser(p: Profile): User? {
     val r = sendCmd(CC.CreateActiveUser(p))
     if (r is CR.ActiveUser) return r.user
+    else if (r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.DuplicateName) {
+      AlertManager.shared.showAlertMsg(generalGetString(R.string.failed_to_create_user_title), generalGetString(R.string.failed_to_create_user_duplicate_desc))
+    } else {
+      AlertManager.shared.showAlertMsg(generalGetString(R.string.failed_to_create_user_title), r.details)
+    }
     Log.d(TAG, "apiCreateActiveUser: ${r.responseType} ${r.details}")
-    throw Error("user not created ${r.responseType} ${r.details}")
+    return null
   }
 
   suspend fun listUsers(): List<UserInfo> {
@@ -3241,9 +3247,11 @@ sealed class StoreError {
   val string: String get() = when (this) {
     is UserContactLinkNotFound -> "userContactLinkNotFound"
     is GroupNotFound -> "groupNotFound"
+    is DuplicateName -> "duplicateName"
   }
   @Serializable @SerialName("userContactLinkNotFound") class UserContactLinkNotFound: StoreError()
   @Serializable @SerialName("groupNotFound") class GroupNotFound: StoreError()
+  @Serializable @SerialName("duplicateName") class DuplicateName: StoreError()
 }
 
 @Serializable
