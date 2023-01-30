@@ -131,7 +131,7 @@ startTestChat_ db cfg opts user = do
 
 stopTestChat :: TestCC -> IO ()
 stopTestChat TestCC {chatController = cc, chatAsync, termAsync} = do
-  void . forkIO $ stopChatController cc
+  stopChatController cc
   uninterruptibleCancel termAsync
   uninterruptibleCancel chatAsync
   threadDelay 100000

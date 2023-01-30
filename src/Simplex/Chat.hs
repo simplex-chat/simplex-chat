@@ -3368,9 +3368,9 @@ parseAChatMessage = parseChatMessage_
 {-# INLINE parseAChatMessage #-}
 
 parseChatMessage_ :: (ChatMonad m, StrEncoding s) => ByteString -> m s
-parseChatMessage_ s = liftEither $ case strDecode s of
-  Left e -> Left . ChatError . CEInvalidChatMessage $ e <> ": " <> T.unpack (safeDecodeUtf8 s)
-  Right msg -> Right msg
+parseChatMessage_ s = liftEither . first msgError $ strDecode s
+  where
+    msgError e = ChatError . CEInvalidChatMessage $ e <> ": " <> T.unpack (safeDecodeUtf8 s)
 
 sendFileChunk :: ChatMonad m => User -> SndFileTransfer -> m ()
 sendFileChunk user ft@SndFileTransfer {fileId, fileStatus, agentConnId = AgentConnId acId} =
