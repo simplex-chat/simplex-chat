@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.capitalize
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
@@ -32,20 +33,11 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 @Composable
-fun UserPicker(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedViewState>, openSettings: () -> Unit) {
+fun UserPicker(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedViewState>, switchingUsers: MutableState<Boolean>, openSettings: () -> Unit) {
   val scope = rememberCoroutineScope()
   var newChat by remember { mutableStateOf(userPickerState.value) }
   val users by remember { derivedStateOf { chatModel.users.sortedByDescending { it.user.activeUser } } }
   val animatedFloat = remember { Animatable(if (newChat.isVisible()) 0f else 1f) }
-  var progressIndicator by remember { mutableStateOf(false) }
-  if (progressIndicator) {
-    Box(
-      Modifier.fillMaxSize().clickable(enabled = false, onClick = {}),
-      contentAlignment = Alignment.Center
-    ) {
-      ProgressIndicator()
-    }
-  }
   LaunchedEffect(Unit) {
     launch {
       userPickerState.collect {
@@ -113,11 +105,11 @@ fun UserPicker(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedV
               scope.launch {
                 val job = launch {
                   delay(500)
-                  progressIndicator = true
+                  switchingUsers.value = true
                 }
                 chatModel.controller.changeActiveUser(u.user.userId)
                 job.cancel()
-                progressIndicator = false
+                switchingUsers.value = false
               }
             }
           }
@@ -137,7 +129,20 @@ fun UserPicker(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedV
 
 @Composable
 fun UserProfilePickerItem(u: User, unreadCount: Int = 0, onLongClick: () -> Unit = {}, onClick: () -> Unit) {
-  SectionItemViewSpaceBetween(onClick, onLongClick, padding = PaddingValues(start = 8.dp, end = DEFAULT_PADDING)) {
+  Row(
+    Modifier
+      .fillMaxWidth()
+      .sizeIn(minHeight = 46.dp)
+      .combinedClickable(
+        onClick = if (!u.activeUser) onClick else { {} },
+        onLongClick = onLongClick,
+        interactionSource = remember { MutableInteractionSource() },
+        indication = if (!u.activeUser) LocalIndication.current else null
+      )
+      .padding(PaddingValues(start = 8.dp, end = DEFAULT_PADDING)),
+    horizontalArrangement = Arrangement.SpaceBetween,
+    verticalAlignment = Alignment.CenterVertically
+  ) {
     Row(
       Modifier
         .widthIn(max = LocalConfiguration.current.screenWidthDp.dp * 0.7f)
@@ -149,26 +154,30 @@ fun UserProfilePickerItem(u: User, unreadCount: Int = 0, onLongClick: () -> Unit
         size = 54.dp
       )
       Text(
-        u.chatViewName,
+        u.displayName,
         modifier = Modifier
-          .padding(start = 8.dp, end = 8.dp)
+          .padding(start = 8.dp, end = 8.dp),
+        fontWeight = if (u.activeUser) FontWeight.Medium else FontWeight.Normal
       )
     }
     if (u.activeUser) {
-      Icon(Icons.Filled.Done, null, Modifier.size(20.dp), tint = MaterialTheme.colors.primary)
+      Icon(Icons.Filled.Done, null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     } else if (unreadCount > 0) {
-      Text(
-        unreadCountStr(unreadCount),
-        color = MaterialTheme.colors.onPrimary,
-        fontSize = 11.sp,
-        modifier = Modifier
-          .background(MaterialTheme.colors.primary, shape = CircleShape)
-          .sizeIn(minWidth = 20.dp, minHeight = 20.dp)
-          .padding(horizontal = 3.dp)
-          .padding(vertical = 1.dp),
-        textAlign = TextAlign.Center,
-        maxLines = 1
-      )
+      Row {
+        Text(
+          unreadCountStr(unreadCount),
+          color = MaterialTheme.colors.onPrimary,
+          fontSize = 11.sp,
+          modifier = Modifier
+            .background(MaterialTheme.colors.primary, shape = CircleShape)
+            .sizeIn(minWidth = 20.dp, minHeight = 20.dp)
+            .padding(horizontal = 3.dp)
+            .padding(vertical = 1.dp),
+          textAlign = TextAlign.Center,
+          maxLines = 1
+        )
+        Spacer(Modifier.width(2.dp))
+      }
     } else {
       Box(Modifier.size(20.dp))
     }
@@ -185,15 +194,4 @@ private fun SettingsPickerItem(onClick: () -> Unit) {
     )
     Icon(Icons.Outlined.Settings, text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
   }
-}
-
-@Composable
-private fun ProgressIndicator() {
-  CircularProgressIndicator(
-    Modifier
-      .padding(horizontal = 2.dp)
-      .size(30.dp),
-    color = HighOrLowlight,
-    strokeWidth = 2.5.dp
-  )
 }

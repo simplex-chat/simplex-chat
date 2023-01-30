@@ -65,6 +65,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
   var searchInList by rememberSaveable { mutableStateOf("") }
   val scaffoldState = rememberScaffoldState()
   val scope = rememberCoroutineScope()
+  val switchingUsers = rememberSaveable { mutableStateOf(false) }
   Scaffold(
     topBar = { ChatListToolbar(chatModel, scaffoldState.drawerState, userPickerState, stopped) { searchInList = it.trim() } },
     scaffoldState = scaffoldState,
@@ -99,7 +100,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
       ) {
         if (chatModel.chats.isNotEmpty()) {
           ChatList(chatModel, search = searchInList)
-        } else {
+        } else if (!switchingUsers.value) {
           Box(Modifier.fillMaxSize()) {
             if (!stopped && !newChatSheetState.collectAsState().value.isVisible()) {
               OnboardingButtons(showNewChatSheet)
@@ -113,8 +114,16 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
   if (searchInList.isEmpty()) {
     NewChatSheet(chatModel, newChatSheetState, stopped, hideNewChatSheet)
   }
-  UserPicker(chatModel, userPickerState) {
+  UserPicker(chatModel, userPickerState, switchingUsers) {
     scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
+  }
+  if (switchingUsers.value) {
+    Box(
+      Modifier.fillMaxSize().clickable(enabled = false, onClick = {}),
+      contentAlignment = Alignment.Center
+    ) {
+      ProgressIndicator()
+    }
   }
 }
 
@@ -264,6 +273,17 @@ private fun BoxScope.unreadBadge(text: String? = "") {
       .padding(horizontal = 3.dp)
       .padding(vertical = 1.dp)
       .align(Alignment.TopEnd)
+  )
+}
+
+@Composable
+private fun ProgressIndicator() {
+  CircularProgressIndicator(
+    Modifier
+      .padding(horizontal = 2.dp)
+      .size(30.dp),
+    color = HighOrLowlight,
+    strokeWidth = 2.5.dp
   )
 }
 

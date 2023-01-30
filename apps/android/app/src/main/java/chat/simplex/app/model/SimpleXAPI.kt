@@ -343,7 +343,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return withContext(Dispatchers.IO) {
       val c = cmd.cmdString
       if (cmd !is CC.ApiParseMarkdown) {
-        chatModel.terminalItems.add(TerminalItem.cmd(cmd.obfuscated))
+        chatModel.addTerminalItem(TerminalItem.cmd(cmd.obfuscated))
         Log.d(TAG, "sendCmd: ${cmd.cmdType}")
       }
       val json = chatSendCmd(ctrl, c)
@@ -353,7 +353,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         Log.d(TAG, "sendCmd response json $json")
       }
       if (r.resp !is CR.ParsedMarkdown) {
-        chatModel.terminalItems.add(TerminalItem.resp(r.resp))
+        chatModel.addTerminalItem(TerminalItem.resp(r.resp))
       }
       r.resp
     }
@@ -1143,7 +1143,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
 
   suspend fun processReceivedMsg(r: CR) {
     lastMsgReceivedTimestamp = System.currentTimeMillis()
-    chatModel.terminalItems.add(TerminalItem.resp(r))
+    chatModel.addTerminalItem(TerminalItem.resp(r))
     when (r) {
       is CR.NewContactConnection -> {
         if (active(r.user)) {
