@@ -201,8 +201,8 @@ withTmpFiles =
     (createDirectoryIfMissing False "tests/tmp")
     (removeDirectoryRecursive "tests/tmp")
 
-testChatN :: FilePath -> HasCallStack => ChatConfig -> ChatOpts -> [Profile] -> (HasCallStack => [TestCC] -> IO ()) -> IO ()
-testChatN tmp cfg opts ps test = do
+testChatN :: HasCallStack => ChatConfig -> ChatOpts -> [Profile] -> (HasCallStack => [TestCC] -> IO ()) -> FilePath -> IO ()
+testChatN cfg opts ps test tmp = do
   tcs <- getTestCCs (zip ps [1 ..]) []
   test tcs
   concurrentlyN_ $ map (<// 100000) tcs
@@ -228,37 +228,37 @@ getTermLine cc =
 userName :: TestCC -> IO [Char]
 userName (TestCC ChatController {currentUser} _ _ _ _) = T.unpack . localDisplayName . fromJust <$> readTVarIO currentUser
 
-testChat2 :: FilePath -> Profile -> Profile -> (TestCC -> TestCC -> IO ()) -> IO ()
-testChat2 tmp = testChatCfgOpts2 tmp testCfg testOpts
+testChat2 :: HasCallStack => Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
+testChat2 = testChatCfgOpts2 testCfg testOpts
 
-testChatCfg2 :: FilePath -> ChatConfig -> Profile -> Profile -> (TestCC -> TestCC -> IO ()) -> IO ()
-testChatCfg2 tmp cfg = testChatCfgOpts2 tmp cfg testOpts
+testChatCfg2 :: HasCallStack => ChatConfig -> Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
+testChatCfg2 cfg = testChatCfgOpts2 cfg testOpts
 
-testChatOpts2 :: FilePath -> ChatOpts -> Profile -> Profile -> (TestCC -> TestCC -> IO ()) -> IO ()
-testChatOpts2 tmp = testChatCfgOpts2 tmp testCfg
+testChatOpts2 :: HasCallStack => ChatOpts -> Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
+testChatOpts2 = testChatCfgOpts2 testCfg
 
-testChatCfgOpts2 :: FilePath -> ChatConfig -> ChatOpts -> Profile -> Profile -> (TestCC -> TestCC -> IO ()) -> IO ()
-testChatCfgOpts2 tmp cfg opts p1 p2 test = testChatN tmp cfg opts [p1, p2] test_
+testChatCfgOpts2 :: HasCallStack => ChatConfig -> ChatOpts -> Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
+testChatCfgOpts2 cfg opts p1 p2 test = testChatN cfg opts [p1, p2] test_
   where
     test_ :: [TestCC] -> IO ()
     test_ [tc1, tc2] = test tc1 tc2
     test_ _ = error "expected 2 chat clients"
 
-testChat3 :: FilePath -> Profile -> Profile -> Profile -> (TestCC -> TestCC -> TestCC -> IO ()) -> IO ()
-testChat3 tmp = testChatCfgOpts3 tmp testCfg testOpts
+testChat3 :: HasCallStack => Profile -> Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
+testChat3 = testChatCfgOpts3 testCfg testOpts
 
-testChatCfg3 :: FilePath -> ChatConfig -> Profile -> Profile -> Profile -> (TestCC -> TestCC -> TestCC -> IO ()) -> IO ()
-testChatCfg3 tmp cfg = testChatCfgOpts3 tmp cfg testOpts
+testChatCfg3 :: HasCallStack => ChatConfig -> Profile -> Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
+testChatCfg3 cfg = testChatCfgOpts3 cfg testOpts
 
-testChatCfgOpts3 :: FilePath -> ChatConfig -> ChatOpts -> Profile -> Profile -> Profile -> (TestCC -> TestCC -> TestCC -> IO ()) -> IO ()
-testChatCfgOpts3 tmp cfg opts p1 p2 p3 test = testChatN tmp cfg opts [p1, p2, p3] test_
+testChatCfgOpts3 :: HasCallStack => ChatConfig -> ChatOpts -> Profile -> Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
+testChatCfgOpts3 cfg opts p1 p2 p3 test = testChatN cfg opts [p1, p2, p3] test_
   where
     test_ :: [TestCC] -> IO ()
     test_ [tc1, tc2, tc3] = test tc1 tc2 tc3
     test_ _ = error "expected 3 chat clients"
 
-testChat4 :: FilePath -> Profile -> Profile -> Profile -> Profile -> (TestCC -> TestCC -> TestCC -> TestCC -> IO ()) -> IO ()
-testChat4 tmp p1 p2 p3 p4 test = testChatN tmp testCfg testOpts [p1, p2, p3, p4] test_
+testChat4 :: HasCallStack => Profile -> Profile -> Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
+testChat4 p1 p2 p3 p4 test = testChatN testCfg testOpts [p1, p2, p3, p4] test_
   where
     test_ :: [TestCC] -> IO ()
     test_ [tc1, tc2, tc3, tc4] = test tc1 tc2 tc3 tc4

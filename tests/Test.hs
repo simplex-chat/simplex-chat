@@ -22,7 +22,7 @@ main = do
   where
     testBracket test = do
       t <- getSystemTime
-      let ts = show $ systemSeconds t * 1000 + fromIntegral (systemNanoseconds t `div` 1000000)
+      let ts = show (systemSeconds t) <> show (systemNanoseconds t)
       withSmpServer $ withTmpFiles $ withTempDirectory "tests" ("tmp" <> ts) test
 
 logCfg :: LogConfig
