@@ -513,6 +513,13 @@ final class ChatModel: ObservableObject {
     func contactNetworkStatus(_ contact: Contact) -> NetworkStatus {
         networkStatuses[contact.activeConn.agentConnId] ?? .unknown
     }
+
+    func addTerminalItem(_ item: TerminalItem) {
+        if terminalItems.count >= 500 {
+            terminalItems.remove(at: 0)
+        }
+        terminalItems.append(item)
+    }
 }
 
 struct UnreadChatItemCounts {
