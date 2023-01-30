@@ -63,6 +63,7 @@
   <string name="failed_to_parse_chat_title">Failed to load chat</string>
   <string name="failed_to_parse_chats_title">Failed to load chats</string>
   <string name="contact_developers">Please update the app and contact developers.</string>
+  <string name="failed_to_create_user_title">Failed to create the user</string>
 
   <!-- API Error Responses - SimpleXAPI.kt -->
   <string name="connection_timeout">Connection timeout</string>

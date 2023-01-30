@@ -379,11 +379,12 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return null
   }
 
-  suspend fun apiCreateActiveUser(p: Profile): User {
+  suspend fun apiCreateActiveUser(p: Profile): User? {
     val r = sendCmd(CC.CreateActiveUser(p))
     if (r is CR.ActiveUser) return r.user
     Log.d(TAG, "apiCreateActiveUser: ${r.responseType} ${r.details}")
-    throw Error("user not created ${r.responseType} ${r.details}")
+    AlertManager.shared.showAlertMsg(generalGetString(R.string.failed_to_create_user_title), r.details)
+    return null
   }
 
   suspend fun listUsers(): List<UserInfo> {
