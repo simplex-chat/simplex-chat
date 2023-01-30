@@ -198,7 +198,7 @@ withTmpFiles :: IO () -> IO ()
 withTmpFiles =
   bracket_
     (createDirectoryIfMissing False "tests/tmp")
-    (removeDirectoryRecursive "tests/tmp" >> threadDelay 2000000)
+    (removeDirectoryRecursive "tests/tmp")
 
 testChatN :: HasCallStack => ChatConfig -> ChatOpts -> [Profile] -> (HasCallStack => [TestCC] -> IO ()) -> IO ()
 testChatN cfg opts ps test = do
