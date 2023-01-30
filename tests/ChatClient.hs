@@ -135,7 +135,7 @@ stopTestChat TestCC {chatController = cc, chatAsync, termAsync} = do
   stopChatController cc
   uninterruptibleCancel termAsync
   uninterruptibleCancel chatAsync
-  threadDelay 500000
+  threadDelay 200000
 
 withNewTestChat :: HasCallStack => String -> Profile -> (HasCallStack => TestCC -> IO a) -> IO a
 withNewTestChat = withNewTestChatCfgOpts testCfg testOpts

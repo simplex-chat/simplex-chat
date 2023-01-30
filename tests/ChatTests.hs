@@ -5060,7 +5060,7 @@ testUsersTimedMessages = do
       alice #$> ("/_get chat @4 count=100", chat, [(1, "alisa 3"), (0, "alisa 4")])
 
       -- messages are deleted after restart
-      threadDelay 1500000
+      threadDelay 1000000
 
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
