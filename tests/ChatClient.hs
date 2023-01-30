@@ -32,7 +32,7 @@ import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM
 import Simplex.Messaging.Transport
 import Simplex.Messaging.Version
-import System.Directory (createDirectoryIfMissing, removePathForcibly)
+import System.Directory (createDirectoryIfMissing, removeDirectoryRecursive)
 import qualified System.Terminal as C
 import System.Terminal.Internal (VirtualTerminal (..), VirtualTerminalSettings (..), withVirtualTerminal)
 import System.Timeout (timeout)
@@ -134,7 +134,7 @@ stopTestChat TestCC {chatController = cc, chatAsync, termAsync} = do
   stopChatController cc
   uninterruptibleCancel termAsync
   uninterruptibleCancel chatAsync
-  threadDelay 100000
+  threadDelay 500000
 
 withNewTestChat :: String -> Profile -> (TestCC -> IO a) -> IO a
 withNewTestChat = withNewTestChatCfgOpts testCfg testOpts
@@ -197,7 +197,7 @@ withTmpFiles :: IO () -> IO ()
 withTmpFiles =
   bracket_
     (createDirectoryIfMissing False "tests/tmp")
-    (removePathForcibly "tests/tmp")
+    (removeDirectoryRecursive "tests/tmp")
 
 testChatN :: ChatConfig -> ChatOpts -> [Profile] -> ([TestCC] -> IO ()) -> IO ()
 testChatN cfg opts ps test = do
