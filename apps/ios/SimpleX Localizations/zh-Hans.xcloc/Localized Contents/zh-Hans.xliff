@@ -214,7 +214,7 @@
       </trans-unit>
       <trans-unit id="**Please note**: you will NOT be able to recover or change passphrase if you lose it." xml:space="preserve" approved="no">
         <source>**Please note**: you will NOT be able to recover or change passphrase if you lose it.</source>
-        <target state="translated">**请注意**：一但丢失您将无法恢复或者更改密码。</target>
+        <target state="translated">**请注意**：如果您丢失密码，您将无法恢复或者更改密码。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." xml:space="preserve" approved="no">
@@ -514,37 +514,43 @@
         <target state="translated">您和您的联系人都可以发送语音消息。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Call already ended!" xml:space="preserve">
+      <trans-unit id="Call already ended!" xml:space="preserve" approved="no">
         <source>Call already ended!</source>
+        <target state="translated">通话已经结束！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Calls" xml:space="preserve">
+      <trans-unit id="Calls" xml:space="preserve" approved="no">
         <source>Calls</source>
+        <target state="translated">通话</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Can't invite contact!" xml:space="preserve">
+      <trans-unit id="Can't invite contact!" xml:space="preserve" approved="no">
         <source>Can't invite contact!</source>
+        <target state="translated">无法邀请联系人！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Can't invite contacts!" xml:space="preserve">
+      <trans-unit id="Can't invite contacts!" xml:space="preserve" approved="no">
         <source>Can't invite contacts!</source>
+        <target state="translated">无法邀请联系人！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Cancel" xml:space="preserve" approved="no">
         <source>Cancel</source>
-        <target state="needs-translation">取消</target>
+        <target state="translated">取消</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Cannot access keychain to save database password" xml:space="preserve">
         <source>Cannot access keychain to save database password</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Cannot receive file" xml:space="preserve">
+      <trans-unit id="Cannot receive file" xml:space="preserve" approved="no">
         <source>Cannot receive file</source>
+        <target state="translated">无法接收文件</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change" xml:space="preserve">
+      <trans-unit id="Change" xml:space="preserve" approved="no">
         <source>Change</source>
+        <target state="translated">更换</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change database passphrase?" xml:space="preserve" approved="no">
@@ -564,8 +570,9 @@
         <source>Change receiving address?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change role" xml:space="preserve">
+      <trans-unit id="Change role" xml:space="preserve" approved="no">
         <source>Change role</source>
+        <target state="translated">改变角色</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat archive" xml:space="preserve">
@@ -3130,24 +3137,28 @@ SimpleX servers cannot see your profile.</source>
         <target state="translated">加粗</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="call error" xml:space="preserve">
+      <trans-unit id="call error" xml:space="preserve" approved="no">
         <source>call error</source>
+        <target state="translated">通话错误</target>
         <note>call status</note>
       </trans-unit>
-      <trans-unit id="call in progress" xml:space="preserve">
+      <trans-unit id="call in progress" xml:space="preserve" approved="no">
         <source>call in progress</source>
+        <target state="translated">通话中</target>
         <note>call status</note>
       </trans-unit>
-      <trans-unit id="calling…" xml:space="preserve">
+      <trans-unit id="calling…" xml:space="preserve" approved="no">
         <source>calling…</source>
+        <target state="translated">呼叫中…</target>
         <note>call status</note>
       </trans-unit>
       <trans-unit id="cancelled %@" xml:space="preserve">
         <source>cancelled %@</source>
         <note>feature offered item</note>
       </trans-unit>
-      <trans-unit id="changed address for you" xml:space="preserve">
+      <trans-unit id="changed address for you" xml:space="preserve" approved="no">
         <source>changed address for you</source>
+        <target state="translated">为您更改地址</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="changed role of %@ to %@" xml:space="preserve">
