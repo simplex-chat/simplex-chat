@@ -1,14 +1,13 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 
 module ChatClient where
 
-import Control.Concurrent (ThreadId, forkIO, forkIOWithUnmask, killThread, threadDelay)
+import Control.Concurrent (forkIO, forkIOWithUnmask, killThread, threadDelay)
 import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Exception (bracket, bracket_)
@@ -201,7 +200,7 @@ withTmpFiles =
     (removePathForcibly "tests/tmp")
 
 testChatN :: ChatConfig -> ChatOpts -> [Profile] -> ([TestCC] -> IO ()) -> IO ()
-testChatN cfg opts ps test = withTmpFiles $ do
+testChatN cfg opts ps test = do
   tcs <- getTestCCs (zip ps [1 ..]) []
   test tcs
   concurrentlyN_ $ map (<// 100000) tcs
@@ -285,7 +284,7 @@ serverCfg =
       caCertificateFile = "tests/fixtures/tls/ca.crt",
       privateKeyFile = "tests/fixtures/tls/server.key",
       certificateFile = "tests/fixtures/tls/server.crt",
-      logStatsInterval = Just 86400,
+      logStatsInterval = Nothing,
       logStatsStartTime = 0,
       serverStatsLogFile = "tests/smp-server-stats.daily.log",
       serverStatsBackupFile = Nothing,
@@ -293,16 +292,16 @@ serverCfg =
       logTLSErrors = True
     }
 
-withSmpServer :: IO a -> IO a
-withSmpServer = serverBracket (`runSMPServerBlocking` serverCfg) (pure ()) . const
+withSmpServer :: IO () -> IO ()
+withSmpServer = serverBracket (`runSMPServerBlocking` serverCfg)
 
-serverBracket :: (TMVar Bool -> IO ()) -> IO () -> (ThreadId -> IO a) -> IO a
-serverBracket process afterProcess f = do
+serverBracket :: (TMVar Bool -> IO ()) -> IO () -> IO ()
+serverBracket server f = do
   started <- newEmptyTMVarIO
   bracket
-    (forkIOWithUnmask ($ process started))
-    (\t -> killThread t >> afterProcess >> waitFor started "stop")
-    (\t -> waitFor started "start" >> f t)
+    (forkIOWithUnmask ($ server started))
+    (\t -> killThread t >> waitFor started "stop")
+    (\_ -> waitFor started "start" >> f)
   where
     waitFor started s =
       5000000 `timeout` atomically (takeTMVar started) >>= \case

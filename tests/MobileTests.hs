@@ -83,7 +83,7 @@ parsedMarkdown = "{\"formattedText\":[{\"format\":{\"type\":\"bold\"},\"text\":\
 #endif
 
 testChatApiNoUser :: IO ()
-testChatApiNoUser = withTmpFiles $ do
+testChatApiNoUser = do
   Right cc <- chatMigrateInit testDBPrefix ""
   Left (DBMErrorNotADatabase _) <- chatMigrateInit testDBPrefix "myKey"
   chatSendCmd cc "/u" `shouldReturn` noActiveUser
@@ -92,7 +92,7 @@ testChatApiNoUser = withTmpFiles $ do
   chatSendCmd cc "/_start" `shouldReturn` chatStarted
 
 testChatApi :: IO ()
-testChatApi = withTmpFiles $ do
+testChatApi = do
   let dbPrefix = testDBPrefix <> "1"
       f = chatStoreFile dbPrefix
   st <- createChatStore f "myKey" True

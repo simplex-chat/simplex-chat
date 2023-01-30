@@ -69,7 +69,7 @@ chatTests = do
     it "re-add member in status invited" testGroupReAddInvited
     it "re-add member in status invited, change role" testGroupReAddInvitedChangeRole
     it "delete contact before they accept group invitation, contact joins group" testGroupDeleteInvitedContact
-    fit "member profile is kept when deleting group if other groups have this member" testDeleteGroupMemberProfileKept
+    it "member profile is kept when deleting group if other groups have this member" testDeleteGroupMemberProfileKept
     it "remove contact from group and add again" testGroupRemoveAdd
     it "list groups containing group invitations" testGroupList
     it "group message quoted replies" testGroupMessageQuotedReply
@@ -120,7 +120,7 @@ chatTests = do
     it "auto-reply message" testAutoReplyMessage
     it "auto-reply message in incognito" testAutoReplyMessageInIncognito
   describe "incognito mode" $ do
-    fit "connect incognito via invitation link" testConnectIncognitoInvitationLink
+    it "connect incognito via invitation link" testConnectIncognitoInvitationLink
     it "connect incognito via contact address" testConnectIncognitoContactAddress
     it "accept contact request incognito" testAcceptContactRequestIncognito
     it "join group incognito" testJoinGroupIncognito
@@ -129,9 +129,9 @@ chatTests = do
     it "deleting contact first, group second deletes incognito profile" testDeleteContactThenGroupDeletesIncognitoProfile
     it "deleting group first, contact second deletes incognito profile" testDeleteGroupThenContactDeletesIncognitoProfile
   describe "group links" $ do
-    fit "create group link, join via group link" testGroupLink
+    it "create group link, join via group link" testGroupLink
     it "delete group, re-join via same link" testGroupLinkDeleteGroupRejoin
-    fit "sending message to contact created via group link marks it used" testGroupLinkContactUsed
+    it "sending message to contact created via group link marks it used" testGroupLinkContactUsed
     it "create group link, join via group link - incognito membership" testGroupLinkIncognitoMembership
     it "unused host contact is deleted after all groups with it are deleted" testGroupLinkUnusedHostContactDeleted
     it "leaving groups with unused host contacts deletes incognito profiles" testGroupLinkIncognitoUnusedHostContactsDeleted
@@ -161,7 +161,7 @@ chatTests = do
   -- it "v2 to v1" testFullAsyncV2toV1
   describe "async sending and receiving files" $ do
     it "send and receive file, sender restarts" testAsyncFileTransferSenderRestarts
-    fit "send and receive file, receiver restarts" testAsyncFileTransferReceiverRestarts
+    it "send and receive file, receiver restarts" testAsyncFileTransferReceiverRestarts
     xdescribe "send and receive file, fully asynchronous" $ do
       it "v2" testAsyncFileTransfer
       it "v1" testAsyncFileTransferV1
@@ -185,7 +185,7 @@ chatTests = do
     it "users have different chat item TTL configuration, chat items expire" testUsersDifferentCIExpirationTTL
     it "chat items expire after restart for all users according to per user configuration" testUsersRestartCIExpiration
     it "chat items only expire for users who configured expiration" testEnableCIExpirationOnlyForOneUser
-    fit "disabling chat item expiration doesn't disable it for other users" testDisableCIExpirationOnlyForOneUser
+    it "disabling chat item expiration doesn't disable it for other users" testDisableCIExpirationOnlyForOneUser
     it "both users have configured timed messages with contacts, messages expire, restart" testUsersTimedMessages
   describe "chat item expiration" $ do
     it "set chat item TTL" testSetChatItemTTL
@@ -242,18 +242,16 @@ fileTestMatrix3 runTest = do
 
 runTestCfg2 :: ChatConfig -> ChatConfig -> (TestCC -> TestCC -> IO ()) -> IO ()
 runTestCfg2 aliceCfg bobCfg runTest =
-  withTmpFiles $
-    withNewTestChatCfg aliceCfg "alice" aliceProfile $ \alice ->
-      withNewTestChatCfg bobCfg "bob" bobProfile $ \bob ->
-        runTest alice bob
+  withNewTestChatCfg aliceCfg "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg bobCfg "bob" bobProfile $ \bob ->
+      runTest alice bob
 
 runTestCfg3 :: ChatConfig -> ChatConfig -> ChatConfig -> (TestCC -> TestCC -> TestCC -> IO ()) -> IO ()
 runTestCfg3 aliceCfg bobCfg cathCfg runTest =
-  withTmpFiles $
-    withNewTestChatCfg aliceCfg "alice" aliceProfile $ \alice ->
-      withNewTestChatCfg bobCfg "bob" bobProfile $ \bob ->
-        withNewTestChatCfg cathCfg "cath" cathProfile $ \cath ->
-          runTest alice bob cath
+  withNewTestChatCfg aliceCfg "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg bobCfg "bob" bobProfile $ \bob ->
+      withNewTestChatCfg cathCfg "cath" cathProfile $ \cath ->
+        runTest alice bob cath
 
 testAddContact :: Spec
 testAddContact = versionTestMatrix2 runTestAddContact
@@ -1675,7 +1673,7 @@ testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile 
       cc <## "#team: new member dan is connected"
 
 testGroupAsync :: IO ()
-testGroupAsync = withTmpFiles $ do
+testGroupAsync = do
   print (0 :: Integer)
   withNewTestChat "alice" aliceProfile $ \alice -> do
     withNewTestChat "bob" bobProfile $ \bob -> do
@@ -1975,7 +1973,7 @@ testSmallInlineFileTransfer =
     dest `shouldBe` src
 
 testSmallInlineFileIgnored :: IO ()
-testSmallInlineFileIgnored = withTmpFiles $ do
+testSmallInlineFileIgnored = do
   withNewTestChat "alice" aliceProfile $ \alice ->
     withNewTestChatOpts testOpts {allowInstantFiles = False} "bob" bobProfile $ \bob -> do
       connectUsers alice bob
@@ -2228,7 +2226,7 @@ testSmallInlineGroupFileTransfer =
       dest2 `shouldBe` src
 
 testSmallInlineGroupFileIgnored :: IO ()
-testSmallInlineGroupFileIgnored = withTmpFiles $ do
+testSmallInlineGroupFileIgnored = do
   withNewTestChat "alice" aliceProfile $ \alice ->
     withNewTestChatOpts testOpts {allowInstantFiles = False} "bob" bobProfile $ \bob -> do
       withNewTestChatOpts testOpts {allowInstantFiles = False} "cath" cathProfile $ \cath -> do
@@ -3858,7 +3856,7 @@ testTestSMPServerConnection =
       alice <## "Possibly, certificate fingerprint in server address is incorrect"
 
 testAsyncInitiatingOffline :: IO ()
-testAsyncInitiatingOffline = withTmpFiles $ do
+testAsyncInitiatingOffline = do
   putStrLn "testAsyncInitiatingOffline"
   inv <- withNewTestChat "alice" aliceProfile $ \alice -> do
     threadDelay 250000
@@ -3881,7 +3879,7 @@ testAsyncInitiatingOffline = withTmpFiles $ do
         (alice <## "bob (Bob): contact is connected")
 
 testAsyncAcceptingOffline :: IO ()
-testAsyncAcceptingOffline = withTmpFiles $ do
+testAsyncAcceptingOffline = do
   putStrLn "testAsyncAcceptingOffline"
   inv <- withNewTestChat "alice" aliceProfile $ \alice -> do
     putStrLn "1"
@@ -3905,7 +3903,7 @@ testAsyncAcceptingOffline = withTmpFiles $ do
         (alice <## "bob (Bob): contact is connected")
 
 testFullAsync :: IO ()
-testFullAsync = withTmpFiles $ do
+testFullAsync = do
   putStrLn "testFullAsync"
   inv <- withNewTestChat "alice" aliceProfile $ \alice -> do
     threadDelay 250000
@@ -3938,7 +3936,7 @@ testFullAsync = withTmpFiles $ do
     bob <## "alice (Alice): contact is connected"
 
 testFullAsyncV1 :: IO ()
-testFullAsyncV1 = withTmpFiles $ do
+testFullAsyncV1 = do
   putStrLn "testFullAsyncV1"
   inv <- withNewAlice $ \alice -> do
     putStrLn "1"
@@ -3980,7 +3978,7 @@ testFullAsyncV1 = withTmpFiles $ do
     withBob = withTestChatV1 "bob"
 
 testFullAsyncV1toV2 :: IO ()
-testFullAsyncV1toV2 = withTmpFiles $ do
+testFullAsyncV1toV2 = do
   putStrLn "testFullAsyncV1toV2"
   inv <- withNewAlice $ \alice -> do
     putStrLn "1"
@@ -4021,7 +4019,7 @@ testFullAsyncV1toV2 = withTmpFiles $ do
     withBob = withTestChatV1 "bob"
 
 testFullAsyncV2toV1 :: IO ()
-testFullAsyncV2toV1 = withTmpFiles $ do
+testFullAsyncV2toV1 = do
   putStrLn "testFullAsyncV2toV1"
   inv <- withNewAlice $ \alice -> do
     putStrLn "1"
@@ -4063,7 +4061,7 @@ testFullAsyncV2toV1 = withTmpFiles $ do
     withBob = withTestChat "bob"
 
 testAsyncFileTransferSenderRestarts :: IO ()
-testAsyncFileTransferSenderRestarts = withTmpFiles $ do
+testAsyncFileTransferSenderRestarts = do
   withNewTestChat "bob" bobProfile $ \bob -> do
     withNewTestChat "alice" aliceProfile $ \alice -> do
       connectUsers alice bob
@@ -4077,7 +4075,7 @@ testAsyncFileTransferSenderRestarts = withTmpFiles $ do
       dest `shouldBe` src
 
 testAsyncFileTransferReceiverRestarts :: IO ()
-testAsyncFileTransferReceiverRestarts = withTmpFiles $ do
+testAsyncFileTransferReceiverRestarts = do
   withNewTestChat "alice" aliceProfile $ \alice -> do
     withNewTestChat "bob" bobProfile $ \bob -> do
       connectUsers alice bob
@@ -4091,7 +4089,7 @@ testAsyncFileTransferReceiverRestarts = withTmpFiles $ do
       dest `shouldBe` src
 
 testAsyncFileTransfer :: IO ()
-testAsyncFileTransfer = withTmpFiles $ do
+testAsyncFileTransfer = do
   withNewTestChat "alice" aliceProfile $ \alice ->
     withNewTestChat "bob" bobProfile $ \bob ->
       connectUsers alice bob
@@ -4121,7 +4119,7 @@ testAsyncFileTransfer = withTmpFiles $ do
   dest `shouldBe` src
 
 testAsyncFileTransferV1 :: IO ()
-testAsyncFileTransferV1 = withTmpFiles $ do
+testAsyncFileTransferV1 = do
   withNewTestChatV1 "alice" aliceProfile $ \alice ->
     withNewTestChatV1 "bob" bobProfile $ \bob ->
       connectUsers alice bob
@@ -4151,7 +4149,7 @@ testAsyncFileTransferV1 = withTmpFiles $ do
   dest `shouldBe` src
 
 testAsyncGroupFileTransfer :: IO ()
-testAsyncGroupFileTransfer = withTmpFiles $ do
+testAsyncGroupFileTransfer = do
   withNewTestChat "alice" aliceProfile $ \alice ->
     withNewTestChat "bob" bobProfile $ \bob ->
       withNewTestChat "cath" cathProfile $ \cath ->
@@ -4263,7 +4261,7 @@ testNegotiateCall =
     alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "outgoing call: ended (00:00)")])
 
 testMaintenanceMode :: IO ()
-testMaintenanceMode = withTmpFiles $ do
+testMaintenanceMode = do
   withNewTestChat "bob" bobProfile $ \bob -> do
     withNewTestChatOpts testOpts {maintenance = True} "alice" aliceProfile $ \alice -> do
       alice ##> "/c"
@@ -4308,7 +4306,7 @@ testChatWorking alice bob = do
   alice <# "bob> hello too"
 
 testMaintenanceModeWithFiles :: IO ()
-testMaintenanceModeWithFiles = withTmpFiles $ do
+testMaintenanceModeWithFiles = do
   withNewTestChat "bob" bobProfile $ \bob -> do
     withNewTestChatOpts testOpts {maintenance = True} "alice" aliceProfile $ \alice -> do
       alice ##> "/_start"
@@ -4339,7 +4337,7 @@ testMaintenanceModeWithFiles = withTmpFiles $ do
     withTestChat "alice" $ \alice -> testChatWorking alice bob
 
 testDatabaseEncryption :: IO ()
-testDatabaseEncryption = withTmpFiles $ do
+testDatabaseEncryption = do
   withNewTestChat "bob" bobProfile $ \bob -> do
     withNewTestChatOpts testOpts {maintenance = True} "alice" aliceProfile $ \alice -> do
       alice ##> "/_start"
@@ -4480,7 +4478,7 @@ testCreateSecondUser =
       showActiveUser alice "alisa"
 
 testUsersSubscribeAfterRestart :: IO ()
-testUsersSubscribeAfterRestart = withTmpFiles $ do
+testUsersSubscribeAfterRestart = do
   withNewTestChat "bob" bobProfile $ \bob -> do
     withNewTestChat "alice" aliceProfile $ \alice -> do
       connectUsers alice bob
@@ -4677,7 +4675,7 @@ testDeleteUser =
       alice <##> dan
 
 testUsersDifferentCIExpirationTTL :: IO ()
-testUsersDifferentCIExpirationTTL = withTmpFiles $ do
+testUsersDifferentCIExpirationTTL = do
   withNewTestChat "bob" bobProfile $ \bob -> do
     withNewTestChatCfg cfg "alice" aliceProfile $ \alice -> do
       -- first user messages
@@ -4752,7 +4750,7 @@ testUsersDifferentCIExpirationTTL = withTmpFiles $ do
     cfg = testCfg {ciExpirationInterval = 500000}
 
 testUsersRestartCIExpiration :: IO ()
-testUsersRestartCIExpiration = withTmpFiles $ do
+testUsersRestartCIExpiration = do
   withNewTestChat "bob" bobProfile $ \bob -> do
     withNewTestChatCfg cfg "alice" aliceProfile $ \alice -> do
       -- set ttl for first user
@@ -4835,7 +4833,7 @@ testUsersRestartCIExpiration = withTmpFiles $ do
     cfg = testCfg {ciExpirationInterval = 500000}
 
 testEnableCIExpirationOnlyForOneUser :: IO ()
-testEnableCIExpirationOnlyForOneUser = withTmpFiles $ do
+testEnableCIExpirationOnlyForOneUser = do
   withNewTestChat "bob" bobProfile $ \bob -> do
     withNewTestChatCfg cfg "alice" aliceProfile $ \alice -> do
       -- first user messages
@@ -4906,7 +4904,7 @@ testEnableCIExpirationOnlyForOneUser = withTmpFiles $ do
     cfg = testCfg {ciExpirationInterval = 500000}
 
 testDisableCIExpirationOnlyForOneUser :: IO ()
-testDisableCIExpirationOnlyForOneUser = withTmpFiles $ do
+testDisableCIExpirationOnlyForOneUser = do
   withNewTestChat "bob" bobProfile $ \bob -> do
     withNewTestChatCfg cfg "alice" aliceProfile $ \alice -> do
       -- set ttl for first user
@@ -4964,7 +4962,7 @@ testDisableCIExpirationOnlyForOneUser = withTmpFiles $ do
     cfg = testCfg {ciExpirationInterval = 500000}
 
 testUsersTimedMessages :: IO ()
-testUsersTimedMessages = withTmpFiles $ do
+testUsersTimedMessages = do
   withNewTestChat "bob" bobProfile $ \bob -> do
     withNewTestChat "alice" aliceProfile $ \alice -> do
       connectUsers alice bob
