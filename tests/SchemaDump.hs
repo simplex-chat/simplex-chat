@@ -20,12 +20,11 @@ schemaDumpTest =
   it "verify and overwrite schema dump" testVerifySchemaDump
 
 testVerifySchemaDump :: IO ()
-testVerifySchemaDump =
-  withTmpFiles $ do
-    void $ createChatStore testDB "" False
-    void $ readCreateProcess (shell $ "touch " <> schema) ""
-    savedSchema <- readFile schema
-    savedSchema `deepseq` pure ()
-    void $ readCreateProcess (shell $ "sqlite3 " <> testDB <> " '.schema --indent' > " <> schema) ""
-    currentSchema <- readFile schema
-    savedSchema `shouldBe` currentSchema
+testVerifySchemaDump = withTmpFiles $ do
+  void $ createChatStore testDB "" False
+  void $ readCreateProcess (shell $ "touch " <> schema) ""
+  savedSchema <- readFile schema
+  savedSchema `deepseq` pure ()
+  void $ readCreateProcess (shell $ "sqlite3 " <> testDB <> " '.schema --indent' > " <> schema) ""
+  currentSchema <- readFile schema
+  savedSchema `shouldBe` currentSchema

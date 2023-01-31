@@ -273,13 +273,16 @@ toView event = do
 processChatCommand :: forall m. ChatMonad m => ChatCommand -> m ChatResponse
 processChatCommand = \case
   ShowActiveUser -> withUser' $ pure . CRActiveUser
-  CreateActiveUser p sameServers -> do
+  CreateActiveUser p@Profile {displayName} sameServers -> do
     u <- asks currentUser
     (smp, smpServers) <- chooseServers
     auId <-
       withStore' getUsers >>= \case
         [] -> pure 1
-        _ -> withAgent (`createUser` smp)
+        users -> do
+          when (any (\User {localDisplayName = n} -> n == displayName) users) $
+            throwChatError $ CEUserExists displayName
+          withAgent (`createUser` smp)
     user <- withStore $ \db -> createUserRecord db (AgentUserId auId) p True
     unless (null smpServers) $
       withStore $ \db -> overwriteSMPServers db user smpServers
@@ -3360,10 +3363,15 @@ sendFileInline_ FileTransferMeta {filePath, chunkSize} sharedMsgId sendMsg =
     chSize = fromIntegral chunkSize
 
 parseChatMessage :: ChatMonad m => ByteString -> m (ChatMessage 'Json)
-parseChatMessage = liftEither . first (ChatError . CEInvalidChatMessage) . strDecode
+parseChatMessage = parseChatMessage_
+{-# INLINE parseChatMessage #-}
 
 parseAChatMessage :: ChatMonad m => ByteString -> m AChatMessage
-parseAChatMessage = liftEither . first (ChatError . CEInvalidChatMessage) . strDecode
+parseAChatMessage = parseChatMessage_
+{-# INLINE parseAChatMessage #-}
+
+parseChatMessage_ :: (ChatMonad m, StrEncoding s) => ByteString -> m s
+parseChatMessage_ = liftEither . first (ChatError . CEInvalidChatMessage) . strDecode
 
 sendFileChunk :: ChatMonad m => User -> SndFileTransfer -> m ()
 sendFileChunk user ft@SndFileTransfer {fileId, fileStatus, agentConnId = AgentConnId acId} =
