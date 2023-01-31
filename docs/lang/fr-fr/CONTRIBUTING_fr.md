@@ -1,3 +1,4 @@
+| Updated 31.01.2023 | Languages Available : [EN](/docs/CONTRIBUTING.md), FR, ... |
 # Guide pour contribuer
 
 ## Compiler avec le chiffrement SQLCipher activé

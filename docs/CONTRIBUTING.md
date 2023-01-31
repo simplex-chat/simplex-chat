@@ -1,3 +1,4 @@
+| Updated 31.01.2023 | Languages Available : EN, [FR](../docs/lang/fr-fr/CONTRIBUTING_fr.md), ... |
 # Contributing guide
 
 ## Compiling with SQLCipher encryption enabled

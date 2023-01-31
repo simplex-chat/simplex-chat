@@ -1,3 +1,4 @@
+| Updated 31.01.2023 | Languages Available : EN, [FR](../docs/lang/fr-fr/SQL_fr.md), ... |
 # Accessing message history via SQL queries
 
 You can run queries against `direct_messages`, `group_messages` and `all_messages` (or their simpler alternatives `direct_messages_plain`, `group_messages_plain` and `all_messages_plain`), for example:
