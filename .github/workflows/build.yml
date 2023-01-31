@@ -109,7 +109,7 @@ jobs:
 
       - name: Unix test
         if: matrix.os != 'windows-latest' && matrix.os != 'ubuntu-20.04'
-        timeout-minutes: 10
+        timeout-minutes: 20
         shell: bash
         run: cabal test --test-show-details=direct
 

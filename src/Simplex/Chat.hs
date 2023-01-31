@@ -3360,10 +3360,15 @@ sendFileInline_ FileTransferMeta {filePath, chunkSize} sharedMsgId sendMsg =
     chSize = fromIntegral chunkSize
 
 parseChatMessage :: ChatMonad m => ByteString -> m (ChatMessage 'Json)
-parseChatMessage = liftEither . first (ChatError . CEInvalidChatMessage) . strDecode
+parseChatMessage = parseChatMessage_
+{-# INLINE parseChatMessage #-}
 
 parseAChatMessage :: ChatMonad m => ByteString -> m AChatMessage
-parseAChatMessage = liftEither . first (ChatError . CEInvalidChatMessage) . strDecode
+parseAChatMessage = parseChatMessage_
+{-# INLINE parseAChatMessage #-}
+
+parseChatMessage_ :: (ChatMonad m, StrEncoding s) => ByteString -> m s
+parseChatMessage_ = liftEither . first (ChatError . CEInvalidChatMessage) . strDecode
 
 sendFileChunk :: ChatMonad m => User -> SndFileTransfer -> m ()
 sendFileChunk user ft@SndFileTransfer {fileId, fileStatus, agentConnId = AgentConnId acId} =
