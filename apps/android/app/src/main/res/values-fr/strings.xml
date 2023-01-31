@@ -949,4 +949,7 @@
     <string name="users_delete_data_only">Données de profil local uniquement</string>
     <string name="error_deleting_user">Erreur lors de la suppression du profil utilisateur</string>
     <string name="your_chat_profiles">Vos profils de chat</string>
+    <string name="failed_to_active_user_title">Erreur lors du changement de profil !</string>
+    <string name="failed_to_create_user_title">Nom affiché en double !</string>
+    <string name="failed_to_create_user_duplicate_desc">Vous avez déjà un profil de chat avec ce même nom affiché. Veuillez choisir un autre nom.</string>
 </resources>
