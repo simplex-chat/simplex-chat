@@ -1,3 +1,4 @@
+| Updated 31.01.2023 | Languages Available : EN, [FR](../docs/lang/fr-fr/SERVER_fr.md), ...
 # Hosting your own SMP Server
 
 ## Overview
@@ -47,7 +48,7 @@ Manual installation requires some preliminary actions:
 
    ```sh
    [Unit]
-   Description=SMP server
+   Description=Serveur SM
    [Service]
    User=smp
    Group=smp
@@ -152,7 +153,7 @@ For example, run:
 sudo su smp -c "smp-server init -y -l --ip 192.168.1.5 --password test"
 ```
 
-to initilize your `smp-server` configuration with:
+to initialize your `smp-server` configuration with:
 
 - restoring connections and messages when the server is restarted (`-l` flag),
 - IP address `192.168.1.5`,
