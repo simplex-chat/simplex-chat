@@ -48,6 +48,7 @@ import Database.SQLite.Simple.Ok (Ok (Ok))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import GHC.Records.Compat
+import Simplex.Chat.Protocol.Types
 import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, sumTypeJSON, taggedObjectJSON)
@@ -1439,11 +1440,19 @@ data SndFileTransfer = SndFileTransfer
     connId :: Int64,
     agentConnId :: AgentConnId,
     fileStatus :: FileStatus,
-    fileInline :: Maybe InlineFileMode
+    fileInline :: Maybe InlineFileTransfer
   }
   deriving (Eq, Show, Generic)
 
 instance ToJSON SndFileTransfer where toEncoding = J.genericToEncoding J.defaultOptions
+
+data InlineFileTransfer = InlineFileTransfer
+  { inlineMode :: InlineFileMode,
+    sharedMsgId :: SharedMsgId
+  }
+  deriving (Eq, Show, Generic)
+
+instance ToJSON InlineFileTransfer where toEncoding = J.genericToEncoding J.defaultOptions
 
 sndFileTransferConnId :: SndFileTransfer -> ConnId
 sndFileTransferConnId SndFileTransfer {agentConnId = AgentConnId acId} = acId

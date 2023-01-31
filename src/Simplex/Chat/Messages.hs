@@ -31,6 +31,7 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Chat.Markdown
 import Simplex.Chat.Protocol
+import Simplex.Chat.Protocol.Types
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgErrorType (..), MsgMeta (..), SwitchPhase (..))
 import Simplex.Messaging.Encoding.String

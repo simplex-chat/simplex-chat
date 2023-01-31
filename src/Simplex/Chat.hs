@@ -54,6 +54,7 @@ import Simplex.Chat.Messages
 import Simplex.Chat.Options
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
+import Simplex.Chat.Protocol.Types
 import Simplex.Chat.Store
 import Simplex.Chat.Types
 import Simplex.Chat.Util (diffInMicros, diffInSeconds)
@@ -3467,6 +3468,8 @@ cancelSndFileTransfer user ft@SndFileTransfer {agentConnId = AgentConnId acId, f
       withStore' $ \db -> do
         updateSndFileStatus db ft FSCancelled
         deleteSndFileChunks db ft
+      -- let msg = case fileInline of
+      --   Just ->
       when sendCancel $
         withAgent (\a -> void (sendMessage a acId SMP.noMsgFlags $ smpEncode FileChunkCancel))
       pure fileConnId

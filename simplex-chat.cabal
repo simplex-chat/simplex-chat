@@ -87,6 +87,7 @@ library
       Simplex.Chat.Options
       Simplex.Chat.ProfileGenerator
       Simplex.Chat.Protocol
+      Simplex.Chat.Protocol.Types
       Simplex.Chat.Store
       Simplex.Chat.Styled
       Simplex.Chat.Terminal

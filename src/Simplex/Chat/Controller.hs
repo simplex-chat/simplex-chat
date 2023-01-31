@@ -41,6 +41,7 @@ import Simplex.Chat.Call
 import Simplex.Chat.Markdown (MarkdownList)
 import Simplex.Chat.Messages
 import Simplex.Chat.Protocol
+import Simplex.Chat.Protocol.Types
 import Simplex.Chat.Store (AutoAccept, StoreError, UserContactLink)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent (AgentClient)

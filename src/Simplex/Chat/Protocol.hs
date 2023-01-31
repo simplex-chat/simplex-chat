@@ -39,6 +39,7 @@ import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Chat.Call
+import Simplex.Chat.Protocol.Types
 import Simplex.Chat.Types
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
@@ -124,25 +125,6 @@ instance StrEncoding AppMessageBinary where
     (tag, msgId', Tail body) <- smpP
     let msgId = if B.null msgId' then Nothing else Just (SharedMsgId msgId')
     pure AppMessageBinary {tag, msgId, body}
-
-newtype SharedMsgId = SharedMsgId ByteString
-  deriving (Eq, Show)
-
-instance FromField SharedMsgId where fromField f = SharedMsgId <$> fromField f
-
-instance ToField SharedMsgId where toField (SharedMsgId m) = toField m
-
-instance StrEncoding SharedMsgId where
-  strEncode (SharedMsgId m) = strEncode m
-  strDecode s = SharedMsgId <$> strDecode s
-  strP = SharedMsgId <$> strP
-
-instance FromJSON SharedMsgId where
-  parseJSON = strParseJSON "SharedMsgId"
-
-instance ToJSON SharedMsgId where
-  toJSON = strToJSON
-  toEncoding = strToJEncoding
 
 data MsgRef = MsgRef
   { msgId :: Maybe SharedMsgId,

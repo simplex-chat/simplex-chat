@@ -339,6 +339,7 @@ import Simplex.Chat.Migrations.M20230117_fkey_indexes
 import Simplex.Chat.Migrations.M20230118_recreate_smp_servers
 import Simplex.Chat.Migrations.M20230129_drop_chat_items_group_idx
 import Simplex.Chat.Protocol
+import Simplex.Chat.Protocol.Types
 import Simplex.Chat.Types
 import Simplex.Chat.Util (week)
 import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..))
@@ -3045,21 +3046,22 @@ getSndFileTransfers_ db userId fileId =
     <$> DB.query
       db
       [sql|
-        SELECT s.file_status, f.file_name, f.file_size, f.chunk_size, f.file_path, s.file_inline, s.connection_id, c.agent_conn_id,
+        SELECT s.file_status, f.file_name, f.file_size, f.chunk_size, f.file_path, s.file_inline, f.shared_msg_id, s.connection_id, c.agent_conn_id,
           cs.local_display_name, m.local_display_name
         FROM snd_files s
         JOIN files f USING (file_id)
         JOIN connections c USING (connection_id)
         LEFT JOIN contacts cs USING (contact_id)
         LEFT JOIN group_members m USING (group_member_id)
+        LEFT JOIN chat_items i ON i.chat_item_id = f.chat_item_id
         WHERE f.user_id = ? AND f.file_id = ?
       |]
       (userId, fileId)
   where
-    sndFileTransfer :: (FileStatus, String, Integer, Integer, FilePath, Maybe InlineFileMode, Int64, AgentConnId, Maybe ContactName, Maybe ContactName) -> Either StoreError SndFileTransfer
-    sndFileTransfer (fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, connId, agentConnId, contactName_, memberName_) =
+    sndFileTransfer :: (FileStatus, String, Integer, Integer, FilePath, Maybe InlineFileMode, Maybe SharedMsgId, Int64, AgentConnId, Maybe ContactName, Maybe ContactName) -> Either StoreError SndFileTransfer
+    sndFileTransfer (fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, sharedMsgId, connId, agentConnId, contactName_, memberName_) =
       case contactName_ <|> memberName_ of
-        Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, recipientDisplayName, connId, agentConnId}
+        Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, sharedMsgId, recipientDisplayName, connId, agentConnId}
         Nothing -> Left $ SESndFileInvalid fileId
 
 getFileTransferMeta :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO FileTransferMeta
