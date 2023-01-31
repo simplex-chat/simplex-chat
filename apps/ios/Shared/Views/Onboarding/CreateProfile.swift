@@ -16,6 +16,17 @@ struct CreateProfile: View {
     @State private var fullName: String = ""
     @FocusState private var focusDisplayName
     @FocusState private var focusFullName
+    @State private var alert: CreateProfileAlert?
+
+    private enum CreateProfileAlert: Identifiable {
+        case duplicateUserError(err: LocalizedStringKey)
+
+        var id: String {
+            switch self {
+            case let .duplicateUserError(err): return "error \(err)"
+            }
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -82,6 +93,15 @@ struct CreateProfile: View {
             focusDisplayName = true
             setLastVersionDefault()
         }
+        .alert(item: $alert) { a in
+            switch a {
+            case let .duplicateUserError(err: err):
+                return Alert(
+                    title: Text("Duplicate display name!"),
+                    message: Text(err)
+                )
+            }
+        }
         .padding()
     }
 
@@ -110,7 +130,22 @@ struct CreateProfile: View {
                 try getUserChatData()
             }
         } catch {
-            fatalError("Failed to create user or start chat: \(responseError(error))")
+            switch error {
+            case ChatResponse.chatCmdError(_, .errorStore(storeError: .duplicateName)),
+                 ChatResponse.chatCmdError(_, .error(errorType: .userExists)):
+                alert = .duplicateUserError(err: "You already have a chat profile with the same display name. Please choose another name.")
+                AlertManager.shared.showAlertMsg(
+                    title: "Duplicate display name!",
+                    message: "You already have a chat profile with the same display name. Please choose another name."
+                )
+            default:
+                alert = .duplicateUserError(err: "Error: \(String(describing: error))")
+                AlertManager.shared.showAlertMsg(
+                    title: "Duplicate display name!",
+                    message: "Error: \(String(describing: error))"
+                )
+            }
+            logger.error("Failed to create user or start chat: \(responseError(error))")
         }
     }
 
