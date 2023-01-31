@@ -89,7 +89,7 @@ chatTests = do
   describe "sending and receiving files" $ do
     describe "send and receive file" $ fileTestMatrix2 runTestFileTransfer
     it "send and receive file inline (without accepting)" testInlineFileTransfer
-    xit "accept inline file transfer, sender cancels during transfer" testAcceptInlineFileSndCancelDuringTransfer
+    it "accept inline file transfer, sender cancels during transfer" testAcceptInlineFileSndCancelDuringTransfer
     it "send and receive small file inline (default config)" testSmallInlineFileTransfer
     it "small file sent without acceptance is ignored in terminal by default" testSmallInlineFileIgnored
     it "receive file inline with inline=on option" testReceiveInline
@@ -1943,10 +1943,8 @@ testAcceptInlineFileSndCancelDuringTransfer =
           alice <## "completed sending file 1 (test_1MB.pdf) to bob",
         bob <## "completed receiving file 1 (test_1MB.pdf) from alice"
       ]
-    _ <- getTermLine alice
     alice #> "@bob hi"
     bob #> "@alice hey"
-    _ <- getTermLine bob
     bob <## "alice cancelled sending file 1 (test_1MB.pdf)"
     bob <# "alice> hi"
     alice <# "bob> hey"
