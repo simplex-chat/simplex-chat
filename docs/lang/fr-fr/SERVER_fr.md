@@ -326,4 +326,4 @@ Il est également possible de partager l'adresse de votre serveur avec vos amis 
 
 _Veuillez noter_ : vous avez besoin de la version 4.0 du serveur SMP pour avoir le support du mot de passe. Si vous avez déjà déployé un serveur, vous pouvez ajouter le mot de passe en l'ajoutant au fichier INI du serveur.
 
-<img src="./server_config_1.png" width="288"> &nbsp;&nbsp; <img src="./server_config_2.png" width="288"> &nbsp;&nbsp; <img src="./server_config_3.png" width="288">
+<img src="/docs/server_config_1.png" width="288"> &nbsp;&nbsp; <img src="/docs/server_config_2.png" width="288"> &nbsp;&nbsp; <img src="/docs/server_config_3.png" width="288">
