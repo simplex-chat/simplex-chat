@@ -387,7 +387,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.DuplicateName ||
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorChat && r.chatError.errorType is ChatErrorType.UserExists
     ) {
-      AlertManager.shared.showAlertMsg(generalGetString(R.string.failed_to_create_user_title), generalGetString(R.string.failed_to_create_user_duplicate_desc))
+      AlertManager.shared.showAlertMsg(generalGetString(R.string.failed_to_create_user_duplicate_title), generalGetString(R.string.failed_to_create_user_duplicate_desc))
     } else {
       AlertManager.shared.showAlertMsg(generalGetString(R.string.failed_to_create_user_title), r.details)
     }
