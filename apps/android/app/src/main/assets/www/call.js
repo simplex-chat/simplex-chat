@@ -103,6 +103,10 @@ const processCommand = (function () {
         pc.addEventListener("connectionstatechange", connectionStateChange);
         return call;
         async function connectionStateChange() {
+            if (pc.connectionState === 'failed') {
+                pc.restartIce()
+                return
+            }
             sendMessageToNative({
                 resp: {
                     type: "connection",
