@@ -1941,12 +1941,13 @@ testAcceptInlineFileSndCancelDuringTransfer =
       [ do
           alice <##. "cancelled sending file 1 (test_1MB.pdf)"
           alice <## "completed sending file 1 (test_1MB.pdf) to bob",
-        bob <## "completed receiving file 1 (test_1MB.pdf) from alice"
+        do
+          bob <## "completed receiving file 1 (test_1MB.pdf) from alice"
+          bob <## "alice cancelled sending file 1 (test_1MB.pdf)"
       ]
     alice #> "@bob hi"
-    bob #> "@alice hey"
-    bob <## "alice cancelled sending file 1 (test_1MB.pdf)"
     bob <# "alice> hi"
+    bob #> "@alice hey"
     alice <# "bob> hey"
   where
     cfg = testCfg {inlineFiles = defaultInlineFilesConfig {offerChunks = 100, receiveChunks = 50}}
