@@ -274,13 +274,16 @@ toView event = do
 processChatCommand :: forall m. ChatMonad m => ChatCommand -> m ChatResponse
 processChatCommand = \case
   ShowActiveUser -> withUser' $ pure . CRActiveUser
-  CreateActiveUser p sameServers -> do
+  CreateActiveUser p@Profile {displayName} sameServers -> do
     u <- asks currentUser
     (smp, smpServers) <- chooseServers
     auId <-
       withStore' getUsers >>= \case
         [] -> pure 1
-        _ -> withAgent (`createUser` smp)
+        users -> do
+          when (any (\User {localDisplayName = n} -> n == displayName) users) $
+            throwChatError $ CEUserExists displayName
+          withAgent (`createUser` smp)
     user <- withStore $ \db -> createUserRecord db (AgentUserId auId) p True
     unless (null smpServers) $
       withStore $ \db -> overwriteSMPServers db user smpServers

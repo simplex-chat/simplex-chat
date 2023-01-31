@@ -1078,6 +1078,7 @@ public enum ChatError: Decodable {
 public enum ChatErrorType: Decodable {
     case noActiveUser
     case activeUserExists
+    case userExists
     case differentActiveUser
     case chatNotStarted
     case invalidConnReq

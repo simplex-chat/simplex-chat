@@ -383,8 +383,11 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   suspend fun apiCreateActiveUser(p: Profile): User? {
     val r = sendCmd(CC.CreateActiveUser(p))
     if (r is CR.ActiveUser) return r.user
-    else if (r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.DuplicateName) {
-      AlertManager.shared.showAlertMsg(generalGetString(R.string.failed_to_create_user_title), generalGetString(R.string.failed_to_create_user_duplicate_desc))
+    else if (
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.DuplicateName ||
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorChat && r.chatError.errorType is ChatErrorType.UserExists
+    ) {
+      AlertManager.shared.showAlertMsg(generalGetString(R.string.failed_to_create_user_duplicate_title), generalGetString(R.string.failed_to_create_user_duplicate_desc))
     } else {
       AlertManager.shared.showAlertMsg(generalGetString(R.string.failed_to_create_user_title), r.details)
     }
@@ -3231,12 +3234,14 @@ sealed class ChatErrorType {
   val string: String get() = when (this) {
     is NoActiveUser -> "noActiveUser"
     is DifferentActiveUser -> "differentActiveUser"
+    is UserExists -> "userExists"
     is InvalidConnReq -> "invalidConnReq"
     is FileAlreadyReceiving -> "fileAlreadyReceiving"
     is СommandError -> "commandError $message"
   }
   @Serializable @SerialName("noActiveUser") class NoActiveUser: ChatErrorType()
   @Serializable @SerialName("differentActiveUser") class DifferentActiveUser: ChatErrorType()
+  @Serializable @SerialName("userExists") class UserExists(val contactName: String): ChatErrorType()
   @Serializable @SerialName("invalidConnReq") class InvalidConnReq: ChatErrorType()
   @Serializable @SerialName("fileAlreadyReceiving") class FileAlreadyReceiving: ChatErrorType()
   @Serializable @SerialName("commandError") class СommandError(val message: String): ChatErrorType()

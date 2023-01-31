@@ -15,11 +15,13 @@ struct UserProfilesView: View {
 
     private enum UserProfilesAlert: Identifiable {
         case deleteUser(index: Int, delSMPQueues: Bool)
+        case activateUserError(error: String)
         case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
 
         var id: String {
             switch self {
             case let .deleteUser(index, delSMPQueues): return "deleteUser \(index) \(delSMPQueues)"
+            case let .activateUserError(err): return "activateUserError \(err)"
             case let .error(title, _): return "error \(title)"
             }
         }
@@ -65,6 +67,11 @@ struct UserProfilesView: View {
                     },
                     secondaryButton: .cancel()
                 )
+            case let .activateUserError(error: err):
+                return Alert(
+                    title: Text("Error switching profile!"),
+                    message: Text(err)
+                )
             case let .error(title, error):
                 return Alert(title: Text(title), message: Text(error))
             }
@@ -104,7 +111,11 @@ struct UserProfilesView: View {
 
     private func userView(_ user: User) -> some View {
         Button {
-            changeActiveUser(user.userId)
+            do {
+                try changeActiveUser_(user.userId)
+            } catch {
+                alert = .activateUserError(error: responseError(error))
+            }
         } label: {
             HStack {
                 ProfileImage(imageStr: user.image, color: Color(uiColor: .tertiarySystemFill))

@@ -91,8 +91,15 @@ struct UserPicker: View {
         let user = u.user
         return Button(action: {
             if !user.activeUser {
-                changeActiveUser(user.userId)
-                userPickerVisible = false
+                do {
+                    try changeActiveUser_(user.userId)
+                    userPickerVisible = false
+                } catch {
+                    AlertManager.shared.showAlertMsg(
+                        title: "Error switching profile!",
+                        message: "Error: \(responseError(error))"
+                    )
+                }
             }
         }, label: {
             HStack(spacing: 0) {
