@@ -20,10 +20,12 @@ struct CreateProfile: View {
 
     private enum CreateProfileAlert: Identifiable {
         case duplicateUserError(err: LocalizedStringKey)
+        case createUserError(err: LocalizedStringKey)
 
         var id: String {
             switch self {
-            case let .duplicateUserError(err): return "error \(err)"
+            case let .duplicateUserError(err): return "duplicateUserError \(err)"
+            case let .createUserError(err): return "createUserError \(err)"
             }
         }
     }
@@ -100,6 +102,11 @@ struct CreateProfile: View {
                     title: Text("Duplicate display name!"),
                     message: Text(err)
                 )
+            case let .createUserError(err: err):
+                return Alert(
+                    title: Text("Error creating profile!"),
+                    message: Text(err)
+                )
             }
         }
         .padding()
@@ -139,9 +146,9 @@ struct CreateProfile: View {
                     message: "You already have a chat profile with the same display name. Please choose another name."
                 )
             default:
-                alert = .duplicateUserError(err: "Error: \(String(describing: error))")
+                alert = .createUserError(err: "Error: \(String(describing: error))")
                 AlertManager.shared.showAlertMsg(
-                    title: "Duplicate display name!",
+                    title: "Error creating profile!",
                     message: "Error: \(String(describing: error))"
                 )
             }
