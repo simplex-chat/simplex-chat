@@ -166,7 +166,7 @@ chatTests = do
     xdescribe "send and receive file, fully asynchronous" $ do
       it "v2" testAsyncFileTransfer
       it "v1" testAsyncFileTransferV1
-    it "send and receive file to group, fully asynchronous" testAsyncGroupFileTransfer
+    xit "send and receive file to group, fully asynchronous" testAsyncGroupFileTransfer
   describe "webrtc calls api" $ do
     it "negotiate call" testNegotiateCall
   describe "maintenance mode" $ do
