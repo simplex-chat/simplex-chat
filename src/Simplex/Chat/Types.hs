@@ -1252,9 +1252,10 @@ fromInvitedBy userCtId = \case
   IBUser -> Just userCtId
 
 data GroupMemberRole
-  = GRAuthor -- can send messages to all group members
-  | GRMember -- + add new members with role Member and below
-  | GRAdmin -- + change member roles (excl. Owners), add Admins, remove members (excl. Owners)
+  = GRObserver -- connects to all group members and receives all messages, can't send messages
+  | GRAuthor -- reserved, unused
+  | GRMember -- + can send messages to all group members
+  | GRAdmin -- + add/remove members, change member role (excl. Owners)
   | GROwner -- + delete and change group information, add/remove/change roles for Owners
   deriving (Eq, Show, Ord)
 
@@ -1268,11 +1269,13 @@ instance StrEncoding GroupMemberRole where
     GRAdmin -> "admin"
     GRMember -> "member"
     GRAuthor -> "author"
+    GRObserver -> "observer"
   strDecode = \case
     "owner" -> Right GROwner
     "admin" -> Right GRAdmin
     "member" -> Right GRMember
     "author" -> Right GRAuthor
+    "observer" -> Right GRObserver
     r -> Left $ "bad GroupMemberRole " <> B.unpack r
   strP = strDecode <$?> A.takeByteString
 
@@ -1401,6 +1404,20 @@ memberCurrent m = case memberStatus m of
   GSMemConnected -> True
   GSMemComplete -> True
   GSMemCreator -> True
+
+memberRemoved :: GroupMember -> Bool
+memberRemoved m = case memberStatus m of
+  GSMemRemoved -> True
+  GSMemLeft -> True
+  GSMemGroupDeleted -> True
+  GSMemInvited -> False
+  GSMemIntroduced -> False
+  GSMemIntroInvited -> False
+  GSMemAccepted -> False
+  GSMemAnnounced -> False
+  GSMemConnected -> False
+  GSMemComplete -> False
+  GSMemCreator -> False
 
 instance TextEncoding GroupMemberStatus where
   textDecode = \case
