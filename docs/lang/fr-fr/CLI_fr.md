@@ -5,7 +5,7 @@
 
 - [Fonctionnalités du terminal de chat](#fonctionnalités-du-terminal-de-chat)
 - [Installation](#🚀-installation)
-  - [Télécharger le client du chat](#télécharger-le-client-du-chat)
+  - [Télécharger le client de chat](#télécharger-le-client-de-chat)
     - [Linux et MacOS](#linux-et-macos)
     - [Windows](#windows)
   - [Compiler depuis la source](#compiler-depuis-la-source)
@@ -17,8 +17,8 @@
   - [Comment utiliser SimpleX chat](#comment-utiliser-simplex-chat)
   - [Groupes](#groupes)
   - [Envoi de fichiers](#envoi-de-fichiers)
-  - [Adresses de contact d'utilisateur](adresses-de-contact-d'utilisateur)
-  - [Accéder à l'historique des chats](#accéder-à-l'historique-des-chats)
+  - [Adresses de contact d'utilisateur](#adresses-de-contact-dutilisateur)
+  - [Accéder à l'historique des chats](#accéder-à-lhistorique-des-chats)
 
 ## Fonctionnalités du terminal de chat
 
@@ -33,12 +33,12 @@
 - Deux couches de chiffrement E2E (double ratchet pour les connexions duplex, utilisant un accord de clé X3DH avec des clés Curve448 éphémères, et NaCl crypto_box pour les files d'attente SMP, utilisant des clés Curve25519) et transmission hors bande des clés des destinataires (voir [Comment utiliser SimpleX chat](#comment-utiliser-simplex-chat)).
 - Validation de l'intégrité du message (en incluant les résumés des messages précédents).
 - Authentification de chaque commande/message par les serveurs SMP avec des clés Ed448 générées automatiquement.
-- Chiffrement du transport TLS 1.3.
+- Chiffrement de transport TLS 1.3.
 - Chiffrement supplémentaire des messages du serveur SMP au destinataire pour réduire la corrélation du trafic.
 
 Les clés publiques impliquées dans l'échange de clés ne sont pas utilisées comme identité, elles sont générées aléatoirement pour chaque contact.
 
-Voir [Primitives de chiffrement utilisées](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md#encryption-primitives-used) pour les détails techniques.
+Voir les [primitives de chiffrement utilisées](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md#encryption-primitives-used) pour les détails techniques.
 
 <a name="🚀-installation"></a>
 
@@ -175,7 +175,7 @@ Une fois que vous aurez lancé le chat, vous serez invité à indiquer un "nom d
 Le schéma ci-dessous montre comment connecter et envoyer un message à un contact :
 
 <div align="center">
-  <img align="center" src="../images/how-to-use-simplex.svg">
+  <img align="center" src="simplex-chat/images/how-to-use-simplex.svg">
 </div>
 
 Une fois que vous avez configuré votre profil local, entrez `/c` (pour `/connect`) pour créer une nouvelle connexion et générer une invitation. Envoyez cette invitation à votre contact via n'importe quel autre canal.
@@ -194,15 +194,15 @@ Utilisez `/help` dans le chat pour voir la liste des commandes disponibles.
 
 Pour créer un groupe, utilisez `/g <groupe>`, puis ajoutez-y des contacts avec `/a <groupe> <nom>`. Vous pouvez ensuite envoyer des messages au groupe en entrant `#<groupe> <message>`. Utilisez `/help groups` pour d'autres commandes.
 
-![simplex-chat](../images/groups.gif)
+![simplex-chat](simplex-chat/images/groups.gif)
 
 > **Veuillez noter**: les groupes ne sont pas stockés sur un serveur, ils sont conservés comme une liste de membres dans la base de données de l'application à qui les messages seront envoyés.
 
-### Envoi de fichier
+### Envoi de fichiers
 
 Vous pouvez envoyer un fichier à votre contact avec `/f @<contact> <chemin_du_fichier>` - le destinataire devra l'accepter avant qu'il ne soit envoyé. Utilisez `/help files` pour les autres commandes.
 
-![simplex-chat](../images/files.gif)
+![simplex-chat](simplex-chat/images/files.gif)
 
 Vous pouvez envoyer des fichiers à un groupe avec `/f #<group> <chemin_du_fichier>`.
 
@@ -216,7 +216,7 @@ L'adresse de l'utilisateur est "à long terme" dans le sens où il s'agit d'un l
 
 Utilisez `/help address` pour les autres commandes.
 
-![simplex-chat](../images/user-addresses.gif)
+![simplex-chat](simplex-chat/images/user-addresses.gif)
 
 ### Accéder à l'historique des chats
 
