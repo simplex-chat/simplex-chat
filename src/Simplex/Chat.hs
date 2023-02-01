@@ -3461,7 +3461,7 @@ cancelSndFile user FileTransferMeta {fileId} fts sendCancel = do
   catMaybes <$> forM fts (\ft -> cancelSndFileTransfer user ft sendCancel)
 
 cancelSndFileTransfer :: ChatMonad m => User -> SndFileTransfer -> Bool -> m (Maybe ConnId)
-cancelSndFileTransfer user ft@SndFileTransfer {agentConnId = AgentConnId acId, fileStatus, fileInline} sendCancel =
+cancelSndFileTransfer user@User {userId} ft@SndFileTransfer {fileId, connId, agentConnId = AgentConnId acId, fileStatus, fileInline} sendCancel =
   if fileStatus == FSCancelled || fileStatus == FSComplete
     then pure Nothing
     else cancel' `catchError` (\e -> toView (CRChatError (Just user) e) >> pure fileConnId)
@@ -3470,10 +3470,13 @@ cancelSndFileTransfer user ft@SndFileTransfer {agentConnId = AgentConnId acId, f
       withStore' $ \db -> do
         updateSndFileStatus db ft FSCancelled
         deleteSndFileChunks db ft
-      when sendCancel $
-        withAgent (\a -> void (sendMessage a acId SMP.noMsgFlags $ smpEncode FileChunkCancel))
+      when sendCancel $ case fileInline of
+        Just _ -> do
+          (sharedMsgId, conn) <- withStore $ \db -> (,) <$> getSharedMsgIdByFileId db userId fileId <*> getConnectionById db user connId
+          void . sendDirectMessage conn (BFileChunk sharedMsgId FileChunkCancel) $ ConnectionId connId
+        _ -> withAgent $ \a -> void . sendMessage a acId SMP.noMsgFlags $ smpEncode FileChunkCancel
       pure fileConnId
-    fileConnId = if isNothing fileInline then Just acId else Nothing
+    fileConnId = if isJust fileInline then Nothing else Just acId
 
 closeFileHandle :: ChatMonad m => Int64 -> (ChatController -> TVar (Map Int64 Handle)) -> m ()
 closeFileHandle fileId files = do
