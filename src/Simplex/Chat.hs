@@ -424,7 +424,7 @@ processChatCommand = \case
             quoteData _ = throwChatError CEInvalidQuote
     CTGroup -> do
       Group gInfo@GroupInfo {groupId, membership, localDisplayName = gName} ms <- withStore $ \db -> getGroup db user chatId
-      unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
+      assertUserGroupRole gInfo GRAuthor
       if isVoice mc && not (groupFeatureAllowed SGFVoice gInfo)
         then pure $ chatCmdError (Just user) ("feature not allowed " <> T.unpack (groupFeatureNameText GFVoice))
         else do
@@ -520,8 +520,8 @@ processChatCommand = \case
             _ -> throwChatError CEInvalidChatItemUpdate
         CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
     CTGroup -> do
-      Group gInfo@GroupInfo {groupId, localDisplayName = gName, membership} ms <- withStore $ \db -> getGroup db user chatId
-      unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
+      Group gInfo@GroupInfo {groupId, localDisplayName = gName} ms <- withStore $ \db -> getGroup db user chatId
+      assertUserGroupRole gInfo GRAuthor
       cci <- withStore $ \db -> getGroupChatItem db user chatId itemId
       case cci of
         CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive}, content = ciContent} -> do
@@ -550,8 +550,8 @@ processChatCommand = \case
             else markDirectCIDeleted user ct ci msgId True
         (CIDMBroadcast, _, _) -> throwChatError CEInvalidChatItemDelete
     CTGroup -> do
-      Group gInfo@GroupInfo {localDisplayName = gName, membership} ms <- withStore $ \db -> getGroup db user chatId
-      unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
+      Group gInfo@GroupInfo {localDisplayName = gName} ms <- withStore $ \db -> getGroup db user chatId
+      assertUserGroupRole gInfo GRObserver -- can still delete messages sent earlier
       ci@(CChatItem msgDir ChatItem {meta = CIMeta {itemSharedMsgId}}) <- withStore $ \db -> getGroupChatItem db user chatId itemId
       case (mode, msgDir, itemSharedMsgId) of
         (CIDMInternal, _, _) -> deleteGroupCI user gInfo ci True False
@@ -620,13 +620,14 @@ processChatCommand = \case
       pure $ CRContactConnectionDeleted user conn
     CTGroup -> do
       Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user chatId
-      let canDelete = memberRole (membership :: GroupMember) == GROwner || not (memberCurrent membership)
-      unless canDelete $ throwChatError CEGroupUserRole
+      let isOwner = memberRole (membership :: GroupMember) == GROwner
+          canDelete = isOwner || not (memberCurrent membership)
+      unless canDelete $ throwChatError $ CEGroupUserRole GROwner
       filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
       withChatLock "deleteChat group" . procCmd $ do
         deleteFilesAndConns user filesInfo
-        when (memberActive membership) . void $ sendGroupMessage user gInfo members XGrpDel
-        deleteGroupLink' user gInfo `catchError` \_ -> pure ()
+        when (memberActive membership && isOwner) . void $ sendGroupMessage user gInfo members XGrpDel
+        deleteGroupLinkIfExists user gInfo
         deleteMembersConnections user members
         -- functions below are called in separate transactions to prevent crashes on android
         -- (possibly, race condition on integrity check?)
@@ -640,7 +641,7 @@ processChatCommand = \case
         deleteUnusedContact :: ContactId -> m [ConnId]
         deleteUnusedContact contactId =
           (withStore (\db -> getContact db user contactId) >>= delete)
-            `catchError` (\e -> toView (CRChatError (Just user) e) >> pure [])
+            `catchError` (\e -> toView (CRChatError (Just user) e) $> [])
           where
             delete ct
               | directOrUsed ct = pure []
@@ -799,7 +800,7 @@ processChatCommand = \case
     user_ <- withStore' (`getUserByAConnId` agentConnId)
     connEntity <-
       pure user_ $>>= \user ->
-        withStore (\db -> Just <$> getConnectionEntity db user agentConnId) `catchError` \_ -> pure Nothing
+        withStore (\db -> Just <$> getConnectionEntity db user agentConnId) `catchError` (\e -> toView (CRChatError (Just user) e) $> Nothing)
     pure CRNtfMessages {user_, connEntity, msgTs = msgTs', ntfMessages}
   APIGetUserSMPServers userId -> withUserId userId $ \user -> do
     ChatConfig {defaultServers = DefaultAgentServers {smp = defaultSMPServers}} <- asks config
@@ -1049,15 +1050,12 @@ processChatCommand = \case
     (group, contact) <- withStore $ \db -> (,) <$> getGroup db user groupId <*> getContact db user contactId
     assertDirectAllowed user MDSnd contact XGrpInv_
     let Group gInfo@GroupInfo {membership} members = group
-        GroupMember {memberRole = userRole} = membership
         Contact {localDisplayName = cName} = contact
+    assertUserGroupRole gInfo $ max GRAdmin memRole
     -- [incognito] forbid to invite contact to whom user is connected incognito
     when (contactConnIncognito contact) $ throwChatError CEContactIncognitoCantInvite
     -- [incognito] forbid to invite contacts if user joined the group using an incognito profile
     when (memberIncognito membership) $ throwChatError CEGroupIncognitoCantInvite
-    when (userRole < GRAdmin || userRole < memRole) $ throwChatError CEGroupUserRole
-    when (memberStatus membership == GSMemInvited) $ throwChatError (CEGroupNotJoined gInfo)
-    unless (memberActive membership) $ throwChatError CEGroupMemberNotActive
     let sendInvitation = sendGrpInvitation user contact gInfo
     case contactMember contact members of
       Nothing -> do
@@ -1101,11 +1099,9 @@ processChatCommand = \case
         Just m -> changeMemberRole user gInfo members m $ SGEMemberRole memberId (fromLocalProfile $ memberProfile m) memRole
         _ -> throwChatError CEGroupMemberNotFound
     where
-      changeMemberRole user gInfo@GroupInfo {membership} members m gEvent = do
+      changeMemberRole user gInfo members m gEvent = do
         let GroupMember {memberId = mId, memberRole = mRole, memberStatus = mStatus, memberContactId, localDisplayName = cName} = m
-            GroupMember {memberRole = userRole} = membership
-            canChangeRole = userRole >= GRAdmin && userRole >= mRole && userRole >= memRole && memberCurrent membership
-        unless canChangeRole $ throwChatError CEGroupUserRole
+        assertUserGroupRole gInfo $ maximum [GRAdmin, mRole, memRole]
         withChatLock "memberRole" . procCmd $ do
           unless (mRole == memRole) $ do
             withStore' $ \db -> updateGroupMemberRole db user m memRole
@@ -1120,13 +1116,11 @@ processChatCommand = \case
                 toView $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
           pure CRMemberRoleUser {user, groupInfo = gInfo, member = m {memberRole = memRole}, fromRole = mRole, toRole = memRole}
   APIRemoveMember groupId memberId -> withUser $ \user -> do
-    Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user groupId
+    Group gInfo members <- withStore $ \db -> getGroup db user groupId
     case find ((== memberId) . groupMemberId') members of
       Nothing -> throwChatError CEGroupMemberNotFound
       Just m@GroupMember {memberId = mId, memberRole = mRole, memberStatus = mStatus, memberProfile} -> do
-        let userRole = memberRole (membership :: GroupMember)
-            canRemove = userRole >= GRAdmin && userRole >= mRole && memberCurrent membership
-        unless canRemove $ throwChatError CEGroupUserRole
+        assertUserGroupRole gInfo $ max GRAdmin mRole
         withChatLock "removeMember" . procCmd $ do
           case mStatus of
             GSMemInvited -> do
@@ -1147,7 +1141,7 @@ processChatCommand = \case
       ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent SGEUserLeft)
       toView $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
       -- TODO delete direct connections that were unused
-      deleteGroupLink' user gInfo `catchError` \_ -> pure ()
+      deleteGroupLinkIfExists user gInfo
       -- member records are not deleted to keep history
       deleteMembersConnections user members
       withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemLeft
@@ -1186,10 +1180,8 @@ processChatCommand = \case
   UpdateGroupDescription gName description ->
     updateGroupProfileByName gName $ \p -> p {description}
   APICreateGroupLink groupId -> withUser $ \user -> withChatLock "createGroupLink" $ do
-    gInfo@GroupInfo {membership = membership@GroupMember {memberRole = userRole}} <- withStore $ \db -> getGroupInfo db user groupId
-    when (userRole < GRAdmin) $ throwChatError CEGroupUserRole
-    when (memberStatus membership == GSMemInvited) $ throwChatError (CEGroupNotJoined gInfo)
-    unless (memberActive membership) $ throwChatError CEGroupMemberNotActive
+    gInfo <- withStore $ \db -> getGroupInfo db user groupId
+    assertUserGroupRole gInfo GRAdmin
     groupLinkId <- GroupLinkId <$> (asks idsDrg >>= liftIO . (`randomBytes` 16))
     let crClientData = encodeJSON $ CRDataGroup groupLinkId
     (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMContact $ Just crClientData
@@ -1464,11 +1456,7 @@ processChatCommand = \case
         pure $ CRContactPrefsUpdated user ct ct'
     runUpdateGroupProfile :: User -> Group -> GroupProfile -> m ChatResponse
     runUpdateGroupProfile user (Group g@GroupInfo {groupProfile = p} ms) p' = do
-      let s = memberStatus $ membership g
-          canUpdate =
-            memberRole (membership g :: GroupMember) == GROwner
-              || (s == GSMemRemoved || s == GSMemLeft || s == GSMemGroupDeleted || s == GSMemInvited)
-      unless canUpdate $ throwChatError CEGroupUserRole
+      assertUserGroupRole g GROwner
       g' <- withStore $ \db -> updateGroupProfile db user g p'
       msg <- sendGroupMessage user g' ms (XGrpInfo p')
       let cd = CDGroupSnd g'
@@ -1477,6 +1465,12 @@ processChatCommand = \case
         toView $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat g') ci)
       createGroupFeatureChangedItems user cd CISndGroupFeature g g'
       pure $ CRGroupUpdated user g g' Nothing
+    assertUserGroupRole :: GroupInfo -> GroupMemberRole -> m ()
+    assertUserGroupRole g@GroupInfo {membership} requiredRole = do
+      when (memberRole (membership :: GroupMember) < requiredRole) $ throwChatError $ CEGroupUserRole requiredRole
+      when (memberStatus membership == GSMemInvited) $ throwChatError (CEGroupNotJoined g)
+      when (memberRemoved membership) $ throwChatError CEGroupMemberUserRemoved
+      unless (memberActive membership) $ throwChatError CEGroupMemberNotActive
     updateGroupProfileByName :: GroupName -> (GroupProfile -> GroupProfile) -> m ChatResponse
     updateGroupProfileByName gName update = withUser $ \user -> do
       g@(Group GroupInfo {groupProfile = p} _) <- withStore $ \db ->
@@ -1602,7 +1596,7 @@ deleteFile user fileInfo = deleteFile' user fileInfo False
 deleteFile' :: forall m. ChatMonad m => User -> CIFileInfo -> Bool -> m [ConnId]
 deleteFile' user CIFileInfo {filePath, fileId, fileStatus} sendCancel = do
   aConnIds <- case fileStatus of
-    Just fStatus -> cancel' fStatus `catchError` (\e -> toView (CRChatError (Just user) e) >> pure [])
+    Just fStatus -> cancel' fStatus `catchError` (\e -> toView (CRChatError (Just user) e) $> [])
     Nothing -> pure []
   delete `catchError` (toView . CRChatError (Just user))
   pure aConnIds
@@ -1789,6 +1783,15 @@ profileToSendOnAccept user ip = userProfileToSend user (getIncognitoProfile <$> 
 deleteGroupLink' :: ChatMonad m => User -> GroupInfo -> m ()
 deleteGroupLink' user gInfo = do
   conn <- withStore $ \db -> getGroupLinkConnection db user gInfo
+  deleteGroupLink_ user gInfo conn
+
+deleteGroupLinkIfExists :: ChatMonad m => User -> GroupInfo -> m ()
+deleteGroupLinkIfExists user gInfo = do
+  conn_ <- eitherToMaybe <$> withStore' (\db -> runExceptT $ getGroupLinkConnection db user gInfo)
+  mapM_ (deleteGroupLink_ user gInfo) conn_
+
+deleteGroupLink_ :: ChatMonad m => User -> GroupInfo -> Connection -> m ()
+deleteGroupLink_ user gInfo conn = do
   deleteAgentConnectionAsync user $ aConnId conn
   withStore' $ \db -> deleteGroupLink db user gInfo
 
@@ -1901,7 +1904,7 @@ subscribeUserConnections agentBatchSubscribe user = do
     pendingConnSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId PendingContactConnection -> m ()
     pendingConnSubsToView rs = toView . CRPendingSubSummary user . map (uncurry PendingSubStatus) . resultsFor rs
     withStore_ :: (DB.Connection -> User -> IO [a]) -> m [a]
-    withStore_ a = withStore' (`a` user) `catchError` \e -> toView (CRChatError (Just user) e) >> pure []
+    withStore_ a = withStore' (`a` user) `catchError` \e -> toView (CRChatError (Just user) e) $> []
     filterErrors :: [(a, Maybe ChatError)] -> [(a, ChatError)]
     filterErrors = mapMaybe (\(a, e_) -> (a,) <$> e_)
     resultsFor :: Map ConnId (Either AgentErrorType ()) -> Map ConnId a -> [(a, Maybe ChatError)]
@@ -2346,8 +2349,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         updateChatLock "groupMessage" event
         withAckMessage agentConnId cmdId msgMeta $
           case event of
-            XMsgNew mc -> newGroupContentMessage gInfo m mc msg msgMeta
-            XMsgUpdate sharedMsgId mContent ttl live -> groupMessageUpdate gInfo m sharedMsgId mContent msg msgMeta ttl live
+            XMsgNew mc -> canSend $ newGroupContentMessage gInfo m mc msg msgMeta
+            XMsgUpdate sharedMsgId mContent ttl live -> canSend $ groupMessageUpdate gInfo m sharedMsgId mContent msg msgMeta ttl live
             XMsgDel sharedMsgId -> groupMessageDelete gInfo m sharedMsgId msg
             -- TODO discontinue XFile
             XFile fInv -> processGroupFileInvitation' gInfo m fInv msg msgMeta
@@ -2364,6 +2367,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             XGrpInfo p' -> xGrpInfo gInfo m p' msg msgMeta
             BFileChunk sharedMsgId chunk -> bFileChunkGroup gInfo sharedMsgId chunk msgMeta
             _ -> messageError $ "unsupported message: " <> T.pack (show event)
+        where
+          canSend a
+            | memberRole (m :: GroupMember) <= GRObserver = messageError "member is not allowed to send messages"
+            | otherwise = a
       SENT msgId -> do
         sentMsgDeliveryEvent conn msgId
         checkSndInlineFTComplete conn msgId
@@ -2602,7 +2609,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     withAckMessage :: ConnId -> CommandId -> MsgMeta -> m () -> m ()
     withAckMessage cId cmdId MsgMeta {recipient = (msgId, _)} action =
       -- [async agent commands] command should be asynchronous, continuation is ackMsgDeliveryEvent
-      action `E.finally` withAgent (\a -> ackMessageAsync a (aCorrId cmdId) cId msgId `catchError` \_ -> pure ())
+      action `E.finally` withAgent (\a -> ackMessageAsync a (aCorrId cmdId) cId msgId)
 
     ackMsgDeliveryEvent :: Connection -> CommandId -> m ()
     ackMsgDeliveryEvent Connection {connId} ackCmdId =
@@ -2968,7 +2975,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     processGroupInvitation :: Contact -> GroupInvitation -> RcvMessage -> MsgMeta -> m ()
     processGroupInvitation ct@Contact {localDisplayName = c, activeConn = Connection {customUserProfileId, groupLinkId = groupLinkId'}} inv@GroupInvitation {fromMember = (MemberIdRole fromMemId fromRole), invitedMember = (MemberIdRole memId memRole), connRequest, groupLinkId} msg msgMeta = do
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
-      when (fromRole < GRMember || fromRole < memRole) $ throwChatError (CEGroupContactRole c)
+      when (fromRole < GRAdmin || fromRole < memRole) $ throwChatError (CEGroupContactRole c)
       when (fromMemId == memId) $ throwChatError CEGroupDuplicateMemberId
       -- [incognito] if direct connection with host is incognito, create membership using the same incognito profile
       (gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership = membership@GroupMember {groupMemberId, memberId}}, hostId) <- withStore $ \db -> createGroupInvitation db user ct inv customUserProfileId
@@ -3202,7 +3209,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           if isMember memId gInfo members
             then messageWarning "x.grp.mem.intro ignored: member already exists"
             else do
-              when (memberRole < GRMember) $ throwChatError (CEGroupContactRole c)
+              when (memberRole < GRAdmin) $ throwChatError (CEGroupContactRole c)
               -- [async agent commands] commands should be asynchronous, continuation is to send XGrpMemInv - have to remember one has completed and process on second
               groupConnIds <- createAgentConnectionAsync user CFCreateConnGrpMemInv enableNtfs SCMInvitation
               directConnIds <- createAgentConnectionAsync user CFCreateConnGrpMemInv enableNtfs SCMInvitation
@@ -3272,14 +3279,14 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     checkHostRole :: GroupMember -> GroupMemberRole -> m ()
     checkHostRole GroupMember {memberRole, localDisplayName} memRole =
-      when (memberRole < GRMember || memberRole < memRole) $ throwChatError (CEGroupContactRole localDisplayName)
+      when (memberRole < GRAdmin || memberRole < memRole) $ throwChatError (CEGroupContactRole localDisplayName)
 
     xGrpMemDel :: GroupInfo -> GroupMember -> MemberId -> RcvMessage -> MsgMeta -> m ()
     xGrpMemDel gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId msg msgMeta = do
       members <- withStore' $ \db -> getGroupMembers db user gInfo
       if memberId (membership :: GroupMember) == memId
         then checkRole membership $ do
-          deleteGroupLink' user gInfo `catchError` \_ -> pure ()
+          deleteGroupLinkIfExists user gInfo
           -- member records are not deleted to keep history
           deleteMembersConnections user members
           withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemRemoved
@@ -3317,7 +3324,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     xGrpDel :: GroupInfo -> GroupMember -> RcvMessage -> MsgMeta -> m ()
     xGrpDel gInfo@GroupInfo {membership} m@GroupMember {memberRole} msg msgMeta = do
-      when (memberRole /= GROwner) $ throwChatError CEGroupUserRole
+      when (memberRole /= GROwner) $ throwChatError $ CEGroupUserRole GROwner
       ms <- withStore' $ \db -> do
         members <- getGroupMembers db user gInfo
         updateGroupMemberStatus db userId membership GSMemGroupDeleted
@@ -3443,7 +3450,7 @@ isFileActive fileId files = do
 
 cancelRcvFileTransfer :: ChatMonad m => User -> RcvFileTransfer -> m (Maybe ConnId)
 cancelRcvFileTransfer user ft@RcvFileTransfer {fileId, rcvFileInline} =
-  cancel' `catchError` (\e -> toView (CRChatError (Just user) e) >> pure fileConnId)
+  cancel' `catchError` (\e -> toView (CRChatError (Just user) e) $> fileConnId)
   where
     cancel' = do
       closeFileHandle fileId rcvFiles
@@ -3461,19 +3468,22 @@ cancelSndFile user FileTransferMeta {fileId} fts sendCancel = do
   catMaybes <$> forM fts (\ft -> cancelSndFileTransfer user ft sendCancel)
 
 cancelSndFileTransfer :: ChatMonad m => User -> SndFileTransfer -> Bool -> m (Maybe ConnId)
-cancelSndFileTransfer user ft@SndFileTransfer {agentConnId = AgentConnId acId, fileStatus, fileInline} sendCancel =
+cancelSndFileTransfer user@User {userId} ft@SndFileTransfer {fileId, connId, agentConnId = AgentConnId acId, fileStatus, fileInline} sendCancel =
   if fileStatus == FSCancelled || fileStatus == FSComplete
     then pure Nothing
-    else cancel' `catchError` (\e -> toView (CRChatError (Just user) e) >> pure fileConnId)
+    else cancel' `catchError` (\e -> toView (CRChatError (Just user) e) $> fileConnId)
   where
     cancel' = do
       withStore' $ \db -> do
         updateSndFileStatus db ft FSCancelled
         deleteSndFileChunks db ft
-      when sendCancel $
-        withAgent (\a -> void (sendMessage a acId SMP.noMsgFlags $ smpEncode FileChunkCancel))
+      when sendCancel $ case fileInline of
+        Just _ -> do
+          (sharedMsgId, conn) <- withStore $ \db -> (,) <$> getSharedMsgIdByFileId db userId fileId <*> getConnectionById db user connId
+          void . sendDirectMessage conn (BFileChunk sharedMsgId FileChunkCancel) $ ConnectionId connId
+        _ -> withAgent $ \a -> void . sendMessage a acId SMP.noMsgFlags $ smpEncode FileChunkCancel
       pure fileConnId
-    fileConnId = if isNothing fileInline then Just acId else Nothing
+    fileConnId = if isJust fileInline then Nothing else Just acId
 
 closeFileHandle :: ChatMonad m => Int64 -> (ChatController -> TVar (Map Int64 Handle)) -> m ()
 closeFileHandle fileId files = do
@@ -4115,7 +4125,7 @@ chatCommandP =
         [ " owner" $> GROwner,
           " admin" $> GRAdmin,
           " member" $> GRMember,
-          -- " author" $> GRAuthor,
+          -- " observer" $> GRObserver,
           pure GRAdmin
         ]
     chatNameP = ChatName <$> chatTypeP <*> displayName

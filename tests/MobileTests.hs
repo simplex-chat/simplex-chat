@@ -2,7 +2,7 @@
 
 module MobileTests where
 
-import ChatTests
+import ChatTests.Utils
 import Control.Monad.Except
 import Simplex.Chat.Mobile
 import Simplex.Chat.Store
