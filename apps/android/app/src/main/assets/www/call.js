@@ -102,19 +102,13 @@ const processCommand = (function () {
         const call = { connection: pc, iceCandidates, localMedia: mediaType, localCamera, localStream, remoteStream, aesKey, useWorker };
         await setupMediaStreams(call);
         let timeoutToEndCall = setTimeout(connectionStateChange, answerTimeout);
-        pc.addEventListener("connectionstatechange", () => {
-            if (pc.connectionState === "failed") {
-                // Means, second party is not answered in time (15 sec timeout in Chrome WebView, https://source.chromium.org/chromium/chromium/src/+/main:third_party/webrtc/p2p/base/p2p_constants.cc;l=70)
-                return;
-            }
-            else if (pc.connectionState === "connected" && timeoutToEndCall) {
-                clearTimeout(timeoutToEndCall);
-                timeoutToEndCall = null;
-            }
-            connectionStateChange();
-        });
+        pc.addEventListener("connectionstatechange", connectionStateChange);
         return call;
         async function connectionStateChange() {
+            // "failed" means the second party did not answer in time (15 sec timeout in Chrome WebView)
+            // See https://source.chromium.org/chromium/chromium/src/+/main:third_party/webrtc/p2p/base/p2p_constants.cc;l=70)
+            if (pc.connectionState === "failed")
+                return;
             sendMessageToNative({
                 resp: {
                     type: "connection",
@@ -126,7 +120,7 @@ const processCommand = (function () {
                     },
                 },
             });
-            if (pc.connectionState == "disconnected" || pc.connectionState == "failed") {
+            if (pc.connectionState == "disconnected") {
                 pc.removeEventListener("connectionstatechange", connectionStateChange);
                 if (activeCall) {
                     setTimeout(() => sendMessageToNative({ resp: { type: "ended" } }), 0);
@@ -134,6 +128,10 @@ const processCommand = (function () {
                 endCall();
             }
             else if (pc.connectionState == "connected") {
+                if (timeoutToEndCall) {
+                    clearTimeout(timeoutToEndCall);
+                    timeoutToEndCall = undefined;
+                }
                 const stats = (await pc.getStats());
                 for (const stat of stats.values()) {
                     const { type, state } = stat;
