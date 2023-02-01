@@ -132,4 +132,16 @@
     <string name="no_details">कोई विवरण नहीं</string>
     <string name="settings_notification_preview_title">अधिसूचना पूर्वावलोकन</string>
     <string name="notifications">सूचनाएं</string>
+    <string name="full_deletion">सभी के लिए हटाएं</string>
+    <string name="delete_chat_archive_question">चैट संग्रह मिटाएं\?</string>
+    <string name="delete_chat_profile_question">चैट प्रोफ़ाइल हटाएं\?</string>
+    <string name="users_delete_question">चैट प्रोफ़ाइल हटाएं\?</string>
+    <string name="users_delete_profile_for">के लिए चैट प्रोफ़ाइल हटाएं</string>
+    <string name="button_delete_contact">संपर्क मिटा दें</string>
+    <string name="deleted_description">हटाए गए</string>
+    <string name="delete_contact_question">संपर्क मिटा दें\?</string>
+    <string name="rcv_group_event_group_deleted">हटाए गए समूह</string>
+    <string name="delete_image">छवि हटाएं</string>
+    <string name="button_delete_group">समूह हटाएं</string>
+    <string name="for_me_only">मेरे लिए हटाएं</string>
 </resources>
