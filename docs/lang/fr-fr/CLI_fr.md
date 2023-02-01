@@ -196,7 +196,7 @@ Pour créer un groupe, utilisez `/g <groupe>`, puis ajoutez-y des contacts avec 
 
 ![simplex-chat](/images/groups.gif)
 
-> **Veuillez noter**: les groupes ne sont pas stockés sur un serveur, ils sont conservés comme une liste de membres dans la base de données de l'application à qui les messages seront envoyés.
+> **Veuillez noter** : les groupes ne sont pas stockés sur un serveur, ils sont conservés comme une liste de membres dans la base de données de l'application à qui les messages seront envoyés.
 
 ### Envoi de fichiers
 
@@ -234,7 +234,7 @@ Ouvrir un terminal de commande SQLite :
 sqlite3 ~/.simplex/simplex_v1_chat.db
 ```
 
-Voir [Requêtes de message](./SQL_fr.md) à titre d'exemple.
+Voir les [requêtes de message](./SQL_fr.md) à titre d'exemple.
 
 > **Veuillez noter :** Les contraintes de clé étrangère SQLite sont désactivées par défaut, et doivent être **[activé séparément pour chaque connexion de base de données](https://sqlite.org/foreignkeys.html#fk_enable)**. Cette dernière peut être réalisée en exécutant la commande `PRAGMA foreign_keys = ON;` sur une connexion de base de données ouverte. En exécutant des requêtes modifiant les données sans activer les clés étrangères au préalable, vous risquez de mettre votre base de données dans un état inconsistant.
 

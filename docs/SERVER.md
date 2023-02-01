@@ -48,7 +48,7 @@ Manual installation requires some preliminary actions:
 
    ```sh
    [Unit]
-   Description=SMP Server
+   Description=SMP server
    [Service]
    User=smp
    Group=smp
