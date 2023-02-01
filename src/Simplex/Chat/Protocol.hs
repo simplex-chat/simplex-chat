@@ -180,7 +180,7 @@ instance StrEncoding AChatMessage where
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
   XMsgUpdate :: {msgId :: SharedMsgId, content :: MsgContent, ttl :: Maybe Int, live :: Maybe Bool} -> ChatMsgEvent 'Json
-  XMsgDel :: SharedMsgId -> ChatMsgEvent 'Json
+  XMsgDel :: SharedMsgId -> Maybe MemberId -> ChatMsgEvent 'Json
   XMsgDeleted :: ChatMsgEvent 'Json
   XFile :: FileInvitation -> ChatMsgEvent 'Json -- TODO discontinue
   XFileAcpt :: String -> ChatMsgEvent 'Json -- direct file protocol
@@ -558,7 +558,7 @@ toCMEventTag :: ChatMsgEvent e -> CMEventTag e
 toCMEventTag msg = case msg of
   XMsgNew _ -> XMsgNew_
   XMsgUpdate {} -> XMsgUpdate_
-  XMsgDel _ -> XMsgDel_
+  XMsgDel {} -> XMsgDel_
   XMsgDeleted -> XMsgDeleted_
   XFile _ -> XFile_
   XFileAcpt _ -> XFileAcpt_
@@ -643,7 +643,7 @@ appJsonToCM AppMessageJson {msgId, event, params} = do
     msg = \case
       XMsgNew_ -> XMsgNew <$> JT.parseEither parseMsgContainer params
       XMsgUpdate_ -> XMsgUpdate <$> p "msgId" <*> p "content" <*> opt "ttl" <*> opt "live"
-      XMsgDel_ -> XMsgDel <$> p "msgId"
+      XMsgDel_ -> XMsgDel <$> p "msgId" <*> p "memberId"
       XMsgDeleted_ -> pure XMsgDeleted
       XFile_ -> XFile <$> p "file"
       XFileAcpt_ -> XFileAcpt <$> p "fileName"
@@ -696,7 +696,7 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = case encoding @e of
     params = \case
       XMsgNew container -> msgContainerJSON container
       XMsgUpdate msgId' content ttl live -> o $ ("ttl" .=? ttl) $ ("live" .=? live) ["msgId" .= msgId', "content" .= content]
-      XMsgDel msgId' -> o ["msgId" .= msgId']
+      XMsgDel msgId' memberId -> o $ ("memberId" .=? memberId) ["msgId" .= msgId']
       XMsgDeleted -> JM.empty
       XFile fileInv -> o ["file" .= fileInv]
       XFileAcpt fileName -> o ["fileName" .= fileName]
