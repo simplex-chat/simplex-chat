@@ -101,7 +101,7 @@ const processCommand = (function () {
         const iceCandidates = getIceCandidates(pc, config);
         const call = { connection: pc, iceCandidates, localMedia: mediaType, localCamera, localStream, remoteStream, aesKey, useWorker };
         await setupMediaStreams(call);
-        let timeoutToEndCall = setTimeout(() => connectionStateChange(null, true), answerTimeout);
+        let connectionTimeout = setTimeout(() => connectionStateChange(null, true), answerTimeout);
         pc.addEventListener("connectionstatechange", connectionStateChange);
         return call;
         async function connectionStateChange(_event, timeout = false) {
@@ -121,6 +121,7 @@ const processCommand = (function () {
                 },
             });
             if (pc.connectionState == "disconnected" || pc.connectionState == "failed") {
+                clearConnectionTimeout();
                 pc.removeEventListener("connectionstatechange", connectionStateChange);
                 if (activeCall) {
                     setTimeout(() => sendMessageToNative({ resp: { type: "ended" } }), 0);
@@ -128,10 +129,7 @@ const processCommand = (function () {
                 endCall();
             }
             else if (pc.connectionState == "connected") {
-                if (timeoutToEndCall) {
-                    clearTimeout(timeoutToEndCall);
-                    timeoutToEndCall = undefined;
-                }
+                clearConnectionTimeout();
                 const stats = (await pc.getStats());
                 for (const stat of stats.values()) {
                     const { type, state } = stat;
@@ -149,6 +147,12 @@ const processCommand = (function () {
                         break;
                     }
                 }
+            }
+        }
+        function clearConnectionTimeout() {
+            if (connectionTimeout) {
+                clearTimeout(connectionTimeout);
+                connectionTimeout = undefined;
             }
         }
     }
