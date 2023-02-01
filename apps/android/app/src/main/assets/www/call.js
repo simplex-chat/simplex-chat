@@ -101,14 +101,16 @@ const processCommand = (function () {
         const iceCandidates = getIceCandidates(pc, config);
         const call = { connection: pc, iceCandidates, localMedia: mediaType, localCamera, localStream, remoteStream, aesKey, useWorker };
         await setupMediaStreams(call);
-        let connectionTimeout = setTimeout(() => connectionStateChange(null, true), answerTimeout);
+        let connectionTimeout = setTimeout(connectionHandler, answerTimeout);
         pc.addEventListener("connectionstatechange", connectionStateChange);
         return call;
-        async function connectionStateChange(_event, timeout = false) {
+        async function connectionStateChange() {
             // "failed" means the second party did not answer in time (15 sec timeout in Chrome WebView)
             // See https://source.chromium.org/chromium/chromium/src/+/main:third_party/webrtc/p2p/base/p2p_constants.cc;l=70)
-            if (pc.connectionState === "failed" && !timeout)
-                return;
+            if (pc.connectionState !== "failed")
+                connectionHandler();
+        }
+        async function connectionHandler() {
             sendMessageToNative({
                 resp: {
                     type: "connection",
