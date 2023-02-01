@@ -1,3 +1,4 @@
+| Updated 31.01.2023 | Languages Available : EN, [FR](../docs/lang/fr-fr/CLI_fr.md), ... |
 # SimpleX Chat terminal (console) app for Linux/MacOS/Windows
 
 ## Table of contents
