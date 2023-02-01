@@ -191,6 +191,7 @@ interface Call {
 }
 
 let activeCall: Call | undefined
+let answerTimeout = 30_000
 
 const processCommand = (function () {
   type RTCRtpSenderWithEncryption = RTCRtpSender & {
@@ -294,7 +295,19 @@ const processCommand = (function () {
     const iceCandidates = getIceCandidates(pc, config)
     const call = {connection: pc, iceCandidates, localMedia: mediaType, localCamera, localStream, remoteStream, aesKey, useWorker}
     await setupMediaStreams(call)
-    pc.addEventListener("connectionstatechange", connectionStateChange)
+    let timeoutToEndCall: number | null = setTimeout(() => {
+      connectionStateChange()
+    }, answerTimeout)
+    pc.addEventListener("connectionstatechange", () => {
+      if (pc.connectionState === "failed") {
+        // Means, second party is not answered in time (15 sec timeout in Chrome WebView, https://source.chromium.org/chromium/chromium/src/+/main:third_party/webrtc/p2p/base/p2p_constants.cc;l=70)
+        return
+      } else if (pc.connectionState === "connected" && timeoutToEndCall) {
+        clearTimeout(timeoutToEndCall)
+        timeoutToEndCall = null
+      }
+      connectionStateChange()
+    })
     return call
 
     async function connectionStateChange() {
