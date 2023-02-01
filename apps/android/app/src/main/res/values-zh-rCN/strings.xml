@@ -207,4 +207,12 @@
     <string name="incognito_info_find">要查找用于隐身聊天连接的资料，点击聊天顶部的联系人或群组名。</string>
     <string name="incognito_info_share">当您与某人共享隐身聊天资料时，该资料将用于他们邀请您加入的群组。</string>
     <string name="v4_3_improved_server_configuration">改进的服务器配置</string>
+    <string name="icon_descr_email">电邮</string>
+    <string name="edit_image">编辑图片</string>
+    <string name="button_edit_group_profile">编辑群组资料</string>
+    <string name="error_encrypting_database">加密数据库错误</string>
+    <string name="error_exporting_chat_database">导出聊天数据库错误</string>
+    <string name="error_importing_database">导入聊天数据库错误</string>
+    <string name="error_joining_group">加入群组错误</string>
+    <string name="error_deleting_user">删除用户资料错误</string>
 </resources>
