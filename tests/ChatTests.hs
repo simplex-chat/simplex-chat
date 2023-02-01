@@ -628,6 +628,29 @@ testGroupShared alice bob cath checkMessages = do
   alice ##> "/contacts"
   alice <## "bob (Bob)"
   alice <## "cath (Catherine)"
+  -- test observer role
+  -- to be enabled once the role is enabled in parser
+  -- alice ##> "/mr team bob observer"
+  -- concurrentlyN_
+  --   [ alice <## "#team: you changed the role of bob from admin to observer",
+  --     bob <## "#team: alice changed your role from admin to observer",
+  --     cath <## "#team: alice changed the role of bob from admin to observer"
+  --   ]
+  -- bob ##> "#team hello"
+  -- bob <## "you don't have permission to send messages to this group"
+  -- bob ##> "/rm team cath"
+  -- bob <## "you have insufficient permissions for this action, the required role is admin"
+  -- cath #> "#team hello"
+  -- concurrentlyN_
+  --   [ alice <# "#team cath> hello",
+  --     bob <# "#team cath> hello"
+  --   ]
+  -- alice ##> "/mr team bob admin"
+  -- concurrentlyN_
+  --   [ alice <## "#team: you changed the role of bob from observer to admin",
+  --     bob <## "#team: alice changed your role from observer to admin",
+  --     cath <## "#team: alice changed the role of bob from observer to admin"
+  --   ]
   -- remove member
   bob ##> "/rm team cath"
   concurrentlyN_
@@ -1462,7 +1485,7 @@ testUpdateGroupProfile =
         (bob <# "#team alice> hello!")
         (cath <# "#team alice> hello!")
       bob ##> "/gp team my_team"
-      bob <## "you have insufficient permissions for this group command"
+      bob <## "you have insufficient permissions for this action, the required role is owner"
       alice ##> "/gp team my_team"
       alice <## "changed to #my_team"
       concurrentlyN_
@@ -1497,13 +1520,13 @@ testUpdateMemberRole =
         (bob <## "#team: you joined the group")
       connectUsers bob cath
       bob ##> "/a team cath"
-      bob <## "you have insufficient permissions for this group command"
+      bob <## "you have insufficient permissions for this action, the required role is admin"
       alice ##> "/mr team bob admin"
       concurrently_
         (alice <## "#team: you changed the role of bob from member to admin")
         (bob <## "#team: alice changed your role from member to admin")
       bob ##> "/a team cath owner"
-      bob <## "you have insufficient permissions for this group command"
+      bob <## "you have insufficient permissions for this action, the required role is owner"
       addMember "team" bob cath GRMember
       cath ##> "/j team"
       concurrentlyN_
@@ -1522,7 +1545,7 @@ testUpdateMemberRole =
           cath <## "#team: alice changed the role from owner to admin"
         ]
       alice ##> "/d #team"
-      alice <## "you have insufficient permissions for this group command"
+      alice <## "you have insufficient permissions for this action, the required role is owner"
 
 testGroupDeleteUnusedContacts :: HasCallStack => FilePath -> IO ()
 testGroupDeleteUnusedContacts =
