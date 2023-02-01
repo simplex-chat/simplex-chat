@@ -4125,7 +4125,7 @@ chatCommandP =
         [ " owner" $> GROwner,
           " admin" $> GRAdmin,
           " member" $> GRMember,
-          " observer" $> GRObserver,
+          -- " observer" $> GRObserver,
           pure GRAdmin
         ]
     chatNameP = ChatName <$> chatTypeP <*> displayName

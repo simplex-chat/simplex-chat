@@ -630,27 +630,27 @@ testGroupShared alice bob cath checkMessages = do
   alice <## "cath (Catherine)"
   -- test observer role
   -- to be enabled once the role is enabled in parser
-  alice ##> "/mr team bob observer"
-  concurrentlyN_
-    [ alice <## "#team: you changed the role of bob from admin to observer",
-      bob <## "#team: alice changed your role from admin to observer",
-      cath <## "#team: alice changed the role of bob from admin to observer"
-    ]
-  bob ##> "#team hello"
-  bob <## "you don't have permission to send messages to this group"
-  bob ##> "/rm team cath"
-  bob <## "you have insufficient permissions for this action, the required role is admin"
-  cath #> "#team hello"
-  concurrentlyN_
-    [ alice <# "#team cath> hello",
-      bob <# "#team cath> hello"
-    ]
-  alice ##> "/mr team bob admin"
-  concurrentlyN_
-    [ alice <## "#team: you changed the role of bob from observer to admin",
-      bob <## "#team: alice changed your role from observer to admin",
-      cath <## "#team: alice changed the role of bob from observer to admin"
-    ]
+  -- alice ##> "/mr team bob observer"
+  -- concurrentlyN_
+  --   [ alice <## "#team: you changed the role of bob from admin to observer",
+  --     bob <## "#team: alice changed your role from admin to observer",
+  --     cath <## "#team: alice changed the role of bob from admin to observer"
+  --   ]
+  -- bob ##> "#team hello"
+  -- bob <## "you don't have permission to send messages to this group"
+  -- bob ##> "/rm team cath"
+  -- bob <## "you have insufficient permissions for this action, the required role is admin"
+  -- cath #> "#team hello"
+  -- concurrentlyN_
+  --   [ alice <# "#team cath> hello",
+  --     bob <# "#team cath> hello"
+  --   ]
+  -- alice ##> "/mr team bob admin"
+  -- concurrentlyN_
+  --   [ alice <## "#team: you changed the role of bob from observer to admin",
+  --     bob <## "#team: alice changed your role from observer to admin",
+  --     cath <## "#team: alice changed the role of bob from observer to admin"
+  --   ]
   -- remove member
   bob ##> "/rm team cath"
   concurrentlyN_
