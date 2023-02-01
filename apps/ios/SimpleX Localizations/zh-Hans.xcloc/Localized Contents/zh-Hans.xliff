@@ -1094,8 +1094,9 @@
         <source>Edit</source>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Edit group profile" xml:space="preserve">
+      <trans-unit id="Edit group profile" xml:space="preserve" approved="no">
         <source>Edit group profile</source>
+        <target state="translated">编辑群组资料</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable" xml:space="preserve">
@@ -1242,20 +1243,24 @@
         <source>Error enabling notifications</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error encrypting database" xml:space="preserve">
+      <trans-unit id="Error encrypting database" xml:space="preserve" approved="no">
         <source>Error encrypting database</source>
+        <target state="translated">加密数据库错误</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error exporting chat database" xml:space="preserve">
+      <trans-unit id="Error exporting chat database" xml:space="preserve" approved="no">
         <source>Error exporting chat database</source>
+        <target state="translated">导出聊天数据库错误</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error importing chat database" xml:space="preserve">
+      <trans-unit id="Error importing chat database" xml:space="preserve" approved="no">
         <source>Error importing chat database</source>
+        <target state="translated">导入聊天数据库错误</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error joining group" xml:space="preserve">
+      <trans-unit id="Error joining group" xml:space="preserve" approved="no">
         <source>Error joining group</source>
+        <target state="translated">加入群组错误</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error receiving file" xml:space="preserve">
@@ -3615,6 +3620,26 @@ SimpleX servers cannot see your profile.</source>
       <trans-unit id="All chats and messages will be deleted - this cannot be undone!" xml:space="preserve" approved="no">
         <source>All chats and messages will be deleted - this cannot be undone!</source>
         <target state="translated">所有聊天记录和消息将被删除——这一行为无法撤销！</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error deleting user profile" xml:space="preserve" approved="no">
+        <source>Error deleting user profile</source>
+        <target state="translated">删除用户资料错误</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Delete files for all chat profiles" xml:space="preserve" approved="no">
+        <source>Delete files for all chat profiles</source>
+        <target state="translated">为所有聊天资料删除文件</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Delete user profile?" xml:space="preserve" approved="no">
+        <source>Delete user profile?</source>
+        <target state="translated">删除用户资料？</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="A separate TCP connection will be used **for each chat profile you have in the app**." xml:space="preserve" approved="no">
+        <source>A separate TCP connection will be used **for each chat profile you have in the app**.</source>
+        <target state="translated">一个单独的TCP连接将被用于**您在应用程序中的每个聊天资料**。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>
