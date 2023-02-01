@@ -101,9 +101,7 @@ const processCommand = (function () {
         const iceCandidates = getIceCandidates(pc, config);
         const call = { connection: pc, iceCandidates, localMedia: mediaType, localCamera, localStream, remoteStream, aesKey, useWorker };
         await setupMediaStreams(call);
-        let timeoutToEndCall = setTimeout(() => {
-            connectionStateChange();
-        }, answerTimeout);
+        let timeoutToEndCall = setTimeout(connectionStateChange, answerTimeout);
         pc.addEventListener("connectionstatechange", () => {
             if (pc.connectionState === "failed") {
                 // Means, second party is not answered in time (15 sec timeout in Chrome WebView, https://source.chromium.org/chromium/chromium/src/+/main:third_party/webrtc/p2p/base/p2p_constants.cc;l=70)
