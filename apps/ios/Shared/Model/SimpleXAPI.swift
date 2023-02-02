@@ -1252,10 +1252,6 @@ func processReceivedMsg(_ res: ChatResponse) async {
             logger.debug("unsupported event: \(res.responseType)")
         }
 
-        func active(_ user: User) -> Bool {
-            user.id == m.currentUser?.id
-        }
-
         func withCall(_ contact: Contact, _ perform: (Call) -> Void) {
             if let call = m.activeCall, call.contact.apiId == contact.apiId {
                 perform(call)
@@ -1266,12 +1262,19 @@ func processReceivedMsg(_ res: ChatResponse) async {
     }
 }
 
+func active(_ user: User) -> Bool {
+    user.id == ChatModel.shared.currentUser?.id
+}
+
 func chatItemSimpleUpdate(_ user: User, _ aChatItem: AChatItem) {
     let m = ChatModel.shared
     let cInfo = aChatItem.chatInfo
     let cItem = aChatItem.chatItem
-    if user.id != m.currentUser?.id || m.upsertChatItem(cInfo, cItem) {
-        NtfManager.shared.notifyMessageReceived(m.currentUser!, cInfo, cItem)
+    let notify = { NtfManager.shared.notifyMessageReceived(user, cInfo, cItem) }
+    if !active(user) {
+        notify()
+    } else if m.upsertChatItem(cInfo, cItem) {
+        notify()
     }
 }
 
