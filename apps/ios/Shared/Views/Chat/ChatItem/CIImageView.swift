@@ -35,7 +35,9 @@ struct CIImageView: View {
                             switch file.fileStatus {
                             case .rcvInvitation:
                                 Task {
-                                    await receiveFile(fileId: file.fileId)
+                                    if let user = ChatModel.shared.currentUser {
+                                        await receiveFile(user: user, fileId: file.fileId)
+                                    }
                                     // TODO image accepted alert?
                                 }
                             case .rcvAccepted:

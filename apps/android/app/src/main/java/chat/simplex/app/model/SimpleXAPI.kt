@@ -1441,8 +1441,11 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   private suspend fun chatItemSimpleUpdate(user: User, aChatItem: AChatItem) {
     val cInfo = aChatItem.chatInfo
     val cItem = aChatItem.chatItem
-    if (!active(user) || chatModel.upsertChatItem(cInfo, cItem)) {
-      ntfManager.notifyMessageReceived(chatModel.currentUser.value!!, cInfo, cItem)
+    val notify = { ntfManager.notifyMessageReceived(user, cInfo, cItem) }
+    if (!active(user)) {
+      notify()
+    } else if (chatModel.upsertChatItem(cInfo, cItem)) {
+      notify()
     }
   }
 

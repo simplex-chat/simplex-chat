@@ -86,15 +86,22 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         if UIApplication.shared.applicationState == .active {
             switch content.categoryIdentifier {
             case ntfCategoryMessageReceived:
+                let recent = recentInTheSameChat(content)
                 if model.chatId == nil {
-                    // in the chat list
-                    return recentInTheSameChat(content) ? [] : [.sound, .list]
+                    // in the chat list...
+                    if model.currentUser?.userId == (content.userInfo["userId"] as? Int64) {
+                        // ... of the current user
+                        return recent ? [] : [.sound, .list]
+                    } else {
+                        // ... of different user
+                        return recent ? [.banner] : [.sound, .banner, .list]
+                    }
                 } else if model.chatId == content.targetContentIdentifier {
                     // in the current chat
-                    return recentInTheSameChat(content) ? [] : [.sound, .list]
+                    return recent ? [] : [.sound, .list]
                 } else {
                     // in another chat
-                    return recentInTheSameChat(content) ? [.banner, .list] : [.sound, .banner, .list]
+                    return recent ? [.banner, .list] : [.sound, .banner, .list]
                 }
             // this notification is deliverd from the notifications server
             // when the app is in foreground it does not need to be shown
