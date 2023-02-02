@@ -197,6 +197,12 @@
 "A random profile will be sent to your contact" = "Un profil aléatoire sera envoyé à votre contact";
 
 /* No comment provided by engineer. */
+"A separate TCP connection will be used **for each chat profile you have in the app**." = "Une connexion TCP distincte sera utilisée **pour chaque profil de chat que vous avez dans l'application**.";
+
+/* No comment provided by engineer. */
+"A separate TCP connection will be used **for each contact and group member**.\n**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." = "Une connexion TCP distincte sera utilisée **pour chaque contact et membre de groupe**.\n**Veuillez noter** : si vous avez de nombreuses connexions, votre consommation de batterie et de réseau peut être nettement plus élevée et certaines liaisons peuvent échouer.";
+
+/* No comment provided by engineer. */
 "About SimpleX" = "À propos de SimpleX";
 
 /* No comment provided by engineer. */
@@ -231,6 +237,9 @@
 "Add preset servers" = "Ajouter des serveurs prédéfinis";
 
 /* No comment provided by engineer. */
+"Add profile" = "Ajouter un profil";
+
+/* No comment provided by engineer. */
 "Add server…" = "Ajouter un serveur…";
 
 /* No comment provided by engineer. */
@@ -247,6 +256,9 @@
 
 /* No comment provided by engineer. */
 "Advanced network settings" = "Paramètres réseau avancés";
+
+/* No comment provided by engineer. */
+"All chats and messages will be deleted - this cannot be undone!" = "Toutes les discussions et tous les messages seront supprimés - il est impossible de revenir en arrière !";
 
 /* No comment provided by engineer. */
 "All group members will remain connected." = "Tous les membres du groupe resteront connectés.";
@@ -723,6 +735,9 @@
 "Delete after" = "Supprimer après";
 
 /* No comment provided by engineer. */
+"Delete all files" = "Effacer tous les fichiers";
+
+/* No comment provided by engineer. */
 "Delete archive" = "Supprimer l'archive";
 
 /* No comment provided by engineer. */
@@ -751,6 +766,9 @@
 
 /* No comment provided by engineer. */
 "Delete files and media?" = "Supprimer les fichiers et médias ?";
+
+/* No comment provided by engineer. */
+"Delete files for all chat profiles" = "Effacer les fichiers de tous les profils de chat";
 
 /* chat feature */
 "Delete for everyone" = "Supprimer pour tous";
@@ -796,6 +814,9 @@
 
 /* server test step */
 "Delete queue" = "Supprimer la file d'attente";
+
+/* No comment provided by engineer. */
+"Delete user profile?" = "Supprimer le profil utilisateur ?";
 
 /* deleted chat item */
 "deleted" = "supprimé";
@@ -993,6 +1014,9 @@
 "Error deleting token" = "Erreur lors de la suppression du token";
 
 /* No comment provided by engineer. */
+"Error deleting user profile" = "Erreur lors de la suppression du profil utilisateur";
+
+/* No comment provided by engineer. */
 "Error enabling notifications" = "Erreur lors de l'activation des notifications";
 
 /* No comment provided by engineer. */
@@ -1072,6 +1096,9 @@
 
 /* No comment provided by engineer. */
 "File: %@" = "Fichier : %@";
+
+/* No comment provided by engineer. */
+"Files & media" = "Fichiers & médias";
 
 /* No comment provided by engineer. */
 "For console" = "Pour la console";
@@ -1380,6 +1407,9 @@
 "Local name" = "Nom local";
 
 /* No comment provided by engineer. */
+"Local profile data only" = "Données de profil local uniquement";
+
+/* No comment provided by engineer. */
 "Make a private connection" = "Établir une connexion privée";
 
 /* No comment provided by engineer. */
@@ -1612,7 +1642,7 @@
 "Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." = "Ouvrir le lien dans le navigateur peut réduire la confidentialité et la sécurité de la connexion. Les liens SimpleX non fiables seront en rouge.";
 
 /* No comment provided by engineer. */
-"or chat with the developers" = "ou chattez avec les développeurs";
+"or chat with the developers" = "ou ici pour discuter avec les développeurs";
 
 /* member role */
 "owner" = "propriétaire";
@@ -1685,6 +1715,9 @@
 
 /* No comment provided by engineer. */
 "Privacy redefined" = "La vie privée redéfinie";
+
+/* No comment provided by engineer. */
+"Profile and server connections" = "Profil et connexions au serveur";
 
 /* No comment provided by engineer. */
 "Profile image" = "Image de profil";
@@ -2056,7 +2089,7 @@
 "Tap to join incognito" = "Appuyez pour rejoindre incognito";
 
 /* No comment provided by engineer. */
-"Tap to start a new chat" = "Appuyez pour commencer un nouveau chat";
+"Tap to start a new chat" = "Appuyez ici pour démarrer une nouvelle discussion";
 
 /* No comment provided by engineer. */
 "TCP connection timeout" = "Délai de connexion TCP";
@@ -2122,6 +2155,9 @@
 "The sender will NOT be notified" = "L'expéditeur N'en sera PAS informé";
 
 /* No comment provided by engineer. */
+"The servers for new connections of your current chat profile **%@**." = "Les serveurs pour les nouvelles connexions de votre profil de chat actuel **%@**.";
+
+/* No comment provided by engineer. */
 "Theme" = "Thème";
 
 /* No comment provided by engineer. */
@@ -2141,6 +2177,9 @@
 
 /* No comment provided by engineer. */
 "This group no longer exists." = "Ce groupe n'existe plus.";
+
+/* No comment provided by engineer. */
+"This setting applies to messages in your current chat profile **%@**." = "Ce paramètre s'applique aux messages de votre profil de chat actuel **%@**.";
 
 /* No comment provided by engineer. */
 "To ask any questions and to receive updates:" = "Si vous avez des questions et que vous souhaitez des réponses :";
@@ -2171,6 +2210,9 @@
 
 /* No comment provided by engineer. */
 "Transfer images faster" = "Transfert d'images plus rapide";
+
+/* No comment provided by engineer. */
+"Transport isolation" = "Isolement du transport";
 
 /* No comment provided by engineer. */
 "Trying to connect to the server used to receive messages from this contact (error: %@)." = "Tentative de connexion au serveur utilisé pour recevoir les messages de ce contact (erreur : %@).";
@@ -2229,6 +2271,9 @@
 /* No comment provided by engineer. */
 "Update network settings?" = "Mettre à jour les paramètres réseau ?";
 
+/* No comment provided by engineer. */
+"Update transport isolation mode?" = "Mettre à jour le mode d'isolation du transport ?";
+
 /* rcv group event chat item */
 "updated group profile" = "mise à jour du profil de groupe";
 
@@ -2252,6 +2297,9 @@
 
 /* No comment provided by engineer. */
 "Use SimpleX Chat servers?" = "Utiliser les serveurs SimpleX Chat ?";
+
+/* No comment provided by engineer. */
+"User profile" = "Profil d'utilisateur";
 
 /* No comment provided by engineer. */
 "Using .onion hosts requires compatible VPN provider." = "L'utilisation des hôtes .onion nécessite un fournisseur VPN compatible.";
@@ -2497,6 +2545,12 @@
 "Your chat profile will be sent to your contact" = "Votre profil de chat sera envoyé à votre contact";
 
 /* No comment provided by engineer. */
+"Your chat profiles" = "Vos profils de chat";
+
+/* No comment provided by engineer. */
+"Your chat profiles are stored locally, only on your device." = "Vos profils de chat sont stockés localement, uniquement sur votre appareil.";
+
+/* No comment provided by engineer. */
 "Your chats" = "Vos chats";
 
 /* No comment provided by engineer. */
@@ -2516,6 +2570,9 @@
 
 /* No comment provided by engineer. */
 "Your current chat database will be DELETED and REPLACED with the imported one." = "Votre base de données de chat actuelle va être SUPPRIMEE et REMPLACEE par celle importée.";
+
+/* No comment provided by engineer. */
+"Your current profile" = "Votre profil actuel";
 
 /* No comment provided by engineer. */
 "Your ICE servers" = "Vos serveurs ICE";

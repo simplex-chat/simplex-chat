@@ -197,6 +197,12 @@
 "A random profile will be sent to your contact" = "Вашему контакту будет отправлен случайный профиль";
 
 /* No comment provided by engineer. */
+"A separate TCP connection will be used **for each chat profile you have in the app**." = "Отдельное TCP-соединение будет использоваться **для каждого профиля чата, который вы имеете в приложении**.";
+
+/* No comment provided by engineer. */
+"A separate TCP connection will be used **for each contact and group member**.\n**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." = "Отдельное TCP-соединение (и авторизация SOCKS) будет использоваться **для каждого контакта и члена группы**.\n**Обратите внимание**: если у вас много контактов, потребление батареи и трафика может быть значительно выше, и некоторые соединения могут не работать.";
+
+/* No comment provided by engineer. */
 "About SimpleX" = "О SimpleX";
 
 /* No comment provided by engineer. */
@@ -231,6 +237,9 @@
 "Add preset servers" = "Добавить серверы по умолчанию";
 
 /* No comment provided by engineer. */
+"Add profile" = "Добавить профиль";
+
+/* No comment provided by engineer. */
 "Add server…" = "Добавить сервер…";
 
 /* No comment provided by engineer. */
@@ -247,6 +256,9 @@
 
 /* No comment provided by engineer. */
 "Advanced network settings" = "Настройки сети";
+
+/* No comment provided by engineer. */
+"All chats and messages will be deleted - this cannot be undone!" = "Все чаты и сообщения будут удалены - это нельзя отменить!";
 
 /* No comment provided by engineer. */
 "All group members will remain connected." = "Все члены группы, которые соединились через эту ссылку, останутся в группе.";
@@ -303,7 +315,16 @@
 "Answer call" = "Принять звонок";
 
 /* No comment provided by engineer. */
+"App build: %@" = "Сборка приложения: %@";
+
+/* No comment provided by engineer. */
 "App icon" = "Иконка";
+
+/* No comment provided by engineer. */
+"App version" = "Версия приложения";
+
+/* No comment provided by engineer. */
+"App version: v%@" = "Версия приложения: v%@";
 
 /* No comment provided by engineer. */
 "Appearance" = "Интерфейс";
@@ -606,6 +627,12 @@
 "Copy" = "Скопировать";
 
 /* No comment provided by engineer. */
+"Core built at: %@" = "Ядро скомпилировано: %@";
+
+/* No comment provided by engineer. */
+"Core version: v%@" = "Версия ядра: v%@";
+
+/* No comment provided by engineer. */
 "Create" = "Создать";
 
 /* No comment provided by engineer. */
@@ -708,6 +735,9 @@
 "Delete after" = "Удалять через";
 
 /* No comment provided by engineer. */
+"Delete all files" = "Удалить все файлы";
+
+/* No comment provided by engineer. */
 "Delete archive" = "Удалить архив";
 
 /* No comment provided by engineer. */
@@ -736,6 +766,9 @@
 
 /* No comment provided by engineer. */
 "Delete files and media?" = "Удалить файлы и медиа?";
+
+/* No comment provided by engineer. */
+"Delete files for all chat profiles" = "Удалить файлы во всех профилях чата";
 
 /* chat feature */
 "Delete for everyone" = "Удалить для всех";
@@ -781,6 +814,9 @@
 
 /* server test step */
 "Delete queue" = "Удаление очереди";
+
+/* No comment provided by engineer. */
+"Delete user profile?" = "Удалить профиль пользователя?";
 
 /* deleted chat item */
 "deleted" = "удалено";
@@ -978,6 +1014,9 @@
 "Error deleting token" = "Ошибка удаления токена";
 
 /* No comment provided by engineer. */
+"Error deleting user profile" = "Ошибка удаления профиля пользователя";
+
+/* No comment provided by engineer. */
 "Error enabling notifications" = "Ошибка при включении уведомлений";
 
 /* No comment provided by engineer. */
@@ -1057,6 +1096,9 @@
 
 /* No comment provided by engineer. */
 "File: %@" = "Файл: %@";
+
+/* No comment provided by engineer. */
+"Files & media" = "Файлы и медиа";
 
 /* No comment provided by engineer. */
 "For console" = "Для консоли";
@@ -1365,6 +1407,9 @@
 "Local name" = "Локальное имя";
 
 /* No comment provided by engineer. */
+"Local profile data only" = "Только локальные данные профиля";
+
+/* No comment provided by engineer. */
 "Make a private connection" = "Добавьте контакт";
 
 /* No comment provided by engineer. */
@@ -1624,6 +1669,9 @@
 "Periodically" = "Периодически";
 
 /* No comment provided by engineer. */
+"PING count" = "Количество PING";
+
+/* No comment provided by engineer. */
 "PING interval" = "Интервал PING";
 
 /* No comment provided by engineer. */
@@ -1667,6 +1715,9 @@
 
 /* No comment provided by engineer. */
 "Privacy redefined" = "Более конфиденциальный";
+
+/* No comment provided by engineer. */
+"Profile and server connections" = "Профиль и соединения на сервере";
 
 /* No comment provided by engineer. */
 "Profile image" = "Аватар";
@@ -2104,6 +2155,9 @@
 "The sender will NOT be notified" = "Отправитель не будет уведомлён";
 
 /* No comment provided by engineer. */
+"The servers for new connections of your current chat profile **%@**." = "Серверы для новых соединений вашего текущего профиля чата **%@**.";
+
+/* No comment provided by engineer. */
 "Theme" = "Тема";
 
 /* No comment provided by engineer. */
@@ -2123,6 +2177,9 @@
 
 /* No comment provided by engineer. */
 "This group no longer exists." = "Эта группа больше не существует.";
+
+/* No comment provided by engineer. */
+"This setting applies to messages in your current chat profile **%@**." = "Эта настройка применяется к сообщениям в вашем текущем профиле чата **%@**.";
 
 /* No comment provided by engineer. */
 "To ask any questions and to receive updates:" = "Чтобы задать вопросы и получать уведомления о новых версиях,";
@@ -2153,6 +2210,9 @@
 
 /* No comment provided by engineer. */
 "Transfer images faster" = "Передавать изображения быстрее";
+
+/* No comment provided by engineer. */
+"Transport isolation" = "Отдельные сессии для";
 
 /* No comment provided by engineer. */
 "Trying to connect to the server used to receive messages from this contact (error: %@)." = "Устанавливается соединение с сервером, через который вы получаете сообщения от этого контакта (ошибка: %@).";
@@ -2211,6 +2271,9 @@
 /* No comment provided by engineer. */
 "Update network settings?" = "Обновить настройки сети?";
 
+/* No comment provided by engineer. */
+"Update transport isolation mode?" = "Обновить режим отдельных сессий?";
+
 /* rcv group event chat item */
 "updated group profile" = "обновил(а) профиль группы";
 
@@ -2234,6 +2297,9 @@
 
 /* No comment provided by engineer. */
 "Use SimpleX Chat servers?" = "Использовать серверы предосталенные SimpleX Chat?";
+
+/* No comment provided by engineer. */
+"User profile" = "Профиль чата";
 
 /* No comment provided by engineer. */
 "Using .onion hosts requires compatible VPN provider." = "Для использования .onion хостов требуется совместимый VPN провайдер.";
@@ -2479,6 +2545,12 @@
 "Your chat profile will be sent to your contact" = "Ваш профиль будет отправлен вашему контакту";
 
 /* No comment provided by engineer. */
+"Your chat profiles" = "Ваши профили чата";
+
+/* No comment provided by engineer. */
+"Your chat profiles are stored locally, only on your device." = "Ваши профили чата хранятся локально, только на вашем устройстве.";
+
+/* No comment provided by engineer. */
 "Your chats" = "Ваши чаты";
 
 /* No comment provided by engineer. */
@@ -2498,6 +2570,9 @@
 
 /* No comment provided by engineer. */
 "Your current chat database will be DELETED and REPLACED with the imported one." = "Текущие данные вашего чата будет УДАЛЕНЫ и ЗАМЕНЕНЫ импортированными.";
+
+/* No comment provided by engineer. */
+"Your current profile" = "Ваш активный профиль";
 
 /* No comment provided by engineer. */
 "Your ICE servers" = "Ваши ICE серверы";
