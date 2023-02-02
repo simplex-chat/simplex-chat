@@ -88,11 +88,10 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
             case ntfCategoryMessageReceived:
                 if model.chatId == nil {
                     // in the chat list...
-                    return recentInTheSameChat(content)
-                            ? []
-                            : model.currentUser?.userId == (content.userInfo["userId"] as? Int64)
-                            ? [.sound, .list] // ... of the current user
-                            : [.sound, .banner, .list] // ... of different user
+                    let recent = recentInTheSameChat(content)
+                    return model.currentUser?.userId == (content.userInfo["userId"] as? Int64)
+                            ? (recent ? [] : [.sound, .list]) // ... of the current user
+                            : (recent ? [.banner] : [.sound, .banner, .list]) // ... of different user
                 } else if model.chatId == content.targetContentIdentifier {
                     // in the current chat
                     return recentInTheSameChat(content) ? [] : [.sound, .list]
