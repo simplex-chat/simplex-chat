@@ -238,7 +238,7 @@ Join via the app to share what's going on and ask any questions!
 
 ## Translate the apps
 
-Thanks to our users and [Weblate](https://weblate.org/en-gb/), SimpleX Chat apps are translated to many other languages. Join our translators to help SimpleX grow faster!
+Thanks to our users and [Weblate](https://hosted.weblate.org/engage/simplex-chat/), SimpleX Chat apps are translated to many other languages. Join our translators to help SimpleX grow faster!
 
 Current interface languages:
 
