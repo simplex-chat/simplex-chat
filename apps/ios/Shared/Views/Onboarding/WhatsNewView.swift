@@ -101,7 +101,7 @@ private let versionDescriptions: [VersionDescription] = [
             FeatureDescription(
                 icon: "person.crop.rectangle.stack",
                 title: "Multiple chat profiles",
-                description: "With different names, avatars and traffic isolation."
+                description: "Different names, avatars and transport isolation."
             ),
             FeatureDescription(
                 icon: "rectangle.and.pencil.and.ellipsis",
@@ -110,13 +110,13 @@ private let versionDescriptions: [VersionDescription] = [
             ),
             FeatureDescription(
                 icon: "network.badge.shield.half.filled",
-                title: "Traffic isolation",
+                title: "Transport isolation",
                 description: "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)."
             ),
             FeatureDescription(
                 icon: "lock.doc",
                 title: "Private filenames",
-                description: "To protect timezone, image/voice names use UTC."
+                description: "To protect timezone, image/voice files use UTC."
             ),
             FeatureDescription(
                 icon: "battery.25",

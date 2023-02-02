@@ -1217,6 +1217,10 @@
         <target>Die Geräteauthentifizierung ist deaktiviert. Sie können die SimpleX Sperre über die Einstellungen aktivieren, sobald Sie die Geräteauthentifizierung aktiviert haben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Different names, avatars and transport isolation." xml:space="preserve">
+        <source>Different names, avatars and transport isolation.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Direct messages" xml:space="preserve">
         <source>Direct messages</source>
         <target>Direkte Nachrichten</target>
@@ -3261,8 +3265,8 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>Zum Schutz Ihrer Privatsphäre verwendet SimpleX an Stelle von Benutzerkennungen, die von allen anderen Plattformen verwendet werden, Kennungen für Nachrichtenwarteschlangen, die für jeden Ihrer Kontakte individuell sind.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To protect timezone, image/voice names use UTC." xml:space="preserve">
-        <source>To protect timezone, image/voice names use UTC.</source>
+      <trans-unit id="To protect timezone, image/voice files use UTC." xml:space="preserve">
+        <source>To protect timezone, image/voice files use UTC.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To protect your information, turn on SimpleX Lock.&#10;You will be prompted to complete authentication before this feature is enabled." xml:space="preserve">
@@ -3285,10 +3289,6 @@ Sie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funkt
       <trans-unit id="To verify end-to-end encryption with your contact compare (or scan) the code on your devices." xml:space="preserve">
         <source>To verify end-to-end encryption with your contact compare (or scan) the code on your devices.</source>
         <target>Um die Ende-zu-Ende-Verschlüsselung mit Ihrem Kontakt zu überprüfen, müssen Sie den Sicherheitscode in Ihren Apps vergleichen oder scannen.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Traffic isolation" xml:space="preserve">
-        <source>Traffic isolation</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Transfer images faster" xml:space="preserve">
@@ -3536,10 +3536,6 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
       <trans-unit id="When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." xml:space="preserve">
         <source>When you share an incognito profile with somebody, this profile will be used for the groups they invite you to.</source>
         <target>Wenn Sie ein Inkognito-Profil mit Jemandem teilen, wird dieses Profil auch für die Gruppen verwendet, für die Sie von diesem Kontakt eingeladen werden.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="With different names, avatars and traffic isolation." xml:space="preserve">
-        <source>With different names, avatars and traffic isolation.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="With optional welcome message." xml:space="preserve">

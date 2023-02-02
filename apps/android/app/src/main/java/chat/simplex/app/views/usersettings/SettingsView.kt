@@ -141,7 +141,7 @@ fun SettingsLayout(
           ProfilePreview(profile, stopped = stopped)
         }
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.HowToReg, stringResource(R.string.your_chat_profiles), { withAuth { showSettingsModal { UserProfilesView(it) }() } }, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.ManageAccounts, stringResource(R.string.your_chat_profiles), { withAuth { showSettingsModal { UserProfilesView(it) }() } }, disabled = stopped)
         SectionDivider()
         SettingsIncognitoActionItem(incognitoPref, incognito, stopped) { showModal { IncognitoView() }() }
         SectionDivider()

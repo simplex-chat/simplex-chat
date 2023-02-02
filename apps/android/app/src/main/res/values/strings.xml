@@ -1119,4 +1119,18 @@
   <string name="v4_4_live_messages_desc">Recipients see updates as you type them.</string>
   <string name="v4_4_verify_connection_security">Verify connection security</string>
   <string name="v4_4_verify_connection_security_desc">Compare security codes with your contacts.</string>
+  <string name="v4_4_french_interface">French interface</string>
+  <string name="v4_4_french_interface_descr">Thanks to the users – contribute via Weblate!</string>
+  <string name="v4_5_multiple_chat_profiles">Multiple chat profiles</string>
+  <string name="v4_5_multiple_chat_profiles_descr">Different names, avatars and transport isolation.</string>
+  <string name="v4_5_message_draft">Message draft</string>
+  <string name="v4_5_message_draft_descr">Preserve the last message draft, with attachments.</string>
+  <string name="v4_5_transport_isolation">Transport isolation</string>
+  <string name="v4_5_transport_isolation_descr">By chat profile (default) or by connection (BETA).</string>
+  <string name="v4_5_private_filenames">Private filenames</string>
+  <string name="v4_5_private_filenames_descr">To protect timezone, image/voice files use UTC.</string>
+  <string name="v4_5_reduced_battery_usage">Reduced battery usage</string>
+  <string name="v4_5_reduced_battery_usage_descr">More improvements are coming soon!</string>
+  <string name="v4_5_italian_interface">Italian interface</string>
+  <string name="v4_5_italian_interface_descr">Thanks to the users – contribute via Weblate!</string>
 </resources>
