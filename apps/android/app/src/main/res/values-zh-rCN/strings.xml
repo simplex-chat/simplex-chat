@@ -93,15 +93,15 @@
     <string name="allow_to_delete_messages">允许不可撤回地删除已发送消息。</string>
     <string name="users_delete_profile_for">为此删除聊天资料</string>
     <string name="delete_database">删除数据库</string>
-    <string name="keychain_allows_to_receive_ntfs">在您重启应用程序或者更换密码后安卓密钥库系统用来安全地保存密码——来确保收到消息提醒。</string>
-    <string name="keychain_is_storing_securely">安卓密钥库系统用来安全地保存密码——来确保消息提醒服务运作。</string>
+    <string name="keychain_allows_to_receive_ntfs">在您重启应用程序或者更换密码后安卓密钥库系统用来安全地保存密码——来确保收到通知。</string>
+    <string name="keychain_is_storing_securely">安卓密钥库系统用来安全地保存密码——来确保通知服务运作。</string>
     <string name="appearance_settings">外观</string>
     <string name="app_version_title">应用程序版本</string>
     <string name="full_backup">应用程序数据备份</string>
     <string name="settings_section_title_icon">应用程序图标</string>
     <string name="incognito_random_profile_from_contact_description">一个随机资料将被发送到收到您链接的联系人那里</string>
     <string name="app_version_name">应用程序版本：v%s</string>
-    <string name="notifications_mode_off_desc">仅在运行时应用程序可以接受消息提醒，不会启动后台服务</string>
+    <string name="notifications_mode_off_desc">仅在运行时应用程序可以接受通知，不会启动后台服务</string>
     <string name="incognito_random_profile_description">一个随机资料将发送给您的联系人</string>
     <string name="auth_unavailable">身份验证不可用</string>
     <string name="auto_accept_images">自动接受图像</string>
@@ -114,7 +114,7 @@
     <string name="settings_audio_video_calls">语音和视频通话</string>
     <string name="accept_automatically">自动地</string>
     <string name="turning_off_service_and_periodic">激活电池优化，关闭了后台服务和新消息的定期请求。您可以通过设置重新启用它们。</string>
-    <string name="notifications_mode_service_desc">后台服务一直在运行——一旦有消息，就会显示消息提醒。</string>
+    <string name="notifications_mode_service_desc">后台服务一直在运行——一旦有消息，就会显示通知。</string>
     <string name="icon_descr_audio_off">关闭音频</string>
     <string name="icon_descr_audio_on">开启音频</string>
     <string name="icon_descr_asked_to_receive">已要求接收图片</string>
@@ -123,14 +123,14 @@
 \n&lt;b&gt;请注意&lt;/b&gt;：如果您有很多连接，您的电池和流量消耗可能会大大增加，并且某些连接可能会失败。</string>
     <string name="back">返回</string>
     <string name="add_new_contact_to_create_one_time_QR_code"><b>添加新联系人</b>：为您的联系人创建一次性二维码。</string>
-    <string name="onboarding_notifications_mode_off_desc"><b> 最适合电池 </b>。您只会在应用程序运行时收到消息提醒，不会使用后台服务。</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b> 适合于电池 </b>。后台服务每 10 分钟检查一次新消息提醒。您可能会错过来电和紧急信息。</string>
+    <string name="onboarding_notifications_mode_off_desc"><b> 最适合电池 </b>。您只会在应用程序运行时收到通知，不会使用后台服务。</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b> 适合于电池 </b>。后台服务每 10 分钟检查一次新消息。您可能会错过来电和紧急信息。</string>
     <string name="bold">加粗</string>
     <string name="both_you_and_your_contacts_can_delete">您和您的联系人都可以不可逆转地删除已发送的消息。</string>
     <string name="both_you_and_your_contact_can_send_disappearing">您和您的联系人都可以发送限时消息。</string>
     <string name="both_you_and_your_contact_can_send_voice">您和您的联系人都可以发送语音消息。</string>
-    <string name="it_can_disabled_via_settings_notifications_still_shown"><b> 可以通过设置禁用它 </b> - 应用程序运行时仍会显示消息提醒。</string>
-    <string name="onboarding_notifications_mode_service_desc"><b> 使用更多电池 </b>！后台服务一直在运行——一旦收到消息，就会显示消息提醒。</string>
+    <string name="it_can_disabled_via_settings_notifications_still_shown"><b> 可以通过设置禁用它 </b> - 应用程序运行时仍会显示通知。</string>
+    <string name="onboarding_notifications_mode_service_desc"><b> 使用更多电池 </b>！后台服务一直在运行——一旦收到消息，就会显示通知。</string>
     <string name="impossible_to_recover_passphrase"><b>请注意</b>：如果您丢失密码，您将无法恢复或者更改密码。</string>
     <string name="call_already_ended">通话已经结束！</string>
     <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>扫描二维码</b> ：与向您展示二维码的联系人联系。</string>
@@ -215,4 +215,12 @@
     <string name="error_importing_database">导入聊天数据库错误</string>
     <string name="error_joining_group">加入群组错误</string>
     <string name="error_deleting_user">删除用户资料错误</string>
+    <string name="passphrase_is_different">数据库密码不同于保存在密钥库中的密码。</string>
+    <string name="database_encryption_will_be_updated">数据库加密密码将被更新并存储在密钥库中。</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored">数据库将被加密，密码存储在密钥库中。</string>
+    <string name="restore_passphrase_not_found_desc">在密匙库中没有找到密码，请手动输入。如果你使用备份工具恢复了应用程序的数据，可能会发生这种情况。如果不是这种情况，请联系开发者。</string>
+    <string name="remove_passphrase_from_keychain">从密钥库中删除密码？</string>
+    <string name="save_passphrase_in_keychain">在密钥库中保存密码</string>
+    <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> 服务</string>
+    <string name="settings_notifications_mode_title">通知服务</string>
 </resources>
