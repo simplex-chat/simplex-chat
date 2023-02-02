@@ -1108,12 +1108,13 @@ func processReceivedMsg(_ res: ChatResponse) async {
             let cItem = aChatItem.chatItem
             if !cItem.isDeletedContent && (!active(user) || m.upsertChatItem(cInfo, cItem)) {
                 NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
-            } else if let endTask = m.messageDelivery[cItem.id] {
+            }
+            if let endTask = m.messageDelivery[cItem.id] {
                 switch cItem.meta.itemStatus {
                 case .sndSent: endTask()
                 case .sndErrorAuth: endTask()
                 case .sndError: endTask()
-                default: break
+                default: ()
                 }
             }
         case let .chatItemUpdated(user, aChatItem):
