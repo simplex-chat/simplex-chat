@@ -1,7 +1,7 @@
 | Updated 02.02.2023 | Languages Available : EN, [FR](../docs/lang/fr-fr/README_fr.md), ... |
-<img src="images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
+<img src="/images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
 
-# SimpleX - the first messaging platform that has no user identifiers of any kind - 100% private by design!
+# SimpleX - la première plateforme de messagerie qui n'a pas le moindre identifiant d'utilisateur - 100% privé par définition !
 
 [![build](https://github.com/simplex-chat/simplex-chat/actions/workflows/build.yml/badge.svg?branch=stable)](https://github.com/simplex-chat/simplex-chat/actions/workflows/build.yml)
 [![GitHub downloads](https://img.shields.io/github/downloads/simplex-chat/simplex-chat/total)](https://github.com/simplex-chat/simplex-chat/releases)
@@ -19,22 +19,22 @@
 &nbsp;
 [<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apk_icon.png" alt="APK" height="41">](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk)
 
-- 🖲 Protects your messages and metadata - who you talk to and when.
-- 🔐 Double ratchet end-to-end encryption, with additional encryption layer.
-- 📱 Mobile apps for Android ([Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app), [APK](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk)) and [iOS](https://apps.apple.com/us/app/simplex-chat/id1605771084).
-- 🚀 [TestFlight preview for iOS](https://testflight.apple.com/join/DWuT2LQu) with the new features 1-2 weeks earlier - **limited to 10,000 users**!
-- 🖥 Available as a terminal (console) app / CLI on Linux, MacOS, Windows.
+- 🖲 Protège vos messages et vos métadonnées - avec qui vous parlez et quand.
+- 🔐 Chiffrement de bout en bout à double ratchet, avec couche de chiffrement supplémentaire.
+- 📱 Apps mobiles pour Android ([Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app), [APK](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk)) et [iOS](https://apps.apple.com/us/app/simplex-chat/id1605771084).
+- 🚀 [Bêta TestFlight pour iOS](https://testflight.apple.com/join/DWuT2LQu) avec les nouvelles fonctionnalités 1 à 2 semaines plus tôt - **limitée à 10 000 utilisateurs**!
+- 🖥 Disponible en tant que terminal (console) / CLI sur Linux, MacOS, Windows.
 
-**NEW**: Security audit by [Trail of Bits](https://www.trailofbits.com/about), the [new website](https://simplex.chat) and v4.2 released! [See the announcement](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md)
+**NOUVEAU** : Audit de sécurité par [Trail of Bits](https://www.trailofbits.com/about), le [nouveau site](https://simplex.chat) et la v4.2 disponible ! [Voir l'annonce](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md)
 
-## Contents
+## Sommaire
 
-- [Why privacy matters](#why-privacy-matters)
-- [SimpleX approach to privacy and security](#simplex-approach-to-privacy-and-security)
-  - [Complete privacy](#complete-privacy-of-your-identity-profile-contacts-and-metadata)
-  - [Protection against spam and abuse](#the-best-protection-against-spam-and-abuse)
-  - [Ownership and security of your data](#complete-ownership-control-and-security-of-your-data)
-  - [Users own SimpleX network](#users-own-simplex-network)
+- [Pourquoi la vie privée est importante](#pourquoi-la-vie-privée-est-importante)
+- [L'approche SimpleX de la vie privée et de la sécurité](#lapproche-simplex-de-la-vie-privée-et-de-la-sécurité)
+  - [Confidentialité totale](#confidentialité-totale-de-votre-identité-de-votre-profil-de-vos-contacts-et-de-vos-métadonnées)
+  - [Protection contre le spam et les abus](#protection-contre-le-spam-et-les-abus)
+  - [Propriété et sécurité de vos données](#propriété-contrôle-et-sécurité-totale-de-vos-données)
+  - [Les utilisateurs sont maîtres de leur réseau SimpleX](#les-utilisateurs-sont-maîtres-de-leur-réseau-simplex)
 - [Frequently asked questions](#frequently-asked-questions)
 - [News and updates](#news-and-updates)
 - [Make a private connection](#make-a-private-connection)
@@ -48,37 +48,37 @@
 - [Help us with donations](#help-us-with-donations)
 - [Disclaimers, Security contact, License](#disclaimers)
 
-## Why privacy matters
+## Pourquoi la vie privée est importante
 
-Everyone should care about privacy and security of their communications - innocuous conversations can put you in danger even if there is nothing to hide.
+Tout le monde devrait se soucier de la confidentialité et de la sécurité de ses communications - des conversations anodines peuvent vous mettre en danger, même si vous n'avez rien à cacher.
 
-One of the most shocking stories is the experience of [Mohamedou Ould Salahi](https://en.wikipedia.org/wiki/Mohamedou_Ould_Slahi) that he wrote about in his memoir and that is shown in The Mauritanian movie. He was put into Guantanamo camp, without trial, and was tortured there for 15 years after a phone call to his relative in Afghanistan, under suspicion of being involved in 9/11 attacks, even though he lived in Germany for the 10 years prior to the attacks.
+L'une des histoires les plus choquantes est l'expérience de [Mohamedou Ould Salahi](https://fr.wikipedia.org/wiki/Mohamedou_Ould_Slahi) dont il a parlé dans ses Mémoires et qui est montré dans le film Désigné coupable(The Mauritanian). Il a été placé dans le camp de Guantanamo, sans procès, et y a été torturé pendant 15 ans après un appel téléphonique à un proche en Afghanistan, soupçonné d'être impliqué dans les attentats du 11 septembre, bien qu'il ait vécu en Allemagne pendant les 10 années précédant les attentats.
 
-It is not enough to use an end-to-end encrypted messenger, we all should use the messengers that protect the privacy of our personal networks - who we are connected with.
+Il ne suffit pas d'utiliser une messagerie chiffrée de bout en bout, nous devrions tous utiliser des messageries qui protègent la vie privée de nos réseaux personnels, c'est-à-dire les personnes avec lesquelles nous sommes connectés.
 
-## SimpleX approach to privacy and security
+## L'approche SimpleX de la vie privée et de la sécurité
 
-### Complete privacy of your identity, profile, contacts and metadata
+### Confidentialité totale de votre identité, de votre profil, de vos contacts et de vos métadonnées.
 
-**Unlike any other existing messaging platform, SimpleX has no identifiers assigned to the users** - not even random numbers. This protects the privacy of who are you communicating with, hiding it from SimpleX platform servers and from any observers. [Read more](./docs/SIMPLEX.md#full-privacy-of-your-identity-profile-contacts-and-metadata).
+**Contrairement à toute les autres plateformes de messagerie existante, SimpleX n'a pas d'identifiant attribué aux utilisateurs.** - pas même des nombres aléatoires. Cela protège la confidentialité des personnes avec lesquelles vous communiquez, en les cachant aux serveurs de la plateforme SimpleX et à tout observateur. [En savoir plus](./SIMPLEX_fr.md#full-privacy-of-your-identity-profile-contacts-and-metadata).
 
-### The best protection against spam and abuse
+### Protection contre le spam et les abus
 
-As you have no identifier on SimpleX platform, you cannot be contacted unless you share a one-time invitation link or an optional temporary user address. [Read more](./docs/SIMPLEX.md#the-best-protection-against-spam-and-abuse).
+Comme vous n'avez pas d'identifiant sur la plateforme SimpleX, vous ne pouvez pas être contacté, sauf si vous partagez un lien d'invitation unique ou une adresse d'utilisateur temporaire facultative. [En savoir plus](./SIMPLEX_fr.md#the-best-protection-against-spam-and-abuse).
 
-### Complete ownership, control and security of your data
+### Propriété, contrôle et sécurité totale de vos données
 
-SimpleX stores all user data on client devices, the messages are only held temporarily on SimpleX relay servers until they are received. [Read more](./docs/SIMPLEX.md#complete-ownership-control-and-security-of-your-data).
+SimpleX stocke toutes les données de l'utilisateur sur les appareils clients, les messages ne sont conservés que temporairement sur les serveurs relais SimpleX jusqu'à leur réception. [En savoir plus](./SIMPLEX_fr.md#complete-ownership-control-and-security-of-your-data).
 
-### Users own SimpleX network
+### Les utilisateurs sont maîtres de leur réseau SimpleX
 
-You can use SimpleX with your own servers and still communicate with people using the servers that are pre-configured in the apps or any other SimpleX servers. [Read more](./docs/SIMPLEX.md#users-own-simplex-network).
+Vous pouvez utiliser SimpleX avec vos propres serveurs et continuer à communiquer avec les personnes utilisant les serveurs préconfigurés dans les applications ou tout autre serveur SimpleX. [En savoir plus](./SIMPLEX_fr.md#users-own-simplex-network).
 
-## Frequently asked questions
+## Foire aux questions
 
-1. _How SimpleX can deliver messages without any user identifiers?_ See [v2 release annoucement](./blog/20220511-simplex-chat-v2-images-files.md#the-first-messaging-platform-without-user-identifiers) explaining how SimpleX works.
+1. _Comment SimpleX peut distribuer des messages sans aucun identifiant d'utilisateur ?_ See [v2 release annoucement](./blog/20220511-simplex-chat-v2-images-files.md#the-first-messaging-platform-without-user-identifiers) explaining how SimpleX works.
 
-2. _Why should I not just use Signal?_ Signal is a centralised platform that uses phone numbers to identify its users and their contacts. It means that while the content of your messages on Signal is protected with robust end-to-end encryption, there is a large amount of meta-data visible to Signal - who you talk with and when.
+2. _Pourquoi ne pas simplement utiliser Signal ?_ Signal est une plateforme centralisée qui utilise les numéros de téléphone pour identifier ses utilisateurs et leurs contacts. Cela signifie que, si le contenu de vos messages sur Signal est protégé par un chiffrement robuste de bout en bout, une importante quantité de métadonnées est visible pour Signal - avec qui vous parlez et quand.
 
 3. _How is it different from Matrix, Session, Ricochet, Cwtch, etc., that also don't require user identites?_ Although these platforms do not require a _real identity_, they do rely on anonymous user identities to deliver messages – it can be, for example, an identity key or a random number. Using a persistent user identity, even anonymous, creates a risk that user's connection graph becomes known to the observers and/or service providers, and it can lead to de-anonymizing some users. If the same user profile is used to connect to two different people via any messenger other than SimpleX, these two people can confirm if they are connected to the same person - they would use the same user identifier in the messages. With SimpleX there is no meta-data in common between your conversations with different contacts - the quality that no other messaging platform has.
 
