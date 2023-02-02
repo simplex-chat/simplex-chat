@@ -43,6 +43,7 @@
 - [For developers](#for-developers)
 - [Roadmap](#roadmap)
 - [Join a user group](#join-a-user-group)
+- [Translate the apps](#translate-the-apps)
 - [Contribute](#contribute)
 - [Help us with donations](#help-us-with-donations)
 - [Disclaimers, Security contact, License](#disclaimers)
@@ -235,11 +236,24 @@ You can join these groups either by opening these links in the app or by opening
 
 Join via the app to share what's going on and ask any questions!
 
+## Translate the apps
+
+Thanks to our users and [Weblate](https://hosted.weblate.org/engage/simplex-chat/), SimpleX Chat apps are translated to many other languages. Join our translators to help SimpleX grow faster!
+
+Current interface languages:
+
+English (development language)
+German: [@mlanp](https://github.com/mlanp)
+French: link to be added
+Italian: [@unbranched](https://github.com/unbranched)
+Russian: project team
+
+Languages in progress: Chinese, Hindi, Japanese, Dutch and [many others](https://hosted.weblate.org/projects/simplex-chat/#languages). We will be adding more languages as some of the already added are completed – please suggest new languages and get in touch with us!
+
 ## Contribute
 
 We would love to have you join the development! You can contribute to SimpleX Chat with:
 
-- translate UI to your language - we are using [Weblate](https://hosted.weblate.org/projects/simplex-chat/) to translate the interface, please get in touch if you want to contribute!
 - translate website homepage - there is a lot of content we would like to share, it would help to bring the new users.
 - writing a tutorial or recipes about hosting servers, chat bot automations, etc.
 - developing features - please connect to us via chat so we can help you get started.

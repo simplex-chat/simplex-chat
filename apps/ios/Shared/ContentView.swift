@@ -64,7 +64,9 @@ struct ContentView: View {
                     alertManager.showAlert(laNoticeAlert())
                 } else if !chatModel.showCallView && CallController.shared.activeCallInvitation == nil {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                        showWhatsNew = shouldShowWhatsNew()
+                        if !showWhatsNew {
+                            showWhatsNew = shouldShowWhatsNew()
+                        }
                     }
                 }
                 prefShowLANotice = true

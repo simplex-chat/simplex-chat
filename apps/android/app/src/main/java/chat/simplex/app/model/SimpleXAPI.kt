@@ -296,6 +296,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       changeActiveUser_(toUserId)
     } catch (e: Exception) {
       Log.e(TAG, "Unable to set active user: ${e.stackTraceToString()}")
+      AlertManager.shared.showAlertMsg(generalGetString(R.string.failed_to_active_user_title), e.stackTraceToString())
     }
   }
 
@@ -343,7 +344,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return withContext(Dispatchers.IO) {
       val c = cmd.cmdString
       if (cmd !is CC.ApiParseMarkdown) {
-        chatModel.terminalItems.add(TerminalItem.cmd(cmd.obfuscated))
+        chatModel.addTerminalItem(TerminalItem.cmd(cmd.obfuscated))
         Log.d(TAG, "sendCmd: ${cmd.cmdType}")
       }
       val json = chatSendCmd(ctrl, c)
@@ -353,7 +354,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         Log.d(TAG, "sendCmd response json $json")
       }
       if (r.resp !is CR.ParsedMarkdown) {
-        chatModel.terminalItems.add(TerminalItem.resp(r.resp))
+        chatModel.addTerminalItem(TerminalItem.resp(r.resp))
       }
       r.resp
     }
@@ -379,11 +380,19 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return null
   }
 
-  suspend fun apiCreateActiveUser(p: Profile): User {
+  suspend fun apiCreateActiveUser(p: Profile): User? {
     val r = sendCmd(CC.CreateActiveUser(p))
     if (r is CR.ActiveUser) return r.user
+    else if (
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.DuplicateName ||
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorChat && r.chatError.errorType is ChatErrorType.UserExists
+    ) {
+      AlertManager.shared.showAlertMsg(generalGetString(R.string.failed_to_create_user_duplicate_title), generalGetString(R.string.failed_to_create_user_duplicate_desc))
+    } else {
+      AlertManager.shared.showAlertMsg(generalGetString(R.string.failed_to_create_user_title), r.details)
+    }
     Log.d(TAG, "apiCreateActiveUser: ${r.responseType} ${r.details}")
-    throw Error("user not created ${r.responseType} ${r.details}")
+    return null
   }
 
   suspend fun listUsers(): List<UserInfo> {
@@ -1143,7 +1152,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
 
   suspend fun processReceivedMsg(r: CR) {
     lastMsgReceivedTimestamp = System.currentTimeMillis()
-    chatModel.terminalItems.add(TerminalItem.resp(r))
+    chatModel.addTerminalItem(TerminalItem.resp(r))
     when (r) {
       is CR.NewContactConnection -> {
         if (active(r.user)) {
@@ -3225,12 +3234,14 @@ sealed class ChatErrorType {
   val string: String get() = when (this) {
     is NoActiveUser -> "noActiveUser"
     is DifferentActiveUser -> "differentActiveUser"
+    is UserExists -> "userExists"
     is InvalidConnReq -> "invalidConnReq"
     is FileAlreadyReceiving -> "fileAlreadyReceiving"
     is СommandError -> "commandError $message"
   }
   @Serializable @SerialName("noActiveUser") class NoActiveUser: ChatErrorType()
   @Serializable @SerialName("differentActiveUser") class DifferentActiveUser: ChatErrorType()
+  @Serializable @SerialName("userExists") class UserExists(val contactName: String): ChatErrorType()
   @Serializable @SerialName("invalidConnReq") class InvalidConnReq: ChatErrorType()
   @Serializable @SerialName("fileAlreadyReceiving") class FileAlreadyReceiving: ChatErrorType()
   @Serializable @SerialName("commandError") class СommandError(val message: String): ChatErrorType()
@@ -3241,9 +3252,11 @@ sealed class StoreError {
   val string: String get() = when (this) {
     is UserContactLinkNotFound -> "userContactLinkNotFound"
     is GroupNotFound -> "groupNotFound"
+    is DuplicateName -> "duplicateName"
   }
   @Serializable @SerialName("userContactLinkNotFound") class UserContactLinkNotFound: StoreError()
   @Serializable @SerialName("groupNotFound") class GroupNotFound: StoreError()
+  @Serializable @SerialName("duplicateName") class DuplicateName: StoreError()
 }
 
 @Serializable

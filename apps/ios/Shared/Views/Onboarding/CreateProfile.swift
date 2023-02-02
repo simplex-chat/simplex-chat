@@ -16,6 +16,19 @@ struct CreateProfile: View {
     @State private var fullName: String = ""
     @FocusState private var focusDisplayName
     @FocusState private var focusFullName
+    @State private var alert: CreateProfileAlert?
+
+    private enum CreateProfileAlert: Identifiable {
+        case duplicateUserError
+        case createUserError(error: LocalizedStringKey)
+
+        var id: String {
+            switch self {
+            case .duplicateUserError: return "duplicateUserError"
+            case .createUserError: return "createUserError"
+            }
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -82,6 +95,12 @@ struct CreateProfile: View {
             focusDisplayName = true
             setLastVersionDefault()
         }
+        .alert(item: $alert) { a in
+            switch a {
+            case .duplicateUserError: return duplicateUserAlert
+            case let .createUserError(err): return creatUserErrorAlert(err)
+            }
+        }
         .padding()
     }
 
@@ -109,13 +128,43 @@ struct CreateProfile: View {
                 m.users = try listUsers()
                 try getUserChatData()
             }
-        } catch {
-            fatalError("Failed to create user or start chat: \(responseError(error))")
+        } catch let error {
+            switch error as? ChatResponse {
+            case .chatCmdError(_, .errorStore(.duplicateName)),
+                 .chatCmdError(_, .error(.userExists)):
+                if m.currentUser == nil {
+                    AlertManager.shared.showAlert(duplicateUserAlert)
+                } else {
+                    alert = .duplicateUserError
+                }
+            default:
+                let err: LocalizedStringKey = "Error: \(responseError(error))"
+                if m.currentUser == nil {
+                    AlertManager.shared.showAlert(creatUserErrorAlert(err))
+                } else {
+                    alert = .createUserError(error: err)
+                }
+            }
+            logger.error("Failed to create user or start chat: \(responseError(error))")
         }
     }
 
     func canCreateProfile() -> Bool {
         displayName != "" && validDisplayName(displayName)
+    }
+
+    private var duplicateUserAlert: Alert {
+        Alert(
+            title: Text("Duplicate display name!"),
+            message: Text("You already have a chat profile with the same display name. Please choose another name.")
+        )
+    }
+
+    private func creatUserErrorAlert(_ err: LocalizedStringKey) -> Alert {
+        Alert(
+            title: Text("Error creating profile!"),
+            message: Text(err)
+        )
     }
 }
 

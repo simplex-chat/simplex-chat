@@ -94,8 +94,8 @@ func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? =
         logger.debug("chatSendCmd \(cmd.cmdType) response: \(json)")
     }
     DispatchQueue.main.async {
-        ChatModel.shared.terminalItems.append(.cmd(.now, cmd.obfuscated))
-        ChatModel.shared.terminalItems.append(.resp(.now, resp))
+        ChatModel.shared.addTerminalItem(.cmd(.now, cmd.obfuscated))
+        ChatModel.shared.addTerminalItem(.resp(.now, resp))
     }
     return resp
 }
@@ -1009,7 +1009,7 @@ class ChatReceiver {
 func processReceivedMsg(_ res: ChatResponse) async {
     let m = ChatModel.shared
     await MainActor.run {
-        m.terminalItems.append(.resp(.now, res))
+        m.addTerminalItem(.resp(.now, res))
         logger.debug("processReceivedMsg: \(res.responseType)")
         switch res {
         case let .newContactConnection(user, connection):

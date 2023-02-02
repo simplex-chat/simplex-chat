@@ -2,15 +2,15 @@
 
 module MobileTests where
 
-import ChatClient
-import ChatTests
+import ChatTests.Utils
 import Control.Monad.Except
 import Simplex.Chat.Mobile
 import Simplex.Chat.Store
 import Simplex.Chat.Types (AgentUserId (..), Profile (..))
+import System.FilePath ((</>))
 import Test.Hspec
 
-mobileTests :: Spec
+mobileTests :: SpecWith FilePath
 mobileTests = do
   describe "mobile API" $ do
     it "start new chat without user" testChatApiNoUser
@@ -25,9 +25,9 @@ noActiveUser = "{\"resp\":{\"type\":\"chatCmdError\",\"chatError\":{\"type\":\"e
 
 activeUserExists :: String
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-activeUserExists = "{\"resp\":{\"chatCmdError\":{\"user_\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"no\"},\"fullDelete\":{\"allow\":\"no\"},\"voice\":{\"allow\":\"yes\"}},\"activeUser\":true},\"chatError\":{\"errorStore\":{\"storeError\":{\"duplicateName\":{}}}}}}}"
+activeUserExists = "{\"resp\":{\"chatCmdError\":{\"user_\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"no\"},\"fullDelete\":{\"allow\":\"no\"},\"voice\":{\"allow\":\"yes\"}},\"activeUser\":true},\"chatError\":{\"error\":{\"errorType\":{\"userExists\":{\"contactName\":\"alice\"}}}}}}}"
 #else
-activeUserExists = "{\"resp\":{\"type\":\"chatCmdError\",\"user_\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"no\"},\"fullDelete\":{\"allow\":\"no\"},\"voice\":{\"allow\":\"yes\"}},\"activeUser\":true},\"chatError\":{\"type\":\"errorStore\",\"storeError\":{\"type\":\"duplicateName\"}}}}"
+activeUserExists = "{\"resp\":{\"type\":\"chatCmdError\",\"user_\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"no\"},\"fullDelete\":{\"allow\":\"no\"},\"voice\":{\"allow\":\"yes\"}},\"activeUser\":true},\"chatError\":{\"type\":\"error\",\"errorType\":{\"type\":\"userExists\",\"contactName\":\"alice\"}}}}"
 #endif
 
 activeUser :: String
@@ -73,7 +73,7 @@ pendingSubSummary = "{\"resp\":{\"type\":\"pendingSubSummary\"," <> userJSON <> 
 #endif
 
 userJSON :: String
-userJSON = "\"user\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"no\"},\"fullDelete\":{\"allow\":\"no\"},\"voice\":{\"allow\":\"yes\"}},\"activeUser\":false}"
+userJSON = "\"user\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"no\"},\"fullDelete\":{\"allow\":\"no\"},\"voice\":{\"allow\":\"yes\"}},\"activeUser\":true}"
 
 parsedMarkdown :: String
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
@@ -82,18 +82,19 @@ parsedMarkdown = "{\"formattedText\":[{\"format\":{\"bold\":{}},\"text\":\"hello
 parsedMarkdown = "{\"formattedText\":[{\"format\":{\"type\":\"bold\"},\"text\":\"hello\"}]}"
 #endif
 
-testChatApiNoUser :: IO ()
-testChatApiNoUser = withTmpFiles $ do
-  Right cc <- chatMigrateInit testDBPrefix ""
-  Left (DBMErrorNotADatabase _) <- chatMigrateInit testDBPrefix "myKey"
+testChatApiNoUser :: FilePath -> IO ()
+testChatApiNoUser tmp = do
+  let dbPrefix = tmp </> "1"
+  Right cc <- chatMigrateInit dbPrefix ""
+  Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "myKey"
   chatSendCmd cc "/u" `shouldReturn` noActiveUser
   chatSendCmd cc "/_start" `shouldReturn` noActiveUser
   chatSendCmd cc "/create user alice Alice" `shouldReturn` activeUser
   chatSendCmd cc "/_start" `shouldReturn` chatStarted
 
-testChatApi :: IO ()
-testChatApi = withTmpFiles $ do
-  let dbPrefix = testDBPrefix <> "1"
+testChatApi :: FilePath -> IO ()
+testChatApi tmp = do
+  let dbPrefix = tmp </> "1"
       f = chatStoreFile dbPrefix
   st <- createChatStore f "myKey" True
   Right _ <- withTransaction st $ \db -> runExceptT $ createUserRecord db (AgentUserId 1) aliceProfile {preferences = Nothing} True
