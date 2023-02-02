@@ -375,6 +375,9 @@
 "Both you and your contact can send voice messages." = "Sia tu che il tuo contatto potete inviare messaggi vocali.";
 
 /* No comment provided by engineer. */
+"By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Per profilo di chat (predefinito) o [per connessione](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).";
+
+/* No comment provided by engineer. */
 "Call already ended!" = "Chiamata già terminata!";
 
 /* call status */
@@ -842,6 +845,9 @@
 /* No comment provided by engineer. */
 "Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." = "L'autenticazione del dispositivo non è abilitata. Puoi attivare SimpleX Lock tramite le impostazioni, dopo aver abilitato l'autenticazione del dispositivo.";
 
+/* No comment provided by engineer. */
+"Different names, avatars and transport isolation." = "Nomi e avatar diversi, isolamento del trasporto.";
+
 /* connection level description */
 "direct" = "diretta";
 
@@ -877,6 +883,9 @@
 
 /* No comment provided by engineer. */
 "Do NOT use SimpleX for emergency calls." = "NON usare SimpleX per chiamate di emergenza.";
+
+/* No comment provided by engineer. */
+"Duplicate display name!" = "Nome da mostrare doppio!";
 
 /* integrity error chat item */
 "duplicate message" = "messaggio duplicato";
@@ -993,6 +1002,9 @@
 "Error creating group link" = "Errore nella creazione del link del gruppo";
 
 /* No comment provided by engineer. */
+"Error creating profile!" = "Errore nella creazione del profilo!";
+
+/* No comment provided by engineer. */
 "Error deleting chat database" = "Errore nell'eliminazione del database della chat";
 
 /* No comment provided by engineer. */
@@ -1059,6 +1071,9 @@
 "Error stopping chat" = "Errore nell'interruzione della chat";
 
 /* No comment provided by engineer. */
+"Error switching profile!" = "Errore nel cambio di profilo!";
+
+/* No comment provided by engineer. */
 "Error updating message" = "Errore nell'aggiornamento del messaggio";
 
 /* No comment provided by engineer. */
@@ -1102,6 +1117,9 @@
 
 /* No comment provided by engineer. */
 "For console" = "Per console";
+
+/* No comment provided by engineer. */
+"French interface" = "Interfaccia francese";
 
 /* No comment provided by engineer. */
 "Full link" = "Link completo";
@@ -1353,6 +1371,9 @@
 "It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "Sembra che tu sia già connesso tramite questo link. In caso contrario, c'è stato un errore (%@).";
 
 /* No comment provided by engineer. */
+"Italian interface" = "Interfaccia italiana";
+
+/* No comment provided by engineer. */
 "italic" = "corsivo";
 
 /* No comment provided by engineer. */
@@ -1460,6 +1481,9 @@
 /* No comment provided by engineer. */
 "Message delivery error" = "Errore di recapito del messaggio";
 
+/* No comment provided by engineer. */
+"Message draft" = "Bozza dei messaggi";
+
 /* notification */
 "message received" = "messaggio ricevuto";
 
@@ -1485,7 +1509,13 @@
 "missed call" = "chiamata persa";
 
 /* No comment provided by engineer. */
+"More improvements are coming soon!" = "Altri miglioramenti sono in arrivo!";
+
+/* No comment provided by engineer. */
 "Most likely this contact has deleted the connection with you." = "Probabilmente questo contatto ha eliminato la connessione con te.";
+
+/* No comment provided by engineer. */
+"Multiple chat profiles" = "Profili di chat multipli";
 
 /* No comment provided by engineer. */
 "Mute" = "Silenzia";
@@ -1705,6 +1735,9 @@
 "Possibly, certificate fingerprint in server address is incorrect" = "Probabilmente l'impronta del certificato nell'indirizzo del server è sbagliata";
 
 /* No comment provided by engineer. */
+"Preserve the last message draft, with attachments." = "Conserva la bozza dell'ultimo messaggio, con gli allegati.";
+
+/* No comment provided by engineer. */
 "Preset server" = "Server preimpostato";
 
 /* No comment provided by engineer. */
@@ -1715,6 +1748,9 @@
 
 /* No comment provided by engineer. */
 "Privacy redefined" = "Privacy ridefinita";
+
+/* No comment provided by engineer. */
+"Private filenames" = "Nomi di file privati";
 
 /* No comment provided by engineer. */
 "Profile and server connections" = "Profilo e connessioni al server";
@@ -1769,6 +1805,9 @@
 
 /* No comment provided by engineer. */
 "Recipients see updates as you type them." = "I destinatari vedono gli aggiornamenti mentre li digiti.";
+
+/* No comment provided by engineer. */
+"Reduced battery usage" = "Consumo di batteria ridotto";
 
 /* reject incoming call via notification */
 "Reject" = "Rifiuta";
@@ -2119,6 +2158,12 @@
 "Thank you for installing SimpleX Chat!" = "Grazie per aver installato SimpleX Chat!";
 
 /* No comment provided by engineer. */
+"Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!" = "Grazie agli utenti – [contribuite via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!";
+
+/* No comment provided by engineer. */
+"Thanks to the users – contribute via Weblate!" = "Grazie agli utenti – contribuite via Weblate!";
+
+/* No comment provided by engineer. */
 "The 1st platform without any user identifiers – private by design." = "La prima piattaforma senza alcun identificatore utente – privata by design.";
 
 /* No comment provided by engineer. */
@@ -2195,6 +2240,9 @@
 
 /* No comment provided by engineer. */
 "To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." = "Per proteggere la privacy, invece degli ID utente utilizzati da tutte le altre piattaforme, SimpleX ha identificatori per le code di messaggi, separati per ciascuno dei tuoi contatti.";
+
+/* No comment provided by engineer. */
+"To protect timezone, image/voice files use UTC." = "Per proteggere il fuso orario, i file immagine/vocali usano UTC.";
 
 /* No comment provided by engineer. */
 "To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled." = "Per proteggere le tue informazioni, attiva SimpleX Lock.\nTi verrà chiesto di completare l'autenticazione prima di attivare questa funzionalità.";
@@ -2408,6 +2456,9 @@
 
 /* No comment provided by engineer. */
 "You allow" = "Lo consenti";
+
+/* No comment provided by engineer. */
+"You already have a chat profile with the same display name. Please choose another name." = "Hai già un profilo chat con lo stesso nome da mostrare. Scegli un altro nome.";
 
 /* No comment provided by engineer. */
 "You are already connected to %@." = "Sei già connesso/a a %@.";

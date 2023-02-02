@@ -878,6 +878,9 @@
 /* No comment provided by engineer. */
 "Do NOT use SimpleX for emergency calls." = "N'utilisez PAS SimpleX pour les appels d'urgence.";
 
+/* No comment provided by engineer. */
+"Duplicate display name!" = "Nom d'affichage en double !";
+
 /* integrity error chat item */
 "duplicate message" = "message dupliqué";
 
@@ -993,6 +996,9 @@
 "Error creating group link" = "Erreur lors de la création du lien du groupe";
 
 /* No comment provided by engineer. */
+"Error creating profile!" = "Erreur lors de la création du profil !";
+
+/* No comment provided by engineer. */
 "Error deleting chat database" = "Erreur lors de la suppression de la base de données du chat";
 
 /* No comment provided by engineer. */
@@ -1057,6 +1063,9 @@
 
 /* No comment provided by engineer. */
 "Error stopping chat" = "Erreur lors de l'arrêt du chat";
+
+/* No comment provided by engineer. */
+"Error switching profile!" = "Erreur lors du changement de profil !";
 
 /* No comment provided by engineer. */
 "Error updating message" = "Erreur lors de la mise à jour du message";
@@ -2408,6 +2417,9 @@
 
 /* No comment provided by engineer. */
 "You allow" = "Vous autorisez";
+
+/* No comment provided by engineer. */
+"You already have a chat profile with the same display name. Please choose another name." = "Vous avez déjà un profil de chat avec ce même nom affiché. Veuillez choisir un autre nom.";
 
 /* No comment provided by engineer. */
 "You are already connected to %@." = "Vous êtes déjà connecté·e à %@ via ce lien.";
