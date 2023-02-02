@@ -208,6 +208,7 @@ module Simplex.Chat.Store
     getDirectChatItemByAgentMsgId,
     getGroupChatItem,
     getGroupChatItemBySharedMsgId,
+    getGroupMemberCIBySharedMsgId,
     getDirectChatItemIdByText,
     getGroupChatItemIdByText,
     getChatItemByFileId,
@@ -4170,13 +4171,32 @@ getGroupChatItemBySharedMsgId db user@User {userId} groupId groupMemberId shared
       DB.query
         db
         [sql|
-            SELECT chat_item_id
-            FROM chat_items
-            WHERE user_id = ? AND group_id = ? AND group_member_id = ? AND shared_msg_id = ?
-            ORDER BY chat_item_id DESC
-            LIMIT 1
-          |]
+          SELECT chat_item_id
+          FROM chat_items
+          WHERE user_id = ? AND group_id = ? AND group_member_id = ? AND shared_msg_id = ?
+          ORDER BY chat_item_id DESC
+          LIMIT 1
+        |]
         (userId, groupId, groupMemberId, sharedMsgId)
+  getGroupChatItem db user groupId itemId
+
+getGroupMemberCIBySharedMsgId :: DB.Connection -> User -> GroupId -> MemberId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTGroup)
+getGroupMemberCIBySharedMsgId db user@User {userId} groupId memberId sharedMsgId = do
+  itemId <-
+    ExceptT . firstRow fromOnly (SEChatItemSharedMsgIdNotFound sharedMsgId) $
+      DB.query
+        db
+        [sql|
+          SELECT i.chat_item_id
+          FROM chat_items i
+          JOIN group_members m ON m.group_id = i.group_id
+                              AND ((i.group_member_id IS NULL AND m.member_category = ?)
+                                  OR i.group_member_id = m.group_member_id)
+          WHERE i.user_id = ? AND i.group_id = ? AND m.member_id = ? AND i.shared_msg_id = ?
+          ORDER BY i.chat_item_id DESC
+          LIMIT 1
+        |]
+        (GCUserMember, userId, groupId, memberId, sharedMsgId)
   getGroupChatItem db user groupId itemId
 
 getGroupChatItem :: DB.Connection -> User -> Int64 -> ChatItemId -> ExceptT StoreError IO (CChatItem 'CTGroup)

@@ -659,7 +659,7 @@ data ChatErrorType
   | CEContactNotReady {contact :: Contact}
   | CEContactDisabled {contact :: Contact}
   | CEConnectionDisabled {connection :: Connection}
-  | CEGroupUserRole {requiredRole :: GroupMemberRole}
+  | CEGroupUserRole {groupInfo :: GroupInfo, requiredRole :: GroupMemberRole}
   | CEContactIncognitoCantInvite
   | CEGroupIncognitoCantInvite
   | CEGroupContactRole {contactName :: ContactName}

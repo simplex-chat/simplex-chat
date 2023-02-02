@@ -629,7 +629,7 @@ processChatCommand = \case
       Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user chatId
       let isOwner = memberRole (membership :: GroupMember) == GROwner
           canDelete = isOwner || not (memberCurrent membership)
-      unless canDelete $ throwChatError $ CEGroupUserRole GROwner
+      unless canDelete $ throwChatError $ CEGroupUserRole gInfo GROwner
       filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
       withChatLock "deleteChat group" . procCmd $ do
         deleteFilesAndConns user filesInfo
@@ -1039,7 +1039,7 @@ processChatCommand = \case
     processChatCommand $ APIDeleteChatItem chatRef deletedItemId CIDMBroadcast
   DeleteMemberMessage gName mName deletedMsg -> withUser $ \user -> do
     (gId, mId) <- getGroupAndMemberId user gName mName
-    deletedItemId <- getSentChatItemIdByText user (ChatRef CTGroup gId) deletedMsg
+    deletedItemId <- withStore $ \db -> getGroupChatItemIdByText db user gId (Just mName) $ safeDecodeUtf8 deletedMsg
     processChatCommand $ APIDeleteMemberChatItem gId mId deletedItemId
   EditMessage chatName editedMsg msg -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
@@ -1478,7 +1478,7 @@ processChatCommand = \case
       pure $ CRGroupUpdated user g g' Nothing
     assertUserGroupRole :: GroupInfo -> GroupMemberRole -> m ()
     assertUserGroupRole g@GroupInfo {membership} requiredRole = do
-      when (memberRole (membership :: GroupMember) < requiredRole) $ throwChatError $ CEGroupUserRole requiredRole
+      when (memberRole (membership :: GroupMember) < requiredRole) $ throwChatError $ CEGroupUserRole g requiredRole
       when (memberStatus membership == GSMemInvited) $ throwChatError (CEGroupNotJoined g)
       when (memberRemoved membership) $ throwChatError CEGroupMemberUserRemoved
       unless (memberActive membership) $ throwChatError CEGroupMemberNotActive
@@ -2368,7 +2368,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           case event of
             XMsgNew mc -> canSend $ newGroupContentMessage gInfo m mc msg msgMeta
             XMsgUpdate sharedMsgId mContent ttl live -> canSend $ groupMessageUpdate gInfo m sharedMsgId mContent msg msgMeta ttl live
-            XMsgDel sharedMsgId _ -> groupMessageDelete gInfo m sharedMsgId msg
+            XMsgDel sharedMsgId memberId -> groupMessageDelete gInfo m sharedMsgId memberId msg
             -- TODO discontinue XFile
             XFile fInv -> processGroupFileInvitation' gInfo m fInv msg msgMeta
             XFileCancel sharedMsgId -> xFileCancelGroup gInfo m sharedMsgId msgMeta
@@ -2822,18 +2822,26 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 else messageError "x.msg.update: group member attempted to update a message of another member" -- shouldn't happen now that query includes group member id
             (SMDSnd, _) -> messageError "x.msg.update: group member attempted invalid message update"
 
-    groupMessageDelete :: GroupInfo -> GroupMember -> SharedMsgId -> RcvMessage -> m ()
-    groupMessageDelete gInfo@GroupInfo {groupId} GroupMember {groupMemberId, memberId} sharedMsgId RcvMessage {msgId} = do
-      ci@(CChatItem msgDir ChatItem {chatDir}) <- withStore $ \db -> getGroupChatItemBySharedMsgId db user groupId groupMemberId sharedMsgId
-      case (msgDir, chatDir) of
-        (SMDRcv, CIGroupRcv m) ->
-          if sameMemberId memberId m
-            then
-              if groupFeatureAllowed SGFFullDelete gInfo
-                then deleteGroupCI user gInfo ci False False >>= toView
-                else markGroupCIDeleted user gInfo ci msgId False >>= toView
-            else messageError "x.msg.del: group member attempted to delete a message of another member" -- shouldn't happen now that query includes group member id
-        (SMDSnd, _) -> messageError "x.msg.del: group member attempted invalid message delete"
+    groupMessageDelete :: GroupInfo -> GroupMember -> SharedMsgId -> Maybe MemberId -> RcvMessage -> m ()
+    groupMessageDelete gInfo@GroupInfo {groupId, membership} GroupMember {memberId} sharedMsgId sndMemberId_ RcvMessage {msgId} = do
+      let msgMemberId = fromMaybe memberId sndMemberId_
+      withStore' (\db -> runExceptT $ getGroupMemberCIBySharedMsgId db user groupId msgMemberId sharedMsgId) >>= \case
+        Right ci@(CChatItem _ ChatItem {chatDir}) -> case chatDir of
+          CIGroupRcv m
+            | sameMemberId memberId m && msgMemberId == memberId -> delete ci >>= toView
+            | otherwise -> deleteMsg m ci
+          CIGroupSnd -> deleteMsg membership ci
+        Left e -> messageError $ "x.msg.del: message not found, " <> tshow e
+      where
+        deleteMsg :: GroupMember -> CChatItem 'CTGroup -> m ()
+        deleteMsg mem ci = case sndMemberId_ of
+          Just sndMemberId
+            | sameMemberId sndMemberId mem -> delete ci >>= toView
+            | otherwise -> messageError "x.msg.del: message of another member with incorrect memberId"
+          _ -> messageError "x.msg.del: message of another member without memberId"
+        delete ci
+          | groupFeatureAllowed SGFFullDelete gInfo = deleteGroupCI user gInfo ci False False
+          | otherwise = markGroupCIDeleted user gInfo ci msgId False
 
     -- TODO remove once XFile is discontinued
     processFileInvitation' :: Contact -> FileInvitation -> RcvMessage -> MsgMeta -> m ()
@@ -3341,7 +3349,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     xGrpDel :: GroupInfo -> GroupMember -> RcvMessage -> MsgMeta -> m ()
     xGrpDel gInfo@GroupInfo {membership} m@GroupMember {memberRole} msg msgMeta = do
-      when (memberRole /= GROwner) $ throwChatError $ CEGroupUserRole GROwner
+      when (memberRole /= GROwner) $ throwChatError $ CEGroupUserRole gInfo GROwner
       ms <- withStore' $ \db -> do
         members <- getGroupMembers db user gInfo
         updateGroupMemberStatus db userId membership GSMemGroupDeleted

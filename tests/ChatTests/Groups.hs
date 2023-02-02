@@ -35,6 +35,7 @@ chatGroupTests = do
     it "update member role" testUpdateMemberRole
     it "unused contacts are deleted after all their groups are deleted" testGroupDeleteUnusedContacts
     it "group description is shown as the first message to new members" testGroupDescription
+    xit "delete message of another group member" testGroupMemberMessageDelete
   describe "async group connections" $ do
     xit "create and join group when clients go offline" testGroupAsync
   describe "group links" $ do
@@ -133,9 +134,9 @@ testGroupShared alice bob cath checkMessages = do
   --     cath <## "#team: alice changed the role of bob from admin to observer"
   --   ]
   -- bob ##> "#team hello"
-  -- bob <## "you don't have permission to send messages to this group"
+  -- bob <## "#team: you don't have permission to send messages to this group"
   -- bob ##> "/rm team cath"
-  -- bob <## "you have insufficient permissions for this action, the required role is admin"
+  -- bob <## "#team: you have insufficient permissions for this action, the required role is admin"
   -- cath #> "#team hello"
   -- concurrentlyN_
   --   [ alice <# "#team cath> hello",
@@ -981,7 +982,7 @@ testUpdateGroupProfile =
         (bob <# "#team alice> hello!")
         (cath <# "#team alice> hello!")
       bob ##> "/gp team my_team"
-      bob <## "you have insufficient permissions for this action, the required role is owner"
+      bob <## "#team: you have insufficient permissions for this action, the required role is owner"
       alice ##> "/gp team my_team"
       alice <## "changed to #my_team"
       concurrentlyN_
@@ -1016,13 +1017,13 @@ testUpdateMemberRole =
         (bob <## "#team: you joined the group")
       connectUsers bob cath
       bob ##> "/a team cath"
-      bob <## "you have insufficient permissions for this action, the required role is admin"
+      bob <## "#team: you have insufficient permissions for this action, the required role is admin"
       alice ##> "/mr team bob admin"
       concurrently_
         (alice <## "#team: you changed the role of bob from member to admin")
         (bob <## "#team: alice changed your role from member to admin")
       bob ##> "/a team cath owner"
-      bob <## "you have insufficient permissions for this action, the required role is owner"
+      bob <## "#team: you have insufficient permissions for this action, the required role is owner"
       addMember "team" bob cath GRMember
       cath ##> "/j team"
       concurrentlyN_
@@ -1041,7 +1042,7 @@ testUpdateMemberRole =
           cath <## "#team: alice changed the role from owner to admin"
         ]
       alice ##> "/d #team"
-      alice <## "you have insufficient permissions for this action, the required role is owner"
+      alice <## "#team: you have insufficient permissions for this action, the required role is owner"
 
 testGroupDeleteUnusedContacts :: HasCallStack => FilePath -> IO ()
 testGroupDeleteUnusedContacts =
@@ -1194,6 +1195,33 @@ testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile 
     bobAddedDan cc = do
       cc <## "#team: bob added dan (Daniel) to the group (connecting...)"
       cc <## "#team: new member dan is connected"
+
+testGroupMemberMessageDelete :: HasCallStack => FilePath -> IO ()
+testGroupMemberMessageDelete =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      alice ##> "/mr team cath member"
+      concurrentlyN_
+        [ alice <## "#team: you changed the role of cath from admin to member",
+          bob <## "#team: alice changed the role of cath from admin to member",
+          cath <## "#team: alice changed your role from admin to member"
+        ]
+      alice #> "#team hello"
+      concurrently_
+        (bob <# "#team alice> hello")
+        (cath <# "#team alice> hello")
+      bob ##> "\\\\ #team @alice hello"
+      bob <## "#team: you have insufficient permissions for this action, the required role is owner"
+      cath #> "#team hi"
+      concurrently_
+        (alice <# "#team cath> hi")
+        (bob <# "#team cath> hi")
+      bob ##> "\\\\ #team @cath hi"
+      bob <## "message marked deleted"
+      concurrently_
+        (alice <# "#team cath> [marked deleted] hi")
+        (cath <## "#team cath> [marked deleted] hi")
 
 testGroupAsync :: HasCallStack => FilePath -> IO ()
 testGroupAsync tmp = do

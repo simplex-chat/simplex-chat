@@ -12,7 +12,6 @@ import Simplex.Chat.Controller (ChatConfig (..), InlineFilesConfig (..), default
 import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.Messaging.Util (unlessM)
 import System.Directory (copyFile, doesFileExist)
-import System.FilePath ((</>))
 import Test.Hspec
 
 chatFileTests :: SpecWith FilePath
