@@ -1276,8 +1276,9 @@
         <target>Fallo dopo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Duplicate display name!" xml:space="preserve">
+      <trans-unit id="Duplicate display name!" xml:space="preserve" approved="no">
         <source>Duplicate display name!</source>
+        <target state="translated">Nome da mostrare doppio!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Edit" xml:space="preserve">
@@ -1430,8 +1431,9 @@
         <target>Errore nella creazione del link del gruppo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error creating profile!" xml:space="preserve">
+      <trans-unit id="Error creating profile!" xml:space="preserve" approved="no">
         <source>Error creating profile!</source>
+        <target state="translated">Errore nella creazione del profilo!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error deleting chat database" xml:space="preserve">
@@ -1544,8 +1546,9 @@
         <target>Errore nell'interruzione della chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error switching profile!" xml:space="preserve">
+      <trans-unit id="Error switching profile!" xml:space="preserve" approved="no">
         <source>Error switching profile!</source>
+        <target state="translated">Errore nel cambio di profilo!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error updating message" xml:space="preserve">
@@ -3568,8 +3571,9 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
         <target>Lo consenti</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You already have a chat profile with the same display name. Please choose another name." xml:space="preserve">
+      <trans-unit id="You already have a chat profile with the same display name. Please choose another name." xml:space="preserve" approved="no">
         <source>You already have a chat profile with the same display name. Please choose another name.</source>
+        <target state="translated">Hai già un profilo chat con lo stesso nome da mostrare. Scegli un altro nome.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are already connected to %@." xml:space="preserve">
