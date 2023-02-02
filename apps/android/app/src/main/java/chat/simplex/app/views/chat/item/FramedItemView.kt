@@ -242,6 +242,7 @@ fun CIMarkdownText(
 }
 
 const val CHAT_IMAGE_LAYOUT_ID = "chatImage"
+const val MAX_SAFE_WIDTH_HEIGHT = 100_000
 
 @Composable
 fun PriorityLayout(
@@ -260,15 +261,15 @@ fun PriorityLayout(
       if (it.layoutId == priorityLayoutId)
         imagePlaceable!!
       else
-        it.measure(constraints.copy(maxWidth = imagePlaceable?.width ?: min(100_000, constraints.maxWidth))) }
+        it.measure(constraints.copy(maxWidth = imagePlaceable?.width ?: min(MAX_SAFE_WIDTH_HEIGHT, constraints.maxWidth))) }
     /**
      * Limit width for every other element to width of important element and height for a sum of all elements.
      *
-     * min(100_000, ...) is here because of exception (related to width of long text):
+     * min(MAX_SAFE_WIDTH_HEIGHT, ...) is here because of exception (related to width of long text):
      * java.lang.IllegalArgumentException: Can't represent a size of 324314 in Constraints
      * at androidx.compose.ui.unit.Constraints$Companion.bitsNeedForSize(Constraints.kt:403)
      * */
-    layout(imagePlaceable?.measuredWidth ?: min(100_000, placeables.maxOf { it.width }), min(100_000, placeables.sumOf { it.height })) {
+    layout(imagePlaceable?.measuredWidth ?: min(MAX_SAFE_WIDTH_HEIGHT, placeables.maxOf { it.width }), min(MAX_SAFE_WIDTH_HEIGHT, placeables.sumOf { it.height })) {
       var y = 0
       placeables.forEach {
         it.place(0, y)
