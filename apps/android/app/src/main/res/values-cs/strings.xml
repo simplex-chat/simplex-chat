@@ -37,4 +37,5 @@
     <string name="allow_to_delete_messages">Povolit nevratné smazání odeslaných zpráv.</string>
     <string name="clear_chat_warning">Všechny zprávy budou smazány – tuto akci nelze vrátit zpět! Zprávy budou smazány POUZE pro vás.</string>
     <string name="allow_your_contacts_irreversibly_delete">Umožněte svým kontaktům nevratně odstranit odeslané zprávy.</string>
+    <string name="allow_your_contacts_to_send_voice_messages">Povolte svým kontaktům odesílání hlasových zpráv.</string>
 </resources>
