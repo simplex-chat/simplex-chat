@@ -86,9 +86,12 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         if UIApplication.shared.applicationState == .active {
             switch content.categoryIdentifier {
             case ntfCategoryMessageReceived:
-                if model.chatId == nil {
-                    // in the chat list
+                if model.chatId == nil && model.currentUser?.userId == (content.userInfo["userId"] as? Int64) {
+                    // in the chat list of current user
                     return recentInTheSameChat(content) ? [] : [.sound, .list]
+                } else if model.chatId == nil {
+                    // in the chat list of different user
+                    return recentInTheSameChat(content) ? [.banner, .list] : [.sound, .banner, .list]
                 } else if model.chatId == content.targetContentIdentifier {
                     // in the current chat
                     return recentInTheSameChat(content) ? [] : [.sound, .list]

@@ -635,10 +635,10 @@ func apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool) async throws {
     try await sendCommandOkResp(.apiChatUnread(type: type, id: id, unreadChat: unreadChat))
 }
 
-func receiveFile(fileId: Int64) async {
+func receiveFile(user: User, fileId: Int64) async {
     let inline = privacyTransferImagesInlineGroupDefault.get()
     if let chatItem = await apiReceiveFile(fileId: fileId, inline: inline) {
-        DispatchQueue.main.async { chatItemSimpleUpdate(chatItem) }
+        DispatchQueue.main.async { chatItemSimpleUpdate(user, chatItem) }
     }
 }
 
@@ -1025,6 +1025,8 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 m.updateContact(contact)
                 m.dismissConnReqView(contact.activeConn.id)
                 m.removeChat(contact.activeConn.id)
+            }
+            if contact.directOrUsed {
                 NtfManager.shared.notifyContactConnected(user, contact)
             }
             m.setContactNetworkStatus(contact, .connected)
@@ -1080,16 +1082,13 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 }
             }
         case let .newChatItem(user, aChatItem):
-            if !active(user) {
-                if case .rcvNew = aChatItem.chatItem.meta.itemStatus, aChatItem.chatInfo.ntfsEnabled {
-                    m.increaseUnreadCounter(user: user)
-                }
-                return
-            }
-
             let cInfo = aChatItem.chatInfo
             let cItem = aChatItem.chatItem
-            m.addChatItem(cInfo, cItem)
+            if active(user) {
+                m.addChatItem(cInfo, cItem)
+            } else if cItem.isRcvNew && cInfo.ntfsEnabled {
+                m.increaseUnreadCounter(user: user)
+            }
             if let file = cItem.file,
                let mc = cItem.content.msgContent,
                file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV {
@@ -1097,7 +1096,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 if (mc.isImage && acceptImages)
                     || (mc.isVoice && ((file.fileSize > MAX_VOICE_MESSAGE_SIZE_INLINE_SEND && acceptImages) || cInfo.chatType == .group)) {
                     Task {
-                        await receiveFile(fileId: file.fileId) // TODO check inlineFileMode != IFMSent
+                        await receiveFile(user: user, fileId: file.fileId) // TODO check inlineFileMode != IFMSent
                     }
                 }
             }
@@ -1105,15 +1104,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
             }
         case let .chatItemStatusUpdated(user, aChatItem):
-            if !active(user) { return }
-
             let cInfo = aChatItem.chatInfo
             let cItem = aChatItem.chatItem
-            var res = false
-            if !cItem.isDeletedContent {
-                res = m.upsertChatItem(cInfo, cItem)
-            }
-            if res {
+            if !cItem.isDeletedContent && (!active(user) || m.upsertChatItem(cInfo, cItem)) {
                 NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
             } else if let endTask = m.messageDelivery[cItem.id] {
                 switch cItem.meta.itemStatus {
@@ -1124,9 +1117,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 }
             }
         case let .chatItemUpdated(user, aChatItem):
-            if active(user) {
-                chatItemSimpleUpdate(aChatItem)
-            }
+            chatItemSimpleUpdate(user, aChatItem)
         case let .chatItemDeleted(user, deletedChatItem, toChatItem, _):
             if !active(user) {
                 if toChatItem == nil && deletedChatItem.chatItem.isRcvNew && deletedChatItem.chatInfo.ntfsEnabled {
@@ -1190,21 +1181,13 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 m.updateGroup(toGroup)
             }
         case let .rcvFileStart(user, aChatItem):
-            if active(user) {
-                chatItemSimpleUpdate(aChatItem)
-            }
+            chatItemSimpleUpdate(user, aChatItem)
         case let .rcvFileComplete(user, aChatItem):
-            if active(user) {
-                chatItemSimpleUpdate(aChatItem)
-            }
+            chatItemSimpleUpdate(user, aChatItem)
         case let .sndFileStart(user, aChatItem, _):
-            if active(user) {
-                chatItemSimpleUpdate(aChatItem)
-            }
+            chatItemSimpleUpdate(user, aChatItem)
         case let .sndFileComplete(user, aChatItem, _):
-            if !active(user) { return }
-
-            chatItemSimpleUpdate(aChatItem)
+            chatItemSimpleUpdate(user, aChatItem)
             let cItem = aChatItem.chatItem
             let mc = cItem.content.msgContent
             if aChatItem.chatInfo.chatType == .direct,
@@ -1283,11 +1266,11 @@ func processReceivedMsg(_ res: ChatResponse) async {
     }
 }
 
-func chatItemSimpleUpdate(_ aChatItem: AChatItem) {
+func chatItemSimpleUpdate(_ user: User, _ aChatItem: AChatItem) {
     let m = ChatModel.shared
     let cInfo = aChatItem.chatInfo
     let cItem = aChatItem.chatItem
-    if m.upsertChatItem(cInfo, cItem) {
+    if user.id != m.currentUser?.id || m.upsertChatItem(cInfo, cItem) {
         NtfManager.shared.notifyMessageReceived(m.currentUser!, cInfo, cItem)
     }
 }
