@@ -84,9 +84,9 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     private func presentationOptions(_ content: UNNotificationContent) -> UNNotificationPresentationOptions {
         let model = ChatModel.shared
         if UIApplication.shared.applicationState == .active {
-            let recent = recentInTheSameChat(content)
             switch content.categoryIdentifier {
             case ntfCategoryMessageReceived:
+                let recent = recentInTheSameChat(content)
                 if model.chatId == nil {
                     // in the chat list...
                     if model.currentUser?.userId == (content.userInfo["userId"] as? Int64) {
