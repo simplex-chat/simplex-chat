@@ -1021,4 +1021,22 @@
     <string name="messages_section_description">Эта настройка применяется к сообщениям в вашем текущем профиле чата</string>
     <string name="network_session_mode_transport_isolation">Отдельные сессии для</string>
     <string name="update_network_session_mode_question">Обновить режим отдельных сессий\?</string>
+    <string name="failed_to_create_user_duplicate_title">Имя профиля уже используется</string>
+    <string name="failed_to_create_user_title">Ошибка создания профиля!</string>
+    <string name="failed_to_create_user_duplicate_desc">У вас уже есть профиль с таким именем. Пожалуйста, выберите другое имя.</string>
+    <string name="failed_to_active_user_title">Ошибка выбора профиля!</string>
+    <string name="v4_5_transport_isolation_descr">По профилю чата или по соединению (БЕТА)</string>
+    <string name="v4_4_french_interface_descr">Благодаря пользователям – добавьте переводы через Weblate!</string>
+    <string name="v4_5_multiple_chat_profiles_descr">Разные имена, аватары и транспортные сессии.</string>
+    <string name="v4_5_italian_interface">Итальянский интерфейс</string>
+    <string name="v4_5_message_draft">Черновик сообщения</string>
+    <string name="v4_5_multiple_chat_profiles">Много профилей чата</string>
+    <string name="v4_5_message_draft_descr">Сохранить последний черновик, вместе с вложениями.</string>
+    <string name="v4_5_private_filenames">Защищенные имена файлов</string>
+    <string name="v4_5_italian_interface_descr">Благодаря пользователям – добавьте переводы через Weblate!</string>
+    <string name="v4_5_private_filenames_descr">Чтобы защитить ваш часовой пояс, файлы картинок и голосовых сообщений используют UTC.</string>
+    <string name="v4_4_french_interface">Французский интерфейс</string>
+    <string name="v4_5_reduced_battery_usage_descr">Дополнительные улучшения скоро!</string>
+    <string name="v4_5_reduced_battery_usage">Уменьшенное потребление батареи</string>
+    <string name="v4_5_transport_isolation">Отдельные транспортные сессии</string>
 </resources>
