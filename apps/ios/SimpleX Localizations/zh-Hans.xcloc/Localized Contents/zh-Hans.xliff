@@ -204,7 +204,7 @@
       </trans-unit>
       <trans-unit id="**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." xml:space="preserve" approved="no">
         <source>**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app).</source>
-        <target state="translated">**最私密**：不使用 SimpleX Chat 消息提醒服务器，在后台定期检查消息（取决于您多经常使用应用程序）。</target>
+        <target state="translated">**最私密**：不使用 SimpleX Chat 通知服务器，在后台定期检查消息（取决于您多经常使用应用程序）。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Paste received link** or open it in the browser and tap **Open in mobile app**." xml:space="preserve" approved="no">
@@ -219,7 +219,7 @@
       </trans-unit>
       <trans-unit id="**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." xml:space="preserve" approved="no">
         <source>**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from.</source>
-        <target state="translated">**推荐**：设备令牌和消息提醒会发送至 SimpleX Chat 消息提醒服务器，但是消息内容、大小或者发送人不会。</target>
+        <target state="translated">**推荐**：设备令牌和通知会发送至 SimpleX Chat 通知服务器，但是消息内容、大小或者发送人不会。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Scan QR code**: to connect to your contact in person or via video call." xml:space="preserve" approved="no">
@@ -229,7 +229,7 @@
       </trans-unit>
       <trans-unit id="**Warning**: Instant push notifications require passphrase saved in Keychain." xml:space="preserve" approved="no">
         <source>**Warning**: Instant push notifications require passphrase saved in Keychain.</source>
-        <target state="translated">**警告**：及时推送消息提醒需要保存在钥匙串的密码。</target>
+        <target state="translated">**警告**：及时推送通知需要保存在钥匙串的密码。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**e2e encrypted** audio call" xml:space="preserve" approved="no">
@@ -539,8 +539,9 @@
         <target state="translated">取消</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Cannot access keychain to save database password" xml:space="preserve">
+      <trans-unit id="Cannot access keychain to save database password" xml:space="preserve" approved="no">
         <source>Cannot access keychain to save database password</source>
+        <target state="translated">无法访问钥匙串以保存数据库密码</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Cannot receive file" xml:space="preserve" approved="no">
@@ -845,9 +846,11 @@
         <target state="translated">数据库已加密!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database encryption passphrase will be updated and stored in the keychain.&#10;" xml:space="preserve">
+      <trans-unit id="Database encryption passphrase will be updated and stored in the keychain.&#10;" xml:space="preserve" approved="no">
         <source>Database encryption passphrase will be updated and stored in the keychain.
 </source>
+        <target state="translated">数据库加密密码将被更新并保存在钥匙串中。
+</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database encryption passphrase will be updated.&#10;" xml:space="preserve">
@@ -875,17 +878,20 @@
         <source>Database passphrase &amp; export</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database passphrase is different from saved in the keychain." xml:space="preserve">
+      <trans-unit id="Database passphrase is different from saved in the keychain." xml:space="preserve" approved="no">
         <source>Database passphrase is different from saved in the keychain.</source>
+        <target state="translated">数据库密码与保存在钥匙串中的密码不同。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database passphrase is required to open chat." xml:space="preserve">
         <source>Database passphrase is required to open chat.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database will be encrypted and the passphrase stored in the keychain.&#10;" xml:space="preserve">
+      <trans-unit id="Database will be encrypted and the passphrase stored in the keychain.&#10;" xml:space="preserve" approved="no">
         <source>Database will be encrypted and the passphrase stored in the keychain.
 </source>
+        <target state="translated">数据库将被加密，密码保存在钥匙串中。
+</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database will be encrypted.&#10;" xml:space="preserve">
@@ -1115,16 +1121,19 @@
         <source>Enable automatic message deletion?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable instant notifications?" xml:space="preserve">
+      <trans-unit id="Enable instant notifications?" xml:space="preserve" approved="no">
         <source>Enable instant notifications?</source>
+        <target state="translated">启用即时通知？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable notifications" xml:space="preserve">
+      <trans-unit id="Enable notifications" xml:space="preserve" approved="no">
         <source>Enable notifications</source>
+        <target state="translated">启用通知</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable periodic notifications?" xml:space="preserve">
+      <trans-unit id="Enable periodic notifications?" xml:space="preserve" approved="no">
         <source>Enable periodic notifications?</source>
+        <target state="translated">启用定期通知？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Encrypt" xml:space="preserve">
@@ -1147,8 +1156,9 @@
         <source>Encrypted message: database error</source>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Encrypted message: keychain error" xml:space="preserve">
+      <trans-unit id="Encrypted message: keychain error" xml:space="preserve" approved="no">
         <source>Encrypted message: keychain error</source>
+        <target state="translated">加密信息：钥匙串错误</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="Encrypted message: no passphrase" xml:space="preserve">
@@ -1239,8 +1249,9 @@
         <source>Error deleting token</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error enabling notifications" xml:space="preserve">
+      <trans-unit id="Error enabling notifications" xml:space="preserve" approved="no">
         <source>Error enabling notifications</source>
+        <target state="translated">启用通知错误</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error encrypting database" xml:space="preserve" approved="no">
@@ -1283,8 +1294,9 @@
         <source>Error saving group profile</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error saving passphrase to keychain" xml:space="preserve">
+      <trans-unit id="Error saving passphrase to keychain" xml:space="preserve" approved="no">
         <source>Error saving passphrase to keychain</source>
+        <target state="translated">保存密码到钥匙串错误</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error sending message" xml:space="preserve">
@@ -1585,9 +1597,11 @@
         <source>Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Instant push notifications will be hidden!&#10;" xml:space="preserve">
+      <trans-unit id="Instant push notifications will be hidden!&#10;" xml:space="preserve" approved="no">
         <source>Instant push notifications will be hidden!
 </source>
+        <target state="translated">即时推送通知将被隐藏！
+</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Instantly" xml:space="preserve">
@@ -1868,12 +1882,14 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>No received or sent files</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Notifications" xml:space="preserve">
+      <trans-unit id="Notifications" xml:space="preserve" approved="no">
         <source>Notifications</source>
+        <target state="translated">通知</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Notifications are disabled!" xml:space="preserve">
+      <trans-unit id="Notifications are disabled!" xml:space="preserve" approved="no">
         <source>Notifications are disabled!</source>
+        <target state="translated">通知被禁用！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Off (Local)" xml:space="preserve">
@@ -2025,8 +2041,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Please enter the previous password after restoring database backup. This action can not be undone.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please restart the app and migrate the database to enable push notifications." xml:space="preserve">
+      <trans-unit id="Please restart the app and migrate the database to enable push notifications." xml:space="preserve" approved="no">
         <source>Please restart the app and migrate the database to enable push notifications.</source>
+        <target state="translated">请重新启动应用程序并迁移数据库以启用推送通知。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please store passphrase securely, you will NOT be able to access chat if you lose it." xml:space="preserve">
@@ -2089,8 +2106,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target state="translated">协议超时</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Push notifications" xml:space="preserve">
+      <trans-unit id="Push notifications" xml:space="preserve" approved="no">
         <source>Push notifications</source>
+        <target state="translated">推送通知</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Rate the app" xml:space="preserve">
@@ -2153,8 +2171,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Remove member?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Remove passphrase from keychain?" xml:space="preserve">
+      <trans-unit id="Remove passphrase from keychain?" xml:space="preserve" approved="no">
         <source>Remove passphrase from keychain?</source>
+        <target state="translated">从钥匙串中删除密码？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reply" xml:space="preserve">
@@ -2249,8 +2268,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Save passphrase and open chat</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save passphrase in Keychain" xml:space="preserve">
+      <trans-unit id="Save passphrase in Keychain" xml:space="preserve" approved="no">
         <source>Save passphrase in Keychain</source>
+        <target state="translated">在钥匙串中保存密码</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save preferences?" xml:space="preserve" approved="no">
@@ -2319,8 +2339,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Send live message</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send notifications" xml:space="preserve">
+      <trans-unit id="Send notifications" xml:space="preserve" approved="no">
         <source>Send notifications</source>
+        <target state="translated">发送通知</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send notifications:" xml:space="preserve">
@@ -2663,8 +2684,9 @@ You will be prompted to complete authentication before this feature is enabled.<
         <source>To record voice message please grant permission to use Microphone.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To support instant push notifications the chat database has to be migrated." xml:space="preserve">
+      <trans-unit id="To support instant push notifications the chat database has to be migrated." xml:space="preserve" approved="no">
         <source>To support instant push notifications the chat database has to be migrated.</source>
+        <target state="translated">为了支持即时推送通知，聊天数据库必须被迁移。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To verify end-to-end encryption with your contact compare (or scan) the code on your devices." xml:space="preserve">
@@ -2687,8 +2709,9 @@ You will be prompted to complete authentication before this feature is enabled.<
         <source>Turn off</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Turn off notifications?" xml:space="preserve">
+      <trans-unit id="Turn off notifications?" xml:space="preserve" approved="no">
         <source>Turn off notifications?</source>
+        <target state="translated">关闭通知？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Turn on" xml:space="preserve">
@@ -2901,8 +2924,9 @@ To connect, please ask your contact to create another connection link and check 
         <source>You can now send messages to %@</source>
         <note>notification body</note>
       </trans-unit>
-      <trans-unit id="You can set lock screen notification preview via settings." xml:space="preserve">
+      <trans-unit id="You can set lock screen notification preview via settings." xml:space="preserve" approved="no">
         <source>You can set lock screen notification preview via settings.</source>
+        <target state="translated">您可以通过设置来设置锁屏通知预览。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." xml:space="preserve">
@@ -3333,12 +3357,14 @@ SimpleX servers cannot see your profile.</source>
         <source>group profile updated</source>
         <note>snd group event chat item</note>
       </trans-unit>
-      <trans-unit id="iOS Keychain is used to securely store passphrase - it allows receiving push notifications." xml:space="preserve">
+      <trans-unit id="iOS Keychain is used to securely store passphrase - it allows receiving push notifications." xml:space="preserve" approved="no">
         <source>iOS Keychain is used to securely store passphrase - it allows receiving push notifications.</source>
+        <target state="translated">iOS钥匙串用于安全地存储密码——它允许接收推送通知。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications." xml:space="preserve">
+      <trans-unit id="iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications." xml:space="preserve" approved="no">
         <source>iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications.</source>
+        <target state="translated">在您重启应用或改变密码后，iOS钥匙串将被用来安全地存储密码——它将允许接收推送通知。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="incognito via contact address link" xml:space="preserve" approved="no">
