@@ -1,4 +1,4 @@
-| Updated 02.02.2023 | Languages Available : EN, [FR](../docs/lang/fr-fr/README_fr.md), ... |
+| Updated 02.02.2023 | Languages Available : [EN](/simplex-chat/README.md), FR, ... |
 <img src="/images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
 
 # SimpleX - la première plateforme de messagerie qui n'a pas le moindre identifiant d'utilisateur - 100% privé par définition !
@@ -22,10 +22,10 @@
 - 🖲 Protège vos messages et vos métadonnées - avec qui vous parlez et quand.
 - 🔐 Chiffrement de bout en bout à double ratchet, avec couche de chiffrement supplémentaire.
 - 📱 Apps mobiles pour Android ([Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app), [APK](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk)) et [iOS](https://apps.apple.com/us/app/simplex-chat/id1605771084).
-- 🚀 [Bêta TestFlight pour iOS](https://testflight.apple.com/join/DWuT2LQu) avec les nouvelles fonctionnalités 1 à 2 semaines plus tôt - **limitée à 10 000 utilisateurs**!
+- 🚀 [Bêta TestFlight pour iOS](https://testflight.apple.com/join/DWuT2LQu) avec les nouvelles fonctionnalités 1 à 2 semaines plus tôt - **limitée à 10 000 utilisateurs** !
 - 🖥 Disponible en tant que terminal (console) / CLI sur Linux, MacOS, Windows.
 
-**NOUVEAU** : Audit de sécurité par [Trail of Bits](https://www.trailofbits.com/about), le [nouveau site](https://simplex.chat) et la v4.2 disponible ! [Voir l'annonce](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md)
+**NOUVEAU** : Audit de sécurité par [Trail of Bits](https://www.trailofbits.com/about), le [nouveau site](https://simplex.chat) et la v4.2 est disponible ! [Voir l'annonce](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md)
 
 ## Sommaire
 
@@ -44,9 +44,9 @@
 - [For developers](#for-developers)
 - [Roadmap](#roadmap)
 - [Join a user group](#join-a-user-group)
-- [Contribute](#contribute)
+- [Contribuer](#contribuer)
 - [Help us with donations](#help-us-with-donations)
-- [Disclaimers, Security contact, License](#disclaimers)
+- [Avertissements, contact de sécurité, licence](#avertissements)
 
 ## Pourquoi la vie privée est importante
 
@@ -203,7 +203,7 @@ If you are considering developing with SimpleX platform please get in touch for 
 - 🏗 Reduced battery and traffic usage in large groups.
 - 🏗 Preserve message drafts.
 - 🏗 Support older Android OS and 32-bit CPUs.
-- Ephemeral/disappearing/OTR conversations with the existing contacts.
+- Conversations éphémères/disparaissantes/OTR avec les contacts existants.
 - Access password/pin (with optional alternative access password).
 - Video messages.
 - Message delivery confirmation (with sender opt-in or opt-out per contact, TBC).
@@ -217,84 +217,84 @@ If you are considering developing with SimpleX platform please get in touch for 
   - the server doesn't have information about your contacts and groups.
 - Channels server for large groups and broadcast channels.
 
-## Join a user group
+## Rejoindre un groupe d'utilisateurs
 
-You can join a general English-speaking group: [#SimpleX-Group](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FcIS0gu1h0Y8pZpQkDaSz7HZGSHcKpMB9%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAKzzWAJYrVt1zdgRp4pD3FBst6eK7233DJeNElENLJRA%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%228mazMhefXoM5HxWBfZnvwQ%3D%3D%22%7D). Just bear in mind that it has ~300 members now, and that it is fully decentralized, so sending a message and connecting to all members in this group will take some time, only join it if you:
-- want to see how larger groups work.
-- traffic is not a concern (sending each message is ~5mb).
+Vous pouvez rejoindre le groupe anglophone général : [#SimpleX-Group](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FcIS0gu1h0Y8pZpQkDaSz7HZGSHcKpMB9%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAKzzWAJYrVt1zdgRp4pD3FBst6eK7233DJeNElENLJRA%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%228mazMhefXoM5HxWBfZnvwQ%3D%3D%22%7D). Just bear in mind that it has ~300 members now, and that it is fully decentralized, so sending a message and connecting to all members in this group will take some time, only join it if you:
+- voir comment fonctionnent les grands groupes.
+- le réseau n'est pas un problème (l'envoi de chaque message est de ~5mb).
 
-You can also join a new and smaller English-speaking group if you want to ask questions without too much traffic: [#SimpleX-Group-2](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FQP8zaGjjmlXV-ix_Er4JgJ0lNPYGS1KX%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEApAgBkRZ3x12ayZ7sHrjHQWNMvqzZpWUgM_fFCUdLXwo%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22xWpPXEZZsQp_F7vwAcAYDw%3D%3D%22%7D)
+Vous pouvez également rejoindre un nouveau groupe anglophone, plus petit, si vous souhaitez poser des questions sans trop de trafic : [#SimpleX-Group-2](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FQP8zaGjjmlXV-ix_Er4JgJ0lNPYGS1KX%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEApAgBkRZ3x12ayZ7sHrjHQWNMvqzZpWUgM_fFCUdLXwo%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22xWpPXEZZsQp_F7vwAcAYDw%3D%3D%22%7D)
 
-There are also several groups in languages other than English, that we have the apps interface translated into. These groups are for testing, and asking questions to other SimpleX Chat users. We do not always answer questions there, so please ask them in one of the English-speaking groups.
+Il existe également plusieurs groupes dans des langues autres que l'anglais, dans lesquelles nous avons traduit l'interface de l'application. Ces groupes sont destinés à tester et à poser des questions aux autres utilisateurs de SimpleX Chat. Nous ne répondons pas toujours aux questions dans ces groupes, alors veuillez les poser dans l'un des groupes anglophones.
 
-- [\#SimpleX-DE](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FkIEl7OQzcp-J6aDmjdlQbRJwqkcZE7XR%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAR16PCu02MobRmKAsjzhDWMZcWP9hS8l5AUZi-Gs8z18%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22puYPMCQt11yPUvgmI5jCiw%3D%3D%22%7D) (German-speaking).
-- [\#SimpleX-FR](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FvIHQDxTor53nwnWWTy5cHNwQQAdWN5Hw%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAPdgK1eBnETmgiqEQufbUkydKBJafoRx4iRrtrC2NAGc%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%221FyUryBPza-1ZFFE80Ekbg%3D%3D%22%7D) (French-speaking).
-- [\#SimpleX-RU](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FXZyt3hJmWsycpN7Dqve_wbrAqb6myk1R%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAMFVIoytozTEa_QXOgoZFq_oe0IwZBYKvW50trSFXzXo%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22xz05ngjA3pNIxLZ32a8Vxg%3D%3D%22%7D) (Russian-speaking).
-- [\#SimpleX-IT](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2F0weR-ZgDUl7ruOtI_8TZwEsnJP6UiImA%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAq4PSThO9Fvb5ydF48wB0yNbpzCbuQJCW3vZ9BGUfcxk%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22e-iceLA0SctC62eARgYDWg%3D%3D%22%7D) (Italian-speaking).
+- [\#SimpleX-DE](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FkIEl7OQzcp-J6aDmjdlQbRJwqkcZE7XR%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAR16PCu02MobRmKAsjzhDWMZcWP9hS8l5AUZi-Gs8z18%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22puYPMCQt11yPUvgmI5jCiw%3D%3D%22%7D) (Germanophone).
+- [\#SimpleX-FR](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FvIHQDxTor53nwnWWTy5cHNwQQAdWN5Hw%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAPdgK1eBnETmgiqEQufbUkydKBJafoRx4iRrtrC2NAGc%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%221FyUryBPza-1ZFFE80Ekbg%3D%3D%22%7D) (Francophone).
+- [\#SimpleX-RU](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FXZyt3hJmWsycpN7Dqve_wbrAqb6myk1R%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAMFVIoytozTEa_QXOgoZFq_oe0IwZBYKvW50trSFXzXo%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22xz05ngjA3pNIxLZ32a8Vxg%3D%3D%22%7D) (Russophone).
+- [\#SimpleX-IT](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2F0weR-ZgDUl7ruOtI_8TZwEsnJP6UiImA%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAq4PSThO9Fvb5ydF48wB0yNbpzCbuQJCW3vZ9BGUfcxk%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22e-iceLA0SctC62eARgYDWg%3D%3D%22%7D) (Italophone).
 
-You can join these groups either by opening these links in the app or by opening them in a desktop browser and scanning QR code.
+Vous pouvez rejoindre ces groupes soit en ouvrant ces liens dans l'application, soit en les ouvrant dans un navigateur de bureau et en scannant le code QR.
 
-Join via the app to share what's going on and ask any questions!
+Rejoignez-nous via l'application pour échanger sur ce qui se passe et poser toutes vos questions !
 
-## Contribute
+## Contribuer
 
-We would love to have you join the development! You can contribute to SimpleX Chat with:
+Nous serions ravis de vous voir rejoindre le développement ! Vous pouvez contribuer à SimpleX Chat pour :
 
-- translate UI to your language - we are using [Weblate](https://hosted.weblate.org/projects/simplex-chat/) to translate the interface, please get in touch if you want to contribute!
-- translate website homepage - there is a lot of content we would like to share, it would help to bring the new users.
-- writing a tutorial or recipes about hosting servers, chat bot automations, etc.
-- developing features - please connect to us via chat so we can help you get started.
+- traduire l'interface utilisateur dans votre langue - nous utilisons [Weblate](https://hosted.weblate.org/projects/simplex-chat/) pour traduire l'interface, veuillez nous contacter si vous voulez contribuer !
+- traduire la page d'accueil du site web - il y a beaucoup de contenu que nous aimerions partager, cela permettrait d'attirer les nouveaux utilisateurs.
+- écrire un tutoriel ou des recommandations sur l'hébergement de serveurs, l'automatisation des bots de chat, etc.
+- développer des nouvelles fonctionnalités - veuillez nous contacter par chat pour que nous puissions vous aider à démarrer.
 
 ## Help us with donations
 
-Huge thank you to everybody who donated to SimpleX Chat!
+Un grand merci à tous ceux qui ont fait un don à SimpleX Chat !
 
-We are prioritizing users privacy and security - it would be impossible without your support.
+Nous donnons la priorité à la confidentialité et à la sécurité des utilisateurs - ce serait impossible sans votre soutien.
 
-Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, - so anybody can build the future implementations of the clients and the servers. We are building SimpleX platform based on the same principles as email and web, but much more private and secure.
+Notre promesse à nos utilisateurs est que les protocoles SimpleX sont et resteront open-source, et dans le domaine public, - afin que tout le monde puisse créer les futures implémentations des clients et des serveurs. Nous créons une plateforme SimpleX basée sur les mêmes principes que l'e-mail et le web, mais bien plus privée et sécurisée.
 
-Your donations help us raise more funds – any amount, even the price of the cup of coffee, would make a big difference for us.
+Vos dons nous aident à collecter plus de fonds - tout montant, même le prix d'une tasse de café, ferait une grande différence pour nous.
 
-It is possible to donate via:
+Il est possible de faire un don via :
 
-- [GitHub](https://github.com/sponsors/simplex-chat) - it is commission-free for us.
-- [OpenCollective](https://opencollective.com/simplex-chat) - it charges a commission, and also accepts donations in crypto-currencies.
-- Monero address: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt
-- Bitcoin address: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
-- BCH address: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
-- Ethereum address: 0x83fd788f7241a2be61780ea9dc72d2151e6843e2
-- Solana address: 43tWFWDczgAcn4Rzwkpqg2mqwnQETSiTwznmCgA2tf1L
-- please let us know, via GitHub issue or chat, if you want to create a donation in some other cryptocurrency - we will add the address to the list.
+- [GitHub](https://github.com/sponsors/simplex-chat) - sans commission pour nous.
+- [OpenCollective](https://opencollective.com/simplex-chat) - perçoit une commission, et accepte également les dons en crypto-monnaies.
+- Adresse Monero : 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt
+- Adresse Bitcoin : 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
+- Adresse BCH : 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
+- Adresse Ethereum : 0x83fd788f7241a2be61780ea9dc72d2151e6843e2
+- Adresse Solana : 43tWFWDczgAcn4Rzwkpqg2mqwnQETSiTwznmCgA2tf1L
+- si vous souhaitez effectuer un don dans une autre crypto-monnaie, veuillez nous en informer via une demande GitHub ou un chat. Nous ajouterons l'adresse à la liste.
 
-Thank you,
+Merci,
 
 Evgeny
 
-SimpleX Chat founder
+Fondateur de SimpleX Chat
 
-## Disclaimers
+## Avertissements
 
-[SimpleX protocols and security model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) was reviewed, and had many breaking changes and improvements in v1.0.0.
+[Protocoles et modèle de sécurité de SimpleX](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) a été revu et a fait l'objet de nombreuses modifications et améliorations dans la v1.0.0.
 
-The security audit was performed in October 2022 by [Trail of Bits](https://www.trailofbits.com/about), and most fixes were released in v4.2.0 – see [the announcement](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
+L'audit de sécurité a été réalisé en octobre 2022 par [Trail of Bits](https://www.trailofbits.com/about), et la plupart des corrections ont été publiées dans la version 4.2.0 - voir [l'annonce](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
 
-SimpleX Chat is still a relatively early stage platform (the mobile apps were released in March 2022), so you may discover some bugs and missing features. We would really appreciate if you let us know anything that needs to be fixed or improved.
+SimpleX Chat est une plateforme encore relativement jeune (les applications mobiles ont été lancées en mars 2022), il est donc possible que vous découvriez quelques bugs et des fonctionnalités manquantes. Nous apprécierions vraiment que vous nous fassiez part de tout ce qui doit être corrigé ou amélioré.
 
-The default servers configured in the app are provided on the best effort basis. We are currently not guaranteeing any SLAs, although historically our servers had over 99.9% uptime each.
+Les serveurs par défaut configurés dans l'application sont fournis dans la mesure du possible. Nous ne garantissons actuellement aucun accord de niveau de service, bien qu'historiquement nos serveurs aient eu un temps de disponibilité de plus de 99,9 % chacun.
 
-We have never provided or have been requested access to our servers or any information from our servers by any third parties. If we are ever requested to provide such access or information, we will be following due legal process.
+Nous n'avons jamais fourni ou demandé l'accès à nos serveurs ou à toute information provenant de nos serveurs à des tiers. S'il nous est demandé de fournir un tel accès ou de telles informations, nous suivrons la procédure légale en vigueur.
 
-We do not log IP addresses of the users and we do not perform any traffic correlation on our servers. If transport level security is critical you must use Tor or some other similar network to access messaging servers. We will be improving the client applications to reduce the opportunities for traffic correlation.
+Nous n'enregistrons pas les adresses IP des utilisateurs et nous n'effectuons aucune corrélation de trafic sur nos serveurs. Si la sécurité au niveau du trafic est primordiale, vous devez utiliser Tor ou un autre réseau similaire pour accéder aux serveurs de messagerie. Nous allons améliorer les applications client afin de réduire les possibilités de corrélation du trafic.
 
-Please read more in [Terms & privacy policy](./PRIVACY.md).
+Pour en savoir plus, consultez la section [Conditions et politique de confidentialité](./PRIVACY.md).
 
-## Security contact
+## Contact de sécurité
 
-To report a security vulnerability, please send us email to chat@simplex.chat. We will coordinate the fix and disclosure. Please do NOT report security vulnerabilities via GitHub issues.
+Pour signaler une vulnérabilité de sécurité, veuillez nous envoyer un courriel à chat@simplex.chat. Nous coordonnerons la correction et la divulgation. Veuillez ne PAS signaler les vulnérabilités de sécurité via les problèmes GitHub.
 
-Please treat any findings of possible traffic correlation attacks allowing to correlate two different conversations to the same user, other than covered in [the threat model](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md#threat-model), as security vulnerabilities, and follow this disclosure process.
+Veuillez traiter toute découverte d'une éventuelle attaque par corrélation de trafic permettant de corréler deux conversations différentes au même utilisateur, autre que celle couverte par [le modèle de menace](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md#threat-model), comme une vulnérabilité de sécurité, et suivez ce processus de publication.
 
-## License
+## Licence
 
 [AGPL v3](./LICENSE)
 
