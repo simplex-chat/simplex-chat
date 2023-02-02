@@ -1027,4 +1027,18 @@
     <string name="failed_to_create_user_title">Fehler beim Erstellen des Profils!</string>
     <string name="failed_to_active_user_title">Fehler beim Umschalten des Profils!</string>
     <string name="failed_to_create_user_duplicate_desc">Sie haben schon ein Chat-Profil mit dem gleichen Anzeigenamen. Bitte wählen Sie einen anderen Namen aus.</string>
+    <string name="v4_5_multiple_chat_profiles">Mehrere Chat-Profile</string>
+    <string name="v4_5_reduced_battery_usage">Reduzierter Batterieverbrauch</string>
+    <string name="v4_5_private_filenames">Neutrale Dateinamen</string>
+    <string name="v4_5_message_draft_descr">Den letzten Nachrichtenentwurf, auch mit seinen Anhängen, aufbewahren.</string>
+    <string name="v4_5_transport_isolation_descr">Per Chat-Profil (Voreinstellung) oder per Verbindung (BETA).</string>
+    <string name="v4_5_italian_interface">Italienische Bedienoberfläche</string>
+    <string name="v4_4_french_interface">Französische Bedienoberfläche</string>
+    <string name="v4_5_message_draft">Nachrichtenentwurf</string>
+    <string name="v4_5_reduced_battery_usage_descr">Weitere Verbesserungen sind bald verfügbar!</string>
+    <string name="v4_5_multiple_chat_profiles_descr">Unterschiedliche Namen, Avatare und Transport-Isolation.</string>
+    <string name="v4_5_transport_isolation">Transport-Isolation</string>
+    <string name="v4_5_italian_interface_descr">Dank der Nutzer - Tragen Sie per Weblate bei!</string>
+    <string name="v4_4_french_interface_descr">Dank der Nutzer - Tragen Sie per Weblate bei!</string>
+    <string name="v4_5_private_filenames_descr">Bild- und Sprachdateinamen enthalten UTC, um Informationen zur Zeitzone zu schützen.</string>
 </resources>
