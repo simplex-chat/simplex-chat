@@ -328,11 +328,12 @@
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Sie werden verbunden, sobald das Endgerät Ihres Kontakts online ist. Bitte warten oder schauen Sie später nochmal nach!</string>
     <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Zeigen Sie Ihrem Kontakt den QR-Code aus der App zum Scannen.</string>
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Wenn Sie sich nicht persönlich treffen können, können Sie <b>den QR-Code während eines Videoanrufs anzeigen</b> oder einen Einladungslink über einen anderen Kanal mit Ihrem Kontakt teilen.</string>
-    <string name="your_chat_profile_will_be_sent_to_your_contact">Ihr Chat-Profil wird\nan Ihren Kontakt gesendet.</string>
+    <string name="your_chat_profile_will_be_sent_to_your_contact">Ihr Chat-Profil wird
+\nan Ihren Kontakt gesendet</string>
     <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Wenn Sie sich nicht persönlich treffen können, können Sie <b>den QR-Code während eines Videoanrufs scannen</b> oder Ihr Kontakt kann einen Einladungslink über einen anderen Kanal mit Ihnen teilen.</string>
     <string name="share_invitation_link">Einladungslink teilen</string>
     <string name="paste_connection_link_below_to_connect">Fügen Sie den erhaltenen Link in das Feld unten ein, um sich mit Ihrem Kontakt zu verbinden.</string>
-    <string name="your_profile_will_be_sent">Ihr Chat-Profil wird an Ihren Kontakt gesendet.</string>
+    <string name="your_profile_will_be_sent">Ihr Chat-Profil wird an Ihren Kontakt gesendet</string>
     <!-- PasteToConnect.kt -->
     <string name="connect_via_link">Über einen Link verbinden</string>
     <string name="connect_button">Verbinden</string>
@@ -426,7 +427,7 @@
     <!-- User profile details - UserProfileView.kt -->
     <string name="display_name__field">Angezeigter Name:</string>
     <string name="full_name__field">"Vollständiger Name:</string>
-    <string name="your_current_profile">Mein Chat-Profil</string>
+    <string name="your_current_profile">Mein aktuelles Chat-Profil</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Ihr Profil wird auf Ihrem Gerät gespeichert und nur mit Ihren Kontakten geteilt.\n\n<xliff:g id="appName">SimpleX</xliff:g>-Server können Ihr Profil nicht sehen.</string>
     <string name="edit_image">Bild bearbeiten</string>
     <string name="delete_image">Bild löschen</string>
@@ -598,14 +599,15 @@
     <string name="error_stopping_chat">Fehler beim Beenden des Chats</string>
     <string name="error_exporting_chat_database">Fehler beim Exportieren der Chat-Datenbank</string>
     <string name="import_database_question">Chat-Datenbank importieren?</string>
-    <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Ihre aktuelle Chat-Datenbank wird GELÖSCHT und durch die Importierte ERSETZT.\nDiese Aktion kann nicht rückgängig gemacht werden - Ihr Profil und Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren.</string>
+    <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Ihre aktuelle Chat-Datenbank wird GELÖSCHT und durch die Importierte ERSETZT.
+\nDiese Aktion kann nicht rückgängig gemacht werden - Ihr Profil, Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren.</string>
     <string name="import_database_confirmation">Importieren</string>
     <string name="error_deleting_database">Fehler beim Löschen der Chat-Datenbank</string>
     <string name="error_importing_database">Fehler beim Importieren der Chat-Datenbank</string>
     <string name="chat_database_imported">Chat-Datenbank importiert</string>
     <string name="restart_the_app_to_use_imported_chat_database">Starten Sie die App neu, um die importierte Chat-Datenbank zu verwenden.</string>
     <string name="delete_chat_profile_question">Chat-Profil löschen?</string>
-    <string name="delete_chat_profile_action_cannot_be_undone_warning">Diese Aktion kann nicht rückgängig gemacht werden - Ihr Profil und Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren.</string>
+    <string name="delete_chat_profile_action_cannot_be_undone_warning">Diese Aktion kann nicht rückgängig gemacht werden - Ihr Profil, Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren.</string>
     <string name="chat_database_deleted">Chat-Datenbank gelöscht</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">Starten Sie die App neu, um ein neues Chat-Profil zu erstellen.</string>
     <string name="you_must_use_the_most_recent_version_of_database">Sie dürfen die neueste Version Ihrer Chat-Datenbank NUR auf einem Gerät verwenden, andernfalls erhalten Sie möglicherweise keine Nachrichten mehr von einigen Ihrer Kontakte.</string>
@@ -991,4 +993,38 @@
     <string name="feature_offered_item">beginne %s</string>
     <string name="feature_offered_item_with_param">beginne %s: %2s</string>
     <string name="feature_cancelled_item">beende %s</string>
+    <string name="core_simplexmq_version">simplexmq Version: v%s (%2s)</string>
+    <string name="delete_files_and_media_all">Alle Dateien löschen</string>
+    <string name="messages_section_title">Nachrichten</string>
+    <string name="app_version_code">App Build: %s</string>
+    <string name="app_version_title">App Version</string>
+    <string name="app_version_name">App Version: v%s</string>
+    <string name="core_build_timestamp">Core übersetzt am: %s</string>
+    <string name="core_version">Core Version: v%s</string>
+    <string name="users_add">Profil hinzufügen</string>
+    <string name="users_delete_all_chats_deleted">Alle Chats und Nachrichten werden gelöscht! Dies kann nicht rückgängig gemacht werden!</string>
+    <string name="users_delete_profile_for">Chat-Profil löschen für</string>
+    <string name="network_option_ping_count">PING Zähler</string>
+    <string name="update_network_session_mode_question">Transport-Isolations-Modus aktualisieren\?</string>
+    <string name="smp_servers_per_user">Server der neuen Verbindungen von Ihrem aktuellen Chat-Profil</string>
+    <string name="files_and_media_section">Dateien &amp; Medien</string>
+    <string name="network_session_mode_transport_isolation">Transport-Isolation</string>
+    <string name="users_delete_question">Chat-Profil löschen\?</string>
+    <string name="error_deleting_user">Fehler beim Löschen des Benutzerprofils</string>
+    <string name="your_chat_profiles">Meine Chat-Profile</string>
+    <string name="network_session_mode_entity">Verbindung</string>
+    <string name="network_session_mode_user">Chat-Profil</string>
+    <string name="delete_files_and_media_for_all_users">Dateien für alle Chat-Profile löschen</string>
+    <string name="network_session_mode_entity_description"><b>Für jeden Kontakt und jedes Gruppenmitglied</b> wird eine separate TCP-Verbindung (und SOCKS-Berechtigung) genutzt.
+\n
+\n<b>Bitte beachten Sie</b>: Wenn Sie viele Verbindung haben, kann der Batterieverbrauch und die Datennutzung wesentlich höher sein und einige Verbindungen können scheitern.</string>
+    <string name="network_session_mode_user_description"><b>Für jedes von Ihnen in der App genutzte Chat-Profil</b> wird eine separate TCP-Verbindung (und SOCKS-Berechtigung) genutzt.</string>
+    <string name="users_delete_data_only">Nur lokale Profildaten</string>
+    <string name="users_delete_with_connections">Profil und Serververbindungen</string>
+    <string name="messages_section_description">Diese Einstellung gilt für Nachrichten in Ihrem aktuellen Chat-Profil</string>
+    <string name="your_chat_profiles_stored_locally">Ihre Chat-Profile werden nur lokal auf Ihrem Endgerät gespeichert</string>
+    <string name="failed_to_create_user_duplicate_title">Doppelter Anzeigename!</string>
+    <string name="failed_to_create_user_title">Fehler beim Erstellen des Profils!</string>
+    <string name="failed_to_active_user_title">Fehler beim Umschalten des Profils!</string>
+    <string name="failed_to_create_user_duplicate_desc">Sie haben schon ein Chat-Profil mit dem gleichen Anzeigenamen. Bitte wählen Sie einen anderen Namen aus.</string>
 </resources>

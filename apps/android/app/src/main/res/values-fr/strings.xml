@@ -143,7 +143,7 @@
     <string name="group_preview_join_as">rejoindre en tant que %s</string>
     <string name="group_preview_you_are_invited">vous êtes invité·e au groupe</string>
     <string name="chat_with_developers">Discuter avec les développeurs</string>
-    <string name="tap_to_start_new_chat">Appuyez pour commencer un nouveau chat</string>
+    <string name="tap_to_start_new_chat">Appuyez ici pour démarrer une nouvelle discussion</string>
     <string name="you_have_no_chats">Vous n\'avez aucune discussion</string>
     <string name="images_limit_title">Trop d’images !</string>
     <string name="share_file">Partager le fichier…</string>
@@ -927,4 +927,30 @@
     <string name="core_build_timestamp">Cœur compilé le : %s</string>
     <string name="core_version">Version du cœur : v%s</string>
     <string name="network_option_ping_count">Nombre de PING</string>
+    <string name="users_delete_all_chats_deleted">Toutes les discussions et tous les messages seront supprimés - il est impossible de revenir en arrière !</string>
+    <string name="delete_files_and_media_all">Effacer tous les fichiers</string>
+    <string name="users_delete_profile_for">Supprimer le profil de chat pour</string>
+    <string name="network_session_mode_user_description">Une connexion TCP distincte (et un identifiant SOCKS) sera utilisée <b>pour chaque profil de chat que vous avez dans l\'application</b>.</string>
+    <string name="users_delete_question">Supprimer le profil du chat \?</string>
+    <string name="files_and_media_section">Fichiers &amp; médias</string>
+    <string name="messages_section_title">Messages</string>
+    <string name="smp_servers_per_user">Les serveurs pour les nouvelles connexions de votre profil de chat actuel</string>
+    <string name="messages_section_description">Ce paramètre s\'applique aux messages de votre profil de chat actuel</string>
+    <string name="network_session_mode_entity">Connexion</string>
+    <string name="delete_files_and_media_for_all_users">Effacer les fichiers de tous les profils de chat</string>
+    <string name="users_delete_with_connections">Profil et connexions au serveur</string>
+    <string name="network_session_mode_transport_isolation">Isolement du transport</string>
+    <string name="update_network_session_mode_question">Mettre à jour le mode d\'isolation du transport \?</string>
+    <string name="your_chat_profiles_stored_locally">Vos profils de chat sont stockés localement, uniquement sur votre appareil</string>
+    <string name="network_session_mode_entity_description">Une connexion TCP distincte (et identifiant SOCKS) sera utilisée <b>pour chaque contact et membre de groupe</b>.
+\n<b>Veuillez noter</b> : si vous avez de nombreuses connexions, votre consommation de batterie et de réseau peut être nettement plus élevée et certaines liaisons peuvent échouer.</string>
+    <string name="network_session_mode_user">Profil de chat</string>
+    <string name="users_add">Ajouter un profil</string>
+    <string name="users_delete_data_only">Données de profil local uniquement</string>
+    <string name="error_deleting_user">Erreur lors de la suppression du profil utilisateur</string>
+    <string name="your_chat_profiles">Vos profils de chat</string>
+    <string name="failed_to_active_user_title">Erreur lors du changement de profil !</string>
+    <string name="failed_to_create_user_title">Erreur lors de la création du profil !</string>
+    <string name="failed_to_create_user_duplicate_desc">Vous avez déjà un profil de chat avec ce même nom affiché. Veuillez choisir un autre nom.</string>
+    <string name="failed_to_create_user_duplicate_title">Nom d\'affichage en double !</string>
 </resources>
