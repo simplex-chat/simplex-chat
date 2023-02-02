@@ -953,4 +953,18 @@
     <string name="your_chat_profiles">I tuoi profili di chat</string>
     <string name="failed_to_create_user_duplicate_desc">Hai già un profilo chat con lo stesso nome da mostrare. Scegli un altro nome.</string>
     <string name="failed_to_create_user_duplicate_title">Nome da mostrare doppio!</string>
+    <string name="v4_5_italian_interface_descr">Grazie agli utenti – contribuite via Weblate!</string>
+    <string name="v4_4_french_interface">Interfaccia francese</string>
+    <string name="v4_5_italian_interface">Interfaccia italiana</string>
+    <string name="v4_5_message_draft">Bozza dei messaggi</string>
+    <string name="v4_5_message_draft_descr">Conserva la bozza dell\'ultimo messaggio, con gli allegati.</string>
+    <string name="v4_5_private_filenames">Nomi di file privati</string>
+    <string name="v4_5_transport_isolation_descr">Per profilo di chat (predefinito) o per connessione (BETA).</string>
+    <string name="v4_5_reduced_battery_usage_descr">Altri miglioramenti sono in arrivo!</string>
+    <string name="v4_5_multiple_chat_profiles">Profili di chat multipli</string>
+    <string name="v4_5_reduced_battery_usage">Consumo di batteria ridotto</string>
+    <string name="v4_4_french_interface_descr">Grazie agli utenti – contribuite via Weblate!</string>
+    <string name="v4_5_transport_isolation">Isolamento del trasporto</string>
+    <string name="v4_5_private_filenames_descr">Per proteggere il fuso orario, i file immagine/vocali usano UTC.</string>
+    <string name="v4_5_multiple_chat_profiles_descr">Nomi e avatar diversi, isolamento del trasporto.</string>
 </resources>
