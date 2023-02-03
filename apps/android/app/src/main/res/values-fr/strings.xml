@@ -952,4 +952,18 @@
     <string name="failed_to_create_user_title">Erreur lors de la création du profil !</string>
     <string name="failed_to_create_user_duplicate_desc">Vous avez déjà un profil de chat avec ce même nom affiché. Veuillez choisir un autre nom.</string>
     <string name="failed_to_create_user_duplicate_title">Nom d\'affichage en double !</string>
+    <string name="v4_4_french_interface">Interface en français</string>
+    <string name="v4_5_transport_isolation_descr">Par profil de chat (par défaut) ou par connexion (BETA).</string>
+    <string name="v4_5_italian_interface">Interface en italien</string>
+    <string name="v4_5_message_draft">Brouillon de message</string>
+    <string name="v4_5_reduced_battery_usage_descr">Plus d\'améliorations à venir !</string>
+    <string name="v4_5_multiple_chat_profiles">Différents profils de chat</string>
+    <string name="v4_5_message_draft_descr">Conserver le brouillon du dernier message, avec les pièces jointes.</string>
+    <string name="v4_5_reduced_battery_usage">Réduction de la consommation de batterie</string>
+    <string name="v4_5_private_filenames">Noms de fichiers privés</string>
+    <string name="v4_5_italian_interface_descr">Merci aux utilisateurs - contribuez via Weblate !</string>
+    <string name="v4_4_french_interface_descr">Merci aux utilisateurs - contribuez via Weblate !</string>
+    <string name="v4_5_private_filenames_descr">Pour préserver le fuseau horaire, les fichiers image/voix utilisent le système UTC.</string>
+    <string name="v4_5_transport_isolation">Isolation du transport</string>
+    <string name="v4_5_multiple_chat_profiles_descr">Différents noms, avatars et mode d\'isolation de transport.</string>
 </resources>
