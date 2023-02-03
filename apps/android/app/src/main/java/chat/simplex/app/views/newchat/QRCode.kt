@@ -42,7 +42,7 @@ fun QRCode(connReq: String, modifier: Modifier = Modifier, withLogo: Boolean = t
             translate(-r.left, -r.top)
             view.draw(this)
           }
-          val file = saveTempImageUncompressed(image)
+          val file = saveTempImageUncompressed(image, false)
           if (file != null) {
             shareFile(context, "", file.absolutePath)
           }

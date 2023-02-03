@@ -375,14 +375,13 @@ fun saveAnimImage(context: Context, uri: Uri): String? {
   }
 }
 
-fun saveTempImageUncompressed(image: Bitmap): File? {
+fun saveTempImageUncompressed(image: Bitmap, asPng: Boolean): File? {
   return try {
-    val hasAlpha = image.hasAlpha()
-    val ext = if (hasAlpha) "png" else "jpg"
+    val ext = if (asPng) "png" else "jpg"
     val tmpDir = SimplexApp.context.getDir("temp", Application.MODE_PRIVATE)
     return File(tmpDir.absolutePath + File.separator + generateNewFileName(SimplexApp.context, "IMG", ext)).apply {
       outputStream().use { out ->
-        image.compress(if (hasAlpha) Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.JPEG, 85, out)
+        image.compress(if (asPng) Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.JPEG, 85, out)
         out.flush()
       }
       deleteOnExit()
