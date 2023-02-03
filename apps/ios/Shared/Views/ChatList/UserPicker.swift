@@ -34,6 +34,7 @@ struct UserPicker: View {
                             ForEach(users) { u in
                                 userView(u)
                                 Divider()
+                                if u.user.activeUser { Divider() }
                             }
                         }
                         .overlay {
@@ -90,7 +91,12 @@ struct UserPicker: View {
     private func userView(_ u: UserInfo) -> some View {
         let user = u.user
         return Button(action: {
-            if !user.activeUser {
+            if user.activeUser {
+                showSettings = true
+                withAnimation {
+                    userPickerVisible.toggle()
+                }
+            } else {
                 do {
                     try changeActiveUser_(user.userId)
                     userPickerVisible = false
@@ -120,7 +126,6 @@ struct UserPicker: View {
             .padding(.trailing)
             .padding([.leading, .vertical], 12)
         })
-        .disabled(user.activeUser)
         .buttonStyle(PressedButtonStyle(defaultColor: fillColor, pressedColor: Color(uiColor: .secondarySystemFill)))
     }
 
