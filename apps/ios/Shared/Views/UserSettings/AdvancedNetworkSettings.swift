@@ -125,8 +125,8 @@ struct AdvancedNetworkSettings: View {
 
     private func updateNetCfgView(_ cfg: NetCfg) {
         netCfg = cfg
-        enableKeepAlive = currentNetCfg.enableKeepAlive
-        keepAliveOpts = currentNetCfg.tcpKeepAlive ?? KeepAliveOpts.defaults
+        enableKeepAlive = netCfg.enableKeepAlive
+        keepAliveOpts = netCfg.tcpKeepAlive ?? KeepAliveOpts.defaults
     }
 
     private func saveNetCfg() {
