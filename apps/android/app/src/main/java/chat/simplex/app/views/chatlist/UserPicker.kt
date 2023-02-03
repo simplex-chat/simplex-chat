@@ -97,8 +97,11 @@ fun UserPicker(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedV
         .background(MaterialTheme.colors.background, MaterialTheme.shapes.medium)
     ) {
       Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
-        users.forEachIndexed { i, u ->
-          UserProfilePickerItem(u.user, u.unreadCount) {
+        users.forEach { u ->
+          UserProfilePickerItem(u.user, u.unreadCount, openSettings = {
+            openSettings()
+            userPickerState.value = AnimatedViewState.GONE
+          }) {
             userPickerState.value = AnimatedViewState.HIDING
             if (!u.user.activeUser) {
               chatModel.chats.clear()
@@ -113,12 +116,10 @@ fun UserPicker(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedV
               }
             }
           }
-          if (i != users.lastIndex) {
-            Divider(Modifier.requiredHeight(1.dp))
-          }
+          Divider(Modifier.requiredHeight(1.dp))
+          if (u.user.activeUser) Divider(Modifier.requiredHeight(0.5.dp))
         }
       }
-      Divider()
       SettingsPickerItem {
         openSettings()
         userPickerState.value = AnimatedViewState.GONE
@@ -128,13 +129,13 @@ fun UserPicker(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedV
 }
 
 @Composable
-fun UserProfilePickerItem(u: User, unreadCount: Int = 0, onLongClick: () -> Unit = {}, onClick: () -> Unit) {
+fun UserProfilePickerItem(u: User, unreadCount: Int = 0, onLongClick: () -> Unit = {}, openSettings: () -> Unit = {}, onClick: () -> Unit) {
   Row(
     Modifier
       .fillMaxWidth()
       .sizeIn(minHeight = 46.dp)
       .combinedClickable(
-        onClick = if (!u.activeUser) onClick else { {} },
+        onClick = if (u.activeUser) openSettings else onClick,
         onLongClick = onLongClick,
         interactionSource = remember { MutableInteractionSource() },
         indication = if (!u.activeUser) LocalIndication.current else null
