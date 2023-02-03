@@ -59,14 +59,14 @@ fun QRCode(connReq: String, modifier: Modifier = Modifier, withLogo: Boolean = t
     if (withLogo) {
       Box(
         Modifier
-          .size(maxWidth * 0.12f)
+          .size(maxWidth * 0.125f)
           .background(Color.White, RoundedCornerShape(100))
       )
       Image(
         painterResource(R.mipmap.icon_foreground),
         null,
         Modifier
-          .size(maxWidth * 0.16f)
+          .size(maxWidth * 0.19f)
       )
     }
   }
