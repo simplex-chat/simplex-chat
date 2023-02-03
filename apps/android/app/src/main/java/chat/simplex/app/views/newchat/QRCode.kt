@@ -59,21 +59,21 @@ fun QRCode(connReq: String, modifier: Modifier = Modifier, withLogo: Boolean = t
     if (withLogo) {
       Box(
         Modifier
-          .size(maxWidth * 0.125f)
+          .size(maxWidth * 0.16f)
           .background(Color.White, RoundedCornerShape(100))
       )
       Image(
         painterResource(R.mipmap.icon_foreground),
         null,
         Modifier
-          .size(maxWidth * 0.19f)
+          .size(maxWidth * 0.24f)
       )
     }
   }
 }
 
 fun qrCodeBitmap(content: String, size: Int): Bitmap {
-  val qrCode = QrCodeEncoder().addAutomatic(content).setError(QrCode.ErrorLevel.M).fixate()
+  val qrCode = QrCodeEncoder().addAutomatic(content).setError(QrCode.ErrorLevel.L).fixate()
   val renderer = QrCodeGeneratorImage(5)
   renderer.render(qrCode)
   return ConvertBitmap.grayToBitmap(renderer.gray, Bitmap.Config.RGB_565)
