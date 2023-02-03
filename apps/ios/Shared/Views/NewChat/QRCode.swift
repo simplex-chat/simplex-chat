@@ -43,10 +43,12 @@ struct QRCode: View {
             GeometryReader { geo in
                 ZStack {
                     if withLogo {
+                        let w = geo.size.width
                         Image("icon-light")
                         .resizable()
                         .scaledToFit()
-                        .frame(width: geo.size.width * 0.16, height: geo.size.width * 0.16)
+                        .frame(width: w * 0.16, height: w * 0.16)
+                        .frame(width: w * 0.165, height: w * 0.165)
                         .background(.white)
                         .clipShape(Circle())
                     }
