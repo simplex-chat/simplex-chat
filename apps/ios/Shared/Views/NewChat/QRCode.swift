@@ -49,9 +49,6 @@ struct QRCode: View {
                         .frame(width: geo.size.width * 0.16, height: geo.size.width * 0.16)
                         .background(.white)
                         .clipShape(Circle())
-                        .frame(width: geo.size.width * 0.18, height: geo.size.width * 0.18)
-                        .background(.white)
-                        .clipShape(Circle())
                     }
                 }
                 .onAppear {
