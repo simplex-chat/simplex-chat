@@ -223,4 +223,37 @@
     <string name="save_passphrase_in_keychain">在密钥库中保存密码</string>
     <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> 服务</string>
     <string name="settings_notifications_mode_title">通知服务</string>
+    <string name="confirm_new_passphrase">确认新口令…</string>
+    <string name="group_member_status_complete">完整的</string>
+    <string name="group_member_status_connected">连接的</string>
+    <string name="chat_preferences">聊天偏好</string>
+    <string name="settings_section_title_chats">聊天</string>
+    <string name="clear_verb">清空</string>
+    <string name="clear_chat_menu_action">清空</string>
+    <string name="clear_chat_button">清除聊天记录</string>
+    <string name="clear_chat_question">清除聊天记录？</string>
+    <string name="chat_with_developers">与开发者聊天</string>
+    <string name="clear_contacts_selection_button">清除</string>
+    <string name="colored">有色</string>
+    <string name="callstate_connected">连接的</string>
+    <string name="connect_button">连接</string>
+    <string name="connect_via_link_verb">连接</string>
+    <string name="choose_file">选择文件</string>
+    <string name="network_session_mode_user">聊天资料</string>
+    <string name="v4_5_transport_isolation_descr">按聊天资料（默认）或按连接（BETA）。</string>
+    <string name="smp_servers_check_address">检查服务器地址并再试一次。</string>
+    <string name="clear_verification">清晰的验证</string>
+    <string name="icon_descr_close_button">关闭键</string>
+    <string name="configure_ICE_servers">配置ICE服务器</string>
+    <string name="confirm_verb">确认</string>
+    <string name="auth_confirm_credential">确认您的证书</string>
+    <string name="server_connected">连接的</string>
+    <string name="icon_descr_server_status_connected">连接的</string>
+    <string name="smp_server_test_connect">连接</string>
+    <string name="notification_contact_connected">连接的</string>
+    <string name="server_connecting">连接的</string>
+    <string name="group_member_status_connecting">连接的</string>
+    <string name="notifications_mode_periodic_desc">每10分钟检查一次新消息，最长1分钟</string>
+    <string name="rcv_group_event_member_connected">连接的</string>
+    <string name="v4_4_verify_connection_security_desc">与你的联系人比较安全码</string>
 </resources>
