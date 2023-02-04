@@ -1314,7 +1314,7 @@ processChatCommand = \case
     updateGroupProfileByName gName $ \p ->
       p {groupPreferences = Just . setGroupPreference' SGFTimedMessages pref $ groupPreferences p}
   QuitChat -> liftIO exitSuccess
-  ShowVersion -> pure $ CRVersionInfo $ coreVersionInfo $(buildTimestampQ) $(simplexmqCommitQ)
+  ShowVersion -> pure $ CRVersionInfo $ coreVersionInfo $(buildTimestampQ) "" -- $(simplexmqCommitQ)
   DebugLocks -> do
     chatLockName <- atomically . tryReadTMVar =<< asks chatLock
     agentLocks <- withAgent debugAgentLocks
@@ -1823,7 +1823,7 @@ subscribeUserConnections agentBatchSubscribe user = do
   -- subscribe using batched commands
   rs <- withAgent (`agentBatchSubscribe` concat [ctConns, ucConns, mConns, sftConns, rftConns, pcConns])
   -- send connection events to view
-  contactSubsToView rs cts
+  contactSubsToView rs cts ce
   contactLinkSubsToView rs ucs
   groupSubsToView rs gs ms ce
   sndFileSubsToView rs sfts
@@ -1860,8 +1860,13 @@ subscribeUserConnections agentBatchSubscribe user = do
       pcs <- withStore_ getPendingContactConnections
       let connIds = map aConnId' pcs
       pure (connIds, M.fromList $ zip connIds pcs)
-    contactSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId Contact -> m ()
-    contactSubsToView rs = toView . CRContactSubSummary user . map (uncurry ContactSubStatus) . resultsFor rs
+    contactSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId Contact -> Bool -> m ()
+    contactSubsToView rs cts ce = do
+      toView . CRContactSubSummary user $ map (uncurry ContactSubStatus) cRs
+      when ce $ mapM_ (toView . uncurry (CRContactSubError user)) cErrors
+      where
+        cRs = resultsFor rs cts
+        cErrors = sortOn (\(Contact {localDisplayName = n}, _) -> n) $ filterErrors cRs
     contactLinkSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId UserContact -> m ()
     contactLinkSubsToView rs = toView . CRUserContactSubSummary user . map (uncurry UserContactSubStatus) . resultsFor rs
     groupSubsToView :: Map ConnId (Either AgentErrorType ()) -> [Group] -> Map ConnId GroupMember -> Bool -> m ()

@@ -430,7 +430,7 @@ data ChatResponse
   | CRSubscriptionEnd {user :: User, connectionEntity :: ConnectionEntity}
   | CRContactsDisconnected {server :: SMPServer, contactRefs :: [ContactRef]}
   | CRContactsSubscribed {server :: SMPServer, contactRefs :: [ContactRef]}
-  | CRContactSubError {contact :: Contact, chatError :: ChatError} -- TODO delete
+  | CRContactSubError {user :: User, contact :: Contact, chatError :: ChatError}
   | CRContactSubSummary {user :: User, contactSubscriptions :: [ContactSubStatus]}
   | CRUserContactSubSummary {user :: User, userContactSubscriptions :: [UserContactSubStatus]}
   | CRHostConnected {protocol :: AProtocolType, transportHost :: TransportHost}

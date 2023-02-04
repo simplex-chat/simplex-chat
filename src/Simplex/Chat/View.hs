@@ -154,7 +154,7 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
   CRSubscriptionEnd u acEntity -> ttyUser u [sShow (connId (entityConnection acEntity :: Connection)) <> ": END"]
   CRContactsDisconnected srv cs -> [plain $ "server disconnected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
   CRContactsSubscribed srv cs -> [plain $ "server connected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
-  CRContactSubError c e -> [ttyContact' c <> ": contact error " <> sShow e]
+  CRContactSubError u c e -> ttyUser u [ttyContact' c <> ": contact error " <> sShow e]
   CRContactSubSummary u summary ->
     ttyUser u $ [sShow (length subscribed) <> " contacts connected (use " <> highlight' "/cs" <> " for the list)" | not (null subscribed)] <> viewErrorsSummary errors " contact errors"
     where
