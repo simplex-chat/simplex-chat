@@ -675,9 +675,6 @@
 "Dark" = "Тёмная";
 
 /* No comment provided by engineer. */
-"Data" = "Данные";
-
-/* No comment provided by engineer. */
 "Database encrypted!" = "База данных зашифрована!";
 
 /* No comment provided by engineer. */
@@ -763,9 +760,6 @@
 
 /* No comment provided by engineer. */
 "Delete database" = "Удалить данные чата";
-
-/* No comment provided by engineer. */
-"Delete files & media" = "Удалить файлы и медиа";
 
 /* No comment provided by engineer. */
 "Delete files and media?" = "Удалить файлы и медиа?";
@@ -2257,7 +2251,7 @@
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "Чтобы подтвердить end-to-end шифрование с вашим контактом сравните (или сканируйте) код безопасности на ваших устройствах.";
 
 /* No comment provided by engineer. */
-"Transfer images faster" = "Передавать изображения быстрее";
+"Transfer images inline (BETA)" = "Передавать изображения в том же соединении0 (БЕТА)";
 
 /* No comment provided by engineer. */
 "Transport isolation" = "Отдельные сессии для";
@@ -2585,9 +2579,6 @@
 
 /* No comment provided by engineer. */
 "Your chat database is not encrypted - set passphrase to encrypt it." = "База данных НЕ зашифрована. Установите пароль, чтобы защитить ваши данные.";
-
-/* No comment provided by engineer. */
-"Your chat profile" = "Ваш профиль";
 
 /* No comment provided by engineer. */
 "Your chat profile will be sent to group members" = "Ваш профиль чата будет отправлен членам группы";

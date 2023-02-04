@@ -673,7 +673,7 @@
   <string name="your_privacy">Your privacy</string>
   <string name="protect_app_screen">Protect app screen</string>
   <string name="auto_accept_images">Auto-accept images</string>
-  <string name="transfer_images_faster">Transfer images faster</string>
+  <string name="transfer_images_faster">Transfer images inline (BETA)</string>
   <string name="send_link_previews">Send link previews</string>
   <string name="full_backup">App data backup</string>
 

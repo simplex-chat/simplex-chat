@@ -672,9 +672,6 @@
 "Dark" = "Sombre";
 
 /* No comment provided by engineer. */
-"Data" = "Données";
-
-/* No comment provided by engineer. */
 "Database encrypted!" = "Base de données chiffrée !";
 
 /* No comment provided by engineer. */
@@ -760,9 +757,6 @@
 
 /* No comment provided by engineer. */
 "Delete database" = "Supprimer la base de données";
-
-/* No comment provided by engineer. */
-"Delete files & media" = "Supprimer les fichiers et médias";
 
 /* No comment provided by engineer. */
 "Delete files and media?" = "Supprimer les fichiers et médias ?";
@@ -2218,7 +2212,7 @@
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "Pour vérifier le chiffrement de bout en bout avec votre contact, comparez (ou scannez) le code sur vos appareils.";
 
 /* No comment provided by engineer. */
-"Transfer images faster" = "Transfert d'images plus rapide";
+"Transfer images inline (BETA)" = "Transfert d'images plus rapide (BETA)";
 
 /* No comment provided by engineer. */
 "Transport isolation" = "Isolement du transport";
@@ -2546,9 +2540,6 @@
 
 /* No comment provided by engineer. */
 "Your chat database is not encrypted - set passphrase to encrypt it." = "Votre base de données de chat n'est pas chiffrée - définisez une phrase secrète.";
-
-/* No comment provided by engineer. */
-"Your chat profile" = "Votre profil de chat";
 
 /* No comment provided by engineer. */
 "Your chat profile will be sent to group members" = "Votre profil de chat sera envoyé aux membres du groupe";

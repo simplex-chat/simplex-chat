@@ -13,7 +13,7 @@ struct PrivacySettings: View {
     @AppStorage(DEFAULT_PRIVACY_ACCEPT_IMAGES) private var autoAcceptImages = true
     @AppStorage(DEFAULT_PRIVACY_LINK_PREVIEWS) private var useLinkPreviews = true
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
-    @AppStorage(GROUP_DEFAULT_PRIVACY_TRANSFER_IMAGES_INLINE, store: groupDefaults) private var transferImagesInline = true
+    @AppStorage(GROUP_DEFAULT_PRIVACY_TRANSFER_IMAGES_INLINE, store: groupDefaults) private var transferImagesInline = false
     @State private var simplexLinkMode = privacySimplexLinkModeDefault.get()
     @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
 
@@ -35,7 +35,7 @@ struct PrivacySettings: View {
                             }
                     }
                     settingsRow("photo.on.rectangle") {
-                        Toggle("Transfer images faster", isOn: $transferImagesInline)
+                        Toggle("Transfer images inline (BETA)", isOn: $transferImagesInline)
                     }
                     settingsRow("network") {
                         Toggle("Send link previews", isOn: $useLinkPreviews)
