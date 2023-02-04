@@ -789,16 +789,19 @@
         <target state="translated">创建地址</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create group link" xml:space="preserve">
+      <trans-unit id="Create group link" xml:space="preserve" approved="no">
         <source>Create group link</source>
+        <target state="translated">创建群组链接</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create link" xml:space="preserve">
+      <trans-unit id="Create link" xml:space="preserve" approved="no">
         <source>Create link</source>
+        <target state="translated">创建链接</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create one-time invitation link" xml:space="preserve">
+      <trans-unit id="Create one-time invitation link" xml:space="preserve" approved="no">
         <source>Create one-time invitation link</source>
+        <target state="translated">创建一次性邀请链接</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create queue" xml:space="preserve">
@@ -3666,6 +3669,16 @@ SimpleX servers cannot see your profile.</source>
       <trans-unit id="A separate TCP connection will be used **for each chat profile you have in the app**." xml:space="preserve" approved="no">
         <source>A separate TCP connection will be used **for each chat profile you have in the app**.</source>
         <target state="translated">一个单独的TCP连接将被用于**您在应用程序中的每个聊天资料**。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Core built at: %@" xml:space="preserve" approved="no">
+        <source>Core built at: %@</source>
+        <target state="translated">核心构建于：%@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Core version: v%@" xml:space="preserve" approved="no">
+        <source>Core version: v%@</source>
+        <target state="translated">核心版本: v%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>
