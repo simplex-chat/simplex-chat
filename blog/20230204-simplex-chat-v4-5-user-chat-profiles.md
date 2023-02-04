@@ -1,6 +1,6 @@
 ---
 layout: layouts/article.html
-title: "SimpleX Chat v4.5 released – with multiple chat profiles, message draft, transport isolation  and Italian language!"
+title: "SimpleX Chat v4.5 released – with multiple chat profiles, message draft, transport isolation and Italian language!"
 date: 2023-02-04
 image: images/20230204-profiles2.png
 imageBottom: true
@@ -8,11 +8,9 @@ previewBody: blog_previews/20230204.html
 permalink: "/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html"
 ---
 
-# SimpleX Chat v4.5 released – with multiple user profiles, message draft, transport isolation  and Italian language!
+# SimpleX Chat v4.5 released – with multiple user profiles, message draft, transport isolation and Italian interface!
 
 **Published:** Feb 4, 2023
-
-TODO this is a post stub to reserve permalink
 
 ## What's new in v4.5
 
@@ -22,7 +20,7 @@ TODO this is a post stub to reserve permalink
 - [reduced battery usage](#reduced-battery-usage).
 - [private filenames](#private-filenames).
 
-Also, we added [Italian language interface](#italian-language-interface), thanks to the users' community and Weblate!
+Also, we added [Italian interface](#italian-interface), thanks to the users' community and Weblate!
 
 ### Multiple chat profiles
 
@@ -85,7 +83,7 @@ Reducing battery usage is our big priority - we expect to reduce it by at least 
 
 When you send an image or voice message they are sent as files with filenames including timestamp. We didn't see it as a problem, as files are sent together with the message, and messages have server-side timestamps anyway. But the users pointed out that the timestamp we used was in the local timezone, and therefore leaked the country (or continent) where the user is located. A simple workaround was to reset timezone to UTC, and that is what most users who need to protect their location do anyway. But this version resolves it - these filenames now include UTC timezones – no workarounds are needed.
 
-### Italian language interface
+### Italian interface
 
 Thanks to our users' community and to Weblate providing a free hosting plan for SimpleX Chat translations we can now support more languages in the interface – this version adds Italian and many more is in progress - Chinese, Japanese, Czech, Dutch, etc.
 
