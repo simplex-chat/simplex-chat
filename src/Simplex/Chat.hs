@@ -2102,8 +2102,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           saveConnInfo conn connInfo
         MSG meta _msgFlags msgBody -> do
           cmdId <- createAckCmd conn
-          _ <- saveRcvMSG conn (ConnectionId connId) meta msgBody cmdId
-          withAckMessage agentConnId cmdId meta $ pure ()
+          withAckMessage agentConnId cmdId meta . void $
+            saveRcvMSG conn (ConnectionId connId) meta msgBody cmdId
         SENT msgId ->
           sentMsgDeliveryEvent conn msgId
         OK ->
@@ -2345,9 +2345,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                   when (memberCategory m == GCPreMember) $ probeMatchingContacts ct connectedIncognito
       MSG msgMeta _msgFlags msgBody -> do
         cmdId <- createAckCmd conn
-        msg@RcvMessage {chatMsgEvent = ACME _ event} <- saveRcvMSG conn (GroupId groupId) msgMeta msgBody cmdId
-        updateChatLock "groupMessage" event
-        withAckMessage agentConnId cmdId msgMeta $
+        withAckMessage agentConnId cmdId msgMeta $ do
+          msg@RcvMessage {chatMsgEvent = ACME _ event} <- saveRcvMSG conn (GroupId groupId) msgMeta msgBody cmdId
+          updateChatLock "groupMessage" event
           case event of
             XMsgNew mc -> canSend $ newGroupContentMessage gInfo m mc msg msgMeta
             XMsgUpdate sharedMsgId mContent ttl live -> canSend $ groupMessageUpdate gInfo m sharedMsgId mContent msg msgMeta ttl live
