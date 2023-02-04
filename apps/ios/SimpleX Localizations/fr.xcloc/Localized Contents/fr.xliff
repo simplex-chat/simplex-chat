@@ -939,11 +939,6 @@
         <target>Sombre</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Data" xml:space="preserve">
-        <source>Data</source>
-        <target>Données</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Database ID" xml:space="preserve">
         <source>Database ID</source>
         <target>ID de base de données</target>
@@ -1090,11 +1085,6 @@
       <trans-unit id="Delete database" xml:space="preserve">
         <source>Delete database</source>
         <target>Supprimer la base de données</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Delete files &amp; media" xml:space="preserve">
-        <source>Delete files &amp; media</source>
-        <target>Supprimer les fichiers et médias</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete files and media?" xml:space="preserve">
@@ -3294,9 +3284,9 @@ Vous serez invité à confirmer l'authentification avant que cette fonction ne s
         <target>Pour vérifier le chiffrement de bout en bout avec votre contact, comparez (ou scannez) le code sur vos appareils.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Transfer images faster" xml:space="preserve">
-        <source>Transfer images faster</source>
-        <target>Transfert d'images plus rapide</target>
+      <trans-unit id="Transfer images inline (BETA)" xml:space="preserve">
+        <source>Transfer images inline (BETA)</source>
+        <target>Transfert d'images plus rapide (BETA)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Transport isolation" xml:space="preserve">
@@ -3749,11 +3739,6 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
       <trans-unit id="Your chat database is not encrypted - set passphrase to encrypt it." xml:space="preserve">
         <source>Your chat database is not encrypted - set passphrase to encrypt it.</source>
         <target>Votre base de données de chat n'est pas chiffrée - définisez une phrase secrète.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Your chat profile" xml:space="preserve">
-        <source>Your chat profile</source>
-        <target>Votre profil de chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chat profile will be sent to group members" xml:space="preserve">

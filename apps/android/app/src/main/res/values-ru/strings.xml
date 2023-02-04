@@ -560,7 +560,7 @@
     <string name="your_privacy">Конфиденциальность</string>
     <string name="protect_app_screen">Защитить экран приложения</string>
     <string name="auto_accept_images">Автоприем изображений</string>
-    <string name="transfer_images_faster">Передавать изображения быстрее</string>
+    <string name="transfer_images_faster">Передавать изображения в том же соединении (БЕТА)</string>
     <string name="send_link_previews">Отправлять картинки ссылок</string>
     <string name="full_backup">Резервная копия данных</string>
     <!-- Settings sections -->

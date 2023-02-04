@@ -742,7 +742,7 @@
     <string name="settings_section_title_support">SUPPORTA SIMPLEX CHAT</string>
     <string name="settings_section_title_themes">TEMI</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">Questa azione non può essere annullata: il tuo profilo, i contatti, i messaggi e i file andranno persi in modo irreversibile.</string>
-    <string name="transfer_images_faster">Trasferisci immagini più velocemente</string>
+    <string name="transfer_images_faster">Trasferisci immagini più velocemente (BETA)</string>
     <string name="settings_section_title_you">TU</string>
     <string name="your_chat_database">Il tuo database della chat</string>
     <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Il tuo attuale database di chat verrà ELIMINATO e SOSTITUITO con quello importato.
