@@ -2,9 +2,9 @@
 layout: layouts/article.html
 title: "SimpleX Chat v4.5 released – with multiple chat profiles, message draft, transport isolation  and Italian language!"
 date: 2023-02-04
-# image: images/20230103-disappearing1.png
-# imageBottom: true
-# previewBody: blog_previews/20230103.html
+image: images/20230204-profiles2.png
+imageBottom: true
+previewBody: blog_previews/20230204.html
 permalink: "/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html"
 ---
 
@@ -22,9 +22,11 @@ TODO this is a post stub to reserve permalink
 - [reduced battery usage](#reduced-battery-usage).
 - [private filenames](#private-filenames).
 
-Also, we added [Italian language interface](#french-language-interface), thanks to the users' community and Weblate!
+Also, we added [Italian language interface](#italian-language-interface), thanks to the users' community and Weblate!
 
 ### Multiple chat profiles
+
+<img src="./images/20230204-profiles1.png" width="288"> &nbsp;&nbsp; <img src="./images/20230204-profiles2.png" width="288">
 
 Incognito mode added in v3.2 allows to share a random profile name with your new contacts. It is quite popular - more than half of users connecting to our support profile use it. In case when you just want a throw-away profile name that doesn't share any information about you it is more convenient that creating a new profile for each contact manually.
 
@@ -46,6 +48,8 @@ All other settings are used for all profiles. While you may want to have differe
 
 ### Message draft
 
+<img src="./images/20230204-draft1.png" width="288"> &nbsp;&nbsp; <img src="./images/20230204-draft2.png" width="288">
+
 Previously, if you've closed the conversation with unsent message, this message was disappearing. While it might be better for privacy, there are several scenarios when it is very inconvenient:
 
 - you need to compose the message from several parts that you copy from other conversations.
@@ -54,6 +58,8 @@ Previously, if you've closed the conversation with unsent message, this message 
 Both are now possible - the message you wrote, together with any attachments, and even a voice message you recorded, will remain available as draft until you either close the app or leave another message unfinished - while you can send the message in another chat without losing the current draft, there can be only one draft at a time.
 
 ### Transport isolation
+
+<img src="./images/20230204-transport.png" width="288">
 
 Even when you create different chat profiles you are still connecting to your contacts via the same device. Transport isolation, by default, makes connections belonging to the same profile use different TCP sessions, so while the server sees the same IP address, it doesn't see it as the same client connection. If you are connecting via Tor using SOCKS proxy (e.g. Orbot app on Android) not only the app will use different TCP sessions, it will also use separate Tor circuits for connections from different profiles, preventing the servers and network observers seeing this as traffic coming from the same device.
 
@@ -78,3 +84,41 @@ Reducing battery usage is our big priority - we expect to reduce it by at least 
 ### Private filenames
 
 When you send an image or voice message they are sent as files with filenames including timestamp. We didn't see it as a problem, as files are sent together with the message, and messages have server-side timestamps anyway. But the users pointed out that the timestamp we used was in the local timezone, and therefore leaked the country (or continent) where the user is located. A simple workaround was to reset timezone to UTC, and that is what most users who need to protect their location do anyway. But this version resolves it - these filenames now include UTC timezones – no workarounds are needed.
+
+### Italian language interface
+
+Thanks to our users' community and to Weblate providing a free hosting plan for SimpleX Chat translations we can now support more languages in the interface – this version adds Italian and many more is in progress - Chinese, Japanese, Czech, Dutch, etc.
+
+You can [contribute the translation](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps) of the apps to your language too!
+
+## SimpleX platform
+
+Some links to answer the most common questions:
+
+[How can SimpleX deliver messages without user identifiers](./20220511-simplex-chat-v2-images-files.md#the-first-messaging-platform-without-user-identifiers).
+
+[What are the risks to have identifiers assigned to the users](./20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md#why-having-users-identifiers-is-bad-for-the-users).
+
+[Technical details and limitations](https://github.com/simplex-chat/simplex-chat#privacy-technical-details-and-limitations).
+
+[How SimpleX is different from Session, Matrix, Signal, etc.](https://github.com/simplex-chat/simplex-chat/blob/stable/README.md#frequently-asked-questions).
+
+Please also see our [website](https://simplex.chat).
+
+## Help us with donations
+
+Huge thank you to everybody who donated to SimpleX Chat!
+
+We are prioritizing users privacy and security - it would be impossible without your support.
+
+Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, - so anybody can build the future implementations of the clients and the servers. We are building SimpleX platform based on the same principles as email and web, but much more private and secure.
+
+Your donations help us raise more funds – any amount, even the price of the cup of coffee, makes a big difference for us.
+
+See [this section](https://github.com/simplex-chat/simplex-chat/tree/master#help-us-with-donations) for the ways to donate.
+
+Thank you,
+
+Evgeny
+
+SimpleX Chat founder
