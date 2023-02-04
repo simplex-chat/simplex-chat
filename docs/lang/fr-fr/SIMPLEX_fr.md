@@ -1,17 +1,17 @@
-| Updated 04.02.2023 | Languages Available : EN, [FR](/docs/lang/fr-fr/SIMPLEX_fr.md), ... |
-# SimpleX platform - motivation and comparison
+| Updated 04.02.2023 | Languages Available : [EN](/docs/SIMPLEX.md), FR, ... |
+# Plateforme SimpleX - motivation et comparaison
 
-## Problems
+## Problèmes
 
-Existing chat platforms and protocols have some or all of the following problems:
+Les plateformes et protocoles de chat existants présentent une partie ou la totalité des problèmes suivants :
 
-- Lack of privacy of the user profile and contacts (meta-data privacy).
-- No protection (or only optional protection) of [E2EE][1] implementations from MITM attacks via provider.
-- Unsolicited messages (spam and abuse).
-- Lack of data ownership and protection.
-- Complexity of usage for all non-centralized protocols to non-technical users.
+- Absence de confidentialité du profil et des contacts de l'utilisateur (confidentialité des métadonnées).
+- Aucune protection (ou seulement une protection optionnelle) des implémentations [E2EE][1] contre les attaques MITM via le fournisseur.
+- Messages non sollicités (spam et abus).
+- Absence de propriété et de protection des données.
+- Complexité d'utilisation de tous les protocoles non centralisés pour les utilisateurs non techniques.
 
-The concentration of the communication in a small number of centralized platforms makes resolving these problems quite difficult.
+La concentration de la communication dans un petit nombre de plateformes centralisées rend la résolution de ces problèmes assez difficile.
 
 ## Proposed solution
 
