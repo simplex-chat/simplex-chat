@@ -1,9 +1,9 @@
 package chat.simplex.app.views.call
 
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
-import chat.simplex.app.R
-import chat.simplex.app.SimplexApp
+import chat.simplex.app.*
 import chat.simplex.app.model.Contact
 import chat.simplex.app.model.User
 import chat.simplex.app.views.helpers.generalGetString
@@ -159,8 +159,8 @@ data class ConnectionState(
 )
 
 // the servers are expected in this format:
-// stun:stun.simplex.im:443
-// turn:private:yleob6AVkiNI87hpR94Z@turn.simplex.im:443
+// stun:stun.simplex.im:443?transport=tcp
+// turn:private:yleob6AVkiNI87hpR94Z@turn.simplex.im:443?transport=tcp
 fun parseRTCIceServer(str: String): RTCIceServer? {
   var s = replaceScheme(str, "stun:")
   s = replaceScheme(s, "turn:")
@@ -171,8 +171,9 @@ fun parseRTCIceServer(str: String): RTCIceServer? {
     val port = u.port
     if (u.path == "" && (scheme == "stun" || scheme == "turn")) {
       val userInfo = u.userInfo?.split(":")
+      val query = if (u.query == null || u.query == "") "" else "?${u.query}"
       return RTCIceServer(
-        urls = listOf("$scheme:$host:$port"),
+        urls = listOf("$scheme:$host:$port$query"),
         username = userInfo?.getOrNull(0),
         credential = userInfo?.getOrNull(1)
       )

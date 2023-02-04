@@ -406,7 +406,7 @@ func parseRTCIceServer(_ str: String) -> RTCIceServer? {
        let host = u.host,
        let port = u.port,
        u.path == "" && (scheme == "stun" || scheme == "turn")  {
-        let query = u.query == nil ? "" : "?" + (u.query ?? "")
+        let query = u.query == nil || u.query == "" ? "" : "?" + (u.query ?? "")
         return RTCIceServer(
             urls: ["\(scheme):\(host):\(port)\(query)"],
             username: u.user,
