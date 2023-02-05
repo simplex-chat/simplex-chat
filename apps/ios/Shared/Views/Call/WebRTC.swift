@@ -362,22 +362,37 @@ struct ConnectionInfo: Codable, Equatable {
     var remoteCandidate: RTCIceCandidate?
 
     var text: LocalizedStringKey {
-        get {
-            if localCandidate?.candidateType == .host && remoteCandidate?.candidateType == .host {
-                return "peer-to-peer"
-            } else if localCandidate?.candidateType == .relay && remoteCandidate?.candidateType == .relay {
-                return "via relay"
-            } else {
-                let unknown = NSLocalizedString("unknown", comment: "connection info")
-                return "\(localCandidate?.candidateType?.rawValue ?? unknown) / \(remoteCandidate?.candidateType?.rawValue ?? unknown)"
-            }
+        let local = localCandidate?.candidateType
+        let remote = remoteCandidate?.candidateType
+        if local == .host && remote == .host {
+            return "peer-to-peer"
+        } else if local == .relay && remote == .relay {
+            return "via relay"
+        } else {
+            let unknown = NSLocalizedString("unknown", comment: "connection info")
+            return "\(local?.rawValue ?? unknown) / \(remote?.rawValue ?? unknown)"
         }
+    }
+
+    var protocolText: String {
+        let unknown = NSLocalizedString("unknown", comment: "connection info")
+        let local = localCandidate?.protocol?.uppercased() ?? unknown
+        let localRelay = localCandidate?.relayProtocol?.uppercased() ?? unknown
+        let remote = remoteCandidate?.protocol?.uppercased() ?? unknown
+        let localText = localRelay == local || localCandidate?.relayProtocol == nil
+                        ? local
+                        : "\(local) (\(localRelay))"
+        return local == remote
+                ? localText
+                : "\(localText) / \(remote)"
     }
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/API/RTCIceCandidate
 struct RTCIceCandidate: Codable, Equatable {
     var candidateType: RTCIceCandidateType?
+    var `protocol`: String?
+    var relayProtocol: String?
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/API/RTCIceCandidate/type
@@ -401,11 +416,12 @@ struct RTCIceServer: Codable, Equatable {
 func parseRTCIceServer(_ str: String) -> RTCIceServer? {
     var s = replaceScheme(str, "stun:")
     s = replaceScheme(s, "turn:")
+    s = replaceScheme(s, "turns:")
     if let u: URL = URL(string: s),
        let scheme = u.scheme,
        let host = u.host,
        let port = u.port,
-       u.path == "" && (scheme == "stun" || scheme == "turn")  {
+       u.path == "" && (scheme == "stun" || scheme == "turn" || scheme == "turns")  {
         let query = u.query == nil || u.query == "" ? "" : "?" + (u.query ?? "")
         return RTCIceServer(
             urls: ["\(scheme):\(host):\(port)\(query)"],

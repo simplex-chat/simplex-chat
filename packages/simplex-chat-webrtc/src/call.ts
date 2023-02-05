@@ -218,7 +218,8 @@ const processCommand = (function () {
   }
 
   const defaultIceServers: RTCIceServer[] = [
-    {urls: ["stun:stun.simplex.im:443?transport=tcp"]},
+    {urls: ["stun:stun.simplex.im:443"]},
+    {urls: ["turn:turn.simplex.im:443?transport=udp"], username: "private", credential: "yleob6AVkiNI87hpR94Z"},
     {urls: ["turn:turn.simplex.im:443?transport=tcp"], username: "private", credential: "yleob6AVkiNI87hpR94Z"},
   ]
 
