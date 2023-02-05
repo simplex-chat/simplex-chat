@@ -559,7 +559,6 @@
     <string name="your_privacy">Meine Privatsphäre</string>
     <string name="protect_app_screen">App-Bildschirm schützen</string>
     <string name="auto_accept_images">Bilder automatisch akzeptieren</string>
-    <string name="transfer_images_faster">Bilder schneller übertragen (BETA)</string>
     <string name="send_link_previews">Link-Vorschau senden</string>
     <string name="full_backup">App-Datensicherung</string>
     <!-- Settings sections -->
