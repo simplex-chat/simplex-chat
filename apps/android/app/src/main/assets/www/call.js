@@ -25,7 +25,9 @@ let activeCall;
 let answerTimeout = 30000;
 const processCommand = (function () {
     const defaultIceServers = [
+        { urls: ["stun:stun.simplex.im:443"] },
         { urls: ["stun:stun.simplex.im:443?transport=tcp"] },
+        { urls: ["turn:turn.simplex.im:443"], username: "private", credential: "yleob6AVkiNI87hpR94Z" },
         { urls: ["turn:turn.simplex.im:443?transport=tcp"], username: "private", credential: "yleob6AVkiNI87hpR94Z" },
     ];
     function getCallConfig(encodedInsertableStreams, iceServers, relay) {
