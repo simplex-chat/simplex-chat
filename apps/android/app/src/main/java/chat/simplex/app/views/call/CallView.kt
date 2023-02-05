@@ -481,8 +481,8 @@ fun PreviewActiveCallOverlayVideo() {
         localMedia = CallMediaType.Video,
         peerMedia = CallMediaType.Video,
         connectionInfo = ConnectionInfo(
-          RTCIceCandidate(RTCIceCandidateType.Host, RTCIceCandidateProtocol.TCP, null),
-          RTCIceCandidate(RTCIceCandidateType.Host, RTCIceCandidateProtocol.TCP, null)
+          RTCIceCandidate(RTCIceCandidateType.Host, "tcp", null),
+          RTCIceCandidate(RTCIceCandidateType.Host, "tcp", null)
         )
       ),
       dismiss = {},
@@ -505,8 +505,8 @@ fun PreviewActiveCallOverlayAudio() {
         localMedia = CallMediaType.Audio,
         peerMedia = CallMediaType.Audio,
         connectionInfo = ConnectionInfo(
-          RTCIceCandidate(RTCIceCandidateType.Host, RTCIceCandidateProtocol.UDP, null),
-          RTCIceCandidate(RTCIceCandidateType.Host, RTCIceCandidateProtocol.UDP, null)
+          RTCIceCandidate(RTCIceCandidateType.Host, "udp", null),
+          RTCIceCandidate(RTCIceCandidateType.Host, "udp", null)
         )
       ),
       dismiss = {},

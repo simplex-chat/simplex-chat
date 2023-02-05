@@ -376,9 +376,9 @@ struct ConnectionInfo: Codable, Equatable {
 
     var protocolText: String {
         let unknown = NSLocalizedString("unknown", comment: "connection info")
-        let local = localCandidate?.protocol?.rawValue.uppercased() ?? unknown
-        let localRelay = localCandidate?.relayProtocol?.rawValue.uppercased() ?? unknown
-        let remote = remoteCandidate?.protocol?.rawValue.uppercased() ?? unknown
+        let local = localCandidate?.protocol?.uppercased() ?? unknown
+        let localRelay = localCandidate?.relayProtocol?.uppercased() ?? unknown
+        let remote = remoteCandidate?.protocol?.uppercased() ?? unknown
         let localText = localRelay == local || localCandidate?.relayProtocol == nil
                         ? local
                         : "\(local) (\(localRelay))"
@@ -391,8 +391,8 @@ struct ConnectionInfo: Codable, Equatable {
 // https://developer.mozilla.org/en-US/docs/Web/API/RTCIceCandidate
 struct RTCIceCandidate: Codable, Equatable {
     var candidateType: RTCIceCandidateType?
-    var `protocol`: RTCIceCandidateProtocol?
-    var relayProtocol: RTCIceCandidateRelayProtocol?
+    var `protocol`: String?
+    var relayProtocol: String?
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/API/RTCIceCandidate/type
@@ -401,17 +401,6 @@ enum RTCIceCandidateType: String, Codable {
     case serverReflexive = "srflx"
     case peerReflexive = "prflx"
     case relay = "relay"
-}
-
-enum RTCIceCandidateProtocol: String, Codable {
-    case tcp = "tcp"
-    case udp = "udp"
-}
-
-enum RTCIceCandidateRelayProtocol: String, Codable {
-    case tcp = "tcp"
-    case tls = "tls"
-    case udp = "udp"
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/API/RTCIceServer

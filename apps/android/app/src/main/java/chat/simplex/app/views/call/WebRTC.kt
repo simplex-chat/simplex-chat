@@ -123,16 +123,16 @@ sealed class WCallResponse {
   }
 
   val protocolText: String get() {
-    val local = localCandidate?.protocol?.value?.uppercase(Locale.ROOT) ?: "unknown"
-    val localRelay = localCandidate?.relayProtocol?.value?.uppercase(Locale.ROOT) ?: "unknown"
-    val remote = remoteCandidate?.protocol?.value?.uppercase(Locale.ROOT) ?: "unknown"
+    val local = localCandidate?.protocol?.uppercase(Locale.ROOT) ?: "unknown"
+    val localRelay = localCandidate?.relayProtocol?.uppercase(Locale.ROOT) ?: "unknown"
+    val remote = remoteCandidate?.protocol?.uppercase(Locale.ROOT) ?: "unknown"
     val localText = if (localRelay == local || localCandidate?.relayProtocol == null) local else "$local ($localRelay)"
     return if (local == remote) localText else "$localText / $remote"
   }
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/API/RTCIceCandidate
-@Serializable data class RTCIceCandidate(val candidateType: RTCIceCandidateType?, val protocol: RTCIceCandidateProtocol?, val relayProtocol: RTCIceCandidateRelayProtocol?)
+@Serializable data class RTCIceCandidate(val candidateType: RTCIceCandidateType?, val protocol: String?, val relayProtocol: String?)
 // https://developer.mozilla.org/en-US/docs/Web/API/RTCIceServer
 @Serializable data class RTCIceServer(val urls: List<String>, val username: String? = null, val credential: String? = null)
 
@@ -143,19 +143,6 @@ enum class RTCIceCandidateType(val value: String) {
   @SerialName("srflx") ServerReflexive("srflx"),
   @SerialName("prflx") PeerReflexive("prflx"),
   @SerialName("relay") Relay("relay")
-}
-
-@Serializable
-enum class RTCIceCandidateProtocol(val value: String) {
-  @SerialName("tcp") TCP("tcp"),
-  @SerialName("udp") UDP("udp"),
-}
-
-@Serializable
-enum class RTCIceCandidateRelayProtocol(val value: String) {
-  @SerialName("tcp") TCP("tcp"),
-  @SerialName("tls") TLS("tls"),
-  @SerialName("udp") UDP("udp"),
 }
 
 @Serializable
