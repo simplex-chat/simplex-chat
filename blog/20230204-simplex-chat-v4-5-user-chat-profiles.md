@@ -72,7 +72,7 @@ Battery usage is one of the biggest complaints of SimpleX Chat users. The main r
 
 This version makes retries for exceeded queue capacity 10x less frequent and adds SMP protocol extension that will allow to reduce retries even further by the next version. It works in the following way:
 - when the sender encounters "queue quota exceeded" error, the sender stops trying to send the message.
-- the server also takes not of that error.
+- the server also takes note of that error.
 - once recipient receives all messages from this queue, the server will notify the recipient that the sender had "queue quota exceeded" error.
 - the recipient will then send a special message to the sender client to instruct it that it can resume delivery.
 - the sender can still occasionally try sending the message, e.g. once every hours, but it won't need to retry once every few minutes as it does now.
