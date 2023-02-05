@@ -265,7 +265,7 @@ window.addEventListener('scroll',changeHeaderBg);
 <p>This version makes retries for exceeded queue capacity 10x less frequent and adds SMP protocol extension that will allow to reduce retries even further by the next version. It works in the following way:</p>
 <ul>
 <li>when the sender encounters &quot;queue quota exceeded&quot; error, the sender stops trying to send the message.</li>
-<li>the server also takes not of that error.</li>
+<li>the server also takes note of that error.</li>
 <li>once recipient receives all messages from this queue, the server will notify the recipient that the sender had &quot;queue quota exceeded&quot; error.</li>
 <li>the recipient will then send a special message to the sender client to instruct it that it can resume delivery.</li>
 <li>the sender can still occasionally try sending the message, e.g. once every hours, but it won't need to retry once every few minutes as it does now.</li>
