@@ -5,14 +5,14 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SimpleX blog: SimpleX Chat v4.5 released – with multiple chat profiles, message draft, transport isolation  and Italian language!</title>
+    <title>SimpleX blog: SimpleX Chat v4.5 released – with multiple chat profiles, message draft, transport isolation and Italian language!</title>
     <meta name="Content-Type" content="text/html;charset=utf-8" />
     <meta http-equiv="onion-location" content="http://isdb4l77sjqoy2qq7ipum6x3at6hyn3jmxfx4zdhc72ufbmuq4ilwkqd.onion/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html" />
     <meta property="og:url" content="https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html" />
     <meta property="og:type" content="article" />
-    <meta property="og:title" content="SimpleX Chat v4.5 released – with multiple chat profiles, message draft, transport isolation  and Italian language!" />
+    <meta property="og:title" content="SimpleX Chat v4.5 released – with multiple chat profiles, message draft, transport isolation and Italian language!" />
     
-      <meta property="og:image" content="https://simplex.chat/img/share_simplex.png" />
+      <meta property="og:image" content="https://simplex.chat/blog/images/20230204-profiles2.png" />
     
     <meta name="twitter:card" content="summary" />
     <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico" />
@@ -222,9 +222,8 @@ window.addEventListener('scroll',changeHeaderBg);
     </div>
 
     <section id="article" class="container mb-[75px] bg-white dark:bg-[#17203D] px-5">
-      <div class="py-6 md:p-[60px]"><h1 id="simplex-chat-v45-released-with-multiple-user-profiles-message-draft-transport-isolation-and-italian-language" tabindex="-1">SimpleX Chat v4.5 released – with multiple user profiles, message draft, transport isolation  and Italian language!</h1>
+      <div class="py-6 md:p-[60px]"><h1 id="simplex-chat-v45-released-with-multiple-user-profiles-message-draft-transport-isolation-and-italian-interface" tabindex="-1">SimpleX Chat v4.5 released – with multiple user profiles, message draft, transport isolation and Italian interface!</h1>
 <p><strong>Published:</strong> Feb 4, 2023</p>
-<p>TODO this is a post stub to reserve permalink</p>
 <h2 id="whats-new-in-v45" tabindex="-1">What's new in v4.5</h2>
 <ul>
 <li><a href="#multiple-chat-profiles">multiple chat profiles</a>.</li>
@@ -233,12 +232,66 @@ window.addEventListener('scroll',changeHeaderBg);
 <li><a href="#reduced-battery-usage">reduced battery usage</a>.</li>
 <li><a href="#private-filenames">private filenames</a>.</li>
 </ul>
-<p>Also, we added <a href="#french-language-interface">Italian language interface</a>, thanks to the users' community and Weblate!</p>
+<p>Also, we added <a href="#italian-interface">Italian interface</a>, thanks to the users' community and Weblate!</p>
 <h3 id="multiple-chat-profiles" tabindex="-1">Multiple chat profiles</h3>
+<p><img src="./images/20230204-profiles1.png" width="288">    <img src="./images/20230204-profiles2.png" width="288"></p>
+<p>Incognito mode added in v3.2 allows to share a random profile name with your new contacts. It is quite popular - more than half of users connecting to our support profile use it. In case when you just want a throw-away profile name that doesn't share any information about you it is more convenient that creating a new profile for each contact manually.</p>
+<p>But there are many cases when a disposable profile is not good enough enough, and you want to create separate profiles - one for your family, another for work, yet one more for your online contacts that only know your pseudonym rather than your real name.</p>
+<p>Previously this was only possible by using separate chat databases. This version adds a chat profile manager that allows you to create unlimited number of profiles, and very quickly switch them. All these profiles are connected at the same time.</p>
+<p>When you delete profile you no longer need you have two options - either delete both profile data on the device and any message queues that this profile created on SMP servers (e.g., when it is more important to leave as few meta-data on the servers), or delete only profile data without making any network requests (when it is more important to delete all data from the device quickly).</p>
+<p>While most app settings apply to all profiles, several settings are profile-specific.</p>
+<p>You can separately set which SMP servers are used to create the new contacts in each profile (via Network settings). Please note: changing SMP servers in one profile won't affect other profiles, and all new profiles are created with preset servers.</p>
+<p>You can also separately set the retention time for messages in each profile (via Database settings).</p>
+<p>Also, you have a different contact address in each profile, and different Chat preferences.</p>
+<p>All other settings are used for all profiles. While you may want to have different settings for different security levels, it is much better to use different devices in this case.</p>
 <h3 id="message-draft" tabindex="-1">Message draft</h3>
+<p><img src="./images/20230204-draft1.png" width="288">    <img src="./images/20230204-draft2.png" width="288"></p>
+<p>Previously, if you've closed the conversation with unsent message, this message was disappearing. While it might be better for privacy, there are several scenarios when it is very inconvenient:</p>
+<ul>
+<li>you need to compose the message from several parts that you copy from other conversations.</li>
+<li>some messages arrives that you need to answer urgently, so you can leave unfinished message to return to it later.</li>
+</ul>
+<p>Both are now possible - the message you wrote, together with any attachments, and even a voice message you recorded, will remain available as draft until you either close the app or leave another message unfinished - while you can send the message in another chat without losing the current draft, there can be only one draft at a time.</p>
 <h3 id="transport-isolation" tabindex="-1">Transport isolation</h3>
+<img src="./images/20230204-transport.png" width="288">
+<p>Even when you create different chat profiles you are still connecting to your contacts via the same device. Transport isolation, by default, makes connections belonging to the same profile use different TCP sessions, so while the server sees the same IP address, it doesn't see it as the same client connection. If you are connecting via Tor using SOCKS proxy (e.g. Orbot app on Android) not only the app will use different TCP sessions, it will also use separate Tor circuits for connections from different profiles, preventing the servers and network observers seeing this as traffic coming from the same device.</p>
+<p>There is an additional BETA option to use a separate transport connection for each contact and group member connection you have – it is available in Network settings if you enable dev tools. In case you have a large number of contacts or participate in large groups across all profiles in the app, you should not use this option, as it may create a lot of traffic and also can exceed the quota for TCP sockets. Also creating a lot of separate Tor circuits can be slow. We will be testing at which number of connections this option starts failing and by the time it's available without dev tools we will add some limits.</p>
 <h3 id="reduced-battery-usage" tabindex="-1">Reduced battery usage</h3>
+<p>Battery usage is one of the biggest complaints of SimpleX Chat users. The main reason for excess traffic is inefficient retry strategies for Network operations in these cases:</p>
+<ul>
+<li>the message queue capacity is exceeded - the app will keep retrying to send the message until there will be capacity.</li>
+<li>the server is not available, e.g. if you connect to somebody via their server, and they later disable it. This case creates much less extra traffic than the first.</li>
+</ul>
+<p>This version makes retries for exceeded queue capacity 10x less frequent and adds SMP protocol extension that will allow to reduce retries even further by the next version. It works in the following way:</p>
+<ul>
+<li>when the sender encounters &quot;queue quota exceeded&quot; error, the sender stops trying to send the message.</li>
+<li>the server also takes not of that error.</li>
+<li>once recipient receives all messages from this queue, the server will notify the recipient that the sender had &quot;queue quota exceeded&quot; error.</li>
+<li>the recipient will then send a special message to the sender client to instruct it that it can resume delivery.</li>
+<li>the sender can still occasionally try sending the message, e.g. once every hours, but it won't need to retry once every few minutes as it does now.</li>
+</ul>
+<p>Reducing battery usage is our big priority - we expect to reduce it by at least 2-3x in the next few months.</p>
 <h3 id="private-filenames" tabindex="-1">Private filenames</h3>
+<p>When you send an image or voice message they are sent as files with filenames including timestamp. We didn't see it as a problem, as files are sent together with the message, and messages have server-side timestamps anyway. But the users pointed out that the timestamp we used was in the local timezone, and therefore leaked the country (or continent) where the user is located. A simple workaround was to reset timezone to UTC, and that is what most users who need to protect their location do anyway. But this version resolves it - these filenames now include UTC timezones – no workarounds are needed.</p>
+<h3 id="italian-interface" tabindex="-1">Italian interface</h3>
+<p>Thanks to our users' community and to Weblate providing a free hosting plan for SimpleX Chat translations we can now support more languages in the interface – this version adds Italian and many more is in progress - Chinese, Japanese, Czech, Dutch, etc.</p>
+<p>You can <a href="https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps">contribute the translation</a> of the apps to your language too!</p>
+<h2 id="simplex-platform" tabindex="-1">SimpleX platform</h2>
+<p>Some links to answer the most common questions:</p>
+<p><a href="20220511-simplex-chat-v2-images-files.html#the-first-messaging-platform-without-user-identifiers">How can SimpleX deliver messages without user identifiers</a>.</p>
+<p><a href="20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.html#why-having-users-identifiers-is-bad-for-the-users">What are the risks to have identifiers assigned to the users</a>.</p>
+<p><a href="https://github.com/simplex-chat/simplex-chat#privacy-technical-details-and-limitations">Technical details and limitations</a>.</p>
+<p><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/README.md#frequently-asked-questions">How SimpleX is different from Session, Matrix, Signal, etc.</a>.</p>
+<p>Please also see our <a href="https://simplex.chat">website</a>.</p>
+<h2 id="help-us-with-donations" tabindex="-1">Help us with donations</h2>
+<p>Huge thank you to everybody who donated to SimpleX Chat!</p>
+<p>We are prioritizing users privacy and security - it would be impossible without your support.</p>
+<p>Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, - so anybody can build the future implementations of the clients and the servers. We are building SimpleX platform based on the same principles as email and web, but much more private and secure.</p>
+<p>Your donations help us raise more funds – any amount, even the price of the cup of coffee, makes a big difference for us.</p>
+<p>See <a href="https://github.com/simplex-chat/simplex-chat/tree/master#help-us-with-donations">this section</a> for the ways to donate.</p>
+<p>Thank you,</p>
+<p>Evgeny</p>
+<p>SimpleX Chat founder</p>
 </div>
     </section>
 
