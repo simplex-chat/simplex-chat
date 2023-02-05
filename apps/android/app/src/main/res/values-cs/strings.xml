@@ -210,7 +210,7 @@
     <string name="you_will_be_connected_when_group_host_device_is_online">Ke skupině budete připojeni, až bude zařízení hostitele skupiny online, vyčkejte prosím nebo se podívejte později!</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Budete připojeni, jakmile bude vaše žádost o připojení přijata, vyčkejte prosím nebo se podívejte později!</string>
     <string name="connection_request_sent">Požadavek na připojení byl odeslán!</string>
-    <string name="paste_connection_link_below_to_connect">Paste the link you received into the box below to connect with your contact.</string>
+    <string name="paste_connection_link_below_to_connect"></string>
     <string name="your_profile_will_be_sent">Váš profil v chatu bude odeslán vašemu kontaktu</string>
     <string name="create_one_time_link">Vytvořit jednorázovou pozvánku</string>
     <string name="one_time_link">Vytvořit jednorázový zvací odkaz</string>
@@ -265,7 +265,7 @@
     <string name="open_simplex_chat_to_accept_call">Otevřete <xliff:g id="appNameFull">SimpleX Chat</xliff:g> pro přijetí hovoru</string>
     <string name="allow_accepting_calls_from_lock_screen">Povolte volání ze zamčené obrazovky prostřednictvím Nastavení.</string>
     <string name="open_verb">Otevřete stránku</string>
-    <string name="status_e2e_encrypted">e2e encrypted</string>
+    <string name="status_e2e_encrypted"></string>
     <string name="icon_descr_audio_on">Zvuk zapnut</string>
     <string name="icon_descr_speaker_off">Reproduktor vypnut</string>
     <string name="icon_descr_speaker_on">Zapnutý reproduktor</string>
@@ -345,7 +345,7 @@
     <string name="notification_new_contact_request">Žádost o nový kontakt</string>
     <string name="delete_message_cannot_be_undone_warning">Zpráva bude smazána - nelze to vzít zpět!</string>
     <string name="confirm_verb">Potvrdit</string>
-    <string name="share_invitation_link">Share invitation link</string>
+    <string name="share_invitation_link"></string>
     <string name="send_us_an_email">Pošlete nám e-mail</string>
     <string name="chat_lock">Zámek SimpleX</string>
     <string name="install_simplex_chat_for_terminal">Instalace <xliff:g id="appNameFull">SimpleX Chat</xliff:g> pro terminál</string>
