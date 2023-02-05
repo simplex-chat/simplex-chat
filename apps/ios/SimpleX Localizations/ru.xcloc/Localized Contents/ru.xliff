@@ -3297,11 +3297,6 @@ You will be prompted to complete authentication before this feature is enabled.<
         <target>Чтобы подтвердить end-to-end шифрование с вашим контактом сравните (или сканируйте) код безопасности на ваших устройствах.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Transfer images inline (BETA)" xml:space="preserve">
-        <source>Transfer images inline (BETA)</source>
-        <target>Передавать изображения в том же соединении0 (БЕТА)</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Transport isolation" xml:space="preserve">
         <source>Transport isolation</source>
         <target>Отдельные сессии для</target>

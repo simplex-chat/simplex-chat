@@ -467,7 +467,6 @@
     <string name="privacy_and_security">Ochrana osobních údajů a zabezpečení</string>
     <string name="your_privacy">Vaše soukromí</string>
     <string name="protect_app_screen">Ochrana obrazovky aplikace</string>
-    <string name="transfer_images_faster">Rychlejší přenos obrázků (BETA)</string>
     <string name="send_link_previews">Odesílání náhledů odkazů</string>
     <string name="full_backup">Zálohování dat aplikace</string>
     <string name="confirm_new_passphrase">Confirm new passphrase…</string>

@@ -225,16 +225,14 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, UNMutableNotification
            if let file = cItem.file,
               file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV,
               privacyAcceptImagesGroupDefault.get() {
-               let inline = privacyTransferImagesInlineGroupDefault.get()
-               cItem = apiReceiveFile(fileId: file.fileId, inline: inline)?.chatItem ?? cItem
+               cItem = apiReceiveFile(fileId: file.fileId)?.chatItem ?? cItem
            }
         } else if case .voice = cItem.content.msgContent { // TODO check inlineFileMode != IFMSent
             if let file = cItem.file,
                file.fileSize <= MAX_IMAGE_SIZE,
                file.fileSize > MAX_VOICE_MESSAGE_SIZE_INLINE_SEND,
                privacyAcceptImagesGroupDefault.get() {
-                let inline = privacyTransferImagesInlineGroupDefault.get()
-                cItem = apiReceiveFile(fileId: file.fileId, inline: inline)?.chatItem ?? cItem
+                cItem = apiReceiveFile(fileId: file.fileId)?.chatItem ?? cItem
             }
          }
         return cItem.showMutableNotification ? (aChatItem.chatId, createMessageReceivedNtf(user, cInfo, cItem)) : nil
@@ -308,7 +306,7 @@ func apiGetNtfMessage(nonce: String, encNtfInfo: String) -> NtfMessages? {
     return nil
 }
 
-func apiReceiveFile(fileId: Int64, inline: Bool) -> AChatItem? {
+func apiReceiveFile(fileId: Int64, inline: Bool? = nil) -> AChatItem? {
     let r = sendSimpleXCmd(.receiveFile(fileId: fileId, inline: inline))
     if case let .rcvFileAccepted(_, chatItem) = r { return chatItem }
     logger.error("receiveFile error: \(responseError(r))")

@@ -2251,9 +2251,6 @@
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "Чтобы подтвердить end-to-end шифрование с вашим контактом сравните (или сканируйте) код безопасности на ваших устройствах.";
 
 /* No comment provided by engineer. */
-"Transfer images inline (BETA)" = "Передавать изображения в том же соединении0 (БЕТА)";
-
-/* No comment provided by engineer. */
 "Transport isolation" = "Отдельные сессии для";
 
 /* No comment provided by engineer. */

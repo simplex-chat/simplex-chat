@@ -88,7 +88,6 @@ class AppPreferences(val context: Context) {
   val webrtcIceServers = mkStrPreference(SHARED_PREFS_WEBRTC_ICE_SERVERS, null)
   val privacyProtectScreen = mkBoolPreference(SHARED_PREFS_PRIVACY_PROTECT_SCREEN, true)
   val privacyAcceptImages = mkBoolPreference(SHARED_PREFS_PRIVACY_ACCEPT_IMAGES, true)
-  val privacyTransferImagesInline = mkBoolPreference(SHARED_PREFS_PRIVACY_TRANSFER_IMAGES_INLINE, false)
   val privacyLinkPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_LINK_PREVIEWS, true)
   private val _simplexLinkMode = mkStrPreference(SHARED_PREFS_PRIVACY_SIMPLEX_LINK_MODE, SimplexLinkMode.default.name)
   val simplexLinkMode: SharedPreference<SimplexLinkMode> = SharedPreference(
@@ -935,7 +934,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return false
   }
 
-  suspend fun apiReceiveFile(fileId: Long, inline: Boolean): AChatItem? {
+  suspend fun apiReceiveFile(fileId: Long, inline: Boolean? = null): AChatItem? {
     val r = sendCmd(CC.ReceiveFile(fileId, inline))
     return when (r) {
       is CR.RcvFileAccepted -> r.chatItem
@@ -1424,8 +1423,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   }
 
   suspend fun receiveFile(user: User, fileId: Long) {
-    val inline = appPrefs.privacyTransferImagesInline.get()
-    val chatItem = apiReceiveFile(fileId, inline)
+    val chatItem = apiReceiveFile(fileId)
     if (chatItem != null) {
       chatItemSimpleUpdate(user, chatItem)
     }
@@ -1798,7 +1796,7 @@ sealed class CC {
   class ApiRejectContact(val contactReqId: Long): CC()
   class ApiChatRead(val type: ChatType, val id: Long, val range: ItemRange): CC()
   class ApiChatUnread(val type: ChatType, val id: Long, val unreadChat: Boolean): CC()
-  class ReceiveFile(val fileId: Long, val inline: Boolean): CC()
+  class ReceiveFile(val fileId: Long, val inline: Boolean?): CC()
   class ShowVersion(): CC()
 
   val cmdString: String get() = when (this) {
@@ -1873,7 +1871,7 @@ sealed class CC {
     is ApiCallStatus -> "/_call status @${contact.apiId} ${callStatus.value}"
     is ApiChatRead -> "/_read chat ${chatRef(type, id)} from=${range.from} to=${range.to}"
     is ApiChatUnread -> "/_unread chat ${chatRef(type, id)} ${onOff(unreadChat)}"
-    is ReceiveFile -> "/freceive $fileId inline=${onOff(inline)}"
+    is ReceiveFile -> if (inline == null) "/freceive $fileId" else "/freceive $fileId inline=${onOff(inline)}"
     is ShowVersion -> "/version"
   }
 

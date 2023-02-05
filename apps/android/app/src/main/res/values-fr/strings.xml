@@ -623,7 +623,6 @@
     <string name="privacy_and_security">Vie privée et sécurité</string>
     <string name="protect_app_screen">Protéger l\'écran de l\'app</string>
     <string name="auto_accept_images">Images auto-acceptées</string>
-    <string name="transfer_images_faster">Transfert d\'images plus rapide (BETA)</string>
     <string name="full_backup">Sauvegarde des données de l\'app</string>
     <string name="settings_section_title_you">VOUS</string>
     <string name="settings_section_title_help">AIDE</string>

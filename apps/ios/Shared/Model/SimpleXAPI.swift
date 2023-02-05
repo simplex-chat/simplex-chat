@@ -636,13 +636,12 @@ func apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool) async throws {
 }
 
 func receiveFile(user: User, fileId: Int64) async {
-    let inline = privacyTransferImagesInlineGroupDefault.get()
-    if let chatItem = await apiReceiveFile(fileId: fileId, inline: inline) {
+    if let chatItem = await apiReceiveFile(fileId: fileId) {
         DispatchQueue.main.async { chatItemSimpleUpdate(user, chatItem) }
     }
 }
 
-func apiReceiveFile(fileId: Int64, inline: Bool) async -> AChatItem? {
+func apiReceiveFile(fileId: Int64, inline: Bool? = nil) async -> AChatItem? {
     let r = await chatSendCmd(.receiveFile(fileId: fileId, inline: inline))
     let am = AlertManager.shared
     if case let .rcvFileAccepted(_, chatItem) = r { return chatItem }
