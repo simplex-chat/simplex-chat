@@ -362,22 +362,37 @@ struct ConnectionInfo: Codable, Equatable {
     var remoteCandidate: RTCIceCandidate?
 
     var text: LocalizedStringKey {
-        get {
-            if localCandidate?.candidateType == .host && remoteCandidate?.candidateType == .host {
-                return "peer-to-peer"
-            } else if localCandidate?.candidateType == .relay && remoteCandidate?.candidateType == .relay {
-                return "via relay"
-            } else {
-                let unknown = NSLocalizedString("unknown", comment: "connection info")
-                return "\(localCandidate?.candidateType?.rawValue ?? unknown) / \(remoteCandidate?.candidateType?.rawValue ?? unknown)"
-            }
+        let local = localCandidate?.candidateType
+        let remote = remoteCandidate?.candidateType
+        if local == .host && remote == .host {
+            return "peer-to-peer"
+        } else if local == .relay && remote == .relay {
+            return "via relay"
+        } else {
+            let unknown = NSLocalizedString("unknown", comment: "connection info")
+            return "\(local?.rawValue ?? unknown) / \(remote?.rawValue ?? unknown)"
         }
+    }
+
+    var protocolText: String {
+        let unknown = NSLocalizedString("unknown", comment: "connection info")
+        let local = localCandidate?.protocol?.rawValue.uppercased() ?? unknown
+        let localRelay = localCandidate?.relayProtocol?.rawValue.uppercased() ?? unknown
+        let remote = remoteCandidate?.protocol?.rawValue.uppercased() ?? unknown
+        let localText = localRelay == local || localCandidate?.relayProtocol == nil
+                        ? local
+                        : "\(local) (\(localRelay))"
+        return local == remote
+                ? localText
+                : "\(localText) / \(remote)"
     }
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/API/RTCIceCandidate
 struct RTCIceCandidate: Codable, Equatable {
     var candidateType: RTCIceCandidateType?
+    var `protocol`: RTCIceCandidateProtocol?
+    var relayProtocol: RTCIceCandidateRelayProtocol?
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/API/RTCIceCandidate/type
@@ -386,6 +401,17 @@ enum RTCIceCandidateType: String, Codable {
     case serverReflexive = "srflx"
     case peerReflexive = "prflx"
     case relay = "relay"
+}
+
+enum RTCIceCandidateProtocol: String, Codable {
+    case tcp = "tcp"
+    case udp = "udp"
+}
+
+enum RTCIceCandidateRelayProtocol: String, Codable {
+    case tcp = "tcp"
+    case tls = "tls"
+    case udp = "udp"
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/API/RTCIceServer
@@ -401,11 +427,12 @@ struct RTCIceServer: Codable, Equatable {
 func parseRTCIceServer(_ str: String) -> RTCIceServer? {
     var s = replaceScheme(str, "stun:")
     s = replaceScheme(s, "turn:")
+    s = replaceScheme(s, "turns:")
     if let u: URL = URL(string: s),
        let scheme = u.scheme,
        let host = u.host,
        let port = u.port,
-       u.path == "" && (scheme == "stun" || scheme == "turn")  {
+       u.path == "" && (scheme == "stun" || scheme == "turn" || scheme == "turns")  {
         let query = u.query == nil || u.query == "" ? "" : "?" + (u.query ?? "")
         return RTCIceServer(
             urls: ["\(scheme):\(host):\(port)\(query)"],

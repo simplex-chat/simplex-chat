@@ -3,6 +3,7 @@ package chat.simplex.app.views.call
 import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.toUpperCase
 import chat.simplex.app.*
 import chat.simplex.app.model.Contact
 import chat.simplex.app.model.User
@@ -11,6 +12,8 @@ import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.net.URI
+import java.util.*
+import kotlin.collections.ArrayList
 
 data class Call(
   val contact: Contact,
@@ -106,17 +109,30 @@ sealed class WCallResponse {
 }
 @Serializable data class CallCapabilities(val encryption: Boolean)
 @Serializable data class ConnectionInfo(private val localCandidate: RTCIceCandidate?, private val remoteCandidate: RTCIceCandidate?) {
-  val text: String @Composable get() = when {
-    localCandidate?.candidateType == RTCIceCandidateType.Host && remoteCandidate?.candidateType == RTCIceCandidateType.Host ->
-      stringResource(R.string.call_connection_peer_to_peer)
-    localCandidate?.candidateType == RTCIceCandidateType.Relay && remoteCandidate?.candidateType == RTCIceCandidateType.Relay ->
-      stringResource(R.string.call_connection_via_relay)
-    else ->
-      "${localCandidate?.candidateType?.value ?: "unknown"} / ${remoteCandidate?.candidateType?.value ?: "unknown"}"
+  val text: String @Composable get() {
+    val local = localCandidate?.candidateType
+    val remote = remoteCandidate?.candidateType
+    return when {
+      local == RTCIceCandidateType.Host && remote == RTCIceCandidateType.Host ->
+        stringResource(R.string.call_connection_peer_to_peer)
+      local == RTCIceCandidateType.Relay && remote == RTCIceCandidateType.Relay ->
+        stringResource(R.string.call_connection_via_relay)
+      else ->
+        "${local?.value ?: "unknown"} / ${remote?.value ?: "unknown"}"
+    }
+  }
+
+  val protocolText: String get() {
+    val local = localCandidate?.protocol?.value?.uppercase(Locale.ROOT) ?: "unknown"
+    val localRelay = localCandidate?.relayProtocol?.value?.uppercase(Locale.ROOT) ?: "unknown"
+    val remote = remoteCandidate?.protocol?.value?.uppercase(Locale.ROOT) ?: "unknown"
+    val localText = if (localRelay == local || localCandidate?.relayProtocol == null) local else "$local ($localRelay)"
+    return if (local == remote) localText else "$localText / $remote"
   }
 }
+
 // https://developer.mozilla.org/en-US/docs/Web/API/RTCIceCandidate
-@Serializable data class RTCIceCandidate(val candidateType: RTCIceCandidateType?)
+@Serializable data class RTCIceCandidate(val candidateType: RTCIceCandidateType?, val protocol: RTCIceCandidateProtocol?, val relayProtocol: RTCIceCandidateRelayProtocol?)
 // https://developer.mozilla.org/en-US/docs/Web/API/RTCIceServer
 @Serializable data class RTCIceServer(val urls: List<String>, val username: String? = null, val credential: String? = null)
 
@@ -127,6 +143,19 @@ enum class RTCIceCandidateType(val value: String) {
   @SerialName("srflx") ServerReflexive("srflx"),
   @SerialName("prflx") PeerReflexive("prflx"),
   @SerialName("relay") Relay("relay")
+}
+
+@Serializable
+enum class RTCIceCandidateProtocol(val value: String) {
+  @SerialName("tcp") TCP("tcp"),
+  @SerialName("udp") UDP("udp"),
+}
+
+@Serializable
+enum class RTCIceCandidateRelayProtocol(val value: String) {
+  @SerialName("tcp") TCP("tcp"),
+  @SerialName("tls") TLS("tls"),
+  @SerialName("udp") UDP("udp"),
 }
 
 @Serializable
@@ -164,12 +193,13 @@ data class ConnectionState(
 fun parseRTCIceServer(str: String): RTCIceServer? {
   var s = replaceScheme(str, "stun:")
   s = replaceScheme(s, "turn:")
+  s = replaceScheme(s, "turns:")
   val u = runCatching { URI(s) }.getOrNull()
   if (u != null) {
     val scheme = u.scheme
     val host = u.host
     val port = u.port
-    if (u.path == "" && (scheme == "stun" || scheme == "turn")) {
+    if (u.path == "" && (scheme == "stun" || scheme == "turn" || scheme == "turns")) {
       val userInfo = u.userInfo?.split(":")
       val query = if (u.query == null || u.query == "") "" else "?${u.query}"
       return RTCIceServer(
