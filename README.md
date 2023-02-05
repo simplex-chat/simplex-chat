@@ -86,6 +86,8 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 Recent updates:
 
+[Feb 04, 2023. v4.5 released - with multiple user profiles, message draft, transport isolation and Italian interface](./blog/20230204-simplex-chat-v4-5-user-chat-profiles.md).
+
 [Jan 03, 2023. v4.4 released - with disappearing messages, "live" messages, connection security verifications, GIFs and stickers and with French interface language](./blog/20230103-simplex-chat-v4.4-disappearing-messages.md).
 
 [Dec 06, 2022. November reviews and v4.3 released - with instant voice messages, irreversible deletion of sent messages and improved server configuration](./blog/20221206-simplex-chat-v4.3-voice-messages.md).
@@ -93,8 +95,6 @@ Recent updates:
 [Nov 08, 2022. Security audit by Trail of Bits, the new website and v4.2 released](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
 
 [Sep 28, 2022. v4.0: encrypted local chat database and many other changes](./blog/20220928-simplex-chat-v4-encrypted-database.md).
-
-[Sep 1, 2022. v3.2: incognito mode, support .onion server hostnames, setting contact names, changing color scheme, etc. Implementation audit is arranged for October!](./blog/20220901-simplex-chat-v3.2-incognito-mode.md).
 
 [All updates](./blog)
 
@@ -148,10 +148,11 @@ What is already implemented:
 8. To protect against replay attacks SimpleX servers require [tlsunique channel binding](https://www.rfc-editor.org/rfc/rfc5929.html) as session ID in each client command signed with per-queue ephemeral key.
 9. To protect your IP address all SimpleX Chat clients support accessing messaging servers via Tor - see [v3.1 release announcement](./blog/20220808-simplex-chat-v3.1-chat-groups.md) for more details.
 10. Local database encryption with passphrase - your contacts, groups and all sent and received messages are stored encrypted. If you used SimpleX Chat before v4.0 you need to enable the encryption via the app settings.
+11. Transport isolation - different TCP connections and Tor circuits are used for traffic of different user profiles, optionally - for different contacts and group member connections.
 
 We plan to add soon:
 
-1. Message queue rotation. Currently the queues created between two users are used until the contact is deleted, providing a long-term pairwise identifiers of the conversation. We are planning to add queue rotation to make these identifiers temporary and rotate based on some schedule TBC (e.g., every X messages, or every X hours/days).
+1. Automatic message queue rotation. Currently the queues created between two users are used until the queue is manually changed by the user or contact is deleted. We are planning to add automatic queue rotation to make these identifiers temporary and rotate based on some schedule TBC (e.g., every X messages, or every X hours/days).
 2. Local files encryption. Currently the images and files you send and receive are stored in the app unencrypted, you can delete them via `Settings / Database passphrase & export`.
 3. Message "mixing" - adding latency to message delivery, to protect against traffic correlation by message time.
 
@@ -196,16 +197,19 @@ If you are considering developing with SimpleX platform please get in touch for 
 - ✅ Disappearing messages (with recipient opt-in per-contact).
 - ✅ "Live" messages.
 - ✅ Contact verification via a separate out-of-band channel.
-- 🏗 Multiple user profiles in the same chat database.
-- 🏗 Optionally avoid re-using the same TCP session for multiple connections.
+- ✅ Multiple user profiles in the same chat database.
+- ✅ Optionally avoid re-using the same TCP session for multiple connections.
+- ✅ Preserve message drafts.
 - 🏗 File server to optimize for efficient and private sending of large files.
+- 🏗 Improved audio & video calls.
 - 🏗 SMP queue redundancy and rotation (manual is supported).
 - 🏗 Reduced battery and traffic usage in large groups.
-- 🏗 Preserve message drafts.
 - 🏗 Support older Android OS and 32-bit CPUs.
 - Ephemeral/disappearing/OTR conversations with the existing contacts.
 - Access password/pin (with optional alternative access password).
+- Local app files encryption.
 - Video messages.
+- Improved navigation and search in the conversation (expand and scroll to quoted message, scroll to search results, etc.).
 - Message delivery confirmation (with sender opt-in or opt-out per contact, TBC).
 - Feeds/broadcasts.
 - Web widgets for custom interactivity in the chats.
@@ -215,7 +219,9 @@ If you are considering developing with SimpleX platform please get in touch for 
 - Privacy-preserving identity server for optional DNS-based contact/group addresses to simplify connection and discovery, but not used to deliver messages:
   - keep all your contacts and groups even if you lose the domain.
   - the server doesn't have information about your contacts and groups.
-- Channels server for large groups and broadcast channels.
+- Hosting server for large groups, communities and public channels.
+- Message delivery relay for senders (to conceal IP address from the recipients' servers and to reduce the traffic).
+- High capacity multi-node SMP relays.
 
 ## Join a user group
 
