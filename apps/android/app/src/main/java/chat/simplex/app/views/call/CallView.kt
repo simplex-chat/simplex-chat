@@ -298,8 +298,8 @@ fun CallInfoView(call: Call, alignment: Alignment.Horizontal) {
     InfoText(call.callState.text)
 
     val connInfo = call.connectionInfo
-    val connInfoText =
-      if (connInfo == null) ""  else " (${connInfo.text}, ${connInfo.protocolText})"
+//    val connInfoText = if (connInfo == null) ""  else " (${connInfo.text}, ${connInfo.protocolText})"
+    val connInfoText = if (connInfo == null) ""  else " (${connInfo.text})"
     InfoText(call.encryptionStatus + connInfoText)
   }
 }
