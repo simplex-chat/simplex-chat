@@ -9,18 +9,20 @@
 import Foundation
 import SwiftUI
 
-public struct User: Decodable, NamedChat {
-    var userId: Int64
+public struct User: Decodable, NamedChat, Identifiable {
+    public var userId: Int64
     var userContactId: Int64
     var localDisplayName: ContactName
     public var profile: LocalProfile
     public var fullPreferences: FullPreferences
-    var activeUser: Bool
+    public var activeUser: Bool
 
     public var displayName: String { get { profile.displayName } }
     public var fullName: String { get { profile.fullName } }
     public var image: String? { get { profile.image } }
     public var localAlias: String { get { "" } }
+
+    public var id: Int64 { userId }
 
     public static let sampleData = User(
         userId: 1,
@@ -29,6 +31,23 @@ public struct User: Decodable, NamedChat {
         profile: LocalProfile.sampleData,
         fullPreferences: FullPreferences.sampleData,
         activeUser: true
+    )
+}
+
+public struct UserInfo: Decodable, Identifiable {
+    public var user: User
+    public var unreadCount: Int
+
+    public init(user: User, unreadCount: Int) {
+        self.user = user
+        self.unreadCount = unreadCount
+    }
+
+    public var id: Int64 { user.userId }
+
+    public static let sampleData = UserInfo(
+        user: User.sampleData,
+        unreadCount: 1
     )
 }
 
@@ -1137,6 +1156,8 @@ public struct Contact: Identifiable, Decodable, NamedChat {
 
 public struct ContactRef: Decodable, Equatable {
     var contactId: Int64
+    public var agentConnId: String
+    var connId: Int64
     var localDisplayName: ContactName
 
     public var id: ChatId { get { "@\(contactId)" } }
@@ -1148,7 +1169,8 @@ public struct ContactSubStatus: Decodable {
 }
 
 public struct Connection: Decodable {
-    var connId: Int64
+    public var connId: Int64
+    public var agentConnId: String
     var connStatus: ConnStatus
     public var connLevel: Int
     public var viaGroupLink: Bool
@@ -1159,6 +1181,7 @@ public struct Connection: Decodable {
 
     static let sampleData = Connection(
         connId: 1,
+        agentConnId: "abc",
         connStatus: .ready,
         connLevel: 0,
         viaGroupLink: false

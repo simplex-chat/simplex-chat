@@ -11,7 +11,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.app.ui.theme.*
 
 @Composable
-fun CloseSheetBar(close: () -> Unit) {
+fun CloseSheetBar(close: () -> Unit, endButtons: @Composable RowScope.() -> Unit = {}) {
   Column(
     Modifier
       .fillMaxWidth()
@@ -20,9 +20,15 @@ fun CloseSheetBar(close: () -> Unit) {
   ) {
     Row(
       Modifier
-        .width(TitleInsetWithIcon - AppBarHorizontalPadding)
         .padding(top = 4.dp), // Like in DefaultAppBar
-      content = { NavigationButtonBack(close) }
+      content = {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+          NavigationButtonBack(close)
+          Row {
+            endButtons()
+          }
+        }
+      }
     )
   }
 }

@@ -297,10 +297,10 @@ fun CallInfoView(call: Call, alignment: Alignment.Horizontal) {
     InfoText(call.contact.chatViewName, style = MaterialTheme.typography.h2)
     InfoText(call.callState.text)
 
-    val connInfo =
-      if (call.connectionInfo == null) ""
-      else " (${call.connectionInfo.text})"
-    InfoText(call.encryptionStatus + connInfo)
+    val connInfo = call.connectionInfo
+//    val connInfoText = if (connInfo == null) ""  else " (${connInfo.text}, ${connInfo.protocolText})"
+    val connInfoText = if (connInfo == null) ""  else " (${connInfo.text})"
+    InfoText(call.encryptionStatus + connInfoText)
   }
 }
 
@@ -480,7 +480,10 @@ fun PreviewActiveCallOverlayVideo() {
         callState = CallState.Negotiated,
         localMedia = CallMediaType.Video,
         peerMedia = CallMediaType.Video,
-        connectionInfo = ConnectionInfo(RTCIceCandidate(RTCIceCandidateType.Host), RTCIceCandidate(RTCIceCandidateType.Host))
+        connectionInfo = ConnectionInfo(
+          RTCIceCandidate(RTCIceCandidateType.Host, "tcp", null),
+          RTCIceCandidate(RTCIceCandidateType.Host, "tcp", null)
+        )
       ),
       dismiss = {},
       toggleAudio = {},
@@ -501,7 +504,10 @@ fun PreviewActiveCallOverlayAudio() {
         callState = CallState.Negotiated,
         localMedia = CallMediaType.Audio,
         peerMedia = CallMediaType.Audio,
-        connectionInfo = ConnectionInfo(RTCIceCandidate(RTCIceCandidateType.Host), RTCIceCandidate(RTCIceCandidateType.Host))
+        connectionInfo = ConnectionInfo(
+          RTCIceCandidate(RTCIceCandidateType.Host, "udp", null),
+          RTCIceCandidate(RTCIceCandidateType.Host, "udp", null)
+        )
       ),
       dismiss = {},
       toggleAudio = {},

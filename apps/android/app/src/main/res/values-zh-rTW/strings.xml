@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="chat_item_ttl_week">1 個星期</string>
+    <string name="accept_requests">接受請求</string>
+    <string name="a_plus_b">a + b</string>
+    <string name="about_simplex">關於 SimpleX</string>
+    <string name="accept_call_on_lock_screen">接受</string>
+    <string name="accept_feature">接受</string>
+    <string name="chat_item_ttl_day">1 天</string>
+    <string name="chat_item_ttl_month">1 個月</string>
+    <string name="accept_contact_button">接受</string>
+    <string name="about_simplex_chat">關於<xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
+    <string name="accept_connection_request__question">接受新連線要求\?</string>
+    <string name="callstatus_accepted">已接受電話</string>
+    <string name="network_enable_socks_info">要在端口 9050 啟動 SOCKS 代理伺服器嗎\? 在啟用這個選項之前，必須先啟動代理伺服器。</string>
+    <string name="group_member_role_admin">管理員</string>
+    <string name="above_then_preposition_continuation">以上,然後:</string>
+    <string name="smp_servers_preset_add">加入預設伺服器</string>
+    <string name="smp_servers_add">新增伺服器…</string>
+    <string name="accept">接受</string>
+</resources>

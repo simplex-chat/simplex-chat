@@ -73,10 +73,14 @@ fun SendMsgView(
     val showProgress = cs.inProgress && (cs.preview is ComposePreview.ImagePreview || cs.preview is ComposePreview.FilePreview)
     val showVoiceButton = cs.message.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
         cs.liveMessage == null && (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started)
-    NativeKeyboard(composeState, textStyle, onMessageChange)
+    val showDeleteTextButton = rememberSaveable { mutableStateOf(false) }
+    NativeKeyboard(composeState, textStyle, showDeleteTextButton, onMessageChange)
     // Disable clicks on text field
     if (cs.preview is ComposePreview.VoicePreview) {
       Box(Modifier.matchParentSize().clickable(enabled = false, onClick = { }))
+    }
+    if (showDeleteTextButton.value) {
+      DeleteTextButton(composeState)
     }
     Box(Modifier.align(Alignment.BottomEnd)) {
       val sendButtonSize = remember { Animatable(36f) }
@@ -168,6 +172,7 @@ fun SendMsgView(
 private fun NativeKeyboard(
   composeState: MutableState<ComposeState>,
   textStyle: MutableState<TextStyle>,
+  showDeleteTextButton: MutableState<Boolean>,
   onMessageChange: (String) -> Unit
 ) {
   val cs = composeState.value
@@ -245,6 +250,7 @@ private fun NativeKeyboard(
       imm.showSoftInput(it, InputMethodManager.SHOW_IMPLICIT)
       showKeyboard = false
     }
+    showDeleteTextButton.value = it.lineCount >= 4
   }
   if (composeState.value.preview is ComposePreview.VoicePreview) {
     Text(
@@ -253,6 +259,16 @@ private fun NativeKeyboard(
       color = HighOrLowlight,
       style = textStyle.value.copy(fontStyle = FontStyle.Italic)
     )
+  }
+}
+
+@Composable
+private fun BoxScope.DeleteTextButton(composeState: MutableState<ComposeState>) {
+  IconButton(
+    { composeState.value = composeState.value.copy(message = "") },
+    Modifier.align(Alignment.TopEnd).size(36.dp)
+  ) {
+    Icon(Icons.Filled.Close, null, Modifier.padding(7.dp).size(36.dp), tint = HighOrLowlight)
   }
 }
 
@@ -601,7 +617,7 @@ fun PreviewSendMsgViewEditing() {
 fun PreviewSendMsgViewInProgress() {
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   val textStyle = remember { mutableStateOf(smallFont) }
-  val composeStateInProgress = ComposeState(preview = ComposePreview.FilePreview("test.txt"), inProgress = true, useLinkPreviews = true)
+  val composeStateInProgress = ComposeState(preview = ComposePreview.FilePreview("test.txt", getAppFileUri("test.txt")), inProgress = true, useLinkPreviews = true)
   SimpleXTheme {
     SendMsgView(
       composeState = remember { mutableStateOf(composeStateInProgress) },

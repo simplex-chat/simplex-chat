@@ -21,7 +21,7 @@ enum class OnboardingStage {
 }
 
 @Composable
-fun CreateProfile(chatModel: ChatModel) {
+fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
   val scope = rememberCoroutineScope()
   val scrollState = rememberScrollState()
   val keyboardState by getKeyboardState()
@@ -34,7 +34,7 @@ fun CreateProfile(chatModel: ChatModel) {
         .background(color = MaterialTheme.colors.background)
         .padding(20.dp)
     ) {
-      CreateProfilePanel(chatModel)
+      CreateProfilePanel(chatModel, close)
       LaunchedEffect(Unit) {
         setLastVersionDefault(chatModel)
       }

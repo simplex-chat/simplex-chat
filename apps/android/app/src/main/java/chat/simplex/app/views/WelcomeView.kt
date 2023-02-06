@@ -38,7 +38,7 @@ fun isValidDisplayName(name: String) : Boolean {
 }
 
 @Composable
-fun CreateProfilePanel(chatModel: ChatModel) {
+fun CreateProfilePanel(chatModel: ChatModel, close: () -> Unit) {
   val displayName = remember { mutableStateOf("") }
   val fullName = remember { mutableStateOf("") }
   val focusRequester = remember { FocusRequester() }
@@ -72,10 +72,12 @@ fun CreateProfilePanel(chatModel: ChatModel) {
       ProfileNameField(fullName)
       Spacer(Modifier.fillMaxHeight().weight(1f))
       Row {
-        SimpleButton(
-          text = stringResource(R.string.about_simplex),
-          icon = Icons.Outlined.ArrowBackIosNew
-        ) { chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo }
+        if (chatModel.users.isEmpty()) {
+          SimpleButton(
+            text = stringResource(R.string.about_simplex),
+            icon = Icons.Outlined.ArrowBackIosNew
+          ) { chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo }
+        }
 
         Spacer(Modifier.fillMaxWidth().weight(1f))
 
@@ -83,7 +85,7 @@ fun CreateProfilePanel(chatModel: ChatModel) {
         val createModifier: Modifier
         val createColor: Color
         if (enabled) {
-          createModifier = Modifier.clickable { createProfile(chatModel, displayName.value, fullName.value) }.padding(8.dp)
+          createModifier = Modifier.clickable { createProfile(chatModel, displayName.value, fullName.value, close) }.padding(8.dp)
           createColor = MaterialTheme.colors.primary
         } else {
           createModifier = Modifier.padding(8.dp)
@@ -105,13 +107,22 @@ fun CreateProfilePanel(chatModel: ChatModel) {
   }
 }
 
-fun createProfile(chatModel: ChatModel, displayName: String, fullName: String) {
+fun createProfile(chatModel: ChatModel, displayName: String, fullName: String, close: () -> Unit) {
   withApi {
     val user = chatModel.controller.apiCreateActiveUser(
       Profile(displayName, fullName, null)
-    )
-    chatModel.controller.startChat(user)
-    chatModel.onboardingStage.value = OnboardingStage.Step3_SetNotificationsMode
+    ) ?: return@withApi
+    chatModel.currentUser.value = user
+    if (chatModel.users.isEmpty()) {
+      chatModel.controller.startChat(user)
+      chatModel.onboardingStage.value = OnboardingStage.Step3_SetNotificationsMode
+    } else {
+      val users = chatModel.controller.listUsers()
+      chatModel.users.clear()
+      chatModel.users.addAll(users)
+      chatModel.controller.getUserChatData()
+      close()
+    }
   }
 }
 

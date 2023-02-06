@@ -17,9 +17,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
-import chat.simplex.app.model.ChatModel
-import chat.simplex.app.model.Contact
+import chat.simplex.app.SimplexApp
+import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
+import chat.simplex.app.views.helpers.ProfileImage
 import chat.simplex.app.views.usersettings.ProfilePreview
 import kotlinx.datetime.Clock
 
@@ -32,6 +33,7 @@ fun IncomingCallAlertView(invitation: RcvCallInvitation, chatModel: ChatModel) {
   DisposableEffect(true) { onDispose { SoundPlayer.shared.stop() } }
   IncomingCallAlertLayout(
     invitation,
+    chatModel,
     rejectCall = { cm.endCall(invitation = invitation) },
     ignoreCall = {
       chatModel.activeCallInvitation.value = null
@@ -44,13 +46,14 @@ fun IncomingCallAlertView(invitation: RcvCallInvitation, chatModel: ChatModel) {
 @Composable
 fun IncomingCallAlertLayout(
   invitation: RcvCallInvitation,
+  chatModel: ChatModel,
   rejectCall: () -> Unit,
   ignoreCall: () -> Unit,
   acceptCall: () -> Unit
 ) {
   val color = if (isInDarkTheme()) IncomingCallDark else IncomingCallLight
   Column(Modifier.fillMaxWidth().background(color).padding(top = 16.dp, bottom = 16.dp, start = 16.dp, end = 8.dp)) {
-    IncomingCallInfo(invitation)
+    IncomingCallInfo(invitation, chatModel)
     Spacer(Modifier.height(8.dp))
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
       Row(Modifier.fillMaxWidth().weight(1f), verticalAlignment = Alignment.CenterVertically) {
@@ -66,9 +69,13 @@ fun IncomingCallAlertLayout(
 }
 
 @Composable
-fun IncomingCallInfo(invitation: RcvCallInvitation) {
+fun IncomingCallInfo(invitation: RcvCallInvitation, chatModel: ChatModel) {
   @Composable fun CallIcon(icon: ImageVector, descr: String) = Icon(icon, descr, tint = SimplexGreen)
-  Row {
+  Row(verticalAlignment = Alignment.CenterVertically) {
+    if (chatModel.users.size > 1) {
+      ProfileImage(size = 32.dp, image = invitation.user.profile.image, color = MaterialTheme.colors.secondary)
+      Spacer(Modifier.width(4.dp))
+    }
     if (invitation.callType.media == CallMediaType.Video) CallIcon(Icons.Filled.Videocam, stringResource(R.string.icon_descr_video_call))
     else CallIcon(Icons.Filled.Phone, stringResource(R.string.icon_descr_audio_call))
     Spacer(Modifier.width(4.dp))
@@ -101,11 +108,13 @@ fun PreviewIncomingCallAlertLayout() {
   SimpleXTheme {
     IncomingCallAlertLayout(
       invitation = RcvCallInvitation(
+        user = User.sampleData,
         contact = Contact.sampleData,
         callType = CallType(media = CallMediaType.Audio, capabilities = CallCapabilities(encryption = false)),
         sharedKey = null,
         callTs = Clock.System.now()
       ),
+      chatModel = SimplexApp.context.chatModel,
       rejectCall = {},
       ignoreCall = {},
       acceptCall = {}

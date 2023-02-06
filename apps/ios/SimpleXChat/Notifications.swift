@@ -21,7 +21,7 @@ public let appNotificationId = "chat.simplex.app.notification"
 
 let contactHidden = NSLocalizedString("Contact hidden:", comment: "notification")
 
-public func createContactRequestNtf(_ contactRequest: UserContactRequest) -> UNMutableNotificationContent {
+public func createContactRequestNtf(_ user: User, _ contactRequest: UserContactRequest) -> UNMutableNotificationContent {
     let hideContent = ntfPreviewModeGroupDefault.get() == .hidden
     return createNotification(
         categoryIdentifier: ntfCategoryContactRequest,
@@ -34,11 +34,11 @@ public func createContactRequestNtf(_ contactRequest: UserContactRequest) -> UNM
             hideContent ? NSLocalizedString("this contact", comment: "notification title") : contactRequest.chatViewName
         ),
         targetContentIdentifier: nil,
-        userInfo: ["chatId": contactRequest.id, "contactRequestId": contactRequest.apiId]
+        userInfo: ["chatId": contactRequest.id, "contactRequestId": contactRequest.apiId, "userId": user.userId]
     )
 }
 
-public func createContactConnectedNtf(_ contact: Contact) -> UNMutableNotificationContent {
+public func createContactConnectedNtf(_ user: User, _ contact: Contact) -> UNMutableNotificationContent {
     let hideContent = ntfPreviewModeGroupDefault.get() == .hidden
     return createNotification(
         categoryIdentifier: ntfCategoryContactConnected,
@@ -50,12 +50,13 @@ public func createContactConnectedNtf(_ contact: Contact) -> UNMutableNotificati
             NSLocalizedString("You can now send messages to %@", comment: "notification body"),
             hideContent ? NSLocalizedString("this contact", comment: "notification title") : contact.chatViewName
         ),
-        targetContentIdentifier: contact.id
+        targetContentIdentifier: contact.id,
+        userInfo: ["userId": user.userId]
 //            userInfo: ["chatId": contact.id, "contactId": contact.apiId]
     )
 }
 
-public func createMessageReceivedNtf(_ cInfo: ChatInfo, _ cItem: ChatItem) -> UNMutableNotificationContent {
+public func createMessageReceivedNtf(_ user: User, _ cInfo: ChatInfo, _ cItem: ChatItem) -> UNMutableNotificationContent {
     let previewMode = ntfPreviewModeGroupDefault.get()
     var title: String
     if case let .group(groupInfo) = cInfo, case let .groupRcv(groupMember) = cItem.chatDir {
@@ -67,7 +68,8 @@ public func createMessageReceivedNtf(_ cInfo: ChatInfo, _ cItem: ChatItem) -> UN
         categoryIdentifier: ntfCategoryMessageReceived,
         title: title,
         body: previewMode == .message ? hideSecrets(cItem) : NSLocalizedString("new message", comment: "notification"),
-        targetContentIdentifier: cInfo.id
+        targetContentIdentifier: cInfo.id,
+        userInfo: ["userId": user.userId]
 //            userInfo: ["chatId": cInfo.id, "chatItemId": cItem.id]
     )
 }
@@ -82,11 +84,11 @@ public func createCallInvitationNtf(_ invitation: RcvCallInvitation) -> UNMutabl
         title: hideContent ? contactHidden : "\(invitation.contact.chatViewName):",
         body: text,
         targetContentIdentifier: nil,
-        userInfo: ["chatId": invitation.contact.id]
+        userInfo: ["chatId": invitation.contact.id, "userId": invitation.user.userId]
     )
 }
 
-public func createConnectionEventNtf(_ connEntity: ConnectionEntity) -> UNMutableNotificationContent {
+public func createConnectionEventNtf(_ user: User, _ connEntity: ConnectionEntity) -> UNMutableNotificationContent {
     let hideContent = ntfPreviewModeGroupDefault.get() == .hidden
     var title: String
     var body: String? = nil
@@ -115,7 +117,8 @@ public func createConnectionEventNtf(_ connEntity: ConnectionEntity) -> UNMutabl
         categoryIdentifier: ntfCategoryConnectionEvent,
         title: title,
         body: body,
-        targetContentIdentifier: targetContentIdentifier
+        targetContentIdentifier: targetContentIdentifier,
+        userInfo: ["userId": user.userId]
     )
 }
 

@@ -90,6 +90,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
     context = this
     initChatController()
     ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+    context.getDir("temp", MODE_PRIVATE).deleteRecursively()
   }
 
   override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
