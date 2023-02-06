@@ -83,7 +83,7 @@ fun QRCode(connReq: String, modifier: Modifier = Modifier, withLogo: Boolean = t
 }
 
 fun qrCodeBitmap(content: String, size: Int = 1024): Bitmap {
-  val qrCode = QrCodeEncoder().setVersion(16).addAutomatic(content).setError(QrCode.ErrorLevel.L).fixate()
+  val qrCode = QrCodeEncoder().addAutomatic(content).setError(QrCode.ErrorLevel.L).fixate()
   /** See [QrCodeGeneratorImage.initialize] and [FiducialImageEngine.configure] for size calculation */
   val numModules = QrCode.totalModules(qrCode.version)
   val borderModule = 1
