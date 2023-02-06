@@ -87,7 +87,7 @@ fun Bitmap.addLogo(): Bitmap = applyCanvas {
   val paint = android.graphics.Paint()
   paint.color = android.graphics.Color.WHITE
   drawCircle(width / 2f, height / 2f, radius, paint)
-  val logo = SimplexApp.context.resources.getDrawable(R.mipmap.icon_foreground).toBitmap()
+  val logo = SimplexApp.context.resources.getDrawable(R.mipmap.icon_foreground, null).toBitmap()
   val logoSize = (width * 0.24).toInt()
   translate((width - logoSize) / 2f, (height - logoSize) / 2f)
   drawBitmap(logo, null, android.graphics.Rect(0, 0, logoSize, logoSize), null)
