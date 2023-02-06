@@ -251,7 +251,7 @@ Current interface languages:
 
 English (development language)
 German: [@mlanp](https://github.com/mlanp)
-French: link to be added
+French: [@ishi_sama](https://github.com/ishi-sama)
 Italian: [@unbranched](https://github.com/unbranched)
 Russian: project team
 
