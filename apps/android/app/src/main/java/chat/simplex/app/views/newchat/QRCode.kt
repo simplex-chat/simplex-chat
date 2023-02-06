@@ -63,7 +63,8 @@ fun QRCode(connReq: String, modifier: Modifier = Modifier, withLogo: Boolean = t
     ) {
       Image(
         bitmap = qrCodeBitmap(connReq, maxOf(size, maxWidth.value.toInt())).replaceColor(Color.Black.toArgb(), tintColor.toArgb()).asImageBitmap(),
-        contentDescription = stringResource(R.string.image_descr_qr_code)
+        contentDescription = stringResource(R.string.image_descr_qr_code),
+        Modifier.fillMaxSize()
       )
       if (withLogo) {
         Box(
