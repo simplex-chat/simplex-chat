@@ -50,7 +50,7 @@ active_home: true
                     <img src="{{ feature.imgLight }}" alt="" class="dark:hidden"/>
                     <img src="{{ feature.imgDark }}" alt="" class="hidden dark:block"/>
                 </div>
-                <p class="text-grey-black dark:text-white text-[16px] font-medium text-center w-full max-w-[265px]">{{ feature.title | safe }}</p>
+                <p class="text-grey-black dark:text-white text-[16px] font-medium text-center w-full max-w-[265px]">{% include feature.title %}</p>
             </div>
             {% endfor %}
         </div>

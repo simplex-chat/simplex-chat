@@ -3,14 +3,39 @@ const markdownItAnchor = require("markdown-it-anchor")
 const markdownItReplaceLink = require('markdown-it-replace-link')
 const slugify = require("slugify")
 const uri = require('fast-uri')
+const fs = require("fs");
+const path = require("path");
 
 const globalConfig = {
   onionLocation: "http://isdb4l77sjqoy2qq7ipum6x3at6hyn3jmxfx4zdhc72ufbmuq4ilwkqd.onion",
   siteLocation: "https://simplex.chat"
 }
 
+// Load the JSON file
+const translations = JSON.parse(fs.readFileSync(path.resolve(__dirname, "translations.json"), "utf-8"))
+const supportedLangs = Object.keys(translations)
+
 module.exports = function (ty) {
   ty.addShortcode("cfg", (name) => globalConfig[name])
+  
+  ty.addShortcode("getValue", (obj) => {
+    const lang = obj.url.split("/")[1]
+    if (supportedLangs.includes(lang)) {
+      const value = translations[lang][obj.key]
+      if (value) {
+        return value
+      }
+    }
+    return translations["en"][obj.key]
+  })
+
+  ty.addShortcode("getlang", (path) => {
+    const lang = path.split("/")[1]
+    if (supportedLangs.includes(lang)) {
+      return lang
+    }
+    return "en"
+  })
 
   // Keeps the same directory structure.
   ty.addPassthroughCopy("src/assets/")
@@ -24,6 +49,7 @@ module.exports = function (ty) {
   ty.addPassthroughCopy("src/hero-phone")
   ty.addPassthroughCopy("src/hero-phone-dark")
   ty.addPassthroughCopy("src/blog/images")
+  supportedLangs.forEach(lang => ty.addPassthroughCopy(`src/${lang}/blog/images`))
   ty.addPassthroughCopy("src/images")
   ty.addPassthroughCopy("src/CNAME")
   ty.addPassthroughCopy("src/.well-known")
@@ -58,6 +84,9 @@ module.exports = function (ty) {
 
   // replace the default markdown-it instance
   ty.setLibrary("md", markdownLib)
+
+  // Pass the translations to Nunjucks as a global variable
+  ty.addNunjucksGlobal("translations", translations)
 
   return {
     dir: {

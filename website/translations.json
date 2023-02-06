@@ -1,0 +1,53 @@
+{
+    "en": {
+        "home": "Home",
+        "hero-overlay-1-title": "We are a creative agency",
+        "hero-overlay-2-title": "Why user IDs are bad for privacy?",
+        "feature-1-title": "E2E-encrypted messages with markdown and editing",
+        "feature-2-title": "E2E-encrypted<br>images and files",
+        "feature-3-title": "Decentralized secret groups &mdash;<br>only users know they exist",
+        "feature-4-title": "E2E-encrypted voice messages <em>(coming soon)</em>",
+        "feature-5-title": "Disappearing secret conversations <em>(coming soon)</em>",
+        "feature-6-title": "E2E-encrypted<br>audio and video calls",
+        "feature-7-title": "Portable encrypted database &mdash; move your profile to another device",
+        "feature-8-title": "Incognito mode &mdash;<br>unique to SimpleX Chat",
+        "simplex-network-overlay-1-title": "Comparison with P2P messaging protocols",
+        "goodbye": "Goodbye"
+    },
+    "fr": {
+        "home": "Maison",
+        "hero-overlay-1-title": "Nous sommes une agence créative",
+        "hero-overlay-2-title": "Pourquoi les identifiants d'utilisateur sont mauvais pour la vie privée?",
+        "feature-1-title": "Messages chiffrés de bout en bout avec markdown et édition",
+        "feature-2-title": "Images et fichiers chiffrés de bout en bout",
+        "feature-3-title": "Groupes secrets décentralisés &mdash; seuls les utilisateurs savent qu'ils existent",
+        "feature-4-title": "Messages vocaux chiffrés de bout en bout <em>(bientôt)</em>",
+        "feature-5-title": "Conversations secrètes éphémères <em>(bientôt)</em>",
+        "feature-6-title": "Appels audio et vidéo chiffrés de bout en bout",
+        "feature-7-title": "Base de données chiffrée portable &mdash; déplacez votre profil sur un autre appareil",
+        "feature-8-title": "Mode incognito &mdash; unique à SimpleX Chat",
+        "simplex-network-overlay-1-title": "Comparaison avec les protocoles de messagerie P2P",
+        "goodbye": "Au revoir"
+    },
+    "de":{
+        "home": "Heim",
+        "hero-overlay-1-title": "Wir sind eine kreative Agentur",
+        "hero-overlay-2-title": "Warum sind Benutzer-IDs schlecht für die Privatsphäre?",
+        "feature-1-title": "Ende-zu-Ende-verschlüsselte Nachrichten mit Markdown und Bearbeitung",
+        "feature-2-title": "Ende-zu-Ende-verschlüsselte<br>Bilder und Dateien",
+        "feature-3-title": "Dekentralisierte geheime Gruppen &mdash;<br>nur Benutzer wissen, dass sie existieren",
+        "feature-4-title": "Ende-zu-Ende-verschlüsselte Sprachnachrichten <em>(in Kürze)</em>",
+        "feature-5-title": "Verschwindende geheime Gespräche <em>(in Kürze)</em>",
+        "feature-6-title": "Ende-zu-Ende-verschlüsselte<br>Audio- und Videoanrufe",
+        "feature-7-title": "Portable verschlüsselte Datenbank &mdash; verschieben Sie Ihr Profil auf ein anderes Gerät",
+        "feature-8-title": "Incognito-Modus &mdash;<br>einzigartig bei SimpleX Chat",
+        "simplex-network-overlay-1-title": "Vergleich mit P2P-Messaging-Protokollen",
+        "goodbye": "Auf Wiedersehen"
+    },
+    "it":{
+
+    },
+    "ru":{
+
+    }
+}
