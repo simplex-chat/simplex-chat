@@ -266,7 +266,7 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
               Just CIFile {filePath = Just fp} -> Just fp
               _ -> Nothing
     testViewItem :: CChatItem c -> Text
-    testViewItem (CChatItem _ ChatItem {meta = CIMeta {itemText, itemDeleted}}) = itemText <> if itemDeleted then " [marked deleted]" else ""
+    testViewItem (CChatItem _ ChatItem {meta = CIMeta {itemText, itemDeleted}}) = itemText <> if isJust itemDeleted then " [marked deleted]" else ""
     viewErrorsSummary :: [a] -> StyledString -> [StyledString]
     viewErrorsSummary summary s = [ttyError (T.pack . show $ length summary) <> s <> " (run with -c option to show each error)" | not (null summary)]
     contactList :: [ContactRef] -> String
@@ -352,7 +352,7 @@ viewChatItem chat ChatItem {chatDir, meta = meta@CIMeta {itemDeleted}, content, 
         quote = maybe [] (groupQuote g) quotedItem
     _ -> []
   where
-    withItemDeleted item = if itemDeleted then item <> styled (colored Red) (" [marked deleted]" :: String) else item
+    withItemDeleted item = if isJust itemDeleted then item <> styled (colored Red) (" [marked deleted]" :: String) else item
     withSndFile = withFile viewSentFileInvitation
     withRcvFile = withFile viewReceivedFileInvitation
     withFile view dir l = maybe l (\f -> l <> view dir f ts meta) file
@@ -404,7 +404,7 @@ viewItemUpdate chat ChatItem {chatDir, meta = meta@CIMeta {itemEdited, itemLive}
       quote = maybe [] (groupQuote g) quotedItem
   _ -> []
 
-hideLive :: CIMeta d -> [StyledString] -> [StyledString]
+hideLive :: CIMeta с d -> [StyledString] -> [StyledString]
 hideLive CIMeta {itemLive = Just True} _ = []
 hideLive _ s = s
 
@@ -445,7 +445,7 @@ msgPreview = msgPlain . preview . msgContentText
       | T.length t <= 120 = t
       | otherwise = T.take 120 t <> "..."
 
-viewRcvIntegrityError :: StyledString -> MsgErrorType -> CurrentTime -> CIMeta 'MDRcv -> [StyledString]
+viewRcvIntegrityError :: StyledString -> MsgErrorType -> CurrentTime -> CIMeta с 'MDRcv -> [StyledString]
 viewRcvIntegrityError from msgErr ts meta = receivedWithTime_ ts from [] meta (viewMsgIntegrityError msgErr) False
 
 viewMsgIntegrityError :: MsgErrorType -> [StyledString]
@@ -929,22 +929,22 @@ viewContactUpdated
     where
       fullNameUpdate = if T.null fullName' || fullName' == n' then " removed full name" else " updated full name: " <> plain fullName'
 
-viewReceivedMessage :: StyledString -> [StyledString] -> MsgContent -> CurrentTime -> CIMeta d -> [StyledString]
+viewReceivedMessage :: StyledString -> [StyledString] -> MsgContent -> CurrentTime -> CIMeta c d -> [StyledString]
 viewReceivedMessage = viewReceivedMessage_ False
 
-viewReceivedUpdatedMessage :: StyledString -> [StyledString] -> MsgContent -> CurrentTime -> CIMeta d -> [StyledString]
+viewReceivedUpdatedMessage :: StyledString -> [StyledString] -> MsgContent -> CurrentTime -> CIMeta c d -> [StyledString]
 viewReceivedUpdatedMessage = viewReceivedMessage_ True
 
-viewReceivedMessage_ :: Bool -> StyledString -> [StyledString] -> MsgContent -> CurrentTime -> CIMeta d -> [StyledString]
+viewReceivedMessage_ :: Bool -> StyledString -> [StyledString] -> MsgContent -> CurrentTime -> CIMeta c d -> [StyledString]
 viewReceivedMessage_ updated from quote mc ts meta = receivedWithTime_ ts from quote meta (ttyMsgContent mc) updated
 
-receivedWithTime_ :: CurrentTime -> StyledString -> [StyledString] -> CIMeta d -> [StyledString] -> Bool -> [StyledString]
+receivedWithTime_ :: CurrentTime -> StyledString -> [StyledString] -> CIMeta c d -> [StyledString] -> Bool -> [StyledString]
 receivedWithTime_ ts from quote CIMeta {localItemTs, itemId, itemEdited, itemDeleted, itemLive} styledMsg updated = do
   prependFirst (ttyMsgTime ts localItemTs <> " " <> from) (quote <> prependFirst (indent <> live) styledMsg)
   where
     indent = if null quote then "" else "      "
     live
-      | itemEdited || itemDeleted = ""
+      | itemEdited || isJust itemDeleted = ""
       | otherwise = case itemLive of
         Just True
           | updated -> ttyFrom "[LIVE] "
@@ -963,12 +963,12 @@ ttyMsgTime ts t =
           else "%H:%M"
    in styleTime $ formatTime defaultTimeLocale fmt localTime
 
-viewSentMessage :: StyledString -> [StyledString] -> MsgContent -> CurrentTime -> CIMeta d -> [StyledString]
+viewSentMessage :: StyledString -> [StyledString] -> MsgContent -> CurrentTime -> CIMeta c d -> [StyledString]
 viewSentMessage to quote mc ts meta@CIMeta {itemEdited, itemDeleted, itemLive} = sentWithTime_ ts (prependFirst to $ quote <> prependFirst (indent <> live) (ttyMsgContent mc)) meta
   where
     indent = if null quote then "" else "      "
     live
-      | itemEdited || itemDeleted = ""
+      | itemEdited || isJust itemDeleted = ""
       | otherwise = case itemLive of
         Just True -> ttyTo "[LIVE started] "
         Just False -> ttyTo "[LIVE] "
@@ -977,7 +977,7 @@ viewSentMessage to quote mc ts meta@CIMeta {itemEdited, itemDeleted, itemLive} =
 viewSentBroadcast :: MsgContent -> Int -> CurrentTime -> ZonedTime -> [StyledString]
 viewSentBroadcast mc n ts t = prependFirst (highlight' "/feed" <> " (" <> sShow n <> ") " <> ttyMsgTime ts t <> " ") (ttyMsgContent mc)
 
-viewSentFileInvitation :: StyledString -> CIFile d -> CurrentTime -> CIMeta d -> [StyledString]
+viewSentFileInvitation :: StyledString -> CIFile d -> CurrentTime -> CIMeta c d -> [StyledString]
 viewSentFileInvitation to CIFile {fileId, filePath, fileStatus} ts = case filePath of
   Just fPath -> sentWithTime_ ts $ ttySentFile fPath
   _ -> const []
@@ -987,7 +987,7 @@ viewSentFileInvitation to CIFile {fileId, filePath, fileStatus} ts = case filePa
       CIFSSndTransfer -> []
       _ -> ["use " <> highlight ("/fc " <> show fileId) <> " to cancel sending"]
 
-sentWithTime_ :: CurrentTime -> [StyledString] -> CIMeta d -> [StyledString]
+sentWithTime_ :: CurrentTime -> [StyledString] -> CIMeta c d -> [StyledString]
 sentWithTime_ ts styledMsg CIMeta {localItemTs} =
   prependFirst (ttyMsgTime ts localItemTs <> " ") styledMsg
 
@@ -1018,7 +1018,7 @@ sendingFile_ status ft@SndFileTransfer {recipientDisplayName = c} =
 sndFile :: SndFileTransfer -> StyledString
 sndFile SndFileTransfer {fileId, fileName} = fileTransferStr fileId fileName
 
-viewReceivedFileInvitation :: StyledString -> CIFile d -> CurrentTime -> CIMeta d -> [StyledString]
+viewReceivedFileInvitation :: StyledString -> CIFile d -> CurrentTime -> CIMeta c d -> [StyledString]
 viewReceivedFileInvitation from file ts meta = receivedWithTime_ ts from [] meta (receivedFileInvitation_ file) False
 
 receivedFileInvitation_ :: CIFile d -> [StyledString]

@@ -372,7 +372,8 @@ CREATE TABLE chat_items(
   item_edited INTEGER,
   timed_ttl INTEGER,
   timed_delete_at TEXT,
-  item_live INTEGER
+  item_live INTEGER,
+  item_deleted_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL
 );
 CREATE TABLE chat_item_messages(
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
@@ -546,3 +547,6 @@ CREATE TABLE IF NOT EXISTS "smp_servers"(
   UNIQUE(user_id, host, port)
 );
 CREATE INDEX idx_smp_servers_user_id ON smp_servers(user_id);
+CREATE INDEX idx_chat_items_item_deleted_by_group_member_id ON chat_items(
+  item_deleted_by_group_member_id
+);
