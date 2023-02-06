@@ -21,14 +21,19 @@ import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.launch
 
 @Composable
-fun QRCode(connReq: String, modifier: Modifier = Modifier, withLogo: Boolean = true, tintColor: Color = Color(0xff062d56)) {
+fun QRCode(
+  connReq: String,
+  modifier: Modifier = Modifier,
+  tintColor: Color = Color(0xff062d56),
+  withLogo: Boolean = true
+) {
   val context = LocalContext.current
   val scope = rememberCoroutineScope()
   val size = 1024
 
   BoxWithConstraints {
     val maxWidthInPx = with(LocalDensity.current) { maxWidth.roundToPx() }
-    val qr = remember(connReq, tintColor, maxWidthInPx) {
+    val qr = remember(maxWidthInPx, connReq, tintColor, withLogo) {
       qrCodeBitmap(connReq, maxOf(size, maxWidthInPx)).replaceColor(Color.Black.toArgb(), tintColor.toArgb())
         .let { if (withLogo) it.addLogo() else it }
         .asImageBitmap()
