@@ -23,7 +23,7 @@ active_home: true
                 <div class="md:w-[70%] lg:w-full flex flex-col items-center md:items-start lg:items-center gap-5 mb-[54px] md:mb-0 lg:mb-[54px]">
                     <p class="font-medium text-xl text-center text-grey-black dark:text-white">{% include section.title %}</p>
                     {% if section.overlayContent %}
-                    <a href="javascript:void(0);" data-show-overlay="{{ section.overlayContent.overlayId }}" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] underline-offset-2">{{ section.overlayContent.linkText }}</a>
+                    <a href="javascript:void(0);" data-show-overlay="{{ section.overlayContent.overlayId }}" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] underline-offset-2">{% include section.overlayContent.linkText %}</a>
                     {{ overlay(section,page.url) }}
                     {% endif %}
                 </div>

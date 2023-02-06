@@ -17,7 +17,7 @@ const supportedLangs = Object.keys(translations)
 
 module.exports = function (ty) {
   ty.addShortcode("cfg", (name) => globalConfig[name])
-  
+
   ty.addShortcode("getValue", (obj) => {
     const lang = obj.url.split("/")[1]
     if (supportedLangs.includes(lang)) {
@@ -35,6 +35,14 @@ module.exports = function (ty) {
       return lang
     }
     return "en"
+  })
+
+  ty.addShortcode("getlangRoute", (path) => {
+    const supportedRoutes = ["blog", "contact", "invitation", ""]
+    const lang = path.split("/")[1]
+    if (supportedRoutes.includes(lang)) return ""
+    if (supportedLangs.includes(lang)) return `/${lang}`
+    return "/en"
   })
 
   // Keeps the same directory structure.

@@ -10,7 +10,7 @@
                 <ul class="flex flex-col lg:flex-row lg:items-center gap-3 py-4 lg:py-0 lg:gap-10">
                     
                     <li class="nav-link relative {% if active_home %}active{% endif %}">
-                        <a href="/{% getlang page.url %}" class="flex items-center justify-between gap-2 lg:py-5 ">
+                        <a href="{% getlangRoute page.url %}/" class="flex items-center justify-between gap-2 lg:py-5 ">
                             <span class="text-[16px] leading-[26px] tracking-[0.01em] nav-link-text text-black dark:text-white before:bg-black dark:before:bg-white">{% getValue {url:page.url,key:"home"} %}</span>
                         </a>                        
                     </li>
@@ -71,7 +71,7 @@
                     <hr class="dark:opacity-[0.1]" >
 
                     <li class="nav-link relative {% if active_blog %}active{% endif %}">
-                        <a href="/{% getlang page.url %}/blog" class="flex items-center justify-between gap-2 lg:py-5">
+                        <a href="{% getlangRoute page.url %}/blog" class="flex items-center justify-between gap-2 lg:py-5">
                             <span class="text-[16px] leading-[26px] tracking-[0.01em] nav-link-text text-black dark:text-white before:bg-black dark:before:bg-white">Blog</span>
                         </a>
                     </li>
