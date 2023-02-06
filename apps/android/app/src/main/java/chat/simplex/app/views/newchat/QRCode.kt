@@ -3,83 +3,51 @@ package chat.simplex.app.views.newchat
 import android.graphics.Bitmap
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.layout.boundsInRoot
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.graphics.*
+import androidx.core.graphics.drawable.toBitmap
 import boofcv.alg.drawing.FiducialImageEngine
 import boofcv.alg.fiducial.qrcode.*
 import boofcv.android.ConvertBitmap
 import chat.simplex.app.R
+import chat.simplex.app.SimplexApp
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.launch
 
 @Composable
 fun QRCode(connReq: String, modifier: Modifier = Modifier, withLogo: Boolean = true, tintColor: Color = Color(0xff062d56)) {
-  val view = LocalView.current
   val context = LocalContext.current
   val scope = rememberCoroutineScope()
-  var rect by remember { mutableStateOf<Rect?>(null) }
   val size = 1024
-  // It's needed for image scaling to fit in required size for sharing
-  var multiplier by remember { mutableStateOf(1f) }
-  Box(modifier) {
-    BoxWithConstraints(Modifier
-      .onGloballyPositioned {
-        val boundsInRoot = it.boundsInRoot()
-        rect = boundsInRoot
-        multiplier = size / boundsInRoot.width
-      }
-      .clickable {
-        scope.launch {
-          val r = rect
-          if (r != null) {
-            val image = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888).applyCanvas {
-              translate(-r.left * multiplier, -r.top * multiplier)
-              withScale(multiplier, multiplier) {
-                view.draw(this)
-              }
-            }
-            // image = qrCodeBitmap(connReq, size).replaceColor(Color.Black.toArgb(), tintColor.toArgb())
+
+  BoxWithConstraints {
+    val maxWidthInPx = with(LocalDensity.current) { maxWidth.roundToPx() }
+    val qr = remember(connReq, tintColor, maxWidthInPx) {
+      qrCodeBitmap(connReq, maxOf(size, maxWidthInPx)).replaceColor(Color.Black.toArgb(), tintColor.toArgb())
+        .let { if (withLogo) it.addLogo() else it }
+        .asImageBitmap()
+    }
+    Image(
+      bitmap = qr,
+      contentDescription = stringResource(R.string.image_descr_qr_code),
+      modifier
+        .clickable {
+          scope.launch {
+            val image = qrCodeBitmap(connReq, size).replaceColor(Color.Black.toArgb(), tintColor.toArgb())
+              .let { if (withLogo) it.addLogo() else it }
             val file = saveTempImageUncompressed(image, false)
             if (file != null) {
               shareFile(context, "", file.absolutePath)
             }
           }
         }
-      },
-      contentAlignment = Alignment.Center
-    ) {
-      Image(
-        bitmap = qrCodeBitmap(connReq, maxOf(size, maxWidth.value.toInt())).replaceColor(Color.Black.toArgb(), tintColor.toArgb()).asImageBitmap(),
-        contentDescription = stringResource(R.string.image_descr_qr_code),
-        Modifier.fillMaxSize()
-      )
-      if (withLogo) {
-        Box(
-          Modifier
-            .size(maxWidth * 0.16f)
-            .background(Color.White, RoundedCornerShape(100))
-        )
-        Image(
-          painterResource(R.mipmap.icon_foreground),
-          null,
-          Modifier
-            .size(maxWidth * 0.24f)
-        )
-      }
-    }
+    )
   }
 }
 
@@ -112,6 +80,17 @@ fun Bitmap.replaceColor(from: Int, to: Int): Bitmap {
   }
   setPixels(pixels, 0, width, 0, 0, width, height)
   return this
+}
+
+fun Bitmap.addLogo(): Bitmap = applyCanvas {
+    val radius = (width * 0.16f) / 2
+    val paint = android.graphics.Paint()
+    paint.color = android.graphics.Color.WHITE
+    drawCircle(width / 2f, height / 2f, radius, paint)
+    val logo = SimplexApp.context.resources.getDrawable(R.mipmap.icon_foreground).toBitmap()
+    val logoSize = (width * 0.24).toInt()
+    translate((width - logoSize) / 2f, (height - logoSize) / 2f)
+    drawBitmap(logo, null, android.graphics.Rect(0, 0, logoSize, logoSize), null)
 }
 
 @Preview
