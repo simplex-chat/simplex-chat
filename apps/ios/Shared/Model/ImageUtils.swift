@@ -133,7 +133,7 @@ func imageHasAlpha(_ img: UIImage) -> Bool {
             context.draw(cgImage, in: CGRect(x: 0, y: 0, width: cgImage.width, height: cgImage.height))
             if let data = context.data {
                 let data = data.assumingMemoryBound(to: UInt8.self)
-                let size = cgImage.width * cgImage.height
+                let size = cgImage.width * cgImage.height * 4
                 var i = 0
                 while i < size {
                     if data[i] < 255 { return true }
@@ -165,8 +165,7 @@ func saveFileFromURL(_ url: URL) -> String? {
 }
 
 func generateNewFileName(_ prefix: String, _ ext: String) -> String {
-    let fileName = uniqueCombine("\(prefix)_\(getTimestamp()).\(ext)")
-    return fileName
+    uniqueCombine("\(prefix)_\(getTimestamp()).\(ext)")
 }
 
 private func uniqueCombine(_ fileName: String) -> String {
@@ -191,6 +190,7 @@ private func getTimestamp() -> String {
         df = DateFormatter()
         df.dateFormat = "yyyyMMdd_HHmmss"
         df.locale = Locale(identifier: "US")
+        df.timeZone = TimeZone(secondsFromGMT: 0)
         tsFormatter = df
     }
     return df.string(from: Date())
@@ -202,4 +202,52 @@ func dropImagePrefix(_ s: String) -> String {
 
 private func dropPrefix(_ s: String, _ prefix: String) -> String {
     s.hasPrefix(prefix) ? String(s.dropFirst(prefix.count)) : s
+}
+
+extension UIImage {
+    func replaceColor(_ from: UIColor, _ to: UIColor) -> UIImage {
+        if let cgImage = cgImage {
+            let colorSpace = CGColorSpaceCreateDeviceRGB()
+            let bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedFirst.rawValue)
+            if let context = CGContext(data: nil, width: cgImage.width, height: cgImage.height, bitsPerComponent: 8, bytesPerRow: cgImage.width * 4, space: colorSpace, bitmapInfo: bitmapInfo.rawValue) {
+                context.draw(cgImage, in: CGRect(x: 0, y: 0, width: cgImage.width, height: cgImage.height))
+                if let data = context.data {
+                    var fromAlpha: CGFloat = 0
+                    var fromRed: CGFloat = 0
+                    var fromGreen: CGFloat = 0
+                    var fromBlue: CGFloat = 0
+                    var toAlpha: CGFloat = 0
+                    var toRed: CGFloat = 0
+                    var toGreen: CGFloat = 0
+                    var toBlue: CGFloat = 0
+                    from.getRed(&fromRed, green: &fromGreen, blue: &fromBlue, alpha: &fromAlpha)
+                    to.getRed(&toRed, green: &toGreen, blue: &toBlue, alpha: &toAlpha)
+                    let fAlpha = UInt8(UInt8(fromAlpha * 255))
+                    let fRed = UInt8(fromRed * 255)
+                    let fGreen = UInt8(fromGreen * 255)
+                    let fBlue = UInt8(fromBlue * 255)
+                    let tAlpha = UInt8(toAlpha * 255)
+                    let tRed = UInt8(toRed * 255)
+                    let tGreen = UInt8(toGreen * 255)
+                    let tBlue = UInt8(toBlue * 255)
+                    let data = data.assumingMemoryBound(to: UInt8.self)
+                    let size = cgImage.width * cgImage.height * 4
+                    var i = 0
+                    while i < size {
+                        if data[i] == fAlpha && data[i + 1] == fRed && data[i + 2] == fGreen && data[i + 3] == fBlue {
+                            data[i + 0] = tAlpha
+                            data[i + 1] = tRed
+                            data[i + 2] = tGreen
+                            data[i + 3] = tBlue
+                        }
+                        i += 4
+                    }
+                }
+                if let img = context.makeImage() {
+                    return UIImage(cgImage: img)
+                }
+            }
+        }
+        return self
+    }
 }

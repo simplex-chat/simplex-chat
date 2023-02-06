@@ -76,45 +76,20 @@ struct SendMessageView: View {
                     }
                 }
 
-                if (composeState.inProgress) {
+                if composeState.inProgress {
                     ProgressView()
                         .scaleEffect(1.4)
                         .frame(width: 31, height: 31, alignment: .center)
                         .padding([.bottom, .trailing], 3)
                 } else {
-                    let vmrs = composeState.voiceMessageRecordingState
-                    if showVoiceMessageButton
-                       && composeState.message.isEmpty
-                       && !composeState.editing
-                       && composeState.liveMessage == nil
-                       && ((composeState.noPreview && vmrs == .noRecording)
-                           || (vmrs == .recording && holdingVMR)) {
-                        HStack {
-                            if voiceMessageAllowed {
-                                RecordVoiceMessageButton(
-                                    startVoiceMessageRecording: startVoiceMessageRecording,
-                                    finishVoiceMessageRecording: finishVoiceMessageRecording,
-                                    holdingVMR: $holdingVMR,
-                                    disabled: composeState.disabled
-                                )
-                            } else {
-                                voiceMessageNotAllowedButton()
-                            }
-                            if let send = sendLiveMessage,
-                               let update = updateLiveMessage,
-                               case .noContextItem = composeState.contextItem {
-                                startLiveMessageButton(send: send, update: update)
-                            }
+                    VStack(alignment: .trailing) {
+                        if teHeight > 100 {
+                            deleteTextButton()
+                            Spacer()
                         }
-                    } else if vmrs == .recording && !holdingVMR {
-                        finishVoiceMessageRecordingButton()
-                    } else if composeState.liveMessage != nil && composeState.liveMessage?.sentMsg == nil && composeState.message.isEmpty {
-                        cancelLiveMessageButton {
-                            cancelLiveMessage?()
-                        }
-                    } else {
-                        sendMessageButton()
+                        composeActionButtons()
                     }
+                    .frame(height: teHeight, alignment: .bottom)
                 }
             }
 
@@ -123,6 +98,52 @@ struct SendMessageView: View {
                 .frame(height: teHeight)
         }
         .padding(.vertical, 8)
+    }
+
+    @ViewBuilder private func composeActionButtons() -> some View {
+        let vmrs = composeState.voiceMessageRecordingState
+        if showVoiceMessageButton
+            && composeState.message.isEmpty
+            && !composeState.editing
+            && composeState.liveMessage == nil
+            && ((composeState.noPreview && vmrs == .noRecording)
+                || (vmrs == .recording && holdingVMR)) {
+            HStack {
+                if voiceMessageAllowed {
+                    RecordVoiceMessageButton(
+                        startVoiceMessageRecording: startVoiceMessageRecording,
+                        finishVoiceMessageRecording: finishVoiceMessageRecording,
+                        holdingVMR: $holdingVMR,
+                        disabled: composeState.disabled
+                    )
+                } else {
+                    voiceMessageNotAllowedButton()
+                }
+                if let send = sendLiveMessage,
+                   let update = updateLiveMessage,
+                   case .noContextItem = composeState.contextItem {
+                    startLiveMessageButton(send: send, update: update)
+                }
+            }
+        } else if vmrs == .recording && !holdingVMR {
+            finishVoiceMessageRecordingButton()
+        } else if composeState.liveMessage != nil && composeState.liveMessage?.sentMsg == nil && composeState.message.isEmpty {
+            cancelLiveMessageButton {
+                cancelLiveMessage?()
+            }
+        } else {
+            sendMessageButton()
+        }
+    }
+
+    private func deleteTextButton() -> some View {
+        Button {
+            composeState.message = ""
+        } label: {
+            Image(systemName: "multiply.circle.fill")
+        }
+        .foregroundColor(Color(uiColor: .tertiaryLabel))
+        .padding([.top, .trailing], 4)
     }
 
     @ViewBuilder private func sendMessageButton() -> some View {

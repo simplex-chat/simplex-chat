@@ -60,7 +60,7 @@ struct SimpleXApp: App {
                             enteredBackground = ProcessInfo.processInfo.systemUptime
                         }
                         doAuthenticate = false
-                        NtfManager.shared.setNtfBadgeCount(chatModel.totalUnreadCount())
+                        NtfManager.shared.setNtfBadgeCount(chatModel.totalUnreadCountForAllUsers())
                     case .active:
                         if chatModel.chatRunning == true {
                             ChatReceiver.shared.start()

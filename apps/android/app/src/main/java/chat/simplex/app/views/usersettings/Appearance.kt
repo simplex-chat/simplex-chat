@@ -24,8 +24,6 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.capitalize
-import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -65,11 +63,6 @@ fun AppearanceView() {
   AppearanceLayout(
     appIcon,
     changeIcon = ::setAppIcon,
-    showThemeSelector = {
-      ModalManager.shared.showModal(true) {
-        ThemeSelectorView()
-      }
-    },
     editPrimaryColor = { primary ->
       ModalManager.shared.showModalCloseable { close ->
         ColorEditor(primary, close)
@@ -81,7 +74,6 @@ fun AppearanceView() {
 @Composable fun AppearanceLayout(
   icon: MutableState<AppIcon>,
   changeIcon: (AppIcon) -> Unit,
-  showThemeSelector: () -> Unit,
   editPrimaryColor: (Color) -> Unit,
 ) {
   Column(
@@ -115,8 +107,12 @@ fun AppearanceView() {
     SectionSpacer()
     val currentTheme by CurrentColors.collectAsState()
     SectionView(stringResource(R.string.settings_section_title_themes)) {
-      SectionItemViewSpaceBetween(showThemeSelector) {
-        Text(generalGetString(R.string.theme))
+      SectionItemViewSpaceBetween {
+        val darkTheme = isSystemInDarkTheme()
+        val state = remember { derivedStateOf { currentTheme.second } }
+        ThemeSelector(state) {
+          ThemeManager.applyTheme(it.name, darkTheme)
+        }
       }
       SectionDivider()
       SectionItemViewSpaceBetween({ editPrimaryColor(currentTheme.first.primary) }) {
@@ -183,6 +179,21 @@ fun ColorPicker(initialColor: Color, onColorChanged: (Color) -> Unit) {
   )
 }
 
+@Composable
+private fun ThemeSelector(state: State<DefaultTheme>, onSelected: (DefaultTheme) -> Unit) {
+  val darkTheme = isSystemInDarkTheme()
+  val values by remember { mutableStateOf(ThemeManager.allThemes(darkTheme).map { it.second to it.third }) }
+  ExposedDropDownSettingRow(
+    generalGetString(R.string.theme),
+    values,
+    state,
+    icon = null,
+    enabled = remember { mutableStateOf(true) },
+    onSelected = onSelected
+  )
+}
+
+
 private fun findEnabledIcon(): AppIcon = AppIcon.values().first { icon ->
   SimplexApp.context.packageManager.getComponentEnabledSetting(
     ComponentName(BuildConfig.APPLICATION_ID, "chat.simplex.app.MainActivity_${icon.name.lowercase()}")
@@ -196,7 +207,6 @@ fun PreviewAppearanceSettings() {
     AppearanceLayout(
       icon = remember { mutableStateOf(AppIcon.DARK_BLUE) },
       changeIcon = {},
-      showThemeSelector = {},
       editPrimaryColor = {},
     )
   }

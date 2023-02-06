@@ -66,7 +66,7 @@ private fun typing(w: FontWeight = FontWeight.Light): AnnotatedString =
 
 @Composable
 fun MarkdownText (
-  text: String,
+  text: CharSequence,
   formattedText: List<FormattedText>? = null,
   sender: String? = null,
   meta: CIMeta? = null,
@@ -78,6 +78,7 @@ fun MarkdownText (
   senderBold: Boolean = false,
   modifier: Modifier = Modifier,
   linkMode: SimplexLinkMode,
+  inlineContent: Map<String, InlineTextContent>? = null,
   onLinkLongClick: (link: String) -> Unit = {}
 ) {
   val textLayoutDirection = remember (text) {
@@ -132,13 +133,14 @@ fun MarkdownText (
     if (formattedText == null) {
       val annotatedText = buildAnnotatedString {
         appendSender(this, sender, senderBold)
-        append(text)
+        if (text is String) append(text)
+        else if (text is AnnotatedString) append(text)
         if (meta?.isLive == true) {
           append(typingIndicator(meta.recent, typingIdx))
         }
         if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
-      Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow)
+      Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent ?: mapOf())
     } else {
       var hasLinks = false
       val annotatedText = buildAnnotatedString {

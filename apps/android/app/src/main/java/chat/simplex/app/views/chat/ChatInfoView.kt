@@ -54,10 +54,14 @@ fun ChatInfoView(
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   if (chat != null) {
+    val contactNetworkStatus = remember(chatModel.networkStatuses.toMap()) {
+      mutableStateOf(chatModel.contactNetworkStatus(contact))
+    }
     ChatInfoLayout(
       chat,
       contact,
       connStats,
+      contactNetworkStatus.value,
       customUserProfile,
       localAlias,
       connectionCode,
@@ -149,6 +153,7 @@ fun ChatInfoLayout(
   chat: Chat,
   contact: Contact,
   connStats: ConnectionStats?,
+  contactNetworkStatus: NetworkStatus,
   customUserProfile: Profile?,
   localAlias: String,
   connectionCode: String?,
@@ -200,9 +205,9 @@ fun ChatInfoLayout(
         SectionItemView({
           AlertManager.shared.showAlertMsg(
             generalGetString(R.string.network_status),
-            chat.serverInfo.networkStatus.statusExplanation
+            contactNetworkStatus.statusExplanation
           )}) {
-          NetworkStatusRow(chat.serverInfo.networkStatus)
+          NetworkStatusRow(contactNetworkStatus)
         }
         val rcvServers = connStats.rcvServers
         if (rcvServers != null && rcvServers.isNotEmpty()) {
@@ -314,7 +319,7 @@ fun LocalAliasEditor(
 }
 
 @Composable
-private fun NetworkStatusRow(networkStatus: Chat.NetworkStatus) {
+private fun NetworkStatusRow(networkStatus: NetworkStatus) {
   Row(
     Modifier.fillMaxSize(),
     horizontalArrangement = Arrangement.SpaceBetween,
@@ -346,14 +351,14 @@ private fun NetworkStatusRow(networkStatus: Chat.NetworkStatus) {
 }
 
 @Composable
-private fun ServerImage(networkStatus: Chat.NetworkStatus) {
+private fun ServerImage(networkStatus: NetworkStatus) {
   Box(Modifier.size(18.dp)) {
     when (networkStatus) {
-      is Chat.NetworkStatus.Connected ->
+      is NetworkStatus.Connected ->
         Icon(Icons.Filled.Circle, stringResource(R.string.icon_descr_server_status_connected), tint = MaterialTheme.colors.primaryVariant)
-      is Chat.NetworkStatus.Disconnected ->
+      is NetworkStatus.Disconnected ->
         Icon(Icons.Filled.Pending, stringResource(R.string.icon_descr_server_status_disconnected), tint = HighOrLowlight)
-      is Chat.NetworkStatus.Error ->
+      is NetworkStatus.Error ->
         Icon(Icons.Filled.Error, stringResource(R.string.icon_descr_server_status_error), tint = HighOrLowlight)
       else -> Icon(Icons.Outlined.Circle, stringResource(R.string.icon_descr_server_status_pending), tint = HighOrLowlight)
     }
@@ -446,14 +451,14 @@ fun PreviewChatInfoLayout() {
     ChatInfoLayout(
       chat = Chat(
         chatInfo = ChatInfo.Direct.sampleData,
-        chatItems = arrayListOf(),
-        serverInfo = Chat.ServerInfo(Chat.NetworkStatus.Error("agent BROKER TIMEOUT"))
+        chatItems = arrayListOf()
       ),
       Contact.sampleData,
       localAlias = "",
       connectionCode = "123",
       developerTools = false,
       connStats = null,
+      contactNetworkStatus = NetworkStatus.Connected(),
       onLocalAliasChanged = {},
       customUserProfile = null,
       openPreferences = {},

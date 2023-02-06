@@ -1,5 +1,6 @@
 package chat.simplex.app.views.helpers
 
+import android.app.Application
 import android.content.Context
 import android.content.res.Resources
 import android.graphics.*
@@ -244,6 +245,11 @@ fun getAppFilePath(context: Context, fileName: String): String {
   return "${getAppFilesDirectory(context)}/$fileName"
 }
 
+fun getAppFileUri(fileName: String): Uri {
+  return Uri.parse("${getAppFilesDirectory(SimplexApp.context)}/$fileName")
+}
+
+
 fun getLoadedFilePath(context: Context, file: CIFile?): String? {
   return if (file?.filePath != null && file.loaded) {
     val filePath = getAppFilePath(context, file.filePath)
@@ -331,8 +337,7 @@ fun saveImage(context: Context, image: Bitmap): String? {
   return try {
     val ext = if (image.hasAlpha()) "png" else "jpg"
     val dataResized = resizeImageToDataSize(image, ext == "png", maxDataSize = MAX_IMAGE_SIZE)
-    val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-    val fileToSave = uniqueCombine(context, "IMG_${timestamp}.$ext")
+    val fileToSave = generateNewFileName(context, "IMG", ext)
     val file = File(getAppFilePath(context, fileToSave))
     val output = FileOutputStream(file)
     dataResized.writeTo(output)
@@ -355,8 +360,7 @@ fun saveAnimImage(context: Context, uri: Uri): String? {
     }
     // Just in case the image has a strange extension
     if (ext.length < 3 || ext.length > 4) ext = "gif"
-    val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-    val fileToSave = uniqueCombine(context, "IMG_${timestamp}.$ext")
+    val fileToSave = generateNewFileName(context, "IMG", ext)
     val file = File(getAppFilePath(context, fileToSave))
     val output = FileOutputStream(file)
     context.contentResolver.openInputStream(uri)!!.use { input ->
@@ -367,6 +371,24 @@ fun saveAnimImage(context: Context, uri: Uri): String? {
     fileToSave
   } catch (e: Exception) {
     Log.e(chat.simplex.app.TAG, "Util.kt saveAnimImage error: ${e.message}")
+    null
+  }
+}
+
+fun saveTempImageUncompressed(image: Bitmap, asPng: Boolean): File? {
+  return try {
+    val ext = if (asPng) "png" else "jpg"
+    val tmpDir = SimplexApp.context.getDir("temp", Application.MODE_PRIVATE)
+    return File(tmpDir.absolutePath + File.separator + generateNewFileName(SimplexApp.context, "IMG", ext)).apply {
+      outputStream().use { out ->
+        image.compress(if (asPng) Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.JPEG, 85, out)
+        out.flush()
+      }
+      deleteOnExit()
+      SimplexApp.context.chatModel.filesToDelete.add(this)
+    }
+  } catch (e: Exception) {
+    Log.e(TAG, "Util.kt saveTempImageUncompressed error: ${e.message}")
     null
   }
 }
@@ -390,15 +412,23 @@ fun saveFileFromUri(context: Context, uri: Uri): String? {
   }
 }
 
+fun generateNewFileName(context: Context, prefix: String, ext: String): String {
+  val sdf = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
+  sdf.timeZone = TimeZone.getTimeZone("GMT")
+  val timestamp = sdf.format(Date())
+  return uniqueCombine(context, "${prefix}_$timestamp.$ext")
+}
+
 fun uniqueCombine(context: Context, fileName: String): String {
-  fun tryCombine(fileName: String, n: Int): String {
-    val name = File(fileName).nameWithoutExtension
-    val ext = File(fileName).extension
+  val orig = File(fileName)
+  val name = orig.nameWithoutExtension
+  val ext = orig.extension
+  fun tryCombine(n: Int): String {
     val suffix = if (n == 0) "" else "_$n"
     val f = "$name$suffix.$ext"
-    return if (File(getAppFilePath(context, f)).exists()) tryCombine(fileName, n + 1) else f
+    return if (File(getAppFilePath(context, f)).exists()) tryCombine(n + 1) else f
   }
-  return tryCombine(fileName, 0)
+  return tryCombine(0)
 }
 
 fun formatBytes(bytes: Long): String {

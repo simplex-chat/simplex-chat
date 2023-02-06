@@ -28,7 +28,6 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     private var granted = false
     private var prevNtfTime: Dictionary<ChatId, Date> = [:]
 
-
     // Handle notification when app is in background
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 didReceive response: UNNotificationResponse,
@@ -38,8 +37,12 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         let chatModel = ChatModel.shared
         let action = response.actionIdentifier
         logger.debug("NtfManager.userNotificationCenter: didReceive: action \(action), categoryIdentifier \(content.categoryIdentifier)")
+        if let userId = content.userInfo["userId"] as? Int64,
+           userId != chatModel.currentUser?.userId {
+           changeActiveUser(userId)
+        }
         if content.categoryIdentifier == ntfCategoryContactRequest && action == ntfActionAcceptContact,
-           let chatId = content.userInfo["chatId"] as? String {
+            let chatId = content.userInfo["chatId"] as? String {
             if case let .contactRequest(contactRequest) = chatModel.getChat(chatId)?.chatInfo {
                 Task { await acceptContactRequest(contactRequest) }
             } else {
@@ -83,15 +86,22 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         if UIApplication.shared.applicationState == .active {
             switch content.categoryIdentifier {
             case ntfCategoryMessageReceived:
+                let recent = recentInTheSameChat(content)
                 if model.chatId == nil {
-                    // in the chat list
-                    return recentInTheSameChat(content) ? [] : [.sound, .list]
+                    // in the chat list...
+                    if model.currentUser?.userId == (content.userInfo["userId"] as? Int64) {
+                        // ... of the current user
+                        return recent ? [] : [.sound, .list]
+                    } else {
+                        // ... of different user
+                        return recent ? [.banner] : [.sound, .banner, .list]
+                    }
                 } else if model.chatId == content.targetContentIdentifier {
                     // in the current chat
-                    return recentInTheSameChat(content) ? [] : [.sound, .list]
+                    return recent ? [] : [.sound, .list]
                 } else {
                     // in another chat
-                    return recentInTheSameChat(content) ? [.banner, .list] : [.sound, .banner, .list]
+                    return recent ? [.banner, .list] : [.sound, .banner, .list]
                 }
             // this notification is deliverd from the notifications server
             // when the app is in foreground it does not need to be shown
@@ -189,20 +199,20 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         center.delegate = self
     }
 
-    func notifyContactRequest(_ contactRequest: UserContactRequest) {
+    func notifyContactRequest(_ user: User, _ contactRequest: UserContactRequest) {
         logger.debug("NtfManager.notifyContactRequest")
-        addNotification(createContactRequestNtf(contactRequest))
+        addNotification(createContactRequestNtf(user, contactRequest))
     }
 
-    func notifyContactConnected(_ contact: Contact) {
+    func notifyContactConnected(_ user: User, _ contact: Contact) {
         logger.debug("NtfManager.notifyContactConnected")
-        addNotification(createContactConnectedNtf(contact))
+        addNotification(createContactConnectedNtf(user, contact))
     }
 
-    func notifyMessageReceived(_ cInfo: ChatInfo, _ cItem: ChatItem) {
+    func notifyMessageReceived(_ user: User, _ cInfo: ChatInfo, _ cItem: ChatItem) {
         logger.debug("NtfManager.notifyMessageReceived")
         if cInfo.ntfsEnabled {
-            addNotification(createMessageReceivedNtf(cInfo, cItem))
+            addNotification(createMessageReceivedNtf(user, cInfo, cItem))
         }
     }
 

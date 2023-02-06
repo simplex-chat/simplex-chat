@@ -113,10 +113,17 @@ struct SettingsView: View {
                 Section("You") {
                     NavigationLink {
                         UserProfile()
-                            .navigationTitle("Your chat profile")
+                            .navigationTitle("Your current profile")
                     } label: {
                         ProfilePreview(profileOf: user)
                         .padding(.leading, -8)
+                    }
+
+                    NavigationLink {
+                        UserProfilesView()
+                            .navigationTitle("Your chat profiles")
+                    } label: {
+                        settingsRow("person.crop.rectangle.stack") { Text("Your chat profiles") }
                     }
 
                     incognitoRow()
@@ -387,7 +394,7 @@ func settingsRow<Content : View>(_ icon: String, color: Color = .secondary, cont
 
 struct ProfilePreview: View {
     var profileOf: NamedChat
-    var color = Color(uiColor: .tertiarySystemGroupedBackground)
+    var color = Color(uiColor: .tertiarySystemFill)
 
     var body: some View {
         HStack {

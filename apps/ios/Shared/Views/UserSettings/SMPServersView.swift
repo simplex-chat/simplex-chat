@@ -44,7 +44,7 @@ struct SMPServersView: View {
 
     private func smpServersView() -> some View {
         List {
-            Section("SMP servers") {
+            Section {
                 ForEach($servers) { srv in
                     smpServerView(srv)
                 }
@@ -57,6 +57,11 @@ struct SMPServersView: View {
                 Button("Add server…") {
                     showAddServer = true
                 }
+            } header: {
+                Text("SMP servers")
+            } footer: {
+                Text("The servers for new connections of your current chat profile **\(m.currentUser?.displayName ?? "")**.")
+                    .lineLimit(10)
             }
 
             Section {

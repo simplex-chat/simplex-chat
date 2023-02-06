@@ -38,6 +38,7 @@ public struct WebRTCExtraInfo: Codable {
 }
 
 public struct RcvCallInvitation: Decodable {
+    public var user: User
     public var contact: Contact
     public var callkitUUID: UUID? = UUID()
     public var callType: CallType
@@ -53,6 +54,7 @@ public struct RcvCallInvitation: Decodable {
     }
 
     public static let sampleData = RcvCallInvitation(
+        user: User.sampleData,
         contact: Contact.sampleData,
         callType: CallType(media: .audio, capabilities: CallCapabilities(encryption: false)),
         callTs: .now
