@@ -15,9 +15,9 @@
                             This radically improves your privacy.
                         </p>
                         <a href="javascript:void(0)" data-show-overlay="{{ hero_overlays.sections[1].overlayContent.overlayId }}" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-center xl:text-left text-[14px] xl:text-[16px] leading-[34px] underline-offset-2">Why user IDs are bad for privacy?</a>
-                        {{ overlay(hero_overlays.sections[1]) }}
+                        {{ overlay(hero_overlays.sections[1],page.url) }}
                         <a href="javascript:void(0)" data-show-overlay="{{ hero_overlays.sections[0].overlayContent.overlayId }}" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-center xl:text-left text-[14px] xl:text-[16px] leading-[34px] underline-offset-2">How does SimpleX work?</a>
-                        {{ overlay(hero_overlays.sections[0]) }}
+                        {{ overlay(hero_overlays.sections[0],page.url) }}
                     </article>
                     <article class="w-full xl:max-w-[600px]">
                         <p class="text-black dark:text-white hidden md:block text-center xl:text-left text-[16px] leading-[26px] mb-[11px] md:mt-6">Get SimpleX</p>

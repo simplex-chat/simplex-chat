@@ -2,39 +2,39 @@
     "sections": [
         {
             "id": 1,
-            "title": "Advertising and price discrimination",
+            "title": "titles/privacy_matters_1_title.html",
             "imgLight": "/img/new/privacy-section-1.svg",
             "imgDark": "/img/new/privacy-section-1.svg",
             "overlayContent": {
                 "overlayId": "why-privacy-matters-1",
-                "title": "Privacy saves you money",
-                "linkText": "Privacy saves you money",
+                "title": "titles/privacy_matters_1_overlay_1_title.html",
+                "linkText": "titles/privacy_matters_1_overlay_1_linkText.html",
                 "showImage": false,
                 "contentBody": "overlay_content/why_privacy_matters/card_1.html"
             }
         },
         {
             "id": 2,
-            "title": "Manipulation of elections",
+            "title": "titles/privacy_matters_2_title.html",
             "imgLight": "/img/new/privacy-section-2.svg",
             "imgDark": "/img/new/privacy-section-2.svg",
             "overlayContent": {
                 "overlayId": "why-privacy-matters-2",
-                "title": "Privacy gives you power",
-                "linkText": "Privacy gives you power",
+                "title": "titles/privacy_matters_2_overlay_1_title.html",
+                "linkText": "titles/privacy_matters_2_overlay_1_linkText.html",
                 "showImage": false,
                 "contentBody": "overlay_content/why_privacy_matters/card_2.html"
             }
         },
         {
             "id": 3,
-            "title": "Prosecution due to innocent association",
+            "title": "titles/privacy_matters_3_title.html",
             "imgLight": "/img/new/privacy-section-3.svg",
             "imgDark": "/img/new/privacy-section-3.svg",
             "overlayContent": {
                 "overlayId": "why-privacy-matters-3",
-                "title": "Privacy protects your freedom",
-                "linkText": "Privacy protects your freedom",
+                "title": "titles/privacy_matters_3_overlay_1_title.html",
+                "linkText": "titles/privacy_matters_3_overlay_1_linkText.html",
                 "showImage": false,
                 "contentBody": "overlay_content/why_privacy_matters/card_3.html"
             }

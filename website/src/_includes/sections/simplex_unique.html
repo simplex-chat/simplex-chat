@@ -16,7 +16,7 @@
                         <div class="card-content absolute md:static px-4 md:px-0 bottom-[80px] right-1 left-1 h-[180px] md:h-fit pt-5 lg:pt-0 bg-primary-bg-light dark:bg-primary-bg-dark">
                             <div class="content-head">
                                 <p class="text-[35px] lg:text-[65px] font-bold tracking-[0.06em] text-active-blue text-center md:text-left">#{{ section.id }}</p>
-                                <p class="w-full max-w-[617px] text-[25px] leading-[33px] lg:text-[35px] lg:leading-[45px] text-center md:text-left font-bold text-grey-black dark:text-white">{{ section.title | safe }}</p>
+                                <p class="w-full max-w-[617px] text-[25px] leading-[33px] lg:text-[35px] lg:leading-[45px] text-center md:text-left font-bold text-grey-black dark:text-white">{% include section.title %}</p>
                             </div>
 
                             <div class="content-body py-5 md:py-7">
@@ -28,7 +28,7 @@
                                     <p class="w-full max-w-[541px] text-[16px] leading-[24px] tracking-[0.02em] mb-[36px] text-grey-black dark:text-white text-center md:text-left">{{ section.desc | safe }}</p>
                                 {% endif %}
                                 {% if section.overlayContent %}
-                                    <a href="javascript:void(0)" data-show-overlay="{{ section.overlayContent.overlayId }}" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] underline-offset-4 tracking-[0.02em] text-center md:text-left">{{ section.overlayContent.linkText }}</a>
+                                    <a href="javascript:void(0)" data-show-overlay="{{ section.overlayContent.overlayId }}" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] underline-offset-4 tracking-[0.02em] text-center md:text-left">Learn more</a>
                                 {% endif %}
                             </div>
                         </div>
@@ -68,7 +68,7 @@
 
 {% for section in why_simplex_is_unique.sections %}
     {% if section.overlayContent %}
-        {{ overlay(section) }}
+        {{ overlay(section,page.url) }}
     {% endif %}
 {% endfor %}
 
