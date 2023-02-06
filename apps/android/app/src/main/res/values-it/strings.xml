@@ -613,7 +613,7 @@
     <string name="your_contact_address">Il tuo indirizzo di contatto</string>
     <string name="smp_servers_your_server">Il tuo server</string>
     <string name="smp_servers_your_server_address">L\'indirizzo del tuo server</string>
-    <string name="your_simplex_contact_address">Il tuo indirizzo di contatto di <xliff:g id="appName">SimpleX</xliff:g>.</string>
+    <string name="your_simplex_contact_address">Il tuo indirizzo di contatto di <xliff:g id="appName">SimpleX</xliff:g></string>
     <string name="network_disable_socks_info">Se confermi, i server di messaggistica saranno in grado di vedere il tuo indirizzo IP e il tuo fornitore, a quali server ti stai connettendo.</string>
     <string name="install_simplex_chat_for_terminal">Installa <xliff:g id="appNameFull">SimpleX Chat</xliff:g> per terminale</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">Assicurati che gli indirizzi dei server WebRTC ICE siano nel formato corretto, uno per riga e non doppi.</string>
