@@ -165,8 +165,7 @@ func saveFileFromURL(_ url: URL) -> String? {
 }
 
 func generateNewFileName(_ prefix: String, _ ext: String) -> String {
-    let fileName = uniqueCombine("\(prefix)_\(getTimestamp()).\(ext)")
-    return fileName
+    uniqueCombine("\(prefix)_\(getTimestamp()).\(ext)")
 }
 
 private func uniqueCombine(_ fileName: String) -> String {
@@ -191,6 +190,7 @@ private func getTimestamp() -> String {
         df = DateFormatter()
         df.dateFormat = "yyyyMMdd_HHmmss"
         df.locale = Locale(identifier: "US")
+        df.timeZone = TimeZone(secondsFromGMT: 0)
         tsFormatter = df
     }
     return df.string(from: Date())

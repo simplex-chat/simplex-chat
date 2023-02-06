@@ -80,8 +80,31 @@ instance IsContact Contact where
   preferences' Contact {profile = LocalProfile {preferences}} = preferences
   {-# INLINE preferences' #-}
 
+newtype AgentUserId = AgentUserId UserId
+  deriving (Eq, Show)
+
+instance StrEncoding AgentUserId where
+  strEncode (AgentUserId uId) = strEncode uId
+  strDecode s = AgentUserId <$> strDecode s
+  strP = AgentUserId <$> strP
+
+instance FromJSON AgentUserId where
+  parseJSON = strParseJSON "AgentUserId"
+
+instance ToJSON AgentUserId where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
+instance FromField AgentUserId where fromField f = AgentUserId <$> fromField f
+
+instance ToField AgentUserId where toField (AgentUserId uId) = toField uId
+
+aUserId :: User -> UserId
+aUserId User {agentUserId = AgentUserId uId} = uId
+
 data User = User
   { userId :: UserId,
+    agentUserId :: AgentUserId,
     userContactId :: ContactId,
     localDisplayName :: ContactName,
     profile :: LocalProfile,
@@ -92,7 +115,17 @@ data User = User
 
 instance ToJSON User where toEncoding = J.genericToEncoding J.defaultOptions
 
-type UserId = ContactId
+data UserInfo = UserInfo
+  { user :: User,
+    unreadCount :: Int
+  }
+  deriving (Show, Generic, FromJSON)
+
+instance ToJSON UserInfo where
+  toJSON = J.genericToJSON J.defaultOptions
+  toEncoding = J.genericToEncoding J.defaultOptions
+
+type UserId = Int64
 
 type ContactId = Int64
 
@@ -139,6 +172,8 @@ contactSecurityCode Contact {activeConn} = connectionCode activeConn
 
 data ContactRef = ContactRef
   { contactId :: ContactId,
+    connId :: Int64,
+    agentConnId :: AgentConnId,
     localDisplayName :: ContactName
   }
   deriving (Eq, Show, Generic)
@@ -215,6 +250,8 @@ instance ToJSON ConnReqUriHash where
   toEncoding = strToJEncoding
 
 data ContactOrRequest = CORContact Contact | CORRequest UserContactRequest
+
+type UserName = Text
 
 type ContactName = Text
 
@@ -1215,9 +1252,10 @@ fromInvitedBy userCtId = \case
   IBUser -> Just userCtId
 
 data GroupMemberRole
-  = GRAuthor -- can send messages to all group members
-  | GRMember -- + add new members with role Member and below
-  | GRAdmin -- + change member roles (excl. Owners), add Admins, remove members (excl. Owners)
+  = GRObserver -- connects to all group members and receives all messages, can't send messages
+  | GRAuthor -- reserved, unused
+  | GRMember -- + can send messages to all group members
+  | GRAdmin -- + add/remove members, change member role (excl. Owners)
   | GROwner -- + delete and change group information, add/remove/change roles for Owners
   deriving (Eq, Show, Ord)
 
@@ -1231,11 +1269,13 @@ instance StrEncoding GroupMemberRole where
     GRAdmin -> "admin"
     GRMember -> "member"
     GRAuthor -> "author"
+    GRObserver -> "observer"
   strDecode = \case
     "owner" -> Right GROwner
     "admin" -> Right GRAdmin
     "member" -> Right GRMember
     "author" -> Right GRAuthor
+    "observer" -> Right GRObserver
     r -> Left $ "bad GroupMemberRole " <> B.unpack r
   strP = strDecode <$?> A.takeByteString
 
@@ -1364,6 +1404,20 @@ memberCurrent m = case memberStatus m of
   GSMemConnected -> True
   GSMemComplete -> True
   GSMemCreator -> True
+
+memberRemoved :: GroupMember -> Bool
+memberRemoved m = case memberStatus m of
+  GSMemRemoved -> True
+  GSMemLeft -> True
+  GSMemGroupDeleted -> True
+  GSMemInvited -> False
+  GSMemIntroduced -> False
+  GSMemIntroInvited -> False
+  GSMemAccepted -> False
+  GSMemAnnounced -> False
+  GSMemConnected -> False
+  GSMemComplete -> False
+  GSMemCreator -> False
 
 instance TextEncoding GroupMemberStatus where
   textDecode = \case
@@ -1828,7 +1882,7 @@ data CommandFunction
   | CFAllowConn
   | CFAcceptContact
   | CFAckMessage
-  | CFDeleteConn
+  | CFDeleteConn -- not used
   deriving (Eq, Show, Generic)
 
 instance FromField CommandFunction where fromField = fromTextField_ textDecode

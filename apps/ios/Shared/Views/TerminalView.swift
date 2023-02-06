@@ -108,10 +108,10 @@ struct TerminalView: View {
     func sendMessage() {
         let cmd = ChatCommand.string(composeState.message)
         if composeState.message.starts(with: "/sql") && (!prefPerformLA || !developerTools) {
-            let resp = ChatResponse.chatCmdError(chatError: ChatError.error(errorType: ChatErrorType.commandError(message: "Failed reading: empty")))
+            let resp = ChatResponse.chatCmdError(user: nil, chatError: ChatError.error(errorType: ChatErrorType.commandError(message: "Failed reading: empty")))
             DispatchQueue.main.async {
-                ChatModel.shared.terminalItems.append(.cmd(.now, cmd))
-                ChatModel.shared.terminalItems.append(.resp(.now, resp))
+                ChatModel.shared.addTerminalItem(.cmd(.now, cmd))
+                ChatModel.shared.addTerminalItem(.resp(.now, resp))
             }
         } else {
             DispatchQueue.global().async {

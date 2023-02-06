@@ -28,6 +28,7 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import kotlinx.datetime.Clock
+import kotlin.math.min
 
 val SentColorLight = Color(0x1E45B8FF)
 val ReceivedColorLight = Color(0x20B1B0B5)
@@ -241,6 +242,7 @@ fun CIMarkdownText(
 }
 
 const val CHAT_IMAGE_LAYOUT_ID = "chatImage"
+const val MAX_SAFE_WIDTH_HEIGHT = 100_000
 
 @Composable
 fun PriorityLayout(
@@ -259,9 +261,15 @@ fun PriorityLayout(
       if (it.layoutId == priorityLayoutId)
         imagePlaceable!!
       else
-        it.measure(constraints.copy(maxWidth = imagePlaceable?.width ?: constraints.maxWidth)) }
-    // Limit width for every other element to width of important element and height for a sum of all elements
-    layout(imagePlaceable?.measuredWidth ?: placeables.maxOf { it.width }, placeables.sumOf { it.height }) {
+        it.measure(constraints.copy(maxWidth = imagePlaceable?.width ?: min(MAX_SAFE_WIDTH_HEIGHT, constraints.maxWidth))) }
+    /**
+     * Limit width for every other element to width of important element and height for a sum of all elements.
+     *
+     * min(MAX_SAFE_WIDTH_HEIGHT, ...) is here because of exception (related to width of long text):
+     * java.lang.IllegalArgumentException: Can't represent a size of 324314 in Constraints
+     * at androidx.compose.ui.unit.Constraints$Companion.bitsNeedForSize(Constraints.kt:403)
+     * */
+    layout(imagePlaceable?.measuredWidth ?: min(MAX_SAFE_WIDTH_HEIGHT, placeables.maxOf { it.width }), min(MAX_SAFE_WIDTH_HEIGHT, placeables.sumOf { it.height })) {
       var y = 0
       placeables.forEach {
         it.place(0, y)

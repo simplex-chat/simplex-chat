@@ -1,9 +1,13 @@
+@file:UseSerializers(UriSerializer::class)
 package chat.simplex.app.views.helpers
 
-import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.runtime.saveable.Saver
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.serialization.*
+import kotlinx.serialization.descriptors.*
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 
 sealed class SharedContent {
   data class Text(val text: String): SharedContent()
@@ -11,7 +15,7 @@ sealed class SharedContent {
   data class File(val text: String, val uri: Uri): SharedContent()
 }
 
-enum class NewChatSheetState {
+enum class AnimatedViewState {
   VISIBLE, HIDING, GONE;
   fun isVisible(): Boolean {
     return this == VISIBLE
@@ -23,7 +27,7 @@ enum class NewChatSheetState {
     return this == GONE
   }
   companion object {
-    fun saver(): Saver<MutableStateFlow<NewChatSheetState>, *> = Saver(
+    fun saver(): Saver<MutableStateFlow<AnimatedViewState>, *> = Saver(
       save = { it.value.toString() },
       restore = {
         MutableStateFlow(valueOf(it))
@@ -32,7 +36,16 @@ enum class NewChatSheetState {
   }
 }
 
+
+@Serializer(forClass = Uri::class)
+object UriSerializer : KSerializer<Uri> {
+  override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("Uri", PrimitiveKind.STRING)
+  override fun serialize(encoder: Encoder, value: Uri) = encoder.encodeString(value.toString())
+  override fun deserialize(decoder: Decoder): Uri = Uri.parse(decoder.decodeString())
+}
+
+@Serializable
 sealed class UploadContent {
-  data class SimpleImage(val uri: Uri): UploadContent()
-  data class AnimatedImage(val uri: Uri): UploadContent()
+  @Serializable data class SimpleImage(val uri: Uri): UploadContent()
+  @Serializable data class AnimatedImage(val uri: Uri): UploadContent()
 }

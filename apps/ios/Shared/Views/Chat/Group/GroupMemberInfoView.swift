@@ -155,8 +155,6 @@ struct GroupMemberInfoView: View {
         Button {
             do {
                 let chat = try apiGetChat(type: .direct, id: contactId)
-                // TODO it's not correct to blindly set network status to connected - we should manage network status in model / backend
-                chat.serverInfo = Chat.ServerInfo(networkStatus: .connected)
                 chatModel.addChat(chat)
                 dismissAllSheets(animated: true)
                 DispatchQueue.main.async {

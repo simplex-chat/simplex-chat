@@ -23,12 +23,12 @@
     }
 </style>
 
-<section id="simplex-explained" class="bg-primary-bg-light dark:bg-primary-bg-dark py-[80px] px-5">
+<section id="simplex-explained" class="bg-primary-bg-light dark:bg-primary-bg-dark lg:h-[890px] py-[90px] px-5">
     <div class="container">
-        <p class="text-[35px] lg:text-[45px] text-center font-bold text-grey-black dark:text-white mb-[40px]">Simplex explained</p>
+        <p class="text-[35px] leading-[45px] md:leading-[55px] lg:text-[38px] text-center font-bold text-grey-black dark:text-white mb-9">Simplex explained</p>
 
         <!-- Tab links -->
-        <div class="tabs hidden md:flex gap-2 mb-16">
+        <div class="tabs hidden md:flex gap-2 mb-24">
             <div data-btn-index="0" class="flex-1 tab-button tab-1 p-2 text-[20px] text-center font-bold cursor-pointer active">1. What users experience</div>
             <div data-btn-index="1" class="flex-1 tab-button tab-2 p-2 text-[20px] text-center font-bold cursor-pointer">2. How does it work</div>
             <div data-btn-index="2" class="flex-1 tab-button tab-3 p-2 text-[20px] text-center font-bold cursor-pointer">3. What servers see</div>
@@ -41,8 +41,8 @@
                 <div class="swiper-slide h-[inherit]">
                     <div class="tab-button p-2 text-[20px] text-center font-bold active md:hidden">1. What users experience</div>
                     <div class="flex flex-col justify-center items-center">
-                        <img class="h-[340px] my-16" src="/img/new/explained-1.svg" alt="" />
-                        <p class="text-black dark:text-white text-[16px] font-normal text-center mt-[30px]">
+                        <img class="h-[340px] mb-[74px]" src="/img/new/explained-1.svg" alt="" />
+                        <p class="text-black dark:text-white text-[16px] font-normal text-center">
                             You can create contacts and groups, and have two-way conversations, as in any other messenger.
                         </p>
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
@@ -54,8 +54,8 @@
                 <div class="swiper-slide h-[inherit]">
                     <div class="tab-button p-2 text-[20px] text-center font-bold active md:hidden">2. How does it work</div>
                     <div class="flex flex-col justify-center items-center">
-                        <img class="h-[340px] my-16" src="/img/new/explained-2.svg" alt="" />
-                        <p class="text-black dark:text-white text-[16px] font-normal text-center mt-[30px]">
+                        <img class="h-[340px] mb-[74px]" src="/img/new/explained-2.svg" alt="" />
+                        <p class="text-black dark:text-white text-[16px] font-normal text-center">
                             For each connection you use two separate messaging queues to send and receive messages via different servers.
                         </p>
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
@@ -67,8 +67,8 @@
                 <div class="swiper-slide h-[inherit]">
                     <div class="tab-button p-2 text-[20px] text-center font-bold active md:hidden">3. What servers see</div>
                     <div class="flex flex-col justify-center items-center">
-                        <img class="h-[340px] my-16" src="/img/new/explained-3.svg" alt="" />
-                        <p class="text-black dark:text-white text-[16px] font-normal text-center mt-[30px]">
+                        <img class="h-[340px] mb-[74px]" src="/img/new/explained-3.svg" alt="" />
+                        <p class="text-black dark:text-white text-[16px] font-normal text-center">
                             The servers have separate anonymous credentials for each queue, and do not know which users they belong to.
                         </p>
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
@@ -84,7 +84,6 @@
 </section>
 
 <script>
-   
 window.addEventListener("load", function () {
     const simplexExplainedSwiper__bullets = document.querySelectorAll(".simplex-explained-swiper .swiper-pagination > span");
     const simplexExplainedSwiper__tabs = document.querySelectorAll("#simplex-explained .tabs .tab-button");

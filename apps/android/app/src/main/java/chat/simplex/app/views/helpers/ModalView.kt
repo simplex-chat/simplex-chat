@@ -20,12 +20,13 @@ fun ModalView(
   close: () -> Unit,
   background: Color = MaterialTheme.colors.background,
   modifier: Modifier = Modifier,
+  endButtons: @Composable RowScope.() -> Unit = {},
   content: @Composable () -> Unit,
 ) {
   BackHandler(onBack = close)
   Surface(Modifier.fillMaxSize()) {
     Column(Modifier.background(background)) {
-      CloseSheetBar(close)
+      CloseSheetBar(close, endButtons)
       Box(modifier) { content() }
     }
   }
@@ -37,9 +38,9 @@ class ModalManager {
   private val toRemove = mutableSetOf<Int>()
   private var oldViewChanging = AtomicBoolean(false)
 
-  fun showModal(settings: Boolean = false, content: @Composable () -> Unit) {
+  fun showModal(settings: Boolean = false, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable () -> Unit) {
     showCustomModal { close ->
-      ModalView(close, if (!settings || isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight, content = content)
+      ModalView(close, if (!settings || isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight, endButtons = endButtons, content = content)
     }
   }
 

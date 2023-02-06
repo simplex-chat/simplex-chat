@@ -22,10 +22,12 @@ var TransformOperation;
     TransformOperation["Decrypt"] = "decrypt";
 })(TransformOperation || (TransformOperation = {}));
 let activeCall;
+let answerTimeout = 30000;
 const processCommand = (function () {
     const defaultIceServers = [
         { urls: ["stun:stun.simplex.im:443"] },
-        { urls: ["turn:turn.simplex.im:443"], username: "private", credential: "yleob6AVkiNI87hpR94Z" },
+        { urls: ["turn:turn.simplex.im:443?transport=udp"], username: "private", credential: "yleob6AVkiNI87hpR94Z" },
+        { urls: ["turn:turn.simplex.im:443?transport=tcp"], username: "private", credential: "yleob6AVkiNI87hpR94Z" },
     ];
     function getCallConfig(encodedInsertableStreams, iceServers, relay) {
         return {
@@ -100,9 +102,16 @@ const processCommand = (function () {
         const iceCandidates = getIceCandidates(pc, config);
         const call = { connection: pc, iceCandidates, localMedia: mediaType, localCamera, localStream, remoteStream, aesKey, useWorker };
         await setupMediaStreams(call);
+        let connectionTimeout = setTimeout(connectionHandler, answerTimeout);
         pc.addEventListener("connectionstatechange", connectionStateChange);
         return call;
         async function connectionStateChange() {
+            // "failed" means the second party did not answer in time (15 sec timeout in Chrome WebView)
+            // See https://source.chromium.org/chromium/chromium/src/+/main:third_party/webrtc/p2p/base/p2p_constants.cc;l=70)
+            if (pc.connectionState !== "failed")
+                connectionHandler();
+        }
+        async function connectionHandler() {
             sendMessageToNative({
                 resp: {
                     type: "connection",
@@ -115,6 +124,7 @@ const processCommand = (function () {
                 },
             });
             if (pc.connectionState == "disconnected" || pc.connectionState == "failed") {
+                clearConnectionTimeout();
                 pc.removeEventListener("connectionstatechange", connectionStateChange);
                 if (activeCall) {
                     setTimeout(() => sendMessageToNative({ resp: { type: "ended" } }), 0);
@@ -122,6 +132,7 @@ const processCommand = (function () {
                 endCall();
             }
             else if (pc.connectionState == "connected") {
+                clearConnectionTimeout();
                 const stats = (await pc.getStats());
                 for (const stat of stats.values()) {
                     const { type, state } = stat;
@@ -139,6 +150,12 @@ const processCommand = (function () {
                         break;
                     }
                 }
+            }
+        }
+        function clearConnectionTimeout() {
+            if (connectionTimeout) {
+                clearTimeout(connectionTimeout);
+                connectionTimeout = undefined;
             }
         }
     }

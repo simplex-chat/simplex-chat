@@ -134,7 +134,13 @@ fun AddGroupLayout(chatModelIncognito: Boolean, createGroup: (GroupProfile) -> U
           val enabled = displayName.value.isNotEmpty() && isValidDisplayName(displayName.value)
           if (enabled) {
             CreateGroupButton(MaterialTheme.colors.primary, Modifier
-              .clickable { createGroup(GroupProfile(displayName.value, fullName.value, profileImage.value)) }
+              .clickable {
+                createGroup(GroupProfile(
+                  displayName = displayName.value,
+                  fullName = fullName.value,
+                  image = profileImage.value
+                ))
+              }
               .padding(8.dp))
           } else {
             CreateGroupButton(HighOrLowlight, Modifier.padding(8.dp))
