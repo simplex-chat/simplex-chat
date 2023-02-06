@@ -29,12 +29,11 @@ fun QRCode(
 ) {
   val context = LocalContext.current
   val scope = rememberCoroutineScope()
-  val size = 1024
 
   BoxWithConstraints {
     val maxWidthInPx = with(LocalDensity.current) { maxWidth.roundToPx() }
     val qr = remember(maxWidthInPx, connReq, tintColor, withLogo) {
-      qrCodeBitmap(connReq, maxOf(size, maxWidthInPx)).replaceColor(Color.Black.toArgb(), tintColor.toArgb())
+      qrCodeBitmap(connReq, maxWidthInPx).replaceColor(Color.Black.toArgb(), tintColor.toArgb())
         .let { if (withLogo) it.addLogo() else it }
         .asImageBitmap()
     }
@@ -44,7 +43,7 @@ fun QRCode(
       modifier
         .clickable {
           scope.launch {
-            val image = qrCodeBitmap(connReq, size).replaceColor(Color.Black.toArgb(), tintColor.toArgb())
+            val image = qrCodeBitmap(connReq, 1024).replaceColor(Color.Black.toArgb(), tintColor.toArgb())
               .let { if (withLogo) it.addLogo() else it }
             val file = saveTempImageUncompressed(image, false)
             if (file != null) {
