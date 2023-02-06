@@ -34,49 +34,50 @@ fun QRCode(connReq: String, modifier: Modifier = Modifier, withLogo: Boolean = t
   val size = 1024
   // It's needed for image scaling to fit in required size for sharing
   var multiplier by remember { mutableStateOf(1f) }
-  BoxWithConstraints(Modifier
-    .onGloballyPositioned {
-      val boundsInRoot = it.boundsInRoot()
-      rect = boundsInRoot
-      multiplier = size / boundsInRoot.width
-    }
-    .clickable {
-      scope.launch {
-        val r = rect
-        if (r != null) {
-          val image = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888).applyCanvas {
-            translate(-r.left * multiplier, -r.top * multiplier)
-            withScale(multiplier, multiplier) {
-              view.draw(this)
+  Box(modifier) {
+    BoxWithConstraints(Modifier
+      .onGloballyPositioned {
+        val boundsInRoot = it.boundsInRoot()
+        rect = boundsInRoot
+        multiplier = size / boundsInRoot.width
+      }
+      .clickable {
+        scope.launch {
+          val r = rect
+          if (r != null) {
+            val image = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888).applyCanvas {
+              translate(-r.left * multiplier, -r.top * multiplier)
+              withScale(multiplier, multiplier) {
+                view.draw(this)
+              }
+            }
+            // image = qrCodeBitmap(connReq, size).replaceColor(Color.Black.toArgb(), tintColor.toArgb())
+            val file = saveTempImageUncompressed(image, false)
+            if (file != null) {
+              shareFile(context, "", file.absolutePath)
             }
           }
-          // image = qrCodeBitmap(connReq, size).replaceColor(Color.Black.toArgb(), tintColor.toArgb())
-          val file = saveTempImageUncompressed(image, false)
-          if (file != null) {
-            shareFile(context, "", file.absolutePath)
-          }
         }
-      }
-    },
-    contentAlignment = Alignment.Center
-  ) {
-    Image(
-      bitmap = qrCodeBitmap(connReq, maxOf(size, maxWidth.value.toInt())).replaceColor(Color.Black.toArgb(), tintColor.toArgb()).asImageBitmap(),
-      contentDescription = stringResource(R.string.image_descr_qr_code),
-      modifier = modifier
-    )
-    if (withLogo) {
-      Box(
-        Modifier
-          .size(maxWidth * 0.16f)
-          .background(Color.White, RoundedCornerShape(100))
-      )
+      },
+      contentAlignment = Alignment.Center
+    ) {
       Image(
-        painterResource(R.mipmap.icon_foreground),
-        null,
-        Modifier
-          .size(maxWidth * 0.24f)
+        bitmap = qrCodeBitmap(connReq, maxOf(size, maxWidth.value.toInt())).replaceColor(Color.Black.toArgb(), tintColor.toArgb()).asImageBitmap(),
+        contentDescription = stringResource(R.string.image_descr_qr_code)
       )
+      if (withLogo) {
+        Box(
+          Modifier
+            .size(maxWidth * 0.16f)
+            .background(Color.White, RoundedCornerShape(100))
+        )
+        Image(
+          painterResource(R.mipmap.icon_foreground),
+          null,
+          Modifier
+            .size(maxWidth * 0.24f)
+        )
+      }
     }
   }
 }
