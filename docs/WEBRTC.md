@@ -117,7 +117,7 @@ This is it - you now can make audio and video calls via your own server, without
   Connection to <your_ip_or_domain> 5349 port [tcp/*] succeeded!
   ```
 
-- **Test STUN/TURN connectivity** :
+- **Test STUN/TURN connectivity**:
 
   1. Go to [IceTest](https://icetest.info/).
 
