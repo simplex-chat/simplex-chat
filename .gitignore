@@ -45,7 +45,7 @@ tests/tmp
 tests/tmp*
 logs/
 
-.devcontainer
+*.devcontainer
 # for website
 website/node_modules/
 website/src/blog/
