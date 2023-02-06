@@ -55,8 +55,8 @@ struct QRCode: View {
                 }
                 .onAppear {
                     makeScreenshotBinding = {
-                        showShareSheet(items: [makeScreenshot(geo.frame(in: .local).origin, geo.size)])
-                    }
+                        let size = CGSizeMake(1024 / UIScreen.main.scale, 1024 / UIScreen.main.scale)
+                        showShareSheet(items: [makeScreenshot(geo.frame(in: .local).origin, size)])}
                 }
                 .frame(width: geo.size.width, height: geo.size.height)
             }
