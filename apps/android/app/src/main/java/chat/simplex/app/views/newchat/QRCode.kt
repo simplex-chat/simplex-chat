@@ -16,7 +16,8 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.core.graphics.applyCanvas
+import androidx.core.graphics.*
+import boofcv.alg.drawing.FiducialImageEngine
 import boofcv.alg.fiducial.qrcode.*
 import boofcv.android.ConvertBitmap
 import chat.simplex.app.R
@@ -30,18 +31,26 @@ fun QRCode(connReq: String, modifier: Modifier = Modifier, withLogo: Boolean = t
   val context = LocalContext.current
   val scope = rememberCoroutineScope()
   var rect by remember { mutableStateOf<Rect?>(null) }
+  val size = 1024
+  // It's needed for image scaling to fit in required size for sharing
+  var multiplier by remember { mutableStateOf(1f) }
   BoxWithConstraints(Modifier
     .onGloballyPositioned {
-      rect = it.boundsInRoot()
+      val boundsInRoot = it.boundsInRoot()
+      rect = boundsInRoot
+      multiplier = size / boundsInRoot.width
     }
     .clickable {
       scope.launch {
         val r = rect
         if (r != null) {
-          val image = Bitmap.createBitmap(r.width.toInt(), r.height.toInt(), Bitmap.Config.ARGB_8888).applyCanvas {
-            translate(-r.left, -r.top)
-            view.draw(this)
+          val image = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888).applyCanvas {
+            translate(-r.left * multiplier, -r.top * multiplier)
+            withScale(multiplier, multiplier) {
+              view.draw(this)
+            }
           }
+          // image = qrCodeBitmap(connReq, size).replaceColor(Color.Black.toArgb(), tintColor.toArgb())
           val file = saveTempImageUncompressed(image, false)
           if (file != null) {
             shareFile(context, "", file.absolutePath)
@@ -52,7 +61,7 @@ fun QRCode(connReq: String, modifier: Modifier = Modifier, withLogo: Boolean = t
     contentAlignment = Alignment.Center
   ) {
     Image(
-      bitmap = qrCodeBitmap(connReq, 1024).replaceColor(Color.Black.toArgb(), tintColor.toArgb()).asImageBitmap(),
+      bitmap = qrCodeBitmap(connReq, maxOf(size, maxWidth.value.toInt())).replaceColor(Color.Black.toArgb(), tintColor.toArgb()).asImageBitmap(),
       contentDescription = stringResource(R.string.image_descr_qr_code),
       modifier = modifier
     )
@@ -72,11 +81,21 @@ fun QRCode(connReq: String, modifier: Modifier = Modifier, withLogo: Boolean = t
   }
 }
 
-fun qrCodeBitmap(content: String, size: Int): Bitmap {
-  val qrCode = QrCodeEncoder().addAutomatic(content).setError(QrCode.ErrorLevel.L).fixate()
-  val renderer = QrCodeGeneratorImage(5)
+fun qrCodeBitmap(content: String, size: Int = 1024): Bitmap {
+  val qrCode = QrCodeEncoder().setVersion(16).addAutomatic(content).setError(QrCode.ErrorLevel.L).fixate()
+  /** See [QrCodeGeneratorImage.initialize] and [FiducialImageEngine.configure] for size calculation */
+  val numModules = QrCode.totalModules(qrCode.version)
+  val borderModule = 1
+  // val calculatedFinalWidth = (pixelsPerModule * numModules) + 2 * (borderModule * pixelsPerModule)
+  // size = (x * numModules) + 2 * (borderModule * x)
+  // size / x = numModules + 2 * borderModule
+  // x = size / (numModules + 2 * borderModule)
+  val pixelsPerModule = size / (numModules + 2 * borderModule)
+  // + 1 to make it with better quality
+  val renderer = QrCodeGeneratorImage(pixelsPerModule + 1)
+  renderer.borderModule = borderModule
   renderer.render(qrCode)
-  return ConvertBitmap.grayToBitmap(renderer.gray, Bitmap.Config.RGB_565)
+  return ConvertBitmap.grayToBitmap(renderer.gray, Bitmap.Config.RGB_565).scale(size, size)
 }
 
 fun Bitmap.replaceColor(from: Int, to: Int): Bitmap {
