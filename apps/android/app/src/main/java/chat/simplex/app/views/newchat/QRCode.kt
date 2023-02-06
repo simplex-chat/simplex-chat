@@ -83,14 +83,14 @@ fun Bitmap.replaceColor(from: Int, to: Int): Bitmap {
 }
 
 fun Bitmap.addLogo(): Bitmap = applyCanvas {
-    val radius = (width * 0.16f) / 2
-    val paint = android.graphics.Paint()
-    paint.color = android.graphics.Color.WHITE
-    drawCircle(width / 2f, height / 2f, radius, paint)
-    val logo = SimplexApp.context.resources.getDrawable(R.mipmap.icon_foreground).toBitmap()
-    val logoSize = (width * 0.24).toInt()
-    translate((width - logoSize) / 2f, (height - logoSize) / 2f)
-    drawBitmap(logo, null, android.graphics.Rect(0, 0, logoSize, logoSize), null)
+  val radius = (width * 0.16f) / 2
+  val paint = android.graphics.Paint()
+  paint.color = android.graphics.Color.WHITE
+  drawCircle(width / 2f, height / 2f, radius, paint)
+  val logo = SimplexApp.context.resources.getDrawable(R.mipmap.icon_foreground).toBitmap()
+  val logoSize = (width * 0.24).toInt()
+  translate((width - logoSize) / 2f, (height - logoSize) / 2f)
+  drawBitmap(logo, null, android.graphics.Rect(0, 0, logoSize, logoSize), null)
 }
 
 @Preview
