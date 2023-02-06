@@ -1,4 +1,4 @@
-| Updated 02.02.2023 | Languages Available : [EN](/README.md), FR, ... |
+| Updated 06.02.2023 | Languages Available : [EN](/README.md), FR, ... |
 <img src="/images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
 
 # SimpleX - la première plateforme de messagerie qui n'a pas le moindre identifiant d'utilisateur - 100% privé par définition !
@@ -44,6 +44,7 @@
 - [Pour les développeurs](#pour-les-développeurs)
 - [Feuille de route](#feuille-de-route)
 - [Rejoindre un groupe d'utilisateurs](#rejoindre-un-groupe-dutilisateurs)
+- [Traduire l'application](#traduire-lapplication)
 - [Contribuer](#contribuer)
 - [Aidez-nous en faisant des dons](#aidez-nous-en-faisant-des-dons)
 - [Avertissements, contact de sécurité, licence](#avertissements)
@@ -86,6 +87,8 @@ Vous pouvez utiliser SimpleX avec vos propres serveurs et continuer à communiqu
 
 Mises à jour récentes :
 
+[04 févr. 2023. Sortie de la v4.5 - avec plusieurs profils d'utilisateurs, les brouillons de messages, l'isolation du transport et l'interface en italien](./blog/20230204-simplex-chat-v4-5-user-chat-profiles.md).
+
 [03 janv. 2023. Sortie de la v4.4 - avec les messages éphèmères, les messages "en direct" (dynamique), la vérification de sécurité de la connexion, les GIFs et les autocollants ainsi que la langue de l'interface en français](/blog/20230103-simplex-chat-v4.4-disappearing-messages.md).
 
 [06 déc. 2022. Revues de novembre et sortie de la v4.3 - avec les messages vocaux instantanés, la suppression irréversible de messages et une configuration améliorée des serveurs](/blog/20221206-simplex-chat-v4.3-voice-messages.md).
@@ -93,8 +96,6 @@ Mises à jour récentes :
 [08 nov. 2022. Audit de sécurité par Trail of Bits, nouveau site web et sortie de la v4.2](/blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
 
 [28 sept. 2022. v4.0 : base de données de chat local chiffrée et beaucoup d'autres changements](/blog/20220928-simplex-chat-v4-encrypted-database.md).
-
-[1 sept. 2022. v3.2 : mode incognito, support des noms d'hôtes des serveurs .onion, définition des noms de contact, modification de la palette de couleurs, etc. L'audit d'implémentation est prévu pour octobre](/blog/20220901-simplex-chat-v3.2-incognito-mode.md).
 
 [Toutes les mises à jour](/blog)
 
@@ -148,10 +149,12 @@ Ce qui est déjà mis en place :
 8. Pour se protéger contre les attaques par relecture, les serveurs SimpleX exigent le [tlsunique channel binding](https://www.rfc-editor.org/rfc/rfc5929.html) comme identifiant de session dans chaque commande client signée avec une clé éphémère par file d'attente.
 9. Pour protéger votre adresse IP, tous les clients SimpleX Chat permettent d'accéder aux serveurs de messagerie via Tor - voir [v3.1 release announcement](./blog/20220808-simplex-chat-v3.1-chat-groups.md) pour plus de détails.
 10. Chiffrement de la base de données locale avec une phrase secrète - vos contacts, groupes et tous les messages envoyés et reçus sont stockés de manière chiffrée. Si vous avez utilisé SimpleX Chat avant la version 4.0, vous devez activer le chiffrement via les paramètres de l'application.
+11. Isolation du transport - des connexions TCP et des circuits Tor différents sont utilisés pour le trafic de différents profils d'utilisateurs, optionnellement - pour des connexions différentes avec des contacts et des membres de groupes.
 
 Nous prévoyons d'ajouter bientôt :
 
-1. Rotation des files d'attente de messages. Actuellement, les files d'attente créées entre deux utilisateurs sont utilisées jusqu'à ce que le contact soit supprimé, fournissant ainsi un identifiant à long terme de la conversation. Nous prévoyons d'ajouter la rotation de la file d'attente pour rendre ces identifiants temporaires et les faire tourner selon un calendrier à déterminer (par exemple, tous les X messages, ou toutes les X heures/jours).
+1. Rotation automatique des files d'attente de messages. Actuellement, les files d'attente créées entre deux utilisateurs sont utilisées jusqu'à ce que la file d'attente soit modifiée manuellement par l'utilisateur ou que le contact soit supprimé. Nous prévoyons d'ajouter une rotation de file d'attente pour rendre ces identifiants temporaires et les faire tourner selon un calendrier à déterminer (par exemple, tous les X messages, ou toutes les X heures/jours).
+
 2. Chiffrement des fichiers locaux. Actuellement, les images et les fichiers que vous envoyez et recevez sont stockés dans l'application sans être cryptés, vous pouvez les supprimer via `Paramètres / Base de données phrase secrète et exportation`.
 3. Mélange de messages - ajout d'une latence à la livraison des messages, pour se protéger contre la corrélation du trafic par le temps de transmission des messages.
 
@@ -196,16 +199,19 @@ Si vous envisagez de développer avec la plateforme SimpleX, n'hésitez pas à n
 - ✅ Messages éphèmére (avec opt-in du destinataire par contact).
 - ✅ Messages "en direct" (dynamique).
 - ✅ Vérification des contacts via un canal distinct extérieur.
-- 🏗 Plusieurs profils d'utilisateurs dans la même base de données de chat.
-- 🏗 Optionnellement, éviter de réutiliser la même session TCP pour plusieurs connexions.
+- ✅ Plusieurs profils d'utilisateurs dans la même base de données de chat.
+- ✅ Optionnellement, éviter de réutiliser la même session TCP pour plusieurs connexions.
+- ✅ Conservation des brouillons de message.
 - 🏗 Serveur de fichiers pour optimiser l'envoi efficace et privé de fichiers volumineux.
+- 🏗 Amélioration des appels audio et vidéo.
 - 🏗 Redondance et rotation des files d'attente SMP (mode manuel déjà fonctionnel).
 - 🏗 Réduction de l'utilisation de la batterie et du trafic dans les grands groupes.
-- 🏗 Conservation des brouillons de message.
-- 🏗 Prise en charge des anciens systèmes d'exploitation Android et des processeurs 32 bits.
+- 🏗 Prise en charge d'anciens OS d'Android et des processeurs 32 bits.
 - Conversations éphémères/disparaissantes/OTR avec les contacts existants.
 - Mot de passe/pin d'accès (avec mot de passe d'accès alternatif facultatif).
+- Chiffrement des fichiers locaux de l'app.
 - Messages vidéo.
+- Amélioration de la navigation et de la recherche dans la conversation (développer et faire défiler jusqu'au message cité, faire défiler jusqu'aux résultats de la recherche, etc.)
 - Confirmation de la distribution du message (avec option d'acceptation ou de refus de l'expéditeur par contact, TBC).
 - Flux/diffusion.
 - Widgets Web pour une interactivité personnalisée dans les chats.
@@ -215,7 +221,9 @@ Si vous envisagez de développer avec la plateforme SimpleX, n'hésitez pas à n
 - Serveur d'identité préservant la confidentialité des adresses de contact/groupe basées sur le DNS pour simplifier la connexion et la découverte, mais non utilisé pour délivrer des messages :
   - conservez tous vos contacts et groupes même si vous perdez le domaine.
   - le serveur ne dispose pas d'informations sur vos contacts et groupes.
-- Serveur de canaux pour les grands groupes et les canaux de diffusion.
+- Serveur hôte pour les grands groupes, les communautés et les canaux publics.
+- Relais de distribution des messages pour les expéditeurs (pour dissimuler l'adresse IP des serveurs des destinataires et réduire le trafic).
+- Relais SMP multi-nœuds à haute capacité.
 
 ## Rejoindre un groupe d'utilisateurs
 
@@ -236,11 +244,24 @@ Vous pouvez rejoindre ces groupes soit en ouvrant ces liens dans l'application, 
 
 Rejoignez-nous via l'application pour échanger sur ce qui se passe et poser toutes vos questions !
 
+## Traduire l'application
+
+Grâce à nos utilisateurs et à [Weblate](https://hosted.weblate.org/engage/simplex-chat/), les applications de chat SimpleX sont traduites dans de nombreuses autres langues. Rejoignez nos traducteurs pour aider SimpleX à se développer plus rapidement !
+
+Langues d'interface existantes :
+
+Anglais (langue de développement)
+Allemand : [@mlanp](https://github.com/mlanp)
+Français : [@ishi_sama](https://github.com/ishi-sama)
+Italien : [@unbranched](https://github.com/unbranched)
+Russe : équipe du projet
+
+Langues en cours : Chinois, hindi, japonais, néerlandais et [beaucoup d'autres](https://hosted.weblate.org/projects/simplex-chat/#languages). Nous ajouterons d'autres langues au fur et à mesure de l'achèvement de certaines d'entre elles. N'hésitez pas à suggérer de nouvelles langues et à nous contacter !
+
 ## Contribuer
 
 Nous serions ravis de vous voir rejoindre le développement ! Vous pouvez contribuer à SimpleX Chat pour :
 
-- traduire l'interface utilisateur dans votre langue - nous utilisons [Weblate](https://hosted.weblate.org/projects/simplex-chat/) pour traduire l'interface, veuillez nous contacter si vous voulez contribuer !
 - traduire la page d'accueil du site web - il y a beaucoup de contenu que nous aimerions partager, cela permettrait d'attirer les nouveaux utilisateurs.
 - écrire un tutoriel ou des recommandations sur l'hébergement de serveurs, l'automatisation des bots de chat, etc.
 - développer des nouvelles fonctionnalités - veuillez nous contacter par chat pour que nous puissions vous aider à démarrer.
