@@ -447,4 +447,50 @@
     <string name="group_members_can_send_dms">群组成员可以私信。</string>
     <string name="v4_4_disappearing_messages">消失的消息</string>
     <string name="v4_3_improved_privacy_and_security_desc">在最近的应用程序中隐藏应用程序屏幕。</string>
+    <string name="leave_group_button">离开</string>
+    <string name="alert_title_group_invitation_expired">邀请已过期！</string>
+    <string name="live_message">实时消息！</string>
+    <string name="image_descr_link_preview">链接预览图片</string>
+    <string name="invalid_QR_code">无效的二维码</string>
+    <string name="onboarding_notifications_mode_subtitle">以后可以通过设置进行更改。</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">它可以在以下情况下发生。
+\n1.如果消息在30天内没有被收到，就会在服务器上过期。
+\n2.您用于接收来自此联系人的消息的服务器已更新并重新启动。
+\n3.连接受损。
+\n请通过“设置”与开发人员联系，以接收有关服务器的更新。
+\n我们将添加服务器冗余以防止丢失消息。</string>
+    <string name="leave_group_question">离开群组？</string>
+    <string name="rcv_group_event_invited_via_your_group_link">通过您的群组链接邀请</string>
+    <string name="info_row_local_name">本地名称</string>
+    <string name="invalid_message_format">无效的消息格式</string>
+    <string name="invalid_data">无效数据</string>
+    <string name="live">LIVE</string>
+    <string name="display_name_invited_to_connect">已邀请连接</string>
+    <string name="invalid_connection_link">无效的连接链接</string>
+    <string name="italic">斜体</string>
+    <string name="group_member_status_invited">邀请</string>
+    <string name="invite_to_group_button">邀请加入群组</string>
+    <string name="join_group_button">加入</string>
+    <string name="join_group_question">加入群组？</string>
+    <string name="icon_descr_add_members">邀请成员</string>
+    <string name="group_member_status_left">左</string>
+    <string name="theme_light">亮度</string>
+    <string name="message_deletion_prohibited">此聊天中禁止不可逆的消息删除。</string>
+    <string name="v4_5_italian_interface">意大利语界面</string>
+    <string name="incorrect_code">安全码不正确！</string>
+    <string name="service_notifications_disabled">即时通知被禁用！</string>
+    <string name="invalid_chat">无效聊天</string>
+    <string name="smp_servers_invalid_address">无效的服务器地址！</string>
+    <string name="button_add_members">邀请成员</string>
+    <string name="button_leave_group">离开群组</string>
+    <string name="users_delete_data_only">仅本地配置文件数据</string>
+    <string name="icon_descr_instant_notifications">即时通知</string>
+    <string name="service_notifications">即时通知！</string>
+    <string name="auth_log_in_using_credential">使用您的凭据登录</string>
+    <string name="large_file">大文件！</string>
+    <string name="invalid_contact_link">链接无效！</string>
+    <string name="rcv_group_event_member_left">左</string>
+    <string name="message_deletion_prohibited_in_chat">此群组中禁止不可逆的消息删除。</string>
+    <string name="v4_3_irreversible_message_deletion">不可逆的消息删除</string>
+    <string name="v4_4_live_messages">实时消息</string>
 </resources>
