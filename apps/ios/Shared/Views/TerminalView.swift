@@ -30,15 +30,7 @@ struct TerminalView: View {
         }
     }
 
-    private func runAuth() {
-        authenticate(reason: NSLocalizedString("Open chat console", comment: "authentication reason")) { laResult in
-            switch laResult {
-            case .success: authorized = true
-            case .unavailable: authorized = true
-            case .failed: authorized = false
-            }
-        }
-    }
+    private func runAuth() { authorize(NSLocalizedString("Open chat console", comment: "authentication reason"), $authorized) }
 
     private func terminalView() -> some View {
         VStack {
