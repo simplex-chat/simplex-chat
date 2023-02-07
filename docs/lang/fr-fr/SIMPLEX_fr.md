@@ -27,7 +27,7 @@ Tout le monde devrait se soucier de la confidentialité et de la sécurité de s
 
 ### Protection complète de votre identité, profil, contacts et métadonnées
 
-**Unlike any other existing messaging platform, SimpleX has no identifiers assigned to the users**Contrairement aux autres platformes de messagerie, SimpleX ne lie pas d'identifiant à l'utilisateur - il n'y a pas besoin de numéro de télèphone (comme Signal ou WhatsApp), d'adresses basés sur des noms de domaines (comme les e-mails, XMPP ou MatriX), de noms d'utilisateurs (comme Telegram), ou de clés publiques ou même de nombres aléatoires pour identifié les utilisateurs - on ne sait même pas combiens de personnes utilise SimpleX.
+**Contrairement aux autres platformes de messagerie, SimpleX ne lie pas d'identifiant à l'utilisateur** - il n'y a pas besoin de numéro de télèphone (comme Signal ou WhatsApp), d'adresses basés sur des noms de domaines (comme les e-mails, XMPP ou Matrix), de noms d'utilisateurs (comme Telegram), ou de clés publiques ou même de nombres aléatoires pour identifié les utilisateurs - on ne sait même pas combiens de personnes utilise SimpleX.
 
 Pour distribuer les messages au lieu d'utiliser des identifiants d'utilisateur que toute les autres platformes utilisent, SimpleX utilise des adresses unidirectionnelles (simplex) de files d'attentes de messages. Utiliser SimpleX c'est comme avoir une adresse e-mail différentes ou un numéro de télèphone différent par contact, sans les inconvenients qui viennent avec. Dans un futur proche les apps SimpleX changeront automatiquement les files d'attentes, déplacant les conversations d'un serveur à un autre, pour une meilleure confidentialité.
 

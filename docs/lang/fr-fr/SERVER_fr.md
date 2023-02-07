@@ -1,4 +1,4 @@
-| Updated 31.01.2023 | Languages Available : [EN](/docs/SERVER.md), FR, ... |
+| Updated 07.02.2023 | Languages Available : [EN](/docs/SERVER.md), FR, ... |
 # Héberger votre propre serveur SMP
 
 ## Présentation générale
@@ -7,7 +7,7 @@ Un serveur SMP est un serveur relais utilisé pour transmettre les messages sur 
 
 Seuls les utilisateurs de SimpleX déterminent quel serveur est utilisé pour recevoir les messages, séparément pour chaque contact (ou pour chaque connexion à un membre d'un groupe), et ces serveurs ne sont que temporaires, car l'adresse de réception peut changer.
 
-_Veuillez noter_ : lorsque vous modifiez les serveurs dans la configuration de l'app, cela n'affecte que les serveurs qui seront utilisés pour les nouveaux contacts. Les contacts existants ne seront pas automatiquement déplacés vers les nouveaux serveurs, mais vous pouvez les déplacer manuellement à l'aide du bouton ["Changer d'adresse de réception"](../blog/20221108-simplex-chat-v4.2-security-audit-new-website.md#change-your-delivery-address-beta) sur les fiches d'information de contact/membre – ce sera bientôt automatisé.
+_Veuillez noter_ : lorsque vous modifiez les serveurs dans la configuration de l'app, cela n'affecte que les serveurs qui seront utilisés pour les nouveaux contacts. Les contacts existants ne seront pas automatiquement déplacés vers les nouveaux serveurs, mais vous pouvez les déplacer manuellement à l'aide du bouton ["Changer d'adresse de réception"](/blog/20221108-simplex-chat-v4.2-security-audit-new-website.md#change-your-delivery-address-beta) sur les fiches d'information de contact/membre – ce sera bientôt automatisé.
 
 ## Installation
 

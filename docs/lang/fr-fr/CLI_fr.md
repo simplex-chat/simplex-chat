@@ -1,4 +1,4 @@
-| Updated 01.02.2023 | Languages Available : [EN](/docs/CLI.md), FR, ... |
+| Updated 07.02.2023 | Languages Available : [EN](/docs/CLI.md), FR, ... |
 # Application de terminal (console) SimpleX Chat pour Linux/MacOS/Windows
 
 ## Table des matières
@@ -240,13 +240,13 @@ Voir les [requêtes de message](./SQL_fr.md) à titre d'exemple.
 
 **Requêtes de commodité**
 
-Obtenir tous les messages d'aujourd'hui (`chat_dt` est en UTC) :
+Pour recevoir tous les messages du jour (`chat_dt` est en UTC) :
 
 ```sql
 select * from all_messages_plain where date(chat_dt) > date('now', '-1 day') order by chat_dt;
 ```
 
-Recevez les messages de la nuit dans la matinée :
+Pour recevoir les messages de la nuit dans la matinée :
 
 ```sql
 select * from all_messages_plain where chat_dt > datetime('now', '-15 hours') order by chat_dt;
