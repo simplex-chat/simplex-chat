@@ -13,7 +13,7 @@
 \n<xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
     <string name="accept_connection_request__question">接受連線請求 \?</string>
     <string name="callstatus_accepted">已接受電話</string>
-    <string name="network_enable_socks_info">要在端口 9050 啟動 SOCKS 代理伺服器嗎\? 在啟用這個選項之前，必須先啟動代理伺服器。</string>
+    <string name="network_enable_socks_info">要在端口 9050 啟動 SOCKS 代理伺服器嗎？在啟用這個選項之前，必須先啟動代理伺服器。</string>
     <string name="group_member_role_admin">管理員</string>
     <string name="above_then_preposition_continuation">然後選按：</string>
     <string name="smp_servers_preset_add">加入預設伺服器</string>
@@ -195,4 +195,5 @@
     <string name="allow_your_contacts_irreversibly_delete">允許你的聯絡人可以不可逆的刪除已發送的訊息。</string>
     <string name="allow_to_delete_messages">允許將不可逆的訊息刪除。</string>
     <string name="allow_to_send_voice">允許使用語言訊息。</string>
+    <string name="delete_after">多久後刪除</string>
 </resources>
