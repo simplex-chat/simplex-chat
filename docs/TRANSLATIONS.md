@@ -20,21 +20,30 @@ This document is created to speed up this process, and share some important "got
 
 2. Some of the strings do not need translations, but they still need to be copied over - there is a button in weblate UI for that:
 
+<img src="./images/weblate_1.png" alt="weblate: copy source to tranlation" width="100%">
+
 3. Weblate also has automatic suggestions that can speed up the process. Sometimes they can be used as is, sometimes they need some editing - click to use them in translations.
+
+<img src="./images/weblate_2.png" alt="weblate: automatic suggestions" width="100%">
 
 4. Once all strings in Android app are translated, please review it to ensure consistent style and language, so that the same words are consistently used for similar user actions, same as in English. Sometimes, you will have to use different words in cases when English has just one, please try to use these choicec consistently in similar contexts, to make it easier for the end users.
 
 5. When you translate [iOS app](https://hosted.weblate.org/projects/simplex-chat/ios/), a large part of the strings are exactly the same - they can be copied over in one click in glossary section. The visual hint that it can be done is that the whole source string is highlighted in yellow. Many other strings are very similar, they only differ in interpolation syntax or how bold font is used - they require minimal editing. There are some strings that are unique to iOS platform - they need to be translated separately.
+
+<img src="./images/weblate_2.png" alt="weblate: automatic suggestions" width="100%">
 
 ## Once translation is completed
 
 Once both Android and iOS apps are translated, please let us know.
 
 We will then:
-  - review all translations - it also takes a bit of time :)
+  - review all the translations and suggest any corrections - it also takes a bit of time :)
   - merge them to the source code - while we do it weblate will be locked for changes.
-  - create a beta releases of both iOS and Android apps - we can add you to testers groups, so you can install the apps before anybody else.
-  - release it to our beta users - it's more than a thousand people who use our beta versions, and announce there is a new language.
+  - create beta releases of both iOS and Android apps - we can also add you to the internal tester groups, so you can install the apps before anybody else.
+  - release it to our beta users - it's more than a thousand people who use our beta versions.
+  - release the app and include the new language in the announcement.
+
+*Please note*: we aim to keep app functions consistent between Android and iOS platforms, when possible, so we will release and announce a new language once both platforms have been translated. It doesn't meen you have to do it, but we will have to wait until somebody else translates the second platform. But if you start from Android, iOS usually takes 3-4x less time to add.
 
 ## What is next
 
