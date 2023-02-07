@@ -107,7 +107,7 @@
     <string name="leave_group_question">समूह छोड़ दें</string>
     <string name="rcv_group_event_member_left">बाएं</string>
     <string name="group_member_status_left">बाएं</string>
-    <string name="theme_light">रोशनी</string>
+    <string name="theme_light">प्रकाश</string>
     <string name="info_row_local_name">स्थानीय नाम</string>
     <string name="users_delete_data_only">केवल स्थानीय प्रोफ़ाइल डेटा</string>
     <string name="auth_log_in_using_credential">अपने क्रेडेंशियल का उपयोग करके लॉग इन करें</string>
@@ -144,4 +144,17 @@
     <string name="delete_image">छवि हटाएं</string>
     <string name="button_delete_group">समूह हटाएं</string>
     <string name="for_me_only">मेरे लिए हटाएं</string>
+    <string name="hide_verb">छिपाना</string>
+    <string name="both_you_and_your_contacts_can_delete">आप और आपका संपर्क दोनों भेजे गए संदेशों को अपरिवर्तनीय रूप से हटा सकते हैं।</string>
+    <string name="message_deletion_prohibited">इस चैट में अपरिवर्तनीय संदेश हटाना प्रतिबंधित है।</string>
+    <string name="chat_with_the_founder">प्रश्न और विचार भेजें</string>
+    <string name="send_us_an_email">हमें ईमेल भेजें</string>
+    <string name="display_name">प्रदर्शित होने वाला नाम</string>
+    <string name="confirm_verb">पुष्टि करना</string>
+    <string name="you_accepted_connection">आपने कनेक्शन स्वीकार किया</string>
+    <string name="contribute">योगदान देना</string>
+    <string name="both_you_and_your_contact_can_send_disappearing">आप और आपका संपर्क दोनों गायब होने वाले संदेश भेज सकते हैं।</string>
+    <string name="allow_to_send_disappearing">गायब होने वाले संदेश भेजने की अनुमति दें।</string>
+    <string name="prohibit_sending_disappearing">गायब होने वाले संदेश भेजने पर रोक लगाएं।</string>
+    <string name="how_to_use_simplex_chat">इसका उपयोग कैसे करना है</string>
 </resources>
