@@ -419,7 +419,7 @@ hideLive _ s = s
 viewItemDelete :: ChatInfo c -> ChatItem c d -> Maybe AChatItem -> Bool -> Bool -> CurrentTime -> [StyledString]
 viewItemDelete chat ChatItem {chatDir, meta, content = deletedContent} toItem byUser timed ts
   | timed = []
-  | byUser = [plain $ "message " <> T.unpack (fromMaybe "deleted" deletedText_)]
+  | byUser = [plain $ "message " <> T.unpack (fromMaybe "deleted" deletedText_)] -- deletedText_ Nothing should be impossible here
   | otherwise = case chat of
     DirectChat c -> case (chatDir, deletedContent) of
       (CIDirectRcv, CIRcvMsgContent mc) -> viewReceivedMessage (ttyFromContactDeleted c deletedText_) [] mc ts meta
