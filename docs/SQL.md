@@ -3,7 +3,7 @@
 In order to view database data you need to decrypt it first. Install `sqlcipher` using your favorite package manager and run the following commands in the directory with databases:
 ```bash
 sqlcipher files_chat.db
-pragma key="youDecryptionPassphrase"
+pragma key="youDecryptionPassphrase";
 # Ensure it works fine
 select * from users;
 ```
