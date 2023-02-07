@@ -29,6 +29,8 @@ android {
         manifestPlaceholders.app_name = "@string/app_name"
         manifestPlaceholders.provider_authorities = "chat.simplex.app.provider"
         manifestPlaceholders.extract_native_libs = compression_level != "0"
+        // Comma separated list of languages that will be included in the apk
+        resConfigs("en", "ru", "de", "fr", "it")
     }
 
     buildTypes {
