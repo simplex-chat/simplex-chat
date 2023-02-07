@@ -4178,13 +4178,13 @@ updateGroupChatItemModerated db User {userId} gInfo@GroupInfo {groupId} (CChatIt
       (groupMemberId, toContent, toText, currentTs, userId, groupId, itemId)
   pure $ AChatItem SCTGroup msgDir (GroupChat gInfo) (ci {content = toContent, meta = (meta ci) {itemText = toText, itemDeleted = Just (CIModerated m)}, formattedText = Nothing})
 
-markGroupChatItemDeleted :: DB.Connection -> User -> GroupInfo -> CChatItem 'CTGroup -> MessageId -> CIDeleted 'CTGroup -> IO AChatItem
-markGroupChatItemDeleted db User {userId} gInfo@GroupInfo {groupId} (CChatItem msgDir ci) msgId ciDeleted = do
+markGroupChatItemDeleted :: DB.Connection -> User -> GroupInfo -> CChatItem 'CTGroup -> MessageId -> Maybe GroupMember -> IO AChatItem
+markGroupChatItemDeleted db User {userId} gInfo@GroupInfo {groupId} (CChatItem msgDir ci) msgId byGroupMember_ = do
   currentTs <- liftIO getCurrentTime
   let itemId = chatItemId' ci
-      deletedByGroupMemberId = case ciDeleted of
-        CIModerated GroupMember {groupMemberId} -> Just groupMemberId
-        _ -> Nothing
+      (deletedByGroupMemberId, ciDeleted) = case byGroupMember_ of
+        Just m@GroupMember {groupMemberId} -> (Just groupMemberId, CIModerated m)
+        _ -> (Nothing, CIDeleted)
   insertChatItemMessage_ db itemId msgId currentTs
   DB.execute
     db
