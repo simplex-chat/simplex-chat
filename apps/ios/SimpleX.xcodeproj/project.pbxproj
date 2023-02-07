@@ -795,7 +795,6 @@
 				5CA059C8279559F40002BEB4 /* Resources */,
 				5CE2BA722845308900EC33A6 /* Embed Frameworks */,
 				5CE2BAA0284555F500EC33A6 /* Embed App Extensions */,
-				D7F5C72A2992951000862EA4 /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -963,26 +962,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		D7F5C72A2992951000862EA4 /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "# Fail fast in case of any error\nset -e\n# Change to Debug for testing how it works\nif [ \"${CONFIGURATION}\" = \"Release\" ]\nthen\n    # Go to build dir. If not exists, script will fail\n    cd \"${TARGET_BUILD_DIR}/${PRODUCT_NAME}.app\"\n    # Find and remove any languages except specified here\n    find . -name \"*.lproj\" -depth 1 -not -name \"en.lproj\" -not -name \"ru.lproj\" -not -name \"de.lproj\" -not -name \"fr.lproj\" -not -name \"it.lproj\" | xargs rm -rf\nfi\n";
-		};
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		5CA059C6279559F40002BEB4 /* Sources */ = {
