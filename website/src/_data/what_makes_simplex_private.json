@@ -2,101 +2,101 @@
     "sections": [
         {
             "id": 10,
-            "title": "titles/simplex_private_10_title.html",
+            "title": "simplex-private-10-title",
             "imgLight": "/img/new/private-10.svg",
             "imgDark": "/img/new/private-10-dark.svg",
             "points": [
-                "sections/simplex_private/card_10_point_1.html",
-                "sections/simplex_private/card_10_point_2.html"
+                "simplex-private-card-10-point-1",
+                "simplex-private-card-10-point-2"
             ]
         },
         {
             "id": 6,
-            "title": "titles/simplex_private_6_title.html",
+            "title": "simplex-private-6-title",
             "imgLight": "/img/new/private-6.svg",
             "imgDark": "/img/new/private-6-dark.svg",
             "points": [
-                "sections/simplex_private/card_6_point_1.html",
-                "sections/simplex_private/card_6_point_2.html"
+                "simplex-private-card-6-point-1",
+                "simplex-private-card-6-point-2"
             ]
         },
         {
             "id": 1,
-            "title": "titles/simplex_private_1_title.html",
+            "title": "simplex-private-1-title",
             "imgLight": "/img/new/private-1.svg",
             "imgDark": "/img/new/private-1-dark.svg",
             "points": [
-                "sections/simplex_private/card_1_point_1.html",
-                "sections/simplex_private/card_1_point_2.html"
+                "simplex-private-card-1-point-1",
+                "simplex-private-card-1-point-2"
             ]
         },
         {
             "id": 7,
-            "title": "titles/simplex_private_7_title.html",
+            "title": "simplex-private-7-title",
             "imgLight": "/img/new/private-7.svg",
             "imgDark": "/img/new/private-7-dark.svg",
             "points": [
-                "sections/simplex_private/card_7_point_1.html",
-                "sections/simplex_private/card_7_point_2.html"
+                "simplex-private-card-7-point-1",
+                "simplex-private-card-7-point-2"
             ]
         },
         {
             "id": 2,
-            "title": "titles/simplex_private_2_title.html",
+            "title": "simplex-private-2-title",
             "imgLight": "/img/new/private-2.svg",
             "imgDark": "/img/new/private-2-dark.svg",
             "points": [
-                "sections/simplex_private/card_2_point_1.html"
+                "simplex-private-card-2-point-1"
             ]
         },
         {
             "id": 8,
-            "title": "titles/simplex_private_8_title.html",
+            "title": "simplex-private-8-title",
             "imgLight": "/img/new/private-8.svg",
             "imgDark": "/img/new/private-8-dark.svg",
             "points": [
-                "sections/simplex_private/card_8_point_1.html"
+                "simplex-private-card-8-point-1"
             ]
         },
         {
             "id": 3,
-            "title": "titles/simplex_private_3_title.html",
+            "title": "simplex-private-3-title",
             "imgLight": "/img/new/private-3.svg",
             "imgDark": "/img/new/private-3-dark.svg",
             "points": [
-                "sections/simplex_private/card_3_point_1.html",
-                "sections/simplex_private/card_3_point_2.html",
-                "sections/simplex_private/card_3_point_3.html"
+                "simplex-private-card-3-point-1",
+                "simplex-private-card-3-point-2",
+                "simplex-private-card-3-point-3"
             ]
         },
         {
             "id": 4,
-            "title": "titles/simplex_private_4_title.html",
+            "title": "simplex-private-4-title",
             "imgLight": "/img/new/private-4.svg",
             "imgDark": "/img/new/private-4-dark.svg",
             "points": [
-                "sections/simplex_private/card_4_point_1.html",
-                "sections/simplex_private/card_4_point_2.html"
+                "simplex-private-card-4-point-1",
+                "simplex-private-card-4-point-2"
             ]
         },
         {
             "id": 9,
-            "title": "titles/simplex_private_9_title.html",
+            "title": "simplex-private-9-title",
             "imgLight": "/img/new/private-9.svg",
             "imgDark": "/img/new/private-9-dark.svg",
             "points": [
-                "sections/simplex_private/card_9_point_1.html",
-                "sections/simplex_private/card_9_point_2.html"
+                "simplex-private-card-9-point-1",
+                "simplex-private-card-9-point-2"
             ]
         },
         {
             "id": 5,
-            "title": "titles/simplex_private_5_title.html",
+            "title": "simplex-private-5-title",
             "imgLight": "/img/new/private-5.svg",
             "imgDark": "/img/new/private-5-dark.svg",
             "points": [
-                "sections/simplex_private/card_5_point_1.html",
-                "sections/simplex_private/card_5_point_2.html"
+                "simplex-private-card-5-point-1",
+                "simplex-private-card-5-point-2"
             ]
         }
     ]

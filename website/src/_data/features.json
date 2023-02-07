@@ -2,49 +2,49 @@
     "sections": [
         {
             "id": 1,
-            "title": "titles/feature_1_title.html",
+            "title": "feature-1-title",
             "imgLight": "/img/new/feature-1.svg",
             "imgDark": "/img/new/feature-1-dark.svg"
         },
         {
             "id": 2,
-            "title": "titles/feature_2_title.html",
+            "title": "feature-2-title",
             "imgLight": "/img/new/feature-2.svg",
             "imgDark": "/img/new/feature-2-dark.svg"
         },
         {
             "id": 3,
-            "title": "titles/feature_3_title.html",
+            "title": "feature-3-title",
             "imgLight": "/img/new/feature-3.svg",
             "imgDark": "/img/new/feature-3-dark.svg"
         },
         {
             "id": 4,
-            "title": "titles/feature_4_title.html",
+            "title": "feature-4-title",
             "imgLight": "/img/new/feature-4.svg",
             "imgDark": "/img/new/feature-4-dark.svg"
         },
         {
             "id": 5,
-            "title": "titles/feature_5_title.html",
+            "title": "feature-5-title",
             "imgLight": "/img/new/feature-5.svg",
             "imgDark": "/img/new/feature-5-dark.svg"
         },
         {
             "id": 6,
-            "title": "titles/feature_6_title.html",
+            "title": "feature-6-title",
             "imgLight": "/img/new/feature-6.svg",
             "imgDark": "/img/new/feature-6-dark.svg"
         },
         {
             "id": 7,
-            "title": "titles/feature_7_title.html",
+            "title": "feature-7-title",
             "imgLight": "/img/new/feature-7.svg",
             "imgDark": "/img/new/feature-7-dark.svg"
         },
         {
             "id": 8,
-            "title": "titles/feature_7_title.html",
+            "title": "feature-8-title",
             "imgLight": "/img/new/feature-8.svg",
             "imgDark": "/img/new/feature-8-dark.svg"
         }

@@ -2,39 +2,39 @@
     "sections": [
         {
             "id": 1,
-            "title": "titles/privacy_matters_1_title.html",
+            "title": "privacy-matters-1-title",
             "imgLight": "/img/new/privacy-section-1.svg",
             "imgDark": "/img/new/privacy-section-1.svg",
             "overlayContent": {
                 "overlayId": "why-privacy-matters-1",
-                "title": "titles/privacy_matters_1_overlay_1_title.html",
-                "linkText": "titles/privacy_matters_1_overlay_1_linkText.html",
+                "title": "privacy-matters-1-overlay-1-title",
+                "linkText": "privacy-matters-1-overlay-1-linkText",
                 "showImage": false,
                 "contentBody": "overlay_content/why_privacy_matters/card_1.html"
             }
         },
         {
             "id": 2,
-            "title": "titles/privacy_matters_2_title.html",
+            "title": "privacy-matters-2-title",
             "imgLight": "/img/new/privacy-section-2.svg",
             "imgDark": "/img/new/privacy-section-2.svg",
             "overlayContent": {
                 "overlayId": "why-privacy-matters-2",
-                "title": "titles/privacy_matters_2_overlay_1_title.html",
-                "linkText": "titles/privacy_matters_2_overlay_1_linkText.html",
+                "title": "privacy-matters-2-overlay-1-title",
+                "linkText": "privacy-matters-2-overlay-1-linkText",
                 "showImage": false,
                 "contentBody": "overlay_content/why_privacy_matters/card_2.html"
             }
         },
         {
             "id": 3,
-            "title": "titles/privacy_matters_3_title.html",
+            "title": "privacy-matters-3-title",
             "imgLight": "/img/new/privacy-section-3.svg",
             "imgDark": "/img/new/privacy-section-3.svg",
             "overlayContent": {
                 "overlayId": "why-privacy-matters-3",
-                "title": "titles/privacy_matters_3_overlay_1_title.html",
-                "linkText": "titles/privacy_matters_3_overlay_1_linkText.html",
+                "title": "privacy-matters-3-overlay-1-title",
+                "linkText": "privacy-matters-3-overlay-1-linkText",
                 "showImage": false,
                 "contentBody": "overlay_content/why_privacy_matters/card_3.html"
             }
