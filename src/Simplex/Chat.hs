@@ -2823,7 +2823,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             (SMDSnd, _) -> messageError "x.msg.update: group member attempted invalid message update"
 
     groupMessageDelete :: GroupInfo -> GroupMember -> SharedMsgId -> Maybe MemberId -> RcvMessage -> m ()
-    groupMessageDelete gInfo@GroupInfo {groupId, membership} m@GroupMember {memberId} sharedMsgId sndMemberId_ RcvMessage {msgId} = do
+    groupMessageDelete gInfo@GroupInfo {groupId, membership} m@GroupMember {memberId, memberRole = senderRole} sharedMsgId sndMemberId_ RcvMessage {msgId} = do
       let msgMemberId = fromMaybe memberId sndMemberId_
       withStore' (\db -> runExceptT $ getGroupMemberCIBySharedMsgId db user groupId msgMemberId sharedMsgId) >>= \case
         Right ci@(CChatItem _ ChatItem {chatDir}) -> case chatDir of
@@ -2833,13 +2833,16 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           CIGroupSnd -> deleteMsg membership ci
         Left e -> messageError $ "x.msg.del: message not found, " <> tshow e
       where
-        -- TODO check role
         deleteMsg :: GroupMember -> CChatItem 'CTGroup -> m ()
         deleteMsg mem ci = case sndMemberId_ of
           Just sndMemberId
-            | sameMemberId sndMemberId mem -> delete ci (CIModerated m) >>= toView
+            | sameMemberId sndMemberId mem -> checkRole mem $ delete ci (CIModerated m) >>= toView
             | otherwise -> messageError "x.msg.del: message of another member with incorrect memberId"
           _ -> messageError "x.msg.del: message of another member without memberId"
+        checkRole GroupMember {memberRole} a
+          | senderRole < GRAdmin || senderRole < memberRole =
+            messageError "x.msg.del: message of another member with insufficient member permissions"
+          | otherwise = a
         delete ci ciDeleted
           | groupFeatureAllowed SGFFullDelete gInfo = deleteGroupCI user gInfo ci False False ciDeleted
           | otherwise = markGroupCIDeleted user gInfo ci msgId False ciDeleted
