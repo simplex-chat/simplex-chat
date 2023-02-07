@@ -24,13 +24,11 @@ This document is created to speed up this process, and share some important "got
 
 3. Weblate also has automatic suggestions that can speed up the process. Sometimes they can be used as is, sometimes they need some editing - click to use them in translations.
 
-<img src="./images/weblate_2.png" alt="weblate: automatic suggestions" width="100%">
-
 4. Once all strings in Android app are translated, please review it to ensure consistent style and language, so that the same words are consistently used for similar user actions, same as in English. Sometimes, you will have to use different words in cases when English has just one, please try to use these choices consistently in similar contexts, to make it easier for the end users.
 
 5. When you translate [iOS app](https://hosted.weblate.org/projects/simplex-chat/ios/), a large part of the strings are exactly the same - they can be copied over in one click in glossary section. The visual hint that it can be done is that the whole source string is highlighted in yellow. Many other strings are very similar, they only differ in interpolation syntax or how bold font is used - they require minimal editing. There are some strings that are unique to iOS platform - they need to be translated separately.
 
-<img src="./images/weblate_3.png" alt="weblate: automatic suggestions" width="100%">
+<img src="./images/weblate_2.png" alt="weblate: automatic suggestions" width="100%">
 
 ## Once translation is completed
 
