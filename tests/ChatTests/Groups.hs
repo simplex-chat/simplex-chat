@@ -35,7 +35,8 @@ chatGroupTests = do
     it "update member role" testUpdateMemberRole
     it "unused contacts are deleted after all their groups are deleted" testGroupDeleteUnusedContacts
     it "group description is shown as the first message to new members" testGroupDescription
-    fit "delete message of another group member" testGroupMemberMessageDelete
+    it "delete message of another group member" testGroupMemberMessageDelete
+    it "full delete message of another group member" testGroupMemberMessageFullDelete
   describe "async group connections" $ do
     xit "create and join group when clients go offline" testGroupAsync
   describe "group links" $ do
@@ -1213,6 +1214,7 @@ testGroupMemberMessageDelete =
         (cath <# "#team alice> hello")
       bob ##> "\\\\ #team @alice hello"
       bob <## "#team: you have insufficient permissions for this action, the required role is owner"
+      threadDelay 1000000
       cath #> "#team hi"
       concurrently_
         (alice <# "#team cath> hi")
@@ -1220,8 +1222,49 @@ testGroupMemberMessageDelete =
       bob ##> "\\\\ #team @cath hi"
       bob <## "message marked deleted"
       concurrently_
-        (alice <# "#team cath> [marked deleted] hi")
-        (cath <# "#team cath> [marked deleted] hi")
+        (alice <# "#team cath> [marked deleted by bob] hi")
+        (cath <# "#team cath> [marked deleted by bob] hi")
+      alice #$> ("/_get chat #1 count=1", chat, [(0, "hi [marked deleted by bob]")])
+      bob #$> ("/_get chat #1 count=1", chat, [(0, "hi [marked deleted]")])
+      cath #$> ("/_get chat #1 count=1", chat, [(1, "hi [marked deleted by bob]")])
+
+testGroupMemberMessageFullDelete :: HasCallStack => FilePath -> IO ()
+testGroupMemberMessageFullDelete =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      alice ##> "/mr team cath member"
+      concurrentlyN_
+        [ alice <## "#team: you changed the role of cath from admin to member",
+          bob <## "#team: alice changed the role of cath from admin to member",
+          cath <## "#team: alice changed your role from admin to member"
+        ]
+      alice ##> "/set delete #team on"
+      alice <## "updated group preferences:"
+      alice <## "Full deletion: on"
+      concurrentlyN_
+        [ do
+            bob <## "alice updated group #team:"
+            bob <## "updated group preferences:"
+            bob <## "Full deletion: on",
+          do
+            cath <## "alice updated group #team:"
+            cath <## "updated group preferences:"
+            cath <## "Full deletion: on"
+        ]
+      threadDelay 1000000
+      cath #> "#team hi"
+      concurrently_
+        (alice <# "#team cath> hi")
+        (bob <# "#team cath> hi")
+      bob ##> "\\\\ #team @cath hi"
+      bob <## "message deleted"
+      concurrently_
+        (alice <# "#team cath> [deleted by bob] hi")
+        (cath <# "#team cath> [deleted by bob] hi")
+      alice #$> ("/_get chat #1 count=1", chat, [(0, "moderated [deleted by bob]")])
+      bob #$> ("/_get chat #1 count=1", chat, [(0, "Full deletion: on")]) -- fully deleted for bob
+      cath #$> ("/_get chat #1 count=1", chat, [(1, "moderated [deleted by bob]")])
 
 testGroupAsync :: HasCallStack => FilePath -> IO ()
 testGroupAsync tmp = do

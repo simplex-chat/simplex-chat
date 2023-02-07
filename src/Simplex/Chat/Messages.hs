@@ -184,6 +184,23 @@ chatItemTs' ChatItem {meta = CIMeta {itemTs}} = itemTs
 chatItemTimed :: ChatItem c d -> Maybe CITimed
 chatItemTimed ChatItem {meta = CIMeta {itemTimed}} = itemTimed
 
+data CIDeletedState = CIDSNotDeleted | CIDSMarkedDeleted (Maybe GroupMember) | CIDSDeleted (Maybe GroupMember)
+  deriving (Show, Eq)
+
+chatItemDeletedState :: ChatItem c d -> CIDeletedState
+chatItemDeletedState ChatItem {meta = CIMeta {itemDeleted}, content} =
+  case itemDeleted of
+    Nothing -> CIDSNotDeleted
+    Just ciDeleted -> case content of
+      CISndModerated -> CIDSDeleted ciDeletedByMember
+      CIRcvModerated -> CIDSDeleted ciDeletedByMember
+      _ -> CIDSMarkedDeleted ciDeletedByMember
+      where
+        ciDeletedByMember :: Maybe GroupMember
+        ciDeletedByMember = case ciDeleted of
+          CIModerated m -> Just m
+          CIDeleted -> Nothing
+
 data ChatDirection (c :: ChatType) (d :: MsgDirection) where
   CDDirectSnd :: Contact -> ChatDirection 'CTDirect 'MDSnd
   CDDirectRcv :: Contact -> ChatDirection 'CTDirect 'MDRcv
