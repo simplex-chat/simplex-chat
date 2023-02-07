@@ -3015,28 +3015,34 @@ SimpleX servers cannot see your profile.</source>
         <source>Your profile will be sent to the contact that you received this link from</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your profile, contacts and delivered messages are stored on your device." xml:space="preserve">
+      <trans-unit id="Your profile, contacts and delivered messages are stored on your device." xml:space="preserve" approved="no">
         <source>Your profile, contacts and delivered messages are stored on your device.</source>
+        <target state="translated">Uw profiel, contacten en afgeleverde berichten worden op uw apparaat opgeslagen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your random profile" xml:space="preserve">
+      <trans-unit id="Your random profile" xml:space="preserve" approved="no">
         <source>Your random profile</source>
+        <target state="translated">Mijn willekeurige profiel</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your server" xml:space="preserve">
+      <trans-unit id="Your server" xml:space="preserve" approved="no">
         <source>Your server</source>
+        <target state="translated">Mijn server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your server address" xml:space="preserve">
+      <trans-unit id="Your server address" xml:space="preserve" approved="no">
         <source>Your server address</source>
+        <target state="translated">Mijn server adres</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your settings" xml:space="preserve">
+      <trans-unit id="Your settings" xml:space="preserve" approved="no">
         <source>Your settings</source>
+        <target state="translated">Mijn instellingen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" xml:space="preserve">
+      <trans-unit id="[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" xml:space="preserve" approved="no">
         <source>[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)</source>
+        <target state="translated">[Bijdragen](https://github.com/simplex-chat/simplex-chat#contribute)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="[Send us email](mailto:chat@simplex.chat)" xml:space="preserve" approved="no">
@@ -3366,7 +3372,7 @@ SimpleX servers cannot see your profile.</source>
       </trans-unit>
       <trans-unit id="italic" xml:space="preserve" approved="no">
         <source>italic</source>
-        <target state="translated">italië</target>
+        <target state="translated">cursief</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="join as %@" xml:space="preserve" approved="no">
@@ -3374,8 +3380,9 @@ SimpleX servers cannot see your profile.</source>
         <target state="translated">deelnemen als %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="left" xml:space="preserve">
+      <trans-unit id="left" xml:space="preserve" approved="no">
         <source>left</source>
+        <target state="translated">Verlaten</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="marked deleted" xml:space="preserve" approved="no">
@@ -3486,7 +3493,7 @@ SimpleX servers cannot see your profile.</source>
       </trans-unit>
       <trans-unit id="removed you" xml:space="preserve" approved="no">
         <source>removed you</source>
-        <target state="translated">heb je verwijderd</target>
+        <target state="translated">heeft je verwijderd</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="sec" xml:space="preserve" approved="no">
@@ -3501,7 +3508,7 @@ SimpleX servers cannot see your profile.</source>
       </trans-unit>
       <trans-unit id="starting…" xml:space="preserve" approved="no">
         <source>starting…</source>
-        <target state="translated">beginnend…</target>
+        <target state="translated">beginnen…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="strike" xml:space="preserve" approved="no">
