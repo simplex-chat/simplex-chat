@@ -184,22 +184,25 @@ chatItemTs' ChatItem {meta = CIMeta {itemTs}} = itemTs
 chatItemTimed :: ChatItem c d -> Maybe CITimed
 chatItemTimed ChatItem {meta = CIMeta {itemTimed}} = itemTimed
 
-data CIDeletedState = CIDSNotDeleted | CIDSMarkedDeleted (Maybe GroupMember) | CIDSDeleted (Maybe GroupMember)
+data CIDeletedState = CIDeletedState
+  { markedDeleted :: Bool,
+    deletedByMember :: Maybe GroupMember
+  }
   deriving (Show, Eq)
 
-chatItemDeletedState :: ChatItem c d -> CIDeletedState
+chatItemDeletedState :: ChatItem c d -> Maybe CIDeletedState
 chatItemDeletedState ChatItem {meta = CIMeta {itemDeleted}, content} =
-  case itemDeleted of
-    Nothing -> CIDSNotDeleted
-    Just ciDeleted -> case content of
-      CISndModerated -> CIDSDeleted ciDeletedByMember
-      CIRcvModerated -> CIDSDeleted ciDeletedByMember
-      _ -> CIDSMarkedDeleted ciDeletedByMember
-      where
-        ciDeletedByMember :: Maybe GroupMember
-        ciDeletedByMember = case ciDeleted of
-          CIModerated m -> Just m
-          CIDeleted -> Nothing
+  ciDeletedToDeletedState <$> itemDeleted
+  where
+    ciDeletedToDeletedState cid =
+      case content of
+        CISndModerated -> CIDeletedState {markedDeleted = False, deletedByMember = byMember cid}
+        CIRcvModerated -> CIDeletedState {markedDeleted = False, deletedByMember = byMember cid}
+        _ -> CIDeletedState {markedDeleted = True, deletedByMember = byMember cid}
+    byMember :: CIDeleted c -> Maybe GroupMember
+    byMember = \case
+      CIModerated m -> Just m
+      CIDeleted -> Nothing
 
 data ChatDirection (c :: ChatType) (d :: MsgDirection) where
   CDDirectSnd :: Contact -> ChatDirection 'CTDirect 'MDSnd

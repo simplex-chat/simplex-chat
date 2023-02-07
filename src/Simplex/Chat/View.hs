@@ -277,11 +277,12 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
       | otherwise = s
 
 chatItemDeletedText :: ChatItem c d -> Maybe Text
-chatItemDeletedText ci = case chatItemDeletedState ci of
-  CIDSNotDeleted -> Nothing
-  CIDSMarkedDeleted m_ -> Just $ "marked deleted" <> byMember m_
-  CIDSDeleted m_ -> Just $ "deleted" <> byMember m_
+chatItemDeletedText ci = deletedStateToText <$> chatItemDeletedState ci
   where
+    deletedStateToText = \CIDeletedState {markedDeleted, deletedByMember} ->
+      if markedDeleted
+        then "marked deleted" <> byMember deletedByMember
+        else "deleted" <> byMember deletedByMember
     byMember m_ = maybe "" (\GroupMember {localDisplayName = m} -> " by " <> m) m_
 
 viewUsersList :: [UserInfo] -> [StyledString]
