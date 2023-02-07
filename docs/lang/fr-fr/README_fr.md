@@ -1,4 +1,4 @@
-| Updated 06.02.2023 | Languages Available : [EN](/README.md), FR, ... |
+| Updated 07.02.2023 | Languages Available : [EN](/README.md), FR, ... |
 <img src="/images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
 
 # SimpleX - la première plateforme de messagerie qui n'a pas le moindre identifiant d'utilisateur - 100% privé par définition !
@@ -34,7 +34,7 @@
   - [Confidentialité totale](#confidentialité-totale-de-votre-identité-de-votre-profil-de-vos-contacts-et-de-vos-métadonnées)
   - [Protection contre le spam et les abus](#protection-contre-le-spam-et-les-abus)
   - [Propriété et sécurité de vos données](#propriété-contrôle-et-sécurité-totale-de-vos-données)
-  - [Les utilisateurs sont maîtres de leur réseau SimpleX](#les-utilisateurs-sont-maîtres-de-leur-réseau-simplex)
+  - [Les utilisateurs sont maîtres de leur réseau SimpleX](#les-utilisateurs-sont-maîtres-du-réseau-simplex)
 - [Foire aux questions](#foire-aux-questions)
 - [Nouvelles et mises à jour](#nouvelles-et-mises-à-jour)
 - [Établir une connexion privée](#établir-une-connexion-privée)
@@ -63,7 +63,7 @@ Il ne suffit pas d'utiliser une messagerie chiffrée de bout en bout, nous devri
 
 **Contrairement à toute les autres plateformes de messagerie existante, SimpleX n'a pas d'identifiant attribué aux utilisateurs.** - pas même des nombres aléatoires. Cela protège la confidentialité des personnes avec lesquelles vous communiquez, en les cachant aux serveurs de la plateforme SimpleX et à tout observateur. [En savoir plus](./SIMPLEX_fr.md#full-privacy-of-your-identity-profile-contacts-and-metadata).
 
-### Protection contre le spam et les abus
+### La meilleure protection contre le spam et les abus
 
 Comme vous n'avez pas d'identifiant sur la plateforme SimpleX, vous ne pouvez pas être contacté, sauf si vous partagez un lien d'invitation unique ou une adresse d'utilisateur temporaire facultative. [En savoir plus](./SIMPLEX_fr.md#the-best-protection-against-spam-and-abuse).
 
@@ -71,7 +71,7 @@ Comme vous n'avez pas d'identifiant sur la plateforme SimpleX, vous ne pouvez pa
 
 SimpleX stocke toutes les données de l'utilisateur sur les appareils clients, les messages ne sont conservés que temporairement sur les serveurs relais SimpleX jusqu'à leur réception. [En savoir plus](./SIMPLEX_fr.md#complete-ownership-control-and-security-of-your-data).
 
-### Les utilisateurs sont maîtres de leur réseau SimpleX
+### Les utilisateurs sont maîtres du réseau SimpleX
 
 Vous pouvez utiliser SimpleX avec vos propres serveurs et continuer à communiquer avec les personnes utilisant les serveurs préconfigurés dans les applications ou tout autre serveur SimpleX. [En savoir plus](./SIMPLEX_fr.md#users-own-simplex-network).
 

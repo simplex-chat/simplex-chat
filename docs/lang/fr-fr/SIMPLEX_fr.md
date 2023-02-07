@@ -1,4 +1,4 @@
-| Updated 04.02.2023 | Languages Available : [EN](/docs/SIMPLEX.md), FR, ... |
+| Updated 07.02.2023 | Languages Available : [EN](/docs/SIMPLEX.md), FR, ... |
 # Plateforme SimpleX - motivation et comparaison
 
 ## Problèmes
@@ -13,84 +13,85 @@ Les plateformes et protocoles de chat existants présentent une partie ou la tot
 
 La concentration de la communication dans un petit nombre de plateformes centralisées rend la résolution de ces problèmes assez difficile.
 
-## Proposed solution
+## Solutions
 
-Proposed stack of protocols solves these problems by making both messages and contacts stored only on client devices, reducing the role of the servers to simple message relays that only require authorization of messages sent to the queues, but do NOT require user authentication - not only the messages but also the metadata is protected because users do not have any identifiers assigned to them - unlike with any other platforms.
+Les différents protocoles proposés résolvent ces problèmes en faisant en sorte que les messages comme les contacts soit stockés exclusivement sur l'appareil client, tout en réduisant le rôle des serveurs à de simples relais de message qui ne nécessite que l'autorisation des messages envoyés dans les files d'attentes, mais qui NE nécessite PAS une authentification utilisateur - les message ne sont pas les seuls à être protégé, les métadonnées le sont aussi car l'utilisateur n'est pas lié à un identifiant - contrairement aux autres platformes. 
 
-See [SimpleX whitepaper](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) for more information on platform objectives and technical design.
+Voir [le livre blanc de SimpleX](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) pour plus d'information sur les objectifs de la platforme et ses détails techniques.
 
-## Why use SimpleX
+## Pourquoi utiliser SimpleX
 
-## SimpleX unique approach to privacy and security
+## SimpleX une approche unique en terme de confidentialité et de sécurité
 
-Everyone should care about privacy and security of their communications - even ordinary conversations can put you in danger.
+Tout le monde devrait se soucier de la confidentialité et de la sécurité de ses communications - même une conversation lambda peut vous mettre en danger.
 
-### Full privacy of your identity, profile, contacts and metadata
+### Protection complète de votre identité, profil, contacts et métadonnées
 
-**Unlike any other existing messaging platform, SimpleX has no identifiers assigned to the users** - it does not use phone numbers (like Signal or WhatsApp), domain-based addresses (like email, XMPP or Matrix), usernames (like Telegram), public keys or even random numbers (like all other messengers) to identify its users - we do not even know how many people use SimpleX.
+**Unlike any other existing messaging platform, SimpleX has no identifiers assigned to the users**Contrairement aux autres platformes de messagerie, SimpleX ne lie pas d'identifiant à l'utilisateur - il n'y a pas besoin de numéro de télèphone (comme Signal ou WhatsApp), d'adresses basés sur des noms de domaines (comme les e-mails, XMPP ou MatriX), de noms d'utilisateurs (comme Telegram), ou de clés publiques ou même de nombres aléatoires pour identifié les utilisateurs - on ne sait même pas combiens de personnes utilise SimpleX.
 
-To deliver the messages instead of user identifiers that all other platforms use, SimpleX uses the addresses of unidirectional (simplex) message queues. Using SimpleX is like having a different email address or a phone number for each contact you have, but without the hassle of managing all these addresses. In the near future SimpleX apps will also change the message queues automatically, moving the conversations from one server to another, to provide even better privacy to the users.
+Pour distribuer les messages au lieu d'utiliser des identifiants d'utilisateur que toute les autres platformes utilisent, SimpleX utilise des adresses unidirectionnelles (simplex) de files d'attentes de messages. Utiliser SimpleX c'est comme avoir une adresse e-mail différentes ou un numéro de télèphone différent par contact, sans les inconvenients qui viennent avec. Dans un futur proche les apps SimpleX changeront automatiquement les files d'attentes, déplacant les conversations d'un serveur à un autre, pour une meilleure confidentialité.
 
-This approach protects the privacy of who are you communicating with, hiding it from SimpleX platform servers and from any observers. You can further improve your privacy by configuring your network access to connect to SimpleX servers via some overlay transport network, e.g. Tor.
+Cette approche protège la vie privé de la personne avec qui vous communiquez, elle est masquée des serveurs SimpleX et de n'importe quel autre observateur. Vous pouvez encore améliorer votre protection en configurant votre réseau pour qu'il passe via des réseaux superposé comme, par exemple Tor.
 
-### The best protection against spam and abuse
+### La meilleure protection contre le spam et les abus
 
-As you have no identifier on SimpleX platform, you cannot be contacted unless you share a one-time invitation link or an optional temporary user address. Even with the optional user addresses, while they can be used to send spam contact requests, you can change or completely delete it without losing any of your connections.
+Comme vous n'avez pas d'identifiant sur la plateforme SimpleX, vous ne pouvez pas être contacté, sauf si vous partagez un lien d'invitation unique ou une adresse d'utilisateur temporaire facultative. Même avec les adresses d'utilisateur facultatives, bien qu'elles puissent être utilisées pour envoyer des demandes de contact non sollicitées, vous pouvez les modifier ou les supprimer complètement sans perdre aucune de vos connexions.
 
-### Complete ownership, control and security of your data
+### Propriété, contrôle et sécurité totale de vos données
 
-SimpleX stores all user data on client devices, the messages are only held temporarily on SimpleX relay servers until they are received.
+SimpleX stocke toutes les données de l'utilisateur sur les appareils clients, les messages ne sont conservés que temporairement sur les serveurs relais SimpleX jusqu'à leur réception.
 
-We use portable database format that can be used on all supported devices - we will soon add the ability to export the chat database from the mobile app so it can be used on another device.
+Nous utilisons un format de base de données portable qui peut être utilisé sur tous les appareils pris en charge. Nous ajouterons bientôt la possibilité d'exporter la base de données de chat depuis l'application mobile afin qu'elle puisse être utilisée sur un autre appareil.
 
-Unlike servers of federated networks (email, XMPP or Matrix), SimpleX servers do not store user accounts, they simply relay messages to the recipients, protecting the privacy of both parties. There are no identifiers or encrypted messages in common between sent and received traffic of the server, thanks to the additional encryption layer for delivered messages. So if anybody is observing server traffic, they cannot easily determine who is communicating with whom (see [SimpleX whitepaper](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) for the known traffic correlation attacks).
+Contrairement aux serveurs des réseaux fédérés (e-mail, XMPP ou Matrix), les serveurs SimpleX ne stockent pas les comptes des utilisateurs, ils se contentent de relayer les messages aux destinataires, protégeant ainsi la vie privée des deux parties. Il n'y a aucun identifiant ou message chiffré en commun entre le trafic envoyé et reçu du serveur, grâce à la couche de chiffrement supplémentaire pour les messages délivrés. Par conséquent, si quelqu'un observe le trafic du serveur, il ne peut pas facilement déterminer qui communique avec qui (Voir [le livre blanc de SimpleX](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) pour les attaques connues de corrélation réseau).
 
-### Users own SimpleX network
+### Les utilisateurs sont maîtres du réseau SimpleX
 
-You can use SimpleX with your own servers and still communicate with people using the servers that are pre-configured in the apps or any other SimpleX servers.
+Vous pouvez utiliser SimpleX avec vos propres serveurs et continuer à communiquer avec les personnes utilisant les serveurs préconfigurés dans les applications ou tout autre serveur SimpleX.
 
-SimpleX platform uses an open protocol and provides SDK to create chat bots, allowing implementation of services that users can interact with via SimpleX Chat apps – we are really looking forward to see what SimpleX services can be built.
+La plateforme SimpleX utilise un protocole ouvert et fournit un SDK pour créer des chatbot, permettant la mise en œuvre de services avec lesquels les utilisateurs peuvent interagir via les applications SimpleX Chat - nous sommes vraiment impatients de voir quels services SimpleX peuvent être créés.
 
-If you are considering developing with the SimpleX platform, whether for chat bot services for SimpleX app users or to integrate the SimpleX Chat library into your mobile apps, please get in touch for any advice and support.
+Si vous envisagez de développer avec la plateforme SimpleX, que ce soit pour des services de chatbot pour les utilisateurs de l'application SimpleX ou pour intégrer la bibliothèque de chat SimpleX dans vos applications mobiles, n'hésitez pas à nous contacter pour tout conseil et assistance.
 
-## Comparison with other protocols
+## Comparaison avec d'autres protocoles
 
-|                                                |    SimpleX chat    | Signal, big platforms |  XMPP, Matrix   |  P2P protocols  |
+|                                                |    SimpleX chat    | Signal et autres...   |  XMPP, Matrix   | Protocoles P2P  |
 | :--------------------------------------------- | :----------------: | :-------------------: | :-------------: | :-------------: |
-| Requires user identifiers                      |    No = private    |    Yes<sup>1</sup>    | Yes<sup>2</sup> | Yes<sup>3</sup> |
-| Possibility of MITM                            |    No = secure     |    Yes<sup>4</sup>    |       Yes       |       Yes       |
-| Dependence on DNS                              |   No = resilient   |          Yes          |       Yes       |       No        |
-| Single operator or network                     | No = decentralized |          Yes          |       No        | Yes<sup>5</sup> |
-| Central component or other network-wide attack |   No = resilient   |          Yes          | Yes<sup>2</sup> | Yes<sup>6</sup> |
+| Identifiants d'utilisateur nécessaire          |    Non = privé     |    Oui<sup>1</sup>    | Oui<sup>2</sup> | Oui<sup>3</sup> |
+| Risque d'attaque MITM                          |    Non = securisé  |    Oui<sup>4</sup>    |       Oui       |       Oui       |
+| Dépendance au DNS                              |   Non = résistant  |          Oui          |       Oui       |       Non       |
+| Un opérateur ou un réseau unique               | Non = décentralisé |          Oui          |       Non       | Oui<sup>5</sup> |
+| Attaque à l'échelle du réseau                  |   Non = résistant  |          Oui          | Oui<sup>2</sup> | Oui<sup>6</sup> |
 
-1. Usually based on a phone number, in some cases on usernames.
-2. DNS based.
-3. Public key or some other globally unique ID.
-4. If operator’s servers are compromised.
-5. While P2P networks and cryptocurrency-based networks are distributed, they are not decentralized - they operate as a single network, with a single namespace of user addresses.
-6. P2P networks either have a central authority or the whole network can be compromised - see the next section.
+1. Généralement basé sur un numéro de téléphone, dans certains cas sur des noms d'utilisateur.
+2. Basé sur le DNS.
+3. Clé publique ou tout autre identifiant global unique.
+4. Si les serveurs de l'opérateur sont compromis.
+5. Si les réseaux P2P et les réseaux basés sur les crypto-monnaies sont distribués, ils ne sont pas décentralisés : ils fonctionnent comme un seul réseau, avec un seul espace de noms des adresses des utilisateurs.
+6. Les réseaux P2P ont soit une autorité centrale, soit l'ensemble du réseau peut être compromis - voir la section suivante.
 
-## Comparison with [P2P][9] messaging protocols
+## Comparaison avec les protocoles de messagerie [P2P][9]
 
-There are several P2P chat/messaging protocols and implementations that aim to solve privacy and centralisation problem, but they have their own set of problems that makes them less reliable than the proposed design, more complex to implement and analyse and more vulnerable to attacks.
+Il existe plusieurs protocoles et implémentations de chat/messagerie P2P qui visent à résoudre le problème de la protection de la vie privée et de la centralisation, mais ils ont leur propre série de problèmes qui les rendent moins fiables que la forme proposée, plus complexes à mettre en œuvre et à analyser et plus vulnérables aux attaques.
 
-1. [P2P][9] networks use some variant of [DHT][10] to route messages/requests through the network. DHT implementations have complex designs that have to balance reliability, delivery guarantee and latency. The proposed design has both better delivery guarantees and lower latency (the message is passed multiple times in parallel, through one node each time, using servers chosen by the recipient, while in P2P networks the message is passed through `O(log N)` nodes sequentially, using nodes chosen by the algorithm).
+1. Les réseaux [P2P][9] utilisent une variante de [DHT][10] pour acheminer les messages/demandes à travers le réseau. Les implémentations du DHT ont des designs complexes qui doivent équilibrer la fiabilité, la garantie de livraison et la latence. La méthode proposée offre à la fois de meilleures garanties de livraison et une latence plus faible (le message est transmis plusieurs fois en parallèle, à travers un nœud à chaque fois, en utilisant des serveurs choisis par le destinataire, alors que dans les réseaux P2P, le message est transmis à travers `O(log N)` nœuds séquentiellement, en utilisant des nœuds choisis par un algorithme).
 
-2. The proposed design, unlike most P2P networks, has no global user identifiers of any kind, even temporary.
+2. Le modèle proposé, contrairement à la plupart des réseaux P2P, ne comporte aucun identifiant global d'utilisateur, même temporaire.
 
-3. P2P itself does not solve [MITM attack][2] problem, and most existing solutions do not use out-of-band messages for the initial key exchange. The proposed design uses out-of-band messages or, in some cases, pre-existing secure and trusted connections for the initial key exchange.
+3. Le P2P en lui-même ne résout pas le problème des [attaques MITM][2], et la plupart des solutions existantes n'utilisent pas de messages hors bande pour l'échange initial de clés. La conception proposée utilise des messages hors bande ou, dans certains cas, des connexions sécurisées et fiables préexistantes pour l'échange initial de clés.
 
-4. P2P implementations can be blocked by some Internet providers (like [BitTorrent][11]). The proposed design is transport agnostic - it can work over standard web protocols, and the servers can be deployed on the same domains as the websites.
+4. Les implémentations P2P peuvent être bloquées par certains fournisseurs d'accès à Internet (comme [BitTorrent][11]). Le modèle proposée est indépendant des moyens de transport : il peut fonctionner avec des protocoles web standard et les serveurs peuvent être déployés sur les mêmes domaines que les sites web.
 
-5. All known P2P networks are likely to be vulnerable to [Sybil attack][12], because each node is discoverable, and the network operates as a whole. Known measures to reduce the probability of the Sybil attack either require a centralized component or expensive [proof of work][13]. The proposed design, on the opposite, has no server discoverability - servers are not connected, not known to each other and to all clients. The SimpleX network is fragmented and operates as multiple isolated connections. It makes network-wide attacks on SimpleX network impossible - even if some servers are compromised, other parts of the network can operate normally, and affected clients can switch to using other servers without losing contacts or messages.
+5. Tous les réseaux P2P connus sont susceptibles d'être vulnérables à une [attaque Sybil][12], car chaque nœud peut être découvert et le réseau fonctionne comme un tout. Les mesures connues pour réduire la probabilité de l'attaque Sybil nécessitent soit un composant centralisé, soit des [preuves de travail][13] coûteuses. Le modèle proposée, au contraire, ne permet pas de découvrir les serveurs - les serveurs ne sont pas connectés, ni connus les uns des autres, ni de tous les clients. Le réseau SimpleX est fragmenté et fonctionne comme de multiples connexions isolées. Cela rend impossible les attaques à l'échelle du réseau SimpleX - même si certains serveurs sont compromis, d'autres parties du réseau peuvent fonctionner normalement, et les clients affectés peuvent passer à l'utilisation d'autres serveurs sans perdre de contacts ou de messages.
 
-6. P2P networks are likely to be vulnerable to [DRDoS attack][14]. In the proposed design clients only relay traffic from known trusted connection and cannot be used to reflect and amplify the traffic in the whole network.
+6. Les réseaux P2P sont susceptibles d'être [vulnérables][14] aux [attaques DRDoS][15]. Dans la conception proposée, les clients ne relaient que le trafic provenant de connexions de confiance connues et ne peuvent pas être utilisés pour refléter et amplifier le trafic dans l'ensemble du réseau.
 
-[1]: https://en.wikipedia.org/wiki/End-to-end_encryption
-[2]: https://en.wikipedia.org/wiki/Man-in-the-middle_attack
-[9]: https://en.wikipedia.org/wiki/Peer-to-peer
-[10]: https://en.wikipedia.org/wiki/Distributed_hash_table
-[11]: https://en.wikipedia.org/wiki/BitTorrent
-[12]: https://en.wikipedia.org/wiki/Sybil_attack
-[13]: https://en.wikipedia.org/wiki/Proof_of_work
+[1]: https://fr.wikipedia.org/wiki/Chiffrement_de_bout_en_bout
+[2]: https://fr.wikipedia.org/wiki/Attaque_de_l%27homme_du_milieu
+[9]: https://fr.wikipedia.org/wiki/Pair-%C3%A0-pair
+[10]: https://fr.wikipedia.org/wiki/Table_de_hachage_distribu%C3%A9e
+[11]: https://fr.wikipedia.org/wiki/BitTorrent
+[12]: https://fr.wikipedia.org/wiki/Attaque_Sybil
+[13]: https://fr.wikipedia.org/wiki/Preuve_de_travail
 [14]: https://www.usenix.org/conference/woot15/workshop-program/presentation/p2p-file-sharing-hell-exploiting-bittorrent
+[15]: https://en.wikipedia.org/wiki/Denial-of-service_attack#Reflected_attack
