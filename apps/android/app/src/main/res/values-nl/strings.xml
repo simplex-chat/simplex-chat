@@ -22,7 +22,7 @@
     <string name="allow_to_delete_messages">Sta toe om verzonden berichten onomkeerbaar te verwijderen.</string>
     <string name="allow_to_send_voice">Sta toe om spraakberichten te verzenden.</string>
     <string name="chat_is_running">Chat is aktief</string>
-    <string name="clear_chat_menu_action">Clear</string>
+    <string name="clear_chat_menu_action">Wissen</string>
     <string name="chat_database_section">CHAT DATABASE</string>
     <string name="chat_archive_section">CHAT ARCHIEF</string>
     <string name="chat_console">Chat console</string>
@@ -41,9 +41,9 @@
     <string name="users_add">Profiel toevoegen</string>
     <string name="smp_servers_add">Server toevoegen…</string>
     <string name="smp_servers_add_to_another_device">Toevoegen aan een ander apparaat</string>
-    <string name="v4_2_group_links_desc">Admins kunnen de uitnodigingslinks naar groepen aanmaken.</string>
+    <string name="v4_2_group_links_desc">Beheerders kunnen de uitnodigingslinks naar groepen aanmaken.</string>
     <string name="v4_3_improved_server_configuration_desc">Servers toevoegen door QR-codes te scannen.</string>
-    <string name="group_member_role_admin">admin</string>
+    <string name="group_member_role_admin">Beheerder</string>
     <string name="all_group_members_will_remain_connected">Alle groepsleden blijven verbonden.</string>
     <string name="allow_verb">Toestaan</string>
     <string name="chat_item_ttl_day">1 dag</string>
@@ -117,7 +117,7 @@
     <string name="cannot_receive_file">Kan bestand niet ontvangen</string>
     <string name="change_role">Rol wijzigen</string>
     <string name="rcv_conn_event_switch_queue_phase_changing">veranderen van adres…</string>
-    <string name="rcv_conn_event_switch_queue_phase_completed">veranderd adres voor jou</string>
+    <string name="rcv_conn_event_switch_queue_phase_completed">adres voor u gewijzigd</string>
     <string name="rcv_group_event_changed_member_role">veranderde rol van %s naar %s</string>
     <string name="change_member_role_question">Groepsrol wijzigen\?</string>
     <string name="chat_is_stopped">Chat is gestopt</string>
@@ -132,7 +132,7 @@
     <string name="chat_with_developers">Chat met de ontwikkelaars</string>
     <string name="smp_servers_check_address">Controleer het serveradres en probeer het opnieuw.</string>
     <string name="choose_file">Kies bestand</string>
-    <string name="clear_verb">Clear</string>
+    <string name="clear_verb">Wissen</string>
     <string name="v4_4_verify_connection_security_desc">Vergelijk beveiligingscodes met je contacten.</string>
     <string name="icon_descr_contact_checked">Contact gecontroleerd</string>
     <string name="notification_contact_connected">Verbonden</string>
@@ -226,7 +226,7 @@
     <string name="rcv_group_event_member_connected">verbonden</string>
     <string name="archive_created_on_ts">Gemaakt op <xliff:g id="archive_ts">%1$s</xliff:g></string>
     <string name="group_member_status_complete">compleet</string>
-    <string name="clear_contacts_selection_button">Duidelijk</string>
+    <string name="clear_contacts_selection_button">Wissen</string>
     <string name="group_member_status_connected">verbonden</string>
     <string name="group_member_status_connecting">Verbinden</string>
     <string name="group_member_status_accepted">verbinden (geaccepteerd)</string>
@@ -424,7 +424,7 @@
     <string name="large_file">Groot bestand!</string>
     <string name="mark_read">Markeer gelezen</string>
     <string name="mark_unread">Markeer als ongelezen</string>
-    <string name="mute_chat">Stom</string>
+    <string name="mute_chat">Dempen</string>
     <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Als u elkaar niet persoonlijk kunt ontmoeten, kunt u <b> de QR-code scannen in het videogesprek </b>, of uw contactpersoon kan een uitnodigingslink delen.</string>
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Als je elkaar niet persoonlijk kunt ontmoeten, <b>toon je de QR-code in het videogesprek</b> of deel je de link.</string>
     <string name="invalid_QR_code">Ongeldige QR-code</string>
@@ -738,7 +738,7 @@
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">Het berichten- en applicatieplatform dat uw privacy en veiligheid beschermt.</string>
     <string name="profile_is_only_shared_with_your_contacts">Het profiel wordt alleen gedeeld met uw contacten.</string>
     <string name="we_do_not_store_contacts_or_messages_on_servers">We slaan geen van uw contacten of berichten (eenmaal afgeleverd) op de servers op.</string>
-    <string name="you_can_use_markdown_to_format_messages__prompt">U kunt markdown gebruiken om berichten op te maken:</string>
+    <string name="you_can_use_markdown_to_format_messages__prompt">U kunt markdown gebruiken voor opmaak in berichten:</string>
     <string name="callstatus_rejected">geweigerde oproep</string>
     <string name="secret">geheim</string>
     <string name="next_generation_of_private_messaging">De volgende generatie berichten versturen</string>
@@ -750,7 +750,7 @@
     <string name="contact_wants_to_connect_via_call"><xliff:g id="contactName" example="Alice">%1$s</xliff:g> wil met je in contact komen via</string>
     <string name="reject">Afwijzen</string>
     <string name="icon_descr_video_call">video-oproep</string>
-    <string name="your_calls">"Mijn  oproepen"</string>
+    <string name="your_calls">Mijn oproepen</string>
     <string name="show_call_on_lock_screen">Toon</string>
     <string name="webrtc_ice_servers">WebRTC ICE-servers</string>
     <string name="your_ice_servers">Mijn ICE servers</string>
@@ -957,9 +957,9 @@
     <string name="simplex_link_mode_browser">Via browser</string>
     <string name="description_via_contact_address_link">via contactadres link</string>
     <string name="description_via_group_link">via groepslink</string>
-    <string name="description_via_one_time_link">via een eenmalige koppeling</string>
+    <string name="description_via_one_time_link">via een eenmalige link</string>
     <string name="simplex_link_connection">via <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g></string>
-    <string name="sender_you_pronoun">Jij</string>
+    <string name="sender_you_pronoun">jij</string>
     <string name="description_you_shared_one_time_link">je hebt een eenmalige link gedeeld</string>
     <string name="description_you_shared_one_time_link_incognito">je hebt een eenmalige link incognito gedeeld</string>
     <string name="chat_help_tap_button">Klik op de knop</string>
