@@ -29,8 +29,6 @@ android {
         manifestPlaceholders.app_name = "@string/app_name"
         manifestPlaceholders.provider_authorities = "chat.simplex.app.provider"
         manifestPlaceholders.extract_native_libs = compression_level != "0"
-        // Comma separated list of languages that will be included in the apk
-        resConfigs("en", "ru", "de", "fr", "it")
     }
 
     buildTypes {
@@ -77,6 +75,11 @@ android {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'
         }
         jniLibs.useLegacyPackaging = compression_level != "0"
+    }
+    def isRelease = gradle.getStartParameter().taskNames.find({ it.toLowerCase().contains("release") }) != null
+    if (isRelease) {
+        // Comma separated list of languages that will be included in the apk
+        android.defaultConfig.resConfigs("en", "ru", "de", "fr", "it")
     }
 }
 
