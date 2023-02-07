@@ -157,4 +157,13 @@
     <string name="allow_to_send_disappearing">गायब होने वाले संदेश भेजने की अनुमति दें।</string>
     <string name="prohibit_sending_disappearing">गायब होने वाले संदेश भेजने पर रोक लगाएं।</string>
     <string name="how_to_use_simplex_chat">इसका उपयोग कैसे करना है</string>
+    <string name="group_member_status_group_deleted">समूह हटाया गया</string>
+    <string name="delete_message_cannot_be_undone_warning">संदेश हटा दिया जाएगा - इसे पूर्ववत नहीं किया जा सकता!</string>
+    <string name="message_delivery_error_title">संदेश वितरण त्रुटि</string>
+    <string name="group_display_name_field">समूह प्रदर्शन नाम:</string>
+    <string name="group_full_name_field">समूह का पूरा नाम:</string>
+    <string name="group_invitation_expired">समूह आमंत्रण समाप्त हो गया</string>
+    <string name="v4_3_irreversible_message_deletion_desc">आपके संपर्क पूर्ण संदेश को हटाने की अनुमति दे सकते हैं।</string>
+    <string name="new_in_version">%s में नया</string>
+    <string name="icon_descr_group_inactive">समूह निष्क्रिय</string>
 </resources>
