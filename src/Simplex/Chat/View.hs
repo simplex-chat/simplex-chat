@@ -416,8 +416,9 @@ viewItemDelete chat ChatItem {chatDir, meta, content = deletedContent} markedDel
     DirectChat c -> case (chatDir, deletedContent) of
       (CIDirectRcv, CIRcvMsgContent mc) -> viewReceivedMessage (ttyFromContactDeleted c markedDeleted) [] mc ts meta
       _ -> prohibited
-    GroupChat g -> case (chatDir, deletedContent) of
+    GroupChat g@GroupInfo {membership} -> case (chatDir, deletedContent) of
       (CIGroupRcv m, CIRcvMsgContent mc) -> viewReceivedMessage (ttyFromGroupDeleted g m markedDeleted) [] mc ts meta
+      (CIGroupSnd, CISndMsgContent mc) -> viewReceivedMessage (ttyFromGroupDeleted g membership markedDeleted) [] mc ts meta
       _ -> prohibited
     _ -> prohibited
   where
@@ -1407,6 +1408,16 @@ ttyToGroup g@GroupInfo {localDisplayName = n} =
 ttyToGroupEdited :: GroupInfo -> StyledString
 ttyToGroupEdited g@GroupInfo {localDisplayName = n} =
   membershipIncognito g <> ttyTo ("#" <> n <> " [edited] ")
+
+-- ttyToGroupDeleted :: GroupInfo -> Bool -> StyledString
+-- ttyToGroupDeleted g markedDeleted =
+--   membershipIncognito g <> ttyTo (fromGroup_ g m <> deleted)
+--   where
+--     deleted = if markedDeleted then "[marked deleted] " else "[deleted] "
+
+-- toGroup_ :: GroupInfo -> Text
+-- toGroup_ GroupInfo {localDisplayName = g} =
+--   "#" <> g <> " " <> m <> "> "
 
 ttyFilePath :: FilePath -> StyledString
 ttyFilePath = plain

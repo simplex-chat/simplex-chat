@@ -35,7 +35,7 @@ chatGroupTests = do
     it "update member role" testUpdateMemberRole
     it "unused contacts are deleted after all their groups are deleted" testGroupDeleteUnusedContacts
     it "group description is shown as the first message to new members" testGroupDescription
-    xit "delete message of another group member" testGroupMemberMessageDelete
+    fit "delete message of another group member" testGroupMemberMessageDelete
   describe "async group connections" $ do
     xit "create and join group when clients go offline" testGroupAsync
   describe "group links" $ do
@@ -1221,7 +1221,7 @@ testGroupMemberMessageDelete =
       bob <## "message marked deleted"
       concurrently_
         (alice <# "#team cath> [marked deleted] hi")
-        (cath <## "#team cath> [marked deleted] hi")
+        (cath <# "#team cath> [marked deleted] hi")
 
 testGroupAsync :: HasCallStack => FilePath -> IO ()
 testGroupAsync tmp = do
