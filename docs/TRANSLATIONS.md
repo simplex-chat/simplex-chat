@@ -30,7 +30,7 @@ This document is created to speed up this process, and share some important "got
 
 5. When you translate [iOS app](https://hosted.weblate.org/projects/simplex-chat/ios/), a large part of the strings are exactly the same - they can be copied over in one click in glossary section. The visual hint that it can be done is that the whole source string is highlighted in yellow. Many other strings are very similar, they only differ in interpolation syntax or how bold font is used - they require minimal editing. There are some strings that are unique to iOS platform - they need to be translated separately.
 
-<img src="./images/weblate_2.png" alt="weblate: automatic suggestions" width="100%">
+<img src="./images/weblate_3.png" alt="weblate: automatic suggestions" width="100%">
 
 ## Once translation is completed
 
