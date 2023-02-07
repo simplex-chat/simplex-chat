@@ -248,13 +248,13 @@ Thanks to our users and [Weblate](https://hosted.weblate.org/engage/simplex-chat
 
 Current interface languages:
 
-English (development language)
-German: [@mlanp](https://github.com/mlanp)
-French: link to be added
-Italian: [@unbranched](https://github.com/unbranched)
-Russian: project team
+- English (development language)
+- German: [@mlanp](https://github.com/mlanp)
+- French: link to be added
+- Italian: [@unbranched](https://github.com/unbranched)
+- Russian: project team
 
-Languages in progress: Chinese, Hindi, Japanese, Dutch and [many others](https://hosted.weblate.org/projects/simplex-chat/#languages). We will be adding more languages as some of the already added are completed – please suggest new languages and get in touch with us!
+Languages in progress: Chinese, Hindi, Czech, Japanese, Dutch and [many others](https://hosted.weblate.org/projects/simplex-chat/#languages). We will be adding more languages as some of the already added are completed – please suggest new languages and get in touch with us!
 
 ## Contribute
 
