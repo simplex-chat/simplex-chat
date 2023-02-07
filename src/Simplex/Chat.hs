@@ -3664,11 +3664,10 @@ deleteDirectCI user ct ci@(CChatItem msgDir deletedItem@ChatItem {file}) byUser 
 deleteGroupCI :: ChatMonad m => User -> GroupInfo -> CChatItem 'CTGroup -> Bool -> Bool -> Maybe GroupMember -> m ChatResponse
 deleteGroupCI user gInfo ci@(CChatItem msgDir deletedItem@ChatItem {file}) byUser timed byGroupMember_ = do
   deleteCIFile user file
-  toCi <- case byGroupMember_ of
-    Nothing ->
-      withStore' (\db -> deleteGroupChatItem db user gInfo ci) $> Nothing
-    Just m ->
-      Just <$> withStore' (\db -> updateGroupChatItemModerated db user gInfo ci m)
+  toCi <- withStore' $ \db ->
+    case byGroupMember_ of
+      Nothing -> deleteGroupChatItem db user gInfo ci $> Nothing
+      Just m -> Just <$> updateGroupChatItemModerated db user gInfo ci m
   pure $ CRChatItemDeleted user (AChatItem SCTGroup msgDir (GroupChat gInfo) deletedItem) toCi byUser timed
 
 deleteCIFile :: (ChatMonad m, MsgDirectionI d) => User -> Maybe (CIFile d) -> m ()
