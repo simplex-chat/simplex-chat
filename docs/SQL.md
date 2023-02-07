@@ -8,7 +8,7 @@ pragma key="youDecryptionPassphrase"
 select * from users;
 ```
 
-If you see `Parse error: no such table: users`, make sure you entered correct passphrase and you have changed passphrase from random in Android app (if you got this database from Android device, of course).
+If you see `Parse error: no such table: users`, make sure you entered correct passphrase, and you have changed passphrase from random in Android app (if you got this database from Android device, of course).
 
 # Accessing message history via SQL queries
 
