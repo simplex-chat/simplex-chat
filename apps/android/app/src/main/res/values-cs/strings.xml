@@ -172,7 +172,7 @@
     <string name="switch_receiving_address_desc">Tato funkce je experimentální! Bude fungovat pouze v případě, že druhý klient má nainstalovanou verzi 4.2. Po dokončení změny adresy by se měla v konverzaci zobrazit zpráva - zkontrolujte, zda můžete od tohoto kontaktu (nebo člena skupiny) stále přijímat zprávy.</string>
     <string name="switch_receiving_address_question">Přepnout přijímací adresu\?</string>
     <string name="send_verb">Poslat</string>
-    <string name="you_need_to_allow_to_send_voice">Abyste mohli odesílat hlasové zprávy, musíte je povolit svému kontaktu.</string>
+    <string name="you_need_to_allow_to_send_voice">Abyste mohli odesílat hlasové zprávy, musíte svému kontaktu odesílání hlasových zpráv povolit.</string>
     <string name="icon_descr_cancel_live_message">Zrušit živou zprávu</string>
     <string name="back">Zpět</string>
     <string name="cancel_verb">Zrušit</string>
@@ -268,7 +268,7 @@
     <string name="icon_descr_speaker_off">Reproduktor vypnut</string>
     <string name="icon_descr_speaker_on">Zapnutý reproduktor</string>
     <string name="icon_descr_call_progress">Probíhající hovor</string>
-    <string name="auto_accept_images">Automatické přijímání obrázků</string>
+    <string name="auto_accept_images">Automaticky přijímat obrázky</string>
     <string name="settings_section_title_settings">NASTAVENÍ</string>
     <string name="settings_section_title_help">NÁPOVĚDA</string>
     <string name="settings_section_title_device">ZAŘÍZENÍ</string>
@@ -327,7 +327,7 @@
     <string name="rcv_conn_event_switch_queue_phase_completed">změnila se vaše adresa</string>
     <string name="icon_descr_expand_role">Rozšířit výběr rolí</string>
     <string name="invite_prohibited">Nelze pozvat kontakt!</string>
-    <string name="failed_to_create_user_duplicate_desc">Již máte profil chatu se stejným zobrazovacím názvem. Zvolte prosím jiné jméno.</string>
+    <string name="failed_to_create_user_duplicate_desc">Již máte profil chatu se stejným názvem. Zvolte prosím jiné jméno.</string>
     <string name="smp_server_test_create_queue">Vytvořit frontu</string>
     <string name="smp_server_test_secure_queue">Zabezpečit frontu</string>
     <string name="service_notifications">Okamžitá oznámení!</string>
@@ -740,7 +740,7 @@
     <string name="set_password_to_export">Nastavení přístupové fráze pro export</string>
     <string name="set_password_to_export_desc">Databáze je šifrována pomocí náhodné přístupové fráze. Před exportem ji změňte.</string>
     <string name="error_stopping_chat">Chyba při zastavení chatu</string>
-    <string name="import_database_question">Importovat databázi chatu\?</string>
+    <string name="import_database_question">Importovat chat databázi\?</string>
     <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Vaše aktuální chat databáze bude SMAZÁNA a NAHRAZENA importovanou databází.
 \nTuto akci nelze vzít zpět - váš profily, kontakty, zprávy a soubory budou nenávratně ztraceny.</string>
     <string name="error_deleting_database">Chyba při mazání databáze chatu</string>
