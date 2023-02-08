@@ -1,4 +1,8 @@
-# Decrypting databases
+| Updated 31.01.2023 | Languages: EN, [FR](/docs/lang/fr/SQL.md) |
+
+# Accessing messages in the database
+
+## Decrypting databases
 
 In order to view database data you need to decrypt it first. Install `sqlcipher` using your favorite package manager and run the following commands in the directory with databases:
 ```bash
@@ -10,7 +14,7 @@ select * from users;
 
 If you see `Parse error: no such table: users`, make sure you entered correct passphrase, and you have changed passphrase from random in Android app (if you got this database from Android device, of course).
 
-# Accessing message history via SQL queries
+## SQL queries
 
 You can run queries against `direct_messages`, `group_messages` and `all_messages` (or their simpler alternatives `direct_messages_plain`, `group_messages_plain` and `all_messages_plain`), for example:
 

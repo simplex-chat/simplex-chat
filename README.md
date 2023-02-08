@@ -1,3 +1,5 @@
+| Updated 07.02.2023 | Languages: EN, [FR](/docs/lang/fr/README.md) |
+
 <img src="images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
 
 # SimpleX - the first messaging platform that has no user identifiers of any kind - 100% private by design!
@@ -250,7 +252,7 @@ Current interface languages:
 
 - English (development language)
 - German: [@mlanp](https://github.com/mlanp)
-- French: link to be added
+- French: [@ishi_sama](https://github.com/ishi-sama)
 - Italian: [@unbranched](https://github.com/unbranched)
 - Russian: project team
 
