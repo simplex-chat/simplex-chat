@@ -58,7 +58,7 @@
     <string name="auth_unavailable">Verificatie niet beschikbaar</string>
     <string name="back">Terug</string>
     <string name="v4_2_auto_accept_contact_requests">Contactverzoeken automatisch accepteren</string>
-    <string name="bold">vet</string>
+    <string name="bold">vetgedrukt</string>
     <string name="incognito_random_profile_description">Er wordt een willekeurig profiel naar uw contactpersoon verzonden</string>
     <string name="attach">Bijvoegen</string>
     <string name="allow_irreversible_message_deletion_only_if">Sta het onomkeerbaar verwijderen van berichten alleen toe als uw contactpersoon dit toestaat.</string>
@@ -734,7 +734,7 @@
     <string name="your_current_profile">Mijn huidige profiel</string>
     <string name="save_and_notify_contacts">Opslaan en Contacten melden</string>
     <string name="save_and_notify_group_members">Opslaan en Groepleden melden</string>
-    <string name="strikethrough">staking</string>
+    <string name="strikethrough">Doorstrepen</string>
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">Het berichten- en applicatieplatform dat uw privacy en veiligheid beschermt.</string>
     <string name="profile_is_only_shared_with_your_contacts">Het profiel wordt alleen gedeeld met uw contacten.</string>
     <string name="we_do_not_store_contacts_or_messages_on_servers">We slaan geen van uw contacten of berichten (eenmaal afgeleverd) op de servers op.</string>
