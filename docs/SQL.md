@@ -1,4 +1,4 @@
-| Updated 31.01.2023 | Languages Available : EN, [FR](/docs/lang/fr-fr/SQL_fr.md), ... |
+| Updated 31.01.2023 | Languages: EN, [FR](/docs/lang/fr/SQL.md), ... |
 
 # Accessing messages in the database
 

@@ -1,4 +1,5 @@
-| Updated 07.02.2023 | Languages Available : EN, [FR](/docs/lang/fr-fr/SIMPLEX_fr.md), ... |
+| Updated 07.02.2023 | Languages: EN, [FR](/docs/lang/fr/SIMPLEX.md), ... |
+
 # SimpleX platform - motivation and comparison
 
 ## Problems

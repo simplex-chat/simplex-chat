@@ -1,4 +1,5 @@
-| Updated 31.01.2023 | Languages Available : [EN](/docs/SQL.md), FR, ... |
+| Updated 31.01.2023 | Languages: [EN](/docs/SQL.md), FR, ... |
+
 # Accès à l'historique des messages via des requêtes SQL
 
 Vous pouvez exécuter des requêtes `direct_messages`, `group_messages` et `all_messages` (ou leurs alternatives plus simples `direct_messages_plain`, `group_messages_plain` et `all_messages_plain`), par exemple :

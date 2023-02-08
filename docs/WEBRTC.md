@@ -1,4 +1,5 @@
-| Updated 31.01.2023 | Languages Available : EN, [FR](/docs/lang/fr-fr/WEBRTC_fr.md), ... |
+| Updated 31.01.2023 | Languages: EN, [FR](/docs/lang/fr/WEBRTC.md), ... |
+
 # Using custom WebRTC ICE servers in SimpleX Chat
 
 ## Deploy STUN/TURN server

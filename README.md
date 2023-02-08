@@ -1,4 +1,5 @@
-| Updated 07.02.2023 | Languages Available : EN, [FR](/docs/lang/fr-fr/README_fr.md), ... |
+| Updated 07.02.2023 | Languages Available : EN, [FR](/docs/lang/fr/README.md), ... |
+
 <img src="images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
 
 # SimpleX - the first messaging platform that has no user identifiers of any kind - 100% private by design!

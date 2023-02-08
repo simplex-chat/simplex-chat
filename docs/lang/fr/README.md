@@ -1,4 +1,5 @@
-| Updated 07.02.2023 | Languages Available : [EN](/README.md), FR, ... |
+| Updated 07.02.2023 | Languages: [EN](/README.md), FR, ... |
+
 <img src="/images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
 
 # SimpleX - la première plateforme de messagerie qui n'a pas le moindre identifiant d'utilisateur - 100% privé par définition !
@@ -61,19 +62,19 @@ Il ne suffit pas d'utiliser une messagerie chiffrée de bout en bout, nous devri
 
 ### Confidentialité totale de votre identité, de votre profil, de vos contacts et de vos métadonnées.
 
-**Contrairement à toutes les autres plateformes de messagerie existante, SimpleX n'a pas d'identifiant attribué aux utilisateurs.** - pas même des nombres aléatoires. Cela protège la confidentialité des personnes avec lesquelles vous communiquez, en les cachant aux serveurs de la plateforme SimpleX et à tout observateur. [En savoir plus](./SIMPLEX_fr.md#protection-complète-de-votre-identité,-profil,-contacts-et-métadonnées).
+**Contrairement à toutes les autres plateformes de messagerie existante, SimpleX n'a pas d'identifiant attribué aux utilisateurs.** - pas même des nombres aléatoires. Cela protège la confidentialité des personnes avec lesquelles vous communiquez, en les cachant aux serveurs de la plateforme SimpleX et à tout observateur. [En savoir plus](./SIMPLEX.md#protection-complète-de-votre-identité,-profil,-contacts-et-métadonnées).
 
 ### La meilleure protection contre le spam et les abus
 
-Comme vous n'avez pas d'identifiant sur la plateforme SimpleX, vous ne pouvez pas être contacté, sauf si vous partagez un lien d'invitation unique ou une adresse d'utilisateur temporaire facultative. [En savoir plus](./SIMPLEX_fr.md#la-meilleure-protection-contre-le-spam-et-les-abus).
+Comme vous n'avez pas d'identifiant sur la plateforme SimpleX, vous ne pouvez pas être contacté, sauf si vous partagez un lien d'invitation unique ou une adresse d'utilisateur temporaire facultative. [En savoir plus](./SIMPLEX.md#la-meilleure-protection-contre-le-spam-et-les-abus).
 
 ### Propriété, contrôle et sécurité totale de vos données
 
-SimpleX stocke toutes les données de l'utilisateur sur les appareils clients, les messages ne sont conservés que temporairement sur les serveurs relais SimpleX jusqu'à leur réception. [En savoir plus](./SIMPLEX_fr.md#propriété,-contrôle-et-sécurité-totale-de-vos-données).
+SimpleX stocke toutes les données de l'utilisateur sur les appareils clients, les messages ne sont conservés que temporairement sur les serveurs relais SimpleX jusqu'à leur réception. [En savoir plus](./SIMPLEX.md#propriété,-contrôle-et-sécurité-totale-de-vos-données).
 
 ### Les utilisateurs sont maîtres du réseau SimpleX
 
-Vous pouvez utiliser SimpleX avec vos propres serveurs et continuer à communiquer avec les personnes utilisant les serveurs préconfigurés dans les applications ou tout autre serveur SimpleX. [En savoir plus](./SIMPLEX_fr.md#les-utilisateurs-sont-maîtres-du-réseau-simplex).
+Vous pouvez utiliser SimpleX avec vos propres serveurs et continuer à communiquer avec les personnes utilisant les serveurs préconfigurés dans les applications ou tout autre serveur SimpleX. [En savoir plus](./SIMPLEX.md#les-utilisateurs-sont-maîtres-du-réseau-simplex).
 
 ## Foire aux questions
 
@@ -117,13 +118,13 @@ Une fois le client de chat installé, exécutez simplement `simplex-chat` depuis
 
 ![simplex-chat](/images/connection.gif)
 
-En savoir plus sur [l'installation et l'utilisation de l'application terminal](/docs/lang/fr-fr/CLI_fr.md).
+En savoir plus sur [l'installation et l'utilisation de l'application terminal](/docs/lang/fr/CLI.md).
 
 ## Le modèle de la plateforme SimpleX
 
 SimpleX est un réseau client-serveur doté d'une topologie de réseau unique qui utilise des nœuds de relais de messages redondants et jetables pour transmettre de manière asynchrone des messages via des files d'attente de messages unidirectionnelles (simplex), assurant l'anonymat du destinataire et de l'expéditeur.
 
-Contrairement aux réseaux P2P, tous les messages passent par un ou plusieurs nœuds de serveur, qui n'ont même pas besoin de persistance. En fait, la [mise en place de serveurs SMP actuelle](https://github.com/simplex-chat/simplexmq#smp-server) utilise un stockage des messages en mémoire, ne conservant que les enregistrements de la file d'attente. SimpleX offre une meilleure protection des métadonnées que les conceptions P2P, car aucun identifiant global de participant n'est utilisé pour transmettre les messages, et évite [les problèmes des réseaux P2P](/docs/lang/fr-fr/SIMPLEX_fr.md#comparaison-avec-dautres-protocoles).
+Contrairement aux réseaux P2P, tous les messages passent par un ou plusieurs nœuds de serveur, qui n'ont même pas besoin de persistance. En fait, la [mise en place de serveurs SMP actuelle](https://github.com/simplex-chat/simplexmq#smp-server) utilise un stockage des messages en mémoire, ne conservant que les enregistrements de la file d'attente. SimpleX offre une meilleure protection des métadonnées que les conceptions P2P, car aucun identifiant global de participant n'est utilisé pour transmettre les messages, et évite [les problèmes des réseaux P2P](/docs/lang/fr/SIMPLEX.md#comparaison-avec-dautres-protocoles).
 
 Contrairement aux réseaux fédérés, les nœuds serveurs **ne possèdent pas d'enregistrements des utilisateurs**, **ne communiquent pas entre eux** et **ne stockent pas les messages** après leur livraison aux destinataires. Il n'existe aucun moyen de découvrir la liste complète des serveurs participant au réseau SimpleX. Cette conception permet d'éviter le problème de visibilité des métadonnées que connaissent tous les réseaux fédérés et protège mieux contre les attaques à l'échelle du réseau.
 
@@ -164,7 +165,7 @@ Vous pouvez :
 - utiliser la bibliothèque SimpleX Chat pour intégrer des fonctionnalités de chat dans vos applications mobiles.
 - créer des bots et services de chat en Haskell - voir un exemple de chat bot [simple](/apps/simplex-bot/) et un plus [avancé](/apps/simplex-bot-advanced/).
 - créer des bots et des services de chat dans n'importe quelle langue en utilisant la CLI du terminal SimpleX Chat comme un serveur WebSocket local. Voir [TypeScript SimpleX Chat client](/packages/simplex-chat-client/) et un [exemple de chat bot en JavaScript](/packages/simplex-chat-client/typescript/examples/squaring-bot.js).
-- exécuter [simplex-chat terminal CLI](/docs/lang/fr-fr/CLI_fr.md) pour exécuter des commandes de chat individuelles, par exemple pour envoyer des messages dans le cadre de l'exécution d'un script shell.
+- exécuter [simplex-chat terminal CLI](/docs/lang/fr/CLI.md) pour exécuter des commandes de chat individuelles, par exemple pour envoyer des messages dans le cadre de l'exécution d'un script shell.
 
 Si vous envisagez de développer avec la plateforme SimpleX, n'hésitez pas à nous contacter pour obtenir des conseils et de l'aide.
 
