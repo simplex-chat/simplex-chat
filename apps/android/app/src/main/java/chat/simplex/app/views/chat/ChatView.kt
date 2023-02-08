@@ -674,10 +674,18 @@ private fun ScrollToBottom(chatId: ChatId, listState: LazyListState, chatItems: 
       .distinctUntilChanged()
       .filter { listState.layoutInfo.visibleItemsInfo.firstOrNull()?.key != it }
       .collect {
-        if (listState.firstVisibleItemIndex == 0) {
-          listState.animateScrollToItem(0)
-        } else {
-          listState.animateScrollBy(scrollDistance)
+        try {
+          if (listState.firstVisibleItemIndex == 0) {
+            listState.animateScrollToItem(0)
+          } else {
+            listState.animateScrollBy(scrollDistance)
+          }
+        } catch (e: CancellationException) {
+          /**
+           * When you tap and hold a finder on lazy column with chatItems, and then you receive a message,
+           * this coroutine will be canceled with the message "Current mutation had a higher priority" because of animatedScroll.
+           * Which breaks auto-scrolling to bottom. So just ignoring the exception
+           * */
         }
       }
   }
