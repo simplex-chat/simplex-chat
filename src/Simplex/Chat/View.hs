@@ -256,11 +256,8 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
       where
         toChatView :: CChatItem c -> ((Int, Text), Maybe (Int, Text), Maybe String)
         toChatView ci@(CChatItem dir ChatItem {quotedItem, file}) =
-          ((msgDirectionInt $ toMsgDirection dir, testViewItem ci membership_), qItem, fPath)
+          ((msgDirectionInt $ toMsgDirection dir, testViewItem ci (chatInfoMembership chatInfo)), qItem, fPath)
           where
-            membership_ = case chatInfo of
-              GroupChat GroupInfo {membership} -> Just membership
-              _ -> Nothing
             qItem = case quotedItem of
               Nothing -> Nothing
               Just CIQuote {chatDir = quoteDir, content} ->
@@ -372,10 +369,7 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemDeleted}, conten
     withItemDeleted item =
       if isJust itemDeleted
         then
-          let deleted_ = styled (colored Red) (T.unpack $ maybe "" (\t -> " [" <> t <> "]") (chatItemDeletedText ci membership_))
-              membership_ = case chat of
-                GroupChat GroupInfo {membership} -> Just membership
-                _ -> Nothing
+          let deleted_ = styled (colored Red) (T.unpack $ maybe "" (\t -> " [" <> t <> "]") (chatItemDeletedText ci $ chatInfoMembership chat))
            in item <> deleted_
         else item
     withSndFile = withFile viewSentFileInvitation
@@ -450,10 +444,7 @@ viewItemDelete chat ChatItem {chatDir, meta, content = deletedContent} toItem by
     deletedText_ :: Maybe Text
     deletedText_ = case toItem of
       Nothing -> Just "deleted"
-      Just (AChatItem _ _ _ ci) -> chatItemDeletedText ci membership_
-    membership_ = case chat of
-      GroupChat GroupInfo {membership} -> Just membership
-      _ -> Nothing
+      Just (AChatItem _ _ _ ci) -> chatItemDeletedText ci $ chatInfoMembership chat
     prohibited = [styled (colored Red) ("[unexpected message deletion, please report to developers]" :: String)]
 
 directQuote :: forall d'. MsgDirectionI d' => CIDirection 'CTDirect d' -> CIQuote 'CTDirect -> [StyledString]
