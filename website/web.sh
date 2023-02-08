@@ -6,9 +6,33 @@ rm website/src/blog/README.md
 cd website
 
 sudo apt update && sudo apt install -y jq
-translations_file=$(cat translations.json)
-# extract the top-level keys and convert them into an array
-langs=($(echo "$translations_file" | jq -r 'keys[]'))
+
+# keys of the english language are used as the base keys
+base_keys=($(jq -r 'keys[]' 'langs/en.json'))
+langs=()
+
+# this loop finds out the available languages
+for file in langs/*.json; do
+  if [ -f "$file" ]; then
+    file_name=$(basename "$file")
+    file_name=${file_name%.*}
+    langs+=($file_name)
+  fi
+done
+
+# this program generates a combined translations.json file
+main_json_obj="{}"
+for key in "${base_keys[@]}"; do
+  val_json_obj="{}"
+  for lang in "${langs[@]}"; do
+    val="$(jq .["\"$key\""] langs/$lang.json)"
+    if [ ! -z "$val" ] && [ "$val" != "null" ]; then
+      val_json_obj=$(echo "$val_json_obj" | jq ". + {$lang: $val}")
+    fi
+  done
+  main_json_obj=$(echo "$main_json_obj" | jq ". + {\"$key\": $val_json_obj}") 
+done
+echo "$main_json_obj" > translations.json
 
 # creating folders for each language for internationalization
 for lang in "${langs[@]}"; do
@@ -19,7 +43,6 @@ for lang in "${langs[@]}"; do
   cp src/blog.html src/$lang
   mkdir src/$lang/blog
   cp -R src/blog/images src/$lang/blog
-
   echo "done $lang copying"
 done
 
@@ -30,3 +53,8 @@ for lang in "${langs[@]}"; do
   rm -rf src/$lang
   echo "done $lang deletion"
 done
+
+# for val in "${langs[@]}"; do
+#   json_content=$(echo "$json_content" | jq ". + {$val: $(jq . langs/$val.json)}")
+# done
+# echo "$json_content" > translations.json

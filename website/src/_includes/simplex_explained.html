@@ -25,13 +25,13 @@
 
 <section id="simplex-explained" class="bg-primary-bg-light dark:bg-primary-bg-dark lg:h-[890px] py-[90px] px-5">
     <div class="container">
-        <p class="text-[35px] leading-[45px] md:leading-[55px] lg:text-[38px] text-center font-bold text-grey-black dark:text-white mb-9">{% getValue {url:page.url,key:"simplex-explained"} %}</p>
+        <p class="text-[35px] leading-[45px] md:leading-[55px] lg:text-[38px] text-center font-bold text-grey-black dark:text-white mb-9">{{ "simplex-explained" | i18n | safe }}</p>
 
         <!-- Tab links -->
         <div class="tabs hidden md:flex gap-2 mb-24">
-            <div data-btn-index="0" class="flex-1 tab-button tab-1 p-2 text-[20px] text-center font-bold cursor-pointer active">{% getValue {url:page.url,key:"simplex-explained-tab-1-text"} %}</div>
-            <div data-btn-index="1" class="flex-1 tab-button tab-2 p-2 text-[20px] text-center font-bold cursor-pointer">{% getValue {url:page.url,key:"simplex-explained-tab-2-text"} %}</div>
-            <div data-btn-index="2" class="flex-1 tab-button tab-3 p-2 text-[20px] text-center font-bold cursor-pointer">{% getValue {url:page.url,key:"simplex-explained-tab-3-text"} %}</div>
+            <div data-btn-index="0" class="flex-1 tab-button tab-1 p-2 text-[20px] text-center font-bold cursor-pointer active">{{ "simplex-explained-tab-1-text" | i18n | safe }}</div>
+            <div data-btn-index="1" class="flex-1 tab-button tab-2 p-2 text-[20px] text-center font-bold cursor-pointer">{{ "simplex-explained-tab-2-text" | i18n | safe }}</div>
+            <div data-btn-index="2" class="flex-1 tab-button tab-3 p-2 text-[20px] text-center font-bold cursor-pointer">{{ "simplex-explained-tab-3-text" | i18n | safe }}</div>
         </div>
 
         <!-- Tab content -->
@@ -39,40 +39,40 @@
             <div class="swiper-wrapper h-[inherit] mb-20 md:mb-0">
 
                 <div class="swiper-slide h-[inherit]">
-                    <div class="tab-button p-2 text-[20px] text-center font-bold active md:hidden">{% getValue {url:page.url,key:"simplex-explained-tab-1-text"} %}</div>
+                    <div class="tab-button p-2 text-[20px] text-center font-bold active md:hidden">{{ "simplex-explained-tab-1-text" | i18n | safe }}</div>
                     <div class="flex flex-col justify-center items-center">
                         <img class="h-[340px] mb-[74px]" src="/img/new/explained-1.svg" alt="" />
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
-                            {% getValue {url:page.url,key:"simplex-explained-tab-1-p-1"} %}
+                            {{ "simplex-explained-tab-1-p-1" | i18n | safe }}
                         </p>
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
-                            {% getValue {url:page.url,key:"simplex-explained-tab-1-p-2"} %}
+                            {{ "simplex-explained-tab-1-p-2" | i18n | safe }}
                         </p>
                     </div>
                 </div>
 
                 <div class="swiper-slide h-[inherit]">
-                    <div class="tab-button p-2 text-[20px] text-center font-bold active md:hidden">{% getValue {url:page.url,key:"simplex-explained-tab-2-text"} %}</div>
+                    <div class="tab-button p-2 text-[20px] text-center font-bold active md:hidden">{{ "simplex-explained-tab-2-text" | i18n | safe }}</div>
                     <div class="flex flex-col justify-center items-center">
                         <img class="h-[340px] mb-[74px]" src="/img/new/explained-2.svg" alt="" />
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
-                            {% getValue {url:page.url,key:"simplex-explained-tab-2-p-1"} %}
+                            {{ "simplex-explained-tab-2-p-1" | i18n | safe }}
                         </p>
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
-                            {% getValue {url:page.url,key:"simplex-explained-tab-2-p-2"} %}
+                            {{ "simplex-explained-tab-2-p-2" | i18n | safe }}
                         </p>
                     </div>
                 </div>
 
                 <div class="swiper-slide h-[inherit]">
-                    <div class="tab-button p-2 text-[20px] text-center font-bold active md:hidden">{% getValue {url:page.url,key:"simplex-explained-tab-3-text"} %}</div>
+                    <div class="tab-button p-2 text-[20px] text-center font-bold active md:hidden">{{ "simplex-explained-tab-3-text" | i18n | safe }}</div>
                     <div class="flex flex-col justify-center items-center">
                         <img class="h-[340px] mb-[74px]" src="/img/new/explained-3.svg" alt="" />
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
-                            {% getValue {url:page.url,key:"simplex-explained-tab-3-p-1"} %}
+                            {{ "simplex-explained-tab-3-p-1" | i18n | safe }}
                         </p>
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
-                            {% getValue {url:page.url,key:"simplex-explained-tab-3-p-2"} %}
+                            {{ "simplex-explained-tab-3-p-2" | i18n | safe }}
                         </p>
                     </div>
                 </div>

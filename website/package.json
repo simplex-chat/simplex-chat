@@ -25,5 +25,8 @@
     "qrcode": "^1.5.1",
     "slugify": "^1.6.5",
     "tailwindcss": "^3.0.24"
+  },
+  "dependencies": {
+    "eleventy-plugin-i18n": "^0.1.3"
   }
 }

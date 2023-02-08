@@ -3,6 +3,7 @@ const markdownItAnchor = require("markdown-it-anchor")
 const markdownItReplaceLink = require('markdown-it-replace-link')
 const slugify = require("slugify")
 const uri = require('fast-uri')
+const i18n = require('eleventy-plugin-i18n');
 const fs = require("fs");
 const path = require("path");
 
@@ -11,29 +12,28 @@ const globalConfig = {
   siteLocation: "https://simplex.chat"
 }
 
-// Load the JSON file
+const translationsDirectoryPath = './langs'
+let supportedLangs = []
+fs.readdir(translationsDirectoryPath, (err, files) => {
+  if (err) {
+    console.error('Could not list the directory.', err)
+    process.exit(1)
+  }
+  const jsonFileNames = files.filter(file => {
+    return file.endsWith('.json') && fs.statSync(translationsDirectoryPath + '/' + file).isFile()
+  })
+  supportedLangs = jsonFileNames.map(file => file.replace('.json', ''))
+});
+
+
 const translations = JSON.parse(fs.readFileSync(path.resolve(__dirname, "translations.json"), "utf-8"))
-const supportedLangs = Object.keys(translations)
 
 module.exports = function (ty) {
   ty.addShortcode("cfg", (name) => globalConfig[name])
 
-  ty.addShortcode("getValue", (obj) => {
-    const lang = obj.url.split("/")[1]
-    if (supportedLangs.includes(lang)) {
-      const value = translations[lang][obj.key]
-      if (value) {
-        return value
-      }
-    }
-    return translations["en"][obj.key]
-  })
-
   ty.addShortcode("getlang", (path) => {
     const lang = path.split("/")[1]
-    if (supportedLangs.includes(lang)) {
-      return lang
-    }
+    if (lang) return lang
     return "en"
   })
 
@@ -44,6 +44,13 @@ module.exports = function (ty) {
     if (supportedLangs.includes(lang)) return `/${lang}`
     return "/en"
   })
+
+  ty.addPlugin(i18n, {
+    translations,
+    fallbackLocales: {
+      '*': 'en'
+    }
+  });
 
   // Keeps the same directory structure.
   ty.addPassthroughCopy("src/assets/")
@@ -92,9 +99,6 @@ module.exports = function (ty) {
 
   // replace the default markdown-it instance
   ty.setLibrary("md", markdownLib)
-
-  // Pass the translations to Nunjucks as a global variable
-  ty.addNunjucksGlobal("translations", translations)
 
   return {
     dir: {
