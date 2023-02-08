@@ -2242,32 +2242,39 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
         <target state="translated">Uit (lokaal)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Ok" xml:space="preserve">
+      <trans-unit id="Ok" xml:space="preserve" approved="no">
         <source>Ok</source>
+        <target state="translated">OK</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Old database" xml:space="preserve">
+      <trans-unit id="Old database" xml:space="preserve" approved="no">
         <source>Old database</source>
+        <target state="translated">Oude database</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Old database archive" xml:space="preserve">
+      <trans-unit id="Old database archive" xml:space="preserve" approved="no">
         <source>Old database archive</source>
+        <target state="translated">Oud database-archief</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="One-time invitation link" xml:space="preserve">
+      <trans-unit id="One-time invitation link" xml:space="preserve" approved="no">
         <source>One-time invitation link</source>
+        <target state="translated">Eenmalige uitnodigingslink</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Onion hosts will be required for connection. Requires enabling VPN." xml:space="preserve">
+      <trans-unit id="Onion hosts will be required for connection. Requires enabling VPN." xml:space="preserve" approved="no">
         <source>Onion hosts will be required for connection. Requires enabling VPN.</source>
+        <target state="translated">Onion hosts zullen nodig zijn voor verbinding. Vereist het inschakelen van VPN.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Onion hosts will be used when available. Requires enabling VPN." xml:space="preserve">
+      <trans-unit id="Onion hosts will be used when available. Requires enabling VPN." xml:space="preserve" approved="no">
         <source>Onion hosts will be used when available. Requires enabling VPN.</source>
+        <target state="translated">Onion hosts worden gebruikt indien beschikbaar. Vereist het inschakelen van VPN.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Onion hosts will not be used." xml:space="preserve">
+      <trans-unit id="Onion hosts will not be used." xml:space="preserve" approved="no">
         <source>Onion hosts will not be used.</source>
+        <target state="translated">Onion hosts worden niet gebruikt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." xml:space="preserve" approved="no">
@@ -2285,96 +2292,119 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
         <target state="translated">Alleen groepseigenaren kunnen spraakberichten inschakelen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only you can irreversibly delete messages (your contact can mark them for deletion)." xml:space="preserve">
+      <trans-unit id="Only you can irreversibly delete messages (your contact can mark them for deletion)." xml:space="preserve" approved="no">
         <source>Only you can irreversibly delete messages (your contact can mark them for deletion).</source>
+        <target state="translated">Alleen jij kunt berichten onomkeerbaar verwijderen (je contactpersoon kan ze markeren voor verwijdering).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only you can send disappearing messages." xml:space="preserve">
+      <trans-unit id="Only you can send disappearing messages." xml:space="preserve" approved="no">
         <source>Only you can send disappearing messages.</source>
+        <target state="translated">Alleen jij kunt verdwijnende berichten verzenden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only you can send voice messages." xml:space="preserve">
+      <trans-unit id="Only you can send voice messages." xml:space="preserve" approved="no">
         <source>Only you can send voice messages.</source>
+        <target state="translated">Alleen jij kunt spraakberichten verzenden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only your contact can irreversibly delete messages (you can mark them for deletion)." xml:space="preserve">
+      <trans-unit id="Only your contact can irreversibly delete messages (you can mark them for deletion)." xml:space="preserve" approved="no">
         <source>Only your contact can irreversibly delete messages (you can mark them for deletion).</source>
+        <target state="translated">Alleen uw contactpersoon kan berichten onherroepelijk verwijderen (u kunt ze markeren voor verwijdering).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only your contact can send disappearing messages." xml:space="preserve">
+      <trans-unit id="Only your contact can send disappearing messages." xml:space="preserve" approved="no">
         <source>Only your contact can send disappearing messages.</source>
+        <target state="translated">Alleen uw contactpersoon kan verdwijnende berichten verzenden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only your contact can send voice messages." xml:space="preserve">
+      <trans-unit id="Only your contact can send voice messages." xml:space="preserve" approved="no">
         <source>Only your contact can send voice messages.</source>
+        <target state="translated">Alleen uw contactpersoon kan spraakberichten verzenden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open Settings" xml:space="preserve">
+      <trans-unit id="Open Settings" xml:space="preserve" approved="no">
         <source>Open Settings</source>
+        <target state="translated">Open instellingen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open chat" xml:space="preserve">
+      <trans-unit id="Open chat" xml:space="preserve" approved="no">
         <source>Open chat</source>
+        <target state="translated">Chat openen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open chat console" xml:space="preserve">
+      <trans-unit id="Open chat console" xml:space="preserve" approved="no">
         <source>Open chat console</source>
+        <target state="translated">Chatconsole openen</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Open-source protocol and code – anybody can run the servers." xml:space="preserve">
+      <trans-unit id="Open-source protocol and code – anybody can run the servers." xml:space="preserve" approved="no">
         <source>Open-source protocol and code – anybody can run the servers.</source>
+        <target state="translated">Open-source protocol en code – iedereen kan de servers draaien.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." xml:space="preserve">
+      <trans-unit id="Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." xml:space="preserve" approved="no">
         <source>Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red.</source>
+        <target state="translated">Het openen van de link in de browser kan de privacy en beveiliging van de verbinding verminderen. Niet-vertrouwde SimpleX-links worden rood weergegeven.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="PING count" xml:space="preserve">
+      <trans-unit id="PING count" xml:space="preserve" approved="no">
         <source>PING count</source>
+        <target state="translated">PING-telling</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="PING interval" xml:space="preserve">
+      <trans-unit id="PING interval" xml:space="preserve" approved="no">
         <source>PING interval</source>
+        <target state="translated">PING-interval</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Paste" xml:space="preserve">
+      <trans-unit id="Paste" xml:space="preserve" approved="no">
         <source>Paste</source>
+        <target state="translated">Plakken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Paste image" xml:space="preserve">
+      <trans-unit id="Paste image" xml:space="preserve" approved="no">
         <source>Paste image</source>
+        <target state="translated">Afbeelding plakken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Paste received link" xml:space="preserve">
+      <trans-unit id="Paste received link" xml:space="preserve" approved="no">
         <source>Paste received link</source>
+        <target state="translated">Plak de ontvangen link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Paste the link you received into the box below to connect with your contact." xml:space="preserve">
+      <trans-unit id="Paste the link you received into the box below to connect with your contact." xml:space="preserve" approved="no">
         <source>Paste the link you received into the box below to connect with your contact.</source>
+        <target state="translated">Plak de link die je hebt ontvangen in het vak hieronder om verbinding te maken met je contactpersoon.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="People can connect to you only via the links you share." xml:space="preserve">
+      <trans-unit id="People can connect to you only via the links you share." xml:space="preserve" approved="no">
         <source>People can connect to you only via the links you share.</source>
+        <target state="translated">Mensen kunnen alleen verbinding met u maken via de links die u deelt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Periodically" xml:space="preserve">
+      <trans-unit id="Periodically" xml:space="preserve" approved="no">
         <source>Periodically</source>
+        <target state="translated">Periodiek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please ask your contact to enable sending voice messages." xml:space="preserve">
+      <trans-unit id="Please ask your contact to enable sending voice messages." xml:space="preserve" approved="no">
         <source>Please ask your contact to enable sending voice messages.</source>
+        <target state="translated">Vraag uw contactpersoon om het verzenden van spraakberichten in te schakelen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please check that you used the correct link or ask your contact to send you another one." xml:space="preserve">
+      <trans-unit id="Please check that you used the correct link or ask your contact to send you another one." xml:space="preserve" approved="no">
         <source>Please check that you used the correct link or ask your contact to send you another one.</source>
+        <target state="translated">Controleer of u de juiste link heeft gebruikt of vraag uw contactpersoon om u een andere te sturen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please check your network connection with %@ and try again." xml:space="preserve">
+      <trans-unit id="Please check your network connection with %@ and try again." xml:space="preserve" approved="no">
         <source>Please check your network connection with %@ and try again.</source>
+        <target state="translated">Controleer uw netwerkverbinding met %@ en probeer het opnieuw.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please check yours and your contact preferences." xml:space="preserve">
+      <trans-unit id="Please check yours and your contact preferences." xml:space="preserve" approved="no">
         <source>Please check yours and your contact preferences.</source>
+        <target state="translated">Controleer uw contactvoorkeuren.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please enter correct current passphrase." xml:space="preserve" approved="no">
@@ -2382,12 +2412,14 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
         <target state="translated">Voer het juiste huidige wachtwoord in.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please enter the previous password after restoring database backup. This action can not be undone." xml:space="preserve">
+      <trans-unit id="Please enter the previous password after restoring database backup. This action can not be undone." xml:space="preserve" approved="no">
         <source>Please enter the previous password after restoring database backup. This action can not be undone.</source>
+        <target state="translated">Voer het vorige wachtwoord in na het herstellen van de database back-up. Deze actie kan niet ongedaan gemaakt worden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please restart the app and migrate the database to enable push notifications." xml:space="preserve">
+      <trans-unit id="Please restart the app and migrate the database to enable push notifications." xml:space="preserve" approved="no">
         <source>Please restart the app and migrate the database to enable push notifications.</source>
+        <target state="translated">Start de app opnieuw en migreer de database om pushmeldingen in te schakelen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please store passphrase securely, you will NOT be able to access chat if you lose it." xml:space="preserve" approved="no">
@@ -2400,104 +2432,129 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
         <target state="translated">Bewaar het wachtwoord veilig, u kunt deze NIET wijzigen als u het kwijtraakt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve">
+      <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve" approved="no">
         <source>Possibly, certificate fingerprint in server address is incorrect</source>
+        <target state="translated">Mogelijk is de certificaatvingerafdruk in het serveradres onjuist</target>
         <note>server test error</note>
       </trans-unit>
-      <trans-unit id="Preset server" xml:space="preserve">
+      <trans-unit id="Preset server" xml:space="preserve" approved="no">
         <source>Preset server</source>
+        <target state="translated">Vooraf ingestelde server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Preset server address" xml:space="preserve">
+      <trans-unit id="Preset server address" xml:space="preserve" approved="no">
         <source>Preset server address</source>
+        <target state="translated">Vooraf ingesteld serveradres</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Privacy &amp; security" xml:space="preserve">
+      <trans-unit id="Privacy &amp; security" xml:space="preserve" approved="no">
         <source>Privacy &amp; security</source>
+        <target state="translated">Privacy en Beveiliging</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Privacy redefined" xml:space="preserve">
+      <trans-unit id="Privacy redefined" xml:space="preserve" approved="no">
         <source>Privacy redefined</source>
+        <target state="translated">Privacy opnieuw gedefinieerd</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Profile and server connections" xml:space="preserve">
+      <trans-unit id="Profile and server connections" xml:space="preserve" approved="no">
         <source>Profile and server connections</source>
+        <target state="translated">Profiel- en serververbindingen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Profile image" xml:space="preserve">
+      <trans-unit id="Profile image" xml:space="preserve" approved="no">
         <source>Profile image</source>
+        <target state="translated">profielfoto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Prohibit irreversible message deletion." xml:space="preserve">
+      <trans-unit id="Prohibit irreversible message deletion." xml:space="preserve" approved="no">
         <source>Prohibit irreversible message deletion.</source>
+        <target state="translated">Verbied het onomkeerbaar verwijderen van berichten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Prohibit sending direct messages to members." xml:space="preserve">
+      <trans-unit id="Prohibit sending direct messages to members." xml:space="preserve" approved="no">
         <source>Prohibit sending direct messages to members.</source>
+        <target state="translated">Verbied het sturen van directe berichten naar leden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Prohibit sending disappearing messages." xml:space="preserve">
+      <trans-unit id="Prohibit sending disappearing messages." xml:space="preserve" approved="no">
         <source>Prohibit sending disappearing messages.</source>
+        <target state="translated">Verbied het verzenden van verdwijnende berichten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Prohibit sending voice messages." xml:space="preserve">
+      <trans-unit id="Prohibit sending voice messages." xml:space="preserve" approved="no">
         <source>Prohibit sending voice messages.</source>
+        <target state="translated">Verbieden het verzenden van spraakberichten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protect app screen" xml:space="preserve">
+      <trans-unit id="Protect app screen" xml:space="preserve" approved="no">
         <source>Protect app screen</source>
+        <target state="translated">Voorkom scherm afbeeldingen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protocol timeout" xml:space="preserve">
+      <trans-unit id="Protocol timeout" xml:space="preserve" approved="no">
         <source>Protocol timeout</source>
+        <target state="translated">Protocol time-out</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Push notifications" xml:space="preserve">
+      <trans-unit id="Push notifications" xml:space="preserve" approved="no">
         <source>Push notifications</source>
+        <target state="translated">Push-meldingen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Rate the app" xml:space="preserve">
+      <trans-unit id="Rate the app" xml:space="preserve" approved="no">
         <source>Rate the app</source>
+        <target state="translated">Beoordeel de app</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Read" xml:space="preserve">
+      <trans-unit id="Read" xml:space="preserve" approved="no">
         <source>Read</source>
+        <target state="translated">Lees</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Read more in our GitHub repository." xml:space="preserve">
+      <trans-unit id="Read more in our GitHub repository." xml:space="preserve" approved="no">
         <source>Read more in our GitHub repository.</source>
+        <target state="translated">Lees meer in onze GitHub-repository.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." xml:space="preserve">
+      <trans-unit id="Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." xml:space="preserve" approved="no">
         <source>Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme).</source>
+        <target state="translated">Lees meer in onze [GitHub-repository](https://github.com/simplex-chat/simplex-chat#readme).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Received file event" xml:space="preserve">
+      <trans-unit id="Received file event" xml:space="preserve" approved="no">
         <source>Received file event</source>
+        <target state="translated">Ontvangen bestandsgebeurtenis</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Receiving via" xml:space="preserve">
+      <trans-unit id="Receiving via" xml:space="preserve" approved="no">
         <source>Receiving via</source>
+        <target state="translated">Ontvang via</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Recipients see updates as you type them." xml:space="preserve">
+      <trans-unit id="Recipients see updates as you type them." xml:space="preserve" approved="no">
         <source>Recipients see updates as you type them.</source>
+        <target state="translated">Ontvangers zien updates terwijl u ze typt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reject" xml:space="preserve">
+      <trans-unit id="Reject" xml:space="preserve" approved="no">
         <source>Reject</source>
+        <target state="translated">Afwijzen</target>
         <note>reject incoming call via notification</note>
       </trans-unit>
-      <trans-unit id="Reject contact (sender NOT notified)" xml:space="preserve">
+      <trans-unit id="Reject contact (sender NOT notified)" xml:space="preserve" approved="no">
         <source>Reject contact (sender NOT notified)</source>
+        <target state="translated">Contact afwijzen (afzender NIET op de hoogte)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reject contact request" xml:space="preserve">
+      <trans-unit id="Reject contact request" xml:space="preserve" approved="no">
         <source>Reject contact request</source>
+        <target state="translated">Contactverzoek afwijzen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Relay server is only used if necessary. Another party can observe your IP address." xml:space="preserve">
+      <trans-unit id="Relay server is only used if necessary. Another party can observe your IP address." xml:space="preserve" approved="no">
         <source>Relay server is only used if necessary. Another party can observe your IP address.</source>
+        <target state="translated">Relay-server wordt alleen gebruikt als dat nodig is. Een andere partij kan uw IP-adres zien.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Relay server protects your IP address, but it can observe the duration of the call." xml:space="preserve">
@@ -4237,6 +4294,21 @@ SimpleX-servers kunnen uw profiel niet zien.</target>
       <trans-unit id="Multiple chat profiles" xml:space="preserve" approved="no">
         <source>Multiple chat profiles</source>
         <target state="translated">Meerdere chatprofielen</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Reduced battery usage" xml:space="preserve" approved="no">
+        <source>Reduced battery usage</source>
+        <target state="translated">Verminderd batterijgebruik</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Preserve the last message draft, with attachments." xml:space="preserve" approved="no">
+        <source>Preserve the last message draft, with attachments.</source>
+        <target state="translated">Bewaar het laatste berichtconcept, met bijlagen.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Private filenames" xml:space="preserve" approved="no">
+        <source>Private filenames</source>
+        <target state="translated">Privé bestandsnamen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>
