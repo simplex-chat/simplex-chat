@@ -30,17 +30,42 @@ struct MutableQRCode: View {
 
 struct QRCode: View {
     let uri: String
-    @State private var image: UIImage?
+    var withLogo: Bool = true
+    var tintColor = UIColor(red: 0.023, green: 0.176, blue: 0.337, alpha: 1)
+    @State private var image: UIImage? = nil
+    @State private var makeScreenshotBinding: () -> Void = {}
 
     var body: some View {
         ZStack {
             if let image = image {
                 qrCodeImage(image)
             }
+            GeometryReader { geo in
+                ZStack {
+                    if withLogo {
+                        let w = geo.size.width
+                        Image("icon-light")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: w * 0.16, height: w * 0.16)
+                        .frame(width: w * 0.165, height: w * 0.165)
+                        .background(.white)
+                        .clipShape(Circle())
+                    }
+                }
+                .onAppear {
+                    makeScreenshotBinding = {
+                        let size = CGSizeMake(1024 / UIScreen.main.scale, 1024 / UIScreen.main.scale)
+                        showShareSheet(items: [makeScreenshot(geo.frame(in: .local).origin, size)])}
+                }
+                .frame(width: geo.size.width, height: geo.size.height)
+            }
         }
+        .onTapGesture(perform: makeScreenshotBinding)
         .onAppear {
-            image = image ?? generateImage(uri)
+            image = image ?? generateImage(uri)?.replaceColor(UIColor.black, tintColor)
         }
+
     }
 }
 
@@ -61,6 +86,20 @@ private func generateImage(_ uri: String) -> UIImage? {
         return UIImage(cgImage: cgImage)
     }
     return nil
+}
+
+extension View {
+    func makeScreenshot(_ origin: CGPoint? = nil, _ targetSize: CGSize? = nil) -> UIImage {
+        let controller = UIHostingController(rootView: self.edgesIgnoringSafeArea(.all))
+        let targetSize = targetSize ?? controller.view.intrinsicContentSize
+        let view = controller.view
+        view?.bounds = CGRect(origin: origin ?? .zero, size: targetSize)
+        view?.backgroundColor = .clear
+        let renderer = UIGraphicsImageRenderer(size: targetSize)
+        return renderer.image { _ in
+            view?.drawHierarchy(in: controller.view.bounds, afterScreenUpdates: true)
+        }
+    }
 }
 
 struct QRCode_Previews: PreviewProvider {

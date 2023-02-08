@@ -16,6 +16,7 @@ struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.dismiss) var dismiss
+    @Environment(\.presentationMode) var presentationMode
     @State @ObservedObject var chat: Chat
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
@@ -77,7 +78,7 @@ struct ChatView: View {
             if chatModel.chatId == nil { dismiss() }
         }
         .onDisappear {
-            if chatModel.chatId == cInfo.id {
+            if chatModel.chatId == cInfo.id && !presentationMode.wrappedValue.isPresented {
                 chatModel.chatId = nil
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                     if chatModel.chatId == nil {

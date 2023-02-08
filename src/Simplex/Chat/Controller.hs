@@ -203,6 +203,7 @@ data ChatCommand
   | APISendMessage {chatRef :: ChatRef, liveMessage :: Bool, composedMessage :: ComposedMessage}
   | APIUpdateChatItem {chatRef :: ChatRef, chatItemId :: ChatItemId, liveMessage :: Bool, msgContent :: MsgContent}
   | APIDeleteChatItem ChatRef ChatItemId CIDeleteMode
+  | APIDeleteMemberChatItem GroupId GroupMemberId ChatItemId
   | APIChatRead ChatRef (Maybe (ChatItemId, ChatItemId))
   | APIChatUnread ChatRef Bool
   | APIDeleteChat ChatRef
@@ -297,6 +298,7 @@ data ChatCommand
   | SendMessageQuote {contactName :: ContactName, msgDir :: AMsgDirection, quotedMsg :: ByteString, message :: ByteString}
   | SendMessageBroadcast ByteString -- UserId (not used in UI)
   | DeleteMessage ChatName ByteString
+  | DeleteMemberMessage GroupName ContactName ByteString
   | EditMessage {chatName :: ChatName, editedMsg :: ByteString, message :: ByteString}
   | UpdateLiveMessage {chatName :: ChatName, chatItemId :: ChatItemId, liveMessage :: Bool, message :: ByteString}
   | APINewGroup UserId GroupProfile
@@ -657,7 +659,7 @@ data ChatErrorType
   | CEContactNotReady {contact :: Contact}
   | CEContactDisabled {contact :: Contact}
   | CEConnectionDisabled {connection :: Connection}
-  | CEGroupUserRole {requiredRole :: GroupMemberRole}
+  | CEGroupUserRole {groupInfo :: GroupInfo, requiredRole :: GroupMemberRole}
   | CEContactIncognitoCantInvite
   | CEGroupIncognitoCantInvite
   | CEGroupContactRole {contactName :: ContactName}

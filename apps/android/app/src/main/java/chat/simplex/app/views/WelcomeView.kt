@@ -21,8 +21,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.simplex.app.*
 import chat.simplex.app.R
-import chat.simplex.app.SimplexService
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
 import chat.simplex.app.ui.theme.*
@@ -116,6 +116,7 @@ fun createProfile(chatModel: ChatModel, displayName: String, fullName: String, c
     if (chatModel.users.isEmpty()) {
       chatModel.controller.startChat(user)
       chatModel.onboardingStage.value = OnboardingStage.Step3_SetNotificationsMode
+      SimplexApp.context.chatModel.controller.ntfManager.createNtfChannelsMaybeShowAlert()
     } else {
       val users = chatModel.controller.listUsers()
       chatModel.users.clear()

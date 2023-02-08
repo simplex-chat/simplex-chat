@@ -1,5 +1,6 @@
 package chat.simplex.app.views.helpers
 
+import android.app.Application
 import android.content.Context
 import android.content.res.Resources
 import android.graphics.*
@@ -370,6 +371,24 @@ fun saveAnimImage(context: Context, uri: Uri): String? {
     fileToSave
   } catch (e: Exception) {
     Log.e(chat.simplex.app.TAG, "Util.kt saveAnimImage error: ${e.message}")
+    null
+  }
+}
+
+fun saveTempImageUncompressed(image: Bitmap, asPng: Boolean): File? {
+  return try {
+    val ext = if (asPng) "png" else "jpg"
+    val tmpDir = SimplexApp.context.getDir("temp", Application.MODE_PRIVATE)
+    return File(tmpDir.absolutePath + File.separator + generateNewFileName(SimplexApp.context, "IMG", ext)).apply {
+      outputStream().use { out ->
+        image.compress(if (asPng) Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.JPEG, 85, out)
+        out.flush()
+      }
+      deleteOnExit()
+      SimplexApp.context.chatModel.filesToDelete.add(this)
+    }
+  } catch (e: Exception) {
+    Log.e(TAG, "Util.kt saveTempImageUncompressed error: ${e.message}")
     null
   }
 }
