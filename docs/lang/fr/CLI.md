@@ -1,4 +1,4 @@
-| Updated 07.02.2023 | Languages: [EN](/docs/CLI.md), FR, ... |
+| Updated 07.02.2023 | Languages: [EN](/docs/CLI.md), FR |
 
 # Application de terminal (console) SimpleX Chat pour Linux/MacOS/Windows
 

@@ -1,4 +1,4 @@
-| Updated 07.02.2023 | Languages: EN, [FR](/docs/lang/fr/SIMPLEX.md), ... |
+| Updated 07.02.2023 | Languages: EN, [FR](/docs/lang/fr/SIMPLEX.md) |
 
 # SimpleX platform - motivation and comparison
 

@@ -1,4 +1,4 @@
-| Updated 07.02.2023 | Languages: [EN](/docs/SERVER.md), FR, ... |
+| Updated 07.02.2023 | Languages: [EN](/docs/SERVER.md), FR |
 
 # Héberger votre propre serveur SMP
 

@@ -1,4 +1,4 @@
-| Updated 31.01.2023 | Languages: [EN](/docs/SQL.md), FR, ... |
+| Updated 31.01.2023 | Languages: [EN](/docs/SQL.md), FR |
 
 # Accès à l'historique des messages via des requêtes SQL
 

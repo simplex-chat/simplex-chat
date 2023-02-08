@@ -1,4 +1,4 @@
-| Updated 07.02.2023 | Languages: [EN](/README.md), FR, ... |
+| Updated 07.02.2023 | Languages: [EN](/README.md), FR |
 
 <img src="/images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
 
