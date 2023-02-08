@@ -101,10 +101,18 @@ class SimplexApp: Application(), LifecycleEventObserver {
           isAppOnForeground = true
           if (chatModel.chatRunning.value == true) {
             kotlin.runCatching {
+              val calcChatsHash = {
+                var hash = 0
+                for (i in chatModel.chats.indices) {
+                  hash += chatModel.chats[i].hashCode()
+                }
+                hash
+              }
               val currentUserId = chatModel.currentUser.value?.userId
+              val chatsHash = calcChatsHash()
               val chats = chatController.apiGetChats()
-              /** Active user can be changed in background while [ChatController.apiGetChats] is executing */
-              if (chatModel.currentUser.value?.userId == currentUserId) {
+              /** Active user can be changed in background while [ChatController.apiGetChats] is executing. Also chats can change too */
+              if (chatModel.currentUser.value?.userId == currentUserId && chatsHash == calcChatsHash()) {
                 chatModel.updateChats(chats)
               }
             }.onFailure { Log.e(TAG, it.stackTraceToString()) }
