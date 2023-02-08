@@ -15,6 +15,16 @@ enum LAResult {
     case unavailable(authError: String?)
 }
 
+func authorize(_ text: String, _ authorized: Binding<Bool>) {
+    authenticate(reason: text) { laResult in
+        switch laResult {
+        case .success: authorized.wrappedValue = true
+        case .unavailable: authorized.wrappedValue = true
+        case .failed: authorized.wrappedValue = false
+        }
+    }
+}
+
 func authenticate(reason: String, completed: @escaping (LAResult) -> Void) {
     let laContext = LAContext()
     var authAvailabilityError: NSError?
