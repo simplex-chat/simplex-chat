@@ -1234,6 +1234,10 @@ testEnableTimedMessagesContact =
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "you offered Disappearing messages (1 sec)"), (0, "Disappearing messages: enabled (1 sec)"), (1, "hi"), (0, "hey")])
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "offered Disappearing messages (1 sec)"), (1, "Disappearing messages: enabled (1 sec)"), (0, "hi"), (1, "hey")])
       threadDelay 1000000
+      alice <## "timed message deleted: hi"
+      alice <## "timed message deleted: hey"
+      bob <## "timed message deleted: hi"
+      bob <## "timed message deleted: hey"
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "you offered Disappearing messages (1 sec)"), (0, "Disappearing messages: enabled (1 sec)")])
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "offered Disappearing messages (1 sec)"), (1, "Disappearing messages: enabled (1 sec)")])
       -- turn off, messages are not disappearing
@@ -1277,6 +1281,8 @@ testEnableTimedMessagesGroup =
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Disappearing messages: on (1 sec)"), (1, "hi")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Disappearing messages: on (1 sec)"), (0, "hi")])
       threadDelay 1000000
+      alice <## "timed message deleted: hi"
+      bob <## "timed message deleted: hi"
       alice #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (1, "Disappearing messages: on (1 sec)")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Disappearing messages: on (1 sec)")])
       -- turn off, messages are not disappearing
@@ -1324,5 +1330,9 @@ testTimedMessagesEnabledGlobally =
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled (1 sec)"), (1, "hi"), (0, "hey")])
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled (1 sec)"), (0, "hi"), (1, "hey")])
       threadDelay 1000000
+      alice <## "timed message deleted: hi"
+      bob <## "timed message deleted: hi"
+      alice <## "timed message deleted: hey"
+      bob <## "timed message deleted: hey"
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled (1 sec)")])
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled (1 sec)")])

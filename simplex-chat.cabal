@@ -83,6 +83,7 @@ library
       Simplex.Chat.Migrations.M20230117_fkey_indexes
       Simplex.Chat.Migrations.M20230118_recreate_smp_servers
       Simplex.Chat.Migrations.M20230129_drop_chat_items_group_idx
+      Simplex.Chat.Migrations.M20230206_item_deleted_by_group_member_id
       Simplex.Chat.Mobile
       Simplex.Chat.Options
       Simplex.Chat.ProfileGenerator
