@@ -97,7 +97,7 @@
     <string name="invite_to_group_button">समूह में आमंत्रित करें</string>
     <string name="message_deletion_prohibited_in_chat">इस समूह में अपरिवर्तनीय संदेश हटाना प्रतिबंधित है।</string>
     <string name="italic">तिरछा</string>
-    <string name="join_group_button">जोड़ना</string>
+    <string name="join_group_button">प्रवेश लेना</string>
     <string name="join_group_incognito_button">गुप्त में शामिल हों</string>
     <string name="joining_group">समूह में शामिल होना</string>
     <string name="join_group_question">समूह में शामिल हों\?</string>
@@ -133,7 +133,7 @@
     <string name="settings_notification_preview_title">अधिसूचना पूर्वावलोकन</string>
     <string name="notifications">सूचनाएं</string>
     <string name="full_deletion">सभी के लिए हटाएं</string>
-    <string name="delete_chat_archive_question">चैट संग्रह मिटाएं\?</string>
+    <string name="delete_chat_archive_question">लिखचीत संग्रह हटा दे\?</string>
     <string name="delete_chat_profile_question">चैट प्रोफ़ाइल हटाएं\?</string>
     <string name="users_delete_question">चैट प्रोफ़ाइल हटाएं\?</string>
     <string name="users_delete_profile_for">के लिए चैट प्रोफ़ाइल हटाएं</string>
@@ -175,4 +175,7 @@
     <string name="use_chat">चैट का प्रयोग करें</string>
     <string name="error_with_info">गलती: %s</string>
     <string name="delete_messages_after">संदेशों को बाद में हटाएं</string>
+    <string name="image_descr">छवि</string>
+    <string name="icon_descr_server_status_error">गलती</string>
+    <string name="restore_database_alert_confirm">वापस लौटाना</string>
 </resources>
