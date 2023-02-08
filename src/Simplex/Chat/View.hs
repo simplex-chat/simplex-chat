@@ -290,7 +290,7 @@ chatItemDeletedText ci membership_ = deletedStateToText <$> chatItemDeletedState
         else "deleted" <> byMember deletedByMember
     byMember m_ = case (m_, membership_) of
       (Just GroupMember {groupMemberId = mId, localDisplayName = n}, Just GroupMember {groupMemberId = membershipId}) ->
-        if mId == membershipId then " by you" else " by " <> n
+        " by " <> if mId == membershipId then "you" else n
       _ -> ""
 
 viewUsersList :: [UserInfo] -> [StyledString]
