@@ -44,9 +44,7 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
   private val msgNtfTimeoutMs = 30000L
 
   init {
-    // The condition here prevents showing the alert on Android 13+ before the on-boarding is completed
-    // On the first app launch the channels will be created after user profile is created
-    if (manager.areNotificationsEnabled()) ensureNtfChannelsExist()
+    if (manager.areNotificationsEnabled()) createNtfChannelsOrShowAlert()
   }
 
   enum class NotificationAction {
@@ -266,7 +264,14 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
     }
   }
 
-  fun ensureNtfChannelsExist() {
+  /**
+   * This function creates notifications channels. On Android 13+ calling it for the first time will trigger system alert,
+   * The alert asks a user to allow or disallow to show notifications for the app. That's why it should be called only when the user
+   * already saw such alert or when you want to trigger showing the alert.
+   * On the first app launch the channels will be created after user profile is created. Subsequent calls will create new channels and delete
+   * old ones if needed
+   * */
+  fun createNtfChannelsOrShowAlert() {
     manager.createNotificationChannel(NotificationChannel(MessageChannel, generalGetString(R.string.ntf_channel_messages), NotificationManager.IMPORTANCE_HIGH))
     manager.createNotificationChannel(callNotificationChannel(CallChannel, generalGetString(R.string.ntf_channel_calls)))
     // Remove old channels since they can't be edited
