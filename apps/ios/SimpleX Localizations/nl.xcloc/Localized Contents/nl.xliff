@@ -202,97 +202,121 @@
         <target state="translated">**Meer privé**: bekijk elke 20 minuten nieuwe berichten. Apparaattoken wordt gedeeld met de SimpleX Chat-server, maar niet hoeveel contacten of berichten u heeft.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." xml:space="preserve">
+      <trans-unit id="**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." xml:space="preserve" approved="no">
         <source>**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app).</source>
+        <target state="translated">**Meest privé**: gebruik geen SimpleX Chat-notificatieserver, controleer berichten regelmatig op de achtergrond (afhankelijk van hoe vaak u de app gebruikt).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Paste received link** or open it in the browser and tap **Open in mobile app**." xml:space="preserve">
+      <trans-unit id="**Paste received link** or open it in the browser and tap **Open in mobile app**." xml:space="preserve" approved="no">
         <source>**Paste received link** or open it in the browser and tap **Open in mobile app**.</source>
+        <target state="translated">**Plak de ontvangen link** of open deze in de browser en tik op **Openen in mobiele app**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Please note**: you will NOT be able to recover or change passphrase if you lose it." xml:space="preserve">
+      <trans-unit id="**Please note**: you will NOT be able to recover or change passphrase if you lose it." xml:space="preserve" approved="no">
         <source>**Please note**: you will NOT be able to recover or change passphrase if you lose it.</source>
+        <target state="translated">**Let op**: u kunt de wachtwoordzin NIET herstellen of wijzigen als u deze kwijtraakt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." xml:space="preserve">
+      <trans-unit id="**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." xml:space="preserve" approved="no">
         <source>**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from.</source>
+        <target state="translated">**Aanbevolen**: apparaattoken en meldingen worden naar de SimpleX Chat-meldingsserver gestuurd, maar niet de berichtinhoud, -grootte of van wie het afkomstig is.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Scan QR code**: to connect to your contact in person or via video call." xml:space="preserve">
+      <trans-unit id="**Scan QR code**: to connect to your contact in person or via video call." xml:space="preserve" approved="no">
         <source>**Scan QR code**: to connect to your contact in person or via video call.</source>
+        <target state="translated">**Scan QR-code**: om persoonlijk of via een videogesprek verbinding te maken met uw contactpersoon.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Warning**: Instant push notifications require passphrase saved in Keychain." xml:space="preserve">
+      <trans-unit id="**Warning**: Instant push notifications require passphrase saved in Keychain." xml:space="preserve" approved="no">
         <source>**Warning**: Instant push notifications require passphrase saved in Keychain.</source>
+        <target state="translated">**Waarschuwing**: voor directe pushmeldingen is een wachtwoordzin vereist die is opgeslagen in Keychain.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**e2e encrypted** audio call" xml:space="preserve">
+      <trans-unit id="**e2e encrypted** audio call" xml:space="preserve" approved="no">
         <source>**e2e encrypted** audio call</source>
+        <target state="translated">**e2e versleuteld** audiogesprek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**e2e encrypted** video call" xml:space="preserve">
+      <trans-unit id="**e2e encrypted** video call" xml:space="preserve" approved="no">
         <source>**e2e encrypted** video call</source>
+        <target state="translated">**e2e versleuteld** videogesprek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="*bold*" xml:space="preserve">
+      <trans-unit id="*bold*" xml:space="preserve" approved="no">
         <source>\*bold*</source>
+        <target state="translated">\*bold*</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id=", " xml:space="preserve">
+      <trans-unit id=", " xml:space="preserve" approved="no">
         <source>, </source>
+        <target state="needs-translation">, </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="." xml:space="preserve">
+      <trans-unit id="." xml:space="preserve" approved="no">
         <source>.</source>
+        <target state="needs-translation">.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="1 day" xml:space="preserve">
+      <trans-unit id="1 day" xml:space="preserve" approved="no">
         <source>1 day</source>
+        <target state="translated">1 dag</target>
         <note>message ttl</note>
       </trans-unit>
-      <trans-unit id="1 hour" xml:space="preserve">
+      <trans-unit id="1 hour" xml:space="preserve" approved="no">
         <source>1 hour</source>
+        <target state="translated">1 uur</target>
         <note>message ttl</note>
       </trans-unit>
-      <trans-unit id="1 month" xml:space="preserve">
+      <trans-unit id="1 month" xml:space="preserve" approved="no">
         <source>1 month</source>
+        <target state="translated">1 maand</target>
         <note>message ttl</note>
       </trans-unit>
-      <trans-unit id="1 week" xml:space="preserve">
+      <trans-unit id="1 week" xml:space="preserve" approved="no">
         <source>1 week</source>
+        <target state="translated">1 week</target>
         <note>message ttl</note>
       </trans-unit>
-      <trans-unit id="2 weeks" xml:space="preserve">
+      <trans-unit id="2 weeks" xml:space="preserve" approved="no">
         <source>2 weeks</source>
+        <target state="translated">2 weken</target>
         <note>message ttl</note>
       </trans-unit>
-      <trans-unit id="6" xml:space="preserve">
+      <trans-unit id="6" xml:space="preserve" approved="no">
         <source>6</source>
+        <target state="translated">6</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id=": " xml:space="preserve">
+      <trans-unit id=": " xml:space="preserve" approved="no">
         <source>: </source>
+        <target state="translated">: </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="A new contact" xml:space="preserve">
+      <trans-unit id="A new contact" xml:space="preserve" approved="no">
         <source>A new contact</source>
+        <target state="translated">Een nieuw contact</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="A random profile will be sent to the contact that you received this link from" xml:space="preserve">
+      <trans-unit id="A random profile will be sent to the contact that you received this link from" xml:space="preserve" approved="no">
         <source>A random profile will be sent to the contact that you received this link from</source>
+        <target state="translated">Er wordt een willekeurig profiel verzonden naar het contact van wie je deze link hebt ontvangen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="A random profile will be sent to your contact" xml:space="preserve">
+      <trans-unit id="A random profile will be sent to your contact" xml:space="preserve" approved="no">
         <source>A random profile will be sent to your contact</source>
+        <target state="translated">Er wordt een willekeurig profiel naar uw contactpersoon verzonden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="A separate TCP connection will be used **for each chat profile you have in the app**." xml:space="preserve">
+      <trans-unit id="A separate TCP connection will be used **for each chat profile you have in the app**." xml:space="preserve" approved="no">
         <source>A separate TCP connection will be used **for each chat profile you have in the app**.</source>
+        <target state="translated">Er wordt een aparte TCP-verbinding gebruikt **voor elk chatprofiel dat je in de app hebt**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="A separate TCP connection will be used **for each contact and group member**.&#10;**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." xml:space="preserve">
+      <trans-unit id="A separate TCP connection will be used **for each contact and group member**.&#10;**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." xml:space="preserve" approved="no">
         <source>A separate TCP connection will be used **for each contact and group member**.
 **Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail.</source>
+        <target state="translated">Er wordt een aparte TCP-verbinding gebruikt **voor elk contact en groepslid**.
+**Let op**: als u veel verbindingen heeft, kan uw batterij- en verkeersverbruik aanzienlijk hoger zijn en kunnen sommige verbindingen uitvallen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="About SimpleX" xml:space="preserve">
