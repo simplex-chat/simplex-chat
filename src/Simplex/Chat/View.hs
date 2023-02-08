@@ -366,9 +366,9 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta, content, quotedItem, file} 
         quote = maybe [] (groupQuote g) quotedItem
     _ -> []
   where
-    withItemDeleted item =
-      let deleted_ = styled (colored Red) (T.unpack $ maybe "" (\t -> " [" <> t <> "]") (chatItemDeletedText ci $ chatInfoMembership chat))
-       in item <> deleted_
+    withItemDeleted item = case chatItemDeletedText ci (chatInfoMembership chat) of
+      Nothing -> item
+      Just t -> item <> styled (colored Red) (" [" <> t <> "]")
     withSndFile = withFile viewSentFileInvitation
     withRcvFile = withFile viewReceivedFileInvitation
     withFile view dir l = maybe l (\f -> l <> view dir f ts meta) file
