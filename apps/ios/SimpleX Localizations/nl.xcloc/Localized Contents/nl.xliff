@@ -1331,128 +1331,159 @@
         <target state="translated">Versleuteld bericht of een andere gebeurtenis</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Encrypted message: database error" xml:space="preserve">
+      <trans-unit id="Encrypted message: database error" xml:space="preserve" approved="no">
         <source>Encrypted message: database error</source>
+        <target state="translated">Versleuteld bericht: databasefout</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Encrypted message: keychain error" xml:space="preserve">
+      <trans-unit id="Encrypted message: keychain error" xml:space="preserve" approved="no">
         <source>Encrypted message: keychain error</source>
+        <target state="translated">Versleuteld bericht: sleutelhangerfout</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Encrypted message: no passphrase" xml:space="preserve">
+      <trans-unit id="Encrypted message: no passphrase" xml:space="preserve" approved="no">
         <source>Encrypted message: no passphrase</source>
+        <target state="translated">Versleuteld bericht: geen wachtwoordzin</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Encrypted message: unexpected error" xml:space="preserve">
+      <trans-unit id="Encrypted message: unexpected error" xml:space="preserve" approved="no">
         <source>Encrypted message: unexpected error</source>
+        <target state="translated">Versleuteld bericht: onverwachte fout</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Enter correct passphrase." xml:space="preserve">
+      <trans-unit id="Enter correct passphrase." xml:space="preserve" approved="no">
         <source>Enter correct passphrase.</source>
+        <target state="translated">Voer de juiste wachtwoordzin in.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enter passphrase…" xml:space="preserve">
+      <trans-unit id="Enter passphrase…" xml:space="preserve" approved="no">
         <source>Enter passphrase…</source>
+        <target state="translated">Voer wachtwoordzin in…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enter server manually" xml:space="preserve">
+      <trans-unit id="Enter server manually" xml:space="preserve" approved="no">
         <source>Enter server manually</source>
+        <target state="translated">Voer de server handmatig in</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error" xml:space="preserve">
+      <trans-unit id="Error" xml:space="preserve" approved="no">
         <source>Error</source>
+        <target state="translated">Fout</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error accepting contact request" xml:space="preserve">
+      <trans-unit id="Error accepting contact request" xml:space="preserve" approved="no">
         <source>Error accepting contact request</source>
+        <target state="translated">Fout bij het accepteren van een contactverzoek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error accessing database file" xml:space="preserve">
+      <trans-unit id="Error accessing database file" xml:space="preserve" approved="no">
         <source>Error accessing database file</source>
+        <target state="translated">Fout bij toegang tot databasebestand</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error adding member(s)" xml:space="preserve">
+      <trans-unit id="Error adding member(s)" xml:space="preserve" approved="no">
         <source>Error adding member(s)</source>
+        <target state="translated">Fout bij het toevoegen van lid (leden)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error changing address" xml:space="preserve">
+      <trans-unit id="Error changing address" xml:space="preserve" approved="no">
         <source>Error changing address</source>
+        <target state="translated">Fout bij wijzigen van adres</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error changing role" xml:space="preserve">
+      <trans-unit id="Error changing role" xml:space="preserve" approved="no">
         <source>Error changing role</source>
+        <target state="translated">Fout bij wisselen van rol</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error changing setting" xml:space="preserve">
+      <trans-unit id="Error changing setting" xml:space="preserve" approved="no">
         <source>Error changing setting</source>
+        <target state="translated">Fout bij wijzigen van instelling</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error creating address" xml:space="preserve">
+      <trans-unit id="Error creating address" xml:space="preserve" approved="no">
         <source>Error creating address</source>
+        <target state="translated">Fout bij aanmaken van adres</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error creating group" xml:space="preserve">
+      <trans-unit id="Error creating group" xml:space="preserve" approved="no">
         <source>Error creating group</source>
+        <target state="translated">Fout bij maken van groep</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error creating group link" xml:space="preserve">
+      <trans-unit id="Error creating group link" xml:space="preserve" approved="no">
         <source>Error creating group link</source>
+        <target state="translated">Fout bij maken van groeps link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error deleting chat database" xml:space="preserve">
+      <trans-unit id="Error deleting chat database" xml:space="preserve" approved="no">
         <source>Error deleting chat database</source>
+        <target state="translated">Fout bij het verwijderen van de chat database</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error deleting chat!" xml:space="preserve">
+      <trans-unit id="Error deleting chat!" xml:space="preserve" approved="no">
         <source>Error deleting chat!</source>
+        <target state="translated">Fout bij verwijderen chat!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error deleting connection" xml:space="preserve">
+      <trans-unit id="Error deleting connection" xml:space="preserve" approved="no">
         <source>Error deleting connection</source>
+        <target state="translated">Fout bij verwijderen van verbinding</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error deleting contact" xml:space="preserve">
+      <trans-unit id="Error deleting contact" xml:space="preserve" approved="no">
         <source>Error deleting contact</source>
+        <target state="translated">Fout bij het verwijderen van contact</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error deleting database" xml:space="preserve">
+      <trans-unit id="Error deleting database" xml:space="preserve" approved="no">
         <source>Error deleting database</source>
+        <target state="translated">Fout bij het verwijderen van de database</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error deleting old database" xml:space="preserve">
+      <trans-unit id="Error deleting old database" xml:space="preserve" approved="no">
         <source>Error deleting old database</source>
+        <target state="translated">Fout bij het verwijderen van de oude database</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error deleting token" xml:space="preserve">
+      <trans-unit id="Error deleting token" xml:space="preserve" approved="no">
         <source>Error deleting token</source>
+        <target state="translated">Fout bij verwijderen token</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error deleting user profile" xml:space="preserve">
+      <trans-unit id="Error deleting user profile" xml:space="preserve" approved="no">
         <source>Error deleting user profile</source>
+        <target state="translated">Fout bij het verwijderen van gebruikers profiel</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error enabling notifications" xml:space="preserve">
+      <trans-unit id="Error enabling notifications" xml:space="preserve" approved="no">
         <source>Error enabling notifications</source>
+        <target state="translated">Fout bij inschakelen van meldingen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error encrypting database" xml:space="preserve">
+      <trans-unit id="Error encrypting database" xml:space="preserve" approved="no">
         <source>Error encrypting database</source>
+        <target state="translated">Fout bij het versleutelen van de database</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error exporting chat database" xml:space="preserve">
+      <trans-unit id="Error exporting chat database" xml:space="preserve" approved="no">
         <source>Error exporting chat database</source>
+        <target state="translated">Fout bij het exporteren van de chat database</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error importing chat database" xml:space="preserve">
+      <trans-unit id="Error importing chat database" xml:space="preserve" approved="no">
         <source>Error importing chat database</source>
+        <target state="translated">Fout bij het importeren van de chat database</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error joining group" xml:space="preserve">
+      <trans-unit id="Error joining group" xml:space="preserve" approved="no">
         <source>Error joining group</source>
+        <target state="translated">Fout bij lid worden van groep</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error receiving file" xml:space="preserve">
+      <trans-unit id="Error receiving file" xml:space="preserve" approved="no">
         <source>Error receiving file</source>
+        <target state="translated">Fout bij ontvangen van bestand</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error removing member" xml:space="preserve">
@@ -3997,6 +4028,11 @@ SimpleX-servers kunnen uw profiel niet zien.</target>
       <trans-unit id="Different names, avatars and transport isolation." xml:space="preserve" approved="no">
         <source>Different names, avatars and transport isolation.</source>
         <target state="translated">Verschillende namen, avatars en transportisolatie.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error creating profile!" xml:space="preserve" approved="no">
+        <source>Error creating profile!</source>
+        <target state="translated">Fout bij aanmaken van profiel!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>
