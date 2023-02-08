@@ -2492,9 +2492,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             _ -> pure ()
         CON -> startReceivingFile ft
         MSG meta _ msgBody -> do
-          cmdId <- createAckCmd conn
-          withAckMessage agentConnId cmdId meta $
-            parseFileChunk msgBody >>= receiveFileChunk ft (Just conn) meta
+          parseFileChunk msgBody >>= receiveFileChunk ft (Just conn) meta
         OK ->
           -- [async agent commands] continuation on receiving OK
           withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
@@ -2516,7 +2514,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       toView $ CRRcvFileStart user ci
 
     receiveFileChunk :: RcvFileTransfer -> Maybe Connection -> MsgMeta -> FileChunk -> m ()
-    receiveFileChunk ft@RcvFileTransfer {fileId, chunkSize, cancelled} conn_ MsgMeta {recipient = (msgId, _), integrity} = \case
+    receiveFileChunk ft@RcvFileTransfer {fileId, chunkSize, cancelled} conn_ meta@MsgMeta {recipient = (msgId, _), integrity} = \case
       FileChunkCancel ->
         unless cancelled $ do
           cancelRcvFileTransfer user ft >>= mapM_ (deleteAgentConnectionAsync user)
@@ -2531,7 +2529,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           RcvChunkOk ->
             if B.length chunk /= fromInteger chunkSize
               then badRcvFileChunk ft "incorrect chunk size"
-              else appendFileChunk ft chunkNo chunk
+              else ack $ appendFileChunk ft chunkNo chunk
           RcvChunkFinal ->
             if B.length chunk > fromInteger chunkSize
               then badRcvFileChunk ft "incorrect chunk size"
@@ -2546,8 +2544,14 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 toView $ CRRcvFileComplete user ci
                 closeFileHandle fileId rcvFiles
                 forM_ conn_ $ \conn -> deleteAgentConnectionAsync user (aConnId conn)
-          RcvChunkDuplicate -> pure ()
+          RcvChunkDuplicate -> ack $ pure ()
           RcvChunkError -> badRcvFileChunk ft $ "incorrect chunk number " <> show chunkNo
+      where
+        ack a = case conn_ of
+          Just conn -> do
+            cmdId <- createAckCmd conn
+            withAckMessage agentConnId cmdId meta a
+          Nothing -> a
 
     processUserContactRequest :: ACommand 'Agent -> ConnectionEntity -> Connection -> UserContact -> m ()
     processUserContactRequest agentMsg connEntity conn UserContact {userContactLinkId} = case agentMsg of
@@ -3330,6 +3334,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           Nothing -> messageError "x.grp.mem.del with unknown member ID"
           Just member@GroupMember {groupMemberId, memberProfile} ->
             checkRole member $ do
+              -- ? prohibit deleting member if it's the sender - sender should use x.grp.leave
               deleteMemberConnection user member
               -- undeleted "member connected" chat item will prevent deletion of member record
               deleteOrUpdateMemberRecord user member
