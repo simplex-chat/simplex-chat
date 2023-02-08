@@ -46,7 +46,7 @@
     <string name="info_row_connection">Připojení</string>
     <string name="conn_level_desc_indirect">nepřímé (<xliff:g id="conn_level">%1$s</xliff:g>)</string>
     <string name="conn_stats_section_title_servers">SERVERY</string>
-    <string name="receiving_via">Příjem prostřednictvím</string>
+    <string name="receiving_via">Příjímáno přez</string>
     <string name="create_secret_group_title">Vytvoření tajné skupiny</string>
     <string name="group_display_name_field">Zobrazení názvu skupiny:</string>
     <string name="group_full_name_field">Úplný název skupiny:</string>
@@ -60,7 +60,7 @@
     <string name="save_color">Uložit barvu</string>
     <string name="reset_color">Obnovení barev</string>
     <string name="color_primary">Zbarvení</string>
-    <string name="chat_preferences_you_allow">Povolíte</string>
+    <string name="chat_preferences_you_allow">Povolujete</string>
     <string name="chat_preferences_default">výchozí (%s)</string>
     <string name="chat_preferences_yes">ano</string>
     <string name="chat_preferences_no">ne</string>
@@ -132,7 +132,7 @@
     <string name="you_are_already_connected_to_vName_via_this_link">Jste již připojeni k <xliff:g id="contactName" example="Alice">%1$s!</xliff:g>.</string>
     <string name="invalid_connection_link">Neplatný odkaz na spojení</string>
     <string name="error_accepting_contact_request">Chyba příjmu požadavku od kontaktu</string>
-    <string name="error_changing_address">Chuba změny adresy</string>
+    <string name="error_changing_address">Chyba změny adresy</string>
     <string name="settings_notifications_mode_title">Služba oznamování</string>
     <string name="notifications_mode_service_desc">Služba na pozadí je spuštěna vždy - oznámení se zobrazí, jakmile jsou zprávy k dispozici.</string>
     <string name="notification_preview_mode_message">Text zprávy</string>
@@ -195,7 +195,7 @@
     <string name="add_new_contact_to_create_one_time_QR_code"><b>Přidat nový kontakt</b>: vytvořit jednorázový kód QR.</string>
     <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>Skenovat QR kód</b>: připojení ke kontaktu, který vám ukáže QR kód.</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 desktop: scan displayed QR code from the app, via <b>Scan QR code</b>.</string>
-    <string name="clear_chat_question">Vyčistit konverzaci\?</string>
+    <string name="clear_chat_question">Vyčistit chat\?</string>
     <string name="clear_verb">Čistý</string>
     <string name="mark_read">Označit jako přečteno</string>
     <string name="mark_unread">Označit jako nepřečtené</string>
@@ -284,11 +284,11 @@
     <string name="delete_database">Odstranění databáze</string>
     <string name="error_exporting_chat_database">Chyba při exportu databáze chatu</string>
     <string name="import_database_confirmation">Import</string>
-    <string name="restart_the_app_to_use_imported_chat_database">Restartujte aplikaci, abyste mohli používat importovanou databázi chatu.</string>
+    <string name="restart_the_app_to_use_imported_chat_database">Restartujte aplikaci, abyste mohli používat importovanou chat databázi.</string>
     <string name="delete_chat_profile_question">Smazat profil chatu\?</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">Tuto akci nelze vzít zpět - váš profil, kontakty, zprávy a soubory budou nenávratně ztraceny.</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">Restartujte aplikaci a vytvořte nový chat profil.</string>
-    <string name="you_must_use_the_most_recent_version_of_database">Nejnovější verzi databáze chatu musíte používat POUZE v jednom zařízení, jinak se může stát, že přestanete přijímat zprávy od některých kontaktů.</string>
+    <string name="you_must_use_the_most_recent_version_of_database">Nejnovější verzi chat databáze musíte používat POUZE v jednom zařízení, jinak se může stát, že přestanete přijímat zprávy od některých kontaktů.</string>
     <string name="stop_chat_to_enable_database_actions">Zastavte chat a povolte akce s databází.</string>
     <string name="files_and_media_section">Soubory a média</string>
     <string name="delete_files_and_media_question">Smazat soubory a média\?</string>
@@ -416,7 +416,7 @@
     <string name="auth_simplex_lock_turned_on">Zapnutý zámek SimpleX Lock</string>
     <string name="auth_unlock">Odemknutí stránky</string>
     <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Ověřování zařízení není povoleno. Jakmile povolíte ověřování zařízení, můžete zámek SimpleX Lock zapnout prostřednictvím Nastavení.</string>
-    <string name="auth_device_authentication_is_disabled_turning_off">Ověřování zařízení je zakázáno. Vypnutí zámku SimpleX Lock.</string>
+    <string name="auth_device_authentication_is_disabled_turning_off">Ověřování zařízení je zakázáno. Vypnutí SimpleX zámku.</string>
     <string name="edit_verb">Upravit</string>
     <string name="delete_verb">Smazat</string>
     <string name="for_everybody">Pro všechny</string>
@@ -872,7 +872,7 @@
     <string name="member_role_will_be_changed_with_invitation">Role bude změněna na \"%s\". Člen obdrží novou pozvánku.</string>
     <string name="error_changing_role">Chyba při změně role</string>
     <string name="conn_level_desc_direct">přímo</string>
-    <string name="sending_via">Odesílání přes</string>
+    <string name="sending_via">Odesíláno přez</string>
     <string name="network_status">Stav sítě</string>
     <string name="switch_receiving_address">Přepínač přijímací adresy</string>
     <string name="group_is_decentralized">Skupina je plně decentralizovaná - je viditelná pouze pro členy.</string>
@@ -899,7 +899,7 @@
     <string name="chat_preferences_on">na</string>
     <string name="chat_preferences_off">vypnuto</string>
     <string name="chat_preferences">Chat předvolby</string>
-    <string name="contact_preferences">Předvolby kontaktů</string>
+    <string name="contact_preferences">Předvolby kontaktu</string>
     <string name="group_preferences">Předvolby skupiny</string>
     <string name="direct_messages">Přímé zprávy</string>
     <string name="full_deletion">Smazat pro všechny</string>
