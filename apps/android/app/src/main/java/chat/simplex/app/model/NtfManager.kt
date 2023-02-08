@@ -44,7 +44,7 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
   private val msgNtfTimeoutMs = 30000L
 
   init {
-    if (manager.areNotificationsEnabled()) createNtfChannelsOrShowAlert()
+    if (manager.areNotificationsEnabled()) createNtfChannelsAndMaybeShowAlert()
   }
 
   enum class NotificationAction {
@@ -271,7 +271,7 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
    * On the first app launch the channels will be created after user profile is created. Subsequent calls will create new channels and delete
    * old ones if needed
    * */
-  fun createNtfChannelsOrShowAlert() {
+  fun createNtfChannelsAndMaybeShowAlert() {
     manager.createNotificationChannel(NotificationChannel(MessageChannel, generalGetString(R.string.ntf_channel_messages), NotificationManager.IMPORTANCE_HIGH))
     manager.createNotificationChannel(callNotificationChannel(CallChannel, generalGetString(R.string.ntf_channel_calls)))
     // Remove old channels since they can't be edited
