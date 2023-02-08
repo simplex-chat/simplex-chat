@@ -330,7 +330,7 @@ viewChats ts = concatMap chatPreview . reverse
           _ -> []
 
 viewChatItem :: forall c d. MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> CurrentTime -> [StyledString]
-viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemDeleted}, content, quotedItem, file} doShow ts =
+viewChatItem chat ci@ChatItem {chatDir, meta = meta, content, quotedItem, file} doShow ts =
   withItemDeleted <$> case chat of
     DirectChat c -> case chatDir of
       CIDirectSnd -> case content of
@@ -367,11 +367,8 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemDeleted}, conten
     _ -> []
   where
     withItemDeleted item =
-      if isJust itemDeleted
-        then
-          let deleted_ = styled (colored Red) (T.unpack $ maybe "" (\t -> " [" <> t <> "]") (chatItemDeletedText ci $ chatInfoMembership chat))
-           in item <> deleted_
-        else item
+      let deleted_ = styled (colored Red) (T.unpack $ maybe "" (\t -> " [" <> t <> "]") (chatItemDeletedText ci $ chatInfoMembership chat))
+       in item <> deleted_
     withSndFile = withFile viewSentFileInvitation
     withRcvFile = withFile viewReceivedFileInvitation
     withFile view dir l = maybe l (\f -> l <> view dir f ts meta) file
