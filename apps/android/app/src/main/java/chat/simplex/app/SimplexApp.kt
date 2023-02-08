@@ -101,8 +101,12 @@ class SimplexApp: Application(), LifecycleEventObserver {
           isAppOnForeground = true
           if (chatModel.chatRunning.value == true) {
             kotlin.runCatching {
+              val currentUserId = chatModel.currentUser.value?.userId
               val chats = chatController.apiGetChats()
-              chatModel.updateChats(chats)
+              /** Active user can be changed in background while [ChatController.apiGetChats] is executing */
+              if (chatModel.currentUser.value?.userId == currentUserId) {
+                chatModel.updateChats(chats)
+              }
             }.onFailure { Log.e(TAG, it.stackTraceToString()) }
           }
         }
