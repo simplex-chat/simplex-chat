@@ -138,7 +138,7 @@
     <string name="invite_prohibited">无法邀请联系人！</string>
     <string name="cancel_verb">取消</string>
     <string name="callstatus_ended">通话结束 <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
-    <string name="change_verb">更换</string>
+    <string name="change_verb">更改</string>
     <string name="icon_descr_call_ended">通话结束</string>
     <string name="change_database_passphrase_question">更改数据库密码？</string>
     <string name="callstatus_error">通话错误</string>
@@ -551,4 +551,27 @@
     <string name="periodic_notifications_desc">该应用程序会定期获取新消息——它每天会消耗百分之几的电量。该应用程序不使用推送通知——您设备中的数据不会发送到服务器。</string>
     <string name="v4_3_irreversible_message_deletion_desc">你的联系人可以允许完全删除消息。</string>
     <string name="v4_4_disappearing_messages_desc">已发送的消息将在设定的时间后被删除。</string>
+    <string name="your_chat_database">您的聊天数据库</string>
+    <string name="wrong_passphrase_title">密码错误！</string>
+    <string name="save_verb">保存</string>
+    <string name="open_verb">打开</string>
+    <string name="update_database">更新</string>
+    <string name="save_passphrase_and_open_chat">保存密码并打开聊天</string>
+    <string name="open_chat">打开聊天</string>
+    <string name="database_backup_can_be_restored">更改数据库密码的尝试未完成。</string>
+    <string name="remove_member_confirmation">移除</string>
+    <string name="sender_you_pronoun">您</string>
+    <string name="save_servers_button">保存</string>
+    <string name="settings_section_title_you">您</string>
+    <string name="remove_passphrase">移除</string>
+    <string name="you_have_to_enter_passphrase_every_time">您必须在每次应用程序启动时输入密码——它不存储在设备上。</string>
+    <string name="set_password_to_export">设置密码来导出</string>
+    <string name="enter_correct_current_passphrase">请输入正确的当前密码。</string>
+    <string name="update_database_passphrase">更新数据库密码</string>
+    <string name="database_is_not_encrypted">您的聊天数据库未加密——设置密码来保护它。</string>
+    <string name="store_passphrase_securely_without_recover">请安全地保存密码，如果您丢失了密码，您将无法访问聊天。</string>
+    <string name="store_passphrase_securely">请安全地保存密码，如果您丢失了密码，您将无法更改它。</string>
+    <string name="wrong_passphrase">数据库密码错误</string>
+    <string name="network_options_save">保存</string>
+    <string name="update_network_settings_confirmation">更新</string>
 </resources>
