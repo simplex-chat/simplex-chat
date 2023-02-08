@@ -553,7 +553,7 @@
       </trans-unit>
       <trans-unit id="Change" xml:space="preserve" approved="no">
         <source>Change</source>
-        <target state="translated">更换</target>
+        <target state="translated">更改</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change database passphrase?" xml:space="preserve" approved="no">
@@ -889,9 +889,11 @@
 </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database encryption passphrase will be updated.&#10;" xml:space="preserve">
+      <trans-unit id="Database encryption passphrase will be updated.&#10;" xml:space="preserve" approved="no">
         <source>Database encryption passphrase will be updated.
 </source>
+        <target state="translated">数据库加密密码将被更新。
+</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database error" xml:space="preserve" approved="no">
@@ -1223,8 +1225,9 @@
         <target state="translated">加密信息：钥匙串错误</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Encrypted message: no passphrase" xml:space="preserve">
+      <trans-unit id="Encrypted message: no passphrase" xml:space="preserve" approved="no">
         <source>Encrypted message: no passphrase</source>
+        <target state="translated">加密消息：没有密码</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="Encrypted message: unexpected error" xml:space="preserve">
@@ -1447,8 +1450,9 @@
         <target state="translated">导出数据库档案中……</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Failed to remove passphrase" xml:space="preserve">
+      <trans-unit id="Failed to remove passphrase" xml:space="preserve" approved="no">
         <source>Failed to remove passphrase</source>
+        <target state="translated">移除密码失败</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File will be received when your contact is online, please wait or check later!" xml:space="preserve" approved="no">
@@ -2133,8 +2137,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Open Settings</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open chat" xml:space="preserve">
+      <trans-unit id="Open chat" xml:space="preserve" approved="no">
         <source>Open chat</source>
+        <target state="translated">打开聊天</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Open chat console" xml:space="preserve">
@@ -2200,8 +2205,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target state="translated">请检查您和您的联系人偏好设置。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please enter correct current passphrase." xml:space="preserve">
+      <trans-unit id="Please enter correct current passphrase." xml:space="preserve" approved="no">
         <source>Please enter correct current passphrase.</source>
+        <target state="translated">请输入正确的当前密码。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please enter the previous password after restoring database backup. This action can not be undone." xml:space="preserve">
@@ -2213,12 +2219,14 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target state="translated">请重新启动应用程序并迁移数据库以启用推送通知。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please store passphrase securely, you will NOT be able to access chat if you lose it." xml:space="preserve">
+      <trans-unit id="Please store passphrase securely, you will NOT be able to access chat if you lose it." xml:space="preserve" approved="no">
         <source>Please store passphrase securely, you will NOT be able to access chat if you lose it.</source>
+        <target state="translated">请安全地保存密码，如果您丢失了密码，您将无法访问聊天。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please store passphrase securely, you will NOT be able to change it if you lose it." xml:space="preserve">
+      <trans-unit id="Please store passphrase securely, you will NOT be able to change it if you lose it." xml:space="preserve" approved="no">
         <source>Please store passphrase securely, you will NOT be able to change it if you lose it.</source>
+        <target state="translated">请安全地保存密码，如果您丢失了密码，您将无法更改它。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve">
@@ -2328,8 +2336,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Relay server protects your IP address, but it can observe the duration of the call.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Remove" xml:space="preserve">
+      <trans-unit id="Remove" xml:space="preserve" approved="no">
         <source>Remove</source>
+        <target state="translated">移除</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Remove member" xml:space="preserve">
@@ -2409,8 +2418,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>SMP servers</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save" xml:space="preserve">
+      <trans-unit id="Save" xml:space="preserve" approved="no">
         <source>Save</source>
+        <target state="translated">保存</target>
         <note>chat item action</note>
       </trans-unit>
       <trans-unit id="Save (and notify contacts)" xml:space="preserve">
@@ -2433,8 +2443,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Save group profile</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save passphrase and open chat" xml:space="preserve">
+      <trans-unit id="Save passphrase and open chat" xml:space="preserve" approved="no">
         <source>Save passphrase and open chat</source>
+        <target state="translated">保存密码并打开聊天</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save passphrase in Keychain" xml:space="preserve" approved="no">
@@ -2572,8 +2583,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target state="translated">设置群组偏好设置</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set passphrase to export" xml:space="preserve">
+      <trans-unit id="Set passphrase to export" xml:space="preserve" approved="no">
         <source>Set passphrase to export</source>
+        <target state="translated">设置密码来导出</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set timeouts for proxy/VPN" xml:space="preserve">
@@ -2763,8 +2775,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>The app can notify you when you receive messages or contact requests - please open settings to enable.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The attempt to change database passphrase was not completed." xml:space="preserve">
+      <trans-unit id="The attempt to change database passphrase was not completed." xml:space="preserve" approved="no">
         <source>The attempt to change database passphrase was not completed.</source>
+        <target state="translated">更改数据库密码的尝试未完成。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The connection you accepted will be cancelled!" xml:space="preserve">
@@ -2933,16 +2946,18 @@ To connect, please ask your contact to create another connection link and check 
         <source>Unread</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Update" xml:space="preserve">
+      <trans-unit id="Update" xml:space="preserve" approved="no">
         <source>Update</source>
+        <target state="translated">更新</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Update .onion hosts setting?" xml:space="preserve">
         <source>Update .onion hosts setting?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Update database passphrase" xml:space="preserve">
+      <trans-unit id="Update database passphrase" xml:space="preserve" approved="no">
         <source>Update database passphrase</source>
+        <target state="translated">更新数据库密码</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Update network settings?" xml:space="preserve">
@@ -3063,12 +3078,14 @@ To connect, please ask your contact to create another connection link and check 
         <source>With optional welcome message.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Wrong database passphrase" xml:space="preserve">
+      <trans-unit id="Wrong database passphrase" xml:space="preserve" approved="no">
         <source>Wrong database passphrase</source>
+        <target state="translated">数据库密码错误</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Wrong passphrase!" xml:space="preserve">
+      <trans-unit id="Wrong passphrase!" xml:space="preserve" approved="no">
         <source>Wrong passphrase!</source>
+        <target state="translated">密码错误！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You" xml:space="preserve">
@@ -3137,8 +3154,9 @@ To connect, please ask your contact to create another connection link and check 
         <target state="translated">您没有聊天记录</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You have to enter passphrase every time the app starts - it is not stored on the device." xml:space="preserve">
+      <trans-unit id="You have to enter passphrase every time the app starts - it is not stored on the device." xml:space="preserve" approved="no">
         <source>You have to enter passphrase every time the app starts - it is not stored on the device.</source>
+        <target state="translated">您必须在每次应用程序启动时输入密码——它不存储在设备上。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You invited your contact" xml:space="preserve">
