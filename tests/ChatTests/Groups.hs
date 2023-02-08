@@ -1220,12 +1220,12 @@ testGroupMemberMessageDelete =
         (alice <# "#team cath> hi")
         (bob <# "#team cath> hi")
       bob ##> "\\\\ #team @cath hi"
-      bob <## "message marked deleted"
+      bob <## "message marked deleted by you"
       concurrently_
         (alice <# "#team cath> [marked deleted by bob] hi")
         (cath <# "#team cath> [marked deleted by bob] hi")
       alice #$> ("/_get chat #1 count=1", chat, [(0, "hi [marked deleted by bob]")])
-      bob #$> ("/_get chat #1 count=1", chat, [(0, "hi [marked deleted]")])
+      bob #$> ("/_get chat #1 count=1", chat, [(0, "hi [marked deleted by you]")])
       cath #$> ("/_get chat #1 count=1", chat, [(1, "hi [marked deleted by bob]")])
 
 testGroupMemberMessageFullDelete :: HasCallStack => FilePath -> IO ()
@@ -1258,12 +1258,12 @@ testGroupMemberMessageFullDelete =
         (alice <# "#team cath> hi")
         (bob <# "#team cath> hi")
       bob ##> "\\\\ #team @cath hi"
-      bob <## "message deleted"
+      bob <## "message deleted by you"
       concurrently_
         (alice <# "#team cath> [deleted by bob] hi")
         (cath <# "#team cath> [deleted by bob] hi")
       alice #$> ("/_get chat #1 count=1", chat, [(0, "moderated [deleted by bob]")])
-      bob #$> ("/_get chat #1 count=1", chat, [(0, "Full deletion: on")]) -- fully deleted for bob
+      bob #$> ("/_get chat #1 count=1", chat, [(0, "moderated [deleted by you]")])
       cath #$> ("/_get chat #1 count=1", chat, [(1, "moderated [deleted by bob]")])
 
 testGroupAsync :: HasCallStack => FilePath -> IO ()
