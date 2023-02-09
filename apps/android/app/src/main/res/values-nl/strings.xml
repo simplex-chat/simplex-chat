@@ -184,7 +184,7 @@
     <string name="ttl_days">%d dagen</string>
     <string name="encrypted_with_random_passphrase">De database is versleuteld met een willekeurig wachtwoord, u kunt deze wijzigen.</string>
     <string name="database_encryption_will_be_updated">Het wachtwoord voor database versleuteling wordt bijgewerkt en opgeslagen in de keychain.</string>
-    <string name="database_will_be_encrypted_and_passphrase_stored">De database wordt gecodeerd en het wachtwoord wordt opgeslagen in de Keychain.</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored">"De database wordt  versleuteld en het wachtwoord wordt opgeslagen in de Keychain."</string>
     <string name="database_passphrase_will_be_updated">Het wachtwoord voor database versleuteling wordt bijgewerkt.</string>
     <string name="database_error">Database fout</string>
     <string name="database_passphrase_is_required">Database-wachtwoord is vereist om de chat te openen.</string>
@@ -664,7 +664,7 @@
     <string name="icon_descr_sent_msg_status_sent">verstuurd</string>
     <string name="icon_descr_sent_msg_status_unauthorized_send">ongeoorloofd verzenden</string>
     <string name="icon_descr_received_msg_status_unread">Ongelezen</string>
-    <string name="tap_to_start_new_chat">Klik om een nieuwe chat te starten</string>
+    <string name="tap_to_start_new_chat">Tik om een nieuwe chat te starten</string>
     <string name="this_text_is_available_in_settings">Deze tekst is beschikbaar in instellingen</string>
     <string name="welcome">Welkom!</string>
     <string name="group_preview_you_are_invited">je bent uitgenodigd voor de groep</string>
@@ -763,7 +763,7 @@
     <string name="settings_section_title_settings">INSTELLINGEN</string>
     <string name="settings_section_title_support">ONDERSTEUNING SIMPLEX CHAT</string>
     <string name="settings_section_title_you">JIJ</string>
-    <string name="run_chat_section">VOER CHAT UIT</string>
+    <string name="run_chat_section">CHAT UITVOEREN</string>
     <string name="your_chat_database">Mijn chat database</string>
     <string name="set_password_to_export">Wachtwoord instellen om te exporteren</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">Start de app opnieuw om een nieuw chatprofiel aan te maken.</string>
@@ -806,8 +806,8 @@
     <string name="unknown_error">Onbekende fout</string>
     <string name="wrong_passphrase_title">Verkeerd wachtwoord!</string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">U bent uitgenodigd voor de groep. Word lid om in contact te komen met groepsleden.</string>
-    <string name="group_invitation_tap_to_join">Klik om mee te doen</string>
-    <string name="group_invitation_tap_to_join_incognito">Klik om incognito deel te nemen</string>
+    <string name="group_invitation_tap_to_join">Tik om mee te doen</string>
+    <string name="group_invitation_tap_to_join_incognito">Tik om incognito deel te nemen</string>
     <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Je bent lid geworden van deze groep. Verbinding maken met uitnodigend groepslid.</string>
     <string name="you_sent_group_invitation">Je hebt een groepsuitnodiging verzonden</string>
     <string name="snd_group_event_user_left">jij bent vertrokken</string>
@@ -962,7 +962,7 @@
     <string name="sender_you_pronoun">jij</string>
     <string name="description_you_shared_one_time_link">je hebt een eenmalige link gedeeld</string>
     <string name="description_you_shared_one_time_link_incognito">je hebt een eenmalige link incognito gedeeld</string>
-    <string name="chat_help_tap_button">Klik op de knop</string>
+    <string name="chat_help_tap_button">Tik op de knop</string>
     <string name="read_more_in_github_with_link">Lees meer in onze <font color="#0088ff">GitHub-repository</font>.</string>
     <string name="read_more_in_github">Lees meer in onze GitHub-repository.</string>
     <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> bericht(en) overgeslagen</string>
