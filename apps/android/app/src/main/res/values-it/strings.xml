@@ -966,4 +966,5 @@
     <string name="v4_5_transport_isolation">Isolamento del trasporto</string>
     <string name="v4_5_private_filenames_descr">Per proteggere il fuso orario, i file immagine/vocali usano UTC.</string>
     <string name="v4_5_multiple_chat_profiles_descr">Nomi e avatar diversi, isolamento del trasporto.</string>
+    <string name="moderated_description">moderato</string>
 </resources>
