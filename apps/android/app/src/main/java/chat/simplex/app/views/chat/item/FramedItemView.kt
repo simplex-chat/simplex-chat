@@ -165,7 +165,7 @@ fun FramedItemView(
     Box(contentAlignment = Alignment.BottomEnd) {
       Column(Modifier.width(IntrinsicSize.Max)) {
         PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID) {
-          if (ci.meta.itemDeleted) {
+          if (ci.meta.itemDeleted != null) {
             FramedItemHeader(stringResource(R.string.marked_deleted_description), true, Icons.Outlined.Delete)
           } else if (ci.meta.isLive) {
             FramedItemHeader(stringResource(R.string.live), false)

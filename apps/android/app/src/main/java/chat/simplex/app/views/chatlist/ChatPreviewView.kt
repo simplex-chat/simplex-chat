@@ -145,12 +145,12 @@ fun ChatPreviewView(
     if (ci != null) {
       val (text: CharSequence, inlineTextContent) = when {
         chatModelDraftChatId == chat.id && chatModelDraft != null -> remember(chatModelDraft) { messageDraft(chatModelDraft) }
-        !ci.meta.itemDeleted -> ci.text to null
+        ci.meta.itemDeleted == null -> ci.text to null
         else -> generalGetString(R.string.marked_deleted_description) to null
       }
       val formattedText = when {
         chatModelDraftChatId == chat.id && chatModelDraft != null -> null
-        !ci.meta.itemDeleted -> ci.formattedText
+        ci.meta.itemDeleted == null -> ci.formattedText
         else -> null
       }
       MarkdownText(

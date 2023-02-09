@@ -98,7 +98,7 @@ fun ChatItemView(
           onDismissRequest = { showMenu.value = false },
           Modifier.width(220.dp)
         ) {
-          if (!cItem.meta.itemDeleted && !live) {
+          if (cItem.meta.itemDeleted == null && !live) {
             ItemAction(stringResource(R.string.reply_verb), Icons.Outlined.Reply, onClick = {
               if (composeState.value.editing) {
                 composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
@@ -140,7 +140,7 @@ fun ChatItemView(
               showMenu.value = false
             })
           }
-          if (cItem.meta.itemDeleted && revealed.value) {
+          if (cItem.meta.itemDeleted != null && revealed.value) {
             ItemAction(
               stringResource(R.string.hide_verb),
               Icons.Outlined.VisibilityOff,
@@ -178,10 +178,10 @@ fun ChatItemView(
       @Composable
       fun ContentItem() {
         val mc = cItem.content.msgContent
-        if (cItem.meta.itemDeleted && !revealed.value) {
+        if (cItem.meta.itemDeleted != null && !revealed.value) {
           MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, showMember = showMember)
           MarkedDeletedItemDropdownMenu()
-        } else if (cItem.quotedItem == null && !cItem.meta.itemDeleted && !cItem.meta.isLive) {
+        } else if (cItem.quotedItem == null && cItem.meta.itemDeleted == null && !cItem.meta.isLive) {
           if (mc is MsgContent.MCText && isShortEmoji(cItem.content.text)) {
             EmojiItemView(cItem, cInfo.timedMessagesTTL)
             MsgContentItemDropdownMenu()
@@ -238,6 +238,8 @@ fun ChatItemView(
         is CIContent.SndGroupFeature -> CIChatFeatureView(cItem, c.groupFeature, c.preference.enable.iconColor)
         is CIContent.RcvChatFeatureRejected -> CIChatFeatureView(cItem, c.feature, Color.Red)
         is CIContent.RcvGroupFeatureRejected -> CIChatFeatureView(cItem, c.groupFeature, Color.Red)
+        is CIContent.SndModerated -> DeletedItem()
+        is CIContent.RcvModerated -> DeletedItem()
         is CIContent.InvalidJSON -> CIInvalidJSONView(c.json)
       }
     }
