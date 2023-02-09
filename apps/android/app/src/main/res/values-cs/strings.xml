@@ -503,7 +503,7 @@
     <string name="v4_5_multiple_chat_profiles_descr">Různá jména, avataři a izolace přenosu.</string>
     <string name="v4_5_message_draft">Návrh zpráv</string>
     <string name="v4_5_message_draft_descr">Zachování posledního návrhu zprávy s přílohami.</string>
-    <string name="v4_5_transport_isolation">Izolace transportu</string>
+    <string name="v4_5_transport_isolation">Izolace přenosu</string>
     <string name="v4_5_transport_isolation_descr">Podle chat profilu (výchozí) nebo podle připojení (BETA).</string>
     <string name="you_will_join_group">Připojíte se ke skupině, na kterou odkazuje tento odkaz, a spojíte se s jejími členy.</string>
     <string name="connect_via_link_verb">Připojení</string>
