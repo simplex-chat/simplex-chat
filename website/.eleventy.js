@@ -13,6 +13,7 @@ const globalConfig = {
 }
 
 const translationsDirectoryPath = './langs'
+const supportedRoutes = ["blog", "contact", "invitation", ""]
 let supportedLangs = []
 fs.readdir(translationsDirectoryPath, (err, files) => {
   if (err) {
@@ -33,16 +34,30 @@ module.exports = function (ty) {
 
   ty.addShortcode("getlang", (path) => {
     const lang = path.split("/")[1]
-    if (lang) return lang
+    if (supportedRoutes.includes(lang)) return "en"
+    else if (supportedLangs.includes(lang)) return lang
     return "en"
   })
 
   ty.addShortcode("getlangRoute", (path) => {
-    const supportedRoutes = ["blog", "contact", "invitation", ""]
     const lang = path.split("/")[1]
     if (supportedRoutes.includes(lang)) return ""
     if (supportedLangs.includes(lang)) return `/${lang}`
     return "/en"
+  })
+
+  ty.addShortcode("completeRoute", (obj) => {
+    const urlParts = obj.url.split("/")
+    if (supportedRoutes.includes(urlParts[1])) {
+      if (obj.lang === "en")
+        return `${obj.url}`
+      return `/${obj.lang}${obj.url}`
+    }
+    else if (supportedLangs.includes(urlParts[1])) {
+      if (obj.lang === "en")
+        return `/${urlParts.slice(2).join('/')}`
+      return `/${obj.lang}/${urlParts.slice(1).join('/')}`
+    }
   })
 
   ty.addPlugin(i18n, {

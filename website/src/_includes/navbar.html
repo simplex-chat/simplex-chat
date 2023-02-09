@@ -94,6 +94,25 @@
             </div>
         </nav>
 
+        <div class="nav-link relative">
+            <a href="javascript:void(0);" class="flex items-center justify-end ml-10">
+                <img class="h-6" src="/img/flags/{% getlang page.url %}.svg" alt="" srcset="">
+            </a>
+            
+            <ul class="flex flex-col items-start gap-2 h-fit absolute top-11 -left-20 bg-white dark:bg-black mt-[10px] py-4 min-w-[200px] rounded-md shadow-[0_0_3px_rgb(60_72_88_/_15%)] sub-menu">
+                {% for language in languages.languages %}
+                    {% if language.label in supported_languages.langs %}
+                        <li>
+                            <a href="{% completeRoute {url:page.url,lang:language.label} %}" class="py-[10px] px-[20px] flex items-center gap-4">
+                                <img class="h-5" src="{{ language.flag }}" alt="" srcset="">
+                                <p>{{ language.name }} ({{ language.label }})</p>
+                            </a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+        </div>
+
         <button href="#" class="flex items-center justify-center h-[36px] w-[36px] ml-10 theme-switch-btn">
             <img src="/img/new/sun.svg"  alt="" srcset="" class="sun">
             <img src="/img/new/moon.svg" alt="" srcset="" class="moon">

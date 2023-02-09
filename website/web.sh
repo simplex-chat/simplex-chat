@@ -35,7 +35,9 @@ done
 echo "$main_json_obj" > translations.json
 
 # creating folders for each language for internationalization
+langs_json="{\"langs\": []}"
 for lang in "${langs[@]}"; do
+  langs_json=$(echo "$langs_json" | jq ".langs += [\"$lang\"]")
   mkdir src/$lang
   cp src/index.html src/$lang
   cp src/contact.html src/$lang
@@ -45,6 +47,8 @@ for lang in "${langs[@]}"; do
   cp -R src/blog/images src/$lang/blog
   echo "done $lang copying"
 done
+echo $langs_json > "src/_data/supported_languages.json"
+# the list in the supported_languages.json file is used as the reference list for displaying available languages on the frontend
 
 npm install
 npm run build
