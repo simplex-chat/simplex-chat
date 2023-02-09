@@ -56,7 +56,7 @@ module.exports = function (ty) {
     else if (supportedLangs.includes(urlParts[1])) {
       if (obj.lang === "en")
         return `/${urlParts.slice(2).join('/')}`
-      return `/${obj.lang}/${urlParts.slice(1).join('/')}`
+      return `/${obj.lang}/${urlParts.slice(2).join('/')}`
     }
   })
 
