@@ -1,8 +1,7 @@
 package chat.simplex.app.views.chat.item
 
 import android.content.res.Configuration
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
@@ -19,9 +18,10 @@ import chat.simplex.app.ui.theme.SimpleXTheme
 
 @Composable
 fun DeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, showMember: Boolean = false) {
+  val sent = ci.chatDir.sent
   Surface(
     shape = RoundedCornerShape(18.dp),
-    color = ReceivedColorLight,
+    color = if (sent) SentColorLight else ReceivedColorLight,
   ) {
     Row(
       Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
