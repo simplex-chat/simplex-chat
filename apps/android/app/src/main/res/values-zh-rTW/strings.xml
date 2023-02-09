@@ -12,7 +12,7 @@
     <string name="about_simplex_chat">關於
 \n<xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
     <string name="accept_connection_request__question">接受連線請求 \?</string>
-    <string name="callstatus_accepted">已接受電話</string>
+    <string name="callstatus_accepted">通話已接納</string>
     <string name="network_enable_socks_info">要在端口 9050 啟動 SOCKS 代理伺服器嗎？在啟用這個選項之前，必須先啟動代理伺服器。</string>
     <string name="group_member_role_admin">管理員</string>
     <string name="above_then_preposition_continuation">然後選按：</string>
@@ -27,7 +27,7 @@
     <string name="onboarding_notifications_mode_periodic_desc"><b>對電池好</b>。通知服務會每十分鐘檢查一次。你可能會錯過電話通話或訊息。</string>
     <string name="answer_call">回應電話請求</string>
     <string name="clear_contacts_selection_button">清除</string>
-    <string name="allow_direct_messages">允許傳送私人訊息至群組內的成員</string>
+    <string name="allow_direct_messages">允許在群組內選擇成員後傳送訊息</string>
     <string name="ttl_sec">%d 秒</string>
     <string name="feature_cancelled_item">已取消 %s</string>
     <string name="v4_2_auto_accept_contact_requests">自動接受聯絡人請求</string>
@@ -55,7 +55,7 @@
     <string name="choose_file">選擇檔案</string>
     <string name="use_camera_button">使用相機</string>
     <string name="from_gallery_button">選擇來自 圖片庫</string>
-    <string name="accept_contact_incognito_button">接受匿名</string>
+    <string name="accept_contact_incognito_button">接受匿名者的對話</string>
     <string name="clear_chat_warning">所有訊息記錄會刪除 - 這不能還原！這些訊息只會在你裝置中刪除。</string>
     <string name="clear_verb">清除</string>
     <string name="clear_chat_question">要清除對話記錄？</string>
@@ -67,7 +67,7 @@
     <string name="how_to_use_simplex_chat">如何使用</string>
     <string name="install_simplex_chat_for_terminal">使用終端機安裝 <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
     <string name="app_version_title">應用程式版本</string>
-    <string name="all_your_contacts_will_remain_connected">你的所有聯絡人已經重新連接。</string>
+    <string name="all_your_contacts_will_remain_connected">你的所有聯絡人會保持連接。</string>
     <string name="app_version_code">程式建構：%s</string>
     <string name="app_version_name">應用程式版本：v%s</string>
     <string name="share_link">分享連結</string>
@@ -102,13 +102,13 @@
     <string name="full_backup">備份資料數據</string>
     <string name="settings_section_title_icon">應用程式圖示</string>
     <string name="chat_database_imported">已匯入對話資料庫</string>
-    <string name="keychain_is_storing_securely">Android Keystore 是用於安全地儲存密碼 - 令到通知服務允許運行。</string>
+    <string name="keychain_is_storing_securely">Android Keystore 是用於安全地儲存密碼 - 確保通知服務的運作</string>
     <string name="impossible_to_recover_passphrase"><b>請注意</b>：如果你忘記了密碼你將不能再次復原或更改密碼。</string>
-    <string name="keychain_allows_to_receive_ntfs">重新啟動應用程式後， Android Keystore 將會用來安全地儲存密碼 - 並且允許接收通知服務。</string>
+    <string name="keychain_allows_to_receive_ntfs">當你重新啟動應用程式或更改密碼後， Android Keystore 將會用來安全地儲存密碼 - 確保收到通知。</string>
     <string name="chat_is_stopped_indication">聊天室已停止運作</string>
     <string name="only_group_owners_can_change_prefs">只有這個群組的創建人才能更改群組內的設定。</string>
     <string name="change_verb">修改</string>
-    <string name="users_add">新增帳號</string>
+    <string name="users_add">加入新帳號</string>
     <string name="users_delete_all_chats_deleted">所有聊天室和聊天記錄會刪除 - 這不能還原！</string>
     <string name="incognito">匿名者</string>
     <string name="chat_preferences_always">經常</string>
@@ -182,7 +182,7 @@
     <string name="mute_chat">靜音</string>
     <string name="unmute_chat">解除靜音</string>
     <string name="your_settings">你的設定</string>
-    <string name="smp_servers_add_to_another_device">加入至其他裝置</string>
+    <string name="smp_servers_add_to_another_device">加入到另一個裝置上</string>
     <string name="smp_servers_check_address">檢查輸入的伺服器地址然後再試一次。</string>
     <string name="chat_console">終端機對話</string>
     <string name="star_on_github">於 Github 給個星星</string>
@@ -191,9 +191,11 @@
     <string name="incognito_info_find">要找到用於匿名連接的個人資料，請點擊上方的聯絡人或群組名稱。</string>
     <string name="allow_disappearing_messages_only_if">只有在你的聯絡人允許的情況下才允許自動銷毀訊息。</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">允許你的聯絡人傳送自動銷毀的訊息。</string>
-    <string name="allow_irreversible_message_deletion_only_if">只有在你的聯絡人允許的情況下，才允許將不可逆的訊息記錄刪除。</string>
+    <string name="allow_irreversible_message_deletion_only_if">只有在你的聯絡人允許的情況下，才允許將不可撤銷的訊息刪除。</string>
     <string name="allow_your_contacts_irreversibly_delete">允許你的聯絡人可以不可逆的刪除已發送的訊息。</string>
-    <string name="allow_to_delete_messages">允許將不可逆的訊息刪除。</string>
-    <string name="allow_to_send_voice">允許使用語言訊息。</string>
+    <string name="allow_to_delete_messages">允許將不可撤銷的訊息刪除。</string>
+    <string name="allow_to_send_voice">允許傳送語音訊息。</string>
     <string name="delete_after">多久後刪除</string>
+    <string name="all_group_members_will_remain_connected">群組內所有成員會保持連接</string>
+    <string name="color_primary">自訂顏色</string>
 </resources>
