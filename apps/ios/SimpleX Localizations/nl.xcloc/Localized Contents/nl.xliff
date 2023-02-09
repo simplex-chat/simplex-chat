@@ -612,7 +612,7 @@
       </trans-unit>
       <trans-unit id="Change member role?" xml:space="preserve" approved="no">
         <source>Change member role?</source>
-        <target state="translated">Rol van lid wijzigen?</target>
+        <target state="translated">Rol van gebruiker wijzigen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change receiving address" xml:space="preserve" approved="no">
@@ -1383,7 +1383,7 @@
       </trans-unit>
       <trans-unit id="Error adding member(s)" xml:space="preserve" approved="no">
         <source>Error adding member(s)</source>
-        <target state="translated">Fout bij het toevoegen van lid (leden)</target>
+        <target state="translated">Fout bij het toevoegen van gebruiker(s)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error changing address" xml:space="preserve" approved="no">
@@ -1488,7 +1488,7 @@
       </trans-unit>
       <trans-unit id="Error removing member" xml:space="preserve" approved="no">
         <source>Error removing member</source>
-        <target state="translated">Fout bij verwijderen van lid</target>
+        <target state="translated">Fout bij verwijderen van gebruiker</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error saving ICE servers" xml:space="preserve" approved="no">
@@ -2074,22 +2074,22 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
       </trans-unit>
       <trans-unit id="Member" xml:space="preserve" approved="no">
         <source>Member</source>
-        <target state="translated">Lid</target>
+        <target state="translated">Gebruiker</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member role will be changed to &quot;%@&quot;. All group members will be notified." xml:space="preserve" approved="no">
         <source>Member role will be changed to "%@". All group members will be notified.</source>
-        <target state="translated">De rol van lid wordt gewijzigd in "%@". Alle groepsleden worden op de hoogte gebracht.</target>
+        <target state="translated">De rol van gebruiker wordt gewijzigd in "%@". Alle groepsleden worden op de hoogte gebracht.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member role will be changed to &quot;%@&quot;. The member will receive a new invitation." xml:space="preserve" approved="no">
         <source>Member role will be changed to "%@". The member will receive a new invitation.</source>
-        <target state="translated">De rol van lid wordt gewijzigd in "%@". Het lid ontvangt een nieuwe uitnodiging.</target>
+        <target state="translated">De rol van gebruiker wordt gewijzigd in "%@". Het lid ontvangt een nieuwe uitnodiging.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member will be removed from group - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Member will be removed from group - this cannot be undone!</source>
-        <target state="translated">Lid wordt uit de groep verwijderd - dit kan niet ongedaan worden gemaakt!</target>
+        <target state="translated">Gebruiker wordt uit de groep verwijderd - dit kan niet ongedaan worden gemaakt!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message delivery error" xml:space="preserve" approved="no">
@@ -2569,12 +2569,12 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
       </trans-unit>
       <trans-unit id="Remove member" xml:space="preserve" approved="no">
         <source>Remove member</source>
-        <target state="translated">Lid verwijderen</target>
+        <target state="translated">Gebruiker verwijderen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Remove member?" xml:space="preserve" approved="no">
         <source>Remove member?</source>
-        <target state="translated">Lid verwijderen?</target>
+        <target state="translated">Gebruiker verwijderen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Remove passphrase from keychain?" xml:space="preserve" approved="no">
@@ -4139,7 +4139,7 @@ SimpleX-servers kunnen uw profiel niet zien.</target>
       </trans-unit>
       <trans-unit id="member" xml:space="preserve" approved="no">
         <source>member</source>
-        <target state="translated">lid</target>
+        <target state="translated">gebruiker</target>
         <note>member role</note>
       </trans-unit>
       <trans-unit id="member connected" xml:space="preserve" approved="no">
