@@ -242,7 +242,12 @@ fun CIMarkdownText(
 }
 
 const val CHAT_IMAGE_LAYOUT_ID = "chatImage"
-const val MAX_SAFE_WIDTH_HEIGHT = 100_000
+/**
+ * Equal to [androidx.compose.ui.unit.Constraints.MaxFocusMask], which is 0x3FFFF - 1
+ * Other values make a crash `java.lang.IllegalArgumentException: Can't represent a width of 123456 and height of 9909 in Constraints`
+ * See [androidx.compose.ui.unit.Constraints.createConstraints]
+ * */
+const val MAX_SAFE_WIDTH = 0x3FFFF - 1
 
 @Composable
 fun PriorityLayout(
@@ -250,6 +255,17 @@ fun PriorityLayout(
   priorityLayoutId: String,
   content: @Composable () -> Unit
 ) {
+  /**
+  * Limiting max value for height + width in order to not crash the app, see [androidx.compose.ui.unit.Constraints.createConstraints]
+  * */
+  fun maxSafeHeight(width: Int) = when { // width bits + height bits should be <= 31
+    width < 0x1FFF /*MaxNonFocusMask*/ -> 0x3FFFF - 1 /* MaxFocusMask */ // 13 bits width + 18 bits height
+    width < 0x7FFF /*MinNonFocusMask*/ -> 0xFFFF - 1 /* MinFocusMask */ // 15 bits width + 16 bits height
+    width < 0xFFFF /*MinFocusMask*/ -> 0x7FFF - 1 /* MinFocusMask */ // 16 bits width + 15 bits height
+    width < 0x3FFFF /*MaxFocusMask*/ -> 0x1FFF - 1 /* MaxNonFocusMask */ // 18 bits width + 13 bits height
+    else -> 0x1FFF // shouldn't happen since width is limited already
+  }
+
   Layout(
     content = content,
     modifier = modifier
@@ -261,15 +277,11 @@ fun PriorityLayout(
       if (it.layoutId == priorityLayoutId)
         imagePlaceable!!
       else
-        it.measure(constraints.copy(maxWidth = imagePlaceable?.width ?: min(MAX_SAFE_WIDTH_HEIGHT, constraints.maxWidth))) }
-    /**
-     * Limit width for every other element to width of important element and height for a sum of all elements.
-     *
-     * min(MAX_SAFE_WIDTH_HEIGHT, ...) is here because of exception (related to width of long text):
-     * java.lang.IllegalArgumentException: Can't represent a size of 324314 in Constraints
-     * at androidx.compose.ui.unit.Constraints$Companion.bitsNeedForSize(Constraints.kt:403)
-     * */
-    layout(imagePlaceable?.measuredWidth ?: min(MAX_SAFE_WIDTH_HEIGHT, placeables.maxOf { it.width }), min(MAX_SAFE_WIDTH_HEIGHT, placeables.sumOf { it.height })) {
+        it.measure(constraints.copy(maxWidth = imagePlaceable?.width ?: min(MAX_SAFE_WIDTH, constraints.maxWidth))) }
+    // Limit width for every other element to width of important element and height for a sum of all elements.
+    val width = imagePlaceable?.measuredWidth ?: min(MAX_SAFE_WIDTH, placeables.maxOf { it.width })
+    val height = minOf(maxSafeHeight(width), placeables.sumOf { it.height })
+    layout(width, height) {
       var y = 0
       placeables.forEach {
         it.place(0, y)
