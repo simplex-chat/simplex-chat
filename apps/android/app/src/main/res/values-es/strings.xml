@@ -77,4 +77,11 @@
     <string name="app_version_name">Versión de la aplicación: v%s</string>
     <string name="accept_requests">Aceptar solicitudes</string>
     <string name="accept_automatically">Automáticamente</string>
+    <string name="icon_descr_asked_to_receive">Solicita recibir la imagen</string>
+    <string name="impossible_to_recover_passphrase"><b>Ten en cuenta</b>: NO podrás recuperar o cambiar la contraseña si la pierdes.</string>
+    <string name="both_you_and_your_contact_can_send_voice">Tanto tú como tu contacto podéis enviar mensajes de voz.</string>
+    <string name="onboarding_notifications_mode_service_desc"><b>¡Usa más batería!</b> El servicio en segundo plano está siempre en funcionamiento - las notificaciones se mostrarán tan pronto como los mensajes estén disponibles.</string>
+    <string name="both_you_and_your_contacts_can_delete">Tanto tú como tu contacto podéis borrar de forma irreversible los mensajes enviados.</string>
+    <string name="both_you_and_your_contact_can_send_disappearing">Tanto tú como tu contacto podéis enviar mensajes de desaparición.</string>
+    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>Escanear código QR</b>: para conectar con tu contacto que te muestre código QR.</string>
 </resources>
