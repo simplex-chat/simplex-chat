@@ -940,6 +940,10 @@
         <target>Тёмная</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Data" xml:space="preserve">
+        <source>Data</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Database ID" xml:space="preserve">
         <source>Database ID</source>
         <target>ID базы данных</target>
@@ -1086,6 +1090,10 @@
       <trans-unit id="Delete database" xml:space="preserve">
         <source>Delete database</source>
         <target>Удалить данные чата</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Delete files &amp; media" xml:space="preserve">
+        <source>Delete files &amp; media</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete files and media?" xml:space="preserve">
@@ -2380,6 +2388,10 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Открыть консоль</target>
         <note>authentication reason</note>
       </trans-unit>
+      <trans-unit id="Open user profiles" xml:space="preserve">
+        <source>Open user profiles</source>
+        <note>authentication reason</note>
+      </trans-unit>
       <trans-unit id="Open-source protocol and code – anybody can run the servers." xml:space="preserve">
         <source>Open-source protocol and code – anybody can run the servers.</source>
         <target>Открытый протокол и код - кто угодно может запустить сервер.</target>
@@ -3297,6 +3309,10 @@ You will be prompted to complete authentication before this feature is enabled.<
         <target>Чтобы подтвердить end-to-end шифрование с вашим контактом сравните (или сканируйте) код безопасности на ваших устройствах.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Transfer images faster" xml:space="preserve">
+        <source>Transfer images faster</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Transport isolation" xml:space="preserve">
         <source>Transport isolation</source>
         <target>Отдельные сессии для</target>
@@ -3747,6 +3763,10 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Your chat database is not encrypted - set passphrase to encrypt it." xml:space="preserve">
         <source>Your chat database is not encrypted - set passphrase to encrypt it.</source>
         <target>База данных НЕ зашифрована. Установите пароль, чтобы защитить ваши данные.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your chat profile" xml:space="preserve">
+        <source>Your chat profile</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chat profile will be sent to group members" xml:space="preserve">
@@ -4227,6 +4247,10 @@ SimpleX серверы не могут получить доступ к ваше
         <source>missed call</source>
         <target>пропущенный звонок</target>
         <note>call status</note>
+      </trans-unit>
+      <trans-unit id="moderated" xml:space="preserve">
+        <source>moderated</source>
+        <note>moderated chat item</note>
       </trans-unit>
       <trans-unit id="never" xml:space="preserve">
         <source>never</source>

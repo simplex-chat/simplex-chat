@@ -940,6 +940,10 @@
         <target>Scuro</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Data" xml:space="preserve">
+        <source>Data</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Database ID" xml:space="preserve">
         <source>Database ID</source>
         <target>ID database</target>
@@ -1086,6 +1090,10 @@
       <trans-unit id="Delete database" xml:space="preserve">
         <source>Delete database</source>
         <target>Elimina database</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Delete files &amp; media" xml:space="preserve">
+        <source>Delete files &amp; media</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete files and media?" xml:space="preserve">
@@ -2380,6 +2388,10 @@ Aggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</tar
         <target>Apri la console della chat</target>
         <note>authentication reason</note>
       </trans-unit>
+      <trans-unit id="Open user profiles" xml:space="preserve">
+        <source>Open user profiles</source>
+        <note>authentication reason</note>
+      </trans-unit>
       <trans-unit id="Open-source protocol and code – anybody can run the servers." xml:space="preserve">
         <source>Open-source protocol and code – anybody can run the servers.</source>
         <target>Protocollo e codice open source: chiunque può gestire i server.</target>
@@ -3297,6 +3309,10 @@ Ti verrà chiesto di completare l'autenticazione prima di attivare questa funzio
         <target>Per verificare la crittografia end-to-end con il tuo contatto, confrontate (o scansionate) il codice sui vostri dispositivi.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Transfer images faster" xml:space="preserve">
+        <source>Transfer images faster</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Transport isolation" xml:space="preserve">
         <source>Transport isolation</source>
         <target>Isolamento del trasporto</target>
@@ -3747,6 +3763,10 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
       <trans-unit id="Your chat database is not encrypted - set passphrase to encrypt it." xml:space="preserve">
         <source>Your chat database is not encrypted - set passphrase to encrypt it.</source>
         <target>Il tuo database della chat non è crittografato: imposta la password per crittografarlo.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your chat profile" xml:space="preserve">
+        <source>Your chat profile</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chat profile will be sent to group members" xml:space="preserve">
@@ -4227,6 +4247,10 @@ I server di SimpleX non possono vedere il tuo profilo.</target>
         <source>missed call</source>
         <target>chiamata persa</target>
         <note>call status</note>
+      </trans-unit>
+      <trans-unit id="moderated" xml:space="preserve">
+        <source>moderated</source>
+        <note>moderated chat item</note>
       </trans-unit>
       <trans-unit id="never" xml:space="preserve">
         <source>never</source>
