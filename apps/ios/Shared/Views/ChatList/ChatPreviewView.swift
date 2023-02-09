@@ -151,8 +151,8 @@ struct ChatPreviewView: View {
     }
 
     func chatItemPreview(_ cItem: ChatItem) -> Text {
-        let itemText = !cItem.meta.itemDeleted ? cItem.text : NSLocalizedString("marked deleted", comment: "marked deleted chat item preview text")
-        let itemFormattedText = !cItem.meta.itemDeleted ? cItem.formattedText : nil
+        let itemText = cItem.meta.itemDeleted == nil ? cItem.text : NSLocalizedString("marked deleted", comment: "marked deleted chat item preview text")
+        let itemFormattedText = cItem.meta.itemDeleted == nil ? cItem.formattedText : nil
         return messageText(itemText, itemFormattedText, cItem.memberDisplayName, icon: attachment(), preview: true)
 
         func attachment() -> String? {
@@ -259,7 +259,7 @@ struct ChatPreviewView_Previews: PreviewProvider {
             ))
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
-                chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent, true, false)]
+                chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent, itemDeleted: .deleted)]
             ))
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,

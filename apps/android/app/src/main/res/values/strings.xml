@@ -28,6 +28,7 @@
   <string name="unknown_message_format">unknown message format</string>
   <string name="invalid_message_format">invalid message format</string>
   <string name="live">LIVE</string>
+  <string name="moderated_description">moderated</string>
   <string name="invalid_chat">invalid chat</string>
   <string name="invalid_data">invalid data</string>
 

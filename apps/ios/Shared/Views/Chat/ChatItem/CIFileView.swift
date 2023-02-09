@@ -138,14 +138,14 @@ struct CIFileView_Previews: PreviewProvider {
     static var previews: some View {
         let sentFile: ChatItem = ChatItem(
             chatDir: .directSnd,
-            meta: CIMeta.getSample(1, .now, "", .sndSent, false, true, false),
+            meta: CIMeta.getSample(1, .now, "", .sndSent, itemEdited: true),
             content: .sndMsgContent(msgContent: .file("")),
             quotedItem: nil,
             file: CIFile.getSample(fileStatus: .sndComplete)
         )
         let fileChatItemWtFile = ChatItem(
             chatDir: .directRcv,
-            meta: CIMeta.getSample(1, .now, "", .rcvRead, false, false, false),
+            meta: CIMeta.getSample(1, .now, "", .rcvRead),
             content: .rcvMsgContent(msgContent: .file("")),
             quotedItem: nil,
             file: nil
