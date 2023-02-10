@@ -957,4 +957,5 @@
     <string name="paste_connection_link_below_to_connect">Do níže uvedeného pole vložte odkaz, který jste obdrželi pro spojení s kontaktem.</string>
     <string name="share_invitation_link">Sdílet zvací odkaz</string>
     <string name="status_e2e_encrypted">end-to-end šifrované</string>
+    <string name="moderated_description">moderované</string>
 </resources>
