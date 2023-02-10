@@ -4130,7 +4130,7 @@ SimpleX-servers kunnen uw profiel niet zien.</target>
       </trans-unit>
       <trans-unit id="left" xml:space="preserve" approved="no">
         <source>left</source>
-        <target state="translated">Verlaten</target>
+        <target state="translated">groep verlaten</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="marked deleted" xml:space="preserve" approved="no">
@@ -4145,7 +4145,7 @@ SimpleX-servers kunnen uw profiel niet zien.</target>
       </trans-unit>
       <trans-unit id="member connected" xml:space="preserve" approved="no">
         <source>connected</source>
-        <target state="translated">verbonden</target>
+        <target state="translated">is toegetreden</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="message received" xml:space="preserve" approved="no">
