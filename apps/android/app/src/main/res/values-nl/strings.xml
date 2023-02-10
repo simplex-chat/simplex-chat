@@ -223,7 +223,7 @@
     <string name="confirm_new_passphrase">Bevestig nieuw wachtwoord…</string>
     <string name="current_passphrase">Huidige wachtwoord…</string>
     <string name="database_encrypted">Database versleuteld!</string>
-    <string name="rcv_group_event_member_connected">verbonden</string>
+    <string name="rcv_group_event_member_connected">is toegetreden</string>
     <string name="archive_created_on_ts">Gemaakt op <xliff:g id="archive_ts">%1$s</xliff:g></string>
     <string name="group_member_status_complete">compleet</string>
     <string name="clear_contacts_selection_button">Wissen</string>
@@ -449,7 +449,7 @@
     <string name="chat_item_ttl_none">nooit</string>
     <string name="no_received_app_files">Geen ontvangen of verzonden bestanden</string>
     <string name="alert_title_group_invitation_expired">Uitnodiging verlopen!</string>
-    <string name="rcv_group_event_member_left">Verlaten</string>
+    <string name="rcv_group_event_member_left">groep verlaten</string>
     <string name="group_member_status_left">Verlaten</string>
     <string name="group_member_status_invited">uitgenodigd</string>
     <string name="button_leave_group">Groep verlaten</string>
