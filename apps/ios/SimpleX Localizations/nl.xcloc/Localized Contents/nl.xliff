@@ -3617,7 +3617,7 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbindingslink
       </trans-unit>
       <trans-unit id="You will be connected when your contact's device is online, please wait or check later!" xml:space="preserve" approved="no">
         <source>You will be connected when your contact's device is online, please wait or check later!</source>
-        <target state="translated">Je wordt verbonden wanneer het apparaat van je contact online is, even geduld a.u.b. of controleer het later!</target>
+        <target state="translated">Je wordt verbonden wanneer het apparaat van je contact online is, even geduld of controleer het later!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will be required to authenticate when you start or resume the app after 30 seconds in background." xml:space="preserve" approved="no">
@@ -3696,7 +3696,8 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbindingslink
       </trans-unit>
       <trans-unit id="Your chat profiles are stored locally, only on your device." xml:space="preserve" approved="no">
         <source>Your chat profiles are stored locally, only on your device.</source>
-        <target state="translated">Uw chatprofielen worden lokaal opgeslagen, alleen op uw apparaat</target>
+        <target state="translated">Uw chatprofielen worden lokaal 
+opgeslagen, alleen op uw apparaat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chats" xml:space="preserve" approved="no">
@@ -4104,7 +4105,7 @@ SimpleX-servers kunnen uw profiel niet zien.</target>
       </trans-unit>
       <trans-unit id="invited %@" xml:space="preserve" approved="no">
         <source>invited %@</source>
-        <target state="translated">uitgenodigd %@</target>
+        <target state="translated">heeft %@ uitgenodigd</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="invited to connect" xml:space="preserve" approved="no">
