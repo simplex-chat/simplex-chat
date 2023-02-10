@@ -5,8 +5,6 @@ cp -R images website/src
 rm website/src/blog/README.md
 cd website
 
-sudo apt update && sudo apt install -y jq
-
 # keys of the english language are used as the base keys
 base_keys=($(jq -r 'keys[]' 'langs/en.json'))
 langs=()
