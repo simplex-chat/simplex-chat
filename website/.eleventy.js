@@ -83,6 +83,7 @@ module.exports = function (ty) {
   ty.addPassthroughCopy("src/hero-phone")
   ty.addPassthroughCopy("src/hero-phone-dark")
   ty.addPassthroughCopy("src/blog/images")
+  supportedLangs.forEach(lang => ty.addPassthroughCopy(`src/${lang}/blog/images`))
   ty.addPassthroughCopy("src/images")
   ty.addPassthroughCopy("src/CNAME")
   ty.addPassthroughCopy("src/.well-known")
