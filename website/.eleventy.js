@@ -49,12 +49,16 @@ module.exports = function (ty) {
   ty.addShortcode("completeRoute", (obj) => {
     const urlParts = obj.url.split("/")
     if (supportedRoutes.includes(urlParts[1])) {
-      if (obj.lang === "en")
+      if (urlParts[1] == "blog")
+        return `/blog`
+      else if (obj.lang === "en")
         return `${obj.url}`
       return `/${obj.lang}${obj.url}`
     }
     else if (supportedLangs.includes(urlParts[1])) {
-      if (obj.lang === "en")
+      if (urlParts[2] == "blog")
+        return `/blog`
+      else if (obj.lang === "en")
         return `/${urlParts.slice(2).join('/')}`
       return `/${obj.lang}/${urlParts.slice(2).join('/')}`
     }
