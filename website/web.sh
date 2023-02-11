@@ -42,9 +42,6 @@ for lang in "${langs[@]}"; do
   cp src/index.html src/$lang
   cp src/contact.html src/$lang
   cp src/invitation.html src/$lang
-  cp src/blog.html src/$lang
-  mkdir src/$lang/blog
-  cp -R src/blog/images src/$lang/blog
   echo "done $lang copying"
 done
 echo $langs_json > "src/_data/supported_languages.json"
