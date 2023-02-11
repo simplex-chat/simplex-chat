@@ -44,11 +44,7 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
   private val msgNtfTimeoutMs = 30000L
 
   init {
-    manager.createNotificationChannel(NotificationChannel(MessageChannel, generalGetString(R.string.ntf_channel_messages), NotificationManager.IMPORTANCE_HIGH))
-    manager.createNotificationChannel(callNotificationChannel(CallChannel, generalGetString(R.string.ntf_channel_calls)))
-    // Remove old channels since they can't be edited
-    manager.deleteNotificationChannel("chat.simplex.app.CALL_NOTIFICATION")
-    manager.deleteNotificationChannel("chat.simplex.app.LOCK_SCREEN_CALL_NOTIFICATION")
+    if (manager.areNotificationsEnabled()) createNtfChannelsMaybeShowAlert()
   }
 
   enum class NotificationAction {
@@ -156,7 +152,7 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
       .setGroup(MessageGroup)
       .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
       .setGroupSummary(true)
-      .setContentIntent(chatPendingIntent(ShowChatsAction, user.userId))
+      .setContentIntent(chatPendingIntent(ShowChatsAction, null))
       .build()
 
     with(NotificationManagerCompat.from(context)) {
@@ -250,7 +246,7 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
     }
   }
 
-  private fun chatPendingIntent(intentAction: String, userId: Long, chatId: String? = null, broadcast: Boolean = false): PendingIntent {
+  private fun chatPendingIntent(intentAction: String, userId: Long?, chatId: String? = null, broadcast: Boolean = false): PendingIntent {
     Log.d(TAG, "chatPendingIntent for $intentAction")
     val uniqueInt = (System.currentTimeMillis() and 0xfffffff).toInt()
     var intent = Intent(context, if (!broadcast) MainActivity::class.java else NtfActionReceiver::class.java)
@@ -266,6 +262,21 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
     } else {
       PendingIntent.getBroadcast(SimplexApp.context, uniqueInt, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
     }
+  }
+
+  /**
+   * This function creates notifications channels. On Android 13+ calling it for the first time will trigger system alert,
+   * The alert asks a user to allow or disallow to show notifications for the app. That's why it should be called only when the user
+   * already saw such alert or when you want to trigger showing the alert.
+   * On the first app launch the channels will be created after user profile is created. Subsequent calls will create new channels and delete
+   * old ones if needed
+   * */
+  fun createNtfChannelsMaybeShowAlert() {
+    manager.createNotificationChannel(NotificationChannel(MessageChannel, generalGetString(R.string.ntf_channel_messages), NotificationManager.IMPORTANCE_HIGH))
+    manager.createNotificationChannel(callNotificationChannel(CallChannel, generalGetString(R.string.ntf_channel_calls)))
+    // Remove old channels since they can't be edited
+    manager.deleteNotificationChannel("chat.simplex.app.CALL_NOTIFICATION")
+    manager.deleteNotificationChannel("chat.simplex.app.LOCK_SCREEN_CALL_NOTIFICATION")
   }
 
   /**

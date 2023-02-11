@@ -1257,6 +1257,8 @@ data class ChatItem (
       is CIContent.SndGroupFeature -> showNtfDir
       is CIContent.RcvChatFeatureRejected -> showNtfDir
       is CIContent.RcvGroupFeatureRejected -> showNtfDir
+      is CIContent.SndModerated -> true
+      is CIContent.RcvModerated -> true
       is CIContent.InvalidJSON -> false
     }
 
@@ -1271,14 +1273,14 @@ data class ChatItem (
       status: CIStatus = CIStatus.SndNew(),
       quotedItem: CIQuote? = null,
       file: CIFile? = null,
-      itemDeleted: Boolean = false,
+      itemDeleted: CIDeleted? = null,
       itemEdited: Boolean = false,
       itemTimed: CITimed? = null,
       editable: Boolean = true
     ) =
       ChatItem(
         chatDir = dir,
-        meta = CIMeta.getSample(id, ts, text, status, itemDeleted, itemEdited, null, editable),
+        meta = CIMeta.getSample(id, ts, text, status, itemDeleted, itemEdited, itemTimed, editable),
         content = CIContent.SndMsgContent(msgContent = MsgContent.MCText(text)),
         quotedItem = quotedItem,
         file = file
@@ -1293,7 +1295,7 @@ data class ChatItem (
     ) =
       ChatItem(
         chatDir = CIDirection.DirectRcv(),
-        meta = CIMeta.getSample(id, Clock.System.now(), text, CIStatus.RcvRead(), itemDeleted = false, itemEdited = false, editable = false),
+        meta = CIMeta.getSample(id, Clock.System.now(), text, CIStatus.RcvRead()),
         content = CIContent.RcvMsgContent(msgContent = MsgContent.MCFile(text)),
         quotedItem = null,
         file = CIFile.getSample(fileName = fileName, fileSize = fileSize, fileStatus = fileStatus)
@@ -1308,7 +1310,7 @@ data class ChatItem (
     ) =
       ChatItem(
         chatDir = dir,
-        meta = CIMeta.getSample(id, ts, text, status, itemDeleted = false, itemEdited = false, editable = false),
+        meta = CIMeta.getSample(id, ts, text, status),
         content = CIContent.RcvDeleted(deleteMode = CIDeleteMode.cidmBroadcast),
         quotedItem = null,
         file = null
@@ -1317,7 +1319,7 @@ data class ChatItem (
     fun getGroupInvitationSample(status: CIGroupInvitationStatus = CIGroupInvitationStatus.Pending) =
       ChatItem(
         chatDir = CIDirection.DirectRcv(),
-        meta = CIMeta.getSample(1, Clock.System.now(), "received invitation to join group team as admin", CIStatus.RcvRead(), itemDeleted = false, itemEdited = false, editable = false),
+        meta = CIMeta.getSample(1, Clock.System.now(), "received invitation to join group team as admin", CIStatus.RcvRead()),
         content = CIContent.RcvGroupInvitation(groupInvitation = CIGroupInvitation.getSample(status = status), memberRole = GroupMemberRole.Admin),
         quotedItem = null,
         file = null
@@ -1326,7 +1328,7 @@ data class ChatItem (
     fun getGroupEventSample() =
       ChatItem(
         chatDir = CIDirection.DirectRcv(),
-        meta = CIMeta.getSample(1, Clock.System.now(), "group event text", CIStatus.RcvRead(), itemDeleted = false, itemEdited = false, editable = false),
+        meta = CIMeta.getSample(1, Clock.System.now(), "group event text", CIStatus.RcvRead()),
         content = CIContent.RcvGroupEventContent(rcvGroupEvent = RcvGroupEvent.MemberAdded(groupMemberId = 1, profile = Profile.sampleData)),
         quotedItem = null,
         file = null
@@ -1336,7 +1338,7 @@ data class ChatItem (
       val content = CIContent.RcvChatFeature(feature = feature, enabled = enabled, param = null)
       return ChatItem(
         chatDir = CIDirection.DirectRcv(),
-        meta = CIMeta.getSample(1, Clock.System.now(), content.text, CIStatus.RcvRead(), itemDeleted = false, itemEdited = false, editable = false),
+        meta = CIMeta.getSample(1, Clock.System.now(), content.text, CIStatus.RcvRead()),
         content = content,
         quotedItem = null,
         file = null
@@ -1356,7 +1358,7 @@ data class ChatItem (
           itemStatus = CIStatus.RcvRead(),
           createdAt = Clock.System.now(),
           updatedAt = Clock.System.now(),
-          itemDeleted = false,
+          itemDeleted = null,
           itemEdited = false,
           itemTimed = null,
           itemLive = false,
@@ -1376,7 +1378,7 @@ data class ChatItem (
           itemStatus = CIStatus.RcvRead(),
           createdAt = Clock.System.now(),
           updatedAt = Clock.System.now(),
-          itemDeleted = false,
+          itemDeleted = null,
           itemEdited = false,
           itemTimed = null,
           itemLive = true,
@@ -1421,7 +1423,7 @@ data class CIMeta (
   val itemStatus: CIStatus,
   val createdAt: Instant,
   val updatedAt: Instant,
-  val itemDeleted: Boolean,
+  val itemDeleted: CIDeleted?,
   val itemEdited: Boolean,
   val itemTimed: CITimed?,
   val itemLive: Boolean?,
@@ -1446,7 +1448,7 @@ data class CIMeta (
   companion object {
     fun getSample(
       id: Long, ts: Instant, text: String, status: CIStatus = CIStatus.SndNew(),
-      itemDeleted: Boolean = false, itemEdited: Boolean = false, itemTimed: CITimed? = null, itemLive: Boolean = false, editable: Boolean = true
+      itemDeleted: CIDeleted? = null, itemEdited: Boolean = false, itemTimed: CITimed? = null, itemLive: Boolean = false, editable: Boolean = true
     ): CIMeta =
       CIMeta(
         itemId = id,
@@ -1471,7 +1473,7 @@ data class CIMeta (
         itemStatus = CIStatus.SndNew(),
         createdAt = Clock.System.now(),
         updatedAt = Clock.System.now(),
-        itemDeleted = false,
+        itemDeleted = null,
         itemEdited = false,
         itemTimed = null,
         itemLive = false,
@@ -1504,6 +1506,12 @@ sealed class CIStatus {
   @Serializable @SerialName("sndError") class SndError(val agentError: String): CIStatus()
   @Serializable @SerialName("rcvNew") class RcvNew: CIStatus()
   @Serializable @SerialName("rcvRead") class RcvRead: CIStatus()
+}
+
+@Serializable
+sealed class CIDeleted {
+  @Serializable @SerialName("deleted") class Deleted: CIDeleted()
+  @Serializable @SerialName("moderated") class Moderated(val byGroupMember: GroupMember): CIDeleted()
 }
 
 @Serializable
@@ -1541,6 +1549,8 @@ sealed class CIContent: ItemContent {
   @Serializable @SerialName("sndGroupFeature") class SndGroupFeature(val groupFeature: GroupFeature, val preference: GroupPreference, val param: Int? = null): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvChatFeatureRejected") class RcvChatFeatureRejected(val feature: ChatFeature): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvGroupFeatureRejected") class RcvGroupFeatureRejected(val groupFeature: GroupFeature): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("sndModerated") object SndModerated: CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvModerated") object RcvModerated: CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("invalidJSON") data class InvalidJSON(val json: String): CIContent() { override val msgContent: MsgContent? get() = null }
 
   override val text: String get() = when (this) {
@@ -1565,6 +1575,8 @@ sealed class CIContent: ItemContent {
       is SndGroupFeature -> featureText(groupFeature, preference.enable.text, param)
       is RcvChatFeatureRejected -> "${feature.text}: ${generalGetString(R.string.feature_received_prohibited)}"
       is RcvGroupFeatureRejected -> "${groupFeature.text}: ${generalGetString(R.string.feature_received_prohibited)}"
+      is SndModerated -> generalGetString(R.string.moderated_description)
+      is RcvModerated -> generalGetString(R.string.moderated_description)
       is InvalidJSON -> "invalid data"
     }
 

@@ -16,6 +16,7 @@ struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.dismiss) var dismiss
+    @Environment(\.presentationMode) var presentationMode
     @State @ObservedObject var chat: Chat
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
@@ -77,7 +78,7 @@ struct ChatView: View {
             if chatModel.chatId == nil { dismiss() }
         }
         .onDisappear {
-            if chatModel.chatId == cInfo.id {
+            if chatModel.chatId == cInfo.id && !presentationMode.wrappedValue.isPresented {
                 chatModel.chatId = nil
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                     if chatModel.chatId == nil {
@@ -465,8 +466,8 @@ struct ChatView: View {
         
         private func menu(live: Bool) -> [UIAction] {
             var menu: [UIAction] = []
-            if let mc = ci.content.msgContent, !ci.meta.itemDeleted || revealed {
-                if !ci.meta.itemDeleted && !ci.isLiveDummy && !live {
+            if let mc = ci.content.msgContent, ci.meta.itemDeleted == nil || revealed {
+                if ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live {
                     menu.append(replyUIAction())
                 }
                 menu.append(shareUIAction())
@@ -491,7 +492,7 @@ struct ChatView: View {
                 if !live || !ci.meta.isLive {
                     menu.append(deleteUIAction())
                 }
-            } else if ci.meta.itemDeleted {
+            } else if ci.meta.itemDeleted != nil {
                 menu.append(revealUIAction())
                 menu.append(deleteUIAction())
             } else if ci.isDeletedContent {

@@ -1388,6 +1388,11 @@ testUsersTimedMessages tmp = do
 
       threadDelay 1000000
 
+      alice <## "[user: alice] timed message deleted: alice 1"
+      alice <## "[user: alice] timed message deleted: alice 2"
+      bob <## "timed message deleted: alice 1"
+      bob <## "timed message deleted: alice 2"
+
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
       alice #$> ("/_get chat @2 count=100", chat, [])
@@ -1397,6 +1402,11 @@ testUsersTimedMessages tmp = do
       alice #$> ("/_get chat @4 count=100", chat, [(1, "alisa 1"), (0, "alisa 2")])
 
       threadDelay 1000000
+
+      alice <## "timed message deleted: alisa 1"
+      alice <## "timed message deleted: alisa 2"
+      bob <## "timed message deleted: alisa 1"
+      bob <## "timed message deleted: alisa 2"
 
       alice ##> "/user"
       showActiveUser alice "alisa"
@@ -1435,6 +1445,11 @@ testUsersTimedMessages tmp = do
       -- messages are deleted after restart
       threadDelay 1000000
 
+      alice <## "[user: alice] timed message deleted: alice 3"
+      alice <## "[user: alice] timed message deleted: alice 4"
+      bob <## "timed message deleted: alice 3"
+      bob <## "timed message deleted: alice 4"
+
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
       alice #$> ("/_get chat @2 count=100", chat, [])
@@ -1444,6 +1459,11 @@ testUsersTimedMessages tmp = do
       alice #$> ("/_get chat @4 count=100", chat, [(1, "alisa 3"), (0, "alisa 4")])
 
       threadDelay 1000000
+
+      alice <## "timed message deleted: alisa 3"
+      alice <## "timed message deleted: alisa 4"
+      bob <## "timed message deleted: alisa 3"
+      bob <## "timed message deleted: alisa 4"
 
       alice ##> "/user"
       showActiveUser alice "alisa"

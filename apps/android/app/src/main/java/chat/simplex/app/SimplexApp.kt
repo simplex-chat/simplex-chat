@@ -101,8 +101,19 @@ class SimplexApp: Application(), LifecycleEventObserver {
           isAppOnForeground = true
           if (chatModel.chatRunning.value == true) {
             kotlin.runCatching {
-              val chats = chatController.apiGetChats()
-              chatModel.updateChats(chats)
+              val currentUserId = chatModel.currentUser.value?.userId
+              val chats = ArrayList(chatController.apiGetChats())
+              /** Active user can be changed in background while [ChatController.apiGetChats] is executing */
+              if (chatModel.currentUser.value?.userId == currentUserId) {
+                val currentChatId = chatModel.chatId.value
+                val oldStats = if (currentChatId != null) chatModel.getChat(currentChatId)?.chatStats else null
+                if (oldStats != null) {
+                  val indexOfCurrentChat = chats.indexOfFirst { it.id == currentChatId }
+                  /** Pass old chatStats because unreadCounter can be changed already while [ChatController.apiGetChats] is executing */
+                  if (indexOfCurrentChat >= 0) chats[indexOfCurrentChat] = chats[indexOfCurrentChat].copy(chatStats = oldStats)
+                }
+                chatModel.updateChats(chats)
+              }
             }.onFailure { Log.e(TAG, it.stackTraceToString()) }
           }
         }

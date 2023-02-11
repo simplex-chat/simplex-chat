@@ -19,6 +19,7 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
+import Data.Maybe (isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
@@ -89,6 +90,11 @@ chatInfoToRef = \case
   ContactRequest UserContactRequest {contactRequestId} -> ChatRef CTContactRequest contactRequestId
   ContactConnection PendingContactConnection {pccConnId} -> ChatRef CTContactConnection pccConnId
 
+chatInfoMembership :: ChatInfo c -> Maybe GroupMember
+chatInfoMembership = \case
+  GroupChat GroupInfo {membership} -> Just membership
+  _ -> Nothing
+
 data JSONChatInfo
   = JCInfoDirect {contact :: Contact}
   | JCInfoGroup {groupInfo :: GroupInfo}
@@ -121,7 +127,7 @@ instance ToJSON AChatInfo where
 
 data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
   { chatDir :: CIDirection c d,
-    meta :: CIMeta d,
+    meta :: CIMeta c d,
     content :: CIContent d,
     formattedText :: Maybe MarkdownList,
     quotedItem :: Maybe (CIQuote c),
@@ -182,6 +188,26 @@ chatItemTs' ChatItem {meta = CIMeta {itemTs}} = itemTs
 
 chatItemTimed :: ChatItem c d -> Maybe CITimed
 chatItemTimed ChatItem {meta = CIMeta {itemTimed}} = itemTimed
+
+data CIDeletedState = CIDeletedState
+  { markedDeleted :: Bool,
+    deletedByMember :: Maybe GroupMember
+  }
+  deriving (Show, Eq)
+
+chatItemDeletedState :: ChatItem c d -> Maybe CIDeletedState
+chatItemDeletedState ChatItem {meta = CIMeta {itemDeleted}, content} =
+  ciDeletedToDeletedState <$> itemDeleted
+  where
+    ciDeletedToDeletedState cid =
+      case content of
+        CISndModerated -> CIDeletedState {markedDeleted = False, deletedByMember = byMember cid}
+        CIRcvModerated -> CIDeletedState {markedDeleted = False, deletedByMember = byMember cid}
+        _ -> CIDeletedState {markedDeleted = True, deletedByMember = byMember cid}
+    byMember :: CIDeleted c -> Maybe GroupMember
+    byMember = \case
+      CIModerated m -> Just m
+      CIDeleted -> Nothing
 
 data ChatDirection (c :: ChatType) (d :: MsgDirection) where
   CDDirectSnd :: Contact -> ChatDirection 'CTDirect 'MDSnd
@@ -277,13 +303,13 @@ instance MsgDirectionI d => ToJSON (JSONAnyChatItem c d) where
   toEncoding = J.genericToEncoding J.defaultOptions
 
 -- This type is not saved to DB, so all JSON encodings are platform-specific
-data CIMeta (d :: MsgDirection) = CIMeta
+data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
   { itemId :: ChatItemId,
     itemTs :: ChatItemTs,
     itemText :: Text,
     itemStatus :: CIStatus d,
     itemSharedMsgId :: Maybe SharedMsgId,
-    itemDeleted :: Bool,
+    itemDeleted :: Maybe (CIDeleted c),
     itemEdited :: Bool,
     itemTimed :: Maybe CITimed,
     itemLive :: Maybe Bool,
@@ -294,15 +320,15 @@ data CIMeta (d :: MsgDirection) = CIMeta
   }
   deriving (Show, Generic)
 
-mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Bool -> Bool -> Maybe CITimed -> Maybe Bool -> TimeZone -> UTCTime -> ChatItemTs -> UTCTime -> UTCTime -> CIMeta d
+mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> TimeZone -> UTCTime -> ChatItemTs -> UTCTime -> UTCTime -> CIMeta c d
 mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemEdited itemTimed itemLive tz currentTs itemTs createdAt updatedAt =
   let localItemTs = utcToZonedTime tz itemTs
       editable = case itemContent of
-        CISndMsgContent _ -> diffUTCTime currentTs itemTs < nominalDay && not itemDeleted
+        CISndMsgContent _ -> diffUTCTime currentTs itemTs < nominalDay && isNothing itemDeleted
         _ -> False
    in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, itemTimed, itemLive, editable, localItemTs, createdAt, updatedAt}
 
-instance ToJSON (CIMeta d) where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON (CIMeta c d) where toEncoding = J.genericToEncoding J.defaultOptions
 
 data CITimed = CITimed
   { ttl :: Int, -- seconds
@@ -629,6 +655,8 @@ data CIContent (d :: MsgDirection) where
   CISndGroupFeature :: GroupFeature -> GroupPreference -> Maybe Int -> CIContent 'MDSnd
   CIRcvChatFeatureRejected :: ChatFeature -> CIContent 'MDRcv
   CIRcvGroupFeatureRejected :: GroupFeature -> CIContent 'MDRcv
+  CISndModerated :: CIContent 'MDSnd
+  CIRcvModerated :: CIContent 'MDRcv
 -- ^ This type is used both in API and in DB, so we use different JSON encodings for the database and for the API
 -- ! ^ Nested sum types also have to use different encodings for database and API
 -- ! ^ to avoid breaking cross-platform compatibility, see RcvGroupEvent and SndGroupEvent
@@ -661,6 +689,7 @@ ciRequiresAttention content = case msgDirection @d of
     CIRcvGroupFeature {} -> False
     CIRcvChatFeatureRejected _ -> True
     CIRcvGroupFeatureRejected _ -> True
+    CIRcvModerated -> True
 
 ciCreateStatus :: forall d. MsgDirectionI d => CIContent d -> CIStatus d
 ciCreateStatus content = case msgDirection @d of
@@ -820,6 +849,8 @@ ciContentToText = \case
   CISndGroupFeature feature pref param -> groupPrefStateText feature pref param
   CIRcvChatFeatureRejected feature -> chatFeatureNameText feature <> ": received, prohibited"
   CIRcvGroupFeatureRejected feature -> groupFeatureNameText feature <> ": received, prohibited"
+  CISndModerated -> ciModeratedText
+  CIRcvModerated -> ciModeratedText
 
 msgIntegrityError :: MsgErrorType -> Text
 msgIntegrityError = \case
@@ -830,10 +861,13 @@ msgIntegrityError = \case
   MsgBadHash -> "incorrect message hash"
   MsgDuplicate -> "duplicate message ID"
 
-msgDirToDeletedContent_ :: SMsgDirection d -> CIDeleteMode -> CIContent d
-msgDirToDeletedContent_ msgDir mode = case msgDir of
-  SMDRcv -> CIRcvDeleted mode
-  SMDSnd -> CISndDeleted mode
+msgDirToModeratedContent_ :: SMsgDirection d -> CIContent d
+msgDirToModeratedContent_ = \case
+  SMDRcv -> CIRcvModerated
+  SMDSnd -> CISndModerated
+
+ciModeratedText :: Text
+ciModeratedText = "moderated"
 
 -- platform independent
 instance ToField (CIContent d) where
@@ -878,6 +912,8 @@ data JSONCIContent
   | JCISndGroupFeature {groupFeature :: GroupFeature, preference :: GroupPreference, param :: Maybe Int}
   | JCIRcvChatFeatureRejected {feature :: ChatFeature}
   | JCIRcvGroupFeatureRejected {groupFeature :: GroupFeature}
+  | JCISndModerated
+  | JCIRcvModerated
   deriving (Generic)
 
 instance FromJSON JSONCIContent where
@@ -910,6 +946,8 @@ jsonCIContent = \case
   CISndGroupFeature groupFeature preference param -> JCISndGroupFeature {groupFeature, preference, param}
   CIRcvChatFeatureRejected feature -> JCIRcvChatFeatureRejected {feature}
   CIRcvGroupFeatureRejected groupFeature -> JCIRcvGroupFeatureRejected {groupFeature}
+  CISndModerated -> JCISndModerated
+  CIRcvModerated -> JCISndModerated
 
 aciContentJSON :: JSONCIContent -> ACIContent
 aciContentJSON = \case
@@ -934,6 +972,8 @@ aciContentJSON = \case
   JCISndGroupFeature {groupFeature, preference, param} -> ACIContent SMDSnd $ CISndGroupFeature groupFeature preference param
   JCIRcvChatFeatureRejected {feature} -> ACIContent SMDRcv $ CIRcvChatFeatureRejected feature
   JCIRcvGroupFeatureRejected {groupFeature} -> ACIContent SMDRcv $ CIRcvGroupFeatureRejected groupFeature
+  JCISndModerated -> ACIContent SMDSnd CISndModerated
+  JCIRcvModerated -> ACIContent SMDRcv CIRcvModerated
 
 -- platform independent
 data DBJSONCIContent
@@ -958,6 +998,8 @@ data DBJSONCIContent
   | DBJCISndGroupFeature {groupFeature :: GroupFeature, preference :: GroupPreference, param :: Maybe Int}
   | DBJCIRcvChatFeatureRejected {feature :: ChatFeature}
   | DBJCIRcvGroupFeatureRejected {groupFeature :: GroupFeature}
+  | DBJCISndModerated
+  | DBJCIRcvModerated
   deriving (Generic)
 
 instance FromJSON DBJSONCIContent where
@@ -990,6 +1032,8 @@ dbJsonCIContent = \case
   CISndGroupFeature groupFeature preference param -> DBJCISndGroupFeature {groupFeature, preference, param}
   CIRcvChatFeatureRejected feature -> DBJCIRcvChatFeatureRejected {feature}
   CIRcvGroupFeatureRejected groupFeature -> DBJCIRcvGroupFeatureRejected {groupFeature}
+  CISndModerated -> DBJCISndModerated
+  CIRcvModerated -> DBJCIRcvModerated
 
 aciContentDBJSON :: DBJSONCIContent -> ACIContent
 aciContentDBJSON = \case
@@ -1014,6 +1058,8 @@ aciContentDBJSON = \case
   DBJCISndGroupFeature {groupFeature, preference, param} -> ACIContent SMDSnd $ CISndGroupFeature groupFeature preference param
   DBJCIRcvChatFeatureRejected {feature} -> ACIContent SMDRcv $ CIRcvChatFeatureRejected feature
   DBJCIRcvGroupFeatureRejected {groupFeature} -> ACIContent SMDRcv $ CIRcvGroupFeatureRejected groupFeature
+  DBJCISndModerated -> ACIContent SMDSnd CISndModerated
+  DBJCIRcvModerated -> ACIContent SMDRcv CIRcvModerated
 
 data CICallStatus
   = CISCallPending
@@ -1241,3 +1287,27 @@ checkDirection :: forall t d d'. (MsgDirectionI d, MsgDirectionI d') => t d' -> 
 checkDirection x = case testEquality (msgDirection @d) (msgDirection @d') of
   Just Refl -> Right x
   Nothing -> Left "bad direction"
+
+data CIDeleted (c :: ChatType) where
+  CIDeleted :: CIDeleted c
+  CIModerated :: GroupMember -> CIDeleted 'CTGroup
+
+deriving instance Show (CIDeleted c)
+
+instance ToJSON (CIDeleted d) where
+  toJSON = J.toJSON . jsonCIDeleted
+  toEncoding = J.toEncoding . jsonCIDeleted
+
+data JSONCIDeleted
+  = JCIDDeleted
+  | JCIDModerated {byGroupMember :: GroupMember}
+  deriving (Show, Generic)
+
+instance ToJSON JSONCIDeleted where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCID"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCID"
+
+jsonCIDeleted :: CIDeleted d -> JSONCIDeleted
+jsonCIDeleted = \case
+  CIDeleted -> JCIDDeleted
+  CIModerated m -> JCIDModerated m

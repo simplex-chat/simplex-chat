@@ -12,6 +12,7 @@ struct UserProfilesView: View {
     @State private var showDeleteConfirmation = false
     @State private var userToDelete: Int?
     @State private var alert: UserProfilesAlert?
+    @State var authorized = !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
 
     private enum UserProfilesAlert: Identifiable {
         case deleteUser(index: Int, delSMPQueues: Bool)
@@ -28,6 +29,17 @@ struct UserProfilesView: View {
     }
 
     var body: some View {
+        if authorized {
+            userProfilesView()
+        } else {
+            Button(action: runAuth) { Label("Unlock", systemImage: "lock") }
+            .onAppear(perform: runAuth)
+        }
+    }
+
+    private func runAuth() { authorize(NSLocalizedString("Open user profiles", comment: "authentication reason"), $authorized) }
+
+    private func userProfilesView() -> some View {
         List {
             Section {
                 ForEach(m.users) { u in
@@ -52,6 +64,7 @@ struct UserProfilesView: View {
             }
         }
         .toolbar { EditButton() }
+        .navigationTitle("Your chat profiles")
         .confirmationDialog("Delete chat profile?", isPresented: $showDeleteConfirmation, titleVisibility: .visible) {
             deleteModeButton("Profile and server connections", true)
             deleteModeButton("Local profile data only", false)

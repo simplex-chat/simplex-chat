@@ -121,7 +121,6 @@ struct SettingsView: View {
 
                     NavigationLink {
                         UserProfilesView()
-                            .navigationTitle("Your chat profiles")
                     } label: {
                         settingsRow("person.crop.rectangle.stack") { Text("Your chat profiles") }
                     }
