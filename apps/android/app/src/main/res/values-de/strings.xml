@@ -1040,4 +1040,5 @@
     <string name="v4_5_italian_interface_descr">Dank der Nutzer - Tragen Sie per Weblate bei!</string>
     <string name="v4_4_french_interface_descr">Dank der Nutzer - Tragen Sie per Weblate bei!</string>
     <string name="v4_5_private_filenames_descr">Bild- und Sprachdateinamen enthalten UTC, um Informationen zur Zeitzone zu schützen.</string>
+    <string name="moderated_description">Moderiert</string>
 </resources>
