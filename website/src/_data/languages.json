@@ -3,37 +3,44 @@
         {
             "label": "en",
             "name": "English",
-            "flag": "/img/flags/en.svg"
+            "flag": "/img/flags/en.svg",
+            "enabled": true
         },
         {
             "label": "de",
             "name": "Deutsch",
-            "flag": "/img/flags/de.svg"
+            "flag": "/img/flags/de.svg",
+            "enabled": true
         },
         {
             "label": "fr",
             "name": "Français",
-            "flag": "/img/flags/fr.svg"
+            "flag": "/img/flags/fr.svg",
+            "enabled": true
         },
         {
             "label": "it",
             "name": "Italian",
-            "flag": "/img/flags/it.svg"
+            "flag": "/img/flags/it.svg",
+            "enabled": false
         },
         {
             "label": "es",
             "name": "Spanish",
-            "flag": "/img/flags/es.svg"
+            "flag": "/img/flags/es.svg",
+            "enabled": false
         },
         {
             "label": "cn",
             "name": "Chinese",
-            "flag": "/img/flags/cn.svg"
+            "flag": "/img/flags/cn.svg",
+            "enabled": false
         },
         {
             "label": "ru",
             "name": "Russian",
-            "flag": "/img/flags/ru.svg"
+            "flag": "/img/flags/ru.svg",
+            "enabled": false
         }
     ]
 }
