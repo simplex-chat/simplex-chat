@@ -94,6 +94,7 @@
             </div>
         </nav>
 
+        {% if 'blog' not in page.url %}
         <div class="nav-link relative">
             <a href="javascript:void(0);" class="flex items-center justify-end ml-10">
                 <img class="h-6" src="/img/flags/{% getlang page.url %}.svg" alt="" srcset="">
@@ -112,6 +113,7 @@
                 {% endfor %}
             </ul>
         </div>
+        {% endif %}
 
         <button href="#" class="flex items-center justify-center h-[36px] w-[36px] ml-10 theme-switch-btn">
             <img src="/img/new/sun.svg"  alt="" srcset="" class="sun">
