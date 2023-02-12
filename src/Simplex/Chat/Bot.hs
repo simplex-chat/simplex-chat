@@ -18,7 +18,7 @@ import Simplex.Chat.Types (Contact (..), User (..))
 import Simplex.Messaging.Encoding.String (strEncode)
 import System.Exit (exitFailure)
 
-chatBotRepl :: String -> (String -> String) -> User -> ChatController -> IO ()
+chatBotRepl :: String -> (Contact -> String -> IO String) -> User -> ChatController -> IO ()
 chatBotRepl welcome answer _user cc = do
   initializeBotAddress cc
   race_ (forever $ void getLine) . forever $ do
@@ -27,9 +27,9 @@ chatBotRepl welcome answer _user cc = do
       CRContactConnected _ contact _ -> do
         contactConnected contact
         void $ sendMsg contact welcome
-      CRNewChatItem _ (AChatItem _ SMDRcv (DirectChat contact) ChatItem {content}) -> do
-        let msg = T.unpack $ ciContentToText content
-        void . sendMsg contact $ answer msg
+      CRNewChatItem _ (AChatItem _ SMDRcv (DirectChat contact) ChatItem {content = mc@CIRcvMsgContent {}}) -> do
+        let msg = T.unpack $ ciContentToText mc
+        void $ sendMsg contact =<< answer contact msg
       _ -> pure ()
   where
     sendMsg Contact {contactId} msg = sendChatCmd cc $ "/_send @" <> show contactId <> " text " <> msg
