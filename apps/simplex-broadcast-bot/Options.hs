@@ -35,7 +35,7 @@ defaultWelcomeMessage :: [Publisher] -> String
 defaultWelcomeMessage ps = "Hello! I am a broadcast bot.\nI broadcast messages to all connected users from " <> publisherNames ps <> "."
 
 defaultProhibitedMessage :: [Publisher] -> String
-defaultProhibitedMessage ps = "Sorry, only these users can broadcast messages: " <> publisherNames ps <> "."
+defaultProhibitedMessage ps = "Sorry, only these users can broadcast messages: " <> publisherNames ps <> ". Your message is deleted."
 
 publisherNames :: [Publisher] -> String
 publisherNames = T.unpack . T.intercalate ", " . map (("@" <>) . localDisplayName)

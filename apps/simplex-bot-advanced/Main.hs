@@ -44,14 +44,13 @@ mySquaringBot _user cc = do
     case resp of
       CRContactConnected _ contact _ -> do
         contactConnected contact
-        void $ sendMsg contact welcomeMessage
+        sendMessage cc contact welcomeMessage
       CRNewChatItem _ (AChatItem _ SMDRcv (DirectChat contact) ChatItem {content = mc@CIRcvMsgContent {}}) -> do
         let msg = T.unpack $ ciContentToText mc
             number_ = readMaybe msg :: Maybe Integer
-        void . sendMsg contact $ case number_ of
+        sendMessage cc contact $ case number_ of
           Just n -> msg <> " * " <> msg <> " = " <> show (n * n)
           _ -> "\"" <> msg <> "\" is not a number"
       _ -> pure ()
   where
-    sendMsg Contact {contactId} msg = sendChatCmd cc $ "/_send @" <> show contactId <> " text " <> msg
     contactConnected Contact {localDisplayName} = putStrLn $ T.unpack localDisplayName <> " connected"
