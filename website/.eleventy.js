@@ -26,8 +26,7 @@ fs.readdir(translationsDirectoryPath, (err, files) => {
   supportedLangs = jsonFileNames.map(file => file.replace('.json', ''))
 });
 
-
-const translations = JSON.parse(fs.readFileSync(path.resolve(__dirname, "translations.json"), "utf-8"))
+const translations = require("./translations.json")
 
 module.exports = function (ty) {
   ty.addShortcode("cfg", (name) => globalConfig[name])
