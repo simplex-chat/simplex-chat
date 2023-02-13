@@ -178,4 +178,6 @@
     <string name="image_descr">छवि</string>
     <string name="icon_descr_server_status_error">गलती</string>
     <string name="restore_database_alert_confirm">वापस लौटाना</string>
+    <string name="a_plus_b">ए + बी</string>
+    <string name="incognito_random_profile">आपका यादृच्छिक प्रोफ़ाइल</string>
 </resources>
