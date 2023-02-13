@@ -5,7 +5,7 @@ In most cases [a simple REPL bot](../simplex-bot/) is sufficient, but in cases y
 Event-based approach allows you:
 
 - decide whether to connect to a user or not depending on any factors, e.g. user display name.
-- disconnect from users who send to many messages or send messages that bot finds inappropriate.
+- disconnect from users who send too many messages or send messages that bot finds inappropriate.
 - react to message deletions and editing.
 - process reply messages differently, taking the original message into account.
 - process and send images and voice messages.
