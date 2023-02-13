@@ -81,8 +81,7 @@ publishersP :: A.Parser [Publisher]
 publishersP = publisherP `A.sepBy1` A.char ','
   where
     publisherP = do
-      contactId <- A.decimal
-      A.char ':'
+      contactId <- A.decimal <* A.char ':'
       localDisplayName <- safeDecodeUtf8 <$> A.takeTill (A.inClass ", ")
       pure Publisher {contactId, localDisplayName}
 
