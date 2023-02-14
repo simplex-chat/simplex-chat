@@ -198,4 +198,68 @@
     <string name="delete_after">多久後刪除</string>
     <string name="all_group_members_will_remain_connected">群組內所有成員會保持連接</string>
     <string name="color_primary">自訂顏色</string>
+    <string name="moderated_description">即時顯示訊息</string>
+    <string name="simplex_link_group">SimpleX 群組連結</string>
+    <string name="v4_5_private_filenames">私人檔案名稱</string>
+    <string name="error_adding_members">傳送訊息時出錯</string>
+    <string name="failed_to_create_user_title">建立帳號失敗！</string>
+    <string name="failed_to_create_user_duplicate_desc">你已經有一個帳號的顯示名稱和現在選擇建立的帳號名稱相同。請顯示其他名稱。</string>
+    <string name="failed_to_active_user_title">切換帳號失敗！</string>
+    <string name="error_joining_group">在群組新增成員時出錯</string>
+    <string name="sender_cancelled_file_transfer">傳送者已取消傳送檔案。</string>
+    <string name="error_receiving_file">接收檔案時出錯</string>
+    <string name="error_creating_address">建立地址時出錯</string>
+    <string name="v4_5_private_filenames_descr">為了保護時區，圖片或語音文件使用 UTC。</string>
+    <string name="sending_files_not_yet_supported">目前還不支援傳送檔案</string>
+    <string name="receiving_files_not_yet_supported">目前還不技援接收檔案</string>
+    <string name="sender_you_pronoun">你</string>
+    <string name="unknown_message_format">未知的訊息格式</string>
+    <string name="invalid_message_format">無效的訊息格式</string>
+    <string name="live">直播</string>
+    <string name="invalid_chat">無效聊天</string>
+    <string name="invalid_data">無效數據</string>
+    <string name="connection_local_display_name">連接 <xliff:g id="connection ID" example="1">%1$d</xliff:g></string>
+    <string name="display_name_connection_established">已建立連線</string>
+    <string name="display_name_invited_to_connect">邀請連線</string>
+    <string name="display_name_connecting">連接中…</string>
+    <string name="description_you_shared_one_time_link">你建立了一次性的連接連結</string>
+    <string name="description_you_shared_one_time_link_incognito">你建立了使用匿名者模式的一次性連接連結</string>
+    <string name="simplex_link_contact">SimpleX 聯絡人連結</string>
+    <string name="simplex_link_invitation">SimpleX 一次性連結</string>
+    <string name="simplex_link_mode">SimpleX 連結</string>
+    <string name="simplex_link_connection">通過 <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g></string>
+    <string name="simplex_link_mode_browser">通過瀏覽器</string>
+    <string name="error_sending_message">請使用 <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g> 檢查你的網路連線並且再試一次。</string>
+    <string name="contact_already_exists">聯絡人已存在</string>
+    <string name="you_are_already_connected_to_vName_via_this_link">你已經連接到 <xliff:g id="contactName" example="Alice">%1$s!</xliff:g>。</string>
+    <string name="v4_5_transport_isolation_descr">通過帳號文件（默認）或通過連接（測試版）。</string>
+    <string name="v4_5_reduced_battery_usage">減少電量使用</string>
+    <string name="v4_5_reduced_battery_usage_descr">更多功能即將推出！</string>
+    <string name="v4_5_italian_interface">意大利語言界面</string>
+    <string name="v4_5_italian_interface_descr">感謝用戶 - 使用 Weblate 的翻譯貢獻！</string>
+    <string name="app_name"><xliff:g id="appName">SimpleX</xliff:g></string>
+    <string name="thousand_abbreviation">k</string>
+    <string name="connect_via_contact_link">使用連結連接聯絡人 \?</string>
+    <string name="connect_via_invitation_link">通過邀請的</string>
+    <string name="connect_via_group_link">通過使用邀請連結連接 \?</string>
+    <string name="profile_will_be_sent_to_contact_sending_link">你的個人資料將發送給你收到此連結的聯絡人。</string>
+    <string name="you_will_join_group">你將會加入此連結內的群組並且連接到此群組成為群組內的成員。</string>
+    <string name="connect_via_link_verb">連接</string>
+    <string name="server_error">錯誤</string>
+    <string name="server_connecting">連接中</string>
+    <string name="connected_to_server_to_receive_messages_from_contact">你已連線到用於接收來自此聯絡人的訊息伺服器。</string>
+    <string name="trying_to_connect_to_server_to_receive_messages_with_error">正在嘗試連接到這聯絡人接收的訊息伺服器 (錯誤： <xliff:g id="errorMsg">%1$s</xliff:g>).</string>
+    <string name="trying_to_connect_to_server_to_receive_messages">正在嘗試連接到這聯絡人接收的訊息伺服器。</string>
+    <string name="deleted_description">己刪除</string>
+    <string name="marked_deleted_description">已標記為刪除</string>
+    <string name="simplex_link_mode_browser_warning">在瀏覽器中開啟連結可能會降低私隱和安全性。不受 SimpleX 信任的連結會顯示紅色。</string>
+    <string name="error_saving_smp_servers">儲存 SMP 伺服器時出錯</string>
+    <string name="ensure_smp_server_address_are_correct_format_and_unique">請確保 SMP 伺服器連結格式正確，行分隔且不重複。</string>
+    <string name="error_setting_network_config">更新網路配置時出錯</string>
+    <string name="failed_to_parse_chat_title">聯絡人載入失敗</string>
+    <string name="failed_to_parse_chats_title">多個聯絡人載入失敗</string>
+    <string name="contact_developers">請更新應用程式或聯絡開發者。</string>
+    <string name="connection_timeout">連線超時</string>
+    <string name="connection_error">連線失敗</string>
+    <string name="network_error_desc">請檢查你的網路</string>
 </resources>
