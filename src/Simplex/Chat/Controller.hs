@@ -572,6 +572,10 @@ data ComposedMessage = ComposedMessage
   }
   deriving (Show, Generic, FromJSON)
 
+instance ToJSON ComposedMessage where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
 data NtfMsgInfo = NtfMsgInfo {msgTs :: UTCTime, msgFlags :: MsgFlags}
   deriving (Show, Generic)
 
