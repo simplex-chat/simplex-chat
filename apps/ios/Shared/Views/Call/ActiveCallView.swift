@@ -13,37 +13,49 @@ import SimpleXChat
 struct ActiveCallView: View {
     @EnvironmentObject var m: ChatModel
     @ObservedObject var call: Call
-    @State private var rtcWebView: WKWebView? = nil
-    @State private var webViewMsg: WVAPIMessage? = nil
+    @State private var client: WebRTCClient? = nil
+    @State private var activeCall: WebRTCClient.Call? = nil
+    @State private var localRendererAspectRatio: CGFloat? = nil
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            WebRTCView(rtcWebView: $rtcWebView, webViewMsg: $webViewMsg)
-                .onAppear() { sendCommandToWebView() }
-                .onChange(of: m.callCommand) { _ in sendCommandToWebView() }
-                .onChange(of: rtcWebView) { _ in sendCommandToWebView() }
-                .onChange(of: webViewMsg) { _ in processWebViewMessage() }
-                .background(.black)
-            if let call = m.activeCall, let webView = rtcWebView  {
-                ActiveCallOverlay(call: call, webView: webView)
+            if let client = client, case .video = call.peerMedia, activeCall != nil {
+                ZStack(alignment: .topTrailing) {
+                    CallViewRemote(client: client, activeCall: $activeCall)
+                    CallViewLocal(client: client, activeCall: $activeCall, localRendererAspectRatio: $localRendererAspectRatio)
+                    .cornerRadius(10)
+                    .frame(width: (localRendererAspectRatio ?? 0) * 130, height: 130)
+                    .padding([.top, .trailing], 17)
+                }
+            }
+            if let call = m.activeCall, let client = client {
+                ActiveCallOverlay(call: call, client: client)
             }
         }
+        .onAppear {
+            if client == nil {
+                client = WebRTCClient($activeCall, processRtcMessage, $localRendererAspectRatio)
+                sendCommandToClient()
+            }
+        }
+        .onChange(of: m.callCommand) { _ in sendCommandToClient()}
+        .background(.black)
         .preferredColorScheme(.dark)
     }
 
-    private func sendCommandToWebView() {
+    private func sendCommandToClient() {
         if m.activeCall != nil,
-           let wv = rtcWebView,
+           let client = client,
            let cmd = m.callCommand {
             m.callCommand = nil
-            sendCallCommand(wv, cmd)
+            logger.debug("sendCallCommand: \(cmd.cmdType)")
+            client.sendCallCommand(command: cmd)
         }
     }
 
-    private func processWebViewMessage() {
-        if let msg = webViewMsg,
-           let call = m.activeCall,
-           let webView = rtcWebView {
+    private func processRtcMessage(msg: WVAPIMessage) {
+        if let call = m.activeCall,
+           let client = client {
             logger.debug("ActiveCallView: response \(msg.resp.respType)")
             switch msg.resp {
             case let .capabilities(capabilities):
@@ -106,6 +118,12 @@ struct ActiveCallView: View {
                         }
                     }
                 }
+                if state.connectionState == "closed" && m.activeCall != nil {
+                    DispatchQueue.main.async {
+                        closeCallView(client)
+                        m.activeCall = nil
+                    }
+                }
                 Task {
                     do {
                         try await apiCallStatus(call.contact, state.connectionState)
@@ -117,7 +135,9 @@ struct ActiveCallView: View {
                 call.callState = .connected
                 call.connectionInfo = connectionInfo
             case .ended:
-                closeCallView(webView)
+                DispatchQueue.main.async {
+                    closeCallView(client)
+                }
                 call.callState = .ended
                 if let uuid = call.callkitUUID {
                     CallController.shared.endCall(callUUID: uuid)
@@ -130,14 +150,16 @@ struct ActiveCallView: View {
                     call.localCamera = camera
                     Task {
                         // This disables microphone if it was disabled before flipping the camera
-                        await webView.setMicrophoneCaptureState(call.audioEnabled ? .active : .muted)
+                        client.setAudioEnabled(call.audioEnabled)
                         // This compensates for the bug on some devices when remote video does not appear
                         // await webView.setCameraCaptureState(.muted)
                         // await webView.setCameraCaptureState(call.videoEnabled ? .active : .muted)
                     }
                 case .end:
-                    closeCallView(webView)
-                    m.activeCall = nil
+                    DispatchQueue.main.async {
+                        closeCallView(client)
+                        m.activeCall = nil
+                    }
                 default: ()
                 }
             case let .error(message):
@@ -148,11 +170,11 @@ struct ActiveCallView: View {
         }
     }
 
-    private func closeCallView(_ webView: WKWebView) {
+    private func closeCallView(_ client: WebRTCClient) {
         m.showCallView = false
         Task {
-            await webView.setMicrophoneCaptureState(.muted)
-            await webView.setCameraCaptureState(.muted)
+            client.setAudioEnabled(false)
+            client.setVideoEnabled(false)
         }
     }
 }
@@ -160,7 +182,7 @@ struct ActiveCallView: View {
 struct ActiveCallOverlay: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var call: Call
-    var webView: WKWebView
+    var client: WebRTCClient
 
     var body: some View {
         VStack {
@@ -210,6 +232,8 @@ struct ActiveCallOverlay: View {
                     toggleAudioButton()
                         .frame(maxWidth: .infinity, alignment: .leading)
                     endCallButton()
+                    toggleSpeakerButton()
+                        .frame(maxWidth: .infinity, alignment: .trailing)
                 }
                 .padding(.bottom, 60)
                 .padding(.horizontal, 48)
@@ -254,9 +278,20 @@ struct ActiveCallOverlay: View {
     private func toggleAudioButton() -> some View {
         controlButton(call, call.audioEnabled ? "mic.fill" : "mic.slash") {
             Task {
-                await webView.setMicrophoneCaptureState(call.audioEnabled ? .muted : .active)
+                client.setAudioEnabled(!call.audioEnabled)
                 DispatchQueue.main.async {
                     call.audioEnabled = !call.audioEnabled
+                }
+            }
+        }
+    }
+
+    private func toggleSpeakerButton() -> some View {
+        controlButton(call, call.speakerEnabled ? "speaker.fill" : "speaker.slash") {
+            Task {
+                client.setSpeakerEnabledAndConfigureSession(!call.speakerEnabled)
+                DispatchQueue.main.async {
+                    call.speakerEnabled = !call.speakerEnabled
                 }
             }
         }
@@ -265,7 +300,7 @@ struct ActiveCallOverlay: View {
     private func toggleVideoButton() -> some View {
         controlButton(call, call.videoEnabled ? "video.fill" : "video.slash") {
             Task {
-                await webView.setCameraCaptureState(call.videoEnabled ? .muted : .active)
+                client.setVideoEnabled(!call.videoEnabled)
                 DispatchQueue.main.async {
                     call.videoEnabled = !call.videoEnabled
                 }
@@ -276,17 +311,13 @@ struct ActiveCallOverlay: View {
     @ViewBuilder private func flipCameraButton() -> some View {
         let cmd = WCallCommand.camera(camera: call.localCamera == .user ? .environment : .user)
         controlButton(call, "arrow.triangle.2.circlepath") {
-            if call.audioEnabled {
-                chatModel.callCommand = cmd
-            } else {
                 Task {
                     // Microphone has to be enabled before flipping the camera to avoid prompt for user permission when getUserMedia is called in webview
-                    await webView.setMicrophoneCaptureState(.active)
+                    client.flipCamera()
                     DispatchQueue.main.async {
                         chatModel.callCommand = cmd
                     }
                 }
-            }
         }
     }
 
@@ -315,9 +346,9 @@ struct ActiveCallOverlay: View {
 struct ActiveCallOverlay_Previews: PreviewProvider {
     static var previews: some View {
         Group{
-            ActiveCallOverlay(call: Call(direction: .incoming, contact: Contact.sampleData, callkitUUID: UUID(), callState: .offerSent, localMedia: .video), webView: WKWebView())
+            ActiveCallOverlay(call: Call(direction: .incoming, contact: Contact.sampleData, callkitUUID: UUID(), callState: .offerSent, localMedia: .video), client: WebRTCClient(Binding.constant(nil), { _ in }, Binding.constant(nil)))
                 .background(.black)
-            ActiveCallOverlay(call: Call(direction: .incoming, contact: Contact.sampleData, callkitUUID: UUID(), callState: .offerSent, localMedia: .audio), webView: WKWebView())
+            ActiveCallOverlay(call: Call(direction: .incoming, contact: Contact.sampleData, callkitUUID: UUID(), callState: .offerSent, localMedia: .audio), client: WebRTCClient(Binding.constant(nil), { _ in }, Binding.constant(nil)))
                 .background(.black)
         }
     }

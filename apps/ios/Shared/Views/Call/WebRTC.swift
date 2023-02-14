@@ -9,6 +9,7 @@
 import Foundation
 import SwiftUI
 import SimpleXChat
+import WebRTC
 
 class Call: ObservableObject, Equatable {
     static func == (lhs: Call, rhs: Call) -> Bool {
@@ -24,6 +25,7 @@ class Call: ObservableObject, Equatable {
     @Published var peerMedia: CallMediaType?
     @Published var sharedKey: String?
     @Published var audioEnabled = true
+    @Published var speakerEnabled = false
     @Published var videoEnabled: Bool
     @Published var localCamera = VideoCamera.user
     @Published var connectionInfo: ConnectionInfo?
@@ -393,6 +395,9 @@ struct RTCIceCandidate: Codable, Equatable {
     var candidateType: RTCIceCandidateType?
     var `protocol`: String?
     var relayProtocol: String?
+    var sdpMid: String?
+    var sdpMLineIndex: Int?
+    var candidate: String
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/API/RTCIceCandidate/type
@@ -453,6 +458,13 @@ func parseRTCIceServers(_ servers: [String]) -> [RTCIceServer]? {
 func getIceServers() -> [RTCIceServer]? {
     if let servers = UserDefaults.standard.stringArray(forKey: DEFAULT_WEBRTC_ICE_SERVERS) {
         return parseRTCIceServers(servers)
+    }
+    return nil
+}
+
+func getWebRTCIceServers() -> [WebRTC.RTCIceServer]? {
+    if let servers = UserDefaults.standard.stringArray(forKey: DEFAULT_WEBRTC_ICE_SERVERS) {
+        return parseRTCIceServers(servers)?.toWebRTCIceServers()
     }
     return nil
 }
