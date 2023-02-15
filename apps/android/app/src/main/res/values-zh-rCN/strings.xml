@@ -67,7 +67,7 @@
     <string name="connect_via_contact_link">通过联系人链接连接？</string>
     <string name="connect_via_group_link">通过群组链接连接？</string>
     <string name="connect_via_link_or_qr">通过群组链接/二维码连接</string>
-    <string name="connect_calls_via_relay">通过继电器连接</string>
+    <string name="connect_calls_via_relay">通过中继连接</string>
     <string name="allow_your_contacts_irreversibly_delete">允许您的联系人不可撤回地删除已发送消息。</string>
     <string name="chat_preferences_contact_allows">联系人允许</string>
     <string name="allow_voice_messages_only_if">仅有您的联系人许可后才允许语音消息。</string>
@@ -574,4 +574,23 @@
     <string name="wrong_passphrase">数据库密码错误</string>
     <string name="network_options_save">保存</string>
     <string name="update_network_settings_confirmation">更新</string>
+    <string name="open_simplex_chat_to_accept_call">打开 <xliff:g id="appNameFull">SimpleX Chat</xliff:g> 来接听电话</string>
+    <string name="icon_descr_video_call">视频通话</string>
+    <string name="contact_wants_to_connect_via_call"><xliff:g id="contactName" example="Alice">%1$s</xliff:g> 想通过该方式与您联系</string>
+    <string name="icon_descr_call_rejected">拒接来电</string>
+    <string name="call_connection_peer_to_peer">点对点</string>
+    <string name="error_with_info">错误：%s</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">如果您不能亲自见面，您可以 <b>扫描视频通话中的二维码</b>，或者您的联系人可以分享邀请链接。</string>
+    <string name="your_calls">您的通话</string>
+    <string name="call_connection_via_relay">通过中继</string>
+    <string name="callstatus_missed">未接来电</string>
+    <string name="callstatus_rejected">拒接来电</string>
+    <string name="v4_3_voice_messages">语音消息</string>
+    <string name="voice_messages">语音消息</string>
+    <string name="ntf_channel_calls">SimpleX Chat 通话</string>
+    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">如果您不能亲自见面，<b>在视频通话</b>中出示二维码，或分享链接。</string>
+    <string name="your_chat_profiles">您的聊天资料</string>
+    <string name="icon_descr_call_missed">未接来电</string>
+    <string name="icon_descr_call_pending_sent">待定来电</string>
+    <string name="your_chat_profiles_stored_locally">您的聊天资料存储在本地，只在您的设备上</string>
 </resources>
