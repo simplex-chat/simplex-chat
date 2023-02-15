@@ -113,13 +113,6 @@ struct ActiveCallView: View {
 //                        CallController.shared.reportOutgoingCall(call: call, connectedAt: nil)
 //                    }
                     call.callState = .connected
-                    // CallKit doesn't work well with WKWebView
-                    // This is a hack to enable microphone in WKWebView after CallKit takes over it
-                    if CallController.useCallKit {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                            m.callCommand = .camera(camera: call.localCamera)
-                        }
-                    }
                 }
                 if state.connectionState == "closed" && m.activeCall != nil {
                     closeCallView(client)
@@ -145,8 +138,6 @@ struct ActiveCallView: View {
                 switch msg.command {
                 case .answer:
                     call.callState = .negotiated
-                case let .camera(camera):
-                    call.localCamera = camera
                 case .end:
                     closeCallView(client)
                     m.activeCall = nil
@@ -299,14 +290,9 @@ struct ActiveCallOverlay: View {
     }
 
     @ViewBuilder private func flipCameraButton() -> some View {
-        let cmd = WCallCommand.camera(camera: call.localCamera == .user ? .environment : .user)
         controlButton(call, "arrow.triangle.2.circlepath") {
                 Task {
-                    // Microphone has to be enabled before flipping the camera to avoid prompt for user permission when getUserMedia is called in webview
                     client.flipCamera()
-                    DispatchQueue.main.async {
-                        chatModel.callCommand = cmd
-                    }
                 }
         }
     }

@@ -108,8 +108,8 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate {
         let pc = activeCall.wrappedValue?.connection
         switch command {
         case .capabilities:
-            resp = .capabilities(capabilities: CallCapabilities(encryption: false))
-        case let .start(media: media, aesKey, _, iceServers, relay):
+            resp = .capabilities(capabilities: CallCapabilities(encryption: supportsEncryption()))
+        case let .start(media: media, aesKey, iceServers, relay):
             logger.debug("starting incoming call - create webrtc session")
             if activeCall.wrappedValue != nil { endCall() }
             let encryption = supportsEncryption()
@@ -135,7 +135,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate {
                 }
 
             }
-        case let .offer(offer, iceCandidates, media, aesKey, _, iceServers, relay):
+        case let .offer(offer, iceCandidates, media, aesKey, iceServers, relay):
             if activeCall.wrappedValue != nil {
                 resp = .error(message: "accept: call already started")
             } else if !supportsEncryption() && aesKey != nil {
@@ -202,13 +202,6 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate {
                 resp = .error(message: "media: no video")
             } else {
                 enableMedia(media, enable)
-                resp = .ok
-            }
-        case .camera:
-            if activeCall.wrappedValue == nil || pc == nil {
-                resp = .error(message: "camera: call not started")
-            } else {
-//                replaceMedia(camera)
                 resp = .ok
             }
         case .end:

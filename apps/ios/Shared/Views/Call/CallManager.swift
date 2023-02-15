@@ -22,7 +22,7 @@ class CallManager {
         let m = ChatModel.shared
         if let call = m.activeCall, call.callkitUUID == callUUID {
             m.showCallView = true
-            m.callCommand = .capabilities(media: call.localMedia, useWorker: true)
+            m.callCommand = .capabilities(media: call.localMedia)
             return true
         }
         return false
@@ -57,7 +57,6 @@ class CallManager {
         m.callCommand = .start(
             media: invitation.callType.media,
             aesKey: invitation.sharedKey,
-            useWorker: true,
             iceServers: iceServers,
             relay: useRelay
         )
