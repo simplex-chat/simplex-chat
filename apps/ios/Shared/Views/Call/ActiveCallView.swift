@@ -44,7 +44,8 @@ struct ActiveCallView: View {
     }
 
     private func sendCommandToClient() {
-        if m.activeCall != nil,
+        if call == m.activeCall,
+           m.activeCall != nil,
            let client = client,
            let cmd = m.callCommand {
             m.callCommand = nil
@@ -57,8 +58,9 @@ struct ActiveCallView: View {
 
     @MainActor
     private func processRtcMessage(msg: WVAPIMessage) {
-        if let call = m.activeCall,
-           let client = client {
+        if call == m.activeCall,
+            let call = m.activeCall,
+            let client = client {
             logger.debug("ActiveCallView: response \(msg.resp.respType)")
             switch msg.resp {
             case let .capabilities(capabilities):
@@ -114,7 +116,7 @@ struct ActiveCallView: View {
 //                    }
                     call.callState = .connected
                 }
-                if state.connectionState == "closed" && m.activeCall != nil {
+                if state.connectionState == "closed" {
                     closeCallView(client)
                     m.activeCall = nil
                 }
@@ -152,10 +154,12 @@ struct ActiveCallView: View {
     }
 
     private func closeCallView(_ client: WebRTCClient) {
-        m.showCallView = false
-        Task {
-            client.setAudioEnabled(false)
-            client.setVideoEnabled(false)
+        if m.activeCall != nil {
+            m.showCallView = false
+            Task {
+                client.setAudioEnabled(false)
+                client.setVideoEnabled(false)
+            }
         }
     }
 }
