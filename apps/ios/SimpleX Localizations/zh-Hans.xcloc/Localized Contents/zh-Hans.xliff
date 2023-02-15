@@ -493,8 +493,9 @@
         <source>Auto-accept images</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Automatically" xml:space="preserve">
+      <trans-unit id="Automatically" xml:space="preserve" approved="no">
         <source>Automatically</source>
+        <target state="translated">自动地</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Back" xml:space="preserve">
@@ -711,7 +712,7 @@
       </trans-unit>
       <trans-unit id="Connect via relay" xml:space="preserve" approved="no">
         <source>Connect via relay</source>
-        <target state="translated">通过继电器连接</target>
+        <target state="translated">通过中继连接</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connecting server…" xml:space="preserve" approved="no">
@@ -1145,8 +1146,9 @@
         <target state="translated">显示名：</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Do NOT use SimpleX for emergency calls." xml:space="preserve">
+      <trans-unit id="Do NOT use SimpleX for emergency calls." xml:space="preserve" approved="no">
         <source>Do NOT use SimpleX for emergency calls.</source>
+        <target state="translated">请勿使用 SimpleX 进行紧急通话。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Do it later" xml:space="preserve">
@@ -1634,12 +1636,14 @@
         <source>If the video fails to connect, flip the camera to resolve it.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="If you can't meet in person, **show QR code in the video call**, or share the link." xml:space="preserve">
+      <trans-unit id="If you can't meet in person, **show QR code in the video call**, or share the link." xml:space="preserve" approved="no">
         <source>If you can't meet in person, **show QR code in the video call**, or share the link.</source>
+        <target state="translated">如果您不能亲自见面，**在视频通话中出示二维码**，或分享链接。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." xml:space="preserve">
+      <trans-unit id="If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." xml:space="preserve" approved="no">
         <source>If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link.</source>
+        <target state="translated">如果您不能亲自见面，您可以**扫描视频通话中的二维码**，或者您的联系人可以分享邀请链接。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." xml:space="preserve" approved="no">
@@ -2184,8 +2188,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target state="translated">其他人只能通过您共享的链接与您联系。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Periodically" xml:space="preserve">
+      <trans-unit id="Periodically" xml:space="preserve" approved="no">
         <source>Periodically</source>
+        <target state="translated">定期地</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please ask your contact to enable sending voice messages." xml:space="preserve">
@@ -2332,8 +2337,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Relay server is only used if necessary. Another party can observe your IP address.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Relay server protects your IP address, but it can observe the duration of the call." xml:space="preserve">
+      <trans-unit id="Relay server protects your IP address, but it can observe the duration of the call." xml:space="preserve" approved="no">
         <source>Relay server protects your IP address, but it can observe the duration of the call.</source>
+        <target state="translated">中继服务器保护您的 IP 地址，但它可以观察通话的持续时间。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Remove" xml:space="preserve" approved="no">
@@ -2855,8 +2861,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>To make a new connection</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To prevent the call interruption, enable Do Not Disturb mode." xml:space="preserve">
+      <trans-unit id="To prevent the call interruption, enable Do Not Disturb mode." xml:space="preserve" approved="no">
         <source>To prevent the call interruption, enable Do Not Disturb mode.</source>
+        <target state="translated">为防止通话中断，请启用请勿打扰模式。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." xml:space="preserve">
@@ -3012,16 +3019,18 @@ To connect, please ask your contact to create another connection link and check 
         <source>Via browser</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Video call" xml:space="preserve">
+      <trans-unit id="Video call" xml:space="preserve" approved="no">
         <source>Video call</source>
+        <target state="translated">视频通话</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="View security code" xml:space="preserve">
         <source>View security code</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Voice messages" xml:space="preserve">
+      <trans-unit id="Voice messages" xml:space="preserve" approved="no">
         <source>Voice messages</source>
+        <target state="translated">语音消息</target>
         <note>chat feature</note>
       </trans-unit>
       <trans-unit id="Voice messages are prohibited in this chat." xml:space="preserve">
@@ -3234,8 +3243,9 @@ To connect, please ask your contact to create another connection link and check 
         <source>Your SimpleX contact address</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your calls" xml:space="preserve">
+      <trans-unit id="Your calls" xml:space="preserve" approved="no">
         <source>Your calls</source>
+        <target state="translated">您的通话</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chat database" xml:space="preserve" approved="no">
@@ -3683,8 +3693,9 @@ SimpleX servers cannot see your profile.</source>
         <source>message received</source>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="missed call" xml:space="preserve">
+      <trans-unit id="missed call" xml:space="preserve" approved="no">
         <source>missed call</source>
+        <target state="translated">未接来电</target>
         <note>call status</note>
       </trans-unit>
       <trans-unit id="never" xml:space="preserve">
@@ -3732,8 +3743,9 @@ SimpleX servers cannot see your profile.</source>
         <source>owner</source>
         <note>member role</note>
       </trans-unit>
-      <trans-unit id="peer-to-peer" xml:space="preserve">
+      <trans-unit id="peer-to-peer" xml:space="preserve" approved="no">
         <source>peer-to-peer</source>
+        <target state="translated">点对点</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="received answer…" xml:space="preserve" approved="no">
@@ -3746,8 +3758,9 @@ SimpleX servers cannot see your profile.</source>
         <target state="translated">已受到确认……</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="rejected call" xml:space="preserve">
+      <trans-unit id="rejected call" xml:space="preserve" approved="no">
         <source>rejected call</source>
+        <target state="translated">拒接来电</target>
         <note>call status</note>
       </trans-unit>
       <trans-unit id="removed" xml:space="preserve">
@@ -3807,8 +3820,9 @@ SimpleX servers cannot see your profile.</source>
         <source>via one-time link</source>
         <note>chat list item description</note>
       </trans-unit>
-      <trans-unit id="via relay" xml:space="preserve">
+      <trans-unit id="via relay" xml:space="preserve" approved="no">
         <source>via relay</source>
+        <target state="translated">通过中继</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="video call (not e2e encrypted)" xml:space="preserve" approved="no">
@@ -3959,6 +3973,16 @@ SimpleX servers cannot see your profile.</source>
         <target state="translated">法语界面</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Your chat profiles" xml:space="preserve" approved="no">
+        <source>Your chat profiles</source>
+        <target state="translated">您的聊天资料</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your chat profiles are stored locally, only on your device." xml:space="preserve" approved="no">
+        <source>Your chat profiles are stored locally, only on your device.</source>
+        <target state="translated">您的聊天资料存储在本地，只在您的设备上。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
     </body>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="zh-Hans" datatype="plaintext">
@@ -3970,16 +3994,18 @@ SimpleX servers cannot see your profile.</source>
         <source>SimpleX</source>
         <note>Bundle name</note>
       </trans-unit>
-      <trans-unit id="NSCameraUsageDescription" xml:space="preserve">
+      <trans-unit id="NSCameraUsageDescription" xml:space="preserve" approved="no">
         <source>SimpleX needs camera access to scan QR codes to connect to other users and for video calls.</source>
+        <target state="translated">SimpleX 需要摄像头访问权限才能扫描二维码以连接到其他用户和进行视频通话。</target>
         <note>Privacy - Camera Usage Description</note>
       </trans-unit>
       <trans-unit id="NSFaceIDUsageDescription" xml:space="preserve">
         <source>SimpleX uses Face ID for local authentication</source>
         <note>Privacy - Face ID Usage Description</note>
       </trans-unit>
-      <trans-unit id="NSMicrophoneUsageDescription" xml:space="preserve">
+      <trans-unit id="NSMicrophoneUsageDescription" xml:space="preserve" approved="no">
         <source>SimpleX needs microphone access for audio and video calls, and to record voice messages.</source>
+        <target state="translated">SimpleX 需要麦克风访问权限才能进行音频和视频通话，以及录制语音消息。</target>
         <note>Privacy - Microphone Usage Description</note>
       </trans-unit>
       <trans-unit id="NSPhotoLibraryAddUsageDescription" xml:space="preserve">
