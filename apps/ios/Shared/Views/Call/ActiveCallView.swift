@@ -19,7 +19,7 @@ struct ActiveCallView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            if let client = client, case .video = call.peerMedia, activeCall != nil {
+            if let client = client, [call.peerMedia, call.localMedia].contains(.video), activeCall != nil {
                 ZStack(alignment: .topTrailing) {
                     CallViewRemote(client: client, activeCall: $activeCall)
                     CallViewLocal(client: client, activeCall: $activeCall, localRendererAspectRatio: $localRendererAspectRatio)
@@ -34,7 +34,7 @@ struct ActiveCallView: View {
         }
         .onAppear {
             if client == nil {
-                client = WebRTCClient($activeCall, processRtcMessage, $localRendererAspectRatio)
+                client = WebRTCClient($activeCall, { msg in DispatchQueue.main.async { processRtcMessage(msg: msg) } }, $localRendererAspectRatio)
                 sendCommandToClient()
             }
         }

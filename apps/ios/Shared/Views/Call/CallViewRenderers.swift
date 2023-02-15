@@ -47,8 +47,6 @@ struct CallViewLocal: UIViewRepresentable {
     func makeUIView(context: Context) -> UIView {
         let view = UIView()
         if let call = activeCall.wrappedValue {
-            view.backgroundColor = UIColor.red
-            localRenderer.backgroundColor = UIColor.green
             client.addLocalRenderer(call, localRenderer)
             client.startCaptureLocalVideo(call)
             addSubviewAndResize(localRenderer, into: view)
