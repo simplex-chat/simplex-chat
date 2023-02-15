@@ -69,8 +69,10 @@ struct ActiveCallView: View {
                     } catch {
                         logger.error("apiSendCallInvitation \(responseError(error))")
                     }
-                    call.callState = .invitationSent
-                    call.localCapabilities = capabilities
+                    await MainActor.run {
+                        call.callState = .invitationSent
+                        call.localCapabilities = capabilities
+                    }
                 }
             case let .offer(offer, iceCandidates, capabilities):
                 Task {
@@ -80,8 +82,10 @@ struct ActiveCallView: View {
                     } catch {
                         logger.error("apiSendCallOffer \(responseError(error))")
                     }
-                    call.callState = .offerSent
-                    call.localCapabilities = capabilities
+                    await MainActor.run {
+                        call.callState = .offerSent
+                        call.localCapabilities = capabilities
+                    }
                 }
             case let .answer(answer, iceCandidates):
                 Task {
@@ -90,7 +94,9 @@ struct ActiveCallView: View {
                     } catch {
                         logger.error("apiSendCallAnswer \(responseError(error))")
                     }
-                    call.callState = .negotiated
+                    await MainActor.run {
+                        call.callState = .negotiated
+                    }
                 }
             case let .ice(iceCandidates):
                 Task {
@@ -141,13 +147,6 @@ struct ActiveCallView: View {
                     call.callState = .negotiated
                 case let .camera(camera):
                     call.localCamera = camera
-                    Task {
-                        // This disables microphone if it was disabled before flipping the camera
-                        client.setAudioEnabled(call.audioEnabled)
-                        // This compensates for the bug on some devices when remote video does not appear
-                        // await webView.setCameraCaptureState(.muted)
-                        // await webView.setCameraCaptureState(call.videoEnabled ? .active : .muted)
-                    }
                 case .end:
                     closeCallView(client)
                     m.activeCall = nil
