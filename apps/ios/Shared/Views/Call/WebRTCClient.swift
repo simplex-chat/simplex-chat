@@ -29,7 +29,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate {
 
     private let rtcAudioSession =  RTCAudioSession.sharedInstance()
     private let audioQueue = DispatchQueue(label: "audio")
-    private var sendRtcMessage: (WVAPIMessage) -> Void
+    private var sendCallResponse: (WVAPIMessage) async -> Void
     private var activeCall: Binding<Call?>
     private var localRendererAspectRatio: Binding<CGFloat?>
 
@@ -38,8 +38,8 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate {
         fatalError("Unimplemented")
     }
 
-    required init(_ activeCall: Binding<Call?>, _ sendRtcMessage: @escaping (WVAPIMessage) -> Void, _ localRendererAspectRatio: Binding<CGFloat?>) {
-        self.sendRtcMessage = sendRtcMessage
+    required init(_ activeCall: Binding<Call?>, _ sendCallResponse: @escaping (WVAPIMessage) async -> Void, _ localRendererAspectRatio: Binding<CGFloat?>) {
+        self.sendCallResponse = sendCallResponse
         self.activeCall = activeCall
         self.localRendererAspectRatio = localRendererAspectRatio
         super.init()
@@ -102,7 +102,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate {
         }
     }
 
-    func sendCallCommand(command: WCallCommand) {
+    func sendCallCommand(command: WCallCommand) async {
         var resp: WCallResponse? = nil
         let pc = activeCall.wrappedValue?.connection
         switch command {
@@ -119,7 +119,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate {
                     self.setSpeakerEnabledAndConfigureSession(media == .video)
                     let gotCandidates = await self.waitWithTimeout(10_000, stepMs: 1000, until: { self.activeCall.wrappedValue?.iceCandidates.count ?? 0 > 0 })
                     if gotCandidates {
-                        self.sendCallResponse(.init(
+                        await self.sendCallResponse(.init(
                             corrId: nil,
                             resp: .offer(
                                 offer: compressToBase64(input: encodeJSON(CustomRTCSessionDescription(type: answer.type.toSdpType(), sdp: answer.sdp))),
@@ -145,22 +145,26 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate {
                 activeCall.wrappedValue = call
                 let pc = call.connection
                 if let type = offer.type, let sdp = offer.sdp {
-                    pc.setRemoteDescription(RTCSessionDescription(type: type.toWebRTCSdpType(), sdp: sdp)) { error in
+                    if (try? await pc.setRemoteDescription(RTCSessionDescription(type: type.toWebRTCSdpType(), sdp: sdp))) != nil {
                         pc.answer { answer in
                             self.setSpeakerEnabledAndConfigureSession(media == .video)
                             self.addIceCandidates(pc, remoteIceCandidates)
 //                            Task {
 //                                try? await Task.sleep(nanoseconds: 32_000 * 1000000)
-                            self.sendCallResponse(.init(
-                                corrId: nil,
-                                resp: .answer(
-                                    answer: compressToBase64(input: encodeJSON(CustomRTCSessionDescription(type: answer.type.toSdpType(), sdp: answer.sdp))),
-                                    iceCandidates: compressToBase64(input: encodeJSON(call.iceCandidates))
-                                ),
-                                command: command)
-                            )
+                            Task {
+                                await self.sendCallResponse(.init(
+                                    corrId: nil,
+                                    resp: .answer(
+                                        answer: compressToBase64(input: encodeJSON(CustomRTCSessionDescription(type: answer.type.toSdpType(), sdp: answer.sdp))),
+                                        iceCandidates: compressToBase64(input: encodeJSON(call.iceCandidates))
+                                    ),
+                                    command: command)
+                                )
+                            }
 //                            }
                         }
+                    } else {
+                        resp = .error(message: "accept: remote description is not set")
                     }
                 }
             }
@@ -175,19 +179,21 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate {
                       let remoteIceCandidates: [RTCIceCandidate] = decodeJSON(decompressFromBase64(input: iceCandidates)),
                       let type = answer.type, let sdp = answer.sdp,
                       let pc = pc {
-                pc.setRemoteDescription(RTCSessionDescription(type: type.toWebRTCSdpType(), sdp: sdp)) { error in
-                    self.addIceCandidates(pc, remoteIceCandidates)
-                    self.sendCallResponse(.init(
+                if (try? await pc.setRemoteDescription(RTCSessionDescription(type: type.toWebRTCSdpType(), sdp: sdp))) != nil {
+                    addIceCandidates(pc, remoteIceCandidates)
+                    await sendCallResponse(.init(
                         corrId: nil,
                         resp: .ok,
                         command: command))
+                } else {
+                    resp = .error(message: "answer: remote description is not set")
                 }
             }
         case let .ice(iceCandidates):
             if let pc = pc,
                let remoteIceCandidates: [RTCIceCandidate] = decodeJSON(decompressFromBase64(input: iceCandidates)) {
                 addIceCandidates(pc, remoteIceCandidates)
-                sendCallResponse(.init(
+                await sendCallResponse(.init(
                     corrId: nil,
                     resp: .ok,
                     command: command))
@@ -211,17 +217,11 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate {
                 resp = .ok
             }
         case .end:
-            sendCallResponse(.init(corrId: nil, resp: .ok, command: command))
+            await sendCallResponse(.init(corrId: nil, resp: .ok, command: command))
             endCall()
         }
         if let resp = resp {
-            sendCallResponse(.init(corrId: nil, resp: resp, command: command))
-        }
-    }
-
-    func sendCallResponse(_ answer: WVAPIMessage) {
-        Task {
-            self.sendRtcMessage(answer)
+            await sendCallResponse(.init(corrId: nil, resp: resp, command: command))
         }
     }
 
@@ -364,21 +364,22 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
         else {
             return
         }
+        Task {
+            await sendCallResponse(.init(
+                corrId: nil,
+                resp: .connection(state: ConnectionState(
+                    connectionState: connectionStateString,
+                    iceConnectionState: iceConnectionStateString,
+                    iceGatheringState: iceGatheringStateString,
+                    signalingState: signalingStateString)
+                ),
+                command: nil)
+            )
 
-        sendCallResponse(.init(
-            corrId: nil,
-            resp: .connection(state: ConnectionState(
-                connectionState: connectionStateString,
-                iceConnectionState: iceConnectionStateString,
-                iceGatheringState: iceGatheringStateString,
-                signalingState: signalingStateString)
-            ),
-            command: nil)
-        )
-
-        switch newState {
-        case .disconnected, .failed: endCall()
-        default: do {}
+            switch newState {
+            case .disconnected, .failed: endCall()
+            default: do {}
+            }
         }
     }
 
@@ -418,21 +419,23 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
                    local.sdp.contains("\((localStats.values["ip"] as? String ?? "--")) \((localStats.values["port"] as? String ?? "--"))") &&
                    remote.sdp.contains("\((remoteStats.values["ip"] as? String ?? "--")) \((remoteStats.values["port"] as? String ?? "--"))")
                 {
-                    self.sendCallResponse(.init(
-                        corrId: nil,
-                        resp: .connected(connectionInfo: ConnectionInfo(
-                            localCandidate: local.toCandidate(
-                                RTCIceCandidateType.init(rawValue: localStats.values["candidateType"] as! String),
-                                localStats.values["protocol"] as? String,
-                                localStats.values["relayProtocol"] as? String
-                            ),
-                            remoteCandidate: remote.toCandidate(
-                                RTCIceCandidateType.init(rawValue: remoteStats.values["candidateType"] as! String),
-                                remoteStats.values["protocol"] as? String,
-                                remoteStats.values["relayProtocol"] as? String
-                            ))),
-                        command: nil)
-                    )
+                    Task {
+                        await self.sendCallResponse(.init(
+                            corrId: nil,
+                            resp: .connected(connectionInfo: ConnectionInfo(
+                                localCandidate: local.toCandidate(
+                                    RTCIceCandidateType.init(rawValue: localStats.values["candidateType"] as! String),
+                                    localStats.values["protocol"] as? String,
+                                    localStats.values["relayProtocol"] as? String
+                                ),
+                                remoteCandidate: remote.toCandidate(
+                                    RTCIceCandidateType.init(rawValue: remoteStats.values["candidateType"] as! String),
+                                    remoteStats.values["protocol"] as? String,
+                                    remoteStats.values["relayProtocol"] as? String
+                                ))),
+                            command: nil)
+                        )
+                    }
                 }
             }
         }

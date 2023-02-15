@@ -34,7 +34,7 @@ struct ActiveCallView: View {
         }
         .onAppear {
             if client == nil {
-                client = WebRTCClient($activeCall, { msg in DispatchQueue.main.async { processRtcMessage(msg: msg) } }, $localRendererAspectRatio)
+                client = WebRTCClient($activeCall, { msg in await MainActor.run { processRtcMessage(msg: msg) } }, $localRendererAspectRatio)
                 sendCommandToClient()
             }
         }
@@ -49,10 +49,13 @@ struct ActiveCallView: View {
            let cmd = m.callCommand {
             m.callCommand = nil
             logger.debug("sendCallCommand: \(cmd.cmdType)")
-            client.sendCallCommand(command: cmd)
+            Task {
+                await client.sendCallCommand(command: cmd)
+            }
         }
     }
 
+    @MainActor
     private func processRtcMessage(msg: WVAPIMessage) {
         if let call = m.activeCall,
            let client = client {
@@ -66,10 +69,8 @@ struct ActiveCallView: View {
                     } catch {
                         logger.error("apiSendCallInvitation \(responseError(error))")
                     }
-                    DispatchQueue.main.async {
-                        call.callState = .invitationSent
-                        call.localCapabilities = capabilities
-                    }
+                    call.callState = .invitationSent
+                    call.localCapabilities = capabilities
                 }
             case let .offer(offer, iceCandidates, capabilities):
                 Task {
@@ -79,10 +80,8 @@ struct ActiveCallView: View {
                     } catch {
                         logger.error("apiSendCallOffer \(responseError(error))")
                     }
-                    DispatchQueue.main.async {
-                        call.callState = .offerSent
-                        call.localCapabilities = capabilities
-                    }
+                    call.callState = .offerSent
+                    call.localCapabilities = capabilities
                 }
             case let .answer(answer, iceCandidates):
                 Task {
@@ -91,9 +90,7 @@ struct ActiveCallView: View {
                     } catch {
                         logger.error("apiSendCallAnswer \(responseError(error))")
                     }
-                    DispatchQueue.main.async {
-                        call.callState = .negotiated
-                    }
+                    call.callState = .negotiated
                 }
             case let .ice(iceCandidates):
                 Task {
@@ -119,10 +116,8 @@ struct ActiveCallView: View {
                     }
                 }
                 if state.connectionState == "closed" && m.activeCall != nil {
-                    DispatchQueue.main.async {
-                        closeCallView(client)
-                        m.activeCall = nil
-                    }
+                    closeCallView(client)
+                    m.activeCall = nil
                 }
                 Task {
                     do {
@@ -135,9 +130,7 @@ struct ActiveCallView: View {
                 call.callState = .connected
                 call.connectionInfo = connectionInfo
             case .ended:
-                DispatchQueue.main.async {
-                    closeCallView(client)
-                }
+                closeCallView(client)
                 call.callState = .ended
                 if let uuid = call.callkitUUID {
                     CallController.shared.endCall(callUUID: uuid)
@@ -156,10 +149,8 @@ struct ActiveCallView: View {
                         // await webView.setCameraCaptureState(call.videoEnabled ? .active : .muted)
                     }
                 case .end:
-                    DispatchQueue.main.async {
-                        closeCallView(client)
-                        m.activeCall = nil
-                    }
+                    closeCallView(client)
+                    m.activeCall = nil
                 default: ()
                 }
             case let .error(message):
