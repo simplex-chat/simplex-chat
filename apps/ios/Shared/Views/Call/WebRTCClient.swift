@@ -209,7 +209,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate {
                 enableMedia(media, enable)
                 resp = .ok
             }
-        case let .camera(camera):
+        case .camera:
             if activeCall.wrappedValue == nil || pc == nil {
                 resp = .error(message: "camera: call not started")
             } else {

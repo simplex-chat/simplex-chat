@@ -36,7 +36,6 @@ struct CallViewLocal: UIViewRepresentable {
     var client: WebRTCClient
     var activeCall: Binding<WebRTCClient.Call?>
     var localRendererAspectRatio: Binding<CGFloat?>
-    let localRenderer = RTCEAGLVideoView(frame: .zero)
 
     init(client: WebRTCClient, activeCall: Binding<WebRTCClient.Call?>, localRendererAspectRatio: Binding<CGFloat?>) {
         self.client = client
@@ -47,6 +46,7 @@ struct CallViewLocal: UIViewRepresentable {
     func makeUIView(context: Context) -> UIView {
         let view = UIView()
         if let call = activeCall.wrappedValue {
+            let localRenderer = RTCEAGLVideoView(frame: .zero)
             client.addLocalRenderer(call, localRenderer)
             client.startCaptureLocalVideo(call)
             addSubviewAndResize(localRenderer, into: view)
