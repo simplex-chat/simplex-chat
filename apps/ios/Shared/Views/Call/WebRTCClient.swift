@@ -51,10 +51,10 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate {
         WebRTC.RTCIceServer(urlStrings: ["turn:turn.simplex.im:443?transport=tcp"], username: "private", credential: "yleob6AVkiNI87hpR94Z"),
     ]
 
-    func initializeCall(_ iceServers: [WebRTC.RTCIceServer]?, _ remoteIceCandidates: [RTCIceCandidate], _ mediaType: CallMediaType, _ aesKey: String?) -> Call {
-        let connection = createPeerConnection(iceServers ?? getWebRTCIceServers() ?? defaultIceServers)
+    func initializeCall(_ iceServers: [WebRTC.RTCIceServer]?, _ remoteIceCandidates: [RTCIceCandidate], _ mediaType: CallMediaType, _ aesKey: String?, _ relay: Bool?) -> Call {
+        let connection = createPeerConnection(iceServers ?? getWebRTCIceServers() ?? defaultIceServers, relay)
         connection.delegate = self
-        let (localStream, remoteStream, localCamera) = self.createMediaSenders(connection)
+        let (localStream, remoteStream, localCamera) = createMediaSenders(connection)
         return Call(
             connection: connection,
             iceCandidates: remoteIceCandidates,
@@ -66,12 +66,12 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate {
         )
     }
 
-    func createPeerConnection(_ iceServers: [WebRTC.RTCIceServer]) -> RTCPeerConnection {
+    func createPeerConnection(_ iceServers: [WebRTC.RTCIceServer], _ relay: Bool?) -> RTCPeerConnection {
         let constraints = RTCMediaConstraints(mandatoryConstraints: nil,
             optionalConstraints: ["DtlsSrtpKeyAgreement": kRTCMediaConstraintsValueTrue])
 
         guard let connection = WebRTCClient.factory.peerConnection(
-            with: getCallConfig(iceServers),
+            with: getCallConfig(iceServers, relay),
             constraints: constraints, delegate: nil
         )
         else {
@@ -80,11 +80,12 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate {
         return connection
     }
 
-    func getCallConfig(_ iceServers: [WebRTC.RTCIceServer]) -> RTCConfiguration {
+    func getCallConfig(_ iceServers: [WebRTC.RTCIceServer], _ relay: Bool?) -> RTCConfiguration {
         let config = RTCConfiguration()
         config.iceServers = iceServers
         config.sdpSemantics = .unifiedPlan
         config.continualGatheringPolicy = .gatherContinually
+        config.iceTransportPolicy = relay == true ? .relay : .all
         // Allows to wait 30 sec before `failing` connection if the answer from remote side is not received in time
         config.iceInactiveTimeout = 30_000
         return config
@@ -108,11 +109,11 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate {
         switch command {
         case .capabilities:
             resp = .capabilities(capabilities: CallCapabilities(encryption: false))
-        case let .start(media: media, aesKey, _, iceServers, _):
+        case let .start(media: media, aesKey, _, iceServers, relay):
             logger.debug("starting incoming call - create webrtc session")
             if activeCall.wrappedValue != nil { endCall() }
             let encryption = supportsEncryption()
-            let call = initializeCall(iceServers?.toWebRTCIceServers(), [], media, aesKey)
+            let call = initializeCall(iceServers?.toWebRTCIceServers(), [], media, aesKey, relay)
             activeCall.wrappedValue = call
             call.connection.offer { answer in
                 Task {
@@ -134,14 +135,14 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate {
                 }
 
             }
-        case let .offer(offer, iceCandidates, media, aesKey, _, iceServers, _):
+        case let .offer(offer, iceCandidates, media, aesKey, _, iceServers, relay):
             if activeCall.wrappedValue != nil {
                 resp = .error(message: "accept: call already started")
             } else if !supportsEncryption() && aesKey != nil {
                 resp = .error(message: "accept: encryption is not supported")
             } else if let offer: CustomRTCSessionDescription = decodeJSON(decompressFromBase64(input: offer)),
                       let remoteIceCandidates: [RTCIceCandidate] = decodeJSON(decompressFromBase64(input: iceCandidates)) {
-                let call = initializeCall(iceServers?.toWebRTCIceServers(), remoteIceCandidates, media, aesKey)
+                let call = initializeCall(iceServers?.toWebRTCIceServers(), remoteIceCandidates, media, aesKey, relay)
                 activeCall.wrappedValue = call
                 let pc = call.connection
                 if let type = offer.type, let sdp = offer.sdp {
