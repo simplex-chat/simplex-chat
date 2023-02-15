@@ -181,10 +181,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate {
                       let pc = pc {
                 if (try? await pc.setRemoteDescription(RTCSessionDescription(type: type.toWebRTCSdpType(), sdp: sdp))) != nil {
                     addIceCandidates(pc, remoteIceCandidates)
-                    await sendCallResponse(.init(
-                        corrId: nil,
-                        resp: .ok,
-                        command: command))
+                    resp = .ok
                 } else {
                     resp = .error(message: "answer: remote description is not set")
                 }
@@ -193,10 +190,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate {
             if let pc = pc,
                let remoteIceCandidates: [RTCIceCandidate] = decodeJSON(decompressFromBase64(input: iceCandidates)) {
                 addIceCandidates(pc, remoteIceCandidates)
-                await sendCallResponse(.init(
-                    corrId: nil,
-                    resp: .ok,
-                    command: command))
+                resp = .ok
             } else {
                 resp = .error(message: "ice: call not started")
             }
