@@ -152,7 +152,7 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
       .setGroup(MessageGroup)
       .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
       .setGroupSummary(true)
-      .setContentIntent(chatPendingIntent(ShowChatsAction, user.userId))
+      .setContentIntent(chatPendingIntent(ShowChatsAction, null))
       .build()
 
     with(NotificationManagerCompat.from(context)) {
@@ -246,7 +246,7 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
     }
   }
 
-  private fun chatPendingIntent(intentAction: String, userId: Long, chatId: String? = null, broadcast: Boolean = false): PendingIntent {
+  private fun chatPendingIntent(intentAction: String, userId: Long?, chatId: String? = null, broadcast: Boolean = false): PendingIntent {
     Log.d(TAG, "chatPendingIntent for $intentAction")
     val uniqueInt = (System.currentTimeMillis() and 0xfffffff).toInt()
     var intent = Intent(context, if (!broadcast) MainActivity::class.java else NtfActionReceiver::class.java)

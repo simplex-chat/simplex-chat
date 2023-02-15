@@ -37,7 +37,7 @@ struct MarkedDeletedItemView: View {
 struct MarkedDeletedItemView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
-            MarkedDeletedItemView(chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent, true, false))
+            MarkedDeletedItemView(chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent, itemDeleted: .deleted))
         }
         .previewLayout(.fixed(width: 360, height: 200))
     }

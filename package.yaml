@@ -1,5 +1,5 @@
 name: simplex-chat
-version: 4.5.1.0
+version: 4.5.2.0
 #synopsis:
 #description:
 homepage: https://github.com/simplex-chat/simplex-chat#readme
@@ -82,6 +82,14 @@ executables:
 
   simplex-bot-advanced:
     source-dirs: apps/simplex-bot-advanced
+    main: Main.hs
+    dependencies:
+      - simplex-chat
+    ghc-options:
+      - -threaded
+
+  simplex-broadcast-bot:
+    source-dirs: apps/simplex-broadcast-bot
     main: Main.hs
     dependencies:
       - simplex-chat

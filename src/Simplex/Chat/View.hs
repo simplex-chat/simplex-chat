@@ -244,19 +244,19 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
     testViewChats chats = [sShow $ map toChatView chats]
       where
         toChatView :: AChat -> (Text, Text, Maybe ConnStatus)
-        toChatView (AChat _ (Chat (DirectChat Contact {localDisplayName, activeConn}) items _)) = ("@" <> localDisplayName, toCIPreview items, Just $ connStatus activeConn)
-        toChatView (AChat _ (Chat (GroupChat GroupInfo {localDisplayName}) items _)) = ("#" <> localDisplayName, toCIPreview items, Nothing)
-        toChatView (AChat _ (Chat (ContactRequest UserContactRequest {localDisplayName}) items _)) = ("<@" <> localDisplayName, toCIPreview items, Nothing)
-        toChatView (AChat _ (Chat (ContactConnection PendingContactConnection {pccConnId, pccConnStatus}) items _)) = (":" <> T.pack (show pccConnId), toCIPreview items, Just pccConnStatus)
-        toCIPreview :: [CChatItem c] -> Text
-        toCIPreview (ci : _) = testViewItem ci
-        toCIPreview _ = ""
+        toChatView (AChat _ (Chat (DirectChat Contact {localDisplayName, activeConn}) items _)) = ("@" <> localDisplayName, toCIPreview items Nothing, Just $ connStatus activeConn)
+        toChatView (AChat _ (Chat (GroupChat GroupInfo {membership, localDisplayName}) items _)) = ("#" <> localDisplayName, toCIPreview items (Just membership), Nothing)
+        toChatView (AChat _ (Chat (ContactRequest UserContactRequest {localDisplayName}) items _)) = ("<@" <> localDisplayName, toCIPreview items Nothing, Nothing)
+        toChatView (AChat _ (Chat (ContactConnection PendingContactConnection {pccConnId, pccConnStatus}) items _)) = (":" <> T.pack (show pccConnId), toCIPreview items Nothing, Just pccConnStatus)
+        toCIPreview :: [CChatItem c] -> Maybe GroupMember -> Text
+        toCIPreview (ci : _) membership_ = testViewItem ci membership_
+        toCIPreview _ _ = ""
     testViewChat :: AChat -> [StyledString]
-    testViewChat (AChat _ Chat {chatItems}) = [sShow $ map toChatView chatItems]
+    testViewChat (AChat _ Chat {chatInfo, chatItems}) = [sShow $ map toChatView chatItems]
       where
         toChatView :: CChatItem c -> ((Int, Text), Maybe (Int, Text), Maybe String)
         toChatView ci@(CChatItem dir ChatItem {quotedItem, file}) =
-          ((msgDirectionInt $ toMsgDirection dir, testViewItem ci), qItem, fPath)
+          ((msgDirectionInt $ toMsgDirection dir, testViewItem ci (chatInfoMembership chatInfo)), qItem, fPath)
           where
             qItem = case quotedItem of
               Nothing -> Nothing
@@ -265,8 +265,10 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
             fPath = case file of
               Just CIFile {filePath = Just fp} -> Just fp
               _ -> Nothing
-    testViewItem :: CChatItem c -> Text
-    testViewItem (CChatItem _ ci@ChatItem {meta = CIMeta {itemText}}) = itemText <> maybe "" (\t -> " [" <> t <> "]") (chatItemDeletedText ci)
+    testViewItem :: CChatItem c -> Maybe GroupMember -> Text
+    testViewItem (CChatItem _ ci@ChatItem {meta = CIMeta {itemText}}) membership_ =
+      let deleted_ = maybe "" (\t -> " [" <> t <> "]") (chatItemDeletedText ci membership_)
+       in itemText <> deleted_
     viewErrorsSummary :: [a] -> StyledString -> [StyledString]
     viewErrorsSummary summary s = [ttyError (T.pack . show $ length summary) <> s <> " (run with -c option to show each error)" | not (null summary)]
     contactList :: [ContactRef] -> String
@@ -276,14 +278,17 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
       | muted chat chatItem = []
       | otherwise = s
 
-chatItemDeletedText :: ChatItem c d -> Maybe Text
-chatItemDeletedText ci = deletedStateToText <$> chatItemDeletedState ci
+chatItemDeletedText :: ChatItem c d -> Maybe GroupMember -> Maybe Text
+chatItemDeletedText ci membership_ = deletedStateToText <$> chatItemDeletedState ci
   where
     deletedStateToText = \CIDeletedState {markedDeleted, deletedByMember} ->
       if markedDeleted
         then "marked deleted" <> byMember deletedByMember
         else "deleted" <> byMember deletedByMember
-    byMember m_ = maybe "" (\GroupMember {localDisplayName = m} -> " by " <> m) m_
+    byMember m_ = case (m_, membership_) of
+      (Just GroupMember {groupMemberId = mId, localDisplayName = n}, Just GroupMember {groupMemberId = membershipId}) ->
+        " by " <> if mId == membershipId then "you" else n
+      _ -> ""
 
 viewUsersList :: [UserInfo] -> [StyledString]
 viewUsersList = map userInfo . sortOn ldn
@@ -325,7 +330,7 @@ viewChats ts = concatMap chatPreview . reverse
           _ -> []
 
 viewChatItem :: forall c d. MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> CurrentTime -> [StyledString]
-viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemDeleted}, content, quotedItem, file} doShow ts =
+viewChatItem chat ci@ChatItem {chatDir, meta = meta, content, quotedItem, file} doShow ts =
   withItemDeleted <$> case chat of
     DirectChat c -> case chatDir of
       CIDirectSnd -> case content of
@@ -361,7 +366,9 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemDeleted}, conten
         quote = maybe [] (groupQuote g) quotedItem
     _ -> []
   where
-    withItemDeleted item = if isJust itemDeleted then item <> styled (colored Red) (T.unpack $ maybe "" (\t -> " [" <> t <> "]") (chatItemDeletedText ci)) else item
+    withItemDeleted item = case chatItemDeletedText ci (chatInfoMembership chat) of
+      Nothing -> item
+      Just t -> item <> styled (colored Red) (" [" <> t <> "]")
     withSndFile = withFile viewSentFileInvitation
     withRcvFile = withFile viewReceivedFileInvitation
     withFile view dir l = maybe l (\f -> l <> view dir f ts meta) file
@@ -434,7 +441,7 @@ viewItemDelete chat ChatItem {chatDir, meta, content = deletedContent} toItem by
     deletedText_ :: Maybe Text
     deletedText_ = case toItem of
       Nothing -> Just "deleted"
-      Just (AChatItem _ _ _ ci) -> chatItemDeletedText ci
+      Just (AChatItem _ _ _ ci) -> chatItemDeletedText ci $ chatInfoMembership chat
     prohibited = [styled (colored Red) ("[unexpected message deletion, please report to developers]" :: String)]
 
 directQuote :: forall d'. MsgDirectionI d' => CIDirection 'CTDirect d' -> CIQuote 'CTDirect -> [StyledString]

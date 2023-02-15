@@ -90,6 +90,11 @@ chatInfoToRef = \case
   ContactRequest UserContactRequest {contactRequestId} -> ChatRef CTContactRequest contactRequestId
   ContactConnection PendingContactConnection {pccConnId} -> ChatRef CTContactConnection pccConnId
 
+chatInfoMembership :: ChatInfo c -> Maybe GroupMember
+chatInfoMembership = \case
+  GroupChat GroupInfo {membership} -> Just membership
+  _ -> Nothing
+
 data JSONChatInfo
   = JCInfoDirect {contact :: Contact}
   | JCInfoGroup {groupInfo :: GroupInfo}

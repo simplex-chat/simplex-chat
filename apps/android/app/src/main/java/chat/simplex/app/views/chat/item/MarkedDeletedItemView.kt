@@ -14,6 +14,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
+import chat.simplex.app.model.CIDeleted
 import chat.simplex.app.model.ChatItem
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
@@ -51,7 +52,7 @@ fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, showMember: Bool
 fun PreviewMarkedDeletedItemView() {
   SimpleXTheme {
     DeletedItemView(
-      ChatItem.getSampleData(itemDeleted = true),
+      ChatItem.getSampleData(itemDeleted = CIDeleted.Deleted()),
       null
     )
   }

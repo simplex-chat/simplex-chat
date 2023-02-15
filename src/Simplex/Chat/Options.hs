@@ -7,6 +7,7 @@
 
 module Simplex.Chat.Options
   ( ChatOpts (..),
+    chatOptsP,
     getChatOpts,
     smpServersP,
     fullNetworkConfig,
@@ -43,8 +44,8 @@ data ChatOpts = ChatOpts
     maintenance :: Bool
   }
 
-chatOpts :: FilePath -> FilePath -> Parser ChatOpts
-chatOpts appDir defaultDbFileName = do
+chatOptsP :: FilePath -> FilePath -> Parser ChatOpts
+chatOptsP appDir defaultDbFileName = do
   dbFilePrefix <-
     strOption
       ( long "database"
@@ -229,7 +230,7 @@ getChatOpts :: FilePath -> FilePath -> IO ChatOpts
 getChatOpts appDir defaultDbFileName =
   execParser $
     info
-      (helper <*> versionOption <*> chatOpts appDir defaultDbFileName)
+      (helper <*> versionOption <*> chatOptsP appDir defaultDbFileName)
       (header versionStr <> fullDesc <> progDesc "Start chat with DB_FILE file and use SERVER as SMP server")
   where
     versionStr = versionString versionNumber
