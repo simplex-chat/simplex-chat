@@ -121,22 +121,6 @@ cChatParseMarkdown s = newCAString . chatParseMarkdown =<< peekCAString s
 cChatParseServer :: CString -> IO CJSONString
 cChatParseServer s = newCAString . chatParseServer =<< peekCAString s
 
-cChatEncryptMedia :: CString -> CString -> CInt -> IO ()
-cChatEncryptMedia cKey cFrame cFrameLen = do
-  key <- B.packCStringLen (cKey, 32)
-  str <- B.packCStringLen (cFrame, fromIntegral cFrameLen)
-  let _ = B.unpack $ chatEncryptMedia key str
-  -- TODO write bytes back to cFrame
-  pure ()
-
-cChatDecryptMedia :: CString -> CString -> CInt -> IO ()
-cChatDecryptMedia cKey cFrame cFrameLen = do
-  key <- B.packCStringLen (cKey, 32)
-  str <- B.packCStringLen (cFrame, fromIntegral cFrameLen)
-  let _ = B.unpack $ chatDecryptMedia key str
-  -- TODO write bytes back to cFrame
-  pure ()
-
 mobileChatOpts :: ChatOpts
 mobileChatOpts =
   ChatOpts
