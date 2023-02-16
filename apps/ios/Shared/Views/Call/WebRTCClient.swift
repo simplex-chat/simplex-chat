@@ -93,7 +93,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCVideoCapturerDelega
         return config
     }
 
-    func supportsEncryption() -> Bool { false }
+    func supportsEncryption() -> Bool { true }
 
     func addIceCandidates(_ connection: RTCPeerConnection, _ remoteIceCandidates: [RTCIceCandidate]) {
         remoteIceCandidates.forEach { candidate in
@@ -268,12 +268,12 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCVideoCapturerDelega
         let dataSize = CVPixelBufferGetDataSize(pixelBuffer)
         debugPrint("LALAL data size \(dataSize)")
         CVPixelBufferLockBaseAddress(pixelBuffer, CVPixelBufferLockFlags(rawValue: 0))
-        let int32Buffer: UnsafeMutablePointer<UInt8> = unsafeBitCast(CVPixelBufferGetBaseAddress(pixelBuffer), to: UnsafeMutablePointer<UInt8>.self)
-        var i = 0
+        let int8Buffer: UnsafeMutablePointer<UInt8> = unsafeBitCast(CVPixelBufferGetBaseAddress(pixelBuffer), to: UnsafeMutablePointer<UInt8>.self)
+        /*var i = 0
         while i < dataSize / 3 * 2 {
-            int32Buffer[i] = 1
+            int8Buffer[i] = 1
             i += 1
-        }
+        }*/
         CVPixelBufferUnlockBaseAddress(pixelBuffer, CVPixelBufferLockFlags(rawValue: 0))
 //        let data = Data.from(pixelBuffer: pixelBuffer)
 //        pixelBuffer = CVPixelBuffer.from(data, width: CVPixelBufferGetWidth(pixelBuffer), height: CVPixelBufferGetHeight(pixelBuffer), pixelFormat: CVPixelBufferGetPixelFormatType(pixelBuffer))
