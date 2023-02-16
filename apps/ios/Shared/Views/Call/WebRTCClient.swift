@@ -8,7 +8,7 @@ import LZString
 import SwiftUI
 import SimpleXChat
 
-final class WebRTCClient: NSObject, RTCVideoViewDelegate {
+final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCVideoCapturerDelegate {
     private static let factory: RTCPeerConnectionFactory = {
         RTCInitializeSSL()
         let videoEncoderFactory = RTCDefaultVideoEncoderFactory()
@@ -21,6 +21,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate {
         var iceCandidates: [RTCIceCandidate]
         var localMedia: CallMediaType
         var localCamera: RTCVideoCapturer
+        var videoSource: RTCVideoSource
         var localStream: RTCVideoTrack
         var remoteStream: RTCVideoTrack?
         var device: AVCaptureDevice.Position = .front
@@ -54,12 +55,13 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate {
     func initializeCall(_ iceServers: [WebRTC.RTCIceServer]?, _ remoteIceCandidates: [RTCIceCandidate], _ mediaType: CallMediaType, _ aesKey: String?, _ relay: Bool?) -> Call {
         let connection = createPeerConnection(iceServers ?? getWebRTCIceServers() ?? defaultIceServers, relay)
         connection.delegate = self
-        let (localStream, remoteStream, localCamera) = createMediaSenders(connection)
+        let (localStream, remoteStream, localCamera, videoSource) = createMediaSenders(connection)
         return Call(
             connection: connection,
             iceCandidates: remoteIceCandidates,
             localMedia: mediaType,
             localCamera: localCamera,
+            videoSource: videoSource,
             localStream: localStream,
             remoteStream: remoteStream,
             aesKey: aesKey
@@ -232,6 +234,12 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate {
     }
 
     func startCaptureLocalVideo(_ activeCall: Call) {
+        let camera = (RTCCameraVideoCapturer.captureDevices().first { $0.position == activeCall.device })!
+            let formats = RTCCameraVideoCapturer.supportedFormats(for: camera).forEach{ format in
+                format.supportedDepthDataFormats.forEach { f in f.supportedDepthDataFormats }
+            }
+        debugPrint("LALAL \(formats)")
+
         guard
             let capturer = activeCall.localCamera as? RTCCameraVideoCapturer,
             let camera = (RTCCameraVideoCapturer.captureDevices().first { $0.position == activeCall.device }),
@@ -242,19 +250,70 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate {
             return
         }
 
+        debugPrint("LALAL format \(format)")
+
+        capturer.delegate = self
         capturer.stopCapture()
         capturer.startCapture(with: camera,
             format: format,
             fps: Int(fps.maxFrameRate))
     }
 
-    private func createMediaSenders(_ connection: RTCPeerConnection) -> (RTCVideoTrack, RTCVideoTrack?, RTCVideoCapturer) {
+    func capturer(_ capturer: RTCVideoCapturer, didCapture frame: RTCVideoFrame) {
+        debugPrint("LALAL \(frame.width) \(frame.height)")
+        let planar: RTCYUVPlanarBuffer = frame.buffer.toI420() as RTCYUVPlanarBuffer
+        let buffer: RTCCVPixelBuffer = frame.buffer as! RTCCVPixelBuffer
+        var pixelBuffer: CVPixelBuffer = buffer.pixelBuffer
+        let baseAddress = CVPixelBufferGetBaseAddressOfPlane(pixelBuffer, 0)
+        let dataSize = CVPixelBufferGetDataSize(pixelBuffer)
+        debugPrint("LALAL data size \(dataSize)")
+        CVPixelBufferLockBaseAddress(pixelBuffer, CVPixelBufferLockFlags(rawValue: 0))
+        let int32Buffer: UnsafeMutablePointer<UInt8> = unsafeBitCast(CVPixelBufferGetBaseAddress(pixelBuffer), to: UnsafeMutablePointer<UInt8>.self)
+        var i = 0
+        while i < dataSize / 3 * 2 {
+            int32Buffer[i] = 1
+            i += 1
+        }
+        CVPixelBufferUnlockBaseAddress(pixelBuffer, CVPixelBufferLockFlags(rawValue: 0))
+//        let data = Data.from(pixelBuffer: pixelBuffer)
+//        pixelBuffer = CVPixelBuffer.from(data, width: CVPixelBufferGetWidth(pixelBuffer), height: CVPixelBufferGetHeight(pixelBuffer), pixelFormat: CVPixelBufferGetPixelFormatType(pixelBuffer))
+        //CVPixelBufferLockBaseAddress(pixelBuffer, CVPixelBufferLockFlags(rawValue: 0))
+
+        // IT'S FOR BGRA
+        /*
+         let int32Buffer: UnsafeMutablePointer<UInt32> = unsafeBitCast(CVPixelBufferGetBaseAddress(pixelBuffer), to: UnsafeMutablePointer<UInt32>.self)
+        //debugPrint("LALAL \(CVPixelBufferGetWidth(pixelBuffer)) \(CVPixelBufferGetHeight(pixelBuffer))  \(frame.buffer.toI420())")
+        let int32PerRow: Int = CVPixelBufferGetBytesPerRow(pixelBuffer)
+        // BGRA = Blue Green Red Alpha
+        let totalPixels = frame.width * frame.height
+        var t = 0
+        var x = 0
+        var y = 0
+        while(t < totalPixels) {
+            int32Buffer[x * 4 + y * int32PerRow] = 0
+            t += 1
+            if y == int32PerRow {
+                y = 0
+                x += 1
+            } else {
+                y += 1
+            }
+        }
+        */
+        //CVPixelBufferUnlockBaseAddress(pixelBuffer, CVPixelBufferLockFlags(rawValue: 0))
+        let modifiedBuffer: RTCCVPixelBuffer = RTCCVPixelBuffer(pixelBuffer: pixelBuffer)
+        let frame: RTCVideoFrame = RTCVideoFrame(buffer: modifiedBuffer, rotation: frame.rotation, timeStampNs: frame.timeStampNs)
+        activeCall.wrappedValue?.videoSource.capturer(capturer, didCapture: frame)
+    }
+
+    private func createMediaSenders(_ connection: RTCPeerConnection) -> (RTCVideoTrack, RTCVideoTrack?, RTCVideoCapturer, RTCVideoSource) {
         let streamId = "stream"
         let audioTrack = createAudioTrack()
         connection.add(audioTrack, streamIds: [streamId])
-        let (videoTrack, localCamera) = createVideoTrack()
+        let (videoTrack, localCamera, videoSource) = createVideoTrack()
         connection.add(videoTrack, streamIds: [streamId])
-        return (videoTrack, connection.transceivers.first { $0.mediaType == .video }?.receiver.track as? RTCVideoTrack, localCamera)
+        connection.senders.first!
+        return (videoTrack, connection.transceivers.first { $0.mediaType == .video }?.receiver.track as? RTCVideoTrack, localCamera, videoSource)
     }
 
     private func createAudioTrack() -> RTCAudioTrack {
@@ -264,7 +323,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate {
         return audioTrack
     }
 
-    private func createVideoTrack() -> (RTCVideoTrack, RTCVideoCapturer) {
+    private func createVideoTrack() -> (RTCVideoTrack, RTCVideoCapturer, RTCVideoSource) {
         let videoSource = WebRTCClient.factory.videoSource()
 
         #if targetEnvironment(simulator)
@@ -274,7 +333,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate {
         #endif
 
         let videoTrack = WebRTCClient.factory.videoTrack(with: videoSource, trackId: "video0")
-        return (videoTrack, localCamera)
+        return (videoTrack, localCamera, videoSource)
     }
 
     func endCall() {
