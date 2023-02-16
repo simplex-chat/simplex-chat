@@ -21,7 +21,7 @@ import Data.Maybe (fromMaybe)
 import Database.SQLite.Simple (SQLError (..))
 import qualified Database.SQLite.Simple as DB
 import Foreign.C.String
-import Foreign.C.Types (CInt (..), CUChar)
+import Foreign.C.Types (CInt (..))
 import Foreign.Ptr
 import Foreign.StablePtr
 import Foreign.Storable (poke)
