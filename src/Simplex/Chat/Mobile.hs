@@ -18,6 +18,7 @@ import Data.Functor (($>))
 import Data.List (find)
 import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe)
+import Data.Word (Word8)
 import Database.SQLite.Simple (SQLError (..))
 import qualified Database.SQLite.Simple as DB
 import Foreign.C.String
@@ -64,9 +65,9 @@ foreign export ccall "chat_parse_markdown" cChatParseMarkdown :: CString -> IO C
 
 foreign export ccall "chat_parse_server" cChatParseServer :: CString -> IO CJSONString
 
-foreign export ccall "chat_encrypt_media" cChatEncryptMedia :: CString -> CString -> CInt -> IO ()
+foreign export ccall "chat_encrypt_media" cChatEncryptMedia :: CString -> Ptr Word8 -> CInt -> IO ()
 
-foreign export ccall "chat_decrypt_media" cChatDecryptMedia :: CString -> CString -> CInt -> IO ()
+foreign export ccall "chat_decrypt_media" cChatDecryptMedia :: CString -> Ptr Word8 -> CInt -> IO ()
 
 -- | check / migrate database and initialize chat controller on success
 cChatMigrateInit :: CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
