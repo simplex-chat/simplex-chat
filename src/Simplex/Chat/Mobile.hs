@@ -133,7 +133,7 @@ cChatDecryptMedia :: CString -> CString -> CInt -> IO ()
 cChatDecryptMedia cKey cFrame cFrameLen = do
   key <- B.packCStringLen (cKey, 32)
   str <- B.packCStringLen (cFrame, fromIntegral cFrameLen)
-  let _ = B.unpack $ chatEncryptMedia key str
+  let _ = B.unpack $ chatDecryptMedia key str
   -- TODO write bytes back to cFrame
   pure ()
 
