@@ -66,7 +66,7 @@ foreign export ccall "chat_parse_server" cChatParseServer :: CString -> IO CJSON
 
 foreign export ccall "chat_encrypt_media" cChatEncryptMedia :: CString -> CString -> CInt -> IO ()
 
--- foreign export ccall "chat_decrypt_media" cChatDecryptMedia :: Ptr CUChar -> Int -> Ptr CUChar -> Int -> IO ()
+foreign export ccall "chat_decrypt_media" cChatDecryptMedia :: CString -> CString -> CInt -> IO ()
 
 -- | check / migrate database and initialize chat controller on success
 cChatMigrateInit :: CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
@@ -129,11 +129,13 @@ cChatEncryptMedia cKey cFrame cFrameLen = do
   -- TODO write bytes back to cFrame
   pure ()
 
--- cChatDecryptMedia :: Ptr CUChar -> Int -> Ptr CUChar -> Int -> IO ()
--- cChatDecryptMedia k s = do
---   key <- B.packCStringLen k
---   str <- B.packCStringLen s
---   newCAStringLen . B.unpack $ cChatDecryptMedia key str
+cChatDecryptMedia :: CString -> CString -> CInt -> IO ()
+cChatDecryptMedia cKey cFrame cFrameLen = do
+  key <- B.packCStringLen (cKey, 32)
+  str <- B.packCStringLen (cFrame, fromIntegral cFrameLen)
+  let _ = B.unpack $ chatEncryptMedia key str
+  -- TODO write bytes back to cFrame
+  pure ()
 
 mobileChatOpts :: ChatOpts
 mobileChatOpts =
