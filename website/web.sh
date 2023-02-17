@@ -24,6 +24,7 @@ for lang in "${langs[@]}"; do
   cp src/index.html src/$lang
   cp src/contact.html src/$lang
   cp src/invitation.html src/$lang
+  echo "{\"lang\":\"$lang\"}" > src/$lang/$lang.json
   echo "done $lang copying"
 done
 
