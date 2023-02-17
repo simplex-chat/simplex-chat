@@ -21,9 +21,10 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCVideoCapturerDelega
         var iceCandidates: [RTCIceCandidate]
         var localMedia: CallMediaType
         var localCamera: RTCVideoCapturer
-        var videoSource: RTCVideoSource
+        var localVideoSource: RTCVideoSource
         var localStream: RTCVideoTrack
         var remoteStream: RTCVideoTrack?
+        var encryptedLocalVideoSource: RTCVideoSource
         var device: AVCaptureDevice.Position = .front
         var aesKey: String?
     }
@@ -55,15 +56,16 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCVideoCapturerDelega
     func initializeCall(_ iceServers: [WebRTC.RTCIceServer]?, _ remoteIceCandidates: [RTCIceCandidate], _ mediaType: CallMediaType, _ aesKey: String?, _ relay: Bool?) -> Call {
         let connection = createPeerConnection(iceServers ?? getWebRTCIceServers() ?? defaultIceServers, relay)
         connection.delegate = self
-        let (localStream, remoteStream, localCamera, videoSource) = createMediaSenders(connection)
+        let (localStream, remoteStream, localCamera, localVideoSource, encryptedLocalVideoSource) = createMediaSenders(connection)
         return Call(
             connection: connection,
             iceCandidates: remoteIceCandidates,
             localMedia: mediaType,
             localCamera: localCamera,
-            videoSource: videoSource,
+            localVideoSource: localVideoSource,
             localStream: localStream,
             remoteStream: remoteStream,
+            encryptedLocalVideoSource: encryptedLocalVideoSource,
             aesKey: aesKey
         )
     }
@@ -93,7 +95,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCVideoCapturerDelega
         return config
     }
 
-    func supportsEncryption() -> Bool { true }
+    func supportsEncryption() -> Bool { false }
 
     func addIceCandidates(_ connection: RTCPeerConnection, _ remoteIceCandidates: [RTCIceCandidate]) {
         remoteIceCandidates.forEach { candidate in
@@ -221,11 +223,8 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCVideoCapturerDelega
 
     func addLocalRenderer(_ activeCall: Call, _ renderer: RTCEAGLVideoView) {
         activeCall.localStream.add(renderer)
+        // To get width and height of a frame, see videoView(videoView:, didChangeVideoSize)
         renderer.delegate = self
-    }
-
-    func addRemoteRenderer(_ activeCall: Call, _ renderer: RTCVideoRenderer) {
-        activeCall.remoteStream?.add(renderer)
     }
 
     func videoView(_ videoView: RTCVideoRenderer, didChangeVideoSize size: CGSize) {
@@ -233,12 +232,41 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCVideoCapturerDelega
         localRendererAspectRatio.wrappedValue = size.width / size.height
     }
 
+    private class EncryptedRTCVideoRenderer: NSObject, RTCVideoRenderer {
+        let delegate: RTCVideoRenderer
+        let aesKey: String
+        init (_ aesKey: String, _ delegate: RTCVideoRenderer) {
+            self.aesKey = aesKey
+            self.delegate = delegate
+        }
+        func setSize(_ size: CGSize) {
+            delegate.setSize(size)
+        }
+
+        func renderFrame(_ frame: RTCVideoFrame?) {
+            if let frame = frame {
+                delegate.renderFrame(frame.encryption(aesKey, encrypt: false))
+            } else {
+                delegate.renderFrame(frame)
+            }
+        }
+    }
+
+    func addRemoteRenderer(_ activeCall: Call, _ renderer: RTCVideoRenderer) {
+        let aesKey: String? = activeCall.aesKey ?? "LALAL"
+        if let aesKey = aesKey {
+            activeCall.remoteStream?.add(EncryptedRTCVideoRenderer(aesKey, renderer))
+        } else {
+            activeCall.remoteStream?.add(renderer)
+        }
+    }
+
     func startCaptureLocalVideo(_ activeCall: Call) {
         let camera = (RTCCameraVideoCapturer.captureDevices().first { $0.position == activeCall.device })!
             let formats = RTCCameraVideoCapturer.supportedFormats(for: camera).forEach{ format in
                 format.supportedDepthDataFormats.forEach { f in f.supportedDepthDataFormats }
             }
-        debugPrint("LALAL \(formats)")
+        debugPrint("LALAL formats \(formats)")
 
         guard
             let capturer = activeCall.localCamera as? RTCCameraVideoCapturer,
@@ -260,60 +288,28 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCVideoCapturerDelega
     }
 
     func capturer(_ capturer: RTCVideoCapturer, didCapture frame: RTCVideoFrame) {
-        debugPrint("LALAL \(frame.width) \(frame.height)")
-        let planar: RTCYUVPlanarBuffer = frame.buffer.toI420() as RTCYUVPlanarBuffer
+        activeCall.wrappedValue?.localVideoSource.capturer(capturer, didCapture: frame)
+        let aesKey: String? = activeCall.wrappedValue?.aesKey ?? "LALAL"
+        // Only be here when encryption is used
+        guard let aesKey = aesKey else { return }
         let buffer: RTCCVPixelBuffer = frame.buffer as! RTCCVPixelBuffer
         var pixelBuffer: CVPixelBuffer = buffer.pixelBuffer
-        let baseAddress = CVPixelBufferGetBaseAddressOfPlane(pixelBuffer, 0)
-        let dataSize = CVPixelBufferGetDataSize(pixelBuffer)
-        debugPrint("LALAL data size \(dataSize)")
-        CVPixelBufferLockBaseAddress(pixelBuffer, CVPixelBufferLockFlags(rawValue: 0))
-        let int8Buffer: UnsafeMutablePointer<UInt8> = unsafeBitCast(CVPixelBufferGetBaseAddress(pixelBuffer), to: UnsafeMutablePointer<UInt8>.self)
-        /*var i = 0
-        while i < dataSize / 3 * 2 {
-            int8Buffer[i] = 1
-            i += 1
-        }*/
-        CVPixelBufferUnlockBaseAddress(pixelBuffer, CVPixelBufferLockFlags(rawValue: 0))
-//        let data = Data.from(pixelBuffer: pixelBuffer)
-//        pixelBuffer = CVPixelBuffer.from(data, width: CVPixelBufferGetWidth(pixelBuffer), height: CVPixelBufferGetHeight(pixelBuffer), pixelFormat: CVPixelBufferGetPixelFormatType(pixelBuffer))
-        //CVPixelBufferLockBaseAddress(pixelBuffer, CVPixelBufferLockFlags(rawValue: 0))
-
-        // IT'S FOR BGRA
-        /*
-         let int32Buffer: UnsafeMutablePointer<UInt32> = unsafeBitCast(CVPixelBufferGetBaseAddress(pixelBuffer), to: UnsafeMutablePointer<UInt32>.self)
-        //debugPrint("LALAL \(CVPixelBufferGetWidth(pixelBuffer)) \(CVPixelBufferGetHeight(pixelBuffer))  \(frame.buffer.toI420())")
-        let int32PerRow: Int = CVPixelBufferGetBytesPerRow(pixelBuffer)
-        // BGRA = Blue Green Red Alpha
-        let totalPixels = frame.width * frame.height
-        var t = 0
-        var x = 0
-        var y = 0
-        while(t < totalPixels) {
-            int32Buffer[x * 4 + y * int32PerRow] = 0
-            t += 1
-            if y == int32PerRow {
-                y = 0
-                x += 1
-            } else {
-                y += 1
-            }
+//        debugPrint("LALAL \(frame.width) \(frame.height)")
+        if let newPixelBuffer = pixelBuffer.copy(aesKey, encrypt: true) {
+            let modifiedBuffer: RTCCVPixelBuffer = RTCCVPixelBuffer(pixelBuffer: newPixelBuffer)
+            print("LALAL0 \(modifiedBuffer) \(modifiedBuffer.width) \(modifiedBuffer.height) \(modifiedBuffer.pixelBuffer)")
+            let frame: RTCVideoFrame = RTCVideoFrame(buffer: modifiedBuffer, rotation: frame.rotation, timeStampNs: frame.timeStampNs)
+            activeCall.wrappedValue?.encryptedLocalVideoSource.capturer(capturer, didCapture: frame)
         }
-        */
-        //CVPixelBufferUnlockBaseAddress(pixelBuffer, CVPixelBufferLockFlags(rawValue: 0))
-        let modifiedBuffer: RTCCVPixelBuffer = RTCCVPixelBuffer(pixelBuffer: pixelBuffer)
-        let frame: RTCVideoFrame = RTCVideoFrame(buffer: modifiedBuffer, rotation: frame.rotation, timeStampNs: frame.timeStampNs)
-        activeCall.wrappedValue?.videoSource.capturer(capturer, didCapture: frame)
     }
 
-    private func createMediaSenders(_ connection: RTCPeerConnection) -> (RTCVideoTrack, RTCVideoTrack?, RTCVideoCapturer, RTCVideoSource) {
+    private func createMediaSenders(_ connection: RTCPeerConnection) -> (RTCVideoTrack, RTCVideoTrack?, RTCVideoCapturer, RTCVideoSource, RTCVideoSource) {
         let streamId = "stream"
         let audioTrack = createAudioTrack()
         connection.add(audioTrack, streamIds: [streamId])
-        let (videoTrack, localCamera, videoSource) = createVideoTrack()
-        connection.add(videoTrack, streamIds: [streamId])
-        connection.senders.first!
-        return (videoTrack, connection.transceivers.first { $0.mediaType == .video }?.receiver.track as? RTCVideoTrack, localCamera, videoSource)
+        let (localVideoTrack, localCamera, localVideoSource, encryptedLocalVideoTrack, encryptedLocalVideoSource) = createVideoTrack()
+        connection.add(encryptedLocalVideoTrack, streamIds: [streamId])
+        return (localVideoTrack, connection.transceivers.first { $0.mediaType == .video }?.receiver.track as? RTCVideoTrack, localCamera, localVideoSource, encryptedLocalVideoSource)
     }
 
     private func createAudioTrack() -> RTCAudioTrack {
@@ -323,17 +319,20 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCVideoCapturerDelega
         return audioTrack
     }
 
-    private func createVideoTrack() -> (RTCVideoTrack, RTCVideoCapturer, RTCVideoSource) {
-        let videoSource = WebRTCClient.factory.videoSource()
+    private func createVideoTrack() -> (RTCVideoTrack, RTCVideoCapturer, RTCVideoSource, RTCVideoTrack, RTCVideoSource) {
+        let localVideoSource = WebRTCClient.factory.videoSource()
+        // Can be encrypted or not
+        let encryptedLocalVideoSource = WebRTCClient.factory.videoSource()
 
         #if targetEnvironment(simulator)
-        let localCamera = RTCFileVideoCapturer(delegate: videoSource)
+        let localCamera = RTCFileVideoCapturer(delegate: self)
         #else
-        let localCamera = RTCCameraVideoCapturer(delegate: videoSource)
+        let localCamera = RTCCameraVideoCapturer(delegate: self)
         #endif
 
-        let videoTrack = WebRTCClient.factory.videoTrack(with: videoSource, trackId: "video0")
-        return (videoTrack, localCamera, videoSource)
+        let localVideoTrack = WebRTCClient.factory.videoTrack(with: localVideoSource, trackId: "video-1")
+        let encryptedLocalVideoTrack = WebRTCClient.factory.videoTrack(with: encryptedLocalVideoSource, trackId: "video0")
+        return (localVideoTrack, localCamera, localVideoSource, encryptedLocalVideoTrack, encryptedLocalVideoSource)
     }
 
     func endCall() {
@@ -656,5 +655,167 @@ extension RTCSignalingState {
         case .closed: return "closed"
         default: return nil // unknown
         }
+    }
+}
+
+extension CVPixelBuffer {
+    func copy(_ aesKey: String?, encrypt: Bool) -> CVPixelBuffer? {
+        var newPixelBuffer: CVPixelBuffer!
+        let res = CVPixelBufferCreate(
+            kCFAllocatorDefault,
+            CVPixelBufferGetWidth(self),
+            CVPixelBufferGetHeight(self),
+            CVPixelBufferGetPixelFormatType(self),
+            nil,
+            &newPixelBuffer)
+        guard res == kCVReturnSuccess else { fatalError() }
+
+        CVPixelBufferLockBaseAddress(self, .readOnly)
+        CVPixelBufferLockBaseAddress(newPixelBuffer, CVPixelBufferLockFlags(rawValue: 0))
+        defer {
+            CVPixelBufferUnlockBaseAddress(newPixelBuffer, CVPixelBufferLockFlags(rawValue: 0))
+            CVPixelBufferUnlockBaseAddress(self, .readOnly)
+        }
+        guard let baseAddress: UnsafeMutableRawPointer = CVPixelBufferGetBaseAddress(self) else {
+            logger.error("Unable to get base address of video frame")
+            return nil
+        }
+        let dataSize = CVPixelBufferGetDataSize(self)
+//        debugPrint("LALAL data size \(dataSize)")
+        //let int8Buffer: UnsafeMutablePointer<UInt8> = unsafeBitCast(baseAddress, to: UnsafeMutablePointer<UInt8>.self)
+
+        guard let newBaseAddress: UnsafeMutableRawPointer = CVPixelBufferGetBaseAddress(newPixelBuffer) else {
+            logger.error("Unable to get base address of new video frame")
+            return nil
+        }
+        var key: [CChar]? = aesKey?.cString(using: .utf8)
+        let planeCount: Int = CVPixelBufferGetPlaneCount(self)
+        if planeCount == 0 {
+            let height = CVPixelBufferGetHeight(self)
+            let bytesPerRow = CVPixelBufferGetBytesPerRow(self)
+            let newBytesPerRow = CVPixelBufferGetBytesPerRow(newPixelBuffer)
+            let len = height * newBytesPerRow
+            if bytesPerRow == newBytesPerRow {
+                memcpy(newBaseAddress, baseAddress, len)
+            } else {
+                var startOfRow = baseAddress
+                var newStartOfRow = newBaseAddress
+                for _ in 0..<height {
+                    memcpy(newStartOfRow, startOfRow, min(bytesPerRow, newBytesPerRow))
+                    startOfRow = startOfRow.advanced(by: bytesPerRow)
+                    newStartOfRow = newStartOfRow.advanced(by: newBytesPerRow)
+                }
+            }
+        } else {
+            for plane in 0..<planeCount {
+                let planeBaseAddress = CVPixelBufferGetBaseAddressOfPlane(self, plane)
+                let newPlaneBaseAddress = CVPixelBufferGetBaseAddressOfPlane(newPixelBuffer, plane)
+                let height = CVPixelBufferGetHeightOfPlane(self, plane)
+                let bytesPerRow = CVPixelBufferGetBytesPerRowOfPlane(self, plane)
+                let newBytesPerRow = CVPixelBufferGetBytesPerRowOfPlane(newPixelBuffer, plane)
+                if bytesPerRow == newBytesPerRow {
+                    memcpy(newPlaneBaseAddress, planeBaseAddress, height * bytesPerRow)
+                } else {
+                    var startOfRow = planeBaseAddress
+                    var newStartOfRow = newPlaneBaseAddress
+                    for _ in 0..<height {
+                        memcpy(newStartOfRow, startOfRow, min(bytesPerRow, newBytesPerRow))
+                        startOfRow = startOfRow?.advanced(by: bytesPerRow)
+                        newStartOfRow = newStartOfRow?.advanced(by: newBytesPerRow)
+                    }
+                }
+            }
+        }
+        //guard let newFrameMem: UnsafeMutableRawPointer = malloc(dataSize) else { fatalError() }
+//            memcpy(newBaseAddress, baseAddress, dataSize)
+        let newInt8Buffer: UnsafeMutablePointer<UInt8> = unsafeBitCast(newBaseAddress, to: UnsafeMutablePointer<UInt8>.self)
+        if aesKey != nil {
+            if encrypt {
+                chat_encrypt_media(&key, baseAddress, Int32(dataSize))
+            } else {
+                chat_decrypt_media(&key, baseAddress, Int32(dataSize))
+            }
+        }
+        /*var i = 0
+        while i < dataSize / 3 * 2 {
+            newInt8Buffer[i] = 1
+            i += 1
+        }*/
+//        let data = Data.from(pixelBuffer: self)
+//        pixelBuffer = CVPixelBuffer.from(data, width: CVPixelBufferGetWidth(pixelBuffer), height: CVPixelBufferGetHeight(pixelBuffer), pixelFormat: CVPixelBufferGetPixelFormatType(pixelBuffer))
+        //CVPixelBufferLockBaseAddress(pixelBuffer, CVPixelBufferLockFlags(rawValue: 0))
+
+        // IT'S FOR BGRA
+        /*
+         let int32Buffer: UnsafeMutablePointer<UInt32> = unsafeBitCast(CVPixelBufferGetBaseAddress(pixelBuffer), to: UnsafeMutablePointer<UInt32>.self)
+        //debugPrint("LALAL \(CVPixelBufferGetWidth(pixelBuffer)) \(CVPixelBufferGetHeight(pixelBuffer))  \(frame.buffer.toI420())")
+        let int32PerRow: Int = CVPixelBufferGetBytesPerRow(pixelBuffer)
+        // BGRA = Blue Green Red Alpha
+        let totalPixels = frame.width * frame.height
+        var t = 0
+        var x = 0
+        var y = 0
+        while(t < totalPixels) {
+            int32Buffer[x * 4 + y * int32PerRow] = 0
+            t += 1
+            if y == int32PerRow {
+                y = 0
+                x += 1
+            } else {
+                y += 1
+            }
+        }
+        */
+        //CVPixelBufferUnlockBaseAddress(pixelBuffer, CVPixelBufferLockFlags(rawValue: 0))
+        return newPixelBuffer
+    }
+}
+
+extension RTCVideoFrame {
+    func encryption(_ aesKey: String, encrypt: Bool) -> RTCVideoFrame? {
+        if let buffer: RTCCVPixelBuffer = self.buffer as? RTCCVPixelBuffer {
+            let pixelBuffer: CVPixelBuffer = buffer.pixelBuffer
+            if let newPixelBuffer = pixelBuffer.copy(aesKey, encrypt: encrypt) {
+                let modifiedBuffer: RTCCVPixelBuffer = RTCCVPixelBuffer(pixelBuffer: newPixelBuffer)
+//                print("LALAL1 \(modifiedBuffer) \(modifiedBuffer.width) \(modifiedBuffer.height) \(modifiedBuffer.pixelBuffer)")
+                return RTCVideoFrame(buffer: modifiedBuffer, rotation: self.rotation, timeStampNs: self.timeStampNs)
+            }
+        } else if let buffer: RTCI420Buffer = self.buffer as? RTCI420Buffer {
+            if let newPixelBuffer = buffer.encryption(aesKey, encrypt: false) {
+                let modifiedBuffer: RTCCVPixelBuffer = RTCCVPixelBuffer(pixelBuffer: newPixelBuffer)
+//                print("LALAL2 \(modifiedBuffer) \(modifiedBuffer.width) \(modifiedBuffer.height) \(modifiedBuffer.pixelBuffer)")
+                return RTCVideoFrame(buffer: modifiedBuffer, rotation: self.rotation, timeStampNs: self.timeStampNs)
+            }
+        }
+        return nil
+    }
+}
+
+extension RTCI420Buffer {
+    func encryption(_ aesKey: String, encrypt: Bool) -> CVPixelBuffer? {
+        var newPixelBuffer: CVPixelBuffer!
+        let res = CVPixelBufferCreate(
+            kCFAllocatorDefault,
+            Int(self.width),
+            Int(self.height),
+            kCVPixelFormatType_420YpCbCr8PlanarFullRange,
+            nil,
+            &newPixelBuffer)
+        guard res == kCVReturnSuccess else { fatalError() }
+
+        CVPixelBufferLockBaseAddress(newPixelBuffer, CVPixelBufferLockFlags(rawValue: 0))
+        defer {
+            CVPixelBufferUnlockBaseAddress(newPixelBuffer, CVPixelBufferLockFlags(rawValue: 0))
+        }
+        let yPlane = CVPixelBufferGetBaseAddressOfPlane(newPixelBuffer, 0)
+        let uPlane = CVPixelBufferGetBaseAddressOfPlane(newPixelBuffer, 1)
+        guard let uPlane = uPlane, let yPlane = yPlane else { return nil }
+//        debugPrint("LALAL planes \(yPlane)  \(uPlane)   \(uPlane - yPlane)   \(Int(self.width) * Int(self.height) / 2)")
+        var w = CVPixelBufferGetWidthOfPlane(newPixelBuffer, 0)
+        var h = CVPixelBufferGetHeightOfPlane(newPixelBuffer, 0)
+        memcpy(yPlane, self.dataY, w * h)
+        memcpy(uPlane, self.dataU, (w * h) / 2)
+//        memcpy(vPlane, self.dataV, w * h)
+        return newPixelBuffer
     }
 }
