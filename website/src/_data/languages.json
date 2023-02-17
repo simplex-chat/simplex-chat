@@ -13,6 +13,18 @@
             "enabled": true
         },
         {
+            "label": "nl",
+            "name": "Nederlands",
+            "flag": "/img/flags/nl.svg",
+            "enabled": true
+        },
+        {
+            "label": "nb_NO",
+            "name": "Norsk",
+            "flag": "/img/flags/nb_NO.svg",
+            "enabled": true
+        },
+        {
             "label": "fr",
             "name": "Français",
             "flag": "/img/flags/fr.svg",
