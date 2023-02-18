@@ -11,7 +11,10 @@
     console.log(connQRCodes);
     if (complete || !connURIel || !mobileConnURIanchor || connQRCodes < 2) return
     complete = true
-    const connURI = document.location.toString().replace(/\/(contact|invitation)\//, "/$1");
+    const urlParts = document.location.toString().split("/");
+    if (urlParts[3] != "contact" && urlParts[3] != "invitation") urlParts.splice(3, 1);
+    const locationURL = urlParts.join("/");
+    const connURI = locationURL.toString().replace(/\/(contact|invitation)\//, "/$1");
     connURIel.innerText = "/c " + connURI;
     const parsedURI = new URL(connURI)
     mobileConnURIanchor.href = "simplex:" + parsedURI.pathname + parsedURI.hash
