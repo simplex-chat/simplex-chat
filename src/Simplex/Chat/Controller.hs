@@ -293,14 +293,14 @@ data ChatCommand
   | AddressAutoAccept (Maybe AutoAccept)
   | AcceptContact ContactName
   | RejectContact ContactName
-  | SendMessage ChatName ByteString
-  | SendLiveMessage ChatName ByteString
-  | SendMessageQuote {contactName :: ContactName, msgDir :: AMsgDirection, quotedMsg :: ByteString, message :: ByteString}
-  | SendMessageBroadcast ByteString -- UserId (not used in UI)
-  | DeleteMessage ChatName ByteString
-  | DeleteMemberMessage GroupName ContactName ByteString
-  | EditMessage {chatName :: ChatName, editedMsg :: ByteString, message :: ByteString}
-  | UpdateLiveMessage {chatName :: ChatName, chatItemId :: ChatItemId, liveMessage :: Bool, message :: ByteString}
+  | SendMessage ChatName Text
+  | SendLiveMessage ChatName Text
+  | SendMessageQuote {contactName :: ContactName, msgDir :: AMsgDirection, quotedMsg :: Text, message :: Text}
+  | SendMessageBroadcast Text -- UserId (not used in UI)
+  | DeleteMessage ChatName Text
+  | DeleteMemberMessage GroupName ContactName Text
+  | EditMessage {chatName :: ChatName, editedMsg :: Text, message :: Text}
+  | UpdateLiveMessage {chatName :: ChatName, chatItemId :: ChatItemId, liveMessage :: Bool, message :: Text}
   | APINewGroup UserId GroupProfile
   | NewGroup GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
@@ -318,7 +318,7 @@ data ChatCommand
   | CreateGroupLink GroupName
   | DeleteGroupLink GroupName
   | ShowGroupLink GroupName
-  | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: ByteString, message :: ByteString}
+  | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: Text, message :: Text}
   | LastChats (Maybe Int) -- UserId (not used in UI)
   | LastMessages (Maybe ChatName) Int (Maybe String) -- UserId (not used in UI)
   | LastChatItemId (Maybe ChatName) Int -- UserId (not used in UI)
