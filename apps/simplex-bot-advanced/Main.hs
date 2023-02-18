@@ -28,7 +28,7 @@ main = do
 welcomeGetOpts :: IO ChatOpts
 welcomeGetOpts = do
   appDir <- getAppUserDataDirectory "simplex"
-  opts@ChatOpts {dbFilePrefix} <- getChatOpts appDir "simplex_bot"
+  opts@ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix}} <- getChatOpts appDir "simplex_bot"
   putStrLn $ "SimpleX Chat Bot v" ++ versionNumber
   putStrLn $ "db: " <> dbFilePrefix <> "_chat.db, " <> dbFilePrefix <> "_agent.db"
   pure opts
