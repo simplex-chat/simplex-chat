@@ -2380,6 +2380,11 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>Open chat console</target>
         <note>authentication reason</note>
       </trans-unit>
+      <trans-unit id="Open user profiles" xml:space="preserve">
+        <source>Open user profiles</source>
+        <target>Open user profiles</target>
+        <note>authentication reason</note>
+      </trans-unit>
       <trans-unit id="Open-source protocol and code – anybody can run the servers." xml:space="preserve">
         <source>Open-source protocol and code – anybody can run the servers.</source>
         <target>Open-source protocol and code – anybody can run the servers.</target>
@@ -4227,6 +4232,11 @@ SimpleX servers cannot see your profile.</target>
         <source>missed call</source>
         <target>missed call</target>
         <note>call status</note>
+      </trans-unit>
+      <trans-unit id="moderated" xml:space="preserve">
+        <source>moderated</source>
+        <target>moderated</target>
+        <note>moderated chat item</note>
       </trans-unit>
       <trans-unit id="never" xml:space="preserve">
         <source>never</source>
