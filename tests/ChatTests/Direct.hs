@@ -32,6 +32,7 @@ chatDirectTests = do
     it "direct message delete" testDirectMessageDelete
     it "direct live message" testDirectLiveMessage
     it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
+    it "should send multiline message" testMultilineMessage
   describe "SMP servers" $ do
     it "get and set SMP servers" testGetSetSMPServers
     it "test SMP server connection" testTestSMPServerConnection
@@ -368,6 +369,13 @@ testRepeatAuthErrorsDisableContact =
     sendAuth alice = do
       alice #> "@bob hey"
       alice <## "[bob, contactId: 2, connId: 1] error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
+
+testMultilineMessage :: HasCallStack => FilePath -> IO ()
+testMultilineMessage = testChat2 aliceProfile bobProfile $ \alice bob -> do
+  connectUsers alice bob
+  alice #> "@bob \"hello\nthere\n"
+  bob <# "alice> hello"
+  bob <# "there"
 
 testGetSetSMPServers :: HasCallStack => FilePath -> IO ()
 testGetSetSMPServers =
