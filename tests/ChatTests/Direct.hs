@@ -371,11 +371,21 @@ testRepeatAuthErrorsDisableContact =
       alice <## "[bob, contactId: 2, connId: 1] error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
 
 testMultilineMessage :: HasCallStack => FilePath -> IO ()
-testMultilineMessage = testChat2 aliceProfile bobProfile $ \alice bob -> do
+testMultilineMessage = testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
   connectUsers alice bob
-  alice #> "@bob \"hello\nthere\n"
+  connectUsers alice cath
+  alice `send` "@bob \"hello\\nthere\"" -- @bob "hello\nthere"
+  alice <# "@bob hello"
+  alice <## "there"
   bob <# "alice> hello"
-  bob <# "there"
+  bob <## "there"
+  alice `send` "/feed \"hello\\nthere\"" -- /feed "hello\nthere"
+  alice <##. "/feed (2)"
+  alice <## "there"
+  bob <# "alice> hello"
+  bob <## "there"
+  cath <# "alice> hello"
+  cath <## "there"
 
 testGetSetSMPServers :: HasCallStack => FilePath -> IO ()
 testGetSetSMPServers =
