@@ -1038,4 +1038,5 @@
     <string name="v4_5_reduced_battery_usage_descr">Дополнительные улучшения скоро!</string>
     <string name="v4_5_reduced_battery_usage">Уменьшенное потребление батареи</string>
     <string name="v4_5_transport_isolation">Отдельные транспортные сессии</string>
+    <string name="moderated_description">удалено</string>
 </resources>
