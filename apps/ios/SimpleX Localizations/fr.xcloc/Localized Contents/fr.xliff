@@ -2380,6 +2380,10 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Ouvrir la console du chat</target>
         <note>authentication reason</note>
       </trans-unit>
+      <trans-unit id="Open user profiles" xml:space="preserve">
+        <source>Open user profiles</source>
+        <note>authentication reason</note>
+      </trans-unit>
       <trans-unit id="Open-source protocol and code – anybody can run the servers." xml:space="preserve">
         <source>Open-source protocol and code – anybody can run the servers.</source>
         <target>Protocole et code open-source – n'importe qui peut heberger un serveur.</target>
@@ -4227,6 +4231,10 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
         <source>missed call</source>
         <target>appel manqué</target>
         <note>call status</note>
+      </trans-unit>
+      <trans-unit id="moderated" xml:space="preserve">
+        <source>moderated</source>
+        <note>moderated chat item</note>
       </trans-unit>
       <trans-unit id="never" xml:space="preserve">
         <source>never</source>
