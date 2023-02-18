@@ -758,7 +758,7 @@ testDatabaseEncryption tmp = do
       alice <## "ok"
       alice ##> "/_start"
       alice <## "error: chat store changed, please restart chat"
-    withTestChatOpts tmp testOpts {maintenance = True, dbKey = "mykey"} "alice" $ \alice -> do
+    withTestChatOpts tmp (getTestOpts True "mykey") "alice" $ \alice -> do
       alice ##> "/_start"
       alice <## "chat started"
       testChatWorking alice bob
@@ -770,7 +770,7 @@ testDatabaseEncryption tmp = do
       alice <## "ok"
       alice ##> "/_db encryption {\"currentKey\":\"nextkey\",\"newKey\":\"anotherkey\"}"
       alice <## "ok"
-    withTestChatOpts tmp testOpts {maintenance = True, dbKey = "anotherkey"} "alice" $ \alice -> do
+    withTestChatOpts tmp (getTestOpts True "anotherkey") "alice" $ \alice -> do
       alice ##> "/_start"
       alice <## "chat started"
       testChatWorking alice bob

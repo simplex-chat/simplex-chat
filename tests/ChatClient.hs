@@ -49,16 +49,19 @@ serverPort = "7001"
 testOpts :: ChatOpts
 testOpts =
   ChatOpts
-    { dbFilePrefix = undefined,
-      dbKey = "",
-      -- dbKey = "this is a pass-phrase to encrypt the database",
-      smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"],
-      networkConfig = defaultNetworkConfig,
-      logLevel = CLLImportant,
-      logConnections = False,
-      logServerHosts = False,
-      logAgent = False,
-      tbqSize = 64,
+    { coreOptions =
+        CoreChatOpts
+          { dbFilePrefix = undefined,
+            dbKey = "",
+            -- dbKey = "this is a pass-phrase to encrypt the database",
+            smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"],
+            networkConfig = defaultNetworkConfig,
+            logLevel = CLLImportant,
+            logConnections = False,
+            logServerHosts = False,
+            logAgent = False,
+            tbqSize = 64
+          },
       chatCmd = "",
       chatCmdDelay = 3,
       chatServerPort = Nothing,
@@ -66,6 +69,9 @@ testOpts =
       allowInstantFiles = True,
       maintenance = False
     }
+
+getTestOpts :: Bool -> String -> ChatOpts
+getTestOpts maintenance dbKey = testOpts {maintenance, coreOptions = (coreOptions testOpts) {dbKey}}
 
 termSettings :: VirtualTerminalSettings
 termSettings =
@@ -109,13 +115,13 @@ testCfgV1 :: ChatConfig
 testCfgV1 = testCfg {agentConfig = testAgentCfgV1}
 
 createTestChat :: FilePath -> ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
-createTestChat tmp cfg opts@ChatOpts {dbKey} dbPrefix profile = do
+createTestChat tmp cfg opts@ChatOpts {coreOptions = CoreChatOpts {dbKey}} dbPrefix profile = do
   db@ChatDatabase {chatStore} <- createChatDatabase (tmp </> dbPrefix) dbKey False
   Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUserRecord db' (AgentUserId 1) profile True
   startTestChat_ db cfg opts user
 
 startTestChat :: FilePath -> ChatConfig -> ChatOpts -> String -> IO TestCC
-startTestChat tmp cfg opts@ChatOpts {dbKey} dbPrefix = do
+startTestChat tmp cfg opts@ChatOpts {coreOptions = CoreChatOpts {dbKey}} dbPrefix = do
   db@ChatDatabase {chatStore} <- createChatDatabase (tmp </> dbPrefix) dbKey False
   Just user <- find activeUser <$> withTransaction chatStore getUsers
   startTestChat_ db cfg opts user
