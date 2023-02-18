@@ -67,7 +67,8 @@ module.exports = function (ty) {
     translations,
     fallbackLocales: {
       '*': 'en'
-    }
+    },
+    defaultLocale: 'en',
   });
 
   // Keeps the same directory structure.
