@@ -33,7 +33,7 @@ main = do
       threadDelay $ chatCmdDelay opts * 1000000
 
 welcome :: ChatOpts -> IO ()
-welcome ChatOpts {dbFilePrefix, networkConfig} =
+welcome ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, networkConfig}} =
   mapM_
     putStrLn
     [ versionString versionNumber,

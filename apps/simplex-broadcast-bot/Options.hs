@@ -14,7 +14,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Options.Applicative
 import Simplex.Chat.Controller (updateStr, versionNumber, versionString)
-import Simplex.Chat.Options
+import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts, coreChatOptsP)
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Util (safeDecodeUtf8)
 
@@ -25,7 +25,7 @@ data Publisher = Publisher
   deriving (Eq)
 
 data BroadcastBotOpts = BroadcastBotOpts
-  { chatOptions :: ChatOpts,
+  { coreOptions :: CoreChatOpts,
     publishers :: [Publisher],
     welcomeMessage :: String,
     prohibitedMessage :: String
@@ -42,7 +42,7 @@ publisherNames = T.unpack . T.intercalate ", " . map (("@" <>) . localDisplayNam
 
 broadcastBotOpts :: FilePath -> FilePath -> Parser BroadcastBotOpts
 broadcastBotOpts appDir defaultDbFileName = do
-  chatOptions <- chatOptsP appDir defaultDbFileName
+  coreOptions <- coreChatOptsP appDir defaultDbFileName
   publishers <-
     option
       parsePublishers
@@ -68,7 +68,7 @@ broadcastBotOpts appDir defaultDbFileName = do
         )
   pure
     BroadcastBotOpts
-      { chatOptions,
+      { coreOptions,
         publishers,
         welcomeMessage = fromMaybe (defaultWelcomeMessage publishers) welcomeMessage_,
         prohibitedMessage = fromMaybe (defaultProhibitedMessage publishers) prohibitedMessage_
@@ -95,3 +95,15 @@ getBroadcastBotOpts appDir defaultDbFileName =
     versionStr = versionString versionNumber
     versionOption = infoOption versionAndUpdate (long "version" <> short 'v' <> help "Show version")
     versionAndUpdate = versionStr <> "\n" <> updateStr
+
+mkChatOpts :: BroadcastBotOpts -> ChatOpts
+mkChatOpts BroadcastBotOpts {coreOptions} =
+  ChatOpts
+    { coreOptions,
+      chatCmd = "",
+      chatCmdDelay = 3,
+      chatServerPort = Nothing,
+      optFilesFolder = Nothing,
+      allowInstantFiles = True,
+      maintenance = False
+    }
