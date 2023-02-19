@@ -73,7 +73,7 @@
     <string name="call_already_ended">Oproep al beëindigd!</string>
     <string name="chat_item_ttl_month">1 maand</string>
     <string name="about_simplex">Over SimpleX</string>
-    <string name="about_simplex_chat">About <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
+    <string name="about_simplex_chat">Over <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
     <string name="above_then_preposition_continuation">hierboven, dan:</string>
     <string name="accept_requests">Verzoeken accepteren</string>
     <string name="users_delete_all_chats_deleted">Alle chats en berichten worden verwijderd - dit kan niet ongedaan worden gemaakt!</string>
@@ -385,7 +385,7 @@
     <string name="error_saving_file">Fout bij opslaan van bestand</string>
     <string name="file_not_found">Bestand niet gevonden</string>
     <string name="file_saved">Bestand opgeslagen</string>
-    <string name="from_gallery_button">Van Galerij</string>
+    <string name="from_gallery_button">Uit galerij</string>
     <string name="error_saving_ICE_servers">Fout bij opslaan van ICE-servers</string>
     <string name="callstate_ended">geëindigd</string>
     <string name="group_members_can_send_disappearing">Groepsleden kunnen verdwijnende berichten sturen.</string>
@@ -685,7 +685,7 @@
     <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(scannen of plakken vanaf klembord)</string>
     <string name="to_connect_via_link_title">Om verbinding te maken via een link</string>
     <string name="reject_contact_button">Afwijzen</string>
-    <string name="set_contact_name">Stel de naam van de contactpersoon in</string>
+    <string name="set_contact_name">Naam contactpersoon instellen</string>
     <string name="connection_you_accepted_will_be_cancelled">De door u geaccepteerde verbinding wordt geannuleerd!</string>
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">Het contact met wie je deze link hebt gedeeld, kan GEEN verbinding maken!</string>
     <string name="you_accepted_connection">Je hebt de verbinding geaccepteerd</string>
@@ -711,7 +711,7 @@
     <string name="you_can_also_connect_by_clicking_the_link">U kunt ook verbinding maken door op de link te klikken. Als het in de browser wordt geopend, klikt u op de knop <b> Openen in mobiele app </b>.</string>
     <string name="your_profile_will_be_sent">Uw chatprofiel wordt naar uw contactpersoon verzonden</string>
     <string name="your_chat_profiles">Mijn chat profielen</string>
-    <string name="your_simplex_contact_address">Uw <xliff:g id="appName">SimpleX</xliff:g> contactadres</string>
+    <string name="your_simplex_contact_address">Mijn <xliff:g id="appName">SimpleX</xliff:g> contactadres</string>
     <string name="chat_with_the_founder">Stuur vragen en ideeën</string>
     <string name="send_us_an_email">Stuur ons een e-mail</string>
     <string name="chat_lock">SimpleX Lock</string>
@@ -966,4 +966,5 @@
     <string name="read_more_in_github_with_link">Lees meer in onze <font color="#0088ff">GitHub-repository</font>.</string>
     <string name="read_more_in_github">Lees meer in onze GitHub-repository.</string>
     <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> bericht(en) overgeslagen</string>
+    <string name="moderated_description">gemodereerd</string>
 </resources>
