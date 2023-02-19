@@ -720,7 +720,7 @@
     <string name="answer_call">Přijmout hovor</string>
     <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> přeskočená zpráva (zprávy)</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Může se to stát, když: 1. Zprávy na serveru vyprší, pokud nebyly přijaty po dobu 30 dnů, 2. Server, který používáte pro příjem zpráv od tohoto kontaktu, byl aktualizován a restartován. 3. Spojení je narušeno. Připojte se k vývojářům prostřednictvím Nastavení, abyste mohli dostávat aktualizace o serverech. Budeme přidávat redundantní servery, abychom zabránili ztrátě zpráv.</string>
-    <string name="settings_section_title_you"></string>
+    <string name="settings_section_title_you">VY</string>
     <string name="settings_section_title_support">PODPOŘIT SIMPLEX CHAT</string>
     <string name="settings_section_title_develop">VÝVOJ</string>
     <string name="settings_developer_tools">Nástroje pro vývojáře</string>

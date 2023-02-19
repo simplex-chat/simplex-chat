@@ -966,4 +966,5 @@
     <string name="v4_5_private_filenames_descr">Pour préserver le fuseau horaire, les fichiers image/voix utilisent le système UTC.</string>
     <string name="v4_5_transport_isolation">Isolation du transport</string>
     <string name="v4_5_multiple_chat_profiles_descr">Différents noms, avatars et mode d\'isolation de transport.</string>
+    <string name="moderated_description">modéré</string>
 </resources>
