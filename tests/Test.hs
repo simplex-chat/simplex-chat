@@ -8,6 +8,7 @@ import ProtocolTests
 import SchemaDump
 import Test.Hspec
 import UnliftIO.Temporary (withTempDirectory)
+import WebRTCTests
 
 main :: IO ()
 main = do
@@ -15,6 +16,7 @@ main = do
   withGlobalLogging logCfg . hspec $ do
     describe "SimpleX chat markdown" markdownTests
     describe "SimpleX chat protocol" protocolTests
+    describe "WebRTC encryption" webRTCTests
     describe "Schema dump" schemaDumpTest
     around testBracket $ do
       describe "Mobile API Tests" mobileTests
