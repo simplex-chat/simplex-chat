@@ -2070,9 +2070,9 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
         <target>Assurez-vous que les adresses des serveurs WebRTC ICE sont au bon format et ne sont pas dupliquées, un par ligne.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" xml:space="preserve">
+      <trans-unit id="Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" xml:space="preserve" approved="no">
         <source>Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*</source>
-        <target>Beaucoup se demandent : *si SimpleX n'a pas d'identifiants d'utilisateur, comment peut-il délivrer des messages ?*</target>
+        <target state="translated">Beaucoup se demandent : *si SimpleX n'a pas d'identifiant d'utilisateur, comment peut-il délivrer des messages ?*</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Mark deleted for everyone" xml:space="preserve">
