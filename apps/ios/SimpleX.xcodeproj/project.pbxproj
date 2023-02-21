@@ -165,9 +165,10 @@
 		64AA1C6C27F3537400AC7277 /* DeletedItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AA1C6B27F3537400AC7277 /* DeletedItemView.swift */; };
 		64E972072881BB22008DBC02 /* CIGroupInvitationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64E972062881BB22008DBC02 /* CIGroupInvitationView.swift */; };
 		64F1CC3B28B39D8600CD1FB1 /* IncognitoHelp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1CC3A28B39D8600CD1FB1 /* IncognitoHelp.swift */; };
+		D70AE4DD29A3F14A009D5DCE /* WebRTC.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = D70AE4DC29A3F149009D5DCE /* WebRTC.xcframework */; };
+		D70AE4DE29A3F14A009D5DCE /* WebRTC.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = D70AE4DC29A3F149009D5DCE /* WebRTC.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		D72A9088294BD7A70047C86D /* NativeTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D72A9087294BD7A70047C86D /* NativeTextEditor.swift */; };
 		D77B92DC2952372200A5A1CC /* SwiftyGif in Frameworks */ = {isa = PBXBuildFile; productRef = D77B92DB2952372200A5A1CC /* SwiftyGif */; };
-		D7F0E336299420000068AF69 /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = D7F0E335299420000068AF69 /* WebRTC */; };
 		D7F0E33929964E7E0068AF69 /* LZString in Frameworks */ = {isa = PBXBuildFile; productRef = D7F0E33829964E7E0068AF69 /* LZString */; };
 /* End PBXBuildFile section */
 
@@ -209,6 +210,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				D70AE4DE29A3F14A009D5DCE /* WebRTC.xcframework in Embed Frameworks */,
 				5CE2BA712845308900EC33A6 /* SimpleXChat.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
@@ -402,6 +404,8 @@
 		64DAE1502809D9F5000DA960 /* FileUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileUtils.swift; sourceTree = "<group>"; };
 		64E972062881BB22008DBC02 /* CIGroupInvitationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIGroupInvitationView.swift; sourceTree = "<group>"; };
 		64F1CC3A28B39D8600CD1FB1 /* IncognitoHelp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IncognitoHelp.swift; sourceTree = "<group>"; };
+		D70AE4D929A3D42A009D5DCE /* WebRTC.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = WebRTC.xcframework; path = ../../../framework/WebRTC.xcframework; sourceTree = "<group>"; };
+		D70AE4DC29A3F149009D5DCE /* WebRTC.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = WebRTC.xcframework; path = ../../../../../../Volumes/Apps/WebRTC/src/out/WebRTC.xcframework; sourceTree = "<group>"; };
 		D72A9087294BD7A70047C86D /* NativeTextEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeTextEditor.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -410,9 +414,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D7F0E336299420000068AF69 /* WebRTC in Frameworks */,
 				5CE2BA702845308900EC33A6 /* SimpleXChat.framework in Frameworks */,
 				D77B92DC2952372200A5A1CC /* SwiftyGif in Frameworks */,
+				D70AE4DD29A3F14A009D5DCE /* WebRTC.xcframework in Frameworks */,
 				D7F0E33929964E7E0068AF69 /* LZString in Frameworks */,
 				646BB38C283BEEB9001CE359 /* LocalAuthentication.framework in Frameworks */,
 				5C8F01CD27A6F0D8007D2C8D /* CodeScanner in Frameworks */,
@@ -515,6 +519,8 @@
 		5C764E7A279C71D4000C6508 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				D70AE4D929A3D42A009D5DCE /* WebRTC.xcframework */,
+				D70AE4DC29A3F149009D5DCE /* WebRTC.xcframework */,
 				646BB38B283BEEB9001CE359 /* LocalAuthentication.framework */,
 				5CDCAD6028187D7900503DA2 /* libz.tbd */,
 				5CDCAD5E28187D4A00503DA2 /* libiconv.tbd */,
@@ -813,7 +819,6 @@
 			packageProductDependencies = (
 				5C8F01CC27A6F0D8007D2C8D /* CodeScanner */,
 				D77B92DB2952372200A5A1CC /* SwiftyGif */,
-				D7F0E335299420000068AF69 /* WebRTC */,
 				D7F0E33829964E7E0068AF69 /* LZString */,
 			);
 			productName = "SimpleX (iOS)";
@@ -921,7 +926,6 @@
 			packageReferences = (
 				5C8F01CB27A6F0D8007D2C8D /* XCRemoteSwiftPackageReference "CodeScanner" */,
 				D77B92DA2952372200A5A1CC /* XCRemoteSwiftPackageReference "SwiftyGif" */,
-				D7F0E334299420000068AF69 /* XCRemoteSwiftPackageReference "WebRTC" */,
 				D7F0E33729964E7D0068AF69 /* XCRemoteSwiftPackageReference "lzstring-swift" */,
 			);
 			productRefGroup = 5CA059CB279559F40002BEB4 /* Products */;
@@ -1678,14 +1682,6 @@
 				kind = branch;
 			};
 		};
-		D7F0E334299420000068AF69 /* XCRemoteSwiftPackageReference "WebRTC" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/stasel/WebRTC.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 109.0.0;
-			};
-		};
 		D7F0E33729964E7D0068AF69 /* XCRemoteSwiftPackageReference "lzstring-swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/Ibrahimhass/lzstring-swift";
@@ -1706,11 +1702,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = D77B92DA2952372200A5A1CC /* XCRemoteSwiftPackageReference "SwiftyGif" */;
 			productName = SwiftyGif;
-		};
-		D7F0E335299420000068AF69 /* WebRTC */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = D7F0E334299420000068AF69 /* XCRemoteSwiftPackageReference "WebRTC" */;
-			productName = WebRTC;
 		};
 		D7F0E33829964E7E0068AF69 /* LZString */ = {
 			isa = XCSwiftPackageProductDependency;

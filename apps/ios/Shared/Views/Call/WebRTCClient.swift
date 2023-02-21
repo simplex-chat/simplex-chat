@@ -35,6 +35,18 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCVideoCapturerDelega
     private var activeCall: Binding<Call?>
     private var localRendererAspectRatio: Binding<CGFloat?>
 
+    final class FrameDecryptor: NSObject, FrameDecryptorInterface {
+        func getMaxPlaintextByteSize(_ mediaType: RTCRtpMediaType, _ encrypted_frame_size: Int32) -> Int32 {
+            debugPrint("LALAL getPlaintextByteSize \(mediaType) \(encrypted_frame_size)")
+            return 0
+        }
+
+        func decrypt(_ mediaType: RTCRtpMediaType, _ csrcs: [NSNumber], _ additional_data: ArrayView<NSNumber>, _ encrypted_frame: ArrayView<NSNumber>, _ frame: ArrayView<NSNumber>) -> Bool {
+            debugPrint("LALAL decrypt \(mediaType) \(csrcs) \(additional_data) \(encrypted_frame) \(frame)")
+            return false
+        }
+    }
+
     @available(*, unavailable)
     override init() {
         fatalError("Unimplemented")
@@ -306,9 +318,18 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCVideoCapturerDelega
     private func createMediaSenders(_ connection: RTCPeerConnection) -> (RTCVideoTrack, RTCVideoTrack?, RTCVideoCapturer, RTCVideoSource, RTCVideoSource) {
         let streamId = "stream"
         let audioTrack = createAudioTrack()
-        connection.add(audioTrack, streamIds: [streamId])
+        let sender_ = connection.add(audioTrack, streamIds: [streamId])
+        //sender?.setFrameEncryptor(self)
         let (localVideoTrack, localCamera, localVideoSource, encryptedLocalVideoTrack, encryptedLocalVideoSource) = createVideoTrack()
         connection.add(encryptedLocalVideoTrack, streamIds: [streamId])
+        // LALAL
+        let _ar = ArrayView<NSNumber>()
+        debugPrint("LALAL PRE \(connection.transceivers.first { $0.mediaType == .video }?.receiver)")
+//        debugPrint("LALAL DEC \(connection.transceivers.first { $0.mediaType == .video }?.receiver.frame_decryptor)")
+//        var cryptor = Cryptor()
+//        let pointer = AutoreleasingUnsafeMutablePointer<FrameDecryptorInterface?>.init(&cryptor)
+        connection.transceivers.first { $0.mediaType == .video }?.receiver.setFrameDecryptor(FrameDecryptor())
+        debugPrint("LALAL AHAH")
         return (localVideoTrack, connection.transceivers.first { $0.mediaType == .video }?.receiver.track as? RTCVideoTrack, localCamera, localVideoSource, encryptedLocalVideoSource)
     }
 
