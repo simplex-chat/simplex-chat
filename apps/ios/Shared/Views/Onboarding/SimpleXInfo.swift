@@ -20,22 +20,23 @@ struct SimpleXInfo: View {
                 Image(colorScheme == .light ? "logo" : "logo-light")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: g.size.width * 0.7)
+                    .frame(width: g.size.width * 0.67)
                     .padding(.bottom, 8)
                     .frame(maxWidth: .infinity)
 
                 VStack(alignment: .leading) {
                     Text("The next generation of private messaging")
-                        .font(.title)
-                        .padding(.bottom, 24)
+                        .font(.title2)
+                        .padding(.bottom, 30)
+                        .padding(.horizontal, 48)
                         .frame(maxWidth: .infinity)
                         .multilineTextAlignment(.center)
                     infoRow("privacy", "Privacy redefined",
-                            "The 1st platform without any user identifiers – private by design.")
+                            "The 1st platform without any user identifiers – private by design.", width: 48)
                     infoRow("shield", "Immune to spam and abuse",
-                            "People can connect to you only via the links you share.")
-                    infoRow("decentralized", "Decentralized",
-                            "Open-source protocol and code – anybody can run the servers.")
+                            "People can connect to you only via the links you share.", width: 46)
+                    infoRow(colorScheme == .light ? "decentralized" : "decentralized-light", "Decentralized",
+                            "Open-source protocol and code – anybody can run the servers.", width: 44)
                 }
 
                 Spacer()
@@ -60,20 +61,23 @@ struct SimpleXInfo: View {
         .padding()
     }
 
-    private func infoRow(_ image: String, _ title: LocalizedStringKey, _ text: LocalizedStringKey) -> some View {
+    private func infoRow(_ image: String, _ title: LocalizedStringKey, _ text: LocalizedStringKey, width: CGFloat) -> some View {
         HStack(alignment: .top) {
             Image(image)
                 .resizable()
                 .scaledToFit()
-                .frame(width: 36, height: 40)
+                .frame(width: width, height: 54)
+                .frame(width: 54)
                 .padding(.top, 4)
-                .padding(.trailing, 6)
+                .padding(.leading, 4)
+                .padding(.trailing, 10)
             VStack(alignment: .leading) {
                 Text(title).font(.headline)
                 Text(text)
             }
         }
-        .padding(.bottom, 8)
+        .padding(.bottom, 20)
+        .padding(.trailing, 6)
     }
 }
 
