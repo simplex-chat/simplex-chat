@@ -16,14 +16,14 @@ struct SimpleXInfo: View {
 
     var body: some View {
         GeometryReader { g in
-            VStack(alignment: .leading) {
-                ScrollView {
+            ScrollView {
+                VStack(alignment: .leading) {
                     Image(colorScheme == .light ? "logo" : "logo-light")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: g.size.width * 0.67)
                         .padding(.bottom, 8)
-                        .frame(maxWidth: .infinity)
+                        .frame(maxWidth: .infinity, minHeight: 48, alignment: .top)
 
                     VStack(alignment: .leading) {
                         Text("The next generation of private messaging")
@@ -39,27 +39,29 @@ struct SimpleXInfo: View {
                         infoRow(colorScheme == .light ? "decentralized" : "decentralized-light", "Decentralized",
                                 "Open-source protocol and code – anybody can run the servers.", width: 44)
                     }
-                }
 
-                Spacer()
-                if onboarding {
-                    OnboardingActionButton()
                     Spacer()
-                }
+                    if onboarding {
+                        OnboardingActionButton()
+                        Spacer()
+                    }
 
-                Button {
-                    showHowItWorks = true
-                } label: {
-                    Label("How it works", systemImage: "info.circle")
-                        .font(.subheadline)
+                    Button {
+                        showHowItWorks = true
+                    } label: {
+                        Label("How it works", systemImage: "info.circle")
+                            .font(.subheadline)
+                    }
+                    .padding(.bottom, 8)
+                    .frame(maxWidth: .infinity)
                 }
-                .padding(.bottom, 8)
-                .frame(maxWidth: .infinity)
+                .frame(height: g.size.height)
             }
             .sheet(isPresented: $showHowItWorks) {
                 HowItWorks(onboarding: onboarding)
             }
         }
+        .frame(maxHeight: .infinity)
         .padding()
     }
 
@@ -73,9 +75,9 @@ struct SimpleXInfo: View {
                 .padding(.top, 4)
                 .padding(.leading, 4)
                 .padding(.trailing, 10)
-            VStack(alignment: .leading) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(title).font(.headline)
-                Text(text)
+                Text(text).frame(minHeight: 36, alignment: .top)
             }
         }
         .padding(.bottom, 20)
