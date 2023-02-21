@@ -77,7 +77,7 @@ struct SimpleXInfo: View {
                 .padding(.trailing, 10)
             VStack(alignment: .leading, spacing: 4) {
                 Text(title).font(.headline)
-                Text(text).frame(minHeight: 36, alignment: .top)
+                Text(text).frame(minHeight: 40, alignment: .top)
             }
         }
         .padding(.bottom, 20)
