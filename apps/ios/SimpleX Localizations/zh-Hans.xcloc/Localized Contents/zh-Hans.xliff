@@ -2695,32 +2695,38 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target state="translated">发送通知</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send notifications:" xml:space="preserve">
+      <trans-unit id="Send notifications:" xml:space="preserve" approved="no">
         <source>Send notifications:</source>
+        <target state="translated">发送通知:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send questions and ideas" xml:space="preserve">
         <source>Send questions and ideas</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send them from gallery or custom keyboards." xml:space="preserve">
+      <trans-unit id="Send them from gallery or custom keyboards." xml:space="preserve" approved="no">
         <source>Send them from gallery or custom keyboards.</source>
+        <target state="translated">发送它们来自图库或自定义键盘。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sender cancelled file transfer." xml:space="preserve">
+      <trans-unit id="Sender cancelled file transfer." xml:space="preserve" approved="no">
         <source>Sender cancelled file transfer.</source>
+        <target state="translated">发送者取消文件传输。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sender may have deleted the connection request." xml:space="preserve">
+      <trans-unit id="Sender may have deleted the connection request." xml:space="preserve" approved="no">
         <source>Sender may have deleted the connection request.</source>
+        <target state="translated">发送者可能已删除连接请求。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sending via" xml:space="preserve">
+      <trans-unit id="Sending via" xml:space="preserve" approved="no">
         <source>Sending via</source>
+        <target state="translated">发送通过</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sent file event" xml:space="preserve">
+      <trans-unit id="Sent file event" xml:space="preserve" approved="no">
         <source>Sent file event</source>
+        <target state="translated">已发送文件事件</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="Sent messages will be deleted after set time." xml:space="preserve" approved="no">
@@ -2733,16 +2739,19 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target state="translated">服务器需要授权才能创建队列，检查密码</target>
         <note>server test error</note>
       </trans-unit>
-      <trans-unit id="Server test failed!" xml:space="preserve">
+      <trans-unit id="Server test failed!" xml:space="preserve" approved="no">
         <source>Server test failed!</source>
+        <target state="translated">服务器测试失败!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Servers" xml:space="preserve">
+      <trans-unit id="Servers" xml:space="preserve" approved="no">
         <source>Servers</source>
+        <target state="translated">服务器</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set 1 day" xml:space="preserve">
+      <trans-unit id="Set 1 day" xml:space="preserve" approved="no">
         <source>Set 1 day</source>
+        <target state="translated">设置1天</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set contact name…" xml:space="preserve" approved="no">
@@ -2760,8 +2769,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target state="translated">设置密码来导出</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set timeouts for proxy/VPN" xml:space="preserve">
+      <trans-unit id="Set timeouts for proxy/VPN" xml:space="preserve" approved="no">
         <source>Set timeouts for proxy/VPN</source>
+        <target state="translated">设置代理/VPN的超时时间</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Settings" xml:space="preserve" approved="no">
@@ -2769,24 +2779,29 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target state="translated">设置</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Share" xml:space="preserve">
+      <trans-unit id="Share" xml:space="preserve" approved="no">
         <source>Share</source>
+        <target state="translated">分享</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Share invitation link" xml:space="preserve">
+      <trans-unit id="Share invitation link" xml:space="preserve" approved="no">
         <source>Share invitation link</source>
+        <target state="translated">分享邀请链接</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Share link" xml:space="preserve">
+      <trans-unit id="Share link" xml:space="preserve" approved="no">
         <source>Share link</source>
+        <target state="translated">分享链接</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Share one-time invitation link" xml:space="preserve">
+      <trans-unit id="Share one-time invitation link" xml:space="preserve" approved="no">
         <source>Share one-time invitation link</source>
+        <target state="translated">分享一次性邀请链接</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show QR code" xml:space="preserve">
+      <trans-unit id="Show QR code" xml:space="preserve" approved="no">
         <source>Show QR code</source>
+        <target state="translated">展示 QR 二维码</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve" approved="no">
@@ -2809,80 +2824,98 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target state="translated">已开启 SimpleX 锁定</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX contact address" xml:space="preserve">
+      <trans-unit id="SimpleX contact address" xml:space="preserve" approved="no">
         <source>SimpleX contact address</source>
+        <target state="translated">SimpleX 联系地址</target>
         <note>simplex link type</note>
       </trans-unit>
-      <trans-unit id="SimpleX encrypted message or connection event" xml:space="preserve">
+      <trans-unit id="SimpleX encrypted message or connection event" xml:space="preserve" approved="no">
         <source>SimpleX encrypted message or connection event</source>
+        <target state="translated">SimpleX 加密消息或连接事件</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="SimpleX group link" xml:space="preserve">
+      <trans-unit id="SimpleX group link" xml:space="preserve" approved="no">
         <source>SimpleX group link</source>
+        <target state="translated">SimpleX 群组链接</target>
         <note>simplex link type</note>
       </trans-unit>
-      <trans-unit id="SimpleX links" xml:space="preserve">
+      <trans-unit id="SimpleX links" xml:space="preserve" approved="no">
         <source>SimpleX links</source>
+        <target state="translated">SimpleX 链接</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX one-time invitation" xml:space="preserve">
+      <trans-unit id="SimpleX one-time invitation" xml:space="preserve" approved="no">
         <source>SimpleX one-time invitation</source>
+        <target state="translated">SimpleX 一次性邀请</target>
         <note>simplex link type</note>
       </trans-unit>
-      <trans-unit id="Skip" xml:space="preserve">
+      <trans-unit id="Skip" xml:space="preserve" approved="no">
         <source>Skip</source>
+        <target state="translated">跳过</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Skipped messages" xml:space="preserve">
+      <trans-unit id="Skipped messages" xml:space="preserve" approved="no">
         <source>Skipped messages</source>
+        <target state="translated">跳过的消息</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Somebody" xml:space="preserve">
         <source>Somebody</source>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="Start a new chat" xml:space="preserve">
+      <trans-unit id="Start a new chat" xml:space="preserve" approved="no">
         <source>Start a new chat</source>
+        <target state="translated">开始新聊天</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Start chat" xml:space="preserve">
+      <trans-unit id="Start chat" xml:space="preserve" approved="no">
         <source>Start chat</source>
+        <target state="translated">开始聊天</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Start migration" xml:space="preserve">
+      <trans-unit id="Start migration" xml:space="preserve" approved="no">
         <source>Start migration</source>
+        <target state="translated">开始迁移</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop" xml:space="preserve">
+      <trans-unit id="Stop" xml:space="preserve" approved="no">
         <source>Stop</source>
+        <target state="translated">停止</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop SimpleX" xml:space="preserve">
+      <trans-unit id="Stop SimpleX" xml:space="preserve" approved="no">
         <source>Stop SimpleX</source>
+        <target state="translated">停止 SimpleX</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Stop chat to enable database actions" xml:space="preserve">
+      <trans-unit id="Stop chat to enable database actions" xml:space="preserve" approved="no">
         <source>Stop chat to enable database actions</source>
+        <target state="translated">停止聊天以启用数据库操作</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." xml:space="preserve">
+      <trans-unit id="Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." xml:space="preserve" approved="no">
         <source>Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped.</source>
+        <target state="translated">停止聊天以便导出、导入或删除聊天数据库。在聊天停止期间，您将无法收发消息。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop chat?" xml:space="preserve">
+      <trans-unit id="Stop chat?" xml:space="preserve" approved="no">
         <source>Stop chat?</source>
+        <target state="translated">请停止聊天吗？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Support SimpleX Chat" xml:space="preserve">
+      <trans-unit id="Support SimpleX Chat" xml:space="preserve" approved="no">
         <source>Support SimpleX Chat</source>
+        <target state="translated">支持 SimpleX Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="System" xml:space="preserve">
+      <trans-unit id="System" xml:space="preserve" approved="no">
         <source>System</source>
+        <target state="translated">系统</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="TCP connection timeout" xml:space="preserve">
+      <trans-unit id="TCP connection timeout" xml:space="preserve" approved="no">
         <source>TCP connection timeout</source>
+        <target state="translated">TCP连接超时</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="TCP_KEEPCNT" xml:space="preserve">
@@ -2897,16 +2930,19 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>TCP_KEEPINTVL</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Take picture" xml:space="preserve">
+      <trans-unit id="Take picture" xml:space="preserve" approved="no">
         <source>Take picture</source>
+        <target state="translated">拍照</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap button " xml:space="preserve">
+      <trans-unit id="Tap button " xml:space="preserve" approved="no">
         <source>Tap button </source>
+        <target state="translated">按钮 </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap to join" xml:space="preserve">
+      <trans-unit id="Tap to join" xml:space="preserve" approved="no">
         <source>Tap to join</source>
+        <target state="translated">点击加入</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap to join incognito" xml:space="preserve" approved="no">
@@ -2919,12 +2955,14 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target state="translated">点击开始一个新聊天</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Test failed at step %@." xml:space="preserve">
+      <trans-unit id="Test failed at step %@." xml:space="preserve" approved="no">
         <source>Test failed at step %@.</source>
+        <target state="translated">在步骤 %@ 上测试失败。</target>
         <note>server test failure</note>
       </trans-unit>
-      <trans-unit id="Test server" xml:space="preserve">
+      <trans-unit id="Test server" xml:space="preserve" approved="no">
         <source>Test server</source>
+        <target state="translated">测试服务器</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Test servers" xml:space="preserve">
