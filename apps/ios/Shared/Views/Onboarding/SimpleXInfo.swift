@@ -29,7 +29,7 @@ struct SimpleXInfo: View {
                         Text("The next generation of private messaging")
                             .font(.title2)
                             .padding(.bottom, 30)
-                            .padding(.horizontal, 48)
+                            .padding(.horizontal, 40)
                             .frame(maxWidth: .infinity)
                             .multilineTextAlignment(.center)
                         infoRow("privacy", "Privacy redefined",
@@ -55,7 +55,7 @@ struct SimpleXInfo: View {
                     .padding(.bottom, 8)
                     .frame(maxWidth: .infinity)
                 }
-                .frame(height: g.size.height)
+                .frame(minHeight: g.size.height)
             }
             .sheet(isPresented: $showHowItWorks) {
                 HowItWorks(onboarding: onboarding)
