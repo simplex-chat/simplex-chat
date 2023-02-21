@@ -17,26 +17,28 @@ struct SimpleXInfo: View {
     var body: some View {
         GeometryReader { g in
             VStack(alignment: .leading) {
-                Image(colorScheme == .light ? "logo" : "logo-light")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: g.size.width * 0.67)
-                    .padding(.bottom, 8)
-                    .frame(maxWidth: .infinity)
-
-                VStack(alignment: .leading) {
-                    Text("The next generation of private messaging")
-                        .font(.title2)
-                        .padding(.bottom, 30)
-                        .padding(.horizontal, 48)
+                ScrollView {
+                    Image(colorScheme == .light ? "logo" : "logo-light")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: g.size.width * 0.67)
+                        .padding(.bottom, 8)
                         .frame(maxWidth: .infinity)
-                        .multilineTextAlignment(.center)
-                    infoRow("privacy", "Privacy redefined",
-                            "The 1st platform without any user identifiers – private by design.", width: 48)
-                    infoRow("shield", "Immune to spam and abuse",
-                            "People can connect to you only via the links you share.", width: 46)
-                    infoRow(colorScheme == .light ? "decentralized" : "decentralized-light", "Decentralized",
-                            "Open-source protocol and code – anybody can run the servers.", width: 44)
+
+                    VStack(alignment: .leading) {
+                        Text("The next generation of private messaging")
+                            .font(.title2)
+                            .padding(.bottom, 30)
+                            .padding(.horizontal, 48)
+                            .frame(maxWidth: .infinity)
+                            .multilineTextAlignment(.center)
+                        infoRow("privacy", "Privacy redefined",
+                                "The 1st platform without any user identifiers – private by design.", width: 48)
+                        infoRow("shield", "Immune to spam and abuse",
+                                "People can connect to you only via the links you share.", width: 46)
+                        infoRow(colorScheme == .light ? "decentralized" : "decentralized-light", "Decentralized",
+                                "Open-source protocol and code – anybody can run the servers.", width: 44)
+                    }
                 }
 
                 Spacer()
