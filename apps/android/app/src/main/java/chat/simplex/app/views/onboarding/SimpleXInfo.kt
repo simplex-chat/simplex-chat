@@ -18,8 +18,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.*
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.User
@@ -47,15 +46,15 @@ fun SimpleXInfoLayout(
       .verticalScroll(rememberScrollState())
       .padding(horizontal = DEFAULT_PADDING),
   ) {
-    Box(Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 8.dp), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxWidth().padding(top = 8.dp), contentAlignment = Alignment.Center) {
       SimpleXLogo()
     }
 
-    Text(stringResource(R.string.next_generation_of_private_messaging), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = 24.dp), textAlign = TextAlign.Center)
+    Text(stringResource(R.string.next_generation_of_private_messaging), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = 36.dp).padding(horizontal = 48.dp), textAlign = TextAlign.Center)
 
-    InfoRow(painterResource(R.drawable.privacy), R.string.privacy_redefined, R.string.first_platform_without_user_ids)
+    InfoRow(painterResource(R.drawable.privacy), R.string.privacy_redefined, R.string.first_platform_without_user_ids, width = 80.dp)
     InfoRow(painterResource(R.drawable.shield), R.string.immune_to_spam_and_abuse, R.string.people_can_connect_only_via_links_you_share)
-    InfoRow(painterResource(R.drawable.decentralized), R.string.decentralized, R.string.opensource_protocol_and_code_anybody_can_run_servers)
+    InfoRow(painterResource(if (isInDarkTheme()) R.drawable.decentralized_light else R.drawable.decentralized), R.string.decentralized, R.string.opensource_protocol_and_code_anybody_can_run_servers)
 
     Spacer(Modifier.fillMaxHeight().weight(1f))
 
@@ -89,14 +88,14 @@ fun SimpleXLogo() {
 }
 
 @Composable
-private fun InfoRow(icon: Painter, @StringRes titleId: Int, @StringRes textId: Int) {
-  Row(Modifier.padding(bottom = 20.dp), verticalAlignment = Alignment.Top) {
+private fun InfoRow(icon: Painter, @StringRes titleId: Int, @StringRes textId: Int, width: Dp = 76.dp) {
+  Row(Modifier.padding(bottom = 27.dp), verticalAlignment = Alignment.Top) {
     Image(icon, contentDescription = null, modifier = Modifier
-      .width(60.dp)
-      .padding(top = 8.dp, end = 16.dp))
+      .width(width)
+      .padding(top = 8.dp, start = 8.dp, end = 24.dp))
     Column(horizontalAlignment = Alignment.Start) {
       Text(stringResource(titleId), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.h3, lineHeight = 24.sp)
-      Text(stringResource(textId), lineHeight = 24.sp, style = MaterialTheme.typography.caption)
+      Text(stringResource(textId), lineHeight = 24.sp, style = MaterialTheme.typography.body1)
     }
   }
 }
