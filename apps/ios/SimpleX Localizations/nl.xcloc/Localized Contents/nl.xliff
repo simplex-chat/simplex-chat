@@ -2380,8 +2380,9 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
         <target>Chatconsole openen</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Open user profiles" xml:space="preserve">
+      <trans-unit id="Open user profiles" xml:space="preserve" approved="no">
         <source>Open user profiles</source>
+        <target state="translated">Gebruikersprofielen openen</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Open-source protocol and code – anybody can run the servers." xml:space="preserve">
@@ -4232,8 +4233,9 @@ SimpleX-servers kunnen uw profiel niet zien.</target>
         <target>gemiste oproep</target>
         <note>call status</note>
       </trans-unit>
-      <trans-unit id="moderated" xml:space="preserve">
+      <trans-unit id="moderated" xml:space="preserve" approved="no">
         <source>moderated</source>
+        <target state="translated">gemodereerd</target>
         <note>moderated chat item</note>
       </trans-unit>
       <trans-unit id="never" xml:space="preserve">
