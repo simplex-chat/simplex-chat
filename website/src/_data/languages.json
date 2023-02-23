@@ -13,22 +13,28 @@
             "enabled": true
         },
         {
+            "label": "fr",
+            "name": "Français",
+            "flag": "/img/flags/fr.svg",
+            "enabled": true
+        },
+        {
+            "label": "cs",
+            "name": "Čeština",
+            "flag": "/img/flags/cz.svg",
+            "enabled": true
+        },
+        {
             "label": "nl",
             "name": "Nederlands",
             "flag": "/img/flags/nl.svg",
-            "enabled": true
+            "enabled": false
         },
         {
             "label": "nb_NO",
             "name": "Norsk",
             "flag": "/img/flags/nb_NO.svg",
-            "enabled": true
-        },
-        {
-            "label": "fr",
-            "name": "Français",
-            "flag": "/img/flags/fr.svg",
-            "enabled": true
+            "enabled": false
         },
         {
             "label": "it",
