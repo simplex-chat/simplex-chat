@@ -8,7 +8,7 @@ import LZString
 import SwiftUI
 import SimpleXChat
 
-final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCVideoCapturerDelegate {
+final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCVideoCapturerDelegate, RTCFrameEncryptorDelegate, RTCFrameDecryptorDelegate {
     private static let factory: RTCPeerConnectionFactory = {
         RTCInitializeSSL()
         let videoEncoderFactory = RTCDefaultVideoEncoderFactory()
@@ -27,6 +27,8 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCVideoCapturerDelega
         var encryptedLocalVideoSource: RTCVideoSource
         var device: AVCaptureDevice.Position = .front
         var aesKey: String?
+        var frameEncryptor: RTCFrameEncryptor?
+        var frameDecryptor: RTCFrameDecryptor?
     }
 
     private let rtcAudioSession =  RTCAudioSession.sharedInstance()
@@ -34,18 +36,6 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCVideoCapturerDelega
     private var sendCallResponse: (WVAPIMessage) async -> Void
     private var activeCall: Binding<Call?>
     private var localRendererAspectRatio: Binding<CGFloat?>
-
-    final class FrameDecryptor: NSObject, FrameDecryptorInterface {
-        func getMaxPlaintextByteSize(_ mediaType: RTCRtpMediaType, _ encrypted_frame_size: Int32) -> Int32 {
-            debugPrint("LALAL getPlaintextByteSize \(mediaType) \(encrypted_frame_size)")
-            return 0
-        }
-
-        func decrypt(_ mediaType: RTCRtpMediaType, _ csrcs: [NSNumber], _ additional_data: ArrayView<NSNumber>, _ encrypted_frame: ArrayView<NSNumber>, _ frame: ArrayView<NSNumber>) -> Bool {
-            debugPrint("LALAL decrypt \(mediaType) \(csrcs) \(additional_data) \(encrypted_frame) \(frame)")
-            return false
-        }
-    }
 
     @available(*, unavailable)
     override init() {
@@ -69,6 +59,14 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCVideoCapturerDelega
         let connection = createPeerConnection(iceServers ?? getWebRTCIceServers() ?? defaultIceServers, relay)
         connection.delegate = self
         let (localStream, remoteStream, localCamera, localVideoSource, encryptedLocalVideoSource) = createMediaSenders(connection)
+        var frameEncryptor: RTCFrameEncryptor? = nil
+        var frameDecryptor: RTCFrameDecryptor? = nil
+        if aesKey != nil {
+            frameEncryptor = RTCFrameEncryptor.init(sizeChange: 28)
+            frameEncryptor?.delegate = self
+            frameDecryptor = RTCFrameDecryptor.init(sizeChange: -28)
+            frameDecryptor?.delegate = self
+        }
         return Call(
             connection: connection,
             iceCandidates: remoteIceCandidates,
@@ -78,7 +76,9 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCVideoCapturerDelega
             localStream: localStream,
             remoteStream: remoteStream,
             encryptedLocalVideoSource: encryptedLocalVideoSource,
-            aesKey: aesKey
+            aesKey: aesKey,
+            frameEncryptor: frameEncryptor,
+            frameDecryptor: frameDecryptor
         )
     }
 
@@ -107,7 +107,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCVideoCapturerDelega
         return config
     }
 
-    func supportsEncryption() -> Bool { false }
+    func supportsEncryption() -> Bool { true }
 
     func addIceCandidates(_ connection: RTCPeerConnection, _ remoteIceCandidates: [RTCIceCandidate]) {
         remoteIceCandidates.forEach { candidate in
@@ -129,7 +129,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCVideoCapturerDelega
             logger.debug("starting incoming call - create webrtc session")
             if activeCall.wrappedValue != nil { endCall() }
             let encryption = supportsEncryption()
-            let call = initializeCall(iceServers?.toWebRTCIceServers(), [], media, aesKey, relay)
+            let call = initializeCall(iceServers?.toWebRTCIceServers(), [], media, encryption ? aesKey : nil, relay)
             activeCall.wrappedValue = call
             call.connection.offer { answer in
                 Task {
@@ -158,7 +158,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCVideoCapturerDelega
                 resp = .error(message: "accept: encryption is not supported")
             } else if let offer: CustomRTCSessionDescription = decodeJSON(decompressFromBase64(input: offer)),
                       let remoteIceCandidates: [RTCIceCandidate] = decodeJSON(decompressFromBase64(input: iceCandidates)) {
-                let call = initializeCall(iceServers?.toWebRTCIceServers(), remoteIceCandidates, media, aesKey, relay)
+                let call = initializeCall(iceServers?.toWebRTCIceServers(), remoteIceCandidates, media, supportsEncryption() ? aesKey : nil, relay)
                 activeCall.wrappedValue = call
                 let pc = call.connection
                 if let type = offer.type, let sdp = offer.sdp {
@@ -244,6 +244,49 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCVideoCapturerDelega
         localRendererAspectRatio.wrappedValue = size.width / size.height
     }
 
+    func frameDecryptor(_ decryptor: RTCFrameDecryptor, withFrame encrypted: Data) -> Data? {
+        debugPrint("LALAL DECRYPTED CALL \(encrypted)  \((encrypted as NSData).first)")
+        guard encrypted.count > 0 else { return nil }
+        if var key: [CChar] = activeCall.wrappedValue?.aesKey?.cString(using: .utf8),
+           let pointer: UnsafeMutableRawPointer = malloc(encrypted.count) {
+            memcpy(pointer, (encrypted as NSData).bytes, encrypted.count)
+//            let raw: UInt8 = (encrypted[0] as UInt8) | ((encrypted[1] as UInt8) << 8) | ((encrypted[2] as UInt8) << 16)
+            let isKeyFrame = encrypted[0] & 1 == 1
+            debugPrint("LALAL key \(isKeyFrame)")
+            let clearTextBytesSize = isKeyFrame ? 10 : 3
+            chat_decrypt_media(&key, pointer.advanced(by: clearTextBytesSize), Int32(encrypted.count - clearTextBytesSize))
+            return Data(bytes: pointer, count: encrypted.count - 28)
+        } else {
+            return nil
+        }
+//        let a: NSData = NSData(base64Encoding: "")!
+//        let o = a.bytes.assumingMemoryBound(to: Int32.self)[0]
+    }
+
+    func frameEncryptor(_ encryptor: RTCFrameEncryptor, withFrame unencrypted: Data) -> Data? {
+        debugPrint("LALAL UNENCRYPTED CALL \(unencrypted)  \((unencrypted as NSData).first)")
+        guard unencrypted.count > 0 else { return nil }
+        if var key: [CChar] = activeCall.wrappedValue?.aesKey?.cString(using: .utf8),
+           let pointer: UnsafeMutableRawPointer = malloc(unencrypted.count + 28) {
+            debugPrint("LALAL keeey \(key)   \(activeCall.wrappedValue?.aesKey)")
+            memcpy(pointer, (unencrypted as NSData).bytes, unencrypted.count)
+//            let raw: UInt8 = (unencrypted[0] as UInt8) | ((unencrypted[1] as UInt8) << 8) | ((unencrypted[2] as UInt8) << 16)
+            let isKeyFrame = unencrypted[0] & 1 == 1
+            debugPrint("LALAL key \(isKeyFrame)")
+            let clearTextBytesSize = isKeyFrame ? 10 : 3
+            for i in 0..<30 {
+                debugPrint("LALAL before \(i)  \(unencrypted[i + clearTextBytesSize])")
+            }
+            chat_encrypt_media(&key, pointer.advanced(by: clearTextBytesSize), Int32(unencrypted.count + 28 - clearTextBytesSize))
+            for i in 0..<30 {
+                debugPrint("LALAL after \(i)  \(pointer.advanced(by: clearTextBytesSize).assumingMemoryBound(to: UInt8.self)[i])")
+            }
+            return Data(bytes: pointer, count: unencrypted.count + 28)
+        } else {
+            return nil
+        }
+    }
+
     private class EncryptedRTCVideoRenderer: NSObject, RTCVideoRenderer {
         let delegate: RTCVideoRenderer
         let aesKey: String
@@ -265,7 +308,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCVideoCapturerDelega
     }
 
     func addRemoteRenderer(_ activeCall: Call, _ renderer: RTCVideoRenderer) {
-        let aesKey: String? = activeCall.aesKey ?? "LALAL"
+        let aesKey: String? = activeCall.aesKey
         if let aesKey = aesKey {
             activeCall.remoteStream?.add(EncryptedRTCVideoRenderer(aesKey, renderer))
         } else {
@@ -274,11 +317,12 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCVideoCapturerDelega
     }
 
     func startCaptureLocalVideo(_ activeCall: Call) {
-        let camera = (RTCCameraVideoCapturer.captureDevices().first { $0.position == activeCall.device })!
+        if let camera = (RTCCameraVideoCapturer.captureDevices().first { $0.position == activeCall.device }) {
             let formats = RTCCameraVideoCapturer.supportedFormats(for: camera).forEach{ format in
                 format.supportedDepthDataFormats.forEach { f in f.supportedDepthDataFormats }
             }
-        debugPrint("LALAL formats \(formats)")
+            debugPrint("LALAL formats \(formats)")
+        }
 
         guard
             let capturer = activeCall.localCamera as? RTCCameraVideoCapturer,
@@ -301,7 +345,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCVideoCapturerDelega
 
     func capturer(_ capturer: RTCVideoCapturer, didCapture frame: RTCVideoFrame) {
         activeCall.wrappedValue?.localVideoSource.capturer(capturer, didCapture: frame)
-        let aesKey: String? = activeCall.wrappedValue?.aesKey ?? "LALAL"
+        let aesKey: String? = activeCall.wrappedValue?.aesKey
         // Only be here when encryption is used
         guard let aesKey = aesKey else { return }
         let buffer: RTCCVPixelBuffer = frame.buffer as! RTCCVPixelBuffer
@@ -318,18 +362,9 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCVideoCapturerDelega
     private func createMediaSenders(_ connection: RTCPeerConnection) -> (RTCVideoTrack, RTCVideoTrack?, RTCVideoCapturer, RTCVideoSource, RTCVideoSource) {
         let streamId = "stream"
         let audioTrack = createAudioTrack()
-        let sender_ = connection.add(audioTrack, streamIds: [streamId])
-        //sender?.setFrameEncryptor(self)
+        connection.add(audioTrack, streamIds: [streamId])
         let (localVideoTrack, localCamera, localVideoSource, encryptedLocalVideoTrack, encryptedLocalVideoSource) = createVideoTrack()
         connection.add(encryptedLocalVideoTrack, streamIds: [streamId])
-        // LALAL
-        let _ar = ArrayView<NSNumber>()
-        debugPrint("LALAL PRE \(connection.transceivers.first { $0.mediaType == .video }?.receiver)")
-//        debugPrint("LALAL DEC \(connection.transceivers.first { $0.mediaType == .video }?.receiver.frame_decryptor)")
-//        var cryptor = Cryptor()
-//        let pointer = AutoreleasingUnsafeMutablePointer<FrameDecryptorInterface?>.init(&cryptor)
-        connection.transceivers.first { $0.mediaType == .video }?.receiver.setFrameDecryptor(FrameDecryptor())
-        debugPrint("LALAL AHAH")
         return (localVideoTrack, connection.transceivers.first { $0.mediaType == .video }?.receiver.track as? RTCVideoTrack, localCamera, localVideoSource, encryptedLocalVideoSource)
     }
 
@@ -358,6 +393,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCVideoCapturerDelega
 
     func endCall() {
         activeCall.wrappedValue?.connection.close()
+        activeCall.wrappedValue?.frameDecryptor?.delegate = nil
         activeCall.wrappedValue = nil
         setSpeakerEnabledAndConfigureSession(false)
     }
@@ -410,6 +446,11 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
 
     func peerConnection(_ connection: RTCPeerConnection, didAdd stream: RTCMediaStream) {
         logger.debug("Connection did add stream")
+        debugPrint("LALAL transceivers \(connection.transceivers)")
+        if let frameEncryptor = activeCall.wrappedValue?.frameEncryptor, let frameDecryptor = activeCall.wrappedValue?.frameDecryptor {
+            connection.transceivers.forEach{ $0.sender.setRtcFrameEncryptor(frameEncryptor) }
+            connection.transceivers.forEach{ $0.receiver.setRtcFrameDecryptor(frameDecryptor) }
+        }
     }
 
     func peerConnection(_ connection: RTCPeerConnection, didRemove stream: RTCMediaStream) {
@@ -423,7 +464,7 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
     func peerConnection(_ connection: RTCPeerConnection, didChange newState: RTCIceConnectionState) {
         logger.debug("Connection new connection state: \(newState.toString() ?? "" + newState.rawValue.description)")
 
-        guard activeCall.wrappedValue != nil,
+        guard let call = activeCall.wrappedValue,
               let connectionStateString = newState.toString(),
               let iceConnectionStateString = connection.iceConnectionState.toString(),
               let iceGatheringStateString = connection.iceGatheringState.toString(),
@@ -709,7 +750,7 @@ extension CVPixelBuffer {
             logger.error("Unable to get base address of new video frame")
             return nil
         }
-        var key: [CChar]? = aesKey?.cString(using: .utf8)
+//        var key: [CChar]? = aesKey?.cString(using: .utf8)
         let planeCount: Int = CVPixelBufferGetPlaneCount(self)
         if planeCount == 0 {
             let height = CVPixelBufferGetHeight(self)
@@ -750,13 +791,6 @@ extension CVPixelBuffer {
         //guard let newFrameMem: UnsafeMutableRawPointer = malloc(dataSize) else { fatalError() }
 //            memcpy(newBaseAddress, baseAddress, dataSize)
         let newInt8Buffer: UnsafeMutablePointer<UInt8> = unsafeBitCast(newBaseAddress, to: UnsafeMutablePointer<UInt8>.self)
-        if aesKey != nil {
-            if encrypt {
-                chat_encrypt_media(&key, baseAddress, Int32(dataSize))
-            } else {
-                chat_decrypt_media(&key, baseAddress, Int32(dataSize))
-            }
-        }
         /*var i = 0
         while i < dataSize / 3 * 2 {
             newInt8Buffer[i] = 1
