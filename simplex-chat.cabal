@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           simplex-chat
-version:        4.5.2.0
+version:        4.5.3.0
 category:       Web, System, Services, Cryptography
 homepage:       https://github.com/simplex-chat/simplex-chat#readme
 author:         simplex.chat
@@ -120,6 +120,7 @@ library
     , exceptions ==0.10.*
     , filepath ==1.4.*
     , http-types ==0.12.*
+    , memory ==0.15.*
     , mtl ==2.2.*
     , network >=3.1.2.7 && <3.2
     , optparse-applicative >=0.15 && <0.17
@@ -166,6 +167,7 @@ executable simplex-bot
     , exceptions ==0.10.*
     , filepath ==1.4.*
     , http-types ==0.12.*
+    , memory ==0.15.*
     , mtl ==2.2.*
     , network >=3.1.2.7 && <3.2
     , optparse-applicative >=0.15 && <0.17
@@ -213,6 +215,7 @@ executable simplex-bot-advanced
     , exceptions ==0.10.*
     , filepath ==1.4.*
     , http-types ==0.12.*
+    , memory ==0.15.*
     , mtl ==2.2.*
     , network >=3.1.2.7 && <3.2
     , optparse-applicative >=0.15 && <0.17
@@ -261,6 +264,7 @@ executable simplex-broadcast-bot
     , exceptions ==0.10.*
     , filepath ==1.4.*
     , http-types ==0.12.*
+    , memory ==0.15.*
     , mtl ==2.2.*
     , network >=3.1.2.7 && <3.2
     , optparse-applicative >=0.15 && <0.17
@@ -309,6 +313,7 @@ executable simplex-chat
     , exceptions ==0.10.*
     , filepath ==1.4.*
     , http-types ==0.12.*
+    , memory ==0.15.*
     , mtl ==2.2.*
     , network ==3.1.*
     , optparse-applicative >=0.15 && <0.17
@@ -348,6 +353,7 @@ test-suite simplex-chat-test
       MobileTests
       ProtocolTests
       SchemaDump
+      WebRTCTests
       Paths_simplex_chat
   hs-source-dirs:
       tests
@@ -371,6 +377,7 @@ test-suite simplex-chat-test
     , filepath ==1.4.*
     , hspec ==2.7.*
     , http-types ==0.12.*
+    , memory ==0.15.*
     , mtl ==2.2.*
     , network ==3.1.*
     , optparse-applicative >=0.15 && <0.17

@@ -9,13 +9,13 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat
 import Simplex.Chat.Controller
-import Simplex.Chat.Options (ChatOpts (..))
+import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Types
 import UnliftIO.Async
 
 simplexChatCore :: ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> (User -> ChatController -> IO ()) -> IO ()
-simplexChatCore cfg@ChatConfig {yesToMigrations} opts@ChatOpts {dbFilePrefix, dbKey} sendToast chat
-  | logAgent opts = do
+simplexChatCore cfg@ChatConfig {yesToMigrations} opts@ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, dbKey, logAgent}} sendToast chat
+  | logAgent = do
     setLogLevel LogInfo -- LogError
     withGlobalLogging logCfg initRun
   | otherwise = initRun

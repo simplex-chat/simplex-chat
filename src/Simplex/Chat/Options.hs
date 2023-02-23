@@ -7,7 +7,9 @@
 
 module Simplex.Chat.Options
   ( ChatOpts (..),
+    CoreChatOpts (..),
     chatOptsP,
+    coreChatOptsP,
     getChatOpts,
     smpServersP,
     fullNetworkConfig,
@@ -27,15 +29,7 @@ import Simplex.Messaging.Transport.Client (SocksProxy, defaultSocksProxy)
 import System.FilePath (combine)
 
 data ChatOpts = ChatOpts
-  { dbFilePrefix :: String,
-    dbKey :: String,
-    smpServers :: [SMPServerWithAuth],
-    networkConfig :: NetworkConfig,
-    logLevel :: ChatLogLevel,
-    logConnections :: Bool,
-    logServerHosts :: Bool,
-    logAgent :: Bool,
-    tbqSize :: Natural,
+  { coreOptions :: CoreChatOpts,
     chatCmd :: String,
     chatCmdDelay :: Int,
     chatServerPort :: Maybe String,
@@ -44,8 +38,20 @@ data ChatOpts = ChatOpts
     maintenance :: Bool
   }
 
-chatOptsP :: FilePath -> FilePath -> Parser ChatOpts
-chatOptsP appDir defaultDbFileName = do
+data CoreChatOpts = CoreChatOpts
+  { dbFilePrefix :: String,
+    dbKey :: String,
+    smpServers :: [SMPServerWithAuth],
+    networkConfig :: NetworkConfig,
+    logLevel :: ChatLogLevel,
+    logConnections :: Bool,
+    logServerHosts :: Bool,
+    logAgent :: Bool,
+    tbqSize :: Natural
+  }
+
+coreChatOptsP :: FilePath -> FilePath -> Parser CoreChatOpts
+coreChatOptsP appDir defaultDbFileName = do
   dbFilePrefix <-
     strOption
       ( long "database"
@@ -129,6 +135,25 @@ chatOptsP appDir defaultDbFileName = do
           <> value 64
           <> showDefault
       )
+  pure
+    CoreChatOpts
+      { dbFilePrefix,
+        dbKey,
+        smpServers,
+        networkConfig = fullNetworkConfig socksProxy (useTcpTimeout socksProxy t) (logTLSErrors || logLevel == CLLDebug),
+        logLevel,
+        logConnections = logConnections || logLevel <= CLLInfo,
+        logServerHosts = logServerHosts || logLevel <= CLLInfo,
+        logAgent = logAgent || logLevel == CLLDebug,
+        tbqSize
+      }
+  where
+    useTcpTimeout p t = 1000000 * if t > 0 then t else maybe 5 (const 10) p
+    defaultDbFilePath = combine appDir defaultDbFileName
+
+chatOptsP :: FilePath -> FilePath -> Parser ChatOpts
+chatOptsP appDir defaultDbFileName = do
+  coreOptions <- coreChatOptsP appDir defaultDbFileName
   chatCmd <-
     strOption
       ( long "execute"
@@ -177,15 +202,7 @@ chatOptsP appDir defaultDbFileName = do
       )
   pure
     ChatOpts
-      { dbFilePrefix,
-        dbKey,
-        smpServers,
-        networkConfig = fullNetworkConfig socksProxy (useTcpTimeout socksProxy t) (logTLSErrors || logLevel == CLLDebug),
-        logLevel,
-        logConnections = logConnections || logLevel <= CLLInfo,
-        logServerHosts = logServerHosts || logLevel <= CLLInfo,
-        logAgent = logAgent || logLevel == CLLDebug,
-        tbqSize,
+      { coreOptions,
         chatCmd,
         chatCmdDelay,
         chatServerPort,
@@ -193,9 +210,6 @@ chatOptsP appDir defaultDbFileName = do
         allowInstantFiles,
         maintenance
       }
-  where
-    useTcpTimeout p t = 1000000 * if t > 0 then t else maybe 5 (const 10) p
-    defaultDbFilePath = combine appDir defaultDbFileName
 
 fullNetworkConfig :: Maybe SocksProxy -> Int -> Bool -> NetworkConfig
 fullNetworkConfig socksProxy tcpTimeout logTLSErrors =

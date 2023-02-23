@@ -1,5 +1,5 @@
 name: simplex-chat
-version: 4.5.2.0
+version: 4.5.3.0
 #synopsis:
 #description:
 homepage: https://github.com/simplex-chat/simplex-chat#readme
@@ -28,6 +28,7 @@ dependencies:
   - exceptions == 0.10.*
   - filepath == 1.4.*
   - http-types == 0.12.*
+  - memory == 0.15.*
   - mtl == 2.2.*
   - network >= 3.1.2.7 && < 3.2
   - optparse-applicative >= 0.15 && < 0.17

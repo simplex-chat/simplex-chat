@@ -32,6 +32,7 @@ chatDirectTests = do
     it "direct message delete" testDirectMessageDelete
     it "direct live message" testDirectLiveMessage
     it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
+    it "should send multiline message" testMultilineMessage
   describe "SMP servers" $ do
     it "get and set SMP servers" testGetSetSMPServers
     it "test SMP server connection" testTestSMPServerConnection
@@ -368,6 +369,23 @@ testRepeatAuthErrorsDisableContact =
     sendAuth alice = do
       alice #> "@bob hey"
       alice <## "[bob, contactId: 2, connId: 1] error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
+
+testMultilineMessage :: HasCallStack => FilePath -> IO ()
+testMultilineMessage = testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+  connectUsers alice bob
+  connectUsers alice cath
+  alice `send` "@bob \"hello\\nthere\"" -- @bob "hello\nthere"
+  alice <# "@bob hello"
+  alice <## "there"
+  bob <# "alice> hello"
+  bob <## "there"
+  alice `send` "/feed \"hello\\nthere\"" -- /feed "hello\nthere"
+  alice <##. "/feed (2)"
+  alice <## "there"
+  bob <# "alice> hello"
+  bob <## "there"
+  cath <# "alice> hello"
+  cath <## "there"
 
 testGetSetSMPServers :: HasCallStack => FilePath -> IO ()
 testGetSetSMPServers =
@@ -740,7 +758,7 @@ testDatabaseEncryption tmp = do
       alice <## "ok"
       alice ##> "/_start"
       alice <## "error: chat store changed, please restart chat"
-    withTestChatOpts tmp testOpts {maintenance = True, dbKey = "mykey"} "alice" $ \alice -> do
+    withTestChatOpts tmp (getTestOpts True "mykey") "alice" $ \alice -> do
       alice ##> "/_start"
       alice <## "chat started"
       testChatWorking alice bob
@@ -752,7 +770,7 @@ testDatabaseEncryption tmp = do
       alice <## "ok"
       alice ##> "/_db encryption {\"currentKey\":\"nextkey\",\"newKey\":\"anotherkey\"}"
       alice <## "ok"
-    withTestChatOpts tmp testOpts {maintenance = True, dbKey = "anotherkey"} "alice" $ \alice -> do
+    withTestChatOpts tmp (getTestOpts True "anotherkey") "alice" $ \alice -> do
       alice ##> "/_start"
       alice <## "chat started"
       testChatWorking alice bob

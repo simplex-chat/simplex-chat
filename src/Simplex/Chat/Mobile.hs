@@ -122,18 +122,21 @@ cChatParseMarkdown s = newCAString . chatParseMarkdown =<< peekCAString s
 cChatParseServer :: CString -> IO CJSONString
 cChatParseServer s = newCAString . chatParseServer =<< peekCAString s
 
-mobileChatOpts :: ChatOpts
-mobileChatOpts =
+mobileChatOpts :: String -> String -> ChatOpts
+mobileChatOpts dbFilePrefix dbKey =
   ChatOpts
-    { dbFilePrefix = undefined,
-      dbKey = "",
-      smpServers = [],
-      networkConfig = defaultNetworkConfig,
-      logLevel = CLLImportant,
-      logConnections = False,
-      logServerHosts = True,
-      logAgent = False,
-      tbqSize = 64,
+    { coreOptions =
+        CoreChatOpts
+          { dbFilePrefix,
+            dbKey,
+            smpServers = [],
+            networkConfig = defaultNetworkConfig,
+            logLevel = CLLImportant,
+            logConnections = False,
+            logServerHosts = True,
+            logAgent = False,
+            tbqSize = 64
+          },
       chatCmd = "",
       chatCmdDelay = 3,
       chatServerPort = Nothing,
@@ -172,7 +175,7 @@ chatMigrateInit dbFilePrefix dbKey = runExceptT $ do
   where
     initialize st db = do
       user_ <- getActiveUser_ st
-      newChatController db user_ defaultMobileConfig mobileChatOpts {dbFilePrefix, dbKey} Nothing
+      newChatController db user_ defaultMobileConfig (mobileChatOpts dbFilePrefix dbKey) Nothing
     migrate createStore dbFile =
       ExceptT $
         (Right <$> createStore dbFile dbKey True)
@@ -209,7 +212,7 @@ chatInitKey :: String -> String -> IO ChatController
 chatInitKey dbFilePrefix dbKey = do
   db@ChatDatabase {chatStore} <- createChatDatabase dbFilePrefix dbKey True
   user_ <- getActiveUser_ chatStore
-  newChatController db user_ defaultMobileConfig mobileChatOpts {dbFilePrefix, dbKey} Nothing
+  newChatController db user_ defaultMobileConfig (mobileChatOpts dbFilePrefix dbKey) Nothing
 
 chatSendCmd :: ChatController -> String -> IO JSONString
 chatSendCmd cc s = LB.unpack . J.encode . APIResponse Nothing <$> runReaderT (execChatCommand $ B.pack s) cc

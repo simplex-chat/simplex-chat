@@ -23,13 +23,13 @@ import System.Directory (getAppUserDataDirectory)
 
 main :: IO ()
 main = do
-  opts@BroadcastBotOpts {chatOptions} <- welcomeGetOpts
-  simplexChatCore terminalChatConfig chatOptions Nothing $ broadcastBot opts
+  opts <- welcomeGetOpts
+  simplexChatCore terminalChatConfig (mkChatOpts opts) Nothing $ broadcastBot opts
 
 welcomeGetOpts :: IO BroadcastBotOpts
 welcomeGetOpts = do
   appDir <- getAppUserDataDirectory "simplex"
-  opts@BroadcastBotOpts {chatOptions = ChatOpts {dbFilePrefix}} <- getBroadcastBotOpts appDir "simplex_status_bot"
+  opts@BroadcastBotOpts {coreOptions = CoreChatOpts {dbFilePrefix}} <- getBroadcastBotOpts appDir "simplex_status_bot"
   putStrLn $ "SimpleX Chat Bot v" ++ versionNumber
   putStrLn $ "db: " <> dbFilePrefix <> "_chat.db, " <> dbFilePrefix <> "_agent.db"
   pure opts
