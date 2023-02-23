@@ -347,7 +347,10 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCVideoCapturerDelega
         activeCall.wrappedValue?.localVideoSource.capturer(capturer, didCapture: frame)
         let aesKey: String? = activeCall.wrappedValue?.aesKey
         // Only be here when encryption is used
-        guard let aesKey = aesKey else { return }
+        guard let aesKey = aesKey else {
+            activeCall.wrappedValue?.encryptedLocalVideoSource.capturer(capturer, didCapture: frame)
+            return
+        }
         let buffer: RTCCVPixelBuffer = frame.buffer as! RTCCVPixelBuffer
         var pixelBuffer: CVPixelBuffer = buffer.pixelBuffer
 //        debugPrint("LALAL \(frame.width) \(frame.height)")
