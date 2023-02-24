@@ -8,7 +8,7 @@ import LZString
 import SwiftUI
 import SimpleXChat
 
-final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCVideoCapturerDelegate, RTCFrameEncryptorDelegate, RTCFrameDecryptorDelegate {
+final class WebRTCClient: NSObject, RTCVideoViewDelegate/*, RTCVideoCapturerDelegate*/, RTCFrameEncryptorDelegate, RTCFrameDecryptorDelegate {
     private static let factory: RTCPeerConnectionFactory = {
         RTCInitializeSSL()
         let videoEncoderFactory = RTCDefaultVideoEncoderFactory()
@@ -61,8 +61,11 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCVideoCapturerDelega
         var frameEncryptor: RTCFrameEncryptor? = nil
         var frameDecryptor: RTCFrameDecryptor? = nil
         if aesKey != nil {
-            frameEncryptor = RTCFrameEncryptor.init(sizeChange: 28)
-            frameEncryptor?.delegate = self
+            let encryptor = RTCFrameEncryptor.init(sizeChange: 28)
+            encryptor.delegate = self
+            frameEncryptor = encryptor
+            connection.senders.forEach { $0.setRtcFrameEncryptor(encryptor) }
+
             frameDecryptor = RTCFrameDecryptor.init(sizeChange: -28)
             frameDecryptor?.delegate = self
         }
@@ -309,16 +312,16 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCVideoCapturerDelega
 
         debugPrint("LALAL format \(format)")
 
-        capturer.delegate = self
+        //capturer.delegate = self
         capturer.stopCapture()
         capturer.startCapture(with: camera,
             format: format,
             fps: Int(fps.maxFrameRate))
     }
 
-    func capturer(_ capturer: RTCVideoCapturer, didCapture frame: RTCVideoFrame) {
-        activeCall.wrappedValue?.localVideoSource.capturer(capturer, didCapture: frame)
-    }
+    //func capturer(_ capturer: RTCVideoCapturer, didCapture frame: RTCVideoFrame) {
+    //    activeCall.wrappedValue?.localVideoSource.capturer(capturer, didCapture: frame)
+    //}
 
     private func createMediaSenders(_ connection: RTCPeerConnection) -> (RTCVideoTrack, RTCVideoTrack?, RTCVideoCapturer, RTCVideoSource) {
         let streamId = "stream"
@@ -340,9 +343,9 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCVideoCapturerDelega
         let localVideoSource = WebRTCClient.factory.videoSource()
 
         #if targetEnvironment(simulator)
-        let localCamera = RTCFileVideoCapturer(delegate: self)
+        let localCamera = RTCFileVideoCapturer(delegate: localVideoSource)
         #else
-        let localCamera = RTCCameraVideoCapturer(delegate: self)
+        let localCamera = RTCCameraVideoCapturer(delegate: localVideoSource)
         #endif
 
         let localVideoTrack = WebRTCClient.factory.videoTrack(with: localVideoSource, trackId: "video0")
@@ -350,9 +353,14 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCVideoCapturerDelega
     }
 
     func endCall() {
-        activeCall.wrappedValue?.connection.close()
-        activeCall.wrappedValue?.frameDecryptor?.delegate = nil
+    debugPrint("LALAL ENDCALL")
+        guard let call = activeCall.wrappedValue else { debugPrint("LALAL RETURN");return }
         activeCall.wrappedValue = nil
+        debugPrint("LALAL ENDCALL2")
+        call.connection.close()
+        call.connection.delegate = nil
+        call.frameEncryptor?.delegate = nil
+        call.frameDecryptor?.delegate = nil
         setSpeakerEnabledAndConfigureSession(false)
     }
 
@@ -405,9 +413,8 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
     func peerConnection(_ connection: RTCPeerConnection, didAdd stream: RTCMediaStream) {
         logger.debug("Connection did add stream")
         debugPrint("LALAL transceivers \(connection.transceivers)")
-        if let frameEncryptor = activeCall.wrappedValue?.frameEncryptor, let frameDecryptor = activeCall.wrappedValue?.frameDecryptor {
-            connection.transceivers.forEach{ $0.sender.setRtcFrameEncryptor(frameEncryptor) }
-            connection.transceivers.forEach{ $0.receiver.setRtcFrameDecryptor(frameDecryptor) }
+        if let frameDecryptor = activeCall.wrappedValue?.frameDecryptor {
+            connection.receivers.forEach { $0.setRtcFrameDecryptor(frameDecryptor) }
         }
     }
 

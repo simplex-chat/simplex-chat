@@ -38,6 +38,9 @@ struct ActiveCallView: View {
                 sendCommandToClient()
             }
         }
+        .onDisappear {
+            client?.endCall()
+        }
         .onChange(of: m.callCommand) { _ in sendCommandToClient()}
         .background(.black)
         .preferredColorScheme(.dark)
@@ -156,10 +159,6 @@ struct ActiveCallView: View {
     private func closeCallView(_ client: WebRTCClient) {
         if m.activeCall != nil {
             m.showCallView = false
-            Task {
-                client.setAudioEnabled(false)
-                client.setVideoEnabled(false)
-            }
         }
     }
 }
