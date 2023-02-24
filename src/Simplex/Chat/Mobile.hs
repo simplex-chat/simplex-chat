@@ -65,9 +65,9 @@ foreign export ccall "chat_parse_markdown" cChatParseMarkdown :: CString -> IO C
 
 foreign export ccall "chat_parse_server" cChatParseServer :: CString -> IO CJSONString
 
-foreign export ccall "chat_encrypt_media" cChatEncryptMedia :: CString -> Ptr Word8 -> CInt -> IO ()
+foreign export ccall "chat_encrypt_media" cChatEncryptMedia :: CString -> Ptr Word8 -> CInt -> IO CString
 
-foreign export ccall "chat_decrypt_media" cChatDecryptMedia :: CString -> Ptr Word8 -> CInt -> IO ()
+foreign export ccall "chat_decrypt_media" cChatDecryptMedia :: CString -> Ptr Word8 -> CInt -> IO CString
 
 -- | check / migrate database and initialize chat controller on success
 cChatMigrateInit :: CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
