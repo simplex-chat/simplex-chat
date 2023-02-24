@@ -9,10 +9,10 @@ var base: UnsafeMutableRawPointer = malloc(totalBytes)
 
 let assume = base.assumingMemoryBound(to: UInt8.self)
 assume[0] = 1 // key frame
-for i in 0..<28 {
-    assume[totalBytes - ivTagBytes + i] = UInt8(i)
+for i in 1..<totalBytes {
+    assume[i] = UInt8(i)
 }
-let unencrypted = NSData(bytesNoCopy: base, length: 200)
+let unencrypted = NSData(bytesNoCopy: base, length: totalBytes)
 let aesKey = "PI-bV-FTgRqZM_lsDH9T21a0yRVMsvLFmvilJ9Ssk3g="
 
 if var key: [CChar] = aesKey.cString(using: .utf8),
