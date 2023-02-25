@@ -4,7 +4,6 @@ module Simplex.Chat.Mobile.WebRTC where
 
 import Control.Monad.Except
 import qualified Crypto.Cipher.Types as AES
-import Crypto.Random (getRandomBytes)
 import Data.Bifunctor (bimap)
 import qualified Data.ByteArray as BA
 import qualified Data.ByteString as B
@@ -41,44 +40,35 @@ cTransformMedia f cKey cFrame cFrameLen = do
 
 chatEncryptMedia :: ByteString -> ByteString -> ExceptT String IO ByteString
 chatEncryptMedia keyStr frame = do
-  checkFrameLen frame
+  len <- checkFrameLen frame
   key <- decodeKey keyStr
-  iv <- liftIO $ getRandomBytes ivSize
-  let (frame', _) = B.splitAt (B.length frame - reservedSize) frame
-  (tag, frame'') <- withExceptT show $ C.encryptAESNoPad key (C.IV $ iv <> ivPad) frame'
-  let authTag = BA.convert $ C.unAuthTag tag
-  pure $ frame'' <> authTag <> iv
+  iv <- liftIO C.randomGCMIV
+  (tag, frame') <- withExceptT show $ C.encryptAESNoPad key iv $ B.take len frame
+  pure $ frame' <> BA.convert (C.unAuthTag tag) <> C.unGCMIV iv
 
 chatDecryptMedia :: ByteString -> ByteString -> ExceptT String IO ByteString
 chatDecryptMedia keyStr frame = do
-  checkFrameLen frame
+  len <- checkFrameLen frame
   key <- decodeKey keyStr
-  let (rest, iv) = B.splitAt (B.length frame - ivSize) frame
-      (frame', tag) = B.splitAt (B.length rest - C.authTagSize) rest
+  let (frame', rest) = B.splitAt len frame
+      (tag, iv) = B.splitAt C.authTagSize rest
       authTag = C.AuthTag $ AES.AuthTag $ BA.convert tag
-  frame'' <- withExceptT show $ C.decryptAESNoPad key (C.IV $ iv <> ivPad) frame' authTag
-  pure $ frame'' <> B.replicate reservedSize 0
+  withExceptT show $ do
+    iv' <- liftEither $ C.gcmIV iv
+    frame'' <- C.decryptAESNoPad key iv' frame' authTag
+    pure $ frame'' <> B.replicate reservedSize 0
 
-checkFrameLen :: ByteString -> ExceptT String IO ()
-checkFrameLen frame =
-  when (B.length frame < reservedSize) $ throwError "frame has no [reserved space] IV and/or auth tag"
+checkFrameLen :: ByteString -> ExceptT String IO Int
+checkFrameLen frame = do
+  let len = B.length frame - reservedSize
+  when (len < 0) $ throwError "frame has no [reserved space for] IV and/or auth tag"
+  pure len
 {-# INLINE checkFrameLen #-}
 
 decodeKey :: ByteString -> ExceptT String IO C.Key
 decodeKey = liftEither . bimap ("invalid key: " <>) C.Key . U.decode
 {-# INLINE decodeKey #-}
 
-authTagSize :: Int
-authTagSize = C.authTagSize
-{-# INLINE authTagSize #-}
-
-ivSize :: Int
-ivSize = 12
-{-# INLINE ivSize #-}
-
-ivPad :: ByteString
-ivPad = B.replicate 4 0
-
 reservedSize :: Int
-reservedSize = authTagSize + ivSize
+reservedSize = C.authTagSize + C.gcmIVSize
 {-# INLINE reservedSize #-}
