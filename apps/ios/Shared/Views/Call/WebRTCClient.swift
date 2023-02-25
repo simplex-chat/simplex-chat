@@ -255,7 +255,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate/*, RTCVideoCapturerDele
             let isKeyFrame = encrypted[0] & 1 == 1
             debugPrint("LALAL key \(isKeyFrame)")
             let clearTextBytesSize = isKeyFrame ? 10 : 3
-            chat_decrypt_media(&key, pointer.advanced(by: clearTextBytesSize), Int32(encrypted.count - clearTextBytesSize))
+            logCrypto("decrypt", chat_decrypt_media(&key, pointer.advanced(by: clearTextBytesSize), Int32(encrypted.count - clearTextBytesSize)))
             return Data(bytes: pointer, count: encrypted.count - 28)
         } else {
             return nil
@@ -278,13 +278,24 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate/*, RTCVideoCapturerDele
             for i in 0..<30 {
                 debugPrint("LALAL before \(i)  \(unencrypted[i + clearTextBytesSize])")
             }
-            chat_encrypt_media(&key, pointer.advanced(by: clearTextBytesSize), Int32(unencrypted.count + 28 - clearTextBytesSize))
+            logCrypto("encrypt", chat_encrypt_media(&key, pointer.advanced(by: clearTextBytesSize), Int32(unencrypted.count + 28 - clearTextBytesSize)))
             for i in 0..<30 {
                 debugPrint("LALAL after \(i)  \(pointer.advanced(by: clearTextBytesSize).assumingMemoryBound(to: UInt8.self)[i])")
             }
             return Data(bytes: pointer, count: unencrypted.count + 28)
         } else {
             return nil
+        }
+    }
+
+    private func logCrypto(_ op: String, _ r: UnsafeMutablePointer<CChar>?) {
+        if let r = r {
+            let err = fromCString(r)
+            if err != "" {
+                logger.error("\(op) error: \(err)")
+//            } else {
+//                logger.debug("\(op) ok")
+            }
         }
     }
 
