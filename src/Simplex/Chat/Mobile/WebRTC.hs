@@ -1,6 +1,12 @@
 {-# LANGUAGE FlexibleContexts #-}
 
-module Simplex.Chat.Mobile.WebRTC where
+module Simplex.Chat.Mobile.WebRTC (
+  cChatEncryptMedia,
+  cChatDecryptMedia,
+  chatEncryptMedia,
+  chatDecryptMedia,
+  reservedSize,
+) where
 
 import Control.Monad.Except
 import qualified Crypto.Cipher.Types as AES
@@ -56,7 +62,7 @@ chatDecryptMedia keyStr frame = do
   withExceptT show $ do
     iv' <- liftEither $ C.gcmIV iv
     frame'' <- C.decryptAESNoPad key iv' frame' authTag
-    pure $ frame'' <> B.replicate reservedSize 0
+    pure $ frame'' <> framePad
 
 checkFrameLen :: ByteString -> ExceptT String IO Int
 checkFrameLen frame = do
@@ -71,4 +77,6 @@ decodeKey = liftEither . bimap ("invalid key: " <>) C.Key . U.decode
 
 reservedSize :: Int
 reservedSize = C.authTagSize + C.gcmIVSize
-{-# INLINE reservedSize #-}
+
+framePad :: ByteString
+framePad = B.replicate reservedSize 0
