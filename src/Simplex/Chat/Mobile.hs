@@ -134,7 +134,8 @@ mobileChatOpts dbFilePrefix dbKey =
             logLevel = CLLImportant,
             logConnections = False,
             logServerHosts = True,
-            logAgent = False,
+            logAgent = Nothing,
+            logFile = Nothing,
             tbqSize = 1024
           },
       chatCmd = "",
