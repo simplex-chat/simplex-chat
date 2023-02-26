@@ -4339,9 +4339,9 @@ SimpleX-servers kunnen uw profiel niet zien.</target>
         <target>beginnen…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="strike" xml:space="preserve">
+      <trans-unit id="strike" xml:space="preserve" approved="no">
         <source>strike</source>
-        <target>Doorstrepen</target>
+        <target state="translated">staking</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="this contact" xml:space="preserve">
@@ -4459,9 +4459,9 @@ SimpleX-servers kunnen uw profiel niet zien.</target>
         <target>Jij: </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="~strike~" xml:space="preserve">
+      <trans-unit id="~strike~" xml:space="preserve" approved="no">
         <source>\~strike~</source>
-        <target>\~Doorstrepen~</target>
+        <target state="translated">\~staking~</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>
