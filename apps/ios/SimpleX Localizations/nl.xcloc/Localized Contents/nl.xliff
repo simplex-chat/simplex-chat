@@ -17,14 +17,14 @@
         <target> </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="  " xml:space="preserve">
+      <trans-unit id="  " xml:space="preserve" approved="no">
         <source>  </source>
-        <target> </target>
+        <target state="translated">  </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="   " xml:space="preserve">
+      <trans-unit id="   " xml:space="preserve" approved="no">
         <source>   </source>
-        <target> </target>
+        <target state="translated">   </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id=" (" xml:space="preserve">
@@ -530,9 +530,9 @@
         <target>Verificatie niet beschikbaar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Auto-accept contact requests" xml:space="preserve">
+      <trans-unit id="Auto-accept contact requests" xml:space="preserve" approved="no">
         <source>Auto-accept contact requests</source>
-        <target>Contactverzoeken automatisch accepterenContactverzoeken automatisch accepteren</target>
+        <target state="translated">Contactverzoeken automatisch accepteren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Auto-accept images" xml:space="preserve">
@@ -575,9 +575,9 @@
         <target>Oproep al beëindigd!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Calls" xml:space="preserve">
+      <trans-unit id="Calls" xml:space="preserve" approved="no">
         <source>Calls</source>
-        <target>OPROEPEN</target>
+        <target state="translated">Oproepen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Can't invite contact!" xml:space="preserve">
@@ -1980,9 +1980,9 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
         <target>Word lid van</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Join group" xml:space="preserve">
+      <trans-unit id="Join group" xml:space="preserve" approved="no">
         <source>Join group</source>
-        <target>Word lid van</target>
+        <target state="translated">Word lid van groep</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Join incognito" xml:space="preserve">
@@ -2545,9 +2545,9 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
         <target>Verbieden het verzenden van spraakberichten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protect app screen" xml:space="preserve">
+      <trans-unit id="Protect app screen" xml:space="preserve" approved="no">
         <source>Protect app screen</source>
-        <target>Voorkom scherm afbeeldingen</target>
+        <target state="translated">Bescherm het app-scherm</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protocol timeout" xml:space="preserve">
@@ -3190,9 +3190,9 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
         <target>De microfoon werkt niet als de app op de achtergrond staat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The next generation of private messaging" xml:space="preserve">
+      <trans-unit id="The next generation of private messaging" xml:space="preserve" approved="no">
         <source>The next generation of private messaging</source>
-        <target>De volgende generatie berichten versturen</target>
+        <target state="translated">De volgende generatie privéberichten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The old database was not removed during the migration, it can be deleted." xml:space="preserve">
@@ -3868,9 +3868,9 @@ SimpleX-servers kunnen uw profiel niet zien.</target>
         <target>[Bijdragen](https://github.com/simplex-chat/simplex-chat#contribute)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="[Send us email](mailto:chat@simplex.chat)" xml:space="preserve">
+      <trans-unit id="[Send us email](mailto:chat@simplex.chat)" xml:space="preserve" approved="no">
         <source>[Send us email](mailto:chat@simplex.chat)</source>
-        <target>Stuur ons een e-mail</target>
+        <target state="translated">[Stuur ons een e-mail](mailto:chat@simplex.chat)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" xml:space="preserve">
@@ -4048,9 +4048,9 @@ SimpleX-servers kunnen uw profiel niet zien.</target>
         <target>contact heeft geen e2e-encryptie</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="creator" xml:space="preserve">
+      <trans-unit id="creator" xml:space="preserve" approved="no">
         <source>creator</source>
-        <target>starter</target>
+        <target state="translated">schepper</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="default (%@)" xml:space="preserve">
@@ -4203,9 +4203,9 @@ SimpleX-servers kunnen uw profiel niet zien.</target>
         <target>deelnemen als %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="left" xml:space="preserve">
+      <trans-unit id="left" xml:space="preserve" approved="no">
         <source>left</source>
-        <target>groep verlaten</target>
+        <target state="translated">verlaten</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="marked deleted" xml:space="preserve">
