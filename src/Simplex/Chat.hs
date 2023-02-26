@@ -105,7 +105,6 @@ defaultChatConfig =
       fileChunkSize = 15780, -- do not change
       inlineFiles = defaultInlineFilesConfig,
       logLevel = CLLImportant,
-      subscriptionConcurrency = 16,
       subscriptionEvents = False,
       hostEvents = False,
       testView = False,

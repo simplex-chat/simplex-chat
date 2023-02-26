@@ -6,6 +6,7 @@
 
 module Main where
 
+import Control.Concurrent (forkIO)
 import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Monad.Reader
@@ -48,7 +49,7 @@ broadcastBot BroadcastBotOpts {publishers, welcomeMessage, prohibitedMessage} _u
           if allowContent mc
             then do
               sendChatCmd cc "/contacts" >>= \case
-                CRContactsList _ cts -> do
+                CRContactsList _ cts -> void . forkIO $ do
                   let cts' = filter broadcastTo cts
                   forM_ cts' $ \ct' -> sendComposedMessage cc ct' Nothing mc
                   sendReply $ "Forwarded to " <> show (length cts') <> " contact(s)"
