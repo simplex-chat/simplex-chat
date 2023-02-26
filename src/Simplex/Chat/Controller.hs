@@ -105,7 +105,6 @@ data ChatConfig = ChatConfig
     tbqSize :: Natural,
     fileChunkSize :: Integer,
     inlineFiles :: InlineFilesConfig,
-    subscriptionConcurrency :: Int,
     subscriptionEvents :: Bool,
     hostEvents :: Bool,
     logLevel :: ChatLogLevel,

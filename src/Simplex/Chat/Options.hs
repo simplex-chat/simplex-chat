@@ -132,7 +132,7 @@ coreChatOptsP appDir defaultDbFileName = do
           <> short 'q'
           <> metavar "SIZE"
           <> help "Internal queue size"
-          <> value 64
+          <> value 1024
           <> showDefault
       )
   pure
