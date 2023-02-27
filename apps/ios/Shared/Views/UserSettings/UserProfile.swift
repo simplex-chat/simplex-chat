@@ -93,6 +93,11 @@ struct UserProfile: View {
             Button("Choose from library") {
                 showImagePicker = true
             }
+            if UIPasteboard.general.hasImages {
+                Button("Paste image") {
+                    chosenImage = UIPasteboard.general.image
+                }
+            }
         }
         .fullScreenCover(isPresented: $showTakePhoto) {
             ZStack {
