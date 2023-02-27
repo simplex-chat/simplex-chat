@@ -385,9 +385,9 @@
         <target>Toevoegen aan een ander apparaat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Admins can create the links to join groups." xml:space="preserve">
+      <trans-unit id="Admins can create the links to join groups." xml:space="preserve" approved="no">
         <source>Admins can create the links to join groups.</source>
-        <target>Beheerders kunnen de uitnodigingslinks naar groepen aanmaken.</target>
+        <target state="translated">Beheerders kunnen de uitnodigingslinks naar groepen aanmaken.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Advanced network settings" xml:space="preserve">
@@ -745,14 +745,14 @@
         <target>Verbind</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Connect via contact link?" xml:space="preserve">
+      <trans-unit id="Connect via contact link?" xml:space="preserve" approved="no">
         <source>Connect via contact link?</source>
-        <target>Verbinden via contactlink?</target>
+        <target state="translated">Verbinden via contactlink?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect via group link?" xml:space="preserve">
+      <trans-unit id="Connect via group link?" xml:space="preserve" approved="no">
         <source>Connect via group link?</source>
-        <target>Verbinden via groepslink?</target>
+        <target state="translated">Verbinden via groepslink?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect via link" xml:space="preserve">
@@ -890,9 +890,9 @@
         <target>Adres aanmaken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create group link" xml:space="preserve">
+      <trans-unit id="Create group link" xml:space="preserve" approved="no">
         <source>Create group link</source>
-        <target>Groepslink maken</target>
+        <target state="translated">Groepslink maken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create link" xml:space="preserve">
@@ -900,9 +900,9 @@
         <target>Maak link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create one-time invitation link" xml:space="preserve">
+      <trans-unit id="Create one-time invitation link" xml:space="preserve" approved="no">
         <source>Create one-time invitation link</source>
-        <target>Maak een eenmalige uitnodigingslink</target>
+        <target state="translated">Maak een eenmalige uitnodigingslink</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create queue" xml:space="preserve">
@@ -1793,14 +1793,14 @@
         <target>Als de video geen verbinding kan maken, draait u de camera om om het probleem op te lossen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="If you can't meet in person, **show QR code in the video call**, or share the link." xml:space="preserve">
+      <trans-unit id="If you can't meet in person, **show QR code in the video call**, or share the link." xml:space="preserve" approved="no">
         <source>If you can't meet in person, **show QR code in the video call**, or share the link.</source>
-        <target>Als je elkaar niet persoonlijk kunt ontmoeten, **toon QR-code in het videogesprek** of deel de link.</target>
+        <target state="translated">Als je elkaar niet persoonlijk kunt ontmoeten, **toon QR-code in het video gesprek** of deel de link.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." xml:space="preserve">
+      <trans-unit id="If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." xml:space="preserve" approved="no">
         <source>If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link.</source>
-        <target>Als u elkaar niet persoonlijk kunt ontmoeten, kunt u **de QR-code scannen in het videogesprek**, of uw contactpersoon kan een uitnodigingslink delen.</target>
+        <target state="translated">Als u elkaar niet persoonlijk kunt ontmoeten, kunt u **de QR-code scannen in het video gesprek**, of uw contactpersoon kan een uitnodigingslink delen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." xml:space="preserve">
