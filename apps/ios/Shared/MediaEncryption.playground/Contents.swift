@@ -8,7 +8,7 @@ let ivTagBytes = 28
 var base: UnsafeMutableRawPointer = malloc(totalBytes)
 
 let assume = base.assumingMemoryBound(to: UInt8.self)
-assume[0] = 1 // key frame
+assume[0] = 0 // key frame
 for i in 1..<totalBytes {
     assume[i] = UInt8(i)
 }
@@ -21,7 +21,7 @@ if var key: [CChar] = aesKey.cString(using: .utf8),
     memcpy(pointer, (unencrypted as NSData).bytes, unencrypted.count)
     let source_ = Data(bytes: pointer, count: unencrypted.count)
     //let raw: UInt8 = (unencrypted[0] as UInt8) | ((unencrypted[1] as UInt8) << 8) | ((unencrypted[2] as UInt8) << 16)
-    let isKeyFrame = unencrypted[0] & 1 == 1
+    let isKeyFrame = unencrypted[0] & 1 == 0
     debugPrint("Is key frame \(isKeyFrame)")
     let clearTextBytesSize = isKeyFrame ? 10 : 3
     for i in 0..<48 {
