@@ -307,14 +307,9 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
 
         let supported = RTCCameraVideoCapturer.supportedFormats(for: camera)
         let height: (AVCaptureDevice.Format) -> Int32 = { (format: AVCaptureDevice.Format) in CMVideoFormatDescriptionGetDimensions(format.formatDescription).height }
-        let format = supported
-            .first(where: { height($0) == 720 })
-        ?? supported
-            .first(where: { height($0) == 1280 })
-        ?? supported
-            .first(where: { height($0) >= 480 && height($0) < 1280 })
-        ?? supported
-            .first(where: { height($0) > 1280 })
+        let format = supported.first(where: { height($0) == 1280 })
+                    ?? supported.first(where: { height($0) >= 480 && height($0) < 1280 })
+                    ?? supported.first(where: { height($0) > 1280 })
         guard
             let format = format,
             let fps = format.videoSupportedFrameRateRanges.max(by: { $0.maxFrameRate < $1.maxFrameRate })

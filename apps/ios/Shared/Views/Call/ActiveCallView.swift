@@ -20,12 +20,15 @@ struct ActiveCallView: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             if let client = client, [call.peerMedia, call.localMedia].contains(.video), activeCall != nil {
-                ZStack(alignment: .topTrailing) {
-                    CallViewRemote(client: client, activeCall: $activeCall)
-                    CallViewLocal(client: client, activeCall: $activeCall, localRendererAspectRatio: $localRendererAspectRatio)
-                    .cornerRadius(10)
-                    .frame(width: (localRendererAspectRatio ?? 0) * 130, height: 130)
-                    .padding([.top, .trailing], 17)
+                GeometryReader { g in
+                    let width = g.size.width * 0.3
+                    ZStack(alignment: .topTrailing) {
+                        CallViewRemote(client: client, activeCall: $activeCall)
+                        CallViewLocal(client: client, activeCall: $activeCall, localRendererAspectRatio: $localRendererAspectRatio)
+                            .cornerRadius(10)
+                            .frame(width: width, height: width / (localRendererAspectRatio ?? 1))
+                            .padding([.top, .trailing], 17)
+                    }
                 }
             }
             if let call = m.activeCall, let client = client {
