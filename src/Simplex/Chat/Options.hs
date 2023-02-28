@@ -16,6 +16,7 @@ module Simplex.Chat.Options
   )
 where
 
+import Control.Logger.Simple (LogLevel (..))
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import Numeric.Natural (Natural)
@@ -46,9 +47,18 @@ data CoreChatOpts = CoreChatOpts
     logLevel :: ChatLogLevel,
     logConnections :: Bool,
     logServerHosts :: Bool,
-    logAgent :: Bool,
+    logAgent :: Maybe LogLevel,
+    logFile :: Maybe FilePath,
     tbqSize :: Natural
   }
+
+agentLogLevel :: ChatLogLevel -> LogLevel
+agentLogLevel = \case
+  CLLDebug -> LogDebug
+  CLLInfo -> LogInfo
+  CLLWarning -> LogWarn
+  CLLError -> LogError
+  CLLImportant -> LogInfo
 
 coreChatOptsP :: FilePath -> FilePath -> Parser CoreChatOpts
 coreChatOptsP appDir defaultDbFileName = do
@@ -125,6 +135,12 @@ coreChatOptsP appDir defaultDbFileName = do
       ( long "log-agent"
           <> help "Enable logs from SMP agent (also with `-l debug`)"
       )
+  logFile <-
+    optional $
+      strOption
+        ( long "log-file"
+            <> help "Log to specified file / device"
+        )
   tbqSize <-
     option
       auto
@@ -144,7 +160,8 @@ coreChatOptsP appDir defaultDbFileName = do
         logLevel,
         logConnections = logConnections || logLevel <= CLLInfo,
         logServerHosts = logServerHosts || logLevel <= CLLInfo,
-        logAgent = logAgent || logLevel == CLLDebug,
+        logAgent = if logAgent || logLevel == CLLDebug then Just $ agentLogLevel logLevel else Nothing,
+        logFile,
         tbqSize
       }
   where
