@@ -322,7 +322,7 @@
     <string name="alert_title_cant_invite_contacts">Nelze pozvat kontakty!</string>
     <string name="snd_group_event_changed_member_role">změnili jste roli %s na %s</string>
     <string name="snd_group_event_changed_role_for_yourself">změnili jste svou roli na %s</string>
-    <string name="snd_group_event_member_deleted">odstranili jste <xliff:g id="profil člena" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="snd_group_event_member_deleted">odebrali jste <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
     <string name="snd_group_event_user_left">odešli jste</string>
     <string name="rcv_conn_event_switch_queue_phase_completed">změnila se vaše adresa</string>
     <string name="icon_descr_expand_role">Rozšířit výběr rolí</string>
@@ -382,17 +382,17 @@
     <string name="incorrect_code">Nesprávný bezpečnostní kód!</string>
     <string name="scan_code_from_contacts_app">Naskenujte bezpečnostní kód z aplikace vašeho kontaktu.</string>
     <string name="mark_code_verified">Označit jako ověřený</string>
-    <string name="clear_verification">Zrušte ověření</string>
+    <string name="clear_verification">Jasné ověření</string>
     <string name="to_verify_compare">Chcete-li ověřit koncové šifrování u svého kontaktu, porovnejte (nebo naskenujte) kód na svých zařízeních.</string>
     <string name="your_settings">Vaše nastavení</string>
-    <string name="your_simplex_contact_address">Vaše <xliff:g id="appName">SimpleX</xliff:g> adresa</string>
+    <string name="your_simplex_contact_address">Vaše kontaktní adresa <xliff:g id="appName">SimpleX</xliff:g></string>
     <string name="database_passphrase_and_export">Heslo databáze a export</string>
     <string name="your_chat_profiles">Vaše chat profily</string>
     <string name="chat_with_the_founder">Zaslat otázky a nápady</string>
     <string name="smp_servers_test_server">Test serveru</string>
     <string name="enter_one_ICE_server_per_line">Servery ICE (jeden na řádek)</string>
     <string name="network_use_onion_hosts_required_desc">Pro připojení budou vyžadováni Onion hostitelé.</string>
-    <string name="update_network_session_mode_question">Aktualizovat režim izolace\?</string>
+    <string name="update_network_session_mode_question">Aktualizovat režim dopravní izolace\?</string>
     <string name="app_version_code">Sestavení aplikace: %s</string>
     <string name="you_can_share_your_address_anybody_will_be_able_to_connect">Můžete sdílet svou adresu jako odkaz nebo jako QR kód - kdokoli se k vám bude moci připojit. O své kontakty nepřijdete, pokud ji později smažete.</string>
     <string name="share_link">Sdílet odkaz</string>
@@ -527,7 +527,8 @@
     <string name="error_receiving_file">Chyba příjmu souboru</string>
     <string name="error_creating_address">Chyba vytváření adresy</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Zkontrolujte, zda jste použili správný odkaz, nebo požádejte kontakt, aby vám poslal jiný.</string>
-    <string name="connection_error_auth_desc">Pokud váš kontakt neodstranil připojení nebo tento odkaz již nebyl použit, může se jednat o chybu – nahlaste ji. Chcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu na připojení a zkontrolujte, zda máte stabilní připojení k síti.</string>
+    <string name="connection_error_auth_desc">Pokud váš kontakt neodstranil připojení nebo tento odkaz již nebyl použit, může se jednat o chybu – nahlaste ji.
+\nChcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu na připojení a zkontrolujte, zda máte stabilní připojení k síti.</string>
     <string name="error_deleting_contact">Chyba mazání kontaktu</string>
     <string name="error_deleting_group">Chyba mazání skupiny</string>
     <string name="error_deleting_contact_request">Chyba mazání žádosti kontaktu</string>
@@ -595,7 +596,8 @@
     <string name="delete_contact_menu_action">Smazat</string>
     <string name="set_contact_name">Nastavit jméno kontaktu</string>
     <string name="you_accepted_connection">Přijali jste spojení</string>
-    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Aby se připojení dokončilo, musí být váš kontakt online. Toto připojení můžete zrušit a kontakt odebrat (a zkusit to později s novým odkazem).</string>
+    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Aby se připojení dokončilo, musí být váš kontakt online.
+\nToto připojení můžete zrušit a kontakt odebrat (a zkusit to později s novým odkazem).</string>
     <string name="contact_wants_to_connect_with_you">Chce se s vámi spojit!</string>
     <string name="icon_descr_profile_image_placeholder">Zástupný symbol profilového obrázku</string>
     <string name="image_descr_profile_image">profilový obrázek</string>
@@ -639,7 +641,7 @@
     <string name="network_socks_toggle">Použít proxy server SOCKS (port 9050)</string>
     <string name="update_onion_hosts_settings_question">Aktualizovat nastavení hostitelů .onion\?</string>
     <string name="network_use_onion_hosts">Použít hostitele .onion</string>
-    <string name="network_use_onion_hosts_prefer">Pokud je k dispozici</string>
+    <string name="network_use_onion_hosts_prefer">Když bude dostupný</string>
     <string name="network_use_onion_hosts_required">Povinné</string>
     <string name="network_use_onion_hosts_prefer_desc">Onion hostitelé budou použiti, pokud jsou k dispozici.</string>
     <string name="network_use_onion_hosts_no_desc">Onion hostitelé nebudou použiti.</string>
@@ -689,10 +691,10 @@
     <string name="immune_to_spam_and_abuse">Odolná vůči spamu a zneužití</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">K ochraně soukromí, místo uživatelských ID užívaných všemi ostatními platformami, <xliff:g id="appName">SimpleX</xliff:g> používá identifikátory pro fronty zpráv, zvlášť pro každý z vašich kontaktů.</string>
     <string name="many_people_asked_how_can_it_deliver">Mnoho lidí se ptá: <i>když <xliff:g id="appName">SimpleX</xliff:g> nemá žádný identifikátor uživatelů, jak může doručovat zprávy\?</i></string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send">Vy kontrolujete přez který server <b>přijímáte</b> zprávy a kontakty i server které používáte pro odchozí komunikaci.</string>
+    <string name="you_control_servers_to_receive_your_contacts_to_send">Vy určujete, přes které servery <b>přijímat</b> zprávy, vaše kontakty – servery, které používáte k zasílání zpráv.</string>
     <string name="read_more_in_github">Další informace najdete v našem repozitáři na GitHubu.</string>
     <string name="read_more_in_github_with_link">Další informace najdete v našem <font color="#0088ff">úložišti GitHub</font>.</string>
-    <string name="use_chat">Konverzovat</string>
+    <string name="use_chat">Použijte chat</string>
     <string name="onboarding_notifications_mode_subtitle">Lze změnit později v nastavení.</string>
     <string name="onboarding_notifications_mode_off">Když aplikace běží</string>
     <string name="onboarding_notifications_mode_service">Okamžité</string>
