@@ -234,7 +234,7 @@
       </trans-unit>
       <trans-unit id="**e2e encrypted** audio call" xml:space="preserve" approved="no">
         <source>**e2e encrypted** audio call</source>
-        <target state="translated">**e2e šifrovaný** hovor</target>
+        <target state="translated">**e2e šifrovaný** audio hovor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**e2e encrypted** video call" xml:space="preserve" approved="no">
@@ -331,7 +331,7 @@
       </trans-unit>
       <trans-unit id="Accent color" xml:space="preserve" approved="no">
         <source>Accent color</source>
-        <target state="translated">Zabarvení</target>
+        <target state="translated">Barva přízvuku</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accept" xml:space="preserve" approved="no">
@@ -537,7 +537,7 @@
       </trans-unit>
       <trans-unit id="Auto-accept images" xml:space="preserve" approved="no">
         <source>Auto-accept images</source>
-        <target state="translated">Automatické přijímání obrázků</target>
+        <target state="translated">Automaticky přijímat obrázky</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Automatically" xml:space="preserve" approved="no">
@@ -1373,7 +1373,7 @@
       </trans-unit>
       <trans-unit id="Error accepting contact request" xml:space="preserve" approved="no">
         <source>Error accepting contact request</source>
-        <target state="translated">Chyba příjmu požadavku od kontaktu</target>
+        <target state="translated">Chyba při přijímání žádosti o kontakt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error accessing database file" xml:space="preserve" approved="no">
@@ -1748,7 +1748,7 @@
       </trans-unit>
       <trans-unit id="How to" xml:space="preserve" approved="no">
         <source>How to</source>
-        <target state="translated">Jak na to</target>
+        <target state="translated">Jak</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How to use it" xml:space="preserve" approved="no">
@@ -2240,7 +2240,7 @@ Budeme přidávat redundantní servery, abychom zabránili ztrátě zpráv.</tar
       </trans-unit>
       <trans-unit id="Off (Local)" xml:space="preserve" approved="no">
         <source>Off (Local)</source>
-        <target state="translated">Mimo (místní)</target>
+        <target state="translated">Vypnuto (místní)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Ok" xml:space="preserve" approved="no">
@@ -2500,7 +2500,7 @@ Budeme přidávat redundantní servery, abychom zabránili ztrátě zpráv.</tar
       </trans-unit>
       <trans-unit id="Push notifications" xml:space="preserve" approved="no">
         <source>Push notifications</source>
-        <target state="translated">Doručování oznámení</target>
+        <target state="translated">Nabízená oznámení</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Rate the app" xml:space="preserve" approved="no">
@@ -2530,7 +2530,7 @@ Budeme přidávat redundantní servery, abychom zabránili ztrátě zpráv.</tar
       </trans-unit>
       <trans-unit id="Receiving via" xml:space="preserve" approved="no">
         <source>Receiving via</source>
-        <target state="translated">Příjem prostřednictvím</target>
+        <target state="translated">Příjem přes</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Recipients see updates as you type them." xml:space="preserve" approved="no">
@@ -3190,7 +3190,7 @@ Budeme přidávat redundantní servery, abychom zabránili ztrátě zpráv.</tar
       </trans-unit>
       <trans-unit id="To make a new connection" xml:space="preserve" approved="no">
         <source>To make a new connection</source>
-        <target state="translated">K vytvoření připojení</target>
+        <target state="translated">Vytvoření nového připojení</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To prevent the call interruption, enable Do Not Disturb mode." xml:space="preserve" approved="no">
@@ -3256,7 +3256,7 @@ Před zapnutím této funkce budete vyzváni k dokončení ověření.</target>
       </trans-unit>
       <trans-unit id="Turn on" xml:space="preserve" approved="no">
         <source>Turn on</source>
-        <target state="translated">Zapněte funkci</target>
+        <target state="translated">Zapnout</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unable to record voice message" xml:space="preserve" approved="no">
@@ -3287,13 +3287,13 @@ Před zapnutím této funkce budete vyzváni k dokončení ověření.</target>
       <trans-unit id="Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.&#10;To connect, please ask your contact to create another connection link and check that you have a stable network connection." xml:space="preserve" approved="no">
         <source>Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.
 To connect, please ask your contact to create another connection link and check that you have a stable network connection.</source>
-        <target state="translated">Pokud váš kontakt spojení nesmazal nebo tento odkaz již byl použit, může se jednat o chybu - nahlaste ji prosím.
-Chcete-li se připojit, požádejte prosím svůj kontakt o vytvoření jiného odkazu pro připojení a zkontrolujte, zda máte stabilní připojení k síti.</target>
+        <target state="translated">Pokud váš kontakt neodstranil připojení nebo tento odkaz již nebyl použit, může se jednat o chybu – nahlaste ji.
+Chcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu na připojení a zkontrolujte, zda máte stabilní připojení k síti.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unlock" xml:space="preserve" approved="no">
         <source>Unlock</source>
-        <target state="translated">Odemknutí stránky</target>
+        <target state="translated">Odemknout</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Unmute" xml:space="preserve" approved="no">
@@ -3328,7 +3328,7 @@ Chcete-li se připojit, požádejte prosím svůj kontakt o vytvoření jiného 
       </trans-unit>
       <trans-unit id="Update transport isolation mode?" xml:space="preserve" approved="no">
         <source>Update transport isolation mode?</source>
-        <target state="translated">Aktualizovat režim izolace?</target>
+        <target state="translated">Aktualizovat režim dopravní izolace?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Updating settings will re-connect the client to all servers." xml:space="preserve" approved="no">
@@ -3353,7 +3353,7 @@ Chcete-li se připojit, požádejte prosím svůj kontakt o vytvoření jiného 
       </trans-unit>
       <trans-unit id="Use chat" xml:space="preserve" approved="no">
         <source>Use chat</source>
-        <target state="translated">Konverzovat</target>
+        <target state="translated">Použijte chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use for new connections" xml:space="preserve" approved="no">
@@ -3623,7 +3623,7 @@ Chcete-li se připojit, požádejte prosím svůj kontakt o vytvoření jiného 
       </trans-unit>
       <trans-unit id="You will be required to authenticate when you start or resume the app after 30 seconds in background." xml:space="preserve" approved="no">
         <source>You will be required to authenticate when you start or resume the app after 30 seconds in background.</source>
-        <target state="translated">Při spuštění nebo obnovení aplikace po 30 sekundách na pozadí budete vyzváni k ověření.</target>
+        <target state="translated">Při spuštění nebo obnovení aplikace po 30 sekundách na pozadí budete požádáni o ověření.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will join a group this link refers to and connect to its group members." xml:space="preserve" approved="no">
@@ -3896,7 +3896,7 @@ Servery SimpleX nevidí váš profil.</target>
       </trans-unit>
       <trans-unit id="changing address..." xml:space="preserve" approved="no">
         <source>changing address...</source>
-        <target state="translated">Měním adresu...</target>
+        <target state="translated">změna adresy...</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="colored" xml:space="preserve" approved="no">
@@ -4262,7 +4262,7 @@ Servery SimpleX nevidí váš profil.</target>
       </trans-unit>
       <trans-unit id="strike" xml:space="preserve" approved="no">
         <source>strike</source>
-        <target state="translated">přeškrtnout</target>
+        <target state="translated">stávka</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="this contact" xml:space="preserve" approved="no">
@@ -4367,7 +4367,7 @@ Servery SimpleX nevidí váš profil.</target>
       </trans-unit>
       <trans-unit id="you shared one-time link" xml:space="preserve" approved="no">
         <source>you shared one-time link</source>
-        <target state="translated">jste sdíleli jednorázové spojení</target>
+        <target state="translated">sdíleli jste jednorázový odkaz</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="you shared one-time link incognito" xml:space="preserve" approved="no">
@@ -4447,7 +4447,7 @@ Servery SimpleX nevidí váš profil.</target>
       </trans-unit>
       <trans-unit id="To protect timezone, image/voice files use UTC." xml:space="preserve" approved="no">
         <source>To protect timezone, image/voice files use UTC.</source>
-        <target state="translated">Pro ochranu časového pásma, obrazové/hlasové soubory používají UTC.</target>
+        <target state="translated">K ochraně časového pásma používají obrazové/hlasové soubory UTC.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Italian interface" xml:space="preserve" approved="no">
