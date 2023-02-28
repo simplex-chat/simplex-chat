@@ -527,7 +527,8 @@
     <string name="error_receiving_file">Chyba příjmu souboru</string>
     <string name="error_creating_address">Chyba vytváření adresy</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Zkontrolujte, zda jste použili správný odkaz, nebo požádejte kontakt, aby vám poslal jiný.</string>
-    <string name="connection_error_auth_desc">Pokud váš kontakt spojení nesmazal nebo tento odkaz již byl použit, může se jednat o chybu - nahlaste ji prosím. Chcete-li se připojit, požádejte prosím svůj kontakt o vytvoření jiného odkazu pro připojení a zkontrolujte, zda máte stabilní připojení k síti.</string>
+    <string name="connection_error_auth_desc">Pokud váš kontakt neodstranil připojení nebo tento odkaz již nebyl použit, může se jednat o chybu – nahlaste ji.
+\nChcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu na připojení a zkontrolujte, zda máte stabilní připojení k síti.</string>
     <string name="error_deleting_contact">Chyba mazání kontaktu</string>
     <string name="error_deleting_group">Chyba mazání skupiny</string>
     <string name="error_deleting_contact_request">Chyba mazání žádosti kontaktu</string>
