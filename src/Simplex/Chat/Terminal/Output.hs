@@ -103,7 +103,7 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} = d
           Just path -> if logResponseToFile r then logResponse path else printToTerminal ct
           _ -> printToTerminal ct
     liveItems <- readTVarIO showLiveItems
-    reponseString cc liveItems r >>= printResp
+    responseString cc liveItems r >>= printResp
   where
     markChatItemRead (AChatItem _ _ chat item@ChatItem {meta = CIMeta {itemStatus}}) =
       case (muted chat item, itemStatus) of
@@ -115,10 +115,10 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} = d
     logResponse path s = withFile path AppendMode $ \h -> mapM_ (hPutStrLn h . unStyle) s
 
 printRespToTerminal :: ChatTerminal -> ChatController -> Bool -> ChatResponse -> IO ()
-printRespToTerminal ct cc liveItems r = reponseString cc liveItems r >>= printToTerminal ct
+printRespToTerminal ct cc liveItems r = responseString cc liveItems r >>= printToTerminal ct
 
-reponseString :: ChatController -> Bool -> ChatResponse -> IO [StyledString]
-reponseString cc liveItems r = do
+responseString :: ChatController -> Bool -> ChatResponse -> IO [StyledString]
+responseString cc liveItems r = do
   user <- readTVarIO $ currentUser cc
   ts <- getCurrentTime
   pure $ responseToView user (config cc) liveItems ts r
