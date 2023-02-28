@@ -1687,8 +1687,8 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/simplex-chat/WebRTC.git";
 			requirement = {
-				kind = exactVersion;
-				version = 110.0.0;
+				kind = revision;
+				revision = 34bedc50f9c58dccf4967ea59c7e6a47d620803b;
 			};
 		};
 		D77B92DA2952372200A5A1CC /* XCRemoteSwiftPackageReference "SwiftyGif" */ = {

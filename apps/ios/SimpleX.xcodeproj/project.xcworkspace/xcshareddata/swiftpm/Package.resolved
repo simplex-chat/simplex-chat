@@ -31,8 +31,7 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/simplex-chat/WebRTC.git",
       "state" : {
-        "revision" : "28dd8570a3482d46b90ce4e924e8ff1d17614e78",
-        "version" : "110.0.0"
+        "revision" : "34bedc50f9c58dccf4967ea59c7e6a47d620803b"
       }
     }
   ],
