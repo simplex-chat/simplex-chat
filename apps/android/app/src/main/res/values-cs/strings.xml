@@ -414,7 +414,7 @@
     <string name="notification_preview_somebody">Skrytý kontakt:</string>
     <string name="la_notice_turn_on">Zapněte funkci</string>
     <string name="auth_simplex_lock_turned_on">Zapnutý zámek SimpleX Lock</string>
-    <string name="auth_unlock">Odemknutí stránky</string>
+    <string name="auth_unlock">Odemknout</string>
     <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Ověřování zařízení není povoleno. Jakmile povolíte ověřování zařízení, můžete zámek SimpleX Lock zapnout prostřednictvím Nastavení.</string>
     <string name="auth_device_authentication_is_disabled_turning_off">Ověřování zařízení je zakázáno. Zámek SimpleX je vypnut.</string>
     <string name="edit_verb">Upravit</string>
@@ -527,7 +527,7 @@
     <string name="error_receiving_file">Chyba příjmu souboru</string>
     <string name="error_creating_address">Chyba vytváření adresy</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Zkontrolujte, zda jste použili správný odkaz, nebo požádejte kontakt, aby vám poslal jiný.</string>
-    <string name="connection_error_auth_desc">Pokud váš kontakt spojení nesmazal a tento odkaz ještě nebyl použit, může se jednat o chybu - nahlaste ji prosím. Chcete-li se připojit, požádejte prosím svůj kontakt o vytvoření jiného odkazu pro připojení a zkontrolujte, zda máte stabilní připojení k síti.</string>
+    <string name="connection_error_auth_desc">Pokud váš kontakt neodstranil připojení nebo tento odkaz již nebyl použit, může se jednat o chybu – nahlaste ji. Chcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu na připojení a zkontrolujte, zda máte stabilní připojení k síti.</string>
     <string name="error_deleting_contact">Chyba mazání kontaktu</string>
     <string name="error_deleting_group">Chyba mazání skupiny</string>
     <string name="error_deleting_contact_request">Chyba mazání žádosti kontaktu</string>
@@ -544,7 +544,8 @@
     <string name="database_initialization_error_desc">Databáze nefunguje správně. Klepnutím se dozvíte více</string>
     <string name="notifications_mode_off_desc">Aplikace může přijímat oznámení pouze při svém běhu, žádná služba na pozadí nebude spuštěna</string>
     <string name="notification_display_mode_hidden_desc">Skrýt kontakt a zprávu</string>
-    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Chcete-li chránit své informace, zapněte zámek SimpleX Lock. Před zapnutím této funkce budete vyzváni k dokončení ověření.</string>
+    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Chcete-li chránit své informace, zapněte zámek SimpleX Lock.
+\nPřed zapnutím této funkce budete vyzváni k dokončení ověření.</string>
     <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">Při spuštění nebo obnovení aplikace po 30 sekundách na pozadí budete vyzváni k ověření.</string>
     <string name="auth_disable_simplex_lock">Vypnout zámek SimpleX</string>
     <string name="auth_confirm_credential">Potvrďte své pověření</string>
@@ -684,7 +685,7 @@
     <string name="callstate_received_confirmation">obdržel potvrzení…</string>
     <string name="callstate_connecting">připojení…</string>
     <string name="privacy_redefined">Nové vymezení soukromí</string>
-    <string name="first_platform_without_user_ids">1. Platforma bez identifikátoru uživatelů - soukromá od základu.</string>
+    <string name="first_platform_without_user_ids">1. platforma bez jakýchkoliv uživatelských identifikátorů – soukromá již od návrhu.</string>
     <string name="immune_to_spam_and_abuse">Odolná vůči spamu a zneužití</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">K ochraně soukromí, místo uživatelských ID užívaných všemi ostatními platformami, <xliff:g id="appName">SimpleX</xliff:g> používá identifikátory pro fronty zpráv, zvlášť pro každý z vašich kontaktů.</string>
     <string name="many_people_asked_how_can_it_deliver">Mnoho lidí se ptá: <i>když <xliff:g id="appName">SimpleX</xliff:g> nemá žádný identifikátor uživatelů, jak může doručovat zprávy\?</i></string>
