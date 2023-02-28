@@ -390,9 +390,9 @@
         <target state="translated">Beheerders kunnen de uitnodiging links naar groepen aanmaken.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Advanced network settings" xml:space="preserve">
+      <trans-unit id="Advanced network settings" xml:space="preserve" approved="no">
         <source>Advanced network settings</source>
-        <target>Geavanceerde netwerkinstellingen</target>
+        <target state="translated">Geavanceerde netwerk instellingen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All chats and messages will be deleted - this cannot be undone!" xml:space="preserve">
@@ -620,14 +620,14 @@
         <target>Rol van gebruiker wijzigen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change receiving address" xml:space="preserve">
+      <trans-unit id="Change receiving address" xml:space="preserve" approved="no">
         <source>Change receiving address</source>
-        <target>Ontvangstadres wijzigen</target>
+        <target state="translated">Ontvangst adres wijzigen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change receiving address?" xml:space="preserve">
+      <trans-unit id="Change receiving address?" xml:space="preserve" approved="no">
         <source>Change receiving address?</source>
-        <target>Ontvangstadres wijzigen?</target>
+        <target state="translated">Ontvangst adres wijzigen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change role" xml:space="preserve">
@@ -984,9 +984,9 @@
         <target state="translated">Database wachtwoord</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database passphrase &amp; export" xml:space="preserve">
+      <trans-unit id="Database passphrase &amp; export" xml:space="preserve" approved="no">
         <source>Database passphrase &amp; export</source>
-        <target>Database wachtwoord &amp; Exporteren</target>
+        <target state="translated">Database wachtwoord &amp; exporteren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database passphrase is different from saved in the keychain." xml:space="preserve">
@@ -2185,9 +2185,9 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
         <target>Naam</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Network &amp; servers" xml:space="preserve">
+      <trans-unit id="Network &amp; servers" xml:space="preserve" approved="no">
         <source>Network &amp; servers</source>
-        <target>Netwerk &amp; Servers</target>
+        <target state="translated">Netwerk &amp; servers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Network settings" xml:space="preserve">
@@ -2450,9 +2450,9 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
         <target>Controleer uw netwerkverbinding met %@ en probeer het opnieuw.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please check yours and your contact preferences." xml:space="preserve">
+      <trans-unit id="Please check yours and your contact preferences." xml:space="preserve" approved="no">
         <source>Please check yours and your contact preferences.</source>
-        <target>Controleer uw contactvoorkeuren.</target>
+        <target state="translated">Controleer de uwe en uw contact voorkeuren.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please enter correct current passphrase." xml:space="preserve">
@@ -2500,9 +2500,9 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
         <target>Vooraf ingesteld serveradres</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Privacy &amp; security" xml:space="preserve">
+      <trans-unit id="Privacy &amp; security" xml:space="preserve" approved="no">
         <source>Privacy &amp; security</source>
-        <target>Privacy en Beveiliging</target>
+        <target state="translated">Privacy en beveiliging</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Privacy redefined" xml:space="preserve">
@@ -3394,9 +3394,9 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
         <target state="translated">Database wachtwoord bijwerken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Update network settings?" xml:space="preserve">
+      <trans-unit id="Update network settings?" xml:space="preserve" approved="no">
         <source>Update network settings?</source>
-        <target>Netwerkinstellingen bijwerken?</target>
+        <target state="translated">Netwerk instellingen bijwerken?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Update transport isolation mode?" xml:space="preserve">
