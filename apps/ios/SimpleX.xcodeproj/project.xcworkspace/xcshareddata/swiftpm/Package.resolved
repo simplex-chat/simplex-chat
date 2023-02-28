@@ -25,6 +25,15 @@
         "branch" : "master",
         "revision" : "5e8619335d394901379c9add5c4c1c2f420b3800"
       }
+    },
+    {
+      "identity" : "webrtc",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/simplex-chat/WebRTC.git",
+      "state" : {
+        "revision" : "28dd8570a3482d46b90ce4e924e8ff1d17614e78",
+        "version" : "110.0.0"
+      }
     }
   ],
   "version" : 2

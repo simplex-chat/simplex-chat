@@ -57,8 +57,6 @@
 		5C646BAE29A82FC70005A88F /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C646BA929A82FC70005A88F /* libgmpxx.a */; };
 		5C646BAF29A82FC70005A88F /* libHSsimplex-chat-4.5.3.0-GBIa33WF3BQFPZWcsfQ1cD-ghc8.10.7.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C646BAA29A82FC70005A88F /* libHSsimplex-chat-4.5.3.0-GBIa33WF3BQFPZWcsfQ1cD-ghc8.10.7.a */; };
 		5C646BB029A82FC70005A88F /* libHSsimplex-chat-4.5.3.0-GBIa33WF3BQFPZWcsfQ1cD.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C646BAB29A82FC70005A88F /* libHSsimplex-chat-4.5.3.0-GBIa33WF3BQFPZWcsfQ1cD.a */; };
-		5C646BB529AA0E970005A88F /* WebRTC.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C646BB429AA0E970005A88F /* WebRTC.xcframework */; };
-		5C646BB629AA0E970005A88F /* WebRTC.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 5C646BB429AA0E970005A88F /* WebRTC.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		5C65F343297D45E100B67AF3 /* VersionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C65F341297D3F3600B67AF3 /* VersionView.swift */; };
 		5C6AD81327A834E300348BD7 /* NewChatButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C6AD81227A834E300348BD7 /* NewChatButton.swift */; };
 		5C6BA667289BD954009B8ECC /* DismissSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C6BA666289BD954009B8ECC /* DismissSheets.swift */; };
@@ -167,6 +165,7 @@
 		64AA1C6C27F3537400AC7277 /* DeletedItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AA1C6B27F3537400AC7277 /* DeletedItemView.swift */; };
 		64E972072881BB22008DBC02 /* CIGroupInvitationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64E972062881BB22008DBC02 /* CIGroupInvitationView.swift */; };
 		64F1CC3B28B39D8600CD1FB1 /* IncognitoHelp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1CC3A28B39D8600CD1FB1 /* IncognitoHelp.swift */; };
+		D7197A1829AE89660055C05A /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = D7197A1729AE89660055C05A /* WebRTC */; };
 		D72A9088294BD7A70047C86D /* NativeTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D72A9087294BD7A70047C86D /* NativeTextEditor.swift */; };
 		D77B92DC2952372200A5A1CC /* SwiftyGif in Frameworks */ = {isa = PBXBuildFile; productRef = D77B92DB2952372200A5A1CC /* SwiftyGif */; };
 		D7F0E33929964E7E0068AF69 /* LZString in Frameworks */ = {isa = PBXBuildFile; productRef = D7F0E33829964E7E0068AF69 /* LZString */; };
@@ -210,7 +209,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				5C646BB629AA0E970005A88F /* WebRTC.xcframework in Embed Frameworks */,
 				5CE2BA712845308900EC33A6 /* SimpleXChat.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
@@ -419,8 +417,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				5CE2BA702845308900EC33A6 /* SimpleXChat.framework in Frameworks */,
+				D7197A1829AE89660055C05A /* WebRTC in Frameworks */,
 				D77B92DC2952372200A5A1CC /* SwiftyGif in Frameworks */,
-				5C646BB529AA0E970005A88F /* WebRTC.xcframework in Frameworks */,
 				D7F0E33929964E7E0068AF69 /* LZString in Frameworks */,
 				646BB38C283BEEB9001CE359 /* LocalAuthentication.framework in Frameworks */,
 				5C8F01CD27A6F0D8007D2C8D /* CodeScanner in Frameworks */,
@@ -824,6 +822,7 @@
 				5C8F01CC27A6F0D8007D2C8D /* CodeScanner */,
 				D77B92DB2952372200A5A1CC /* SwiftyGif */,
 				D7F0E33829964E7E0068AF69 /* LZString */,
+				D7197A1729AE89660055C05A /* WebRTC */,
 			);
 			productName = "SimpleX (iOS)";
 			productReference = 5CA059CA279559F40002BEB4 /* SimpleX.app */;
@@ -932,6 +931,7 @@
 				5C8F01CB27A6F0D8007D2C8D /* XCRemoteSwiftPackageReference "CodeScanner" */,
 				D77B92DA2952372200A5A1CC /* XCRemoteSwiftPackageReference "SwiftyGif" */,
 				D7F0E33729964E7D0068AF69 /* XCRemoteSwiftPackageReference "lzstring-swift" */,
+				D7197A1629AE89660055C05A /* XCRemoteSwiftPackageReference "WebRTC" */,
 			);
 			productRefGroup = 5CA059CB279559F40002BEB4 /* Products */;
 			projectDirPath = "";
@@ -1683,6 +1683,14 @@
 				minimumVersion = 2.0.0;
 			};
 		};
+		D7197A1629AE89660055C05A /* XCRemoteSwiftPackageReference "WebRTC" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/simplex-chat/WebRTC.git";
+			requirement = {
+				kind = exactVersion;
+				version = 110.0.0;
+			};
+		};
 		D77B92DA2952372200A5A1CC /* XCRemoteSwiftPackageReference "SwiftyGif" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/kirualex/SwiftyGif";
@@ -1706,6 +1714,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 5C8F01CB27A6F0D8007D2C8D /* XCRemoteSwiftPackageReference "CodeScanner" */;
 			productName = CodeScanner;
+		};
+		D7197A1729AE89660055C05A /* WebRTC */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D7197A1629AE89660055C05A /* XCRemoteSwiftPackageReference "WebRTC" */;
+			productName = WebRTC;
 		};
 		D77B92DB2952372200A5A1CC /* SwiftyGif */ = {
 			isa = XCSwiftPackageProductDependency;
