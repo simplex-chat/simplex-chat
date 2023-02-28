@@ -16,6 +16,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         return RTCPeerConnectionFactory(encoderFactory: videoEncoderFactory, decoderFactory: videoDecoderFactory)
     }()
     private static let ivTagBytes: Int = 28
+    private static let enableEncryption: Bool = true
 
     struct Call {
         var connection: RTCPeerConnection
@@ -119,8 +120,6 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         return config
     }
 
-    func supportsEncryption() -> Bool { true }
-
     func addIceCandidates(_ connection: RTCPeerConnection, _ remoteIceCandidates: [RTCIceCandidate]) {
         remoteIceCandidates.forEach { candidate in
             connection.add(candidate.toWebRTCCandidate()) { error in
@@ -136,11 +135,11 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         let pc = activeCall.wrappedValue?.connection
         switch command {
         case .capabilities:
-            resp = .capabilities(capabilities: CallCapabilities(encryption: supportsEncryption()))
+            resp = .capabilities(capabilities: CallCapabilities(encryption: WebRTCClient.enableEncryption))
         case let .start(media: media, aesKey, iceServers, relay):
             logger.debug("starting incoming call - create webrtc session")
             if activeCall.wrappedValue != nil { endCall() }
-            let encryption = supportsEncryption()
+            let encryption = WebRTCClient.enableEncryption
             let call = initializeCall(iceServers?.toWebRTCIceServers(), [], media, encryption ? aesKey : nil, relay)
             activeCall.wrappedValue = call
             call.connection.offer { answer in
@@ -165,11 +164,11 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         case let .offer(offer, iceCandidates, media, aesKey, iceServers, relay):
             if activeCall.wrappedValue != nil {
                 resp = .error(message: "accept: call already started")
-            } else if !supportsEncryption() && aesKey != nil {
+            } else if !WebRTCClient.enableEncryption && aesKey != nil {
                 resp = .error(message: "accept: encryption is not supported")
             } else if let offer: CustomRTCSessionDescription = decodeJSON(decompressFromBase64(input: offer)),
                       let remoteIceCandidates: [RTCIceCandidate] = decodeJSON(decompressFromBase64(input: iceCandidates)) {
-                let call = initializeCall(iceServers?.toWebRTCIceServers(), remoteIceCandidates, media, supportsEncryption() ? aesKey : nil, relay)
+                let call = initializeCall(iceServers?.toWebRTCIceServers(), remoteIceCandidates, media, WebRTCClient.enableEncryption ? aesKey : nil, relay)
                 activeCall.wrappedValue = call
                 let pc = call.connection
                 if let type = offer.type, let sdp = offer.sdp {
@@ -255,7 +254,6 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
     }
 
     func frameDecryptor(_ decryptor: RTCFrameDecryptor, mediaType: RTCRtpMediaType, withFrame encrypted: Data) -> Data? {
-        debugPrint("LALAL dddec \(mediaType)")
         guard encrypted.count > 0 else { return nil }
         if var key: [CChar] = activeCall.wrappedValue?.aesKey?.cString(using: .utf8),
            let pointer: UnsafeMutableRawPointer = malloc(encrypted.count) {
@@ -296,7 +294,6 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
 
     func addRemoteRenderer(_ activeCall: Call, _ renderer: RTCVideoRenderer) {
         activeCall.remoteStream?.add(renderer)
-
     }
 
     func startCaptureLocalVideo(_ activeCall: Call) {
@@ -550,9 +547,7 @@ extension WebRTCClient {
                 try self.rtcAudioSession.setCategory(AVAudioSession.Category.playAndRecord.rawValue)
                 try self.rtcAudioSession.setMode(AVAudioSession.Mode.voiceChat.rawValue)
                 try self.rtcAudioSession.overrideOutputAudioPort(enabled ? .speaker : .none)
-                if enabled {
-                    try self.rtcAudioSession.setActive(true)
-                }
+                try self.rtcAudioSession.setActive(true)
             } catch let error {
                 logger.debug("Error configuring AVAudioSession: \(error)")
             }
