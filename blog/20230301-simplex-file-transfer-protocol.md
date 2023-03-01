@@ -11,41 +11,43 @@ permalink: "/blog/20230301-simplex-file-transfer-protocol.html"
 
 **Published:** Mar 1, 2023
 
-- [Quick start: how to send a file using XFTP CLI](#zap-quick-start-how-to-send-a-file-using-xftp-cli)
+- [Quick start: how to send a file using XFTP CLI](#⚡️-quick-start-send-a-file-with-xftp-cli-in-3-simple-steps)
 - [What's the problem](#whats-the-problem)
 - [Why didn't we just use some existing solution?](#why-didnt-we-just-use-some-existing-solution)
 - [What is XFTP and how does it work?](#what-is-xftp-and-how-does-it-work)
 - [What is next?](#what-is-next)
 
-## :zap: Quick start: how to send a file using XFTP CLI
+## ⚡️ Quick start: send a file with XFTP CLI in 3 simple steps
 
-1. Download XFTP binary for Linux from [the release](https://github.com/simplex-chat/simplexmq/releases/tag/v5.0.0-beta.3) – you need the file `xftp-ubuntu-20_04-x86-64` - rename it as `xftp`.
+Download XFTP binary for Linux from [the release](https://github.com/simplex-chat/simplexmq/releases/tag/v5.0.0-beta.3) – you need the file `xftp-ubuntu-20_04-x86-64` - rename it as `xftp`.
 
-2. To send the file:
+**Step 1**: To send the file:
 
-```
+```bash
 xftp send filename.ext
 ```
 
 You can also send the file that can be received by multiple recipients using `-n` option:
 
-```
+```bash
 xftp send filename.ext -n 10
 ```
 
-3. Pass file descriptions (files with that have names `rcvN.xftp` – they will be more random soon) to the recipient(s) securely, e.g. send it as a file via SimpleX Chat.
+**Step 2**: Pass file description(s) (files `rcvN.xftp`) to the recipient(s) securely, e.g. send it as a file via SimpleX Chat.
 
-4. To receive the file:
+**Step 3**: To receive the file:
 
-```
+```bash
 xftp recv rcvN.xftp
 ```
 
-5. The sender also delete all file chunks from the relays before they expire in 48 hours with this command:
+The sender also delete all file chunks from the relays before they expire in 48 hours with this command:
 
-```
+```bash
 xftp del ./filename.ext/snd.xftp.private
 ```
+
+<br>
 
 ## What's the problem?
 
@@ -59,7 +61,7 @@ As a result, we limited the supported size of files in the app to 8mb. Even for 
 
 ## Why didn't we just use some existing solution?
 
-We really hoped to find some existing open-source solution that we would integrate in SimpleX Chat.
+We really hoped to find some existing open-source solution that we could integrate with SimpleX Chat.
 
 We decided not to use torrent-like or any other P2P solutions because of their lack of privacy, challenging legality in some jurisdictions and, in many cases, because they are inefficient in groups.
 
@@ -102,31 +104,31 @@ XFTP stands for SimpleX File Transfer Protocol. Its design is based on the same 
 - recipient cannot see sender's IP address, as the file fragments (chunks) are temporarily stored on multiple XFTP relays.
 - file can be sent asynchronously, without requiring the sender to be online for file to be received.
 - there is no network of peers that can observe this transfer - sender chooses which XFTP relays to use, and can self-host their own.
-- XFTP relays do not have any file metadata - they only see individual chunks, with access to each chunk authorised with anonymous credentials that are random per chunk.
+- XFTP relays do not have any file metadata - they only see individual chunks, with access to each chunk authorised with anonymous credentials (using Edwards curve cryptographic signature) that are random per chunk.
 - chunks have one of the sizes allowed by the servers - currently we allow 256kb, 1mb and 4mb chunks, so if you send, say 1gb file, to XFTP relays it will look indistinguishable from sending many small files, and they would only know that chunks are sent by the same user only via the transport information, but none of the relays will see all chunks. Also, once this feature is available in mobile apps you can use transport isolation per chunk, when each file fragment will be uploaded via a separate TCP connection (and Tor circuit, if you use Tor) – the CLI we released does not yet support per-chunk transport isolation.
-- each chunk can be downloaded by multiple recipients, but each recipient uses their own key and chunk ID to authorise access, and the chunk is encrypted by a different key agreed via ephemeral DH keys on the way from the server to each recipient. XFTP protocol as a result has the same quality as SMP protocol - there are no identifiers and ciphertext in common between sent and recived traffic inside TLS connection, so even if TLS is compromised, it complicates traffic correlation attacks.
+- each chunk can be downloaded by multiple recipients, but each recipient uses their own key and chunk ID to authorise access, and the chunk is encrypted by a different key agreed via ephemeral DH keys (NaCl crypto_box (SalsaX20Poly1305 authenticated encryption scheme ) with shared secret derived from Curve25519 key exchange) on the way from the server to each recipient. XFTP protocol as a result has the same quality as SMP protocol - there are no identifiers and ciphertext in common between sent and recived traffic inside TLS connection, so even if TLS is compromised, it complicates traffic correlation attacks.
 - XFTP protocol also supports redundancy - each file chunk can be sent via multiple relays, and the recipient can choose the one that is availbale. The released CLI does not support redundancy though.
-- the file as a whole is encrypted with a random symmetric key.
+- the file as a whole is encrypted with a random symmetric key using NaCl secret_box.
 
-So, how would any recipient know where to get all these file fragments from and how to put them back together into the original file? Normally, when you send a file via any file-sharing service it provides you a link that you can pass to the recipient. The link allows to download the original file, but it also provides the server a lot of file meta-data, that often includes file name and exact size, and in many cases also file content.
+So, how would any recipient know where to get all these file fragments from and how to put them back together into the original file? Normally, when you send a file via any file-sharing service it provides you a link that you can pass to the recipient. The link allows to download the original file, but it also provides the server a lot of file meta-data, that often includes file name and exact size, and in many cases the server also has access to a file content.
 
-Instead of using a link, XFTP protocol includes a special format for a "file description" - it is a small text file containing the locations, access keys and digests for all chunks, and also an encryption key and digest for the whole file. This file description does not contain the original file name or exact file size, so if it is used after the file fragments expired or removed from XFTP relays, this information is not accessible.
+Instead of using a link, XFTP protocol includes a special format for a "file description" - it is a small text file containing the locations, access keys and digests for all file chunks, and also the encryption key and digest (SHA512) for the whole file. This file description does not contain the original file name or exact file size, so if it is used after the file fragments are expired or removed from XFTP relays, this information is not accessible.
 
-CLI generates a separate file description for each intended recipient - you need to specify how many people you want to receive this file. It is recommended to specify a larger number of recipients to hide the real number of recipients from XFTP relays. Mobile apps, when this protocol is integrated, will do it automatically choosing some large random number of possible recipients, so while the relays will be able to observe how many people actually downloaded the file, they won't know how many intended recipients you actually had - sending to a group of 10 people and to 1 recipient will look the same to the relays.
+CLI generates a separate file description for each intended recipient - you need to specify how many people you want to be able to receive this file. You can specify a larger number of recipients to avoid revealing the real number of recipients from XFTP relays. Mobile apps, when this protocol is integrated, will do it automatically, choosing some large random number of possible recipients, so while the relays will be able to observe how many people time the file was downloaded, they won't know how many intended recipients you had - sending to a group of 10 people and to 1 recipient can look the same to the relays.
 
-File description is a security-sensitive document that contains private keys and addresses necessary to receive the file, and also a symmetric key to decrypt the file. So the channel you use to send this file description must be secure from passive attacks (unlike SimpleX Chat invitation links that only need to be secure against active attacks) - e.g., it can be sent via SimpleX Chat. But once the recipient downloaded the file, CLI invalidates the file fragment addresses on relays and the same file description cannot be used again to download the same file.
+File description is a security-sensitive file that contains private keys and chunk addresses necessary to receive the whole file, and also a symmetric key to decrypt the file. Therefore you must use a secure channel to send file description - e.g., it can be sent via SimpleX Chat. But once the recipient downloaded the file, CLI invalidates the file fragment addresses on relays and the same file description cannot be used again to download the file.
 
 ## What is next?
 
-We've just released and deployed several XFTP relays for you to experiment with (they are hardcoded in the XFTP CLI), and you can deploy your own relay either from [downloadable binary](https://github.com/simplex-chat/simplexmq/releases/tag/v5.0.0-beta.3) or by compiling from source. We've also released XFTP CLI - also available in the same release.
+We released and deployed several XFTP relays for you to experiment with (they are hardcoded in the XFTP CLI), and you can deploy your own relays either from [downloadable binary](https://github.com/simplex-chat/simplexmq/releases/tag/v5.0.0-beta.3) or by compiling [the source code](https://github.com/simplex-chat/simplexmq). We also released XFTP CLI - it is available in the same release.
 
-We are currently integrating support for sending large files using this brand-new XFTP protocol into SimpleX Chat clients. v5.0 of SimpleX Chat will already have support for receiving files sent via XFTP protocol (you will be able to send a file description via a SimpleX Chat CLI app in a way that mobile apps will be able to receive it as a normal file), and v5.1 will have support for sending large files from the mobile apps.
+We are currently integrating support for sending large files using XFTP protocol into SimpleX Chat clients. SimpleX Chat v5.0 will have support for receiving files sent via XFTP protocol (you will be able to send a file description via a SimpleX Chat CLI app, so that mobile apps will be able to receive them as normal files, only much faster), and v5.1 will fully support for sending large files (up to 1gb) in the mobile apps.
 
-We will also publish a formal specification for XFTP protocol and overview of its security qualities. For now you can learn more about protocol design and motivations from this internal [XFTP RFC](https://github.com/simplex-chat/simplexmq/blob/stable/rfcs/2022-12-26-simplex-file-transfer.md).
+We will also publish a formal specification for XFTP protocol and overview of its security qualities and threat model. For now you can learn more about the protocol design and motivations from this internal [XFTP protocol RFC](https://github.com/simplex-chat/simplexmq/blob/stable/rfcs/2022-12-26-simplex-file-transfer.md).
 
-Using and sending files with the available XFTP CLI will hugely help us stabilizing both the protocol and implementations. What we really like about it is that it is completely independent from SimpleX Chat - you can use it on its own, sending files and passing file descriptions to your contacts via any other messenger - e.g. via Signal, – without this messenger being able to observe that you are in fact sending a large file.
+Using and sending files with the available XFTP CLI will hugely help us stabilizing both the protocol and implementations. What we really like about this design is that it is completely independent from SimpleX Chat - you can use it on its own, sending files and passing file descriptions to your contacts via any other messenger - e.g. via Signal, – without this messenger being able to observe that you are in fact sending a large file.
 
-We did not yet decide whether we would be conducting a separate security audit of XFTP, or if we combine it with the next security audit of SimpleX Chat. The latter seems more likely, as XFTP uses the same cryptographic primitives that were reviewed during [SimpleX Chat security assessment by Trail of Bits](./20221108-simplex-chat-v4.2-security-audit-new-website.md) in November 2022.
+We did not yet decide whether we will be making a separate security audit of XFTP implementation, or if we combine it with the next security audit of SimpleX Chat. The latter seems more likely, as XFTP uses the same cryptographic primitives that were reviewed during [SimpleX Chat security assessment by Trail of Bits](./20221108-simplex-chat-v4.2-security-audit-new-website.md) in November 2022.
 
 ## SimpleX platform
 
