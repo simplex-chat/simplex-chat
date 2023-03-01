@@ -19,11 +19,9 @@ permalink: "/blog/20230301-simplex-file-transfer-protocol.html"
 
 ## :zap: Quick start: how to send a file using XFTP CLI
 
-1. Download XFTP binary for Linux from the release or install it with this command: ... You can also compile it from source for any platform.
+1. Download XFTP binary for Linux from [the release](https://github.com/simplex-chat/simplexmq/releases/tag/v5.0.0-beta.3) – you need the file `xftp-ubuntu-20_04-x86-64` - rename it as `xftp`.
 
-2. Choose file of any size up to 1Gb.
-
-3. To send the file to one recipient:
+2. To send the file:
 
 ```
 xftp send filename.ext
@@ -35,23 +33,15 @@ You can also send the file that can be received by multiple recipients using `-n
 xftp send filename.ext -n 10
 ```
 
-Executing this command will encrypt and upload you file fragments to multiple XFTP relays. Once it is completed (it takes several minutes for 1gb file), the CLI will create as many file descriptions as you specified, plus one more for you that you can use to delete all file fragments from the relays before they expire (currently it is set to expire in 48 hours).
+3. Pass file descriptions (files with that have names `rcvN.xftp` – they will be more random soon) to the recipient(s) securely, e.g. send it as a file via SimpleX Chat.
 
-File descriptions will be in the subfolder of the current working directory with the name `filename.ext.xftp` (CLI allows to change the folder for file descriptions via options), with the names `rcvABCD.xftp` for each recipient and `snd.xftp.private` for you. If you also want to be able to download the file, you need one more file description for the recipient.
-
-The number of recipients does not change the traffic for you, and each person will be downloading file fragments via different addresses - each file description can be used only once (but if download fails because of a bad network connection it can be retried).
-
-4. Pass each recipient a different file description securely, e.g. send it as a file via SimpleX Chat. For example, for 1gb file file description will have a size of ~36kb – you can think about it as a very large link to receive the file.
-
-5. To receive the file, the recipient has to execute this command:
+4. To receive the file:
 
 ```
-xftp recv rcvABCD.xftp
+xftp recv rcvN.xftp
 ```
 
-This will download file fragments from all relays specified in the file description, and decrypt the file into the default Downloads folder (or you can specify another location via CLI options). Once the file is fully downloaded, it won't be possible to use this file description again - CLI will offer removing it.
-
-6. The sender can delete the file from the server before it expires with this command:
+5. The sender also delete all file chunks from the relays before they expire in 48 hours with this command:
 
 ```
 xftp del ./filename.ext/snd.xftp.private
