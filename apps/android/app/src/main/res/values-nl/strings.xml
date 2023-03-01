@@ -21,7 +21,7 @@
     <string name="allow_direct_messages">Sta het verzenden van directe berichten naar leden toe.</string>
     <string name="allow_to_delete_messages">Sta toe om verzonden berichten onomkeerbaar te verwijderen.</string>
     <string name="allow_to_send_voice">Sta toe om spraak berichten te verzenden.</string>
-    <string name="chat_is_running">Chat is aktief</string>
+    <string name="chat_is_running">Chat is actief</string>
     <string name="clear_chat_menu_action">Wissen</string>
     <string name="chat_database_section">CHAT DATABASE</string>
     <string name="chat_archive_section">CHAT ARCHIEF</string>
@@ -669,7 +669,7 @@
     <string name="welcome">Welkom!</string>
     <string name="group_preview_you_are_invited">je bent uitgenodigd voor de groep</string>
     <string name="you_have_no_chats">Je hebt geen gesprekken</string>
-    <string name="your_chats">Je gesprekken</string>
+    <string name="your_chats">Jouw gesprekken</string>
     <string name="share_file">Deel bestand…</string>
     <string name="share_image">Afbeelding delen…</string>
     <string name="icon_descr_waiting_for_image">Wachten op afbeelding</string>
@@ -709,7 +709,7 @@
     <string name="to_verify_compare">Vergelijk (of scan) de code op uw apparaten om end-to-end-codering met uw contactpersoon te verifiëren.</string>
     <string name="you_can_also_connect_by_clicking_the_link">U kunt ook verbinding maken door op de link te klikken. Als het in de browser wordt geopend, klikt u op de knop <b> Openen in mobiele app </b>.</string>
     <string name="your_profile_will_be_sent">Uw chat profiel wordt naar uw contactpersoon verzonden</string>
-    <string name="your_chat_profiles">Je chat profielen</string>
+    <string name="your_chat_profiles">Uw chat profielen</string>
     <string name="your_simplex_contact_address">Uw <xliff:g id="appName">SimpleX</xliff:g> contactadres</string>
     <string name="chat_with_the_founder">Stuur vragen en ideeën</string>
     <string name="send_us_an_email">Stuur ons een e-mail</string>
