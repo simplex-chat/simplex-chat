@@ -289,6 +289,8 @@
 		5C84FE9229A216C800D95B1A /* nl */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = nl; path = nl.lproj/Localizable.strings; sourceTree = "<group>"; };
 		5C84FE9329A2179C00D95B1A /* nl */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = nl; path = "nl.lproj/SimpleX--iOS--InfoPlist.strings"; sourceTree = "<group>"; };
 		5C84FE9429A2179C00D95B1A /* nl */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = nl; path = nl.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		5C8B41C929AF41BC00888272 /* cs */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = cs; path = cs.lproj/Localizable.strings; sourceTree = "<group>"; };
+		5C8B41CA29AF41BC00888272 /* cs */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = cs; path = cs.lproj/Localizable.strings; sourceTree = "<group>"; };
 		5C93292E29239A170090FFF9 /* SMPServersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SMPServersView.swift; sourceTree = "<group>"; };
 		5C93293029239BED0090FFF9 /* SMPServerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SMPServerView.swift; sourceTree = "<group>"; };
 		5C93293E2928E0FD0090FFF9 /* AudioRecPlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRecPlay.swift; sourceTree = "<group>"; };
@@ -912,6 +914,7 @@
 				fr,
 				it,
 				nl,
+				cs,
 			);
 			mainGroup = 5CA059BD279559F40002BEB4;
 			packageReferences = (
@@ -1181,6 +1184,7 @@
 				5CBD285629565CAE00EC2CF4 /* fr */,
 				5CA85D0B297218AA0095AF72 /* it */,
 				5C84FE9229A216C800D95B1A /* nl */,
+				5C8B41CA29AF41BC00888272 /* cs */,
 			);
 			name = Localizable.strings;
 			sourceTree = "<group>";
@@ -1194,6 +1198,7 @@
 				5CBD285529565CAE00EC2CF4 /* fr */,
 				5CA85D0A297218AA0095AF72 /* it */,
 				5C84FE9129A216C800D95B1A /* nl */,
+				5C8B41C929AF41BC00888272 /* cs */,
 			);
 			name = Localizable.strings;
 			sourceTree = "<group>";
