@@ -1868,7 +1868,7 @@
       </trans-unit>
       <trans-unit id="Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" xml:space="preserve" approved="no">
         <source>Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)</source>
-        <target state="translated">Nainstalujte [SimpleX Chat pro terminál] (https://github.com/simplex-chat / simplex-chat)</target>
+        <target state="translated">Nainstalujte [SimpleX Chat pro terminál](https://github.com/simplex-chat/simplex-chat)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Instant push notifications will be hidden!&#10;" xml:space="preserve" approved="no">
@@ -3791,17 +3791,17 @@ Servery SimpleX nevidí váš profil.</target>
       </trans-unit>
       <trans-unit id="[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" xml:space="preserve" approved="no">
         <source>[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)</source>
-        <target state="translated">[Přispějte] (https://github.com/simplex-chat/simplex-chat#contribute)</target>
+        <target state="translated">[Přispějte](https://github.com/simplex-chat/simplex-chat#contribute)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="[Send us email](mailto:chat@simplex.chat)" xml:space="preserve" approved="no">
         <source>[Send us email](mailto:chat@simplex.chat)</source>
-        <target state="translated">[Pošlete nám e-mail] (mailto:chat@simplex.chat)</target>
+        <target state="translated">[Pošlete nám e-mail](mailto:chat@simplex.chat)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" xml:space="preserve" approved="no">
         <source>[Star on GitHub](https://github.com/simplex-chat/simplex-chat)</source>
-        <target state="translated">[Hvězda na GitHubu] (https://github.com/simplex-chat/simplex-chat)</target>
+        <target state="translated">[Hvězda na GitHubu](https://github.com/simplex-chat/simplex-chat)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="_italic_" xml:space="preserve" approved="no">
@@ -4467,7 +4467,7 @@ Servery SimpleX nevidí váš profil.</target>
       </trans-unit>
       <trans-unit id="Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!" xml:space="preserve" approved="no">
         <source>Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!</source>
-        <target state="translated">Díky uživatelům - [přispějte přes Weblate] (https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!</target>
+        <target state="translated">Díky uživatelům - [přispějte přes Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve" approved="no">

@@ -38,13 +38,13 @@
 ")" = ")";
 
 /* No comment provided by engineer. */
-"[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Přispějte] (https://github.com/simplex-chat/simplex-chat#contribute)";
+"[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Přispějte](https://github.com/simplex-chat/simplex-chat#contribute)";
 
 /* No comment provided by engineer. */
-"[Send us email](mailto:chat@simplex.chat)" = "[Pošlete nám e-mail] (mailto:chat@simplex.chat)";
+"[Send us email](mailto:chat@simplex.chat)" = "[Pošlete nám e-mail](mailto:chat@simplex.chat)";
 
 /* No comment provided by engineer. */
-"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Hvězda na GitHubu] (https://github.com/simplex-chat/simplex-chat)";
+"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Hvězda na GitHubu](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
 "**Add new contact**: to create your one-time QR Code for your contact." = "**Přidat nový kontakt**: pro vytvoření jednorázového QR kódu nebo odkazu pro váš kontakt.";
@@ -1293,7 +1293,7 @@
 "indirect (%d)" = "nepřímé (%d)";
 
 /* No comment provided by engineer. */
-"Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "Nainstalujte [SimpleX Chat pro terminál] (https://github.com/simplex-chat / simplex-chat)";
+"Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "Nainstalujte [SimpleX Chat pro terminál](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
 "Instant push notifications will be hidden!\n" = "Okamžitá oznámení budou skryta!\n";
@@ -2158,7 +2158,7 @@
 "Thank you for installing SimpleX Chat!" = "Děkujeme, že jste si nainstalovali SimpleX Chat!";
 
 /* No comment provided by engineer. */
-"Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!" = "Díky uživatelům - [přispějte přes Weblate] (https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!";
+"Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!" = "Díky uživatelům - [přispějte přes Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#translate-the-apps)!";
 
 /* No comment provided by engineer. */
 "Thanks to the users – contribute via Weblate!" = "Díky uživatelům - přispívejte prostřednictvím Weblate!";

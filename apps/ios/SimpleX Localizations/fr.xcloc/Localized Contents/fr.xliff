@@ -2577,7 +2577,7 @@ Nous allons ajouter une redondance des serveurs pour éviter la perte de message
       </trans-unit>
       <trans-unit id="Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." xml:space="preserve">
         <source>Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme).</source>
-        <target>Pour en savoir plus, consultez notre [dépôt GitHub] (https://github.com/simplex-chat/simplex-chat#readme).</target>
+        <target>Pour en savoir plus, consultez notre [dépôt GitHub](https://github.com/simplex-chat/simplex-chat#readme).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Received file event" xml:space="preserve">
