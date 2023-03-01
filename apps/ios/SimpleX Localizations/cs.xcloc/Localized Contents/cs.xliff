@@ -331,7 +331,7 @@
       </trans-unit>
       <trans-unit id="Accent color" xml:space="preserve" approved="no">
         <source>Accent color</source>
-        <target state="translated">Barva přízvuku</target>
+        <target state="translated">Zbarvení</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accept" xml:space="preserve" approved="no">
@@ -467,7 +467,7 @@
       </trans-unit>
       <trans-unit id="Allow your contacts to send disappearing messages." xml:space="preserve" approved="no">
         <source>Allow your contacts to send disappearing messages.</source>
-        <target state="translated">Umožněte svým kontaktům odesílat mizející zprávy.</target>
+        <target state="translated">Umožněte svým kontaktům odesílat mizící zprávy.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow your contacts to send voice messages." xml:space="preserve" approved="no">
@@ -557,7 +557,7 @@
       </trans-unit>
       <trans-unit id="Both you and your contact can send disappearing messages." xml:space="preserve" approved="no">
         <source>Both you and your contact can send disappearing messages.</source>
-        <target state="translated">Vy i váš kontakt můžete posílat mizející zprávy.</target>
+        <target state="translated">Vy i váš kontakt můžete posílat mizící zprávy.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can send voice messages." xml:space="preserve" approved="no">
@@ -812,7 +812,7 @@
       </trans-unit>
       <trans-unit id="Contact allows" xml:space="preserve" approved="no">
         <source>Contact allows</source>
-        <target state="translated">Kontakt povoluje</target>
+        <target state="translated">Kontakt povolil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact already exists" xml:space="preserve" approved="no">
@@ -1064,7 +1064,7 @@
       </trans-unit>
       <trans-unit id="Delete chat profile?" xml:space="preserve" approved="no">
         <source>Delete chat profile?</source>
-        <target state="translated">Smazat profil chatu?</target>
+        <target state="translated">Smazat chat profil?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete connection" xml:space="preserve" approved="no">
@@ -1228,7 +1228,7 @@
       </trans-unit>
       <trans-unit id="Disappearing messages" xml:space="preserve" approved="no">
         <source>Disappearing messages</source>
-        <target state="translated">Zmizení zpráv</target>
+        <target state="translated">Mizící zprávy</target>
         <note>chat feature</note>
       </trans-unit>
       <trans-unit id="Disappearing messages are prohibited in this chat." xml:space="preserve" approved="no">
@@ -1678,7 +1678,7 @@
       </trans-unit>
       <trans-unit id="Group members can send disappearing messages." xml:space="preserve" approved="no">
         <source>Group members can send disappearing messages.</source>
-        <target state="translated">Členové skupiny mohou posílat mizející zprávy.</target>
+        <target state="translated">Členové skupiny mohou posílat mizící zprávy.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group members can send voice messages." xml:space="preserve" approved="no">
@@ -2480,7 +2480,7 @@ Budeme přidávat redundantní servery, abychom zabránili ztrátě zpráv.</tar
       </trans-unit>
       <trans-unit id="Prohibit sending disappearing messages." xml:space="preserve" approved="no">
         <source>Prohibit sending disappearing messages.</source>
-        <target state="translated">Zakázat posílání mizejících zpráv.</target>
+        <target state="translated">Zakázat posílání mizících zpráv.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit sending voice messages." xml:space="preserve" approved="no">
@@ -3682,22 +3682,22 @@ Chcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu
       </trans-unit>
       <trans-unit id="Your chat profile will be sent to group members" xml:space="preserve" approved="no">
         <source>Your chat profile will be sent to group members</source>
-        <target state="translated">Váš profil v chatu bude zaslán členům skupiny</target>
+        <target state="translated">Váš chat profil bude zaslán členům skupiny</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chat profile will be sent to your contact" xml:space="preserve" approved="no">
         <source>Your chat profile will be sent to your contact</source>
-        <target state="translated">Váš profil v chatu bude odeslán vašemu kontaktu</target>
+        <target state="translated">Váš chat profil bude odeslán vašemu kontaktu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chat profiles" xml:space="preserve" approved="no">
         <source>Your chat profiles</source>
-        <target state="translated">Vaše profily v chatu</target>
+        <target state="translated">Vaše chat profily</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chat profiles are stored locally, only on your device." xml:space="preserve" approved="no">
         <source>Your chat profiles are stored locally, only on your device.</source>
-        <target state="translated">Vaše profily v chatu jsou uloženy lokálně, pouze ve vašem zařízení.</target>
+        <target state="translated">Vaše chat profily jsou uloženy lokálně, pouze ve vašem zařízení.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chats" xml:space="preserve" approved="no">
@@ -3707,7 +3707,7 @@ Chcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu
       </trans-unit>
       <trans-unit id="Your contact address" xml:space="preserve" approved="no">
         <source>Your contact address</source>
-        <target state="translated">Vaše kontaktní adresa</target>
+        <target state="translated">Vaše adresa</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact can scan it from the app." xml:space="preserve" approved="no">
@@ -3718,7 +3718,7 @@ Chcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu
       <trans-unit id="Your contact needs to be online for the connection to complete.&#10;You can cancel this connection and remove the contact (and try later with a new link)." xml:space="preserve" approved="no">
         <source>Your contact needs to be online for the connection to complete.
 You can cancel this connection and remove the contact (and try later with a new link).</source>
-        <target state="translated">Aby se připojení dokončilo, musí být váš kontakt online.
+        <target state="translated">K dokončení připojení, musí být váš kontakt online.
 Toto připojení můžete zrušit a kontakt odebrat (a zkusit to později s novým odkazem).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3729,7 +3729,7 @@ Toto připojení můžete zrušit a kontakt odebrat (a zkusit to později s nov�
       </trans-unit>
       <trans-unit id="Your contacts can allow full message deletion." xml:space="preserve" approved="no">
         <source>Your contacts can allow full message deletion.</source>
-        <target state="translated">Vaše kontakty mohou povolit úplné vymazání zpráv.</target>
+        <target state="translated">Vaše kontakty mohou povolit úplné mazání zpráv.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your current chat database will be DELETED and REPLACED with the imported one." xml:space="preserve" approved="no">
@@ -4297,7 +4297,7 @@ Servery SimpleX nevidí váš profil.</target>
       </trans-unit>
       <trans-unit id="via one-time link" xml:space="preserve" approved="no">
         <source>via one-time link</source>
-        <target state="translated">prostřednictvím jednorázového odkazu</target>
+        <target state="translated">jednorázovým odkazem</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="via relay" xml:space="preserve" approved="no">
