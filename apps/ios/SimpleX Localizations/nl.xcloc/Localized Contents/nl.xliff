@@ -660,9 +660,9 @@
         <target>Chat database geïmporteerd</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat is running" xml:space="preserve">
+      <trans-unit id="Chat is running" xml:space="preserve" approved="no">
         <source>Chat is running</source>
-        <target>Chat is aktief</target>
+        <target state="translated">Chat is actief</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat is stopped" xml:space="preserve">
@@ -2980,9 +2980,9 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
         <target>SimpleX Lock ingeschakeld</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX contact address" xml:space="preserve">
+      <trans-unit id="SimpleX contact address" xml:space="preserve" approved="no">
         <source>SimpleX contact address</source>
-        <target>SimpleX-contactadres</target>
+        <target state="translated">SimpleX contactadres</target>
         <note>simplex link type</note>
       </trans-unit>
       <trans-unit id="SimpleX encrypted message or connection event" xml:space="preserve">
@@ -3734,9 +3734,9 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
         <target>Uw SMP-servers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your SimpleX contact address" xml:space="preserve">
+      <trans-unit id="Your SimpleX contact address" xml:space="preserve" approved="no">
         <source>Your SimpleX contact address</source>
-        <target>Uw SimpleX-contactadres</target>
+        <target state="translated">Uw SimpleX contactadres</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your calls" xml:space="preserve">
@@ -3764,9 +3764,9 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
         <target>Uw chat profiel wordt naar uw contactpersoon verzonden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your chat profiles" xml:space="preserve">
+      <trans-unit id="Your chat profiles" xml:space="preserve" approved="no">
         <source>Your chat profiles</source>
-        <target>Je chat profielen</target>
+        <target state="translated">Uw chat profielen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chat profiles are stored locally, only on your device." xml:space="preserve">
@@ -3774,9 +3774,9 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
         <target>Uw chat profielen worden lokaal opgeslagen, alleen op uw apparaat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your chats" xml:space="preserve">
+      <trans-unit id="Your chats" xml:space="preserve" approved="no">
         <source>Your chats</source>
-        <target>Je gesprekken</target>
+        <target state="translated">Jouw gesprekken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact address" xml:space="preserve">
@@ -4133,9 +4133,9 @@ SimpleX-servers kunnen uw profiel niet zien.</target>
         <target>iOS-keychain wordt gebruikt om het wachtwoord veilig op te slaan nadat u de app opnieuw hebt opgestart of het wachtwoord hebt gewijzigd - hiermee kunt u push meldingen ontvangen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="incognito via contact address link" xml:space="preserve">
+      <trans-unit id="incognito via contact address link" xml:space="preserve" approved="no">
         <source>incognito via contact address link</source>
-        <target>incognito via link naar contactadres</target>
+        <target state="translated">incognito via link naar contactadres</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="incognito via group link" xml:space="preserve">
@@ -4364,9 +4364,9 @@ SimpleX-servers kunnen uw profiel niet zien.</target>
         <target>v%@ (%@)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="via contact address link" xml:space="preserve">
+      <trans-unit id="via contact address link" xml:space="preserve" approved="no">
         <source>via contact address link</source>
-        <target>via contactadres link</target>
+        <target state="translated">via contactadres link</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="via group link" xml:space="preserve">
