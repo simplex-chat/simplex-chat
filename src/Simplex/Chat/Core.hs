@@ -14,11 +14,12 @@ import Simplex.Chat.Types
 import UnliftIO.Async
 
 simplexChatCore :: ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> (User -> ChatController -> IO ()) -> IO ()
-simplexChatCore cfg@ChatConfig {yesToMigrations} opts@ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, dbKey, logAgent}} sendToast chat
-  | logAgent = do
-    setLogLevel LogInfo -- LogError
-    withGlobalLogging logCfg initRun
-  | otherwise = initRun
+simplexChatCore cfg@ChatConfig {yesToMigrations} opts@ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, dbKey, logAgent}} sendToast chat =
+  case logAgent of
+    Just level -> do
+      setLogLevel level
+      withGlobalLogging logCfg initRun
+    _ -> initRun
   where
     initRun = do
       db@ChatDatabase {chatStore} <- createChatDatabase dbFilePrefix dbKey yesToMigrations

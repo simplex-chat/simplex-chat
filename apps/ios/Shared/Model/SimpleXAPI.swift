@@ -1270,11 +1270,8 @@ func chatItemSimpleUpdate(_ user: User, _ aChatItem: AChatItem) {
     let m = ChatModel.shared
     let cInfo = aChatItem.chatInfo
     let cItem = aChatItem.chatItem
-    let notify = { NtfManager.shared.notifyMessageReceived(user, cInfo, cItem) }
-    if !active(user) {
-        notify()
-    } else if m.upsertChatItem(cInfo, cItem) {
-        notify()
+    if active(user) && m.upsertChatItem(cInfo, cItem) {
+        NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
     }
 }
 

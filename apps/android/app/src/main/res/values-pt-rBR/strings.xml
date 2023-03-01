@@ -1,2 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="about_simplex_chat">Sobre o <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
+    <string name="about_simplex">Sobre o SimpleX</string>
+    <string name="chat_item_ttl_day">1 dia</string>
+    <string name="chat_item_ttl_week">1 semana</string>
+    <string name="chat_item_ttl_month">1 mês</string>
+    <string name="a_plus_b">a + b</string>
+</resources>
