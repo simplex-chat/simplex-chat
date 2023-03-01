@@ -2380,9 +2380,9 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>Chat-Konsole öffnen</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Open user profiles" xml:space="preserve" approved="no">
+      <trans-unit id="Open user profiles" xml:space="preserve">
         <source>Open user profiles</source>
-        <target state="translated">Benutzerprofile öffnen</target>
+        <target>Benutzerprofile öffnen</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Open-source protocol and code – anybody can run the servers." xml:space="preserve">
@@ -4233,9 +4233,9 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>Anruf verpasst</target>
         <note>call status</note>
       </trans-unit>
-      <trans-unit id="moderated" xml:space="preserve" approved="no">
+      <trans-unit id="moderated" xml:space="preserve">
         <source>moderated</source>
-        <target state="translated">Moderiert</target>
+        <target>Moderiert</target>
         <note>moderated chat item</note>
       </trans-unit>
       <trans-unit id="never" xml:space="preserve">
