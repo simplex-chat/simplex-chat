@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SimpleX blog: SimpleX File Transfer Protocol - a new protocol for sending large files efficiently, privately and securely.</title>
+    <meta name="Content-Type" content="text/html;charset=utf-8" />
+    <meta http-equiv="onion-location" content="http://isdb4l77sjqoy2qq7ipum6x3at6hyn3jmxfx4zdhc72ufbmuq4ilwkqd.onion/blog/20230301-simplex-file-transfer-protocol.html" />
+    <meta property="og:url" content="https://simplex.chat/blog/20230301-simplex-file-transfer-protocol.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="SimpleX File Transfer Protocol - a new protocol for sending large files efficiently, privately and securely." />
+    
+      <meta property="og:image" content="https://simplex.chat/blog/images/20230301-xftp.jpg" />
+    
+    <meta name="twitter:card" content="summary" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico" />
+    <link href="/css/tailwind.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/css/blog.css" />
+    <link href="/css/style.css" rel="stylesheet" />
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+  </head>
+
+  <body class="bg-[#F3F6F7] dark:bg-[#0C0B13]">
+    <header class="">
+    <div class="flex items-center justify-end m-auto px-4 lg:px-7 h-[66px]">
+        <a href="/" class="h-full hidden dark:hidden lg:flex items-center mr-auto"><img class="w-auto max-h-[50px] pr-10" src="/img/new/logo-light.png" alt="logo" /></a>
+        <a href="/" class="h-full hidden dark:lg:flex items-center mr-auto"><img class="w-auto max-h-[50px] pr-10" src="/img/new/logo-dark.png" alt="logo" /></a>
+        <a href="/" class="dark:hidden lg:hidden mr-auto"><img class="h-[32px]" src="/img/new/logo-symbol-light.svg" alt="" srcset=""></a>
+        <a href="/" class="hidden dark:inline-block dark:lg:hidden lg:hidden mr-auto"><img class="h-[32px]" src="/img/new/logo-symbol-dark.svg" alt="" srcset=""></a>
+        
+        <nav class="bg-[#F0F1F2] dark:bg-gradient-radial-mobile dark:lg:bg-none lg:bg-transparent fixed top-[66px] left-0 right-0 bottom-0 lg:top-0 lg:relative" id="menu">
+            <div class="flex flex-col lg:flex-row justify-between lg:items-center gap-5 xl:gap-10 px-4 lg:px-0 h-full">
+                <ul class="flex flex-col lg:flex-row lg:items-center gap-3 py-4 lg:py-0 lg:gap-5 xl:gap-8">
+                    
+                    <li class="nav-link relative ">
+                        <a href="/" class="flex items-center justify-between gap-2 lg:py-5 ">
+                            <span class="text-[16px] leading-[26px] tracking-[0.01em] nav-link-text text-black dark:text-white before:bg-black dark:before:bg-white">Home</span>
+                        </a>                        
+                    </li>
+
+                    <hr class="dark:opacity-[0.1]" >
+
+                    <li class="nav-link relative">
+                        <a href="javascript:void(0);" class="flex items-center justify-between gap-2 lg:py-5">
+                            <span class="text-[16px] leading-[26px] tracking-[0.01em] text-black dark:text-white before:bg-black dark:before:bg-white">Developers</span>
+                            <span href="" id="btn-mobile" class="flex items-center justify-center h-[36px] w-[36px] lg:h-auto lg:w-auto mt-1">
+                                <svg class="fill-black dark:fill-white" width="10" height="6" viewBox="0 0 10 6" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M1.50447 0.902966C1.21571 0.627397 0.747525 0.627397 0.458761 0.902966C0.169996 1.17853 0.169996 1.62532 0.458761 1.90089L4.21933 5.48961C4.25543 5.52406 4.29433 5.5542 4.33533 5.58003C4.62234 5.76088 5.01237 5.73074 5.26504 5.48961L9.02561 1.90089C9.31438 1.62532 9.31438 1.17853 9.02561 0.902966C8.73685 0.627397 8.26867 0.627397 7.97991 0.902966L4.74219 3.99273L1.50447 0.902966Z"/>
+                                </svg>
+                            </span>
+                        </a>
+                        
+                        <ul class="flex flex-col items-start gap-2 lg:h-fit lg:absolute lg:bg-white dark:lg:bg-black top-full lg:mt-[10px] lg:py-4 min-w-[200px] rounded-md lg:shadow-[0_0_3px_rgb(60_72_88_/_15%)] sub-menu">
+                            <li><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/apps/simplex-bot-advanced/Main.hs"
+                                target="_blank" class="lg:px-[20px] inline-block"
+                                >Chat bot example</a></li>
+                            <li><a href="https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript"
+                                target="_blank" class="lg:px-[20px] inline-block"
+                                >TypeScript SDK</a></li>
+                            <li><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/CLI.md"
+                                target="_blank" class="lg:px-[20px] inline-block"
+                                >Terminal CLI</a></li>
+                            <li><a href="https://github.com/simplex-chat/simplexmq"
+                                target="_blank" class="lg:px-[20px] inline-block"
+                                >SimpleXMQ</a></li>
+                            </ul>
+                    </li>
+
+                    <hr class="dark:opacity-[0.1]" >
+
+                    <li class="nav-link relative">
+                        <a href="javascript:void(0);" class="flex items-center justify-between gap-2 lg:py-5">
+                            <span class="text-[16px] leading-[26px] tracking-[0.01em] text-black dark:text-white before:bg-black dark:before:bg-white">Reference</span>
+                            <span href="" id="btn-mobile" class="flex items-center justify-center h-[36px] w-[36px] lg:h-auto lg:w-auto mt-1">
+                                <svg class="fill-black dark:fill-white" width="10" height="6" viewBox="0 0 10 6" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M1.50447 0.902966C1.21571 0.627397 0.747525 0.627397 0.458761 0.902966C0.169996 1.17853 0.169996 1.62532 0.458761 1.90089L4.21933 5.48961C4.25543 5.52406 4.29433 5.5542 4.33533 5.58003C4.62234 5.76088 5.01237 5.73074 5.26504 5.48961L9.02561 1.90089C9.31438 1.62532 9.31438 1.17853 9.02561 0.902966C8.73685 0.627397 8.26867 0.627397 7.97991 0.902966L4.74219 3.99273L1.50447 0.902966Z"/>
+                                </svg>
+                            </span>
+                        </a>
+                        
+                        <ul class="flex flex-col items-start gap-2 lg:h-fit lg:absolute lg:bg-white dark:lg:bg-black top-full lg:mt-[10px] lg:py-4 min-w-[180px] rounded-md lg:shadow-[0_0_3px_rgb(60_72_88_/_15%)] sub-menu">
+                            <li><a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md"
+                                target="_blank" class="lg:px-[20px] inline-block"
+                                >Whitepaper</a></li>
+                            <li><a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/simplex-messaging.md"
+                                target="_blank" class="lg:px-[20px] inline-block"
+                                >SMP protocol</a></li>
+                            <li><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/simplex-chat.md"
+                                target="_blank" class="lg:px-[20px] inline-block"
+                                >Chat protocol</a></li>
+                        </ul>
+                    </li>
+
+                    <hr class="dark:opacity-[0.1]" >
+
+                    <li class="nav-link relative ">
+                        <a href="/blog" class="flex items-center justify-between gap-2 lg:py-5">
+                            <span class="text-[16px] leading-[26px] tracking-[0.01em] nav-link-text text-black dark:text-white before:bg-black dark:before:bg-white">Blog</span>
+                        </a>
+                    </li>
+                </ul>
+
+                <a href="https://github.com/simplex-chat/simplex-chat#help-us-with-donations"
+                    target="_blank" class="whitespace-nowrap inline-block self-center text-white dark:text-black text-[16px] font-medium tracking-[0.02em] rounded-[34px] bg-primary-light dark:bg-primary-dark py-3 lg:py-2 px-20 lg:px-5 mb-16 lg:mb-0"
+                    >Donate</a>
+
+                <div class="inline-block dark:hidden self-center mt-[8px]">
+                    <a class="github-button" href="https://github.com/simplex-chat/simplex-chat" data-size="large"
+                        data-show-count="true" aria-label="Star simplex-chat on GitHub">Star</a>
+                </div>
+
+                <div class="hidden dark:inline-block self-center mt-[8px]">
+                    <a class="github-button" href="https://github.com/simplex-chat/simplex-chat" data-size="large"
+                        data-color-scheme="no-preference: dark; light: dark; dark: dark;"
+                        data-show-count="true" aria-label="Star simplex-chat on GitHub">Star</a>
+                </div>
+            </div>
+        </nav>
+
+        
+
+        <button href="#" class="flex items-center justify-center h-[36px] w-[36px] ml-8 lg:ml-4 xl:ml-8 theme-switch-btn">
+            <img src="/img/new/sun.svg"  alt="" srcset="" class="sun">
+            <img src="/img/new/moon.svg" alt="" srcset="" class="moon">
+        </button>
+
+        <button href="" id="btn-mobile" class="flex lg:hidden items-center justify-center h-[36px] w-[36px] ml-8 lg:ml-5 xl:ml-10 nav-toggle-btn">
+            <img src="/img/new/hamburger.svg" id="hamburger" alt="" srcset="">
+            <svg class="fill-black dark:fill-white hidden" id="cross" width="13" height="13" viewBox="0 0 13 13" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12.7973 11.5525L7.59762 6.49833L12.7947 1.44675C13.055 1.19371 13.0658 0.771991 12.8188 0.505331C12.5718 0.238674 12.1602 0.227644 11.8999 0.480681L6.65343 5.58028L1.09979 0.182228C0.839522 -0.070157 0.427909 -0.059127 0.18094 0.207531C-0.0660305 0.474191 -0.0552645 0.895911 0.205003 1.14894L5.70862 6.49833L0.20247 11.851C-0.0577975 12.104 -0.0685635 12.5257 0.178407 12.7924C0.306324 12.9306 0.477936 13 0.650181 13C0.811033 13 0.971873 12.9397 1.09726 12.817L6.65343 7.41639L11.9025 12.5186C12.0285 12.6406 12.1893 12.7015 12.3495 12.7015C12.5218 12.7015 12.6934 12.6321 12.8213 12.4939C13.0689 12.2273 13.0582 11.8062 12.7973 11.5525Z" />
+            </svg>
+        </button>
+    </div>
+</header>
+
+
+<SCript>
+// switch theme
+const sunIcon = document.querySelector('.sun');
+const moonIcon = document.querySelector('.moon');
+
+const userTheme = localStorage.getItem('theme');
+const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+const iconToggle = () => {
+    sunIcon.classList.toggle('hidden');
+    moonIcon.classList.toggle('hidden');
+}
+
+const themeCheck = () => {
+    if(userTheme === 'dark' || (!userTheme && systemTheme)){
+        document.documentElement.classList.add('dark');
+        moonIcon.classList.add('hidden');
+    }
+    else{
+        sunIcon.classList.add('hidden');
+    }
+}
+
+const themeSwitch = () => {
+    if(document.documentElement.classList.contains('dark')){
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme','light');
+        iconToggle();
+    }
+    else{
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme','dark');
+        iconToggle();
+    }
+}
+
+const nav = document.querySelector('header nav');
+window.addEventListener('click',(e)=>{
+    if(e.target.closest('.nav-link')){
+        if(e.target.closest('.nav-link').classList.contains('active')){
+            e.target.closest('.nav-link').classList.remove('active');
+        }
+        else{
+            document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'))
+            e.target.closest('.nav-link').classList.add('active');
+        }
+    }
+    else if(e.target.closest('.nav-toggle-btn')){
+        document.body.classList.toggle('lock-scroll');
+        if(nav.classList.contains('open')){
+            nav.classList.remove('open');
+            document.getElementById('hamburger').classList.remove('hidden');
+            document.getElementById('cross').classList.add('hidden');
+        }
+        else{
+            nav.classList.add('open');
+            document.getElementById('hamburger').classList.add('hidden');
+            document.getElementById('cross').classList.remove('hidden');
+        }
+    }
+    else if(e.target.closest('.theme-switch-btn')){
+        themeSwitch();
+    }
+})
+
+themeCheck();
+
+const changeHeaderBg = ()=>{
+    const header = document.querySelector('header')
+    const scrollValue = window.scrollY
+    if(scrollValue > 5){
+        header.classList.add('bg-primary-bg-light');
+        header.classList.add('dark:bg-primary-bg-dark');
+    }
+    else{
+        header.classList.remove('bg-primary-bg-light');
+        header.classList.remove('dark:bg-primary-bg-dark');
+    }
+}
+
+window.addEventListener('scroll',changeHeaderBg);
+</SCript>
+
+    <div class="container px-5">
+      <a class="inline-block text-grey-black dark:text-white my-5 underline underline-offset-2" href="/blog"><&nbsp;Back to list</a>
+    </div>
+
+    <section id="article" class="container mb-[75px] bg-white dark:bg-[#17203D] px-5">
+      <div class="py-6 md:p-[60px]"><h1 id="simplex-file-transfer-protocol-a-new-protocol-for-sending-large-files-efficiently-privately-and-securely" tabindex="-1">SimpleX File Transfer Protocol – a new protocol for sending large files efficiently, privately and securely.</h1>
+<p><strong>Published:</strong> Mar 1, 2023</p>
+<ul>
+<li><a href="#%E2%9A%A1%EF%B8%8F-quick-start-send-a-file-with-xftp-cli-in-3-simple-steps">Quick start: how to send a file using XFTP CLI</a></li>
+<li><a href="#whats-the-problem">What's the problem</a></li>
+<li><a href="#why-didnt-we-just-use-some-existing-solution">Why didn't we just use some existing solution?</a></li>
+<li><a href="#what-is-xftp-and-how-does-it-work">What is XFTP and how does it work?</a></li>
+<li><a href="#what-is-next">What is next?</a></li>
+</ul>
+<h2 id="quick-start-send-a-file-with-xftp-cli-in-3-simple-steps" tabindex="-1">⚡️ Quick start: send a file with XFTP CLI in 3 simple steps</h2>
+<p>Download XFTP binary for Linux from <a href="https://github.com/simplex-chat/simplexmq/releases/tag/v5.0.0-beta.3">the release</a> – you need the file <code>xftp-ubuntu-20_04-x86-64</code> - rename it as <code>xftp</code>.</p>
+<p><strong>Step 1</strong>: To send the file:</p>
+<pre><code class="language-bash">xftp send filename.ext
+</code></pre>
+<p>You can also send the file that can be received by multiple recipients using <code>-n</code> option:</p>
+<pre><code class="language-bash">xftp send filename.ext -n 10
+</code></pre>
+<p><strong>Step 2</strong>: Pass file description(s) (files <code>rcvN.xftp</code>) to the recipient(s) securely, e.g. send it as a file via SimpleX Chat.</p>
+<p><strong>Step 3</strong>: To receive the file:</p>
+<pre><code class="language-bash">xftp recv rcvN.xftp
+</code></pre>
+<p>The sender also delete all file chunks from the relays before they expire in 48 hours with this command:</p>
+<pre><code class="language-bash">xftp del ./filename.ext/snd.xftp.private
+</code></pre>
+<br>
+<h2 id="whats-the-problem" tabindex="-1">What's the problem?</h2>
+<p>If you are using SimpleX Chat apps you know that support of sending files and images is not very good, and sending videos and large files is simply impossible. There are currently these problems:</p>
+<ul>
+<li>the sender has to be online for file transfer to complete, once it was confirmed by the recipient.</li>
+<li>when the file is sent to the group, the sender will have to transfer it separately to each member, creatin a lot of traffic.</li>
+<li>the file transfer is slow, as it is sent in small chunks - approximately 16kb per message.</li>
+</ul>
+<p>As a result, we limited the supported size of files in the app to 8mb. Even for supported files, it is quite inefficient for sending any files to large groups.</p>
+<h2 id="why-didnt-we-just-use-some-existing-solution" tabindex="-1">Why didn't we just use some existing solution?</h2>
+<p>We really hoped to find some existing open-source solution that we could integrate with SimpleX Chat.</p>
+<p>We decided not to use torrent-like or any other P2P solutions because of their lack of privacy, challenging legality in some jurisdictions and, in many cases, because they are inefficient in groups.</p>
+<p>We reviewed several S3-compatible solutions (e.g., <a href="https://github.com/minio/minio">minio</a>, <a href="https://git.deuxfleurs.fr/Deuxfleurs/garage">garage</a>, <a href="https://github.com/seaweedfs/seaweedfs">SeaweedFS</a>), but they all require the development of a separate service layer, making them unusable as standalone serveces and harder to deploy for the users who want to self-host the file transfer service. As a side note, the solution that we developed can still be composed with S3-compatible storage for higher capacity servers with some privacy/efficiency trade-offs.</p>
+<p>We also looked at a few independent implementations of file sharing, with some ad-hoc protocols (e.g., <a href="https://github.com/ceph/ceph">ceph</a> and <a href="https://framagit.org/fiat-tux/hat-softwares/lufi">lufi</a>), but neither seemed sufficiently mature, and also not as private as we would like.</p>
+<p>So after a lot of searching we decided to design and implement a new protocol for file transfers, that both solved the problems above, and provided a higher level of metadata privacy than any other file transfer solution has.</p>
+<h2 id="what-is-xftp-and-how-does-it-work" tabindex="-1">What is XFTP and how does it work?</h2>
+<pre><code>           Sender                      Internet                XFTP relays             Internet         Recipient
+----------------------------   |   -----------------   |   -------------------   |   ------------   |   ---------- 
+                               |                       |                         |                  |
+                               |                       |   (can be self-hosted)  |                  |
+                               |                       |        +---------+      |                  |
+                  chunk 1     ----- HTTP2 over TLS ------       |  XFTP   |     ---- HTTP2 / TLS -----   chunk 1
+                |---&gt; SimpleX File Transfer Protocol (XFTP) --&gt; |  Relay  | ---&gt;        XFTP         -------------&gt;|
+                |             ---------------------------       +---------+     ----------------------             |
+                |              |                       |                         |                  |              | 
+                |              |                       |                         |                  |              v
+          +----------+         |                       |        +---------+      |                  |        +-------------+
+          | Sending  | ch. 2  ------- HTTP2 / TLS -------       |  XFTP   |     ---- HTTP2 / TLS ----  ch. 2 |  Receiving  |
+file ---&gt; |   XFTP   | ------&gt;           XFTP            ----&gt;  |  Relay  | ---&gt;        XFTP         ------&gt; |     XFTP    | ---&gt; file
+          |  Client  |        ---------------------------       +---------+     ----------------------       |    Client   |
+          +----------+         |                       |                         |                  |        +-------------+
+                |              |                       |                         |                  |              ^
+                |              |                       |        +---------+      |                  |              |
+                |             ------- HTTP2 / TLS -------       |  XFTP   |     ---- HTTP2 / TLS ----              |
+                |-------------&gt;           XFTP           ----&gt;  |  Relay  | ---&gt;        XFTP         -------------&gt;|
+                   chunk N    ---------------------------       +---------+     ---------------------    chunk N
+                               |                       |   (store file chunks)   |                  |
+                               |                       |                         |                  |
+                               |                       |                         |                  |
+</code></pre>
+<p>XFTP stands for SimpleX File Transfer Protocol. Its design is based on the same ideas and has some of the qualities of SimpleX Messaging Protocol, that is used in SimpleX Chat:</p>
+<ul>
+<li>recipient cannot see sender's IP address, as the file fragments (chunks) are temporarily stored on multiple XFTP relays.</li>
+<li>file can be sent asynchronously, without requiring the sender to be online for file to be received.</li>
+<li>there is no network of peers that can observe this transfer - sender chooses which XFTP relays to use, and can self-host their own.</li>
+<li>XFTP relays do not have any file metadata - they only see individual chunks, with access to each chunk authorised with anonymous credentials (using Edwards curve cryptographic signature) that are random per chunk.</li>
+<li>chunks have one of the sizes allowed by the servers - currently we allow 256kb, 1mb and 4mb chunks, so if you send, say 1gb file, to XFTP relays it will look indistinguishable from sending many small files, and they would only know that chunks are sent by the same user only via the transport information, but none of the relays will see all chunks. Also, once this feature is available in mobile apps you can use transport isolation per chunk, when each file fragment will be uploaded via a separate TCP connection (and Tor circuit, if you use Tor) – the CLI we released does not yet support per-chunk transport isolation.</li>
+<li>each chunk can be downloaded by multiple recipients, but each recipient uses their own key and chunk ID to authorise access, and the chunk is encrypted by a different key agreed via ephemeral DH keys (NaCl crypto_box (SalsaX20Poly1305 authenticated encryption scheme ) with shared secret derived from Curve25519 key exchange) on the way from the server to each recipient. XFTP protocol as a result has the same quality as SMP protocol - there are no identifiers and ciphertext in common between sent and recived traffic inside TLS connection, so even if TLS is compromised, it complicates traffic correlation attacks.</li>
+<li>XFTP protocol also supports redundancy - each file chunk can be sent via multiple relays, and the recipient can choose the one that is availbale. The released CLI does not support redundancy though.</li>
+<li>the file as a whole is encrypted with a random symmetric key using NaCl secret_box.</li>
+</ul>
+<p>So, how would any recipient know where to get all these file fragments from and how to put them back together into the original file? Normally, when you send a file via any file-sharing service it provides you a link that you can pass to the recipient. The link allows to download the original file, but it also provides the server a lot of file meta-data, that often includes file name and exact size, and in many cases the server also has access to a file content.</p>
+<p>Instead of using a link, XFTP protocol includes a special format for a &quot;file description&quot; - it is a small text file containing the locations, access keys and digests for all file chunks, and also the encryption key and digest (SHA512) for the whole file. This file description does not contain the original file name or exact file size, so if it is used after the file fragments are expired or removed from XFTP relays, this information is not accessible.</p>
+<p>CLI generates a separate file description for each intended recipient - you need to specify how many people you want to be able to receive this file. You can specify a larger number of recipients to avoid revealing the real number of recipients from XFTP relays. Mobile apps, when this protocol is integrated, will do it automatically, choosing some large random number of possible recipients, so while the relays will be able to observe how many people time the file was downloaded, they won't know how many intended recipients you had - sending to a group of 10 people and to 1 recipient can look the same to the relays.</p>
+<p>File description is a security-sensitive file that contains private keys and chunk addresses necessary to receive the whole file, and also a symmetric key to decrypt the file. Therefore you must use a secure channel to send file description - e.g., it can be sent via SimpleX Chat. But once the recipient downloaded the file, CLI invalidates the file fragment addresses on relays and the same file description cannot be used again to download the file.</p>
+<h2 id="what-is-next" tabindex="-1">What is next?</h2>
+<p>We released and deployed several XFTP relays for you to experiment with (they are hardcoded in the XFTP CLI), and you can deploy your own relays either from <a href="https://github.com/simplex-chat/simplexmq/releases/tag/v5.0.0-beta.3">downloadable binary</a> or by compiling <a href="https://github.com/simplex-chat/simplexmq">the source code</a>. We also released XFTP CLI - it is available in the same release.</p>
+<p>We are currently integrating support for sending large files using XFTP protocol into SimpleX Chat clients. SimpleX Chat v5.0 will have support for receiving files sent via XFTP protocol (you will be able to send a file description via a SimpleX Chat CLI app, so that mobile apps will be able to receive them as normal files, only much faster), and v5.1 will fully support for sending large files (up to 1gb) in the mobile apps.</p>
+<p>We will also publish a formal specification for XFTP protocol and overview of its security qualities and threat model. For now you can learn more about the protocol design and motivations from this internal <a href="https://github.com/simplex-chat/simplexmq/blob/stable/rfcs/2022-12-26-simplex-file-transfer.md">XFTP protocol RFC</a>.</p>
+<p>Using and sending files with the available XFTP CLI will hugely help us stabilizing both the protocol and implementations. What we really like about this design is that it is completely independent from SimpleX Chat - you can use it on its own, sending files and passing file descriptions to your contacts via any other messenger - e.g. via Signal, – without this messenger being able to observe that you are in fact sending a large file.</p>
+<p>We did not yet decide whether we will be making a separate security audit of XFTP implementation, or if we combine it with the next security audit of SimpleX Chat. The latter seems more likely, as XFTP uses the same cryptographic primitives that were reviewed during <a href="20221108-simplex-chat-v4.2-security-audit-new-website.html">SimpleX Chat security assessment by Trail of Bits</a> in November 2022.</p>
+<h2 id="simplex-platform" tabindex="-1">SimpleX platform</h2>
+<p>Some links to answer the most common questions:</p>
+<p><a href="20220511-simplex-chat-v2-images-files.html#the-first-messaging-platform-without-user-identifiers">How can SimpleX deliver messages without user identifiers</a>.</p>
+<p><a href="20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.html#why-having-users-identifiers-is-bad-for-the-users">What are the risks to have identifiers assigned to the users</a>.</p>
+<p><a href="https://github.com/simplex-chat/simplex-chat#privacy-technical-details-and-limitations">Technical details and limitations</a>.</p>
+<p><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/README.md#frequently-asked-questions">How SimpleX is different from Session, Matrix, Signal, etc.</a>.</p>
+<p>Please also see our <a href="https://simplex.chat">website</a>.</p>
+<h2 id="help-us-with-donations" tabindex="-1">Help us with donations</h2>
+<p>Huge thank you to everybody who donated to SimpleX Chat!</p>
+<p>We are prioritizing users privacy and security - it would be impossible without your support.</p>
+<p>Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, - so anybody can build the future implementations of the clients and the servers. We are building SimpleX platform based on the same principles as email and web, but much more private and secure.</p>
+<p>Your donations help us raise more funds – any amount, even the price of the cup of coffee, makes a big difference for us.</p>
+<p>See <a href="https://github.com/simplex-chat/simplex-chat/tree/master#help-us-with-donations">this section</a> for the ways to donate.</p>
+<p>Thank you,</p>
+<p>Evgeny</p>
+<p>SimpleX Chat founder</p>
+</div>
+    </section>
+
+    <section class="bg-[#D9E7ED] dark:bg-[#0E2B57] py-[50px]">
+    <div class="container">
+        <div class="flex flex-col lg:flex-row justify-between">
+            <div class="flex flex-col items-center lg:items-start">
+                <a href="/" class="h-full mb-14 dark:hidden"><img class="w-auto h-[32px]" src="/img/new/logo-light.png" alt="logo" /></a>
+                <a href="/" class="h-full mb-14 hidden dark:inline-block"><img class="w-auto h-[32px]" src="/img/new/logo-dark.png" alt="logo" /></a>
+
+                <div class="flex flex-col items-center lg:items-start lg:flex-row gap-[150px] lg:gap-[350px]">
+                    <div class="flex flex-col items-center lg:items-start">
+                        <a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md"
+                            target="_blank"
+                            class="text-grey-black dark:text-white text-[14px] font-medium leading-[28px] tracking-[0.01em] mb-3">
+                            SimpleX Whitepaper</a>
+                        <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/simplex-chat.md"
+                            target="_blank"
+                            class="text-grey-black dark:text-white text-[14px] font-medium leading-[28px] tracking-[0.01em] mb-3">
+                            SimpleX Chat protocol</a>
+                        <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/PRIVACY.md"
+                            target="_blank"
+                            class="text-grey-black dark:text-white text-[14px] font-medium leading-[28px] tracking-[0.01em] mb-3">
+                            Terms & Privacy Policy</a>
+                        <a href="https://github.com/simplex-chat/simplex-chat#help-us-with-donations"
+                            target="_blank"
+                            class="text-grey-black dark:text-white text-[14px] font-medium leading-[28px] tracking-[0.01em] mb-3">
+                            Donate</a>
+                    </div>
+                    <div class="flex flex-col items-center lg:items-start">
+                        <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/CLI.md"
+                            target="_blank"
+                            class="text-grey-black dark:text-white text-[14px] font-medium leading-[28px] tracking-[0.01em] mb-3">
+                            Terminal CLI</a>
+                        <a href="https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript"
+                            target="_blank"
+                            class="text-grey-black dark:text-white text-[14px] font-medium leading-[28px] tracking-[0.01em] mb-3">
+                            TypeScript SDK</a>
+                    </div>
+                </div>
+            </div>
+
+            <article class="mt-10 lg:mt-0">
+                <div class="h-[40px] flex gap-4 justify-center">
+                    <a href="https://github.com/simplex-chat" target="_blank">
+                        <svg class="fill-primary-light dark:fill-primary-dark" width="40" height="40" viewBox="0 0 41 41" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M20.2907 0.926758C9.24635 0.926758 0.290527 10.1075 0.290527 21.4331C0.290527 30.4933 6.02118 38.18 13.9679 40.8915C14.9674 41.0813 15.3344 40.4467 15.3344 39.905C15.3344 39.4161 15.3158 37.8007 15.3072 36.0872C9.74314 37.3277 8.56906 33.6677 8.56906 33.6677C7.65927 31.2975 6.3484 30.6672 6.3484 30.6672C4.53379 29.3945 6.48519 29.4206 6.48519 29.4206C8.49355 29.5653 9.55105 31.5338 9.55105 31.5338C11.3349 34.6688 14.2298 33.7624 15.3711 33.2385C15.5506 31.9131 16.069 31.0085 16.6409 30.4964C12.1986 29.9779 7.52878 28.2195 7.52878 20.3621C7.52878 18.1232 8.31007 16.294 9.58947 14.8579C9.38181 14.3414 8.69723 12.2557 9.78322 9.43111C9.78322 9.43111 11.4627 8.87998 15.2847 11.5331C16.8801 11.0787 18.591 10.8509 20.2907 10.8431C21.9904 10.8509 23.7027 11.0787 25.301 11.5331C29.1183 8.87998 30.7955 9.43111 30.7955 9.43111C31.8842 12.2557 31.1992 14.3414 30.9916 14.8579C32.274 16.294 33.05 18.1232 33.05 20.3621C33.05 28.2382 28.3712 29.9724 23.9176
+                                30.4801C24.635 31.1165 25.2742 32.3644 25.2742 34.2776C25.2742 37.0214 25.251 39.2296 25.251 39.905C25.251 40.4507 25.611 41.0902 26.6248 40.8888C34.5672 38.1742 40.2905 30.4903 40.2905 21.4331C40.2905 10.1075 31.336 0.926758 20.2907 0.926758Z" />
+                        </svg>
+                    </a>
+                    <a href="https://www.reddit.com/r/SimpleXChat/" target="_blank">
+                        <svg class="fill-primary-light dark:fill-primary-dark" width="40" height="40" viewBox="0 0 41 41" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" clip-rule="evenodd" d="M20.874 40.9268C31.9197 40.9268 40.874 31.9724 40.874 20.9268C40.874 9.88108 31.9197 0.926758 20.874 0.926758C9.82834 0.926758 0.874023 9.88108 0.874023 20.9268C0.874023 31.9724 9.82834 40.9268 20.874 40.9268ZM30.4091 16.615C31.9031 16.615 33.1157 17.8276 33.1157 19.3216C33.1157 20.426 32.4445 21.3787 31.5567 21.8118C31.6 22.0716 31.6217 22.3315 31.6217 22.613C31.6217 26.7705 26.7929 30.1268 20.8165 30.1268C14.8402 30.1268 10.0114 26.7705 10.0114 22.613C10.0114 22.3315 10.0331 22.05 10.0764 21.7902C9.12362 21.3571 8.47402 20.426 8.47402 19.3216C8.47402 17.8276 9.68662 16.615 11.1807 16.615C11.8953 16.615 12.5665 16.9181 13.0429 17.3728C14.9051 16.0086 17.4819 15.1642 20.3618 15.0776L21.726 8.6248C21.7693 8.49488 21.8343 8.3866 21.9425 8.32164C22.0508 8.25668 22.1807 8.23504 22.3106 8.25668L26.7929 9.20944C27.0961 8.55984 27.7457 8.12676 28.5035 8.12676C29.5646 8.12676 30.4307 8.99292 30.4307
+                                10.0539C30.4307 11.115 29.5646 11.9811 28.5035 11.9811C27.4642 11.9811 26.6197 11.1582 26.5764 10.1406L22.5705 9.29604L21.3362 15.0776C24.1512 15.1858 26.7063 16.052 28.5469 17.3728C29.0232 16.8964 29.6728 16.615 30.4091 16.615ZM16.5291 19.3216C15.4681 19.3216 14.602 20.1878 14.602 21.2488C14.602 22.3098 15.4681 23.176 16.5291 23.176C17.5902 23.176 18.4563 22.3098 18.4563 21.2488C18.4563 20.1878 17.5902 19.3216 16.5291 19.3216ZM20.7949 27.7449C21.5311 27.7449 24.0429 27.6582 25.3638 26.3374C25.5587 26.1425 25.5587 25.8394 25.4071 25.6228C25.2122 25.428 24.8874 25.428 24.6925 25.6228C23.848 26.4456 22.0941 26.7488 20.8165 26.7488C19.539 26.7488 17.7634 26.4456 16.9405 25.6228C16.7457 25.428 16.4209 25.428 16.226 25.6228C16.0311 25.8177 16.0311 26.1425 16.226 26.3374C17.5252 27.6366 20.0587 27.7449 20.7949 27.7449ZM23.0902 21.2488C23.0902 22.3098 23.9563 23.176 25.0173 23.176C26.0783 23.176 26.9445 22.3098 26.9445 21.2488C26.9445 20.1878 26.0783
+                                19.3216 25.0173 19.3216C23.9563 19.3216 23.0902 20.1878 23.0902 21.2488Z" />
+                        </svg>
+                    </a>
+                    <a href="https://twitter.com/simplexchat" target="_blank">
+                        <svg class="fill-primary-light dark:fill-primary-dark" width="40" height="40" viewBox="0 0 41 41" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" clip-rule="evenodd" d="M20.4575 40.9268C31.5032 40.9268 40.4575 31.9725 40.4575 20.9268C40.4575 9.88106 31.5032 0.926758 20.4575 0.926758C9.41182 0.926758 0.45752 9.88106 0.45752 20.9268C0.45752 31.9725 9.41182 40.9268 20.4575 40.9268ZM29.916 16.7766C29.916 23.1157 25.014 30.4265 16.0519 30.4265V30.423C13.4038 30.4265 10.8115 29.6795 8.58252 28.2719C8.96846 28.3174 9.35558 28.3397 9.74271 28.3409C11.9372 28.3432 14.0688 27.6182 15.7942 26.283C13.7101 26.2444 11.8802 24.9055 11.2425 22.9507C11.9716 23.0898 12.7245 23.0619 13.4418 22.869C11.1689 22.4165 9.53371 20.4504 9.53252 18.1671V18.1062C10.2106 18.478 10.9694 18.6835 11.7448 18.7057C9.60377 17.2981 8.94233 14.4948 10.2355 12.3026C12.7103 15.2992 16.3606 17.1207 20.2782 17.3147C19.8851 15.6487 20.4231 13.902 21.6878 12.7306C23.6507 10.9137 26.737 11.0073 28.5824 12.9387C29.6737 12.7271 30.7199 12.3327 31.677 11.7738C31.3125 12.8857 30.5513 13.828 29.5348 14.4277C30.5002
+                                14.3155 31.4443 14.0609 32.3325 13.6728C31.6782 14.6362 30.8553 15.4781 29.9017 16.1562C29.916 16.362 29.916 16.5685 29.916 16.7766Z" />
+                        </svg>
+                    </a>
+                    <a href="https://www.linkedin.com/company/simplex-chat/" target="_blank">
+                        <svg class="fill-primary-light dark:fill-primary-dark" width="40" height="40" viewBox="0 0 41 41" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" clip-rule="evenodd" d="M20.0408 0.926758C8.9951 0.926758 0.0407715 9.88109 0.0407715 20.9268C0.0407715 31.9724 8.9951 40.9268 20.0408 40.9268C31.0864 40.9268 40.0408 31.9724 40.0408 20.9268C40.0408 9.88109 31.0864 0.926758 20.0408 0.926758ZM9.6421 17.4916H14.1745V31.1098H9.6421V17.4916ZM14.4731 13.279C14.4437 11.9438 13.4889 10.9268 11.9383 10.9268C10.3878 10.9268 9.3741 11.9438 9.3741 13.279C9.3741 14.5866 10.3579 15.6328 11.8794 15.6328H11.9084C13.4889 15.6328 14.4731 14.5866 14.4731 13.279ZM25.3017 17.1718C28.2843 17.1718 30.5203 19.1187 30.5203 23.3015L30.5201 31.1098H25.9879V23.824C25.9879 21.994 25.3319 20.7453 23.6912 20.7453C22.439 20.7453 21.6932 21.5871 21.3656 22.4003C21.2458 22.6916 21.2164 23.0976 21.2164 23.5046V31.1101H16.6834C16.6834 31.1101 16.7431 18.7698 16.6834 17.492H21.2164V19.4208C21.8179 18.4936 22.8953 17.1718 25.3017 17.1718Z" />
+                        </svg>
+                    </a>
+                </div>
+            </article>
+        </div>
+        <a href="#" class="text-grey-black dark:text-white text-[16px] text-center lg:text-left font-medium leading-[28px] tracking-[0.01em] block mt-[60px]">© 2020-2023 SimpleX | Open-Source Project</a>
+    </div>
+</section>
+
+  </body>
+
+</html>
