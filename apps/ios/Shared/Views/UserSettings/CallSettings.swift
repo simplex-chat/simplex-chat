@@ -10,12 +10,28 @@ import SwiftUI
 
 struct CallSettings: View {
     @AppStorage(DEFAULT_WEBRTC_POLICY_RELAY) private var webrtcPolicyRelay = true
+    @AppStorage(DEFAULT_CALL_KIT_ENABLED) private var callKitEnabled = true
+    @AppStorage(DEFAULT_CALL_KIT_CALLS_IN_RECENTS) private var callKitCallsInRecents = false
+    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
+    private let allowChangingCallsHistory = false
 
     var body: some View {
         VStack {
             List {
                 Section {
                     Toggle("Connect via relay", isOn: $webrtcPolicyRelay)
+
+                    if !CallController.isInChina && developerTools {
+                        Toggle("Use native phone call UI", isOn: $callKitEnabled)
+
+                        if allowChangingCallsHistory {
+                            Toggle("Show calls in phone history", isOn: $callKitCallsInRecents)
+                            .disabled(!callKitEnabled)
+                            .onChange(of: callKitCallsInRecents) { value in
+                                CallController.shared.showInRecents(value)
+                            }
+                        }
+                    }
 
                     NavigationLink {
                         RTCServers()

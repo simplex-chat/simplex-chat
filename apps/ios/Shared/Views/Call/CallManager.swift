@@ -48,18 +48,31 @@ class CallManager {
             sharedKey: invitation.sharedKey
         )
         call.speakerEnabled = invitation.callType.media == .video
-        m.activeCall = call
-        m.showCallView = true
         let useRelay = UserDefaults.standard.bool(forKey: DEFAULT_WEBRTC_POLICY_RELAY)
         let iceServers = getIceServers()
         logger.debug("answerIncomingCall useRelay: \(useRelay)")
         logger.debug("answerIncomingCall iceServers: \(String(describing: iceServers))")
-        m.callCommand = .start(
-            media: invitation.callType.media,
-            aesKey: invitation.sharedKey,
-            iceServers: iceServers,
-            relay: useRelay
-        )
+        // When in active call user wants to accept another call, this can only work after delay (to hide and show activeCallView)
+        DispatchQueue.main.asyncAfter(deadline: .now() + (m.activeCall == nil ? 0 : 1)) {
+            m.activeCall = call
+            m.showCallView = true
+
+            m.callCommand = .start(
+                media: invitation.callType.media,
+                aesKey: invitation.sharedKey,
+                iceServers: iceServers,
+                relay: useRelay
+            )
+        }
+    }
+
+    func enableMedia(media: CallMediaType, enable: Bool, callUUID: UUID) -> Bool {
+        if let call = ChatModel.shared.activeCall, call.callkitUUID == callUUID {
+            let m = ChatModel.shared
+            m.callCommand = .media(media: media, enable: enable)
+            return true
+        }
+        return false
     }
 
     func endCall(callUUID: UUID, completed: @escaping (Bool) -> Void) {
@@ -82,16 +95,14 @@ class CallManager {
         } else {
             logger.debug("CallManager.endCall: ending call...")
             m.callCommand = .end
+            m.activeCall = nil
             m.showCallView = false
+            completed()
             Task {
                 do {
                     try await apiEndCall(call.contact)
                 } catch {
                     logger.error("CallController.provider apiEndCall error: \(responseError(error))")
-                }
-                DispatchQueue.main.async {
-                    m.activeCall = nil
-                    completed()
                 }
             }
         }

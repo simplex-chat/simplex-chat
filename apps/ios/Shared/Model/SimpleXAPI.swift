@@ -1198,19 +1198,6 @@ func processReceivedMsg(_ res: ChatResponse) async {
         case let .callInvitation(invitation):
             m.callInvitations[invitation.contact.id] = invitation
             activateCall(invitation)
-
-// This will be called from notification service extension
-//            CXProvider.reportNewIncomingVoIPPushPayload([
-//                "displayName": contact.displayName,
-//                "contactId": contact.id,
-//                "uuid": invitation.callkitUUID
-//            ]) { error in
-//                if let error = error {
-//                    logger.error("reportNewIncomingVoIPPushPayload error \(error.localizedDescription)")
-//                } else {
-//                    logger.debug("reportNewIncomingVoIPPushPayload success for \(contact.id)")
-//                }
-//            }
         case let .callOffer(_, contact, callType, offer, sharedKey, _):
             withCall(contact) { call in
                 call.callState = .offerReceived
@@ -1243,7 +1230,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
             }
             withCall(contact) { call in
                 m.callCommand = .end
-//                CallController.shared.reportCallRemoteEnded(call: call)
+                CallController.shared.reportCallRemoteEnded(call: call)
             }
         case .chatSuspended:
             chatSuspended()

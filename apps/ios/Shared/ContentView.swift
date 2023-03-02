@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Intents
 import SimpleXChat
 
 struct ContentView: View {
@@ -78,6 +79,25 @@ struct ContentView: View {
                 ActiveCallView(call: call)
             }
             IncomingCallView()
+        }
+        .onContinueUserActivity("INStartCallIntent", perform: processUserActivity)
+        .onContinueUserActivity("INStartAudioCallIntent", perform: processUserActivity)
+        .onContinueUserActivity("INStartVideoCallIntent", perform: processUserActivity)
+    }
+
+    private func processUserActivity(_ activity: NSUserActivity) {
+        let callToContact = { (contactApiId: String?, mediaType: CallMediaType) in
+            if let chatInfo = chatModel.chats.first(where: { $0.id == "@\(contactApiId ?? "")"})?.chatInfo,
+                case let .direct(contact) = chatInfo {
+                CallController.shared.startCall(contact, mediaType)
+            }
+        }
+        if let intent = activity.interaction?.intent as? INStartCallIntent {
+            callToContact(intent.contacts?.first?.personHandle?.value, .audio)
+        } else if let intent = activity.interaction?.intent as? INStartAudioCallIntent {
+            callToContact(intent.contacts?.first?.personHandle?.value, .audio)
+        } else if let intent = activity.interaction?.intent as? INStartVideoCallIntent {
+            callToContact(intent.contacts?.first?.personHandle?.value, .video)
         }
     }
 

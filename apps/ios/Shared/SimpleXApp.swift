@@ -51,22 +51,29 @@ struct SimpleXApp: App {
                     }
                 }
                 .onChange(of: scenePhase) { phase in
-                    logger.debug("scenePhase \(String(describing: scenePhase))")
+                    logger.debug("scenePhase was \(String(describing: scenePhase)), now \(String(describing: phase))")
                     switch (phase) {
                     case .background:
-                        suspendChat()
-                        BGManager.shared.schedule()
+                        if CallController.useCallKit() && chatModel.activeCall != nil {
+                            CallController.shared.onEndCall = {
+                                suspendChat()
+                                BGManager.shared.schedule()
+                            }
+                        }
                         if userAuthorized == true {
                             enteredBackground = ProcessInfo.processInfo.systemUptime
                         }
                         doAuthenticate = false
                         NtfManager.shared.setNtfBadgeCount(chatModel.totalUnreadCountForAllUsers())
                     case .active:
+                        CallController.shared.onEndCall = nil
                         if chatModel.chatRunning == true {
                             ChatReceiver.shared.start()
                         }
                         let appState = appStateGroupDefault.get()
-                        activateChat()
+                        if .active != appState  {
+                            activateChat()
+                        }
                         if appState.inactive && chatModel.chatRunning == true {
                             updateChats()
                             updateCallInvitations()

@@ -8,6 +8,7 @@
 
 import UserNotifications
 import OSLog
+import CallKit
 import SimpleXChat
 
 let logger = Logger()
@@ -237,6 +238,17 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, UNMutableNotification
          }
         return cItem.showMutableNotification ? (aChatItem.chatId, createMessageReceivedNtf(user, cInfo, cItem)) : nil
     case let .callInvitation(invitation):
+        CXProvider.reportNewIncomingVoIPPushPayload([
+            "displayName": invitation.contact.displayName,
+            "contactId": invitation.contact.id,
+            "uuid": invitation.callkitUUID
+        ]) { error in
+            if let error = error {
+                logger.error("reportNewIncomingVoIPPushPayload error \(error.localizedDescription, privacy: .public)")
+            } else {
+                logger.debug("reportNewIncomingVoIPPushPayload success for \(invitation.contact.id)")
+            }
+        }
         return (invitation.contact.id, createCallInvitationNtf(invitation))
     default:
         logger.debug("NotificationService processReceivedMsg ignored event: \(res.responseType)")
