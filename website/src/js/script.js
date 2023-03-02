@@ -77,6 +77,7 @@ function closeOverlay (e) {
     e.target.closest('.overlay').classList.remove('flex');
     e.target.closest('.overlay').classList.add('hidden');
     document.body.classList.remove('lock-scroll');
+    history.replaceState(null, null, ' ');
 }
 
 window.addEventListener('click', clickHandler)
@@ -105,10 +106,7 @@ function clickHandler(e) {
     }
     else if (e.target.closest('.open-overlay-btn')) {
         let id = e.target.closest('.open-overlay-btn').dataset.showOverlay;
-        let overlay = document.getElementById(id);
-        overlay.classList.remove('hidden');
-        overlay.classList.add('flex');
-        document.body.classList.toggle('lock-scroll');
+        window.location.hash = id;
     }
     // -----------------------------------------------
     // ---------- For Contact & Invitation Page tabs
@@ -137,3 +135,19 @@ window.addEventListener('load', () => {
         fDroidBtn.classList.remove('hidden');
     }
 })
+
+const openOverlay = () => {
+    let hash = window.location.hash
+    if (hash) {
+        const id = hash.split('#')[1];
+        const el = document.getElementById(id)
+        if (el.classList.contains('overlay')) {
+            el.classList.remove('hidden')
+            el.classList.add('flex')
+            document.body.classList.add('lock-scroll')
+        }
+    }
+}
+
+window.addEventListener('load', openOverlay);
+window.addEventListener('hashchange', openOverlay);
