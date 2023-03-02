@@ -1502,6 +1502,9 @@
 /* call status */
 "missed call" = "appel manqué";
 
+/* moderated chat item */
+"moderated" = "modéré";
+
 /* No comment provided by engineer. */
 "More improvements are coming soon!" = "Plus d'améliorations à venir !";
 
@@ -1659,6 +1662,9 @@
 /* No comment provided by engineer. */
 "Open Settings" = "Ouvrir les Paramètres";
 
+/* authentication reason */
+"Open user profiles" = "Ouvrir les profils d'utilisateurs";
+
 /* No comment provided by engineer. */
 "Open-source protocol and code – anybody can run the servers." = "Protocole et code open-source – n'importe qui peut heberger un serveur.";
 
@@ -1780,7 +1786,7 @@
 "Read" = "Lire";
 
 /* No comment provided by engineer. */
-"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "Pour en savoir plus, consultez notre [dépôt GitHub] (https://github.com/simplex-chat/simplex-chat#readme).";
+"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "Pour en savoir plus, consultez notre [dépôt GitHub](https://github.com/simplex-chat/simplex-chat#readme).";
 
 /* No comment provided by engineer. */
 "Read more in our GitHub repository." = "Plus d'informations sur notre GitHub.";

@@ -1,0 +1,15 @@
+/* Bundle name */
+"CFBundleName" = "SimpleX";
+
+/* Privacy - Camera Usage Description */
+"NSCameraUsageDescription" = "SimpleX potřebuje přístup k fotoaparátu, aby mohl skenovat QR kódy pro připojení k ostatním uživatelům a pro videohovory.";
+
+/* Privacy - Face ID Usage Description */
+"NSFaceIDUsageDescription" = "SimpleX používá Face ID pro místní ověřování";
+
+/* Privacy - Microphone Usage Description */
+"NSMicrophoneUsageDescription" = "SimpleX potřebuje přístup k mikrofonu pro audio a video hovory a pro nahrávání hlasových zpráv.";
+
+/* Privacy - Photo Library Additions Usage Description */
+"NSPhotoLibraryAddUsageDescription" = "SimpleX potřebuje přístup do knihovny fotografií pro ukládání zachycených a přijatých médií";
+

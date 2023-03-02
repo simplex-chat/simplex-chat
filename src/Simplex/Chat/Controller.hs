@@ -4,6 +4,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StrictData #-}
@@ -105,7 +106,6 @@ data ChatConfig = ChatConfig
     tbqSize :: Natural,
     fileChunkSize :: Integer,
     inlineFiles :: InlineFilesConfig,
-    subscriptionConcurrency :: Int,
     subscriptionEvents :: Bool,
     hostEvents :: Bool,
     logLevel :: ChatLogLevel,
@@ -166,7 +166,8 @@ data ChatController = ChatController
     expireCIFlags :: TMap UserId Bool,
     cleanupManagerAsync :: TVar (Maybe (Async ())),
     timedItemThreads :: TMap (ChatRef, ChatItemId) (TVar (Maybe (Weak ThreadId))),
-    showLiveItems :: TVar Bool
+    showLiveItems :: TVar Bool,
+    logFilePath :: Maybe FilePath
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown | HSMessages | HSSettings
@@ -487,6 +488,25 @@ data ChatResponse
   | CRChatCmdError {user_ :: Maybe User, chatError :: ChatError}
   | CRChatError {user_ :: Maybe User, chatError :: ChatError}
   deriving (Show, Generic)
+
+logResponseToFile :: ChatResponse -> Bool
+logResponseToFile = \case
+  CRContactsDisconnected {} -> True
+  CRContactsSubscribed {} -> True
+  CRContactSubError {} -> True
+  CRMemberSubError {} -> True
+  CRSndFileSubError {} -> True
+  CRRcvFileSubError {} -> True
+  CRHostConnected {} -> True
+  CRHostDisconnected {} -> True
+  CRConnectionDisabled {} -> True
+  CRAgentRcvQueueDeleted {} -> True
+  CRAgentConnDeleted {} -> True
+  CRAgentUserDeleted {} -> True
+  CRChatCmdError {} -> True
+  CRChatError {} -> True
+  CRMessageError {} -> True
+  _ -> False
 
 instance ToJSON ChatResponse where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CR"

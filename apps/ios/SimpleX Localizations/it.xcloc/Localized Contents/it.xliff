@@ -2382,6 +2382,7 @@ Aggiungeremo la ridondanza del server per prevenire la perdita di messaggi.</tar
       </trans-unit>
       <trans-unit id="Open user profiles" xml:space="preserve">
         <source>Open user profiles</source>
+        <target>Apri i profili utente</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Open-source protocol and code – anybody can run the servers." xml:space="preserve">
@@ -4234,6 +4235,7 @@ I server di SimpleX non possono vedere il tuo profilo.</target>
       </trans-unit>
       <trans-unit id="moderated" xml:space="preserve">
         <source>moderated</source>
+        <target>moderato</target>
         <note>moderated chat item</note>
       </trans-unit>
       <trans-unit id="never" xml:space="preserve">

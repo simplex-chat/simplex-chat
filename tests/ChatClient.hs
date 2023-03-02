@@ -59,8 +59,9 @@ testOpts =
             logLevel = CLLImportant,
             logConnections = False,
             logServerHosts = False,
-            logAgent = False,
-            tbqSize = 64
+            logAgent = Nothing,
+            logFile = Nothing,
+            tbqSize = 16
           },
       chatCmd = "",
       chatCmdDelay = 3,
@@ -91,7 +92,7 @@ data TestCC = TestCC
   }
 
 aCfg :: AgentConfig
-aCfg = agentConfig defaultChatConfig
+aCfg = (agentConfig defaultChatConfig) {tbqSize = 16}
 
 testAgentCfg :: AgentConfig
 testAgentCfg = aCfg {reconnectInterval = (reconnectInterval aCfg) {initialInterval = 50000}}
@@ -100,7 +101,8 @@ testCfg :: ChatConfig
 testCfg =
   defaultChatConfig
     { agentConfig = testAgentCfg,
-      testView = True
+      testView = True,
+      tbqSize = 16
     }
 
 testAgentCfgV1 :: AgentConfig
