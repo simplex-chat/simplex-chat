@@ -506,7 +506,7 @@
     <string name="import_database">Database importeren</string>
     <string name="v4_3_improved_privacy_and_security">Verbeterde privacy en veiligheid</string>
     <string name="image_will_be_received_when_contact_is_online">De afbeelding wordt ontvangen wanneer uw contact online is, even geduld a.u.b. of kijk later!</string>
-    <string name="incognito_info_protects">De incognito modus beschermt de privacy van uw hoofdprofielnaam en -afbeelding - voor elk nieuw contact wordt een nieuw willekeurig profiel gemaakt.</string>
+    <string name="incognito_info_protects">De incognito modus beschermt de privacy van uw hoofdprofielnaam en afbeelding voor elk nieuw contact wordt een nieuw willekeurig profiel gemaakt.</string>
     <string name="new_database_archive">Nieuw database archief</string>
     <string name="no_details">geen details</string>
     <string name="conn_level_desc_indirect">indirect (<xliff:g id="conn_level">%1$s</xliff:g>)</string>
@@ -599,7 +599,7 @@
     <string name="network_use_onion_hosts_prefer_desc">Onion hosts worden gebruikt indien beschikbaar.</string>
     <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion hosts worden gebruikt indien beschikbaar.</string>
     <string name="network_use_onion_hosts_no_desc">Onion hosts worden niet gebruikt.</string>
-    <string name="opensource_protocol_and_code_anybody_can_run_servers">Open-source protocol en code – iedereen kan de servers draaien.</string>
+    <string name="opensource_protocol_and_code_anybody_can_run_servers">Open-source protocol en code. Iedereen kan de servers draaien.</string>
     <string name="people_can_connect_only_via_links_you_share">Mensen kunnen alleen verbinding met u maken via de links die u deelt.</string>
     <string name="only_your_contact_can_delete">Alleen uw contactpersoon kan berichten onherroepelijk verwijderen (u kunt ze markeren voor verwijdering).</string>
     <string name="only_you_can_send_voice">Alleen jij kunt spraak berichten verzenden.</string>
@@ -783,7 +783,7 @@
     <string name="rcv_group_event_user_deleted">heeft je verwijderd</string>
     <string name="group_info_member_you">jij: <xliff:g id="group_info_you">%1$s</xliff:g></string>
     <string name="group_info_section_title_num_members"><xliff:g id="num_members">%1$s</xliff:g> LEDEN</string>
-    <string name="you_can_share_group_link_anybody_will_be_able_to_connect">U kunt een link of een QR-code delen - iedereen kan lid worden van de groep. U verliest geen leden van de groep als u deze later verwijdert.</string>
+    <string name="you_can_share_group_link_anybody_will_be_able_to_connect">U kunt een link of een QR-code delen. Iedereen kan lid worden van de groep. U verliest geen leden van de groep als u deze later verwijdert.</string>
     <string name="switch_verb">Wijzig</string>
     <string name="member_role_will_be_changed_with_notification">De rol wordt gewijzigd in \"%s\". Iedereen in de groep wordt op de hoogte gebracht.</string>
     <string name="receiving_via">Ontvang via</string>
@@ -927,7 +927,7 @@
     <string name="use_simplex_chat_servers__question"><xliff:g id="appNameFull">SimpleX Chat</xliff:g>-servers gebruiken\?</string>
     <string name="voice_messages_are_prohibited">Spraak berichten zijn verboden in deze groep.</string>
     <string name="personal_welcome">Welkom <xliff:g>%1$s</xliff:g>!</string>
-    <string name="you_can_share_your_address_anybody_will_be_able_to_connect">U kunt uw adres delen als een link of als een QR-code - iedereen kan verbinding met u maken. U verliest uw contacten niet als u deze later verwijdert.</string>
+    <string name="you_can_share_your_address_anybody_will_be_able_to_connect">U kunt uw adres delen als een link of als een QR-code. Iedereen kan verbinding met u maken. U verliest uw contacten niet als u deze later verwijdert.</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">U kunt de chat starten via app Instellingen / Database of door de app opnieuw op te starten.</string>
     <string name="snd_conn_event_switch_queue_phase_completed_for_member">je hebt het adres gewijzigd voor %s</string>
     <string name="snd_group_event_member_deleted">je hebt <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g> verwijderd</string>
