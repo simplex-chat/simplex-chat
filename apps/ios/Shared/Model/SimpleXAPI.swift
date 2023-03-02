@@ -1224,7 +1224,6 @@ func processReceivedMsg(_ res: ChatResponse) async {
                     offer: offer.rtcSession,
                     iceCandidates: offer.rtcIceCandidates,
                     media: callType.media, aesKey: sharedKey,
-                    useWorker: true,
                     iceServers: iceServers,
                     relay: useRelay
                 )

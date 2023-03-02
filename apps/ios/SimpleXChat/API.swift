@@ -109,7 +109,7 @@ struct ParsedServerAddress: Decodable {
     var parseError: String
 }
 
-private func fromCString(_ c: UnsafeMutablePointer<CChar>) -> String {
+public func fromCString(_ c: UnsafeMutablePointer<CChar>) -> String {
     let s = String.init(cString: c)
     free(c)
     return s

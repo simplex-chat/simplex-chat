@@ -9,6 +9,7 @@
 import Foundation
 import SwiftUI
 import SimpleXChat
+import WebRTC
 
 class Call: ObservableObject, Equatable {
     static func == (lhs: Call, rhs: Call) -> Bool {
@@ -24,8 +25,8 @@ class Call: ObservableObject, Equatable {
     @Published var peerMedia: CallMediaType?
     @Published var sharedKey: String?
     @Published var audioEnabled = true
+    @Published var speakerEnabled = false
     @Published var videoEnabled: Bool
-    @Published var localCamera = VideoCamera.user
     @Published var connectionInfo: ConnectionInfo?
 
     init(
@@ -103,21 +104,18 @@ struct WVAPIMessage: Equatable, Decodable, Encodable {
 }
 
 enum WCallCommand: Equatable, Encodable, Decodable {
-    case capabilities(media: CallMediaType, useWorker: Bool? = nil)
-    case start(media: CallMediaType, aesKey: String? = nil, useWorker: Bool? = nil, iceServers: [RTCIceServer]? = nil, relay: Bool? = nil)
-    case offer(offer: String, iceCandidates: String, media: CallMediaType, aesKey: String? = nil, useWorker: Bool? = nil, iceServers: [RTCIceServer]? = nil, relay: Bool? = nil)
+    case capabilities(media: CallMediaType)
+    case start(media: CallMediaType, aesKey: String? = nil, iceServers: [RTCIceServer]? = nil, relay: Bool? = nil)
+    case offer(offer: String, iceCandidates: String, media: CallMediaType, aesKey: String? = nil, iceServers: [RTCIceServer]? = nil, relay: Bool? = nil)
     case answer(answer: String, iceCandidates: String)
     case ice(iceCandidates: String)
     case media(media: CallMediaType, enable: Bool)
-    case camera(camera: VideoCamera)
     case end
 
     enum CodingKeys: String, CodingKey {
         case type
         case media
-        case camera
         case aesKey
-        case useWorker
         case offer
         case answer
         case iceCandidates
@@ -135,7 +133,6 @@ enum WCallCommand: Equatable, Encodable, Decodable {
             case .answer: return "answer"
             case .ice: return "ice"
             case .media: return "media"
-            case .camera: return "camera"
             case .end: return "end"
             }
         }
@@ -144,24 +141,21 @@ enum WCallCommand: Equatable, Encodable, Decodable {
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         switch self {
-        case let .capabilities(media, useWorker):
+        case let .capabilities(media):
             try container.encode("capabilities", forKey: .type)
             try container.encode(media, forKey: .media)
-            try container.encode(useWorker, forKey: .useWorker)
-        case let .start(media, aesKey, useWorker, iceServers, relay):
+        case let .start(media, aesKey, iceServers, relay):
             try container.encode("start", forKey: .type)
             try container.encode(media, forKey: .media)
             try container.encode(aesKey, forKey: .aesKey)
-            try container.encode(useWorker, forKey: .useWorker)
             try container.encode(iceServers, forKey: .iceServers)
             try container.encode(relay, forKey: .relay)
-        case let .offer(offer, iceCandidates, media, aesKey, useWorker, iceServers, relay):
+        case let .offer(offer, iceCandidates, media, aesKey, iceServers, relay):
             try container.encode("offer", forKey: .type)
             try container.encode(offer, forKey: .offer)
             try container.encode(iceCandidates, forKey: .iceCandidates)
             try container.encode(media, forKey: .media)
             try container.encode(aesKey, forKey: .aesKey)
-            try container.encode(useWorker, forKey: .useWorker)
             try container.encode(iceServers, forKey: .iceServers)
             try container.encode(relay, forKey: .relay)
         case let .answer(answer, iceCandidates):
@@ -175,9 +169,6 @@ enum WCallCommand: Equatable, Encodable, Decodable {
             try container.encode("media", forKey: .type)
             try container.encode(media, forKey: .media)
             try container.encode(enable, forKey: .enable)
-        case let .camera(camera):
-            try container.encode("camera", forKey: .type)
-            try container.encode(camera, forKey: .camera)
         case .end:
             try container.encode("end", forKey: .type)
         }
@@ -189,24 +180,21 @@ enum WCallCommand: Equatable, Encodable, Decodable {
         switch type {
         case "capabilities":
             let media = try container.decode(CallMediaType.self, forKey: CodingKeys.media)
-            let useWorker = try container.decode((Bool?).self, forKey: CodingKeys.useWorker)
-            self = .capabilities(media: media, useWorker: useWorker)
+            self = .capabilities(media: media)
         case "start":
             let media = try container.decode(CallMediaType.self, forKey: CodingKeys.media)
             let aesKey = try? container.decode(String.self, forKey: CodingKeys.aesKey)
-            let useWorker = try container.decode((Bool?).self, forKey: CodingKeys.useWorker)
             let iceServers = try container.decode(([RTCIceServer]?).self, forKey: .iceServers)
             let relay = try container.decode((Bool?).self, forKey: .relay)
-            self = .start(media: media, aesKey: aesKey, useWorker: useWorker, iceServers: iceServers, relay: relay)
+            self = .start(media: media, aesKey: aesKey, iceServers: iceServers, relay: relay)
         case "offer":
             let offer = try container.decode(String.self, forKey: CodingKeys.offer)
             let iceCandidates = try container.decode(String.self, forKey: CodingKeys.iceCandidates)
             let media = try container.decode(CallMediaType.self, forKey: CodingKeys.media)
             let aesKey = try? container.decode(String.self, forKey: CodingKeys.aesKey)
-            let useWorker = try container.decode((Bool?).self, forKey: CodingKeys.useWorker)
             let iceServers = try container.decode(([RTCIceServer]?).self, forKey: .iceServers)
             let relay = try container.decode((Bool?).self, forKey: .relay)
-            self = .offer(offer: offer, iceCandidates: iceCandidates, media: media, aesKey: aesKey, useWorker: useWorker, iceServers: iceServers, relay: relay)
+            self = .offer(offer: offer, iceCandidates: iceCandidates, media: media, aesKey: aesKey, iceServers: iceServers, relay: relay)
         case "answer":
             let answer = try container.decode(String.self, forKey: CodingKeys.answer)
             let iceCandidates = try container.decode(String.self, forKey: CodingKeys.iceCandidates)
@@ -218,9 +206,6 @@ enum WCallCommand: Equatable, Encodable, Decodable {
             let media = try container.decode(CallMediaType.self, forKey: CodingKeys.media)
             let enable = try container.decode(Bool.self, forKey: CodingKeys.enable)
             self = .media(media: media, enable: enable)
-        case "camera":
-            let camera = try container.decode(VideoCamera.self, forKey: CodingKeys.camera)
-            self = .camera(camera: camera)
         case "end":
             self = .end
         default:
@@ -393,6 +378,9 @@ struct RTCIceCandidate: Codable, Equatable {
     var candidateType: RTCIceCandidateType?
     var `protocol`: String?
     var relayProtocol: String?
+    var sdpMid: String?
+    var sdpMLineIndex: Int?
+    var candidate: String
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/API/RTCIceCandidate/type
@@ -453,6 +441,13 @@ func parseRTCIceServers(_ servers: [String]) -> [RTCIceServer]? {
 func getIceServers() -> [RTCIceServer]? {
     if let servers = UserDefaults.standard.stringArray(forKey: DEFAULT_WEBRTC_ICE_SERVERS) {
         return parseRTCIceServers(servers)
+    }
+    return nil
+}
+
+func getWebRTCIceServers() -> [WebRTC.RTCIceServer]? {
+    if let servers = UserDefaults.standard.stringArray(forKey: DEFAULT_WEBRTC_ICE_SERVERS) {
+        return parseRTCIceServers(servers)?.toWebRTCIceServers()
     }
     return nil
 }
