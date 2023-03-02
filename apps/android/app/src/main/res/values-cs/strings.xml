@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="allow_voice_messages_only_if">Povolte hlasové zprávy, pouze pokud je váš kontakt povolí.</string>
-    <string name="allow_to_send_disappearing">Povolit odesílání mizících zpráv.</string>
-    <string name="allow_to_send_voice">Povolit odesílání hlasových zpráv.</string>
+    <string name="allow_to_send_disappearing">Mizící zprávy povoleny.</string>
+    <string name="allow_to_send_voice">Hlasové zprávy povoleny.</string>
     <string name="v4_2_group_links_desc">Správci mohou vytvářet odkazy pro připojení ke skupinám.</string>
     <string name="accept_contact_button">Přijmout</string>
     <string name="smp_servers_preset_add">Přidejte přednastavené servery</string>
@@ -29,12 +29,12 @@
     <string name="chat_item_ttl_month">1 měsíci</string>
     <string name="chat_item_ttl_week">1 týdnu</string>
     <string name="callstatus_accepted">přijatý hovor</string>
-    <string name="accept_contact_incognito_button">Přijmout Inkognito</string>
+    <string name="accept_contact_incognito_button">Přijmout inkognito</string>
     <string name="accept_connection_request__question">Přijmout žádost o připojení\?</string>
     <string name="all_group_members_will_remain_connected">Všichni členové skupiny zůstanou připojeni.</string>
     <string name="allow_irreversible_message_deletion_only_if">Povolte nevratné smazání zprávy pouze v případě, že vám to váš kontakt dovolí.</string>
-    <string name="allow_direct_messages">Povolit odesílání přímých zpráv členům.</string>
-    <string name="allow_to_delete_messages">Povolit nevratné smazání odeslaných zpráv.</string>
+    <string name="allow_direct_messages">Přímé zprávy členům povoleny.</string>
+    <string name="allow_to_delete_messages">Nevratné mazání odeslaných zpráv povoleno.</string>
     <string name="clear_chat_warning">Všechny zprávy budou smazány – tuto akci nelze vrátit zpět! Zprávy budou smazány POUZE pro vás.</string>
     <string name="allow_your_contacts_irreversibly_delete">Umožněte svým kontaktům nevratně odstranit odeslané zprávy.</string>
     <string name="allow_your_contacts_to_send_voice_messages">Povolte svým kontaktům odesílání hlasových zpráv.</string>
@@ -74,11 +74,11 @@
     <string name="only_your_contact_can_send_disappearing">Zmizelé zprávy může odesílat pouze váš kontakt.</string>
     <string name="only_you_can_delete_messages">Nevratně mazat zprávy můžete pouze vy (váš kontakt je může označit ke smazání).</string>
     <string name="message_deletion_prohibited">Nevratné mazání zpráv je v tomto chatu zakázáno.</string>
-    <string name="prohibit_direct_messages">Zakázat odesílání přímých zpráv členům.</string>
+    <string name="prohibit_direct_messages">Přímé zprávy členům zakázány.</string>
     <string name="ttl_sec">%d sec</string>
     <string name="ttl_s">%ds</string>
     <string name="ttl_min">%d min</string>
-    <string name="ttl_hour">%d hodina</string>
+    <string name="ttl_hour">%d hodinu</string>
     <string name="feature_offered_item_with_param">offered %s: %2s</string>
     <string name="v4_2_group_links">Odkazy na skupiny</string>
     <string name="v4_3_voice_messages">Hlasové zprávy</string>
@@ -87,8 +87,8 @@
     <string name="v4_4_verify_connection_security_desc">Porovnejte bezpečnostní kódy se svými kontakty.</string>
     <string name="app_name"><xliff:g id="appName">SimpleX</xliff:g></string>
     <string name="thousand_abbreviation">k</string>
-    <string name="connect_via_contact_link">Připojit se přes kontaktní odkaz\?</string>
-    <string name="connect_via_invitation_link">Připojit se přes odkaz na pozvánku\?</string>
+    <string name="connect_via_contact_link">Připojit se přes odkaz\?</string>
+    <string name="connect_via_invitation_link">Připojit se přes pozvánku\?</string>
     <string name="connect_via_group_link">Připojit se přes odkaz skupiny\?</string>
     <string name="profile_will_be_sent_to_contact_sending_link">Váš profil bude odeslán kontaktu, od kterého jste obdrželi tento odkaz.</string>
     <string name="server_connected">připojeno</string>
@@ -103,13 +103,13 @@
     <string name="display_name_invited_to_connect">pozvánka k připojení</string>
     <string name="display_name_connecting">připojení…</string>
     <string name="description_you_shared_one_time_link">sdíleli jste jednorázový odkaz</string>
-    <string name="description_you_shared_one_time_link_incognito">sdíleli jste jednorázový odkaz Inkognito</string>
+    <string name="description_you_shared_one_time_link_incognito">sdíleli jste jednorázový odkaz inkognito</string>
     <string name="description_via_group_link">prostřednictvím skupinového odkazu</string>
-    <string name="description_via_contact_address_link">prostřednictvím odkazu na kontaktní adresu</string>
-    <string name="description_via_contact_address_link_incognito">Inkognito přes odkaz na kontaktní adresu</string>
+    <string name="description_via_contact_address_link">prostřednictvím odkazu</string>
+    <string name="description_via_contact_address_link_incognito">inkognito přes odkaz</string>
     <string name="description_via_one_time_link">jednorázovým odkazem</string>
-    <string name="description_via_one_time_link_incognito">Inkognito přes jednorázový odkaz</string>
-    <string name="simplex_link_contact">SimpleX kontaktní adresa</string>
+    <string name="description_via_one_time_link_incognito">inkognito jednorázovým odkazem</string>
+    <string name="simplex_link_contact">SimpleX adresa</string>
     <string name="simplex_link_invitation">Jednorázová pozvánka SimpleX</string>
     <string name="simplex_link_group">Skupinový odkaz SimpleX</string>
     <string name="simplex_link_connection">prostřednictvím <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g></string>
@@ -118,31 +118,31 @@
     <string name="simplex_link_mode_full">Úplný odkaz</string>
     <string name="simplex_link_mode_browser">Prostřednictvím prohlížeče</string>
     <string name="simplex_link_mode_browser_warning">Otevření odkazu v prohlížeči může snížit soukromí a bezpečnost připojení. Nedůvěryhodné odkazy SimpleX budou červené.</string>
-    <string name="error_saving_smp_servers">Chyba při ukládání serverů SMP</string>
-    <string name="error_setting_network_config">Chyba při aktualizaci konfigurace sítě</string>
+    <string name="error_saving_smp_servers">Chyba ukládání serverů SMP</string>
+    <string name="error_setting_network_config">Chyba aktualizaci konfigurace sítě</string>
     <string name="failed_to_parse_chat_title">Nepodařilo se načíst chat</string>
     <string name="failed_to_parse_chats_title">Nepodařilo se načíst chaty</string>
     <string name="contact_developers">Aktualizujte aplikaci a kontaktujte vývojáře.</string>
     <string name="connection_timeout">Časový limit připojení</string>
     <string name="connection_error">Chyba připojení</string>
     <string name="network_error_desc">Zkontrolujte prosím své síťové připojení pomocí <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g> a zkuste to znovu.</string>
-    <string name="error_sending_message">Chyba při odesílání zprávy</string>
-    <string name="error_adding_members">Chyba při přidávání členů</string>
+    <string name="error_sending_message">Chyba odesílání zprávy</string>
+    <string name="error_adding_members">Chyba přidávání členů</string>
     <string name="contact_already_exists">Kontakt již existuje</string>
     <string name="you_are_already_connected_to_vName_via_this_link">Jste již připojeni k <xliff:g id="contactName" example="Alice">%1$s!</xliff:g>.</string>
     <string name="invalid_connection_link">Neplatný odkaz na spojení</string>
     <string name="error_accepting_contact_request">Chyba příjmu požadavku od kontaktu</string>
     <string name="error_changing_address">Chyba změny adresy</string>
-    <string name="settings_notifications_mode_title">Služba oznamování</string>
+    <string name="settings_notifications_mode_title">Oznamovací služba</string>
     <string name="notifications_mode_service_desc">Služba na pozadí je spuštěna vždy - oznámení se zobrazí, jakmile jsou zprávy k dispozici.</string>
     <string name="notification_preview_mode_message">Text zprávy</string>
     <string name="notification_preview_mode_contact">Jméno kontaktu</string>
     <string name="notification_preview_mode_hidden">Skryté</string>
-    <string name="notification_preview_mode_message_desc">Zobrazit kontakt a zprávu</string>
+    <string name="notification_preview_mode_message_desc">Zobrazí kontakt a zprávu</string>
     <string name="notification_contact_connected">Připojeno</string>
     <string name="la_notice_title_simplex_lock">SimpleX Zámek</string>
     <string name="auth_log_in_using_credential">Přihlaste se pomocí svého pověření</string>
-    <string name="auth_enable_simplex_lock">Zapnutí zámku SimpleX</string>
+    <string name="auth_enable_simplex_lock">Zapnout zámek SimpleX</string>
     <string name="reply_verb">Odpověď</string>
     <string name="share_verb">Sdílet</string>
     <string name="copy_verb">Kopírovat</string>
@@ -163,7 +163,7 @@
     <string name="image_will_be_received_when_contact_is_online">Obrázek bude přijat, až bude váš kontakt online, vyčkejte prosím nebo se podívejte později!</string>
     <string name="contact_sent_large_file">Váš kontakt odeslal soubor, který je větší než aktuálně podporovaná maximální velikost (<xliff:g id="maxFileSize">%1$s</xliff:g>).</string>
     <string name="maximum_supported_file_size">V současné době je maximální podporovaná velikost souboru <xliff:g id="maxFileSize">%1$s</xliff:g>.</string>
-    <string name="error_saving_file">Chyba při ukládání souboru</string>
+    <string name="error_saving_file">Chyba ukládání souboru</string>
     <string name="voice_message">Hlasová zpráva</string>
     <string name="voice_message_send_text">Hlasová zpráva…</string>
     <string name="icon_descr_server_status_connected">Připojeno</string>
@@ -192,9 +192,9 @@
     <string name="to_start_a_new_chat_help_header">Pro zahájení nové konverzace</string>
     <string name="chat_help_tap_button">Klepněte na tlačítko</string>
     <string name="above_then_preposition_continuation">nad, potom:</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><b>Přidat nový kontakt</b>: pro vytvoření jednorázového QR kódu pro váš kontakt.</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>Skenovat QR kód</b>: připojení ke kontaktu, který vám ukáže QR kód.</string>
-    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 desktop: scan displayed QR code from the app, via <b>Scan QR code</b>.</string>
+    <string name="add_new_contact_to_create_one_time_QR_code"><b>Přidejte nový kontakt</b>: vytvořte jednorázý QR kód pro váš kontakt.</string>
+    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>Naskenujte QR kód</b>: připojíte se ke kontaktu, který vám QR kód ukázal.</string>
+    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 počítač: naskenujte QR kód z aplikace přez <b>Skenovat QR kód</b>.</string>
     <string name="clear_chat_question">Vyčistit chat\?</string>
     <string name="clear_verb">Vyčistit</string>
     <string name="mark_read">Označit jako přečteno</string>
@@ -252,7 +252,7 @@
     <string name="decentralized">Decentralizovaná</string>
     <string name="how_it_works">Jak to funguje</string>
     <string name="how_simplex_works">Jak funguje <xliff:g id="appName">SimpleX</xliff:g></string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Pouze klientská zařízení ukládají uživatelské profily, kontakty, skupiny a zprávy odesílané pomocí <b>2 vrstvého end-to-end šifrování</b>.</string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Pouze klientská zařízení ukládají uživatelské profily, kontakty, skupiny a zprávy odesílané pomocí <b>2 vrstvého koncového šifrování</b>.</string>
     <string name="onboarding_notifications_mode_title">Soukromá oznámení</string>
     <string name="onboarding_notifications_mode_periodic">Pravidelné</string>
     <string name="ignore">Ignorovat</string>
@@ -281,8 +281,8 @@
     <string name="settings_section_title_calls">VOLÁNÍ</string>
     <string name="export_database">Export databáze</string>
     <string name="import_database">Import databáze</string>
-    <string name="delete_database">Smazání databáze</string>
-    <string name="error_exporting_chat_database">Chyba při exportu chat databáze</string>
+    <string name="delete_database">Smazat databázi</string>
+    <string name="error_exporting_chat_database">Chyba exportu chat databáze</string>
     <string name="import_database_confirmation">Import</string>
     <string name="restart_the_app_to_use_imported_chat_database">Restartujte aplikaci, abyste mohli používat importovanou chat databázi.</string>
     <string name="delete_chat_profile_question">Smazat chat profil\?</string>
@@ -293,15 +293,15 @@
     <string name="files_and_media_section">Soubory a média</string>
     <string name="delete_files_and_media_question">Smazat soubory a média\?</string>
     <string name="delete_messages">Odstranit zprávy</string>
-    <string name="remove_passphrase_from_keychain">Odstranit přístupovou frázi z úložiště klíčů\?</string>
+    <string name="remove_passphrase_from_keychain">Odstranit frázi z úložiště klíčů\?</string>
     <string name="notifications_will_be_hidden">Oznámení budou doručována pouze do doby, než se aplikace zastaví!</string>
     <string name="remove_passphrase">Odstranit</string>
     <string name="update_database">Aktualizovat</string>
-    <string name="current_passphrase">Aktuální přístupová fráze…</string>
-    <string name="update_database_passphrase">Aktualizovat přístupovou frázi databáze</string>
+    <string name="current_passphrase">Aktuální fráze…</string>
+    <string name="update_database_passphrase">Aktualizovat přístupovou frázi</string>
     <string name="enter_correct_current_passphrase">Zadejte prosím správnou aktuální přístupovou frázi.</string>
-    <string name="database_is_not_encrypted">Váš chat databáze není šifrována - nastavte přístupovou frázi pro její ochranu.</string>
-    <string name="keychain_is_storing_securely">K bezpečnému uložení heslové fráze slouží úložiště klíčů Android - umožňuje fungování služby oznámení.</string>
+    <string name="database_is_not_encrypted">Chat databáze není šifrována - nastavte přístupovou frázi pro její ochranu.</string>
+    <string name="keychain_is_storing_securely">K bezpečnému uložení přístupové fráze slouží úložiště klíčů Android - umožňuje fungování služby oznámení.</string>
     <string name="impossible_to_recover_passphrase"><b>Upozornění</b>: pokud přístupovou frázi ztratíte, NEBUDE možné ji obnovit ani změnit.</string>
     <string name="database_will_be_encrypted_and_passphrase_stored">Databáze bude šifrována a přístupová fráze bude uložena v úložišti klíčů.</string>
     <string name="store_passphrase_securely">Heslo uložte bezpečně, v případě jeho ztráty jej NEBUDE možné změnit.</string>
@@ -310,7 +310,7 @@
     <string name="unknown_error">Neznámá chyba</string>
     <string name="open_chat">Otevřete chat</string>
     <string name="restore_database">Obnovte zálohu databáze</string>
-    <string name="restore_database_alert_desc">Po obnovení zálohy databáze zadejte předchozí heslo. Tuto akci nelze vrátit zpět.</string>
+    <string name="restore_database_alert_desc">Po obnovení zálohy databáze zadejte předchozí frázi. Tuto akci nelze vrátit zpět.</string>
     <string name="chat_is_stopped_indication">Chat je zastaven</string>
     <string name="chat_archive_header">Chat se archivuje</string>
     <string name="delete_chat_archive_question">Smazat chat archiv\?</string>
@@ -360,10 +360,10 @@
     <string name="integrity_msg_bad_hash">špatný kontrolní součet zprávy</string>
     <string name="chat_database_imported">Chat databáze importována</string>
     <string name="new_passphrase">Nová přístupová fráze…</string>
-    <string name="save_passphrase_and_open_chat">Uložte heslo a otevřete chat</string>
+    <string name="save_passphrase_and_open_chat">Uložte frázi a otevřete chat</string>
     <string name="chat_archive_section">CHAT ARCHIV</string>
     <string name="no_contacts_selected">Nebyl vybrán žádný kontakt</string>
-    <string name="invite_prohibited_description">Snažíte se pozvat kontakt se kterým jste sdíleli Inkognito profil, do skupiny ve které používáte svůj hlavní profil</string>
+    <string name="invite_prohibited_description">Snažíte se pozvat kontakt se kterým jste sdíleli inkognito profil, do skupiny ve které používáte svůj hlavní profil</string>
     <string name="info_row_group">Skupina</string>
     <string name="network_options_revert">Vrátit</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">Aktualizací nastavení se klient znovu připojí ke všem serverům.</string>
@@ -387,7 +387,7 @@
     <string name="your_settings">Vaše nastavení</string>
     <string name="your_simplex_contact_address">Vaše adresa <xliff:g id="appName">SimpleX</xliff:g></string>
     <string name="database_passphrase_and_export">Heslo databáze a export</string>
-    <string name="your_chat_profiles">Vaše chat profily</string>
+    <string name="your_chat_profiles">Chat profily</string>
     <string name="chat_with_the_founder">Zaslat otázky a nápady</string>
     <string name="smp_servers_test_server">Test serveru</string>
     <string name="enter_one_ICE_server_per_line">Servery ICE (jeden na řádek)</string>
@@ -406,14 +406,14 @@
     <string name="ntf_channel_messages">Zprávy SimpleX Chat</string>
     <string name="settings_notification_preview_mode_title">Zobrazení náhledu</string>
     <string name="settings_notification_preview_title">Náhled oznámení</string>
-    <string name="notifications_mode_off">Spustí se při otevření aplikace</string>
+    <string name="notifications_mode_off">Spuštěna při otevřené aplikaci</string>
     <string name="notifications_mode_periodic">Spouští se pravidelně</string>
-    <string name="notifications_mode_service">Vždy zapnuto</string>
+    <string name="notifications_mode_service">Vždy zapnuta</string>
     <string name="notifications_mode_periodic_desc">Každých 10 minut kontroluje nové zprávy, po dobu až 1 minuty</string>
-    <string name="notification_preview_mode_contact_desc">Zobrazit pouze kontakt</string>
+    <string name="notification_preview_mode_contact_desc">Zobrazí pouze kontakt</string>
     <string name="notification_preview_somebody">Skrytý kontakt:</string>
     <string name="la_notice_turn_on">Zapněte funkci</string>
-    <string name="auth_simplex_lock_turned_on">Zapnutý zámek SimpleX Lock</string>
+    <string name="auth_simplex_lock_turned_on">Zámek SimpleX zapnut</string>
     <string name="auth_unlock">Odemknout</string>
     <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Ověřování zařízení není povoleno. Jakmile povolíte ověřování zařízení, můžete zámek SimpleX Lock zapnout prostřednictvím Nastavení.</string>
     <string name="auth_device_authentication_is_disabled_turning_off">Ověřování zařízení je zakázáno. Zámek SimpleX je vypnut.</string>
@@ -463,10 +463,10 @@
     <string name="alert_title_skipped_messages">Přeskočené zprávy</string>
     <string name="privacy_and_security">Ochrana osobních údajů a zabezpečení</string>
     <string name="your_privacy">Vaše soukromí</string>
-    <string name="protect_app_screen">Ochrana obrazovky aplikace</string>
-    <string name="send_link_previews">Odesílání náhledů odkazů</string>
-    <string name="full_backup">Zálohování dat aplikace</string>
-    <string name="confirm_new_passphrase">Potvrdit novou heslovou frázi…</string>
+    <string name="protect_app_screen">Skrývat aplikaci</string>
+    <string name="send_link_previews">Odesílat náhledy odkazů</string>
+    <string name="full_backup">Zálohovat data aplikace</string>
+    <string name="confirm_new_passphrase">Potvrdit frázi…</string>
     <string name="error_with_info">Chyba: %s</string>
     <string name="leave_group_question">Opustit skupinu\?</string>
     <string name="icon_descr_group_inactive">Skupina je neaktivní</string>
@@ -478,8 +478,8 @@
     <string name="error_saving_group_profile">Chyba ukládání profilu skupiny</string>
     <string name="network_option_seconds_label">vteřin</string>
     <string name="incognito_info_allows">Umožňuje mít v jednom chat profilu mnoho anonymních spojení bez sdílení údajů mezi nimi.</string>
-    <string name="incognito_info_share">Pokud s někým sdílíte Inkognito profil, bude použit pro skupiny, do kterých vás pozve.</string>
-    <string name="theme_system">Systém</string>
+    <string name="incognito_info_share">Pokud s někým sdílíte inkognito profil, bude použit pro skupiny, do kterých vás pozve.</string>
+    <string name="theme_system">Systémové</string>
     <string name="voice_messages">Hlasové zprávy</string>
     <string name="both_you_and_your_contacts_can_delete">Vy i váš kontakt můžete nevratně mazat odeslané zprávy.</string>
     <string name="ttl_m">%dm</string>
@@ -516,12 +516,12 @@
     <string name="unknown_message_format">neznámý formát zprávy</string>
     <string name="invalid_message_format">neplatný formát zprávy</string>
     <string name="live">ŽIVĚ</string>
-    <string name="description_via_group_link_incognito">Inkognito přes skupinový odkaz</string>
+    <string name="description_via_group_link_incognito">inkognito přes skupinový odkaz</string>
     <string name="ensure_smp_server_address_are_correct_format_and_unique">Ujistěte se, že adresy serverů SMP jsou ve správném formátu, oddělené na řádcích a nejsou duplicitní.</string>
-    <string name="failed_to_create_user_title">Chyba při vytváření profilu!</string>
+    <string name="failed_to_create_user_title">Chyba vytváření profilu!</string>
     <string name="failed_to_create_user_duplicate_title">Duplicitní zobrazované jméno!</string>
-    <string name="failed_to_active_user_title">Chyba při přepínání profilu!</string>
-    <string name="error_joining_group">Chyba při připojování ke skupině</string>
+    <string name="failed_to_active_user_title">Chyba přepínání profilu!</string>
+    <string name="error_joining_group">Chyba připojování ke skupině</string>
     <string name="cannot_receive_file">Nelze přijmout soubor</string>
     <string name="sender_cancelled_file_transfer">Odesílatel zrušil přenos souboru.</string>
     <string name="error_receiving_file">Chyba příjmu souboru</string>
@@ -544,12 +544,12 @@
     <string name="periodic_notifications_disabled">Pravidelná oznámení jsou vypnuta!</string>
     <string name="database_initialization_error_desc">Databáze nefunguje správně. Klepnutím se dozvíte více</string>
     <string name="notifications_mode_off_desc">Aplikace může přijímat oznámení pouze při svém běhu, žádná služba na pozadí nebude spuštěna</string>
-    <string name="notification_display_mode_hidden_desc">Skrýt kontakt a zprávu</string>
+    <string name="notification_display_mode_hidden_desc">Skryje kontakt i zprávu</string>
     <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Chcete-li chránit své informace, zapněte zámek SimpleX Lock.
 \nPřed zapnutím této funkce budete vyzváni k dokončení ověření.</string>
-    <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">Při spuštění nebo obnovení aplikace po 30 sekundách na pozadí budete vyzváni k ověření.</string>
+    <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">Při spuštění, nebo obnovení aplikace po 30 sekundách, budete vyzváni k odemčení.</string>
     <string name="auth_disable_simplex_lock">Vypnout zámek SimpleX</string>
-    <string name="auth_confirm_credential">Potvrďte své pověření</string>
+    <string name="auth_confirm_credential">Potvrďte vzor</string>
     <string name="auth_unavailable">Ověřování není k dispozici</string>
     <string name="auth_stop_chat">Zastavit chat</string>
     <string name="auth_open_chat_console">Otevřete chat konzoli</string>
@@ -565,7 +565,7 @@
     <string name="icon_descr_sent_msg_status_unauthorized_send">neautorizované odeslání</string>
     <string name="group_preview_you_are_invited">jste pozváni do skupiny</string>
     <string name="group_preview_join_as">připojit jako %s</string>
-    <string name="group_connection_pending">připojuje se…</string>
+    <string name="group_connection_pending">připojuji…</string>
     <string name="tap_to_start_new_chat">Začněte nový chat</string>
     <string name="chat_with_developers">Chat s vývojáři</string>
     <string name="you_have_no_chats">Nemáte žádné konverzace</string>
@@ -585,11 +585,11 @@
     <string name="live_message">Živá zpráva!</string>
     <string name="connect_via_link_or_qr">Připojit se prostřednictvím odkazu / QR kódu</string>
     <string name="thank_you_for_installing_simplex">Děkujeme za instalaci <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
-    <string name="you_can_connect_to_simplex_chat_founder">Můžete se <font color="#0088ff">připojit k <xliff:g id="appNameFull">SimpleX Chat</xliff:g> vývojářům a položit jim případné dotazy a získat aktualizace</font>.</string>
+    <string name="you_can_connect_to_simplex_chat_founder">Můžete se <font color="#0088ff">připojit k <xliff:g id="appNameFull">SimpleX Chat</xliff:g> vývojářům, položit jim případné dotazy a získat aktualizace</font>.</string>
     <string name="to_connect_via_link_title">Připojení prostřednictvím odkazu</string>
-    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Pokud jste dostali <xliff:g id="appName">SimpleX Chat</xliff:g> zvací odkaz, Můžete ho otevřít v prohlížeči:</string>
+    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Pokud jste dostali <xliff:g id="appName">SimpleX Chat</xliff:g> pozvánku, můžete ji otevřít v prohlížeči:</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Pokud zvolíte odmítnutí, odesílatel NEBUDE upozorněn.</string>
-    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 mobilní telefon: tap <b>Otevřete v mobilní aplikaci</b>, potom klikněte <b>Připojit</b>.</string>
+    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 telefon: <b>Otevřete v mobilní aplikaci</b>, potom klikněte na <b>Připojit</b>.</string>
     <string name="reject_contact_button">Odmítnout</string>
     <string name="clear_chat_button">Smazat chat</string>
     <string name="clear_chat_menu_action">Vyčistit</string>
@@ -603,7 +603,7 @@
     <string name="image_descr_profile_image">profilový obrázek</string>
     <string name="icon_descr_close_button">Tlačítko Zavřít</string>
     <string name="alert_title_contact_connection_pending">Kontakt ještě není připojen!</string>
-    <string name="image_descr_link_preview">náhledový obrázek odkazu</string>
+    <string name="image_descr_link_preview">náhled odkazu</string>
     <string name="icon_descr_cancel_link_preview">Zrušit náhled odkazu</string>
     <string name="image_descr_simplex_logo"><xliff:g id="appName">SimpleX</xliff:g> Logo</string>
     <string name="icon_descr_email">E-mail</string>
@@ -634,7 +634,7 @@
     <string name="use_simplex_chat_servers__question">Použít <xliff:g id="appNameFull">SimpleX Chat</xliff:g> servery\?</string>
     <string name="using_simplex_chat_servers">Použití <xliff:g id="appNameFull">SimpleX Chat</xliff:g> serverů.</string>
     <string name="saved_ICE_servers_will_be_removed">Uložené servery WebRTC ICE budou odstraněny.</string>
-    <string name="error_saving_ICE_servers">Chyba při ukládání serverů ICE</string>
+    <string name="error_saving_ICE_servers">Chyba ukládání serverů ICE</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">Ujistěte se, že adresy serverů WebRTC ICE jsou ve správném formátu, oddělené na řádcích a nejsou duplicitní.</string>
     <string name="save_servers_button">Uložit</string>
     <string name="network_and_servers">Síť a servery</string>
@@ -655,7 +655,7 @@
     <string name="app_version_title">Verze aplikace</string>
     <string name="app_version_name">Verze aplikace: v%s</string>
     <string name="core_version">Verze jádra: v%s</string>
-    <string name="core_build_timestamp">Jádro sestaveno na: %s</string>
+    <string name="core_build_timestamp">Jádro sestaveno: %s</string>
     <string name="delete_address__question">Smazat adresu\?</string>
     <string name="all_your_contacts_will_remain_connected">Všechny vaše kontakty zůstanou připojeny.</string>
     <string name="contact_requests">Žádosti o kontakt</string>
@@ -731,15 +731,15 @@
 \nBudeme přidávat redundantní servery, abychom zabránili ztrátě zpráv.</string>
     <string name="settings_section_title_you">VY</string>
     <string name="settings_section_title_support">PODPOŘIT SIMPLEX CHAT</string>
-    <string name="settings_section_title_develop">ROZVÍJET</string>
+    <string name="settings_section_title_develop">VÝVOJ</string>
     <string name="settings_developer_tools">Nástroje pro vývojáře</string>
-    <string name="settings_section_title_incognito">Inkognito mód</string>
-    <string name="your_chat_database">Vaše chat databáze</string>
+    <string name="settings_section_title_incognito">inkognito mód</string>
+    <string name="your_chat_database">Chat databáze</string>
     <string name="run_chat_section">SPUSTIT CHAT</string>
     <string name="chat_is_running">Chat je spuštěn</string>
     <string name="chat_is_stopped">Chat je zastaven</string>
     <string name="chat_database_section">CHAT DATABÁZE</string>
-    <string name="database_passphrase">Heslo databáze</string>
+    <string name="database_passphrase">přístupová fráze databáze</string>
     <string name="new_database_archive">Archiv nové databáze</string>
     <string name="old_database_archive">Archiv staré databáze</string>
     <string name="error_starting_chat">Chyba spouštění chatu</string>
@@ -768,7 +768,7 @@
     <string name="enable_automatic_deletion_question">Povolit automatické mazání zpráv\?</string>
     <string name="enable_automatic_deletion_message">Tuto akci nelze vzít zpět - zprávy odeslané a přijaté dříve, než bylo zvoleno, budou smazány. Může to trvat několik minut.</string>
     <string name="error_changing_message_deletion">Chyba změny nastavení</string>
-    <string name="save_passphrase_in_keychain">Uložit přístupovou frázi do úložiště klíčů</string>
+    <string name="save_passphrase_in_keychain">Uložit frázi do úložiště klíčů</string>
     <string name="database_encrypted">Databáze šifrována!</string>
     <string name="error_encrypting_database">Chyba šifrování databáze</string>
     <string name="encrypt_database">Šifrovat</string>
@@ -796,13 +796,13 @@
     <string name="restore_database_alert_confirm">Obnovit</string>
     <string name="database_restore_error">Chyba obnovení databáze</string>
     <string name="restore_passphrase_not_found_desc">Heslo nebylo nalezeno v úložišti klíčů, zadejte jej prosím ručně. K této situaci mohlo dojít, pokud jste obnovili data aplikace pomocí zálohovacího nástroje. Pokud tomu tak není, obraťte se na vývojáře.</string>
-    <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Chat můžete spustit přes Nastavení aplikace / Databáze nebo restartováním aplikace.</string>
+    <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Chat můžete spustit v Nastavení aplikace / Databáze nebo restartováním aplikace.</string>
     <string name="save_archive">Uložit archiv</string>
     <string name="delete_archive">Smazat archiv</string>
     <string name="group_invitation_item_description">pozvánka do skupiny <xliff:g id="group_name">%1$s</xliff:g></string>
     <string name="archive_created_on_ts">Vytvořeno dne <xliff:g id="archive_ts">%1$s</xliff:g></string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">Jste zváni do skupiny. Připojte se a spojte se s členy skupiny.</string>
-    <string name="join_group_incognito_button">Připojit se Inkognito</string>
+    <string name="join_group_incognito_button">Připojit se inkognito</string>
     <string name="joining_group">Připojit ke skupině</string>
     <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Připojili jste se k této skupině. Připojení k pozvání člena skupiny.</string>
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Přestanete dostávat zprávy z této skupiny. Chat historie bude zachována.</string>
@@ -813,7 +813,7 @@
     <string name="you_sent_group_invitation">Odeslali jste pozvánku do skupiny</string>
     <string name="you_are_invited_to_group">Jste pozváni do skupiny</string>
     <string name="group_invitation_tap_to_join">Klepnutím se připojíte</string>
-    <string name="group_invitation_tap_to_join_incognito">Klepnutím se připojíte Inkognito</string>
+    <string name="group_invitation_tap_to_join_incognito">Klepnutím se připojíte inkognito</string>
     <string name="you_joined_this_group">Připojili jste se k této skupině</string>
     <string name="you_rejected_group_invitation">Odmítli jste pozvánku do skupiny</string>
     <string name="group_invitation_expired">Platnost pozvánky do skupiny vypršela</string>
@@ -885,7 +885,7 @@
     <string name="network_status">Stav sítě</string>
     <string name="switch_receiving_address">Přepínač přijímací adresy</string>
     <string name="group_is_decentralized">Skupina je plně decentralizovaná - viditelná pouze pro členy.</string>
-    <string name="group_unsupported_incognito_main_profile_sent">Zde není podporován režim Inkognito - členům skupiny bude zaslán váš hlavní profil.</string>
+    <string name="group_unsupported_incognito_main_profile_sent">Zde není podporován režim inkognito - členům skupiny bude zaslán váš hlavní profil.</string>
     <string name="save_group_profile">Uložení profilu skupiny</string>
     <string name="network_options_reset_to_defaults">Obnovit výchozí nastavení</string>
     <string name="network_option_tcp_connection_timeout">Časový limit připojení TCP</string>
@@ -899,10 +899,10 @@
     <string name="users_delete_with_connections">Profil a připojení k serveru</string>
     <string name="users_delete_data_only">Pouze místní data profilu</string>
     <string name="incognito_random_profile_from_contact_description">Náhodný profil bude zaslán kontaktu, od kterého jste obdrželi tento odkaz.</string>
-    <string name="incognito_info_protects">Režim Inkognito chrání soukromí vašeho hlavního profilového jména a obrázku - pro každý nový kontakt je vytvořen nový náhodný profil.</string>
-    <string name="incognito_info_find">Chcete-li najít profil použitý pro Inkognito připojení, klepněte na název kontaktu nebo skupiny v horní části chatu.</string>
-    <string name="theme_light">Světlý</string>
-    <string name="theme_dark">Tmavý</string>
+    <string name="incognito_info_protects">Režim inkognito chrání soukromí vašeho hlavního jména a obrázku profilu - pro každý nový kontakt je vytvořen nový náhodný profil.</string>
+    <string name="incognito_info_find">Chcete-li najít profil použitý pro inkognito připojení, klepněte na název kontaktu nebo skupiny v horní části chatu.</string>
+    <string name="theme_light">Světlé</string>
+    <string name="theme_dark">Tmavé</string>
     <string name="theme">Téma</string>
     <string name="chat_preferences_contact_allows">Kontakt povolil</string>
     <string name="chat_preferences_on">zapnuto</string>
@@ -911,13 +911,13 @@
     <string name="contact_preferences">Předvolby kontaktu</string>
     <string name="group_preferences">Předvolby skupiny</string>
     <string name="direct_messages">Přímé zprávy</string>
-    <string name="full_deletion">Smazat pro všechny</string>
-    <string name="feature_enabled">povoleno</string>
+    <string name="full_deletion">Mazání všem</string>
+    <string name="feature_enabled">zapnuty</string>
     <string name="feature_enabled_for_you">povoleno pro vás</string>
-    <string name="feature_off">vypnuto</string>
-    <string name="prohibit_sending_disappearing_messages">Zakázat posílání mizících zpráv.</string>
+    <string name="feature_off">vypnuty</string>
+    <string name="prohibit_sending_disappearing_messages">Mizící zprávy zakázány.</string>
     <string name="contacts_can_mark_messages_for_deletion">Kontakty mohou označit zprávy ke smazání; vy je budete moci zobrazit.</string>
-    <string name="prohibit_sending_voice_messages">Zakázat odesílání hlasových zpráv.</string>
+    <string name="prohibit_sending_voice_messages">Hlasové zprávy zakázány.</string>
     <string name="only_you_can_send_disappearing">Mizící zprávy můžete odesílat pouze vy.</string>
     <string name="disappearing_prohibited_in_this_chat">Mizící zprávy jsou v tomto chatu zakázány.</string>
     <string name="only_your_contact_can_delete">Nevratně mazat zprávy může pouze váš kontakt (vy je můžete označit ke smazání).</string>
@@ -926,8 +926,8 @@
     <string name="only_your_contact_can_send_voice">Hlasové zprávy může odesílat pouze váš kontakt.</string>
     <string name="voice_prohibited_in_this_chat">Hlasové zprávy jsou v tomto chatu zakázány.</string>
     <string name="prohibit_sending_disappearing">Zakázat posílání mizících zpráv.</string>
-    <string name="prohibit_message_deletion">Zakázat nevratné mazání zpráv.</string>
-    <string name="prohibit_sending_voice">Zakázat odesílání hlasových zpráv.</string>
+    <string name="prohibit_message_deletion">Nevratné mazání odeslaných zpráv zakázáno.</string>
+    <string name="prohibit_sending_voice">Hlasové zprávy zakázány.</string>
     <string name="group_members_can_send_disappearing">Členové skupiny mohou posílat mizící zprávy.</string>
     <string name="disappearing_messages_are_prohibited">Mizící zprávy jsou v této skupině zakázány.</string>
     <string name="group_members_can_send_dms">Členové skupiny mohou posílat přímé zprávy.</string>
@@ -936,7 +936,7 @@
     <string name="message_deletion_prohibited_in_chat">Nevratné mazání zpráv je v této skupině zakázáno.</string>
     <string name="group_members_can_send_voice">Členové skupiny mohou posílat hlasové zprávy.</string>
     <string name="voice_messages_are_prohibited">Hlasové zprávy jsou v této skupině zakázány.</string>
-    <string name="delete_after">Smazat po</string>
+    <string name="delete_after">Smazat za</string>
     <string name="ttl_month">%d měsíc</string>
     <string name="ttl_months">%d měsíců</string>
     <string name="ttl_day">%d den</string>
@@ -947,7 +947,7 @@
     <string name="feature_offered_item">nabízeno %s</string>
     <string name="feature_cancelled_item">zrušeno %s</string>
     <string name="whats_new">Co je nového</string>
-    <string name="new_in_version">Novinky v %s</string>
+    <string name="new_in_version">Novinky %s</string>
     <string name="v4_2_auto_accept_contact_requests">Automatické přijímání žádostí o kontakt</string>
     <string name="v4_2_auto_accept_contact_requests_desc">S volitelnou uvítací zprávou.</string>
     <string name="v4_3_voice_messages_desc">Max. 40 sekund, přijímá se okamžitě.</string>
@@ -965,6 +965,6 @@
     <string name="your_chats">Vaše konverzace</string>
     <string name="paste_connection_link_below_to_connect">Do níže uvedeného pole vložte odkaz, který jste obdrželi pro spojení s kontaktem.</string>
     <string name="share_invitation_link">Sdílet zvací odkaz</string>
-    <string name="status_e2e_encrypted">end-to-end šifrované</string>
+    <string name="status_e2e_encrypted">koncově šifrované</string>
     <string name="moderated_description">moderované</string>
 </resources>
