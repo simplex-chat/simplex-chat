@@ -23,7 +23,7 @@ struct CallSettings: View {
                     Toggle("Connect via relay", isOn: $webrtcPolicyRelay)
 
                     if !CallController.isInChina && developerTools {
-                        Toggle("Use native phone call UI", isOn: $callKitEnabled)
+                        Toggle("Use CallKit", isOn: $callKitEnabled)
 
                         if allowChangingCallsHistory {
                             Toggle("Show calls in phone history", isOn: $callKitCallsInRecents)
