@@ -86,8 +86,8 @@ struct ContentView: View {
     }
 
     private func processUserActivity(_ activity: NSUserActivity) {
-        let callToContact = { (contactApiId: String?, mediaType: CallMediaType) in
-            if let chatInfo = chatModel.chats.first(where: { $0.id == "@\(contactApiId ?? "")"})?.chatInfo,
+        let callToContact = { (contactId: ChatId?, mediaType: CallMediaType) in
+            if let chatInfo = chatModel.chats.first(where: { $0.id == contactId })?.chatInfo,
                 case let .direct(contact) = chatInfo {
                 CallController.shared.startCall(contact, mediaType)
             }

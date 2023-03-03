@@ -144,7 +144,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         logger.debug("CallController.reportNewIncomingCall, UUID=\(String(describing: invitation.callkitUUID))")
         if CallController.useCallKit(), let uuid = invitation.callkitUUID {
             let update = CXCallUpdate()
-            update.remoteHandle = CXHandle(type: .generic, value: String(invitation.contact.contactId))
+            update.remoteHandle = CXHandle(type: .generic, value: invitation.contact.id)
             update.hasVideo = invitation.callType.media == .video
             update.localizedCallerName = invitation.contact.displayName
             provider.reportNewIncomingCall(with: uuid, update: update, completion: completion)
@@ -180,12 +180,12 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         logger.debug("CallController.startCall")
         let uuid = callManager.newOutgoingCall(contact, media)
         if CallController.useCallKit() {
-            let handle = CXHandle(type: .generic, value: String(contact.contactId))
+            let handle = CXHandle(type: .generic, value: contact.id)
             let action = CXStartCallAction(call: uuid, handle: handle)
             action.isVideo = media == .video
             requestTransaction(with: action) {
                 let update = CXCallUpdate()
-                update.remoteHandle = CXHandle(type: .generic, value: String(contact.contactId))
+                update.remoteHandle = CXHandle(type: .generic, value: contact.id)
                 update.hasVideo = media == .video
                 update.localizedCallerName = contact.displayName
                 self.provider.reportCall(with: uuid, updated: update)
