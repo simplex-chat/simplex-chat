@@ -117,9 +117,9 @@ struct ActiveCallView: View {
             case let .connection(state):
                 if let callStatus = WebRTCCallStatus.init(rawValue: state.connectionState),
                    case .connected = callStatus {
-                    if case .outgoing = call.direction {
-                        CallController.shared.reportOutgoingCall(call: call, connectedAt: nil)
-                    }
+                    call.direction == .outgoing
+                        ? CallController.shared.reportOutgoingCall(call: call, connectedAt: nil)
+                        : CallController.shared.reportIncomingCall(call: call, connectedAt: nil)
                     call.callState = .connected
                 }
                 if state.connectionState == "closed" {

@@ -59,6 +59,9 @@ struct SimpleXApp: App {
                                 suspendChat()
                                 BGManager.shared.schedule()
                             }
+                        } else {
+                            suspendChat()
+                            BGManager.shared.schedule()
                         }
                         if userAuthorized == true {
                             enteredBackground = ProcessInfo.processInfo.systemUptime

@@ -47,6 +47,8 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         self.sendCallResponse = sendCallResponse
         self.activeCall = activeCall
         self.localRendererAspectRatio = localRendererAspectRatio
+        rtcAudioSession.useManualAudio = CallController.useCallKit()
+        rtcAudioSession.isAudioEnabled = !CallController.useCallKit()
         super.init()
     }
 
@@ -562,7 +564,7 @@ extension WebRTCClient {
                 try self.rtcAudioSession.overrideOutputAudioPort(.none)
                 try self.rtcAudioSession.setActive(false)
             } catch let error {
-                logger.debug("Error configuring AVAudioSession: \(error)")
+                logger.debug("Error configuring AVAudioSession with defaults: \(error)")
             }
         }
     }

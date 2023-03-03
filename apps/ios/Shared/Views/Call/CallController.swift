@@ -12,11 +12,12 @@ import StoreKit
 import PushKit
 import AVFoundation
 import SimpleXChat
+import WebRTC
 
 class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, ObservableObject {
     static let shared = CallController()
     static let isInChina = SKStorefront().countryCode == "CHN"
-    static func useCallKit() -> Bool { !isInChina && UserDefaults.standard.bool(forKey: DEFAULT_CALL_KIT_ENABLED) }
+    static func useCallKit() -> Bool { !isInChina && UserDefaults.standard.bool(forKey: GROUP_DEFAULT_CALL_KIT_ENABLED) }
 
     private let provider = CXProvider(configuration: {
         let configuration = CXProviderConfiguration()
@@ -31,6 +32,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     private let callManager = CallManager()
     @Published var activeCallInvitation: RcvCallInvitation?
     var onEndCall: (() -> Void)? = nil
+    var fulfillOnConnect: CXAnswerCallAction? = nil
 
     // PKPushRegistry is used from notification service extension
     private let registry = PKPushRegistry(queue: nil)
@@ -58,7 +60,9 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     func provider(_ provider: CXProvider, perform action: CXAnswerCallAction) {
         logger.debug("CallController.provider CXAnswerCallAction")
         if callManager.answerIncomingCall(callUUID: action.callUUID) {
-            action.fulfill()
+            // WebRTC call should be in connected state to fulfill.
+            // Otherwise no audio and mic working on lockscreen
+            fulfillOnConnect = action
         } else {
             action.fail()
         }
@@ -66,6 +70,9 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
 
     func provider(_ provider: CXProvider, perform action: CXEndCallAction) {
         logger.debug("CallController.provider CXEndCallAction")
+        // Should be nil here if connection was in connected state
+        fulfillOnConnect?.fail()
+        fulfillOnConnect = nil
         callManager.endCall(callUUID: action.callUUID) { ok in
             if ok {
                 action.fulfill()
@@ -90,6 +97,8 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
 
     func provider(_ provider: CXProvider, didActivate audioSession: AVAudioSession) {
         print("received", #function)
+        RTCAudioSession.sharedInstance().audioSessionDidActivate(audioSession)
+        RTCAudioSession.sharedInstance().isAudioEnabled = true
         do {
             try audioSession.setCategory(.playAndRecord, mode: .voiceChat, options: .mixWithOthers)
             logger.debug("audioSession category set")
@@ -103,6 +112,8 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
 
     func provider(_ provider: CXProvider, didDeactivate audioSession: AVAudioSession) {
         print("received", #function)
+        RTCAudioSession.sharedInstance().audioSessionDidDeactivate(audioSession)
+        RTCAudioSession.sharedInstance().isAudioEnabled = false
         do {
             try audioSession.setActive(false)
         } catch {
@@ -159,6 +170,14 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
             if invitation.callTs.timeIntervalSinceNow >= -180 {
                 activeCallInvitation = invitation
             }
+        }
+    }
+
+    func reportIncomingCall(call: Call, connectedAt dateConnected: Date?) {
+        if CallController.useCallKit() {
+            // Fulfilling this action only after connect, otherwise there are no audio and mic on lockscreen
+            fulfillOnConnect?.fulfill()
+            fulfillOnConnect = nil
         }
     }
 

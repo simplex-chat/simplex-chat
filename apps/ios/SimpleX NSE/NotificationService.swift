@@ -8,6 +8,7 @@
 
 import UserNotifications
 import OSLog
+import StoreKit
 import CallKit
 import SimpleXChat
 
@@ -207,6 +208,9 @@ func chatRecvMsg() async -> ChatResponse? {
     }
 }
 
+private let isInChina = SKStorefront().countryCode == "CHN"
+private func useCallKit() -> Bool { !isInChina && UserDefaults.standard.bool(forKey: GROUP_DEFAULT_CALL_KIT_ENABLED) }
+
 func receivedMsgNtf(_ res: ChatResponse) async -> (String, UNMutableNotificationContent)? {
     logger.debug("NotificationService processReceivedMsg: \(res.responseType)")
     switch res {
@@ -249,7 +253,7 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, UNMutableNotification
                 logger.debug("reportNewIncomingVoIPPushPayload success for \(invitation.contact.id)")
             }
         }
-        return (invitation.contact.id, createCallInvitationNtf(invitation))
+        return useCallKit() ? nil : (invitation.contact.id, createCallInvitationNtf(invitation))
     default:
         logger.debug("NotificationService processReceivedMsg ignored event: \(res.responseType)")
         return nil
