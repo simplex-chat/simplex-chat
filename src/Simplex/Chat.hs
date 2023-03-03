@@ -57,6 +57,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Store
 import Simplex.Chat.Types
 import Simplex.Chat.Util (diffInMicros, diffInSeconds)
+import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Client (AgentStatsKey (..))
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), AgentDatabase (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
@@ -68,7 +69,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (base64P)
-import Simplex.Messaging.Protocol (ErrorType (..), MsgBody, MsgFlags (..), NtfServer)
+import Simplex.Messaging.Protocol (ErrorType (..), MsgBody, MsgFlags (..), NtfServer, ProtoServerWithAuth, ProtocolType (..), ProtocolTypeI)
 import qualified Simplex.Messaging.Protocol as SMP
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (defaultSocksProxy)
@@ -99,6 +100,7 @@ defaultChatConfig =
         DefaultAgentServers
           { smp = _defaultSMPServers,
             ntf = _defaultNtfServers,
+            xftp = defaultXFTPServers,
             netCfg = defaultNetworkConfig
           },
       tbqSize = 1024,
@@ -170,21 +172,25 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
       let smp' = fromMaybe (smp (defaultServers :: DefaultAgentServers)) (nonEmpty smpServers)
        in defaultServers {smp = smp', netCfg = networkConfig}
     agentServers :: ChatConfig -> IO InitialAgentServers
-    agentServers config@ChatConfig {defaultServers = DefaultAgentServers {smp, ntf, netCfg}} = do
+    agentServers config@ChatConfig {defaultServers = defServers@DefaultAgentServers {ntf, netCfg}} = do
       users <- withTransaction chatStore getUsers
-      smp' <- case users of
-        [] -> pure $ M.fromList [(1, smp)]
-        _ -> M.fromList <$> initialServers users
-      pure InitialAgentServers {smp = smp', ntf, netCfg}
+      smp' <- getUserServers users smp
+      xftp' <- getUserServers users xftp
+      pure InitialAgentServers {smp = smp', xftp = xftp', ntf, netCfg}
       where
-        initialServers :: [User] -> IO [(UserId, NonEmpty SMPServerWithAuth)]
-        initialServers = mapM $ \u -> (aUserId u,) <$> userServers u
-        userServers :: User -> IO (NonEmpty SMPServerWithAuth)
-        userServers user' = activeAgentServers config <$> withTransaction chatStore (`getSMPServers` user')
+        getUserServers :: forall p. ProtocolTypeI p => [User] -> (DefaultAgentServers -> NonEmpty (ProtoServerWithAuth p)) -> IO (Map UserId (NonEmpty (ProtoServerWithAuth p)))
+        getUserServers users srvSel = case users of
+          [] -> pure $ M.fromList [(1, srvSel defServers)]
+          _ -> M.fromList <$> initialServers
+          where
+            initialServers :: IO [(UserId, NonEmpty (ProtoServerWithAuth p))]
+            initialServers = mapM (\u -> (aUserId u,) <$> userServers u) users
+            userServers :: User -> IO (NonEmpty (ProtoServerWithAuth p))
+            userServers user' = activeAgentServers config srvSel <$> withTransaction chatStore (`getProtocolServers` user')
 
-activeAgentServers :: ChatConfig -> [ServerCfg] -> NonEmpty SMPServerWithAuth
-activeAgentServers ChatConfig {defaultServers = DefaultAgentServers {smp}} =
-  fromMaybe smp
+activeAgentServers :: ChatConfig -> (DefaultAgentServers -> NonEmpty (ProtoServerWithAuth p)) -> [ServerCfg p] -> NonEmpty (ProtoServerWithAuth p)
+activeAgentServers ChatConfig {defaultServers} srvSel =
+  fromMaybe (srvSel defaultServers)
     . nonEmpty
     . map (\ServerCfg {server} -> server)
     . filter (\ServerCfg {enabled} -> enabled)
@@ -289,7 +295,7 @@ processChatCommand = \case
     atomically . writeTVar u $ Just user
     pure $ CRActiveUser user
     where
-      chooseServers :: m (NonEmpty SMPServerWithAuth, [ServerCfg])
+      chooseServers :: m (NonEmpty SMPServerWithAuth, [ServerCfg 'PSMP])
       chooseServers
         | sameServers =
           asks currentUser >>= readTVarIO >>= \case
@@ -297,7 +303,7 @@ processChatCommand = \case
             Just user -> do
               smpServers <- withStore' (`getSMPServers` user)
               cfg <- asks config
-              pure (activeAgentServers cfg smpServers, smpServers)
+              pure (activeAgentServers cfg smp smpServers, smpServers)
         | otherwise = do
           DefaultAgentServers {smp} <- asks $ defaultServers . config
           pure (smp, [])
@@ -396,7 +402,7 @@ processChatCommand = \case
               then pure (Nothing, Nothing)
               else bimap Just Just <$> withAgent (\a -> createConnection a (aUserId user) True SCMInvitation Nothing)
           let fileName = takeFileName file
-              fileInvitation = FileInvitation {fileName, fileSize, fileConnReq, fileInline}
+              fileInvitation = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq, fileInline, fileDescr = Nothing}
           withStore' $ \db -> do
             ft@FileTransferMeta {fileId} <- createSndDirectFileTransfer db userId ct file fileInvitation agentConnId_ chSize
             fileStatus <- case fileInline of
@@ -442,7 +448,7 @@ processChatCommand = \case
         setupSndFileTransfer gInfo n = forM file_ $ \file -> do
           (fileSize, chSize, fileInline) <- checkSndFile mc file $ fromIntegral n
           let fileName = takeFileName file
-              fileInvitation = FileInvitation {fileName, fileSize, fileConnReq = Nothing, fileInline}
+              fileInvitation = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq = Nothing, fileInline, fileDescr = Nothing}
               fileStatus = if fileInline == Just IFMSent then CIFSSndTransfer else CIFSSndStored
           withStore' $ \db -> do
             ft@FileTransferMeta {fileId} <- createSndGroupFileTransfer db userId gInfo file fileInvitation chSize
@@ -482,7 +488,7 @@ processChatCommand = \case
       quoteContent qmc ciFile_
         | replaceContent = MCText qTextOrFile
         | otherwise = case qmc of
-          MCImage _ image -> MCImage qTextOrFile image
+          MCImage _ image descr -> MCImage qTextOrFile image descr
           MCFile _ -> MCFile qTextOrFile
           -- consider same for voice messages
           -- MCVoice _ voice -> MCVoice qTextOrFile voice
@@ -495,6 +501,7 @@ processChatCommand = \case
             MCFile _ -> False
             MCLink {} -> True
             MCImage {} -> True
+            MCVideo {} -> True
             MCVoice {} -> False
             MCUnknown {} -> True
           qText = msgContentText qmc
@@ -820,10 +827,14 @@ processChatCommand = \case
   APISetUserSMPServers userId (SMPServersConfig smpServers) -> withUserId userId $ \user -> withChatLock "setUserSMPServers" $ do
     withStore $ \db -> overwriteSMPServers db user smpServers
     cfg <- asks config
-    withAgent $ \a -> setSMPServers a (aUserId user) $ activeAgentServers cfg smpServers
+    withAgent $ \a -> setSMPServers a (aUserId user) $ activeAgentServers cfg smp smpServers
     ok user
   SetUserSMPServers smpServersConfig -> withUser $ \User {userId} ->
     processChatCommand $ APISetUserSMPServers userId smpServersConfig
+  APIGetUserServers _ -> pure $ chatCmdError Nothing "TODO"
+  GetUserServers -> pure $ chatCmdError Nothing "TODO"
+  APISetUserServers _ _ -> pure $ chatCmdError Nothing "TODO"
+  SetUserServers _ -> pure $ chatCmdError Nothing "TODO"
   TestSMPServer userId smpServer -> withUserId userId $ \user ->
     CRSmpTestResult user <$> withAgent (\a -> testSMPServerConnection a (aUserId user) smpServer)
   APISetChatItemTTL userId newTTL_ -> withUser' $ \user -> do
@@ -1253,9 +1264,11 @@ processChatCommand = \case
     unless (".jpg" `isSuffixOf` f || ".jpeg" `isSuffixOf` f) $ throwChatError CEFileImageType {filePath}
     fileSize <- getFileSize filePath
     unless (fileSize <= maxImageSize) $ throwChatError CEFileImageSize {filePath}
-    processChatCommand . APISendMessage chatRef False $ ComposedMessage (Just f) Nothing (MCImage "" fixedImagePreview)
+    -- TODO include file description for preview
+    processChatCommand . APISendMessage chatRef False $ ComposedMessage (Just f) Nothing (MCImage "" fixedImagePreview Nothing)
   ForwardFile chatName fileId -> forwardFile chatName fileId SendFile
   ForwardImage chatName fileId -> forwardFile chatName fileId SendImage
+  SendFileDescription _chatName _f -> pure $ chatCmdError Nothing "TODO"
   ReceiveFile fileId rcvInline_ filePath_ -> withUser $ \_ ->
     withChatLock "receiveFile" . procCmd $ do
       (user, ft) <- withStore $ \db -> getRcvFileTransferById db fileId
@@ -1324,7 +1337,7 @@ processChatCommand = \case
     updateGroupProfileByName gName $ \p ->
       p {groupPreferences = Just . setGroupPreference' SGFTimedMessages pref $ groupPreferences p}
   QuitChat -> liftIO exitSuccess
-  ShowVersion -> pure $ CRVersionInfo $ coreVersionInfo $(buildTimestampQ) $(simplexmqCommitQ)
+  ShowVersion -> pure $ CRVersionInfo $ coreVersionInfo $(buildTimestampQ) "" -- $(simplexmqCommitQ)
   DebugLocks -> do
     chatLockName <- atomically . tryReadTMVar =<< asks chatLock
     agentLocks <- withAgent debugAgentLocks
@@ -4088,6 +4101,7 @@ chatCommandP =
       ("/image " <|> "/img ") *> (SendImage <$> chatNameP' <* A.space <*> filePath),
       ("/fforward " <|> "/ff ") *> (ForwardFile <$> chatNameP' <* A.space <*> A.decimal),
       ("/image_forward " <|> "/imgf ") *> (ForwardImage <$> chatNameP' <* A.space <*> A.decimal),
+      ("/fdescription " <|> "/fd") *> (SendFileDescription <$> chatNameP' <* A.space <*> filePath),
       ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (" inline=" *> onOffP) <*> optional (A.space *> filePath)),
       ("/fcancel " <|> "/fc ") *> (CancelFile <$> A.decimal),
       ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal),

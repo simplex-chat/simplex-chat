@@ -45,7 +45,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
-import Simplex.Messaging.Protocol (AProtocolType, ProtocolServer (..))
+import Simplex.Messaging.Protocol (AProtocolType, ProtocolServer (..), ProtocolTypeI)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (bshow, tshow)
@@ -720,12 +720,13 @@ viewUserProfile Profile {displayName, fullName} =
     "(the updated profile will be sent to all your contacts)"
   ]
 
-viewSMPServers :: [ServerCfg] -> Bool -> [StyledString]
-viewSMPServers smpServers testView =
+-- TODO make more generic messages or split
+viewSMPServers :: ProtocolTypeI p => [ServerCfg p] -> Bool -> [StyledString]
+viewSMPServers servers testView =
   if testView
-    then [customSMPServers]
+    then [customServers]
     else
-      [ customSMPServers,
+      [ customServers,
         "",
         "use " <> highlight' "/smp test <srv>" <> " to test SMP server connection",
         "use " <> highlight' "/smp set <srv1[,srv2,...]>" <> " to switch to custom SMP servers",
@@ -733,10 +734,10 @@ viewSMPServers smpServers testView =
         "(chat option " <> highlight' "-s" <> " (" <> highlight' "--server" <> ") has precedence over saved SMP servers for chat session)"
       ]
   where
-    customSMPServers =
-      if null smpServers
+    customServers =
+      if null servers
         then "no custom SMP servers saved"
-        else viewServers smpServers
+        else viewServers servers
 
 viewSMPTestResult :: Maybe SMPTestFailure -> [StyledString]
 viewSMPTestResult = \case
@@ -797,7 +798,7 @@ viewConnectionStats ConnectionStats {rcvServers, sndServers} =
   ["receiving messages via: " <> viewServerHosts rcvServers | not $ null rcvServers]
     <> ["sending messages via: " <> viewServerHosts sndServers | not $ null sndServers]
 
-viewServers :: [ServerCfg] -> StyledString
+viewServers :: ProtocolTypeI p => [ServerCfg p] -> StyledString
 viewServers = plain . intercalate ", " . map (B.unpack . strEncode . (\ServerCfg {server} -> server))
 
 viewServerHosts :: [SMPServer] -> StyledString

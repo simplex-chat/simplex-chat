@@ -231,6 +231,8 @@ module Simplex.Chat.Store
     setGroupChatItemDeleteAt,
     getSMPServers,
     overwriteSMPServers,
+    getProtocolServers,
+    overwriteProtocolServers,
     createCall,
     deleteCalls,
     getCalls,
@@ -349,7 +351,7 @@ import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
-import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), pattern SMPServer)
+import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), pattern SMPServer)
 import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8)
 import UnliftIO.STM
@@ -2888,7 +2890,7 @@ getRcvFileTransfer db User {userId} fileId = do
       (FileStatus, Maybe ConnReqInvitation, Maybe Int64, String, Integer, Integer, Maybe Bool) :. (Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe InlineFileMode, Maybe InlineFileMode) :. (Maybe Int64, Maybe AgentConnId) ->
       ExceptT StoreError IO RcvFileTransfer
     rcvFileTransfer ((fileStatus', fileConnReq, grpMemberId, fileName, fileSize, chunkSize, cancelled_) :. (contactName_, memberName_, filePath_, fileInline, rcvFileInline) :. (connId_, agentConnId_)) = do
-      let fileInv = FileInvitation {fileName, fileSize, fileConnReq, fileInline}
+      let fileInv = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq, fileInline, fileDescr = Nothing}
           fileInfo = (filePath_, connId_, agentConnId_)
       case contactName_ <|> memberName_ of
         Nothing -> throwError $ SERcvFileInvalid fileId
@@ -4606,7 +4608,7 @@ toGroupChatItemList tz currentTs userContactId (((Just itemId, Just itemTs, Just
   either (const []) (: []) $ toGroupChatItem tz currentTs userContactId (((itemId, itemTs, itemContent, itemText, itemStatus, sharedMsgId, itemDeleted, itemEdited, createdAt, updatedAt) :. (timedTTL, timedDeleteAt, itemLive) :. fileRow) :. memberRow_ :. (quoteRow :. quotedMemberRow_) :. deletedByGroupMemberRow_)
 toGroupChatItemList _ _ _ _ = []
 
-getSMPServers :: DB.Connection -> User -> IO [ServerCfg]
+getSMPServers :: DB.Connection -> User -> IO [ServerCfg 'PSMP]
 getSMPServers db User {userId} =
   map toServerCfg
     <$> DB.query
@@ -4618,12 +4620,12 @@ getSMPServers db User {userId} =
       |]
       (Only userId)
   where
-    toServerCfg :: (NonEmpty TransportHost, String, C.KeyHash, Maybe Text, Bool, Maybe Bool, Bool) -> ServerCfg
+    toServerCfg :: (NonEmpty TransportHost, String, C.KeyHash, Maybe Text, Bool, Maybe Bool, Bool) -> ServerCfg 'PSMP
     toServerCfg (host, port, keyHash, auth_, preset, tested, enabled) =
       let server = ProtoServerWithAuth (SMPServer host port keyHash) (BasicAuth . encodeUtf8 <$> auth_)
        in ServerCfg {server, preset, tested, enabled}
 
-overwriteSMPServers :: DB.Connection -> User -> [ServerCfg] -> ExceptT StoreError IO ()
+overwriteSMPServers :: DB.Connection -> User -> [ServerCfg 'PSMP] -> ExceptT StoreError IO ()
 overwriteSMPServers db User {userId} servers =
   checkConstraint SEUniqueID . ExceptT $ do
     currentTs <- getCurrentTime
@@ -4639,6 +4641,16 @@ overwriteSMPServers db User {userId} servers =
         |]
         (host, port, keyHash, safeDecodeUtf8 . unBasicAuth <$> auth_, preset, tested, enabled, userId, currentTs, currentTs)
     pure $ Right ()
+
+getProtocolServers :: forall p. ProtocolTypeI p => DB.Connection -> User -> IO [ServerCfg p]
+getProtocolServers db user = case protocolTypeI @p of
+  SPSMP -> getSMPServers db user
+  _ -> pure [] -- TODO read from the new table of all servers (alternatively, we could migrate data)
+
+overwriteProtocolServers :: forall p. ProtocolTypeI p => DB.Connection -> User -> [ServerCfg p] -> ExceptT StoreError IO ()
+overwriteProtocolServers db user servers = case protocolTypeI @p of
+  SPSMP -> overwriteSMPServers db user servers
+  _ -> pure () -- TODO write the new table of all servers
 
 createCall :: DB.Connection -> User -> Call -> UTCTime -> IO ()
 createCall db user@User {userId} Call {contactId, callId, chatItemId, callState} callTs = do

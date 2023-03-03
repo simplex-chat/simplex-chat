@@ -54,7 +54,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtocolType, CorrId, MsgFlags, NtfServer, QueueId)
+import Simplex.Messaging.Protocol (AProtocolType, CorrId, MsgFlags, NtfServer, ProtocolType (..), QueueId, XFTPServerWithAuth)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
@@ -116,6 +116,7 @@ data ChatConfig = ChatConfig
 data DefaultAgentServers = DefaultAgentServers
   { smp :: NonEmpty SMPServerWithAuth,
     ntf :: [NtfServer],
+    xftp :: NonEmpty XFTPServerWithAuth,
     netCfg :: NetworkConfig
   }
 
@@ -245,6 +246,10 @@ data ChatCommand
   | APISetUserSMPServers UserId SMPServersConfig
   | SetUserSMPServers SMPServersConfig
   | TestSMPServer UserId SMPServerWithAuth
+  | APIGetUserServers UserId
+  | GetUserServers
+  | APISetUserServers UserId ServersConfig
+  | SetUserServers ServersConfig
   | APISetChatItemTTL UserId (Maybe Int64)
   | SetChatItemTTL (Maybe Int64)
   | APIGetChatItemTTL UserId
@@ -329,6 +334,7 @@ data ChatCommand
   | SendImage ChatName FilePath
   | ForwardFile ChatName FileTransferId
   | ForwardImage ChatName FileTransferId
+  | SendFileDescription ChatName FilePath
   | ReceiveFile {fileId :: FileTransferId, fileInline :: Maybe Bool, filePath :: Maybe FilePath}
   | CancelFile FileTransferId
   | FileStatus FileTransferId
@@ -361,7 +367,7 @@ data ChatResponse
   | CRChatItems {user :: User, chatItems :: [AChatItem]}
   | CRChatItemId User (Maybe ChatItemId)
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
-  | CRUserSMPServers {user :: User, smpServers :: NonEmpty ServerCfg, presetSMPServers :: NonEmpty SMPServerWithAuth}
+  | CRUserSMPServers {user :: User, smpServers :: NonEmpty (ServerCfg 'PSMP), presetSMPServers :: NonEmpty SMPServerWithAuth}
   | CRSmpTestResult {user :: User, smpTestFailure :: Maybe SMPTestFailure}
   | CRChatItemTTL {user :: User, chatItemTTL :: Maybe Int64}
   | CRNetworkConfig {networkConfig :: NetworkConfig}
@@ -524,7 +530,10 @@ instance ToJSON AgentQueueId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-data SMPServersConfig = SMPServersConfig {smpServers :: [ServerCfg]}
+data SMPServersConfig = SMPServersConfig {smpServers :: [ServerCfg 'PSMP]}
+  deriving (Show, Generic, FromJSON)
+
+data ServersConfig = ServersConfig {servers :: [AServerCfg]}
   deriving (Show, Generic, FromJSON)
 
 data ArchiveConfig = ArchiveConfig {archivePath :: FilePath, disableCompression :: Maybe Bool, parentTempDirectory :: Maybe FilePath}

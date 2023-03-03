@@ -264,7 +264,7 @@ cmToQuotedMsg = \case
   ACME _ (XMsgNew (MCQuote quotedMsg _)) -> Just quotedMsg
   _ -> Nothing
 
-data MsgContentTag = MCText_ | MCLink_ | MCImage_ | MCVoice_ | MCFile_ | MCUnknown_ Text
+data MsgContentTag = MCText_ | MCLink_ | MCImage_ | MCVideo_ | MCVoice_ | MCFile_ | MCUnknown_ Text
   deriving (Eq)
 
 instance StrEncoding MsgContentTag where
@@ -272,6 +272,7 @@ instance StrEncoding MsgContentTag where
     MCText_ -> "text"
     MCLink_ -> "link"
     MCImage_ -> "image"
+    MCVideo_ -> "video"
     MCFile_ -> "file"
     MCVoice_ -> "voice"
     MCUnknown_ t -> encodeUtf8 t
@@ -279,6 +280,7 @@ instance StrEncoding MsgContentTag where
     "text" -> Right MCText_
     "link" -> Right MCLink_
     "image" -> Right MCImage_
+    "video" -> Right MCVideo_
     "voice" -> Right MCVoice_
     "file" -> Right MCFile_
     t -> Right . MCUnknown_ $ safeDecodeUtf8 t
@@ -316,7 +318,8 @@ instance ToJSON LinkPreview where
 data MsgContent
   = MCText Text
   | MCLink {text :: Text, preview :: LinkPreview}
-  | MCImage {text :: Text, image :: ImageData}
+  | MCImage {text :: Text, image :: ImageData, fileDescr :: Maybe Text}
+  | MCVideo {text :: Text, poster :: ImageData}
   | MCVoice {text :: Text, duration :: Int}
   | MCFile Text
   | MCUnknown {tag :: Text, text :: Text, json :: J.Object}
@@ -327,6 +330,7 @@ msgContentText = \case
   MCText t -> t
   MCLink {text} -> text
   MCImage {text} -> text
+  MCVideo {text} -> text
   MCVoice {text, duration} ->
     if T.null text then msg else msg <> "; " <> text
     where
@@ -352,6 +356,7 @@ msgContentTag = \case
   MCText _ -> MCText_
   MCLink {} -> MCLink_
   MCImage {} -> MCImage_
+  MCVideo {} -> MCVideo_
   MCVoice {} -> MCVoice_
   MCFile {} -> MCFile_
   MCUnknown {tag} -> MCUnknown_ tag
@@ -385,7 +390,12 @@ instance FromJSON MsgContent where
       MCImage_ -> do
         text <- v .: "text"
         image <- v .: "image"
-        pure MCImage {image, text}
+        fileDescr <- v .:? "fileDescr"
+        pure MCImage {text, image, fileDescr}
+      MCVideo_ -> do
+        text <- v .: "text"
+        poster <- v .: "poster"
+        pure MCVideo {text, poster}
       MCVoice_ -> do
         text <- v .: "text"
         duration <- v .: "duration"
@@ -415,6 +425,7 @@ instance ToJSON MsgContent where
     MCText t -> J.object ["type" .= MCText_, "text" .= t]
     MCLink {text, preview} -> J.object ["type" .= MCLink_, "text" .= text, "preview" .= preview]
     MCImage {text, image} -> J.object ["type" .= MCImage_, "text" .= text, "image" .= image]
+    MCVideo {text, poster} -> J.object ["type" .= MCImage_, "text" .= text, "poster" .= poster]
     MCVoice {text, duration} -> J.object ["type" .= MCVoice_, "text" .= text, "duration" .= duration]
     MCFile t -> J.object ["type" .= MCFile_, "text" .= t]
   toEncoding = \case
@@ -422,6 +433,7 @@ instance ToJSON MsgContent where
     MCText t -> J.pairs $ "type" .= MCText_ <> "text" .= t
     MCLink {text, preview} -> J.pairs $ "type" .= MCLink_ <> "text" .= text <> "preview" .= preview
     MCImage {text, image} -> J.pairs $ "type" .= MCImage_ <> "text" .= text <> "image" .= image
+    MCVideo {text, poster} -> J.pairs $ "type" .= MCImage_ <> "text" .= text <> "poster" .= poster
     MCVoice {text, duration} -> J.pairs $ "type" .= MCVoice_ <> "text" .= text <> "duration" .= duration
     MCFile t -> J.pairs $ "type" .= MCFile_ <> "text" .= t
 
