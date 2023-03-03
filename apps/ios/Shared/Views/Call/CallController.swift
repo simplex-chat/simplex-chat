@@ -33,7 +33,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     var onEndCall: (() -> Void)? = nil
 
     // PKPushRegistry is used from notification service extension
-    let registry = PKPushRegistry(queue: nil)
+    private let registry = PKPushRegistry(queue: nil)
 
     override init() {
         super.init()
@@ -103,6 +103,12 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
 
     func provider(_ provider: CXProvider, didDeactivate audioSession: AVAudioSession) {
         print("received", #function)
+        do {
+            try audioSession.setActive(false)
+        } catch {
+            print(error)
+            logger.error("failed deactivating audio session")
+        }
         // Allows to accept second call while in call with a previous before suspending a chat,
         // see `.onChange(of: scenePhase)` in SimpleXApp
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
