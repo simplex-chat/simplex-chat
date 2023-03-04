@@ -549,7 +549,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
 
   suspend fun testSMPServer(smpServer: String): SMPTestFailure? {
     val userId = chatModel.currentUser.value?.userId ?: run { throw Exception("testSMPServer: no current user") }
-    val r = sendCmd(CC.TestSMPServer(userId, smpServer))
+    val r = sendCmd(CC.APITestSMPServer(userId, smpServer))
     return when (r) {
       is CR.SmpTestResult -> r.smpTestFailure
       else -> {
@@ -1757,7 +1757,7 @@ sealed class CC {
   class APIGetGroupLink(val groupId: Long): CC()
   class APIGetUserSMPServers(val userId: Long): CC()
   class APISetUserSMPServers(val userId: Long, val smpServers: List<ServerCfg>): CC()
-  class TestSMPServer(val userId: Long, val smpServer: String): CC()
+  class APITestSMPServer(val userId: Long, val smpServer: String): CC()
   class APISetChatItemTTL(val userId: Long, val seconds: Long?): CC()
   class APIGetChatItemTTL(val userId: Long): CC()
   class APISetNetworkConfig(val networkConfig: NetCfg): CC()
@@ -1832,7 +1832,7 @@ sealed class CC {
     is APIGetGroupLink -> "/_get link #$groupId"
     is APIGetUserSMPServers -> "/_smp $userId"
     is APISetUserSMPServers -> "/_smp $userId ${smpServersStr(smpServers)}"
-    is TestSMPServer -> "/smp test $userId $smpServer"
+    is APITestSMPServer -> "/_smp test $userId $smpServer"
     is APISetChatItemTTL -> "/_ttl $userId ${chatItemTTLStr(seconds)}"
     is APIGetChatItemTTL -> "/_ttl $userId"
     is APISetNetworkConfig -> "/_network ${json.encodeToString(networkConfig)}"
@@ -1908,7 +1908,7 @@ sealed class CC {
     is APIGetGroupLink -> "apiGetGroupLink"
     is APIGetUserSMPServers -> "apiGetUserSMPServers"
     is APISetUserSMPServers -> "apiSetUserSMPServers"
-    is TestSMPServer -> "testSMPServer"
+    is APITestSMPServer -> "testSMPServer"
     is APISetChatItemTTL -> "apiSetChatItemTTL"
     is APIGetChatItemTTL -> "apiGetChatItemTTL"
     is APISetNetworkConfig -> "/apiSetNetworkConfig"

@@ -344,7 +344,7 @@ func setUserSMPServers(smpServers: [ServerCfg]) async throws {
 
 func testSMPServer(smpServer: String) async throws -> Result<(), SMPTestFailure> {
     guard let userId = ChatModel.shared.currentUser?.userId else { throw RuntimeError("testSMPServer: no current user") }
-    let r = await chatSendCmd(.testSMPServer(userId: userId, smpServer: smpServer))
+    let r = await chatSendCmd(.apiTestSMPServer(userId: userId, smpServer: smpServer))
     if case let .smpTestResult(_, testFailure) = r {
         if let t = testFailure {
             return .failure(t)

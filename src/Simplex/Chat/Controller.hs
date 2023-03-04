@@ -170,7 +170,7 @@ data ChatController = ChatController
     logFilePath :: Maybe FilePath
   }
 
-data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown | HSMessages | HSSettings
+data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSMarkdown | HSMessages | HSSettings
   deriving (Show, Generic)
 
 instance ToJSON HelpSection where
@@ -244,7 +244,8 @@ data ChatCommand
   | GetUserSMPServers
   | APISetUserSMPServers UserId SMPServersConfig
   | SetUserSMPServers SMPServersConfig
-  | TestSMPServer UserId SMPServerWithAuth
+  | APITestSMPServer UserId SMPServerWithAuth
+  | TestSMPServer SMPServerWithAuth
   | APISetChatItemTTL UserId (Maybe Int64)
   | SetChatItemTTL (Maybe Int64)
   | APIGetChatItemTTL UserId

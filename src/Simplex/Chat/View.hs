@@ -94,6 +94,7 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
     HSMain -> chatHelpInfo
     HSFiles -> filesHelpInfo
     HSGroups -> groupsHelpInfo
+    HSContacts -> contactsHelpInfo
     HSMyAddress -> myAddressHelpInfo
     HSMessages -> messagesHelpInfo
     HSMarkdown -> markdownInfo
