@@ -824,8 +824,10 @@ processChatCommand = \case
     ok user
   SetUserSMPServers smpServersConfig -> withUser $ \User {userId} ->
     processChatCommand $ APISetUserSMPServers userId smpServersConfig
-  TestSMPServer userId smpServer -> withUserId userId $ \user ->
+  APITestSMPServer userId smpServer -> withUserId userId $ \user ->
     CRSmpTestResult user <$> withAgent (\a -> testSMPServerConnection a (aUserId user) smpServer)
+  TestSMPServer smpServer -> withUser $ \User {userId} ->
+    processChatCommand $ APITestSMPServer userId smpServer
   APISetChatItemTTL userId newTTL_ -> withUser' $ \user -> do
     checkSameUser userId user
     checkStoreNotChanged $
@@ -4000,7 +4002,8 @@ chatCommandP =
       "/smp_servers " *> (SetUserSMPServers . SMPServersConfig . map toServerCfg <$> smpServersP),
       "/smp_servers" $> GetUserSMPServers,
       "/smp default" $> SetUserSMPServers (SMPServersConfig []),
-      "/smp test " *> (TestSMPServer <$> A.decimal <* A.space <*> strP),
+      "/_smp test " *> (APITestSMPServer <$> A.decimal <* A.space <*> strP),
+      "/smp test " *> (TestSMPServer <$> strP),
       "/_smp " *> (APISetUserSMPServers <$> A.decimal <* A.space <*> jsonP),
       "/smp " *> (SetUserSMPServers . SMPServersConfig . map toServerCfg <$> smpServersP),
       "/_smp " *> (APIGetUserSMPServers <$> A.decimal),
@@ -4035,6 +4038,7 @@ chatCommandP =
       "/enable #" *> (EnableGroupMember <$> displayName <* A.space <* char_ '@' <*> displayName),
       ("/help files" <|> "/help file" <|> "/hf") $> ChatHelp HSFiles,
       ("/help groups" <|> "/help group" <|> "/hg") $> ChatHelp HSGroups,
+      ("/help contacts" <|> "/help contact" <|> "/hc") $> ChatHelp HSContacts,
       ("/help address" <|> "/ha") $> ChatHelp HSMyAddress,
       ("/help messages" <|> "/hm") $> ChatHelp HSMessages,
       ("/help settings" <|> "/hs") $> ChatHelp HSSettings,
