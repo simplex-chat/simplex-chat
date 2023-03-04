@@ -1474,7 +1474,7 @@ data FileInvitation = FileInvitation
     fileDigest :: Maybe FileDigest,
     fileConnReq :: Maybe ConnReqInvitation,
     fileInline :: Maybe InlineFileMode,
-    fileDescr :: Maybe Text
+    fileDescr :: Maybe FileDescr
   }
   deriving (Eq, Show, Generic)
 
@@ -1489,6 +1489,16 @@ data InlineFileMode
   = IFMOffer -- file will be sent inline once accepted
   | IFMSent -- file is sent inline without acceptance
   deriving (Eq, Show, Generic)
+
+data FileDescr = FDText {text :: Text} | FDFile {file :: FileInvitation}
+  deriving (Eq, Show, Generic)
+
+instance ToJSON FileDescr where
+  toEncoding = J.genericToEncoding . taggedObjectJSON $ dropPrefix "FD"
+  toJSON = J.genericToJSON . taggedObjectJSON $ dropPrefix "FD"
+
+instance FromJSON FileDescr where
+  parseJSON = J.genericParseJSON . taggedObjectJSON $ dropPrefix "FD"
 
 instance TextEncoding InlineFileMode where
   textEncode = \case

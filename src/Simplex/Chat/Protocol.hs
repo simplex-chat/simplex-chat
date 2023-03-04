@@ -318,8 +318,8 @@ instance ToJSON LinkPreview where
 data MsgContent
   = MCText Text
   | MCLink {text :: Text, preview :: LinkPreview}
-  | MCImage {text :: Text, image :: ImageData, fileDescr :: Maybe Text}
-  | MCVideo {text :: Text, poster :: ImageData}
+  | MCImage {text :: Text, image :: ImageData, previewFile :: Maybe Text}
+  | MCVideo {text :: Text, image :: ImageData, duration :: Int}
   | MCVoice {text :: Text, duration :: Int}
   | MCFile Text
   | MCUnknown {tag :: Text, text :: Text, json :: J.Object}
@@ -390,12 +390,13 @@ instance FromJSON MsgContent where
       MCImage_ -> do
         text <- v .: "text"
         image <- v .: "image"
-        fileDescr <- v .:? "fileDescr"
-        pure MCImage {text, image, fileDescr}
+        previewFile <- v .:? "previewFile"
+        pure MCImage {text, image, previewFile}
       MCVideo_ -> do
         text <- v .: "text"
-        poster <- v .: "poster"
-        pure MCVideo {text, poster}
+        image <- v .: "image"
+        duration <- v .: "duration"
+        pure MCVideo {text, image, duration}
       MCVoice_ -> do
         text <- v .: "text"
         duration <- v .: "duration"
@@ -424,16 +425,16 @@ instance ToJSON MsgContent where
     MCUnknown {json} -> J.Object json
     MCText t -> J.object ["type" .= MCText_, "text" .= t]
     MCLink {text, preview} -> J.object ["type" .= MCLink_, "text" .= text, "preview" .= preview]
-    MCImage {text, image} -> J.object ["type" .= MCImage_, "text" .= text, "image" .= image]
-    MCVideo {text, poster} -> J.object ["type" .= MCImage_, "text" .= text, "poster" .= poster]
+    MCImage {text, image, previewFile} -> J.object $ ("previewFile" .=? previewFile) ["type" .= MCImage_, "text" .= text, "image" .= image]
+    MCVideo {text, image, duration} -> J.object ["type" .= MCImage_, "text" .= text, "image" .= image, "duration" .= duration]
     MCVoice {text, duration} -> J.object ["type" .= MCVoice_, "text" .= text, "duration" .= duration]
     MCFile t -> J.object ["type" .= MCFile_, "text" .= t]
   toEncoding = \case
     MCUnknown {json} -> JE.value $ J.Object json
     MCText t -> J.pairs $ "type" .= MCText_ <> "text" .= t
     MCLink {text, preview} -> J.pairs $ "type" .= MCLink_ <> "text" .= text <> "preview" .= preview
-    MCImage {text, image} -> J.pairs $ "type" .= MCImage_ <> "text" .= text <> "image" .= image
-    MCVideo {text, poster} -> J.pairs $ "type" .= MCImage_ <> "text" .= text <> "poster" .= poster
+    MCImage {text, image, previewFile} -> J.pairs $ "type" .= MCImage_ <> "text" .= text <> "image" .= image <> "previewFile" .= previewFile
+    MCVideo {text, image, duration} -> J.pairs $ "type" .= MCImage_ <> "text" .= text <> "image" .= image <> "duration" .= duration
     MCVoice {text, duration} -> J.pairs $ "type" .= MCVoice_ <> "text" .= text <> "duration" .= duration
     MCFile t -> J.pairs $ "type" .= MCFile_ <> "text" .= t
 

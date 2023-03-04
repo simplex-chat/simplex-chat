@@ -343,6 +343,7 @@ import Simplex.Chat.Migrations.M20230117_fkey_indexes
 import Simplex.Chat.Migrations.M20230118_recreate_smp_servers
 import Simplex.Chat.Migrations.M20230129_drop_chat_items_group_idx
 import Simplex.Chat.Migrations.M20230206_item_deleted_by_group_member_id
+import Simplex.Chat.Migrations.M20230304_file_description
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (week)
@@ -408,7 +409,8 @@ schemaMigrations =
     ("20230117_fkey_indexes", m20230117_fkey_indexes),
     ("20230118_recreate_smp_servers", m20230118_recreate_smp_servers),
     ("20230129_drop_chat_items_group_idx", m20230129_drop_chat_items_group_idx),
-    ("20230206_item_deleted_by_group_member_id", m20230206_item_deleted_by_group_member_id)
+    ("20230206_item_deleted_by_group_member_id", m20230206_item_deleted_by_group_member_id),
+    ("20230304_file_description", m20230304_file_description)
   ]
 
 -- | The list of migrations in ascending order by date
