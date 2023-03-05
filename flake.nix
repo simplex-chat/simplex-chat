@@ -12,7 +12,23 @@
   outputs = { self, haskellNix, nixpkgs, flake-utils, ... }:
     let systems = [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ]; in
     flake-utils.lib.eachSystem systems (system:
-      let pkgs = haskellNix.legacyPackages.${system}; in
+      # this android26 overlay makes the pkgsCross.{aarch64-android,armv7a-android-prebuilt} to set stdVer to 26 (Android 8).
+      let android26 = final: prev: {
+        pkgsCross = prev.pkgsCross // {
+          aarch64-android = import prev.path {
+            inherit system;
+            inherit (prev) overlays;
+            crossSystem = prev.lib.systems.examples.aarch64-android // { sdkVer = "26"; };
+          };
+          armv7a-android-prebuilt = import prev.path {
+            inherit system;
+            inherit (prev) overlays;
+            crossSystem = prev.lib.systems.examples.armv7a-android-prebuilt // { sdkVer = "26"; };
+          };
+        };
+      }; in
+      # `appendOverlays` with a singleton is identical to `extend`.
+      let pkgs = haskellNix.legacyPackages.${system}.appendOverlays [android26]; in
       let drv' = { extra-modules, pkgs', ... }: pkgs'.haskell-nix.project {
         compiler-nix-name = "ghc8107";
         index-state = "2022-06-20T00:00:00Z";
