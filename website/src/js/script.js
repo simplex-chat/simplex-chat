@@ -1,10 +1,18 @@
 const uniqueSwiper = new Swiper('.unique-swiper', {
     slidesPerView: 1,
     spaceBetween: 80,
-    // autoplay: {
-    //   delay: 3000,
-    //   disableOnInteraction: false,
-    // },
+    allowTouchMove: true,
+    breakpoints: {
+        1400: {
+            allowTouchMove: false,
+        },
+        1200: {
+            allowTouchMove: true,
+        },
+        768: {
+            allowTouchMove: true,
+        }
+    },
     direction: 'horizontal',
     pagination: {
         el: '.simplex-unique-swiper-pagination',
@@ -62,10 +70,18 @@ const privateSwiper = new Swiper('.private-swiper', {
 const simplexExplainedSwiper = new Swiper(".simplex-explained-swiper", {
     slidesPerView: 1,
     spaceBetween: 80,
-    // autoplay: {
-    //   delay: 3000,
-    //   disableOnInteraction: false,
-    // },
+    allowTouchMove: true,
+    breakpoints: {
+        1400: {
+            allowTouchMove: false,
+        },
+        1200: {
+            allowTouchMove: true,
+        },
+        768: {
+            allowTouchMove: true,
+        }
+    },
     direction: "horizontal",
     pagination: {
         el: ".simplex-explained-swiper-pagination",
