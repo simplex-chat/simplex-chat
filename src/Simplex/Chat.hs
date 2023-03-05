@@ -1191,25 +1191,35 @@ processChatCommand = \case
     CRGroupProfile user <$> withStore (\db -> getGroupInfoByName db user gName)
   UpdateGroupDescription gName description ->
     updateGroupProfileByName gName $ \p -> p {description}
-  APICreateGroupLink groupId -> withUser $ \user -> withChatLock "createGroupLink" $ do
+  APICreateGroupLink groupId mRole -> withUser $ \user -> withChatLock "createGroupLink" $ do
     gInfo <- withStore $ \db -> getGroupInfo db user groupId
     assertUserGroupRole gInfo GRAdmin
+    -- TODO validate role - only member or observer
     groupLinkId <- GroupLinkId <$> (asks idsDrg >>= liftIO . (`randomBytes` 16))
     let crClientData = encodeJSON $ CRDataGroup groupLinkId
     (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMContact $ Just crClientData
-    withStore $ \db -> createGroupLink db user gInfo connId cReq groupLinkId
-    pure $ CRGroupLinkCreated user gInfo cReq
+    withStore $ \db -> createGroupLink db user gInfo connId cReq groupLinkId mRole
+    pure $ CRGroupLinkCreated user gInfo cReq mRole
+  APIGroupLinkMemberRole groupId mRole' -> withUser $ \user -> withChatLock "groupLinkMemberRole " $ do
+    gInfo <- withStore $ \db -> getGroupInfo db user groupId
+    withStore $ \db -> do
+      (groupLinkId, _, mRole) <- getGroupLink db user gInfo
+      liftIO $ when (mRole' /= mRole) $ setGroupLinkMemberRole db user groupLinkId mRole'
+    pure $ CRCmdOk $ Just user
   APIDeleteGroupLink groupId -> withUser $ \user -> withChatLock "deleteGroupLink" $ do
     gInfo <- withStore $ \db -> getGroupInfo db user groupId
     deleteGroupLink' user gInfo
     pure $ CRGroupLinkDeleted user gInfo
   APIGetGroupLink groupId -> withUser $ \user -> do
     gInfo <- withStore $ \db -> getGroupInfo db user groupId
-    groupLink <- withStore $ \db -> getGroupLink db user gInfo
-    pure $ CRGroupLink user gInfo groupLink
-  CreateGroupLink gName -> withUser $ \user -> do
+    (_, groupLink, mRole) <- withStore $ \db -> getGroupLink db user gInfo
+    pure $ CRGroupLink user gInfo groupLink mRole
+  CreateGroupLink gName mRole -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
-    processChatCommand $ APICreateGroupLink groupId
+    processChatCommand $ APICreateGroupLink groupId mRole
+  GroupLinkMemberRole gName mRole -> withUser $ \user -> do
+    groupId <- withStore $ \db -> getGroupIdByName db user gName
+    processChatCommand $ APIGroupLinkMemberRole groupId mRole
   DeleteGroupLink gName -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIDeleteGroupLink groupId
@@ -4060,10 +4070,12 @@ chatCommandP =
       ("/group_profile " <|> "/gp ") *> char_ '#' *> (UpdateGroupNames <$> displayName <* A.space <*> groupProfile),
       ("/group_profile " <|> "/gp ") *> char_ '#' *> (ShowGroupProfile <$> displayName),
       "/group_descr " *> char_ '#' *> (UpdateGroupDescription <$> displayName <*> optional (A.space *> msgTextP)),
-      "/_create link #" *> (APICreateGroupLink <$> A.decimal),
+      "/_create link #" *> (APICreateGroupLink <$> A.decimal <*> (A.space *> memberRole <|> pure GRMember)),
+      "/_set link role #" *> (APIGroupLinkMemberRole <$> A.decimal <* A.space <*> memberRole),
       "/_delete link #" *> (APIDeleteGroupLink <$> A.decimal),
       "/_get link #" *> (APIGetGroupLink <$> A.decimal),
-      "/create link #" *> (CreateGroupLink <$> displayName),
+      "/create link #" *> (CreateGroupLink <$> displayName <*> (A.space *> memberRole <|> pure GRMember)),
+      "/set link role #" *> (GroupLinkMemberRole <$> displayName <* A.space <*> memberRole),
       "/delete link #" *> (DeleteGroupLink <$> displayName),
       "/show link #" *> (ShowGroupLink <$> displayName),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <*> pure Nothing <*> quotedMsg <*> msgTextP),

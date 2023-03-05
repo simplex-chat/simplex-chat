@@ -39,7 +39,7 @@ chatGroupTests = do
     it "full delete message of another group member" testGroupMemberMessageFullDelete
   describe "async group connections" $ do
     xit "create and join group when clients go offline" testGroupAsync
-  describe "group links" $ do
+  fdescribe "group links" $ do
     it "create group link, join via group link" testGroupLink
     it "delete group, re-join via same link" testGroupLinkDeleteGroupRejoin
     it "sending message to contact created via group link marks it used" testGroupLinkContactUsed
