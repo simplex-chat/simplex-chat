@@ -39,7 +39,7 @@ chatGroupTests = do
     it "full delete message of another group member" testGroupMemberMessageFullDelete
   describe "async group connections" $ do
     xit "create and join group when clients go offline" testGroupAsync
-  fdescribe "group links" $ do
+  describe "group links" $ do
     it "create group link, join via group link" testGroupLink
     it "delete group, re-join via same link" testGroupLinkDeleteGroupRejoin
     it "sending message to contact created via group link marks it used" testGroupLinkContactUsed
@@ -1423,14 +1423,14 @@ testGroupLink =
       alice ##> "/show link #team"
       alice <## "no group link, to create: /create link #team"
       alice ##> "/create link #team"
-      _ <- getGroupLink alice "team" True
+      _ <- getGroupLink alice "team" GRMember True
       alice ##> "/delete link #team"
       alice <## "Group link is deleted - joined members will remain connected."
       alice <## "To create a new group link use /create link #team"
       alice ##> "/create link #team"
-      gLink <- getGroupLink alice "team" True
+      gLink <- getGroupLink alice "team" GRMember True
       alice ##> "/show link #team"
-      _ <- getGroupLink alice "team" False
+      _ <- getGroupLink alice "team" GRMember False
       alice ##> "/create link #team"
       alice <## "you already have link for this group, to show: /show link #team"
       bob ##> ("/c " <> gLink)
@@ -1522,7 +1522,7 @@ testGroupLinkDeleteGroupRejoin =
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
       alice ##> "/create link #team"
-      gLink <- getGroupLink alice "team" True
+      gLink <- getGroupLink alice "team" GRMember True
       bob ##> ("/c " <> gLink)
       bob <## "connection request sent!"
       alice <## "bob (Bob): accepting request to join group #team..."
@@ -1578,7 +1578,7 @@ testGroupLinkContactUsed =
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
       alice ##> "/create link #team"
-      gLink <- getGroupLink alice "team" True
+      gLink <- getGroupLink alice "team" GRMember True
       bob ##> ("/c " <> gLink)
       bob <## "connection request sent!"
       alice <## "bob (Bob): accepting request to join group #team..."
@@ -1638,7 +1638,7 @@ testGroupLinkIncognitoMembership =
         (bob <## ("#team: you joined the group incognito as " <> bobIncognito))
       -- bob creates group link, cath joins
       bob ##> "/create link #team"
-      gLink <- getGroupLink bob "team" True
+      gLink <- getGroupLink bob "team" GRMember True
       cath ##> ("/c " <> gLink)
       cath <## "connection request sent!"
       bob <## "cath (Catherine): accepting request to join group #team..."
@@ -1729,7 +1729,7 @@ testGroupLinkUnusedHostContactDeleted =
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
       alice ##> "/create link #team"
-      gLinkTeam <- getGroupLink alice "team" True
+      gLinkTeam <- getGroupLink alice "team" GRMember True
       bob ##> ("/c " <> gLinkTeam)
       bob <## "connection request sent!"
       alice <## "bob (Bob): accepting request to join group #team..."
@@ -1747,7 +1747,7 @@ testGroupLinkUnusedHostContactDeleted =
       alice <## "group #club is created"
       alice <## "to add members use /a club <name> or /create link #club"
       alice ##> "/create link #club"
-      gLinkClub <- getGroupLink alice "club" True
+      gLinkClub <- getGroupLink alice "club" GRMember True
       bob ##> ("/c " <> gLinkClub)
       bob <## "connection request sent!"
       alice <## "bob_1 (Bob): accepting request to join group #club..."
@@ -1822,7 +1822,7 @@ testGroupLinkIncognitoUnusedHostContactsDeleted =
       alice <## ("group #" <> group <> " is created")
       alice <## ("to add members use /a " <> group <> " <name> or /create link #" <> group)
       alice ##> ("/create link #" <> group)
-      gLinkTeam <- getGroupLink alice group True
+      gLinkTeam <- getGroupLink alice group GRMember True
       bob ##> ("/c " <> gLinkTeam)
       bobIncognito <- getTermLine bob
       bob <## "connection request sent incognito!"

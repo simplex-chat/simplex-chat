@@ -1187,8 +1187,10 @@ deleteGroupLink db User {userId} GroupInfo {groupId} = do
 
 getGroupLink :: DB.Connection -> User -> GroupInfo -> ExceptT StoreError IO (Int64, ConnReqContact, GroupMemberRole)
 getGroupLink db User {userId} gInfo@GroupInfo {groupId} =
-  ExceptT . firstRow id (SEGroupLinkNotFound gInfo) $
+  ExceptT . firstRow groupLink (SEGroupLinkNotFound gInfo) $
     DB.query db "SELECT user_contact_link_id, conn_req_contact, group_link_member_role FROM user_contact_links WHERE user_id = ? AND group_id = ? LIMIT 1" (userId, groupId)
+  where
+    groupLink (linkId, cReq, mRole_) = (linkId, cReq, fromMaybe GRMember mRole_)
 
 getGroupLinkId :: DB.Connection -> User -> GroupInfo -> IO (Maybe GroupLinkId)
 getGroupLinkId db User {userId} GroupInfo {groupId} =
