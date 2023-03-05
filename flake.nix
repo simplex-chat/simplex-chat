@@ -105,7 +105,7 @@
               );in {
               "${pkgs.pkgsCross.musl64.hostPlatform.system}-static:exe:simplex-chat" = (drv pkgs.pkgsCross.musl64).simplex-chat.components.exes.simplex-chat;
               "${pkgs.pkgsCross.musl32.hostPlatform.system}-static:exe:simplex-chat" = (drv pkgs.pkgsCross.musl32).simplex-chat.components.exes.simplex-chat;
-              "${pkgs.pkgsCross.muslpi.hostPlatform.system}-static:exe:simplex-chat" = (drv pkgs.pkgsCross.muslpi).simplex-chat.components.exes.simplex-chat;
+              # "${pkgs.pkgsCross.muslpi.hostPlatform.system}-static:exe:simplex-chat" = (drv pkgs.pkgsCross.muslpi).simplex-chat.components.exes.simplex-chat;
               "${pkgs.pkgsCross.aarch64-multiplatform-musl.hostPlatform.system}-static:exe:simplex-chat" = (drv pkgs.pkgsCross.aarch64-multiplatform-musl).simplex-chat.components.exes.simplex-chat;
               "armv7a-android:lib:support" = (drv android32Pkgs).android-support.components.library.override {
                 smallAddressSpace = true; enableShared = false;
