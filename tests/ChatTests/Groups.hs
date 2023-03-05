@@ -46,6 +46,7 @@ chatGroupTests = do
     it "create group link, join via group link - incognito membership" testGroupLinkIncognitoMembership
     it "unused host contact is deleted after all groups with it are deleted" testGroupLinkUnusedHostContactDeleted
     it "leaving groups with unused host contacts deletes incognito profiles" testGroupLinkIncognitoUnusedHostContactsDeleted
+    it "group link member role" testGroupLinkMemberRole
 
 testGroup :: HasCallStack => SpecWith FilePath
 testGroup = versionTestMatrix3 runTestGroup
@@ -127,28 +128,27 @@ testGroupShared alice bob cath checkMessages = do
   alice <## "bob (Bob)"
   alice <## "cath (Catherine)"
   -- test observer role
-  -- to be enabled once the role is enabled in parser
-  -- alice ##> "/mr team bob observer"
-  -- concurrentlyN_
-  --   [ alice <## "#team: you changed the role of bob from admin to observer",
-  --     bob <## "#team: alice changed your role from admin to observer",
-  --     cath <## "#team: alice changed the role of bob from admin to observer"
-  --   ]
-  -- bob ##> "#team hello"
-  -- bob <## "#team: you don't have permission to send messages to this group"
-  -- bob ##> "/rm team cath"
-  -- bob <## "#team: you have insufficient permissions for this action, the required role is admin"
-  -- cath #> "#team hello"
-  -- concurrentlyN_
-  --   [ alice <# "#team cath> hello",
-  --     bob <# "#team cath> hello"
-  --   ]
-  -- alice ##> "/mr team bob admin"
-  -- concurrentlyN_
-  --   [ alice <## "#team: you changed the role of bob from observer to admin",
-  --     bob <## "#team: alice changed your role from observer to admin",
-  --     cath <## "#team: alice changed the role of bob from observer to admin"
-  --   ]
+  alice ##> "/mr team bob observer"
+  concurrentlyN_
+    [ alice <## "#team: you changed the role of bob from admin to observer",
+      bob <## "#team: alice changed your role from admin to observer",
+      cath <## "#team: alice changed the role of bob from admin to observer"
+    ]
+  bob ##> "#team hello"
+  bob <## "#team: you don't have permission to send messages"
+  bob ##> "/rm team cath"
+  bob <## "#team: you have insufficient permissions for this action, the required role is admin"
+  cath #> "#team hello"
+  concurrentlyN_
+    [ alice <# "#team cath> hello",
+      bob <# "#team cath> hello"
+    ]
+  alice ##> "/mr team bob admin"
+  concurrentlyN_
+    [ alice <## "#team: you changed the role of bob from observer to admin",
+      bob <## "#team: alice changed your role from observer to admin",
+      cath <## "#team: alice changed the role of bob from observer to admin"
+    ]
   -- remove member
   bob ##> "/rm team cath"
   concurrentlyN_
@@ -1850,3 +1850,58 @@ testGroupLinkIncognitoUnusedHostContactsDeleted =
         ]
       bob ##> ("/d #" <> group)
       bob <## ("#" <> group <> ": you deleted the group")
+
+testGroupLinkMemberRole :: HasCallStack => FilePath -> IO ()
+testGroupLinkMemberRole =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+      alice ##> "/create link #team observer"
+      gLink <- getGroupLink alice "team" GRObserver True
+      bob ##> ("/c " <> gLink)
+      bob <## "connection request sent!"
+      alice <## "bob (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ do
+            alice <## "bob (Bob): contact is connected"
+            alice <## "bob invited to group #team via your group link"
+            alice <## "#team: bob joined the group",
+          do
+            bob <## "alice (Alice): contact is connected"
+            bob <## "#team: you joined the group"
+        ]
+      alice ##> "/set link role #team admin"
+      alice <## "#team: initial role for group member cannot be admin, use member or observer"
+      alice ##> "/set link role #team member"
+      alice <## "ok"
+      cath ##> ("/c " <> gLink)
+      cath <## "connection request sent!"
+      alice <## "cath (Catherine): accepting request to join group #team..."
+      -- if contact existed it is merged
+      concurrentlyN_
+        [ alice
+            <### [ "cath (Catherine): contact is connected",
+                   EndsWith "invited to group #team via your group link",
+                   EndsWith "joined the group"
+                 ],
+          cath
+            <### [ "alice (Alice): contact is connected",
+                   "#team: you joined the group",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+      alice #> "#team hello"
+      concurrently_
+        (bob <# "#team alice> hello")
+        (cath <# "#team alice> hello")
+      cath #> "#team hello too"
+      concurrently_
+        (alice <# "#team cath> hello too")
+        (bob <# "#team cath> hello too")
+      bob ##> "#team hey"
+      bob <## "#team: you don't have permission to send messages"

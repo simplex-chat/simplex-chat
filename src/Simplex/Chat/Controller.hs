@@ -687,6 +687,7 @@ data ChatErrorType
   | CEContactDisabled {contact :: Contact}
   | CEConnectionDisabled {connection :: Connection}
   | CEGroupUserRole {groupInfo :: GroupInfo, requiredRole :: GroupMemberRole}
+  | CEGroupMemberInitialRole {groupInfo :: GroupInfo, initialRole :: GroupMemberRole}
   | CEContactIncognitoCantInvite
   | CEGroupIncognitoCantInvite
   | CEGroupContactRole {contactName :: ContactName}
