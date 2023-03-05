@@ -1875,7 +1875,7 @@ testGroupLinkMemberRole =
       alice ##> "/set link role #team admin"
       alice <## "#team: initial role for group member cannot be admin, use member or observer"
       alice ##> "/set link role #team member"
-      alice <## "ok"
+      _ <- getGroupLink alice "team" GRMember False
       cath ##> ("/c " <> gLink)
       cath <## "connection request sent!"
       alice <## "cath (Catherine): accepting request to join group #team..."
