@@ -214,7 +214,7 @@
     <string name="sender_you_pronoun">你</string>
     <string name="unknown_message_format">未知的訊息格式</string>
     <string name="invalid_message_format">無效的訊息格式</string>
-    <string name="live">直播</string>
+    <string name="live">實況</string>
     <string name="invalid_chat">無效聊天</string>
     <string name="invalid_data">無效數據</string>
     <string name="connection_local_display_name">連接 <xliff:g id="connection ID" example="1">%1$d</xliff:g></string>
@@ -241,7 +241,7 @@
     <string name="connect_via_contact_link">透過連結連接聯絡人？</string>
     <string name="connect_via_invitation_link">透過邀請連結連接？</string>
     <string name="connect_via_group_link">通過邀請連結連接群組？</string>
-    <string name="profile_will_be_sent_to_contact_sending_link">您的個人檔案將會傳送給你收到此連結的聯絡人</string>
+    <string name="profile_will_be_sent_to_contact_sending_link">你的個人檔案將會傳送給你收到此連結的聯絡人</string>
     <string name="you_will_join_group">你將會加入此連結內的群組並且連接到此群組成為群組內的成員。</string>
     <string name="connect_via_link_verb">連接</string>
     <string name="server_error">錯誤</string>
@@ -345,10 +345,10 @@
     <string name="notification_contact_connected">已連線</string>
     <string name="la_notice_title_simplex_lock">SimpleX 鎖定</string>
     <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">為了保護你的個人訊息，開啟 SimpleX 鎖定。
-\n在啟用此功能之前，系統將提示您完成螢幕鎖定的功能。</string>
+\n在啟用此功能之前，系統將提示你完成螢幕鎖定的功能。</string>
     <string name="la_notice_turn_on">打開</string>
     <string name="auth_simplex_lock_turned_on">SimpleX 鎖定已開啟</string>
-    <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">你的裝置沒有啟動螢幕鎖定。您可以通過設定內啟動螢幕鎖定，當你啟動後就可以使用 SimpleX 鎖定</string>
+    <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">你的裝置沒有啟動螢幕鎖定。你可以通過設定內啟動螢幕鎖定，當你啟動後就可以使用 SimpleX 鎖定</string>
     <string name="edit_verb">修改</string>
     <string name="delete_verb">刪除</string>
     <string name="reveal_verb">透露</string>
@@ -454,7 +454,7 @@
     <string name="callstate_waiting_for_answer">等待對方回應 …</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">如果你收到 &lt;xliff:g xmlns:xliff=\"urn:oasis:names:tc:xliff:document:1.2\" id=\"appName\"&gt;SimepleX Chat 邀請連結，你可以使用瀏覧器開啟</string>
     <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 電話版： 點擊 <b>使用電話程式開啟</b>, 然後在程式內點擊 <b>連接</b>.</string>
-    <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">如果您選擇拒絕傳送者將不會收到通知。</string>
+    <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">如果你選擇拒絕傳送者將不會收到通知。</string>
     <string name="reject_contact_button">拒絕</string>
     <string name="delete_contact_menu_action">刪除</string>
     <string name="delete_group_menu_action">刪除</string>
@@ -540,7 +540,7 @@
     <string name="we_do_not_store_contacts_or_messages_on_servers">我們不會在伺服器內儲存你的任何聯絡人和消息（一旦傳送）。</string>
     <string name="create_profile">建立個人檔案</string>
     <string name="callstate_received_confirmation">回應已確認</string>
-    <string name="you_can_connect_to_simplex_chat_founder">您可以透過 <font color="#0088ff">連接到 <xliff:g id="appNameFull">SimpleX Chat</xliff:g> 開發人員提出任何問題並接收更新</font>。</string>
+    <string name="you_can_connect_to_simplex_chat_founder">你可以透過 <font color="#0088ff">連接到 <xliff:g id="appNameFull">SimpleX Chat</xliff:g> 開發人員提出任何問題並接收更新</font>。</string>
     <string name="to_start_a_new_chat_help_header">開始新的對話</string>
     <string name="set_contact_name">設定聯聯人名稱</string>
     <string name="you_invited_your_contact">你已邀請了你的聯絡人</string>
@@ -739,7 +739,7 @@
     <string name="skip_inviting_button">跳過邀請成員</string>
     <string name="invite_to_group_button">邀請至群組</string>
     <string name="button_add_members">邀請成員</string>
-    <string name="invite_prohibited_description">你正在嘗試邀請一位與您分享了匿名聊天模式的聯絡人進入至你正在使用真實的個人檔案聊天模式的群組中</string>
+    <string name="invite_prohibited_description">你正在嘗試邀請一位與你分享了匿名聊天模式的聯絡人進入至你正在使用真實的個人檔案聊天模式的群組中</string>
     <string name="error_creating_link_for_group">建立群組邀請連結時出錯</string>
     <string name="error_deleting_link_for_group">刪除群組邀請連結時出錯</string>
     <string name="section_title_for_console">為終端機</string>
@@ -883,9 +883,9 @@
     <string name="v4_3_irreversible_message_deletion">無法撤銷的訊息刪除</string>
     <string name="v4_3_improved_privacy_and_security">增強隱私和安全性</string>
     <string name="v4_4_disappearing_messages_desc">已傳送的訊息將在設定的時間後被刪除。</string>
-    <string name="v4_4_live_messages_desc">當您輸入訊息時侯，對方將可以即時看到您輸入的內容。</string>
+    <string name="v4_4_live_messages_desc">當你輸入訊息時侯，對方將可以即時看到你輸入的內容。</string>
     <string name="v4_4_verify_connection_security">驗證連線安全性。</string>
-    <string name="v4_4_verify_connection_security_desc">比較您與聯絡人的安全碼。</string>
+    <string name="v4_4_verify_connection_security_desc">比較你與聯絡人的安全碼。</string>
     <string name="v4_4_french_interface_descr">感謝用戶 - 使用 Weblate 的翻譯貢獻！</string>
     <string name="snd_conn_event_switch_queue_phase_changing_for_member">正在改變地址為 %s …</string>
     <string name="database_encryption_will_be_updated">受加密的數據庫密碼會再次更新和儲存於金鑰庫。</string>
