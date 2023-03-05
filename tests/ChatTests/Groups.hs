@@ -1905,3 +1905,12 @@ testGroupLinkMemberRole =
         (bob <# "#team cath> hello too")
       bob ##> "#team hey"
       bob <## "#team: you don't have permission to send messages"
+      alice ##> "/mr #team bob member"
+      alice <## "#team: you changed the role of bob from observer to member"
+      concurrently_
+        (bob <## "#team: alice changed your role from observer to member")
+        (cath <## "#team: alice changed the role of bob from observer to member")
+      bob #> "#team hey now"
+      concurrently_
+        (alice <# "#team bob> hey now")
+        (cath <# "#team bob> hey now")
