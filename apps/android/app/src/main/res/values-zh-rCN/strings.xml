@@ -644,4 +644,32 @@
     <string name="v4_5_multiple_chat_profiles">多个聊天资料</string>
     <string name="database_initialization_error_desc">数据库不能正常工作。点击了解更多</string>
     <string name="message_delivery_error_title">消息传递错误</string>
+    <string name="ttl_hour">%d 小时</string>
+    <string name="ttl_hours">%d 小时</string>
+    <string name="ttl_month">%d 月</string>
+    <string name="ttl_sec">%d 秒</string>
+    <string name="how_simplex_works">SimpleX<xliff:g id="appName">如何</xliff:g>工作</string>
+    <string name="ensure_ICE_server_address_are_correct_format_and_unique">确保 WebRTC ICE 服务器地址格式正确、每行分开且不重复。</string>
+    <string name="many_people_asked_how_can_it_deliver">许多人问：<i>如果<xliff:g id="appName">SimpleX</xliff:g>没有用户标识符，它是怎样传递信息的？</i></string>
+    <string name="ensure_smp_server_address_are_correct_format_and_unique">确保 SMP 服务器地址格式正确、每行分开且不重复。</string>
+    <string name="markdown_help">Markdown帮助</string>
+    <string name="mark_code_verified">标记为已验证</string>
+    <string name="make_private_connection">建立隐私连接</string>
+    <string name="group_preview_join_as">以%s身份加入</string>
+    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">如果你收到<xliff:g id="appName">SimpleX聊天的</xliff:g>邀请链接，你可以在浏览器中打开它：</string>
+    <string name="mark_read">标记为已读</string>
+    <string name="mark_unread">标记为未读</string>
+    <string name="markdown_in_messages">在消息中使用Markdown</string>
+    <string name="file_with_path">文件：%s</string>
+    <string name="member_will_be_removed_from_group_cannot_be_undone">成员将被移出群组 - 此操作无法撤消！</string>
+    <string name="v4_5_message_draft">消息草稿</string>
+    <string name="thousand_abbreviation">千</string>
+    <string name="marked_deleted_description">已标记为已删除的</string>
+    <string name="ttl_week">%d 星期</string>
+    <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">您将停止接收来自该群组的消息。聊天记录将被保留。</string>
+    <string name="group_member_role_member">成员</string>
+    <string name="member_info_section_title_member">成员</string>
+    <string name="ttl_weeks">%d 几个星期</string>
+    <string name="ttl_min">%d 分钟</string>
+    <string name="ttl_months">%d 几个月</string>
 </resources>
