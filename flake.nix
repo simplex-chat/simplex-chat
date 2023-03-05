@@ -329,22 +329,6 @@
                       > $out/nix-support/hydra-build-products
                 '';
               };
-              "x86_64-linux:lib:support" = (drv androidPkgs).android-support.components.library.override {
-                smallAddressSpace = true; enableShared = false;
-                setupBuildFlags = map (x: "--ghc-option=${x}") [ "-shared" "-o" "libsupport.so" ];
-                postInstall = ''
-
-                  mkdir -p $out/_pkg
-                  cp libsupport.so $out/_pkg
-                  ${pkgs.patchelf}/bin/patchelf --remove-needed libunwind.so.1 $out/_pkg/libsupport.so
-                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-x86_64-linux-libsupport.zip *)
-                  rm -fR $out/_pkg
-
-                  mkdir -p $out/nix-support
-                  echo "file binary-dist \"$(echo $out/*.zip)\"" \
-                      > $out/nix-support/hydra-build-products
-                '';
-              };
             };
 
             # builds for iOS and iOS simulator
