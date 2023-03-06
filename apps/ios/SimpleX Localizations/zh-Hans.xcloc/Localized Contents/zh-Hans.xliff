@@ -149,7 +149,7 @@
       </trans-unit>
       <trans-unit id="%lldh" xml:space="preserve" approved="no">
         <source>%lldh</source>
-        <target state="translated">%lld时</target>
+        <target state="translated">%lld小时</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lldk" xml:space="preserve" approved="no">
@@ -159,7 +159,7 @@
       </trans-unit>
       <trans-unit id="%lldm" xml:space="preserve" approved="no">
         <source>%lldm</source>
-        <target state="translated">%lld分</target>
+        <target state="translated">%lld分钟</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lldmth" xml:space="preserve" approved="no">
