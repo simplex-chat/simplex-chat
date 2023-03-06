@@ -17,6 +17,7 @@ struct GroupChatInfoView: View {
     @ObservedObject private var alertManager = AlertManager.shared
     @State private var alert: GroupChatInfoViewAlert? = nil
     @State private var groupLink: String?
+    @State private var groupLinkMemberRole: GroupMemberRole = .member
     @State private var showAddMembersSheet: Bool = false
     @State private var connectionStats: ConnectionStats?
     @State private var connectionCode: String?
@@ -107,7 +108,9 @@ struct GroupChatInfoView: View {
         }
         .onAppear {
             do {
-                groupLink = try apiGetGroupLink(groupInfo.groupId)
+                if let link = try apiGetGroupLink(groupInfo.groupId) {
+                    (groupLink, groupLinkMemberRole) = link
+                }
             } catch let error {
                 logger.error("GroupChatInfoView apiGetGroupLink: \(responseError(error))")
             }
@@ -187,7 +190,7 @@ struct GroupChatInfoView: View {
 
     private func groupLinkButton() -> some View {
         NavigationLink {
-            GroupLinkView(groupId: groupInfo.groupId, groupLink: $groupLink)
+            GroupLinkView(groupId: groupInfo.groupId, groupLink: $groupLink, groupLinkMemberRole: $groupLinkMemberRole)
                 .navigationBarTitle("Group link")
                 .navigationBarTitleDisplayMode(.large)
         } label: {
