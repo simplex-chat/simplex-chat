@@ -89,7 +89,7 @@ const simplexExplainedSwiper = new Swiper(".simplex-explained-swiper", {
     }
 });
 
-function closeOverlay (e) {
+function closeOverlay(e) {
     e.target.closest('.overlay').classList.remove('flex');
     e.target.closest('.overlay').classList.add('hidden');
     document.body.classList.remove('lock-scroll');
@@ -126,7 +126,7 @@ function clickHandler(e) {
     }
     // -----------------------------------------------
     // ---------- For Contact & Invitation Page tabs
-    else if(e.target.closest('.contact-tab-btn')){
+    else if (e.target.closest('.contact-tab-btn')) {
         e.target.closest('.contact-tab').classList.toggle('active')
     }
 }
@@ -135,7 +135,7 @@ window.addEventListener('load', () => {
     const googlePlayBtn = document.querySelector('.google-play-btn');
     const appleStoreBtn = document.querySelector('.apple-store-btn');
     const fDroidBtn = document.querySelector('.f-droid-btn');
-    if(!googlePlayBtn || !appleStoreBtn || !fDroidBtn) return;
+    if (!googlePlayBtn || !appleStoreBtn || !fDroidBtn) return;
 
 
     if (isMobile.Android()) {
@@ -152,12 +152,17 @@ window.addEventListener('load', () => {
     }
 })
 
-const openOverlay = () => {
+function openOverlay() {
     let hash = window.location.hash
     if (hash) {
         const id = hash.split('#')[1];
         const el = document.getElementById(id)
         if (el.classList.contains('overlay')) {
+            const scrollTo = el.getAttribute('data-scroll-to')
+            if (scrollTo) {
+                const scrollToEl = document.getElementById(scrollTo)
+                if (scrollToEl) scrollToEl.scrollIntoView(true)
+            }
             el.classList.remove('hidden')
             el.classList.add('flex')
             document.body.classList.add('lock-scroll')

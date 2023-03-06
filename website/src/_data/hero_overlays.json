@@ -6,6 +6,7 @@
             "imgDark": "/img/new/explained-2.svg",
             "overlayContent": {
                 "overlayId": "how-simplex-works",
+                "overlayScrollTo": "",
                 "title": "hero-overlay-1-title",
                 "showImage": true,
                 "contentBody": "overlay_content/hero/card_1.html"
@@ -17,6 +18,7 @@
             "imgDark": "/img/new/explained-1.svg",
             "overlayContent": {
                 "overlayId": "why-ids-bad-for-privacy",
+                "overlayScrollTo": "",
                 "title": "hero-overlay-2-title",
                 "showImage": true,
                 "contentBody": "overlay_content/hero/card_2.html"
