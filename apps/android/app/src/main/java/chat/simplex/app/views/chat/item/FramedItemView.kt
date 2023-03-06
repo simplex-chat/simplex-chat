@@ -7,6 +7,7 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -166,7 +167,11 @@ fun FramedItemView(
       Column(Modifier.width(IntrinsicSize.Max)) {
         PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID) {
           if (ci.meta.itemDeleted != null) {
-            FramedItemHeader(stringResource(R.string.marked_deleted_description), true, Icons.Outlined.Delete)
+            if (ci.meta.itemDeleted is CIDeleted.Moderated) {
+              FramedItemHeader(String.format(stringResource(R.string.moderated_item_description), ci.meta.itemDeleted.byGroupMember.chatViewName), true, Icons.Outlined.Flag)
+            } else {
+              FramedItemHeader(stringResource(R.string.marked_deleted_description), true, Icons.Outlined.Delete)
+            }
           } else if (ci.meta.isLive) {
             FramedItemHeader(stringResource(R.string.live), false)
           }

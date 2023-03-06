@@ -153,6 +153,9 @@ fun ChatItemView(
           if (!(live && cItem.meta.isLive)) {
             DeleteItemAction(cItem, showMenu, questionText = deleteMessageQuestionText(), deleteMessage)
           }
+          if (cItem.memberToModerate(cInfo) != null) {
+            ModerateItemAction(cItem, showMenu, deleteMessage)
+          }
         }
       }
 
@@ -163,14 +166,16 @@ fun ChatItemView(
           onDismissRequest = { showMenu.value = false },
           Modifier.width(220.dp)
         ) {
-          ItemAction(
-            stringResource(R.string.reveal_verb),
-            Icons.Outlined.Visibility,
-            onClick = {
-              revealed.value = true
-              showMenu.value = false
-            }
-          )
+          if (!cItem.isDeletedContent) {
+            ItemAction(
+              stringResource(R.string.reveal_verb),
+              Icons.Outlined.Visibility,
+              onClick = {
+                revealed.value = true
+                showMenu.value = false
+              }
+            )
+          }
           DeleteItemAction(cItem, showMenu, questionText = deleteMessageQuestionText(), deleteMessage)
         }
       }
@@ -259,6 +264,23 @@ fun DeleteItemAction(
     onClick = {
       showMenu.value = false
       deleteMessageAlertDialog(cItem, questionText, deleteMessage = deleteMessage)
+    },
+    color = Color.Red
+  )
+}
+
+@Composable
+fun ModerateItemAction(
+  cItem: ChatItem,
+  showMenu: MutableState<Boolean>,
+  deleteMessage: (Long, CIDeleteMode) -> Unit
+) {
+  ItemAction(
+    stringResource(R.string.moderate_verb),
+    Icons.Outlined.Flag,
+    onClick = {
+      showMenu.value = false
+      deleteMessage(cItem.id, CIDeleteMode.cidmBroadcast)
     },
     color = Color.Red
   )

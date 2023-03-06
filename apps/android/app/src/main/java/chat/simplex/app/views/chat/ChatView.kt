@@ -193,19 +193,34 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
       deleteMessage = { itemId, mode ->
         withApi {
           val cInfo = chat.chatInfo
-          val r = chatModel.controller.apiDeleteChatItem(
-            type = cInfo.chatType,
-            id = cInfo.apiId,
-            itemId = itemId,
-            mode = mode
-          )
-          if (r != null) {
-            val toChatItem = r.toChatItem
-            if (toChatItem == null) {
-              chatModel.removeChatItem(cInfo, r.deletedChatItem.chatItem)
-            } else {
-              chatModel.upsertChatItem(cInfo, toChatItem.chatItem)
-            }
+          val toDeleteItem = chatModel.chatItems.firstOrNull { it.id == itemId }
+          val toModerate = toDeleteItem?.memberToModerate(chat.chatInfo)
+          val groupId = toModerate?.first
+          val groupMemberId = toModerate?.second
+          val deletedChatItem: ChatItem?
+          val toChatItem: ChatItem?
+          if (groupId != null && groupMemberId != null) {
+            val r = chatModel.controller.apiDeleteMemberChatItem(
+              groupId = groupId,
+              groupMemberId = groupMemberId,
+              itemId = itemId
+            )
+            deletedChatItem = r?.first
+            toChatItem = r?.second
+          } else {
+            val r = chatModel.controller.apiDeleteChatItem(
+              type = cInfo.chatType,
+              id = cInfo.apiId,
+              itemId = itemId,
+              mode = mode
+            )
+            deletedChatItem = r?.deletedChatItem?.chatItem
+            toChatItem = r?.toChatItem?.chatItem
+          }
+          if (toChatItem == null && deletedChatItem != null) {
+            chatModel.removeChatItem(cInfo, deletedChatItem)
+          } else if (toChatItem != null) {
+            chatModel.upsertChatItem(cInfo, toChatItem)
           }
         }
       },
