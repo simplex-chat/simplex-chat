@@ -3422,8 +3422,9 @@ SimpleX servers cannot see your profile.</source>
         <source>you: </source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="~strike~" xml:space="preserve">
+      <trans-unit id="~strike~" xml:space="preserve" approved="no">
         <source>\~strike~</source>
+        <target state="translated">\~刪除線~</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>
