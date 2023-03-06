@@ -1186,6 +1186,10 @@ func processReceivedMsg(_ res: ChatResponse) async {
             if active(user) {
                 m.updateGroup(toGroup)
             }
+        case let .memberRole(user, groupInfo, _, _, _, _):
+            if active(user) {
+                m.updateGroup(groupInfo)
+            }
         case let .rcvFileStart(user, aChatItem):
             chatItemSimpleUpdate(user, aChatItem)
         case let .rcvFileComplete(user, aChatItem):
