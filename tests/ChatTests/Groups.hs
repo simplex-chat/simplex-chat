@@ -1858,6 +1858,8 @@ testGroupLinkMemberRole =
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
+      alice ##> "/create link #team admin"
+      alice <## "#team: initial role for group member cannot be admin, use member or observer"
       alice ##> "/create link #team observer"
       gLink <- getGroupLink alice "team" GRObserver True
       bob ##> ("/c " <> gLink)
