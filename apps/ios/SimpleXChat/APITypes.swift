@@ -33,6 +33,7 @@ public enum ChatCommand {
     case apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent, live: Bool)
     case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent, live: Bool)
     case apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode)
+    case apiDeleteMemberChatItem(groupId: Int64, groupMemberId: Int64, itemId: Int64)
     case apiGetNtfToken
     case apiRegisterToken(token: DeviceToken, notificationMode: NotificationsMode)
     case apiVerifyToken(token: DeviceToken, nonce: String, code: String)
@@ -122,6 +123,7 @@ public enum ChatCommand {
                 return "/_send \(ref(type, id)) live=\(onOff(live)) json \(msg)"
             case let .apiUpdateChatItem(type, id, itemId, mc, live): return "/_update item \(ref(type, id)) \(itemId) live=\(onOff(live)) \(mc.cmdString)"
             case let .apiDeleteChatItem(type, id, itemId, mode): return "/_delete item \(ref(type, id)) \(itemId) \(mode.rawValue)"
+            case let .apiDeleteMemberChatItem(groupId, groupMemberId, itemId): return "/_delete member item #\(groupId) \(groupMemberId) \(itemId)"
             case .apiGetNtfToken: return "/_ntf get "
             case let .apiRegisterToken(token, notificationMode): return "/_ntf register \(token.cmdString) \(notificationMode.rawValue)"
             case let .apiVerifyToken(token, nonce, code): return "/_ntf verify \(token.cmdString) \(nonce) \(code)"
@@ -216,6 +218,7 @@ public enum ChatCommand {
             case .apiSendMessage: return "apiSendMessage"
             case .apiUpdateChatItem: return "apiUpdateChatItem"
             case .apiDeleteChatItem: return "apiDeleteChatItem"
+            case .apiDeleteMemberChatItem: return "apiDeleteMemberChatItem"
             case .apiGetNtfToken: return "apiGetNtfToken"
             case .apiRegisterToken: return "apiRegisterToken"
             case .apiVerifyToken: return "apiVerifyToken"

@@ -288,6 +288,12 @@ func apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteM
     throw r
 }
 
+func apiDeleteMemberChatItem(groupId: Int64, groupMemberId: Int64, itemId: Int64) async throws -> (ChatItem, ChatItem?) {
+    let r = await chatSendCmd(.apiDeleteMemberChatItem(groupId: groupId, groupMemberId: groupMemberId, itemId: itemId), bgDelay: msgDelay)
+    if case let .chatItemDeleted(_, deletedChatItem, toChatItem, _) = r { return (deletedChatItem.chatItem, toChatItem?.chatItem) }
+    throw r
+}
+
 func apiGetNtfToken() -> (DeviceToken?, NtfTknStatus?, NotificationsMode) {
     let r = chatSendCmdSync(.apiGetNtfToken)
     switch r {
