@@ -463,7 +463,7 @@
     <string name="info_row_local_name">本地名称</string>
     <string name="invalid_message_format">无效的消息格式</string>
     <string name="invalid_data">无效数据</string>
-    <string name="live">LIVE</string>
+    <string name="live">实时</string>
     <string name="display_name_invited_to_connect">已邀请连接</string>
     <string name="invalid_connection_link">无效的连接链接</string>
     <string name="italic">斜体</string>
@@ -671,7 +671,7 @@
     <string name="member_info_section_title_member">成员</string>
     <string name="ttl_weeks">%d 几个星期</string>
     <string name="ttl_min">%d 分钟</string>
-    <string name="ttl_months">%d 几个月</string>
+    <string name="ttl_months">%d 月</string>
     <string name="network_and_servers">网络和服务器</string>
     <string name="network_settings_title">网络设置</string>
     <string name="moderated_description">已审核</string>
@@ -745,23 +745,23 @@
     <string name="security_code">安全码</string>
     <string name="secret">秘密</string>
     <string name="v4_2_security_assessment">安全评估</string>
-    <string name="ntf_channel_messages">SimpleX 聊天消息</string>
+    <string name="ntf_channel_messages">SimpleX 消息</string>
     <string name="is_not_verified">%s 未验证</string>
     <string name="v4_5_italian_interface_descr">感谢用户——通过 Weblate 做出贡献！</string>
-    <string name="first_platform_without_user_ids">第一个没有任何用户标识符的平台——为私密而生。</string>
-    <string name="group_is_decentralized">该小组是完全去中心化的——它只对成员可见。</string>
-    <string name="image_decoding_exception_desc">图像无法解码。 请尝试不同的图像或联系开发人员。</string>
+    <string name="first_platform_without_user_ids">第一个没有任何用户标识符的平台——专为隐私保护设计。</string>
+    <string name="group_is_decentralized">该小组是完全分散式的——它只对成员可见。</string>
+    <string name="image_decoding_exception_desc">图像无法解码。 请尝试不同的图像或联系开发者。</string>
     <string name="theme">主题</string>
-    <string name="delete_files_and_media_desc">此操作无法撤消 - 所有接收和发送的文件和媒体都将被删除。 低分辨率图片将保留。</string>
+    <string name="delete_files_and_media_desc">此操作无法撤消——所有接收和发送的文件和媒体都将被删除。 低分辨率图片将保留。</string>
     <string name="member_role_will_be_changed_with_invitation">角色将更改为“%s”。 该成员将收到新的邀请。</string>
-    <string name="enable_automatic_deletion_message">此操作无法撤消 - 早于所选的发送和接收的消息将被删除。 这可能需要几分钟时间。</string>
+    <string name="enable_automatic_deletion_message">此操作无法撤消——早于所选的发送和接收的消息将被删除。 这可能需要几分钟时间。</string>
     <string name="this_QR_code_is_not_a_link">此二维码不是链接！</string>
     <string name="switch_receiving_address_desc">此功能是实验性的！ 它仅在其他客户端安装了 4.2 版时才有效。 地址更改完成后，您应该会在对话中看到该消息——请检查您是否仍能收到来自该联系人（或群组成员）的消息。</string>
     <string name="this_link_is_not_a_valid_connection_link">此链接不是有效的连接链接！</string>
     <string name="to_start_a_new_chat_help_header">开始新的聊天</string>
     <string name="to_verify_compare">要与您的联系人验证端到端加密，请比较（或扫描）您设备上的代码。</string>
-    <string name="unmute_chat">启用通知</string>
-    <string name="update_onion_hosts_settings_question">更新洋葱网络 (.onion) 主机设置？</string>
+    <string name="unmute_chat">取消静音</string>
+    <string name="update_onion_hosts_settings_question">更新 .onion 主机设置？</string>
     <string name="update_network_session_mode_question">更新传输隔离模式？</string>
     <string name="connect_via_link_or_qr_from_clipboard_or_in_person">（从剪贴板扫描或粘贴）</string>
     <string name="smp_server_test_secure_queue">安全队列</string>
@@ -769,7 +769,7 @@
     <string name="la_notice_turn_on">打开</string>
     <string name="icon_descr_sent_msg_status_send_failed">发送失败</string>
     <string name="icon_descr_sent_msg_status_unauthorized_send">未经授权发送</string>
-    <string name="images_limit_title">图片太多了！</string>
+    <string name="images_limit_title">太多图片！</string>
     <string name="icon_descr_server_status_pending">待办的</string>
     <string name="switch_receiving_address_question">切换接收地址吗？</string>
     <string name="ask_your_contact_to_enable_voice">请让您的联系人启用发送语音消息。</string>
@@ -787,16 +787,16 @@
     <string name="show_QR_code">显示二维码</string>
     <string name="chat_with_the_founder">发送问题和想法</string>
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">保护您的隐私和安全的消息传递和应用程序平台。</string>
-    <string name="strikethrough">罢工</string>
+    <string name="strikethrough">删去</string>
     <string name="people_can_connect_only_via_links_you_share">人们只能通过您共享的链接与您建立联系。</string>
     <string name="next_generation_of_private_messaging">下一代私密通讯软件</string>
     <string name="paste_the_link_you_received">粘贴收到的链接</string>
-    <string name="alert_title_skipped_messages">跳过的消息</string>
-    <string name="settings_section_title_support">支持单纯聊天</string>
+    <string name="alert_title_skipped_messages">已跳过消息</string>
+    <string name="settings_section_title_support">支持 SIMPLEX CHAT</string>
     <string name="send_link_previews">发送链接预览</string>
     <string name="settings_section_title_socks">SOCKS 代理</string>
     <string name="stop_chat_question">停止聊天？</string>
-    <string name="stop_chat_to_export_import_or_delete_chat_database">停止聊天以导出、导入或删除聊天数据库。 聊天停止时，您将无法接收和发送消息。</string>
+    <string name="stop_chat_to_export_import_or_delete_chat_database">停止聊天以便导出、导入或删除聊天数据库。在聊天停止期间，您将无法收发消息。</string>
     <string name="restore_database">恢复数据库备份</string>
     <string name="restore_database_alert_title">恢复数据库备份？</string>
     <string name="button_remove_member">删除成员</string>
@@ -808,7 +808,7 @@
     <string name="v4_5_message_draft_descr">保留最后的消息草稿，带附件。</string>
     <string name="v4_5_private_filenames">私有文件名</string>
     <string name="v4_4_french_interface_descr">感谢用户——通过 Weblate 做出贡献！</string>
-    <string name="v4_5_transport_isolation">运输隔离</string>
+    <string name="v4_5_transport_isolation">传输隔离</string>
     <string name="paste_connection_link_below_to_connect">将您收到的链接粘贴到下面的框中以与您的联系人联系。</string>
     <string name="share_invitation_link">分享邀请链接</string>
     <string name="this_string_is_not_a_connection_link">此字符串不是连接链接！</string>
@@ -817,7 +817,7 @@
     <string name="sending_files_not_yet_supported">尚不支持发送文件</string>
     <string name="trying_to_connect_to_server_to_receive_messages">正在尝试连接到用于从该联系人接收消息的服务器。</string>
     <string name="receiving_files_not_yet_supported">尚不支持接收文件</string>
-    <string name="unknown_message_format">未知的消息格式</string>
+    <string name="unknown_message_format">未知消息格式</string>
     <string name="smp_servers_test_server">测试服务器</string>
     <string name="smp_servers_test_servers">测试服务器</string>
     <string name="simplex_link_contact">SimpleX 联系地址</string>
@@ -827,7 +827,7 @@
     <string name="sender_may_have_deleted_the_connection_request">发件人可能已删除连接请求。</string>
     <string name="smp_servers_preset_server">预设服务器</string>
     <string name="image_descr_qr_code">二维码</string>
-    <string name="network_session_mode_transport_isolation">运输隔离</string>
+    <string name="network_session_mode_transport_isolation">传输隔离</string>
     <string name="share_link">分享链接</string>
     <string name="select_contacts">选择联系人</string>
     <string name="skip_inviting_button">跳过邀请成员</string>
@@ -851,7 +851,7 @@
     <string name="reset_color">重置颜色</string>
     <string name="save_color">保存颜色</string>
     <string name="v4_5_reduced_battery_usage">减少电池使用量</string>
-    <string name="v4_5_private_filenames_descr">为了保护时区，图像/语音文件使用 UTC。</string>
+    <string name="v4_5_private_filenames_descr">为了保护时区，图像和语音文件使用协调世界时（UTC）。</string>
     <string name="use_chat">使用聊天</string>
     <string name="read_more_in_github_with_link">在我们的 <font color="#0088ff">GitHub 存储库</font> 中阅读更多内容。</string>
     <string name="auth_open_chat_console">打开聊天控制台</string>
@@ -864,29 +864,29 @@
     <string name="smp_servers_scan_qr">扫描服务器二维码</string>
     <string name="smp_servers_test_failed">服务器测试失败！</string>
     <string name="smp_servers_test_some_failed">一些服务器未通过测试：</string>
-    <string name="star_on_github">在 GitHub 上点亮小星星</string>
+    <string name="star_on_github">在 GitHub 上加星</string>
     <string name="save_and_notify_group_members">保存并通知群组成员</string>
     <string name="icon_descr_speaker_off">扬声器关闭</string>
     <string name="icon_descr_speaker_on">扬声器开启</string>
     <string name="rcv_group_event_user_deleted">已将您移除</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">更新设置会将客户端重新连接到所有服务器。</string>
-    <string name="theme_system">系统默认</string>
+    <string name="theme_system">系统</string>
     <string name="v4_4_live_messages_desc">对方会在您键入时看到更新。</string>
     <string name="view_security_code">查看安全码</string>
     <string name="voice_message_with_duration">语音消息 (<xliff:g id="duration">%1$s</xliff:g>)</string>
-    <string name="waiting_for_image">等待图像</string>
+    <string name="waiting_for_image">等待图像中</string>
     <string name="welcome">欢迎！</string>
     <string name="personal_welcome">欢迎 <xliff:g>%1$s</xliff:g>！</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">当您的联系人设备在线时，您将可以连接，请稍等或稍后查看！</string>
-    <string name="rate_the_app">评价此应用</string>
+    <string name="rate_the_app">评价此应用程序</string>
     <string name="network_enable_socks">使用 SOCKS 代理？</string>
     <string name="network_socks_toggle">使用 SOCKS 代理（端口 9050）</string>
     <string name="total_files_count_and_size">%d 个文件，总大小为 %s</string>
-    <string name="you_joined_this_group">您加入了这个群组</string>
+    <string name="you_joined_this_group">您已加入此群组</string>
     <string name="you_are_invited_to_group">您被邀请加入群组</string>
-    <string name="chat_preferences_default">默认值（%s）</string>
+    <string name="chat_preferences_default">默认（%s）</string>
     <string name="voice_prohibited_in_this_chat">此聊天中禁止语音消息。</string>
-    <string name="voice_messages_are_prohibited">该组禁止语音留言。</string>
+    <string name="voice_messages_are_prohibited">语音信息在该群组中被禁用。</string>
     <string name="verify_security_code">验证安全码</string>
     <string name="using_simplex_chat_servers">使用 <xliff:g id="appNameFull">SimpleX Chat</xliff:g> 服务器。</string>
     <string name="simplex_link_connection">通过 <xliff:g id="serverHost" example="smp.simplex.im">%1$s</xliff:g></string>
@@ -894,28 +894,28 @@
     <string name="icon_descr_address"><xliff:g id="appName">SimpleX</xliff:g> 地址</string>
     <string name="icon_descr_simplex_team"><xliff:g id="appName">SimpleX</xliff:g> 团队</string>
     <string name="group_info_section_title_num_members"><xliff:g id="num_members">%1$s</xliff:g> 成员</string>
-    <string name="chat_preferences_yes">是的</string>
-    <string name="you_can_share_your_address_anybody_will_be_able_to_connect">您可以将您的地址作为链接或二维码共享 - 任何人都可以连接到您。 如果您以后删除它，您不会丢失您的联系人。</string>
+    <string name="chat_preferences_yes">是</string>
+    <string name="you_can_share_your_address_anybody_will_be_able_to_connect">您可以将您的地址作为链接或二维码共享——任何人都可以连接到您。 如果您以后删除它，您不会丢失您的联系人。</string>
     <string name="you_control_servers_to_receive_your_contacts_to_send">您可以控制通过哪些服务器<b>接收</b>消息，您的联系人 - 您用来向他们发送消息的服务器。</string>
     <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">您的联系人可以从应用程序中扫描二维码。</string>
-    <string name="you_will_be_connected_when_group_host_device_is_online">当群主设备在线时，您将连接到群组，请稍等或稍后查看！</string>
+    <string name="you_will_be_connected_when_group_host_device_is_online">您将在组主设备上线时连接到该群组，请稍等或稍后再检查！</string>
     <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">当您启动应用或在应用程序驻留后台超过30 秒后，您将需要进行身份验证。</string>
     <string name="archive_created_on_ts">创建于 <xliff:g id="archive_ts">%1$s</xliff:g></string>
-    <string name="you_can_connect_to_simplex_chat_founder">您可以<font color="#0088ff">连接到<xliff:g id="appNameFull">SimpleX Chat</xliff:g> 开发人员提出任何问题并接收更新</font>。</string>
-    <string name="you_accepted_connection">您接受的连接</string>
+    <string name="you_can_connect_to_simplex_chat_founder">您可以 <font color="#0088ff"> 连接到 <xliff:g id="appNameFull"> SimpleX Chat </xliff:g> 开发者提出任何问题并接收更新 </font>。</string>
+    <string name="you_accepted_connection">您已接受连接</string>
     <string name="your_SMP_servers">您的 SMP 服务器</string>
-    <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> skipped message(s)</string>
+    <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> 已跳过消息</string>
     <string name="ttl_s">%d秒</string>
     <string name="whats_new">更新内容</string>
     <string name="group_preview_you_are_invited">您被邀请加入群组</string>
     <string name="you_have_no_chats">您没有聊天记录</string>
-    <string name="icon_descr_waiting_for_image">等待图像</string>
-    <string name="voice_message">语音留言</string>
-    <string name="voice_messages_prohibited">禁止语音留言！</string>
+    <string name="icon_descr_waiting_for_image">等待图像中</string>
+    <string name="voice_message">语音消息</string>
+    <string name="voice_messages_prohibited">语音消息禁止发送！</string>
     <string name="you_need_to_allow_to_send_voice">您需要允许您的联系人发送语音消息才能发送它们。</string>
     <string name="scan_QR_code">扫描二维码</string>
     <string name="you_invited_your_contact">您邀请了您的联系人</string>
-    <string name="contact_wants_to_connect_with_you">想与您联系！</string>
+    <string name="contact_wants_to_connect_with_you">想要与您连接！</string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">您的联系人需要在线才能完成连接。
 \n您可以取消此连接并删除联系人（稍后尝试使用新链接）。</string>
     <string name="image_descr_simplex_logo"><xliff:g id="appName">SimpleX</xliff:g> 标志</string>
@@ -929,37 +929,37 @@
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">您可以通过应用设置/数据库或重启应用开始聊天。</string>
     <string name="snd_group_event_changed_member_role">您将 %s 的角色更改为 %s</string>
     <string name="snd_group_event_changed_role_for_yourself">您将自己的角色更改为 %s</string>
-    <string name="snd_conn_event_switch_queue_phase_completed">您改变了地址</string>
-    <string name="you_can_share_group_link_anybody_will_be_able_to_connect">您可以共享链接或二维码 - 任何人都可以加入该群组。 如果您稍后将其删除，您不会失去该组的成员。</string>
+    <string name="snd_conn_event_switch_queue_phase_completed">您已更改地址</string>
+    <string name="you_can_share_group_link_anybody_will_be_able_to_connect">您可以共享链接或二维码——任何人都可以加入该群组。 如果您稍后将其删除，您不会失去该组的成员。</string>
     <string name="conn_level_desc_indirect">间接（<xliff:g id="conn_level">%1$s</xliff:g>）</string>
-    <string name="you_can_also_connect_by_clicking_the_link">您也可以通过单击链接进行连接。 如果它在浏览器中打开，请单击<b>在移动应用程序中打开</b>按钮。</string>
+    <string name="you_can_also_connect_by_clicking_the_link">您也可以通过点击链接进行连接。 如果它在浏览器中打开，请单击<b>在移动应用程序中打开</b>按钮。</string>
     <string name="app_name"><xliff:g id="appName">SimpleX</xliff:g></string>
     <string name="you_will_join_group">您将加入此链接指向的群组并连接到其群组成员。</string>
     <string name="description_via_group_link">通过群组链接</string>
-    <string name="description_via_one_time_link">via one-time link</string>
+    <string name="description_via_one_time_link">通过一次性链接</string>
     <string name="description_via_contact_address_link">通过联系地址链接</string>
     <string name="simplex_link_mode_browser">通过浏览器</string>
     <string name="smp_servers_your_server">您的服务器</string>
     <string name="network_use_onion_hosts_prefer">当可用时</string>
-    <string name="network_use_onion_hosts">使用洋葱网络 (.onion) 主机</string>
+    <string name="network_use_onion_hosts">使用 .onion 主机</string>
     <string name="your_ICE_servers">您的 ICE 服务器</string>
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
     <string name="section_title_welcome_message">欢迎消息</string>
     <string name="you_control_your_chat">您的聊天由您掌控！</string>
-    <string name="you_can_use_markdown_to_format_messages__prompt">您可以使用 markdown 来格式化消息：</string>
+    <string name="you_can_use_markdown_to_format_messages__prompt">您可以使用 markdown 来编排消息格式：</string>
     <string name="ttl_h">%d小时</string>
-    <string name="ttl_days">%d 天数</string>
-    <string name="ttl_w">%dw</string>
-    <string name="you_are_invited_to_group_join_to_connect_with_group_members">邀请您加入群组。 加入以与群组成员联系。</string>
-    <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">您加入了这个群组。 正在连接到邀请您的群组成员。</string>
+    <string name="ttl_days">%d 天</string>
+    <string name="ttl_w">%d周</string>
+    <string name="you_are_invited_to_group_join_to_connect_with_group_members">您被邀请加入群组。 加入以与群组成员联系。</string>
+    <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">您已加入该群组。正在连接邀请的群组成员。</string>
     <string name="snd_conn_event_switch_queue_phase_completed_for_member">您更改了 %s 的地址</string>
-    <string name="snd_group_event_user_left">您离开了</string>
-    <string name="num_contacts_selected"><xliff:g id="connection ID" example="1">%1$d</xliff:g> 已跳过消息</string>
-    <string name="chat_preferences_you_allow">您允许的</string>
-    <string name="v4_2_auto_accept_contact_requests_desc">带有可选的欢迎信息。</string>
+    <string name="snd_group_event_user_left">您已离开</string>
+    <string name="num_contacts_selected"><xliff:g id="connection ID" example="1">%1$d</xliff:g> 已选择联系人</string>
+    <string name="chat_preferences_you_allow">您允许</string>
+    <string name="v4_2_auto_accept_contact_requests_desc">带有可选的欢迎消息。</string>
     <string name="ttl_m">%d分钟</string>
     <string name="ttl_mth">%d月</string>
-    <string name="waiting_for_file">等待文件</string>
+    <string name="waiting_for_file">等待文件中</string>
     <string name="contact_sent_large_file">您的联系人发送的文件大于当前支持的最大大小 (&lt;xliff:g xmlns:xliff=\"urn:oasis:names:tc:xliff:document:1.2\" id=\"maxFileSize\"&gt;%1$s&lt;/xliff :g&gt;).</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">当您的连接请求被接受后，您将可以连接，请稍等或稍后检查！</string>
     <string name="smp_servers_use_server">使用服务器</string>
