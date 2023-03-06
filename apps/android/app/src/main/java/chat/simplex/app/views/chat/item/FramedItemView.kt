@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.*
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.util.fastMap
@@ -76,10 +77,7 @@ fun FramedItemView(
       Modifier
         .background(if (sent) SentQuoteColorLight else ReceivedQuoteColorLight)
         .fillMaxWidth()
-        .padding(start = 8.dp)
-        .padding(end = 12.dp)
-        .padding(top = 6.dp)
-        .padding(bottom = if (ci.quotedItem == null) 6.dp else 0.dp),
+        .padding(start = 8.dp, top = 6.dp, end = 12.dp, bottom = if (ci.quotedItem == null) 6.dp else 0.dp),
       horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
       if (icon != null) {
@@ -97,6 +95,8 @@ fun FramedItemView(
           }
         },
         style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
       )
     }
   }
