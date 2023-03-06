@@ -1060,12 +1060,24 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     }
   }
 
-  suspend fun apiCreateGroupLink(groupId: Long): String? {
-    return when (val r = sendCmd(CC.APICreateGroupLink(groupId))) {
-      is CR.GroupLinkCreated -> r.connReqContact
+  suspend fun apiCreateGroupLink(groupId: Long, memberRole: GroupMemberRole = GroupMemberRole.Member): Pair<String, GroupMemberRole>? {
+    return when (val r = sendCmd(CC.APICreateGroupLink(groupId, memberRole))) {
+      is CR.GroupLinkCreated -> r.connReqContact to r.memberRole
       else -> {
         if (!(networkErrorAlert(r))) {
           apiErrorAlert("apiCreateGroupLink", generalGetString(R.string.error_creating_link_for_group), r)
+        }
+        null
+      }
+    }
+  }
+
+  suspend fun apiGroupLinkMemberRole(groupId: Long, memberRole: GroupMemberRole = GroupMemberRole.Member): Pair<String, GroupMemberRole>? {
+    return when (val r = sendCmd(CC.APIGroupLinkMemberRole(groupId, memberRole))) {
+      is CR.GroupLink -> r.connReqContact to r.memberRole
+      else -> {
+        if (!(networkErrorAlert(r))) {
+          apiErrorAlert("apiGroupLinkMemberRole", generalGetString(R.string.error_updating_link_for_group), r)
         }
         null
       }
@@ -1084,9 +1096,9 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     }
   }
 
-  suspend fun apiGetGroupLink(groupId: Long): String? {
+  suspend fun apiGetGroupLink(groupId: Long): Pair<String, GroupMemberRole>? {
     return when (val r = sendCmd(CC.APIGetGroupLink(groupId))) {
-      is CR.GroupLink -> r.connReqContact
+      is CR.GroupLink -> r.connReqContact to r.memberRole
       else -> {
         Log.e(TAG, "apiGetGroupLink bad response: ${r.responseType} ${r.details}")
         null
@@ -1342,6 +1354,10 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       is CR.GroupUpdated ->
         if (active(r.user)) {
           chatModel.updateGroup(r.toGroup)
+        }
+      is CR.MemberRole ->
+        if (active(r.user)) {
+          chatModel.updateGroup(r.groupInfo)
         }
       is CR.RcvFileStart ->
         chatItemSimpleUpdate(r.user, r.chatItem)
@@ -1752,7 +1768,8 @@ sealed class CC {
   class ApiLeaveGroup(val groupId: Long): CC()
   class ApiListMembers(val groupId: Long): CC()
   class ApiUpdateGroupProfile(val groupId: Long, val groupProfile: GroupProfile): CC()
-  class APICreateGroupLink(val groupId: Long): CC()
+  class APICreateGroupLink(val groupId: Long, val memberRole: GroupMemberRole): CC()
+  class APIGroupLinkMemberRole(val groupId: Long, val memberRole: GroupMemberRole): CC()
   class APIDeleteGroupLink(val groupId: Long): CC()
   class APIGetGroupLink(val groupId: Long): CC()
   class APIGetUserSMPServers(val userId: Long): CC()
@@ -1827,7 +1844,8 @@ sealed class CC {
     is ApiLeaveGroup -> "/_leave #$groupId"
     is ApiListMembers -> "/_members #$groupId"
     is ApiUpdateGroupProfile -> "/_group_profile #$groupId ${json.encodeToString(groupProfile)}"
-    is APICreateGroupLink -> "/_create link #$groupId"
+    is APICreateGroupLink -> "/_create link #$groupId ${memberRole.name.lowercase()}"
+    is APIGroupLinkMemberRole -> "/_set link role #$groupId ${memberRole.name.lowercase()}"
     is APIDeleteGroupLink -> "/_delete link #$groupId"
     is APIGetGroupLink -> "/_get link #$groupId"
     is APIGetUserSMPServers -> "/_smp $userId"
@@ -1904,6 +1922,7 @@ sealed class CC {
     is ApiListMembers -> "apiListMembers"
     is ApiUpdateGroupProfile -> "apiUpdateGroupProfile"
     is APICreateGroupLink -> "apiCreateGroupLink"
+    is APIGroupLinkMemberRole -> "apiGroupLinkMemberRole"
     is APIDeleteGroupLink -> "apiDeleteGroupLink"
     is APIGetGroupLink -> "apiGetGroupLink"
     is APIGetUserSMPServers -> "apiGetUserSMPServers"
@@ -2925,8 +2944,8 @@ sealed class CR {
   @Serializable @SerialName("connectedToGroupMember") class ConnectedToGroupMember(val user: User, val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("groupRemoved") class GroupRemoved(val user: User, val groupInfo: GroupInfo): CR() // unused
   @Serializable @SerialName("groupUpdated") class GroupUpdated(val user: User, val toGroup: GroupInfo): CR()
-  @Serializable @SerialName("groupLinkCreated") class GroupLinkCreated(val user: User, val groupInfo: GroupInfo, val connReqContact: String): CR()
-  @Serializable @SerialName("groupLink") class GroupLink(val user: User, val groupInfo: GroupInfo, val connReqContact: String): CR()
+  @Serializable @SerialName("groupLinkCreated") class GroupLinkCreated(val user: User, val groupInfo: GroupInfo, val connReqContact: String, val memberRole: GroupMemberRole): CR()
+  @Serializable @SerialName("groupLink") class GroupLink(val user: User, val groupInfo: GroupInfo, val connReqContact: String, val memberRole: GroupMemberRole): CR()
   @Serializable @SerialName("groupLinkDeleted") class GroupLinkDeleted(val user: User, val groupInfo: GroupInfo): CR()
   // receiving file events
   @Serializable @SerialName("rcvFileAccepted") class RcvFileAccepted(val user: User, val chatItem: AChatItem): CR()
@@ -3129,8 +3148,8 @@ sealed class CR {
     is ConnectedToGroupMember -> withUser(user, "groupInfo: $groupInfo\nmember: $member")
     is GroupRemoved -> withUser(user, json.encodeToString(groupInfo))
     is GroupUpdated -> withUser(user, json.encodeToString(toGroup))
-    is GroupLinkCreated -> withUser(user, "groupInfo: $groupInfo\nconnReqContact: $connReqContact")
-    is GroupLink -> withUser(user, "groupInfo: $groupInfo\nconnReqContact: $connReqContact")
+    is GroupLinkCreated -> withUser(user, "groupInfo: $groupInfo\nconnReqContact: $connReqContact\nmemberRole: $memberRole")
+    is GroupLink -> withUser(user, "groupInfo: $groupInfo\nconnReqContact: $connReqContact\nmemberRole: $memberRole")
     is GroupLinkDeleted -> withUser(user, json.encodeToString(groupInfo))
     is RcvFileAcceptedSndCancelled -> withUser(user, noDetails())
     is RcvFileAccepted -> withUser(user, json.encodeToString(chatItem))

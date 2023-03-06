@@ -17,6 +17,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
@@ -32,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import chat.simplex.app.*
@@ -656,7 +658,7 @@ fun ComposeView(
       modifier = Modifier.padding(end = 8.dp),
       verticalAlignment = Alignment.Bottom,
     ) {
-      IconButton(showChooseAttachment, enabled = !composeState.value.attachmentDisabled) {
+      IconButton(showChooseAttachment, enabled = !composeState.value.attachmentDisabled && rememberUpdatedState(chat.userCanSend).value) {
         Icon(
           Icons.Filled.AttachFile,
           contentDescription = stringResource(R.string.attach),
@@ -698,6 +700,13 @@ fun ComposeView(
         }
       }
 
+      LaunchedEffect(rememberUpdatedState(chat.userCanSend).value) {
+        if (!chat.userCanSend) {
+          clearCurrentDraft()
+          clearState()
+        }
+      }
+
       val activity = LocalContext.current as Activity
       DisposableEffect(Unit) {
         val orientation = activity.resources.configuration.orientation
@@ -724,28 +733,47 @@ fun ComposeView(
         }
       }
 
-      SendMsgView(
-        composeState,
-        showVoiceRecordIcon = true,
-        recState,
-        chat.chatInfo is ChatInfo.Direct,
-        liveMessageAlertShown = chatModel.controller.appPrefs.liveMessageAlertShown,
-        needToAllowVoiceToContact,
-        allowedVoiceByPrefs,
-        allowVoiceToContact = ::allowVoiceToContact,
-        sendMessage = {
-          sendMessage()
-          resetLinkPreview()
-        },
-        sendLiveMessage = ::sendLiveMessage,
-        updateLiveMessage = ::updateLiveMessage,
-        cancelLiveMessage = {
-          composeState.value = composeState.value.copy(liveMessage = null)
-          chatModel.removeLiveDummy()
-        },
-        onMessageChange = ::onMessageChange,
-        textStyle = textStyle
-      )
+      Box {
+        SendMsgView(
+          composeState,
+          showVoiceRecordIcon = true,
+          recState,
+          chat.chatInfo is ChatInfo.Direct,
+          liveMessageAlertShown = chatModel.controller.appPrefs.liveMessageAlertShown,
+          needToAllowVoiceToContact,
+          allowedVoiceByPrefs,
+          allowVoiceToContact = ::allowVoiceToContact,
+          sendMessage = {
+            sendMessage()
+            resetLinkPreview()
+          },
+          sendLiveMessage = ::sendLiveMessage,
+          updateLiveMessage = ::updateLiveMessage,
+          cancelLiveMessage = {
+            composeState.value = composeState.value.copy(liveMessage = null)
+            chatModel.removeLiveDummy()
+          },
+          onMessageChange = ::onMessageChange,
+          textStyle = textStyle
+        )
+        if (!chat.userCanSend) {
+          // Disable clicks
+          Box(Modifier.matchParentSize().clickable(enabled = false, onClick = { }))
+          Text(
+            stringResource(R.string.you_are_observer),
+            Modifier
+              .padding(12.dp, 15.dp, 45.dp, 0.dp)
+              .clickable {
+                AlertManager.shared.showAlertMsg(
+                  title = generalGetString(R.string.observer_cant_send_message_title),
+                  text = generalGetString(R.string.observer_cant_send_message_desc)
+                )
+              },
+            color = HighOrLowlight,
+            style = textStyle.value.copy(fontStyle = FontStyle.Italic)
+          )
+        }
+      }
     }
   }
 }
