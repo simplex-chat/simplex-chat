@@ -1791,12 +1791,12 @@ public struct ChatItem: Identifiable, Decodable {
         }
     }
 
-    public func memberToModerate(_ chatInfo: ChatInfo) -> (Int64, Int64)? {
+    public func memberToModerate(_ chatInfo: ChatInfo) -> (GroupInfo, GroupMember)? {
         switch (chatInfo, chatDir) {
         case let (.group(groupInfo), .groupRcv(groupMember)):
             let m = groupInfo.membership
-            return m.memberRole >= .admin && m.memberRole >= groupMember.memberRole
-                    ? (groupInfo.apiId, groupMember.groupMemberId)
+            return m.memberRole >= .admin && m.memberRole >= groupMember.memberRole && meta.itemDeleted == nil
+                    ? (groupInfo, groupMember)
                     : nil
         default: return nil
         }

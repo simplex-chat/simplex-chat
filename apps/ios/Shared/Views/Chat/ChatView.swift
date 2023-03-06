@@ -492,8 +492,8 @@ struct ChatView: View {
                 if !live || !ci.meta.isLive {
                     menu.append(deleteUIAction())
                 }
-                if ci.memberToModerate(chat.chatInfo) != nil {
-                    menu.append(moderateUIAction())
+                if let (groupInfo, _) = ci.memberToModerate(chat.chatInfo) {
+                    menu.append(moderateUIAction(groupInfo))
                 }
             } else if ci.meta.itemDeleted != nil {
                 if !ci.isDeletedContent {
@@ -601,14 +601,25 @@ struct ChatView: View {
             }
         }
 
-        private func moderateUIAction() -> UIAction {
+        private func moderateUIAction(_ groupInfo: GroupInfo) -> UIAction {
             UIAction(
                 title: NSLocalizedString("Moderate", comment: "chat item action"),
                 image: UIImage(systemName: "flag"),
                 attributes: [.destructive]
             ) { _ in
-                deletingItem = ci
-                deleteMessage(.cidmBroadcast)
+                AlertManager.shared.showAlert(Alert(
+                    title: Text("Delete member message?"),
+                    message: Text(
+                                groupInfo.fullGroupPreferences.fullDelete.on
+                                ? "The message will be deleted for all members."
+                                : "The message will be marked as moderated for all members."
+                            ),
+                    primaryButton: .destructive(Text("Delete")) {
+                        deletingItem = ci
+                        deleteMessage(.cidmBroadcast)
+                    },
+                    secondaryButton: .cancel()
+                ))
             }
         }
 
@@ -656,10 +667,10 @@ struct ChatView: View {
                 if let di = deletingItem {
                     var deletedItem: ChatItem
                     var toItem: ChatItem?
-                    if let (groupId, groupMemberId) = di.memberToModerate(chat.chatInfo) {
+                    if let (groupInfo, groupMember) = di.memberToModerate(chat.chatInfo) {
                         (deletedItem, toItem) = try await apiDeleteMemberChatItem(
-                            groupId: groupId,
-                            groupMemberId: groupMemberId,
+                            groupId: groupInfo.apiId,
+                            groupMemberId: groupMember.groupMemberId,
                             itemId: di.id
                         )
                     } else {
