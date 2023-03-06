@@ -252,8 +252,8 @@ fun ChatItemView(
         is CIContent.SndGroupFeature -> CIChatFeatureView(cItem, c.groupFeature, c.preference.enable.iconColor)
         is CIContent.RcvChatFeatureRejected -> CIChatFeatureView(cItem, c.feature, Color.Red)
         is CIContent.RcvGroupFeatureRejected -> CIChatFeatureView(cItem, c.groupFeature, Color.Red)
-        is CIContent.SndModerated -> DeletedItem()
-        is CIContent.RcvModerated -> DeletedItem()
+        is CIContent.SndModerated -> MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, showMember = showMember)
+        is CIContent.RcvModerated -> MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, showMember = showMember)
         is CIContent.InvalidJSON -> CIInvalidJSONView(c.json)
       }
     }
