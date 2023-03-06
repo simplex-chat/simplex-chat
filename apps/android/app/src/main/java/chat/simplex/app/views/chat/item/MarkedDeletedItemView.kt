@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -49,7 +50,8 @@ private fun MarkedDeletedText(text: String) {
     },
     style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
     modifier = Modifier.padding(end = 8.dp),
-    maxLines = 1
+    maxLines = 1,
+    overflow = TextOverflow.Ellipsis,
   )
 }
 
