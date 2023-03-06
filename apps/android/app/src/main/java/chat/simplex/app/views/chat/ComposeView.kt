@@ -762,7 +762,7 @@ fun ComposeView(
           Text(
             stringResource(R.string.you_are_observer),
             Modifier
-              .padding(12.dp, 15.dp, 45.dp, 0.dp)
+              .padding(12.dp, 13.dp, 45.dp, 2.dp)
               .clickable {
                 AlertManager.shared.showAlertMsg(
                   title = generalGetString(R.string.observer_cant_send_message_title),
