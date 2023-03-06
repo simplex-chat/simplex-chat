@@ -1722,6 +1722,8 @@ public struct ChatItem: Identifiable, Decodable {
         switch content {
         case .sndDeleted: return true
         case .rcvDeleted: return true
+        case .sndModerated: return true
+        case .rcvModerated: return true
         default: return false
         }
     }
@@ -1786,6 +1788,17 @@ public struct ChatItem: Identifiable, Decodable {
             } else {
                 return nil
             }
+        }
+    }
+
+    public func memberToModerate(_ chatInfo: ChatInfo) -> (Int64, Int64)? {
+        switch (chatInfo, chatDir) {
+        case let (.group(groupInfo), .groupRcv(groupMember)):
+            let m = groupInfo.membership
+            return m.memberRole >= .admin && m.memberRole >= groupMember.memberRole
+                    ? (groupInfo.apiId, groupMember.groupMemberId)
+                    : nil
+        default: return nil
         }
     }
 

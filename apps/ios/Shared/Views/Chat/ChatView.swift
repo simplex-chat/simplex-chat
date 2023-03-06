@@ -454,7 +454,7 @@ struct ChatView: View {
                     Button("Delete for me", role: .destructive) {
                         deleteMessage(.cidmInternal)
                     }
-                    if let di = deletingItem, di.meta.editable {
+                    if let di = deletingItem, di.meta.editable || di.memberToModerate(chat.chatInfo) != nil {
                         Button(broadcastDeleteButtonText, role: .destructive) {
                             deleteMessage(.cidmBroadcast)
                         }
@@ -493,7 +493,9 @@ struct ChatView: View {
                     menu.append(deleteUIAction())
                 }
             } else if ci.meta.itemDeleted != nil {
-                menu.append(revealUIAction())
+                if !ci.isDeletedContent {
+                    menu.append(revealUIAction())
+                }
                 menu.append(deleteUIAction())
             } else if ci.isDeletedContent {
                 menu.append(deleteUIAction())
@@ -638,12 +640,22 @@ struct ChatView: View {
             logger.debug("ChatView deleteMessage: in Task")
             do {
                 if let di = deletingItem {
-                    let (deletedItem, toItem) = try await apiDeleteChatItem(
-                        type: chat.chatInfo.chatType,
-                        id: chat.chatInfo.apiId,
-                        itemId: di.id,
-                        mode: mode
-                    )
+                    var deletedItem: ChatItem
+                    var toItem: ChatItem?
+                    if let (groupId, groupMemberId) = di.memberToModerate(chat.chatInfo) {
+                        (deletedItem, toItem) = try await apiDeleteMemberChatItem(
+                            groupId: groupId,
+                            groupMemberId: groupMemberId,
+                            itemId: di.id
+                        )
+                    } else {
+                        (deletedItem, toItem) = try await apiDeleteChatItem(
+                            type: chat.chatInfo.chatType,
+                            id: chat.chatInfo.apiId,
+                            itemId: di.id,
+                            mode: mode
+                        )
+                    }
                     DispatchQueue.main.async {
                         deletingItem = nil
                         if let toItem = toItem {
