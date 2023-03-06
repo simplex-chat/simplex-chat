@@ -237,7 +237,8 @@ data ChatCommand
   | APILeaveGroup GroupId
   | APIListMembers GroupId
   | APIUpdateGroupProfile GroupId GroupProfile
-  | APICreateGroupLink GroupId
+  | APICreateGroupLink GroupId GroupMemberRole
+  | APIGroupLinkMemberRole GroupId GroupMemberRole
   | APIDeleteGroupLink GroupId
   | APIGetGroupLink GroupId
   | APIGetUserSMPServers UserId
@@ -317,7 +318,8 @@ data ChatCommand
   | UpdateGroupNames GroupName GroupProfile
   | ShowGroupProfile GroupName
   | UpdateGroupDescription GroupName (Maybe Text)
-  | CreateGroupLink GroupName
+  | CreateGroupLink GroupName GroupMemberRole
+  | GroupLinkMemberRole GroupName GroupMemberRole
   | DeleteGroupLink GroupName
   | ShowGroupLink GroupName
   | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: Text, message :: Text}
@@ -455,8 +457,8 @@ data ChatResponse
   | CRGroupDeleted {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRGroupUpdated {user :: User, fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember}
   | CRGroupProfile {user :: User, groupInfo :: GroupInfo}
-  | CRGroupLinkCreated {user :: User, groupInfo :: GroupInfo, connReqContact :: ConnReqContact}
-  | CRGroupLink {user :: User, groupInfo :: GroupInfo, connReqContact :: ConnReqContact}
+  | CRGroupLinkCreated {user :: User, groupInfo :: GroupInfo, connReqContact :: ConnReqContact, memberRole :: GroupMemberRole}
+  | CRGroupLink {user :: User, groupInfo :: GroupInfo, connReqContact :: ConnReqContact, memberRole :: GroupMemberRole}
   | CRGroupLinkDeleted {user :: User, groupInfo :: GroupInfo}
   | CRAcceptingGroupJoinRequest {user :: User, groupInfo :: GroupInfo, contact :: Contact}
   | CRMemberSubError {user :: User, groupInfo :: GroupInfo, member :: GroupMember, chatError :: ChatError}
@@ -685,6 +687,7 @@ data ChatErrorType
   | CEContactDisabled {contact :: Contact}
   | CEConnectionDisabled {connection :: Connection}
   | CEGroupUserRole {groupInfo :: GroupInfo, requiredRole :: GroupMemberRole}
+  | CEGroupMemberInitialRole {groupInfo :: GroupInfo, initialRole :: GroupMemberRole}
   | CEContactIncognitoCantInvite
   | CEGroupIncognitoCantInvite
   | CEGroupContactRole {contactName :: ContactName}
