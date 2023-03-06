@@ -454,7 +454,7 @@ struct ChatView: View {
                     Button("Delete for me", role: .destructive) {
                         deleteMessage(.cidmInternal)
                     }
-                    if let di = deletingItem, di.meta.editable || di.memberToModerate(chat.chatInfo) != nil {
+                    if let di = deletingItem, di.meta.editable {
                         Button(broadcastDeleteButtonText, role: .destructive) {
                             deleteMessage(.cidmBroadcast)
                         }
@@ -491,6 +491,9 @@ struct ChatView: View {
                 }
                 if !live || !ci.meta.isLive {
                     menu.append(deleteUIAction())
+                }
+                if ci.memberToModerate(chat.chatInfo) != nil {
+                    menu.append(moderateUIAction())
                 }
             } else if ci.meta.itemDeleted != nil {
                 if !ci.isDeletedContent {
@@ -597,7 +600,18 @@ struct ChatView: View {
                 deletingItem = ci
             }
         }
-        
+
+        private func moderateUIAction() -> UIAction {
+            UIAction(
+                title: NSLocalizedString("Moderate", comment: "chat item action"),
+                image: UIImage(systemName: "flag"),
+                attributes: [.destructive]
+            ) { _ in
+                deletingItem = ci
+                deleteMessage(.cidmBroadcast)
+            }
+        }
+
         private func revealUIAction() -> UIAction {
             UIAction(
                 title: NSLocalizedString("Reveal", comment: "chat item action"),
