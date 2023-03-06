@@ -187,6 +187,9 @@
   <string name="delete_message__question">Delete message?</string>
   <string name="delete_message_cannot_be_undone_warning">Message will be deleted - this cannot be undone!</string>
   <string name="delete_message_mark_deleted_warning">Message will be marked for deletion. The recipient(s) will be able to reveal this message.</string>
+  <string name="delete_member_message__question">Delete member message?</string>
+  <string name="moderate_message_will_be_deleted_warning">The message will be deleted for all members.</string>
+  <string name="moderate_message_will_be_marked_warning">The message will be marked as moderated for all members.</string>
   <string name="for_me_only">Delete for me</string>
   <string name="for_everybody">For everyone</string>
 

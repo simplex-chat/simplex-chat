@@ -91,6 +91,14 @@ fun ChatItemView(
         }
       }
 
+      fun moderateMessageQuestionText(): String {
+        return if (fullDeleteAllowed) {
+          generalGetString(R.string.moderate_message_will_be_deleted_warning)
+        } else {
+          generalGetString(R.string.moderate_message_will_be_marked_warning)
+        }
+      }
+
       @Composable
       fun MsgContentItemDropdownMenu() {
         DropdownMenu(
@@ -153,8 +161,9 @@ fun ChatItemView(
           if (!(live && cItem.meta.isLive)) {
             DeleteItemAction(cItem, showMenu, questionText = deleteMessageQuestionText(), deleteMessage)
           }
-          if (cItem.memberToModerate(cInfo) != null) {
-            ModerateItemAction(cItem, showMenu, deleteMessage)
+          val groupInfo = cItem.memberToModerate(cInfo)?.first
+          if (groupInfo != null) {
+            ModerateItemAction(cItem, questionText = moderateMessageQuestionText(), showMenu, deleteMessage)
           }
         }
       }
@@ -272,6 +281,7 @@ fun DeleteItemAction(
 @Composable
 fun ModerateItemAction(
   cItem: ChatItem,
+  questionText: String,
   showMenu: MutableState<Boolean>,
   deleteMessage: (Long, CIDeleteMode) -> Unit
 ) {
@@ -280,7 +290,7 @@ fun ModerateItemAction(
     Icons.Outlined.Flag,
     onClick = {
       showMenu.value = false
-      deleteMessage(cItem.id, CIDeleteMode.cidmBroadcast)
+      moderateMessageAlertDialog(cItem, questionText, deleteMessage = deleteMessage)
     },
     color = Color.Red
   )
@@ -326,6 +336,18 @@ fun deleteMessageAlertDialog(chatItem: ChatItem, questionText: String, deleteMes
           }) { Text(stringResource(R.string.for_everybody)) }
         }
       }
+    }
+  )
+}
+
+fun moderateMessageAlertDialog(chatItem: ChatItem, questionText: String, deleteMessage: (Long, CIDeleteMode) -> Unit) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(R.string.delete_member_message__question),
+    text = questionText,
+    confirmText = generalGetString(R.string.delete_verb),
+    destructive = true,
+    onConfirm = {
+      deleteMessage(chatItem.id, CIDeleteMode.cidmBroadcast)
     }
   )
 }

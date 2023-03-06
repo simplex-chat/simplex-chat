@@ -1223,11 +1223,11 @@ data class ChatItem (
       else -> false
     }
 
-  fun memberToModerate(chatInfo: ChatInfo): Pair<Long, Long>? {
+  fun memberToModerate(chatInfo: ChatInfo): Pair<GroupInfo, GroupMember>? {
     return if (chatInfo is ChatInfo.Group && chatDir is CIDirection.GroupRcv) {
       val m = chatInfo.groupInfo.membership
-      if (m.memberRole >= GroupMemberRole.Admin && m.memberRole >= chatDir.groupMember.memberRole) {
-        chatInfo.groupInfo.apiId to chatDir.groupMember.groupMemberId
+      if (m.memberRole >= GroupMemberRole.Admin && m.memberRole >= chatDir.groupMember.memberRole && meta.itemDeleted == null) {
+        chatInfo.groupInfo to chatDir.groupMember
       } else {
       null
       }
