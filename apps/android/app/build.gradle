@@ -9,7 +9,7 @@ android {
 
     defaultConfig {
         applicationId "chat.simplex.app"
-        minSdk 29
+        minSdk 26
         targetSdk 32
         versionCode 102
         versionName "4.5.3"
