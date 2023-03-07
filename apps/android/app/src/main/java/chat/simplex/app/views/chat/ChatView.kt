@@ -152,9 +152,14 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
             }
           } else if (chat.chatInfo is ChatInfo.Group) {
             setGroupMembers(chat.chatInfo.groupInfo, chatModel)
-            var groupLink = chatModel.controller.apiGetGroupLink(chat.chatInfo.groupInfo.groupId)
+            val link = chatModel.controller.apiGetGroupLink(chat.chatInfo.groupInfo.groupId)
+            var groupLink = link?.first
+            var groupLinkMemberRole = link?.second
             ModalManager.shared.showModalCloseable(true) { close ->
-              GroupChatInfoView(chatModel, groupLink, { groupLink = it }, close)
+              GroupChatInfoView(chatModel, groupLink, groupLinkMemberRole, {
+                groupLink = it.first;
+                groupLinkMemberRole = it.second
+              }, close)
             }
           }
         }
