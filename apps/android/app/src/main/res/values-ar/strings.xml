@@ -1,2 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="accept_contact_button">اقبل</string>
+    <string name="about_simplex_chat">عن <xliff:g id="appNameFull"> ٍSimpleX </xliff:g></string>
+    <string name="a_plus_b">a + b</string>
+    <string name="accept">اقبل</string>
+    <string name="chat_item_ttl_week">اسبوع 1</string>
+    <string name="chat_item_ttl_month">شهر 1</string>
+    <string name="color_primary">لون تمييزي</string>
+    <string name="chat_item_ttl_day">يوم 1</string>
+    <string name="accept_feature">اقبل</string>
+    <string name="about_simplex">عن SimpleX</string>
+    <string name="above_then_preposition_continuation">أعلاه ، ثم:</string>
+    <string name="accept_call_on_lock_screen">اقبل</string>
+</resources>
