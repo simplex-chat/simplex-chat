@@ -249,4 +249,18 @@
     <string name="group_member_status_accepted">conectando (aceito)</string>
     <string name="ttl_d">%dd</string>
     <string name="v4_5_transport_isolation_descr">Por perfil de bate-papo (padrão) ou por conexão (BETA).</string>
+    <string name="accept_contact_incognito_button">Aceitar anônimo</string>
+    <string name="delete_messages_after">Excluir mensagens após</string>
+    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 desktop: digitalize o QR code exibido no aplicativo, via <b>Scan QR code</b></string>
+    <string name="delete_pending_connection__question">Excluir conexão pendente\?</string>
+    <string name="simplex_link_mode_description">Descrição</string>
+    <string name="smp_servers_delete_server">Excluir servidor</string>
+    <string name="group_member_status_intro_invitation">conectando (introduction invitation)</string>
+    <string name="connection_timeout">Tempo de conexão esgotado</string>
+    <string name="delete_member_message__question">Excluir mensagem do membro\?</string>
+    <string name="smp_server_test_delete_queue">Excluir fila</string>
+    <string name="settings_section_title_device">DISPOSITIVO</string>
+    <string name="settings_developer_tools">Ferramentas de desenvolvimento</string>
+    <string name="group_member_status_introduced">conectando (introduced)</string>
+    <string name="color_primary">Realçar</string>
 </resources>
