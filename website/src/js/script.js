@@ -1,10 +1,18 @@
 const uniqueSwiper = new Swiper('.unique-swiper', {
     slidesPerView: 1,
     spaceBetween: 80,
-    // autoplay: {
-    //   delay: 3000,
-    //   disableOnInteraction: false,
-    // },
+    allowTouchMove: true,
+    breakpoints: {
+        1400: {
+            allowTouchMove: false,
+        },
+        1200: {
+            allowTouchMove: true,
+        },
+        768: {
+            allowTouchMove: true,
+        }
+    },
     direction: 'horizontal',
     pagination: {
         el: '.simplex-unique-swiper-pagination',
@@ -62,10 +70,18 @@ const privateSwiper = new Swiper('.private-swiper', {
 const simplexExplainedSwiper = new Swiper(".simplex-explained-swiper", {
     slidesPerView: 1,
     spaceBetween: 80,
-    // autoplay: {
-    //   delay: 3000,
-    //   disableOnInteraction: false,
-    // },
+    allowTouchMove: true,
+    breakpoints: {
+        1400: {
+            allowTouchMove: false,
+        },
+        1200: {
+            allowTouchMove: true,
+        },
+        768: {
+            allowTouchMove: true,
+        }
+    },
     direction: "horizontal",
     pagination: {
         el: ".simplex-explained-swiper-pagination",
@@ -73,10 +89,11 @@ const simplexExplainedSwiper = new Swiper(".simplex-explained-swiper", {
     }
 });
 
-function closeOverlay (e) {
+function closeOverlay(e) {
     e.target.closest('.overlay').classList.remove('flex');
     e.target.closest('.overlay').classList.add('hidden');
     document.body.classList.remove('lock-scroll');
+    history.replaceState(null, null, ' ');
 }
 
 window.addEventListener('click', clickHandler)
@@ -105,14 +122,11 @@ function clickHandler(e) {
     }
     else if (e.target.closest('.open-overlay-btn')) {
         let id = e.target.closest('.open-overlay-btn').dataset.showOverlay;
-        let overlay = document.getElementById(id);
-        overlay.classList.remove('hidden');
-        overlay.classList.add('flex');
-        document.body.classList.toggle('lock-scroll');
+        window.location.hash = id;
     }
     // -----------------------------------------------
     // ---------- For Contact & Invitation Page tabs
-    else if(e.target.closest('.contact-tab-btn')){
+    else if (e.target.closest('.contact-tab-btn')) {
         e.target.closest('.contact-tab').classList.toggle('active')
     }
 }
@@ -121,7 +135,7 @@ window.addEventListener('load', () => {
     const googlePlayBtn = document.querySelector('.google-play-btn');
     const appleStoreBtn = document.querySelector('.apple-store-btn');
     const fDroidBtn = document.querySelector('.f-droid-btn');
-    if(!googlePlayBtn || !appleStoreBtn || !fDroidBtn) return;
+    if (!googlePlayBtn || !appleStoreBtn || !fDroidBtn) return;
 
 
     if (isMobile.Android()) {
@@ -137,3 +151,24 @@ window.addEventListener('load', () => {
         fDroidBtn.classList.remove('hidden');
     }
 })
+
+function openOverlay() {
+    let hash = window.location.hash
+    if (hash) {
+        const id = hash.split('#')[1];
+        const el = document.getElementById(id)
+        if (el.classList.contains('overlay')) {
+            const scrollTo = el.getAttribute('data-scroll-to')
+            if (scrollTo) {
+                const scrollToEl = document.getElementById(scrollTo)
+                if (scrollToEl) scrollToEl.scrollIntoView(true)
+            }
+            el.classList.remove('hidden')
+            el.classList.add('flex')
+            document.body.classList.add('lock-scroll')
+        }
+    }
+}
+
+window.addEventListener('load', openOverlay);
+window.addEventListener('hashchange', openOverlay);

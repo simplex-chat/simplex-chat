@@ -1230,8 +1230,23 @@ data class ChatItem (
     when (content) {
       is CIContent.SndDeleted -> true
       is CIContent.RcvDeleted -> true
+      is CIContent.SndModerated -> true
+      is CIContent.RcvModerated -> true
       else -> false
     }
+
+  fun memberToModerate(chatInfo: ChatInfo): Pair<GroupInfo, GroupMember>? {
+    return if (chatInfo is ChatInfo.Group && chatDir is CIDirection.GroupRcv) {
+      val m = chatInfo.groupInfo.membership
+      if (m.memberRole >= GroupMemberRole.Admin && m.memberRole >= chatDir.groupMember.memberRole && meta.itemDeleted == null) {
+        chatInfo.groupInfo to chatDir.groupMember
+      } else {
+      null
+      }
+    } else {
+      null
+    }
+  }
 
   private val showNtfDir: Boolean get() = !chatDir.sent
 

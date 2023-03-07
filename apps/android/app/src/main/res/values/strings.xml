@@ -22,6 +22,7 @@
   <!-- Item Content - ChatModel.kt -->
   <string name="deleted_description">deleted</string>
   <string name="marked_deleted_description">marked deleted</string>
+  <string name="moderated_item_description">moderated by %s</string>
   <string name="sending_files_not_yet_supported">sending files is not supported yet</string>
   <string name="receiving_files_not_yet_supported">receiving files is not supported yet</string>
   <string name="sender_you_pronoun">you</string>
@@ -182,9 +183,13 @@
   <string name="reveal_verb">Reveal</string>
   <string name="hide_verb">Hide</string>
   <string name="allow_verb">Allow</string>
+  <string name="moderate_verb">Moderate</string>
   <string name="delete_message__question">Delete message?</string>
   <string name="delete_message_cannot_be_undone_warning">Message will be deleted - this cannot be undone!</string>
   <string name="delete_message_mark_deleted_warning">Message will be marked for deletion. The recipient(s) will be able to reveal this message.</string>
+  <string name="delete_member_message__question">Delete member message?</string>
+  <string name="moderate_message_will_be_deleted_warning">The message will be deleted for all members.</string>
+  <string name="moderate_message_will_be_marked_warning">The message will be marked as moderated for all members.</string>
   <string name="for_me_only">Delete for me</string>
   <string name="for_everybody">For everyone</string>
 
