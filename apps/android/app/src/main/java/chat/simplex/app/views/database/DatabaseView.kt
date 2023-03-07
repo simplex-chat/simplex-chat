@@ -8,7 +8,6 @@ import SectionView
 import android.content.Context
 import android.content.res.Configuration
 import android.net.Uri
-import android.os.FileUtils
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.ManagedActivityResultLauncher
@@ -40,6 +39,7 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.*
 import kotlinx.coroutines.*
 import kotlinx.datetime.*
+import org.apache.commons.io.IOUtils
 import java.io.*
 import java.text.SimpleDateFormat
 import java.util.*
@@ -620,7 +620,7 @@ private fun saveArchiveFromUri(context: Context, importedArchiveUri: Uri): Strin
     if (inputStream != null && archiveName != null) {
       val archivePath = "${context.cacheDir}/$archiveName"
       val destFile = File(archivePath)
-      FileUtils.copy(inputStream, FileOutputStream(destFile))
+      IOUtils.copy(inputStream, FileOutputStream(destFile))
       archivePath
     } else {
       Log.e(TAG, "saveArchiveFromUri null inputStream")
