@@ -1198,14 +1198,14 @@
         <target>Apparaat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Device authentication is disabled. Turning off SimpleX Lock." xml:space="preserve">
+      <trans-unit id="Device authentication is disabled. Turning off SimpleX Lock." xml:space="preserve" approved="no">
         <source>Device authentication is disabled. Turning off SimpleX Lock.</source>
-        <target>Apparaatverificatie is uitgeschakeld. SimpleX Lock uitschakelen.</target>
+        <target state="translated">Apparaatverificatie is uitgeschakeld. SimpleX Vergrendelen uitschakelen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." xml:space="preserve">
+      <trans-unit id="Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." xml:space="preserve" approved="no">
         <source>Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication.</source>
-        <target>Apparaatverificatie is niet ingeschakeld. Je kunt SimpleX Lock inschakelen via Instellingen zodra je apparaatverificatie hebt ingeschakeld.</target>
+        <target state="translated">Apparaatverificatie is niet ingeschakeld. Je kunt SimpleX Vergrendelen inschakelen via Instellingen zodra je apparaatverificatie hebt ingeschakeld.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Different names, avatars and transport isolation." xml:space="preserve">
@@ -1223,9 +1223,9 @@
         <target>Directe berichten tussen leden zijn verboden in deze groep.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disable SimpleX Lock" xml:space="preserve">
+      <trans-unit id="Disable SimpleX Lock" xml:space="preserve" approved="no">
         <source>Disable SimpleX Lock</source>
-        <target>SimpleX Lock uitschakelen</target>
+        <target state="translated">SimpleX Vergrendelen uitschakelen</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Disappearing messages" xml:space="preserve">
@@ -1288,9 +1288,9 @@
         <target>Inschakelen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable SimpleX Lock" xml:space="preserve">
+      <trans-unit id="Enable SimpleX Lock" xml:space="preserve" approved="no">
         <source>Enable SimpleX Lock</source>
-        <target>SimpleX Lock inschakelen</target>
+        <target state="translated">SimpleX Vergrendelen inschakelen</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Enable TCP keep-alive" xml:space="preserve">
@@ -1865,7 +1865,7 @@
       </trans-unit>
       <trans-unit id="Incognito mode protects the privacy of your main profile name and image — for each new contact a new random profile is created." xml:space="preserve" approved="no">
         <source>Incognito mode protects the privacy of your main profile name and image — for each new contact a new random profile is created.</source>
-        <target state="translated">De incognito modus beschermt de privacy van uw hoofdprofielnaam en afbeelding voor elk nieuw contact wordt een nieuw willekeurig profiel gemaakt.</target>
+        <target state="translated">De incognito modus beschermt de privacy van uw hoofdprofielnaam en afbeelding, voor elk nieuw contact wordt een nieuw willekeurig profiel gemaakt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incoming audio call" xml:space="preserve">
@@ -2970,14 +2970,14 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
         <target>De beveiliging van SimpleX Chat is [gecontroleerd door Trail of Bits](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX Lock" xml:space="preserve">
+      <trans-unit id="SimpleX Lock" xml:space="preserve" approved="no">
         <source>SimpleX Lock</source>
-        <target>SimpleX Lock</target>
+        <target state="translated">SimpleX Vergrendelen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX Lock turned on" xml:space="preserve">
+      <trans-unit id="SimpleX Lock turned on" xml:space="preserve" approved="no">
         <source>SimpleX Lock turned on</source>
-        <target>SimpleX Lock ingeschakeld</target>
+        <target state="translated">SimpleX Vergrendelen ingeschakeld</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX contact address" xml:space="preserve" approved="no">
@@ -3280,10 +3280,10 @@ We zullen serverredundantie toevoegen om verloren berichten te voorkomen.</targe
         <target>Om de tijdzone te beschermen, gebruiken afbeeldings-/spraakbestanden UTC.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To protect your information, turn on SimpleX Lock.&#10;You will be prompted to complete authentication before this feature is enabled." xml:space="preserve">
+      <trans-unit id="To protect your information, turn on SimpleX Lock.&#10;You will be prompted to complete authentication before this feature is enabled." xml:space="preserve" approved="no">
         <source>To protect your information, turn on SimpleX Lock.
 You will be prompted to complete authentication before this feature is enabled.</source>
-        <target>Schakel SimpleX Lock in om uw informatie te beschermen.
+        <target state="translated">Schakel SimpleX Vergrendelen om uw informatie te beschermen.
 U wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingeschakeld.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3604,9 +3604,9 @@ Om verbinding te maken, vraagt u uw contactpersoon om een andere verbinding link
         <target>Je kunt nu berichten sturen naar %@</target>
         <note>notification body</note>
       </trans-unit>
-      <trans-unit id="You can set lock screen notification preview via settings." xml:space="preserve">
+      <trans-unit id="You can set lock screen notification preview via settings." xml:space="preserve" approved="no">
         <source>You can set lock screen notification preview via settings.</source>
-        <target>U kunt een voorbeeld van een melding op het vergrendelscherm instellen via instellingen.</target>
+        <target state="translated">U kunt een voorbeeld van een melding op het vergrendeld scherm instellen via instellingen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." xml:space="preserve" approved="no">
