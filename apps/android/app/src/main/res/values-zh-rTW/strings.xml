@@ -971,4 +971,9 @@
     <string name="icon_descr_video_off">關閉視訊</string>
     <string name="snd_group_event_changed_role_for_yourself">你修改了自己的身份為 %s</string>
     <string name="snd_conn_event_switch_queue_phase_completed">你修改了地址</string>
+    <string name="moderated_item_description">由 %s 管理</string>
+    <string name="moderate_message_will_be_deleted_warning">將為所有成員刪除該消息。</string>
+    <string name="delete_member_message__question">刪除成員消息？</string>
+    <string name="moderate_verb">主持</string>
+    <string name="moderate_message_will_be_marked_warning">該消息將對所有成員標記為已審核。</string>
 </resources>
