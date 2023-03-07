@@ -267,16 +267,16 @@
     <string name="delete_pending_connection__question">Wachtende verbinding verwijderen\?</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 desktop: scan weergegeven QR-code vanuit de app, via <b>Scan QR-code</b>.</string>
     <string name="settings_developer_tools">Ontwikkel gereedschap</string>
-    <string name="auth_device_authentication_is_disabled_turning_off">Apparaatverificatie is uitgeschakeld. SimpleX Lock uitschakelen.</string>
+    <string name="auth_device_authentication_is_disabled_turning_off">Apparaatverificatie is uitgeschakeld. SimpleX Vergrendelen uitschakelen.</string>
     <string name="display_name">Weergavenaam</string>
-    <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Apparaatverificatie is niet ingeschakeld. Je kunt SimpleX Lock inschakelen via Instellingen zodra je apparaatverificatie hebt ingeschakeld.</string>
+    <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Apparaatverificatie is niet ingeschakeld. Je kunt SimpleX Vergrendelen inschakelen via Instellingen zodra je apparaatverificatie hebt ingeschakeld.</string>
     <string name="direct_messages_are_prohibited_in_chat">Directe berichten tussen leden zijn verboden in deze groep.</string>
     <string name="total_files_count_and_size">%d bestand(en) met een totale grootte van %s</string>
     <string name="ttl_hour">%d uur</string>
     <string name="no_call_on_lock_screen">Uitzetten</string>
     <string name="v4_4_disappearing_messages">Verdwijnende berichten</string>
     <string name="disappearing_prohibited_in_this_chat">Verdwijnende berichten zijn verboden in dit gesprek.</string>
-    <string name="auth_disable_simplex_lock">SimpleX Lock uitschakelen</string>
+    <string name="auth_disable_simplex_lock">SimpleX Vergrendelen uitschakelen</string>
     <string name="timed_messages">Verdwijnende berichten</string>
     <string name="smp_server_test_disconnect">Verbinding verbreken</string>
     <string name="icon_descr_server_status_disconnected">Verbinding verbroken</string>
@@ -314,7 +314,7 @@
     <string name="error_changing_address">Fout bij wijzigen van adres</string>
     <string name="error_deleting_pending_contact_connection">Fout bij het verwijderen van in behandeling zijnde contact verbinding</string>
     <string name="error_deleting_user">Fout bij het verwijderen van gebruikers profiel</string>
-    <string name="auth_enable_simplex_lock">SimpleX Lock inschakelen</string>
+    <string name="auth_enable_simplex_lock">SimpleX Vergrendelen inschakelen</string>
     <string name="hide_verb">Verbergen</string>
     <string name="icon_descr_edited">bewerkt</string>
     <string name="for_everybody">Voor iedereen</string>
@@ -506,7 +506,7 @@
     <string name="import_database">Database importeren</string>
     <string name="v4_3_improved_privacy_and_security">Verbeterde privacy en veiligheid</string>
     <string name="image_will_be_received_when_contact_is_online">De afbeelding wordt ontvangen wanneer uw contact online is, even geduld a.u.b. of kijk later!</string>
-    <string name="incognito_info_protects">De incognito modus beschermt de privacy van uw hoofdprofielnaam en afbeelding voor elk nieuw contact wordt een nieuw willekeurig profiel gemaakt.</string>
+    <string name="incognito_info_protects">De incognito modus beschermt de privacy van uw hoofdprofielnaam en afbeelding, voor elk nieuw contact wordt een nieuw willekeurig profiel gemaakt.</string>
     <string name="new_database_archive">Nieuw database archief</string>
     <string name="no_details">geen details</string>
     <string name="conn_level_desc_indirect">indirect (<xliff:g id="conn_level">%1$s</xliff:g>)</string>
@@ -615,7 +615,7 @@
     <string name="contact_developers">Werk de app bij en neem contact op met de ontwikkelaars.</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Alleen client-apparaten slaan gebruikersprofielen, contacten, groepen en berichten op die zijn verzonden met <b>2-laags end-to-end-codering</b>.</string>
     <string name="sender_may_have_deleted_the_connection_request">De afzender heeft mogelijk het verbindingsverzoek verwijderd.</string>
-    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Schakel SimpleX Lock in om uw informatie te beschermen.
+    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Schakel SimpleX Vergrendelen in om uw informatie te beschermen.
 \nU wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingeschakeld.</string>
     <string name="la_notice_turn_on">Aanzetten</string>
     <string name="auth_unlock">Ontgrendelen</string>
@@ -654,7 +654,7 @@
     <string name="notification_preview_mode_message_desc">Toon contact en bericht</string>
     <string name="notification_preview_mode_contact_desc">Toon alleen contactpersoon</string>
     <string name="ntf_channel_messages">SimpleX Chat berichten</string>
-    <string name="auth_simplex_lock_turned_on">SimpleX Lock ingeschakeld</string>
+    <string name="auth_simplex_lock_turned_on">SimpleX Vergrendelen ingeschakeld</string>
     <string name="auth_stop_chat">Stop chat</string>
     <string name="reply_verb">Antwoord</string>
     <string name="save_verb">Opslaan</string>
@@ -713,7 +713,7 @@
     <string name="your_simplex_contact_address">Uw <xliff:g id="appName">SimpleX</xliff:g> contactadres</string>
     <string name="chat_with_the_founder">Stuur vragen en ideeën</string>
     <string name="send_us_an_email">Stuur ons een e-mail</string>
-    <string name="chat_lock">SimpleX Lock</string>
+    <string name="chat_lock">SimpleX Vergrendelen</string>
     <string name="smp_servers">SMP servers</string>
     <string name="smp_servers_save">Bewaar servers</string>
     <string name="smp_servers_test_failed">Servertest mislukt!</string>
@@ -906,7 +906,7 @@
     <string name="error_smp_test_server_auth">Server vereist autorisatie om wachtrijen te maken, controleer wachtwoord</string>
     <string name="set_group_preferences">Groep voorkeuren instellen</string>
     <string name="share_message">Bericht delen…</string>
-    <string name="la_notice_title_simplex_lock">SimpleX Lock</string>
+    <string name="la_notice_title_simplex_lock">SimpleX Vergrendelen</string>
     <string name="save_passphrase_in_keychain">Sla het wachtwoord op in Keychain</string>
     <string name="settings_section_title_socks">SOCKS PROXY</string>
     <string name="v4_5_italian_interface_descr">Dank aan de gebruikers – draag bij via Weblate!</string>
@@ -966,4 +966,9 @@
     <string name="read_more_in_github">Lees meer in onze GitHub-repository.</string>
     <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> bericht(en) overgeslagen</string>
     <string name="moderated_description">gemodereerd</string>
+    <string name="moderated_item_description">gemodereerd door %s</string>
+    <string name="delete_member_message__question">Bericht van lid verwijderen\?</string>
+    <string name="moderate_verb">gemodereerd</string>
+    <string name="moderate_message_will_be_deleted_warning">Het bericht wordt verwijderd voor alle leden.</string>
+    <string name="moderate_message_will_be_marked_warning">Het bericht wordt gemarkeerd als gemodereerd voor alle leden.</string>
 </resources>
