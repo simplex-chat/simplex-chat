@@ -298,6 +298,7 @@ private fun MemberRow(member: GroupMember, user: Boolean = false) {
     verticalAlignment = Alignment.CenterVertically
   ) {
     Row(
+      Modifier.weight(1f).padding(end = DEFAULT_PADDING),
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
