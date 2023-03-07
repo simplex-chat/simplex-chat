@@ -647,6 +647,8 @@ fun ComposeView(
     chatModel.sharedContent.value = null
   }
 
+  val userCanSend = rememberUpdatedState(chat.userCanSend)
+
   Column {
     contextItemView()
     when {
@@ -662,7 +664,7 @@ fun ComposeView(
         Icon(
           Icons.Filled.AttachFile,
           contentDescription = stringResource(R.string.attach),
-          tint = if (!composeState.value.attachmentDisabled) MaterialTheme.colors.primary else HighOrLowlight,
+          tint = if (!composeState.value.attachmentDisabled && userCanSend.value) MaterialTheme.colors.primary else HighOrLowlight,
           modifier = Modifier
             .size(28.dp)
             .clip(CircleShape)
@@ -733,47 +735,29 @@ fun ComposeView(
         }
       }
 
-      Box {
-        SendMsgView(
-          composeState,
-          showVoiceRecordIcon = true,
-          recState,
-          chat.chatInfo is ChatInfo.Direct,
-          liveMessageAlertShown = chatModel.controller.appPrefs.liveMessageAlertShown,
-          needToAllowVoiceToContact,
-          allowedVoiceByPrefs,
-          allowVoiceToContact = ::allowVoiceToContact,
-          sendMessage = {
-            sendMessage()
-            resetLinkPreview()
-          },
-          sendLiveMessage = ::sendLiveMessage,
-          updateLiveMessage = ::updateLiveMessage,
-          cancelLiveMessage = {
-            composeState.value = composeState.value.copy(liveMessage = null)
-            chatModel.removeLiveDummy()
-          },
-          onMessageChange = ::onMessageChange,
-          textStyle = textStyle
-        )
-        if (!chat.userCanSend) {
-          // Disable clicks
-          Box(Modifier.matchParentSize().clickable(enabled = false, onClick = { }))
-          Text(
-            stringResource(R.string.you_are_observer),
-            Modifier
-              .padding(12.dp, 13.dp, 45.dp, 2.dp)
-              .clickable {
-                AlertManager.shared.showAlertMsg(
-                  title = generalGetString(R.string.observer_cant_send_message_title),
-                  text = generalGetString(R.string.observer_cant_send_message_desc)
-                )
-              },
-            color = HighOrLowlight,
-            style = textStyle.value.copy(fontStyle = FontStyle.Italic)
-          )
-        }
-      }
+      SendMsgView(
+        composeState,
+        showVoiceRecordIcon = true,
+        recState,
+        chat.chatInfo is ChatInfo.Direct,
+        liveMessageAlertShown = chatModel.controller.appPrefs.liveMessageAlertShown,
+        needToAllowVoiceToContact,
+        allowedVoiceByPrefs,
+        allowVoiceToContact = ::allowVoiceToContact,
+        userCanSend = userCanSend.value,
+        sendMessage = {
+          sendMessage()
+          resetLinkPreview()
+        },
+        sendLiveMessage = ::sendLiveMessage,
+        updateLiveMessage = ::updateLiveMessage,
+        cancelLiveMessage = {
+          composeState.value = composeState.value.copy(liveMessage = null)
+          chatModel.removeLiveDummy()
+        },
+        onMessageChange = ::onMessageChange,
+        textStyle = textStyle
+      )
     }
   }
 }

@@ -83,6 +83,7 @@ fun TerminalLayout(
             liveMessageAlertShown = SharedPreference(get = { false }, set = {}),
             needToAllowVoiceToContact = false,
             allowedVoiceByPrefs = false,
+            userCanSend = true,
             allowVoiceToContact = {},
             sendMessage = sendCommand,
             sendLiveMessage = null,
