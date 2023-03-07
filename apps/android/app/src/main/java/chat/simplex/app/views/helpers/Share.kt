@@ -1,5 +1,6 @@
 package chat.simplex.app.views.helpers
 
+import android.Manifest
 import android.content.*
 import android.net.Uri
 import android.provider.MediaStore
@@ -81,6 +82,7 @@ fun imageMimeType(fileName: String): String {
   }
 }
 
+/** Before calling, make sure the user allows to write to external storage [Manifest.permission.WRITE_EXTERNAL_STORAGE] */
 fun saveImage(cxt: Context, ciFile: CIFile?) {
   val filePath = getLoadedFilePath(cxt, ciFile)
   val fileName = ciFile?.fileName

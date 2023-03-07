@@ -33,6 +33,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.core.net.toFile
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
@@ -203,7 +204,10 @@ fun ComposeView(
     uris.forEach { uri ->
       val drawable = getDrawableFromUri(uri)
       var bitmap: Bitmap? = if (drawable != null) getBitmapFromUri(uri) else null
-      if (Build.VERSION.SDK_INT >= 28 && drawable is AnimatedImageDrawable) {
+      val isAnimNewApi = Build.VERSION.SDK_INT >= 28 && drawable is AnimatedImageDrawable
+      val isAnimOldApi = Build.VERSION.SDK_INT < 28 &&
+          (getFileName(SimplexApp.context, uri)?.endsWith(".gif") == true || getFileName(SimplexApp.context, uri)?.endsWith(".webp") == true)
+      if (isAnimNewApi || isAnimOldApi) {
         // It's a gif or webp
         val fileSize = getFileSize(context, uri)
         if (fileSize != null && fileSize <= MAX_FILE_SIZE) {
