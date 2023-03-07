@@ -967,4 +967,9 @@
     <string name="icon_descr_video_on">视频开启</string>
     <string name="v4_3_voice_messages_desc">最多 40 秒，立即收到。</string>
     <string name="v4_4_verify_connection_security">验证连接安全</string>
+    <string name="moderated_item_description">由 %s 管理</string>
+    <string name="moderate_verb">主持</string>
+    <string name="moderate_message_will_be_deleted_warning">将为所有成员删除该消息。</string>
+    <string name="moderate_message_will_be_marked_warning">该消息将对所有成员显示为已审核。</string>
+    <string name="delete_member_message__question">删除成员消息？</string>
 </resources>
