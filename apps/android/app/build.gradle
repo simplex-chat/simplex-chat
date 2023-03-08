@@ -15,9 +15,6 @@ android {
         versionName "4.5.3"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        ndk {
-            abiFilters 'armeabi-v7a'
-        }
         vectorDrawables {
             useSupportLibrary true
         }
@@ -80,6 +77,18 @@ android {
     if (isRelease) {
         // Comma separated list of languages that will be included in the apk
         android.defaultConfig.resConfigs("en", "ru", "de", "fr", "it", "nl", "cs")
+    }
+    splits {
+        abi {
+            enable true
+            reset()
+            if (isRelease) {
+                include 'arm64-v8a', 'armeabi-v7a'
+            } else {
+                include "$abi_filter"
+                universalApk false
+            }
+        }
     }
 }
 
