@@ -33,6 +33,7 @@ public enum ChatCommand {
     case apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent, live: Bool)
     case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent, live: Bool)
     case apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode)
+    case apiDeleteMemberChatItem(groupId: Int64, groupMemberId: Int64, itemId: Int64)
     case apiGetNtfToken
     case apiRegisterToken(token: DeviceToken, notificationMode: NotificationsMode)
     case apiVerifyToken(token: DeviceToken, nonce: String, code: String)
@@ -46,12 +47,13 @@ public enum ChatCommand {
     case apiLeaveGroup(groupId: Int64)
     case apiListMembers(groupId: Int64)
     case apiUpdateGroupProfile(groupId: Int64, groupProfile: GroupProfile)
-    case apiCreateGroupLink(groupId: Int64)
+    case apiCreateGroupLink(groupId: Int64, memberRole: GroupMemberRole)
+    case apiGroupLinkMemberRole(groupId: Int64, memberRole: GroupMemberRole)
     case apiDeleteGroupLink(groupId: Int64)
     case apiGetGroupLink(groupId: Int64)
     case apiGetUserSMPServers(userId: Int64)
     case apiSetUserSMPServers(userId: Int64, smpServers: [ServerCfg])
-    case testSMPServer(userId: Int64, smpServer: String)
+    case apiTestSMPServer(userId: Int64, smpServer: String)
     case apiSetChatItemTTL(userId: Int64, seconds: Int64?)
     case apiGetChatItemTTL(userId: Int64)
     case apiSetNetworkConfig(networkConfig: NetCfg)
@@ -121,6 +123,7 @@ public enum ChatCommand {
                 return "/_send \(ref(type, id)) live=\(onOff(live)) json \(msg)"
             case let .apiUpdateChatItem(type, id, itemId, mc, live): return "/_update item \(ref(type, id)) \(itemId) live=\(onOff(live)) \(mc.cmdString)"
             case let .apiDeleteChatItem(type, id, itemId, mode): return "/_delete item \(ref(type, id)) \(itemId) \(mode.rawValue)"
+            case let .apiDeleteMemberChatItem(groupId, groupMemberId, itemId): return "/_delete member item #\(groupId) \(groupMemberId) \(itemId)"
             case .apiGetNtfToken: return "/_ntf get "
             case let .apiRegisterToken(token, notificationMode): return "/_ntf register \(token.cmdString) \(notificationMode.rawValue)"
             case let .apiVerifyToken(token, nonce, code): return "/_ntf verify \(token.cmdString) \(nonce) \(code)"
@@ -134,12 +137,13 @@ public enum ChatCommand {
             case let .apiLeaveGroup(groupId): return "/_leave #\(groupId)"
             case let .apiListMembers(groupId): return "/_members #\(groupId)"
             case let .apiUpdateGroupProfile(groupId, groupProfile): return "/_group_profile #\(groupId) \(encodeJSON(groupProfile))"
-            case let .apiCreateGroupLink(groupId): return "/_create link #\(groupId)"
+            case let .apiCreateGroupLink(groupId, memberRole): return "/_create link #\(groupId) \(memberRole)"
+            case let .apiGroupLinkMemberRole(groupId, memberRole): return "/_set link role #\(groupId) \(memberRole)"
             case let .apiDeleteGroupLink(groupId): return "/_delete link #\(groupId)"
             case let .apiGetGroupLink(groupId): return "/_get link #\(groupId)"
             case let .apiGetUserSMPServers(userId): return "/_smp \(userId)"
             case let .apiSetUserSMPServers(userId, smpServers): return "/_smp \(userId) \(smpServersStr(smpServers: smpServers))"
-            case let .testSMPServer(userId, smpServer): return "/smp test \(userId) \(smpServer)"
+            case let .apiTestSMPServer(userId, smpServer): return "/_smp test \(userId) \(smpServer)"
             case let .apiSetChatItemTTL(userId, seconds): return "/_ttl \(userId) \(chatItemTTLStr(seconds: seconds))"
             case let .apiGetChatItemTTL(userId): return "/_ttl \(userId)"
             case let .apiSetNetworkConfig(networkConfig): return "/_network \(encodeJSON(networkConfig))"
@@ -214,6 +218,7 @@ public enum ChatCommand {
             case .apiSendMessage: return "apiSendMessage"
             case .apiUpdateChatItem: return "apiUpdateChatItem"
             case .apiDeleteChatItem: return "apiDeleteChatItem"
+            case .apiDeleteMemberChatItem: return "apiDeleteMemberChatItem"
             case .apiGetNtfToken: return "apiGetNtfToken"
             case .apiRegisterToken: return "apiRegisterToken"
             case .apiVerifyToken: return "apiVerifyToken"
@@ -228,11 +233,12 @@ public enum ChatCommand {
             case .apiListMembers: return "apiListMembers"
             case .apiUpdateGroupProfile: return "apiUpdateGroupProfile"
             case .apiCreateGroupLink: return "apiCreateGroupLink"
+            case .apiGroupLinkMemberRole: return "apiGroupLinkMemberRole"
             case .apiDeleteGroupLink: return "apiDeleteGroupLink"
             case .apiGetGroupLink: return "apiGetGroupLink"
             case .apiGetUserSMPServers: return "apiGetUserSMPServers"
             case .apiSetUserSMPServers: return "apiSetUserSMPServers"
-            case .testSMPServer: return "testSMPServer"
+            case .apiTestSMPServer: return "testSMPServer"
             case .apiSetChatItemTTL: return "apiSetChatItemTTL"
             case .apiGetChatItemTTL: return "apiGetChatItemTTL"
             case .apiSetNetworkConfig: return "apiSetNetworkConfig"
@@ -391,8 +397,8 @@ public enum ChatResponse: Decodable, Error {
     case connectedToGroupMember(user: User, groupInfo: GroupInfo, member: GroupMember)
     case groupRemoved(user: User, groupInfo: GroupInfo) // unused
     case groupUpdated(user: User, toGroup: GroupInfo)
-    case groupLinkCreated(user: User, groupInfo: GroupInfo, connReqContact: String)
-    case groupLink(user: User, groupInfo: GroupInfo, connReqContact: String)
+    case groupLinkCreated(user: User, groupInfo: GroupInfo, connReqContact: String, memberRole: GroupMemberRole)
+    case groupLink(user: User, groupInfo: GroupInfo, connReqContact: String, memberRole: GroupMemberRole)
     case groupLinkDeleted(user: User, groupInfo: GroupInfo)
     // receiving file events
     case rcvFileAccepted(user: User, chatItem: AChatItem)
@@ -606,8 +612,8 @@ public enum ChatResponse: Decodable, Error {
             case let .connectedToGroupMember(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
             case let .groupRemoved(u, groupInfo): return withUser(u, String(describing: groupInfo))
             case let .groupUpdated(u, toGroup): return withUser(u, String(describing: toGroup))
-            case let .groupLinkCreated(u, groupInfo, connReqContact): return withUser(u, "groupInfo: \(groupInfo)\nconnReqContact: \(connReqContact)")
-            case let .groupLink(u, groupInfo, connReqContact): return withUser(u, "groupInfo: \(groupInfo)\nconnReqContact: \(connReqContact)")
+            case let .groupLinkCreated(u, groupInfo, connReqContact, memberRole): return withUser(u, "groupInfo: \(groupInfo)\nconnReqContact: \(connReqContact)\nmemberRole: \(memberRole)")
+            case let .groupLink(u, groupInfo, connReqContact, memberRole): return withUser(u, "groupInfo: \(groupInfo)\nconnReqContact: \(connReqContact)\nmemberRole: \(memberRole)")
             case let .groupLinkDeleted(u, groupInfo): return withUser(u, String(describing: groupInfo))
             case let .rcvFileAccepted(u, chatItem): return withUser(u, String(describing: chatItem))
             case .rcvFileAcceptedSndCancelled: return noDetails

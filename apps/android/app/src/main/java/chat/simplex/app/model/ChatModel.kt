@@ -486,6 +486,16 @@ data class Chat (
   val chatItems: List<ChatItem>,
   val chatStats: ChatStats = ChatStats(),
 ) {
+  val userCanSend: Boolean
+    get() = when (chatInfo) {
+      is ChatInfo.Direct -> true
+      is ChatInfo.Group -> {
+        val m = chatInfo.groupInfo.membership
+        m.memberActive && m.memberRole >= GroupMemberRole.Member
+      }
+      else -> false
+    }
+
   val id: String get() = chatInfo.id
 
   @Serializable
@@ -963,11 +973,13 @@ class GroupMemberRef(
 
 @Serializable
 enum class GroupMemberRole(val memberRole: String) {
-  @SerialName("member") Member("member"), // order matters in comparisons
+  @SerialName("observer") Observer("observer"), // order matters in comparisons
+  @SerialName("member") Member("member"),
   @SerialName("admin") Admin("admin"),
   @SerialName("owner") Owner("owner");
 
   val text: String get() = when (this) {
+    Observer -> generalGetString(R.string.group_member_role_observer)
     Member -> generalGetString(R.string.group_member_role_member)
     Admin -> generalGetString(R.string.group_member_role_admin)
     Owner -> generalGetString(R.string.group_member_role_owner)
@@ -1218,8 +1230,23 @@ data class ChatItem (
     when (content) {
       is CIContent.SndDeleted -> true
       is CIContent.RcvDeleted -> true
+      is CIContent.SndModerated -> true
+      is CIContent.RcvModerated -> true
       else -> false
     }
+
+  fun memberToModerate(chatInfo: ChatInfo): Pair<GroupInfo, GroupMember>? {
+    return if (chatInfo is ChatInfo.Group && chatDir is CIDirection.GroupRcv) {
+      val m = chatInfo.groupInfo.membership
+      if (m.memberRole >= GroupMemberRole.Admin && m.memberRole >= chatDir.groupMember.memberRole && meta.itemDeleted == null) {
+        chatInfo.groupInfo to chatDir.groupMember
+      } else {
+      null
+      }
+    } else {
+      null
+    }
+  }
 
   private val showNtfDir: Boolean get() = !chatDir.sent
 

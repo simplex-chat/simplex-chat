@@ -85,13 +85,14 @@ fun SectionItemView(
   click: (() -> Unit)? = null,
   minHeight: Dp = 46.dp,
   disabled: Boolean = false,
+  padding: PaddingValues = PaddingValues(horizontal = DEFAULT_PADDING),
   content: (@Composable RowScope.() -> Unit)
 ) {
   val modifier = Modifier
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
   Row(
-    if (click == null || disabled) modifier.padding(horizontal = DEFAULT_PADDING) else modifier.clickable(onClick = click).padding(horizontal = DEFAULT_PADDING),
+    if (click == null || disabled) modifier.padding(padding) else modifier.clickable(onClick = click).padding(padding),
     verticalAlignment = Alignment.CenterVertically
   ) {
     content()
