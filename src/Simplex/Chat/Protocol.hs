@@ -34,7 +34,7 @@ import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
-import Data.Word (Word32)
+import Data.Word (Word32, Word8)
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
@@ -42,7 +42,7 @@ import Simplex.Chat.Call
 import Simplex.Chat.Types
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (fromTextField_, fstToLower, parseAll, sumTypeJSON)
+import Simplex.Messaging.Parsers (dropPrefix, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 
 data ConnectionEntity
@@ -213,6 +213,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XOk :: ChatMsgEvent 'Json
   XUnknown :: {event :: Text, params :: J.Object} -> ChatMsgEvent 'Json
   BFileChunk :: SharedMsgId -> FileChunk -> ChatMsgEvent 'Binary
+  BFileDescrChunk :: SharedMsgId -> Word8 -> FileChunk -> ChatMsgEvent 'Binary
 
 deriving instance Eq (ChatMsgEvent e)
 
@@ -305,7 +306,10 @@ mcExtMsgContent = \case
   MCQuote _ c -> c
   MCForward c -> c
 
-data LinkPreview = LinkPreview {uri :: Text, title :: Text, description :: Text, image :: ImageData}
+data LinkPreview = LinkPreview {uri :: Text, title :: Text, description :: Text, image :: ImageData, content :: Maybe LinkContent}
+  deriving (Eq, Show, Generic)
+
+data LinkContent = LCPage | LCImage | LCVideo {duration :: Maybe Int} | LCUnknown {tag :: Text, json :: J.Object}
   deriving (Eq, Show, Generic)
 
 instance FromJSON LinkPreview where
@@ -315,10 +319,25 @@ instance ToJSON LinkPreview where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
+instance FromJSON LinkContent where
+  parseJSON v@(J.Object j) =
+    J.genericParseJSON (taggedObjectJSON $ dropPrefix "LC") v
+      <|> LCUnknown <$> j .: "type" <*> pure j
+  parseJSON invalid =
+    JT.prependFailure "bad LinkContent, " (JT.typeMismatch "Object" invalid)
+
+instance ToJSON LinkContent where
+  toJSON = \case
+    LCUnknown _ j -> J.Object j
+    v -> J.genericToJSON (taggedObjectJSON $ dropPrefix "LC") v
+  toEncoding = \case
+    LCUnknown _ j -> JE.value $ J.Object j
+    v -> J.genericToEncoding (taggedObjectJSON $ dropPrefix "LC") v
+
 data MsgContent
   = MCText Text
   | MCLink {text :: Text, preview :: LinkPreview}
-  | MCImage {text :: Text, image :: ImageData, previewFile :: Maybe Text}
+  | MCImage {text :: Text, image :: ImageData}
   | MCVideo {text :: Text, image :: ImageData, duration :: Int}
   | MCVoice {text :: Text, duration :: Int}
   | MCFile Text
@@ -390,8 +409,7 @@ instance FromJSON MsgContent where
       MCImage_ -> do
         text <- v .: "text"
         image <- v .: "image"
-        previewFile <- v .:? "previewFile"
-        pure MCImage {text, image, previewFile}
+        pure MCImage {text, image}
       MCVideo_ -> do
         text <- v .: "text"
         image <- v .: "image"
@@ -425,7 +443,7 @@ instance ToJSON MsgContent where
     MCUnknown {json} -> J.Object json
     MCText t -> J.object ["type" .= MCText_, "text" .= t]
     MCLink {text, preview} -> J.object ["type" .= MCLink_, "text" .= text, "preview" .= preview]
-    MCImage {text, image, previewFile} -> J.object $ ("previewFile" .=? previewFile) ["type" .= MCImage_, "text" .= text, "image" .= image]
+    MCImage {text, image} -> J.object ["type" .= MCImage_, "text" .= text, "image" .= image]
     MCVideo {text, image, duration} -> J.object ["type" .= MCImage_, "text" .= text, "image" .= image, "duration" .= duration]
     MCVoice {text, duration} -> J.object ["type" .= MCVoice_, "text" .= text, "duration" .= duration]
     MCFile t -> J.object ["type" .= MCFile_, "text" .= t]
@@ -433,7 +451,7 @@ instance ToJSON MsgContent where
     MCUnknown {json} -> JE.value $ J.Object json
     MCText t -> J.pairs $ "type" .= MCText_ <> "text" .= t
     MCLink {text, preview} -> J.pairs $ "type" .= MCLink_ <> "text" .= text <> "preview" .= preview
-    MCImage {text, image, previewFile} -> J.pairs $ "type" .= MCImage_ <> "text" .= text <> "image" .= image <> "previewFile" .= previewFile
+    MCImage {text, image} -> J.pairs $ "type" .= MCImage_ <> "text" .= text <> "image" .= image
     MCVideo {text, image, duration} -> J.pairs $ "type" .= MCImage_ <> "text" .= text <> "image" .= image <> "duration" .= duration
     MCVoice {text, duration} -> J.pairs $ "type" .= MCVoice_ <> "text" .= text <> "duration" .= duration
     MCFile t -> J.pairs $ "type" .= MCFile_ <> "text" .= t
@@ -480,6 +498,7 @@ data CMEventTag (e :: MsgEncoding) where
   XOk_ :: CMEventTag 'Json
   XUnknown_ :: Text -> CMEventTag 'Json
   BFileChunk_ :: CMEventTag 'Binary
+  BFileDescrChunk_ :: CMEventTag 'Binary
 
 deriving instance Show (CMEventTag e)
 
@@ -522,6 +541,7 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XOk_ -> "x.ok"
     XUnknown_ t -> encodeUtf8 t
     BFileChunk_ -> "F"
+    BFileDescrChunk_ -> "D"
   strDecode = (\(ACMEventTag _ t) -> checkEncoding t) <=< strDecode
   strP = strDecode <$?> A.takeTill (== ' ')
 
@@ -565,6 +585,7 @@ instance StrEncoding ACMEventTag where
         "x.ok" -> XOk_
         _ -> XUnknown_ $ safeDecodeUtf8 t
       (_, "F") -> pure $ ACMEventTag SBinary BFileChunk_
+      (_, "D") -> pure $ ACMEventTag SBinary BFileDescrChunk_
       _ -> fail "bad ACMEventTag"
 
 toCMEventTag :: ChatMsgEvent e -> CMEventTag e
@@ -604,6 +625,7 @@ toCMEventTag msg = case msg of
   XOk -> XOk_
   XUnknown t _ -> XUnknown_ t
   BFileChunk _ _ -> BFileChunk_
+  BFileDescrChunk {} -> BFileDescrChunk_
 
 instance MsgEncodingI e => TextEncoding (CMEventTag e) where
   textEncode = decodeLatin1 . strEncode
@@ -641,6 +663,7 @@ appBinaryToCM AppMessageBinary {msgId, tag, body} = do
     msg :: CMEventTag 'Binary -> A.Parser (ChatMsgEvent 'Binary)
     msg = \case
       BFileChunk_ -> BFileChunk <$> (SharedMsgId <$> smpP) <*> (unIFC <$> smpP)
+      BFileDescrChunk_ -> BFileDescrChunk <$> (SharedMsgId <$> smpP) <*> (c2w <$> smpP) <*> (unIFC <$> smpP)
 
 appJsonToCM :: AppMessageJson -> Either String (ChatMessage 'Json)
 appJsonToCM AppMessageJson {msgId, event, params} = do
@@ -705,6 +728,7 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = case encoding @e of
     toBody :: ChatMsgEvent 'Binary -> (Maybe SharedMsgId, ByteString)
     toBody = \case
       BFileChunk (SharedMsgId msgId') chunk -> (Nothing, smpEncode (msgId', IFC chunk))
+      BFileDescrChunk (SharedMsgId msgId') fileId chunk -> (Nothing, smpEncode (msgId', w2c fileId, IFC chunk))
     params :: ChatMsgEvent 'Json -> J.Object
     params = \case
       XMsgNew container -> msgContainerJSON container

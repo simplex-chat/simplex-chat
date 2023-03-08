@@ -402,7 +402,7 @@ processChatCommand = \case
               then pure (Nothing, Nothing)
               else bimap Just Just <$> withAgent (\a -> createConnection a (aUserId user) True SCMInvitation Nothing)
           let fileName = takeFileName file
-              fileInvitation = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq, fileInline, fileDescr = Nothing}
+              fileInvitation = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq, fileInline, fileDescrSize = Nothing}
           withStore' $ \db -> do
             ft@FileTransferMeta {fileId} <- createSndDirectFileTransfer db userId ct file fileInvitation agentConnId_ chSize
             fileStatus <- case fileInline of
@@ -448,7 +448,7 @@ processChatCommand = \case
         setupSndFileTransfer gInfo n = forM file_ $ \file -> do
           (fileSize, chSize, fileInline) <- checkSndFile mc file $ fromIntegral n
           let fileName = takeFileName file
-              fileInvitation = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq = Nothing, fileInline, fileDescr = Nothing}
+              fileInvitation = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq = Nothing, fileInline, fileDescrSize = Nothing}
               fileStatus = if fileInline == Just IFMSent then CIFSSndTransfer else CIFSSndStored
           withStore' $ \db -> do
             ft@FileTransferMeta {fileId} <- createSndGroupFileTransfer db userId gInfo file fileInvitation chSize
@@ -488,7 +488,7 @@ processChatCommand = \case
       quoteContent qmc ciFile_
         | replaceContent = MCText qTextOrFile
         | otherwise = case qmc of
-          MCImage _ image descr -> MCImage qTextOrFile image descr
+          MCImage _ image -> MCImage qTextOrFile image
           MCFile _ -> MCFile qTextOrFile
           -- consider same for voice messages
           -- MCVoice _ voice -> MCVoice qTextOrFile voice
@@ -1278,7 +1278,7 @@ processChatCommand = \case
     fileSize <- getFileSize filePath
     unless (fileSize <= maxImageSize) $ throwChatError CEFileImageSize {filePath}
     -- TODO include file description for preview
-    processChatCommand . APISendMessage chatRef False $ ComposedMessage (Just f) Nothing (MCImage "" fixedImagePreview Nothing)
+    processChatCommand . APISendMessage chatRef False $ ComposedMessage (Just f) Nothing (MCImage "" fixedImagePreview)
   ForwardFile chatName fileId -> forwardFile chatName fileId SendFile
   ForwardImage chatName fileId -> forwardFile chatName fileId SendImage
   SendFileDescription _chatName _f -> pure $ chatCmdError Nothing "TODO"

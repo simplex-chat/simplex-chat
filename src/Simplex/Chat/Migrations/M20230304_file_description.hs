@@ -12,11 +12,16 @@ m20230304_file_description :: Query
 m20230304_file_description =
   [sql|
 CREATE TABLE recipient_file_descriptions (
-  rcp_file_descr_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  rcp_file_descr_text TEXT NOT NULL
+  file_descr_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  file_descr_size INTEGER NOT NULL,
+  file_descr_status TEXT NOT NULL,
+  file_descr_text TEXT NOT NULL
 );
 
-ALTER TABLE rcv_files ADD COLUMN rcp_file_descr_id TEXT NULL;
+ALTER TABLE rcv_files ADD COLUMN file_descr_id TEXT NULL;
 
-ALTER TABLE snd_files ADD COLUMN rcp_file_descr_id TEXT NULL;
+ALTER TABLE snd_files ADD COLUMN file_descr_id TEXT NULL;
+
+ -- this is a private file description allowing to delete the file from the server
+ALTER TABLE files ADD COLUMN snd_file_descr_text TEXT NULL;
 |]

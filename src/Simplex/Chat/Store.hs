@@ -2856,7 +2856,7 @@ createRcvFileTransfer db userId Contact {contactId, localDisplayName = c} f@File
     db
     "INSERT INTO rcv_files (file_id, file_status, file_queue_info, file_inline, rcv_file_inline, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
     (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, currentTs, currentTs)
-  pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, rcvFileInline, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Nothing}
+  pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, rcvFileInline, rcvFileDescription = Nothing, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Nothing}
 
 createRcvGroupFileTransfer :: DB.Connection -> UserId -> GroupMember -> FileInvitation -> Maybe InlineFileMode -> Integer -> IO RcvFileTransfer
 createRcvGroupFileTransfer db userId GroupMember {groupId, groupMemberId, localDisplayName = c} f@FileInvitation {fileName, fileSize, fileConnReq, fileInline} rcvFileInline chunkSize = do
@@ -2870,7 +2870,7 @@ createRcvGroupFileTransfer db userId GroupMember {groupId, groupMemberId, localD
     db
     "INSERT INTO rcv_files (file_id, file_status, file_queue_info, file_inline, rcv_file_inline, group_member_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
     (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, groupMemberId, currentTs, currentTs)
-  pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, rcvFileInline, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Just groupMemberId}
+  pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, rcvFileInline, rcvFileDescription = Nothing, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Just groupMemberId}
 
 getRcvFileTransferById :: DB.Connection -> FileTransferId -> ExceptT StoreError IO (User, RcvFileTransfer)
 getRcvFileTransferById db fileId = do
@@ -2901,7 +2901,7 @@ getRcvFileTransfer db User {userId} fileId = do
       (FileStatus, Maybe ConnReqInvitation, Maybe Int64, String, Integer, Integer, Maybe Bool) :. (Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe InlineFileMode, Maybe InlineFileMode) :. (Maybe Int64, Maybe AgentConnId) ->
       ExceptT StoreError IO RcvFileTransfer
     rcvFileTransfer ((fileStatus', fileConnReq, grpMemberId, fileName, fileSize, chunkSize, cancelled_) :. (contactName_, memberName_, filePath_, fileInline, rcvFileInline) :. (connId_, agentConnId_)) = do
-      let fileInv = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq, fileInline, fileDescr = Nothing}
+      let fileInv = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq, fileInline, fileDescrSize = Nothing}
           fileInfo = (filePath_, connId_, agentConnId_)
       case contactName_ <|> memberName_ of
         Nothing -> throwError $ SERcvFileInvalid fileId
@@ -2914,7 +2914,7 @@ getRcvFileTransfer db User {userId} fileId = do
             FSCancelled -> ft name fileInv . RFSCancelled <$> rfi_ fileInfo
       where
         ft senderDisplayName fileInvitation fileStatus =
-          RcvFileTransfer {fileId, fileInvitation, fileStatus, rcvFileInline, senderDisplayName, chunkSize, cancelled, grpMemberId}
+          RcvFileTransfer {fileId, fileInvitation, fileStatus, rcvFileInline, rcvFileDescription = Nothing, senderDisplayName, chunkSize, cancelled, grpMemberId}
         rfi fileInfo = maybe (throwError $ SERcvFileInvalid fileId) pure =<< rfi_ fileInfo
         rfi_ = \case
           (Just filePath, connId, agentConnId) -> pure $ Just RcvFileInfo {filePath, connId, agentConnId}

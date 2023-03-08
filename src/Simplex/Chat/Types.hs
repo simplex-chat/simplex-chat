@@ -1474,7 +1474,7 @@ data FileInvitation = FileInvitation
     fileDigest :: Maybe FileDigest,
     fileConnReq :: Maybe ConnReqInvitation,
     fileInline :: Maybe InlineFileMode,
-    fileDescr :: Maybe FileDescr
+    fileDescrSize :: Maybe Integer -- if this property is set, it means that the sent file will be file description, not the actual file
   }
   deriving (Eq, Show, Generic)
 
@@ -1489,16 +1489,6 @@ data InlineFileMode
   = IFMOffer -- file will be sent inline once accepted
   | IFMSent -- file is sent inline without acceptance
   deriving (Eq, Show, Generic)
-
-data FileDescr = FDText {text :: Text} | FDFile {file :: FileInvitation}
-  deriving (Eq, Show, Generic)
-
-instance ToJSON FileDescr where
-  toEncoding = J.genericToEncoding . taggedObjectJSON $ dropPrefix "FD"
-  toJSON = J.genericToJSON . taggedObjectJSON $ dropPrefix "FD"
-
-instance FromJSON FileDescr where
-  parseJSON = J.genericParseJSON . taggedObjectJSON $ dropPrefix "FD"
 
 instance TextEncoding InlineFileMode where
   textEncode = \case
@@ -1525,6 +1515,7 @@ data RcvFileTransfer = RcvFileTransfer
     fileInvitation :: FileInvitation,
     fileStatus :: RcvFileStatus,
     rcvFileInline :: Maybe InlineFileMode,
+    rcvFileDescription :: Maybe RcvFileDescr,
     senderDisplayName :: ContactName,
     chunkSize :: Integer,
     cancelled :: Bool,
@@ -1533,6 +1524,16 @@ data RcvFileTransfer = RcvFileTransfer
   deriving (Eq, Show, Generic)
 
 instance ToJSON RcvFileTransfer where toEncoding = J.genericToEncoding J.defaultOptions
+
+data RcvFileDescr = RcvFileDescr
+  { fileDescrId :: Int64,
+    fileDescrStatus :: RcvFileStatus,
+    fileDescrText :: Text,
+    chunkSize :: Integer
+  }
+  deriving (Eq, Show, Generic)
+
+instance ToJSON RcvFileDescr where toEncoding = J.genericToEncoding J.defaultOptions
 
 data RcvFileStatus
   = RFSNew
