@@ -972,4 +972,10 @@
     <string name="moderate_message_will_be_deleted_warning">将为所有成员删除该消息。</string>
     <string name="moderate_message_will_be_marked_warning">该消息将对所有成员显示为已审核。</string>
     <string name="delete_member_message__question">删除成员消息？</string>
+    <string name="group_member_role_observer">观察者</string>
+    <string name="you_are_observer">您是观察者</string>
+    <string name="error_updating_link_for_group">更新群组链接错误</string>
+    <string name="observer_cant_send_message_title">您无法发送消息！</string>
+    <string name="initial_member_role">初始角色</string>
+    <string name="observer_cant_send_message_desc">请联系群组管理员。</string>
 </resources>
