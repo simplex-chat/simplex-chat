@@ -205,6 +205,8 @@ tasks.register("compressApk") {
 
         if (project.properties['android.injected.signing.key.alias'] != null && buildType == 'release') {
             new File(outputDir, "app-release.apk").renameTo(new File(outputDir, "simplex.apk"))
+            new File(outputDir, "app-armeabi-v7a-release.apk").renameTo(new File(outputDir, "simplex-armeabi-v7a.apk"))
+            new File(outputDir, "app-arm64-v8a-release.apk").renameTo(new File(outputDir, "simplex-arm64-v8a.apk"))
         }
 
         // View all gradle properties set
