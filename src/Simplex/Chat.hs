@@ -402,7 +402,7 @@ processChatCommand = \case
               then pure (Nothing, Nothing)
               else bimap Just Just <$> withAgent (\a -> createConnection a (aUserId user) True SCMInvitation Nothing)
           let fileName = takeFileName file
-              fileInvitation = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq, fileInline, fileDescrSize = Nothing}
+              fileInvitation = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq, fileInline, fileDescr = Nothing}
           withStore' $ \db -> do
             ft@FileTransferMeta {fileId} <- createSndDirectFileTransfer db userId ct file fileInvitation agentConnId_ chSize
             fileStatus <- case fileInline of
@@ -448,7 +448,7 @@ processChatCommand = \case
         setupSndFileTransfer gInfo n = forM file_ $ \file -> do
           (fileSize, chSize, fileInline) <- checkSndFile mc file $ fromIntegral n
           let fileName = takeFileName file
-              fileInvitation = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq = Nothing, fileInline, fileDescrSize = Nothing}
+              fileInvitation = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq = Nothing, fileInline, fileDescr = Nothing}
               fileStatus = if fileInline == Just IFMSent then CIFSSndTransfer else CIFSSndStored
           withStore' $ \db -> do
             ft@FileTransferMeta {fileId} <- createSndGroupFileTransfer db userId gInfo file fileInvitation chSize

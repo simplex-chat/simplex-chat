@@ -18,9 +18,11 @@ CREATE TABLE recipient_file_descriptions (
   file_descr_text TEXT NOT NULL
 );
 
-ALTER TABLE rcv_files ADD COLUMN file_descr_id TEXT NULL;
+ALTER TABLE rcv_files ADD COLUMN file_descr_id INTEGER NULL
+  REFERENCES recipient_file_descriptions(file_descr_id) ON DELETE RESTRICT;
 
-ALTER TABLE snd_files ADD COLUMN file_descr_id TEXT NULL;
+ALTER TABLE snd_files ADD COLUMN file_descr_id INTEGER NULL
+  REFERENCES recipient_file_descriptions(file_descr_id) ON DELETE RESTRICT;
 
  -- this is a private file description allowing to delete the file from the server
 ALTER TABLE files ADD COLUMN snd_file_descr_text TEXT NULL;

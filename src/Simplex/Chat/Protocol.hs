@@ -34,7 +34,7 @@ import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
-import Data.Word (Word32, Word8)
+import Data.Word (Word32)
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
@@ -179,6 +179,8 @@ instance StrEncoding AChatMessage where
 
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
+  XMsgFileDescr :: {msgId :: SharedMsgId, fileDescr :: FileDescr} -> ChatMsgEvent 'Json
+  XMsgFileCancel :: SharedMsgId -> ChatMsgEvent 'Json
   XMsgUpdate :: {msgId :: SharedMsgId, content :: MsgContent, ttl :: Maybe Int, live :: Maybe Bool} -> ChatMsgEvent 'Json
   XMsgDel :: SharedMsgId -> Maybe MemberId -> ChatMsgEvent 'Json
   XMsgDeleted :: ChatMsgEvent 'Json
@@ -213,7 +215,6 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XOk :: ChatMsgEvent 'Json
   XUnknown :: {event :: Text, params :: J.Object} -> ChatMsgEvent 'Json
   BFileChunk :: SharedMsgId -> FileChunk -> ChatMsgEvent 'Binary
-  BFileDescrChunk :: SharedMsgId -> Word8 -> FileChunk -> ChatMsgEvent 'Binary
 
 deriving instance Eq (ChatMsgEvent e)
 
@@ -464,6 +465,8 @@ instance FromField MsgContent where
 
 data CMEventTag (e :: MsgEncoding) where
   XMsgNew_ :: CMEventTag 'Json
+  XMsgFileDescr_ :: CMEventTag 'Json
+  XMsgFileCancel_ :: CMEventTag 'Json
   XMsgUpdate_ :: CMEventTag 'Json
   XMsgDel_ :: CMEventTag 'Json
   XMsgDeleted_ :: CMEventTag 'Json
@@ -498,7 +501,6 @@ data CMEventTag (e :: MsgEncoding) where
   XOk_ :: CMEventTag 'Json
   XUnknown_ :: Text -> CMEventTag 'Json
   BFileChunk_ :: CMEventTag 'Binary
-  BFileDescrChunk_ :: CMEventTag 'Binary
 
 deriving instance Show (CMEventTag e)
 
@@ -507,6 +509,8 @@ deriving instance Eq (CMEventTag e)
 instance MsgEncodingI e => StrEncoding (CMEventTag e) where
   strEncode = \case
     XMsgNew_ -> "x.msg.new"
+    XMsgFileDescr_ -> "x.msg.file.descr"
+    XMsgFileCancel_ -> "x.msg.file.cancel"
     XMsgUpdate_ -> "x.msg.update"
     XMsgDel_ -> "x.msg.del"
     XMsgDeleted_ -> "x.msg.deleted"
@@ -541,7 +545,6 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XOk_ -> "x.ok"
     XUnknown_ t -> encodeUtf8 t
     BFileChunk_ -> "F"
-    BFileDescrChunk_ -> "D"
   strDecode = (\(ACMEventTag _ t) -> checkEncoding t) <=< strDecode
   strP = strDecode <$?> A.takeTill (== ' ')
 
@@ -551,6 +554,8 @@ instance StrEncoding ACMEventTag where
     ((,) <$> A.peekChar' <*> A.takeTill (== ' ')) >>= \case
       ('x', t) -> pure . ACMEventTag SJson $ case t of
         "x.msg.new" -> XMsgNew_
+        "x.msg.file.descr" -> XMsgFileDescr_
+        "x.msg.file.cancel" -> XMsgFileCancel_
         "x.msg.update" -> XMsgUpdate_
         "x.msg.del" -> XMsgDel_
         "x.msg.deleted" -> XMsgDeleted_
@@ -585,12 +590,13 @@ instance StrEncoding ACMEventTag where
         "x.ok" -> XOk_
         _ -> XUnknown_ $ safeDecodeUtf8 t
       (_, "F") -> pure $ ACMEventTag SBinary BFileChunk_
-      (_, "D") -> pure $ ACMEventTag SBinary BFileDescrChunk_
       _ -> fail "bad ACMEventTag"
 
 toCMEventTag :: ChatMsgEvent e -> CMEventTag e
 toCMEventTag msg = case msg of
   XMsgNew _ -> XMsgNew_
+  XMsgFileDescr _ _ -> XMsgFileDescr_
+  XMsgFileCancel _ -> XMsgFileCancel_
   XMsgUpdate {} -> XMsgUpdate_
   XMsgDel {} -> XMsgDel_
   XMsgDeleted -> XMsgDeleted_
@@ -625,7 +631,6 @@ toCMEventTag msg = case msg of
   XOk -> XOk_
   XUnknown t _ -> XUnknown_ t
   BFileChunk _ _ -> BFileChunk_
-  BFileDescrChunk {} -> BFileDescrChunk_
 
 instance MsgEncodingI e => TextEncoding (CMEventTag e) where
   textEncode = decodeLatin1 . strEncode
@@ -663,7 +668,6 @@ appBinaryToCM AppMessageBinary {msgId, tag, body} = do
     msg :: CMEventTag 'Binary -> A.Parser (ChatMsgEvent 'Binary)
     msg = \case
       BFileChunk_ -> BFileChunk <$> (SharedMsgId <$> smpP) <*> (unIFC <$> smpP)
-      BFileDescrChunk_ -> BFileDescrChunk <$> (SharedMsgId <$> smpP) <*> (c2w <$> smpP) <*> (unIFC <$> smpP)
 
 appJsonToCM :: AppMessageJson -> Either String (ChatMessage 'Json)
 appJsonToCM AppMessageJson {msgId, event, params} = do
@@ -678,6 +682,8 @@ appJsonToCM AppMessageJson {msgId, event, params} = do
     msg :: CMEventTag 'Json -> Either String (ChatMsgEvent 'Json)
     msg = \case
       XMsgNew_ -> XMsgNew <$> JT.parseEither parseMsgContainer params
+      XMsgFileDescr_ -> XMsgFileDescr <$> p "msgId" <*> p "fileDescr"
+      XMsgFileCancel_ -> XMsgFileCancel <$> p "msgId"
       XMsgUpdate_ -> XMsgUpdate <$> p "msgId" <*> p "content" <*> opt "ttl" <*> opt "live"
       XMsgDel_ -> XMsgDel <$> p "msgId" <*> opt "memberId"
       XMsgDeleted_ -> pure XMsgDeleted
@@ -728,10 +734,11 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = case encoding @e of
     toBody :: ChatMsgEvent 'Binary -> (Maybe SharedMsgId, ByteString)
     toBody = \case
       BFileChunk (SharedMsgId msgId') chunk -> (Nothing, smpEncode (msgId', IFC chunk))
-      BFileDescrChunk (SharedMsgId msgId') fileId chunk -> (Nothing, smpEncode (msgId', w2c fileId, IFC chunk))
     params :: ChatMsgEvent 'Json -> J.Object
     params = \case
       XMsgNew container -> msgContainerJSON container
+      XMsgFileDescr msgId' fileDescr -> o ["msgId" .= msgId', "fileDescr" .= fileDescr]
+      XMsgFileCancel msgId' -> o ["msgId" .= msgId']
       XMsgUpdate msgId' content ttl live -> o $ ("ttl" .=? ttl) $ ("live" .=? live) ["msgId" .= msgId', "content" .= content]
       XMsgDel msgId' memberId -> o $ ("memberId" .=? memberId) ["msgId" .= msgId']
       XMsgDeleted -> JM.empty

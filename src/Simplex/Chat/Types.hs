@@ -1474,7 +1474,7 @@ data FileInvitation = FileInvitation
     fileDigest :: Maybe FileDigest,
     fileConnReq :: Maybe ConnReqInvitation,
     fileInline :: Maybe InlineFileMode,
-    fileDescrSize :: Maybe Integer -- if this property is set, it means that the sent file will be file description, not the actual file
+    fileDescr :: Maybe FileDescr
   }
   deriving (Eq, Show, Generic)
 
@@ -1484,6 +1484,19 @@ instance ToJSON FileInvitation where
 
 instance FromJSON FileInvitation where
   parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
+
+data FileDescr
+  = FDText {fileDescrText :: Text}
+  | FDInline {fileDescrSize :: Integer, fileDescrInline :: InlineFileMode}
+  | FDPending
+  deriving (Eq, Show, Generic)
+
+instance ToJSON FileDescr where
+  toEncoding = J.genericToEncoding . taggedObjectJSON $ dropPrefix "FD"
+  toJSON = J.genericToJSON . taggedObjectJSON $ dropPrefix "FD"
+
+instance FromJSON FileDescr where
+  parseJSON = J.genericParseJSON . taggedObjectJSON $ dropPrefix "FD"
 
 data InlineFileMode
   = IFMOffer -- file will be sent inline once accepted

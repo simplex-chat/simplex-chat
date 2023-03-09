@@ -345,7 +345,7 @@ import Simplex.Chat.Migrations.M20230118_recreate_smp_servers
 import Simplex.Chat.Migrations.M20230129_drop_chat_items_group_idx
 import Simplex.Chat.Migrations.M20230206_item_deleted_by_group_member_id
 import Simplex.Chat.Migrations.M20230303_group_link_role
-import Simplex.Chat.Migrations.M20230304_file_description
+-- import Simplex.Chat.Migrations.M20230304_file_description
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (week)
@@ -412,8 +412,8 @@ schemaMigrations =
     ("20230118_recreate_smp_servers", m20230118_recreate_smp_servers),
     ("20230129_drop_chat_items_group_idx", m20230129_drop_chat_items_group_idx),
     ("20230206_item_deleted_by_group_member_id", m20230206_item_deleted_by_group_member_id),
-    ("20230303_group_link_role", m20230303_group_link_role),
-    ("20230304_file_description", m20230304_file_description)
+    ("20230303_group_link_role", m20230303_group_link_role)
+    -- ("20230304_file_description", m20230304_file_description)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -2901,7 +2901,7 @@ getRcvFileTransfer db User {userId} fileId = do
       (FileStatus, Maybe ConnReqInvitation, Maybe Int64, String, Integer, Integer, Maybe Bool) :. (Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe InlineFileMode, Maybe InlineFileMode) :. (Maybe Int64, Maybe AgentConnId) ->
       ExceptT StoreError IO RcvFileTransfer
     rcvFileTransfer ((fileStatus', fileConnReq, grpMemberId, fileName, fileSize, chunkSize, cancelled_) :. (contactName_, memberName_, filePath_, fileInline, rcvFileInline) :. (connId_, agentConnId_)) = do
-      let fileInv = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq, fileInline, fileDescrSize = Nothing}
+      let fileInv = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq, fileInline, fileDescr = Nothing}
           fileInfo = (filePath_, connId_, agentConnId_)
       case contactName_ <|> memberName_ of
         Nothing -> throwError $ SERcvFileInvalid fileId

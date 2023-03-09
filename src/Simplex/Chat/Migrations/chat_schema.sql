@@ -205,7 +205,8 @@ CREATE TABLE snd_files(
   updated_at TEXT CHECK(updated_at NOT NULL),
   file_inline TEXT,
   last_inline_msg_delivery_id INTEGER,
-  file_descr_id TEXT NULL,
+  file_descr_id INTEGER NULL
+  REFERENCES recipient_file_descriptions(file_descr_id) ON DELETE RESTRICT,
   PRIMARY KEY(file_id, connection_id)
 ) WITHOUT ROWID;
 CREATE TABLE rcv_files(
@@ -218,7 +219,8 @@ CREATE TABLE rcv_files(
   updated_at TEXT CHECK(updated_at NOT NULL),
   rcv_file_inline TEXT,
   file_inline TEXT,
-  file_descr_id TEXT NULL
+  file_descr_id INTEGER NULL
+  REFERENCES recipient_file_descriptions(file_descr_id) ON DELETE RESTRICT
 );
 CREATE TABLE snd_file_chunks(
   file_id INTEGER NOT NULL,
