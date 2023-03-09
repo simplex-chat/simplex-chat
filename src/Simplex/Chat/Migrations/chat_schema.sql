@@ -193,8 +193,7 @@ CREATE TABLE files(
   updated_at TEXT CHECK(updated_at NOT NULL),
   cancelled INTEGER,
   ci_file_status TEXT,
-  file_inline TEXT,
-  snd_file_descr_text TEXT NULL
+  file_inline TEXT
 );
 CREATE TABLE snd_files(
   file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
@@ -205,8 +204,6 @@ CREATE TABLE snd_files(
   updated_at TEXT CHECK(updated_at NOT NULL),
   file_inline TEXT,
   last_inline_msg_delivery_id INTEGER,
-  file_descr_id INTEGER NULL
-  REFERENCES recipient_file_descriptions(file_descr_id) ON DELETE RESTRICT,
   PRIMARY KEY(file_id, connection_id)
 ) WITHOUT ROWID;
 CREATE TABLE rcv_files(
@@ -218,9 +215,7 @@ CREATE TABLE rcv_files(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
   rcv_file_inline TEXT,
-  file_inline TEXT,
-  file_descr_id INTEGER NULL
-  REFERENCES recipient_file_descriptions(file_descr_id) ON DELETE RESTRICT
+  file_inline TEXT
 );
 CREATE TABLE snd_file_chunks(
   file_id INTEGER NOT NULL,
@@ -555,10 +550,4 @@ CREATE TABLE IF NOT EXISTS "smp_servers"(
 CREATE INDEX idx_smp_servers_user_id ON smp_servers(user_id);
 CREATE INDEX idx_chat_items_item_deleted_by_group_member_id ON chat_items(
   item_deleted_by_group_member_id
-);
-CREATE TABLE recipient_file_descriptions(
-  file_descr_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  file_descr_size INTEGER NOT NULL,
-  file_descr_status TEXT NOT NULL,
-  file_descr_text TEXT NOT NULL
 );
