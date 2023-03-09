@@ -49,7 +49,7 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import GHC.Records.Compat
 import Simplex.FileTransfer.Description (FileDigest)
-import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId)
+import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), APartyCmdTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, SAEntity (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth, ProtoServerWithAuth, ProtocolTypeI)
@@ -1939,17 +1939,19 @@ instance TextEncoding CommandFunction where
     CFAckMessage -> "ack_message"
     CFDeleteConn -> "delete_conn"
 
-commandExpectedResponse :: CommandFunction -> ACommandTag 'Agent
+commandExpectedResponse :: CommandFunction -> APartyCmdTag 'Agent
 commandExpectedResponse = \case
-  CFCreateConnGrpMemInv -> INV_
-  CFCreateConnGrpInv -> INV_
-  CFCreateConnFileInvDirect -> INV_
-  CFCreateConnFileInvGroup -> INV_
-  CFJoinConn -> OK_
-  CFAllowConn -> OK_
-  CFAcceptContact -> OK_
-  CFAckMessage -> OK_
-  CFDeleteConn -> OK_
+  CFCreateConnGrpMemInv -> t INV_
+  CFCreateConnGrpInv -> t INV_
+  CFCreateConnFileInvDirect -> t INV_
+  CFCreateConnFileInvGroup -> t INV_
+  CFJoinConn -> t OK_
+  CFAllowConn -> t OK_
+  CFAcceptContact -> t OK_
+  CFAckMessage -> t OK_
+  CFDeleteConn -> t OK_
+  where
+    t = APCT SAEConn
 
 data CommandData = CommandData
   { cmdId :: CommandId,

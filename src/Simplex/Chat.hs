@@ -1350,7 +1350,7 @@ processChatCommand = \case
     updateGroupProfileByName gName $ \p ->
       p {groupPreferences = Just . setGroupPreference' SGFTimedMessages pref $ groupPreferences p}
   QuitChat -> liftIO exitSuccess
-  ShowVersion -> pure $ CRVersionInfo $ coreVersionInfo $(buildTimestampQ) $(simplexmqCommitQ)
+  ShowVersion -> pure $ CRVersionInfo $ coreVersionInfo $(buildTimestampQ) "" --  $(simplexmqCommitQ)
   DebugLocks -> do
     chatLockName <- atomically . tryReadTMVar =<< asks chatLock
     agentLocks <- withAgent debugAgentLocks
@@ -1842,7 +1842,7 @@ agentSubscriber = do
   q <- asks $ subQ . smpAgent
   l <- asks chatLock
   forever $ do
-    (corrId, connId, msg) <- atomically $ readTBQueue q
+    (corrId, connId, APC _ msg) <- atomically $ readTBQueue q
     let name = "agentSubscriber connId=" <> str connId <> " corrId=" <> str corrId <> " msg=" <> str (aCommandTag msg)
     withLock l name . void . runExceptT $
       processAgentMessage corrId connId msg `catchError` (toView . CRChatError Nothing)
@@ -2066,7 +2066,7 @@ expireChatItems user@User {userId} ttl sync = do
       membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db user gInfo
       forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
 
-processAgentMessage :: forall m. ChatMonad m => ACorrId -> ConnId -> ACommand 'Agent -> m ()
+processAgentMessage :: forall e m. (AEntityI e, ChatMonad m) => ACorrId -> ConnId -> ACommand 'Agent e -> m ()
 processAgentMessage _ "" msg =
   processAgentMessageNoConn msg `catchError` (toView . CRChatError Nothing)
 processAgentMessage _ connId (DEL_RCVQ srv qId err_) =
@@ -2078,7 +2078,7 @@ processAgentMessage corrId connId msg =
     Just user -> processAgentMessageConn user corrId connId msg `catchError` (toView . CRChatError (Just user))
     _ -> throwChatError $ CENoConnectionUser (AgentConnId connId)
 
-processAgentMessageNoConn :: forall m. ChatMonad m => ACommand 'Agent -> m ()
+processAgentMessageNoConn :: forall e m. ChatMonad m => ACommand 'Agent e -> m ()
 processAgentMessageNoConn = \case
   CONNECT p h -> hostEvent $ CRHostConnected p h
   DISCONNECT p h -> hostEvent $ CRHostDisconnected p h
@@ -2088,13 +2088,14 @@ processAgentMessageNoConn = \case
   DEL_USER agentUserId -> toView $ CRAgentUserDeleted agentUserId
   _ -> pure ()
   where
+    hostEvent :: ChatResponse -> m ()
     hostEvent = whenM (asks $ hostEvents . config) . toView
     serverEvent srv@(SMPServer host _ _) conns event str = do
       cs <- withStore' $ \db -> getConnectionsContacts db conns
       toView $ event srv cs
       showToast ("server " <> str) (safeDecodeUtf8 $ strEncode host)
 
-processAgentMessageConn :: forall m. ChatMonad m => User -> ACorrId -> ConnId -> ACommand 'Agent -> m ()
+processAgentMessageConn :: forall e m. (AEntityI e, ChatMonad m) => User -> ACorrId -> ConnId -> ACommand 'Agent e -> m ()
 processAgentMessageConn user _ agentConnId END =
   withStore (\db -> getConnectionEntity db user $ AgentConnId agentConnId) >>= \case
     RcvDirectMsgConnection _ (Just ct@Contact {localDisplayName = c}) -> do
@@ -2128,14 +2129,14 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     isMember memId GroupInfo {membership} members =
       sameMemberId memId membership || isJust (find (sameMemberId memId) members)
 
-    agentMsgConnStatus :: ACommand 'Agent -> Maybe ConnStatus
+    agentMsgConnStatus :: ACommand 'Agent e -> Maybe ConnStatus
     agentMsgConnStatus = \case
       CONF {} -> Just ConnRequested
       INFO _ -> Just ConnSndReady
       CON -> Just ConnReady
       _ -> Nothing
 
-    processDirectMessage :: ACommand 'Agent -> ConnectionEntity -> Connection -> Maybe Contact -> m ()
+    processDirectMessage :: ACommand 'Agent e -> ConnectionEntity -> Connection -> Maybe Contact -> m ()
     processDirectMessage agentMsg connEntity conn@Connection {connId, viaUserContactLink, groupLinkId, customUserProfileId} = \case
       Nothing -> case agentMsg of
         CONF confId _ connInfo -> do
@@ -2282,7 +2283,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         -- TODO add debugging output
         _ -> pure ()
 
-    processGroupMessage :: ACommand 'Agent -> ConnectionEntity -> Connection -> GroupInfo -> GroupMember -> m ()
+    processGroupMessage :: ACommand 'Agent e -> ConnectionEntity -> Connection -> GroupInfo -> GroupMember -> m ()
     processGroupMessage agentMsg connEntity conn@Connection {connId} gInfo@GroupInfo {groupId, localDisplayName = gName, groupProfile, membership, chatSettings} m = case agentMsg of
       INV (ACR _ cReq) ->
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
@@ -2439,7 +2440,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       -- TODO add debugging output
       _ -> pure ()
 
-    processSndFileConn :: ACommand 'Agent -> ConnectionEntity -> Connection -> SndFileTransfer -> m ()
+    processSndFileConn :: ACommand 'Agent e -> ConnectionEntity -> Connection -> SndFileTransfer -> m ()
     processSndFileConn agentMsg connEntity conn ft@SndFileTransfer {fileId, fileName, fileStatus} =
       case agentMsg of
         -- SMP CONF for SndFileConnection happens for direct file protocol
@@ -2483,7 +2484,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         -- TODO add debugging output
         _ -> pure ()
 
-    processRcvFileConn :: ACommand 'Agent -> ConnectionEntity -> Connection -> RcvFileTransfer -> m ()
+    processRcvFileConn :: ACommand 'Agent e -> ConnectionEntity -> Connection -> RcvFileTransfer -> m ()
     processRcvFileConn agentMsg connEntity conn ft@RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}, grpMemberId} =
       case agentMsg of
         INV (ACR _ cReq) ->
@@ -2578,7 +2579,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             withAckMessage agentConnId cmdId meta a
           Nothing -> a
 
-    processUserContactRequest :: ACommand 'Agent -> ConnectionEntity -> Connection -> UserContact -> m ()
+    processUserContactRequest :: ACommand 'Agent e -> ConnectionEntity -> Connection -> UserContact -> m ()
     processUserContactRequest agentMsg connEntity conn UserContact {userContactLinkId} = case agentMsg of
       REQ invId _ connInfo -> do
         ChatMessage {chatMsgEvent} <- parseChatMessage connInfo
@@ -2629,20 +2630,20 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             toView $ CRConnectionDisabled connEntity
         _ -> pure ()
 
-    updateChatLock :: MsgEncodingI e => String -> ChatMsgEvent e -> m ()
+    updateChatLock :: MsgEncodingI enc => String -> ChatMsgEvent enc -> m ()
     updateChatLock name event = do
       l <- asks chatLock
       atomically $ tryReadTMVar l >>= mapM_ (swapTMVar l . (<> s))
       where
         s = " " <> name <> "=" <> B.unpack (strEncode $ toCMEventTag event)
 
-    withCompletedCommand :: Connection -> ACommand 'Agent -> (CommandData -> m ()) -> m ()
+    withCompletedCommand :: Connection -> ACommand 'Agent e -> (CommandData -> m ()) -> m ()
     withCompletedCommand Connection {connId} agentMsg action = do
-      let agentMsgTag = aCommandTag agentMsg
+      let agentMsgTag = APCT (sAEntity @e) $ aCommandTag agentMsg
       cmdData_ <- withStore' $ \db -> getCommandDataByCorrId db user corrId
       case cmdData_ of
         Just cmdData@CommandData {cmdId, cmdConnId = Just cmdConnId', cmdFunction}
-          | connId == cmdConnId' && (agentMsgTag == commandExpectedResponse cmdFunction || agentMsgTag == ERR_) -> do
+          | connId == cmdConnId' && (agentMsgTag == commandExpectedResponse cmdFunction || agentMsgTag == APCT SAEConn ERR_) -> do
             withStore' $ \db -> deleteCommand db user cmdId
             action cmdData
           | otherwise -> err cmdId $ "not matching connection id or unexpected response, corrId = " <> show corrId
