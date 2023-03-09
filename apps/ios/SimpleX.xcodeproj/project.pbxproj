@@ -532,7 +532,6 @@
 			children = (
 				D741547929AF90B00022400A /* PushKit.framework */,
 				D741547729AF89AF0022400A /* StoreKit.framework */,
-				5C646BB429AA0E970005A88F /* WebRTC.xcframework */,
 				646BB38B283BEEB9001CE359 /* LocalAuthentication.framework */,
 				5CDCAD6028187D7900503DA2 /* libz.tbd */,
 				5CDCAD5E28187D4A00503DA2 /* libiconv.tbd */,
@@ -1491,6 +1490,7 @@
 			buildSettings = {
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = "SimpleX NSE/SimpleX NSE.entitlements";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 127;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
@@ -1508,6 +1508,7 @@
 				MARKETING_VERSION = 4.5.3;
 				PRODUCT_BUNDLE_IDENTIFIER = "chat.simplex.app.SimpleX-NSE";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -1521,6 +1522,7 @@
 			buildSettings = {
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = "SimpleX NSE/SimpleX NSE.entitlements";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 127;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
@@ -1538,6 +1540,7 @@
 				MARKETING_VERSION = 4.5.3;
 				PRODUCT_BUNDLE_IDENTIFIER = "chat.simplex.app.SimpleX-NSE";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
