@@ -26,7 +26,7 @@ module Simplex.Chat.Types where
 
 import Control.Applicative ((<|>))
 import Crypto.Number.Serialize (os2ip)
-import Data.Aeson (FromJSON, ToJSON)
+import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.Types as JT
@@ -48,10 +48,11 @@ import Database.SQLite.Simple.Ok (Ok (Ok))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import GHC.Records.Compat
+import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, sumTypeJSON, taggedObjectJSON)
-import Simplex.Messaging.Protocol (SMPServerWithAuth)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth, ProtoServerWithAuth, ProtocolTypeI)
 import Simplex.Messaging.Util (safeDecodeUtf8, (<$?>))
 
 class IsContact a where
@@ -1470,8 +1471,10 @@ type FileTransferId = Int64
 data FileInvitation = FileInvitation
   { fileName :: String,
     fileSize :: Integer,
+    fileDigest :: Maybe FileDigest,
     fileConnReq :: Maybe ConnReqInvitation,
-    fileInline :: Maybe InlineFileMode
+    fileInline :: Maybe InlineFileMode,
+    fileDescr :: Maybe FileDescr
   }
   deriving (Eq, Show, Generic)
 
@@ -1481,6 +1484,19 @@ instance ToJSON FileInvitation where
 
 instance FromJSON FileInvitation where
   parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
+
+data FileDescr
+  = FDText {fileDescrText :: Text}
+  | FDInline {fileDescrSize :: Integer, fileDescrInline :: InlineFileMode}
+  | FDPending
+  deriving (Eq, Show, Generic)
+
+instance ToJSON FileDescr where
+  toEncoding = J.genericToEncoding . taggedObjectJSON $ dropPrefix "FD"
+  toJSON = J.genericToJSON . taggedObjectJSON $ dropPrefix "FD"
+
+instance FromJSON FileDescr where
+  parseJSON = J.genericParseJSON . taggedObjectJSON $ dropPrefix "FD"
 
 data InlineFileMode
   = IFMOffer -- file will be sent inline once accepted
@@ -1512,6 +1528,7 @@ data RcvFileTransfer = RcvFileTransfer
     fileInvitation :: FileInvitation,
     fileStatus :: RcvFileStatus,
     rcvFileInline :: Maybe InlineFileMode,
+    rcvFileDescription :: Maybe RcvFileDescr,
     senderDisplayName :: ContactName,
     chunkSize :: Integer,
     cancelled :: Bool,
@@ -1520,6 +1537,16 @@ data RcvFileTransfer = RcvFileTransfer
   deriving (Eq, Show, Generic)
 
 instance ToJSON RcvFileTransfer where toEncoding = J.genericToEncoding J.defaultOptions
+
+data RcvFileDescr = RcvFileDescr
+  { fileDescrId :: Int64,
+    fileDescrStatus :: RcvFileStatus,
+    fileDescrText :: Text,
+    chunkSize :: Integer
+  }
+  deriving (Eq, Show, Generic)
+
+instance ToJSON RcvFileDescr where toEncoding = J.genericToEncoding J.defaultOptions
 
 data RcvFileStatus
   = RFSNew
@@ -1947,17 +1974,35 @@ encodeJSON = safeDecodeUtf8 . LB.toStrict . J.encode
 decodeJSON :: FromJSON a => Text -> Maybe a
 decodeJSON = J.decode . LB.fromStrict . encodeUtf8
 
-data ServerCfg = ServerCfg
-  { server :: SMPServerWithAuth,
+data ServerCfg p = ServerCfg
+  { server :: ProtoServerWithAuth p,
     preset :: Bool,
     tested :: Maybe Bool,
     enabled :: Bool
   }
   deriving (Show, Generic)
 
-instance ToJSON ServerCfg where
+instance ProtocolTypeI p => ToJSON (ServerCfg p) where
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
 
-instance FromJSON ServerCfg where
+instance ProtocolTypeI p => FromJSON (ServerCfg p) where
+  parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
+
+data AServerCfg = AServerCfg
+  { server :: AProtoServerWithAuth,
+    preset :: Bool,
+    tested :: Maybe Bool,
+    enabled :: Bool
+  }
+
+deriving instance Show AServerCfg
+
+deriving instance Generic AServerCfg
+
+instance ToJSON AServerCfg where
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+
+instance FromJSON AServerCfg where
   parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
