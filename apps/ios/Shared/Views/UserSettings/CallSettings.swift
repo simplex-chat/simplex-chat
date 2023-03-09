@@ -53,9 +53,7 @@ struct CallSettings: View {
                 Section("Limitations") {
                     VStack(alignment: .leading, spacing: 8) {
                         textListItem("1.", "Do NOT use SimpleX for emergency calls.")
-                        textListItem("2.", "The microphone does not work when the app is in the background.")
-                        textListItem("3.", "To prevent the call interruption, enable Do Not Disturb mode.")
-                        textListItem("4.", "If the video fails to connect, flip the camera to resolve it.")
+                        textListItem("2.", "To prevent the call interruption, enable Do Not Disturb mode.")
                     }
                     .font(.callout)
                     .padding(.vertical, 8)
