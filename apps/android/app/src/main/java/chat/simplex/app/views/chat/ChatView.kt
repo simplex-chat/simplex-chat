@@ -152,9 +152,14 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
             }
           } else if (chat.chatInfo is ChatInfo.Group) {
             setGroupMembers(chat.chatInfo.groupInfo, chatModel)
-            var groupLink = chatModel.controller.apiGetGroupLink(chat.chatInfo.groupInfo.groupId)
+            val link = chatModel.controller.apiGetGroupLink(chat.chatInfo.groupInfo.groupId)
+            var groupLink = link?.first
+            var groupLinkMemberRole = link?.second
             ModalManager.shared.showModalCloseable(true) { close ->
-              GroupChatInfoView(chatModel, groupLink, { groupLink = it }, close)
+              GroupChatInfoView(chatModel, groupLink, groupLinkMemberRole, {
+                groupLink = it.first;
+                groupLinkMemberRole = it.second
+              }, close)
             }
           }
         }
@@ -193,19 +198,34 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: () -> Unit) {
       deleteMessage = { itemId, mode ->
         withApi {
           val cInfo = chat.chatInfo
-          val r = chatModel.controller.apiDeleteChatItem(
-            type = cInfo.chatType,
-            id = cInfo.apiId,
-            itemId = itemId,
-            mode = mode
-          )
-          if (r != null) {
-            val toChatItem = r.toChatItem
-            if (toChatItem == null) {
-              chatModel.removeChatItem(cInfo, r.deletedChatItem.chatItem)
-            } else {
-              chatModel.upsertChatItem(cInfo, toChatItem.chatItem)
-            }
+          val toDeleteItem = chatModel.chatItems.firstOrNull { it.id == itemId }
+          val toModerate = toDeleteItem?.memberToModerate(chat.chatInfo)
+          val groupInfo = toModerate?.first
+          val groupMember = toModerate?.second
+          val deletedChatItem: ChatItem?
+          val toChatItem: ChatItem?
+          if (groupInfo != null && groupMember != null) {
+            val r = chatModel.controller.apiDeleteMemberChatItem(
+              groupId = groupInfo.groupId,
+              groupMemberId = groupMember.groupMemberId,
+              itemId = itemId
+            )
+            deletedChatItem = r?.first
+            toChatItem = r?.second
+          } else {
+            val r = chatModel.controller.apiDeleteChatItem(
+              type = cInfo.chatType,
+              id = cInfo.apiId,
+              itemId = itemId,
+              mode = mode
+            )
+            deletedChatItem = r?.deletedChatItem?.chatItem
+            toChatItem = r?.toChatItem?.chatItem
+          }
+          if (toChatItem == null && deletedChatItem != null) {
+            chatModel.removeChatItem(cInfo, deletedChatItem)
+          } else if (toChatItem != null) {
+            chatModel.upsertChatItem(cInfo, toChatItem)
           }
         }
       },

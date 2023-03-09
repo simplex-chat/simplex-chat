@@ -54,7 +54,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtocolType, CorrId, MsgFlags, NtfServer, QueueId)
+import Simplex.Messaging.Protocol (AProtocolType, CorrId, MsgFlags, NtfServer, ProtocolType (..), QueueId, XFTPServerWithAuth)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
@@ -116,6 +116,7 @@ data ChatConfig = ChatConfig
 data DefaultAgentServers = DefaultAgentServers
   { smp :: NonEmpty SMPServerWithAuth,
     ntf :: [NtfServer],
+    xftp :: NonEmpty XFTPServerWithAuth,
     netCfg :: NetworkConfig
   }
 
@@ -170,7 +171,7 @@ data ChatController = ChatController
     logFilePath :: Maybe FilePath
   }
 
-data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown | HSMessages | HSSettings
+data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSMarkdown | HSMessages | HSSettings
   deriving (Show, Generic)
 
 instance ToJSON HelpSection where
@@ -237,14 +238,20 @@ data ChatCommand
   | APILeaveGroup GroupId
   | APIListMembers GroupId
   | APIUpdateGroupProfile GroupId GroupProfile
-  | APICreateGroupLink GroupId
+  | APICreateGroupLink GroupId GroupMemberRole
+  | APIGroupLinkMemberRole GroupId GroupMemberRole
   | APIDeleteGroupLink GroupId
   | APIGetGroupLink GroupId
   | APIGetUserSMPServers UserId
   | GetUserSMPServers
   | APISetUserSMPServers UserId SMPServersConfig
   | SetUserSMPServers SMPServersConfig
-  | TestSMPServer UserId SMPServerWithAuth
+  | APIGetUserServers UserId
+  | GetUserServers
+  | APISetUserServers UserId ServersConfig
+  | SetUserServers ServersConfig
+  | APITestSMPServer UserId SMPServerWithAuth
+  | TestSMPServer SMPServerWithAuth
   | APISetChatItemTTL UserId (Maybe Int64)
   | SetChatItemTTL (Maybe Int64)
   | APIGetChatItemTTL UserId
@@ -316,7 +323,8 @@ data ChatCommand
   | UpdateGroupNames GroupName GroupProfile
   | ShowGroupProfile GroupName
   | UpdateGroupDescription GroupName (Maybe Text)
-  | CreateGroupLink GroupName
+  | CreateGroupLink GroupName GroupMemberRole
+  | GroupLinkMemberRole GroupName GroupMemberRole
   | DeleteGroupLink GroupName
   | ShowGroupLink GroupName
   | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: Text, message :: Text}
@@ -329,6 +337,7 @@ data ChatCommand
   | SendImage ChatName FilePath
   | ForwardFile ChatName FileTransferId
   | ForwardImage ChatName FileTransferId
+  | SendFileDescription ChatName FilePath
   | ReceiveFile {fileId :: FileTransferId, fileInline :: Maybe Bool, filePath :: Maybe FilePath}
   | CancelFile FileTransferId
   | FileStatus FileTransferId
@@ -361,7 +370,7 @@ data ChatResponse
   | CRChatItems {user :: User, chatItems :: [AChatItem]}
   | CRChatItemId User (Maybe ChatItemId)
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
-  | CRUserSMPServers {user :: User, smpServers :: NonEmpty ServerCfg, presetSMPServers :: NonEmpty SMPServerWithAuth}
+  | CRUserSMPServers {user :: User, smpServers :: NonEmpty (ServerCfg 'PSMP), presetSMPServers :: NonEmpty SMPServerWithAuth}
   | CRSmpTestResult {user :: User, smpTestFailure :: Maybe SMPTestFailure}
   | CRChatItemTTL {user :: User, chatItemTTL :: Maybe Int64}
   | CRNetworkConfig {networkConfig :: NetworkConfig}
@@ -454,8 +463,8 @@ data ChatResponse
   | CRGroupDeleted {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRGroupUpdated {user :: User, fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember}
   | CRGroupProfile {user :: User, groupInfo :: GroupInfo}
-  | CRGroupLinkCreated {user :: User, groupInfo :: GroupInfo, connReqContact :: ConnReqContact}
-  | CRGroupLink {user :: User, groupInfo :: GroupInfo, connReqContact :: ConnReqContact}
+  | CRGroupLinkCreated {user :: User, groupInfo :: GroupInfo, connReqContact :: ConnReqContact, memberRole :: GroupMemberRole}
+  | CRGroupLink {user :: User, groupInfo :: GroupInfo, connReqContact :: ConnReqContact, memberRole :: GroupMemberRole}
   | CRGroupLinkDeleted {user :: User, groupInfo :: GroupInfo}
   | CRAcceptingGroupJoinRequest {user :: User, groupInfo :: GroupInfo, contact :: Contact}
   | CRMemberSubError {user :: User, groupInfo :: GroupInfo, member :: GroupMember, chatError :: ChatError}
@@ -524,7 +533,10 @@ instance ToJSON AgentQueueId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-data SMPServersConfig = SMPServersConfig {smpServers :: [ServerCfg]}
+data SMPServersConfig = SMPServersConfig {smpServers :: [ServerCfg 'PSMP]}
+  deriving (Show, Generic, FromJSON)
+
+data ServersConfig = ServersConfig {servers :: [AServerCfg]}
   deriving (Show, Generic, FromJSON)
 
 data ArchiveConfig = ArchiveConfig {archivePath :: FilePath, disableCompression :: Maybe Bool, parentTempDirectory :: Maybe FilePath}
@@ -684,6 +696,7 @@ data ChatErrorType
   | CEContactDisabled {contact :: Contact}
   | CEConnectionDisabled {connection :: Connection}
   | CEGroupUserRole {groupInfo :: GroupInfo, requiredRole :: GroupMemberRole}
+  | CEGroupMemberInitialRole {groupInfo :: GroupInfo, initialRole :: GroupMemberRole}
   | CEContactIncognitoCantInvite
   | CEGroupIncognitoCantInvite
   | CEGroupContactRole {contactName :: ContactName}

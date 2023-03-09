@@ -6,7 +6,8 @@
             "imgLight": "/img/new/privacy-section-1.svg",
             "imgDark": "/img/new/privacy-section-1.svg",
             "overlayContent": {
-                "overlayId": "why-privacy-matters-1",
+                "overlayId": "privacy-saves-money",
+                "overlayScrollTo": "why-privacy",
                 "title": "privacy-matters-1-overlay-1-title",
                 "linkText": "privacy-matters-1-overlay-1-linkText",
                 "showImage": false,
@@ -19,7 +20,8 @@
             "imgLight": "/img/new/privacy-section-2.svg",
             "imgDark": "/img/new/privacy-section-2.svg",
             "overlayContent": {
-                "overlayId": "why-privacy-matters-2",
+                "overlayId": "privacy-gives-power",
+                "overlayScrollTo": "why-privacy",
                 "title": "privacy-matters-2-overlay-1-title",
                 "linkText": "privacy-matters-2-overlay-1-linkText",
                 "showImage": false,
@@ -32,7 +34,8 @@
             "imgLight": "/img/new/privacy-section-3.svg",
             "imgDark": "/img/new/privacy-section-3.svg",
             "overlayContent": {
-                "overlayId": "why-privacy-matters-3",
+                "overlayId": "privacy-protects-freedom",
+                "overlayScrollTo": "why-privacy",
                 "title": "privacy-matters-3-overlay-1-title",
                 "linkText": "privacy-matters-3-overlay-1-linkText",
                 "showImage": false,
