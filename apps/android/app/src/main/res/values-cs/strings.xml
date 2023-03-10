@@ -967,4 +967,15 @@
     <string name="share_invitation_link">Sdílet pozvánku</string>
     <string name="status_e2e_encrypted">koncově šifrované</string>
     <string name="moderated_description">moderované</string>
+    <string name="moderated_item_description">moderovaný %s</string>
+    <string name="delete_member_message__question">Smazat zprávu člena\?</string>
+    <string name="moderate_verb">moderovaný</string>
+    <string name="observer_cant_send_message_desc">Kontaktujte prosím správce skupiny.</string>
+    <string name="you_are_observer">jste pozorovatel</string>
+    <string name="group_member_role_observer">pozorovatel</string>
+    <string name="moderate_message_will_be_deleted_warning">Zpráva bude smazána pro všechny členy.</string>
+    <string name="moderate_message_will_be_marked_warning">Zpráva bude pro všechny členy označena jako moderovaná.</string>
+    <string name="observer_cant_send_message_title">Nemůžete posílat zprávy!</string>
+    <string name="error_updating_link_for_group">Chyba aktualizace odkazu skupiny</string>
+    <string name="initial_member_role">Počáteční role</string>
 </resources>
