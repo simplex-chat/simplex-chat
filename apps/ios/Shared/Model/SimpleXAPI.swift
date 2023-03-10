@@ -1297,8 +1297,7 @@ func processContactSubError(_ contact: Contact, _ chatError: ChatError) {
 
 func refreshCallInvitations() throws {
     let m = ChatModel.shared
-    let callInvitations = try apiGetCallInvitations()
-    m.callInvitations = callInvitations.reduce(into: [ChatId: RcvCallInvitation]()) { result, inv in result[inv.contact.id] = inv }
+    let callInvitations = try justRefreshCallInvitations()
     if let (chatId, ntfAction) = m.ntfCallInvitationAction,
        let invitation = m.callInvitations.removeValue(forKey: chatId) {
         m.ntfCallInvitationAction = nil
@@ -1306,6 +1305,13 @@ func refreshCallInvitations() throws {
     } else if let invitation = callInvitations.last {
         activateCall(invitation)
     }
+}
+
+func justRefreshCallInvitations() throws -> [RcvCallInvitation] {
+    let m = ChatModel.shared
+    let callInvitations = try apiGetCallInvitations()
+    m.callInvitations = callInvitations.reduce(into: [ChatId: RcvCallInvitation]()) { result, inv in result[inv.contact.id] = inv }
+    return callInvitations
 }
 
 func activateCall(_ callInvitation: RcvCallInvitation) {

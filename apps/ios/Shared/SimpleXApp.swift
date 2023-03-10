@@ -41,14 +41,7 @@ struct SimpleXApp: App {
                     chatModel.appOpenUrl = url
                 }
                 .onAppear() {
-                    if (!chatModel.chatInitialized) {
-                        do {
-                            chatModel.v3DBMigration = v3DBMigrationDefault.get()
-                            try initializeChat(start: chatModel.v3DBMigration.startChat)
-                        } catch let error {
-                            fatalError("Failed to start or load chats: \(responseError(error))")
-                        }
-                    }
+                    initChatAndMigrate()
                 }
                 .onChange(of: scenePhase) { phase in
                     logger.debug("scenePhase was \(String(describing: scenePhase)), now \(String(describing: phase))")

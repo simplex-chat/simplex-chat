@@ -137,18 +137,32 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     // This will be needed when we have notification service extension
     func pushRegistry(_ registry: PKPushRegistry, didReceiveIncomingPushWith payload: PKPushPayload, for type: PKPushType, completion: @escaping () -> Void) {
         if type == .voIP {
+            if (!ChatModel.shared.chatInitialized) {
+                initChatAndMigrate()
+                startChatAndActivate()
+                CallController.shared.onEndCall = { terminateChat() }
+            } else {
+                startChatAndActivate()
+                CallController.shared.onEndCall = {
+                    suspendChat()
+                    BGManager.shared.schedule()
+                }
+            }
+            // No actual list of invitations in model before this line
+            let invitations = try? justRefreshCallInvitations()
+            logger.debug("Invitations \(String(describing: invitations))")
             // Extract the call information from the push notification payload
             if let displayName = payload.dictionaryPayload["displayName"] as? String,
                let contactId = payload.dictionaryPayload["contactId"] as? String,
-               let uuidStr = payload.dictionaryPayload["uuid"] as? String,
-               let uuid = UUID(uuidString: uuidStr) {
+               let uuid = ChatModel.shared.callInvitations.first(where: { (key, value) in value.contact.id == contactId } )?.value.callkitUUID,
+               let media = payload.dictionaryPayload["media"] as? String {
                 let callUpdate = CXCallUpdate()
                 callUpdate.remoteHandle = CXHandle(type: .generic, value: contactId)
                 callUpdate.localizedCallerName = displayName
-                provider.reportNewIncomingCall(with: uuid, update: callUpdate, completion: { error in
+                callUpdate.hasVideo = media == CallMediaType.video.rawValue
+                CallController.shared.provider.reportNewIncomingCall(with: uuid, update: callUpdate, completion: { error in
                     if error != nil {
-                        let m = ChatModel.shared
-                        m.callInvitations.removeValue(forKey: contactId)
+                        ChatModel.shared.callInvitations.removeValue(forKey: contactId)
                     }
                     // Tell PushKit that the notification is handled.
                     completion()
@@ -239,7 +253,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
                 if ok {
                     logger.debug("CallController.endCall: call ended")
                 } else {
-                    logger.error("CallController.endCall: no actove call pr call invitation to end")
+                    logger.error("CallController.endCall: no active call pr call invitation to end")
                 }
             }
         }

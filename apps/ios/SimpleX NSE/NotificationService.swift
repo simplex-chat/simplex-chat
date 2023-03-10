@@ -242,15 +242,18 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, UNMutableNotification
          }
         return cItem.showMutableNotification ? (aChatItem.chatId, createMessageReceivedNtf(user, cInfo, cItem)) : nil
     case let .callInvitation(invitation):
-        CXProvider.reportNewIncomingVoIPPushPayload([
-            "displayName": invitation.contact.displayName,
-            "contactId": invitation.contact.id,
-            "uuid": invitation.callkitUUID
-        ]) { error in
-            if let error = error {
-                logger.error("reportNewIncomingVoIPPushPayload error \(error.localizedDescription, privacy: .public)")
-            } else {
-                logger.debug("reportNewIncomingVoIPPushPayload success for \(invitation.contact.id)")
+        // Do not post it without CallKit support, iOS will stop launching the app without showing CallKit
+        if useCallKit() {
+            CXProvider.reportNewIncomingVoIPPushPayload([
+                "displayName": invitation.contact.displayName,
+                "contactId": invitation.contact.id,
+                "media": invitation.callType.media.rawValue
+            ]) { error in
+                if let error = error {
+                    logger.error("reportNewIncomingVoIPPushPayload error \(error.localizedDescription, privacy: .public)")
+                } else {
+                    logger.debug("reportNewIncomingVoIPPushPayload success for \(invitation.contact.id)")
+                }
             }
         }
         return useCallKit() ? nil : (invitation.contact.id, createCallInvitationNtf(invitation))
