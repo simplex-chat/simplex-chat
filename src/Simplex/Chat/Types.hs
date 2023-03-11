@@ -1483,15 +1483,12 @@ instance ToJSON FileInvitation where
 instance FromJSON FileInvitation where
   parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
 
-data FileDescr
-  = FDText {fileDescrText :: Text}
-  | FDInline {fileDescrSize :: Integer, fileDescrInline :: InlineFileMode}
-  | FDPending
+data FileDescr = FileDescr {fdText :: Text, fdPartNo :: Int, fdComplete :: Bool}
   deriving (Eq, Show, Generic)
 
 instance ToJSON FileDescr where
-  toEncoding = J.genericToEncoding . taggedObjectJSON $ dropPrefix "FD"
-  toJSON = J.genericToJSON . taggedObjectJSON $ dropPrefix "FD"
+  toEncoding = J.genericToEncoding J.defaultOptions
+  toJSON = J.genericToJSON J.defaultOptions
 
 instance FromJSON FileDescr where
   parseJSON = J.genericParseJSON . taggedObjectJSON $ dropPrefix "FD"
@@ -1504,7 +1501,7 @@ xftpFileInvitation fileName fileSize =
       fileDigest = Nothing,
       fileConnReq = Nothing,
       fileInline = Nothing,
-      fileDescr = Just FDPending
+      fileDescr = Just FileDescr {fdText = "", fdPartNo = 0, fdComplete = False}
     }
 
 data InlineFileMode
@@ -1603,21 +1600,37 @@ instance FromField AgentConnId where fromField f = AgentConnId <$> fromField f
 
 instance ToField AgentConnId where toField (AgentConnId m) = toField m
 
-newtype AgentFileId = AgentFileId ConnId
+newtype AgentSndFileId = AgentSndFileId ConnId
   deriving (Eq, Show)
 
-instance StrEncoding AgentFileId where
-  strEncode (AgentFileId connId) = strEncode connId
-  strDecode s = AgentFileId <$> strDecode s
-  strP = AgentFileId <$> strP
+instance StrEncoding AgentSndFileId where
+  strEncode (AgentSndFileId connId) = strEncode connId
+  strDecode s = AgentSndFileId <$> strDecode s
+  strP = AgentSndFileId <$> strP
 
-instance ToJSON AgentFileId where
+instance ToJSON AgentSndFileId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-instance FromField AgentFileId where fromField f = AgentFileId <$> fromField f
+instance FromField AgentSndFileId where fromField f = AgentSndFileId <$> fromField f
 
-instance ToField AgentFileId where toField (AgentFileId m) = toField m
+instance ToField AgentSndFileId where toField (AgentSndFileId m) = toField m
+
+newtype AgentRcvFileId = AgentRcvFileId ConnId
+  deriving (Eq, Show)
+
+instance StrEncoding AgentRcvFileId where
+  strEncode (AgentRcvFileId connId) = strEncode connId
+  strDecode s = AgentRcvFileId <$> strDecode s
+  strP = AgentRcvFileId <$> strP
+
+instance ToJSON AgentRcvFileId where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
+instance FromField AgentRcvFileId where fromField f = AgentRcvFileId <$> fromField f
+
+instance ToField AgentRcvFileId where toField (AgentRcvFileId m) = toField m
 
 newtype AgentInvId = AgentInvId InvitationId
   deriving (Eq, Show)

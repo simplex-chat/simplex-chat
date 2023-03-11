@@ -21,6 +21,8 @@ CREATE TABLE recipient_file_descriptions (
 ALTER TABLE rcv_files ADD COLUMN file_descr_id INTEGER NULL
   REFERENCES recipient_file_descriptions(file_descr_id) ON DELETE SET NULL;
 
+ALTER TABLE rcv_files ADD COLUMN agent_rcv_file_id BLOB NULL;
+
 ALTER TABLE snd_files ADD COLUMN file_descr_id INTEGER NULL
   REFERENCES recipient_file_descriptions(file_descr_id) ON DELETE SET NULL;
 

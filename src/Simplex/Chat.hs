@@ -2122,18 +2122,52 @@ processAgentMessageNoConn = \case
       toView $ event srv cs
       showToast ("server " <> str) (safeDecodeUtf8 $ strEncode host)
 
-processAgentMsgRcvFile :: forall m. ChatMonad m => ACorrId -> ConnId -> ACommand 'Agent 'AERcvFile -> m ()
-processAgentMsgRcvFile = undefined
-
-processAgentMsgSndFile :: forall m. ChatMonad m => ACorrId -> ConnId -> ACommand 'Agent 'AESndFile -> m ()
-processAgentMsgSndFile corrId aFileId msg =
-  withStore' (`getUserByAFileId` AgentFileId aFileId) >>= \case
-    Just user -> process user corrId aFileId msg `catchError` (toView . CRChatError (Just user))
-    _ -> throwChatError $ CENoFileUser $ AgentFileId aFileId
+processAgentMsgSndFile :: forall m. ChatMonad m => ACorrId -> SndFileId -> ACommand 'Agent 'AESndFile -> m ()
+processAgentMsgSndFile _corrId aFileId msg =
+  withStore' (`getUserByASndFileId` AgentSndFileId aFileId) >>= \case
+    Just user -> process user `catchError` (toView . CRChatError (Just user))
+    _ -> throwChatError $ CENoSndFileUser $ AgentSndFileId aFileId
   where
-    process :: User -> ACorrId -> ConnId -> ACommand 'Agent 'AESndFile -> m ()
-    process _user _corrId _aFileId = \case
-      SFDONE _rcvDescr _sndDescr -> pure ()
+    process :: User -> m ()
+    process user = do
+      _sndFile <- withStore (\db -> getAgentSndFileXFTP db user $ AgentSndFileId aFileId)
+      --  >>= updateConnStatus
+      -- load file transfer meta (add chat item status to type and also contact/group)
+      case msg of
+        SFPROG _sent _total -> do
+          -- update chat item status
+          -- send status to view
+          pure ()
+        SFDONE _rcvDescr _sndDescr -> do
+          -- update chat item status
+          -- send descriptions to the recipients in XMsgFileDescr
+          -- send status to view
+          pure ()
+
+processAgentMsgRcvFile :: forall m. ChatMonad m => ACorrId -> RcvFileId -> ACommand 'Agent 'AERcvFile -> m ()
+processAgentMsgRcvFile _corrId aFileId msg =
+  withStore' (`getUserByARcvFileId` AgentRcvFileId aFileId) >>= \case
+    Just user -> process user `catchError` (toView . CRChatError (Just user))
+    _ -> throwChatError $ CENoRcvFileUser $ AgentRcvFileId aFileId
+  where
+    process :: User -> m ()
+    process user = do
+      _rcvFile <- withStore (\db -> getAgentRcvFileXFTP db user $ AgentRcvFileId aFileId)
+      --  >>= updateConnStatus
+      -- load file transfer meta (add chat item status to type and also contact/group)
+      case msg of
+        RFPROG _sent _total -> do
+          -- update chat item status
+          -- send status to view
+          pure ()
+        RFDONE _filePath -> do
+          -- update chat item status
+          -- send status to view
+          pure ()
+        RFERR _e -> do
+          -- update chat item status
+          -- send status to view
+          pure ()
 
 processAgentMessageConn :: forall m. ChatMonad m => User -> ACorrId -> ConnId -> ACommand 'Agent 'AEConn -> m ()
 processAgentMessageConn user _ agentConnId END =
@@ -2226,6 +2260,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             updateChatLock "directMessage" event
             case event of
               XMsgNew mc -> newContentMessage ct mc msg msgMeta
+              XMsgFileDescr sharedMsgId fileDescr -> messageFileDescription ct sharedMsgId fileDescr msgMeta
+              XMsgFileCancel sharedMsgId -> cancelMessageFile ct sharedMsgId msgMeta
               XMsgUpdate sharedMsgId mContent ttl live -> messageUpdate ct sharedMsgId mContent msg msgMeta ttl live
               XMsgDel sharedMsgId _ -> messageDelete ct sharedMsgId msg msgMeta
               -- TODO discontinue XFile
@@ -2438,6 +2474,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           updateChatLock "groupMessage" event
           case event of
             XMsgNew mc -> canSend $ newGroupContentMessage gInfo m mc msg msgMeta
+            XMsgFileDescr sharedMsgId fileDescr -> canSend $ groupMessageFileDescription gInfo m sharedMsgId fileDescr msgMeta
+            XMsgFileCancel sharedMsgId -> cancelGroupMessageFile gInfo m sharedMsgId msgMeta
             XMsgUpdate sharedMsgId mContent ttl live -> canSend $ groupMessageUpdate gInfo m sharedMsgId mContent msg msgMeta ttl live
             XMsgDel sharedMsgId memberId -> groupMessageDelete gInfo m sharedMsgId memberId msg
             -- TODO discontinue XFile
@@ -2788,6 +2826,31 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           ci <- saveRcvChatItem' user (CDDirectRcv ct) msg sharedMsgId_ msgMeta ciContent ciFile_ timed_ live
           toView $ CRNewChatItem user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
           pure ci
+
+    messageFileDescription :: Contact -> SharedMsgId -> FileDescr -> MsgMeta -> m ()
+    messageFileDescription ct _sharedMsgId _fileDescr msgMeta = do
+      checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
+      -- find the original chat item and file
+      -- re-create file item if it does not exist
+      -- check file description part number
+      -- append file description part to the record
+      -- if file description is complete send it to the agent to receive
+      pure ()
+
+    groupMessageFileDescription :: GroupInfo -> GroupMember -> SharedMsgId -> FileDescr -> MsgMeta -> m ()
+    groupMessageFileDescription _gInfo _m _sharedMsgId _fileDescr _msgMeta = do
+      pure ()
+
+    cancelMessageFile :: Contact -> SharedMsgId -> MsgMeta -> m ()
+    cancelMessageFile ct _sharedMsgId msgMeta = do
+      checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
+      -- find the original chat item and file
+      -- mark file as cancelled, remove description if excists
+      pure ()
+
+    cancelGroupMessageFile :: GroupInfo -> GroupMember -> SharedMsgId -> MsgMeta -> m ()
+    cancelGroupMessageFile _gInfo _m _sharedMsgId _msgMeta = do
+      pure ()
 
     processFileInvitation :: Maybe FileInvitation -> MsgContent -> (DB.Connection -> FileInvitation -> Maybe InlineFileMode -> Integer -> IO RcvFileTransfer) -> m (Maybe (CIFile 'MDRcv))
     processFileInvitation fInv_ mc createRcvFT = forM fInv_ $ \fInv@FileInvitation {fileName, fileSize} -> do

@@ -1207,7 +1207,8 @@ viewChatError logLevel = \case
   ChatError err -> case err of
     CENoActiveUser -> ["error: active user is required"]
     CENoConnectionUser agentConnId -> ["error: message user not found, conn id: " <> sShow agentConnId | logLevel <= CLLError]
-    CENoFileUser agentFileId -> ["error: file user not found, file id: " <> sShow agentFileId | logLevel <= CLLError]
+    CENoSndFileUser aFileId -> ["error: snd file user not found, file id: " <> sShow aFileId | logLevel <= CLLError]
+    CENoRcvFileUser aFileId -> ["error: rcv file user not found, file id: " <> sShow aFileId | logLevel <= CLLError]
     CEActiveUserExists -> ["error: active user already exists"]
     CEUserExists name -> ["user with the name " <> ttyContact name <> " already exists"]
     CEDifferentActiveUser commandUserId activeUserId -> ["error: different active user, command user id: " <> sShow commandUserId <> ", active user id: " <> sShow activeUserId]

@@ -33,7 +33,8 @@ module Simplex.Chat.Store
     getUser,
     getUserIdByName,
     getUserByAConnId,
-    getUserByAFileId,
+    getUserByASndFileId,
+    getUserByARcvFileId,
     getUserByContactId,
     getUserByGroupId,
     getUserByFileId,
@@ -155,6 +156,8 @@ module Simplex.Chat.Store
     updateSndGroupFTDelivery,
     getSndInlineFTViaMsgDelivery,
     createFileTransferXFTP,
+    getAgentSndFileXFTP,
+    getAgentRcvFileXFTP,
     updateFileCancelled,
     updateCIFileStatus,
     getSharedMsgIdByFileId,
@@ -543,10 +546,15 @@ getUserByAConnId db agentConnId =
   maybeFirstRow toUser $
     DB.query db (userQuery <> " JOIN connections c ON c.user_id = u.user_id WHERE c.agent_conn_id = ?") (Only agentConnId)
 
-getUserByAFileId :: DB.Connection -> AgentFileId -> IO (Maybe User)
-getUserByAFileId db agentFileId =
+getUserByASndFileId :: DB.Connection -> AgentSndFileId -> IO (Maybe User)
+getUserByASndFileId db aSndFileId =
   maybeFirstRow toUser $
-    DB.query db (userQuery <> " JOIN files f ON f.user_id = u.user_id WHERE f.agent_file_id = ?") (Only agentFileId)
+    DB.query db (userQuery <> " JOIN files f ON f.user_id = u.user_id WHERE f.agent_snd_file_id = ?") (Only aSndFileId)
+
+getUserByARcvFileId :: DB.Connection -> AgentRcvFileId -> IO (Maybe User)
+getUserByARcvFileId db aRcvFileId =
+  maybeFirstRow toUser $
+    DB.query db (userQuery <> " JOIN rcv_files r USING (file_id) JOIN files f ON f.user_id = u.user_id WHERE r.agent_rcv_file_id = ?") (Only aRcvFileId)
 
 getUserByContactId :: DB.Connection -> ContactId -> ExceptT StoreError IO User
 getUserByContactId db contactId =
@@ -2718,6 +2726,12 @@ getSndInlineFTViaMsgDelivery db User {userId} Connection {connId, agentConnId} a
 -- TODO create record only in files table, not in snd_files
 createFileTransferXFTP :: DB.Connection -> User -> Either Contact GroupInfo -> FilePath -> FileInvitation -> SndFileId -> IO FileTransferMeta
 createFileTransferXFTP _db _user _ctOrGroup _file _fileInvitation _agentFileId = undefined
+
+getAgentSndFileXFTP :: DB.Connection -> User -> AgentSndFileId -> ExceptT StoreError IO FileTransferMeta
+getAgentSndFileXFTP _db _user _aFileId = undefined
+
+getAgentRcvFileXFTP :: DB.Connection -> User -> AgentRcvFileId -> ExceptT StoreError IO FileTransferMeta
+getAgentRcvFileXFTP _db _user _aFileId = undefined
 
 updateFileCancelled :: MsgDirectionI d => DB.Connection -> User -> Int64 -> CIFileStatus d -> IO ()
 updateFileCancelled db User {userId} fileId ciFileStatus = do

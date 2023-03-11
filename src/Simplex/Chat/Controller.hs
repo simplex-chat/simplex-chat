@@ -688,7 +688,8 @@ instance ToJSON ChatError where
 data ChatErrorType
   = CENoActiveUser
   | CENoConnectionUser {agentConnId :: AgentConnId}
-  | CENoFileUser {agentFileId :: AgentFileId}
+  | CENoSndFileUser {agentSndFileId :: AgentSndFileId}
+  | CENoRcvFileUser {agentRcvFileId :: AgentRcvFileId}
   | CEActiveUserExists -- TODO delete
   | CEUserExists {contactName :: ContactName}
   | CEDifferentActiveUser {commandUserId :: UserId, activeUserId :: UserId}
