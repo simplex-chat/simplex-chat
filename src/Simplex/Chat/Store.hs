@@ -33,6 +33,7 @@ module Simplex.Chat.Store
     getUser,
     getUserIdByName,
     getUserByAConnId,
+    getUserByAFileId,
     getUserByContactId,
     getUserByGroupId,
     getUserByFileId,
@@ -153,6 +154,7 @@ module Simplex.Chat.Store
     updateSndDirectFTDelivery,
     updateSndGroupFTDelivery,
     getSndInlineFTViaMsgDelivery,
+    createFileTransferXFTP,
     updateFileCancelled,
     updateCIFileStatus,
     getSharedMsgIdByFileId,
@@ -349,7 +351,7 @@ import Simplex.Chat.Migrations.M20230303_group_link_role
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (week)
-import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..))
+import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..), SndFileId, UserId)
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, firstRow, firstRow', maybeFirstRow, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
@@ -540,6 +542,11 @@ getUserByAConnId :: DB.Connection -> AgentConnId -> IO (Maybe User)
 getUserByAConnId db agentConnId =
   maybeFirstRow toUser $
     DB.query db (userQuery <> " JOIN connections c ON c.user_id = u.user_id WHERE c.agent_conn_id = ?") (Only agentConnId)
+
+getUserByAFileId :: DB.Connection -> AgentFileId -> IO (Maybe User)
+getUserByAFileId db agentFileId =
+  maybeFirstRow toUser $
+    DB.query db (userQuery <> " JOIN files f ON f.user_id = u.user_id WHERE f.agent_file_id = ?") (Only agentFileId)
 
 getUserByContactId :: DB.Connection -> ContactId -> ExceptT StoreError IO User
 getUserByContactId db contactId =
@@ -2707,6 +2714,10 @@ getSndInlineFTViaMsgDelivery db User {userId} Connection {connId, agentConnId} a
     sndFileTransfer_ (fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, contactName_, memberName_) =
       (\n -> SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, recipientDisplayName = n, connId, agentConnId})
         <$> (contactName_ <|> memberName_)
+
+-- TODO create record only in files table, not in snd_files
+createFileTransferXFTP :: DB.Connection -> User -> Either Contact GroupInfo -> FilePath -> FileInvitation -> SndFileId -> IO FileTransferMeta
+createFileTransferXFTP _db _user _ctOrGroup _file _fileInvitation _agentFileId = undefined
 
 updateFileCancelled :: MsgDirectionI d => DB.Connection -> User -> Int64 -> CIFileStatus d -> IO ()
 updateFileCancelled db User {userId} fileId ciFileStatus = do

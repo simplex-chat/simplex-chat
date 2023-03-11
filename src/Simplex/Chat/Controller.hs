@@ -106,6 +106,7 @@ data ChatConfig = ChatConfig
     tbqSize :: Natural,
     fileChunkSize :: Integer,
     inlineFiles :: InlineFilesConfig,
+    xftpSendFiles :: Bool,
     subscriptionEvents :: Bool,
     hostEvents :: Bool,
     logLevel :: ChatLogLevel,
@@ -668,6 +669,11 @@ data CoreVersionInfo = CoreVersionInfo
 
 instance ToJSON CoreVersionInfo where toEncoding = J.genericToEncoding J.defaultOptions
 
+data SendFileMode
+  = SendFileSMP {fileChunkSize :: Integer, fileInline :: Maybe InlineFileMode}
+  | SendFileXFTP
+  deriving (Show, Generic)
+
 data ChatError
   = ChatError {errorType :: ChatErrorType}
   | ChatErrorAgent {agentError :: AgentErrorType, connectionEntity_ :: Maybe ConnectionEntity}
@@ -682,6 +688,7 @@ instance ToJSON ChatError where
 data ChatErrorType
   = CENoActiveUser
   | CENoConnectionUser {agentConnId :: AgentConnId}
+  | CENoFileUser {agentFileId :: AgentFileId}
   | CEActiveUserExists -- TODO delete
   | CEUserExists {contactName :: ContactName}
   | CEDifferentActiveUser {commandUserId :: UserId, activeUserId :: UserId}

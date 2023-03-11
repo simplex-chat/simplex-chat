@@ -49,7 +49,7 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import GHC.Records.Compat
 import Simplex.FileTransfer.Description (FileDigest)
-import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), APartyCmdTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, SAEntity (..))
+import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), APartyCmdTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, SAEntity (..), UserId)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth, ProtoServerWithAuth, ProtocolTypeI)
@@ -125,8 +125,6 @@ data UserInfo = UserInfo
 instance ToJSON UserInfo where
   toJSON = J.genericToJSON J.defaultOptions
   toEncoding = J.genericToEncoding J.defaultOptions
-
-type UserId = Int64
 
 type ContactId = Int64
 
@@ -1498,6 +1496,17 @@ instance ToJSON FileDescr where
 instance FromJSON FileDescr where
   parseJSON = J.genericParseJSON . taggedObjectJSON $ dropPrefix "FD"
 
+xftpFileInvitation :: FilePath -> Integer -> FileInvitation
+xftpFileInvitation fileName fileSize =
+  FileInvitation
+    { fileName,
+      fileSize,
+      fileDigest = Nothing,
+      fileConnReq = Nothing,
+      fileInline = Nothing,
+      fileDescr = Just FDPending
+    }
+
 data InlineFileMode
   = IFMOffer -- file will be sent inline once accepted
   | IFMSent -- file is sent inline without acceptance
@@ -1593,6 +1602,22 @@ instance ToJSON AgentConnId where
 instance FromField AgentConnId where fromField f = AgentConnId <$> fromField f
 
 instance ToField AgentConnId where toField (AgentConnId m) = toField m
+
+newtype AgentFileId = AgentFileId ConnId
+  deriving (Eq, Show)
+
+instance StrEncoding AgentFileId where
+  strEncode (AgentFileId connId) = strEncode connId
+  strDecode s = AgentFileId <$> strDecode s
+  strP = AgentFileId <$> strP
+
+instance ToJSON AgentFileId where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
+instance FromField AgentFileId where fromField f = AgentFileId <$> fromField f
+
+instance ToField AgentFileId where toField (AgentFileId m) = toField m
 
 newtype AgentInvId = AgentInvId InvitationId
   deriving (Eq, Show)

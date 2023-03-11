@@ -1007,7 +1007,7 @@ viewSentFileInvitation to CIFile {fileId, filePath, fileStatus} ts = case filePa
   where
     ttySentFile fPath = ["/f " <> to <> ttyFilePath fPath] <> cancelSending
     cancelSending = case fileStatus of
-      CIFSSndTransfer -> []
+      CIFSSndTransfer _ _ -> []
       _ -> ["use " <> highlight ("/fc " <> show fileId) <> " to cancel sending"]
 
 sentWithTime_ :: CurrentTime -> [StyledString] -> CIMeta c d -> [StyledString]
@@ -1207,6 +1207,7 @@ viewChatError logLevel = \case
   ChatError err -> case err of
     CENoActiveUser -> ["error: active user is required"]
     CENoConnectionUser agentConnId -> ["error: message user not found, conn id: " <> sShow agentConnId | logLevel <= CLLError]
+    CENoFileUser agentFileId -> ["error: file user not found, file id: " <> sShow agentFileId | logLevel <= CLLError]
     CEActiveUserExists -> ["error: active user already exists"]
     CEUserExists name -> ["user with the name " <> ttyContact name <> " already exists"]
     CEDifferentActiveUser commandUserId activeUserId -> ["error: different active user, command user id: " <> sShow commandUserId <> ", active user id: " <> sShow activeUserId]
