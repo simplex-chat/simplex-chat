@@ -154,8 +154,9 @@ module Simplex.Chat.Store
     createSndGroupInlineFT,
     updateSndDirectFTDelivery,
     updateSndGroupFTDelivery,
-    getSndInlineFTViaMsgDelivery,
+    getSndFTViaMsgDelivery,
     createSndFileTransferXFTP,
+    createSndDirectFTDescrXFTP,
     getAgentSndFileXFTP,
     getAgentRcvFileXFTP,
     updateFileCancelled,
@@ -1409,7 +1410,10 @@ getLiveSndFileTransfers db User {userId} = do
           SELECT DISTINCT f.file_id
           FROM files f
           JOIN snd_files s USING (file_id)
-          WHERE f.user_id = ? AND s.file_status IN (?, ?, ?) AND s.file_inline IS NULL
+          WHERE f.user_id = ?
+            AND s.file_status IN (?, ?, ?)
+            AND s.file_descr_id IS NULL
+            AND s.file_inline IS NULL
             AND s.created_at > ?
         |]
         (userId, FSNew, FSAccepted, FSConnected, cutoffTs)
@@ -1736,7 +1740,7 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
           DB.query
             db
             [sql|
-              SELECT s.file_status, f.file_name, f.file_size, f.chunk_size, f.file_path, s.file_inline, cs.local_display_name, m.local_display_name
+              SELECT s.file_status, f.file_name, f.file_size, f.chunk_size, f.file_path, s.file_descr_id, s.file_inline, cs.local_display_name, m.local_display_name
               FROM snd_files s
               JOIN files f USING (file_id)
               LEFT JOIN contacts cs USING (contact_id)
@@ -1744,10 +1748,10 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
               WHERE f.user_id = ? AND f.file_id = ? AND s.connection_id = ?
             |]
             (userId, fileId, connId)
-    sndFileTransfer_ :: Int64 -> Int64 -> (FileStatus, String, Integer, Integer, FilePath, Maybe InlineFileMode, Maybe ContactName, Maybe ContactName) -> Either StoreError SndFileTransfer
-    sndFileTransfer_ fileId connId (fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, contactName_, memberName_) =
+    sndFileTransfer_ :: Int64 -> Int64 -> (FileStatus, String, Integer, Integer, FilePath, Maybe Int64, Maybe InlineFileMode, Maybe ContactName, Maybe ContactName) -> Either StoreError SndFileTransfer
+    sndFileTransfer_ fileId connId (fileStatus, fileName, fileSize, chunkSize, filePath, fileDescrId, fileInline, contactName_, memberName_) =
       case contactName_ <|> memberName_ of
-        Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, recipientDisplayName, connId, agentConnId}
+        Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileDescrId, fileInline, recipientDisplayName, connId, agentConnId}
         Nothing -> Left $ SESndFileInvalid fileId
     getUserContact_ :: Int64 -> ExceptT StoreError IO UserContact
     getUserContact_ userContactLinkId = ExceptT $ do
@@ -2675,7 +2679,7 @@ createSndDirectInlineFT db Contact {localDisplayName = n, activeConn = Connectio
     db
     "INSERT INTO snd_files (file_id, file_status, file_inline, connection_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
     (fileId, fileStatus, fileInline', connId, currentTs, currentTs)
-  pure SndFileTransfer {fileId, fileName, filePath, fileSize, chunkSize, recipientDisplayName = n, connId, agentConnId, fileStatus, fileInline = fileInline'}
+  pure SndFileTransfer {fileId, fileName, filePath, fileSize, chunkSize, recipientDisplayName = n, connId, agentConnId, fileStatus, fileDescrId = Nothing, fileInline = fileInline'}
 
 createSndGroupInlineFT :: DB.Connection -> GroupMember -> Connection -> FileTransferMeta -> IO SndFileTransfer
 createSndGroupInlineFT db GroupMember {groupMemberId, localDisplayName = n} Connection {connId, agentConnId} FileTransferMeta {fileId, fileName, filePath, fileSize, chunkSize, fileInline} = do
@@ -2686,7 +2690,7 @@ createSndGroupInlineFT db GroupMember {groupMemberId, localDisplayName = n} Conn
     db
     "INSERT INTO snd_files (file_id, file_status, file_inline, connection_id, group_member_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
     (fileId, fileStatus, fileInline', connId, groupMemberId, currentTs, currentTs)
-  pure SndFileTransfer {fileId, fileName, filePath, fileSize, chunkSize, recipientDisplayName = n, connId, agentConnId, fileStatus, fileInline = fileInline'}
+  pure SndFileTransfer {fileId, fileName, filePath, fileSize, chunkSize, recipientDisplayName = n, connId, agentConnId, fileStatus, fileDescrId = Nothing, fileInline = fileInline'}
 
 updateSndDirectFTDelivery :: DB.Connection -> Contact -> FileTransferMeta -> Int64 -> IO ()
 updateSndDirectFTDelivery db Contact {activeConn = Connection {connId}} FileTransferMeta {fileId} msgDeliveryId =
@@ -2702,45 +2706,56 @@ updateSndGroupFTDelivery db GroupMember {groupMemberId} Connection {connId} File
     "UPDATE snd_files SET last_inline_msg_delivery_id = ? WHERE group_member_id = ? AND connection_id = ? AND file_id = ? AND file_inline IS NOT NULL"
     (msgDeliveryId, groupMemberId, connId, fileId)
 
-getSndInlineFTViaMsgDelivery :: DB.Connection -> User -> Connection -> AgentMsgId -> IO (Maybe SndFileTransfer)
-getSndInlineFTViaMsgDelivery db User {userId} Connection {connId, agentConnId} agentMsgId = do
+getSndFTViaMsgDelivery :: DB.Connection -> User -> Connection -> AgentMsgId -> IO (Maybe SndFileTransfer)
+getSndFTViaMsgDelivery db User {userId} Connection {connId, agentConnId} agentMsgId = do
   (sndFileTransfer_ <=< listToMaybe)
     <$> DB.query
       db
       [sql|
-        SELECT s.file_id, s.file_status, f.file_name, f.file_size, f.chunk_size, f.file_path, s.file_inline, c.local_display_name, m.local_display_name
+        SELECT s.file_id, s.file_status, f.file_name, f.file_size, f.chunk_size, f.file_path, s.file_descr_id, s.file_inline, c.local_display_name, m.local_display_name
         FROM msg_deliveries d
         JOIN snd_files s ON s.connection_id = d.connection_id AND s.last_inline_msg_delivery_id = d.msg_delivery_id
         JOIN files f ON f.file_id = s.file_id
         LEFT JOIN contacts c USING (contact_id)
         LEFT JOIN group_members m USING (group_member_id)
-        WHERE d.connection_id = ? AND d.agent_msg_id = ? AND f.user_id = ? AND s.file_inline IS NOT NULL
+        WHERE d.connection_id = ? AND d.agent_msg_id = ? AND f.user_id = ?
+          AND (s.file_descr_id IS NOT NULL OR s.file_inline IS NOT NULL)
       |]
       (connId, agentMsgId, userId)
   where
-    sndFileTransfer_ :: (Int64, FileStatus, String, Integer, Integer, FilePath, Maybe InlineFileMode, Maybe ContactName, Maybe ContactName) -> Maybe SndFileTransfer
-    sndFileTransfer_ (fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, contactName_, memberName_) =
-      (\n -> SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, recipientDisplayName = n, connId, agentConnId})
+    sndFileTransfer_ :: (Int64, FileStatus, String, Integer, Integer, FilePath, Maybe Int64, Maybe InlineFileMode, Maybe ContactName, Maybe ContactName) -> Maybe SndFileTransfer
+    sndFileTransfer_ (fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileDescrId, fileInline, contactName_, memberName_) =
+      (\n -> SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileDescrId, fileInline, recipientDisplayName = n, connId, agentConnId})
         <$> (contactName_ <|> memberName_)
 
-createSndFileTransferXFTP :: DB.Connection -> User -> Either Contact GroupInfo -> FilePath -> FileInvitation -> AgentSndFileId -> IO FileTransferMeta
-createSndFileTransferXFTP db User {userId} ctOrGroup filePath FileInvitation {fileName, fileSize} agentSndFileId = do
+createSndFileTransferXFTP :: DB.Connection -> User -> ContactOrGroup -> FilePath -> FileInvitation -> AgentSndFileId -> IO FileTransferMeta
+createSndFileTransferXFTP db User {userId} contactOrGroup filePath FileInvitation {fileName, fileSize} agentSndFileId = do
   currentTs <- getCurrentTime
   let chunkSize = 0
-      xftpSndFile = Just XFTPSndFile {agentSndFileId, sndFileDescr = Nothing}
+      xftpSndFile = Just XFTPSndFile {agentSndFileId, privateSndFileDescr = Nothing}
   DB.execute
     db
-    "INSERT INTO files (user_id, contact_id, group_id, file_name, file_path, file_size, chunk_size, agent_snd_file_id, ci_file_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)"
-    ((userId, ctId, gId) :. (fileName, filePath, fileSize, chunkSize, agentSndFileId, CIFSSndStored, currentTs, currentTs))
+    "INSERT INTO files (contact_id, group_id, user_id, file_name, file_path, file_size, chunk_size, agent_snd_file_id, ci_file_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)"
+    (contactAndGroupIds contactOrGroup :. (userId, fileName, filePath, fileSize, chunkSize, agentSndFileId, CIFSSndStored, currentTs, currentTs))
   fileId <- insertedRowId db
   pure FileTransferMeta {fileId, xftpSndFile, fileName, filePath, fileSize, fileInline = Nothing, chunkSize, cancelled = False}
-  where
-    (ctId, gId) = case ctOrGroup of
-      Left Contact {contactId} -> (Just contactId, Nothing)
-      Right GroupInfo {groupId} -> (Nothing, Just groupId)
+
+createSndDirectFTDescrXFTP :: DB.Connection -> User -> Contact -> FileTransferMeta -> Text -> IO ()
+createSndDirectFTDescrXFTP db User {userId} Contact {activeConn = Connection {connId}} FileTransferMeta {fileId} rfdText = do
+  let fileStatus = FSConnected
+  DB.execute db "INSERT INTO xftp_file_descriptions (user_id, file_descr_text, file_descr_complete) VALUES (?,?,?)" (userId, rfdText, True)
+  fileDescrId <- insertedRowId db
+  DB.execute
+    db
+    "INSERT INTO snd_files (file_id, file_status, file_descr_id, connection_id) VALUES (?,?,?,?)"
+    (fileId, fileStatus, fileDescrId, connId)
 
 getAgentSndFileXFTP :: DB.Connection -> User -> AgentSndFileId -> ExceptT StoreError IO FileTransferMeta
-getAgentSndFileXFTP _db _user _aFileId = undefined
+getAgentSndFileXFTP db user aSndFileId = do
+  fileId <-
+    ExceptT . firstRow fromOnly (SESndFileNotFoundXFTP aSndFileId) $
+      DB.query db "SELECT file_id FROM files WHERE agent_snd_file_id = ?" (Only aSndFileId)
+  getFileTransferMeta db user fileId
 
 getAgentRcvFileXFTP :: DB.Connection -> User -> AgentRcvFileId -> ExceptT StoreError IO FileTransferMeta
 getAgentRcvFileXFTP _db _user _aFileId = undefined
@@ -2890,10 +2905,11 @@ createRcvFileTransfer db userId Contact {contactId, localDisplayName = c} f@File
     (userId, contactId, fileName, fileSize, chunkSize, fileInline, CIFSRcvInvitation, currentTs, currentTs)
   fileId <- insertedRowId db
   rfd <- mapM (createRcvFD_ db) fileDescr
+  let rfdId = (fileDescrId :: RcvFileDescr -> Int64) <$> rfd
   DB.execute
     db
     "INSERT INTO rcv_files (file_id, file_status, file_queue_info, file_inline, rcv_file_inline, file_descr_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
-    (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, fileDescrId <$> rfd, currentTs, currentTs)
+    (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, rfdId, currentTs, currentTs)
   pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, rcvFileInline, rcvFileDescription = rfd, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Nothing}
 
 createRcvGroupFileTransfer :: DB.Connection -> UserId -> GroupMember -> FileInvitation -> Maybe InlineFileMode -> Integer -> IO RcvFileTransfer
@@ -2905,10 +2921,11 @@ createRcvGroupFileTransfer db userId GroupMember {groupId, groupMemberId, localD
     (userId, groupId, fileName, fileSize, chunkSize, fileInline, CIFSRcvInvitation, currentTs, currentTs)
   fileId <- insertedRowId db
   rfd <- mapM (createRcvFD_ db) fileDescr
+  let rfdId = (fileDescrId :: RcvFileDescr -> Int64) <$> rfd
   DB.execute
     db
     "INSERT INTO rcv_files (file_id, file_status, file_queue_info, file_inline, rcv_file_inline, group_member_id, file_descr_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
-    (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, groupMemberId, fileDescrId <$> rfd, currentTs, currentTs)
+    (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, groupMemberId, rfdId, currentTs, currentTs)
   pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, rcvFileInline, rcvFileDescription = rfd, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Just groupMemberId}
 
 createRcvFD_ :: DB.Connection -> FileDescr -> IO RcvFileDescr
@@ -3111,7 +3128,7 @@ getSndFileTransfers_ db userId fileId =
     <$> DB.query
       db
       [sql|
-        SELECT s.file_status, f.file_name, f.file_size, f.chunk_size, f.file_path, s.file_inline, s.connection_id, c.agent_conn_id,
+        SELECT s.file_status, f.file_name, f.file_size, f.chunk_size, f.file_path, s.file_descr_id, s.file_inline, s.connection_id, c.agent_conn_id,
           cs.local_display_name, m.local_display_name
         FROM snd_files s
         JOIN files f USING (file_id)
@@ -3122,10 +3139,10 @@ getSndFileTransfers_ db userId fileId =
       |]
       (userId, fileId)
   where
-    sndFileTransfer :: (FileStatus, String, Integer, Integer, FilePath, Maybe InlineFileMode, Int64, AgentConnId, Maybe ContactName, Maybe ContactName) -> Either StoreError SndFileTransfer
-    sndFileTransfer (fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, connId, agentConnId, contactName_, memberName_) =
+    sndFileTransfer :: (FileStatus, String, Integer, Integer, FilePath) :. (Maybe Int64, Maybe InlineFileMode, Int64, AgentConnId, Maybe ContactName, Maybe ContactName) -> Either StoreError SndFileTransfer
+    sndFileTransfer ((fileStatus, fileName, fileSize, chunkSize, filePath) :. (fileDescrId, fileInline, connId, agentConnId, contactName_, memberName_)) =
       case contactName_ <|> memberName_ of
-        Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, recipientDisplayName, connId, agentConnId}
+        Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileDescrId, fileInline, recipientDisplayName, connId, agentConnId}
         Nothing -> Left $ SESndFileInvalid fileId
 
 getFileTransferMeta :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO FileTransferMeta
@@ -3141,8 +3158,8 @@ getFileTransferMeta db User {userId} fileId =
       (userId, fileId)
   where
     fileTransferMeta :: (String, Integer, Integer, FilePath, Maybe InlineFileMode, Maybe AgentSndFileId, Maybe Text, Maybe Bool) -> FileTransferMeta
-    fileTransferMeta (fileName, fileSize, chunkSize, filePath, fileInline, aSndFileId_, sndFileDescr, cancelled_) =
-      let xftpSndFile = (\fId -> XFTPSndFile {agentSndFileId = fId, sndFileDescr}) <$> aSndFileId_
+    fileTransferMeta (fileName, fileSize, chunkSize, filePath, fileInline, aSndFileId_, privateSndFileDescr, cancelled_) =
+      let xftpSndFile = (\fId -> XFTPSndFile {agentSndFileId = fId, privateSndFileDescr}) <$> aSndFileId_
        in FileTransferMeta {fileId, xftpSndFile, fileName, fileSize, chunkSize, filePath, fileInline, cancelled = fromMaybe False cancelled_}
 
 getContactFileInfo :: DB.Connection -> User -> Contact -> IO [CIFileInfo]
@@ -5029,6 +5046,7 @@ data StoreError
   | SERcvFileInvalid {fileId :: FileTransferId}
   | SESharedMsgIdNotFoundByFileId {fileId :: FileTransferId}
   | SEFileIdNotFoundBySharedMsgId {sharedMsgId :: SharedMsgId}
+  | SESndFileNotFoundXFTP {agentFileId :: AgentSndFileId}
   | SEConnectionNotFound {agentConnId :: AgentConnId}
   | SEConnectionNotFoundById {connId :: Int64}
   | SEPendingConnectionNotFound {connId :: Int64}

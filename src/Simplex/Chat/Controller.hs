@@ -105,6 +105,7 @@ data ChatConfig = ChatConfig
     defaultServers :: DefaultAgentServers,
     tbqSize :: Natural,
     fileChunkSize :: Integer,
+    xftpDescrPartSize :: Int,
     inlineFiles :: InlineFilesConfig,
     xftpFileConfig :: Maybe XFTPFileConfig, -- Nothing - XFTP is disabled
     subscriptionEvents :: Bool,

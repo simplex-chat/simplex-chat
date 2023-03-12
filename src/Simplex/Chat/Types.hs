@@ -287,6 +287,13 @@ instance ToJSON GroupInfo where toEncoding = J.genericToEncoding J.defaultOption
 groupName' :: GroupInfo -> GroupName
 groupName' GroupInfo {localDisplayName = g} = g
 
+data ContactOrGroup = CGContact Contact | CGGroup GroupInfo
+
+contactAndGroupIds :: ContactOrGroup -> (Maybe ContactId, Maybe GroupId)
+contactAndGroupIds = \case
+  CGContact Contact {contactId} -> (Just contactId, Nothing)
+  CGGroup GroupInfo {groupId} -> (Nothing, Just groupId)
+
 -- TODO when more settings are added we should create another type to allow partial setting updates (with all Maybe properties)
 data ChatSettings = ChatSettings
   { enableNtfs :: Bool
@@ -1455,6 +1462,7 @@ data SndFileTransfer = SndFileTransfer
     connId :: Int64,
     agentConnId :: AgentConnId,
     fileStatus :: FileStatus,
+    fileDescrId :: Maybe Int64,
     fileInline :: Maybe InlineFileMode
   }
   deriving (Eq, Show, Generic)
@@ -1676,7 +1684,7 @@ instance ToJSON FileTransferMeta where toEncoding = J.genericToEncoding J.defaul
 
 data XFTPSndFile = XFTPSndFile
   { agentSndFileId :: AgentSndFileId,
-    sndFileDescr :: Maybe Text
+    privateSndFileDescr :: Maybe Text
   }
   deriving (Eq, Show, Generic)
 
@@ -1686,6 +1694,7 @@ fileTransferCancelled :: FileTransfer -> Bool
 fileTransferCancelled (FTSnd FileTransferMeta {cancelled} _) = cancelled
 fileTransferCancelled (FTRcv RcvFileTransfer {cancelled}) = cancelled
 
+-- For XFTP file transfers FSConnected means "uploaded to XFTP relays"
 data FileStatus = FSNew | FSAccepted | FSConnected | FSComplete | FSCancelled deriving (Eq, Ord, Show)
 
 instance FromField FileStatus where fromField = fromTextField_ textDecode

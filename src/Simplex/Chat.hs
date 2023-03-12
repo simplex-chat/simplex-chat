@@ -105,6 +105,7 @@ defaultChatConfig =
           },
       tbqSize = 1024,
       fileChunkSize = 15780, -- do not change
+      xftpDescrPartSize = 14000,
       inlineFiles = defaultInlineFilesConfig,
       xftpFileConfig = Nothing,
       logLevel = CLLImportant,
@@ -401,7 +402,7 @@ processChatCommand = \case
           (fileSize, fileMode) <- checkSndFile mc file 1
           case fileMode of
             SendFileSMP fileInline -> smpSndFileTransfer file fileSize fileInline
-            SendFileXFTP xftpCfg -> xftpSndFileTransfer user file fileSize xftpCfg 1 $ Left ct
+            SendFileXFTP xftpCfg -> xftpSndFileTransfer user file fileSize xftpCfg 1 $ CGContact ct
           where
             smpSndFileTransfer :: FilePath -> Integer -> Maybe InlineFileMode -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
             smpSndFileTransfer file fileSize fileInline = do
@@ -458,7 +459,7 @@ processChatCommand = \case
           (fileSize, fileMode) <- checkSndFile mc file $ fromIntegral n
           case fileMode of
             SendFileSMP fileInline -> smpSndFileTransfer file fileSize fileInline
-            SendFileXFTP xftpCfg -> xftpSndFileTransfer user file fileSize xftpCfg n $ Right gInfo
+            SendFileXFTP xftpCfg -> xftpSndFileTransfer user file fileSize xftpCfg n $ CGGroup gInfo
           where
             smpSndFileTransfer :: FilePath -> Integer -> Maybe InlineFileMode -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
             smpSndFileTransfer file fileSize fileInline = do
@@ -523,7 +524,7 @@ processChatCommand = \case
           qText = msgContentText qmc
           qFileName = maybe qText (T.pack . (fileName :: CIFile d -> String)) ciFile_
           qTextOrFile = if T.null qText then qFileName else qText
-      xftpSndFileTransfer :: User -> FilePath -> Integer -> XFTPFileConfig -> Int -> Either Contact GroupInfo -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
+      xftpSndFileTransfer :: User -> FilePath -> Integer -> XFTPFileConfig -> Int -> ContactOrGroup -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
       xftpSndFileTransfer user file fileSize XFTPFileConfig {tempDirectory} n contactOrGroup = do
         let fileName = takeFileName file
             fInv = xftpFileInvitation fileName fileSize
@@ -2141,29 +2142,22 @@ processAgentMsgSndFile _corrId aFileId msg =
   where
     process :: User -> m ()
     process user = do
-      _ft@FileTransferMeta {fileId} <- withStore (\db -> getAgentSndFileXFTP db user $ AgentSndFileId aFileId)
-      --  >>= updateConnStatus
-      -- load file transfer meta (add chat item status to type and also contact/group)
+      ft@FileTransferMeta {fileId} <- withStore $ \db -> getAgentSndFileXFTP db user $ AgentSndFileId aFileId
       case msg of
         SFPROG _sent _total -> do
           -- update chat item status
           -- send status to view
           pure ()
-        SFDONE _sndDescr rds -> do
+        SFDONE _sndDescr rfds -> do
           AChatItem _ d cInfo _ci@ChatItem {meta = CIMeta {itemSharedMsgId = msgId_, itemDeleted}} <-
             withStore $ \db -> getChatItemByFileId db user fileId
           case (msgId_, itemDeleted) of
-            (Just msgId, Nothing) -> case (rds, d, cInfo) of
-              (fd : _, SMDSnd, DirectChat ct) -> do
-                -- store file description and file to snd_files
-                -- TODO send multiple parts, as needed
-                let fileDescr = FileDescr {fileDescrText = safeDecodeUtf8 (strEncode fd), fileDescrPartNo = 0, fileDescrComplete = True}
-                void $ sendDirectContactMessage ct $ XMsgFileDescr {msgId, fileDescr}
-                -- update chat item file status (CIFileStatus)
-                -- update sent file status
-                -- ??? possibly another event as we need one event per group, not per member
-                -- toView $ CRSndFileComplete user ci ft
-                pure ()
+            (Just sharedMsgId, Nothing) -> case (rfds, d, cInfo) of
+              (rfd : _, SMDSnd, DirectChat ct) -> do
+                let rfdText = safeDecodeUtf8 $ strEncode rfd
+                withStore' $ \db -> createSndDirectFTDescrXFTP db user ct ft rfdText
+                -- TODO update chat item status to show 100% progress
+                sendDirectFileDescription ct rfdText ft sharedMsgId
               (_, SMDSnd, GroupChat _g) -> do
                 -- store file descriptions and files to snd_files
                 -- send messages with descriptions to the recipients
@@ -2175,6 +2169,30 @@ processAgentMsgSndFile _corrId aFileId msg =
               _ -> pure () -- TODO error
             _ -> pure () -- TODO error
           pure ()
+      where
+        sendDirectFileDescription :: Contact -> Text -> FileTransferMeta -> SharedMsgId -> m ()
+        sendDirectFileDescription ct rfd ft sharedMsgId = do
+          msgDeliveryId <- sendFileDescription_ rfd sharedMsgId $ sendDirectContactMessage ct
+          withStore' $ \db -> updateSndDirectFTDelivery db ct ft msgDeliveryId
+
+        _sendMemberFileDescription :: GroupMember -> Connection -> Text -> FileTransferMeta -> SharedMsgId -> m ()
+        _sendMemberFileDescription m@GroupMember {groupId} conn rfd ft sharedMsgId = do
+          msgDeliveryId <- sendFileDescription_ rfd sharedMsgId $ \msg' -> sendDirectMessage conn msg' $ GroupId groupId
+          withStore' $ \db -> updateSndGroupFTDelivery db m conn ft msgDeliveryId
+
+        sendFileDescription_ :: Text -> SharedMsgId -> (ChatMsgEvent 'Json -> m (SndMessage, Int64)) -> m Int64
+        sendFileDescription_ rfdText msgId sendMsg = do
+          partSize <- asks $ xftpDescrPartSize . config
+          sendParts 1 partSize rfdText
+          where
+            sendParts partNo partSize rfd = do
+              let (part, rest) = T.splitAt partSize rfd
+                  complete = T.null rest
+                  fileDescr = FileDescr {fileDescrText = part, fileDescrPartNo = partNo, fileDescrComplete = complete}
+              (_, msgDeliveryId) <- sendMsg $ XMsgFileDescr {msgId, fileDescr}
+              if complete
+                then pure msgDeliveryId
+                else sendParts (partNo + 1) partSize rest
 
 processAgentMsgRcvFile :: forall m. ChatMonad m => ACorrId -> RcvFileId -> ACommand 'Agent 'AERcvFile -> m ()
 processAgentMsgRcvFile _corrId aFileId msg =
@@ -3088,7 +3106,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     checkSndInlineFTComplete :: Connection -> AgentMsgId -> m ()
     checkSndInlineFTComplete conn agentMsgId = do
-      ft_ <- withStore' $ \db -> getSndInlineFTViaMsgDelivery db user conn agentMsgId
+      ft_ <- withStore' $ \db -> getSndFTViaMsgDelivery db user conn agentMsgId
       forM_ ft_ $ \ft@SndFileTransfer {fileId} -> do
         ci <- withStore $ \db -> do
           liftIO $ updateSndFileStatus db ft FSComplete
