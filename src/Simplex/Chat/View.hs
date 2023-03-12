@@ -130,6 +130,9 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
   CRUserDeletedMember u g m -> ttyUser u [ttyGroup' g <> ": you removed " <> ttyMember m <> " from the group"]
   CRLeftMemberUser u g -> ttyUser u $ [ttyGroup' g <> ": you left the group"] <> groupPreserved g
   CRGroupDeletedUser u g -> ttyUser u [ttyGroup' g <> ": you deleted the group"]
+  CRRcvFileDescrReady _ _ -> []
+  CRRcvFileDescrNotReady _ _ -> []
+  CRRcvFileProgressXFTP _ _ _ _ -> []
   CRRcvFileAccepted u ci -> ttyUser u $ savingFile' ci
   CRRcvFileAcceptedSndCancelled u ft -> ttyUser u $ viewRcvFileSndCancelled ft
   CRSndGroupFileCancelled u _ ftm fts -> ttyUser u $ viewSndGroupFileCancelled ftm fts
@@ -147,6 +150,10 @@ responseToView user_ ChatConfig {logLevel, testView} liveItems ts = \case
   CRSndFileStart u _ ft -> ttyUser u $ sendingFile_ "started" ft
   CRSndFileComplete u _ ft -> ttyUser u $ sendingFile_ "completed" ft
   CRSndFileCancelled _ ft -> sendingFile_ "cancelled" ft
+  CRSndFileStartXFTP _ _ _ -> []
+  CRSndFileProgressXFTP _ _ _ _ _ -> []
+  CRSndFileCompleteXFTP _ _ _ -> []
+  CRSndFileCancelledXFTP _ _ _ -> []
   CRSndFileRcvCancelled u _ ft@SndFileTransfer {recipientDisplayName = c} ->
     ttyUser u [ttyContact c <> " cancelled receiving " <> sndFile ft]
   CRContactConnecting u _ -> ttyUser u []

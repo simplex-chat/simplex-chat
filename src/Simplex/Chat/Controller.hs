@@ -422,9 +422,12 @@ data ChatResponse
   | CRContactRequestAlreadyAccepted {user :: User, contact :: Contact}
   | CRLeftMemberUser {user :: User, groupInfo :: GroupInfo}
   | CRGroupDeletedUser {user :: User, groupInfo :: GroupInfo}
+  | CRRcvFileDescrReady {user :: User, chatItem :: AChatItem}
   | CRRcvFileAccepted {user :: User, chatItem :: AChatItem}
   | CRRcvFileAcceptedSndCancelled {user :: User, rcvFileTransfer :: RcvFileTransfer}
+  | CRRcvFileDescrNotReady {user :: User, chatItem :: AChatItem}
   | CRRcvFileStart {user :: User, chatItem :: AChatItem}
+  | CRRcvFileProgressXFTP {user :: User, chatItem :: AChatItem, receivedChunks :: Int, totalChunks :: Int}
   | CRRcvFileComplete {user :: User, chatItem :: AChatItem}
   | CRRcvFileCancelled {user :: User, rcvFileTransfer :: RcvFileTransfer}
   | CRRcvFileSndCancelled {user :: User, rcvFileTransfer :: RcvFileTransfer}
@@ -433,6 +436,10 @@ data ChatResponse
   | CRSndFileCancelled {chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
   | CRSndFileRcvCancelled {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
   | CRSndGroupFileCancelled {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta, sndFileTransfers :: [SndFileTransfer]}
+  | CRSndFileStartXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta}
+  | CRSndFileProgressXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta, sentChunks :: Int, totalChunks :: Int}
+  | CRSndFileCompleteXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta}
+  | CRSndFileCancelledXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta}
   | CRUserProfileUpdated {user :: User, fromProfile :: Profile, toProfile :: Profile}
   | CRContactAliasUpdated {user :: User, toContact :: Contact}
   | CRConnectionAliasUpdated {user :: User, toConnection :: PendingContactConnection}
